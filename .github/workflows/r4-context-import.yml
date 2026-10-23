@@ -1,0 +1,78 @@
+name: "R4: preservar README operativo de Luna R4 en staging"
+on:
+  push:
+    branches: [staging/luna-r4-context-recovery-20260927]
+    paths: [.github/workflows/r4-context-import.yml]
+permissions:
+  contents: write
+jobs:
+  import:
+    if: >-
+      github.repository == 'Plomillo/luna-linux-bridge' &&
+      github.event.head_commit.message == 'ci(R4): preservar README operativo original en staging'
+    runs-on: [self-hosted, Linux, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Checkout aislado sin modificar el espacio de trabajo previo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          clean: false
+          persist-credentials: true
+          path: r4_context_import_worktree
+      - name: Cotejar el documento operativo y su identidad criptografica
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import os,re,json,hashlib,datetime
+          from pathlib import Path
+          home=Path.home()
+          expected="5614b1a1c2fdded0d43f8f6cc7c73dda7efd832faffc7c1a8ef5ca53e1eaa628"
+          original=home/"LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/README_R4_V2_ES.md"
+          assert original.is_file() and not original.is_symlink(),"SOURCE_MISSING"
+          data=original.read_bytes()
+          assert len(data)==4686,"SOURCE_SIZE_CHANGED"
+          actual=hashlib.sha256(data).hexdigest()
+          assert actual==expected,"SOURCE_SHA256_CHANGED"
+          forbidden=[
+              rb"-----BEGIN [A-Z ]*PRIVATE KEY-----",
+              rb"gh[pousr]_[A-Za-z0-9_]{24,}",
+              rb"sk-[A-Za-z0-9_-]{28,}",
+              rb"(?im)^\s*(?:password|passwd|api_key|client_secret|refresh_token|private_key)\s*[:=]\s*[^\s'\"\x00]{8,}"
+          ]
+          assert not any(re.search(pattern,data) for pattern in forbidden),"POSSIBLE_SECRET_REVIEW_REQUIRED"
+          target=Path(os.environ["GITHUB_WORKSPACE"])/"r4_context_import_worktree"
+          assert (target/".git").exists(),"ISOLATED_CHECKOUT_MISSING"
+          dest=target/"docs/luna-r4/source/README_R4_V2_ES.md"
+          dest.parent.mkdir(parents=True,exist_ok=True)
+          dest.write_bytes(data)
+          assert dest.read_bytes()==data,"COPY_NOT_BYTE_EXACT"
+          report={
+              "status":"SOURCE_README_IMPORTED_FOR_REVIEW_ONLY",
+              "source_path_redacted":"~/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/README_R4_V2_ES.md",
+              "source_size_bytes":len(data),"source_sha256":actual,
+              "destination":"docs/luna-r4/source/README_R4_V2_ES.md",
+              "source_identity_verified":True,
+              "full_PART_0_TO_PART_9_document_located":False,
+              "full_document_origin":"Earlier conversation 'Reinicio final Luna'; original attachment not accessible in this recovery",
+              "canonical_mutation":False,"g23_granted":False,"g24_granted":False,
+              "generated_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()
+          }
+          (target/"docs/luna-r4/SOURCE_RECOVERY_STATUS.json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          print("SOURCE_README_SHA256_PASS="+actual)
+          print("IMPORTED_AS_SUPPLEMENTARY_CONTEXT_NOT_FULL_PART_0_TO_9")
+          PY
+      - name: Confirmar commit de procedencia en rama de revision privada
+        shell: bash
+        working-directory: r4_context_import_worktree
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_REF" = "refs/heads/staging/luna-r4-context-recovery-20260927"
+          git add -- docs/luna-r4/source/README_R4_V2_ES.md docs/luna-r4/SOURCE_RECOVERY_STATUS.json
+          git diff --cached --check
+          git config user.name 'louksna-r4-recovery[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -c commit.gpgsign=false commit -m "docs(R4): preservar README original verificado como contexto complementario"
+          git push origin HEAD:refs/heads/staging/luna-r4-context-recovery-20260927
+          echo "R4_SOURCE_PRESERVED_STAGING_ONLY_NO_G23_NO_G24"
