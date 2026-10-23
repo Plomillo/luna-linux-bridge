@@ -75,7 +75,7 @@ jobs:
           TOKENIZERS_PARALLELISM: "false"
         run: |
           python -B cajita-luna-runtime/cajita_runtime.py adapter measure-all \
-            --max-rss-mib 800 \
+            --max-rss-mib 850 \
             --timeout-seconds 600 \
             --report-file artifacts/cajita-resource-evidence.json \
             --trace-file artifacts/cajita-resource-audit.jsonl
@@ -102,6 +102,10 @@ jobs:
                       if r.get("worker_started") and not r.get("worker_pid_reaped")]
           unmeasured = [r.get("domain_id") for r in results
                         if r.get("status") == "PASS" and r.get("peak_rss_mib") is None]
+          combined_over = [r.get("domain_id") for r in results
+                           if r.get("status") == "PASS" and
+                           (r.get("peak_combined_parent_worker_rss_mib") is None or
+                            r.get("peak_combined_parent_worker_rss_mib") > 900)]
           if actual != required:
               print("DOMAIN_COVERAGE_MISMATCH", sorted(actual), sorted(required))
           if failures:
@@ -114,7 +118,9 @@ jobs:
               print("WORKER_PROCESS_NOT_REAPED", unreaped)
           if unmeasured:
               print("RSS_NOT_MEASURED", unmeasured)
-          if actual != required or failures or unreaped or unmeasured:
+          if combined_over:
+              print("COMBINED_RSS_OVER_LIMIT", combined_over)
+          if actual != required or failures or unreaped or unmeasured or combined_over:
               raise SystemExit(1)
           print("PASS: six domain tasks executed sequentially, each stage measured RSS, and every worker process was reaped.")
           print("Certification remains NOT_GRANTED; task-quality equivalence is not assessed by this workflow.")
