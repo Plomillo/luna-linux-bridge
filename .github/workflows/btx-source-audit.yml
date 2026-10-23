@@ -34,17 +34,21 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install pinned Parquet reader
-        run: python -m pip install --disable-pip-version-check pyarrow==21.0.0
+        run: python -m pip install --disable-pip-version-check pyarrow==21.0.0 pymupdf==1.26.5
       - name: Test archive path and inventory safety
         working-directory: tools/btx-audit
         run: python -m unittest -v test_audit_source.py
       - name: Inspect BTX archive without publishing Bible text
         run: python tools/btx-audit/audit_source.py --output btx-source-audit.json
+      - name: Profile font and layout metadata without emitting Bible text
+        run: python tools/btx-audit/inspect_pdf_layout.py > btx-layout-profile.json
       - name: Upload forensic metadata report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: btx-source-forensic-audit
-          path: btx-source-audit.json
+          path: |
+            btx-source-audit.json
+            btx-layout-profile.json
           if-no-files-found: warn
           retention-days: 14
