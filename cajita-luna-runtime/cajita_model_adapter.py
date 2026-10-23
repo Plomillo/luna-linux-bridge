@@ -38,6 +38,7 @@ DEFAULT_WORKER_RSS_LIMIT_MIB = 800
 DEFAULT_STAGE_TIMEOUT_SECONDS = 600
 MAX_INPUT_FILE_BYTES = 50 * 1024 * 1024
 MODEL_MANIFEST = ROOT / "CAJITA_RUNTIME_V1" / "weights_manifest.json"
+MANIFEST_SHA256 = "50ae6f9cf60ef84d4be15d35af998c5ad64685f54b882cc3fff8e812357e3483"
 
 DOMAINS: dict[str, dict[str, Any]] = {
     "D01_CEREBRO": {
@@ -165,6 +166,8 @@ def expected_asset(asset_rel: str) -> dict[str, Any]:
     if not MODEL_MANIFEST.is_file():
         raise RuntimeError("WEIGHTS_MANIFEST_MISSING")
     manifest = json.loads(MODEL_MANIFEST.read_text(encoding="utf-8"))
+    if sha256_file(MODEL_MANIFEST) != MANIFEST_SHA256:
+        raise RuntimeError("WEIGHTS_MANIFEST_SHA256_MISMATCH")
     if manifest.get("schema") != "CAJITA_SIX_DOMAIN_WEIGHT_MANIFEST/1.0":
         raise RuntimeError("WEIGHTS_MANIFEST_SCHEMA_INVALID")
     matches = [item for item in manifest.get("artifacts", []) if item.get("path") == asset_rel]
@@ -541,7 +544,8 @@ def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     raise RuntimeError("UNKNOWN_DOMAIN:" + domain_id)
 
 def worker_main(domain_id: str) -> int:
-    set_single_cpu_affinity()
+    affinity = set_single_cpu_affinity()
+    verified_asset = False
     started = time.monotonic()
     try:
         if domain_id not in DOMAINS:
@@ -555,6 +559,7 @@ def worker_main(domain_id: str) -> int:
             asset_rel = DOMAINS[domain_id]["asset"]
             if asset_rel:
                 expected_asset(asset_rel)
+                verified_asset = True
         task_result = run_model_task(domain_id, payload)
         output_text = str(task_result.pop("output_text", ""))
         result = {
@@ -567,7 +572,9 @@ def worker_main(domain_id: str) -> int:
             "output_text": output_text,
             "peak_rss_mib": peak_rss_mib(),
             "rss_after_model_unload_mib": current_rss_mib(),
-            "model_payload_hash_verified": True,
+            "model_payload_hash_verified": verified_asset,
+            "model_asset_validation": "PASS" if verified_asset else "NOT_APPLICABLE",
+            "cpu_affinity": affinity,
             "certification": "NOT_GRANTED",
         }
         print(json.dumps(result, ensure_ascii=False, separators=(",", ":")), flush=True)
@@ -578,7 +585,8 @@ def worker_main(domain_id: str) -> int:
                   "status": "FAIL_CLOSED", "elapsed_seconds": round(time.monotonic() - started, 3),
                   "error_type": type(exc).__name__, "reason": str(exc)[:500],
                   "peak_rss_mib": peak_rss_mib(), "rss_after_model_unload_mib": current_rss_mib(),
-                  "model_payload_hash_verified": False, "certification": "NOT_GRANTED"}
+                  "model_payload_hash_verified": False, "model_asset_validation": "FAILED",
+                  "cpu_affinity": affinity, "certification": "NOT_GRANTED"}
         print(json.dumps(result, ensure_ascii=False, separators=(",", ":")), flush=True)
         return 2
 
@@ -614,6 +622,20 @@ def run_stage(domain_id: str, payload: dict[str, Any], max_rss_mib: int,
             return {"domain_id": domain_id, "status": "BLOCKED_ASSET_VALIDATION",
                     "reason": str(exc)[:500], "worker_started": False,
                     "certification": "NOT_GRANTED"}
+    input_summary = None
+    input_value = payload.get("input_file")
+    if input_value:
+        try:
+            input_path = pathlib.Path(str(input_value)).expanduser()
+            if input_path.is_symlink():
+                raise RuntimeError("INPUT_FILE_SYMLINK_REJECTED")
+            input_path = input_path.resolve(strict=True)
+            if not input_path.is_file() or input_path.stat().st_size > MAX_INPUT_FILE_BYTES:
+                raise RuntimeError("INPUT_FILE_INVALID_OR_TOO_LARGE")
+            input_summary = {"bytes": input_path.stat().st_size, "sha256": sha256_file(input_path)}
+        except Exception as exc:
+            return {"domain_id": domain_id, "status": "BLOCKED_INPUT_VALIDATION",
+                    "reason": str(exc)[:300], "worker_started": False, "certification": "NOT_GRANTED"}
     env = os.environ.copy()
     env.update({"OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1",
                 "NUMEXPR_NUM_THREADS": "1", "TOKENIZERS_PARALLELISM": "false",
@@ -709,6 +731,9 @@ def run_stage(domain_id: str, payload: dict[str, Any], max_rss_mib: int,
         "model_loaded": bool(((worker_result or {}).get("task_result") or {}).get("model_loaded", False)),
         "model_asset": asset,
         "model_payload_hash_verified": bool((worker_result or {}).get("model_payload_hash_verified", False)),
+        "model_asset_validation": (worker_result or {}).get("model_asset_validation", "FAILED_OR_UNAVAILABLE"),
+        "worker_cpu_affinity": (worker_result or {}).get("cpu_affinity"),
+        "input_file": input_summary,
         "output_sha256": (worker_result or {}).get("output_sha256") or (hashlib.sha256(output.encode("utf-8")).hexdigest() if output else None),
         "output_chars": (worker_result or {}).get("output_chars", 0),
         "worker_error_type": (worker_result or {}).get("error_type"),
@@ -732,6 +757,8 @@ def append_audit_trace(path_value: str, report: dict[str, Any], request_text: st
         "timestamp_utc": utc_now(), "schema": SCHEMA, "domain_id": report.get("domain_id"),
         "operation_status": report.get("operation_status", report.get("status")),
         "request_sha256": sha256_text(request_text) if request_text else None,
+        "input_file_sha256": (report.get("input_file") or {}).get("sha256"),
+        "input_file_bytes": (report.get("input_file") or {}).get("bytes"),
         "model_asset_sha256": (report.get("model_asset") or {}).get("sha256"),
         "peak_rss_mib": report.get("peak_rss_mib"), "worker_rss_limit_mib": report.get("worker_rss_limit_mib"),
         "worker_pid_reaped": report.get("worker_pid_reaped"), "output_sha256": report.get("output_sha256"),
@@ -872,9 +899,17 @@ def main(argv: list[str] | None = None) -> int:
         report = run_measurement(args.domain, args.max_rss_mib, args.timeout_seconds, args.trace_file)
         print(json.dumps(report, indent=2, ensure_ascii=False))
         return 0 if report["status"] == "PASS" and report["worker_pid_reaped"] else 2
+    if not (1 <= args.max_rss_mib < MAX_GLOBAL_RAM_MIB) or not (1 <= args.timeout_seconds <= 3600):
+        parser.error("resource ceiling or timeout out of range")
     results = []
     for domain_id in DOMAINS:
-        report = run_measurement(domain_id, args.max_rss_mib, args.timeout_seconds, args.trace_file)
+        try:
+            report = run_measurement(domain_id, args.max_rss_mib, args.timeout_seconds, args.trace_file)
+        except Exception as exc:
+            report = {"schema": SCHEMA, "domain_id": domain_id, "status": "FAIL_CLOSED",
+                      "reason": type(exc).__name__ + ":" + str(exc)[:400],
+                      "worker_started": False, "worker_pid_reaped": True,
+                      "captured_at_utc": utc_now(), "certification": "NOT_GRANTED"}
         results.append(report)
     statuses = [item["status"] for item in results]
     evidence = {
