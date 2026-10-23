@@ -58,6 +58,9 @@ class ModelAdapterControlTests(unittest.TestCase):
         tie_pos = source.index('model.tie_weights()')
         allocate_pos = source.index('model.to_empty(device="cpu")')
         self.assertLess(tie_pos, allocate_pos, "tied embedding storage must be shared before CPU allocation")
+        self.assertIn('output_parent._modules.pop(output_name)', source)
+        self.assertIn('output_parent._modules[output_name] = output_head', source)
+        self.assertIn('TIED_EMBEDDING_ALIAS_NOT_PRESERVED_AFTER_CPU_MATERIALIZATION', source)
         tensor_loop_start = source.index('for name,r in meta["tensors"].items():')
         tensor_loop_end = source.index('    finally:', tensor_loop_start)
         tensor_loop = source[tensor_loop_start:tensor_loop_end]
