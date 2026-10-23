@@ -108,12 +108,12 @@ class Line:
     spans: list[Span]
 
 
-def line_order(line: Line) -> tuple[int, float, float]:
-    return (line.col, line.y0, line.x0)
+def line_order(line: Line) -> tuple[int, int, float, float]:
+    return (line.page, line.col, line.y0, line.x0)
 
 
-def span_order(span: Span) -> tuple[int, float, float]:
-    return (span.col, span.y0, span.x0)
+def span_order(span: Span) -> tuple[int, int, float, float]:
+    return (span.page, span.col, span.y0, span.x0)
 
 
 def is_number_token(text: str) -> bool:
@@ -255,7 +255,7 @@ def identify_anchors(
         "3 Juan": (("1 Juan", 5), ("Apocalipsis", 1)),
         "Judas": (("1 Juan", 5), ("Apocalipsis", 1)),
     }
-    big_anchor_pos = {chapter: span_order(big[idx]) for idx, chapter in enumerate(EXPECTED_LARGE_CHAPTERS)}
+    big_anchor_pos = {chapter: (big[idx].page, big[idx].col, big[idx].y0, big[idx].x0) for idx, chapter in enumerate(EXPECTED_LARGE_CHAPTERS)}
     single_line_map: dict[tuple[int,int,int], tuple[str,int]] = {}
     candidate_summary: dict[str,Any] = {}
     for book, (prev_key, next_key) in single_chapter_prev_next.items():
@@ -266,8 +266,7 @@ def identify_anchors(
             if norm_text(line.text) != norm_text(book):
                 continue
             max_size = max((span.size for span in line.spans), default=0.0)
-            pos = (line.col, float(line.y0), float(line.x0))
-            absolute = (line.page, *pos)
+            absolute = (line.page, line.col, float(line.y0), float(line.x0))
             if absolute > (prev_pos[0], prev_pos[1], prev_pos[2], prev_pos[3]) and absolute < (next_pos[0], next_pos[1], next_pos[2], next_pos[3]):
                 matches.append({"line":line,"font_size":max_size})
         candidate_summary[book] = [
