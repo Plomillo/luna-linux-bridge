@@ -373,6 +373,31 @@ def chunked_eager_attention_forward(module, query, key, value, attention_mask,
     output = torch.cat(outputs, dim=-2).transpose(1, 2).contiguous()
     return output, None
 
+def chunked_idefics3_vision_attention_forward(module, hidden_states, attention_mask=None, **kwargs):
+    """Instance-level Idefics3 vision attention override to guarantee chunked execution."""
+    import torch
+    batch_size, seq_length, embed_dim = hidden_states.shape
+    queries = module.q_proj(hidden_states)
+    keys = module.k_proj(hidden_states)
+    values = module.v_proj(hidden_states)
+    queries = queries.view(batch_size, seq_length, module.num_heads, module.head_dim).transpose(1, 2)
+    keys = keys.view(batch_size, seq_length, module.num_heads, module.head_dim).transpose(1, 2)
+    values = values.view(batch_size, seq_length, module.num_heads, module.head_dim).transpose(1, 2)
+    output, weights = chunked_eager_attention_forward(
+        module, queries, keys, values, attention_mask,
+        scaling=module.scale,
+        dropout=0.0 if not module.training else module.dropout,
+    )
+    output = output.reshape(batch_size, seq_length, embed_dim).contiguous()
+    output = module.out_proj(output)
+    if not getattr(module, "_cajita_chunked_attention_logged", False):
+        module._cajita_chunked_attention_logged = True
+        print(
+            f"CAJITA_D05_CHUNKED_ATTENTION_ACTIVE seq={seq_length} block={VISION_ATTENTION_QUERY_BLOCK}",
+            file=sys.stderr, flush=True,
+        )
+    return output, weights
+
 def install_chunked_idefics3_attention(model) -> dict[str, Any]:
     """Patch only this child process's Idefics3 vision attention implementation."""
     try:
@@ -380,10 +405,14 @@ def install_chunked_idefics3_attention(model) -> dict[str, Any]:
     except Exception as exc:
         raise RuntimeError("IDEFICS3_ATTENTION_MODULE_UNAVAILABLE") from exc
     idefics3_modeling.eager_attention_forward = chunked_eager_attention_forward
+    from types import MethodType
     patched = 0
     for module in model.modules():
         if module.__class__.__name__ == "Idefics3VisionAttention":
             module.config._attn_implementation = "eager"
+            # Bind the chunked method directly to each instance, rather than relying
+            # on Transformers' selected attention backend honoring the global hook.
+            module.forward = MethodType(chunked_idefics3_vision_attention_forward, module)
             patched += 1
     if patched < 1:
         raise RuntimeError("IDEFICS3_VISION_ATTENTION_MODULES_NOT_FOUND")
@@ -557,8 +586,11 @@ def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
                 image = Image.open(input_path).convert("RGB")
             processor = AutoProcessor.from_pretrained(spec["module"].parent, local_files_only=True, trust_remote_code=False)
             image_profile = apply_compatible_document_profile(processor)
+            print(f"CAJITA_D05_PHASE=MODEL_LOAD_BEGIN rss_mib={current_rss_mib()}", file=sys.stderr, flush=True)
             model, meta = mod.load_candidate(str(spec["module"].parent))
+            print(f"CAJITA_D05_PHASE=MODEL_LOADED rss_mib={current_rss_mib()}", file=sys.stderr, flush=True)
             attention_profile = install_chunked_idefics3_attention(model)
+            print(f"CAJITA_D05_PHASE=ATTENTION_PATCHED layers={attention_profile['vision_attention_layers_patched']} rss_mib={current_rss_mib()}", file=sys.stderr, flush=True)
             prompt = str(payload.get("text", "Extract the visible text and structure from this page."))
             messages = [{"role": "user", "content": [{"type": "image", "image": image}, {"type": "text", "text": prompt}]}]
             try:
@@ -569,8 +601,10 @@ def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
             inputs = {key: (value.to("cpu") if isinstance(value, torch.Tensor) else value)
                       for key, value in inputs.items()}
             max_new = max(1, min(int(payload.get("max_new_tokens", 32)), 64))
+            print(f"CAJITA_D05_PHASE=GENERATION_BEGIN input_keys={','.join(sorted(inputs.keys()))} rss_mib={current_rss_mib()}", file=sys.stderr, flush=True)
             with torch.inference_mode():
                 generated = model.generate(**inputs, max_new_tokens=max_new, do_sample=False)
+            print(f"CAJITA_D05_PHASE=GENERATION_DONE rss_mib={current_rss_mib()}", file=sys.stderr, flush=True)
             decoded = processor.batch_decode(generated, skip_special_tokens=False)
             text_out = decoded[0].strip() if decoded else ""
             if len(text_out) < 4:
