@@ -85,6 +85,8 @@ SUPPORT_ASSETS_BY_ID = {item["id"]: item for item in SUPPORT_ASSETS}
 ROUTE_PROFILES = ROUTING_REGISTRY.get("route_profiles", [])
 ROUTE_PROFILES_BY_COMMAND = {item["command"]: item for item in ROUTE_PROFILES}
 INTENT_ROUTING_RULES = ROUTING_REGISTRY.get("intent_rules", [])
+ENGINE_REGISTRY = ROUTING_REGISTRY.get("engine_registry", [])
+VALID_ENGINE_IDS = {item.get("id") for item in ENGINE_REGISTRY}
 DOMAIN_ORDER = ROUTING_REGISTRY.get("domain_order", list(DOMAINS))
 COMMAND_ALIASES = {
     item["alias"]: item["canonical"]
@@ -110,6 +112,11 @@ for target in TARGETS:
 for asset in SUPPORT_ASSETS:
     if any(target_id not in TARGETS_BY_ID for target_id in asset.get("subdomain_ids", [])):
         raise RuntimeError("UNKNOWN_ASSET_TARGET:" + str(asset.get("id")))
+for target in TARGETS:
+    if not target.get("engine_ids") or any(engine_id not in VALID_ENGINE_IDS for engine_id in target.get("engine_ids", [])):
+        raise RuntimeError("INVALID_TARGET_ENGINE_BINDING:" + str(target.get("id")))
+if len(VALID_ENGINE_IDS) != 15:
+    raise RuntimeError("EXPECTED_15_CANONICAL_ENGINE_IDS")
 
 # Replace broad/stale domain hints only. Command names, agents, engines,
 # and criticality remain unchanged from the canonical route registry above.
@@ -207,6 +214,10 @@ def route_table_selftest() -> dict[str, Any]:
                      if target.get("domain_id") == domain_id and target.get("kind") == "SUBDOMAIN")
         if actual != expected: errors.append(f"SUBDOMAIN_COUNT_{domain_id}:{actual}!={expected}")
     if len(SUPPORT_ASSETS) != 10: errors.append(f"EXPECTED_10_SUPPORT_ASSETS_GOT_{len(SUPPORT_ASSETS)}")
+    if len(ENGINE_REGISTRY) != 15 or len(VALID_ENGINE_IDS) != 15: errors.append("EXPECTED_15_CANONICAL_ENGINES")
+    for target in TARGETS:
+        if not target.get("engine_ids") or any(engine_id not in VALID_ENGINE_IDS for engine_id in target.get("engine_ids", [])):
+            errors.append("INVALID_TARGET_ENGINE_BINDING:" + str(target.get("id")))
     for asset in SUPPORT_ASSETS:
         if not asset.get("sha256") or not asset.get("relative_path") or int(asset.get("bytes", 0)) <= 0:
             errors.append("INCOMPLETE_ASSET_IDENTITY:" + str(asset.get("id")))
@@ -223,7 +234,8 @@ def route_table_selftest() -> dict[str, Any]:
             domain_id: sum(1 for t in TARGETS if t.get("domain_id") == domain_id and t.get("kind") == "SUBDOMAIN")
             for domain_id in expected_counts
         },
-        "support_asset_count": len(SUPPORT_ASSETS),
+        "support_asset_count": len(SUPPORT_ASSETS), "engine_count": len(ENGINE_REGISTRY),
+        "target_engine_binding_count": len(TARGETS),
         "status": "PASS" if not errors else "FAIL", "errors": errors,
         "canonical_command_bindings_mutated": False,
         "execution_dispatch": "PLAN_ONLY_FAIL_CLOSED",
@@ -283,7 +295,8 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
             selected_targets.append({
                 "id": target["id"], "domain_id": target["domain_id"],
                 "kind": target["kind"], "name": target["name"], "path": target["path"],
-                "purpose": target["purpose"], "support_assets": target.get("support_assets", []),
+                "purpose": target["purpose"], "engine_ids": target.get("engine_ids", []),
+                "support_assets": target.get("support_assets", []),
                 "task_adapter": "NOT_REGISTERED",
             })
 
