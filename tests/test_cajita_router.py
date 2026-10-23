@@ -1,6 +1,8 @@
 import json
 import tempfile
 import unittest
+import subprocess
+import sys
 from pathlib import Path
 
 from cajita_router import (
@@ -94,6 +96,24 @@ class CajitaRouterTests(unittest.TestCase):
         self.assertEqual(CAPABILITY_ADAPTERS["pdf_generation"], "NOT_REGISTERED")
         self.assertEqual(CAPABILITY_ADAPTERS["audio_transcription"], "NOT_REGISTERED")
         self.assertEqual(CAPABILITY_ADAPTERS["job_orchestration"], "REGISTRY_SELFTEST_ONLY")
+
+    def test_primary_runtime_exposes_routes_command(self):
+        runtime = Path(__file__).resolve().parents[1] / "cajita-luna-runtime" / "cajita_runtime.py"
+        result = subprocess.run([sys.executable, "-B", str(runtime), "routes"],
+                                capture_output=True, text=True, timeout=10, check=False)
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(len(payload["routes"]), 14)
+        self.assertEqual(len(payload["domains"]), 6)
+
+    def test_primary_runtime_fails_closed_for_unregistered_pdf_generator(self):
+        runtime = Path(__file__).resolve().parents[1] / "cajita-luna-runtime" / "cajita_runtime.py"
+        result = subprocess.run([sys.executable, "-B", str(runtime), "plan", "--request", "Crea un PDF con este informe"],
+                                capture_output=True, text=True, timeout=10, check=False)
+        self.assertEqual(result.returncode, 2, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertFalse(payload["execution_authorized"])
+        self.assertIn("PDF_GENERATION_ADAPTER_NOT_REGISTERED", payload["blockers"])
 
 if __name__ == "__main__":
     unittest.main()
