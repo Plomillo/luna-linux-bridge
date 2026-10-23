@@ -134,3 +134,57 @@ La primera cifra del 86,96 % correspondía únicamente a comparar los números d
 - **Cinco libros de un capítulo** no presentan el marcador grande esperado y deben identificarse por el límite del libro: Abdías, Filemón, 2 Juan, 3 Juan y Judas.
 
 La reconciliación tipográfica, por tanto, explica el total estructural de 1.189 capítulos como **1.034 marcadores grandes + 150 marcadores de Salmos + 5 capítulos únicos representados por el límite del libro**. Esta comprobación cierra el diagnóstico de numeración de capítulos; **no certifica todavía la extracción de los versículos** ni la correspondencia exacta de cada fragmento de texto con su referencia. El siguiente gate continúa siendo construir el libro BTX y validar íntegramente sus libros, capítulos, versículos, contenido, consultas e índices antes de autorizar cualquier sustitución.
+
+
+## 9. Addendum: compact BTX SQLite candidate — 2026-10-23 23:36 UTC
+
+**Source:** successful structural-candidate run https://github.com/Plomillo/luna-linux-bridge/actions/runs/40040512871, branch commit \`c83b2a0d708a711bf98329a176d06cc205e7e818\`.
+
+The CI build produced a **temporary, non-promoted** SQLite candidate with:
+
+| Check | Result |
+|---|---:|
+| Candidate DB size | 6,750,208 bytes |
+| Candidate DB SHA-256 | \`fdb4a43776a06e76cf772242bc8c802970b2b55c9544cd03826aa8453bc993e0\` |
+| Books | 66 |
+| Chapter records | 1,189 |
+| Nonempty verse rows | 29,883 |
+| Duplicate verse-reference keys | 0 |
+| Duplicate source-marker events after the canon cutoff | 0 |
+| Main-Scripture cutoff | PDF page 1,298 |
+| Post-canon pages excluded from Scripture parsing | 62 |
+| Normalized text-stream round trip | PASS — 3,862,059 characters each side |
+| Representative reference lookups | 13/13 PASS |
+| Transient FTS5 search probe | PASS across 29,883 verse rows |
+| FTS5 bundled into core database | NO |
+| Structural candidate gate | PASS |
+| Independent certification | NOT GRANTED |
+| Source deletion/replacement | DENIED |
+
+The source-marker audit finds 36 reference numbers without an explicit verse-marker span in the corresponding source range, across 24 chapters. They are recorded in the database table \`source_reference_gaps\` with status \`NO_EXPLICIT_VERSE_MARKER_FOUND_IN_SOURCE_RANGE\`. The builder does not synthesize verse text for those references. John 8:1 is among these gaps; the opening span for John 8:1–11 is not present as separate verse markers in this PDF extraction. This is evidence of unmarked/source-specific reference positions, **not proof that the missing textual variants or editorial notes have been independently reconstructed**.
+
+The database is deliberately **reference-indexed in its core distribution form** (book → chapter → verse). FTS5 is tested transiently in memory, but the full FTS index is not bundled: the prior persisted-FTS variant was 15,421,440 bytes and, if substituted for the 6,949,245-byte source archive, would take the gross Cajita payload from 464,307,422 to approximately 472,779,617 bytes, breaching the exact 470,000,000-byte limit. The compact core candidate is 6,750,208 bytes; simple substitution would yield an arithmetic projection of 464,108,385 bytes before regenerating the runtime manifest and measuring all changed metadata. This projection is not a release-size certificate.
+
+**Scope limit:** the candidate reconstructs the main Scripture body text. Editorial footnotes, cross-references, headings and other apparatus are not separately indexed or independently validated in this pass. The candidate's own builder round-trip is not a substitute for independent source-to-record content validation. Therefore this structural pass cannot be promoted to PUAC G23/G24 certification.
+
+## 10. Orquestador — active-state reconciliation
+
+The current \`CajitadeLuna.md\` on \`main\` (SHA \`cd7c4301be32cf8ed3d098621b2056e718c02845\`) states that routing for 14 commands and 21 targets is still \`PLAN_ONLY\`. The command routing registry is not operational dispatch proof.
+
+The Orquestador directory contains packages for Agno, Deep Agents, LangChain Core and Playwright, but registry entries A043–A046 remain \`UNVERIFIED\` and \`REGISTERED_REFERENCE_NOT_BUNDLED\`. The presence of a wheel/source archive does not establish a dependency closure, a working consumer adapter or an end-to-end route. The eight CLI domains in \`punto.json\` remain \`ADAPTER_PENDING\`, dependencies \`UNRESOLVED_UNTIL_INVENTORY\`, and mutations denied until a versioned action contract is registered. The absolute, machine-specific \`cli_spec.path\` in that manifest remains a portability defect. Existing CLI Python modules are chiefly read-only binary/version probes, not proof of install/update/self-repair/rollback functions.
+
+The current \`CajitadeLuna.md\` also contains two same-day status descriptions that should be reconciled additively, not by erasing historical evidence: the integration audit near its lines 129–149 says the expanded assets are not available in original formats at distribution paths and \`runtime_path_repair\` remains pending, while the later deployment section near lines 186–206 says the ten assets were extracted into persistent runtime directories and their hashes/trees validated. The later section still says native execution tests and manifest regeneration are pending. A dated active-state reconciliation should name the checked commit, directory tree, exact runtime manifest state and verification artifacts before any activation is authorized.
+
+## 11. Governance event — branch correction
+
+During work on the separate structural validator, one file-add call omitted the branch argument and temporarily created \`tools/btx-audit/validate_btx_sqlite_candidate.py\` on \`main\`. I then removed that file through a compensating commit and recreated it on \`audit/btx-book-census-20261023\`. No runtime source, \`CajitadeLuna.md\`, BTX archive, PDF or Parquet corpus was changed by that incident. The validator is now subject to the same draft PR and fail-closed checks; this event is recorded rather than silently omitted.
+
+## 12. Current decision
+
+\`BTX_BOOK_CORE_CANDIDATE = STRUCTURAL_PASS_PENDING_INDEPENDENT_VALIDATION\`  
+\`FTS5_CORE_BUNDLED = FALSE\`  
+\`CERTIFICATION = NOT_GRANTED\`  
+\`SOURCE_DELETION = DENIED\`  
+\`SOURCE_REPLACEMENT_IN_MAIN = DENIED\`
+
+The working database remains a temporary CI candidate. The original BTX \`.7z\` and its embedded PDF remain intact in the repository. The draft PR must not be merged as a certified runtime replacement until the separate validator, reproducibility check, source-content verification, manifest regeneration, hard-cap check, independent validation and rollback test all pass.
