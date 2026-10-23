@@ -117,8 +117,14 @@ def load_candidate(candidate_dir):
             model=AutoModelForImageTextToText.from_config(config,trust_remote_code=False)
     finally:
         torch.set_default_dtype(old)
-    # Allocate uninitialized CPU storage; the verified quantized manifest fills all
-    # declared parameters below, after which missing parameters are rejected.
+    # Tie shared embeddings while the model is still on the meta device. The
+    # quantized manifest records lm_head.weight as an alias of embed_tokens.weight.
+    # Tying only after CPU materialization transiently allocates a second ~110 MiB
+    # vocabulary matrix, raising peak RSS even though it is immediately discarded.
+    if meta.get("tie_word_embeddings") and hasattr(model, "tie_weights"):
+        model.tie_weights()
+    # Allocate uninitialized CPU storage only after aliasing tied parameters, then
+    # fill each declared tensor from the already hash-verified compact payload.
     model.to_empty(device="cpu")
     state=model.state_dict(keep_vars=True)
     # File-map the compact payload and release mapped resident pages periodically.
