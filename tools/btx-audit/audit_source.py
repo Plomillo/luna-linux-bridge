@@ -125,6 +125,17 @@ def pdf_audit(pdf: Path, temp_root: Path) -> dict[str, Any]:
                 "error_excerpt": extract.stderr[-400:]}
     text = out_txt.read_text(encoding="utf-8", errors="replace")
     page_texts = [p for p in text.split("\f") if p.strip()]
+    nonempty_lines = [(i + 1, line.rstrip()) for i, line in enumerate(text.splitlines()) if line.strip()]
+    start_numeric = [line for _, line in nonempty_lines if re.match(r"^\s*\d{1,3}(?:[a-z])?\s+\S", line, re.IGNORECASE)]
+    standalone_numbers = [line for _, line in nonempty_lines if re.fullmatch(r"\s*\d{1,3}\s*", line)]
+    line_signatures: dict[str, int] = {}
+    for line in nonempty_lines:
+        signature = re.sub(r"[^\W\d_]+", "W", line[1], flags=re.UNICODE)
+        signature = re.sub(r"\d+", "N", signature)
+        signature = re.sub(r"\s+", " ", signature).strip()
+        if len(signature) > 100:
+            signature = signature[:100]
+        line_signatures[signature] = line_signatures.get(signature, 0) + 1
     flat = norm_ascii(text)
     book_hits = [book for book in BOOKS_ES if re.search(r"(?<!\w)" + re.escape(norm_ascii(book)) + r"(?!\w)", flat)]
     return {
@@ -138,6 +149,13 @@ def pdf_audit(pdf: Path, temp_root: Path) -> dict[str, Any]:
         "text_layer_likely_usable": len(text.strip()) >= max(1000, (pages or 1) * 40),
         "known_spanish_bible_book_names_detected": len(book_hits),
         "known_book_names_detected": book_hits,
+        "layout_diagnostics": {
+            "nonempty_lines": len(nonempty_lines),
+            "lines_starting_with_verse_like_number": len(start_numeric),
+            "standalone_number_lines": len(standalone_numbers),
+            "common_redacted_line_signatures": sorted(line_signatures.items(), key=lambda kv: (-kv[1], kv[0]))[:30],
+            "text_content_redacted": True,
+        },
         "text_extraction": "PASS",
         "full_text_in_report": False,
     }
