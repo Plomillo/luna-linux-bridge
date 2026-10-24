@@ -143,7 +143,7 @@ jobs:
           assert {"release_manifest", "g23_evidence", "g24_evidence", "task_adapter_evidence", "latest_factory_run", "gate"} <= set(tasks)
           gate = tasks["gate"]
           assert gate["type"] == "io.kestra.plugin.core.flow.If"
-          assert "490000000" in gate["condition"]
+          assert "479000000" in gate["condition"]
           assert "NOT_GRANTED" in gate["condition"]
           assert ".id > 0" in gate["condition"]
           assert ".total_count > 0" not in gate["condition"]
