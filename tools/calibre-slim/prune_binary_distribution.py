@@ -163,13 +163,13 @@ def main() -> int:
 
     report: dict[str, Any] = {
         "schema": "CAJITA_CALIBRE_SLIM_BINARY_PRUNE_REPORT/1.0",
-        "candidate_id": "CAJITA_CALIBRE_SLIM_V1_20261024",
+        "candidate_id": "CAJITA_CALIBRE_SLIM_PDF_EPUB_V2_20261024",
         "status": "DRY_RUN_NOT_APPLIED",
         "upstream": UPSTREAM,
         "applied": bool(args.apply),
         "certification": "NOT_GRANTED",
         "policy": "EXPLICIT_FEATURE_SUBSET; NO_GENERIC_DEAD_CODE_OR_BUG_FIX_CLAIM",
-        "language_policy": "REMOVE_UI_LOCALES_ONLY; PRESERVE_DOCUMENT_LANGUAGES_DICTIONARIES_HYPHENATION_AND_FONTS",
+        "language_policy": "REMOVE_UI_TRANSLATION_CATALOGS; KEEP_RUNTIME_RESOURCES_REQUIRED_BY_UPSTREAM_RENDERER; NOT_A_SELF_CONTAINED_16MB_RUNTIME",
         "required_components": list(REQUIRED_PATHS),
         "removed": [],
     }
