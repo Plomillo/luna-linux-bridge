@@ -38,8 +38,9 @@ printf '%s  %s\n' "$EXPECTED_SHA512" "$SOURCE_ARCHIVE" | sha512sum --check --sta
 
 tar --extract --xz --file "$SOURCE_ARCHIVE" --directory "$STAGE" --no-same-owner
 test -f "$STAGE/ebook-convert"
+test -f "$STAGE/calibre-parallel"
 test -f "$STAGE/calibre_postinstall"
-chmod +x "$STAGE/ebook-convert" "$STAGE/calibre_postinstall"
+chmod +x "$STAGE/ebook-convert" "$STAGE/calibre-parallel" "$STAGE/calibre_postinstall"
 
 export CALIBRE_UPSTREAM_VERSION="$VERSION"
 export CALIBRE_EBOOK_CONVERT="$STAGE/ebook-convert"
@@ -71,9 +72,33 @@ HTML
 
 export CALIBRE_COMPACT_AUDIT_LOG="$EVIDENCE_DIR/conversion-audit.jsonl"
 python3 "$CANDIDATE_DIR/calibre_compact.py" "$WORK_ROOT/fixture.html" "$WORK_ROOT/from-html.epub"
+python3 "$CANDIDATE_DIR/calibre_compact.py" "$WORK_ROOT/fixture.html" "$WORK_ROOT/from-html.pdf"
+pdftotext "$WORK_ROOT/from-html.pdf" "$WORK_ROOT/from-html.txt"
+grep -q "Integridad" "$WORK_ROOT/from-html.txt"
+grep -q "acentuación" "$WORK_ROOT/from-html.txt"
 python3 "$CANDIDATE_DIR/calibre_compact.py" "$WORK_ROOT/from-html.epub" "$WORK_ROOT/from-epub.pdf"
 python3 "$CANDIDATE_DIR/calibre_compact.py" "$WORK_ROOT/from-epub.pdf" "$WORK_ROOT/from-pdf.epub"
-python3 "$CANDIDATE_DIR/calibre_compact.py" "$WORK_ROOT/fixture.html" "$WORK_ROOT/from-html.pdf"
+
+python3 - "$WORK_ROOT/from-html.epub" "$WORK_ROOT/from-pdf.epub" <<'PY'
+from pathlib import Path
+import sys
+import zipfile
+
+for name in sys.argv[1:]:
+    path = Path(name)
+    with zipfile.ZipFile(path) as archive:
+        texts = []
+        for member in archive.namelist():
+            if member.lower().endswith((".xhtml", ".html", ".htm")):
+                try:
+                    texts.append(archive.read(member).decode("utf-8", errors="ignore"))
+                except KeyError:
+                    pass
+        joined = "\n".join(texts)
+        for marker in ("Integridad", "acentuación"):
+            if marker not in joined:
+                raise SystemExit(f"Falta el texto esperado {marker!r} en {path.name}")
+PY
 
 if python3 "$CANDIDATE_DIR/calibre_compact.py" "$WORK_ROOT/from-html.epub" "$WORK_ROOT/should-not-create.mobi"; then
   echo "FAIL_CLOSED: el wrapper aceptó una salida .mobi." >&2
@@ -110,12 +135,14 @@ report = {
     "upstream":{"project":"Calibre","version":version,"architecture":arch,"source_url":source_url,"source_sha512":source_sha512,"source_sha256":digest(source_archive),"sidecar_status":"SHA512_VERIFIED"},
     "pruning":{"report_file":"prune-report.json","status":"APPLIED_AND_SMOKE_TESTED"},
     "runtime":{"file_count":file_count,"raw_bytes":raw_bytes,"archive_bytes":archive.stat().st_size,"archive_sha256":digest(archive),"archive_name":archive.name},
-    "functional_tests":{"unit_tests":"PASS","html_to_epub":"PASS","epub_to_pdf":"PASS","pdf_to_epub":"PASS","html_to_pdf":"PASS","unsupported_output_rejected":"PASS"},
+    "functional_tests":{"unit_tests":"PASS","html_to_epub":"PASS","epub_to_pdf":"PASS","pdf_to_epub":"PASS","html_to_pdf":"PASS","pdf_text_and_accents":"PASS","epub_text_and_accents":"PASS","unsupported_output_rejected":"PASS"},
     "conversion_audit":"conversion-audit.jsonl",
-    "integration":{"global_cap_bytes":470000000,"macrodown_inclusion":"NOT_AUTOMATIC","size_gate":"MEASURED_CANDIDATE_REQUIRES_GLOBAL_REBALANCE","certification":"NOT_GRANTED"},
+    "integration":{"global_cap_bytes":470000000,"macrodown_inclusion":"NOT_AUTOMATIC","raw_size_gate":"PASS" if raw_bytes <= 470000000 else "FAIL_REQUIRES_MORE_COMPACTION_OR_SEPARATE_PAYLOAD","size_gate":"MEASURED_CANDIDATE_REQUIRES_GLOBAL_REBALANCE","certification":"NOT_GRANTED"},
 }
 (evidence_dir/"build-evidence.json").write_text(json.dumps(report,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
 print(json.dumps(report, indent=2, ensure_ascii=False))
+if raw_bytes > 470000000:
+    print("NOTICE: candidate raw footprint exceeds Cajita global cap; do not integrate.")
 PY
 
 printf '\nCALIBRE_COMPACT_ARTIFACT=%s\n' "$ARCHIVE"

@@ -6,9 +6,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from pathlib import Path
+import os
+from pathlib import Path, PurePosixPath
 import re
+import shutil
 import sys
+import tempfile
+import zipfile
 from datetime import datetime, timezone
 
 ALLOWED_CONVERSION_MODULES = {
@@ -25,7 +29,9 @@ ALLOWED_ENTRYPOINTS = {
     "ebook-device", "ebook-edit", "ebook-meta", "ebook-polish", "ebook-viewer",
     "fetch-ebook-metadata", "lrf2lrs", "lrs2lrf", "markdown-calibre", "web2disk",
 }
-KEEP_ROOT_ENTRYPOINTS = {"ebook-convert", "calibre_postinstall", "calibre-uninstall"}
+KEEP_ROOT_ENTRYPOINTS = {
+    "ebook-convert", "calibre-parallel", "calibre_postinstall", "calibre-uninstall",
+}
 KEEP_DEFAULT_COVERS = {
     "resources/images/default_cover.png",
     "resources/catalog/DefaultCover.jpg",
@@ -39,6 +45,10 @@ KEEP_RESOURCE_FILES = {
 KEEP_WEBENGINE_LOCALES = {"en-US.pak", "es.pak", "es-419.pak", "es-MX.pak"}
 LOCALE_NAME = re.compile(r"(?:^|[_-])([a-z]{2,3}(?:[-_][a-z0-9]{2,8})*)\.(?:qm|mo)$", re.IGNORECASE)
 KEEP_LOCALES = {"en", "en-us", "en_us", "es", "es-es", "es_es", "es-419", "es_419", "es-mx", "es_mx"}
+KNOWN_LANGUAGES = set("""
+af am ar ast az be bg bn br bs ca cs cy da de el en eo es et eu fa fi fr fy ga gd gl gu he hi hr hu hy id is it ja ka kk km kn ko ku ky la lt lv mk ml mn mr ms my nb ne nl nn no oc pa pl pt ro ru sk sl sq sr sv sw ta te th tl tr tt ug uk ur uz vi wa xh zh
+""".split())
+KEEP_LANGUAGE_BASES = {"en", "es"}
 
 
 def utc_now() -> str:
@@ -89,6 +99,96 @@ def conversion_module_allowed(rel: Path) -> bool:
     return True
 
 
+def locale_base(token: str) -> str | None:
+    value = token.strip().replace("_", "-").lower()
+    for suffix in (".mo", ".qm", ".pak", ".json", ".txt", ".dat"):
+        if value.endswith(suffix):
+            value = value[:-len(suffix)]
+            break
+    if value in KNOWN_LANGUAGES:
+        return value
+    match = re.match(r"^([a-z]{2,3})(?:-[a-z0-9]{2,8})+$", value)
+    if match and match.group(1) in KNOWN_LANGUAGES:
+        return match.group(1)
+    # Locale files can be named calibre-es.qm or calibre_de.mo.
+    match = re.search(r"(?:^|[_-])([a-z]{2,3})(?:-[a-z0-9]{2,8})?$", value)
+    if match and match.group(1) in KNOWN_LANGUAGES:
+        return match.group(1)
+    return None
+
+
+def zip_entry_language(name: str) -> str | None:
+    for token in PurePosixPath(name).parts:
+        base = locale_base(token)
+        if base:
+            return base
+    return None
+
+
+def prune_locale_archive(root: Path) -> dict[str, object]:
+    """Retain English and Spanish locale-specific entries inside Calibre's locale ZIP."""
+    archive_path = root / "resources/localization/locales.zip"
+    if not archive_path.is_file():
+        return {"status": "NOT_PRESENT", "removed_entries": 0, "bytes_saved": 0}
+    before_bytes = archive_path.stat().st_size
+    with zipfile.ZipFile(archive_path, "r") as source:
+        entries = source.infolist()
+        decisions = []
+        for info in entries:
+            language = zip_entry_language(info.filename)
+            remove = language is not None and language not in KEEP_LANGUAGE_BASES
+            decisions.append((info, language, remove))
+        removed = [
+            {"path": info.filename, "language": language, "size_bytes": info.file_size}
+            for info, language, remove in decisions if remove
+        ]
+        kept = [(info, language) for info, language, remove in decisions if not remove]
+
+        # If we cannot positively identify any locale-specific entries, fail closed
+        # and preserve the original archive.
+        if not removed or not any(language in KEEP_LANGUAGE_BASES for _, language in kept):
+            return {
+                "status": "PRESERVED_NO_SAFE_LOCALE_CLASSIFICATION",
+                "before_bytes": before_bytes,
+                "after_bytes": before_bytes,
+                "bytes_saved": 0,
+                "entry_count_before": len(entries),
+                "entry_count_after": len(entries),
+                "removed_entries": 0,
+                "samples": [info.filename for info in entries[:100]],
+            }
+
+        fd, temp_name = tempfile.mkstemp(prefix="calibre-locales-", suffix=".zip", dir=archive_path.parent)
+        os.close(fd)
+        temp_path = Path(temp_name)
+        try:
+            with zipfile.ZipFile(temp_path, "w") as target:
+                target.comment = source.comment
+                for info, _language in kept:
+                    target.writestr(info, source.read(info.filename))
+            # Verify all retained entries are readable before replacing the original.
+            with zipfile.ZipFile(temp_path, "r") as verify:
+                corrupt = verify.testzip()
+                if corrupt:
+                    raise RuntimeError(f"Locale archive integrity check failed: {corrupt}")
+            os.replace(temp_path, archive_path)
+        finally:
+            temp_path.unlink(missing_ok=True)
+
+    after_bytes = archive_path.stat().st_size
+    return {
+        "status": "PRUNED_AND_VERIFIED",
+        "before_bytes": before_bytes,
+        "after_bytes": after_bytes,
+        "bytes_saved": before_bytes - after_bytes,
+        "entry_count_before": len(entries),
+        "entry_count_after": len(kept),
+        "removed_entries": len(removed),
+        "removed_locale_payload_bytes": sum(item["size_bytes"] for item in removed),
+        "removed_samples": removed[:100],
+    }
+
+
 def locale_should_remove(rel: Path) -> bool:
     name = rel.name
     if rel.suffix.lower() in {".qm", ".mo"}:
@@ -110,6 +210,8 @@ def removal_reason(rel: Path) -> str | None:
     if len(parts) >= 2 and parts[0] == "resources":
         if posix in KEEP_RESOURCE_FILES:
             return None
+        if posix == "resources/qtwebengine_devtools_resources.pak":
+            return "unused_browser_developer_tools_resources"
         if parts[1] in {"content-server", "editor-help", "dictionaries", "manual", "recipes"}:
             return "unused_server_editor_spellcheck_or_news_resources"
         if parts[1] == "images" and posix not in KEEP_DEFAULT_COVERS:
@@ -122,7 +224,15 @@ def removal_reason(rel: Path) -> str | None:
         }:
             return "unused_portable_resource"
 
-    if len(parts) == 1 and rel.name in ALLOWED_ENTRYPOINTS:
+    # Piper is Calibre's speech output subsystem; Cajita does not ship TTS.
+    if posix.startswith("share/espeak-ng-data/"):
+        return "unused_text_to_speech_language_payload"
+    if posix.startswith("lib/") and re.fullmatch(r"libonnxruntime\.so(?:\..*)?", rel.name):
+        return "unused_text_to_speech_onnxruntime_dependency"
+    if posix.startswith("lib/calibre-extensions/") and rel.name.lower().startswith("piper"):
+        return "unused_text_to_speech_native_extension"
+
+    if len(parts) == 1 and rel.name in ALLOWED_ENTRYPOINTS and rel.name not in KEEP_ROOT_ENTRYPOINTS:
         return "unused_GUI_library_server_device_or_metadata_command"
 
     if locale_should_remove(rel):
@@ -215,9 +325,11 @@ def main(argv: list[str] | None = None) -> int:
             "sha256": sha256_file(path),
         })
 
+    locale_archive_report: dict[str, object] = {"status": "DRY_RUN_NOT_APPLIED"}
     if args.apply:
         for path, _reason in plan:
             path.unlink(missing_ok=True)
+        locale_archive_report = prune_locale_archive(root)
         for directory in sorted(
             (p for p in root.rglob("*") if p.is_dir() and not p.is_symlink()),
             key=lambda p: len(p.parts),
@@ -229,6 +341,7 @@ def main(argv: list[str] | None = None) -> int:
                 pass
         required = [
             root / "ebook-convert",
+            root / "calibre-parallel",
             root / "calibre_postinstall",
             root / "resources/default_tweaks.py",
             root / "resources/calibre-mimetypes.xml",
@@ -253,6 +366,7 @@ def main(argv: list[str] | None = None) -> int:
         "planned_removed_bytes": sum(item["size_bytes"] for item in removals),
         "after": {"file_count": after_count, "bytes": after_bytes},
         "measured_removed_bytes": removed_bytes,
+        "locale_archive": locale_archive_report,
         "largest_remaining_files": largest_items(root),
         "largest_top_level_directories": directory_totals(root),
         "retained_conversion_modules": sorted(ALLOWED_CONVERSION_MODULES),
@@ -268,6 +382,7 @@ def main(argv: list[str] | None = None) -> int:
         "after_bytes": after_bytes,
         "measured_removed_bytes": removed_bytes,
         "files_removed": len(removals),
+        "locale_archive": locale_archive_report,
         "largest_remaining_files": report["largest_remaining_files"][:15],
         "largest_top_level_directories": report["largest_top_level_directories"][:15],
         "report": str(args.report),
