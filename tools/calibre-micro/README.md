@@ -13,7 +13,7 @@ The public launcher rejects HTML, DOCX, MOBI and other formats. TXT is the only 
 
 ## Size budget and packaging boundary
 
-The build workflow measures the exact .tar.xz release package and fails unless its size is <= 16,000,000 bytes. It also records SHA-256 and the file inventory. The archive includes the converter source plus pinned, vendored pypdf and ReportLab Python packages. It does not include the CPython interpreter, Python standard library or glibc; host Python >= 3.9 is required.
+The build workflow measures the exact .tar.xz release package and fails unless its size is <= 16,000,000 bytes. It also records SHA-256 and the file inventory. The archive includes the converter source plus pinned, vendored pypdf, ReportLab and Pillow Python packages. Pillow is included only because the pinned ReportLab release imports PIL utilities on its text-rendering path; the application does not provide image conversion. The package does not include the CPython interpreter, Python standard library or glibc; host Python >= 3.9 is required.
 
 ## Fidelity limitations
 
@@ -34,6 +34,6 @@ An existing output is never replaced unless --force is supplied.
 
 ## Dependencies and provenance
 
-The build pins and verifies the official PyPI wheel hashes for pypdf 6.21.2 and ReportLab 5.1.0 before vendoring them. Their licenses and the bundled Vera font license are retained in the package. The source lock and package SHA-256 are emitted as build evidence.
+The build pins and verifies the official PyPI wheel hashes for pypdf 6.21.2, ReportLab 5.1.0 and Pillow 12.0.0 before vendoring them. Their licenses and the bundled Vera font license are retained in the package. The source lock and package SHA-256 are emitted as build evidence.
 
 This is an alternative candidate. It does not modify the main Cajita runtime, Macrodown manifest, or the existing Calibre Slim v2 PR.

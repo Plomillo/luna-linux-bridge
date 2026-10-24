@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: cajita-pdf-epub-micro-\${{ github.ref }}
+  group: cajita-pdf-epub-micro-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -30,10 +30,11 @@ jobs:
           set -euo pipefail
           WORK="$RUNNER_TEMP/cajita-micro"
           mkdir -p "$WORK/wheels" "$WORK/runtime/vendor" "$WORK/evidence" "$WORK/dist"
-          python -m pip download --only-binary=:all: --no-deps --no-cache-dir pypdf==6.21.2 reportlab==5.1.0 --dest "$WORK/wheels"
+          python -m pip download --only-binary=:all: --no-deps --no-cache-dir pypdf==6.21.2 reportlab==5.1.0 pillow==12.0.0 --dest "$WORK/wheels"
           echo "1d44d1a3a200f25062adff0085b02040e4646431ac2ccac22e42679e91466084  $WORK/wheels/pypdf-6.21.2-py3-none-any.whl" | sha256sum --check -
           echo "59fdbaec5efe437095ad1d7292ec9a271c8ca2d3ec75e889c6e61400929b90df  $WORK/wheels/reportlab-5.1.0-py3-none-any.whl" | sha256sum --check -
-          python -m pip install --no-deps --no-compile --no-index --target "$WORK/runtime/vendor" "$WORK/wheels/pypdf-6.21.2-py3-none-any.whl" "$WORK/wheels/reportlab-5.1.0-py3-none-any.whl"
+          echo "b87843e225e74576437fd5b6a4c2205d422754f84a06942cfaf1dc32243e45a8  $WORK/wheels/pillow-12.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" | sha256sum --check -
+          python -m pip install --no-deps --no-compile --no-index --target "$WORK/runtime/vendor" "$WORK/wheels/pypdf-6.21.2-py3-none-any.whl" "$WORK/wheels/reportlab-5.1.0-py3-none-any.whl" "$WORK/wheels/pillow-12.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"
           cp tools/calibre-micro/micro_convert.py "$WORK/runtime/"
           cp tools/calibre-micro/launch "$WORK/runtime/"
           cp tools/calibre-micro/README.md "$WORK/runtime/README.md"
@@ -44,10 +45,12 @@ jobs:
           mkdir -p "$WORK/runtime/licenses"
           PYPDF_LICENSE="$(find "$WORK/runtime/vendor" -path '*pypdf-*.dist-info/licenses/*' -type f -iname 'license*' -print -quit)"
           REPORTLAB_LICENSE="$(find "$WORK/runtime/vendor" -path '*reportlab-*.dist-info/licenses/*' -type f -iname 'license*' -print -quit)"
+          PILLOW_LICENSE="$(find "$WORK/runtime/vendor" -path '*pillow-*.dist-info/licenses/*' -type f -iname 'license*' -print -quit)"
           VERA_LICENSE="$(find "$WORK/runtime/vendor/reportlab" -type f -iname '*vera*license*' -print -quit)"
-          test -n "$PYPDF_LICENSE"; test -n "$REPORTLAB_LICENSE"; test -n "$VERA_LICENSE"
+          test -n "$PYPDF_LICENSE"; test -n "$REPORTLAB_LICENSE"; test -n "$PILLOW_LICENSE"; test -n "$VERA_LICENSE"
           cp "$PYPDF_LICENSE" "$WORK/runtime/licenses/PYPDF-LICENSE.txt"
           cp "$REPORTLAB_LICENSE" "$WORK/runtime/licenses/REPORTLAB-LICENSE.txt"
+          cp "$PILLOW_LICENSE" "$WORK/runtime/licenses/PILLOW-LICENSE.txt"
           cp "$VERA_LICENSE" "$WORK/runtime/licenses/BITSTREAM-VERA-LICENSE.txt"
           echo "WORK=$WORK" >> "$GITHUB_ENV"
       - name: Static validation
@@ -58,7 +61,7 @@ jobs:
           python -m py_compile tools/calibre-micro/micro_convert.py tools/calibre-micro/smoke_test.py
           python -m json.tool tools/calibre-micro/dependencies.json >/dev/null
           python -m json.tool "$WORK/runtime/dependencies.json" >/dev/null
-          PYTHONPATH="$WORK/runtime/vendor" python -c "import pypdf, reportlab; print('pypdf', pypdf.__version__, 'reportlab', reportlab.Version)"
+          PYTHONPATH="$WORK/runtime/vendor" python -c "import pypdf, reportlab, PIL; print('pypdf', pypdf.__version__, 'reportlab', reportlab.Version, 'Pillow', PIL.__version__)"
       - name: Functional tests for four routes and scope guards
         shell: bash
         run: |
@@ -99,7 +102,8 @@ jobs:
             "host_dependency": "CPython >= 3.9 and glibc",
             "pinned_dependencies": {
               "pypdf-6.21.2-py3-none-any.whl": "1d44d1a3a200f25062adff0085b02040e4646431ac2ccac22e42679e91466084",
-              "reportlab-5.1.0-py3-none-any.whl": "59fdbaec5efe437095ad1d7292ec9a271c8ca2d3ec75e889c6e61400929b90df"
+              "reportlab-5.1.0-py3-none-any.whl": "59fdbaec5efe437095ad1d7292ec9a271c8ca2d3ec75e889c6e61400929b90df",
+              "pillow-12.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl": "b87843e225e74576437fd5b6a4c2205d422754f84a06942cfaf1dc32243e45a8"
             },
             "feature_scope": ["PDF->EPUB", "EPUB->PDF", "TXT->PDF", "TXT->EPUB"],
             "non_goals": ["HTML", "DOCX", "OCR", "GUI", "stores", "catalogs", "device drivers", "translation catalogs"],
@@ -119,10 +123,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cajita-pdf-epub-micro-\${{ github.run_number }}
+          name: cajita-pdf-epub-micro-${{ github.run_number }}
           path: |
-            \${{ runner.temp }}/cajita-micro/dist/**
-            \${{ runner.temp }}/cajita-micro/evidence/**
+            ${{ runner.temp }}/cajita-micro/dist/**
+            ${{ runner.temp }}/cajita-micro/evidence/**
           if-no-files-found: warn
           retention-days: 30
       - name: Summarize results
