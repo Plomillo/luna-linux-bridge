@@ -3,7 +3,7 @@ name: Cajita Calibre Slim Candidate
 on:
   push:
     branches:
-      - cajita/calibre-slim-v1
+      - cajita/calibre-slim-pdf-epub-16mb-v1
   workflow_dispatch:
 
 permissions:
@@ -130,9 +130,6 @@ jobs:
           cp "$SOURCE_ROOT/COPYRIGHT" "$DIST_ROOT/CALIBRE_UPSTREAM_COPYRIGHT"
           "$DIST_ROOT/calibre-debug" -e tools/calibre-slim/dump_frozen_index.py -- "$WORK/reports/frozen-index.json"
           test -s "$WORK/reports/frozen-index.json"
-          tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
-            --use-compress-program='xz -T2 -6' -cf "$WORK/artifacts/calibre-9.17.0-cajita-source-pruned.tar.xz" \
-            -C "$SOURCE_ROOT/src" .
           cp tools/calibre-slim/source-lock.json "$WORK/artifacts/"
           cp tools/calibre-slim/prune_candidate.py "$WORK/artifacts/"
           cp tools/calibre-slim/prune_binary_distribution.py "$WORK/artifacts/"
@@ -181,7 +178,7 @@ jobs:
             exit 1
           fi
 
-      - name: Package candidate and collect size and hash evidence
+      - name: Package Calibre PDF/EPUB overlay and enforce 16 MB cap
         id: package
         if: steps.candidate-tests.outcome == 'success'
         shell: bash
@@ -189,41 +186,78 @@ jobs:
           set -euo pipefail
           source "$RUNNER_TEMP/calibre-slim/reports/layout.env"
           WORK="$RUNNER_TEMP/calibre-slim"
-          OUT="$WORK/artifacts/calibre-9.17.0-cajita-pdf-epub-linux-x86_64.tar.xz"
+          OVERLAY="$WORK/overlay"
+          rm -rf "$OVERLAY"
+          mkdir -p "$OVERLAY/source/calibre/customize" "$OVERLAY/evidence"
+          cp "$DIST_ROOT/source/calibre/customize/builtins.py" "$OVERLAY/source/calibre/customize/builtins.py"
+          cp tools/calibre-slim/calibre-slim-convert "$OVERLAY/calibre-slim-convert"
+          chmod 0755 "$OVERLAY/calibre-slim-convert"
+          cp tools/calibre-slim/profile.json "$OVERLAY/"
+          cp tools/calibre-slim/source-lock.json "$OVERLAY/"
+          cp tools/calibre-slim/README.md "$OVERLAY/"
+          cp tools/calibre-slim/prune_candidate.py "$OVERLAY/"
+          cp tools/calibre-slim/prune_binary_distribution.py "$OVERLAY/"
+          cp "$WORK/artifacts/CALIBRE_UPSTREAM_LICENSE" "$OVERLAY/"
+          cp "$WORK/artifacts/CALIBRE_UPSTREAM_COPYRIGHT" "$OVERLAY/"
+          cp "$WORK/reports/source-prune.json" "$OVERLAY/evidence/"
+          cp "$WORK/reports/binary-prune.json" "$OVERLAY/evidence/"
+          cp "$WORK/reports/frozen-scrub.json" "$OVERLAY/evidence/"
+          cp "$WORK/reports/candidate-smoke.json" "$OVERLAY/evidence/"
+          cat > "$OVERLAY/runtime-dependencies.json" <<'JSON'
+          {
+            "schema": "CAJITA_CALIBRE_OVERLAY_RUNTIME_DEPENDENCIES/1.0",
+            "candidate_id": "CAJITA_CALIBRE_SLIM_PDF_EPUB_V2_20261024",
+            "runtime": "Calibre v9.17.0 official Linux x86_64 native runtime",
+            "included_in_overlay": false,
+            "required": true,
+            "resolution": "Set CALIBRE_EBOOK_CONVERT to the pinned runtime's ebook-convert executable or ensure that executable is on PATH.",
+            "note": "The 16,000,000-byte ceiling applies to this feature overlay archive only, not to the complete Calibre runtime plus its shared Qt/WebEngine dependencies."
+          }
+          JSON
+          OUT="$WORK/artifacts/calibre-9.17.0-cajita-pdf-epub-overlay.tar.xz"
           tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
-            --use-compress-program='xz -T2 -6' -cf "$OUT" -C "$DIST_ROOT" .
-          python3 - "$DIST_ROOT" "$OUT" "$WORK/reports/package.json" "$WORK/reports/binary-prune.json" <<'PY'
+            --use-compress-program='xz -T2 -6' -cf "$OUT" -C "$OVERLAY" .
+          python3 - "$OVERLAY" "$OUT" "$WORK/reports/package.json" "$WORK/reports/binary-prune.json" <<'PY'
           import hashlib, json, sys
           from pathlib import Path
           root, archive, report_path, prune_path = map(Path, sys.argv[1:])
           def digest(path):
               h = hashlib.sha256()
               with path.open('rb') as f:
-                  for block in iter(lambda: f.read(1024*1024), b''): h.update(block)
+                  for block in iter(lambda: f.read(1024 * 1024), b''):
+                      h.update(block)
               return h.hexdigest()
           prune = json.loads(prune_path.read_text())
-          frozen_scrub = json.loads((report_path.parent / "frozen-scrub.json").read_text())
-          files = [p for p in root.rglob('*') if p.is_file() and not p.is_symlink()]
+          archive_bytes = archive.stat().st_size
+          limit = 16000000
           report = {
-            "schema": "CAJITA_CALIBRE_SLIM_PACKAGE_AUDIT/1.0",
-            "candidate_id": "CAJITA_CALIBRE_SLIM_V1_20261024",
+            "schema": "CAJITA_CALIBRE_SLIM_OVERLAY_PACKAGE_AUDIT/2.0",
+            "candidate_id": "CAJITA_CALIBRE_SLIM_PDF_EPUB_V2_20261024",
+            "artifact_type": "UPSTREAM_CALIBRE_FEATURE_OVERLAY_NOT_SELF_CONTAINED_RUNTIME",
             "status": "SMOKE_TESTS_PASS_NOT_CERTIFIED",
             "upstream_tag": "v9.17.0",
-            "runtime_file_count": len(files),
-            "runtime_raw_bytes": sum(p.stat().st_size for p in files),
-            "archive_bytes": archive.stat().st_size,
+            "archive_file": archive.name,
+            "archive_bytes": archive_bytes,
+            "maximum_archive_bytes": limit,
+            "archive_budget_pass": archive_bytes <= limit,
             "archive_sha256": digest(archive),
+            "overlay_raw_bytes": sum(p.stat().st_size for p in root.rglob('*') if p.is_file() and not p.is_symlink()),
+            "overlay_file_count": sum(1 for p in root.rglob('*') if p.is_file() and not p.is_symlink()),
             "prune_report_sha256": digest(prune_path),
-            "frozen_entries_scrubbed": frozen_scrub["selected_entry_count"],
-            "frozen_payload_bytes_zeroed": frozen_scrub["payload_bytes_zeroed"],
-            "frozen_archive_sha256_after": frozen_scrub["archive_sha256_after"],
-            "frozen_scrub_report_sha256": digest(report_path.parent / "frozen-scrub.json"),
+            "frozen_entries_scrubbed_in_test_runtime": json.loads((report_path.parent / "frozen-scrub.json").read_text())["selected_entry_count"],
+            "self_contained_native_runtime": False,
+            "required_external_runtime": "Official Calibre v9.17.0 Linux x86_64 binary runtime and its Qt/WebEngine dependencies",
+            "global_cajita_16mb_compliance": "NOT_ESTABLISHED; external runtime bytes are outside this overlay archive",
+            "feature_subset": ["TXT -> PDF", "TXT -> EPUB", "PDF -> EPUB", "EPUB -> PDF"],
+            "excluded": ["HTML", "DOCX", "other public output formats", "UI translation catalogs", "OCR", "GUI/store/catalog/device-management features"],
             "certification": "NOT_GRANTED",
-            "source_rebuildability": "NOT_ESTABLISHED",
-            "feature_subset": "PDF/EPUB conversion; HTML/TXT/DOCX source formats; no GUI/store/device-management scope"
+            "source_rebuildability": "NOT_ESTABLISHED"
           }
           report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
           print(json.dumps(report, indent=2))
+          if archive_bytes > limit:
+              print(f"FAIL_CLOSED: overlay archive {archive_bytes} exceeds {limit} bytes", file=sys.stderr)
+              raise SystemExit(2)
           PY
           cp "$WORK/reports/package.json" "$WORK/artifacts/"
           cp "$WORK/reports/baseline-smoke.json" "$WORK/artifacts/"
@@ -233,13 +267,14 @@ jobs:
           cp "$WORK/reports/frozen-index.json" "$WORK/artifacts/"
           cp "$WORK/reports/frozen-scrub.json" "$WORK/artifacts/"
           cp "$WORK/reports/upstream.sha256" "$WORK/artifacts/"
+          rm -f "$WORK/artifacts/calibre-9.17.0-cajita-source-pruned.tar.xz"
           sha256sum "$WORK/artifacts/"* > "$WORK/artifacts/SHA256SUMS.txt"
 
       - name: Upload candidate artifact and evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cajita-calibre-slim-candidate-${{ github.run_number }}
+          name: cajita-calibre-pdf-epub-overlay-${{ github.run_number }}
           path: |
             ${{ runner.temp }}/calibre-slim/artifacts/**
             ${{ runner.temp }}/calibre-slim/reports/**
@@ -252,7 +287,7 @@ jobs:
         shell: bash
         run: |
           {
-            echo "## Cajita Calibre Slim Candidate"
+            echo "## Cajita Calibre PDF/EPUB Overlay Candidate"
             echo
             echo "- Upstream: Calibre v9.17.0, pinned hashes."
             echo "- Baseline smoke test: ${{ steps.baseline.outcome }}"
@@ -261,5 +296,7 @@ jobs:
             echo "- Post-pruning smoke test: ${{ steps.candidate-tests.outcome }}"
             echo "- Packaging: ${{ steps.package.outcome }}"
             echo "- Certification: NOT GRANTED by this workflow."
+            echo "- Overlay cap: 16,000,000 bytes; the workflow fails if the overlay archive exceeds it."
+            echo "- Native Calibre runtime is external and not counted in the overlay archive; global Cajita size compliance is not established."
             echo "- Main Cajita runtime and Macrodown manifest are not modified."
           } >> "$GITHUB_STEP_SUMMARY"
