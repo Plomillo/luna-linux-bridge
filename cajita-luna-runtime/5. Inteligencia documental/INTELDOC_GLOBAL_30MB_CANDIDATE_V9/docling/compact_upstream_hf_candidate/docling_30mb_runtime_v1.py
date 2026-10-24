@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed runtime loader and CPU image-to-DocTags startup smoke for the isolated candidate."""
 from __future__ import annotations
-import argparse, hashlib, json, time
+import argparse, hashlib, json, time, sys
 from pathlib import Path
 import numpy as np
 import torch
@@ -138,29 +138,46 @@ def make_test_image():
         d.text((28,28+i*48),line,fill="black")
     return im
 
-def smoke(candidate_dir,max_new_tokens=48):
-    t=time.time(); model,meta=load_candidate(candidate_dir)
+ROOT=Path(__file__).resolve().parent
+
+def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert this page to docling."):
+    t=time.time()
+    model,meta=load_candidate(candidate_dir)
     from transformers import AutoProcessor
     proc=AutoProcessor.from_pretrained(candidate_dir,local_files_only=True,trust_remote_code=False)
-    image=make_test_image(); prompt="Convert this page to docling."
+    if image_path:
+        from PIL import Image
+        path=Path(image_path)
+        if path.is_symlink() or not path.is_file(): raise RuntimeError("INPUT_IMAGE_MISSING_OR_SYMLINK")
+        image=Image.open(path).convert("RGB")
+    else:
+        image=make_test_image()
     try:
         msgs=[{"role":"user","content":[{"type":"image","image":image},{"type":"text","text":prompt}]}]
         inputs=proc.apply_chat_template(msgs,add_generation_prompt=True,tokenize=True,return_dict=True,return_tensors="pt")
     except Exception:
         inputs=proc(images=image,text=prompt,return_tensors="pt")
     inputs={k:(v.to("cpu") if isinstance(v,torch.Tensor) else v) for k,v in inputs.items()}
-    with torch.inference_mode(): out=model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=False)
+    with torch.inference_mode():
+        out=model.generate(**inputs,max_new_tokens=int(max_new_tokens),do_sample=False)
     decoded=proc.batch_decode(out,skip_special_tokens=False)[0]
     if len(decoded.strip())<4: raise RuntimeError("RUNTIME_SMOKE_EMPTY_OR_SHORT_OUTPUT")
     return {"status":"PASS","candidate_id":meta["candidate_id"],"model_load":"PASS","processor_load":"PASS",
-        "image_preprocess":"PASS","generation":"PASS","decoded_chars":len(decoded),"output_prefix":decoded[:200],
-        "elapsed_seconds":round(time.time()-t,3),"quality_equivalence":"NOT_ESTABLISHED"}
+            "image_preprocess":"PASS","generation":"PASS","generated_token_count":int(out.shape[-1]),
+            "output_text":decoded[:8192],"output_sha256":hashlib.sha256(decoded.encode("utf-8")).hexdigest(),
+            "decoded_chars":len(decoded),"elapsed_seconds":round(time.time()-t,3),"quality_equivalence":"NOT_ESTABLISHED"}
+
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument("--candidate-dir",required=True); ap.add_argument("--smoke-test",action="store_true")
-    ap.add_argument("--verify-only",action="store_true"); ap.add_argument("--max-new-tokens",type=int,default=48); a=ap.parse_args()
-    if a.smoke_test: print(json.dumps(smoke(a.candidate_dir,a.max_new_tokens),indent=2,ensure_ascii=False)); return 0
+    ap=argparse.ArgumentParser();ap.add_argument("--candidate-dir",default=str(ROOT));ap.add_argument("--smoke-test",action="store_true")
+    ap.add_argument("--verify-only",action="store_true");ap.add_argument("--max-new-tokens",type=int,default=48);ap.add_argument("--task-json-stdin",action="store_true")
+    a=ap.parse_args()
+    if a.task_json_stdin:
+        task=json.load(sys.stdin)
+        if task.get("operation")!="extract_document_image": ap.error("Unsupported task operation")
+        print(json.dumps(smoke(a.candidate_dir,int(task.get("max_new_tokens",24)),task.get("image_path"),task.get("prompt","Extract visible text and fields.")),indent=2,ensure_ascii=False));return 0
+    if a.smoke_test: print(json.dumps(smoke(a.candidate_dir,a.max_new_tokens),indent=2,ensure_ascii=False));return 0
     if a.verify_only:
-        model,meta=load_candidate(a.candidate_dir); print(json.dumps({"status":"PASS","candidate_id":meta["candidate_id"]})); return 0
-    ap.error("use --smoke-test or --verify-only")
+        model,meta=load_candidate(a.candidate_dir);print(json.dumps({"status":"PASS","candidate_id":meta["candidate_id"]}));return 0
+    ap.error("use --smoke-test, --verify-only, or --task-json-stdin")
 if __name__=="__main__": raise SystemExit(main())
