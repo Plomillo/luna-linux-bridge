@@ -1,6 +1,6 @@
 {
   "schema": "CAJITA_CALIBRE_SLIM_SOURCE_LOCK/1.0",
-  "candidate_id": "CAJITA_CALIBRE_SLIM_V1_20261024",
+  "candidate_id": "CAJITA_CALIBRE_SLIM_PDF_EPUB_V2_20261024",
   "created_at_utc": "2026-10-24",
   "upstream_repository": "https://github.com/kovidgoyal/calibre",
   "tag": "v9.17.0",
@@ -31,7 +31,10 @@
   ],
   "license": {
     "spdx": "GPL-3.0",
-    "upstream_files_preserved": ["LICENSE", "COPYRIGHT"],
+    "upstream_files_preserved": [
+      "LICENSE",
+      "COPYRIGHT"
+    ],
     "modified_version_notice": "Cajita Calibre Slim is a modified feature subset of upstream Calibre; it is not the upstream full product."
   },
   "verification": {
@@ -40,6 +43,9 @@
     "pre_pruning_smoke_tests_required": true,
     "post_pruning_smoke_tests_required": true,
     "archive_size_measured": true,
-    "certification": "NOT_GRANTED"
+    "certification": "NOT_GRANTED",
+    "candidate_archive_max_bytes": 16000000,
+    "self_contained_native_runtime": false,
+    "external_runtime_required": "Calibre v9.17.0 Linux x86_64"
   }
 }
