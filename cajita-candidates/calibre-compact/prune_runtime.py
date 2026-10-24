@@ -30,6 +30,12 @@ KEEP_DEFAULT_COVERS = {
     "resources/images/default_cover.png",
     "resources/catalog/DefaultCover.jpg",
 }
+KEEP_RESOURCE_FILES = {
+    "resources/default_tweaks.py",
+    "resources/calibre-mimetypes.xml",
+    "resources/common-english-words.txt",
+    "resources/fonts/calibreSymbols.otf",
+}
 KEEP_WEBENGINE_LOCALES = {"en-US.pak", "es.pak", "es-419.pak", "es-MX.pak"}
 LOCALE_NAME = re.compile(r"(?:^|[_-])([a-z]{2,3}(?:[-_][a-z0-9]{2,8})*)\.(?:qm|mo)$", re.IGNORECASE)
 KEEP_LOCALES = {"en", "en-us", "en_us", "es", "es-es", "es_es", "es-419", "es_419", "es-mx", "es_mx"}
@@ -102,6 +108,8 @@ def removal_reason(rel: Path) -> str | None:
     if parts and parts[0] in {"recipes", "manual", "icons"}:
         return "unused_root_feature_or_documentation"
     if len(parts) >= 2 and parts[0] == "resources":
+        if posix in KEEP_RESOURCE_FILES:
+            return None
         if parts[1] in {"content-server", "editor-help", "dictionaries", "manual", "recipes"}:
             return "unused_server_editor_spellcheck_or_news_resources"
         if parts[1] == "images" and posix not in KEEP_DEFAULT_COVERS:
@@ -111,9 +119,8 @@ def removal_reason(rel: Path) -> str | None:
         if posix in {
             "resources/calibre-portable.bat",
             "resources/calibre-portable.sh",
-            "resources/default_tweaks.py",
         }:
-            return "unused_portable_or_GUI_customization_resource"
+            return "unused_portable_resource"
 
     if len(parts) == 1 and rel.name in ALLOWED_ENTRYPOINTS:
         return "unused_GUI_library_server_device_or_metadata_command"
@@ -138,6 +145,33 @@ def measure(root: Path) -> tuple[int, int]:
             count += 1
             total += path.stat().st_size
     return count, total
+
+
+def largest_items(root: Path, limit: int = 25) -> list[dict[str, object]]:
+    files = [
+        (p.stat().st_size, p.relative_to(root).as_posix())
+        for p in root.rglob("*")
+        if p.is_file() and not p.is_symlink()
+    ]
+    return [
+        {"path": rel, "size_bytes": size}
+        for size, rel in sorted(files, reverse=True)[:limit]
+    ]
+
+
+def directory_totals(root: Path, limit: int = 25) -> list[dict[str, object]]:
+    totals: dict[str, int] = {}
+    for p in root.rglob("*"):
+        if not p.is_file() or p.is_symlink():
+            continue
+        rel = p.relative_to(root)
+        if len(rel.parts) > 1:
+            top = rel.parts[0]
+            totals[top] = totals.get(top, 0) + p.stat().st_size
+    return [
+        {"directory": name, "size_bytes": size}
+        for name, size in sorted(totals.items(), key=lambda item: item[1], reverse=True)[:limit]
+    ]
 
 
 def build_plan(root: Path) -> list[tuple[Path, str]]:
@@ -193,8 +227,15 @@ def main(argv: list[str] | None = None) -> int:
                 directory.rmdir()
             except OSError:
                 pass
-        if not (root / "ebook-convert").is_file() or not (root / "calibre_postinstall").is_file():
-            print("FAIL_CLOSED: los entrypoints básicos desaparecieron durante la poda.", file=sys.stderr)
+        required = [
+            root / "ebook-convert",
+            root / "calibre_postinstall",
+            root / "resources/default_tweaks.py",
+            root / "resources/calibre-mimetypes.xml",
+        ]
+        missing = [str(p.relative_to(root)) for p in required if not p.is_file()]
+        if missing:
+            print(f"FAIL_CLOSED: faltan archivos de conversión requeridos: {missing}", file=sys.stderr)
             return 3
         after_count, after_bytes = measure(root)
         removed_bytes = before_bytes - after_bytes
@@ -212,6 +253,8 @@ def main(argv: list[str] | None = None) -> int:
         "planned_removed_bytes": sum(item["size_bytes"] for item in removals),
         "after": {"file_count": after_count, "bytes": after_bytes},
         "measured_removed_bytes": removed_bytes,
+        "largest_remaining_files": largest_items(root),
+        "largest_top_level_directories": directory_totals(root),
         "retained_conversion_modules": sorted(ALLOWED_CONVERSION_MODULES),
         "removed_files": removals,
         "status": "PRUNE_APPLIED_AWAITING_FUNCTIONAL_TESTS" if args.apply else "DRY_RUN_ONLY",
@@ -225,6 +268,8 @@ def main(argv: list[str] | None = None) -> int:
         "after_bytes": after_bytes,
         "measured_removed_bytes": removed_bytes,
         "files_removed": len(removals),
+        "largest_remaining_files": report["largest_remaining_files"][:15],
+        "largest_top_level_directories": report["largest_top_level_directories"][:15],
         "report": str(args.report),
     }, ensure_ascii=False))
     return 0

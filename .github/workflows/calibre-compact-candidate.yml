@@ -22,14 +22,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - name: Checkout candidate branch
-        uses: actions/checkout@v4
-
-      - name: Install validation utilities
+      - name: Set up validation dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends \
-            ca-certificates curl xz-utils python3 poppler-utils
+          sudo apt-get install --yes --no-install-recommends ca-certificates curl xz-utils python3 poppler-utils
+
+      - name: Checkout candidate branch
+        uses: actions/checkout@v4
 
       - name: Check candidate syntax and policy tests
         run: |
@@ -47,6 +46,7 @@ jobs:
         run: bash cajita-candidates/calibre-compact/build_candidate.sh
 
       - name: Upload candidate package and evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: calibre-compact-v1-linux-x86_64
@@ -55,5 +55,5 @@ jobs:
             ${{ runner.temp }}/cajita-calibre-compact/evidence/build-evidence.json
             ${{ runner.temp }}/cajita-calibre-compact/evidence/prune-report.json
             ${{ runner.temp }}/cajita-calibre-compact/evidence/conversion-audit.jsonl
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
