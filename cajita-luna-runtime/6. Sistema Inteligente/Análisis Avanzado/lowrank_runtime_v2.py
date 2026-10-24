@@ -101,31 +101,41 @@ def load_candidate():
     model.eval()
     return model
 
-def smoke_test():
-    t0 = time.monotonic()
-    tokenizer = AutoTokenizer.from_pretrained(ROOT, local_files_only=True)
-    model = load_candidate()
-    tok = tokenizer("Test", return_tensors="pt")
-    with torch.inference_mode():
-        out = model(input_ids=tok["input_ids"], attention_mask=tok.get("attention_mask"), use_cache=False)
-    logits = out.logits
-    if logits.ndim != 3 or logits.shape[0] != 1 or not torch.isfinite(logits).all():
-        raise RuntimeError("NONFINITE_OR_MALFORMED_LOGITS")
-    next_id = int(logits[0, -1].argmax().item())
-    if not 0 <= next_id < int(model.config.vocab_size):
-        raise RuntimeError("NEXT_TOKEN_OUT_OF_RANGE")
-    return {"status": "PASS_MODEL_START_AND_FORWARD", "model_type": model.config.model_type,
-            "vocab_size": int(model.config.vocab_size), "input_token_count": int(tok["input_ids"].shape[-1]),
-            "logits_shape": list(logits.shape), "finite_logits": True, "argmax_token_id": next_id,
-            "elapsed_seconds": round(time.monotonic()-t0, 3),
-            "rope_buffers_materialized": int(getattr(model, "_lowrank_rope_materialized", 0)),
-            "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST"}
+def smoke_test(generate=False, prompt="Test", max_new_tokens=1):
+    t0=time.monotonic()
+    if not isinstance(prompt,str) or not prompt.strip(): raise ValueError("PROMPT_REQUIRED")
+    if isinstance(max_new_tokens,bool) or not 1<=int(max_new_tokens)<=128: raise ValueError("MAX_NEW_TOKENS_OUT_OF_RANGE")
+    tokenizer=AutoTokenizer.from_pretrained(ROOT,local_files_only=True)
+    model=load_candidate()
+    tok=tokenizer(prompt,return_tensors="pt")
+    with torch.inference_mode(): out=model(input_ids=tok["input_ids"],attention_mask=tok.get("attention_mask"),use_cache=False)
+    logits=out.logits
+    if logits.ndim!=3 or logits.shape[0]!=1 or not torch.isfinite(logits).all(): raise RuntimeError("NONFINITE_OR_MALFORMED_LOGITS")
+    next_id=int(logits[0,-1].argmax().item())
+    if not 0<=next_id<int(model.config.vocab_size): raise RuntimeError("NEXT_TOKEN_OUT_OF_RANGE")
+    result={"status":"PASS_MODEL_START_AND_FORWARD","model_type":model.config.model_type,"vocab_size":int(model.config.vocab_size),
+            "input_token_count":int(tok["input_ids"].shape[-1]),"logits_shape":list(logits.shape),"finite_logits":True,"argmax_token_id":next_id,
+            "elapsed_seconds":round(time.monotonic()-t0,3),"rope_buffers_materialized":int(getattr(model,"_lowrank_rope_materialized",0)),
+            "quality_equivalence":"NOT_ESTABLISHED_BY_SMOKE_TEST"}
+    if generate:
+        with torch.inference_mode():
+            generated=model.generate(tok["input_ids"],attention_mask=tok.get("attention_mask"),max_new_tokens=int(max_new_tokens),do_sample=False,use_cache=False)
+        count=int(generated.shape[-1]-tok["input_ids"].shape[-1])
+        if count<1: raise RuntimeError("MODEL_GENERATED_NO_NEW_TOKENS")
+        result.update({"generation_status":"PASS_GENERATE","generated_token_count":count,
+                       "output_text":tokenizer.decode(generated[0,tok["input_ids"].shape[-1]:],skip_special_tokens=True)[:8192]})
+    return result
 
 if __name__ == "__main__":
     import argparse
-    p = argparse.ArgumentParser()
-    p.add_argument("--smoke-test", action="store_true")
-    a = p.parse_args()
-    if not a.smoke_test:
-        p.error("Use --smoke-test")
-    print(json.dumps(smoke_test(), indent=2))
+    p=argparse.ArgumentParser()
+    p.add_argument("--smoke-test",action="store_true");p.add_argument("--task-json-stdin",action="store_true")
+    a=p.parse_args()
+    if a.task_json_stdin:
+        task=json.load(sys.stdin)
+        if task.get("operation")!="analyze_reasoning": p.error("Unsupported task operation")
+        result=smoke_test(True,task.get("prompt",""),int(task.get("max_new_tokens",8)));result["status"]="PASS_TASK_REASONING"
+    else:
+        if not a.smoke_test: p.error("Use --smoke-test or --task-json-stdin")
+        result=smoke_test()
+    print(json.dumps(result,indent=2,ensure_ascii=False))
