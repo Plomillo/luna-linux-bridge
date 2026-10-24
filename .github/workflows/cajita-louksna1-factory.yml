@@ -140,11 +140,13 @@ jobs:
           assert flow["id"] == "louksna1_release_audit"
           assert flow["namespace"] == "louksna.kestra"
           tasks = {task["id"]: task for task in flow["tasks"]}
-          assert {"release_manifest", "g23_evidence", "g24_evidence", "gate"} <= set(tasks)
+          assert {"release_manifest", "g23_evidence", "g24_evidence", "task_adapter_evidence", "latest_factory_run", "gate"} <= set(tasks)
           gate = tasks["gate"]
           assert gate["type"] == "io.kestra.plugin.core.flow.If"
           assert "490000000" in gate["condition"]
           assert "NOT_GRANTED" in gate["condition"]
+          assert ".id > 0" in gate["condition"]
+          assert ".total_count > 0" not in gate["condition"]
           print("LOUKSNA1_KESTRA_FLOW_STATIC_CONTRACT=PASS")
           PY
           python cajita-luna-runtime/cajita_antiparalysis.py selftest --state-dir "$RUNNER_TEMP/anti-paralysis-selftest"

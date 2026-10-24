@@ -106,6 +106,10 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
                 "Task evidence must bind to the exact factory run selected by its immutable run id.")
         require("actions/runs/{{ envs.factory_run_id }}" in body,
                 "Louksna1 audit must inspect the exact workflow_run trigger, not a race-prone latest-run query.")
+        require("fromJson(outputs.latest_factory_run.body).id > 0" in body,
+                "Louksna1 audit must validate the single workflow-run object returned by the exact run-ID endpoint.")
+        require("fromJson(outputs.latest_factory_run.body).total_count > 0" not in body,
+                "A single workflow-run object must not be treated as a list response with total_count.")
         require("fromJson(outputs.release_manifest.body).task_adapter_evidence.sha256 == fromJson(outputs.g24_evidence.body).task_adapter_evidence_sha256" in body,
                 "Release manifest and G24 evidence must bind the same task evidence digest.")
 
