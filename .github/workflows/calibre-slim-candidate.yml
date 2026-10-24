@@ -85,26 +85,9 @@ jobs:
           if [ -z "$BIN_BUILTINS" ]; then
             BIN_BUILTINS_PYC="$(find "$WORK/binary" -type f -path '*/calibre/customize/builtins.pyc' -print -quit)"
             if [ -z "$BIN_BUILTINS_PYC" ]; then
-              echo "Binary distribution contains no loose builtins.py or builtins.pyc. Dumping package layout and scanning zip/egg archives."
-              echo "--- top-level files ---"
-              find "$WORK/binary" -maxdepth 4 -type f -printf '%P %s bytes\n' | sort | head -160
-              echo "--- archive candidates ---"
-              find "$WORK/binary" -type f \( -iname '*.zip' -o -iname '*.egg' -o -iname '*.pyz' \) -print
-              python3 - "$WORK/binary" <<'PYSCAN'
-              import sys, zipfile
-              from pathlib import Path
-              root = Path(sys.argv[1])
-              for archive in root.rglob("*"):
-                  if not archive.is_file() or archive.suffix.lower() not in {".zip", ".egg", ".pyz"}:
-                      continue
-                  try:
-                      with zipfile.ZipFile(archive) as z:
-                          hits = [n for n in z.namelist() if n.endswith(("calibre/customize/builtins.py", "calibre/customize/builtins.pyc"))]
-                          if hits:
-                              print(f"MODULE_ARCHIVE {archive} {hits[:5]}")
-                  except Exception:
-                      pass
-              PYSCAN
+              echo "Binary has no unpacked editable registry; collecting read-only package layout evidence."
+              python3 tools/calibre-slim/inspect_layout.py "$WORK/binary" > "$WORK/reports/binary-layout-inspection.json"
+              cat "$WORK/reports/binary-layout-inspection.json"
               exit 1
             fi
             BIN_BUILTINS="$(dirname "$BIN_BUILTINS_PYC")/builtins.py"
