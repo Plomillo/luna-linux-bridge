@@ -1,0 +1,168 @@
+{
+  "schema": "CAJITA_CLI_INFRASTRUCTURE_CONTRACT/1.0",
+  "authority": "Louksna.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "legacy_specification": {
+    "path": "cajita-luna-runtime/2. Orquestación/Orquestador/CLIS.txt",
+    "git_blob_sha": "146afab4ef88e659cba5b94c2e989f7106fdd1e4",
+    "migration_status": "MIGRATED_TO_MODULAR_CONTRACT"
+  },
+  "domain_order": [
+    "CLI_MOJO",
+    "CLI_CPP23_TOOLCHAIN",
+    "CLI_CLAUDE_CODE",
+    "CLI_PYTHON",
+    "CLI_GITHUB",
+    "CLI_GEMINI",
+    "CLI_GROK",
+    "CLI_HUGGING_FACE"
+  ],
+  "governance": {
+    "default_mode": "READ_ONLY_AUDIT_AND_PLAN",
+    "allowed_default_effects": [
+      "DISCOVER",
+      "VERSION_PROBE",
+      "DIAGNOSE"
+    ],
+    "install_requires": [
+      "EXACT_VERSION_PIN",
+      "OFFICIAL_SOURCE",
+      "SOURCE_INTEGRITY",
+      "EXPLICIT_PLAN_SHA256_APPROVAL",
+      "PRE_MUTATION_CHECKPOINT",
+      "ROLLBACK_PLAN",
+      "POST_VALIDATION",
+      "STRUCTURED_EVIDENCE"
+    ],
+    "shell": false,
+    "implicit_sudo": false,
+    "secret_logging": false,
+    "cross_domain_mutation": false,
+    "fail_closed": true,
+    "certification_propagation": false,
+    "extension_framework": "CLI_EXTENSION_FRAMEWORK"
+  },
+  "domains": [
+    {
+      "id": "CLI_MOJO",
+      "provider": "Modular",
+      "module": "cli_mojo.py",
+      "package": "mojo",
+      "binary": "mojo",
+      "official_sources": [
+        "https://docs.modular.com/mojo/manual/install",
+        "https://mojolang.static.modular.com/install/"
+      ],
+      "status": "PIN_REQUIRED"
+    },
+    {
+      "id": "CLI_CPP23_TOOLCHAIN",
+      "provider": "GNU/LLVM, CMake, Ninja",
+      "module": "cli_cpp23_toolchain.py",
+      "package": "system toolchain",
+      "binary": "g++ or clang++ plus cmake and ninja",
+      "official_sources": [
+        "https://gcc.gnu.org/",
+        "https://clang.llvm.org/",
+        "https://cmake.org/",
+        "https://ninja-build.org/"
+      ],
+      "status": "VERSIONED_PLATFORM_PLAN_REQUIRED"
+    },
+    {
+      "id": "CLI_CLAUDE_CODE",
+      "provider": "Anthropic",
+      "module": "cli_claude_code.py",
+      "package": "@anthropic-ai/claude-code",
+      "binary": "claude",
+      "official_sources": [
+        "https://docs.anthropic.com/en/docs/claude-code/getting-started"
+      ],
+      "status": "PIN_REQUIRED"
+    },
+    {
+      "id": "CLI_PYTHON",
+      "provider": "Python / OS distribution",
+      "module": "cli_python.py",
+      "package": "python3",
+      "binary": "python3",
+      "official_sources": [
+        "https://docs.python.org/3/using/unix.html"
+      ],
+      "status": "HOST_AUDIT_ONLY_DO_NOT_REPLACE_SYSTEM_PYTHON"
+    },
+    {
+      "id": "CLI_GITHUB",
+      "provider": "GitHub CLI maintainers",
+      "module": "cli_github.py",
+      "package": "gh",
+      "binary": "gh",
+      "official_sources": [
+        "https://cli.github.com/",
+        "https://github.com/cli/cli/blob/trunk/docs/install_linux.md"
+      ],
+      "status": "PIN_AND_INTEGRITY_REQUIRED"
+    },
+    {
+      "id": "CLI_GEMINI",
+      "provider": "Google",
+      "module": "cli_gemini.py",
+      "package": "@google/gemini-cli",
+      "binary": "gemini",
+      "official_sources": [
+        "https://geminicli.com/docs/get-started/installation/"
+      ],
+      "status": "PIN_REQUIRED"
+    },
+    {
+      "id": "CLI_GROK",
+      "provider": "xAI",
+      "module": "cli_grok.py",
+      "package": "@xai-official/grok",
+      "binary": "grok",
+      "official_sources": [
+        "https://x.ai/cli/install.sh",
+        "https://docs.x.ai/build/overview"
+      ],
+      "status": "OFFICIAL_DISTRIBUTION_IDENTIFIED_PIN_REQUIRED"
+    },
+    {
+      "id": "CLI_HUGGING_FACE",
+      "provider": "Hugging Face",
+      "module": "cli_hugging_face.py",
+      "package": "huggingface_hub",
+      "binary": "hf",
+      "official_sources": [
+        "https://huggingface.co/docs/huggingface_hub/guides/cli"
+      ],
+      "status": "PIN_REQUIRED"
+    }
+  ],
+  "extension": {
+    "id": "CLI_EXTENSION_FRAMEWORK",
+    "role": "EXTENSIBLE_CONTRACT_NOT_NINTH_CLI",
+    "required_fields": [
+      "canonical_id",
+      "official_source",
+      "version_pin",
+      "package",
+      "binary",
+      "dependencies",
+      "health_check",
+      "integrity",
+      "rollback",
+      "provenance",
+      "independent_validation"
+    ],
+    "activation": [
+      "DISCOVER",
+      "REGISTER",
+      "RESOLVE",
+      "EVIDENCE",
+      "VALIDATE",
+      "INDEPENDENT_VALIDATE",
+      "CERTIFY",
+      "ACTIVATE"
+    ]
+  }
+}
