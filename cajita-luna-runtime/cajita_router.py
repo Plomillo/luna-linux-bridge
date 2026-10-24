@@ -344,7 +344,7 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
                 "bytes": asset.get("expanded_bytes") or asset["bytes"],
                 "sha256": asset.get("expanded_tree_sha256") or asset["sha256"],
                 "role": asset["role"],
-                "activation_status": asset.get("activation_status", "MAPPED_CONTAINER_NOT_ACTIVATED"),
+                "activation_status": "MATERIALIZED_NOT_FUNCTIONALLY_VALIDATED" if asset.get("materialized_path") else "MAPPED_CONTAINER_NOT_ACTIVATED",
                 "archive_removed_from_runtime": asset.get("archive_removed_from_runtime", False),
                 "activation_requirements": [
                     "verify-module-manifest", "register-real-consumer-adapter",
