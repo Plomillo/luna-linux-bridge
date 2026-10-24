@@ -269,7 +269,7 @@ jobs:
           assert hashlib.sha256(protected).hexdigest()==release["protected_architecture"]["sha256"]
           assert hashlib.sha256(package.read_bytes()).hexdigest()==release["runtime_distribution"]["sha256"]
           assert hashlib.sha256(doc.read_bytes()).hexdigest()==release["louksna1"]["sha256"]
-          assert package.stat().st_size+doc.stat().st_size<=490_000_000, "COMBINED_SIZE_GATE"
+          assert package.stat().st_size+doc.stat().st_size<=479_000_000, "COMBINED_SIZE_GATE"
           with zipfile.ZipFile(package) as z:
             assert z.testzip() is None, "ZIP_CRC"
             names=z.namelist()
