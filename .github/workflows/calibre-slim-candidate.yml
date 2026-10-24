@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: calibre-slim-candidate-${ github.ref }
+  group: calibre-slim-candidate-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -208,10 +208,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cajita-calibre-slim-candidate-${ github.run_number }
+          name: cajita-calibre-slim-candidate-${{ github.run_number }}
           path: |
-            ${ runner.temp }/calibre-slim/artifacts/**
-            ${ runner.temp }/calibre-slim/reports/**
+            ${{ runner.temp }}/calibre-slim/artifacts/**
+            ${{ runner.temp }}/calibre-slim/reports/**
             tools/calibre-slim/**
           if-no-files-found: warn
           retention-days: 30
@@ -224,11 +224,11 @@ jobs:
             echo "## Cajita Calibre Slim Candidate"
             echo
             echo "- Upstream: Calibre v9.17.0, pinned hashes."
-            echo "- Baseline smoke test: ${ steps.baseline.outcome }"
-            echo "- Source pruning: ${ steps.source-prune.outcome }"
-            echo "- Binary pruning: ${ steps.binary-prune.outcome }"
-            echo "- Post-pruning smoke test: ${ steps.candidate-tests.outcome }"
-            echo "- Packaging: ${ steps.package.outcome }"
+            echo "- Baseline smoke test: ${{ steps.baseline.outcome }}"
+            echo "- Source pruning: ${{ steps.source-prune.outcome }}"
+            echo "- Binary pruning: ${{ steps.binary-prune.outcome }}"
+            echo "- Post-pruning smoke test: ${{ steps.candidate-tests.outcome }}"
+            echo "- Packaging: ${{ steps.package.outcome }}"
             echo "- Certification: NOT GRANTED by this workflow."
             echo "- Main Cajita runtime and Macrodown manifest are not modified."
           } >> "$GITHUB_STEP_SUMMARY"
