@@ -27,6 +27,11 @@
     "entrypoint": "calibre-slim-convert"
   },
   "retained": {
+    "runtime_language_modules": [
+      "calibre/translations/dynamic.py (runtime translation helper used by OEB rendering)",
+      "calibre/translations/__init__.py",
+      "calibre/translations/msgfmt.py"
+    ],
     "conversion_plugins": [
       "docx_input.py",
       "epub_input.py",
