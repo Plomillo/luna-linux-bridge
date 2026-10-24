@@ -5,8 +5,8 @@
   "archive_bytes": 58180,
   "archive_sha256": "dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b",
   "archive_internal_path": "5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-overlay.tar.xz",
-  "artifact_embedded_in_runtime": false,
-  "materialization_status": "BLOCKED__BINARY_EXISTS_ONLY_AS_GITHUB_ACTIONS_ARTIFACT",
+  "artifact_embedded_in_runtime": true,
+  "materialization_status": "MATERIALIZED_IN_MAIN__NOT_CERTIFIED",
   "workflow_run_id": 40057448243,
   "workflow_run_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40057448243",
   "artifact_id": 12545698477,
@@ -21,5 +21,8 @@
     "The overlay excludes the native Calibre runtime and Qt/WebEngine dependencies.",
     "Passing overlay tests is not certification of a self-contained runtime."
   ],
-  "next_gate": "Materialize this exact archive at archive_internal_path, verify exact size and SHA-256, then rebuild MACRODOWN and run post-materialization canaries."
+  "next_gate": "Materialize this exact archive at archive_internal_path, verify exact size and SHA-256, then rebuild MACRODOWN and run post-materialization canaries.",
+  "actual_repository_path": "5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-overlay.tar.xz",
+  "post_materialization_sha256_verified": true,
+  "post_materialization_size_verified": true
 }

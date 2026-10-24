@@ -1,7 +1,7 @@
 # Calibre Slim — integración en Cajita de Luna
 
 **Dominio:** D05 — Inteligencia documental  
-**Estado:** candidato registrado; binario no materializado en el árbol de runtime.  
+**Estado:** binario incorporado físicamente en el árbol de runtime; candidato todavía no certificado.  
 **Versión base:** Calibre oficial v9.17.0.
 
 ## Ruta interna
@@ -23,7 +23,7 @@ Se admiten entradas PDF, EPUB y TXT; las salidas públicas se limitan a PDF y EP
 
 El artefacto del overlay pesa **58.180 bytes (0,05818 MB decimal)** y su SHA-256 esperado es `dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b`. La referencia apunta al artefacto de CI identificado en `ARTIFACT_REFERENCE.json`.
 
-**Ese archivo todavía no está físicamente en esta carpeta de runtime.** El archivo binario existe como artefacto de GitHub Actions; el registro no lo representa como si ya estuviera empaquetado. Por ello, el lanzador termina con `FAIL_CLOSED` mientras no exista el overlay extraído. Una vez materializado, se requiere además el runtime oficial de Calibre v9.17.0 para Linux x86-64 y sus dependencias Qt/WebEngine, fuera del overlay. No se afirma que Calibre completo quepa en 16 MB.
+**El archivo ya está físicamente en esta carpeta de runtime.** El lanzador verifica tamaño y SHA-256, extrae el overlay de forma segura la primera vez y falla cerrado ante discrepancias. Una vez materializado, se requiere además el runtime oficial de Calibre v9.17.0 para Linux x86-64 y sus dependencias Qt/WebEngine, fuera del overlay. No se afirma que Calibre completo quepa en 16 MB.
 
 ## Evidencia y puerta pendiente
 

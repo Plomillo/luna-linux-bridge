@@ -1,7 +1,7 @@
 {
   "schema": "CAJITA_CALIBRE_SLIM_RUNTIME_PROFILE/1.0",
   "candidate_id": "CAJITA_CALIBRE_SLIM_PDF_EPUB_V2_20261024",
-  "status": "INTEGRATION_STAGING__ARTIFACT_NOT_MATERIALIZED",
+  "status": "MATERIALIZED_IN_CAJITA_RUNTIME__NOT_CERTIFIED",
   "authority": "SUBORDINATE_OPERATIONAL_CANDIDATE",
   "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
   "internal_path": "5. Inteligencia documental/Conversión documental/Calibre Slim/",
@@ -44,8 +44,9 @@
     "expected_path": "calibre-slim-overlay.tar.xz",
     "size_bytes": 58180,
     "sha256": "dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b",
-    "physically_embedded": false,
-    "external_runtime_required": true
+    "physically_embedded": true,
+    "external_runtime_required": true,
+    "materialized_path": "5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-overlay.tar.xz"
   },
   "tests": {
     "static_checks": "PASS",
