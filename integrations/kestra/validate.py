@@ -96,10 +96,16 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
     require("docker.sock" not in lower,
             f"{flow_path.relative_to(ROOT)} references a Docker socket.")
     if flow_path.name == "21-louksna1-release-audit.yml":
-        require("fromJson(outputs.g24_evidence.body).status == 'PASS_FOR_DECLARED_SMOKE_SCOPE'" in body,
-                "Louksna1 release audit must fail closed unless scoped G24 runtime evidence passes.")
-        require("fromJson(outputs.release_manifest.body).gates.G24 == 'PASS_FOR_DECLARED_SMOKE_SCOPE'" in body,
-                "Louksna1 release manifest and G24 evidence must agree on the runtime gate.")
+        require("fromJson(outputs.g24_evidence.body).status == 'PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE'" in body,
+                "Louksna1 release audit must fail closed unless scoped synthetic task execution evidence passes.")
+        require("fromJson(outputs.release_manifest.body).gates.G24 == 'PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE'" in body,
+                "Louksna1 release manifest and G24 evidence must agree on the new scoped runtime gate.")
+        require("outputs.task_adapter_evidence.code == 200" in body and "outputs.latest_factory_run.code == 200" in body,
+                "Louksna1 release audit must read task evidence and latest factory run evidence.")
+        require("fromJson(outputs.task_adapter_evidence.body).source_commit == fromJson(outputs.latest_factory_run.body).workflow_runs[0].head_sha" in body,
+                "Task evidence must bind to the latest factory source commit.")
+        require("fromJson(outputs.release_manifest.body).task_adapter_evidence.sha256 == fromJson(outputs.g24_evidence.body).task_adapter_evidence_sha256" in body,
+                "Release manifest and G24 evidence must bind the same task evidence digest.")
 
     if flow_path.name == "10-super1200-continuity.yml":
         require("type: io.kestra.plugin.core.trigger.Schedule" in body,
