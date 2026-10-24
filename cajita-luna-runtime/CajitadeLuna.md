@@ -253,3 +253,17 @@ Los factores de bajo rango que ya estaban empaquetados en INT4 se recodificaron 
 | W02_TRANSCRIPTION | PROMOTED_Q2_BLOCKWISE | 472 | 17918086 | 10399882 | 7445404 |
 | W03_TRANSLATION | PROMOTED_Q2_BLOCKWISE | 1682 | 14765381 | 11720882 | 2771797 |
 | W05_QWEN3 | PROMOTED_Q2_BLOCKWISE | 564 | 28687808 | 14956240 | 13647850 |
+
+
+## Sustitución operativa BTX por SQLite — 2026-10-23
+
+El recurso BTX del runtime se ha sustituido por la candidata SQLite en la ruta equivalente del dominio Orquestación. El PDF empaquetado en el antiguo contenedor .7z ya no está en la ruta de runtime.
+
+- Recurso activo: 2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).sqlite3
+- Tamaño: 6.750.208 bytes.
+- SHA-256: fdb4a43776a06e76cf772242bc8c802970b2b55c9544cd03826aa8453bc993e0.
+- Fuente original preservada para rollback fuera del runtime: externalized-assets-staging/2-Orquestacion/BTX/Biblia_Textual_BTX_original_rollback.7z
+- Construcción de origen: GitHub Actions run 40041740047, artefacto 12539134323.
+- Estado: RUNTIME_SUBSTITUTION=APPLIED_UNCERTIFIED; STRUCTURAL_VALIDATION=PASS; BYTE_REPRODUCIBILITY=PASS; SOURCE_TO_VERSE_CONTENT_EQUIVALENCE=NOT_INDEPENDENTLY_VALIDATED; EDITORIAL_APPARATUS=NOT_INCLUDED_OR_CERTIFIED; CERTIFICATION=NOT_GRANTED; OPERABILITY=UNVERIFIED.
+
+Esta sustitución cambia el formato de almacenamiento del recurso; no declara certificación integral del texto bíblico ni equivalencia versículo por versículo. La entrada A029 conserva los hashes, tamaños, procedencia y estado pendiente. El archivo original se retiene únicamente para recuperación.

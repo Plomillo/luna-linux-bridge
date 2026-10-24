@@ -25,7 +25,7 @@ from typing import Any
 import fitz
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / "cajita-luna-runtime/2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).7z"
+SOURCE = ROOT / "externalized-assets-staging/2-Orquestacion/BTX/Biblia_Textual_BTX_original_rollback.7z"
 EXPECTED_SOURCE_SHA256 = "be5ec9ee6153a5573a8e491e2f96ea0a4e94c9c6c023d3cb43abd6807f040b36"
 PARSER_VERSION = "btx-sqlite-candidate/0.1.0"
 BOOKS_CHAPTERS = [

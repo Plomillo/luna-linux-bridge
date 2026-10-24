@@ -17,7 +17,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 SUBDIR = Path("cajita-luna-runtime/2. Orquestación/Confesión Eclesial Reformada")
 SOURCE_NAME = "Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).7z"
-SOURCE_PATH = ROOT / SUBDIR / SOURCE_NAME
+SOURCE_PATH = ROOT / "externalized-assets-staging/2-Orquestacion/BTX/Biblia_Textual_BTX_original_rollback.7z"
 DATA_PATH = ROOT / SUBDIR / "data.parquet"
 EXPECTED_SOURCE_SHA256 = "be5ec9ee6153a5573a8e491e2f96ea0a4e94c9c6c023d3cb43abd6807f040b36"
 EXPECTED_PARQUET_SHA256 = "94f408fabc959e706241e557927c81f1a380b1c51934b60c1f8fde69c0a6d079"

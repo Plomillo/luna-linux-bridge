@@ -224,3 +224,16 @@ https://github.com/Plomillo/luna-linux-bridge/actions/runs/40041430598/artifacts
 Nombre del artefacto: `BTX-SQLite-Core-Candidate-STRUCTURAL-NOT-CERTIFIED`. Tamaño del paquete comprimido de artefacto: 2.246.379 bytes. Incluye la base SQLite candidata (el archivo de base tiene 6.750.208 bytes antes de compresión) y los informes de validación/reproducibilidad asociados.
 
 Esta entrega es temporal, identificada expresamente como candidata no certificada y no forma parte de `main` ni del runtime. Puede usarse para probar consultas, índices e integración, pero no debe reemplazar la fuente. Sigue pendiente la comparación independiente del contenido de cada versículo contra la fuente PDF, además de decidir cómo representar notas, referencias cruzadas y material editorial.
+
+
+## 15. Sustitución de runtime ejecutada por autorización explícita — 2026-10-23
+
+Esta sección actualiza el estado operativo posterior a las secciones históricas anteriores. Por instrucción explícita del usuario, el contenedor BTX .7z fue retirado de su ubicación dentro del runtime y reemplazado por la candidata SQLite de la ejecución de GitHub Actions 40041740047 (artefacto 12539134323).
+
+- Archivo anterior retirado del runtime: cajita-luna-runtime/2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).7z.
+- Copia de recuperación preservada fuera del runtime: externalized-assets-staging/2-Orquestacion/BTX/Biblia_Textual_BTX_original_rollback.7z; SHA-256 original be5ec9ee6153a5573a8e491e2f96ea0a4e94c9c6c023d3cb43abd6807f040b36.
+- Nuevo recurso de runtime: cajita-luna-runtime/2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).sqlite3; 6.750.208 bytes; SHA-256 fdb4a43776a06e76cf772242bc8c802970b2b55c9544cd03826aa8453bc993e0.
+- El registro A029 y CajitadeLuna.md se actualizaron aditivamente. Las herramientas de auditoría apuntan ahora al original preservado fuera del runtime para permitir futuras reconstrucciones.
+- Estado: STRUCTURAL_VALIDATION=PASS; BYTE_REPRODUCIBILITY=PASS; SOURCE_TO_VERSE_CONTENT_EQUIVALENCE=NOT_INDEPENDENTLY_VALIDATED; CERTIFICATION=NOT_GRANTED; OPERABILITY=UNVERIFIED; ROLLBACK_VERIFIED_AFTER_SUBSTITUTION=NOT_YET_EXECUTED.
+
+El contenido del archivo original no se modificó; solo se movió a la ubicación de rollback. Esta operación sustituye el recurso del runtime y no equivale a certificación del contenido.
