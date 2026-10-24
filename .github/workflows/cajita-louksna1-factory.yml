@@ -7,6 +7,7 @@ on:
       - ".github/workflows/cajita-louksna1-factory.yml"
       - "tools/cajita_runtime_factory.py"
       - "tools/cajita_architecture_binding.py"
+      - "tools/cajita_task_e2e.py"
       - "tools/cajita_axiom_source_loader.py"
       - "tests/test_cajita_axiom_source_loader.py"
       - "tests/test_cajita_runtime_factory.py"
@@ -405,14 +406,19 @@ jobs:
           MEMMAX=""
           CPUMAX=""
           SMOKE_RC=125
+          TASK_RC=125
+          CONTAINER_RC=125
           if [ "$BUILD_RC" -eq 0 ]; then
             docker run --rm --memory=1073741824 --memory-swap=1073741824 --cpus=1 \
               -e OMP_NUM_THREADS=1 -e OPENBLAS_NUM_THREADS=1 -e MKL_NUM_THREADS=1 -e NUMEXPR_NUM_THREADS=1 \
               -e TOKENIZERS_PARALLELISM=false -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \
-              -v "$ROOT:/runtime:ro" -v "$RUNNER_TEMP:/telemetry:rw" -w /runtime \
+              -v "$ROOT:/runtime:ro" -v "$RUNNER_TEMP:/telemetry:rw" \
+              -v "$GITHUB_WORKSPACE/tools/cajita_task_e2e.py:/harness/cajita_task_e2e.py:ro" -w /runtime \
               cajita-louksna1-smoke sh -lc \
-              'cat /sys/fs/cgroup/memory.max > /telemetry/cgroup-memory-max.txt; cat /sys/fs/cgroup/cpu.max > /telemetry/cgroup-cpu-max.txt; python cajita_runtime.py smoke-all --timeout 600 > /telemetry/smoke-all.log 2>&1; rc=$?; cat /sys/fs/cgroup/memory.peak > /telemetry/cgroup-memory-peak.txt; exit "$rc"'
-            SMOKE_RC=$?
+              'cat /sys/fs/cgroup/memory.max > /telemetry/cgroup-memory-max.txt; cat /sys/fs/cgroup/cpu.max > /telemetry/cgroup-cpu-max.txt; python cajita_runtime.py smoke-all --timeout 600 > /telemetry/smoke-all.log 2>&1; smoke_rc=$?; echo "$smoke_rc" > /telemetry/smoke-all.rc; python /harness/cajita_task_e2e.py --root /runtime --output-dir /telemetry/task-adapter-fixtures --output /telemetry/task-adapter-e2e-raw.json --timeout 900 > /telemetry/task-adapter-e2e.log 2>&1; task_rc=$?; echo "$task_rc" > /telemetry/task-adapter-e2e.rc; cat /sys/fs/cgroup/memory.peak > /telemetry/cgroup-memory-peak.txt; if [ "$smoke_rc" -eq 0 ] && [ "$task_rc" -eq 0 ]; then exit 0; else exit 1; fi'
+            CONTAINER_RC=$?
+            SMOKE_RC="$(cat "$RUNNER_TEMP/smoke-all.rc" 2>/dev/null || echo "$CONTAINER_RC")"
+            TASK_RC="$(cat "$RUNNER_TEMP/task-adapter-e2e.rc" 2>/dev/null || echo 125)"
             if [ -f "$RUNNER_TEMP/smoke-all.log" ]; then
               echo "=== CAJITA_SMOKE_DIAGNOSTICS_BEGIN ==="
               cat "$RUNNER_TEMP/smoke-all.log"
@@ -421,24 +427,48 @@ jobs:
             MEMMAX="$(cat "$RUNNER_TEMP/cgroup-memory-max.txt" 2>/dev/null)"
             CPUMAX="$(cat "$RUNNER_TEMP/cgroup-cpu-max.txt" 2>/dev/null)"
             PEAK="$(cat "$RUNNER_TEMP/cgroup-memory-peak.txt" 2>/dev/null)"
-            if [ "$SMOKE_RC" -eq 0 ] && [ "$MEMMAX" = "1073741824" ] && [ "$CPUMAX" = "100000 100000" ] && [ -n "$PEAK" ] && [ "$PEAK" -le 1073741824 ]; then
-              STATUS="PASS_FOR_DECLARED_SMOKE_SCOPE"
-              REASON="SIX_DOMAIN_SMOKE_PASS_WITH_EFFECTIVE_ONE_CPU_1_GIB_LIMITS"
+            if [ "$SMOKE_RC" -eq 0 ] && [ "$TASK_RC" -eq 0 ] && [ "$MEMMAX" = "1073741824" ] && [ "$CPUMAX" = "100000 100000" ] && [ -n "$PEAK" ] && [ "$PEAK" -le 1073741824 ]; then
+              STATUS="PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE"
+              REASON="SIX_DOMAIN_SMOKE_AND_FIVE_MODEL_TASK_ADAPTERS_PASS_WITH_EFFECTIVE_ONE_CPU_1_GIB_LIMITS"
             else
-              REASON="SMOKE_OR_RESOURCE_GATE_FAILED_RC_$SMOKE_RC"
+              REASON="SMOKE_TASK_ADAPTER_OR_RESOURCE_GATE_FAILED_SMOKE_RC_${SMOKE_RC}_TASK_RC_${TASK_RC}"
             fi
           else
             REASON="SMOKE_IMAGE_BUILD_FAILED"
           fi
-          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC BUILD_RC
+          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC TASK_RC BUILD_RC
           python - <<'PY'
           import hashlib,json,os
           from pathlib import Path
           p=Path("evidence/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown")
           d=Path("evidence/louksna1-candidate/Louksna1.md")
-          result={"schema":"LOUKSNA1_G24_EVIDENCE/1.0","gate":"G24","status":os.environ["STATUS"],"decision":"PASS_FOR_DECLARED_SMOKE_SCOPE" if os.environ["STATUS"]=="PASS_FOR_DECLARED_SMOKE_SCOPE" else "NOT_GRANTED","package_sha256":hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None,"louksna1_sha256":hashlib.sha256(d.read_bytes()).hexdigest() if d.is_file() else None,"reason":os.environ["REASON"],"smoke_return_code":int(os.environ["SMOKE_RC"]),"image_build_return_code":int(os.environ["BUILD_RC"]),"memory_max_bytes":os.environ.get("MEMMAX") or None,"cpu_quota":os.environ.get("CPUMAX") or None,"memory_peak_bytes":int(os.environ["PEAK"]) if os.environ.get("PEAK","").isdigit() else None,"scope":"SIX_DOMAIN_STARTUP_SMOKE_AND_RESOURCE_ENFORCEMENT_ONLY","task_adapters":"NOT_REGISTERED_FOR_ALL_END_TO_END_TASKS","semantic_quality_equivalence":"NOT_ESTABLISHED","global_integrated_product_certification":"NOT_GRANTED"}
-          Path("evidence/LOUKSNA1_G24_EVIDENCE.json").write_text(json.dumps(result,indent=2)+"\n")
-          print(json.dumps(result,indent=2))
+          raw_path=Path(os.environ["RUNNER_TEMP"])/"task-adapter-e2e-raw.json"
+          task_report=json.loads(raw_path.read_text(encoding="utf-8")) if raw_path.is_file() else {"status":"NOT_COMPLETED","task_results":[]}
+          task_bytes=(json.dumps(task_report,sort_keys=True,ensure_ascii=False,indent=2)+"\\n").encode("utf-8")
+          task_path=Path("evidence/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json")
+          task_path.parent.mkdir(parents=True,exist_ok=True)
+          task_path.write_bytes(task_bytes)
+          task_sha=hashlib.sha256(task_bytes).hexdigest()
+          release=json.loads(Path("evidence/louksna1-candidate/LOUKSNA1_RELEASE_MANIFEST.json").read_text(encoding="utf-8"))
+          task_status=task_report.get("status","NOT_COMPLETED")
+          task_rows=task_report.get("task_results",[])
+          result={"schema":"LOUKSNA1_G24_EVIDENCE/1.0","gate":"G24","status":os.environ["STATUS"],
+            "decision":os.environ["STATUS"] if os.environ["STATUS"].startswith("PASS_") else "NOT_GRANTED",
+            "package_sha256":hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None,
+            "louksna1_sha256":hashlib.sha256(d.read_bytes()).hexdigest() if d.is_file() else None,
+            "source_commit":release.get("source_commit"),"reason":os.environ["REASON"],
+            "smoke_return_code":int(os.environ["SMOKE_RC"]),"task_adapter_return_code":int(os.environ.get("TASK_RC","125")),
+            "task_adapter_evidence_sha256":task_sha,"task_adapter_evidence_status":task_status,
+            "task_adapter_pass_count":sum(1 for x in task_rows if x.get("status")=="PASS_FUNCTIONAL_EXECUTION" and x.get("exit_code")==0),
+            "task_adapter_expected_count":5,"image_build_return_code":int(os.environ["BUILD_RC"]),
+            "memory_max_bytes":os.environ.get("MEMMAX") or None,"cpu_quota":os.environ.get("CPUMAX") or None,
+            "memory_peak_bytes":int(os.environ["PEAK"]) if os.environ.get("PEAK","").isdigit() else None,
+            "scope":"SIX_DOMAIN_STARTUP_SMOKE_PLUS_FIVE_SYNTHETIC_MODEL_TASK_EXECUTIONS_AND_FAIL_CLOSED_ORCHESTRATION_GUARD",
+            "task_adapters":"PASS_FOR_DECLARED_SCOPE" if task_status=="PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY" else "FAIL_OR_NOT_COMPLETED",
+            "semantic_quality_equivalence":"NOT_ESTABLISHED","all_21_target_adapters":"NOT_ESTABLISHED",
+            "global_integrated_product_certification":"NOT_GRANTED"}
+          Path("evidence/LOUKSNA1_G24_EVIDENCE.json").write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\\n",encoding="utf-8")
+          print(json.dumps(result,indent=2,ensure_ascii=False))
           PY
           if [ "$STATUS" = "PASS_FOR_DECLARED_SMOKE_SCOPE" ]; then
             echo "gate_pass=true" >> "$GITHUB_OUTPUT"
@@ -452,7 +482,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: louksna1-g24-evidence
-          path: evidence/LOUKSNA1_G24_EVIDENCE.json
+          path: |
+            evidence/LOUKSNA1_G24_EVIDENCE.json
+            evidence/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json
           if-no-files-found: error
           retention-days: 90
 
@@ -467,6 +499,10 @@ jobs:
             ${{ runner.temp }}/cgroup-memory-max.txt
             ${{ runner.temp }}/cgroup-cpu-max.txt
             ${{ runner.temp }}/cgroup-memory-peak.txt
+            ${{ runner.temp }}/task-adapter-e2e.log
+            ${{ runner.temp }}/task-adapter-e2e-raw.json
+            ${{ runner.temp }}/task-adapter-e2e.rc
+            ${{ runner.temp }}/smoke-all.rc
           if-no-files-found: warn
           retention-days: 90
 
@@ -514,7 +550,9 @@ jobs:
           FACTORY="downloaded/louksna1-candidate"
           G23="downloaded/louksna1-g23-evidence/G23_EVIDENCE.json"
           G24="downloaded/louksna1-g24-evidence/LOUKSNA1_G24_EVIDENCE.json"
+          TASK_EVIDENCE="downloaded/louksna1-g24-evidence/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json"
           test -s "$G23"
+          test -s "$TASK_EVIDENCE"
           python - <<'PY'
           import hashlib,json
           from pathlib import Path
@@ -526,12 +564,15 @@ jobs:
           g23=json.loads(Path("downloaded/louksna1-g23-evidence/G23_EVIDENCE.json").read_text())
           g24path=Path("downloaded/louksna1-g24-evidence/LOUKSNA1_G24_EVIDENCE.json")
           g24=json.loads(g24path.read_text()) if g24path.is_file() else {"status":"NOT_GRANTED","reason":"G24_EVIDENCE_MISSING"}
+          task_path=Path("downloaded/louksna1-g24-evidence/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json")
+          task=json.loads(task_path.read_text(encoding="utf-8")) if task_path.is_file() else {"status":"NOT_GRANTED"}
           report["gates"]={"G23":g23.get("status","NOT_GRANTED"),"G24":g24.get("status","NOT_GRANTED")}
+          report["task_adapter_evidence"]={"path":"docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json","sha256":hashlib.sha256(task_path.read_bytes()).hexdigest() if task_path.is_file() else None,"status":task.get("status","NOT_GRANTED"),"tested_model_domain_count":task.get("tested_model_domain_count",0),"registered_model_domain_count":task.get("registered_model_domain_count",0)}
           report["G23_evidence_sha256"]=hashlib.sha256(Path("downloaded/louksna1-g23-evidence/G23_EVIDENCE.json").read_bytes()).hexdigest()
           report["G24_evidence_sha256"]=hashlib.sha256(g24path.read_bytes()).hexdigest() if g24path.is_file() else None
           report["global_certification"]="NOT_GRANTED"
-          report["certification_scope"]="DISTRIBUTION_INTEGRITY_AND_STRUCTURAL_MATERIALIZATION"
-          report["reason_global_certification_not_granted"]="End-to-end user-task adapters and semantic quality equivalence remain unestablished."
+          report["certification_scope"]="DISTRIBUTION_INTEGRITY_PLUS_SCOPED_SYNTHETIC_TASK_EXECUTION"
+          report["reason_global_certification_not_granted"]="Five synthetic model-domain tasks have scoped execution evidence only; all 21 target adapters, graph execution and semantic quality equivalence remain unestablished."
           report["status"]="PUBLISHED_CANDIDATE_GLOBAL_CERTIFICATION_NOT_GRANTED"
           report["CUSTOSZV9"]={"used_as":"BOUNDED_FACTORY_HELPER","self_reported_certification":"NOT_GRANTED","not_used_as_independent_certifier":True}
           Path("downloaded/louksna1-candidate/LOUKSNA1_RELEASE_MANIFEST.json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n")
@@ -547,9 +588,10 @@ jobs:
           cp "$FACTORY/factory-report.json" docs/cajita-luna/CAJITA_LOUKSNA1_FACTORY_REPORT.json
           cp "$G23" docs/cajita-luna/LOUKSNA1_G23_EVIDENCE.json
           if [ -s "$G24" ]; then cp "$G24" docs/cajita-luna/LOUKSNA1_G24_EVIDENCE.json; fi
+          cp "$TASK_EVIDENCE" docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json
           if [ -s "$FACTORY/CUSTOSZV9_EVIDENCE.json" ]; then cp "$FACTORY/CUSTOSZV9_EVIDENCE.json" docs/cajita-luna/CUSTOSZV9_FACTORY_HELPER_EVIDENCE.json; fi
           git diff --check
-          git add -A -- cajita-luna-runtime Louksna1.md docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json docs/cajita-luna/CAJITA_LOUKSNA1_FACTORY_REPORT.json docs/cajita-luna/LOUKSNA1_G23_EVIDENCE.json docs/cajita-luna/LOUKSNA1_G24_EVIDENCE.json docs/cajita-luna/CUSTOSZV9_FACTORY_HELPER_EVIDENCE.json
+          git add -A -- cajita-luna-runtime Louksna1.md docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json docs/cajita-luna/CAJITA_LOUKSNA1_FACTORY_REPORT.json docs/cajita-luna/LOUKSNA1_G23_EVIDENCE.json docs/cajita-luna/LOUKSNA1_G24_EVIDENCE.json docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json docs/cajita-luna/CUSTOSZV9_FACTORY_HELPER_EVIDENCE.json
           if git diff --cached --quiet; then
             echo "NO_CANDIDATE_DIFF"
           else
@@ -581,6 +623,7 @@ jobs:
             docs/cajita-luna/CAJITA_LOUKSNA1_FACTORY_REPORT.json
             docs/cajita-luna/LOUKSNA1_G23_EVIDENCE.json
             docs/cajita-luna/LOUKSNA1_G24_EVIDENCE.json
+            docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json
             docs/cajita-luna/CUSTOSZV9_FACTORY_HELPER_EVIDENCE.json
           if-no-files-found: warn
           retention-days: 90
