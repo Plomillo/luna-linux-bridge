@@ -142,10 +142,6 @@ tasks:
             body: |
               {"ref":"custosz/super-1200-implementation-20261007"}
             timeout: PT30S
-            options:
-              retryableTransportFailureMethods:
-                - GET
-                - HEAD
         else:
           - id: blocked_safe_hold
             type: io.kestra.plugin.core.log.Log
