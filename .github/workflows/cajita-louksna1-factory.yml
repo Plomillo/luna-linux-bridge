@@ -6,6 +6,9 @@ on:
     paths:
       - ".github/workflows/cajita-louksna1-factory.yml"
       - "tools/cajita_runtime_factory.py"
+      - "tools/cajita_architecture_binding.py"
+      - "tools/cajita_axiom_source_loader.py"
+      - "tests/test_cajita_axiom_source_loader.py"
       - "tests/test_cajita_runtime_factory.py"
       - "tests/test_cajita_antiparalysis.py"
       - "cajita-luna-runtime/cajita_antiparalysis.py"
@@ -107,7 +110,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install pinned test-only YAML parser
-        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==44.0.3
 
       - name: Test manufacturing and anti-paralysis controls
         shell: bash
@@ -189,7 +192,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install pinned test-only YAML parser
-        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==44.0.3
 
       - name: Independently recompute package, document, modules and six weight identities
         shell: bash
@@ -233,6 +236,25 @@ jobs:
           assert len(routing["engine_registry"])==15 and len(routing["route_profiles"])==14 and len(routing["targets"])==21
           registry=json.loads((runtime/"module_registry.json").read_text())
           assert registry["materialized_module_count"]>=1
+          assert registry["canonical_target_module_count"] == 21
+          assert len(registry["target_modules"]) == 21
+          for target_module in registry["target_modules"]:
+            target_manifest = runtime / target_module["manifest"]
+            assert target_manifest.is_file()
+            target_data = json.loads(target_manifest.read_text())
+            assert target_data["target_id"] == target_module["target_id"]
+            assert target_data["tree_integrity"]["sha256"] == target_module["tree_sha256"]
+          binding_meta = registry["axiom_interdisciplinary_binding"]
+          binding_path = runtime / binding_meta["path"]
+          assert binding_path.is_file()
+          binding = json.loads(binding_path.read_text())
+          assert binding["status"] == "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
+          assert binding["target"]["id"] == "D02_MULTI_INTERDISCIPLINAR"
+          assert binding["axiom_inventory"]["range"] == "AX0001-AX12414"
+          assert binding["axiom_inventory"]["declared_materialized_count"] == 11757
+          assert binding["axiom_inventory"]["declared_historical_gap_count"] == 657
+          assert binding["block_inventory"]["range"] == "B1-B134"
+          assert binding["framework_count"] == 18
           for module in registry["modules"]:
             path=runtime/module["manifest"]
             manifest=json.loads(path.read_text())
@@ -246,6 +268,7 @@ jobs:
           PY
           PYTHONPATH=tools:scripts:candidate/runtime python -m unittest discover -s tests -p 'test_cajita*.py' -v
           python candidate/runtime/cajita_antiparalysis.py selftest --state-dir "$RUNNER_TEMP/g23-antiparalysis"
+          python tools/cajita_axiom_source_loader.py --runtime-root candidate/runtime --companion candidate/Louksna1.md
           (cd candidate/runtime && python cajita_router.py selftest)
           python candidate/runtime/cajita_runtime.py selftest --root candidate/runtime
           python candidate/runtime/cajita_runtime.py audit-weights --root candidate/runtime

@@ -5,6 +5,8 @@ import argparse, hashlib, json, os, re, shutil, stat, subprocess, sys, tempfile,
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
+from cajita_architecture_binding import register_architecture_binding
+
 SCHEMA = "CAJITA_LOUKSNA1_FACTORY/1.0"
 RAW_CAP = 800_000_000
 COMBINED_CAP = 490_000_000
@@ -273,6 +275,7 @@ El prefijo de este archivo preserva byte por byte LOUKSNAMEJORADA.md; el archivo
 - ZIP/7Z se materializan durante la fabricación y se retiran del runtime después de verificar la extracción; no se empaquetan junto al mismo árbol expandido.
 - README* se excluyen del runtime y se registran en evidencia.
 - Cada módulo de ruta declara procedencia, integridad y estado del adaptador sin recibir identidad canónica inventada.
+- Los 21 destinos canónicos se registran como módulos de ruta; D02_MULTI_INTERDISCIPLINAR se vincula al prefijo byte-exacto de LOUKSNAMEJORADA.md. Se preservan como declaraciones de procedencia AX0001-AX12414, 11.757 axiomas declarados materializados, 657 brechas históricas, B1-B134 y 18 frameworks. El enlace por hash no se presenta como ejecución de grafo ni como validación semántica.
 - Presupuesto conjunto de distribución: .macrodown + este documento ≤ {COMBINED_CAP} bytes decimales.
 - Antiparálisis persistente, diario verificable por cadena SHA-256 y HOLD_CONSCIOUS al tercer estancamiento idéntico. Sin bucles infinitos ni reintentos automáticos para efectos desconocidos.
 - Presencia, integridad, smoke, G23 y G24 son estados distintos.
@@ -308,10 +311,16 @@ def main():
   expected=["D01_CEREBRO","D02_ORQUESTACION","D03_TRANSCRIPCION","D04_TRADUCTOR_INTELIGENTE","D05_INTELIGENCIA_DOCUMENTAL","D06_SISTEMA_INTELIGENTE"]
   if routing.get("domain_order")!=expected or len(routing.get("engine_registry",[]))!=15 or len(routing.get("route_profiles",[]))!=14 or len(routing.get("targets",[]))!=21 or len(routing.get("support_assets",[]))!=10:
    raise RuntimeError("CANONICAL_TAXONOMY_INVARIANT_FAILED")
+  registry=json.loads((runtime/"module_registry.json").read_text(encoding="utf-8"))
+  if registry.get("canonical_target_module_count")!=21 or len(registry.get("target_modules",[]))!=21:
+   raise RuntimeError("CANONICAL_TARGET_MODULE_COUNT_MISMATCH")
+  if registry.get("axiom_interdisciplinary_binding",{}).get("state")!="SOURCE_BOUND_GRAPH_EXECUTION_PENDING":
+   raise RuntimeError("AXIOM_INTERDISCIPLINARY_BINDING_MISSING")
   report["weights_after"]=verify_weights(runtime,weights)
   report["weights_preserved"]=report["weights_before"]==report["weights_after"]
   if not report["weights_preserved"]: raise RuntimeError("WEIGHT_IDENTITY_CHANGED")
   doc=out/"Louksna1.md"; report["louksna1"]=make_louksna1(repo,runtime,doc)
+  report["axiom_interdisciplinary_binding"]=register_architecture_binding(repo,runtime,doc)
   pkg=out/"CAJITA_LUNA_RUNTIME_V10.macrodown"
   builder=subprocess.run([sys.executable,str(runtime/"reproduce_macrodown.py"),"--root",str(runtime),"--output",str(pkg),"--raw-cap-bytes",str(a.raw_cap_bytes),"--combined-cap-bytes",str(a.combined_cap_bytes),"--companion-bytes",str(doc.stat().st_size),"--companion-sha256",sha_file(doc)],text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=1800)
   report["builder_output"]=builder.stdout[-12000:]
@@ -335,6 +344,7 @@ def main():
    "louksna1":{"path":doc.name,"bytes":doc.stat().st_size,"sha256":sha_file(doc)},
    "runtime_distribution":{"path":pkg.name,"bytes":pkg.stat().st_size,"sha256":sha_file(pkg)},
    "combined_distribution":{"bytes":combined,"cap_bytes":a.combined_cap_bytes,"status":"PASS"},
+   "axiom_interdisciplinary_binding":{"path":report["axiom_interdisciplinary_binding"]["binding_path"],"sha256":report["axiom_interdisciplinary_binding"]["binding_sha256"],"target_module_count":report["axiom_interdisciplinary_binding"]["target_module_count"],"declared_materialized_axioms":11757,"declared_historical_gaps":657,"block_count":134,"framework_count":18,"source_binding":"PASS_PENDING_GRAPH_EXECUTION"},
    "gates":{"G23":"NOT_PERFORMED","G24":"NOT_GRANTED"},"global_certification":"NOT_GRANTED",
    "functional_scope":"MATERIALIZATION_HASHES_STRUCTURE_PACKAGE_CRC_PENDING_NATIVE_TASK_ADAPTERS_AND_HARDWARE_SMOKE",
    "status":"BUILT_CANDIDATE_PENDING_G23_G24"}

@@ -1,0 +1,144 @@
+from __future__ import annotations
+import hashlib
+import json
+import shutil
+from pathlib import Path, PurePosixPath
+
+
+def _sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _canonical(value) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def _safe_rel(value: str) -> PurePosixPath:
+    p = PurePosixPath(value.replace("\\", "/"))
+    if not value or p.is_absolute() or any(part in {"..", ""} for part in p.parts):
+        raise RuntimeError("TARGET_MODULE_PATH_INVALID:" + value[:200])
+    return p
+
+
+def _rows(root: Path) -> list[dict]:
+    rows = []
+    for base, dirs, files in __import__("os").walk(root, topdown=True, followlinks=False):
+        bp = Path(base)
+        dirs[:] = sorted(d for d in dirs if not (bp / d).is_symlink())
+        for name in sorted(files):
+            path = bp / name
+            if path.is_symlink() or not path.is_file():
+                raise RuntimeError("TARGET_MODULE_NON_REGULAR_ENTRY:" + str(path))
+            if name == "CAJITA_MODULE.json":
+                continue
+            rows.append({"path": path.relative_to(root).as_posix(), "bytes": path.stat().st_size, "sha256": _sha(path.read_bytes())})
+    return sorted(rows, key=lambda row: row["path"].encode("utf-8"))
+
+
+def register_architecture_binding(repo_root: str | Path, runtime_root: str | Path, document_path: str | Path) -> dict:
+    repo = Path(repo_root).resolve()
+    runtime = Path(runtime_root).resolve()
+    source = repo / "LOUKSNAMEJORADA.md"
+    doc = Path(document_path).resolve()
+    if source.is_symlink() or not source.is_file() or doc.is_symlink() or not doc.is_file():
+        raise RuntimeError("PROTECTED_ARCHITECTURE_OR_LOUKSNA1_MISSING")
+    source_bytes = source.read_bytes()
+    doc_bytes = doc.read_bytes()
+    source_sha = _sha(source_bytes)
+    doc_sha = _sha(doc_bytes)
+    routing_path = runtime / "command_subdomain_routing.json"
+    routing = json.loads(routing_path.read_text(encoding="utf-8"))
+    targets = routing.get("targets", [])
+    multi = next((target for target in targets if target.get("id") == "D02_MULTI_INTERDISCIPLINAR"), None)
+    if not multi:
+        raise RuntimeError("MULTI_INTERDISCIPLINAR_TARGET_MISSING")
+    multi_dir = runtime.joinpath(*_safe_rel(multi["path"]).parts)
+    if not multi_dir.is_dir() or multi_dir.is_symlink():
+        raise RuntimeError("MULTI_INTERDISCIPLINAR_DIRECTORY_MISSING")
+    loader_source = repo / "tools" / "cajita_axiom_source_loader.py"
+    if loader_source.is_symlink() or not loader_source.is_file():
+        raise RuntimeError("AXIOM_SOURCE_LOADER_SOURCE_MISSING")
+    loader_dest = multi_dir / "cajita_axiom_source_loader.py"
+    binding_path = multi_dir / "axiom_interdisciplinary_binding.json"
+    if loader_dest.exists() or binding_path.exists():
+        raise RuntimeError("AXIOM_BINDING_DESTINATION_COLLISION")
+    shutil.copy2(loader_source, loader_dest)
+    binding = {
+        "schema": "LOUKSNA_AXIOM_MULTI_INTERDISCIPLINAR_BINDING/1.0",
+        "status": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING",
+        "companion_artifact": {"path_from_runtime_root": "../Louksna1.md", "bytes": len(doc_bytes), "sha256": doc_sha},
+        "protected_architecture_prefix": {"source_path": "LOUKSNAMEJORADA.md", "bytes": len(source_bytes), "sha256": source_sha, "mutation_allowed": False},
+        "axiom_inventory": {
+            "range": "AX0001-AX12414",
+            "declared_materialized_count": 11757,
+            "declared_historical_gap_count": 657,
+            "gap_range": "AX0001-AX2414",
+            "contiguous_range": "AX2415-AX12414",
+            "state": "PRESERVED_DECLARATION_NOT_INDEPENDENTLY_REPARSED",
+            "mutation_allowed": False
+        },
+        "block_inventory": {"range": "B1-B134", "count": 134, "state": "PRESERVED_CANONICAL_RANGE", "mutation_allowed": False},
+        "framework_count": 18,
+        "target": {"id": multi["id"], "domain_id": multi["domain_id"], "path": multi["path"], "engine_ids": multi.get("engine_ids", []), "support_assets": multi.get("support_assets", [])},
+        "reader": {"relative_path": loader_dest.relative_to(runtime).as_posix(), "operation": "VERIFY_DOCUMENT_SHA256_AND_BYTE_EXACT_PROTECTED_PREFIX"},
+        "graph_execution": "NOT_PROVEN_BY_SOURCE_BINDING",
+        "certification": "NOT_GRANTED"
+    }
+    binding_path.write_text(json.dumps(binding, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    target_modules = []
+    for target in targets:
+        relative = _safe_rel(target["path"])
+        directory = runtime.joinpath(*relative.parts)
+        if not directory.is_dir() or directory.is_symlink():
+            raise RuntimeError("CANONICAL_TARGET_DIRECTORY_MISSING:" + target["id"])
+        manifest_path = directory / "CAJITA_MODULE.json"
+        if manifest_path.exists():
+            raise RuntimeError("CANONICAL_TARGET_MODULE_MANIFEST_COLLISION:" + target["id"])
+        rows = _rows(directory)
+        manifest = {
+            "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
+            "target_id": target["id"],
+            "domain_id": target["domain_id"],
+            "target_kind": target.get("kind"),
+            "target_name": target.get("name"),
+            "relative_path": target["path"],
+            "engine_ids": target.get("engine_ids", []),
+            "source_identity": {"path": "Louksna1.md", "protected_prefix_sha256": source_sha, "protected_prefix_bytes": len(source_bytes), "companion_sha256": doc_sha},
+            "tree_integrity": {"file_count_excluding_module_descriptors": len(rows), "bytes_excluding_module_descriptors": sum(row["bytes"] for row in rows), "sha256": _sha(_canonical(rows))},
+            "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+            "functional_state": "MODULE_REGISTERED_ADAPTER_AND_NATIVE_SMOKE_REQUIRED",
+            "lifecycle_state": "MATERIALIZED_OR_SOURCE_DIRECTORY_REGISTERED",
+            "certification": "NOT_GRANTED"
+        }
+        manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+        target_modules.append({
+            "target_id": target["id"], "domain_id": target["domain_id"], "path": target["path"],
+            "manifest": manifest_path.relative_to(runtime).as_posix(), "manifest_sha256": _sha(manifest_path.read_bytes()),
+            "tree_sha256": manifest["tree_integrity"]["sha256"], "engine_ids": target.get("engine_ids", []),
+            "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS", "certification": "NOT_GRANTED"
+        })
+    registry_path = runtime / "module_registry.json"
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    registry["canonical_target_module_count"] = len(target_modules)
+    registry["target_modules"] = target_modules
+    registry["axiom_interdisciplinary_binding"] = {
+        "path": binding_path.relative_to(runtime).as_posix(), "sha256": _sha(binding_path.read_bytes()),
+        "target_id": multi["id"], "protected_architecture_sha256": source_sha,
+        "declared_materialized_axiom_count": 11757, "declared_historical_gap_count": 657,
+        "block_count": 134, "framework_count": 18, "state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
+    }
+    registry["certification"] = "NOT_GRANTED"
+    registry_path.write_text(json.dumps(registry, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    routing.setdefault("materialization", {})["canonical_target_module_count"] = len(target_modules)
+    routing["materialization"]["axiom_interdisciplinary_binding"] = binding_path.relative_to(runtime).as_posix()
+    routing["materialization"]["axiom_interdisciplinary_binding_sha256"] = _sha(binding_path.read_bytes())
+    routing["materialization"]["axiom_source_state"] = "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
+    routing_path.write_text(json.dumps(routing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {
+        "target_module_count": len(target_modules), "target_modules": target_modules,
+        "binding_path": binding_path.relative_to(runtime).as_posix(),
+        "binding_sha256": _sha(binding_path.read_bytes()), "protected_source_sha256": source_sha,
+        "companion_document_sha256": doc_sha, "declared_materialized_axioms": 11757,
+        "declared_historical_gaps": 657, "block_count": 134, "framework_count": 18,
+        "state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
+    }
