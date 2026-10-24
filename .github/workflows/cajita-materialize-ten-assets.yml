@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/cajita-materialize-ten-assets.yml"
-      - "cajita-luna-runtime/CajitadeLuna.md"
+      - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
+      - "externalized-assets-staging/optimized-containers/**"
   workflow_dispatch:
 
 permissions:

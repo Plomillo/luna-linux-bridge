@@ -11,6 +11,9 @@ on:
       - "cajita-luna-runtime/reproduce_macrodown.py"
       - "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json"
       - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
+      - "cajita-luna-runtime/2. Orquestación/Orquestador/punto.json"
+      - "cajita-luna-runtime/2. Orquestación/Orquestador/CLIS.txt"
+      - "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/**"
   workflow_dispatch:
 
 permissions:
@@ -151,6 +154,7 @@ jobs:
           set -euo pipefail
           OUT="$RUNNER_TEMP/CAJITA_LUNA_RUNTIME_V9.macrodown"
           RESULT="$RUNNER_TEMP/macrodown-build-result.json"
+          cp "cajita-luna-runtime/MACRODOWN_MANIFEST.json" "$RUNNER_TEMP/macrodown-manifest-before.json"
           python cajita-luna-runtime/reproduce_macrodown.py \
             --root cajita-luna-runtime \
             --output "$OUT" > "$RESULT"
@@ -206,6 +210,111 @@ jobs:
           Path("docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json").write_text(
               json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
           )
+          manifest_path = Path("cajita-luna-runtime/MACRODOWN_MANIFEST.json")
+          manifest_doc = json.loads(manifest_path.read_text(encoding="utf-8"))
+          manifest_hash = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+          old_manifest_path = Path(os.environ["RUNNER_TEMP"]) / "macrodown-manifest-before.json"
+          old_manifest = json.loads(old_manifest_path.read_text(encoding="utf-8")) if old_manifest_path.is_file() else {"files": []}
+          old_by_path = {x["path"]: x for x in old_manifest.get("files", [])}
+          new_by_path = {x["path"]: x for x in manifest_doc.get("files", [])}
+          added_paths = sorted(set(new_by_path) - set(old_by_path))
+          removed_paths = sorted(set(old_by_path) - set(new_by_path))
+          changed_paths = sorted(path for path in set(old_by_path) & set(new_by_path)
+                                  if old_by_path[path].get("size_bytes") != new_by_path[path].get("size_bytes")
+                                  or old_by_path[path].get("sha256") != new_by_path[path].get("sha256"))
+          by_domain = {}
+          for item in manifest_doc.get("files", []):
+              domain = item.get("domain_id") or "ROOT_OR_SUPPORT"
+              slot = by_domain.setdefault(domain, {"file_count": 0, "bytes": 0})
+              slot["file_count"] += 1
+              slot["bytes"] += int(item.get("size_bytes", 0))
+          full_inventory = list(manifest_doc.get("files", []))
+          full_inventory.append({
+              "path": "MACRODOWN_MANIFEST.json",
+              "size_bytes": manifest_path.stat().st_size,
+              "sha256": manifest_hash,
+              "domain_id": None,
+              "route_type": None,
+              "zip_method": "DEFLATED",
+              "inventory_role": "SELF_DESCRIBING_MANIFEST_NOT_INCLUDED_IN_OWN_HASH_TABLE"
+          })
+          runtime = Path("cajita-luna-runtime")
+          cli_dir = runtime / "2. Orquestación/Orquestador/CLIs"
+          cli_contract_path = cli_dir / "cli_contract.json"
+          punto_path = runtime / "2. Orquestación/Orquestador/punto.json"
+          runtime_doc_path = runtime / "CajitadeLuna.md"
+          old_btx_pdf_path = "2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).7z"
+          btx_rows = [x for x in full_inventory if "Biblia Textual BTX" in x["path"]]
+          legacy_cli_path = runtime / "2. Orquestación/Orquestador/CLIS.txt"
+          cli_files = sorted(x.name for x in cli_dir.rglob("*") if x.is_file())
+          inventory_record = {
+              "schema": "CAJITA_INVENTORY_AUDIT/1.0",
+              "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
+              "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+              "repository": "Plomillo/luna-linux-bridge",
+              "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+              "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
+              "distribution": {
+                  "archive_format": record["format"],
+                  "member_count_including_manifest": int(result["member_count"]),
+                  "file_count_excluding_manifest": len(manifest_doc.get("files", [])),
+                  "runtime_payload_bytes_excluding_manifest": int(result["gross_raw_payload_bytes"]) - int(manifest_path.stat().st_size),
+                  "gross_raw_payload_bytes_including_manifest": int(result["gross_raw_payload_bytes"]),
+                  "archive_bytes": int(result["archive_bytes"]),
+                  "hard_cap_bytes": cap,
+                  "raw_bytes_under_cap": max(0, cap - int(result["gross_raw_payload_bytes"])),
+                  "archive_bytes_under_cap": max(0, cap - int(result["archive_bytes"])),
+                  "archive_sha256": result["sha256"],
+                  "raw_gate": "PASS",
+                  "archive_gate": "PASS",
+                  "certification": "NOT_GRANTED"
+              },
+              "runtime_root_document": {
+                  "path": "CajitadeLuna.md",
+                  "size_bytes": runtime_doc_path.stat().st_size,
+                  "sha256": hashlib.sha256(runtime_doc_path.read_bytes()).hexdigest()
+              },
+              "cli_infrastructure": {
+                  "path": "2. Orquestación/Orquestador/CLIs",
+                  "files": cli_files,
+                  "contract_sha256": hashlib.sha256(cli_contract_path.read_bytes()).hexdigest(),
+                  "punto_json_sha256": hashlib.sha256(punto_path.read_bytes()).hexdigest(),
+                  "legacy_CLIS_txt_present": legacy_cli_path.exists(),
+                  "legacy_spec_git_blob_sha": "146afab4ef88e659cba5b94c2e989f7106fdd1e4",
+                  "provider_host_audit": "RECORDED_SEPARATELY_BY_cajita-cli-host-audit_workflow",
+                  "certification": "NOT_GRANTED"
+              },
+              "btx_resource": {
+                  "current_runtime_entries": btx_rows,
+                  "legacy_pdf_archive_path_present_in_runtime_inventory": any(x["path"] == old_btx_pdf_path for x in full_inventory),
+                  "original_rollback_archive_retained_outside_runtime": True,
+                  "verse_level_equivalence": "NOT_INDEPENDENTLY_VALIDATED",
+                  "certification": "NOT_GRANTED"
+              },
+              "domain_order": manifest_doc.get("domain_order", []),
+              "domain_summary": by_domain,
+              "prior_manifest_reconciliation": {
+                  "prior_file_count_excluding_manifest": len(old_by_path),
+                  "current_file_count_excluding_manifest": len(new_by_path),
+                  "added_paths": added_paths,
+                  "removed_paths": removed_paths,
+                  "changed_paths": changed_paths,
+                  "added_count": len(added_paths),
+                  "removed_count": len(removed_paths),
+                  "changed_count": len(changed_paths),
+                  "prior_manifest_was_in_sync": not added_paths and not removed_paths and not changed_paths
+              },
+              "inventory": full_inventory,
+              "known_unresolved_gates": [
+                  "121 external registry entries report operability/dependencies UNVERIFIED; external registered bytes are not part of the bundled distribution unless separately materialized.",
+                  "Ten-asset expansion workflow previously aborted with DESTINATION_EXISTS_FAIL_CLOSED:APACHE_JENA_6_2_0; no native execution or full functional integration is inferred.",
+                  "Model quality equivalence, independent validation, and BTX verse-level equivalence remain unproven."
+              ],
+              "certification": "NOT_GRANTED"
+          }
+          Path("docs/cajita-luna/CAJITA_INVENTORY_AUDIT_20261024.json").write_text(
+              json.dumps(inventory_record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+          )
           print(json.dumps(record, ensure_ascii=False))
           PY
 
@@ -217,8 +326,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- \
             "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json" \
+            "cajita-luna-runtime/MACRODOWN_MANIFEST.json" \
             "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json" \
-            "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json"
+            "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json" \
+            "docs/cajita-luna/CAJITA_INVENTORY_AUDIT_20261024.json"
           if git diff --cached --quiet; then
             echo "CAJITA_FINAL_BUILD_EVIDENCE_ALREADY_CURRENT"
           else
