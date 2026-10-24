@@ -1,0 +1,87 @@
+name: Louksna1 integral certification assessment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "LOUKSNAMEJORADA.md"
+      - "Louksna1.md"
+      - "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/**"
+      - "docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json"
+      - "tools/cajita_axiom_graph_audit.py"
+      - ".github/workflows/louksna1-integral-certification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna1-integral-certification-main
+  cancel-in-progress: false
+
+jobs:
+  graph-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout source and candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Set up Java for the packaged Apache Jena runtime
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Verify audit script syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/cajita_axiom_graph_audit.py
+
+      - name: Materialize source-bound RDF and execute Apache Jena
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/cajita_axiom_graph_audit.py \
+            --source LOUKSNAMEJORADA.md \
+            --companion Louksna1.md \
+            --manifest docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json \
+            --runtime cajita-luna-runtime \
+            --output out/louksna1-integral-certification \
+            | tee "$RUNNER_TEMP/louksna1-integral-certification.log"
+
+      - name: Upload graph and assessment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: louksna1-integral-certification-assessment
+          path: |
+            out/louksna1-integral-certification/
+            \${{ runner.temp }}/louksna1-integral-certification.log
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 6
+
+      - name: Write certification scope summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "# Louksna1 integral certification assessment"
+            echo
+            echo "- This job verifies the 10,000 materialized axiom rows and runs Apache Jena RIOT + SPARQL over a source-bound RDF provenance graph."
+            echo "- This is a structural graph-execution result, not a semantic proof or global certificate."
+            echo "- Global certification remains NOT_GRANTED until all registered task adapters, semantic-quality baselines and full-runtime evidence pass."
+          } >> "$GITHUB_STEP_SUMMARY"
