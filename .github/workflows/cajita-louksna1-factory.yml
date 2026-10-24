@@ -120,7 +120,21 @@ jobs:
         run: |
           set -euo pipefail
           python -m unittest discover -s tests -p 'test_cajita*.py' -v
-          python integrations/kestra/validate.py
+          python - <<'PY'
+          import yaml
+          from pathlib import Path
+          path = Path("integrations/kestra/flows/21-louksna1-release-audit.yml")
+          flow = yaml.safe_load(path.read_text(encoding="utf-8"))
+          assert flow["id"] == "louksna1_release_audit"
+          assert flow["namespace"] == "louksna.kestra"
+          tasks = {task["id"]: task for task in flow["tasks"]}
+          assert {"release_manifest", "g23_evidence", "g24_evidence", "gate"} <= set(tasks)
+          gate = tasks["gate"]
+          assert gate["type"] == "io.kestra.plugin.core.flow.If"
+          assert "490000000" in gate["condition"]
+          assert "NOT_GRANTED" in gate["condition"]
+          print("LOUKSNA1_KESTRA_FLOW_STATIC_CONTRACT=PASS")
+          PY
           python cajita-luna-runtime/cajita_antiparalysis.py selftest --state-dir "$RUNNER_TEMP/anti-paralysis-selftest"
           python cajita-luna-runtime/cajita_router.py selftest
 
