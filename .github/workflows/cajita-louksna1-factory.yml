@@ -10,6 +10,7 @@ on:
       - "tools/cajita_axiom_source_loader.py"
       - "tests/test_cajita_axiom_source_loader.py"
       - "tests/test_cajita_runtime_factory.py"
+      - "tests/test_cajita_router.py"
       - "tests/test_cajita_antiparalysis.py"
       - "cajita-luna-runtime/cajita_antiparalysis.py"
       - "cajita-luna-runtime/cajita_router.py"
