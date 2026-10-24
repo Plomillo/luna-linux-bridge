@@ -418,7 +418,9 @@ jobs:
           mkdir -p "$DOCKERCTX"
           cat > "$DOCKERCTX/Dockerfile" <<'EOF'
           FROM python:3.13-slim-bookworm
-          RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.11.0+cpu numpy==2.2.6 safetensors==0.8.0 transformers==4.57.6 sentencepiece==0.2.2 tokenizers==0.22.2 pillow==13.0.0 Jinja2==3.1.6 protobuf==4.25.9 PyYAML==6.0.3
+          RUN apt-get update && apt-get install -y --no-install-recommends espeak-ng \
+              && rm -rf /var/lib/apt/lists/* \
+              && pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.11.0+cpu numpy==2.2.6 safetensors==0.8.0 transformers==4.57.6 sentencepiece==0.2.2 tokenizers==0.22.2 pillow==13.0.0 Jinja2==3.1.6 protobuf==4.25.9 PyYAML==6.0.3
           EOF
           docker build -t cajita-louksna1-smoke "$DOCKERCTX" > "$RUNNER_TEMP/docker-build.log" 2>&1
           BUILD_RC=$?
