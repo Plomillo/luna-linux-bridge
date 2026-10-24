@@ -1,0 +1,59 @@
+name: Calibre Compact Candidate
+
+on:
+  push:
+    branches:
+      - "candidates/calibre-compact-v1"
+    paths:
+      - "cajita-candidates/calibre-compact/**"
+      - ".github/workflows/calibre-compact-candidate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: calibre-compact-candidate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-test-prune:
+    name: Build, prune and smoke-test official Calibre
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@v4
+
+      - name: Install validation utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            ca-certificates curl xz-utils python3 poppler-utils
+
+      - name: Check candidate syntax and policy tests
+        run: |
+          python3 -m py_compile \
+            cajita-candidates/calibre-compact/calibre_compact.py \
+            cajita-candidates/calibre-compact/prune_runtime.py \
+            cajita-candidates/calibre-compact/tests/test_calibre_compact.py
+          python3 -m unittest discover \
+            -s cajita-candidates/calibre-compact/tests -v
+
+      - name: Download official Calibre, verify SHA-512, prune and smoke-test
+        env:
+          CALIBRE_VERSION: "9.17.0"
+          CALIBRE_ARCH: "x86_64"
+        run: bash cajita-candidates/calibre-compact/build_candidate.sh
+
+      - name: Upload candidate package and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: calibre-compact-v1-linux-x86_64
+          path: |
+            ${{ runner.temp }}/cajita-calibre-compact/output/calibre-compact-9.17.0-linux-x86_64.tar.xz
+            ${{ runner.temp }}/cajita-calibre-compact/evidence/build-evidence.json
+            ${{ runner.temp }}/cajita-calibre-compact/evidence/prune-report.json
+            ${{ runner.temp }}/cajita-calibre-compact/evidence/conversion-audit.jsonl
+          if-no-files-found: error
+          retention-days: 14

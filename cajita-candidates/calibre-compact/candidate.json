@@ -1,0 +1,99 @@
+{
+  "schema": "CAJITA_CALIBRE_COMPACT_CANDIDATE/1.0",
+  "candidate_id": "CAJITA_CALIBRE_COMPACT_V1_LINUX_X86_64",
+  "status": "EXPERIMENTAL_BUILD_CANDIDATE",
+  "certification": "NOT_GRANTED",
+  "architecture_authority": "LouksnaMejorada.md",
+  "role": "SUBORDINATE_DOCUMENT_CONVERSION_INFRASTRUCTURE",
+  "upstream": {
+    "project": "Calibre",
+    "version": "9.17.0",
+    "license": "GPL-3.0",
+    "architecture": "linux-x86_64",
+    "archive_url": "https://download.calibre-ebook.com/9.17.0/calibre-9.17.0-x86_64.txz",
+    "sha512_sidecar_url": "https://calibre-ebook.com/signatures/calibre-9.17.0-x86_64.txz.sha512",
+    "verification": "SHA512SUM_CHECKED_AGAINST_OFFICIAL_HTTPS_SIDECAR"
+  },
+  "supported_input_formats": [
+    "pdf",
+    "epub",
+    "html",
+    "htm",
+    "xhtml",
+    "xhtm",
+    "shtml",
+    "shtm",
+    "txt",
+    "text",
+    "md",
+    "markdown",
+    "docx",
+    "docm",
+    "odt",
+    "rtf"
+  ],
+  "supported_output_formats": [
+    "pdf",
+    "epub"
+  ],
+  "requested_routes": [
+    "PDF_TO_EPUB",
+    "EPUB_TO_PDF",
+    "CREATE_PDF",
+    "CREATE_EPUB"
+  ],
+  "retained_conversion_plugins": [
+    "__init__.py",
+    "archive_input.py",
+    "pdf_input.py",
+    "pdf_output.py",
+    "epub_input.py",
+    "epub_output.py",
+    "html_input.py",
+    "txt_input.py",
+    "docx_input.py",
+    "odt_input.py",
+    "rtf_input.py",
+    "oeb_output.py"
+  ],
+  "retained_functions": [
+    "ebook-convert",
+    "PDF input/output",
+    "EPUB input/output",
+    "HTML/TXT/Markdown/DOCX/ODT/RTF input",
+    "OEB intermediate conversion",
+    "required Qt/WebEngine/native dependencies",
+    "English/Spanish UI resources when available"
+  ],
+  "excluded_function_groups": [
+    "news/recipes download",
+    "book-library GUI",
+    "ebook viewer GUI",
+    "ebook editor GUI",
+    "device drivers and device command entry points",
+    "content server",
+    "web metadata fetcher",
+    "non-PDF/EPUB conversion format plugins",
+    "manuals and editor help",
+    "unused locale packs"
+  ],
+  "hardening": {
+    "wrapper_shell_execution": false,
+    "output_extension_allowlist": true,
+    "output_validation": true,
+    "timeout_seconds": 600,
+    "sha256_input_output_evidence": true,
+    "append_only_jsonl_audit": true,
+    "fail_closed_on_conversion_or_validation_error": true
+  },
+  "size_gate": {
+    "global_runtime_cap_bytes": 470000000,
+    "integration_allowed_before_measurement": false,
+    "result": "PENDING_MEASURED_PACKAGE_AND_GLOBAL_REBALANCE"
+  },
+  "bug_handling": {
+    "upstream_source_patches": "ONLY_AFTER_REPRODUCER_AND_REGRESSION_TEST",
+    "speculative_bugfixes": false,
+    "smoke_tests_required": true
+  }
+}
