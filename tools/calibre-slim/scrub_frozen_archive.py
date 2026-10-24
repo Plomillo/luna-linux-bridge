@@ -47,6 +47,7 @@ TARGET_PLUGIN_STEMS = {
     "epub_input",
     "epub_output",
     "html_input",
+    "archive_input",
     "oeb_output",
     "pdf_input",
     "pdf_output",
