@@ -65,15 +65,34 @@ jobs:
           SRC_BUILTINS="$(find "$WORK/source" -type f -path '*/src/calibre/customize/builtins.py' -print -quit)"
           BIN_BUILTINS="$(find "$WORK/binary" -type f -path '*/calibre/customize/builtins.py' -print -quit)"
           BIN_CONVERTER="$(find -L "$WORK/binary" -type f -name ebook-convert -perm /111 -print -quit)"
-          test -n "$SRC_BUILTINS"
-          test -n "$BIN_BUILTINS"
-          test -n "$BIN_CONVERTER"
+          printf 'SRC_BUILTINS=%s\nBIN_BUILTINS=%s\nBIN_CONVERTER=%s\n' "$SRC_BUILTINS" "$BIN_BUILTINS" "$BIN_CONVERTER"
+          if [ -z "$SRC_BUILTINS" ]; then
+            echo "Source archive layout did not contain src/calibre/customize/builtins.py"
+            find "$WORK/source" -type f -name builtins.py -print | head -20
+            exit 1
+          fi
+          if [ -z "$BIN_CONVERTER" ]; then
+            echo "Binary archive layout did not contain executable ebook-convert"
+            find -L "$WORK/binary" -name ebook-convert -print | head -20
+            exit 1
+          fi
           SOURCE_ROOT="${SRC_BUILTINS%/src/calibre/customize/builtins.py}"
           DIST_ROOT="$(dirname "$BIN_CONVERTER")"
           while [ "$DIST_ROOT" != "/" ]; do
             if find "$DIST_ROOT" -type f -path '*/calibre/customize/builtins.py' -print -quit | grep -q .; then break; fi
             DIST_ROOT="$(dirname "$DIST_ROOT")"
           done
+          if [ -z "$BIN_BUILTINS" ]; then
+            BIN_BUILTINS_PYC="$(find "$WORK/binary" -type f -path '*/calibre/customize/builtins.pyc' -print -quit)"
+            if [ -z "$BIN_BUILTINS_PYC" ]; then
+              echo "Binary distribution contains no editable builtins.py or builtins.pyc; refusing to mutate opaque bytecode."
+              find "$WORK/binary" -type f \( -name builtins.py -o -name builtins.pyc \) -print | head -40
+              exit 1
+            fi
+            BIN_BUILTINS="$(dirname "$BIN_BUILTINS_PYC")/builtins.py"
+            cp "$SRC_BUILTINS" "$BIN_BUILTINS"
+            echo "Injected pinned v9.17.0 source builtins.py so Python import resolution can use the reviewable source over sourceless bytecode."
+          fi
           find "$DIST_ROOT" -type f -path '*/calibre/customize/builtins.py' -print -quit | grep -q .
           printf 'SOURCE_ROOT=%s\nDIST_ROOT=%s\nBASELINE_CONVERTER=%s\n' \
             "$SOURCE_ROOT" "$DIST_ROOT" "$BIN_CONVERTER" > "$WORK/reports/layout.env"
