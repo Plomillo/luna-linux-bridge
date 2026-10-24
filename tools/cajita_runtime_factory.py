@@ -8,7 +8,7 @@ from pathlib import Path, PurePosixPath
 from cajita_architecture_binding import register_architecture_binding
 
 SCHEMA = "CAJITA_LOUKSNA1_FACTORY/1.0"
-RAW_CAP = 800_000_000
+RAW_CAP = 1_500_000_000
 COMBINED_CAP = 490_000_000
 ARCHIVE_SUFFIXES = {".zip", ".7z"}
 WEIGHT_PATHS = (
