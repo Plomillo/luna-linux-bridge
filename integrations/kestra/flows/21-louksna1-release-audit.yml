@@ -33,7 +33,7 @@ tasks:
       Pragma: no-cache
   - id: latest_factory_run
     type: io.kestra.plugin.core.http.Request
-    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/cajita-louksna1-factory.yml/runs?branch=main&per_page=1&cache_bust={{ execution.id }}"
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/runs/{{ envs.factory_run_id }}?cache_bust={{ execution.id }}"
     method: GET
     headers:
       Authorization: "Bearer {{ envs.github_token }}"
@@ -58,15 +58,15 @@ tasks:
          and outputs.task_adapter_evidence.code == 200
          and outputs.latest_factory_run.code == 200
          and fromJson(outputs.latest_factory_run.body).total_count > 0
-         and fromJson(outputs.latest_factory_run.body).workflow_runs[0].conclusion == 'success'
+         and fromJson(outputs.latest_factory_run.body).conclusion == 'success'
          and fromJson(outputs.release_manifest.body).combined_distribution.status == 'PASS'
          and fromJson(outputs.release_manifest.body).combined_distribution.bytes <= 490000000
          and fromJson(outputs.release_manifest.body).combined_distribution.cap_bytes == 490000000
          and fromJson(outputs.release_manifest.body).protected_architecture.modified == false
          and fromJson(outputs.g23_evidence.body).status == 'PASS'
-         and fromJson(outputs.release_manifest.body).source_commit == fromJson(outputs.latest_factory_run.body).workflow_runs[0].head_sha
-         and fromJson(outputs.g24_evidence.body).source_commit == fromJson(outputs.latest_factory_run.body).workflow_runs[0].head_sha
-         and fromJson(outputs.task_adapter_evidence.body).source_commit == fromJson(outputs.latest_factory_run.body).workflow_runs[0].head_sha
+         and fromJson(outputs.release_manifest.body).source_commit == fromJson(outputs.latest_factory_run.body).head_sha
+         and fromJson(outputs.g24_evidence.body).source_commit == fromJson(outputs.latest_factory_run.body).head_sha
+         and fromJson(outputs.task_adapter_evidence.body).source_commit == fromJson(outputs.latest_factory_run.body).head_sha
          and fromJson(outputs.release_manifest.body).gates.G24 == 'PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE'
          and fromJson(outputs.g24_evidence.body).status == 'PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE'
          and fromJson(outputs.g24_evidence.body).task_adapter_evidence_status == 'PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY'
@@ -90,7 +90,7 @@ tasks:
           G24={{ fromJson(outputs.release_manifest.body).gates.G24 }}
           task_adapter_evidence={{ fromJson(outputs.task_adapter_evidence.body).status }}
           tested_model_domain_count={{ fromJson(outputs.task_adapter_evidence.body).tested_model_domain_count }}
-          source_commit={{ fromJson(outputs.latest_factory_run.body).workflow_runs[0].head_sha }}
+          source_commit={{ fromJson(outputs.latest_factory_run.body).head_sha }}
           global_certification=NOT_GRANTED
           execution={{ execution.id }}
     else:

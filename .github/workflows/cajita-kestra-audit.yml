@@ -36,6 +36,8 @@ jobs:
       contents: read
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ENV_FACTORY_RUN_ID: ${{ github.event.workflow_run.id || '' }}
+      ENV_FACTORY_RUN_SHA: ${{ github.event.workflow_run.head_sha || '' }}
     steps:
       - name: Checkout read-only audit flow
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -70,7 +72,7 @@ jobs:
           export KESTRA_CONFIGURATION="$(cat "$CONFIG_PATH")"
           export ENV_GITHUB_TOKEN="$GITHUB_TOKEN"
           docker run -d --rm --name kestra-cajita-audit -p 8080:8080 \
-            -e ENV_GITHUB_TOKEN -e KESTRA_CONFIGURATION \
+            -e ENV_GITHUB_TOKEN -e ENV_FACTORY_RUN_ID -e ENV_FACTORY_RUN_SHA -e KESTRA_CONFIGURATION \
             kestra/kestra:v2.0.3-slim server local
           unset ENV_GITHUB_TOKEN KESTRA_CONFIGURATION
           for attempt in $(seq 1 60); do

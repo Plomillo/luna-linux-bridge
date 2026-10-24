@@ -424,6 +424,16 @@ jobs:
               cat "$RUNNER_TEMP/smoke-all.log"
               echo "=== CAJITA_SMOKE_DIAGNOSTICS_END ==="
             fi
+            if [ -f "$RUNNER_TEMP/task-adapter-e2e.log" ]; then
+              echo "=== CAJITA_TASK_ADAPTER_E2E_DIAGNOSTICS_BEGIN ==="
+              cat "$RUNNER_TEMP/task-adapter-e2e.log"
+              echo "=== CAJITA_TASK_ADAPTER_E2E_DIAGNOSTICS_END ==="
+            fi
+            if [ -f "$RUNNER_TEMP/task-adapter-e2e-raw.json" ]; then
+              echo "=== CAJITA_TASK_ADAPTER_E2E_RESULT_BEGIN ==="
+              cat "$RUNNER_TEMP/task-adapter-e2e-raw.json"
+              echo "=== CAJITA_TASK_ADAPTER_E2E_RESULT_END ==="
+            fi
             MEMMAX="$(cat "$RUNNER_TEMP/cgroup-memory-max.txt" 2>/dev/null)"
             CPUMAX="$(cat "$RUNNER_TEMP/cgroup-cpu-max.txt" 2>/dev/null)"
             PEAK="$(cat "$RUNNER_TEMP/cgroup-memory-peak.txt" 2>/dev/null)"
@@ -506,6 +516,19 @@ jobs:
             ${{ runner.temp }}/smoke-all.rc
           if-no-files-found: warn
           retention-days: 90
+
+      - name: Require G24 pass before treating the factory workflow as successful
+        if: always()
+        shell: bash
+        env:
+          G24_GATE_PASS: ${{ steps.resource_limited_smoke.outputs.gate_pass }}
+        run: |
+          set -euo pipefail
+          if [ "$G24_GATE_PASS" != "true" ]; then
+            echo "G24=FAIL_CLOSED; candidate publication remains blocked"
+            exit 1
+          fi
+          echo "G24=PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE"
 
   publish-candidate:
     needs: [manufacture, g23-independent-validation, g24-resource-limited-runtime-smoke]
