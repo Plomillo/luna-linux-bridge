@@ -147,6 +147,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, required=True, help="Extracted official Calibre v9.17.0 Linux x86-64 bundle")
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--upstream-raw-bytes", type=int, required=True,
+                        help="Raw bytes of the extracted official runtime, measured before adding the source overlay")
     parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
 
@@ -216,8 +218,11 @@ def main() -> int:
         report["removed_bytes"] = sum(
             item.get("size_bytes", 0) for item in report["removed"]
         )
+        report["source_overlay_raw_bytes"] = tree_bytes(root / "source")
+        report["upstream_binary_raw_bytes"] = args.upstream_raw_bytes
         report["raw_bytes_after"] = tree_bytes(root)
         report["raw_bytes_saved"] = report["raw_bytes_before"] - report["raw_bytes_after"]
+        report["net_raw_bytes_saved_vs_upstream"] = args.upstream_raw_bytes - report["raw_bytes_after"]
         report["tree_sha256_after"] = tree_digest(root)
         report["status"] = "PRUNED_AWAITING_CONVERSION_SMOKE_TESTS"
 

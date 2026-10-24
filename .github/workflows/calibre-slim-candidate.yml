@@ -85,8 +85,9 @@ jobs:
           DIST_ROOT="$(dirname "$BIN_CONVERTER")"
           test -d "$SOURCE_ROOT/src/calibre"
           test -f "$DIST_ROOT/lib/calibre-extensions/python-lib.bypy.frozen"
-          printf 'SOURCE_ROOT=%s\nDIST_ROOT=%s\nBASELINE_CONVERTER=%s\n' \
-            "$SOURCE_ROOT" "$DIST_ROOT" "$BIN_CONVERTER" > "$WORK/reports/layout.env"
+          UPSTREAM_BINARY_RAW_BYTES="$(python3 -c 'from pathlib import Path; import sys; r=Path(sys.argv[1]); print(sum(p.stat().st_size for p in r.rglob("*") if p.is_file() and not p.is_symlink()))' "$DIST_ROOT")"
+          printf 'SOURCE_ROOT=%s\nDIST_ROOT=%s\nBASELINE_CONVERTER=%s\nUPSTREAM_BINARY_RAW_BYTES=%s\n' \
+            "$SOURCE_ROOT" "$DIST_ROOT" "$BIN_CONVERTER" "$UPSTREAM_BINARY_RAW_BYTES" > "$WORK/reports/layout.env"
           echo "layout_discovery=PASS" >> "$GITHUB_OUTPUT"
 
       - name: Run baseline conversion canaries before pruning
@@ -121,8 +122,8 @@ jobs:
           python3 tools/calibre-slim/prune_candidate.py \
             --root "$SOURCE_ROOT/src" --apply --source-only \
             --report "$WORK/reports/source-prune.json"
-          mkdir -p "$WORK/artifacts" "$DIST_ROOT/source"
-          cp -a "$SOURCE_ROOT/src/." "$DIST_ROOT/source/"
+          mkdir -p "$WORK/artifacts" "$DIST_ROOT/source/calibre/customize"
+          cp "$SOURCE_ROOT/src/calibre/customize/builtins.py" "$DIST_ROOT/source/calibre/customize/builtins.py"
           cp "$SOURCE_ROOT/LICENSE" "$DIST_ROOT/CALIBRE_UPSTREAM_LICENSE"
           cp "$SOURCE_ROOT/COPYRIGHT" "$DIST_ROOT/CALIBRE_UPSTREAM_COPYRIGHT"
           tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
@@ -146,7 +147,7 @@ jobs:
           WORK="$RUNNER_TEMP/calibre-slim"
           source "$WORK/reports/layout.env"
           python3 tools/calibre-slim/prune_binary_distribution.py \
-            --root "$DIST_ROOT" --apply \
+            --root "$DIST_ROOT" --upstream-raw-bytes "$UPSTREAM_BINARY_RAW_BYTES" --apply \
             --report "$WORK/reports/binary-prune.json"
           cp tools/calibre-slim/calibre-slim-convert "$DIST_ROOT/calibre-slim-convert"
           chmod 0755 "$DIST_ROOT/calibre-slim-convert"
