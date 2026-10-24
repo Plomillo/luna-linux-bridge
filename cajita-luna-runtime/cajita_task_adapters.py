@@ -159,7 +159,13 @@ def execute_task(record,root,timeout_cap=600):
    out.update({"status":"FAIL_TIMEOUT","reason":"TASK_EXECUTION_TIMEOUT","integrity":integrity,"peak_rss_bytes":peak_child_rss(),"elapsed_seconds":round(time.monotonic()-started,3)});return out,4
   out.update({"entrypoint_sha256":digest_file(entry),"integrity":integrity,"return_code":p.returncode,"peak_rss_bytes":peak_child_rss(),"elapsed_seconds":round(time.monotonic()-started,3)})
   if p.returncode:
-   out.update({"status":"FAIL_MODEL_RUNTIME","reason":"TASK_RUNTIME_NONZERO_EXIT","stderr_sha256":digest_bytes(p.stderr.encode("utf-8",errors="replace"))});return out,4
+   out.update({"status":"FAIL_MODEL_RUNTIME","reason":"TASK_RUNTIME_NONZERO_EXIT","stderr_sha256":digest_bytes(p.stderr.encode("utf-8",errors="replace"))})
+   # CI enables bounded diagnostics only for synthetic fixtures; production requests
+   # never echo model stderr/stdout, which may contain user-specific content.
+   if os.environ.get("CAJITA_E2E_DIAGNOSTICS") == "1":
+    out["diagnostic_stderr_tail"]=p.stderr[-3000:]
+    out["diagnostic_stdout_tail"]=p.stdout[-1200:]
+   return out,4
   answer=json_output(p.stdout);status=str(answer.get("status",""));text=answer.get("output_text","");tokens=answer.get("generated_token_count")
   if status!="PASS" and not status.startswith("PASS_"):out.update({"status":"FAIL_MODEL_RESULT_STATUS","model_runtime_status":status});return out,4
   if not isinstance(text,str) or (row["domain_id"]!="D03_TRANSCRIPCION" and not text.strip()):out.update({"status":"FAIL_MODEL_OUTPUT_EMPTY"});return out,4
