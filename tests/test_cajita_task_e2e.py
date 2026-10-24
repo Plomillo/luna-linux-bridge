@@ -38,7 +38,7 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
     def test_report_does_not_claim_reference_model_equivalence(self):
         for row in MODEL_CASES:
             evidence = quality_acceptance(row, "synthetic output")
-            self.assertTrue(evidence.get("does_not_establish_reference_model_equivalence", True))
+            self.assertIs(evidence.get("does_not_establish_reference_model_equivalence"), True)
 
 
 if __name__ == "__main__":
