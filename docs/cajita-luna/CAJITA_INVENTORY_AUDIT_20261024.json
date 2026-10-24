@@ -1,21 +1,21 @@
 {
   "schema": "CAJITA_INVENTORY_AUDIT/1.0",
   "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
-  "generated_at_utc": "2026-10-24T00:56:38.781736+00:00",
+  "generated_at_utc": "2026-10-24T00:58:44.397141+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "1b488a426ad85fb75c80777b70ac2d01daa9189a",
+  "source_commit": "b7980762efe0776cf60ef9e4c9cdbb3398c8bca3",
   "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
   "distribution": {
     "archive_format": "deterministic ZIP container with .macrodown extension",
     "member_count_including_manifest": 152,
-    "file_count_excluding_manifest": 132,
-    "runtime_payload_bytes_excluding_manifest": 464095155,
-    "gross_raw_payload_bytes_including_manifest": 464130071,
-    "archive_bytes": 412236987,
+    "file_count_excluding_manifest": 151,
+    "runtime_payload_bytes_excluding_manifest": 464090916,
+    "gross_raw_payload_bytes_including_manifest": 464130593,
+    "archive_bytes": 412237160,
     "hard_cap_bytes": 470000000,
-    "raw_bytes_under_cap": 5869929,
-    "archive_bytes_under_cap": 57763013,
-    "archive_sha256": "e2b809786aa7cb3ab1f96bfb04efe4c94b108e8409174c76a276f3bd5b1816da",
+    "raw_bytes_under_cap": 5869407,
+    "archive_bytes_under_cap": 57762840,
+    "archive_sha256": "9fc7dedde0076524d1f1c98bb353521cc914de5217d4fb18e1b276ddc401b580",
     "raw_gate": "PASS",
     "archive_gate": "PASS",
     "certification": "NOT_GRANTED"
@@ -53,14 +53,14 @@
     "current_runtime_entries": [
       {
         "domain_id": "D02_ORQUESTACION",
-        "path": "2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).7z",
+        "path": "2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).sqlite3",
         "route_type": "orquestacion",
-        "sha256": "be5ec9ee6153a5573a8e491e2f96ea0a4e94c9c6c023d3cb43abd6807f040b36",
-        "size_bytes": 6949245,
-        "zip_method": "STORED"
+        "sha256": "fdb4a43776a06e76cf772242bc8c802970b2b55c9544cd03826aa8453bc993e0",
+        "size_bytes": 6750208,
+        "zip_method": "DEFLATED"
       }
     ],
-    "legacy_pdf_archive_path_present_in_runtime_inventory": true,
+    "legacy_pdf_archive_path_present_in_runtime_inventory": false,
     "original_rollback_archive_retained_outside_runtime": true,
     "verse_level_equivalence": "NOT_INDEPENDENTLY_VALIDATED",
     "certification": "NOT_GRANTED"
@@ -75,44 +75,95 @@
   ],
   "domain_summary": {
     "D01_CEREBRO": {
-      "file_count": 14,
-      "bytes": 176493413
+      "file_count": 15,
+      "bytes": 68725958
     },
     "D02_ORQUESTACION": {
-      "file_count": 36,
-      "bytes": 17259389
+      "file_count": 39,
+      "bytes": 72312289
     },
     "D03_TRANSCRIPCION": {
-      "file_count": 15,
-      "bytes": 39528219
+      "file_count": 16,
+      "bytes": 15243403
     },
     "D04_TRADUCTOR_INTELIGENTE": {
-      "file_count": 12,
-      "bytes": 26897990
+      "file_count": 13,
+      "bytes": 19098198
     },
     "D05_INTELIGENCIA_DOCUMENTAL": {
       "file_count": 17,
       "bytes": 21661837
     },
     "D06_SISTEMA_INTELIGENTE": {
-      "file_count": 26,
-      "bytes": 194438133
+      "file_count": 35,
+      "bytes": 266674550
     },
     "ROOT_OR_SUPPORT": {
-      "file_count": 12,
-      "bytes": 211675
+      "file_count": 16,
+      "bytes": 374681
     }
   },
   "prior_manifest_reconciliation": {
     "prior_file_count_excluding_manifest": 132,
-    "current_file_count_excluding_manifest": 132,
-    "added_paths": [],
-    "removed_paths": [],
-    "changed_paths": [],
-    "added_count": 0,
-    "removed_count": 0,
-    "changed_count": 0,
-    "prior_manifest_was_in_sync": true
+    "current_file_count_excluding_manifest": 151,
+    "added_paths": [
+      "1. Cerebro/model.safetensors.q4.json",
+      "2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).sqlite3",
+      "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
+      "2. Orquestación/Orquestador/CLIs/cli_contract.json",
+      "2. Orquestación/Orquestador/CLIs/cli_manager.py",
+      "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z",
+      "3. Transcripción/model.safetensors.q4.json",
+      "4. Traductor Inteligente/Traducción general/model.safetensors.q4.json",
+      "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z",
+      "6. Sistema Inteligente/Análisis Avanzado/model.safetensors.q4.json",
+      "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z",
+      "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z",
+      "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z",
+      "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z",
+      "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z",
+      "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z",
+      "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z",
+      "EXTERNALIZED_ASSET_PLACEMENT.json",
+      "cajita_router.py",
+      "cajita_weight_materializer.py",
+      "command_subdomain_routing.json"
+    ],
+    "removed_paths": [
+      "2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).7z",
+      "2. Orquestación/Orquestador/CLIS.txt"
+    ],
+    "changed_paths": [
+      "1. Cerebro/cerebro_180mb_runtime.py",
+      "1. Cerebro/model.safetensors",
+      "2. Orquestación/Orquestador/CLIs/cli_claude_code.py",
+      "2. Orquestación/Orquestador/CLIs/cli_cpp23_toolchain.py",
+      "2. Orquestación/Orquestador/CLIs/cli_gemini.py",
+      "2. Orquestación/Orquestador/CLIs/cli_github.py",
+      "2. Orquestación/Orquestador/CLIs/cli_grok.py",
+      "2. Orquestación/Orquestador/CLIs/cli_hugging_face.py",
+      "2. Orquestación/Orquestador/CLIs/cli_mojo.py",
+      "2. Orquestación/Orquestador/CLIs/cli_python.py",
+      "2. Orquestación/Orquestador/CLIs/cli_registry.py",
+      "2. Orquestación/Orquestador/CLIs/common.py",
+      "2. Orquestación/Orquestador/CLIs/tests/test_cli_registry.py",
+      "2. Orquestación/Orquestador/punto.json",
+      "3. Transcripción/lowrank_runtime.py",
+      "3. Transcripción/model.safetensors",
+      "4. Traductor Inteligente/Traducción general/lowrank_runtime.py",
+      "4. Traductor Inteligente/Traducción general/model.safetensors",
+      "6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py",
+      "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+      "CAJITA_RUNTIME_V1/weights_manifest.json",
+      "CajitadeLuna.md",
+      "RUNTIME_CANDIDATE_V1/registry.json",
+      "cajita_runtime.py",
+      "reproduce_macrodown.py"
+    ],
+    "added_count": 21,
+    "removed_count": 2,
+    "changed_count": 25,
+    "prior_manifest_was_in_sync": false
   },
   "inventory": [
     {
@@ -151,8 +202,8 @@
       "domain_id": "D01_CEREBRO",
       "path": "1. Cerebro/cerebro_180mb_runtime.py",
       "route_type": "cerebro",
-      "sha256": "2897b7ca4d6b3c53349298b40381bfc0c19ec3fb6f38633c21d93296aea6db34",
-      "size_bytes": 11677,
+      "sha256": "24de203e8319569ad741873c45c670a90d3d9607428ab19851e3caf00646cdbb",
+      "size_bytes": 11810,
       "zip_method": "DEFLATED"
     },
     {
@@ -191,8 +242,8 @@
       "domain_id": "D01_CEREBRO",
       "path": "1. Cerebro/model.safetensors",
       "route_type": "cerebro",
-      "sha256": "935d226a65faca9b59a7742c7c31208ef0ba671509d475c1a4e2f3489cecc19e",
-      "size_bytes": 148477400,
+      "sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0",
+      "size_bytes": 40489120,
       "zip_method": "STORED"
     },
     {
@@ -201,6 +252,14 @@
       "route_type": "cerebro",
       "sha256": "6d639920511710305c76a8854550057f7c1fe33be9fea3efcefc8ae8af96317e",
       "size_bytes": 94388,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/model.safetensors.q4.json",
+      "route_type": "cerebro",
+      "sha256": "3b238e558e230891ee78dd6474d40b8644eae5815820ee257a45015d75436662",
+      "size_bytes": 220692,
       "zip_method": "DEFLATED"
     },
     {
@@ -229,11 +288,11 @@
     },
     {
       "domain_id": "D02_ORQUESTACION",
-      "path": "2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).7z",
+      "path": "2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).sqlite3",
       "route_type": "orquestacion",
-      "sha256": "be5ec9ee6153a5573a8e491e2f96ea0a4e94c9c6c023d3cb43abd6807f040b36",
-      "size_bytes": 6949245,
-      "zip_method": "STORED"
+      "sha256": "fdb4a43776a06e76cf772242bc8c802970b2b55c9544cd03826aa8453bc993e0",
+      "size_bytes": 6750208,
+      "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D02_ORQUESTACION",
@@ -257,6 +316,14 @@
       "route_type": "orquestacion",
       "sha256": "94f408fabc959e706241e557927c81f1a380b1c51934b60c1f8fde69c0a6d079",
       "size_bytes": 2199007,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
+      "route_type": "orquestacion",
+      "sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
+      "size_bytes": 23103199,
       "zip_method": "STORED"
     },
     {
@@ -293,98 +360,106 @@
     },
     {
       "domain_id": "D02_ORQUESTACION",
-      "path": "2. Orquestación/Orquestador/CLIS.txt",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_claude_code.py",
       "route_type": "orquestacion",
-      "sha256": "ecac2319f8d1cdc2aef0046a6cabd2c25de39801f07eea15021c38ed6e30d7fb",
-      "size_bytes": 9479,
+      "sha256": "f9a70263ad1ee42ded2537263aed01c22705276af3369df420c0032d7733a4c2",
+      "size_bytes": 163,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D02_ORQUESTACION",
-      "path": "2. Orquestación/Orquestador/CLIs/cli_claude_code.py",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_contract.json",
       "route_type": "orquestacion",
-      "sha256": "4ab3a7ad3419c459f4e60ae47ac8c81fdc26b5392a0a6297719e459c71878243",
-      "size_bytes": 165,
+      "sha256": "ccad3722b49299ed21989a22fdc1101018381b54198362b05d6f6652a8a91392",
+      "size_bytes": 4478,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/CLIs/cli_cpp23_toolchain.py",
       "route_type": "orquestacion",
-      "sha256": "aa0d0961ededda80e6d629f4e6374ae048f03734a0ddbca67ed83bdfd936741e",
-      "size_bytes": 246,
+      "sha256": "88e80301a81539991f7eff99b22e0048ef1a2f371bbb5237933b30c80c20bc79",
+      "size_bytes": 952,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/CLIs/cli_gemini.py",
       "route_type": "orquestacion",
-      "sha256": "2da2803d86f2997d7895e8e529ad3976ba1922796349c2a14df78a366ab61953",
-      "size_bytes": 160,
+      "sha256": "507caf36ed5aa8f365c75a1b828d785f2aee7218522c8b632dc9b545ae69d01d",
+      "size_bytes": 158,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/CLIs/cli_github.py",
       "route_type": "orquestacion",
-      "sha256": "444c6841d33ed548d8a6123d8f72943d69523fc9c60a4ce327131f2949c62411",
-      "size_bytes": 180,
+      "sha256": "0c30575062210c61b5cf65391a000b36a1d6466e3f36151d613689c816c2a5b7",
+      "size_bytes": 257,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/CLIs/cli_grok.py",
       "route_type": "orquestacion",
-      "sha256": "ffe1dfff9d91a9289393e5643f5223554982adfb9d2af432008824b70bac08af",
-      "size_bytes": 156,
+      "sha256": "f97ab486d91da7389c71598725fda794d084c7a5f8164051a7a510c80ff892c2",
+      "size_bytes": 620,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/CLIs/cli_hugging_face.py",
       "route_type": "orquestacion",
-      "sha256": "ae4f2a8f3d6090627cea35b67981c8569b624b001843f253d0003a90a46cf45b",
-      "size_bytes": 198,
+      "sha256": "1cba7a7ca0b41db19eef5ea5ae3e0be6d97788bab49cc2fbb8a645358d5ca345",
+      "size_bytes": 276,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_manager.py",
+      "route_type": "orquestacion",
+      "sha256": "93fa67a326c16dd753ebc471eb307d9a32c815e5567b0476b92a02272c9957ba",
+      "size_bytes": 13436,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/CLIs/cli_mojo.py",
       "route_type": "orquestacion",
-      "sha256": "afd6ec0c8f3c1ebbd88e0b8f8d03de400c15bbf27be972ef5b749df0cab2c991",
-      "size_bytes": 156,
+      "sha256": "eebf498d7885b8ee8c75186301e49df4f6c04a0dbe9e455186f8010443ac6d4e",
+      "size_bytes": 154,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/CLIs/cli_python.py",
       "route_type": "orquestacion",
-      "sha256": "71aefaa7299e302b97df95def3447796591bc5ee1900489438499dc63b9f2488",
-      "size_bytes": 213,
+      "sha256": "b68716cda192e95fc8cbbe7a1700697d560f0703f0a8fb2349eac7571821238d",
+      "size_bytes": 219,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/CLIs/cli_registry.py",
       "route_type": "orquestacion",
-      "sha256": "b07b813b95c553877228c3d0218978b02f94b73f468fa17372110a5c18831a7f",
-      "size_bytes": 4858,
+      "sha256": "0a98ecf2a2e40c7be7fd3ecb93249afcb1a441f452e0f3f5fcc5a058e92dffe2",
+      "size_bytes": 5909,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/CLIs/common.py",
       "route_type": "orquestacion",
-      "sha256": "6e8d07038aa2bbe10802466e437bb0dfea42d8fd06256c15789615da4d4e5b2f",
-      "size_bytes": 2371,
+      "sha256": "cf43dc66604eb2eb1cf7cb67359a561e6283d5a2b661275544bb242b58355241",
+      "size_bytes": 2505,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/CLIs/tests/test_cli_registry.py",
       "route_type": "orquestacion",
-      "sha256": "b1258ff229fb89a4c479837d62308144ef6bbafb74921f26b71ee3260e897b20",
-      "size_bytes": 1923,
+      "sha256": "552b09688ba3016d3115029b4e3bbaf0074d61232c20a0d9144cdc97e17f01c1",
+      "size_bytes": 4978,
       "zip_method": "DEFLATED"
     },
     {
@@ -485,6 +560,14 @@
     },
     {
       "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z",
+      "route_type": "orquestacion",
+      "sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14",
+      "size_bytes": 32133546,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/agno-3.0.4-py3-none-any.whl",
       "route_type": "orquestacion",
       "sha256": "e7338d46a3a3401fa7f87a0366c6cb7d9299a5c0d3f1e955ae55be2e1f95d46f",
@@ -511,8 +594,8 @@
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/punto.json",
       "route_type": "orquestacion",
-      "sha256": "2070888de326dc684d4926a4c11c86b2d15db9067755b1ff2e69d1e6e7413aac",
-      "size_bytes": 5104,
+      "sha256": "f91310f4544b6f6957d87eedc2cfdf2cb21a6b4b24d563f8c52380a8d45da5d6",
+      "size_bytes": 6296,
       "zip_method": "DEFLATED"
     },
     {
@@ -567,8 +650,8 @@
       "domain_id": "D03_TRANSCRIPCION",
       "path": "3. Transcripción/lowrank_runtime.py",
       "route_type": "transcripcion",
-      "sha256": "845eff9326687f2b76f42af27c88eb571c0ce5e42de68d5383c65f53657a0a8d",
-      "size_bytes": 7830,
+      "sha256": "0735f753051c4ebbf288a136ee4dadce3d0ed96a1d6c2a3eaf1a4073831ac9ad",
+      "size_bytes": 7964,
       "zip_method": "DEFLATED"
     },
     {
@@ -583,9 +666,17 @@
       "domain_id": "D03_TRANSCRIPCION",
       "path": "3. Transcripción/model.safetensors",
       "route_type": "transcripcion",
-      "sha256": "6f4541536bfca7899d74e962c277b7fbcd1cbc4fb7f8d101c69bcd1ea2560aa3",
-      "size_bytes": 34877948,
+      "sha256": "67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f",
+      "size_bytes": 10399882,
       "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/model.safetensors.q4.json",
+      "route_type": "transcripcion",
+      "sha256": "a3d9b84771d60c0b384df500e2219ec1c568a2e7d6794e3073cb7a435cde119a",
+      "size_bytes": 193116,
+      "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D03_TRANSCRIPCION",
@@ -679,17 +770,25 @@
       "domain_id": "D04_TRADUCTOR_INTELIGENTE",
       "path": "4. Traductor Inteligente/Traducción general/lowrank_runtime.py",
       "route_type": "traductor_inteligente",
-      "sha256": "14f2273c385c2dc28e0f7bfdeb5dc2f46146ec92953368e7fa5215c50d15f80b",
-      "size_bytes": 15666,
+      "sha256": "706ea29b9eff6a15c8dc8b655246e78a7741eba0d1d0f36875069ca65217dc74",
+      "size_bytes": 15799,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D04_TRADUCTOR_INTELIGENTE",
       "path": "4. Traductor Inteligente/Traducción general/model.safetensors",
       "route_type": "traductor_inteligente",
-      "sha256": "a2ba25feb33c68b7a5ea27ff8aadeaf96f67d80fc74d169c075e14d1ff363bf5",
-      "size_bytes": 20256147,
+      "sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f",
+      "size_bytes": 11720882,
       "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/model.safetensors.q4.json",
+      "route_type": "traductor_inteligente",
+      "sha256": "3a15a07b83feba6f933141796029bf344db7c7cdcf061fca7ae8a99a5c8b2c39",
+      "size_bytes": 735340,
+      "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D04_TRADUCTOR_INTELIGENTE",
@@ -869,6 +968,14 @@
     },
     {
       "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b",
+      "size_bytes": 10219873,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
       "route_type": "sistema_inteligente",
       "sha256": "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7",
@@ -951,8 +1058,8 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py",
       "route_type": "sistema_inteligente",
-      "sha256": "d9b8c5a32cb17f6f6e8171516633d65c6cff5d04ee612a84982e8df1cf1bcc57",
-      "size_bytes": 6403,
+      "sha256": "7812a7441e6e234c3608a23901154430b1b5958df7f32ee7aee0099c867c9377",
+      "size_bytes": 6536,
       "zip_method": "DEFLATED"
     },
     {
@@ -967,9 +1074,17 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
       "route_type": "sistema_inteligente",
-      "sha256": "9d5c2ec7d88583c016a7d48f29695915ecfe0619cbca49bdfa8708f6cf6a4604",
-      "size_bytes": 52950152,
+      "sha256": "01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56",
+      "size_bytes": 14956240,
       "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors.q4.json",
+      "route_type": "sistema_inteligente",
+      "sha256": "7b9357cd045cbd0aab3434e1ff93d06e79806c59ece422dc82a81c004926a33b",
+      "size_bytes": 216892,
+      "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D06_SISTEMA_INTELIGENTE",
@@ -1029,6 +1144,22 @@
     },
     {
       "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e",
+      "size_bytes": 15377436,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628",
+      "size_bytes": 25273630,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04.zip",
       "route_type": "sistema_inteligente",
       "sha256": "4a4732e2b812ce386234118ec36fa817771b474b1a335aed8fece55fb6279dae",
@@ -1053,10 +1184,50 @@
     },
     {
       "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea",
+      "size_bytes": 12962199,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e",
+      "size_bytes": 7954439,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0.zip",
       "route_type": "sistema_inteligente",
       "sha256": "d5f5f95086ea89aaf02f414c23a2ee4ad5f953c9b04d1298093422af040e63b5",
       "size_bytes": 38162,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
+      "size_bytes": 21310484,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f",
+      "size_bytes": 3836434,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8",
+      "size_bytes": 13078809,
       "zip_method": "STORED"
     },
     {
@@ -1087,16 +1258,16 @@
       "domain_id": null,
       "path": "CAJITA_RUNTIME_V1/weights_manifest.json",
       "route_type": null,
-      "sha256": "50ae6f9cf60ef84d4be15d35af998c5ad64685f54b882cc3fff8e812357e3483",
-      "size_bytes": 3386,
+      "sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
+      "size_bytes": 3385,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": null,
       "path": "CajitadeLuna.md",
       "route_type": null,
-      "sha256": "4ea018a74f213a91b6dd4d19b41ab63a85697b086139a85d8e0c50478970b900",
-      "size_bytes": 3957,
+      "sha256": "28a9dda9d9650ff1f9a51a5fd53dbd2e48e0427cd2cb11d2d694274d2a9e9d11",
+      "size_bytes": 35593,
       "zip_method": "DEFLATED"
     },
     {
@@ -1105,6 +1276,14 @@
       "route_type": null,
       "sha256": "35887c3fb7433805f3598826d7b3c859cf698dcd3e917720a23eb42a7ca1bb94",
       "size_bytes": 14479,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "EXTERNALIZED_ASSET_PLACEMENT.json",
+      "route_type": null,
+      "sha256": "ef2897321b8055ccfd758442f00547cf5c3966be00a5173675bcc3ae4f811dcc",
+      "size_bytes": 56838,
       "zip_method": "DEFLATED"
     },
     {
@@ -1127,8 +1306,8 @@
       "domain_id": null,
       "path": "RUNTIME_CANDIDATE_V1/registry.json",
       "route_type": null,
-      "sha256": "e872101b9347356eb2e6574efbe7ae24986d0cef2b5e5c9288bb3e5d4f0ba22a",
-      "size_bytes": 98546,
+      "sha256": "7e2af8ad65ec32a0b4c98f22ea40fc078ad44f2dbdbf0e580b4e9652d7742eac",
+      "size_bytes": 99865,
       "zip_method": "DEFLATED"
     },
     {
@@ -1157,24 +1336,48 @@
     },
     {
       "domain_id": null,
+      "path": "cajita_router.py",
+      "route_type": null,
+      "sha256": "5beb6138ae20f1064fee9e4c40029e2d0d18cc177528b89e96e79259ba1876e3",
+      "size_bytes": 27348,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
       "path": "cajita_runtime.py",
       "route_type": null,
-      "sha256": "9353e0d1d8e5950dc0330706f206a928922bd042f30708abe36156c9bb516d67",
-      "size_bytes": 13669,
+      "sha256": "cc12d796d2b5cbedeb21a5b0d0cd7220bae943cf64c175bcdf404d504820f21c",
+      "size_bytes": 14205,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "cajita_weight_materializer.py",
+      "route_type": null,
+      "sha256": "54e18a88e01e62b0ee09ef0b9594f8d3b9d5696c6c3e0211ec539d4fd7f68fff",
+      "size_bytes": 5671,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "command_subdomain_routing.json",
+      "route_type": null,
+      "sha256": "ca5e383b14f97079c500380ebc68d3fdccd43f43fe316039c55c38489f5f3cc1",
+      "size_bytes": 39137,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": null,
       "path": "reproduce_macrodown.py",
       "route_type": null,
-      "sha256": "22dde39bbdf554a36ccb34118cc627a01f0fd274747ccfeba2946856247bc1ef",
-      "size_bytes": 7682,
+      "sha256": "8367701b27a492434f1103b62a793b9abf1f89a9e4a97ed99f20a296f3abfffd",
+      "size_bytes": 8204,
       "zip_method": "DEFLATED"
     },
     {
       "path": "MACRODOWN_MANIFEST.json",
-      "size_bytes": 34916,
-      "sha256": "04b82e117089c957ad973a1182a7e73b53bf6fa89e072185dc6ecd21b8e0f196",
+      "size_bytes": 39677,
+      "sha256": "b6dc1ee28eb6aa254325507792064c1917f8fbc6615a03505948c4c64a4d7491",
       "domain_id": null,
       "route_type": null,
       "zip_method": "DEFLATED",
