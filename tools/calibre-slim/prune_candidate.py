@@ -49,7 +49,18 @@ plugins += [InputProfile, OutputProfile]
 SUPPORTED_METADATA = {"pdf", "epub", "html", "xhtml", "txt", "text", "docx"}
 
 REMOVE_BUILTIN_SECTIONS = (
+    "# To archive plugins {{{",
     "# Catalog plugins {{{",
+    "# Device driver plugins {{{",
+    "# New metadata download plugins {{{",
+    "# Interface Actions {{{",
+    "# Preferences Plugins {{{",
+    "# Store plugins {{{",
+)
+
+REMOVE_BUILTIN_SECTIONS = (
+    "# Catalog plugins {{{",
+    "# To archive plugins {{{",
     "# Device driver plugins {{{",
     "# New metadata download plugins {{{",
     "# Interface Actions {{{",
@@ -167,6 +178,7 @@ def replace_section(text: str, marker: str, replacement: str) -> str:
 def prune_builtin_registry(builtins_path: Path, removed: list[dict[str, Any]]) -> dict[str, str]:
     original = builtins_path.read_text(encoding="utf-8")
     required_markers = (
+        "# To archive plugins {{{",
         "# Conversion plugins {{{",
         "# Catalog plugins {{{",
         "# Profiles {{{",
@@ -180,7 +192,8 @@ def prune_builtin_registry(builtins_path: Path, removed: list[dict[str, Any]]) -
         if original.count(marker) != 1:
             raise RuntimeError(f"Refusing unknown builtins.py layout: marker count for {marker!r} != 1")
 
-    updated = replace_section(original, "# Conversion plugins {{{", CONVERSION_IMPORTS)
+    updated = replace_section(original, "# To archive plugins {{{", "")
+    updated = replace_section(updated, "# Conversion plugins {{{", CONVERSION_IMPORTS)
     for marker in REMOVE_BUILTIN_SECTIONS:
         updated = replace_section(updated, marker, "")
     updated = replace_section(updated, "# Profiles {{{", PROFILE_SECTION)
