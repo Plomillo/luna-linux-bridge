@@ -14,6 +14,8 @@ The pruning script replaces the broad built-in plugin registry with a narrow reg
 
 The script edits only a disposable extracted candidate tree. It does not edit the canonical runtime or the upstream download. It preserves LICENSE and COPYRIGHT material in the candidate.
 
+The source pruning step produces a reviewable, pruned Python source overlay. The upstream Linux binary is not rebuilt from source by this candidate workflow. Calibre's native launcher embeds the Python import index for the 81,999,364-byte `python-lib.bypy.frozen` archive, so the candidate retains that original frozen archive as a fallback and lets the pruned overlay override the active conversion registry. This gives a tested narrow conversion feature surface but does **not** mean every out-of-scope Python module has been physically removed from the binary. A fully rebuilt frozen archive requires rebuilding Calibre's native launcher/index and is a separate release gate.
+
 ## What must not be mistaken for junk
 
 Interface translations are not the same as language support for book content. The candidate deliberately preserves Unicode processing, fonts, document language handling, right-to-left and CJK support resources, and the Qt/WebEngine dependencies used to render PDF output. It does not remove language-specific resources merely because a user interface is not translated.
