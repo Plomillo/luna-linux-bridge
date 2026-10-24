@@ -1,0 +1,95 @@
+name: BTX source forensic audit
+
+on:
+  push:
+    branches:
+      - audit/btx-book-census-20261023
+    paths:
+      - ".github/workflows/btx-source-audit.yml"
+      - "tools/btx-audit/**"
+      - "cajita-luna-runtime/2. Orquestación/Confesión Eclesial Reformada/**"
+      - "externalized-assets-staging/2-Orquestacion/BTX/**"
+  pull_request:
+    paths:
+      - ".github/workflows/btx-source-audit.yml"
+      - "tools/btx-audit/**"
+      - "cajita-luna-runtime/2. Orquestación/Confesión Eclesial Reformada/**"
+      - "externalized-assets-staging/2-Orquestacion/BTX/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-btx-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Install read-only archive and PDF inspection tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full poppler-utils
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned Parquet reader
+        run: python -m pip install --disable-pip-version-check pyarrow==21.0.0 pymupdf==1.26.5
+      - name: Test archive path and inventory safety
+        working-directory: tools/btx-audit
+        run: python -m unittest -v test_audit_source.py
+      - name: Inspect BTX archive without publishing Bible text
+        run: python tools/btx-audit/audit_source.py --output btx-source-audit.json
+      - name: Profile font and layout metadata without emitting Bible text
+        run: |
+          python tools/btx-audit/inspect_pdf_layout.py > btx-layout-profile.json
+          python -c "import json; d=json.load(open('btx-layout-profile.json', encoding='utf-8')); print(json.dumps({k:d.get(k) for k in ['pdf_open','pdf_pages','text_char_count_from_spans','text_word_count_from_spans','font_styles','numeric_only_span_font_distribution','numeric_only_span_sample_coordinates','exact_book_heading_lines','exact_book_heading_blocks','numeric_only_block_count','body_char_distribution_by_font_size_pt','status']}, ensure_ascii=False))"
+      - name: Align large numeric spans to canonical chapter sequence
+        run: |
+          python tools/btx-audit/analyze_chapter_spans.py > btx-chapter-span-alignment.json
+          python -c "import json; d=json.load(open('btx-chapter-span-alignment.json', encoding='utf-8')); keys=['pdf_pages','large_numeric_span_count','large_numeric_span_style_counts','small_bold_numeric_span_style_counts','small_bold_numeric_span_suffix_counts','all_small_numeric_span_style_counts','small_numeric_tokens_by_value','large_noninteger_numeric_style_counts','expected_sequence_lcs_matches','expected_sequence_coverage_percent','expected_large_marker_chapters','large_marker_sequence_lcs_matches','positional_chapter_sequence_matches','positional_chapter_sequence_total','positional_chapter_sequence_mismatch_count','positional_chapter_sequence_mismatches_first_100','large_marker_coverage_percent','large_marker_unmatched_expected_count','large_marker_unmatched_expected_first_100','large_marker_unmatched_observed_count','large_marker_unmatched_observed_first_100','all_canon_unmatched_expected_count','all_canon_unmatched_expected_first_150','alternate_chapter_marker_books','chapter_page_ranges_by_book','book_chapter_alignment','candidate_counts_by_page_sample','salmo_heading_candidate_count','book_heading_candidate_count','book_heading_candidates','salmo_chapter_marker_count','salmo_unique_chapter_count','salmo_missing_chapter_numbers','salmo_duplicate_chapter_numbers','salmo_chapter_markers_first_40','salmo_chapter_markers_last_40','status']; out={k:d.get(k) for k in keys}; out['salmo_heading_samples_first_40']=d.get('salmo_heading_candidates',[])[:40]; out['salmo_heading_samples_last_40']=d.get('salmo_heading_candidates',[])[-40:]; print(json.dumps(out, ensure_ascii=False))"
+      - name: Build non-certifying BTX SQLite book candidate
+        run: |
+          python tools/btx-audit/build_btx_sqlite_candidate.py --output /tmp/btx-candidate.sqlite3 --report btx-candidate-validation.json
+          python -c "import json; d=json.load(open('btx-candidate-validation.json', encoding='utf-8')); keys=['status','certification','source_archive_integrity','source_pdf_text_extraction','large_chapter_markers','psalm_chapter_markers','chapter_anchor_count','chapter_anchor_sequence_exact','database_file_bytes','database_sha256','book_count','chapter_count','verse_row_count','main_bible_end_page','post_canon_pages_excluded_from_scripture','duplicate_reference_keys','duplicate_marker_events','missing_expected_chapter_count','missing_first_verse_chapter_count','unexplained_missing_first_verse_count','empty_verse_chapter_count','chapter_verse_number_gap_chapter_count','chapter_verse_number_gap_total','source_unmarked_reference_count','source_reference_gap_rows_written','reference_gap_reconciliation_pass','unresolved_gap_references','text_roundtrip_whitespace_normalized_exact','fts5_enabled','fts5_error','representative_reference_query_tests','representative_full_text_query_test','source_removal_allowed','source_pdf_removed','structural_candidate_pass']; print(json.dumps({k:d.get(k) for k in keys}, ensure_ascii=False))"
+      - name: Independently rebuild candidate to test byte reproducibility
+        run: |
+          python tools/btx-audit/build_btx_sqlite_candidate.py --output /tmp/btx-candidate-rebuild.sqlite3 --report /tmp/btx-candidate-rebuild-validation.json > /tmp/btx-candidate-rebuild-log.json
+          python -c "import json,sys; a=json.load(open('btx-candidate-validation.json',encoding='utf-8')); b=json.load(open('/tmp/btx-candidate-rebuild-validation.json',encoding='utf-8')); ok=a.get('database_sha256')==b.get('database_sha256') and a.get('database_file_bytes')==b.get('database_file_bytes'); r={'status':'PASS' if ok else 'FAIL','sha256_first':a.get('database_sha256'),'sha256_rebuild':b.get('database_sha256'),'bytes_first':a.get('database_file_bytes'),'bytes_rebuild':b.get('database_file_bytes'),'reproducible':ok}; open('btx-reproducibility.json','w',encoding='utf-8').write(json.dumps(r,ensure_ascii=False,indent=2)+'\\n'); print(json.dumps(r,ensure_ascii=False)); sys.exit(0 if ok else 2)"
+      - name: Run independent structural validator
+        run: |
+          python -m py_compile tools/btx-audit/validate_btx_sqlite_candidate.py
+          python tools/btx-audit/validate_btx_sqlite_candidate.py --database /tmp/btx-candidate.sqlite3 --source-audit btx-source-audit.json --report btx-independent-validation.json
+      - name: Stage candidate artifact only after independent structural gates
+        run: |
+          python -c "import hashlib,json,pathlib,shutil,sys; b=json.load(open('btx-candidate-validation.json',encoding='utf-8')); i=json.load(open('btx-independent-validation.json',encoding='utf-8')); r=json.load(open('btx-reproducibility.json',encoding='utf-8')); ok=b.get('structural_candidate_pass') is True and i.get('candidate_structural_independent_validation')=='PASS' and not i.get('failures') and r.get('reproducible') is True and b.get('database_sha256')==i.get('database_sha256') and b.get('database_file_bytes')==i.get('database_file_bytes'); print(json.dumps({'candidate_artifact_stage_gate':'PASS' if ok else 'DENY','structural_candidate_pass':b.get('structural_candidate_pass'),'independent_validation':i.get('candidate_structural_independent_validation'),'independent_failures':i.get('failures'),'byte_reproducible':r.get('reproducible'),'hash_agreement':b.get('database_sha256')==i.get('database_sha256'),'bytes_agreement':b.get('database_file_bytes')==i.get('database_file_bytes')})); sys.exit(0 if ok else 2);"
+          cp /tmp/btx-candidate.sqlite3 BTX_Book_Core_Candidate.sqlite3
+          sha256sum BTX_Book_Core_Candidate.sqlite3
+      - name: Upload forensic metadata report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: btx-source-forensic-audit
+          path: |
+            btx-source-audit.json
+            btx-layout-profile.json
+            btx-chapter-span-alignment.json
+            btx-candidate-validation.json
+            btx-independent-validation.json
+            btx-reproducibility.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload compact BTX SQLite candidate for review
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BTX-SQLite-Core-Candidate-STRUCTURAL-NOT-CERTIFIED
+          path: |
+            BTX_Book_Core_Candidate.sqlite3
+            btx-candidate-validation.json
+            btx-independent-validation.json
+            btx-reproducibility.json
+          if-no-files-found: error
+          retention-days: 14
