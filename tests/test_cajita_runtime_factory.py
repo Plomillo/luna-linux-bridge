@@ -1,5 +1,5 @@
 from __future__ import annotations
-import tempfile, unittest, zipfile
+import json, tempfile, unittest, zipfile
 from pathlib import Path
 from cajita_runtime_factory import safe_rel, extract, tree_hash, tree_rows, factory_materialize, sha_file
 from reproduce_macrodown import BINARY_SUFFIXES, add_stream
