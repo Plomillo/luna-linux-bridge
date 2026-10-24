@@ -303,7 +303,7 @@ jobs:
             path=runtime/module["manifest"]
             assert path.is_file() and not path.is_symlink()
             manifest_bytes=path.read_bytes()
-            assert hashlib.sha256(manifest_bytes).hexdigest()==module["module_manifest_sha256"], "MATERIALIZED_MODULE_MANIFEST_HASH:"+module["module_key"]
+            assert hashlib.sha256(manifest_bytes).hexdigest()==module["manifest_sha256"], "MATERIALIZED_MODULE_MANIFEST_HASH:"+module["module_key"]
             manifest=json.loads(manifest_bytes)
             assert manifest["materialization"]["status"]=="PASS"
             assert manifest["module_key"]==module["module_key"]
