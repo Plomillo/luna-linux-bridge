@@ -10,6 +10,7 @@ from cajita_architecture_binding import register_architecture_binding
 SCHEMA = "CAJITA_LOUKSNA1_FACTORY/1.0"
 RAW_CAP = 1_500_000_000
 COMBINED_CAP = 490_000_000
+MATERIALIZATION_SOURCE_COMMIT = "f2771dd76c2c99967bbf1f7b032f8e6d15b0e387"
 ARCHIVE_SUFFIXES = {".zip", ".7z"}
 WEIGHT_PATHS = (
  "1. Cerebro/model.safetensors",
@@ -193,7 +194,72 @@ def load_registered_materialized_modules(runtime, registry):
   out.append({**data,"module_manifest_path":expected_manifest,"module_manifest_sha256":descriptor_sha})
  return sorted(out,key=lambda item:item["module_key"].encode("utf-8"))
 
-def factory_materialize(runtime,rollback,raw_cap):
+
+def restore_materialized_modules_from_source_archives(runtime, repo_root, prior_reconciliation):
+ runtime=Path(runtime).resolve(); repo_root=Path(repo_root).resolve()
+ history=prior_reconciliation.get("archives",[])
+ if not isinstance(history,list) or not history:
+  raise RuntimeError("MATERIALIZED_SOURCE_ARCHIVE_HISTORY_MISSING")
+ source_archives=[]
+ for row in history:
+  if not isinstance(row,dict) or not isinstance(row.get("source_path"),str):
+   raise RuntimeError("MATERIALIZED_SOURCE_ARCHIVE_HISTORY_ROW_INVALID")
+  rel=safe_rel(row["source_path"])
+  repo_rel=(PurePosixPath("cajita-luna-runtime")/rel).as_posix()
+  refspec=MATERIALIZATION_SOURCE_COMMIT+":"+repo_rel
+  exists=subprocess.run(["git","-C",str(repo_root),"cat-file","-e",refspec],
+   stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+  if exists.returncode!=0:
+   continue
+  proc=subprocess.run(["git","-C",str(repo_root),"show",refspec],stdout=subprocess.PIPE,
+   stderr=subprocess.PIPE,check=False,timeout=1200)
+  if proc.returncode:
+   raise RuntimeError("MATERIALIZED_SOURCE_ARCHIVE_GIT_SHOW_FAILED:"+rel.as_posix()+":"+proc.stderr.decode("utf-8",errors="replace")[-240:])
+  payload=proc.stdout
+  actual_sha=sha_bytes(payload); actual_bytes=len(payload)
+  if actual_sha!=row.get("source_sha256") or actual_bytes!=int(row.get("source_bytes",-1)):
+   raise RuntimeError("MATERIALIZED_SOURCE_ARCHIVE_IDENTITY_MISMATCH:"+rel.as_posix())
+  source_archives.append((rel,payload,actual_sha,actual_bytes))
+ if not source_archives:
+  raise RuntimeError("MATERIALIZED_SOURCE_ARCHIVES_UNRECOVERABLE_FROM_PINNED_COMMIT")
+ # Reset only paths that the historical evidence identifies as extracted modules.
+ # Ancestor paths are deleted before nested paths, so one removal is sufficient.
+ expanded=[]
+ for row in history:
+  rel=safe_rel(row.get("expanded_path",""))
+  if not rel.parts or rel.as_posix() in {".",".."}:
+   raise RuntimeError("MATERIALIZED_EXPANDED_PATH_INVALID")
+  folder=runtime.joinpath(*rel.parts)
+  if folder.resolve().is_relative_to(runtime) is False:
+   raise RuntimeError("MATERIALIZED_EXPANDED_PATH_ESCAPE")
+  expanded.append((len(rel.parts),rel.as_posix(),folder))
+ removed=[]
+ for depth,rel,folder in sorted(expanded,key=lambda x:(x[0],x[1].encode("utf-8"))):
+  if folder.is_symlink():
+   raise RuntimeError("MATERIALIZED_EXPANDED_PATH_SYMLINK:"+rel)
+  if not folder.exists():
+   continue
+  if not folder.is_dir():
+   raise RuntimeError("MATERIALIZED_EXPANDED_PATH_NOT_DIRECTORY:"+rel)
+  shutil.rmtree(folder)
+  removed.append(rel)
+ restored=[]
+ for rel,payload,digest,size in source_archives:
+  target=runtime.joinpath(*rel.parts)
+  if not target.resolve().is_relative_to(runtime) or target.is_symlink():
+   raise RuntimeError("MATERIALIZED_SOURCE_ARCHIVE_PATH_ESCAPE:"+rel.as_posix())
+  if target.exists():
+   raise RuntimeError("MATERIALIZED_SOURCE_ARCHIVE_DESTINATION_COLLISION:"+rel.as_posix())
+  target.parent.mkdir(parents=True,exist_ok=True)
+  target.write_bytes(payload)
+  if target.stat().st_size!=size or sha_file(target)!=digest:
+   raise RuntimeError("MATERIALIZED_SOURCE_ARCHIVE_POSTWRITE_MISMATCH:"+rel.as_posix())
+  restored.append({"path":rel.as_posix(),"bytes":size,"sha256":digest})
+ return {"status":"PASS_SOURCE_ARCHIVE_REPLAY_REQUIRED","source_commit":MATERIALIZATION_SOURCE_COMMIT,
+  "archive_count_restored":len(restored),"archives":restored,"expanded_module_paths_reset":sorted(set(removed)),
+  "reason":"RECORDED_MODULE_TREE_DRIFT; REPLAY_SOURCE_ARCHIVES_AND_REVALIDATE"}
+
+def factory_materialize(runtime,rollback,raw_cap,repo_root=None):
  placement_path=runtime/"EXTERNALIZED_ASSET_PLACEMENT.json"
  routing_path=runtime/"command_subdomain_routing.json"
  placement=json.loads(placement_path.read_text(encoding="utf-8"))
@@ -208,6 +274,20 @@ def factory_materialize(runtime,rollback,raw_cap):
  if not isinstance(prior_reconciliation,dict): prior_reconciliation={}
  prior_archive_rows=prior_reconciliation.get("archives",[])
  prior_readme_rows=prior_reconciliation.get("readmes_removed",[])
+ source_tree_recovery=None
+ if prior_registry.get("materialized_module_count",0):
+  source_archives_present=any(p.is_file() and not p.is_symlink() and p.suffix.lower() in ARCHIVE_SUFFIXES for p in runtime.rglob("*"))
+  if not source_archives_present:
+   try:
+    load_registered_materialized_modules(runtime,prior_registry)
+   except RuntimeError as exc:
+    recoverable=("MATERIALIZED_MODULE_TREE_INTEGRITY_MISMATCH:",
+     "MATERIALIZED_MODULE_DESCRIPTOR_HASH_MISMATCH:",
+     "MATERIALIZED_MODULE_DESCRIPTOR_MISSING:",
+     "MATERIALIZED_MODULE_DESCRIPTOR_IDENTITY_MISMATCH:")
+    if repo_root is None or not str(exc).startswith(recoverable):
+     raise
+    source_tree_recovery=restore_materialized_modules_from_source_archives(runtime,repo_root,prior_reconciliation)
  registered={}
  for a in placement.get("assets",[]):
   prefix="cajita-luna-runtime/"
@@ -292,7 +372,7 @@ def factory_materialize(runtime,rollback,raw_cap):
  archive_history=merge_history(prior_archive_rows,records,"source_path","source_sha256")
  readme_history=merge_history(prior_readme_rows,readmes,"path","sha256")
  total_removed_bytes=sum(int(row["source_bytes"]) for row in archive_history)
- placement["factory_reconciliation"]={"schema":SCHEMA,"generated_at_utc":utc(),"archive_count_materialized":len(archive_history),"archive_bytes_removed":total_removed_bytes,"archives":archive_history,"readmes_removed":readme_history,"module_count":len(module_records),"rollback_copies_retained_outside_runtime":bool(records) or bool(prior_reconciliation.get("rollback_copies_retained_outside_runtime",False)),"all_zip_7z_removed":True,"last_run_archive_count_materialized":len(records),"last_run_readme_count_removed":len(readmes),"materialized_module_revalidation":"PASS","certification":"NOT_GRANTED"}
+ placement["factory_reconciliation"]={"schema":SCHEMA,"generated_at_utc":utc(),"archive_count_materialized":len(archive_history),"archive_bytes_removed":total_removed_bytes,"archives":archive_history,"readmes_removed":readme_history,"module_count":len(module_records),"rollback_copies_retained_outside_runtime":bool(records) or bool(prior_reconciliation.get("rollback_copies_retained_outside_runtime",False)),"all_zip_7z_removed":True,"last_run_archive_count_materialized":len(records),"last_run_readme_count_removed":len(readmes),"materialized_module_revalidation":"PASS","source_tree_recovery":source_tree_recovery or prior_reconciliation.get("source_tree_recovery"),"certification":"NOT_GRANTED"}
  placement["status"]="MATERIALIZATION_COMPLETE_PENDING_FUNCTION_AND_G23_G24"
  placement["certification"]="NOT_GRANTED"
  placement_path.write_text(json.dumps(placement,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
@@ -311,7 +391,7 @@ def factory_materialize(runtime,rollback,raw_cap):
  (runtime/"module_registry.json").write_text(json.dumps(registry,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
  _,raw=measure(runtime,False)
  if raw>raw_cap: raise RuntimeError(f"RAW_STAGING_CEILING_EXCEEDED:{raw}>{raw_cap}")
- return {"archive_count":len(archive_history),"archive_count_this_run":len(records),"archive_bytes_removed":total_removed_bytes,"archives":archive_history,"readme_count":len(readme_history),"readme_count_this_run":len(readmes),"readmes_removed":readme_history,"module_count":len(module_records),"modules":module_records,"materialized_module_revalidation":"PASS","raw_tree_bytes_after_materialization":raw}
+ return {"archive_count":len(archive_history),"archive_count_this_run":len(records),"archive_bytes_removed":total_removed_bytes,"archives":archive_history,"readme_count":len(readme_history),"readme_count_this_run":len(readmes),"readmes_removed":readme_history,"module_count":len(module_records),"modules":module_records,"materialized_module_revalidation":"PASS","source_tree_recovery":source_tree_recovery,"raw_tree_bytes_after_materialization":raw}
 
 def append_runtime_policy(runtime,factory_data):
  p=runtime/"CajitadeLuna.md"; original=p.read_bytes()
@@ -387,7 +467,7 @@ def main():
   shutil.copytree(runtime_source,runtime,symlinks=True)
   weights=json.loads((runtime/"CAJITA_RUNTIME_V1/weights_manifest.json").read_text(encoding="utf-8"))
   report["weights_before"]=verify_weights(runtime,weights)
-  data=factory_materialize(runtime,rollback,a.raw_cap_bytes); report["materialization"]=data
+  data=factory_materialize(runtime,rollback,a.raw_cap_bytes,repo_root=repo); report["materialization"]=data
   append_runtime_policy(runtime,data)
   routing=json.loads((runtime/"command_subdomain_routing.json").read_text(encoding="utf-8"))
   expected=["D01_CEREBRO","D02_ORQUESTACION","D03_TRANSCRIPCION","D04_TRADUCTOR_INTELIGENTE","D05_INTELIGENCIA_DOCUMENTAL","D06_SISTEMA_INTELIGENTE"]
