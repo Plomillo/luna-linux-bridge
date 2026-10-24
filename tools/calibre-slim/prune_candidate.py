@@ -22,20 +22,16 @@ UPSTREAM = {
 }
 
 CONVERSION_IMPORTS = """# Conversion plugins {{{
-from calibre.ebooks.conversion.plugins.docx_input import DOCXInput
 from calibre.ebooks.conversion.plugins.epub_input import EPUBInput
 from calibre.ebooks.conversion.plugins.epub_output import EPUBOutput
-from calibre.ebooks.conversion.plugins.html_input import HTMLInput
 from calibre.ebooks.conversion.plugins.oeb_output import OEBOutput
 from calibre.ebooks.conversion.plugins.pdf_input import PDFInput
 from calibre.ebooks.conversion.plugins.pdf_output import PDFOutput
 from calibre.ebooks.conversion.plugins.txt_input import TXTInput
 
-# Keep OEB as an internal pipeline format; only PDF and EPUB are public outputs.
-plugins += [
-    DOCXInput, EPUBInput, HTMLInput, PDFInput, TXTInput,
-    EPUBOutput, PDFOutput, OEBOutput,
-]
+# OEB is internal to the upstream conversion pipeline, never exposed as an output.
+# TXT is retained only as a minimal source for creating PDF/EPUB files.
+plugins += [EPUBInput, PDFInput, TXTInput, EPUBOutput, PDFOutput, OEBOutput]
 # }}}
 """
 
@@ -46,7 +42,7 @@ plugins += [InputProfile, OutputProfile]
 # }}}
 """
 
-SUPPORTED_METADATA = {"pdf", "epub", "html", "xhtml", "txt", "text", "docx"}
+SUPPORTED_METADATA = {"pdf", "epub", "txt", "text"}
 
 REMOVE_BUILTIN_SECTIONS = (
     "# To archive plugins {{{",
@@ -97,10 +93,8 @@ UNRELATED_LAUNCHERS = {
 
 TARGET_PLUGIN_FILES = {
     "__init__.py",
-    "docx_input.py",
     "epub_input.py",
     "epub_output.py",
-    "html_input.py",
     "archive_input.py",
     "oeb_output.py",
     "pdf_input.py",
@@ -237,11 +231,11 @@ def prune_builtin_registry(builtins_path: Path, removed: list[dict[str, Any]]) -
     # classes remain upstream code; this change only narrows registration.
     updated = updated.replace(
         "plugins += [x for x in list(locals().values()) if isinstance(x, type) and x.__name__.endswith('MetadataReader')]",
-        "plugins += [x for x in list(locals().values()) if isinstance(x, type) and x.__name__.endswith('MetadataReader') and bool(getattr(x, 'file_types', set()) & {'pdf', 'epub', 'kepub', 'html', 'xhtml', 'txt', 'docx'})]",
+        "plugins += [x for x in list(locals().values()) if isinstance(x, type) and x.__name__.endswith('MetadataReader') and bool(getattr(x, 'file_types', set()) & {'pdf', 'epub', 'txt'})]",
     )
     updated = updated.replace(
         "plugins += [x for x in list(locals().values()) if isinstance(x, type) and x.__name__.endswith('MetadataWriter')]",
-        "plugins += [x for x in list(locals().values()) if isinstance(x, type) and x.__name__.endswith('MetadataWriter') and bool(getattr(x, 'file_types', set()) & {'pdf', 'epub', 'kepub', 'html', 'xhtml', 'txt', 'docx'})]",
+        "plugins += [x for x in list(locals().values()) if isinstance(x, type) and x.__name__.endswith('MetadataWriter') and bool(getattr(x, 'file_types', set()) & {'pdf', 'epub', 'txt'})]",
     )
     if "plugins += [x for x in list(locals().values()) if isinstance(x, type) and x.__name__.endswith('MetadataReader') and bool(" not in updated:
         raise RuntimeError("Failed to narrow metadata reader registrations")
@@ -382,7 +376,7 @@ def main() -> int:
 
     report: dict[str, Any] = {
         "schema": "CAJITA_CALIBRE_SLIM_PRUNE_REPORT/1.0",
-        "candidate_id": "CAJITA_CALIBRE_SLIM_V1_20261024",
+        "candidate_id": "CAJITA_CALIBRE_SLIM_PDF_EPUB_V2_20261024",
         "status": "NOT_CERTIFIED",
         "upstream": UPSTREAM,
         "mode": "source-only-pruned-snapshot" if args.source_only else "binary-distribution-pruning",
@@ -391,7 +385,7 @@ def main() -> int:
         "source_rebuildability": "NOT_ESTABLISHED_BY_THIS_PRUNING_STEP",
         "bug_fix_status": "NO_GENERIC_BUG_FIX_CLAIM; ONLY_TEST-DRIVEN_REPRODUCIBLE_PATCHES_ARE_ADMISSIBLE",
         "language_policy": "REMOVE_UI_TRANSLATIONS_ONLY; PRESERVE_DOCUMENT_LANGUAGE_UNICODE_FONTS_RTL_CJK",
-        "target_public_inputs": ["pdf", "epub", "html", "txt", "docx"],
+        "target_public_inputs": ["pdf", "epub", "txt"],
         "target_public_outputs": ["pdf", "epub"],
         "retained_plugins": sorted(TARGET_PLUGIN_FILES),
         "removed": [],
