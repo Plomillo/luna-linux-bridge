@@ -84,7 +84,7 @@ jobs:
           git fetch origin "+$REF:refs/remotes/origin/custoszv9-v9"
           git show refs/remotes/origin/custoszv9-v9:dist/CUSTOSZV9.pyz > "$RUNNER_TEMP/CUSTOSZV9.pyz"
           ACTUAL="$(sha256sum "$RUNNER_TEMP/CUSTOSZV9.pyz" | awk '{print $1}')"
-          test "$ACTUAL" = "58deae6f0496773f3af63c4103a6a2d87cfb9bd30566f068b55ad02574565956"
+          test "$ACTUAL" = "d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817"
           set +e
           python "$RUNNER_TEMP/CUSTOSZV9.pyz" --version > "$RUNNER_TEMP/custosz-version.txt" 2>&1
           VERSION_RC=$?
@@ -96,7 +96,7 @@ jobs:
           import json, os, hashlib
           from pathlib import Path
           root=Path(os.environ["RUNNER_TEMP"])
-          report={"schema":"CUSTOSZV9_FACTORY_HELPER_EVIDENCE/1.0","artifact_sha256":"58deae6f0496773f3af63c4103a6a2d87cfb9bd30566f068b55ad02574565956","version_exit_code":int(os.environ["VERSION_RC"]),"selftest_exit_code":int(os.environ["SELFTEST_RC"]),"version_output":(root/"custosz-version.txt").read_text(errors="replace")[-2000:],"selftest_output":(root/"custosz-selftest.txt").read_text(errors="replace")[-6000:],"self_reported_certification":"NOT_GRANTED","authority":"BOUNDED_HELPER_ONLY_NOT_G23_OR_G24"}
+          report={"schema":"CUSTOSZV9_FACTORY_HELPER_EVIDENCE/1.0","artifact_sha256":"d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817","version_exit_code":int(os.environ["VERSION_RC"]),"selftest_exit_code":int(os.environ["SELFTEST_RC"]),"version_output":(root/"custosz-version.txt").read_text(errors="replace")[-2000:],"selftest_output":(root/"custosz-selftest.txt").read_text(errors="replace")[-6000:],"self_reported_certification":"NOT_GRANTED","authority":"BOUNDED_HELPER_ONLY_NOT_G23_OR_G24"}
           report["status"]="PASS_HELPER_TESTS" if report["version_exit_code"]==0 and report["selftest_exit_code"]==0 else "HELPER_TEST_FAILED"
           Path("out/CUSTOSZV9_EVIDENCE.json").write_text(json.dumps(report,indent=2)+"\n")
           print(json.dumps({"status":report["status"],"certification":report["self_reported_certification"]},indent=2))
