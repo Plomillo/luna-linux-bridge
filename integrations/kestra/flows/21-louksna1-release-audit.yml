@@ -42,6 +42,8 @@ tasks:
          and fromJson(outputs.release_manifest.body).combined_distribution.cap_bytes == 490000000
          and fromJson(outputs.release_manifest.body).protected_architecture.modified == false
          and fromJson(outputs.g23_evidence.body).status == 'PASS'
+         and fromJson(outputs.g24_evidence.body).status == 'PASS_FOR_DECLARED_SMOKE_SCOPE'
+         and fromJson(outputs.release_manifest.body).gates.G24 == 'PASS_FOR_DECLARED_SMOKE_SCOPE'
          and fromJson(outputs.release_manifest.body).global_certification == 'NOT_GRANTED'
          and fromJson(outputs.g24_evidence.body).global_integrated_product_certification == 'NOT_GRANTED' }}
     then:

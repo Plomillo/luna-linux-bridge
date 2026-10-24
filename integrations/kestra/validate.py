@@ -95,6 +95,12 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
             f"{flow_path.relative_to(ROOT)} declares script execution before runner isolation is approved.")
     require("docker.sock" not in lower,
             f"{flow_path.relative_to(ROOT)} references a Docker socket.")
+    if flow_path.name == "21-louksna1-release-audit.yml":
+        require("fromJson(outputs.g24_evidence.body).status == 'PASS_FOR_DECLARED_SMOKE_SCOPE'" in body,
+                "Louksna1 release audit must fail closed unless scoped G24 runtime evidence passes.")
+        require("fromJson(outputs.release_manifest.body).gates.G24 == 'PASS_FOR_DECLARED_SMOKE_SCOPE'" in body,
+                "Louksna1 release manifest and G24 evidence must agree on the runtime gate.")
+
     if flow_path.name == "10-super1200-continuity.yml":
         require("type: io.kestra.plugin.core.trigger.Schedule" in body,
                 "SUPER1200 continuity must be scheduled by Kestra.")

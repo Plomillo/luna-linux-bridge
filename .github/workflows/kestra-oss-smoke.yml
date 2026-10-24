@@ -9,6 +9,8 @@ on:
       - "integrations/kestra/**"
       - ".github/workflows/kestra-oss-smoke.yml"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
