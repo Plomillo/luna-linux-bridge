@@ -241,7 +241,8 @@ def record_remove(path: Path, root: Path, removed: list[dict[str, Any]], reason:
 
 
 def remove_conversion_plugins(package_root: Path, root: Path, removed: list[dict[str, Any]]) -> int:
-    plugin_dirs = list(package_root.rglob("calibre/ebooks/conversion/plugins"))
+    expected = package_root / "calibre" / "ebooks" / "conversion" / "plugins"
+    plugin_dirs = [expected] if expected.is_dir() else list(package_root.rglob("calibre/ebooks/conversion/plugins"))
     if not plugin_dirs:
         raise RuntimeError("No calibre/ebooks/conversion/plugins directory found")
     count = 0
