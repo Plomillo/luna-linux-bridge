@@ -10,7 +10,7 @@ The candidate starts from the official Linux x86-64 binary distribution and sepa
 
 ## What is removed
 
-The pruning script replaces the broad built-in plugin registry with a narrow registry for the required conversion formats and default profiles. It removes non-target conversion plugins, GUI action and ebook-store modules, device drivers not required by the generic device interface, catalog/editor/news modules, UI translation catalogs/resources, translated man pages, and command wrappers outside the conversion scope.
+The pruning script replaces the broad built-in plugin registry with a narrow registry for the required conversion formats and default profiles. It removes non-target conversion plugins, GUI action and ebook-store modules, device drivers not required by the generic device interface, catalog/editor/news modules, UI translation catalogs/resources, translated man pages, and command wrappers outside the conversion scope. The small `archive_input.py` helper is retained even though it is not a public conversion plugin, because the official `TXTInput` module imports its `archive_file_data` helper at module load. The frozen-payload scrub therefore retains this dependency instead of treating it as dead code.
 
 The script edits only a disposable extracted candidate tree. It does not edit the canonical runtime or the upstream download. It preserves LICENSE and COPYRIGHT material in the candidate.
 
