@@ -9,7 +9,7 @@
 - PDF -> EPUB
 - EPUB -> PDF
 
-Only PDF and EPUB are allowed as output formats. HTML, DOCX, other ebook formats, GUI, store/catalog/device-management functions, translation catalogs, and OCR are outside the scope. TXT remains only as the minimum source format for creating new files. The OEB intermediate remains private to Calibre's upstream conversion pipeline.
+Only PDF and EPUB are allowed as output formats. HTML is not an allowed public input; Calibre's upstream TXT converter internally invokes its HTML input plugin, so that plugin remains hidden behind the wrapper as a required dependency. DOCX, other ebook formats, GUI, store/catalog/device-management functions, translation catalogs, and OCR are out of scope. TXT remains only as the minimum source format for creating new files. HTML and OEB are internal pipeline formats, not public capabilities.
 
 ## 16 MB package contract
 
