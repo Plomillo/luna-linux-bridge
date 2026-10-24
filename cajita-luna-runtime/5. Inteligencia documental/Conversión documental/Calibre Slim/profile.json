@@ -1,0 +1,62 @@
+{
+  "schema": "CAJITA_CALIBRE_SLIM_RUNTIME_PROFILE/1.0",
+  "candidate_id": "CAJITA_CALIBRE_SLIM_PDF_EPUB_V2_20261024",
+  "status": "INTEGRATION_STAGING__ARTIFACT_NOT_MATERIALIZED",
+  "authority": "SUBORDINATE_OPERATIONAL_CANDIDATE",
+  "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+  "internal_path": "5. Inteligencia documental/Conversión documental/Calibre Slim/",
+  "entrypoint": "calibre-slim-convert.py",
+  "upstream": {
+    "repository": "https://github.com/kovidgoyal/calibre",
+    "tag": "v9.17.0",
+    "commit": "e6b9e09472f6e63f8a12bf376eb54836042f0f5f"
+  },
+  "public_io": {
+    "allowed_inputs": [
+      ".pdf",
+      ".epub",
+      ".txt"
+    ],
+    "allowed_outputs": [
+      ".pdf",
+      ".epub"
+    ],
+    "required_conversions": [
+      "PDF -> EPUB",
+      "EPUB -> PDF",
+      "TXT -> PDF",
+      "TXT -> EPUB"
+    ],
+    "html_public_input": false
+  },
+  "excluded_features": [
+    "OCR",
+    "language packs and translated UI catalogs",
+    "GUI",
+    "ebook stores",
+    "device management",
+    "catalog generation",
+    "ebook editor",
+    "news recipes",
+    "other public input/output formats"
+  ],
+  "archive": {
+    "expected_path": "calibre-slim-overlay.tar.xz",
+    "size_bytes": 58180,
+    "sha256": "dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b",
+    "physically_embedded": false,
+    "external_runtime_required": true
+  },
+  "tests": {
+    "static_checks": "PASS",
+    "baseline_conversions": "4/4 PASS",
+    "candidate_canaries": "6/6 PASS on CI using external official Calibre runtime",
+    "independent_validation": "NOT_PERFORMED",
+    "certification": "NOT_GRANTED"
+  },
+  "safety": {
+    "fail_closed": true,
+    "no_silent_fallback_without_overlay": true,
+    "full_runtime_under_16mb_claim": false
+  }
+}

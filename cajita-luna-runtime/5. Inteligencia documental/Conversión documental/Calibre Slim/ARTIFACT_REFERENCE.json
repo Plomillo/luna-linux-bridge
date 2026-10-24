@@ -1,0 +1,25 @@
+{
+  "schema": "CAJITA_EXTERNAL_CANDIDATE_ARTIFACT_REFERENCE/1.0",
+  "candidate_id": "CAJITA_CALIBRE_SLIM_PDF_EPUB_V2_20261024",
+  "archive_filename": "calibre-slim-overlay.tar.xz",
+  "archive_bytes": 58180,
+  "archive_sha256": "dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b",
+  "archive_internal_path": "5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-overlay.tar.xz",
+  "artifact_embedded_in_runtime": false,
+  "materialization_status": "BLOCKED__BINARY_EXISTS_ONLY_AS_GITHUB_ACTIONS_ARTIFACT",
+  "workflow_run_id": 40057448243,
+  "workflow_run_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40057448243",
+  "artifact_id": 12545698477,
+  "artifact_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40057448243/artifacts/12545698477",
+  "outer_ci_artifact_zip_bytes": 390518,
+  "ci_branch": "cajita/calibre-slim-pdf-epub-16mb-v1",
+  "ci_commit": "fb8c608716dafbe2195cde1d3f841dc003ab5ae7",
+  "ci_result": "success",
+  "scope_canaries": "6/6 PASS using an external Calibre v9.17.0 runtime",
+  "limitations": [
+    "The Actions artifact is not physically stored at archive_internal_path in main.",
+    "The overlay excludes the native Calibre runtime and Qt/WebEngine dependencies.",
+    "Passing overlay tests is not certification of a self-contained runtime."
+  ],
+  "next_gate": "Materialize this exact archive at archive_internal_path, verify exact size and SHA-256, then rebuild MACRODOWN and run post-materialization canaries."
+}

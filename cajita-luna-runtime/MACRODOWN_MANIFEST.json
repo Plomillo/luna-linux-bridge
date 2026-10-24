@@ -1,1 +1,1304 @@
-{"candidate_id":"CAJITA_LUNA_RUNTIME_V9_20261023","domain_order":["D01_CEREBRO","D02_ORQUESTACION","D03_TRANSCRIPCION","D04_TRADUCTOR_INTELIGENTE","D05_INTELIGENCIA_DOCUMENTAL","D06_SISTEMA_INTELIGENTE"],"domains":[{"id":"D01_CEREBRO","root":"1. Cerebro/","route_type":"cerebro"},{"id":"D02_ORQUESTACION","root":"2. Orquestación/","route_type":"orquestacion"},{"id":"D03_TRANSCRIPCION","root":"3. Transcripción/","route_type":"transcripcion"},{"id":"D04_TRADUCTOR_INTELIGENTE","root":"4. Traductor Inteligente/","route_type":"traductor_inteligente"},{"id":"D05_INTELIGENCIA_DOCUMENTAL","root":"5. Inteligencia documental/","route_type":"inteligencia_documental"},{"id":"D06_SISTEMA_INTELIGENTE","root":"6. Sistema Inteligente/","route_type":"sistema_inteligente"}],"external_22_domain_repository_included":false,"file_count_excluding_manifest":151,"files":[{"domain_id":"D01_CEREBRO","path":"1. Cerebro/CANDIDATO_ACTIVO_ELEGIDO.txt","route_type":"cerebro","sha256":"1cfb79957d746e5cae4d76c5a8b5f2dae9a56d374cacb8296a5d1b4c27a05c0d","size_bytes":915,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/CEREBRO_180MB_QUANTIZATION_20261021T083326Z.json","route_type":"cerebro","sha256":"637b048ab2718f4d80714f97bde4d9a919681829de9c90897bb26080e818463b","size_bytes":6628,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/README.md","route_type":"cerebro","sha256":"92b0408cf5dce04e4c5e4e5f2be0361da710d3650baefd7d7519badd1c687919","size_bytes":7111,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/USAGE_POLICY","route_type":"cerebro","sha256":"fc48d386a7a7ff8b066f743cfe62df683ab16892450f5bb7357bb4de261cd037","size_bytes":201,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/cerebro_180mb_runtime.py","route_type":"cerebro","sha256":"24de203e8319569ad741873c45c670a90d3d9607428ab19851e3caf00646cdbb","size_bytes":11810,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/chat_template.jinja","route_type":"cerebro","sha256":"a4c9919cbbd4acdd51ccffe22da049264b1b73e59055fa58811a99efbd7c8146","size_bytes":16738,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/compression_metadata.json","route_type":"cerebro","sha256":"8995d52d633f9019aa0968abf7155a1fb143c56a1e2256a68186310cc39cd09a","size_bytes":3511,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/config.json","route_type":"cerebro","sha256":"fdbc7d2e9b14721ae4fc4cb239e3e53f6465674388410d788d12abdbde871fea","size_bytes":2195,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/generation_config.json","route_type":"cerebro","sha256":"f9970ada892d2d1f72e3ed0a6535ccebadd11897318794ca671d8c7014c957da","size_bytes":177,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/model.safetensors","route_type":"cerebro","sha256":"e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0","size_bytes":40489120,"zip_method":"STORED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/model.safetensors.index.json","route_type":"cerebro","sha256":"6d639920511710305c76a8854550057f7c1fe33be9fea3efcefc8ae8af96317e","size_bytes":94388,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/model.safetensors.q4.json","route_type":"cerebro","sha256":"3b238e558e230891ee78dd6474d40b8644eae5815820ee257a45015d75436662","size_bytes":220692,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/special_tokens_map.json","route_type":"cerebro","sha256":"dd5e191d20c12d2fee1da5bae14ca1db0f5f4215300af691f23cdee97120a293","size_bytes":98,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/tokenizer.json","route_type":"cerebro","sha256":"0614fe83cadab421296e664e1f48f4261fa8fef6e03e63bb75c20f38e37d07d3","size_bytes":27868174,"zip_method":"DEFLATED"},{"domain_id":"D01_CEREBRO","path":"1. Cerebro/tokenizer_config.json","route_type":"cerebro","sha256":"9279e942392b742d633c7adbb89ebe002c98399db8926a7af5125c726f404070","size_bytes":4200,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).sqlite3","route_type":"orquestacion","sha256":"fdb4a43776a06e76cf772242bc8c802970b2b55c9544cd03826aa8453bc993e0","size_bytes":6750208,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Confesión Eclesial Reformada/README.md","route_type":"orquestacion","sha256":"0e767f45b6c7c2c339926fc4c4cebbcc8f01392b4d8a0b24bf1f06ddf26dbf83","size_bytes":2390,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642.zip","route_type":"orquestacion","sha256":"55369287510f8826a66f9ce162ff0213bfdef42fc85736b82049ab7dca8315c3","size_bytes":1230890,"zip_method":"STORED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Confesión Eclesial Reformada/data.parquet","route_type":"orquestacion","sha256":"94f408fabc959e706241e557927c81f1a380b1c51934b60c1f8fde69c0a6d079","size_bytes":2199007,"zip_method":"STORED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z","route_type":"orquestacion","sha256":"a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a","size_bytes":23103199,"zip_method":"STORED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Multi + Interdisciplinar/owlrl-7.6.2-py3-none-any.whl","route_type":"orquestacion","sha256":"83347bf7f133979e87b2b18695d51d25510b99cec3f6919b5df05d4fbf058ae0","size_bytes":55814,"zip_method":"STORED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Multi + Interdisciplinar/prov-o.owl","route_type":"orquestacion","sha256":"02a4d7409ee3e1f697a04e4980d8d208a847cc7fa5180ca0d187540abb66919f","size_bytes":112346,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Multi + Interdisciplinar/pyshacl-0.40.1-py3-none-any.whl","route_type":"orquestacion","sha256":"27dd58c8ddfa103303b4a8c40b2c666332ffc912dbcd3137f7adc7b7bc5e6bda","size_bytes":1306209,"zip_method":"STORED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Multi + Interdisciplinar/rdflib-7.6.0-py3-none-any.whl","route_type":"orquestacion","sha256":"30c0a3ebf4c0e09215f066be7246794b6492e054e782d7ac2a34c9f70a15e0dd","size_bytes":615416,"zip_method":"STORED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/cli_claude_code.py","route_type":"orquestacion","sha256":"f9a70263ad1ee42ded2537263aed01c22705276af3369df420c0032d7733a4c2","size_bytes":163,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/cli_contract.json","route_type":"orquestacion","sha256":"ccad3722b49299ed21989a22fdc1101018381b54198362b05d6f6652a8a91392","size_bytes":4478,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/cli_cpp23_toolchain.py","route_type":"orquestacion","sha256":"88e80301a81539991f7eff99b22e0048ef1a2f371bbb5237933b30c80c20bc79","size_bytes":952,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/cli_gemini.py","route_type":"orquestacion","sha256":"507caf36ed5aa8f365c75a1b828d785f2aee7218522c8b632dc9b545ae69d01d","size_bytes":158,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/cli_github.py","route_type":"orquestacion","sha256":"0c30575062210c61b5cf65391a000b36a1d6466e3f36151d613689c816c2a5b7","size_bytes":257,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/cli_grok.py","route_type":"orquestacion","sha256":"f97ab486d91da7389c71598725fda794d084c7a5f8164051a7a510c80ff892c2","size_bytes":620,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/cli_hugging_face.py","route_type":"orquestacion","sha256":"1cba7a7ca0b41db19eef5ea5ae3e0be6d97788bab49cc2fbb8a645358d5ca345","size_bytes":276,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/cli_manager.py","route_type":"orquestacion","sha256":"93fa67a326c16dd753ebc471eb307d9a32c815e5567b0476b92a02272c9957ba","size_bytes":13436,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/cli_mojo.py","route_type":"orquestacion","sha256":"eebf498d7885b8ee8c75186301e49df4f6c04a0dbe9e455186f8010443ac6d4e","size_bytes":154,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/cli_python.py","route_type":"orquestacion","sha256":"b68716cda192e95fc8cbbe7a1700697d560f0703f0a8fb2349eac7571821238d","size_bytes":219,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/cli_registry.py","route_type":"orquestacion","sha256":"0a98ecf2a2e40c7be7fd3ecb93249afcb1a441f452e0f3f5fcc5a058e92dffe2","size_bytes":5909,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/common.py","route_type":"orquestacion","sha256":"cf43dc66604eb2eb1cf7cb67359a561e6283d5a2b661275544bb242b58355241","size_bytes":2505,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/CLIs/tests/test_cli_registry.py","route_type":"orquestacion","sha256":"552b09688ba3016d3115029b4e3bbaf0074d61232c20a0d9144cdc97e17f01c1","size_bytes":4978,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/01_skyvern/SOURCE.md","route_type":"orquestacion","sha256":"1a3f6ee1bfc441addbacee47d9dbbecb35355613bd0233e78e12effc81b61435","size_bytes":449,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/02_stagehand/SOURCE.md","route_type":"orquestacion","sha256":"a53581f7bd4742ae8bc282052a83e2894698a707b49f456f4814e782bec8de4a","size_bytes":414,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/03_playwright/SOURCE.md","route_type":"orquestacion","sha256":"24f8b1ea378f48ad43e6356e3fe762d4992ac4e8c458ce8e435d68112de2ddeb","size_bytes":394,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/04_config/config.json","route_type":"orquestacion","sha256":"e4762de9113a43aeeaa66c0f77d698df62605ae5d25036a624cdedd2e88be080","size_bytes":4028,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/05_install/LOCAL_ONLY_CHECKLIST.md","route_type":"orquestacion","sha256":"67234b00a021e1ff2de4bbf3a3503e0c9f91ff328d515f9e662a017dcb8e0c1c","size_bytes":323,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/05_install/install-local.sh","route_type":"orquestacion","sha256":"aca24652ba8fd9e9adfaf7c5ef79f4f7840a2a9da9034480b4f824aea69ec6bc","size_bytes":463,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/06_provenance/FINAL_SHA256SUMS.txt","route_type":"orquestacion","sha256":"d4cc03efd59fe4c28caeb1cafbc3e07f79a190dfff92b59ea9b0ff0d8ec3c3a0","size_bytes":1050,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/06_provenance/VERIFIED_SOURCES.md","route_type":"orquestacion","sha256":"a34fefbd8688e387e7c11100c3d10d087c2433c2c8459540f6e0f37ae7e44f79","size_bytes":582,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/07_security_clamav/CLAMAV_SOURCE.json","route_type":"orquestacion","sha256":"c543ad314fe8eca3105a28fa5655e4b041d77716c023deb4f694311d1f172d7b","size_bytes":969,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/07_security_clamav/README.md","route_type":"orquestacion","sha256":"fce5548e4615d634bbbed48f8f5f85cabf5fff053d2b0f09f02c18323a1f2d25","size_bytes":918,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/07_security_clamav/download-clamav.sh","route_type":"orquestacion","sha256":"2c6f76293dd1c9a5b30da531552a84065d73e0e4c535ab4b1880ccfc2b17b9ec","size_bytes":611,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/README.md","route_type":"orquestacion","sha256":"238e7956bed81362d05eaa18bc2d57bd5288b3bcf0a422a6221d4ccfa3c6b3fe","size_bytes":528,"zip_method":"DEFLATED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z","route_type":"orquestacion","sha256":"395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14","size_bytes":32133546,"zip_method":"STORED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/agno-3.0.4-py3-none-any.whl","route_type":"orquestacion","sha256":"e7338d46a3a3401fa7f87a0366c6cb7d9299a5c0d3f1e955ae55be2e1f95d46f","size_bytes":3860188,"zip_method":"STORED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/deepagents-0.7.11-py3-none-any.whl","route_type":"orquestacion","sha256":"7f8ca58b7aa8b11fb8a18d054aa5da937700cba221b1104b5eda4469e9531382","size_bytes":320468,"zip_method":"STORED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/langchain_core-1.6.1-py3-none-any.whl","route_type":"orquestacion","sha256":"954a84132a5cb0435d27b910e336347b6744ecc18fbeef1e2de7029a0959841a","size_bytes":571478,"zip_method":"STORED"},{"domain_id":"D02_ORQUESTACION","path":"2. Orquestación/Orquestador/punto.json","route_type":"orquestacion","sha256":"f91310f4544b6f6957d87eedc2cfdf2cb21a6b4b24d563f8c52380a8d45da5d6","size_bytes":6296,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/README.md","route_type":"transcripcion","sha256":"aaef74a740faca90fa1899c4233ebe17f2093b9846d0acf16d9131bf650e9585","size_bytes":21196,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/added_tokens.json","route_type":"transcripcion","sha256":"3c51f66c4c21f9e126970078f11ae77a78c74aee8df606ee9daba86e467108e0","size_bytes":34648,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/compression_metadata.json","route_type":"transcripcion","sha256":"31b8629bcb893c711e9557fe442740a0e287a2751b5d88c9647eed6ce2511b30","size_bytes":1251,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/config.json","route_type":"transcripcion","sha256":"c5b526b3e3cd64cd8940dabb45e8ba726629e22d8ed389c29b552f9140daf04a","size_bytes":1256,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/generation_config.json","route_type":"transcripcion","sha256":"cce11bfe3aaa6ae9e072ea2637caaec8795e68d9b67e655a5af16ee509681a4c","size_bytes":3772,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/gitattributes","route_type":"transcripcion","sha256":"11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361","size_bytes":1519,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/lowrank_runtime.py","route_type":"transcripcion","sha256":"0735f753051c4ebbf288a136ee4dadce3d0ed96a1d6c2a3eaf1a4073831ac9ad","size_bytes":7964,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/merges.txt","route_type":"transcripcion","sha256":"2df2990a395e35e8dfbc7511e08c12d56018d8d04691e0133e5d63b21e154dc6","size_bytes":493869,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/model.safetensors","route_type":"transcripcion","sha256":"67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f","size_bytes":10399882,"zip_method":"STORED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/model.safetensors.q4.json","route_type":"transcripcion","sha256":"a3d9b84771d60c0b384df500e2219ec1c568a2e7d6794e3073cb7a435cde119a","size_bytes":193116,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/normalizer.json","route_type":"transcripcion","sha256":"bf1c507dc8724ca9cf9903640dacfb69dae2f00edee4f21ceba106a7392f26dd","size_bytes":52666,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/preprocessor_config.json","route_type":"transcripcion","sha256":"7ccc62c6f2765af1f3b46c00c9b5894426835a05021c8b9c01eecb6dfb542711","size_bytes":340,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/special_tokens_map.json","route_type":"transcripcion","sha256":"baea4ea09372eb4fca86b4e4346139fd73cb807d5087e9de0948e971739c3e74","size_bytes":2186,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/tokenizer.json","route_type":"transcripcion","sha256":"297b13372ac43916285644fb9687add3cc62ee2a1adb60da3dc25cc94c1871fd","size_bytes":2710337,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/tokenizer_config.json","route_type":"transcripcion","sha256":"844b642c73a91359722f47b35705f7174686df33d252695d8572cf9ac03a6389","size_bytes":282843,"zip_method":"DEFLATED"},{"domain_id":"D03_TRANSCRIPCION","path":"3. Transcripción/vocab.json","route_type":"transcripcion","sha256":"e2aa043ef015641d363d8288e7c241c85e36a5c761fb303598e0710233344387","size_bytes":1036558,"zip_method":"DEFLATED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24.zip","route_type":"traductor_inteligente","sha256":"6b413b1561e30d3a027a3a14bf8b5cc68dedaebaa852ff74ab2fc60f9293f583","size_bytes":836260,"zip_method":"STORED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master.zip","route_type":"traductor_inteligente","sha256":"93d2a4eeb811f4bc3fbe584a35385f1aae07908ef42d2893693eabd354db1e74","size_bytes":225343,"zip_method":"STORED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Traducción general/added_tokens.json","route_type":"traductor_inteligente","sha256":"9ac8a85d4e97d27fad026a813d52a069680e4e0cae701ef145b204bd533251b2","size_bytes":2066,"zip_method":"DEFLATED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Traducción general/compression_metadata.json","route_type":"traductor_inteligente","sha256":"c04044f67ff2b448bcf6c1323063d339ca2d4571da78956419512980d3da8408","size_bytes":1302,"zip_method":"DEFLATED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Traducción general/config.json","route_type":"traductor_inteligente","sha256":"4b2fa9d863cc3033adaf261e6c3e32ad90347ee2f199a349ba1c77d5e26a605f","size_bytes":2716,"zip_method":"DEFLATED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Traducción general/lowrank_runtime.py","route_type":"traductor_inteligente","sha256":"706ea29b9eff6a15c8dc8b655246e78a7741eba0d1d0f36875069ca65217dc74","size_bytes":15799,"zip_method":"DEFLATED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Traducción general/model.safetensors","route_type":"traductor_inteligente","sha256":"630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f","size_bytes":11720882,"zip_method":"STORED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Traducción general/model.safetensors.q4.json","route_type":"traductor_inteligente","sha256":"3a15a07b83feba6f933141796029bf344db7c7cdcf061fca7ae8a99a5c8b2c39","size_bytes":735340,"zip_method":"DEFLATED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Traducción general/preprocessor_config.json","route_type":"traductor_inteligente","sha256":"59294da7ee216cf80f8083180cdb0ace7efabbe35a8b9009c5cab341af2bd1c7","size_bytes":1776,"zip_method":"DEFLATED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Traducción general/sentencepiece.bpe.model","route_type":"traductor_inteligente","sha256":"026a76827537db9f1348e4d5aaa127bb10a2f2ff633243f3a52d16be82d73f9d","size_bytes":5165809,"zip_method":"STORED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Traducción general/special_tokens_map.json","route_type":"traductor_inteligente","sha256":"36ba9ab56ea9a4d0182ae18aed1ff16a15bf91b8aa544722c686744d5972b522","size_bytes":2337,"zip_method":"DEFLATED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Traducción general/spm_char_lang38_tc.model","route_type":"traductor_inteligente","sha256":"9e7f2075dbc38dbe11d2414bfa4fb8e900022e87bbff4f74c97817e32a7ab493","size_bytes":368901,"zip_method":"STORED"},{"domain_id":"D04_TRADUCTOR_INTELIGENTE","path":"4. Traductor Inteligente/Traducción general/tokenizer_config.json","route_type":"traductor_inteligente","sha256":"0a184dd2f5b9ee02ddfa7fc2110b7e919c471f29e2e771d8c18b22b7758827c8","size_bytes":19667,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/HOST_TOOL_INVENTORY.json","route_type":"inteligencia_documental","sha256":"1fe0fe5d941657c8133ec7530cda7d709c69386066f07545174511efcc7dde6f","size_bytes":1791,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre/CALIBRE_BINARY_EXTERNALIZATION.json","route_type":"inteligencia_documental","sha256":"af59dbc475c2f60ef38bb580d1a6d2a44c3103da836923ddc4d9df8bc62410c1","size_bytes":526,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre/CALIBRE_SOURCE_PROVENANCE.json","route_type":"inteligencia_documental","sha256":"fde8c2eb9287d819e11c23b9e6678f145b94084ddb535df5b8e613f700d75050","size_bytes":549,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/added_tokens.json","route_type":"inteligencia_documental","sha256":"882e49757a3bea90e00df1d2dc8c18b2b526ff77380db20439feeb1f053a63cd","size_bytes":35,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/chat_template.jinja","route_type":"inteligencia_documental","sha256":"a4b0bf4348b014acca131da664d05b61e39d5dc8af980f1913846a57ccc6d289","size_bytes":588,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/config.json","route_type":"inteligencia_documental","sha256":"4fbb5d2ad9549663e5740b36a5f45cb3d861d20d2e1c158af8569765f9864f30","size_bytes":1641,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py","route_type":"inteligencia_documental","sha256":"85ab92e255e9ea78bbc12fce23da9159e32e4ab550b593561f943835fda6255d","size_bytes":9430,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/generation_config.json","route_type":"inteligencia_documental","sha256":"369256b622c73d709b248da31ba4332ef19c01dec6e311d8e4b671bc1321bc06","size_bytes":169,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/preprocessor_config.json","route_type":"inteligencia_documental","sha256":"6cb6e36d6fcb88ca1502c4a26750715dc3e7dedddc9a8f17b27d8d167d1457e7","size_bytes":486,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/processor_config.json","route_type":"inteligencia_documental","sha256":"e7bff42da73ae9eec9042ef20e066e11f1ee20f025358ff79131e3c0fb549b46","size_bytes":68,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_manifest.json","route_type":"inteligencia_documental","sha256":"aa08a8cfa4e8406a72466ccd071639966f53042c90e2525f10a5883a7b4a9c23","size_bytes":206894,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin","route_type":"inteligencia_documental","sha256":"4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88","size_bytes":13483380,"zip_method":"STORED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/special_tokens_map.json","route_type":"inteligencia_documental","sha256":"45c073d82ba37a1fc69c8d6a772d17a8e4f78b64b63c0fce2c77d18a3259d18e","size_bytes":812,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/tokenizer.json","route_type":"inteligencia_documental","sha256":"673ef3c60759806916ebf37c5d9b79f7ffd53a1419f1ebd75bfec8f177c2b1b3","size_bytes":7153134,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/tokenizer_config.json","route_type":"inteligencia_documental","sha256":"261f9491897226589c131a4ac5993c495eec2104dace144f69c397682865a3a0","size_bytes":17774,"zip_method":"DEFLATED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/docling_slim-2.124.0-pruned.whl","route_type":"inteligencia_documental","sha256":"471a1bea5431ea264201d3781efe0b9d35b547357dfd0e483e4943f2127c974f","size_bytes":775392,"zip_method":"STORED"},{"domain_id":"D05_INTELIGENCIA_DOCUMENTAL","path":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9_RESULT.json","route_type":"inteligencia_documental","sha256":"a0d53b141a3f5de3632d16268bd12ca26960e6bcc2fec7cda3041eb88611ff61","size_bytes":9168,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z","route_type":"sistema_inteligente","sha256":"d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b","size_bytes":10219873,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Anti-Alucinaciones/model.onnx","route_type":"sistema_inteligente","sha256":"c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7","size_bytes":110516001,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Anti-Alucinaciones/tokenizer.json","route_type":"sistema_inteligente","sha256":"10e1c362713a22cc592cf66395ab98fa7461a36d33e3d1bf7226e30490cd20e7","size_bytes":1387522,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Anti-Alucinaciones/tokenizers-0.23.1-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl","route_type":"sistema_inteligente","sha256":"f3f481c3b156c4e296233c9da62a338af2bed11399dd419ca480117821f8e0b5","size_bytes":3240180,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/CAJITA_QWEN3_LOWRANK_TARGET70_FINAL_20261021T041400Z.json","route_type":"sistema_inteligente","sha256":"8c2e12e202a5f876d6ee56b3abaa63c2129c6ddc4e6522c9f2a829c2f0d73760","size_bytes":6747,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/CANDIDATO_ACTIVO_ELEGIDO.txt","route_type":"sistema_inteligente","sha256":"b2ec40bbb9663385432dc1ab8ef252c6c2a24a2eef591eb1643224d4b86ef9aa","size_bytes":914,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/LICENSE","route_type":"sistema_inteligente","sha256":"832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e","size_bytes":11343,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/compression_metadata.json","route_type":"sistema_inteligente","sha256":"82850aa9247dfb4dc381f8bcf5bb6291d031a9b7b87ebbdef098563248398eb0","size_bytes":2041,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/config.json","route_type":"sistema_inteligente","sha256":"e73c3664ca09b10a673fef0c22e8a6b456201d49bd4713c9691f775720e8857a","size_bytes":728,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/generation_config.json","route_type":"sistema_inteligente","sha256":"2325da0f15bb848e018c5ae071b7943332e9f871d6b60e2ed22ca97d4cb993d2","size_bytes":239,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime.py","route_type":"sistema_inteligente","sha256":"ca041b36effa79ce28457f4c9a26ec5326be625a953c133a324031259ae64284","size_bytes":5322,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py","route_type":"sistema_inteligente","sha256":"7812a7441e6e234c3608a23901154430b1b5958df7f32ee7aee0099c867c9377","size_bytes":6536,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/merges.txt","route_type":"sistema_inteligente","sha256":"8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5","size_bytes":1671853,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/model.safetensors","route_type":"sistema_inteligente","sha256":"01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56","size_bytes":14956240,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/model.safetensors.q4.json","route_type":"sistema_inteligente","sha256":"7b9357cd045cbd0aab3434e1ff93d06e79806c59ece422dc82a81c004926a33b","size_bytes":216892,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/runtime_patch_v2.json","route_type":"sistema_inteligente","sha256":"1c5214ab66088dbcc1aec5f5b994878845df1b170018df426badddcc87ff4b63","size_bytes":1503,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/tokenizer.json","route_type":"sistema_inteligente","sha256":"aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4","size_bytes":11422654,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/tokenizer_config.json","route_type":"sistema_inteligente","sha256":"d5d09f07b48c3086c508b30d1c9114bd1189145b74e982a265350c923acd8101","size_bytes":9732,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Análisis Avanzado/vocab.json","route_type":"sistema_inteligente","sha256":"ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910","size_bytes":2776833,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Archivado Deteccion/7z2602-linux-x64.tar.xz","route_type":"sistema_inteligente","sha256":"41aaba7b1235304ab5aa0624530c67ae829496cd29e875925271efdccc28c03e","size_bytes":1571416,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Archivado Deteccion/rarlinux-x64-723 (1).tar.gz","route_type":"sistema_inteligente","sha256":"e140def835dedcd2f1a86879914bfe4aa6628acbd8aaf89b272d9d135c91baa1","size_bytes":691630,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip","route_type":"sistema_inteligente","sha256":"1d8c6fae32af635c0a97fc7d9d6abc2708a1c7769c946f04ec25a545362200a6","size_bytes":3727204,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z","route_type":"sistema_inteligente","sha256":"bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e","size_bytes":15377436,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z","route_type":"sistema_inteligente","sha256":"75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628","size_bytes":25273630,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04.zip","route_type":"sistema_inteligente","sha256":"4a4732e2b812ce386234118ec36fa817771b474b1a335aed8fece55fb6279dae","size_bytes":909563,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400.zip","route_type":"sistema_inteligente","sha256":"087e07c19da4898889258e3f5b0d87612f02651ccfffbc0aae904c4f1c9a9769","size_bytes":2923847,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Memoria Gobernada/sqlite-vec-0.1.9-loadable-linux-x86_64.tar.gz","route_type":"sistema_inteligente","sha256":"b959baa1d8dc88861b1edb337b8587178cdcb12d60b4998f9d10b6a82052d5d7","size_bytes":61507,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z","route_type":"sistema_inteligente","sha256":"bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea","size_bytes":12962199,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z","route_type":"sistema_inteligente","sha256":"e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e","size_bytes":7954439,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0.zip","route_type":"sistema_inteligente","sha256":"d5f5f95086ea89aaf02f414c23a2ee4ad5f953c9b04d1298093422af040e63b5","size_bytes":38162,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z","route_type":"sistema_inteligente","sha256":"fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37","size_bytes":21310484,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z","route_type":"sistema_inteligente","sha256":"46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f","size_bytes":3836434,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z","route_type":"sistema_inteligente","sha256":"04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8","size_bytes":13078809,"zip_method":"STORED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Testing/criterion-0.8.2.crate","route_type":"sistema_inteligente","sha256":"950046b2aa2492f9a536f5f4f9a3de7b9e2476e575e05bd6c333371add4d98f3","size_bytes":122924,"zip_method":"DEFLATED"},{"domain_id":"D06_SISTEMA_INTELIGENTE","path":"6. Sistema Inteligente/Testing/pytest-9.1.1-py3-none-any.rebuilt.whl","route_type":"sistema_inteligente","sha256":"4d441dfcdbc9517dde8859b3f07b82bdb581119a865938e2560884bdf00cafd5","size_bytes":381713,"zip_method":"STORED"},{"domain_id":null,"path":"BUILD_PROVENANCE.json","route_type":null,"sha256":"8f5362579cf7e8b92d3dcf0ddf0beb3bb21f137ab815d481a7fea06342d58990","size_bytes":5288,"zip_method":"DEFLATED"},{"domain_id":null,"path":"CAJITA_RUNTIME_V1/weights_manifest.json","route_type":null,"sha256":"703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d","size_bytes":3385,"zip_method":"DEFLATED"},{"domain_id":null,"path":"CajitadeLuna.md","route_type":null,"sha256":"5d5f3a72531e08effdade5146799d47bd055ec37dba0d762881256a3041f53c3","size_bytes":84988,"zip_method":"DEFLATED"},{"domain_id":null,"path":"EXTERNALIZATION_MANIFEST.json","route_type":null,"sha256":"35887c3fb7433805f3598826d7b3c859cf698dcd3e917720a23eb42a7ca1bb94","size_bytes":14479,"zip_method":"DEFLATED"},{"domain_id":null,"path":"EXTERNALIZED_ASSET_PLACEMENT.json","route_type":null,"sha256":"71cf89c9a19a4ca511ebe1d90c7540079bdccb17178e5a0f25cd7ca8953c8457","size_bytes":56838,"zip_method":"DEFLATED"},{"domain_id":null,"path":"REQUIREMENTS.runtime.lock","route_type":null,"sha256":"4fb4ba59f33f941a13967bb832e96515f27c4bd0c00c3aabc29a0bd9f9bdd4b0","size_bytes":1108,"zip_method":"DEFLATED"},{"domain_id":null,"path":"RUNTIME_CANDIDATE_V1/README.md","route_type":null,"sha256":"5cb55ea1be0a87366eb1ead6befb043f0315765153d052aab0c506de19f7b3a1","size_bytes":6859,"zip_method":"DEFLATED"},{"domain_id":null,"path":"RUNTIME_CANDIDATE_V1/registry.json","route_type":null,"sha256":"7e2af8ad65ec32a0b4c98f22ea40fc078ad44f2dbdbf0e580b4e9652d7742eac","size_bytes":99865,"zip_method":"DEFLATED"},{"domain_id":null,"path":"RUNTIME_CANDIDATE_V1/registry_reconciliation.json","route_type":null,"sha256":"47af56c9347d57e323acaa18cf40b5deb9c5256755f0a534ba0aa750646c0127","size_bytes":31655,"zip_method":"DEFLATED"},{"domain_id":null,"path":"RUNTIME_CANDIDATE_V1/runtime.py","route_type":null,"sha256":"8ce1a07cc78f1a7a31d7a4b16b2ecde8fa2bc43a80c424addd7211577798b394","size_bytes":23181,"zip_method":"DEFLATED"},{"domain_id":null,"path":"RUNTIME_REPAIR_PATCH_MANIFEST_V2.json","route_type":null,"sha256":"47c2a7be0e1e411a6f0bfe210be56a9943fa3f7ec2dc6232943aab66ba22e363","size_bytes":1865,"zip_method":"DEFLATED"},{"domain_id":null,"path":"cajita_router.py","route_type":null,"sha256":"5beb6138ae20f1064fee9e4c40029e2d0d18cc177528b89e96e79259ba1876e3","size_bytes":27348,"zip_method":"DEFLATED"},{"domain_id":null,"path":"cajita_runtime.py","route_type":null,"sha256":"cc12d796d2b5cbedeb21a5b0d0cd7220bae943cf64c175bcdf404d504820f21c","size_bytes":14205,"zip_method":"DEFLATED"},{"domain_id":null,"path":"cajita_weight_materializer.py","route_type":null,"sha256":"54e18a88e01e62b0ee09ef0b9594f8d3b9d5696c6c3e0211ec539d4fd7f68fff","size_bytes":5671,"zip_method":"DEFLATED"},{"domain_id":null,"path":"command_subdomain_routing.json","route_type":null,"sha256":"ca5e383b14f97079c500380ebc68d3fdccd43f43fe316039c55c38489f5f3cc1","size_bytes":39137,"zip_method":"DEFLATED"},{"domain_id":null,"path":"reproduce_macrodown.py","route_type":null,"sha256":"8367701b27a492434f1103b62a793b9abf1f89a9e4a97ed99f20a296f3abfffd","size_bytes":8204,"zip_method":"DEFLATED"}],"format":"ZIP archive with deterministic metadata; file extension .macrodown","gross_payload_bytes":464179988,"gross_payload_bytes_excluding_manifest":464140311,"hard_cap_archive_bytes":470000000,"hard_cap_raw_bytes":470000000,"manifest_is_self_excluded_from_file_hash_table":true,"rebuild_script":"reproduce_macrodown.py","runtime_entrypoint":"cajita_runtime.py","schema":"CAJITA_RUNTIME_MACRODOWN/1.0"}
+{
+  "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023",
+  "domain_order": [
+    "D01_CEREBRO",
+    "D02_ORQUESTACION",
+    "D03_TRANSCRIPCION",
+    "D04_TRADUCTOR_INTELIGENTE",
+    "D05_INTELIGENCIA_DOCUMENTAL",
+    "D06_SISTEMA_INTELIGENTE"
+  ],
+  "domains": [
+    {
+      "id": "D01_CEREBRO",
+      "root": "1. Cerebro/",
+      "route_type": "cerebro"
+    },
+    {
+      "id": "D02_ORQUESTACION",
+      "root": "2. Orquestación/",
+      "route_type": "orquestacion"
+    },
+    {
+      "id": "D03_TRANSCRIPCION",
+      "root": "3. Transcripción/",
+      "route_type": "transcripcion"
+    },
+    {
+      "id": "D04_TRADUCTOR_INTELIGENTE",
+      "root": "4. Traductor Inteligente/",
+      "route_type": "traductor_inteligente"
+    },
+    {
+      "id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "root": "5. Inteligencia documental/",
+      "route_type": "inteligencia_documental"
+    },
+    {
+      "id": "D06_SISTEMA_INTELIGENTE",
+      "root": "6. Sistema Inteligente/",
+      "route_type": "sistema_inteligente"
+    }
+  ],
+  "external_22_domain_repository_included": false,
+  "file_count_excluding_manifest": 156,
+  "files": [
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/CANDIDATO_ACTIVO_ELEGIDO.txt",
+      "route_type": "cerebro",
+      "sha256": "1cfb79957d746e5cae4d76c5a8b5f2dae9a56d374cacb8296a5d1b4c27a05c0d",
+      "size_bytes": 915,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/CEREBRO_180MB_QUANTIZATION_20261021T083326Z.json",
+      "route_type": "cerebro",
+      "sha256": "637b048ab2718f4d80714f97bde4d9a919681829de9c90897bb26080e818463b",
+      "size_bytes": 6628,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/README.md",
+      "route_type": "cerebro",
+      "sha256": "92b0408cf5dce04e4c5e4e5f2be0361da710d3650baefd7d7519badd1c687919",
+      "size_bytes": 7111,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/USAGE_POLICY",
+      "route_type": "cerebro",
+      "sha256": "fc48d386a7a7ff8b066f743cfe62df683ab16892450f5bb7357bb4de261cd037",
+      "size_bytes": 201,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/cerebro_180mb_runtime.py",
+      "route_type": "cerebro",
+      "sha256": "24de203e8319569ad741873c45c670a90d3d9607428ab19851e3caf00646cdbb",
+      "size_bytes": 11810,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/chat_template.jinja",
+      "route_type": "cerebro",
+      "sha256": "a4c9919cbbd4acdd51ccffe22da049264b1b73e59055fa58811a99efbd7c8146",
+      "size_bytes": 16738,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/compression_metadata.json",
+      "route_type": "cerebro",
+      "sha256": "8995d52d633f9019aa0968abf7155a1fb143c56a1e2256a68186310cc39cd09a",
+      "size_bytes": 3511,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/config.json",
+      "route_type": "cerebro",
+      "sha256": "fdbc7d2e9b14721ae4fc4cb239e3e53f6465674388410d788d12abdbde871fea",
+      "size_bytes": 2195,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/generation_config.json",
+      "route_type": "cerebro",
+      "sha256": "f9970ada892d2d1f72e3ed0a6535ccebadd11897318794ca671d8c7014c957da",
+      "size_bytes": 177,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/model.safetensors",
+      "route_type": "cerebro",
+      "sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0",
+      "size_bytes": 40489120,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/model.safetensors.index.json",
+      "route_type": "cerebro",
+      "sha256": "6d639920511710305c76a8854550057f7c1fe33be9fea3efcefc8ae8af96317e",
+      "size_bytes": 94388,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/model.safetensors.q4.json",
+      "route_type": "cerebro",
+      "sha256": "3b238e558e230891ee78dd6474d40b8644eae5815820ee257a45015d75436662",
+      "size_bytes": 220692,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/special_tokens_map.json",
+      "route_type": "cerebro",
+      "sha256": "dd5e191d20c12d2fee1da5bae14ca1db0f5f4215300af691f23cdee97120a293",
+      "size_bytes": 98,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/tokenizer.json",
+      "route_type": "cerebro",
+      "sha256": "0614fe83cadab421296e664e1f48f4261fa8fef6e03e63bb75c20f38e37d07d3",
+      "size_bytes": 27868174,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D01_CEREBRO",
+      "path": "1. Cerebro/tokenizer_config.json",
+      "route_type": "cerebro",
+      "sha256": "9279e942392b742d633c7adbb89ebe002c98399db8926a7af5125c726f404070",
+      "size_bytes": 4200,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).sqlite3",
+      "route_type": "orquestacion",
+      "sha256": "fdb4a43776a06e76cf772242bc8c802970b2b55c9544cd03826aa8453bc993e0",
+      "size_bytes": 6750208,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Confesión Eclesial Reformada/README.md",
+      "route_type": "orquestacion",
+      "sha256": "0e767f45b6c7c2c339926fc4c4cebbcc8f01392b4d8a0b24bf1f06ddf26dbf83",
+      "size_bytes": 2390,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642.zip",
+      "route_type": "orquestacion",
+      "sha256": "55369287510f8826a66f9ce162ff0213bfdef42fc85736b82049ab7dca8315c3",
+      "size_bytes": 1230890,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Confesión Eclesial Reformada/data.parquet",
+      "route_type": "orquestacion",
+      "sha256": "94f408fabc959e706241e557927c81f1a380b1c51934b60c1f8fde69c0a6d079",
+      "size_bytes": 2199007,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
+      "route_type": "orquestacion",
+      "sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
+      "size_bytes": 23103199,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Multi + Interdisciplinar/owlrl-7.6.2-py3-none-any.whl",
+      "route_type": "orquestacion",
+      "sha256": "83347bf7f133979e87b2b18695d51d25510b99cec3f6919b5df05d4fbf058ae0",
+      "size_bytes": 55814,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Multi + Interdisciplinar/prov-o.owl",
+      "route_type": "orquestacion",
+      "sha256": "02a4d7409ee3e1f697a04e4980d8d208a847cc7fa5180ca0d187540abb66919f",
+      "size_bytes": 112346,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Multi + Interdisciplinar/pyshacl-0.40.1-py3-none-any.whl",
+      "route_type": "orquestacion",
+      "sha256": "27dd58c8ddfa103303b4a8c40b2c666332ffc912dbcd3137f7adc7b7bc5e6bda",
+      "size_bytes": 1306209,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Multi + Interdisciplinar/rdflib-7.6.0-py3-none-any.whl",
+      "route_type": "orquestacion",
+      "sha256": "30c0a3ebf4c0e09215f066be7246794b6492e054e782d7ac2a34c9f70a15e0dd",
+      "size_bytes": 615416,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_claude_code.py",
+      "route_type": "orquestacion",
+      "sha256": "f9a70263ad1ee42ded2537263aed01c22705276af3369df420c0032d7733a4c2",
+      "size_bytes": 163,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_contract.json",
+      "route_type": "orquestacion",
+      "sha256": "ccad3722b49299ed21989a22fdc1101018381b54198362b05d6f6652a8a91392",
+      "size_bytes": 4478,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_cpp23_toolchain.py",
+      "route_type": "orquestacion",
+      "sha256": "88e80301a81539991f7eff99b22e0048ef1a2f371bbb5237933b30c80c20bc79",
+      "size_bytes": 952,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_gemini.py",
+      "route_type": "orquestacion",
+      "sha256": "507caf36ed5aa8f365c75a1b828d785f2aee7218522c8b632dc9b545ae69d01d",
+      "size_bytes": 158,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_github.py",
+      "route_type": "orquestacion",
+      "sha256": "0c30575062210c61b5cf65391a000b36a1d6466e3f36151d613689c816c2a5b7",
+      "size_bytes": 257,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_grok.py",
+      "route_type": "orquestacion",
+      "sha256": "f97ab486d91da7389c71598725fda794d084c7a5f8164051a7a510c80ff892c2",
+      "size_bytes": 620,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_hugging_face.py",
+      "route_type": "orquestacion",
+      "sha256": "1cba7a7ca0b41db19eef5ea5ae3e0be6d97788bab49cc2fbb8a645358d5ca345",
+      "size_bytes": 276,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_manager.py",
+      "route_type": "orquestacion",
+      "sha256": "93fa67a326c16dd753ebc471eb307d9a32c815e5567b0476b92a02272c9957ba",
+      "size_bytes": 13436,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_mojo.py",
+      "route_type": "orquestacion",
+      "sha256": "eebf498d7885b8ee8c75186301e49df4f6c04a0dbe9e455186f8010443ac6d4e",
+      "size_bytes": 154,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_python.py",
+      "route_type": "orquestacion",
+      "sha256": "b68716cda192e95fc8cbbe7a1700697d560f0703f0a8fb2349eac7571821238d",
+      "size_bytes": 219,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/cli_registry.py",
+      "route_type": "orquestacion",
+      "sha256": "0a98ecf2a2e40c7be7fd3ecb93249afcb1a441f452e0f3f5fcc5a058e92dffe2",
+      "size_bytes": 5909,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/common.py",
+      "route_type": "orquestacion",
+      "sha256": "cf43dc66604eb2eb1cf7cb67359a561e6283d5a2b661275544bb242b58355241",
+      "size_bytes": 2505,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/CLIs/tests/test_cli_registry.py",
+      "route_type": "orquestacion",
+      "sha256": "552b09688ba3016d3115029b4e3bbaf0074d61232c20a0d9144cdc97e17f01c1",
+      "size_bytes": 4978,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/01_skyvern/SOURCE.md",
+      "route_type": "orquestacion",
+      "sha256": "1a3f6ee1bfc441addbacee47d9dbbecb35355613bd0233e78e12effc81b61435",
+      "size_bytes": 449,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/02_stagehand/SOURCE.md",
+      "route_type": "orquestacion",
+      "sha256": "a53581f7bd4742ae8bc282052a83e2894698a707b49f456f4814e782bec8de4a",
+      "size_bytes": 414,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/03_playwright/SOURCE.md",
+      "route_type": "orquestacion",
+      "sha256": "24f8b1ea378f48ad43e6356e3fe762d4992ac4e8c458ce8e435d68112de2ddeb",
+      "size_bytes": 394,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/04_config/config.json",
+      "route_type": "orquestacion",
+      "sha256": "e4762de9113a43aeeaa66c0f77d698df62605ae5d25036a624cdedd2e88be080",
+      "size_bytes": 4028,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/05_install/LOCAL_ONLY_CHECKLIST.md",
+      "route_type": "orquestacion",
+      "sha256": "67234b00a021e1ff2de4bbf3a3503e0c9f91ff328d515f9e662a017dcb8e0c1c",
+      "size_bytes": 323,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/05_install/install-local.sh",
+      "route_type": "orquestacion",
+      "sha256": "aca24652ba8fd9e9adfaf7c5ef79f4f7840a2a9da9034480b4f824aea69ec6bc",
+      "size_bytes": 463,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/06_provenance/FINAL_SHA256SUMS.txt",
+      "route_type": "orquestacion",
+      "sha256": "d4cc03efd59fe4c28caeb1cafbc3e07f79a190dfff92b59ea9b0ff0d8ec3c3a0",
+      "size_bytes": 1050,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/06_provenance/VERIFIED_SOURCES.md",
+      "route_type": "orquestacion",
+      "sha256": "a34fefbd8688e387e7c11100c3d10d087c2433c2c8459540f6e0f37ae7e44f79",
+      "size_bytes": 582,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/07_security_clamav/CLAMAV_SOURCE.json",
+      "route_type": "orquestacion",
+      "sha256": "c543ad314fe8eca3105a28fa5655e4b041d77716c023deb4f694311d1f172d7b",
+      "size_bytes": 969,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/07_security_clamav/README.md",
+      "route_type": "orquestacion",
+      "sha256": "fce5548e4615d634bbbed48f8f5f85cabf5fff053d2b0f09f02c18323a1f2d25",
+      "size_bytes": 918,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/07_security_clamav/download-clamav.sh",
+      "route_type": "orquestacion",
+      "sha256": "2c6f76293dd1c9a5b30da531552a84065d73e0e4c535ab4b1880ccfc2b17b9ec",
+      "size_bytes": 611,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/README.md",
+      "route_type": "orquestacion",
+      "sha256": "238e7956bed81362d05eaa18bc2d57bd5288b3bcf0a422a6221d4ccfa3c6b3fe",
+      "size_bytes": 528,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z",
+      "route_type": "orquestacion",
+      "sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14",
+      "size_bytes": 32133546,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/agno-3.0.4-py3-none-any.whl",
+      "route_type": "orquestacion",
+      "sha256": "e7338d46a3a3401fa7f87a0366c6cb7d9299a5c0d3f1e955ae55be2e1f95d46f",
+      "size_bytes": 3860188,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/deepagents-0.7.11-py3-none-any.whl",
+      "route_type": "orquestacion",
+      "sha256": "7f8ca58b7aa8b11fb8a18d054aa5da937700cba221b1104b5eda4469e9531382",
+      "size_bytes": 320468,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/langchain_core-1.6.1-py3-none-any.whl",
+      "route_type": "orquestacion",
+      "sha256": "954a84132a5cb0435d27b910e336347b6744ecc18fbeef1e2de7029a0959841a",
+      "size_bytes": 571478,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D02_ORQUESTACION",
+      "path": "2. Orquestación/Orquestador/punto.json",
+      "route_type": "orquestacion",
+      "sha256": "f91310f4544b6f6957d87eedc2cfdf2cb21a6b4b24d563f8c52380a8d45da5d6",
+      "size_bytes": 6296,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/README.md",
+      "route_type": "transcripcion",
+      "sha256": "aaef74a740faca90fa1899c4233ebe17f2093b9846d0acf16d9131bf650e9585",
+      "size_bytes": 21196,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/added_tokens.json",
+      "route_type": "transcripcion",
+      "sha256": "3c51f66c4c21f9e126970078f11ae77a78c74aee8df606ee9daba86e467108e0",
+      "size_bytes": 34648,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/compression_metadata.json",
+      "route_type": "transcripcion",
+      "sha256": "31b8629bcb893c711e9557fe442740a0e287a2751b5d88c9647eed6ce2511b30",
+      "size_bytes": 1251,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/config.json",
+      "route_type": "transcripcion",
+      "sha256": "c5b526b3e3cd64cd8940dabb45e8ba726629e22d8ed389c29b552f9140daf04a",
+      "size_bytes": 1256,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/generation_config.json",
+      "route_type": "transcripcion",
+      "sha256": "cce11bfe3aaa6ae9e072ea2637caaec8795e68d9b67e655a5af16ee509681a4c",
+      "size_bytes": 3772,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/gitattributes",
+      "route_type": "transcripcion",
+      "sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361",
+      "size_bytes": 1519,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/lowrank_runtime.py",
+      "route_type": "transcripcion",
+      "sha256": "0735f753051c4ebbf288a136ee4dadce3d0ed96a1d6c2a3eaf1a4073831ac9ad",
+      "size_bytes": 7964,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/merges.txt",
+      "route_type": "transcripcion",
+      "sha256": "2df2990a395e35e8dfbc7511e08c12d56018d8d04691e0133e5d63b21e154dc6",
+      "size_bytes": 493869,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/model.safetensors",
+      "route_type": "transcripcion",
+      "sha256": "67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f",
+      "size_bytes": 10399882,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/model.safetensors.q4.json",
+      "route_type": "transcripcion",
+      "sha256": "a3d9b84771d60c0b384df500e2219ec1c568a2e7d6794e3073cb7a435cde119a",
+      "size_bytes": 193116,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/normalizer.json",
+      "route_type": "transcripcion",
+      "sha256": "bf1c507dc8724ca9cf9903640dacfb69dae2f00edee4f21ceba106a7392f26dd",
+      "size_bytes": 52666,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/preprocessor_config.json",
+      "route_type": "transcripcion",
+      "sha256": "7ccc62c6f2765af1f3b46c00c9b5894426835a05021c8b9c01eecb6dfb542711",
+      "size_bytes": 340,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/special_tokens_map.json",
+      "route_type": "transcripcion",
+      "sha256": "baea4ea09372eb4fca86b4e4346139fd73cb807d5087e9de0948e971739c3e74",
+      "size_bytes": 2186,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/tokenizer.json",
+      "route_type": "transcripcion",
+      "sha256": "297b13372ac43916285644fb9687add3cc62ee2a1adb60da3dc25cc94c1871fd",
+      "size_bytes": 2710337,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/tokenizer_config.json",
+      "route_type": "transcripcion",
+      "sha256": "844b642c73a91359722f47b35705f7174686df33d252695d8572cf9ac03a6389",
+      "size_bytes": 282843,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D03_TRANSCRIPCION",
+      "path": "3. Transcripción/vocab.json",
+      "route_type": "transcripcion",
+      "sha256": "e2aa043ef015641d363d8288e7c241c85e36a5c761fb303598e0710233344387",
+      "size_bytes": 1036558,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24.zip",
+      "route_type": "traductor_inteligente",
+      "sha256": "6b413b1561e30d3a027a3a14bf8b5cc68dedaebaa852ff74ab2fc60f9293f583",
+      "size_bytes": 836260,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master.zip",
+      "route_type": "traductor_inteligente",
+      "sha256": "93d2a4eeb811f4bc3fbe584a35385f1aae07908ef42d2893693eabd354db1e74",
+      "size_bytes": 225343,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/added_tokens.json",
+      "route_type": "traductor_inteligente",
+      "sha256": "9ac8a85d4e97d27fad026a813d52a069680e4e0cae701ef145b204bd533251b2",
+      "size_bytes": 2066,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/compression_metadata.json",
+      "route_type": "traductor_inteligente",
+      "sha256": "c04044f67ff2b448bcf6c1323063d339ca2d4571da78956419512980d3da8408",
+      "size_bytes": 1302,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/config.json",
+      "route_type": "traductor_inteligente",
+      "sha256": "4b2fa9d863cc3033adaf261e6c3e32ad90347ee2f199a349ba1c77d5e26a605f",
+      "size_bytes": 2716,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/lowrank_runtime.py",
+      "route_type": "traductor_inteligente",
+      "sha256": "706ea29b9eff6a15c8dc8b655246e78a7741eba0d1d0f36875069ca65217dc74",
+      "size_bytes": 15799,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/model.safetensors",
+      "route_type": "traductor_inteligente",
+      "sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f",
+      "size_bytes": 11720882,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/model.safetensors.q4.json",
+      "route_type": "traductor_inteligente",
+      "sha256": "3a15a07b83feba6f933141796029bf344db7c7cdcf061fca7ae8a99a5c8b2c39",
+      "size_bytes": 735340,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/preprocessor_config.json",
+      "route_type": "traductor_inteligente",
+      "sha256": "59294da7ee216cf80f8083180cdb0ace7efabbe35a8b9009c5cab341af2bd1c7",
+      "size_bytes": 1776,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/sentencepiece.bpe.model",
+      "route_type": "traductor_inteligente",
+      "sha256": "026a76827537db9f1348e4d5aaa127bb10a2f2ff633243f3a52d16be82d73f9d",
+      "size_bytes": 5165809,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/special_tokens_map.json",
+      "route_type": "traductor_inteligente",
+      "sha256": "36ba9ab56ea9a4d0182ae18aed1ff16a15bf91b8aa544722c686744d5972b522",
+      "size_bytes": 2337,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/spm_char_lang38_tc.model",
+      "route_type": "traductor_inteligente",
+      "sha256": "9e7f2075dbc38dbe11d2414bfa4fb8e900022e87bbff4f74c97817e32a7ab493",
+      "size_bytes": 368901,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/tokenizer_config.json",
+      "route_type": "traductor_inteligente",
+      "sha256": "0a184dd2f5b9ee02ddfa7fc2110b7e919c471f29e2e771d8c18b22b7758827c8",
+      "size_bytes": 19667,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/ARTIFACT_REFERENCE.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "22e7d6bcef0658afd6820440f6d41e2f37dde27c61ae94b404b045fae4aba5d8",
+      "size_bytes": 1516,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/README.md",
+      "route_type": "inteligencia_documental",
+      "sha256": "cd459418e771fc2b6996157a700fb6e02ecad180e205174855ab3fdda90fe8dc",
+      "size_bytes": 2430,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py",
+      "route_type": "inteligencia_documental",
+      "sha256": "b383793e6c36ab285406b7da10a898cec7fc9a06cf5175f2d61d0a98ebe53013",
+      "size_bytes": 2718,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/profile.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "d636213de8ad3d3fcebf067594ccf95adca05d55d9028fca6330af51d8c3a3b7",
+      "size_bytes": 1764,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/source-lock.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "fbbdeac746ca357dfffcdb8ca5eed3b8f5844b84fea772d722c51a74f2456c28",
+      "size_bytes": 2134,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/HOST_TOOL_INVENTORY.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "1fe0fe5d941657c8133ec7530cda7d709c69386066f07545174511efcc7dde6f",
+      "size_bytes": 1791,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre/CALIBRE_BINARY_EXTERNALIZATION.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "af59dbc475c2f60ef38bb580d1a6d2a44c3103da836923ddc4d9df8bc62410c1",
+      "size_bytes": 526,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre/CALIBRE_SOURCE_PROVENANCE.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "fde8c2eb9287d819e11c23b9e6678f145b94084ddb535df5b8e613f700d75050",
+      "size_bytes": 549,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/added_tokens.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "882e49757a3bea90e00df1d2dc8c18b2b526ff77380db20439feeb1f053a63cd",
+      "size_bytes": 35,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/chat_template.jinja",
+      "route_type": "inteligencia_documental",
+      "sha256": "a4b0bf4348b014acca131da664d05b61e39d5dc8af980f1913846a57ccc6d289",
+      "size_bytes": 588,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/config.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "4fbb5d2ad9549663e5740b36a5f45cb3d861d20d2e1c158af8569765f9864f30",
+      "size_bytes": 1641,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py",
+      "route_type": "inteligencia_documental",
+      "sha256": "85ab92e255e9ea78bbc12fce23da9159e32e4ab550b593561f943835fda6255d",
+      "size_bytes": 9430,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/generation_config.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "369256b622c73d709b248da31ba4332ef19c01dec6e311d8e4b671bc1321bc06",
+      "size_bytes": 169,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/preprocessor_config.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "6cb6e36d6fcb88ca1502c4a26750715dc3e7dedddc9a8f17b27d8d167d1457e7",
+      "size_bytes": 486,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/processor_config.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "e7bff42da73ae9eec9042ef20e066e11f1ee20f025358ff79131e3c0fb549b46",
+      "size_bytes": 68,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_manifest.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "aa08a8cfa4e8406a72466ccd071639966f53042c90e2525f10a5883a7b4a9c23",
+      "size_bytes": 206894,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin",
+      "route_type": "inteligencia_documental",
+      "sha256": "4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88",
+      "size_bytes": 13483380,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/special_tokens_map.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "45c073d82ba37a1fc69c8d6a772d17a8e4f78b64b63c0fce2c77d18a3259d18e",
+      "size_bytes": 812,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/tokenizer.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "673ef3c60759806916ebf37c5d9b79f7ffd53a1419f1ebd75bfec8f177c2b1b3",
+      "size_bytes": 7153134,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/tokenizer_config.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "261f9491897226589c131a4ac5993c495eec2104dace144f69c397682865a3a0",
+      "size_bytes": 17774,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/docling_slim-2.124.0-pruned.whl",
+      "route_type": "inteligencia_documental",
+      "sha256": "471a1bea5431ea264201d3781efe0b9d35b547357dfd0e483e4943f2127c974f",
+      "size_bytes": 775392,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9_RESULT.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "a0d53b141a3f5de3632d16268bd12ca26960e6bcc2fec7cda3041eb88611ff61",
+      "size_bytes": 9168,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b",
+      "size_bytes": 10219873,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
+      "route_type": "sistema_inteligente",
+      "sha256": "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7",
+      "size_bytes": 110516001,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Anti-Alucinaciones/tokenizer.json",
+      "route_type": "sistema_inteligente",
+      "sha256": "10e1c362713a22cc592cf66395ab98fa7461a36d33e3d1bf7226e30490cd20e7",
+      "size_bytes": 1387522,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Anti-Alucinaciones/tokenizers-0.23.1-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "route_type": "sistema_inteligente",
+      "sha256": "f3f481c3b156c4e296233c9da62a338af2bed11399dd419ca480117821f8e0b5",
+      "size_bytes": 3240180,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/CAJITA_QWEN3_LOWRANK_TARGET70_FINAL_20261021T041400Z.json",
+      "route_type": "sistema_inteligente",
+      "sha256": "8c2e12e202a5f876d6ee56b3abaa63c2129c6ddc4e6522c9f2a829c2f0d73760",
+      "size_bytes": 6747,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/CANDIDATO_ACTIVO_ELEGIDO.txt",
+      "route_type": "sistema_inteligente",
+      "sha256": "b2ec40bbb9663385432dc1ab8ef252c6c2a24a2eef591eb1643224d4b86ef9aa",
+      "size_bytes": 914,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/LICENSE",
+      "route_type": "sistema_inteligente",
+      "sha256": "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e",
+      "size_bytes": 11343,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/compression_metadata.json",
+      "route_type": "sistema_inteligente",
+      "sha256": "82850aa9247dfb4dc381f8bcf5bb6291d031a9b7b87ebbdef098563248398eb0",
+      "size_bytes": 2041,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/config.json",
+      "route_type": "sistema_inteligente",
+      "sha256": "e73c3664ca09b10a673fef0c22e8a6b456201d49bd4713c9691f775720e8857a",
+      "size_bytes": 728,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/generation_config.json",
+      "route_type": "sistema_inteligente",
+      "sha256": "2325da0f15bb848e018c5ae071b7943332e9f871d6b60e2ed22ca97d4cb993d2",
+      "size_bytes": 239,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime.py",
+      "route_type": "sistema_inteligente",
+      "sha256": "ca041b36effa79ce28457f4c9a26ec5326be625a953c133a324031259ae64284",
+      "size_bytes": 5322,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py",
+      "route_type": "sistema_inteligente",
+      "sha256": "7812a7441e6e234c3608a23901154430b1b5958df7f32ee7aee0099c867c9377",
+      "size_bytes": 6536,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/merges.txt",
+      "route_type": "sistema_inteligente",
+      "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5",
+      "size_bytes": 1671853,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+      "route_type": "sistema_inteligente",
+      "sha256": "01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56",
+      "size_bytes": 14956240,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors.q4.json",
+      "route_type": "sistema_inteligente",
+      "sha256": "7b9357cd045cbd0aab3434e1ff93d06e79806c59ece422dc82a81c004926a33b",
+      "size_bytes": 216892,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/runtime_patch_v2.json",
+      "route_type": "sistema_inteligente",
+      "sha256": "1c5214ab66088dbcc1aec5f5b994878845df1b170018df426badddcc87ff4b63",
+      "size_bytes": 1503,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/tokenizer.json",
+      "route_type": "sistema_inteligente",
+      "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+      "size_bytes": 11422654,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/tokenizer_config.json",
+      "route_type": "sistema_inteligente",
+      "sha256": "d5d09f07b48c3086c508b30d1c9114bd1189145b74e982a265350c923acd8101",
+      "size_bytes": 9732,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/vocab.json",
+      "route_type": "sistema_inteligente",
+      "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+      "size_bytes": 2776833,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Archivado Deteccion/7z2602-linux-x64.tar.xz",
+      "route_type": "sistema_inteligente",
+      "sha256": "41aaba7b1235304ab5aa0624530c67ae829496cd29e875925271efdccc28c03e",
+      "size_bytes": 1571416,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Archivado Deteccion/rarlinux-x64-723 (1).tar.gz",
+      "route_type": "sistema_inteligente",
+      "sha256": "e140def835dedcd2f1a86879914bfe4aa6628acbd8aaf89b272d9d135c91baa1",
+      "size_bytes": 691630,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip",
+      "route_type": "sistema_inteligente",
+      "sha256": "1d8c6fae32af635c0a97fc7d9d6abc2708a1c7769c946f04ec25a545362200a6",
+      "size_bytes": 3727204,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e",
+      "size_bytes": 15377436,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628",
+      "size_bytes": 25273630,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04.zip",
+      "route_type": "sistema_inteligente",
+      "sha256": "4a4732e2b812ce386234118ec36fa817771b474b1a335aed8fece55fb6279dae",
+      "size_bytes": 909563,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400.zip",
+      "route_type": "sistema_inteligente",
+      "sha256": "087e07c19da4898889258e3f5b0d87612f02651ccfffbc0aae904c4f1c9a9769",
+      "size_bytes": 2923847,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Memoria Gobernada/sqlite-vec-0.1.9-loadable-linux-x86_64.tar.gz",
+      "route_type": "sistema_inteligente",
+      "sha256": "b959baa1d8dc88861b1edb337b8587178cdcb12d60b4998f9d10b6a82052d5d7",
+      "size_bytes": 61507,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea",
+      "size_bytes": 12962199,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e",
+      "size_bytes": 7954439,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0.zip",
+      "route_type": "sistema_inteligente",
+      "sha256": "d5f5f95086ea89aaf02f414c23a2ee4ad5f953c9b04d1298093422af040e63b5",
+      "size_bytes": 38162,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
+      "size_bytes": 21310484,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f",
+      "size_bytes": 3836434,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z",
+      "route_type": "sistema_inteligente",
+      "sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8",
+      "size_bytes": 13078809,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Testing/criterion-0.8.2.crate",
+      "route_type": "sistema_inteligente",
+      "sha256": "950046b2aa2492f9a536f5f4f9a3de7b9e2476e575e05bd6c333371add4d98f3",
+      "size_bytes": 122924,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Testing/pytest-9.1.1-py3-none-any.rebuilt.whl",
+      "route_type": "sistema_inteligente",
+      "sha256": "4d441dfcdbc9517dde8859b3f07b82bdb581119a865938e2560884bdf00cafd5",
+      "size_bytes": 381713,
+      "zip_method": "STORED"
+    },
+    {
+      "domain_id": null,
+      "path": "BUILD_PROVENANCE.json",
+      "route_type": null,
+      "sha256": "8f5362579cf7e8b92d3dcf0ddf0beb3bb21f137ab815d481a7fea06342d58990",
+      "size_bytes": 5288,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "CAJITA_RUNTIME_V1/weights_manifest.json",
+      "route_type": null,
+      "sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
+      "size_bytes": 3385,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "CajitadeLuna.md",
+      "route_type": "inteligencia_documental",
+      "sha256": "04f765aceb63e7b6b342819f0d8753e0b3d4626b01236e498109d82ce1149169",
+      "size_bytes": 86624,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "EXTERNALIZATION_MANIFEST.json",
+      "route_type": null,
+      "sha256": "35887c3fb7433805f3598826d7b3c859cf698dcd3e917720a23eb42a7ca1bb94",
+      "size_bytes": 14479,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "EXTERNALIZED_ASSET_PLACEMENT.json",
+      "route_type": null,
+      "sha256": "71cf89c9a19a4ca511ebe1d90c7540079bdccb17178e5a0f25cd7ca8953c8457",
+      "size_bytes": 56838,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "REQUIREMENTS.runtime.lock",
+      "route_type": null,
+      "sha256": "4fb4ba59f33f941a13967bb832e96515f27c4bd0c00c3aabc29a0bd9f9bdd4b0",
+      "size_bytes": 1108,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "RUNTIME_CANDIDATE_V1/README.md",
+      "route_type": null,
+      "sha256": "5cb55ea1be0a87366eb1ead6befb043f0315765153d052aab0c506de19f7b3a1",
+      "size_bytes": 6859,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "RUNTIME_CANDIDATE_V1/registry.json",
+      "route_type": null,
+      "sha256": "7e2af8ad65ec32a0b4c98f22ea40fc078ad44f2dbdbf0e580b4e9652d7742eac",
+      "size_bytes": 99865,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "RUNTIME_CANDIDATE_V1/registry_reconciliation.json",
+      "route_type": null,
+      "sha256": "47af56c9347d57e323acaa18cf40b5deb9c5256755f0a534ba0aa750646c0127",
+      "size_bytes": 31655,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "RUNTIME_CANDIDATE_V1/runtime.py",
+      "route_type": null,
+      "sha256": "8ce1a07cc78f1a7a31d7a4b16b2ecde8fa2bc43a80c424addd7211577798b394",
+      "size_bytes": 23181,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "RUNTIME_REPAIR_PATCH_MANIFEST_V2.json",
+      "route_type": null,
+      "sha256": "47c2a7be0e1e411a6f0bfe210be56a9943fa3f7ec2dc6232943aab66ba22e363",
+      "size_bytes": 1865,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "cajita_router.py",
+      "route_type": null,
+      "sha256": "5beb6138ae20f1064fee9e4c40029e2d0d18cc177528b89e96e79259ba1876e3",
+      "size_bytes": 27348,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "cajita_runtime.py",
+      "route_type": null,
+      "sha256": "cc12d796d2b5cbedeb21a5b0d0cd7220bae943cf64c175bcdf404d504820f21c",
+      "size_bytes": 14205,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "cajita_weight_materializer.py",
+      "route_type": null,
+      "sha256": "54e18a88e01e62b0ee09ef0b9594f8d3b9d5696c6c3e0211ec539d4fd7f68fff",
+      "size_bytes": 5671,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "command_subdomain_routing.json",
+      "route_type": null,
+      "sha256": "ca5e383b14f97079c500380ebc68d3fdccd43f43fe316039c55c38489f5f3cc1",
+      "size_bytes": 39137,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
+      "path": "reproduce_macrodown.py",
+      "route_type": null,
+      "sha256": "8367701b27a492434f1103b62a793b9abf1f89a9e4a97ed99f20a296f3abfffd",
+      "size_bytes": 8204,
+      "zip_method": "DEFLATED"
+    }
+  ],
+  "format": "ZIP archive with deterministic metadata; file extension .macrodown",
+  "gross_payload_bytes": 464203037,
+  "gross_payload_bytes_excluding_manifest": 464152509,
+  "hard_cap_archive_bytes": 470000000,
+  "hard_cap_raw_bytes": 470000000,
+  "manifest_is_self_excluded_from_file_hash_table": true,
+  "rebuild_script": "reproduce_macrodown.py",
+  "runtime_entrypoint": "cajita_runtime.py",
+  "schema": "CAJITA_RUNTIME_MACRODOWN/1.0"
+}

@@ -1300,3 +1300,15 @@ if __name__ == "__main__":
     unittest.main(verbosity=2)
 ````
 
+## Candidato aditivo de conversión documental — Calibre Slim (2026-10-24)
+
+**Asignación canónica:** D05 — Inteligencia documental.  
+**Ruta interna prevista:** `cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/`  
+**Lanzador registrado:** `calibre-slim-convert.py`  
+**Entradas públicas:** PDF, EPUB y TXT. **Salidas públicas:** PDF y EPUB.  
+**Conversiones requeridas:** PDF→EPUB, EPUB→PDF, TXT→PDF y TXT→EPUB. OCR, paquetes de idiomas, GUI y formatos adicionales quedan excluidos.
+
+El overlay de Calibre v9.17.0 tiene tamaño de referencia de **58.180 bytes (0,05818 MB decimal)** y SHA-256 `dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b`. Su evidencia CI está en [ejecución 40057448243](https://github.com/Plomillo/luna-linux-bridge/actions/runs/40057448243), artefacto [12545698477](https://github.com/Plomillo/luna-linux-bridge/actions/runs/40057448243/artifacts/12545698477).
+
+**Estado de materialización: BLOQUEADO.** La ruta y los archivos de integración se registran abajo, pero el `calibre-slim-overlay.tar.xz` todavía no está físicamente en el árbol de `main`; sigue alojado como artefacto de Actions. El lanzador falla de forma segura si falta `source/calibre/customize/builtins.py`. La integración no debe marcarse como activa ni certificada hasta materializar el binario exacto, comprobar sus bytes/hash, reconstruir el paquete `.macrodown` y pasar pruebas sobre la ruta interna. El overlay no contiene el runtime nativo oficial ni las dependencias Qt/WebEngine; por tanto, los 58 KB no representan una instalación independiente de Calibre.
+
