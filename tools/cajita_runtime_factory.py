@@ -176,14 +176,20 @@ def load_registered_materialized_modules(runtime, registry):
   rows_now=tree_rows(folder,True)
   actual_tree=sha_bytes(canon(rows_now))
   actual_bytes=sum(x["bytes"] for x in rows_now)
-  if (materialization.get("status")!="PASS"
+  mismatch=(materialization.get("status")!="PASS"
       or materialization.get("file_count")!=len(rows_now)
       or materialization.get("bytes")!=actual_bytes
       or materialization.get("tree_sha256")!=actual_tree
       or row.get("tree_sha256")!=actual_tree
       or row.get("file_count")!=len(rows_now)
-      or row.get("bytes")!=actual_bytes):
-   raise RuntimeError("MATERIALIZED_MODULE_TREE_INTEGRITY_MISMATCH:"+key)
+      or row.get("bytes")!=actual_bytes)
+  if mismatch:
+   details={"descriptor_file_count":materialization.get("file_count"),"actual_file_count":len(rows_now),
+    "registry_file_count":row.get("file_count"),"descriptor_bytes":materialization.get("bytes"),
+    "actual_bytes":actual_bytes,"registry_bytes":row.get("bytes"),
+    "descriptor_tree_sha256":materialization.get("tree_sha256"),"registry_tree_sha256":row.get("tree_sha256"),
+    "actual_tree_sha256":actual_tree,"materialization_status":materialization.get("status")}
+   raise RuntimeError("MATERIALIZED_MODULE_TREE_INTEGRITY_MISMATCH:"+key+":"+json.dumps(details,sort_keys=True,separators=(",",":")))
   out.append({**data,"module_manifest_path":expected_manifest,"module_manifest_sha256":descriptor_sha})
  return sorted(out,key=lambda item:item["module_key"].encode("utf-8"))
 
