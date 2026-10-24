@@ -59,6 +59,7 @@ REMOVE_BUILTIN_SECTIONS = (
 )
 
 OPTIONAL_PACKAGE_PATHS = (
+    "calibre/translations",
     "calibre/ai",
     "calibre/gui2/actions",
     "calibre/gui2/store",
