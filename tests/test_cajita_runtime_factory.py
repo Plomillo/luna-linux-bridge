@@ -3,10 +3,22 @@ import tempfile, unittest, zipfile
 from pathlib import Path
 from cajita_runtime_factory import safe_rel, extract, tree_hash, tree_rows
 from reproduce_macrodown import BINARY_SUFFIXES, add_stream
+from cajita_runtime import KNOWN_INFRASTRUCTURE_TEST_FIXTURES, classify_model_like_paths
 
 class FactorySafetyTests(unittest.TestCase):
  def test_parent_traversal_is_denied(self):
   with self.assertRaisesRegex(RuntimeError,"TRAVERSAL"): safe_rel("../outside")
+ def test_onnxruntime_dataset_models_are_infrastructure_fixtures_not_extra_weights(self):
+  found=set(KNOWN_INFRASTRUCTURE_TEST_FIXTURES)|{"1. Cerebro/model.safetensors","6. Sistema Inteligente/Anti-Alucinaciones/model.onnx"}
+  listed={"1. Cerebro/model.safetensors","6. Sistema Inteligente/Anti-Alucinaciones/model.onnx"}
+  result=classify_model_like_paths(found,listed)
+  self.assertEqual(result["recognized_infrastructure_fixtures"],sorted(KNOWN_INFRASTRUCTURE_TEST_FIXTURES))
+  self.assertEqual(result["undeclared_model_like_files"],[])
+  self.assertEqual(result["missing_infrastructure_fixtures"],[])
+ def test_unknown_model_like_files_remain_fail_closed(self):
+  result=classify_model_like_paths({"6. Sistema Inteligente/Anti-Alucinaciones/unregistered.onnx"},set())
+  self.assertIn("6. Sistema Inteligente/Anti-Alucinaciones/unregistered.onnx",result["undeclared_model_like_files"])
+  self.assertEqual(len(result["missing_infrastructure_fixtures"]),3)
  def test_absolute_path_is_denied(self):
   with self.assertRaisesRegex(RuntimeError,"ABSOLUTE"): safe_rel("/etc/passwd")
  def test_zip_extract_is_deterministic(self):

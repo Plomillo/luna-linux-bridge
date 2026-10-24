@@ -71,6 +71,17 @@ def selftest(root):
   manifest_ok=False; manifest_error=str(exc)
  count,size=package_size(root); capok=size<=RAW_STAGING_CAP_BYTES
  return {"schema":SCHEMA,"operation":"selftest","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"root":str(root),"domain_order":[d["id"] for d in DOMAINS],"domain_count":6,"domains":domains,"blocked_domains":missing,"weights_manifest_valid":manifest_ok,"weights_manifest_error":manifest_error,"package_file_count":count,"package_size_bytes":size,"raw_staging_ceiling_bytes":RAW_STAGING_CAP_BYTES,"combined_distribution_cap_bytes":COMBINED_DISTRIBUTION_CAP_BYTES,"combined_distribution_gate":"ENFORCED_BY_FACTORY_AND_G23_NOT_BY_UNPACKED_TREE_SELFTEST","size_gate":"PASS" if capok else "FAIL","functional_equivalence":"NOT_ESTABLISHED","certification":"NOT_GRANTED","status":"PASS" if not missing and manifest_ok and capok else "FAIL"}
+KNOWN_INFRASTRUCTURE_TEST_FIXTURES = frozenset({
+ "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311/onnxruntime/datasets/logreg_iris.onnx",
+ "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311/onnxruntime/datasets/mul_1.onnx",
+ "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311/onnxruntime/datasets/sigmoid.onnx",
+})
+def classify_model_like_paths(found_paths, listed_weight_paths):
+ found=set(found_paths); listed=set(listed_weight_paths)
+ recognized=sorted(found & KNOWN_INFRASTRUCTURE_TEST_FIXTURES)
+ extras=sorted(found-listed-KNOWN_INFRASTRUCTURE_TEST_FIXTURES)
+ missing_fixtures=sorted(KNOWN_INFRASTRUCTURE_TEST_FIXTURES-found)
+ return {"recognized_infrastructure_fixtures":recognized,"undeclared_model_like_files":extras,"missing_infrastructure_fixtures":missing_fixtures}
 def audit(root):
  m=manifest_for(root); listed={a["path"] for a in m["artifacts"]}; found=set()
  for base,dirs,files in os.walk(root,followlinks=False):
@@ -82,9 +93,14 @@ def audit(root):
   p=file_for(root,a["path"]); actualsize=p.stat().st_size; actualhash=sha256(p)
   result.append({"id":a["id"],"domain_id":a["domain_id"],"path":a["path"],"expected_bytes":a["bytes"],"actual_bytes":actualsize,"expected_sha256":a["sha256"],"actual_sha256":actualhash,"status":"PASS" if actualsize==int(a["bytes"]) and actualhash==a["sha256"] else "FAIL"})
  count,size=package_size(root); capok=size<=RAW_STAGING_CAP_BYTES
- extra=sorted(found-listed); absent=sorted(listed-found); hashok=all(x["status"]=="PASS" for x in result)
- passed=hashok and not extra and not absent and capok
- return {"schema":SCHEMA,"operation":"audit-weights","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"artifacts":result,"artifact_count":len(result),"total_weight_bytes":sum(x["actual_bytes"] for x in result),"undeclared_model_like_files":extra,"missing_manifest_files":absent,"package_file_count":count,"package_size_bytes":size,"raw_staging_ceiling_bytes":RAW_STAGING_CAP_BYTES,"combined_distribution_cap_bytes":COMBINED_DISTRIBUTION_CAP_BYTES,"combined_distribution_gate":"ENFORCED_BY_FACTORY_AND_G23_NOT_BY_UNPACKED_TREE_AUDIT","size_gate":"PASS" if capok else "FAIL","weight_presence_integrity":"PASS" if passed else "FAIL","functional_equivalence":"NOT_ESTABLISHED","independent_validation":"NOT_RUN","certification":"NOT_GRANTED","promotion":"NOT_AUTHORIZED","status":"PASS" if passed and capok else "FAIL"}
+ classified=classify_model_like_paths(found,listed)
+ extra=classified["undeclared_model_like_files"]; absent=sorted(listed-found); hashok=all(x["status"]=="PASS" for x in result)
+ fixture_records=[]
+ for rel in classified["recognized_infrastructure_fixtures"]:
+  p=file_for(root,rel)
+  fixture_records.append({"path":rel,"bytes":p.stat().st_size,"sha256":sha256(p),"classification":"ONNX_RUNTIME_TEST_FIXTURE_NOT_CAJITA_WEIGHT","integrity":"COVERED_BY_MATERIALIZED_MODULE_TREE_HASH"})
+ passed=hashok and not extra and not absent and not classified["missing_infrastructure_fixtures"] and capok
+ return {"schema":SCHEMA,"operation":"audit-weights","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"artifacts":result,"artifact_count":len(result),"total_weight_bytes":sum(x["actual_bytes"] for x in result),"undeclared_model_like_files":extra,"recognized_infrastructure_test_fixtures":fixture_records,"missing_infrastructure_test_fixtures":classified["missing_infrastructure_fixtures"],"missing_manifest_files":absent,"package_file_count":count,"package_size_bytes":size,"raw_staging_ceiling_bytes":RAW_STAGING_CAP_BYTES,"combined_distribution_cap_bytes":COMBINED_DISTRIBUTION_CAP_BYTES,"combined_distribution_gate":"ENFORCED_BY_FACTORY_AND_G23_NOT_BY_UNPACKED_TREE_AUDIT","size_gate":"PASS" if capok else "FAIL","weight_presence_integrity":"PASS" if passed else "FAIL","functional_equivalence":"NOT_ESTABLISHED","independent_validation":"NOT_RUN","certification":"NOT_GRANTED","promotion":"NOT_AUTHORIZED","status":"PASS" if passed and capok else "FAIL"}
 def select_domain(value):
  aliases={}
  for i,d in enumerate(DOMAINS,1):
