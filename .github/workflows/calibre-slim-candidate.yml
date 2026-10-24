@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: calibre-slim-candidate-${{ github.ref }}
+  group: calibre-slim-candidate-v2-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
