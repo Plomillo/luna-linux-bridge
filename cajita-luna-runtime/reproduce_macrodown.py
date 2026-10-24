@@ -4,7 +4,8 @@ from __future__ import annotations
 import argparse, hashlib, json, os, shutil, stat, zipfile
 from pathlib import Path
 SCHEMA="CAJITA_RUNTIME_MACRODOWN/1.0"
-HARD_CAP_BYTES=470_000_000
+DEFAULT_RAW_CAP_BYTES=800_000_000
+DEFAULT_COMBINED_CAP_BYTES=490_000_000
 MANIFEST_NAME="MACRODOWN_MANIFEST.json"
 BINARY_SUFFIXES={".safetensors",".onnx",".bin",".7z",".zip",".gz",".xz",".whl",".nupkg",".model",".gguf",".parquet",".pdf"}
 EXCLUDED_DIRS={".git","__pycache__",".pytest_cache"}
@@ -32,7 +33,7 @@ def iter_files(root,output):
             result.append((rel,p))
     return sorted(result,key=lambda x:x[0].encode("utf-8"))
 
-def manifest_bytes(root,files):
+def manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,companion_sha256):
     domain_map={
       "1. Cerebro":("D01_CEREBRO","cerebro"),
       "2. Orquestación":("D02_ORQUESTACION","orquestacion"),
@@ -48,8 +49,11 @@ def manifest_bytes(root,files):
           "route_type":domain_map.get(top,(None,None))[1],
           "zip_method":"STORED" if p.suffix.lower() in BINARY_SUFFIXES else "DEFLATED"})
     m={"schema":SCHEMA,"format":"ZIP archive with deterministic metadata; file extension .macrodown",
-      "candidate_id":"CAJITA_LUNA_RUNTIME_V9_20261023","hard_cap_raw_bytes":HARD_CAP_BYTES,
-      "hard_cap_archive_bytes":HARD_CAP_BYTES,"gross_payload_bytes":0,
+      "candidate_id":"CAJITA_LUNA_RUNTIME_V9_20261023","hard_cap_raw_bytes":raw_cap_bytes,
+      "hard_cap_archive_bytes":max(0,combined_cap_bytes-companion_bytes),
+      "combined_distribution_cap_bytes":combined_cap_bytes,
+      "companion_artifact":{"path":"Louksna1.md","size_bytes":companion_bytes,"sha256":companion_sha256},
+      "gross_payload_bytes":0,
       "gross_payload_bytes_excluding_manifest":total,"file_count_excluding_manifest":len(records),
       "manifest_is_self_excluded_from_file_hash_table":True,
       "domain_order":["D01_CEREBRO","D02_ORQUESTACION","D03_TRANSCRIPCION","D04_TRADUCTOR_INTELIGENTE","D05_INTELIGENCIA_DOCUMENTAL","D06_SISTEMA_INTELIGENTE"],
@@ -71,7 +75,7 @@ def manifest_bytes(root,files):
     m["gross_payload_bytes"]=total+len(enc)
     enc=(json.dumps(m,ensure_ascii=False,sort_keys=True,separators=(",",":"))+"\n").encode()
     gross=total+len(enc)
-    if gross>HARD_CAP_BYTES: raise RuntimeError(f"RAW_PAYLOAD_OVER_CAP:{gross}>{HARD_CAP_BYTES}")
+    if gross>raw_cap_bytes: raise RuntimeError(f"RAW_BUILD_TREE_OVER_CAP:{gross}>{raw_cap_bytes}")
     return enc,gross
 
 def add_stream(zf,rel,path):
@@ -82,13 +86,13 @@ def add_stream(zf,rel,path):
     with zf.open(zi,"w",force_zip64=True) as dst, path.open("rb") as src:
         shutil.copyfileobj(src,dst,length=8*1024*1024)
 
-def build(root,output):
+def build(root,output,raw_cap_bytes=DEFAULT_RAW_CAP_BYTES,combined_cap_bytes=DEFAULT_COMBINED_CAP_BYTES,companion_bytes=0,companion_sha256=None):
     root=Path(root).resolve(); output=Path(output).resolve()
     domains=["1. Cerebro","2. Orquestación","3. Transcripción","4. Traductor Inteligente","5. Inteligencia documental","6. Sistema Inteligente"]
     missing=[d for d in domains if not (root/d).is_dir()]
     if missing: raise RuntimeError("DOMAIN_ROOTS_MISSING:"+",".join(missing))
     if not (root/"cajita_runtime.py").is_file(): raise RuntimeError("RUNTIME_ENTRYPOINT_MISSING")
-    files=iter_files(root,output); manifest,gross=manifest_bytes(root,files)
+    files=iter_files(root,output); manifest,gross=manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,companion_sha256)
     output.parent.mkdir(parents=True,exist_ok=True); temp=output.with_name(output.name+".building")
     try:
         if temp.exists(): temp.unlink()
@@ -99,8 +103,9 @@ def build(root,output):
             zi.compress_type=zipfile.ZIP_DEFLATED; zi.extra=b""; zi.comment=b""
             zf.writestr(zi,manifest,compress_type=zipfile.ZIP_DEFLATED,compresslevel=9)
         archive_size=temp.stat().st_size
-        if gross>HARD_CAP_BYTES: raise RuntimeError(f"RAW_PAYLOAD_OVER_CAP:{gross}")
-        if archive_size>HARD_CAP_BYTES: raise RuntimeError(f"ARCHIVE_OVER_CAP:{archive_size}")
+        if gross>raw_cap_bytes: raise RuntimeError(f"RAW_BUILD_TREE_OVER_CAP:{gross}>{raw_cap_bytes}")
+        combined_size=archive_size+companion_bytes
+        if combined_size>combined_cap_bytes: raise RuntimeError(f"COMBINED_DISTRIBUTION_OVER_CAP:archive={archive_size},companion={companion_bytes},combined={combined_size},cap={combined_cap_bytes}")
         with zipfile.ZipFile(temp,"r") as zf:
             if zf.testzip(): raise RuntimeError("ZIP_CRC_FAILURE")
             names=zf.namelist()
@@ -119,7 +124,9 @@ def build(root,output):
         os.replace(temp,output); digest=sha256_file(output)
         output.with_suffix(output.suffix+".sha256").write_text(digest+"  "+output.name+"\n",encoding="ascii")
         return {"status":"PASS","output":str(output),"archive_bytes":output.stat().st_size,
-          "gross_raw_payload_bytes":gross,"hard_cap_bytes":HARD_CAP_BYTES,
+          "gross_raw_payload_bytes":gross,"raw_build_tree_ceiling_bytes":raw_cap_bytes,
+          "combined_distribution_cap_bytes":combined_cap_bytes,"companion_bytes":companion_bytes,
+          "combined_distribution_bytes":archive_size+companion_bytes,
           "member_count":len(files)+1,"sha256":digest,"rebuildable":True}
     finally:
         if temp.exists(): temp.unlink()
@@ -128,7 +135,15 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--root",default=str(Path(__file__).resolve().parent))
     ap.add_argument("--output",default=None)
+    ap.add_argument("--raw-cap-bytes",type=int,default=DEFAULT_RAW_CAP_BYTES)
+    ap.add_argument("--combined-cap-bytes",type=int,default=DEFAULT_COMBINED_CAP_BYTES)
+    ap.add_argument("--companion-bytes",type=int,default=0)
+    ap.add_argument("--companion-sha256",default=None)
     a=ap.parse_args(); root=Path(a.root).resolve()
-    output=Path(a.output).resolve() if a.output else root.parent/"CAJITA_LUNA_RUNTIME_V9.macrodown"
-    print(json.dumps(build(root,output),ensure_ascii=False,indent=2))
+    output=Path(a.output).resolve() if a.output else root.parent/"CAJITA_LUNA_RUNTIME_V10.macrodown"
+    if min(a.raw_cap_bytes,a.combined_cap_bytes)<1 or a.companion_bytes<0:
+        ap.error("byte limits must be positive and companion bytes must be non-negative")
+    if a.companion_sha256 is not None and (len(a.companion_sha256)!=64 or any(c not in "0123456789abcdef" for c in a.companion_sha256)):
+        ap.error("companion sha256 must be 64 lowercase hexadecimal characters")
+    print(json.dumps(build(root,output,a.raw_cap_bytes,a.combined_cap_bytes,a.companion_bytes,a.companion_sha256),ensure_ascii=False,indent=2))
 if __name__=="__main__": main()

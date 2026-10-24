@@ -1,0 +1,355 @@
+#!/usr/bin/env python3
+"""Reproducible Cajita materialization and Louksna1 candidate factory."""
+from __future__ import annotations
+import argparse, hashlib, json, os, re, shutil, stat, subprocess, sys, tempfile, zipfile
+from datetime import datetime, timezone
+from pathlib import Path, PurePosixPath
+
+SCHEMA = "CAJITA_LOUKSNA1_FACTORY/1.0"
+RAW_CAP = 800_000_000
+COMBINED_CAP = 490_000_000
+ARCHIVE_SUFFIXES = {".zip", ".7z"}
+WEIGHT_PATHS = (
+ "1. Cerebro/model.safetensors",
+ "3. Transcripción/model.safetensors",
+ "4. Traductor Inteligente/Traducción general/model.safetensors",
+ "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin",
+ "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+ "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
+)
+
+def utc():
+ return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+
+def canon(obj):
+ return json.dumps(obj,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+
+def sha_bytes(data):
+ return hashlib.sha256(data).hexdigest()
+
+def sha_file(path):
+ h=hashlib.sha256()
+ with Path(path).open("rb") as f:
+  for block in iter(lambda:f.read(4*1024*1024),b""): h.update(block)
+ return h.hexdigest()
+
+def safe_rel(value):
+ value=value.replace("\\","/")
+ p=PurePosixPath(value)
+ if not value or value.startswith("/") or re.match(r"^[A-Za-z]:",value):
+  raise RuntimeError("ARCHIVE_ABSOLUTE_PATH_REJECTED:"+value[:160])
+ if any(part in {"..",""} for part in p.parts) or p.as_posix() in {"",".",".."}:
+  raise RuntimeError("ARCHIVE_PATH_TRAVERSAL_REJECTED:"+value[:160])
+ return p
+
+def check_tree(root):
+ root=root.resolve()
+ for base,dirs,files in os.walk(root,followlinks=False):
+  for name in dirs+files:
+   p=Path(base)/name
+   if p.is_symlink() or not p.resolve().is_relative_to(root):
+    raise RuntimeError("SYMLINK_OR_PATH_ESCAPE:"+str(p))
+   if p.is_file() and not stat.S_ISREG(p.stat().st_mode):
+    raise RuntimeError("NON_REGULAR_FILE:"+str(p))
+
+def tree_rows(root, exclude_descriptor=True):
+ rows=[]
+ for base,dirs,files in os.walk(root,topdown=True,followlinks=False):
+  bp=Path(base)
+  dirs[:]=sorted(d for d in dirs if not (bp/d).is_symlink())
+  for name in sorted(files):
+   p=bp/name
+   if p.is_symlink() or not p.is_file(): raise RuntimeError("NON_REGULAR_TREE_ENTRY:"+str(p))
+   if exclude_descriptor and name=="CAJITA_MODULE.json": continue
+   rows.append({"path":p.relative_to(root).as_posix(),"bytes":p.stat().st_size,"sha256":sha_file(p)})
+ return sorted(rows,key=lambda x:x["path"].encode())
+
+def tree_hash(root):
+ return sha_bytes(canon(tree_rows(root,True)))
+
+def merge_tree(src,dest):
+ check_tree(src)
+ dest.mkdir(parents=True,exist_ok=True)
+ for base,dirs,files in os.walk(src,topdown=True,followlinks=False):
+  rel=Path(base).relative_to(src); target=dest/rel
+  target.mkdir(parents=True,exist_ok=True)
+  for d in dirs: (target/d).mkdir(parents=True,exist_ok=True)
+  for name in files:
+   s=Path(base)/name; t=target/name
+   if t.exists():
+    if not t.is_file() or t.is_symlink() or s.stat().st_size!=t.stat().st_size or sha_file(s)!=sha_file(t):
+     raise RuntimeError("DESTINATION_CONTENT_COLLISION:"+str(t))
+   else: shutil.copy2(s,t)
+
+def validate_7z(archive):
+ p=subprocess.run(["7z","l","-slt",str(archive)],text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=120)
+ if p.returncode: raise RuntimeError("7Z_LIST_FAILED:"+p.stdout[-300:])
+ paths=[line[7:] for line in p.stdout.splitlines() if line.startswith("Path = ")]
+ for name in paths[1:]: safe_rel(name)
+
+def extract(archive,dest,tmp_parent):
+ tmp=Path(tempfile.mkdtemp(prefix="cajita-extract-",dir=tmp_parent))
+ try:
+  if archive.suffix.lower()==".zip":
+   with zipfile.ZipFile(archive) as z:
+    bad=z.testzip()
+    if bad: raise RuntimeError("ZIP_CRC_FAILURE:"+bad)
+    names=[i.filename for i in z.infolist()]
+    if len(names)!=len(set(names)): raise RuntimeError("ZIP_DUPLICATE_MEMBER")
+    for info in z.infolist():
+     if not info.filename.rstrip("/"): continue
+     rel=safe_rel(info.filename.rstrip("/"))
+     mode=(info.external_attr>>16)&0xFFFF
+     if stat.S_ISLNK(mode): raise RuntimeError("ZIP_SYMLINK_REJECTED:"+info.filename)
+     out=tmp.joinpath(*rel.parts)
+     if not out.resolve().is_relative_to(tmp.resolve()): raise RuntimeError("ZIP_PATH_ESCAPE")
+     if info.is_dir(): out.mkdir(parents=True,exist_ok=True)
+     else:
+      out.parent.mkdir(parents=True,exist_ok=True)
+      with z.open(info) as src,out.open("wb") as dst: shutil.copyfileobj(src,dst,1024*1024)
+      os.chmod(out,0o755 if mode&0o111 else 0o644)
+  elif archive.suffix.lower()==".7z":
+   validate_7z(archive)
+   test=subprocess.run(["7z","t","-bd",str(archive)],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=600)
+   if test.returncode: raise RuntimeError("7Z_TEST_FAILED:"+test.stdout[-300:])
+   run=subprocess.run(["7z","x","-y","-bd","-o"+str(tmp),str(archive)],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=900)
+   if run.returncode: raise RuntimeError("7Z_EXTRACTION_FAILED:"+run.stdout[-500:])
+  else: raise RuntimeError("UNSUPPORTED_ARCHIVE_SUFFIX")
+  check_tree(tmp)
+  if not tree_rows(tmp,False): raise RuntimeError("EMPTY_ARCHIVE:"+str(archive))
+  merge_tree(tmp,dest)
+ finally: shutil.rmtree(tmp,ignore_errors=True)
+
+def measure(root,exclude_manifest=True):
+ total=0; count=0
+ for p in root.rglob("*"):
+  if p.is_symlink(): raise RuntimeError("SYMLINK_IN_RUNTIME:"+str(p))
+  if p.is_file() and not (exclude_manifest and p.name=="MACRODOWN_MANIFEST.json"):
+   total+=p.stat().st_size; count+=1
+ return count,total
+
+def verify_weights(runtime,manifest):
+ out=[]
+ for w in manifest.get("artifacts",[]):
+  p=runtime/w["path"]
+  if not p.is_file() or p.is_symlink() or p.stat().st_size!=int(w["bytes"]) or sha_file(p)!=w["sha256"]:
+   raise RuntimeError("WEIGHT_HASH_OR_SIZE_MISMATCH:"+w["path"])
+  out.append({"id":w["id"],"path":w["path"],"bytes":p.stat().st_size,"sha256":sha_file(p),"status":"PASS"})
+ if len(out)!=6: raise RuntimeError("WEIGHT_COUNT_NOT_SIX")
+ return out
+
+def factory_materialize(runtime,rollback,raw_cap):
+ placement_path=runtime/"EXTERNALIZED_ASSET_PLACEMENT.json"
+ routing_path=runtime/"command_subdomain_routing.json"
+ placement=json.loads(placement_path.read_text(encoding="utf-8"))
+ routing=json.loads(routing_path.read_text(encoding="utf-8"))
+ original=json.loads((runtime/"MACRODOWN_MANIFEST.json").read_text(encoding="utf-8"))
+ original_files={r["path"]:r for r in original.get("files",[])}
+ registered={}
+ for a in placement.get("assets",[]):
+  prefix="cajita-luna-runtime/"
+  if a.get("placed_path","").startswith(prefix): registered[a["placed_path"][len(prefix):]]=a
+ processed=set(); records=[]; removed_bytes=0
+ while True:
+  pending=sorted([p for p in runtime.rglob("*") if p.is_file() and p.suffix.lower() in ARCHIVE_SUFFIXES and not p.is_symlink() and p.relative_to(runtime).as_posix() not in processed],key=lambda p:p.relative_to(runtime).as_posix().encode())
+  if not pending: break
+  if len(processed)+len(pending)>200: raise RuntimeError("ARCHIVE_EXPANSION_COUNT_LIMIT")
+  for archive in pending:
+   rel=archive.relative_to(runtime).as_posix(); oldsha=sha_file(archive); oldsize=archive.stat().st_size
+   oldrow=original_files.get(rel)
+   if oldrow and (int(oldrow.get("size_bytes",-1))!=oldsize or oldrow.get("sha256")!=oldsha):
+    raise RuntimeError("SOURCE_MANIFEST_MISMATCH:"+rel)
+   asset=registered.get(rel)
+   if asset:
+    ex=asset.get("expanded_path",""); prefix="cajita-luna-runtime/"
+    if not ex.startswith(prefix): raise RuntimeError("EXPANSION_PATH_INVALID:"+rel)
+    dest=runtime.joinpath(*safe_rel(ex[len(prefix):]).parts)
+   else: dest=archive.with_suffix("")
+   if dest==archive or not dest.resolve().is_relative_to(runtime.resolve()): raise RuntimeError("INVALID_EXPANSION_DESTINATION:"+rel)
+   backup=rollback/rel; backup.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(archive,backup)
+   extract(archive,dest,rollback)
+   count,expanded_bytes=measure(dest,False)
+   rec={"source_path":rel,"source_sha256":oldsha,"source_bytes":oldsize,"expanded_path":dest.relative_to(runtime).as_posix(),"expanded_file_count_at_extract":count,"expanded_bytes_at_extract":expanded_bytes,"archive_removed_from_runtime":True,"rollback_path":str(backup.relative_to(rollback)).replace("\\","/"),"asset_id":asset.get("id") if asset else None}
+   archive.unlink(); processed.add(rel); removed_bytes+=oldsize; records.append(rec)
+   _,raw=measure(runtime,False)
+   if raw>raw_cap: raise RuntimeError(f"RAW_STAGING_CEILING_EXCEEDED:{raw}>{raw_cap}")
+ archives=[p.relative_to(runtime).as_posix() for p in runtime.rglob("*") if p.is_file() and p.suffix.lower() in ARCHIVE_SUFFIXES]
+ if archives: raise RuntimeError("ARCHIVES_REMAIN:"+",".join(archives[:20]))
+ readmes=[]
+ for p in sorted(runtime.rglob("*"),key=lambda p:len(p.parts),reverse=True):
+  if p.is_file() and p.name.upper().startswith("README"):
+   readmes.append({"path":p.relative_to(runtime).as_posix(),"bytes":p.stat().st_size,"sha256":sha_file(p)})
+   p.unlink()
+ if any(p.is_file() and p.name.upper().startswith("README") for p in runtime.rglob("*")): raise RuntimeError("READMES_REMAIN")
+
+ modules={}
+ for rec in records: modules[rec["expanded_path"]]=modules.get(rec["expanded_path"],[])
+ for rec in records: modules[rec["expanded_path"]].append(rec)
+ module_records=[]
+ for rel,source_rows in sorted(modules.items()):
+  folder=runtime/rel
+  descriptor=folder/"CAJITA_MODULE.json"
+  if descriptor.exists(): raise RuntimeError("MODULE_DESCRIPTOR_COLLISION:"+rel)
+  rows=tree_rows(folder,True); byte_count=sum(x["bytes"] for x in rows)
+  data={"schema":"CAJITA_MATERIALIZED_MODULE/1.0","module_key":rel,"identity_type":"PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT","canonical_asset_id":next((r["asset_id"] for r in source_rows if r["asset_id"]),None),"source_archives":[{"path":r["source_path"],"bytes":r["source_bytes"],"sha256":r["source_sha256"]} for r in source_rows],"materialization":{"status":"PASS","file_count":len(rows),"bytes":byte_count,"tree_sha256":sha_bytes(canon(rows))},"consumer_adapter":"NOT_PROVEN_BY_EXTRACTION","functional_smoke":"REQUIRED","certification":"NOT_GRANTED"}
+  descriptor.write_text(json.dumps(data,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+  module_records.append({**data,"module_manifest_path":descriptor.relative_to(runtime).as_posix(),"module_manifest_sha256":sha_file(descriptor)})
+
+ by_path={r["source_path"]:r for r in records}; by_id={m.get("canonical_asset_id"):m for m in module_records if m.get("canonical_asset_id")}
+ for a in placement.get("assets",[]):
+  prefix="cajita-luna-runtime/"; rel=a.get("placed_path","")
+  rel=rel[len(prefix):] if rel.startswith(prefix) else rel
+  r=by_path.get(rel)
+  if not r: continue
+  m=by_id.get(a["id"])
+  a["factory_reconciliation"]={"status":"MATERIALIZED_HASH_VERIFIED","source_archive_sha256_actual":r["source_sha256"],"source_archive_bytes_actual":r["source_bytes"],"historical_hash_match":r["source_sha256"]==a.get("sha256"),"archive_removed_from_runtime":True,"module_path":r["expanded_path"],"module_manifest":m["module_manifest_path"] if m else None,"module_manifest_sha256":m["module_manifest_sha256"] if m else None}
+  a["included_in_current_macrodown_manifest"]=False
+  a["materialized_module_path"]=r["expanded_path"]
+  if m:
+   a["expanded_file_count"]=m["materialization"]["file_count"]; a["expanded_bytes"]=m["materialization"]["bytes"]; a["expanded_tree_sha256"]=m["materialization"]["tree_sha256"]
+  a["placement"]="MATERIALIZED_DIRECTORY"
+ placement["factory_reconciliation"]={"schema":SCHEMA,"generated_at_utc":utc(),"archive_count_materialized":len(records),"archive_bytes_removed":removed_bytes,"archives":records,"readmes_removed":readmes,"module_count":len(module_records),"rollback_copies_retained_outside_runtime":True,"all_zip_7z_removed":True,"certification":"NOT_GRANTED"}
+ placement["status"]="MATERIALIZATION_COMPLETE_PENDING_FUNCTION_AND_G23_G24"
+ placement["certification"]="NOT_GRANTED"
+ placement_path.write_text(json.dumps(placement,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+
+ for a in routing.get("support_assets",[]):
+  rel=a.get("relative_path",""); r=by_path.get(rel)
+  if r:
+   m=by_id.get(r["asset_id"])
+   a.update({"source_archive_path":rel,"source_archive_sha256":r["source_sha256"],"source_archive_bytes":r["source_bytes"],"materialized_path":r["expanded_path"],"expanded_bytes":m["materialization"]["bytes"] if m else None,"expanded_tree_sha256":m["materialization"]["tree_sha256"] if m else None,"module_manifest_path":m["module_manifest_path"] if m else None,"module_manifest_sha256":m["module_manifest_sha256"] if m else None,"activation_status":"MATERIALIZED_NOT_FUNCTIONALLY_VALIDATED","archive_removed_from_runtime":True})
+ routing["materialization"]={"schema":"CAJITA_MATERIALIZATION_REGISTRY/1.0","archive_policy":"ZIP_7Z_MATERIALIZED_DURING_BUILD_AND_REMOVED","readme_policy":"ALL_README_PREFIX_FILES_REMOVED","module_registry":"module_registry.json","module_count":len(module_records),"archive_count_removed":len(records),"certification":"NOT_GRANTED"}
+ routing["state"]["status"]="ROUTING_MAP_REGISTERED_MATERIALIZED_MODULES_EXECUTION_REMAINS_FAIL_CLOSED"
+ routing["state"]["task_dispatch"]="PLAN_ONLY_UNTIL_TASK_ADAPTERS_AND_RESOURCE_EVIDENCE_PASS"
+ routing["state"]["certification"]="NOT_GRANTED"
+ routing_path.write_text(json.dumps(routing,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+ registry={"schema":"CAJITA_MODULE_REGISTRY/1.0","generated_at_utc":utc(),"domain_order":routing.get("domain_order",[]),"canonical_engine_count":len(routing.get("engine_registry",[])),"canonical_command_count":len(routing.get("route_profiles",[])),"materialized_module_count":len(module_records),"modules":[{"module_key":m["module_key"],"canonical_asset_id":m["canonical_asset_id"],"path":m["module_key"],"manifest":m["module_manifest_path"],"manifest_sha256":m["module_manifest_sha256"],"tree_sha256":m["materialization"]["tree_sha256"],"bytes":m["materialization"]["bytes"],"file_count":m["materialization"]["file_count"],"state":"MATERIALIZED_HASH_VERIFIED","consumer_adapter":"NOT_PROVEN_BY_EXTRACTION","execution":"NOT_GRANTED_WITHOUT_ADAPTER_AND_SMOKE","certification":"NOT_GRANTED"} for m in module_records],"certification":"NOT_GRANTED"}
+ (runtime/"module_registry.json").write_text(json.dumps(registry,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+ _,raw=measure(runtime,False)
+ if raw>raw_cap: raise RuntimeError(f"RAW_STAGING_CEILING_EXCEEDED:{raw}>{raw_cap}")
+ return {"archive_count":len(records),"archive_bytes_removed":removed_bytes,"archives":records,"readme_count":len(readmes),"readmes_removed":readmes,"module_count":len(module_records),"modules":module_records,"raw_tree_bytes_after_materialization":raw}
+
+def append_runtime_policy(runtime,factory_data):
+ p=runtime/"CajitadeLuna.md"; original=p.read_bytes()
+ text=f"""
+
+---
+
+## Política de fabricación V10: módulos materializados y distribución conjunta
+
+Esta sección es aditiva; se preserva el documento histórico y se aplica a esta fabricación para resolver el empaquetado durante la construcción, no durante cada ejecución.
+
+- Cada archivo ZIP o 7Z del runtime se valida y extrae durante la fabricación. Solo se elimina el contenedor después de la prueba de integridad y la verificación de colisiones. Se conserva una copia de rollback fuera del runtime distribuible.
+- Se eliminan todos los archivos cuyo nombre comienza por README, sin distinguir mayúsculas. Sus rutas, tamaños y SHA-256 quedan registrados en el manifiesto de fabricación.
+- Cada paquete extraído queda identificado como módulo mediante CAJITA_MODULE.json y module_registry.json. La materialización no autoriza a dar por conectado un consumidor: adaptador, smoke nativo y medición de recursos siguen siendo pruebas separadas.
+- Los seis artefactos de pesos deben mantener exactamente tamaño y SHA-256. No se reemplazan modelos ni motores por motivos de tamaño.
+- El árbol de trabajo materializado tiene un techo de fabricación separado de {RAW_CAP} bytes. La puerta de distribución conjunta mide el archivo .macrodown más Louksna1.md, con máximo decimal exacto de {COMBINED_CAP} bytes. El techo del árbol de trabajo no amplía el presupuesto del producto final.
+- La ejecución sigue siendo secuencial y bajo demanda. La autorización de una tarea no equivale a autorización de efectos ajenos a ella.
+- El sistema antiparálisis mantiene un diario persistente encadenado por SHA-256, limita a tres las observaciones idénticas sin progreso y pasa a HOLD_CONSCIOUS al agotarlas. No realiza reintentos automáticos con efectos desconocidos ni sin idempotencia y checkpoint verificado.
+- Ningún estado de certificación se hereda automáticamente. La certificación integral exige evidencia independiente G23 y una decisión G24 separada.
+
+Estado de fabricación: {factory_data["archive_count"]} contenedores ZIP/7Z retirados tras extracción; {factory_data["readme_count"]} README retirados; {factory_data["module_count"]} módulos de ruta registrados. La validación funcional completa y la certificación global permanecen pendientes de sus gates independientes.
+"""
+ p.write_bytes(original+text.encode("utf-8"))
+
+def make_louksna1(repo_root,runtime,out_doc):
+ source=repo_root/"LOUKSNAMEJORADA.md"
+ if not source.is_file() or source.is_symlink(): raise RuntimeError("PROTECTED_ARCHITECTURE_MISSING")
+ base=source.read_bytes(); base_hash=sha_bytes(base); cajita=(runtime/"CajitadeLuna.md").read_bytes()
+ marker=f"""
+
+---
+
+# Unificación gobernada de Cajita de Luna
+
+Fórmula: LOUKSNAMEJORADA.md + runtime definido por CajitadeLuna.md → LOUKSNA1.md.
+
+El prefijo de este archivo preserva byte por byte LOUKSNAMEJORADA.md; el archivo fuente no se modifica. Se incorpora íntegramente CajitadeLuna.md y el runtime distribuible se entrega por separado como CAJITA_LUNA_RUNTIME_V10.macrodown. El registro LOUKSNA1_RELEASE_MANIFEST.json vincula los tamaños y SHA-256 exactos de ambos artefactos.
+
+## Invariantes
+
+- Fuente protegida: SHA-256 {base_hash}; prefijo byte exacto confirmado.
+- Se mantienen seis dominios, orden canónico, 15 motores, 14 comandos y las identidades existentes.
+- ZIP/7Z se materializan durante la fabricación y se retiran del runtime después de verificar la extracción; no se empaquetan junto al mismo árbol expandido.
+- README* se excluyen del runtime y se registran en evidencia.
+- Cada módulo de ruta declara procedencia, integridad y estado del adaptador sin recibir identidad canónica inventada.
+- Presupuesto conjunto de distribución: .macrodown + este documento ≤ {COMBINED_CAP} bytes decimales.
+- Antiparálisis persistente, diario verificable por cadena SHA-256 y HOLD_CONSCIOUS al tercer estancamiento idéntico. Sin bucles infinitos ni reintentos automáticos para efectos desconocidos.
+- Presencia, integridad, smoke, G23 y G24 son estados distintos.
+
+## Alcance y certificación
+
+La evidencia independiente debe vincular los SHA-256 del documento y del paquete distribuible. Ningún PASS de fabricación se convierte automáticamente en certificación integral. La decisión global queda NOT_GRANTED hasta completar G23 y G24 y probar adaptadores funcionales, calidad y recursos dentro del alcance declarado.
+"""
+ out_doc.parent.mkdir(parents=True,exist_ok=True)
+ out_doc.write_bytes(base+marker.encode()+b"\n\n---\n\n# Documento central del runtime Cajita de Luna (copia literal)\n\n"+cajita)
+ if not out_doc.read_bytes().startswith(base): raise RuntimeError("LOUKSNAMEJORADA_PREFIX_NOT_BYTE_EXACT")
+ return {"path":out_doc.name,"bytes":out_doc.stat().st_size,"sha256":sha_file(out_doc),"source_sha256":base_hash,"prefix_byte_exact":True,"cajita_doc_sha256":sha_bytes(cajita)}
+
+def main():
+ ap=argparse.ArgumentParser()
+ ap.add_argument("--repo-root",default="."); ap.add_argument("--output-dir",required=True)
+ ap.add_argument("--raw-cap-bytes",type=int,default=RAW_CAP); ap.add_argument("--combined-cap-bytes",type=int,default=COMBINED_CAP)
+ a=ap.parse_args(); repo=Path(a.repo_root).resolve(); out=Path(a.output_dir).resolve()
+ runtime_source=repo/"cajita-luna-runtime"; stage_parent=out/"stage"; runtime=stage_parent/"cajita-luna-runtime"; rollback=out/"rollback-source-archives"
+ out.mkdir(parents=True,exist_ok=True)
+ if stage_parent.exists(): shutil.rmtree(stage_parent)
+ stage_parent.mkdir(parents=True); rollback.mkdir(parents=True,exist_ok=True)
+ report={"schema":SCHEMA,"generated_at_utc":utc(),"status":"RUNNING","certification":"NOT_GRANTED","blockers":[]}
+ report_path=out/"factory-report.json"
+ try:
+  report["source_commit"]=subprocess.check_output(["git","-C",str(repo),"rev-parse","HEAD"],text=True).strip()
+  shutil.copytree(runtime_source,runtime,symlinks=True)
+  weights=json.loads((runtime/"CAJITA_RUNTIME_V1/weights_manifest.json").read_text(encoding="utf-8"))
+  report["weights_before"]=verify_weights(runtime,weights)
+  data=factory_materialize(runtime,rollback,a.raw_cap_bytes); report["materialization"]=data
+  append_runtime_policy(runtime,data)
+  routing=json.loads((runtime/"command_subdomain_routing.json").read_text(encoding="utf-8"))
+  expected=["D01_CEREBRO","D02_ORQUESTACION","D03_TRANSCRIPCION","D04_TRADUCTOR_INTELIGENTE","D05_INTELIGENCIA_DOCUMENTAL","D06_SISTEMA_INTELIGENTE"]
+  if routing.get("domain_order")!=expected or len(routing.get("engine_registry",[]))!=15 or len(routing.get("route_profiles",[]))!=14 or len(routing.get("targets",[]))!=21 or len(routing.get("support_assets",[]))!=10:
+   raise RuntimeError("CANONICAL_TAXONOMY_INVARIANT_FAILED")
+  report["weights_after"]=verify_weights(runtime,weights)
+  report["weights_preserved"]=report["weights_before"]==report["weights_after"]
+  if not report["weights_preserved"]: raise RuntimeError("WEIGHT_IDENTITY_CHANGED")
+  doc=out/"Louksna1.md"; report["louksna1"]=make_louksna1(repo,runtime,doc)
+  pkg=out/"CAJITA_LUNA_RUNTIME_V10.macrodown"
+  builder=subprocess.run([sys.executable,str(runtime/"reproduce_macrodown.py"),"--root",str(runtime),"--output",str(pkg),"--raw-cap-bytes",str(a.raw_cap_bytes),"--combined-cap-bytes",str(a.combined_cap_bytes),"--companion-bytes",str(doc.stat().st_size),"--companion-sha256",sha_file(doc)],text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=1800)
+  report["builder_output"]=builder.stdout[-12000:]
+  if builder.returncode or not pkg.is_file(): raise RuntimeError("MACRODOWN_BUILD_FAILED:"+builder.stdout[-1800:])
+  built=json.loads(builder.stdout); 
+  with zipfile.ZipFile(pkg) as z:
+   if z.testzip(): raise RuntimeError("MACRODOWN_CRC_FAILED")
+   names=z.namelist()
+   if len(names)!=len(set(names)): raise RuntimeError("MACRODOWN_DUPLICATE_MEMBERS")
+   if any(Path(n).name.upper().startswith("README") for n in names): raise RuntimeError("README_STILL_PACKAGED")
+   if any(Path(n).suffix.lower() in ARCHIVE_SUFFIXES for n in names): raise RuntimeError("ZIP_7Z_STILL_PACKAGED")
+   manifest=json.loads(z.read("MACRODOWN_MANIFEST.json")); table={x["path"]:x for x in manifest["files"]}
+   if set(table)!=set(names)-{"MACRODOWN_MANIFEST.json"}: raise RuntimeError("MACRODOWN_MANIFEST_MEMBER_SET_MISMATCH")
+   for name,row in table.items():
+    content=z.read(name)
+    if len(content)!=int(row["size_bytes"]) or sha_bytes(content)!=row["sha256"]: raise RuntimeError("MACRODOWN_MEMBER_HASH_MISMATCH:"+name)
+  combined=pkg.stat().st_size+doc.stat().st_size
+  if combined>a.combined_cap_bytes: raise RuntimeError(f"COMBINED_DISTRIBUTION_OVER_CAP:{combined}>{a.combined_cap_bytes}")
+  release={"schema":"LOUKSNA1_RELEASE_MANIFEST/1.0","source_commit":report["source_commit"],"generated_at_utc":utc(),
+   "protected_architecture":{"path":"LOUKSNAMEJORADA.md","sha256":report["louksna1"]["source_sha256"],"modified":False,"prefix_byte_exact":True},
+   "louksna1":{"path":doc.name,"bytes":doc.stat().st_size,"sha256":sha_file(doc)},
+   "runtime_distribution":{"path":pkg.name,"bytes":pkg.stat().st_size,"sha256":sha_file(pkg)},
+   "combined_distribution":{"bytes":combined,"cap_bytes":a.combined_cap_bytes,"status":"PASS"},
+   "gates":{"G23":"NOT_PERFORMED","G24":"NOT_GRANTED"},"global_certification":"NOT_GRANTED",
+   "functional_scope":"MATERIALIZATION_HASHES_STRUCTURE_PACKAGE_CRC_PENDING_NATIVE_TASK_ADAPTERS_AND_HARDWARE_SMOKE",
+   "status":"BUILT_CANDIDATE_PENDING_G23_G24"}
+  (out/"LOUKSNA1_RELEASE_MANIFEST.json").write_text(json.dumps(release,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+  report["distribution"]={"archive_bytes":pkg.stat().st_size,"archive_sha256":sha_file(pkg),"louksna1_bytes":doc.stat().st_size,"louksna1_sha256":sha_file(doc),"combined_bytes":combined,"combined_cap_bytes":a.combined_cap_bytes,"status":"PASS","raw_tree_bytes":built["gross_raw_payload_bytes"]}
+  report["status"]="PASS_MANUFACTURED_CANDIDATE_PENDING_G23_G24"; report["next_gate"]="INDEPENDENT_G23_G24_AND_REAL_ONE_CPU_1_GIB_FUNCTIONAL_TESTS"
+  report_path.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+  print(json.dumps({"status":report["status"],"report":str(report_path),"distribution":report["distribution"]},ensure_ascii=False))
+  return 0
+ except Exception as exc:
+  report["status"]="HOLD" if "OVER_CAP" in str(exc) or "CEILING_EXCEEDED" in str(exc) else "FAIL_CLOSED"
+  report["blockers"].append(type(exc).__name__+":"+str(exc)[:3000]); report["finished_at_utc"]=utc()
+  report_path.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+  print(json.dumps({"status":report["status"],"blockers":report["blockers"],"report":str(report_path)},ensure_ascii=False),file=sys.stderr)
+  return 2
+
+if __name__=="__main__":
+ raise SystemExit(main())

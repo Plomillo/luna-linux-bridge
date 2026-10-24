@@ -5,13 +5,13 @@ import argparse, datetime as dt, hashlib, json, os, subprocess, sys, time
 from pathlib import Path
 
 SCHEMA = "CAJITA_SIX_DOMAIN_RUNTIME/1.1"
-HARD_CAP_BYTES = 470_000_000
+RAW_STAGING_CAP_BYTES = 800_000_000
 CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023"
 MANIFEST_REL = Path("CAJITA_RUNTIME_V1/weights_manifest.json")
 MANIFEST_SHA256 = "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d"
 DOMAINS = [
  {"id":"D01_CEREBRO","name":"1. Cerebro","directory":"1. Cerebro","entrypoint":"1. Cerebro/cerebro_180mb_runtime.py","args":["--smoke-test"],"assets":["1. Cerebro/config.json","1. Cerebro/model.safetensors","1. Cerebro/tokenizer.json","1. Cerebro/tokenizer_config.json"],"scope":"GPT-OSS low-rank candidate; smoke is not quality certification."},
- {"id":"D02_ORQUESTACION","name":"2. Orquestación","directory":"2. Orquestación","entrypoint":"2. Orquestación/Orquestador/CLIs/cli_registry.py","args":["--self-test"],"assets":["2. Orquestación/Orquestador/punto.json","2. Orquestación/Orquestador/CLIS.txt"],"scope":"CLI registry self-test; does not prove all external CLI tools are installed."},
+ {"id":"D02_ORQUESTACION","name":"2. Orquestación","directory":"2. Orquestación","entrypoint":"2. Orquestación/Orquestador/CLIs/cli_registry.py","args":["--self-test"],"assets":["2. Orquestación/Orquestador/punto.json","2. Orquestación/Orquestador/CLIs/cli_contract.json"],"scope":"CLI registry self-test; does not prove all external CLI tools are installed."},
  {"id":"D03_TRANSCRIPCION","name":"3. Transcripción","directory":"3. Transcripción","entrypoint":"3. Transcripción/lowrank_runtime.py","args":["--smoke-test"],"assets":["3. Transcripción/config.json","3. Transcripción/model.safetensors","3. Transcripción/preprocessor_config.json","3. Transcripción/tokenizer.json"],"scope":"Whisper low-rank candidate; smoke does not certify transcription quality/WER."},
  {"id":"D04_TRADUCTOR_INTELIGENTE","name":"4. Traductor Inteligente","directory":"4. Traductor Inteligente","entrypoint":"4. Traductor Inteligente/Traducción general/lowrank_runtime.py","args":["--smoke-test"],"assets":["4. Traductor Inteligente/Traducción general/config.json","4. Traductor Inteligente/Traducción general/model.safetensors","4. Traductor Inteligente/Traducción general/sentencepiece.bpe.model"],"scope":"SeamlessM4T v2 low-rank candidate; exact shared embedding/output aliases are restored by the compact runtime; smoke tests text generation only."},
  {"id":"D05_INTELIGENCIA_DOCUMENTAL","name":"5. Inteligencia documental","directory":"5. Inteligencia documental","entrypoint":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py","args":["--candidate-dir","5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate","--verify-only"],"assets":["5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_manifest.json","5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin"],"scope":"Granite Docling candidate; model-load verification, not document OCR/quality certification."},
@@ -68,8 +68,8 @@ def selftest(root):
   manifest_for(root); manifest_ok=True; manifest_error=None
  except Exception as exc:
   manifest_ok=False; manifest_error=str(exc)
- count,size=package_size(root); capok=size<=HARD_CAP_BYTES
- return {"schema":SCHEMA,"operation":"selftest","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"root":str(root),"domain_order":[d["id"] for d in DOMAINS],"domain_count":6,"domains":domains,"blocked_domains":missing,"weights_manifest_valid":manifest_ok,"weights_manifest_error":manifest_error,"package_file_count":count,"package_size_bytes":size,"hard_cap_bytes":HARD_CAP_BYTES,"size_gate":"PASS" if capok else "FAIL","functional_equivalence":"NOT_ESTABLISHED","certification":"NOT_GRANTED","status":"PASS" if not missing and manifest_ok and capok else "FAIL"}
+ count,size=package_size(root); capok=size<=RAW_STAGING_CAP_BYTES
+ return {"schema":SCHEMA,"operation":"selftest","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"root":str(root),"domain_order":[d["id"] for d in DOMAINS],"domain_count":6,"domains":domains,"blocked_domains":missing,"weights_manifest_valid":manifest_ok,"weights_manifest_error":manifest_error,"package_file_count":count,"package_size_bytes":size,"raw_staging_ceiling_bytes":RAW_STAGING_CAP_BYTES,"size_gate":"PASS" if capok else "FAIL","functional_equivalence":"NOT_ESTABLISHED","certification":"NOT_GRANTED","status":"PASS" if not missing and manifest_ok and capok else "FAIL"}
 def audit(root):
  m=manifest_for(root); listed={a["path"] for a in m["artifacts"]}; found=set()
  for base,dirs,files in os.walk(root,followlinks=False):
@@ -80,10 +80,10 @@ def audit(root):
  for a in m["artifacts"]:
   p=file_for(root,a["path"]); actualsize=p.stat().st_size; actualhash=sha256(p)
   result.append({"id":a["id"],"domain_id":a["domain_id"],"path":a["path"],"expected_bytes":a["bytes"],"actual_bytes":actualsize,"expected_sha256":a["sha256"],"actual_sha256":actualhash,"status":"PASS" if actualsize==int(a["bytes"]) and actualhash==a["sha256"] else "FAIL"})
- count,size=package_size(root); capok=size<=HARD_CAP_BYTES
+ count,size=package_size(root); capok=size<=RAW_STAGING_CAP_BYTES
  extra=sorted(found-listed); absent=sorted(listed-found); hashok=all(x["status"]=="PASS" for x in result)
  passed=hashok and not extra and not absent and capok
- return {"schema":SCHEMA,"operation":"audit-weights","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"artifacts":result,"artifact_count":len(result),"total_weight_bytes":sum(x["actual_bytes"] for x in result),"undeclared_model_like_files":extra,"missing_manifest_files":absent,"package_file_count":count,"package_size_bytes":size,"hard_cap_bytes":HARD_CAP_BYTES,"size_gate":"PASS" if capok else "FAIL","weight_presence_integrity":"PASS" if passed else "FAIL","functional_equivalence":"NOT_ESTABLISHED","independent_validation":"NOT_RUN","certification":"NOT_GRANTED","promotion":"NOT_AUTHORIZED","status":"PASS" if passed else "FAIL"}
+ return {"schema":SCHEMA,"operation":"audit-weights","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"artifacts":result,"artifact_count":len(result),"total_weight_bytes":sum(x["actual_bytes"] for x in result),"undeclared_model_like_files":extra,"missing_manifest_files":absent,"package_file_count":count,"package_size_bytes":size,"raw_staging_ceiling_bytes":RAW_STAGING_CAP_BYTES,"size_gate":"PASS" if capok else "FAIL","weight_presence_integrity":"PASS" if passed else "FAIL","functional_equivalence":"NOT_ESTABLISHED","independent_validation":"NOT_RUN","certification":"NOT_GRANTED","promotion":"NOT_AUTHORIZED","status":"PASS" if passed else "FAIL"}
 def select_domain(value):
  aliases={}
  for i,d in enumerate(DOMAINS,1):

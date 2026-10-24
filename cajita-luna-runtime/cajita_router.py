@@ -11,6 +11,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from cajita_antiparalysis import PersistentAntiParalysis
+
 SCHEMA = "CAJITA_DEMAND_ROUTER/1.0"
 MAX_RAM_MIB = 1024
 CPU_THREAD_LIMIT = 1
@@ -337,11 +339,15 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
         if asset["id"] in selected_asset_ids:
             selected_support_assets.append({
                 "id": asset["id"], "version": asset["version"],
-                "path": asset["relative_path"], "bytes": asset["bytes"],
-                "sha256": asset["sha256"], "role": asset["role"],
-                "activation_status": "MAPPED_CONTAINER_NOT_ACTIVATED",
+                "path": asset.get("materialized_path", asset["relative_path"]),
+                "source_archive_path": asset.get("source_archive_path", asset["relative_path"]),
+                "bytes": asset.get("expanded_bytes") or asset["bytes"],
+                "sha256": asset.get("expanded_tree_sha256") or asset["sha256"],
+                "role": asset["role"],
+                "activation_status": asset.get("activation_status", "MAPPED_CONTAINER_NOT_ACTIVATED"),
+                "archive_removed_from_runtime": asset.get("archive_removed_from_runtime", False),
                 "activation_requirements": [
-                    "extract-on-demand", "verify-sha256", "register-real-consumer-adapter",
+                    "verify-module-manifest", "register-real-consumer-adapter",
                     "native-smoke-test", "measure-resource-profile"
                 ],
             })
@@ -440,6 +446,21 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0 if result["status"] == "PASS" else 2
     plan = build_plan(args.request, args.route_command)
+    try:
+        plan["anti_paralysis"] = PersistentAntiParalysis.default().observe_plan(
+            task_id=plan["request_sha256"],
+            input_sha256=plan["request_sha256"],
+            blockers=plan.get("blockers", []),
+            plan_status=plan.get("status", "FAIL_CLOSED"),
+        )
+    except Exception as exc:
+        plan["status"] = "FAIL_CLOSED"
+        plan["execution_authorized"] = False
+        plan["anti_paralysis"] = {
+            "state": "FAIL_CLOSED",
+            "automatic_retry": False,
+            "reason": type(exc).__name__ + ":" + str(exc)[:200],
+        }
     if args.trace_file:
         try: append_trace(args.trace_file, plan)
         except Exception as exc:

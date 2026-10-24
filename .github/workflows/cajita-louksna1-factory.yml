@@ -1,0 +1,444 @@
+name: Cajita V10 materialization and Louksna1 governed factory
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cajita-louksna1-factory.yml"
+      - "tools/cajita_runtime_factory.py"
+      - "tests/test_cajita_runtime_factory.py"
+      - "tests/test_cajita_antiparalysis.py"
+      - "cajita-luna-runtime/cajita_antiparalysis.py"
+      - "cajita-luna-runtime/cajita_router.py"
+      - "cajita-luna-runtime/cajita_runtime.py"
+      - "cajita-luna-runtime/reproduce_macrodown.py"
+      - "integrations/kestra/flows/21-louksna1-release-audit.yml"
+      - "integrations/kestra/validate.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: cajita-louksna1-factory-main
+  cancel-in-progress: false
+
+jobs:
+  manufacture:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      candidate_ready: ${{ steps.factory.outputs.candidate_ready }}
+      source_commit: ${{ steps.factory.outputs.source_commit }}
+    steps:
+      - name: Checkout exact source commit without blanket LFS download
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          lfs: false
+          persist-credentials: true
+
+      - name: Install build-only archive extractors
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full unzip rsync
+
+      - name: Materialize and verify six exact model payloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs install
+          LFS_INCLUDE='cajita-luna-runtime/1. Cerebro/model.safetensors,cajita-luna-runtime/3. Transcripción/model.safetensors,cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors,cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin,cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors,cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx,cajita-luna-runtime/2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642.zip,cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z,cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z,cajita-luna-runtime/4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24.zip,cajita-luna-runtime/4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master.zip,cajita-luna-runtime/6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip,cajita-luna-runtime/6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04.zip,cajita-luna-runtime/6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400.zip,cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z,cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z,cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z,cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z,cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z,cajita-luna-runtime/6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0.zip,cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z,cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z,cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z'
+          git lfs pull --include="$LFS_INCLUDE" --exclude="" origin "$GITHUB_SHA"
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          expected = {
+            "cajita-luna-runtime/1. Cerebro/model.safetensors": ("e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0", 40489120),
+            "cajita-luna-runtime/3. Transcripción/model.safetensors": ("67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f", 10399882),
+            "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors": ("630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f", 11720882),
+            "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin": ("4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88", 13483380),
+            "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors": ("01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56", 14956240),
+            "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx": ("c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7", 110516001),
+          }
+          for name, (digest, size) in expected.items():
+            p = Path(name)
+            if not p.is_file() or p.stat().st_size != size or hashlib.sha256(p.read_bytes()).hexdigest() != digest:
+              raise SystemExit("WEIGHT_IDENTITY_MISMATCH:" + name)
+          print("SIX_WEIGHTS_EXACT_HASH_AND_SIZE=PASS")
+          PY
+
+      - name: Exercise CUSTOSZ V9 as a bounded factory helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          REF='refs/heads/artifacts/custoszv9-b09353cbfff4efddfdec0cf853ae9658055fad2d'
+          git fetch origin "+$REF:refs/remotes/origin/custoszv9-v9"
+          git show refs/remotes/origin/custoszv9-v9:dist/CUSTOSZV9.pyz > "$RUNNER_TEMP/CUSTOSZV9.pyz"
+          ACTUAL="$(sha256sum "$RUNNER_TEMP/CUSTOSZV9.pyz" | awk '{print $1}')"
+          test "$ACTUAL" = "58deae6f0496773f3af63c4103a6a2d87cfb9bd30566f068b55ad02574565956"
+          set +e
+          python "$RUNNER_TEMP/CUSTOSZV9.pyz" --version > "$RUNNER_TEMP/custosz-version.txt" 2>&1
+          VERSION_RC=$?
+          python "$RUNNER_TEMP/CUSTOSZV9.pyz" crfu selftest > "$RUNNER_TEMP/custosz-selftest.txt" 2>&1
+          SELFTEST_RC=$?
+          set -e
+          export VERSION_RC SELFTEST_RC
+          python - <<'PY'
+          import json, os, hashlib
+          from pathlib import Path
+          root=Path(os.environ["RUNNER_TEMP"])
+          report={"schema":"CUSTOSZV9_FACTORY_HELPER_EVIDENCE/1.0","artifact_sha256":"58deae6f0496773f3af63c4103a6a2d87cfb9bd30566f068b55ad02574565956","version_exit_code":int(os.environ["VERSION_RC"]),"selftest_exit_code":int(os.environ["SELFTEST_RC"]),"version_output":(root/"custosz-version.txt").read_text(errors="replace")[-2000:],"selftest_output":(root/"custosz-selftest.txt").read_text(errors="replace")[-6000:],"self_reported_certification":"NOT_GRANTED","authority":"BOUNDED_HELPER_ONLY_NOT_G23_OR_G24"}
+          report["status"]="PASS_HELPER_TESTS" if report["version_exit_code"]==0 and report["selftest_exit_code"]==0 else "HELPER_TEST_FAILED"
+          Path("out/CUSTOSZV9_EVIDENCE.json").write_text(json.dumps(report,indent=2)+"\n")
+          print(json.dumps({"status":report["status"],"certification":report["self_reported_certification"]},indent=2))
+          PY
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Test manufacturing and anti-paralysis controls
+        shell: bash
+        env:
+          PYTHONPATH: tools:cajita-luna-runtime
+          CAJITA_STATE_DIR: ${{ runner.temp }}/cajita-state
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_cajita*.py' -v
+          python integrations/kestra/validate.py
+          python cajita-luna-runtime/cajita_antiparalysis.py selftest --state-dir "$RUNNER_TEMP/anti-paralysis-selftest"
+          python cajita-luna-runtime/cajita_router.py selftest
+
+      - name: Manufacture candidate and enforce aggregate 490 MB cap
+        id: factory
+        shell: bash
+        env:
+          PYTHONPATH: tools:cajita-luna-runtime
+        run: |
+          set +e
+          python tools/cajita_runtime_factory.py --repo-root "$GITHUB_WORKSPACE" --output-dir out > "$RUNNER_TEMP/factory-output.txt" 2>&1
+          RC=$?
+          cat "$RUNNER_TEMP/factory-output.txt"
+          if [ "$RC" -eq 0 ] && [ -s out/CAJITA_LUNA_RUNTIME_V10.macrodown ] && [ -s out/Louksna1.md ]; then
+            echo "candidate_ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "candidate_ready=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "source_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          exit "$RC"
+
+      - name: Upload exact candidate and factory report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: louksna1-candidate
+          path: |
+            out/Louksna1.md
+            out/CAJITA_LUNA_RUNTIME_V10.macrodown
+            out/CAJITA_LUNA_RUNTIME_V10.macrodown.sha256
+            out/LOUKSNA1_RELEASE_MANIFEST.json
+            out/factory-report.json
+            out/CUSTOSZV9_EVIDENCE.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Preserve rollback copies of original containers outside the runtime
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: louksna1-source-archive-rollback
+          path: out/rollback-source-archives/**
+          if-no-files-found: warn
+          retention-days: 90
+
+  g23-independent-validation:
+    needs: manufacture
+    if: needs.manufacture.result == 'success' && needs.manufacture.outputs.candidate_ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact producer commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.manufacture.outputs.source_commit }}
+          lfs: false
+
+      - name: Download candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: louksna1-candidate
+          path: candidate
+
+      - name: Independently recompute package, document, modules and six weight identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, zipfile
+          from pathlib import Path
+          root=Path("candidate")
+          package=root/"CAJITA_LUNA_RUNTIME_V10.macrodown"
+          doc=root/"Louksna1.md"
+          report=json.loads((root/"factory-report.json").read_text())
+          release=json.loads((root/"LOUKSNA1_RELEASE_MANIFEST.json").read_text())
+          protected=Path("LOUKSNAMEJORADA.md").read_bytes()
+          assert doc.read_bytes().startswith(protected), "PROTECTED_ARCHITECTURE_NOT_BYTE_EXACT_PREFIX"
+          assert hashlib.sha256(protected).hexdigest()==release["protected_architecture"]["sha256"]
+          assert hashlib.sha256(package.read_bytes()).hexdigest()==release["runtime_distribution"]["sha256"]
+          assert hashlib.sha256(doc.read_bytes()).hexdigest()==release["louksna1"]["sha256"]
+          assert package.stat().st_size+doc.stat().st_size<=490_000_000, "COMBINED_SIZE_GATE"
+          with zipfile.ZipFile(package) as z:
+            assert z.testzip() is None, "ZIP_CRC"
+            names=z.namelist()
+            assert len(names)==len(set(names)), "DUPLICATE_MEMBERS"
+            assert not any(Path(n).name.upper().startswith("README") for n in names), "README_MEMBER"
+            assert not any(Path(n).suffix.lower() in {".zip",".7z"} for n in names), "ARCHIVE_MEMBER"
+            m=json.loads(z.read("MACRODOWN_MANIFEST.json"))
+            table={x["path"]:x for x in m["files"]}
+            assert set(table)==set(names)-{"MACRODOWN_MANIFEST.json"}, "MANIFEST_SET"
+            for name,row in table.items():
+              data=z.read(name)
+              assert len(data)==int(row["size_bytes"]) and hashlib.sha256(data).hexdigest()==row["sha256"], "MEMBER_HASH:"+name
+            (root/"runtime").mkdir()
+            for name in names:
+              if name=="MACRODOWN_MANIFEST.json": continue
+              target=root/"runtime"/name
+              target.parent.mkdir(parents=True,exist_ok=True)
+              target.write_bytes(z.read(name))
+          runtime=root/"runtime"
+          routing=json.loads((runtime/"command_subdomain_routing.json").read_text())
+          assert routing["domain_order"]==["D01_CEREBRO","D02_ORQUESTACION","D03_TRANSCRIPCION","D04_TRADUCTOR_INTELIGENTE","D05_INTELIGENCIA_DOCUMENTAL","D06_SISTEMA_INTELIGENTE"]
+          assert len(routing["engine_registry"])==15 and len(routing["route_profiles"])==14 and len(routing["targets"])==21
+          registry=json.loads((runtime/"module_registry.json").read_text())
+          assert registry["materialized_module_count"]>=1
+          for module in registry["modules"]:
+            path=runtime/module["manifest"]
+            manifest=json.loads(path.read_text())
+            assert manifest["materialization"]["status"]=="PASS"
+            assert manifest["module_key"]==module["module_key"]
+          weights=json.loads((runtime/"CAJITA_RUNTIME_V1/weights_manifest.json").read_text())
+          for w in weights["artifacts"]:
+            p=runtime/w["path"]
+            assert p.is_file() and p.stat().st_size==int(w["bytes"]) and hashlib.sha256(p.read_bytes()).hexdigest()==w["sha256"], "WEIGHT:"+w["id"]
+          print(json.dumps({"status":"PASS","scope":"DISTRIBUTION_HASHES_STRUCTURE_MATERIALIZATION_WEIGHT_IDENTITY","combined_bytes":package.stat().st_size+doc.stat().st_size,"package_sha256":hashlib.sha256(package.read_bytes()).hexdigest(),"louksna1_sha256":hashlib.sha256(doc.read_bytes()).hexdigest(),"domains":6,"engines":15,"commands":14,"targets":21,"global_certification":"NOT_GRANTED"},indent=2))
+          PY
+          PYTHONPATH=tools:candidate/runtime python -m unittest discover -s tests -p 'test_cajita*.py' -v
+          python candidate/runtime/cajita_antiparalysis.py selftest --state-dir "$RUNNER_TEMP/g23-antiparalysis"
+          (cd candidate/runtime && python cajita_router.py selftest)
+          python candidate/runtime/cajita_runtime.py selftest --root candidate/runtime
+          python candidate/runtime/cajita_runtime.py audit-weights --root candidate/runtime
+          (cd candidate/runtime && python "2. Orquestación/Orquestador/CLIs/cli_registry.py" --self-test)
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          root=Path("candidate"); p=root/"CAJITA_LUNA_RUNTIME_V10.macrodown"; d=root/"Louksna1.md"
+          out={"schema":"LOUKSNA1_G23_EVIDENCE/1.0","gate":"G23","status":"PASS","independent_job":True,"package_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"package_bytes":p.stat().st_size,"louksna1_sha256":hashlib.sha256(d.read_bytes()).hexdigest(),"louksna1_bytes":d.stat().st_size,"combined_bytes":p.stat().st_size+d.stat().st_size,"combined_cap_bytes":490000000,"certification_scope":"DISTRIBUTION_INTEGRITY_STRUCTURE_WEIGHT_IDENTITY_AND_REGISTERED_SMOKES","task_adapter_completion":"NOT_ESTABLISHED","semantic_quality_equivalence":"NOT_ESTABLISHED","global_certification":"NOT_GRANTED"}
+          Path("candidate/G23_EVIDENCE.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps(out,indent=2))
+          PY
+
+      - name: Upload independent G23 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: louksna1-g23-evidence
+          path: candidate/G23_EVIDENCE.json
+          if-no-files-found: warn
+          retention-days: 90
+
+  g24-resource-limited-runtime-smoke:
+    needs: [manufacture, g23-independent-validation]
+    if: needs.manufacture.outputs.candidate_ready == 'true' && needs.g23-independent-validation.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Download candidate and G23 evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: louksna1-*
+          path: evidence
+          merge-multiple: false
+
+      - name: Execute six-domain smoke under one CPU and 1 GiB cgroup limits
+        shell: bash
+        run: |
+          set +e
+          ROOT="$RUNNER_TEMP/cajita-runtime"
+          mkdir -p "$ROOT"
+          unzip -q "evidence/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown" -d "$ROOT"
+          DOCKERCTX="$RUNNER_TEMP/cajita-smoke-image"
+          mkdir -p "$DOCKERCTX"
+          cat > "$DOCKERCTX/Dockerfile" <<'EOF'
+          FROM python:3.13-slim-bookworm
+          RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.11.0+cpu numpy==2.2.6 safetensors==0.8.0 transformers==4.57.6 sentencepiece==0.2.2 tokenizers==0.22.2 pillow==13.0.0 Jinja2==3.1.6 protobuf==4.25.9 PyYAML==6.0.3
+          EOF
+          docker build -t cajita-louksna1-smoke "$DOCKERCTX" > "$RUNNER_TEMP/docker-build.log" 2>&1
+          BUILD_RC=$?
+          STATUS="NOT_GRANTED"
+          REASON="RESOURCE_LIMITED_SMOKE_NOT_COMPLETED"
+          PEAK=""
+          MEMMAX=""
+          CPUMAX=""
+          SMOKE_RC=125
+          if [ "$BUILD_RC" -eq 0 ]; then
+            docker run --rm --memory=1073741824 --memory-swap=1073741824 --cpus=1 \
+              -e OMP_NUM_THREADS=1 -e OPENBLAS_NUM_THREADS=1 -e MKL_NUM_THREADS=1 -e NUMEXPR_NUM_THREADS=1 \
+              -e TOKENIZERS_PARALLELISM=false -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \
+              -v "$ROOT:/runtime:ro" -v "$RUNNER_TEMP:/telemetry:rw" -w /runtime \
+              cajita-louksna1-smoke sh -lc \
+              'cat /sys/fs/cgroup/memory.max > /telemetry/cgroup-memory-max.txt; cat /sys/fs/cgroup/cpu.max > /telemetry/cgroup-cpu-max.txt; python cajita_runtime.py smoke-all --timeout 600 > /telemetry/smoke-all.log 2>&1; rc=$?; cat /sys/fs/cgroup/memory.peak > /telemetry/cgroup-memory-peak.txt; exit "$rc"'
+            SMOKE_RC=$?
+            MEMMAX="$(cat "$RUNNER_TEMP/cgroup-memory-max.txt" 2>/dev/null)"
+            CPUMAX="$(cat "$RUNNER_TEMP/cgroup-cpu-max.txt" 2>/dev/null)"
+            PEAK="$(cat "$RUNNER_TEMP/cgroup-memory-peak.txt" 2>/dev/null)"
+            if [ "$SMOKE_RC" -eq 0 ] && [ "$MEMMAX" = "1073741824" ] && [ "$CPUMAX" = "100000 100000" ] && [ -n "$PEAK" ] && [ "$PEAK" -le 1073741824 ]; then
+              STATUS="PASS_FOR_DECLARED_SMOKE_SCOPE"
+              REASON="SIX_DOMAIN_SMOKE_PASS_WITH_EFFECTIVE_ONE_CPU_1_GIB_LIMITS"
+            else
+              REASON="SMOKE_OR_RESOURCE_GATE_FAILED_RC_$SMOKE_RC"
+            fi
+          else
+            REASON="SMOKE_IMAGE_BUILD_FAILED"
+          fi
+          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC BUILD_RC
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          p=Path("evidence/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown")
+          d=Path("evidence/louksna1-candidate/Louksna1.md")
+          result={"schema":"LOUKSNA1_G24_EVIDENCE/1.0","gate":"G24","status":os.environ["STATUS"],"decision":"PASS_FOR_DECLARED_SMOKE_SCOPE" if os.environ["STATUS"]=="PASS_FOR_DECLARED_SMOKE_SCOPE" else "NOT_GRANTED","package_sha256":hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None,"louksna1_sha256":hashlib.sha256(d.read_bytes()).hexdigest() if d.is_file() else None,"reason":os.environ["REASON"],"smoke_return_code":int(os.environ["SMOKE_RC"]),"image_build_return_code":int(os.environ["BUILD_RC"]),"memory_max_bytes":os.environ.get("MEMMAX") or None,"cpu_quota":os.environ.get("CPUMAX") or None,"memory_peak_bytes":int(os.environ["PEAK"]) if os.environ.get("PEAK","").isdigit() else None,"scope":"SIX_DOMAIN_STARTUP_SMOKE_AND_RESOURCE_ENFORCEMENT_ONLY","task_adapters":"NOT_REGISTERED_FOR_ALL_END_TO_END_TASKS","semantic_quality_equivalence":"NOT_ESTABLISHED","global_integrated_product_certification":"NOT_GRANTED"}
+          Path("evidence/LOUKSNA1_G24_EVIDENCE.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result,indent=2))
+          PY
+          exit 0
+
+      - name: Upload G24 decision and telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: louksna1-g24-evidence
+          path: |
+            evidence/LOUKSNA1_G24_EVIDENCE.json
+            ${{ runner.temp }}/smoke-all.log
+            ${{ runner.temp }}/docker-build.log
+            ${{ runner.temp }}/cgroup-memory-max.txt
+            ${{ runner.temp }}/cgroup-cpu-max.txt
+            ${{ runner.temp }}/cgroup-memory-peak.txt
+          if-no-files-found: warn
+          retention-days: 90
+
+  publish-candidate:
+    needs: [manufacture, g23-independent-validation, g24-resource-limited-runtime-smoke]
+    if: needs.manufacture.outputs.candidate_ready == 'true' && needs.g23-independent-validation.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout current main, no branch and no pull request
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          lfs: false
+          persist-credentials: true
+
+      - name: Download candidate and independent gate evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: louksna1-*
+          path: downloaded
+          merge-multiple: false
+
+      - name: Verify exact source prefix, record gate states, and commit the candidate directly
+        shell: bash
+        run: |
+          set -euo pipefail
+          FACTORY="downloaded/louksna1-candidate"
+          G23="downloaded/louksna1-g23-evidence/G23_EVIDENCE.json"
+          G24="downloaded/louksna1-g24-evidence/LOUKSNA1_G24_EVIDENCE.json"
+          test -s "$G23"
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          d=Path("downloaded/louksna1-candidate/Louksna1.md").read_bytes()
+          protected=Path("LOUKSNAMEJORADA.md").read_bytes()
+          assert d.startswith(protected), "PROTECTED_ARCHITECTURE_PREFIX_CHANGED"
+          report=json.loads(Path("downloaded/louksna1-candidate/LOUKSNA1_RELEASE_MANIFEST.json").read_text())
+          assert hashlib.sha256(protected).hexdigest()==report["protected_architecture"]["sha256"]
+          g23=json.loads(Path("downloaded/louksna1-g23-evidence/G23_EVIDENCE.json").read_text())
+          g24path=Path("downloaded/louksna1-g24-evidence/LOUKSNA1_G24_EVIDENCE.json")
+          g24=json.loads(g24path.read_text()) if g24path.is_file() else {"status":"NOT_GRANTED","reason":"G24_EVIDENCE_MISSING"}
+          report["gates"]={"G23":g23.get("status","NOT_GRANTED"),"G24":g24.get("status","NOT_GRANTED")}
+          report["G23_evidence_sha256"]=hashlib.sha256(Path("downloaded/louksna1-g23-evidence/G23_EVIDENCE.json").read_bytes()).hexdigest()
+          report["G24_evidence_sha256"]=hashlib.sha256(g24path.read_bytes()).hexdigest() if g24path.is_file() else None
+          report["global_certification"]="NOT_GRANTED"
+          report["certification_scope"]="DISTRIBUTION_INTEGRITY_AND_STRUCTURAL_MATERIALIZATION"
+          report["reason_global_certification_not_granted"]="End-to-end user-task adapters and semantic quality equivalence remain unestablished."
+          report["status"]="PUBLISHED_CANDIDATE_GLOBAL_CERTIFICATION_NOT_GRANTED"
+          report["CUSTOSZV9"]={"used_as":"BOUNDED_FACTORY_HELPER","self_reported_certification":"NOT_GRANTED","not_used_as_independent_certifier":True}
+          Path("downloaded/louksna1-candidate/LOUKSNA1_RELEASE_MANIFEST.json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n")
+          PY
+          git lfs install
+          mkdir -p "$RUNNER_TEMP/cajita-unpacked"
+          unzip -q "$FACTORY/CAJITA_LUNA_RUNTIME_V10.macrodown" -d "$RUNNER_TEMP/cajita-unpacked"
+          test -s "$RUNNER_TEMP/cajita-unpacked/MACRODOWN_MANIFEST.json"
+          rsync -a --delete "$RUNNER_TEMP/cajita-unpacked/" "cajita-luna-runtime/"
+          cp "$FACTORY/Louksna1.md" Louksna1.md
+          mkdir -p docs/cajita-luna
+          cp "$FACTORY/LOUKSNA1_RELEASE_MANIFEST.json" docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json
+          cp "$FACTORY/factory-report.json" docs/cajita-luna/CAJITA_LOUKSNA1_FACTORY_REPORT.json
+          cp "$G23" docs/cajita-luna/LOUKSNA1_G23_EVIDENCE.json
+          if [ -s "$G24" ]; then cp "$G24" docs/cajita-luna/LOUKSNA1_G24_EVIDENCE.json; fi
+          if [ -s "$FACTORY/CUSTOSZV9_EVIDENCE.json" ]; then cp "$FACTORY/CUSTOSZV9_EVIDENCE.json" docs/cajita-luna/CUSTOSZV9_FACTORY_HELPER_EVIDENCE.json; fi
+          git diff --check
+          git add -A -- cajita-luna-runtime Louksna1.md docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json docs/cajita-luna/CAJITA_LOUKSNA1_FACTORY_REPORT.json docs/cajita-luna/LOUKSNA1_G23_EVIDENCE.json docs/cajita-luna/LOUKSNA1_G24_EVIDENCE.json docs/cajita-luna/CUSTOSZV9_FACTORY_HELPER_EVIDENCE.json
+          if git diff --cached --quiet; then
+            echo "NO_CANDIDATE_DIFF"
+          else
+            git diff --cached --stat
+            git commit -m "Materialize Cajita modules and publish Louksna1 candidate"
+            git push origin HEAD:main
+          fi
+
+      - name: Attest package/document build provenance
+        if: success()
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            downloaded/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown
+            downloaded/louksna1-candidate/Louksna1.md
+
+      - name: Upload final package and release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LOUKSNA1-PRODUCT-CANDIDATE
+          path: |
+            downloaded/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown
+            downloaded/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown.sha256
+            downloaded/louksna1-candidate/Louksna1.md
+            docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json
+            docs/cajita-luna/CAJITA_LOUKSNA1_FACTORY_REPORT.json
+            docs/cajita-luna/LOUKSNA1_G23_EVIDENCE.json
+            docs/cajita-luna/LOUKSNA1_G24_EVIDENCE.json
+            docs/cajita-luna/CUSTOSZV9_FACTORY_HELPER_EVIDENCE.json
+          if-no-files-found: warn
+          retention-days: 90

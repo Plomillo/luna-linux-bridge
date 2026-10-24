@@ -1,0 +1,64 @@
+id: louksna1_release_audit
+namespace: louksna.kestra
+description: >-
+  Read-only verification of the published Louksna1 candidate, aggregate 490 MB
+  distribution cap, independent G23 evidence and separately scoped G24 evidence.
+tasks:
+  - id: release_manifest
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json?ref=main&cache_bust={{ execution.id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
+  - id: g23_evidence
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/docs/cajita-luna/LOUKSNA1_G23_EVIDENCE.json?ref=main&cache_bust={{ execution.id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
+  - id: g24_evidence
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/docs/cajita-luna/LOUKSNA1_G24_EVIDENCE.json?ref=main&cache_bust={{ execution.id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
+  - id: gate
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ outputs.release_manifest.code == 200
+         and outputs.g23_evidence.code == 200
+         and outputs.g24_evidence.code == 200
+         and fromJson(outputs.release_manifest.body).combined_distribution.status == 'PASS'
+         and fromJson(outputs.release_manifest.body).combined_distribution.bytes <= 490000000
+         and fromJson(outputs.release_manifest.body).combined_distribution.cap_bytes == 490000000
+         and fromJson(outputs.release_manifest.body).protected_architecture.modified == false
+         and fromJson(outputs.g23_evidence.body).status == 'PASS'
+         and fromJson(outputs.release_manifest.body).global_certification == 'NOT_GRANTED'
+         and fromJson(outputs.g24_evidence.body).global_integrated_product_certification == 'NOT_GRANTED' }}
+    then:
+      - id: record_candidate_audit
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNA1_READ_ONLY_RELEASE_AUDIT=PASS
+          combined_distribution_bytes={{ fromJson(outputs.release_manifest.body).combined_distribution.bytes }}
+          combined_distribution_cap_bytes=490000000
+          G23={{ fromJson(outputs.release_manifest.body).gates.G23 }}
+          G24={{ fromJson(outputs.release_manifest.body).gates.G24 }}
+          global_certification=NOT_GRANTED
+          execution={{ execution.id }}
+    else:
+      - id: fail_closed
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNA1_RELEASE_AUDIT_HOLD: release, combined size, protected source,
+          G23 or scoped G24 evidence is missing or inconsistent. No certification
+          is inferred from a successful read-only audit.
