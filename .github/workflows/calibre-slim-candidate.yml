@@ -1,0 +1,234 @@
+name: Cajita Calibre Slim Candidate
+
+on:
+  push:
+    branches:
+      - cajita/calibre-slim-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: calibre-slim-candidate-${ github.ref }
+  cancel-in-progress: false
+
+jobs:
+  build-candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@v4
+
+      - name: Install headless PDF rendering dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            curl xz-utils tar coreutils findutils python3 xvfb \
+            libegl1 libopengl0 libgl1 libx11-xcb1 libxcb-cursor0 \
+            libxcb-xinerama0 libxcb-keysyms1 libxcb-image0 libxcb-icccm4 \
+            libxkbcommon-x11-0 libnss3 libasound2t64 libfontconfig1 \
+            libfreetype6 libxrender1 libxext6 libxi6 libxrandr2 \
+            libxfixes3 libxkbcommon0 libdbus-1-3 libsm6 libice6 \
+            fonts-dejavu-core
+
+      - name: Download and verify pinned official artifacts
+        id: downloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/calibre-slim"/{downloads,source,binary,reports,artifacts}
+          cd "$RUNNER_TEMP/calibre-slim/downloads"
+          curl --fail --location --retry 3 --retry-all-errors \
+            https://github.com/kovidgoyal/calibre/releases/download/v9.17.0/calibre-9.17.0-x86_64.txz \
+            -o calibre-9.17.0-x86_64.txz
+          curl --fail --location --retry 3 --retry-all-errors \
+            https://github.com/kovidgoyal/calibre/releases/download/v9.17.0/calibre-9.17.0.tar.xz \
+            -o calibre-9.17.0.tar.xz
+          test "$(stat -c %s calibre-9.17.0-x86_64.txz)" = "201590724"
+          test "$(stat -c %s calibre-9.17.0.tar.xz)" = "50661596"
+          echo "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53  calibre-9.17.0-x86_64.txz" | sha256sum --check -
+          echo "07507ea8ace5f8a0f768c13afdb799ad685a636c1cdbd8b11162ddb419743be5  calibre-9.17.0.tar.xz" | sha256sum --check -
+          sha256sum calibre-9.17.0-x86_64.txz calibre-9.17.0.tar.xz > "$RUNNER_TEMP/calibre-slim/reports/upstream.sha256"
+          echo "artifact_identity=PASS" >> "$GITHUB_OUTPUT"
+
+      - name: Extract official source and binary releases
+        id: extract
+        if: steps.downloads.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/calibre-slim"
+          tar -xJf "$WORK/downloads/calibre-9.17.0.tar.xz" -C "$WORK/source"
+          tar -xJf "$WORK/downloads/calibre-9.17.0-x86_64.txz" -C "$WORK/binary"
+          SRC_BUILTINS="$(find "$WORK/source" -type f -path '*/src/calibre/customize/builtins.py' -print -quit)"
+          BIN_BUILTINS="$(find "$WORK/binary" -type f -path '*/calibre/customize/builtins.py' -print -quit)"
+          BIN_CONVERTER="$(find -L "$WORK/binary" -type f -name ebook-convert -perm /111 -print -quit)"
+          test -n "$SRC_BUILTINS"
+          test -n "$BIN_BUILTINS"
+          test -n "$BIN_CONVERTER"
+          SOURCE_ROOT="${SRC_BUILTINS%/src/calibre/customize/builtins.py}"
+          DIST_ROOT="$(dirname "$BIN_CONVERTER")"
+          while [ "$DIST_ROOT" != "/" ]; do
+            if find "$DIST_ROOT" -type f -path '*/calibre/customize/builtins.py' -print -quit | grep -q .; then break; fi
+            DIST_ROOT="$(dirname "$DIST_ROOT")"
+          done
+          find "$DIST_ROOT" -type f -path '*/calibre/customize/builtins.py' -print -quit | grep -q .
+          printf 'SOURCE_ROOT=%s\nDIST_ROOT=%s\nBASELINE_CONVERTER=%s\n' \
+            "$SOURCE_ROOT" "$DIST_ROOT" "$BIN_CONVERTER" > "$WORK/reports/layout.env"
+          echo "layout_discovery=PASS" >> "$GITHUB_OUTPUT"
+
+      - name: Run baseline conversion canaries before pruning
+        id: baseline
+        if: steps.extract.outcome == 'success'
+        shell: bash
+        run: |
+          set -uo pipefail
+          source "$RUNNER_TEMP/calibre-slim/reports/layout.env"
+          set +e
+          xvfb-run -a python3 tools/calibre-slim/smoke_test.py \
+            --mode baseline \
+            --converter "$BASELINE_CONVERTER" \
+            --work-dir "$RUNNER_TEMP/calibre-slim/baseline-work" \
+            --report "$RUNNER_TEMP/calibre-slim/reports/baseline-smoke.json"
+          RC=$?
+          set -e
+          echo "exit_code=$RC" >> "$GITHUB_OUTPUT"
+          if [ "$RC" -ne 0 ]; then
+            echo "Baseline conversion tests failed; no candidate will be released."
+            exit 1
+          fi
+
+      - name: Prune official source snapshot and create source evidence
+        id: source-prune
+        if: steps.baseline.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "$RUNNER_TEMP/calibre-slim/reports/layout.env"
+          python3 tools/calibre-slim/prune_candidate.py \
+            --root "$SOURCE_ROOT" --apply --source-only \
+            --report "$RUNNER_TEMP/calibre-slim/reports/source-prune.json"
+          mkdir -p "$RUNNER_TEMP/calibre-slim/artifacts"
+          tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+            -cJf "$RUNNER_TEMP/calibre-slim/artifacts/calibre-9.17.0-cajita-source-pruned.tar.xz" \
+            -C "$SOURCE_ROOT" .
+          cp tools/calibre-slim/source-lock.json "$RUNNER_TEMP/calibre-slim/artifacts/"
+          cp tools/calibre-slim/prune_candidate.py "$RUNNER_TEMP/calibre-slim/artifacts/"
+          cp tools/calibre-slim/calibre-slim-convert "$RUNNER_TEMP/calibre-slim/artifacts/"
+          cp tools/calibre-slim/profile.json "$RUNNER_TEMP/calibre-slim/artifacts/"
+
+      - name: Prune disposable binary distribution
+        id: binary-prune
+        if: steps.baseline.outcome == 'success' && steps.source-prune.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "$RUNNER_TEMP/calibre-slim/reports/layout.env"
+          python3 tools/calibre-slim/prune_candidate.py \
+            --root "$DIST_ROOT" --apply \
+            --report "$RUNNER_TEMP/calibre-slim/reports/binary-prune.json"
+          cp tools/calibre-slim/calibre-slim-convert "$DIST_ROOT/calibre-slim-convert"
+          chmod 0755 "$DIST_ROOT/calibre-slim-convert"
+          if [ ! -x "$DIST_ROOT/ebook-convert" ] && [ -x "$DIST_ROOT/bin/ebook-convert" ]; then
+            ln -s bin/ebook-convert "$DIST_ROOT/ebook-convert"
+          fi
+          echo "candidate_root=$DIST_ROOT" >> "$GITHUB_OUTPUT"
+
+      - name: Run post-pruning conversion and command-scope tests
+        id: candidate-tests
+        if: steps.binary-prune.outcome == 'success'
+        shell: bash
+        run: |
+          set -uo pipefail
+          source "$RUNNER_TEMP/calibre-slim/reports/layout.env"
+          set +e
+          xvfb-run -a python3 tools/calibre-slim/smoke_test.py \
+            --mode candidate \
+            --converter "$DIST_ROOT/calibre-slim-convert" \
+            --work-dir "$RUNNER_TEMP/calibre-slim/candidate-work" \
+            --report "$RUNNER_TEMP/calibre-slim/reports/candidate-smoke.json"
+          RC=$?
+          set -e
+          echo "exit_code=$RC" >> "$GITHUB_OUTPUT"
+          if [ "$RC" -ne 0 ]; then
+            echo "Post-pruning conversion tests failed; packaging is blocked."
+            exit 1
+          fi
+
+      - name: Package candidate and collect size and hash evidence
+        id: package
+        if: steps.candidate-tests.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "$RUNNER_TEMP/calibre-slim/reports/layout.env"
+          WORK="$RUNNER_TEMP/calibre-slim"
+          OUT="$WORK/artifacts/calibre-9.17.0-cajita-pdf-epub-linux-x86_64.tar.xz"
+          tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+            -cJf "$OUT" -C "$DIST_ROOT" .
+          python3 - "$DIST_ROOT" "$OUT" "$WORK/reports/package.json" "$WORK/reports/binary-prune.json" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          root, archive, report_path, prune_path = map(Path, sys.argv[1:])
+          def digest(path):
+              h = hashlib.sha256()
+              with path.open('rb') as f:
+                  for block in iter(lambda: f.read(1024*1024), b''): h.update(block)
+              return h.hexdigest()
+          prune = json.loads(prune_path.read_text())
+          files = [p for p in root.rglob('*') if p.is_file() and not p.is_symlink()]
+          report = {
+            "schema": "CAJITA_CALIBRE_SLIM_PACKAGE_AUDIT/1.0",
+            "candidate_id": "CAJITA_CALIBRE_SLIM_V1_20261024",
+            "status": "SMOKE_TESTS_PASS_NOT_CERTIFIED",
+            "upstream_tag": "v9.17.0",
+            "runtime_file_count": len(files),
+            "runtime_raw_bytes": sum(p.stat().st_size for p in files),
+            "archive_bytes": archive.stat().st_size,
+            "archive_sha256": digest(archive),
+            "prune_report_sha256": digest(prune_path),
+            "certification": "NOT_GRANTED",
+            "source_rebuildability": "NOT_ESTABLISHED",
+            "feature_subset": "PDF/EPUB conversion; HTML/TXT/DOCX source formats; no GUI/store/device-management scope"
+          }
+          report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(report, indent=2))
+          PY
+          cp "$WORK/reports/package.json" "$WORK/artifacts/"
+          cp "$WORK/reports/baseline-smoke.json" "$WORK/artifacts/"
+          cp "$WORK/reports/candidate-smoke.json" "$WORK/artifacts/"
+          cp "$WORK/reports/source-prune.json" "$WORK/artifacts/"
+          cp "$WORK/reports/binary-prune.json" "$WORK/artifacts/"
+          cp "$WORK/reports/upstream.sha256" "$WORK/artifacts/"
+          sha256sum "$WORK/artifacts/"* > "$WORK/artifacts/SHA256SUMS.txt"
+
+      - name: Upload candidate artifact and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cajita-calibre-slim-candidate-${ github.run_number }
+          path: |
+            ${ runner.temp }/calibre-slim/artifacts/**
+            ${ runner.temp }/calibre-slim/reports/**
+            tools/calibre-slim/**
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Summarize candidate outcome
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Cajita Calibre Slim Candidate"
+            echo
+            echo "- Upstream: Calibre v9.17.0, pinned hashes."
+            echo "- Baseline smoke test: ${ steps.baseline.outcome }"
+            echo "- Source pruning: ${ steps.source-prune.outcome }"
+            echo "- Binary pruning: ${ steps.binary-prune.outcome }"
+            echo "- Post-pruning smoke test: ${ steps.candidate-tests.outcome }"
+            echo "- Packaging: ${ steps.package.outcome }"
+            echo "- Certification: NOT GRANTED by this workflow."
+            echo "- Main Cajita runtime and Macrodown manifest are not modified."
+          } >> "$GITHUB_STEP_SUMMARY"
