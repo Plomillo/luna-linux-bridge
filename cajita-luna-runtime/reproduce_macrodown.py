@@ -108,6 +108,14 @@ def build(root,output):
             if MANIFEST_NAME not in names or "cajita_runtime.py" not in names: raise RuntimeError("RUNTIME_OR_MANIFEST_MISSING")
             for d in domains:
                 if not any(n.startswith(d+"/") for n in names): raise RuntimeError("EMPTY_DOMAIN:"+d)
+        # Persist exactly the same self-excluding manifest embedded in the validated archive.
+        # This prevents the tracked inventory from drifting from the delivered package.
+        manifest_target=root/MANIFEST_NAME
+        manifest_temp=manifest_target.with_name(MANIFEST_NAME+".building")
+        manifest_temp.write_bytes(manifest)
+        os.replace(manifest_temp,manifest_target)
+        if manifest_target.read_bytes()!=manifest:
+            raise RuntimeError("SOURCE_MANIFEST_EMBEDDED_MANIFEST_MISMATCH")
         os.replace(temp,output); digest=sha256_file(output)
         output.with_suffix(output.suffix+".sha256").write_text(digest+"  "+output.name+"\n",encoding="ascii")
         return {"status":"PASS","output":str(output),"archive_bytes":output.stat().st_size,
