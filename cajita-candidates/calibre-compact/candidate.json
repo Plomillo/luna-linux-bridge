@@ -58,12 +58,13 @@
   ],
   "retained_functions": [
     "ebook-convert",
+    "calibre-parallel worker",
     "PDF input/output",
     "EPUB input/output",
     "HTML/TXT/Markdown/DOCX/ODT/RTF input",
     "OEB intermediate conversion",
-    "required Qt/WebEngine/native dependencies",
-    "English/Spanish UI resources when available"
+    "required Qt/WebEngine/native conversion dependencies",
+    "English/Spanish locale entries when available"
   ],
   "excluded_function_groups": [
     "news/recipes download",
@@ -75,7 +76,13 @@
     "web metadata fetcher",
     "non-PDF/EPUB conversion format plugins",
     "manuals and editor help",
-    "unused locale packs"
+    "unused locale packs",
+    "text-to-speech/Piper and espeak language payload",
+    "browser developer-tools resources"
+  ],
+  "external_system_dependencies": [
+    "libegl1 (libEGL.so.1) for Qt WebEngine PDF rendering",
+    "libgl1 (libGL.so.1), plus the host graphics/Mesa stack required by the Linux runtime"
   ],
   "hardening": {
     "wrapper_shell_execution": false,
@@ -84,16 +91,21 @@
     "timeout_seconds": 600,
     "sha256_input_output_evidence": true,
     "append_only_jsonl_audit": true,
+    "stage_output_then_atomic_commit": true,
     "fail_closed_on_conversion_or_validation_error": true
   },
-  "size_gate": {
-    "global_runtime_cap_bytes": 470000000,
-    "integration_allowed_before_measurement": false,
-    "result": "PENDING_MEASURED_PACKAGE_AND_GLOBAL_REBALANCE"
+  "distribution": {
+    "packaging": "single compressed tar.xz asset",
+    "expanded_runtime_is_extracted_on_demand": true,
+    "expanded_runtime_not_duplicated_inside_macrodown": true,
+    "maximum_candidate_asset_bytes": 470000000,
+    "final_macrodown_integration_requires_global_rebalance": true,
+    "status": "PENDING_SUCCESSFUL_BUILD_AND_MEASURED_ARCHIVE"
   },
   "bug_handling": {
     "upstream_source_patches": "ONLY_AFTER_REPRODUCER_AND_REGRESSION_TEST",
     "speculative_bugfixes": false,
-    "smoke_tests_required": true
+    "smoke_tests_required": true,
+    "note": "No claim is made that all upstream bugs have been removed."
   }
 }

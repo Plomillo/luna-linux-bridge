@@ -123,26 +123,34 @@ def tree_size(root):
         if p.is_file() and not p.is_symlink():
             total += p.stat().st_size; count += 1
     return count,total
-file_count, raw_bytes = tree_size(stage)
+file_count, expanded_bytes = tree_size(stage)
 archive.parent.mkdir(parents=True, exist_ok=True)
 with tarfile.open(archive, "w:xz", preset=9) as tf:
     for p in sorted(stage.rglob("*")):
         arc = p.relative_to(stage)
         tf.add(p, arcname=str(arc), recursive=False)
+archive_bytes = archive.stat().st_size
 report = {
     "schema":"CAJITA_CALIBRE_COMPACT_BUILD_EVIDENCE/1.0",
     "candidate_id":"CAJITA_CALIBRE_COMPACT_V1_LINUX_X86_64",
     "upstream":{"project":"Calibre","version":version,"architecture":arch,"source_url":source_url,"source_sha512":source_sha512,"source_sha256":digest(source_archive),"sidecar_status":"SHA512_VERIFIED"},
     "pruning":{"report_file":"prune-report.json","status":"APPLIED_AND_SMOKE_TESTED"},
-    "runtime":{"file_count":file_count,"raw_bytes":raw_bytes,"archive_bytes":archive.stat().st_size,"archive_sha256":digest(archive),"archive_name":archive.name},
+    "runtime":{"file_count":file_count,"expanded_bytes":expanded_bytes,"archive_bytes":archive_bytes,"archive_sha256":digest(archive),"archive_name":archive.name},
     "functional_tests":{"unit_tests":"PASS","html_to_epub":"PASS","epub_to_pdf":"PASS","pdf_to_epub":"PASS","html_to_pdf":"PASS","pdf_text_and_accents":"PASS","epub_text_and_accents":"PASS","unsupported_output_rejected":"PASS"},
-    "conversion_audit":"conversion-audit.jsonl",
-    "integration":{"global_cap_bytes":470000000,"macrodown_inclusion":"NOT_AUTOMATIC","raw_size_gate":"PASS" if raw_bytes <= 470000000 else "FAIL_REQUIRES_MORE_COMPACTION_OR_SEPARATE_PAYLOAD","size_gate":"MEASURED_CANDIDATE_REQUIRES_GLOBAL_REBALANCE","certification":"NOT_GRANTED"},
+    "distribution_gate":{
+        "candidate_archive_max_bytes":470000000,
+        "candidate_archive_gate":"PASS" if archive_bytes <= 470000000 else "FAIL",
+        "global_macrodown_gate":"PENDING_EXACT_ADDED_PAYLOAD_AND_GLOBAL_REBALANCE",
+        "expanded_cache_bytes_are_not_duplicated_in_distribution":True,
+        "certification":"NOT_GRANTED"
+    },
+    "conversion_audit":"conversion-audit.jsonl"
 }
 (evidence_dir/"build-evidence.json").write_text(json.dumps(report,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
 print(json.dumps(report, indent=2, ensure_ascii=False))
-if raw_bytes > 470000000:
-    print("NOTICE: candidate raw footprint exceeds Cajita global cap; do not integrate.")
+if archive_bytes > 470000000:
+    print("FAIL_CLOSED: comprimido candidato supera por sí solo el límite máximo de distribución.")
+    raise SystemExit(24)
 PY
 
 printf '\nCALIBRE_COMPACT_ARTIFACT=%s\n' "$ARCHIVE"

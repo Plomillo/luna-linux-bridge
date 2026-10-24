@@ -25,7 +25,8 @@ jobs:
       - name: Set up validation dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ca-certificates curl xz-utils python3 poppler-utils
+          sudo apt-get install --yes --no-install-recommends \
+            ca-certificates curl xz-utils python3 poppler-utils libegl1 libgl1 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0
 
       - name: Checkout candidate branch
         uses: actions/checkout@v4

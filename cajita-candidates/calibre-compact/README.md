@@ -2,49 +2,41 @@
 
 Estado: **CANDIDATO EXPERIMENTAL; NO CERTIFICADO**.
 
-Este candidato conserva el motor oficial de conversión de Calibre y construye una distribución Linux x86-64 restringida a generar PDF y EPUB, con entradas PDF, EPUB, HTML, TXT/Markdown, DOCX, ODT y RTF. La interfaz pública es una envoltura CLI propia; el motor sigue siendo ebook-convert del upstream.
+Este candidato conserva el motor oficial de conversión de Calibre y construye un paquete Linux x86-64 reducido, orientado exclusivamente a generar PDF/EPUB y convertir documentos hacia esos dos formatos. La interfaz pública es una envoltura CLI propia; el motor sigue siendo `ebook-convert` del upstream.
 
-## Objetivo
+## Funciones admitidas
 
 - PDF → EPUB.
 - EPUB → PDF.
-- Crear EPUB desde HTML, TXT/Markdown, DOCX, ODT o RTF.
-- Crear PDF desde EPUB, HTML, TXT/Markdown, DOCX, ODT o RTF.
-- Mantener la conversión PDF/EPUB de Calibre, sus dependencias nativas y sus recursos de renderizado necesarios.
-- Eliminar recursos no necesarios para este ámbito: colecciones de recetas/noticias, manuales y ayudas de GUI, recursos de servidor y editor, localizaciones distintas de inglés/español, iconografía de interfaz y módulos de conversión de formatos ajenos a la lista blanca.
-- Auditar el hash/tamaño de entrada y salida, el estado de la conversión y la versión del motor.
-- Detener la construcción si falla cualquiera de las pruebas positivas, las validaciones de archivo o la política de formatos.
+- Creación de EPUB desde HTML, TXT/Markdown, DOCX, ODT o RTF.
+- Creación de PDF desde EPUB, HTML, TXT/Markdown, DOCX, ODT o RTF.
+- Entradas adicionales PDF y EPUB para las conversiones bidireccionales.
+- Hash SHA-256, tamaño, versión del motor y resultado de cada operación en un registro JSONL append-only.
+- Salida temporal validada antes de reemplazar el destino; fallo de conversión o evidencia impide declarar éxito.
 
-## Procedencia
+## Poda
 
-Se fija Calibre 9.17.0, descarga oficial Linux x86-64: https://download.calibre-ebook.com/9.17.0/calibre-9.17.0-x86_64.txz. El constructor verifica SHA-512 contra el fichero lateral publicado en https://calibre-ebook.com/signatures/ antes de extraer o podar.
+La distribución deja fuera la GUI de biblioteca, visor y editor, el servidor de contenido, la descarga de noticias y recetas, los comandos de dispositivos, el generador/descargador de metadatos, manuales, iconografía de interfaz, complementos de conversión ajenos a la lista de formatos admitidos, traducciones no inglesas/españolas y la infraestructura de texto a voz (Piper/espeak).
 
-La copia de Calibre continúa sujeta a GPL-3.0 y conserva los ficheros de licencia/procedencia presentes en el paquete oficial. Este candidato no sustituye ni modifica la autoridad de Louksna; es infraestructura técnica subordinada.
+Se retienen expresamente el trabajador `calibre-parallel`, el motor de conversión, el recurso interno `resources/default_tweaks.py`, el mapa MIME, Qt WebEngine y sus dependencias de renderizado. La ejecución de pruebas detectó que eliminar el trabajador o el recurso de ajustes rompe el motor; ambos están protegidos por comprobaciones del constructor.
 
-## Poda y límites
+No se borra código fuente solo por parecer innecesario. El código Python empaquetado en el runtime congelado se conserva en esta versión para evitar una reconstrucción invasiva del upstream. Este candidato poda funciones y recursos de distribución; **no afirma haber eliminado todos los bugs de Calibre**. Un arreglo upstream solo se añadirá tras un fallo reproducible y una prueba de regresión.
 
-La poda es una operación de empaquetado sobre una copia temporal aislada, no sobre el sistema del usuario. El script registra cada archivo eliminado (ruta relativa, tamaño, SHA-256 y regla de poda). Conserva los archivos de licencia y no elimina código de conversión fuera de la lista explícita. La lista blanca actual conserva entradas PDF, EPUB, HTML, TXT/Markdown, DOCX, ODT y RTF, salidas PDF/EPUB y el formato OEB interno.
+## Procedencia y plataforma
 
-No se eliminan indiscriminadamente fuentes tipográficas, datos Unicode, MIME, componentes Qt/WebEngine, bibliotecas nativas ni recursos que puedan ser necesarios para renderizar libros. Se conservan el paquete de idioma inglés de Qt WebEngine y los recursos españoles si el paquete los incluye.
+Calibre 9.17.0 oficial Linux x86-64:
+https://download.calibre-ebook.com/9.17.0/calibre-9.17.0-x86_64.txz
 
-## Pruebas exigidas
+El constructor obtiene y comprueba el SHA-512 publicado por el proyecto antes de extraer o podar. Conserva las licencias y la procedencia del paquete. La prueba de PDF necesita al menos `libegl1` y `libgl1` del sistema; por tanto, este paquete aún no se considera un runtime Linux totalmente autónomo.
 
-1. ebook-convert --version.
-2. HTML → EPUB; EPUB → PDF; PDF → EPUB; HTML → PDF.
-3. Integridad ZIP/OCF de EPUB, mimetype como primera entrada sin compresión y existencia de META-INF/container.xml.
-4. Cabecera %PDF- en el PDF y extracción de texto para comprobar contenido español.
-5. Rechazo de extensiones de entrada/salida fuera de la lista blanca.
-6. Inspección de tamaño bruto, tamaño comprimido, hashes y archivos retirados.
-7. Captura de evidencia reproducible como artefacto de GitHub Actions.
+## Tamaño y empaquetado
 
-## Qué no se proclama
+El paquete final se distribuye como un único `.tar.xz` comprimido. Cajita debe registrar ese archivo como un solo payload y extraerlo en disco bajo demanda; no debe distribuir a la vez el archivo comprimido y la copia expandida. El tamaño expandido se registra aparte como requisito de espacio temporal/disco, no se confunde con el tamaño del artefacto comprimido.
 
-- No se proclama equivalencia funcional con toda la distribución oficial de Calibre.
-- No se proclama que se hayan encontrado o reparado todos los errores del upstream. No se incorporan parches especulativos sin un fallo reproducible y una prueba de regresión.
-- No se proclama compatibilidad con Windows o Android: esta construcción se dirige a Linux x86-64.
-- No se declara aprobado para incluirse en Macrodown hasta medir el candidato real, verificar calidad funcional e integrar el tamaño global sin romper el límite duro de Cajita.
-- La prueba de humo cubre fixtures sintéticos; la calidad de PDF reales complejos y escaneados necesita un corpus de aceptación separado.
+La inclusión en Macrodown no es automática: el gate final debe sumar el tamaño exacto del paquete comprimido y sus metadatos al resto del payload de Cajita y volver a validar el límite global de 470.000.000 bytes. El artefacto de prueba por sí solo no concede certificación.
 
-## Ejecución
+## Pruebas
 
-El workflow Calibre Compact Candidate descarga, verifica, extrae, poda, ejecuta las pruebas y publica el paquete y un JSON de evidencia. El ZIP/artefacto no se incorpora automáticamente a cajita-luna-runtime; primero hay que evaluar su tamaño final y su calidad contra el presupuesto global.
+El workflow comprueba el SHA-512 upstream, compila y ejecuta pruebas de política, pruna el paquete, y realiza conversiones reales HTML→EPUB, HTML→PDF, EPUB→PDF y PDF→EPUB. Comprueba el contenedor EPUB, la salida PDF y la conservación de texto y acentos en el fixture español. También comprueba que se rechace una salida no permitida como MOBI.
+
+La prueba sintética es un gate inicial, no una evaluación de calidad en libros reales. Los PDF escaneados, de varias columnas, tablas complejas y documentos con fuentes incrustadas requieren un corpus de aceptación independiente.
