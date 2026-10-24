@@ -53,7 +53,8 @@ def run_case(root,outdir,record,timeout):
     request_path.write_text(json.dumps(record,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     safe_env={k:os.environ[k] for k in ("PATH","HOME","LANG","LC_ALL","TMPDIR","SYSTEMROOT","WINDIR") if k in os.environ}
     safe_env.update({"OMP_NUM_THREADS":"1","OPENBLAS_NUM_THREADS":"1","MKL_NUM_THREADS":"1","NUMEXPR_NUM_THREADS":"1",
-                     "TOKENIZERS_PARALLELISM":"false","HF_HUB_OFFLINE":"1","TRANSFORMERS_OFFLINE":"1","PYTHONNOUSERSITE":"1"})
+                     "TOKENIZERS_PARALLELISM":"false","HF_HUB_OFFLINE":"1","TRANSFORMERS_OFFLINE":"1","PYTHONNOUSERSITE":"1",
+                     "CAJITA_E2E_DIAGNOSTICS":"1"})
     started=time.monotonic()
     try:
         p=subprocess.run([sys.executable,str(root/"cajita_runtime.py"),"execute-task","--root",str(root),
@@ -78,6 +79,8 @@ def run_case(root,outdir,record,timeout):
                 "module_tree_sha256":result.get("integrity",{}).get("module_tree_sha256"),
                 "peak_rss_bytes":result.get("peak_rss_bytes"),"generated_token_count":result.get("generated_token_count"),
                 "failure_reason":result.get("reason"),"semantic_quality_equivalence":"NOT_ESTABLISHED",
+                "model_runtime_stderr_tail":result.get("diagnostic_stderr_tail"),
+                "model_runtime_stdout_tail":result.get("diagnostic_stdout_tail"),
                 **diagnostics}
     except subprocess.TimeoutExpired:
         return {"task_id":record["task_id"],"domain_id":record["domain_id"],"operation":record["operation"],
