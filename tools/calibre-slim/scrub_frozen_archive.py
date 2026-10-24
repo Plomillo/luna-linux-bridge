@@ -76,7 +76,7 @@ def sha256_region(handle, offset: int, size: int) -> str:
 
 
 def category_for(name: str) -> str | None:
-    normalized = name.replace("\\\\", "/").lstrip("./")
+    normalized = name.replace("\\", "/").lstrip("./")
 
     for prefix, category in TARGET_PREFIXES.items():
         if normalized.startswith(prefix):
@@ -102,7 +102,7 @@ def category_for(name: str) -> str | None:
 
 def zero_range(handle, offset: int, size: int) -> None:
     handle.seek(offset)
-    zero = b"\\0" * min(1024 * 1024, max(1, size))
+    zero = b"\0" * min(1024 * 1024, max(1, size))
     remaining = size
     while remaining:
         chunk_size = min(remaining, len(zero))
