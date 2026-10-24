@@ -102,6 +102,7 @@ TARGET_PLUGIN_FILES = {
     "epub_input.py",
     "epub_output.py",
     "html_input.py",
+    "archive_input.py",
     "oeb_output.py",
     "pdf_input.py",
     "pdf_output.py",
