@@ -35,7 +35,7 @@ def run_registry(manifest_path=None,contract_path=None):
     mp,cp,m,c=load_inputs(manifest_path,contract_path)
     cmap={d["id"]:d for d in c["domains"]}; rows=[]
     for d in m["domains"]:
-        p=(ROOT/d["module"]).resolve()
+        p=(ROOT/pathlib.Path(d["module"]).name).resolve()
         try: p.relative_to(ROOT.resolve())
         except ValueError: rows.append({"domain_id":d["id"],"status":"MODULE_PATH_ESCAPE"}); continue
         if not p.is_file(): rows.append({"domain_id":d["id"],"status":"ADAPTER_ABSENT"}); continue
