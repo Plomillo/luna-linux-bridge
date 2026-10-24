@@ -547,6 +547,8 @@ jobs:
             echo "NO_CANDIDATE_DIFF"
           else
             git diff --cached --stat
+            git config --local user.name "github-actions[bot]"
+            git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -m "Materialize Cajita modules and publish Louksna1 candidate"
             git push origin HEAD:main
           fi
