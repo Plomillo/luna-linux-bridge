@@ -106,10 +106,13 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Install pinned test-only YAML parser
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
+
       - name: Test manufacturing and anti-paralysis controls
         shell: bash
         env:
-          PYTHONPATH: tools:cajita-luna-runtime
+          PYTHONPATH: tools:scripts:cajita-luna-runtime
           CAJITA_STATE_DIR: ${{ runner.temp }}/cajita-state
         run: |
           set -euo pipefail
@@ -122,7 +125,7 @@ jobs:
         id: factory
         shell: bash
         env:
-          PYTHONPATH: tools:cajita-luna-runtime
+          PYTHONPATH: tools:scripts:cajita-luna-runtime
         run: |
           set +e
           python tools/cajita_runtime_factory.py --repo-root "$GITHUB_WORKSPACE" --output-dir out > "$RUNNER_TEMP/factory-output.txt" 2>&1
@@ -180,6 +183,14 @@ jobs:
           name: louksna1-candidate
           path: candidate
 
+      - name: Set up independent validator Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install pinned test-only YAML parser
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
+
       - name: Independently recompute package, document, modules and six weight identities
         shell: bash
         run: |
@@ -233,7 +244,7 @@ jobs:
             assert p.is_file() and p.stat().st_size==int(w["bytes"]) and hashlib.sha256(p.read_bytes()).hexdigest()==w["sha256"], "WEIGHT:"+w["id"]
           print(json.dumps({"status":"PASS","scope":"DISTRIBUTION_HASHES_STRUCTURE_MATERIALIZATION_WEIGHT_IDENTITY","combined_bytes":package.stat().st_size+doc.stat().st_size,"package_sha256":hashlib.sha256(package.read_bytes()).hexdigest(),"louksna1_sha256":hashlib.sha256(doc.read_bytes()).hexdigest(),"domains":6,"engines":15,"commands":14,"targets":21,"global_certification":"NOT_GRANTED"},indent=2))
           PY
-          PYTHONPATH=tools:candidate/runtime python -m unittest discover -s tests -p 'test_cajita*.py' -v
+          PYTHONPATH=tools:scripts:candidate/runtime python -m unittest discover -s tests -p 'test_cajita*.py' -v
           python candidate/runtime/cajita_antiparalysis.py selftest --state-dir "$RUNNER_TEMP/g23-antiparalysis"
           (cd candidate/runtime && python cajita_router.py selftest)
           python candidate/runtime/cajita_runtime.py selftest --root candidate/runtime
