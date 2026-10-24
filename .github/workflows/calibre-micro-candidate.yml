@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - cajita/calibre-micro-16mb-v1
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
