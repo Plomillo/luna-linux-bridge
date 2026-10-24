@@ -59,7 +59,8 @@ def validate_argv(step,domain,rollback=False):
         if not rollback and not any(re.search(r"@(?:[0-9]+\.){1,2}[0-9]+",x) for x in package_args):
             raise ValueError("NPM_EXACT_VERSION_PIN_REQUIRED")
     elif exe=="uv":
-        if not args or args[0] not in ({"tool","uninstall"} if rollback else {"tool","install"}): raise ValueError("UV_OPERATION_NOT_ALLOWLISTED")
+        expected=["tool","uninstall"] if rollback else ["tool","install"]
+        if len(args)<2 or args[:2]!=expected: raise ValueError("UV_OPERATION_NOT_ALLOWLISTED")
         if not rollback and not any(re.search(r"==[^=]+$",x) for x in args): raise ValueError("UV_EXACT_VERSION_PIN_REQUIRED")
     elif exe=="pipx":
         expected="uninstall" if rollback else "install"
