@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: calibre-slim-candidate-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-candidate:
@@ -127,7 +127,7 @@ jobs:
           cp "$SOURCE_ROOT/LICENSE" "$DIST_ROOT/CALIBRE_UPSTREAM_LICENSE"
           cp "$SOURCE_ROOT/COPYRIGHT" "$DIST_ROOT/CALIBRE_UPSTREAM_COPYRIGHT"
           tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
-            -cJf "$WORK/artifacts/calibre-9.17.0-cajita-source-pruned.tar.xz" \
+            --use-compress-program='xz -T2 -6' -cf "$WORK/artifacts/calibre-9.17.0-cajita-source-pruned.tar.xz" \
             -C "$SOURCE_ROOT/src" .
           cp tools/calibre-slim/source-lock.json "$WORK/artifacts/"
           cp tools/calibre-slim/prune_candidate.py "$WORK/artifacts/"
@@ -184,7 +184,7 @@ jobs:
           WORK="$RUNNER_TEMP/calibre-slim"
           OUT="$WORK/artifacts/calibre-9.17.0-cajita-pdf-epub-linux-x86_64.tar.xz"
           tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
-            -cJf "$OUT" -C "$DIST_ROOT" .
+            --use-compress-program='xz -T2 -6' -cf "$OUT" -C "$DIST_ROOT" .
           python3 - "$DIST_ROOT" "$OUT" "$WORK/reports/package.json" "$WORK/reports/binary-prune.json" <<'PY'
           import hashlib, json, sys
           from pathlib import Path
