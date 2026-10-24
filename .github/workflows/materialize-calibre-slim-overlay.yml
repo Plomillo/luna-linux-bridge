@@ -1,0 +1,128 @@
+name: Materialize Calibre Slim in Cajita runtime
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/materialize-calibre-slim-overlay.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: materialize-calibre-slim-overlay-main
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Retrieve and verify exact previously tested overlay
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          artifact_id="12545698477"
+          expected_size="58180"
+          expected_sha="dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b"
+          tmp="$RUNNER_TEMP/calibre-physical"
+          mkdir -p "$tmp/download" "$tmp/extracted"
+          gh api "repos/$repo/actions/artifacts/$artifact_id/zip" > "$tmp/artifact.zip"
+          unzip -q "$tmp/artifact.zip" -d "$tmp/extracted"
+          payload="$(find "$tmp/extracted" -type f -name 'calibre-9.17.0-cajita-pdf-epub-overlay.tar.xz' -print -quit)"
+          test -n "$payload"
+          actual_size="$(stat -c '%s' "$payload")"
+          test "$actual_size" = "$expected_size"
+          actual_sha="$(sha256sum "$payload" | awk '{print $1}')"
+          test "$actual_sha" = "$expected_sha"
+          dest="cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-overlay.tar.xz"
+          install -D -m 0644 "$payload" "$dest"
+          printf 'MATERIALIZED_PATH=%s\nMATERIALIZED_SIZE=%s\nMATERIALIZED_SHA=%s\n' "$dest" "$actual_size" "$actual_sha" >> "$GITHUB_ENV"
+          echo "Verified source artifact: $actual_size bytes SHA-256 $actual_sha"
+
+      - name: Validate and rebuild the Cajita runtime package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py"
+          python3 - "$MATERIALIZED_PATH" <<'PY'
+          import hashlib, os, sys
+          from pathlib import Path
+          p=Path(sys.argv[1])
+          assert p.is_file(), "physical overlay missing"
+          assert p.stat().st_size == 58180, "overlay size mismatch"
+          assert hashlib.sha256(p.read_bytes()).hexdigest() == "dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b", "overlay SHA-256 mismatch"
+          print("PHYSICAL_ARTIFACT_VALIDATION=PASS")
+          PY
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("cajita-luna-runtime")
+          d=root/"5. Inteligencia documental/Conversión documental/Calibre Slim"
+          profile=d/"profile.json"
+          p=json.loads(profile.read_text(encoding="utf-8"))
+          p["status"]="MATERIALIZED_IN_CAJITA_RUNTIME__NOT_CERTIFIED"
+          p["archive"]["physically_embedded"]=True
+          p["archive"]["materialized_path"]="5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-overlay.tar.xz"
+          profile.write_text(json.dumps(p,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          reference=d/"ARTIFACT_REFERENCE.json"
+          a=json.loads(reference.read_text(encoding="utf-8"))
+          a["artifact_embedded_in_runtime"]=True
+          a["materialization_status"]="MATERIALIZED_IN_MAIN__NOT_CERTIFIED"
+          a["actual_repository_path"]="5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-overlay.tar.xz"
+          a["post_materialization_sha256_verified"]=True
+          a["post_materialization_size_verified"]=True
+          reference.write_text(json.dumps(a,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          readme=d/"README.md"
+          t=readme.read_text(encoding="utf-8")
+          t=t.replace("**Estado:** candidato registrado; binario no materializado en el árbol de runtime.","**Estado:** binario incorporado físicamente en el árbol de runtime; candidato todavía no certificado.")
+          t=t.replace("**Ese archivo todavía no está físicamente en esta carpeta de runtime.** El archivo binario existe como artefacto de GitHub Actions; el registro no lo representa como si ya estuviera empaquetado. Por ello, el lanzador termina con `FAIL_CLOSED` mientras no exista el overlay extraído.","**El archivo ya está físicamente en esta carpeta de runtime.** El lanzador verifica tamaño y SHA-256, extrae el overlay de forma segura la primera vez y falla cerrado ante discrepancias.")
+          readme.write_text(t,encoding="utf-8")
+          doc=root/"CajitadeLuna.md"
+          t=doc.read_text(encoding="utf-8")
+          t=t.replace("**Estado de materialización: BLOQUEADO.** La ruta y los archivos de integración se registran abajo, pero el `calibre-slim-overlay.tar.xz` todavía no está físicamente en el árbol de `main`; sigue alojado como artefacto de Actions. El lanzador falla de forma segura si falta `source/calibre/customize/builtins.py`.","**Materialización física: PASS.** El archivo `calibre-slim-overlay.tar.xz` está presente en la ruta interna del árbol `main`; el tamaño y SHA-256 se verificaron tras copiarlo desde el artefacto de CI. El lanzador verifica otra vez esos valores y extrae el overlay de forma segura en el primer uso.")
+          doc.write_text(t,encoding="utf-8")
+          PY
+          python3 "cajita-luna-runtime/reproduce_macrodown.py" --root "$GITHUB_WORKSPACE/cajita-luna-runtime" --output "$RUNNER_TEMP/CAJITA_LUNA_RUNTIME_V9.macrodown" | tee "$RUNNER_TEMP/rebuild-report.json"
+          python3 - "$RUNNER_TEMP/CAJITA_LUNA_RUNTIME_V9.macrodown" <<'PY'
+          import json, sys, zipfile
+          from pathlib import Path
+          p=Path(sys.argv[1])
+          with zipfile.ZipFile(p) as z:
+              assert z.testzip() is None, "macrodown CRC failure"
+              names=z.namelist()
+              target="5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-overlay.tar.xz"
+              assert names.count(target)==1, "physical Calibre overlay absent/duplicated in rebuilt Cajita package"
+              m=json.loads(z.read("MACRODOWN_MANIFEST.json"))
+              record=next(x for x in m["files"] if x["path"]==target)
+              assert record["size_bytes"]==58180
+              print("REBUILT_PACKAGE_CONTAINS_CALIBRE=PASS")
+          PY
+          rm -f "$RUNNER_TEMP/CAJITA_LUNA_RUNTIME_V9.macrodown" "$RUNNER_TEMP/CAJITA_LUNA_RUNTIME_V9.macrodown.sha256"
+
+      - name: Commit physical payload and regenerated manifest directly to main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add             "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-overlay.tar.xz"             "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/profile.json"             "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/ARTIFACT_REFERENCE.json"             "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/README.md"             "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py"             "cajita-luna-runtime/CajitadeLuna.md"             "cajita-luna-runtime/MACRODOWN_MANIFEST.json"
+          git commit -m "Physically include Calibre Slim overlay in Cajita runtime"
+          git push origin HEAD:main
+          echo "PHYSICAL_CALIBRE_INTEGRATION_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "PATH=$MATERIALIZED_PATH" >> "$GITHUB_STEP_SUMMARY"
+          echo "SIZE=$MATERIALIZED_SIZE" >> "$GITHUB_STEP_SUMMARY"
+          echo "SHA256=$MATERIALIZED_SHA" >> "$GITHUB_STEP_SUMMARY"
