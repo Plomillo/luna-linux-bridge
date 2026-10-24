@@ -30,6 +30,8 @@ jobs:
             tools/calibre-slim/prune_candidate.py \
             tools/calibre-slim/prune_binary_distribution.py \
             tools/calibre-slim/inspect_layout.py \
+            tools/calibre-slim/dump_frozen_index.py \
+            tools/calibre-slim/scrub_frozen_archive.py \
             tools/calibre-slim/smoke_test.py
           python3 -m json.tool tools/calibre-slim/profile.json >/dev/null
           python3 -m json.tool tools/calibre-slim/source-lock.json >/dev/null
@@ -126,6 +128,8 @@ jobs:
           cp "$SOURCE_ROOT/src/calibre/customize/builtins.py" "$DIST_ROOT/source/calibre/customize/builtins.py"
           cp "$SOURCE_ROOT/LICENSE" "$DIST_ROOT/CALIBRE_UPSTREAM_LICENSE"
           cp "$SOURCE_ROOT/COPYRIGHT" "$DIST_ROOT/CALIBRE_UPSTREAM_COPYRIGHT"
+          "$DIST_ROOT/calibre-debug" -e tools/calibre-slim/dump_frozen_index.py -- "$WORK/reports/frozen-index.json"
+          test -s "$WORK/reports/frozen-index.json"
           tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
             --use-compress-program='xz -T2 -6' -cf "$WORK/artifacts/calibre-9.17.0-cajita-source-pruned.tar.xz" \
             -C "$SOURCE_ROOT/src" .
@@ -146,6 +150,9 @@ jobs:
           set -euo pipefail
           WORK="$RUNNER_TEMP/calibre-slim"
           source "$WORK/reports/layout.env"
+          python3 tools/calibre-slim/scrub_frozen_archive.py \
+            --root "$DIST_ROOT" --index "$WORK/reports/frozen-index.json" --apply \
+            --report "$WORK/reports/frozen-scrub.json"
           python3 tools/calibre-slim/prune_binary_distribution.py \
             --root "$DIST_ROOT" --upstream-raw-bytes "$UPSTREAM_BINARY_RAW_BYTES" --apply \
             --report "$WORK/reports/binary-prune.json"
@@ -195,6 +202,7 @@ jobs:
                   for block in iter(lambda: f.read(1024*1024), b''): h.update(block)
               return h.hexdigest()
           prune = json.loads(prune_path.read_text())
+          frozen_scrub = json.loads((report_path.parent / "frozen-scrub.json").read_text())
           files = [p for p in root.rglob('*') if p.is_file() and not p.is_symlink()]
           report = {
             "schema": "CAJITA_CALIBRE_SLIM_PACKAGE_AUDIT/1.0",
@@ -206,6 +214,10 @@ jobs:
             "archive_bytes": archive.stat().st_size,
             "archive_sha256": digest(archive),
             "prune_report_sha256": digest(prune_path),
+            "frozen_entries_scrubbed": frozen_scrub["selected_entry_count"],
+            "frozen_payload_bytes_zeroed": frozen_scrub["payload_bytes_zeroed"],
+            "frozen_archive_sha256_after": frozen_scrub["archive_sha256_after"],
+            "frozen_scrub_report_sha256": digest(report_path.parent / "frozen-scrub.json"),
             "certification": "NOT_GRANTED",
             "source_rebuildability": "NOT_ESTABLISHED",
             "feature_subset": "PDF/EPUB conversion; HTML/TXT/DOCX source formats; no GUI/store/device-management scope"
@@ -218,6 +230,8 @@ jobs:
           cp "$WORK/reports/candidate-smoke.json" "$WORK/artifacts/"
           cp "$WORK/reports/source-prune.json" "$WORK/artifacts/"
           cp "$WORK/reports/binary-prune.json" "$WORK/artifacts/"
+          cp "$WORK/reports/frozen-index.json" "$WORK/artifacts/"
+          cp "$WORK/reports/frozen-scrub.json" "$WORK/artifacts/"
           cp "$WORK/reports/upstream.sha256" "$WORK/artifacts/"
           sha256sum "$WORK/artifacts/"* > "$WORK/artifacts/SHA256SUMS.txt"
 
