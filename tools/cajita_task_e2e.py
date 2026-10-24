@@ -60,6 +60,16 @@ def run_case(root,outdir,record,timeout):
                           "--request-json",str(request_path),"--timeout",str(timeout)],
                          cwd=str(root),env=safe_env,capture_output=True,text=True,timeout=timeout+30,check=False)
         result=json.loads(p.stdout) if p.stdout.strip() else {}
+        # Preserve bounded diagnostics for genuine runtime failures; this harness uses
+        # synthetic inputs only and never serializes the input request or prompt here.
+        diagnostics = {}
+        if p.returncode != 0:
+            diagnostics = {
+                "stderr_tail": p.stderr[-3000:],
+                "stdout_tail": p.stdout[-1200:],
+                "stderr_sha256": hashlib.sha256(p.stderr.encode("utf-8", errors="replace")).hexdigest(),
+                "stdout_sha256": hashlib.sha256(p.stdout.encode("utf-8", errors="replace")).hexdigest(),
+            }
         return {"task_id":record["task_id"],"domain_id":record["domain_id"],"operation":record["operation"],
                 "status":result.get("status","NO_JSON_RESULT"),"exit_code":p.returncode,
                 "elapsed_seconds":round(time.monotonic()-started,3),"input_sha256":result.get("input_sha256"),
@@ -67,7 +77,8 @@ def run_case(root,outdir,record,timeout):
                 "weight_sha256":result.get("integrity",{}).get("weight_sha256"),
                 "module_tree_sha256":result.get("integrity",{}).get("module_tree_sha256"),
                 "peak_rss_bytes":result.get("peak_rss_bytes"),"generated_token_count":result.get("generated_token_count"),
-                "failure_reason":result.get("reason"),"semantic_quality_equivalence":"NOT_ESTABLISHED"}
+                "failure_reason":result.get("reason"),"semantic_quality_equivalence":"NOT_ESTABLISHED",
+                **diagnostics}
     except subprocess.TimeoutExpired:
         return {"task_id":record["task_id"],"domain_id":record["domain_id"],"operation":record["operation"],
                 "status":"FAIL_TIMEOUT","exit_code":124,"elapsed_seconds":round(time.monotonic()-started,3),
