@@ -267,3 +267,38 @@ El recurso BTX del runtime se ha sustituido por la candidata SQLite en la ruta e
 - Estado: RUNTIME_SUBSTITUTION=APPLIED_UNCERTIFIED; STRUCTURAL_VALIDATION=PASS; BYTE_REPRODUCIBILITY=PASS; SOURCE_TO_VERSE_CONTENT_EQUIVALENCE=NOT_INDEPENDENTLY_VALIDATED; EDITORIAL_APPARATUS=NOT_INCLUDED_OR_CERTIFIED; CERTIFICATION=NOT_GRANTED; OPERABILITY=UNVERIFIED.
 
 Esta sustitución cambia el formato de almacenamiento del recurso; no declara certificación integral del texto bíblico ni equivalencia versículo por versículo. La entrada A029 conserva los hashes, tamaños, procedencia y estado pendiente. El archivo original se retiene únicamente para recuperación.
+
+
+## Auditoría integral del inventario y subsistema CLI — 2026-10-24
+
+**Fuente de verdad:** árbol de Git y manifiesto Macrodown regenerado durante la construcción reproducible. Presencia de archivo, instalación de proveedor, operatividad y certificación se registran como estados diferentes.
+
+### Subsistema CLI
+
+La infraestructura modular se mantiene en `2. Orquestación/Orquestador/CLIs/`: `cli_contract.json`, `cli_registry.py`, `cli_manager.py`, `common.py`, los ocho adaptadores y las pruebas. `punto.json` es el punto de entrada declarativo. El documento anterior `CLIS.txt` se migra a este contrato, no se interpreta como prueba de que estén instaladas las ocho herramientas proveedoras.
+
+El modo predeterminado es de solo lectura. La instalación de proveedores requiere versión exacta fijada, fuente oficial y comprobación de integridad, plan versionado con SHA-256 explícitamente aprobado, checkpoint previo, rollback, prueba posterior y evidencia estructurada. No hay uso implícito de shell, privilegios, tokens ni actualizaciones. Python se audita pero no se sustituye como runtime del sistema. La autenticación de cada proveedor es un control aparte y sus secretos nunca se registran.
+
+El workflow `.github/workflows/cajita-cli-host-audit.yml` hace una auditoría de solo lectura del runner Linux `luna-aux` y preserva el resultado JSON como artefacto de GitHub Actions. Separa la coherencia de la infraestructura (`infrastructure_status`) del estado real de los proveedores (`provider_host_readiness`). La infraestructura no se declara certificada por existir el código.
+
+### Inventario completo del runtime
+
+La construcción reproducible regenera `MACRODOWN_MANIFEST.json` con ruta, tamaño, SHA-256, dominio y tipo de compresión para cada archivo distribuido. El informe generado `docs/cajita-luna/CAJITA_INVENTORY_AUDIT_20261024.json` añade el propio manifiesto al inventario final, reconcilia rutas añadidas/retiradas/modificadas, separa los seis dominios canónicos del soporte de raíz y registra tamaño bruto, tamaño empaquetado y hash del artefacto construido. El workflow debe guardar en Git el manifiesto regenerado y el informe.
+
+Dominios, en orden inmutable:
+1. `1. Cerebro`
+2. `2. Orquestación`
+3. `3. Transcripción`
+4. `4. Traductor Inteligente`
+5. `5. Inteligencia documental`
+6. `6. Sistema Inteligente`
+
+### Pendientes preservados
+
+- BTX está almacenada como SQLite en el runtime y el archivo original se conserva fuera para rollback. La equivalencia versículo por versículo y el aparato editorial no están validados de forma independiente; certificación integral no concedida.
+- Los 121 registros externos de `RUNTIME_CANDIDATE_V1/registry.json` declaran operatividad y dependencias `UNVERIFIED`. Son referencias externas, no bytes incluidos automáticamente en el paquete Macrodown.
+- El workflow de expansión de diez componentes registró el fallo `DESTINATION_EXISTS_FAIL_CLOSED:APACHE_JENA_6_2_0`. Su reintento no debe depender de una edición documental ni interpretarse como integración funcional. Ejecución nativa, cableado y rollback de ese flujo siguen separados.
+- Equivalencia de calidad de los modelos, verificación independiente y certificación integral siguen pendientes de las pruebas registradas por dominio.
+- Cada build debe medir el contenido real con objetos Git LFS materializados y comprobar el límite duro de `470.000.000` bytes. Ningún número histórico sustituye la medición del build actual.
+
+**Estado de esta sección:** inventario trazable y actualización continua prevista; certificación integral `NOT_GRANTED`.
