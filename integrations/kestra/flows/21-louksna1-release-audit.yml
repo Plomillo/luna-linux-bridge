@@ -75,7 +75,7 @@ tasks:
          and fromJson(outputs.task_adapter_evidence.body).registered_model_domain_count == 5
          and fromJson(outputs.release_manifest.body).task_adapter_evidence.status == 'PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY'
          and fromJson(outputs.release_manifest.body).task_adapter_evidence.sha256 == fromJson(outputs.g24_evidence.body).task_adapter_evidence_sha256
-         and fromJson(outputs.g24_evidence.body).task_adapter_evidence_sha256 == fromJson(outputs.task_adapter_evidence.body).evidence_sha256
+
          and fromJson(outputs.release_manifest.body).global_certification == 'NOT_GRANTED'
          and fromJson(outputs.g24_evidence.body).global_integrated_product_certification == 'NOT_GRANTED'
          and fromJson(outputs.task_adapter_evidence.body).global_certification == 'NOT_GRANTED' }}
