@@ -226,6 +226,13 @@ def prune_builtin_registry(builtins_path: Path, removed: list[dict[str, Any]]) -
         "",
     )
 
+    updated = updated.replace(
+        "plugins.extend((OpenRouterAI, GoogleAI, AnthropicAI, OllamaAI, LMStudioAI, OpenAI, OpenAICompatible, GrokAI, VeniceAI))\n",
+        "",
+    )
+    if "plugins.extend((OpenRouterAI, GoogleAI, AnthropicAI" in updated:
+        raise RuntimeError("AI plugin registry remained after the AI imports were removed")
+
     # Keep metadata readers/writers needed for supported document types. The
     # classes remain upstream code; this change only narrows registration.
     updated = updated.replace(
