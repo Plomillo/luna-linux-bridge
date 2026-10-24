@@ -8,11 +8,13 @@ on:
       - ".github/workflows/btx-source-audit.yml"
       - "tools/btx-audit/**"
       - "cajita-luna-runtime/2. Orquestación/Confesión Eclesial Reformada/**"
+      - "externalized-assets-staging/2-Orquestacion/BTX/**"
   pull_request:
     paths:
       - ".github/workflows/btx-source-audit.yml"
       - "tools/btx-audit/**"
       - "cajita-luna-runtime/2. Orquestación/Confesión Eclesial Reformada/**"
+      - "externalized-assets-staging/2-Orquestacion/BTX/**"
   workflow_dispatch:
 
 permissions:
