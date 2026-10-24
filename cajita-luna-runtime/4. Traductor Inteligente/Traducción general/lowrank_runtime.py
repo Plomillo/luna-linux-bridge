@@ -236,43 +236,50 @@ def load_candidate():
     model.eval()
     return model
 
-def smoke_test():
+def smoke_test(text="Hello world.", src_lang="eng", tgt_lang="spa", max_new_tokens=4):
     t0 = time.monotonic()
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("TRANSLATION_TEXT_REQUIRED")
+    if isinstance(max_new_tokens, bool) or not 1 <= int(max_new_tokens) <= 128:
+        raise ValueError("MAX_NEW_TOKENS_OUT_OF_RANGE")
     processor = AutoProcessor.from_pretrained(ROOT, local_files_only=True)
     model = load_candidate()
-    # The compact bundle deliberately omits a full upstream generation_config.json.
-    # Reconstruct only the text-decoder language map from the packaged tokenizer.
-    # Token IDs are taken from the exact local tokenizer, never inferred from a list.
     tok = getattr(processor, "tokenizer", None)
     if tok is None:
         raise RuntimeError("TOKENIZER_REQUIRED_FOR_TEXT_LANGUAGE_MAP")
     decoder_map = {}
-    tokens = getattr(tok, "additional_special_tokens", None) or []
-    for token in tokens:
+    for token in getattr(tok, "additional_special_tokens", None) or []:
         if isinstance(token, str) and token.startswith("__") and token.endswith("__") and len(token) > 4:
             lang = token[2:-2]
             token_id = tok.convert_tokens_to_ids(token)
             if isinstance(token_id, int) and token_id >= 0 and lang:
                 decoder_map[lang] = token_id
-    if not decoder_map or "spa" not in decoder_map or "eng" not in decoder_map:
+    if not decoder_map or src_lang not in decoder_map or tgt_lang not in decoder_map:
         raise RuntimeError("PACKAGED_TOKENIZER_LANGUAGE_MAP_INCOMPLETE")
     model.generation_config.text_decoder_lang_to_code_id = decoder_map
-    inputs = processor(text="Hello world.", src_lang="eng", return_tensors="pt")
+    inputs = processor(text=text, src_lang=src_lang, return_tensors="pt")
     with torch.inference_mode():
-        generated = model.generate(**inputs, tgt_lang="spa", max_new_tokens=4, generate_speech=False)
-    sequences = generated.sequences if hasattr(generated, "sequences") else generated
-    if not isinstance(sequences, torch.Tensor) or sequences.ndim != 2 or sequences.shape[0] != 1:
+        generated = model.generate(**inputs, tgt_lang=tgt_lang, max_new_tokens=int(max_new_tokens), generate_speech=False)
+    seq = generated.sequences if hasattr(generated, "sequences") else generated
+    if not isinstance(seq, torch.Tensor) or seq.ndim != 2 or seq.shape[0] != 1:
         raise RuntimeError("MALFORMED_TEXT_TRANSLATION_OUTPUT:" + type(generated).__name__)
-    decoded = processor.batch_decode(sequences, skip_special_tokens=True)
-    return {"status": "PASS_TEXT_TRANSLATION_GENERATION", "model_type": model.config.model_type,
-            "input_token_count": int(inputs["input_ids"].shape[-1]), "generated_token_count": int(sequences.shape[-1]),
-            "decoded": decoded[0] if decoded else "", "elapsed_seconds": round(time.monotonic()-t0, 3),
-            "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST"}
+    decoded = processor.batch_decode(seq, skip_special_tokens=True)
+    return {"status":"PASS_TEXT_TRANSLATION_GENERATION","model_type":model.config.model_type,
+            "input_token_count":int(inputs["input_ids"].shape[-1]),"generated_token_count":int(seq.shape[-1]),
+            "output_text":decoded[0][:8192] if decoded else "", "src_lang":src_lang, "tgt_lang":tgt_lang,
+            "elapsed_seconds":round(time.monotonic()-t0,3),"quality_equivalence":"NOT_ESTABLISHED_BY_SMOKE_TEST"}
+
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--smoke-test", action="store_true")
-    args = parser.parse_args()
-    if not args.smoke_test:
-        parser.error("Use --smoke-test")
-    print(json.dumps(smoke_test(), indent=2, ensure_ascii=False))
+    import argparse, sys
+    parser=argparse.ArgumentParser()
+    parser.add_argument("--smoke-test",action="store_true")
+    parser.add_argument("--task-json-stdin",action="store_true")
+    args=parser.parse_args()
+    if args.task_json_stdin:
+        task=json.load(sys.stdin)
+        if task.get("operation")!="translate_text": parser.error("Unsupported task operation")
+        result=smoke_test(task.get("text",""),task.get("src_lang","eng"),task.get("tgt_lang","spa"),int(task.get("max_new_tokens",8)))
+    else:
+        if not args.smoke_test: parser.error("Use --smoke-test or --task-json-stdin")
+        result=smoke_test()
+    print(json.dumps(result,indent=2,ensure_ascii=False))
