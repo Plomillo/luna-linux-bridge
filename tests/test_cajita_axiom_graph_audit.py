@@ -6,7 +6,7 @@ from pathlib import Path
 from cajita_axiom_graph_audit import (
     END_HEADING,
     HEADING,
-    census_legacy,
+    legacy_census,
     expected_block,
     parse_legacy,
     parse_materialized,
@@ -50,7 +50,7 @@ class AxiomGraphAuditTests(unittest.TestCase):
 
     def test_legacy_census_reports_duplicates_without_rewriting_source(self):
         rows = parse_legacy("id: AX0001\nid: AX0003\nid: AX0003\n")
-        result = census_legacy(rows)
+        result = legacy_census(rows)
         self.assertEqual(result["definition_records"], 3)
         self.assertEqual(result["distinct_numeric_ids"], 2)
         self.assertEqual(result["repeated_definition_records"], 1)
