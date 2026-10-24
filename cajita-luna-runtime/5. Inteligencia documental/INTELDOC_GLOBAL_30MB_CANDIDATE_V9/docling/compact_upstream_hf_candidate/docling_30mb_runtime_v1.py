@@ -196,6 +196,9 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     except Exception:
         inputs=proc(images=image,text=prompt,return_tensors="pt")
     inputs={k:(v.to("cpu") if isinstance(v,torch.Tensor) else v) for k,v in inputs.items()}
+    image_token_count=int((inputs["input_ids"] == int(model.config.image_token_id)).sum().item())
+    if image_token_count != image_seq_len:
+        raise RuntimeError(f"DOCLING_IMAGE_TOKEN_COUNT_MISMATCH:{image_token_count}!={image_seq_len}")
     with torch.inference_mode():
         out=model.generate(**inputs,max_new_tokens=int(max_new_tokens),do_sample=False)
     decoded=proc.batch_decode(out,skip_special_tokens=False)[0]
