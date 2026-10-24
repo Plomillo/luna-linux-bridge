@@ -31,7 +31,17 @@ TARGET_PREFIXES = {
     "calibre/web/feeds/recipes/": "news recipe modules",
     "calibre/ebooks/catalogs/": "catalog generation modules",
     "calibre/library/catalogs/": "library catalog generation modules",
-    "calibre/translations/": "Calibre UI translation catalogs",
+}
+
+RETAINED_RUNTIME_MODULES = {
+    # These are Python infrastructure imported while parsing/rendering EPUB/OEB
+    # content, not UI language catalogs. Preserve their frozen payloads.
+    "calibre/translations/__init__.py",
+    "calibre/translations/__init__.pyc",
+    "calibre/translations/dynamic.py",
+    "calibre/translations/dynamic.pyc",
+    "calibre/translations/msgfmt.py",
+    "calibre/translations/msgfmt.pyc",
 }
 
 ALLOWED_DEVICE_MODULES = {
@@ -78,6 +88,9 @@ def sha256_region(handle, offset: int, size: int) -> str:
 
 def category_for(name: str) -> str | None:
     normalized = name.replace("\\", "/").lstrip("./")
+
+    if normalized in RETAINED_RUNTIME_MODULES:
+        return None
 
     for prefix, category in TARGET_PREFIXES.items():
         if normalized.startswith(prefix):
@@ -161,6 +174,16 @@ def main() -> int:
                 "size": size,
                 "category": category,
             })
+
+    accidentally_selected_core = [
+        item["name"] for item in selected
+        if item["name"] in RETAINED_RUNTIME_MODULES
+    ]
+    if accidentally_selected_core:
+        raise RuntimeError(
+            "Refusing scrub of conversion-critical translation infrastructure: "
+            + ", ".join(accidentally_selected_core)
+        )
 
     if len(selected) < 100:
         raise RuntimeError(
