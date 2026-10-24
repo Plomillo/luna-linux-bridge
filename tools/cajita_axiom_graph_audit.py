@@ -4,7 +4,7 @@
 This is a structural/provenance execution gate only; it is not a proof of semantic truth.
 """
 from __future__ import annotations
-import argparse, collections, hashlib, json, re, subprocess
+import argparse, collections, datetime as dt, hashlib, json, os, re, subprocess
 from pathlib import Path
 
 HEADING = "# LUNACORE V15 --- B15-B134 AXIOM MATERIALIZATION REGISTRY"
@@ -140,6 +140,24 @@ def audit(args):
     source=Path(args.source).read_bytes(); companion=Path(args.companion).read_bytes()
     manifest=json.loads(Path(args.manifest).read_text(encoding="utf-8"))
     source_sha=sha(source); companion_sha=sha(companion)
+    expected_factory_sha=os.environ.get("LOUKSNA_FACTORY_HEAD_SHA","").strip()
+    factory_run_id=os.environ.get("LOUKSNA_FACTORY_RUN_ID","").strip()
+    bound_factory_evidence=None
+    if expected_factory_sha:
+        if manifest.get("source_commit") != expected_factory_sha:
+            raise ValueError("FACTORY_SOURCE_COMMIT_MISMATCH_WITH_RELEASE_MANIFEST")
+        evidence_root=Path("docs/cajita-luna")
+        g23=json.loads((evidence_root/"LOUKSNA1_G23_EVIDENCE.json").read_text(encoding="utf-8"))
+        g24=json.loads((evidence_root/"LOUKSNA1_G24_EVIDENCE.json").read_text(encoding="utf-8"))
+        task=json.loads((evidence_root/"LOUKSNA1_TASK_ADAPTER_EVIDENCE.json").read_text(encoding="utf-8"))
+        if g23.get("status")!="PASS" or g23.get("source_commit")!=expected_factory_sha:
+            raise ValueError("G23_EVIDENCE_NOT_PASS_OR_SOURCE_MISMATCH")
+        if g24.get("status")!="PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE" or g24.get("source_commit")!=expected_factory_sha:
+            raise ValueError("G24_EVIDENCE_NOT_PASS_OR_SOURCE_MISMATCH")
+        if task.get("status")!="PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY" or task.get("source_commit")!=expected_factory_sha:
+            raise ValueError("TASK_ADAPTER_EVIDENCE_NOT_PASS_OR_SOURCE_MISMATCH")
+        bound_factory_evidence={"factory_run_id":factory_run_id,"source_commit":expected_factory_sha,
+                                "G23":g23["status"],"G24":g24["status"],"task_adapter_evidence":task["status"]}
     if source_sha!=manifest["protected_architecture"]["sha256"]: raise ValueError("PROTECTED_SOURCE_SHA256_MISMATCH")
     if not companion.startswith(source): raise ValueError("LOUKSNA1_PREFIX_NOT_BYTE_EXACT")
     if companion_sha!=manifest["louksna1"]["sha256"]: raise ValueError("LOUKSNA1_SHA256_MISMATCH")
@@ -167,6 +185,8 @@ def audit(args):
     return {
       "schema":"LOUKSNA1_INTEGRAL_CERTIFICATION_ASSESSMENT/1.0",
       "assessment":"PASS_STRUCTURAL_AXIOM_GRAPH_EXECUTION","decision":"HOLD","global_certification":"NOT_GRANTED",
+      "generated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z"),
+      "source_commit":manifest.get("source_commit"),"factory_evidence_binding":bound_factory_evidence,
       "source":{"path":Path(args.source).name,"sha256":source_sha,"bytes":len(source),
                 "companion_sha256":companion_sha,"companion_bytes":len(companion),"protected_prefix_byte_exact":True},
       "legacy_definition_census":legacy_result,"materialized_axiom_census":axiom_result,
