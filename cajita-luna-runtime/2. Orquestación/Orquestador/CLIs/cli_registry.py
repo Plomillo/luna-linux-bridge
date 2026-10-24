@@ -29,7 +29,8 @@ def selftest(manifest_path=None,contract_path=None):
         try: p.relative_to(ORCHESTRATOR.resolve())
         except ValueError: missing.append({"id":d["id"],"status":"MODULE_PATH_ESCAPE"}); continue
         if not p.is_file(): missing.append({"id":d["id"],"status":"MODULE_ABSENT"})
-    return {"schema":"CAJITA_CLI_INFRASTRUCTURE_SELFTEST/1.0","status":"PASS" if not missing else "FAIL","domain_count":8,"unique_domain_count":len(set(ORDER)),"contract_present":cp.is_file(),"manifest_present":mp.is_file(),"all_adapters_present":not missing,"missing_adapters":missing,"legacy_spec_git_blob_sha":c.get("legacy_specification",{}).get("git_blob_sha"),"legacy_spec_migrated":True,"side_effects":False,"certification":"NOT_GRANTED"}
+    legacy_absent = not (ORCHESTRATOR/"CLIS.txt").exists()
+    return {"schema":"CAJITA_CLI_INFRASTRUCTURE_SELFTEST/1.0","status":"PASS" if not missing and legacy_absent else "FAIL","domain_count":8,"unique_domain_count":len(set(ORDER)),"contract_present":cp.is_file(),"manifest_present":mp.is_file(),"all_adapters_present":not missing,"missing_adapters":missing,"legacy_spec_git_blob_sha":c.get("legacy_specification",{}).get("git_blob_sha"),"legacy_spec_absent_after_migration":legacy_absent,"side_effects":False,"certification":"NOT_GRANTED"}
 def run_registry(manifest_path=None,contract_path=None):
     mp,cp,m,c=load_inputs(manifest_path,contract_path)
     cmap={d["id"]:d for d in c["domains"]}; rows=[]
