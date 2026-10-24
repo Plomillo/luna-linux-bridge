@@ -222,6 +222,17 @@ def main() -> int:
         "passed": passed,
         "failed": total - passed,
         "report": str(args.report),
+        "test_results": [
+            {
+                "test": item.get("test"),
+                "status": item.get("status"),
+                "returncode": item.get("returncode"),
+                "error": item.get("error"),
+                "output_tail": item.get("output_tail", "")[-1800:],
+            }
+            for item in results
+        ],
+        "wrapper_checks": wrapper_checks,
     }, indent=2))
     return 0 if all_passed else 1
 
