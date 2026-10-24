@@ -179,11 +179,15 @@ def build_model():
     return model
 
 
-def smoke_test(generate: bool = False):
+def smoke_test(generate: bool = False, prompt: str = "Test", max_new_tokens: int = 1):
+    if not isinstance(prompt, str) or not prompt.strip():
+        raise ValueError("PROMPT_REQUIRED")
+    if isinstance(max_new_tokens, bool) or not 1 <= int(max_new_tokens) <= 128:
+        raise ValueError("MAX_NEW_TOKENS_OUT_OF_RANGE")
     started = time.monotonic()
     tokenizer = AutoTokenizer.from_pretrained(ROOT, local_files_only=True)
     model = build_model()
-    enc = tokenizer("Test", return_tensors="pt")
+    enc = tokenizer(prompt, return_tensors="pt")
     with torch.inference_mode():
         out = model(input_ids=enc["input_ids"], attention_mask=enc.get("attention_mask"), use_cache=False)
     logits = out.logits
@@ -194,13 +198,19 @@ def smoke_test(generate: bool = False):
               "vocab_size": int(model.config.vocab_size), "logits_shape": list(logits.shape),
               "finite_logits": True, "argmax_token_id": next_id,
               "elapsed_seconds": round(time.monotonic() - started, 3),
-              "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST",
-              "compression_rank": 1}
+              "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST", "compression_rank": 1}
     if generate:
         with torch.inference_mode():
-            generated = model.generate(enc["input_ids"], max_new_tokens=1, do_sample=False, use_cache=False)
-        result["generation_status"] = "PASS_GENERATE_ONE_TOKEN" if generated.shape[-1] == enc["input_ids"].shape[-1] + 1 else "FAIL_GENERATION_LENGTH"
-        result["generated_token_count"] = int(generated.shape[-1] - enc["input_ids"].shape[-1])
+            generated = model.generate(enc["input_ids"], attention_mask=enc.get("attention_mask"),
+                max_new_tokens=int(max_new_tokens), do_sample=False, use_cache=False)
+        count = int(generated.shape[-1] - enc["input_ids"].shape[-1])
+        if count < 1:
+            raise RuntimeError("MODEL_GENERATED_NO_NEW_TOKENS")
+        result["generation_status"] = "PASS_GENERATE"
+        result["generated_token_count"] = count
+        result["output_text"] = tokenizer.decode(
+            generated[0, enc["input_ids"].shape[-1]:], skip_special_tokens=True
+        )[:8192]
     return result
 
 
@@ -208,10 +218,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--smoke-test", action="store_true")
     parser.add_argument("--generate-test", action="store_true")
+    parser.add_argument("--task-json-stdin", action="store_true")
     args = parser.parse_args()
-    if not (args.smoke_test or args.generate_test):
-        parser.error("Use --smoke-test or --generate-test")
-    result = smoke_test(generate=args.generate_test)
-    print(json.dumps(result, indent=2))
-    if result["status"] != "PASS_MODEL_START_AND_FORWARD" or result.get("generation_status", "").startswith("FAIL"):
+    if args.task_json_stdin:
+        task = json.load(sys.stdin)
+        if task.get("operation") != "generate_text":
+            parser.error("Unsupported task operation")
+        result = smoke_test(True, task.get("prompt", ""), int(task.get("max_new_tokens", 8)))
+        result["status"] = "PASS_TASK_GENERATION"
+    else:
+        if not (args.smoke_test or args.generate_test):
+            parser.error("Use --smoke-test, --generate-test, or --task-json-stdin")
+        result = smoke_test(generate=args.generate_test)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    if result["status"] not in {"PASS_MODEL_START_AND_FORWARD", "PASS_TASK_GENERATION"}:
         raise SystemExit(1)
