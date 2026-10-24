@@ -471,7 +471,7 @@ jobs:
           Path("evidence/LOUKSNA1_G24_EVIDENCE.json").write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
           print(json.dumps(result,indent=2,ensure_ascii=False))
           PY
-          if [ "$STATUS" = "PASS_FOR_DECLARED_SMOKE_SCOPE" ]; then
+          if [ "$STATUS" = "PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE" ]; then
             echo "gate_pass=true" >> "$GITHUB_OUTPUT"
           else
             echo "gate_pass=false" >> "$GITHUB_OUTPUT"
