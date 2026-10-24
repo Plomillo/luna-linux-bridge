@@ -57,7 +57,7 @@ tasks:
          and outputs.g24_evidence.code == 200
          and outputs.task_adapter_evidence.code == 200
          and outputs.latest_factory_run.code == 200
-         and fromJson(outputs.latest_factory_run.body).total_count > 0
+         and fromJson(outputs.latest_factory_run.body).id > 0
          and fromJson(outputs.latest_factory_run.body).conclusion == 'success'
          and fromJson(outputs.release_manifest.body).combined_distribution.status == 'PASS'
          and fromJson(outputs.release_manifest.body).combined_distribution.bytes <= 490000000
