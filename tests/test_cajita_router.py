@@ -132,7 +132,7 @@ class CajitaRouterTests(unittest.TestCase):
             self.assertIn("verify-module-manifest", asset["activation_requirements"])
             self.assertIn("register-real-consumer-adapter", asset["activation_requirements"])
         self.assertFalse(result["execution_authorized"])
-        self.assertEqual(result["orchestration_mode"], "PLAN_ONLY; SUBDOMAIN_TASK_DISPATCH_NOT_IMPLEMENTED")
+        self.assertEqual(result["orchestration_mode"], "PLAN_ONLY; REGISTERED_DOMAIN_ADAPTERS_REQUIRE_MEASURED_RESOURCE_AND_TARGET_EVIDENCE")
         self.assertTrue(any(x.startswith("SUBDOMAIN_TASK_ADAPTER_NOT_REGISTERED:")
                             for x in result["blockers"]))
 
@@ -158,7 +158,7 @@ class CajitaRouterTests(unittest.TestCase):
     def test_execution_is_blocked_without_adapter_and_peak_rss_evidence(self):
         result = build_plan("Responde a esta pregunta general")
         self.assertFalse(result["execution_authorized"])
-        self.assertEqual(result["orchestration_mode"], "PLAN_ONLY; SUBDOMAIN_TASK_DISPATCH_NOT_IMPLEMENTED")
+        self.assertEqual(result["orchestration_mode"], "PLAN_ONLY; REGISTERED_DOMAIN_ADAPTERS_REQUIRE_MEASURED_RESOURCE_AND_TARGET_EVIDENCE")
         self.assertIn("D01_CEREBRO", result["unmeasured_peak_rss_domains"])
         self.assertTrue(any(blocker.startswith("PEAK_RSS_UNMEASURED:D01_CEREBRO") for blocker in result["blockers"]))
 
@@ -187,8 +187,11 @@ class CajitaRouterTests(unittest.TestCase):
 
     def test_task_adapter_registry_reflects_current_evidence_boundary(self):
         self.assertEqual(CAPABILITY_ADAPTERS["pdf_generation"], "NOT_REGISTERED")
-        self.assertEqual(CAPABILITY_ADAPTERS["audio_transcription"], "NOT_REGISTERED")
-        self.assertEqual(CAPABILITY_ADAPTERS["job_orchestration"], "REGISTRY_SELFTEST_ONLY")
+        self.assertEqual(CAPABILITY_ADAPTERS["audio_transcription"], "CAJITA_WHISPER_TRANSCRIPTION/1.0")
+        self.assertEqual(CAPABILITY_ADAPTERS["text_translation"], "CAJITA_SEAMLESS_TRANSLATION/1.0")
+        self.assertEqual(CAPABILITY_ADAPTERS["advanced_reasoning"], "CAJITA_QWEN3_REASONING/1.0")
+        self.assertEqual(CAPABILITY_ADAPTERS["job_orchestration"], "REGISTRY_AND_PLAN_ONLY_NOT_EXECUTOR")
+        self.assertEqual(CAPABILITY_ADAPTERS["pdf_generation"], "NOT_REGISTERED")
 
     def test_primary_runtime_exposes_routes_and_subdomain_registry(self):
         runtime = Path(__file__).resolve().parents[1] / "cajita-luna-runtime" / "cajita_runtime.py"

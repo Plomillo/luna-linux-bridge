@@ -52,10 +52,20 @@ DOMAIN_CAPABILITY = {
     "D05_INTELIGENCIA_DOCUMENTAL": "document_extraction", "D06_SISTEMA_INTELIGENTE": "advanced_reasoning",
 }
 CAPABILITY_ADAPTERS = {
-    "answer_generation": "NOT_REGISTERED", "job_orchestration": "REGISTRY_SELFTEST_ONLY",
-    "audio_transcription": "NOT_REGISTERED", "text_translation": "NOT_REGISTERED",
-    "document_extraction": "NOT_REGISTERED", "pdf_generation": "NOT_REGISTERED",
-    "advanced_reasoning": "NOT_REGISTERED",
+    "answer_generation": "CAJITA_CEREBRO_TEXT_GENERATION/1.0",
+    "job_orchestration": "REGISTRY_AND_PLAN_ONLY_NOT_EXECUTOR",
+    "audio_transcription": "CAJITA_WHISPER_TRANSCRIPTION/1.0",
+    "text_translation": "CAJITA_SEAMLESS_TRANSLATION/1.0",
+    "document_extraction": "CAJITA_DOCLING_IMAGE_EXTRACTION/1.0",
+    "pdf_generation": "NOT_REGISTERED",
+    "advanced_reasoning": "CAJITA_QWEN3_REASONING/1.0",
+}
+TARGET_TASK_ADAPTERS = {
+    "D01_CEREBRO_ROOT": "CAJITA_CEREBRO_TEXT_GENERATION/1.0",
+    "D03_TRANSCRIPCION_ROOT": "CAJITA_WHISPER_TRANSCRIPTION/1.0",
+    "D04_TRADUCCION_GENERAL": "CAJITA_SEAMLESS_TRANSLATION/1.0",
+    "D05_DOCLING": "CAJITA_DOCLING_IMAGE_EXTRACTION/1.0",
+    "D06_ANALISIS_AVANZADO": "CAJITA_QWEN3_REASONING/1.0",
 }
 TASK_RULES = [
     ("audio_transcription", "D03_TRANSCRIPCION", (r"\btranscrib\w*\b", r"\btranscripci[oó]n\b", r"\baudio\b", r"\bspeech[- ]to[- ]text\b", r"\bvoz a texto\b")),
@@ -310,7 +320,7 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
                 "kind": target["kind"], "name": target["name"], "path": target["path"],
                 "purpose": target["purpose"], "engine_ids": target.get("engine_ids", []),
                 "support_assets": target.get("support_assets", []),
-                "task_adapter": "NOT_REGISTERED",
+                "task_adapter": TARGET_TASK_ADAPTERS.get(target["id"], "NOT_REGISTERED"),
             })
 
     rank = {"D03_TRANSCRIPCION": 10, "D05_INTELIGENCIA_DOCUMENTAL": 20,
@@ -370,7 +380,8 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
     missing = sorted({cap for cap in capabilities
                       if CAPABILITY_ADAPTERS.get(cap, "NOT_REGISTERED") == "NOT_REGISTERED"})
     adapter_blockers = ["SUBDOMAIN_TASK_ADAPTER_NOT_REGISTERED:" + target["id"]
-                        for target in selected_targets]
+                        for target in selected_targets
+                        if target.get("task_adapter", "NOT_REGISTERED") == "NOT_REGISTERED"]
     unmeasured = [domain_id for domain_id in sequence
                   if DOMAINS.get(domain_id, {}).get("peak_rss_mib") is None]
     observed_memory = available_memory_mib()
@@ -417,11 +428,11 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
         "unmeasured_peak_rss_domains": unmeasured, "missing_task_adapters": missing,
         "blockers": blockers, "execution_authorized": False,
         "classification_mode": "DETERMINISTIC_KEYWORD_PRECLASSIFIER; CEREBRO_INFERENCE_ADAPTER_NOT_REGISTERED",
-        "orchestration_mode": "PLAN_ONLY; SUBDOMAIN_TASK_DISPATCH_NOT_IMPLEMENTED",
+        "orchestration_mode": "PLAN_ONLY; REGISTERED_DOMAIN_ADAPTERS_REQUIRE_MEASURED_RESOURCE_AND_TARGET_EVIDENCE",
         "canonical_routes_mutated": False, "authority_transfer": False,
         "provenance": {"request_sha256": sha256_text(request), "trace_contains_request_text": False},
         "certification": "NOT_GRANTED",
-        "next_gate": "REGISTER_VERIFIED_SUBDOMAIN_TASK_ADAPTERS_AND_MEASURE_PEAK_RSS_BEFORE_EXECUTION",
+        "next_gate": "REGISTER_REMAINING_TARGET_ADAPTERS_AND_MEASURE_PEAK_RSS_BEFORE_ROUTED_EXECUTION",
     }
 
 

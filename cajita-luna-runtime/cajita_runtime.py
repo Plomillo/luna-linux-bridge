@@ -170,10 +170,14 @@ def smoke(root,d,timeout):
 
 def main():
  ap=argparse.ArgumentParser(description=__doc__)
- ap.add_argument("command",choices=("status","selftest","audit-weights","smoke","smoke-all","routes","plan"))
+ ap.add_argument("command",choices=("status","selftest","audit-weights","smoke","smoke-all","routes","plan","execute-task"))
  ap.add_argument("--root"); ap.add_argument("--domain"); ap.add_argument("--timeout",type=int,default=600)
- ap.add_argument("--request"); ap.add_argument("--route-command"); ap.add_argument("--trace-file")
+ ap.add_argument("--request"); ap.add_argument("--route-command"); ap.add_argument("--trace-file"); ap.add_argument("--request-json")
  a=ap.parse_args()
+ if a.command=="execute-task":
+  if not a.request_json: ap.error("execute-task requires --request-json")
+  from cajita_task_adapters import main as task_adapter_main
+  return task_adapter_main(["execute","--root",str(root_for(a.root)),"--request-json",a.request_json,"--timeout",str(a.timeout)])
  if a.command in {"routes","plan"}:
   from cajita_router import main as router_main
   router_args=[a.command]
