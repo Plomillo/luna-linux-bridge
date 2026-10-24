@@ -1,29 +1,29 @@
 {
   "schema": "CAJITA_INVENTORY_AUDIT/1.0",
   "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
-  "generated_at_utc": "2026-10-24T03:33:09.638549+00:00",
+  "generated_at_utc": "2026-10-24T03:43:12.540030+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "4fdd9f28c63a3edde1fa9d46977f4f1ad512610e",
+  "source_commit": "6b9379f5b71d61c72728f56898b0c7b3a806bcb3",
   "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
   "distribution": {
     "archive_format": "deterministic ZIP container with .macrodown extension",
-    "member_count_including_manifest": 157,
-    "file_count_excluding_manifest": 156,
-    "runtime_payload_bytes_excluding_manifest": 464152509,
-    "gross_raw_payload_bytes_including_manifest": 464193639,
-    "archive_bytes": 412257417,
+    "member_count_including_manifest": 158,
+    "file_count_excluding_manifest": 157,
+    "runtime_payload_bytes_excluding_manifest": 464214709,
+    "gross_raw_payload_bytes_including_manifest": 464256139,
+    "archive_bytes": 412317028,
     "hard_cap_bytes": 470000000,
-    "raw_bytes_under_cap": 5806361,
-    "archive_bytes_under_cap": 57742583,
-    "archive_sha256": "250aea0b9cd6bb0a2aba7e4571627aa112e103c6c2476ca3def6202b7b174d05",
+    "raw_bytes_under_cap": 5743861,
+    "archive_bytes_under_cap": 57682972,
+    "archive_sha256": "b464572323bd95722e8638c18672306afed36a9b574afa327779bb888a51cae8",
     "raw_gate": "PASS",
     "archive_gate": "PASS",
     "certification": "NOT_GRANTED"
   },
   "runtime_root_document": {
     "path": "CajitadeLuna.md",
-    "size_bytes": 86624,
-    "sha256": "04f765aceb63e7b6b342819f0d8753e0b3d4626b01236e498109d82ce1149169"
+    "size_bytes": 86654,
+    "sha256": "6d46c8b73eb6a214c4b0eeaec778367fe0719451c8b5d08edd5445ae454e892f"
   },
   "cli_infrastructure": {
     "path": "2. Orquestación/Orquestador/CLIs",
@@ -91,8 +91,8 @@
       "bytes": 19098198
     },
     "D05_INTELIGENCIA_DOCUMENTAL": {
-      "file_count": 22,
-      "bytes": 21672399
+      "file_count": 23,
+      "bytes": 21734569
     },
     "D06_SISTEMA_INTELIGENTE": {
       "file_count": 35,
@@ -100,20 +100,22 @@
     },
     "ROOT_OR_SUPPORT": {
       "file_count": 16,
-      "bytes": 425712
+      "bytes": 425742
     }
   },
   "prior_manifest_reconciliation": {
-    "prior_file_count_excluding_manifest": 156,
-    "current_file_count_excluding_manifest": 156,
+    "prior_file_count_excluding_manifest": 157,
+    "current_file_count_excluding_manifest": 157,
     "added_paths": [],
     "removed_paths": [],
     "changed_paths": [
+      "1. Cerebro/model.safetensors",
+      "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
       "EXTERNALIZED_ASSET_PLACEMENT.json"
     ],
     "added_count": 0,
     "removed_count": 0,
-    "changed_count": 1,
+    "changed_count": 3,
     "prior_manifest_was_in_sync": false
   },
   "inventory": [
@@ -785,32 +787,40 @@
       "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
       "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/ARTIFACT_REFERENCE.json",
       "route_type": "inteligencia_documental",
-      "sha256": "22e7d6bcef0658afd6820440f6d41e2f37dde27c61ae94b404b045fae4aba5d8",
-      "size_bytes": 1516,
+      "sha256": "cc4f6043405c4906c3103651df3ad47280c4334ab887196804b314ab68858d29",
+      "size_bytes": 1712,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
       "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/README.md",
       "route_type": "inteligencia_documental",
-      "sha256": "cd459418e771fc2b6996157a700fb6e02ecad180e205174855ab3fdda90fe8dc",
-      "size_bytes": 2430,
+      "sha256": "b64a31e8c71d6b605dad7495f9499b91e22863e31bd945522669d39c9267fcb7",
+      "size_bytes": 2354,
       "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
       "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py",
       "route_type": "inteligencia_documental",
-      "sha256": "b383793e6c36ab285406b7da10a898cec7fc9a06cf5175f2d61d0a98ebe53013",
-      "size_bytes": 2718,
+      "sha256": "69b1c6830955abbbf3e3e2aad11497b53c222c9450095b46263bfc729dd0d5d0",
+      "size_bytes": 6471,
       "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-overlay.tar.xz",
+      "route_type": "inteligencia_documental",
+      "sha256": "dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b",
+      "size_bytes": 58180,
+      "zip_method": "STORED"
     },
     {
       "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
       "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/profile.json",
       "route_type": "inteligencia_documental",
-      "sha256": "d636213de8ad3d3fcebf067594ccf95adca05d55d9028fca6330af51d8c3a3b7",
-      "size_bytes": 1764,
+      "sha256": "239d270220cb74dc96c03849196de1b751f5585ebd94934daa43213192570d75",
+      "size_bytes": 1881,
       "zip_method": "DEFLATED"
     },
     {
@@ -1257,8 +1267,8 @@
       "domain_id": null,
       "path": "CajitadeLuna.md",
       "route_type": null,
-      "sha256": "04f765aceb63e7b6b342819f0d8753e0b3d4626b01236e498109d82ce1149169",
-      "size_bytes": 86624,
+      "sha256": "6d46c8b73eb6a214c4b0eeaec778367fe0719451c8b5d08edd5445ae454e892f",
+      "size_bytes": 86654,
       "zip_method": "DEFLATED"
     },
     {
@@ -1273,7 +1283,7 @@
       "domain_id": null,
       "path": "EXTERNALIZED_ASSET_PLACEMENT.json",
       "route_type": null,
-      "sha256": "ceba110b8eb5ae963e89cc977db0922f52e50cbdf908ffd6711d9e22fe74f00c",
+      "sha256": "1d5e63a07cd8fbacceca9e60d18e844129b274ed5b614355735539bff5a136ce",
       "size_bytes": 56838,
       "zip_method": "DEFLATED"
     },
@@ -1367,8 +1377,8 @@
     },
     {
       "path": "MACRODOWN_MANIFEST.json",
-      "size_bytes": 41130,
-      "sha256": "d5fb4621863cea17d223508480503f5d41b5bda97abddd398a85f1109f346eea",
+      "size_bytes": 41430,
+      "sha256": "5ce3b837a007b7727fcfa88dfaf3029a4c630a1e05ddf7c989fd5f6ac3b44c9b",
       "domain_id": null,
       "route_type": null,
       "zip_method": "DEFLATED",
