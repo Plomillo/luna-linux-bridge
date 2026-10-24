@@ -1,0 +1,188 @@
+  name: Build
+
+  on:
+    create:
+      tags:
+    push:
+      branches:
+        - main
+    pull_request:
+
+  jobs:
+    build:
+      name: Native
+      runs-on: ${{ matrix.os }}
+      strategy:
+        fail-fast: false
+        matrix:
+          os:
+            - ubuntu-latest
+            - macos-latest
+      steps:
+        - uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+        - name: Install deps (Linux)
+          run: |
+            sudo apt-get update
+            sudo apt-get install libedit-dev xxd libffi-dev libssl-dev
+          if: matrix.os == 'ubuntu-latest'
+        - name: Install deps (macOS)
+          run: |
+            brew update
+            brew install vim libffi openssl make coreutils bash
+            echo "$(brew --prefix)/opt/make/libexec/gnubin" >> $GITHUB_PATH
+          if: matrix.os == 'macos-latest'
+        - name: Fetch tags
+          run: git fetch --tags --force origin
+        - name: Build
+          run: make release
+        - name: Test
+          run: make test
+        - name: Upload artifacts
+          uses: actions/upload-artifact@v4
+          with:
+            name: ${{ format('tpl-{0}-{1}', runner.os, runner.arch) }}
+            path: |
+              tpl
+              LICENSE
+              ATTRIBUTION
+              README.md
+
+    windows:
+      name: Windows
+      runs-on: windows-latest
+      defaults:
+        run:
+          shell: msys2 {0}
+      steps:
+        - uses: msys2/setup-msys2@v2
+        - name: Install deps
+          run: |
+            pacman --noconfirm -S make mingw-w64-x86_64-gcc mingw-w64-x86_64-headers-git mingw-w64-x86_64-libffi mingw-w64-x86_64-dlfcn
+            pacman --noconfirm -S mingw-w64-x86_64-openssl mingw-w64-x86_64-libwinpthread vim diffutils git
+        - name: Configure line endings
+          run: git config --global core.autocrlf input
+        - uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+        - name: Fetch tags
+          run: git fetch --tags --force origin
+        - name: Build
+          run: make WIN=1 release
+        - name: Test
+          run: make test
+        - name: Make Windows-friendly
+          run: |
+            cp ${MINGW_PREFIX}/bin/{libcrypto-3-x64.dll,libssl-3-x64.dll,libffi-8.dll,libdl.dll,libwinpthread-1.dll} .
+            echo -e "\n\nOpenSSL (libcrypto-3-x64.dll, libssl-3-x64.dll):\n" >> ATTRIBUTION
+            cat ${MINGW_PREFIX}/share/licenses/openssl/LICENSE >> ATTRIBUTION
+            echo -e "\n\nlibffi: (libffi-8.dll)\n" >> ATTRIBUTION
+            cat ${MINGW_PREFIX}/share/licenses/libffi/LICENSE >> ATTRIBUTION
+            echo -e "\n\ndlfcn: (libdl.dll)\n" >> ATTRIBUTION
+            cat ${MINGW_PREFIX}/share/licenses/dlfcn/LICENSE >> ATTRIBUTION
+            echo -e "\n\nlibwinpthread:\n" >> ATTRIBUTION
+            cat ${MINGW_PREFIX}/share/licenses/libwinpthread/COPYING >> ATTRIBUTION
+            echo -e "\n\nisocline:\n" >> ATTRIBUTION
+            cat src/isocline/LICENSE >> ATTRIBUTION
+            if [ ! -f "tpl.exe" ]; then
+              mv tpl tpl.exe
+            fi
+            mv ATTRIBUTION ATTRIBUTION.txt
+            mv LICENSE LICENSE.txt
+        - name: Upload artifacts
+          uses: actions/upload-artifact@v4
+          with:
+            name: ${{ format('tpl-{0}-{1}', runner.os, runner.arch) }}
+            path: |
+              tpl.exe
+              LICENSE.txt
+              ATTRIBUTION.txt
+              README.md
+              libcrypto-3-x64.dll
+              libssl-3-x64.dll
+              libffi-8.dll
+              libdl.dll
+              libwinpthread-1.dll
+
+    # Roughly matches https://github.com/WebAssembly/wasi-sdk#install
+    wasm:
+      name: WebAssembly
+      runs-on: ubuntu-latest
+      env:
+        WASI_VERSION: 19
+        BINARYEN_VERSION: 109
+      steps:
+        - uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+        - name: Fetch tags
+          run: git fetch --tags --force origin
+        - name: Set environment (1/3)
+          run: |
+            echo "WASI_VERSION_FULL=${WASI_VERSION}.0" >> $GITHUB_ENV
+        - name: Set environment (2/3)
+          run: |
+            echo "WASI_SDK_PATH=`pwd`/wasi-sdk-${WASI_VERSION_FULL}" >> $GITHUB_ENV
+        - name: Set environment (3/3)
+          run: |
+            echo "WASI_CC=${WASI_SDK_PATH}/bin/clang --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot" >> $GITHUB_ENV
+        - name: Add Homebrew to $PATH
+          run: echo "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin" >> $GITHUB_PATH
+        - name: Install WASI SDK
+          run: |
+            wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_VERSION}/wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz
+            tar xvf wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz
+        - name: Install Binaryen
+          run: |
+            brew install binaryen
+        - name: Setup Wasmtime
+          uses: mwilliamson/setup-wasmtime-action@v2
+          with:
+            wasmtime-version: "12.0.1"
+        - name: Build
+          run: make clean wasm
+        - name: Test
+          run: |
+            echo 'wasmtime run --max-wasm-stack 8388608 --dir . tpl.wasm -- $@' > tpl
+            chmod +x tpl
+            make test
+        - name: Upload artifacts
+          uses: actions/upload-artifact@v4
+          with:
+            name: tpl-wasm-wasi
+            path: |
+              tpl.wasm
+              LICENSE
+              ATTRIBUTION
+              README.md
+
+    release:
+      if: startsWith(github.ref, 'refs/tags/')
+      needs: [build, windows, wasm]
+      name: Release binaries
+      runs-on: ubuntu-latest
+      steps:
+        - name: Download artifacts
+          uses: actions/download-artifact@v4
+          with:
+            path: artifacts
+        - name: List files
+          run: ls -R
+        - name: Zip releases
+          run: |
+            cd artifacts
+            chmod +x */tpl* */*.wasm
+            for i in */; do
+              dir=${i%/}
+              lower=${dir,,}
+              if [ "$dir" != "$lower" ]
+              then
+                mv "$dir" "$lower"
+              fi
+              zip -r "${lower}.zip" "$lower"
+            done
+        - name: Publish
+          uses: softprops/action-gh-release@v1
+          with:
+            files: 'artifacts/*.zip'

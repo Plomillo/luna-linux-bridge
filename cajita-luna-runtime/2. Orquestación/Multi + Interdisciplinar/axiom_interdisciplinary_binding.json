@@ -1,0 +1,58 @@
+{
+  "axiom_inventory": {
+    "contiguous_range": "AX2415-AX12414",
+    "declared_historical_gap_count": 657,
+    "declared_materialized_count": 11757,
+    "gap_range": "AX0001-AX2414",
+    "mutation_allowed": false,
+    "range": "AX0001-AX12414",
+    "state": "PRESERVED_DECLARATION_NOT_INDEPENDENTLY_REPARSED"
+  },
+  "block_inventory": {
+    "count": 134,
+    "mutation_allowed": false,
+    "range": "B1-B134",
+    "state": "PRESERVED_CANONICAL_RANGE"
+  },
+  "certification": "NOT_GRANTED",
+  "companion_artifact": {
+    "bytes": 11633744,
+    "path_from_runtime_root": "../Louksna1.md",
+    "sha256": "c12787deeeaf08b89719c5a1c3e5e9598f8999488b0b83768027e8d907d33dd2"
+  },
+  "framework_count": 18,
+  "graph_execution": "NOT_PROVEN_BY_SOURCE_BINDING",
+  "protected_architecture_prefix": {
+    "bytes": 11542631,
+    "mutation_allowed": false,
+    "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+    "source_path": "LOUKSNAMEJORADA.md"
+  },
+  "reader": {
+    "operation": "VERIFY_DOCUMENT_SHA256_AND_BYTE_EXACT_PROTECTED_PREFIX",
+    "relative_path": "2. Orquestación/Multi + Interdisciplinar/cajita_axiom_source_loader.py"
+  },
+  "schema": "LOUKSNA_AXIOM_MULTI_INTERDISCIPLINAR_BINDING/1.0",
+  "status": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING",
+  "target": {
+    "domain_id": "D02_ORQUESTACION",
+    "engine_ids": [
+      "E03",
+      "E04",
+      "E05",
+      "E06",
+      "E07",
+      "E08",
+      "E09",
+      "E12",
+      "E13",
+      "E14",
+      "E15"
+    ],
+    "id": "D02_MULTI_INTERDISCIPLINAR",
+    "path": "2. Orquestación/Multi + Interdisciplinar",
+    "support_assets": [
+      "APACHE_JENA_6_2_0"
+    ]
+  }
+}

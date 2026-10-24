@@ -1,0 +1,22 @@
+{
+  "canonical_asset_id": null,
+  "certification": "NOT_GRANTED",
+  "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+  "functional_smoke": "REQUIRED",
+  "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
+  "materialization": {
+    "bytes": 184390,
+    "file_count": 6,
+    "status": "PASS",
+    "tree_sha256": "25317fdc20ea3eaaed2d46824ae914509a52611c72e5a964d9b6fe7da41cb0c2"
+  },
+  "module_key": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0",
+  "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
+  "source_archives": [
+    {
+      "bytes": 38162,
+      "path": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0.zip",
+      "sha256": "d5f5f95086ea89aaf02f414c23a2ee4ad5f953c9b04d1298093422af040e63b5"
+    }
+  ]
+}

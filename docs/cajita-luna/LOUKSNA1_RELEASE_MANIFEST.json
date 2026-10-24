@@ -1,0 +1,52 @@
+{
+  "schema": "LOUKSNA1_RELEASE_MANIFEST/1.0",
+  "source_commit": "0180d45cd171555858c8824634eff60d18fb8e2b",
+  "generated_at_utc": "2026-10-24T20:26:55Z",
+  "protected_architecture": {
+    "path": "LOUKSNAMEJORADA.md",
+    "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+    "modified": false,
+    "prefix_byte_exact": true
+  },
+  "louksna1": {
+    "path": "Louksna1.md",
+    "bytes": 11633744,
+    "sha256": "c12787deeeaf08b89719c5a1c3e5e9598f8999488b0b83768027e8d907d33dd2"
+  },
+  "runtime_distribution": {
+    "path": "CAJITA_LUNA_RUNTIME_V10.macrodown",
+    "bytes": 446897729,
+    "sha256": "f426a8f97132c90f4b2436f457c9c38d1a7994fc873d560b16aa1eefb3733c0c"
+  },
+  "combined_distribution": {
+    "bytes": 458531473,
+    "cap_bytes": 490000000,
+    "status": "PASS"
+  },
+  "axiom_interdisciplinary_binding": {
+    "path": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
+    "sha256": "e2da482c555f68394f741b67e83f00c4ae313d44069c28091f33cd7b58b21340",
+    "target_module_count": 21,
+    "declared_materialized_axioms": 11757,
+    "declared_historical_gaps": 657,
+    "block_count": 134,
+    "framework_count": 18,
+    "source_binding": "PASS_PENDING_GRAPH_EXECUTION"
+  },
+  "gates": {
+    "G23": "PASS",
+    "G24": "PASS_FOR_DECLARED_SMOKE_SCOPE"
+  },
+  "global_certification": "NOT_GRANTED",
+  "functional_scope": "MATERIALIZATION_HASHES_STRUCTURE_PACKAGE_CRC_PENDING_NATIVE_TASK_ADAPTERS_AND_HARDWARE_SMOKE",
+  "status": "PUBLISHED_CANDIDATE_GLOBAL_CERTIFICATION_NOT_GRANTED",
+  "G23_evidence_sha256": "4406c2c49baa914e233ab16c2005f673d7291d72baf1e239e83f0c108ecc116b",
+  "G24_evidence_sha256": "bf27cac98107fd563a7ecbbfde7bb9ef126a892743aa8c0ec99ed6555f359898",
+  "certification_scope": "DISTRIBUTION_INTEGRITY_AND_STRUCTURAL_MATERIALIZATION",
+  "reason_global_certification_not_granted": "End-to-end user-task adapters and semantic quality equivalence remain unestablished.",
+  "CUSTOSZV9": {
+    "used_as": "BOUNDED_FACTORY_HELPER",
+    "self_reported_certification": "NOT_GRANTED",
+    "not_used_as_independent_certifier": true
+  }
+}

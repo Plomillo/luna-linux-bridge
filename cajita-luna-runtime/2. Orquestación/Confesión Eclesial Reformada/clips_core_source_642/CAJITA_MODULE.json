@@ -1,0 +1,22 @@
+{
+  "canonical_asset_id": null,
+  "certification": "NOT_GRANTED",
+  "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+  "functional_smoke": "REQUIRED",
+  "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
+  "materialization": {
+    "bytes": 6542920,
+    "file_count": 343,
+    "status": "PASS",
+    "tree_sha256": "437f68292a82dbb230919710f9fabc173cd1ccf05ec05ec0d01b18d1c47557c2"
+  },
+  "module_key": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642",
+  "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
+  "source_archives": [
+    {
+      "bytes": 1230890,
+      "path": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642.zip",
+      "sha256": "55369287510f8826a66f9ce162ff0213bfdef42fc85736b82049ab7dca8315c3"
+    }
+  ]
+}

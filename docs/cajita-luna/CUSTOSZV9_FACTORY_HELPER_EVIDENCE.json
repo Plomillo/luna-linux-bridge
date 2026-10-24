@@ -1,0 +1,11 @@
+{
+  "schema": "CUSTOSZV9_FACTORY_HELPER_EVIDENCE/1.0",
+  "artifact_sha256": "d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817",
+  "version_exit_code": 0,
+  "selftest_exit_code": 0,
+  "version_output": "CUSTOSZV9 9.0.0-candidate\n",
+  "selftest_output": "{\n  \"authorization_granted\": false,\n  \"certification\": \"NOT_GRANTED_BY_SELFTEST\",\n  \"check_count\": 12,\n  \"checks\": {\n    \"bounded_256_action_stress\": true,\n    \"bounded_queue_32_missions_and_hash_chain\": true,\n    \"dependency_cycle_denied\": true,\n    \"deterministic_topological_plan\": true,\n    \"equivalence_cannot_transport_certification\": true,\n    \"journal_chain_valid\": true,\n    \"journal_tamper_detected\": true,\n    \"missing_formal_proof_fails_closed\": true,\n    \"offline_checkpoint_restore_postvalidated\": true,\n    \"puac_claim_schema_does_not_assert_truth\": true,\n    \"repeated_strategy_without_evidence_blocked\": true,\n    \"unknown_resources_hold\": true\n  },\n  \"external_host_operations\": false,\n  \"failed_checks\": [],\n  \"schema\": \"CUSTOSZV9_CRFU_SELFTEST/2.0\",\n  \"status\": \"PASS\"\n}\n",
+  "self_reported_certification": "NOT_GRANTED",
+  "authority": "BOUNDED_HELPER_ONLY_NOT_G23_OR_G24",
+  "status": "PASS_HELPER_TESTS"
+}

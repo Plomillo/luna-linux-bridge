@@ -1,0 +1,20 @@
+name: Test foma
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: dependencies
+      run: |
+           sudo apt-get -qy update
+           sudo apt-get -qfy install --no-install-recommends cmake libreadline-dev
+
+    - name: build with sanitizer
+      run: cd foma && export CFLAGS="-g3 -Wall -fsanitize=address" && cmake . && make -j
+
+    - name: run tests
+      run: cd foma && make test

@@ -1,0 +1,22 @@
+{
+  "canonical_asset_id": null,
+  "certification": "NOT_GRANTED",
+  "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+  "functional_smoke": "REQUIRED",
+  "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
+  "materialization": {
+    "bytes": 2825504,
+    "file_count": 809,
+    "status": "PASS",
+    "tree_sha256": "e9f543012cf90fd584976dc2d5d1ccc887ec33446615a2d7e638085772a0612b"
+  },
+  "module_key": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24",
+  "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
+  "source_archives": [
+    {
+      "bytes": 836260,
+      "path": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24.zip",
+      "sha256": "6b413b1561e30d3a027a3a14bf8b5cc68dedaebaa852ff74ab2fc60f9293f583"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "certification": "NOT_GRANTED",
+  "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+  "domain_id": "D02_ORQUESTACION",
+  "engine_ids": [
+    "E10",
+    "E12",
+    "E13",
+    "E14",
+    "E15"
+  ],
+  "functional_state": "MODULE_REGISTERED_ADAPTER_AND_NATIVE_SMOKE_REQUIRED",
+  "lifecycle_state": "MATERIALIZED_OR_SOURCE_DIRECTORY_REGISTERED",
+  "relative_path": "2. Orquestación/Orquestador",
+  "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
+  "source_identity": {
+    "companion_sha256": "c12787deeeaf08b89719c5a1c3e5e9598f8999488b0b83768027e8d907d33dd2",
+    "path": "Louksna1.md",
+    "protected_prefix_bytes": 11542631,
+    "protected_prefix_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51"
+  },
+  "target_id": "D02_ORQUESTADOR",
+  "target_kind": "SUBDOMAIN",
+  "target_name": "Orquestador",
+  "tree_integrity": {
+    "bytes_excluding_module_descriptors": 73510007,
+    "file_count_excluding_module_descriptors": 3111,
+    "sha256": "52f79c56c0cf17cf524df58ced88fe1048161aa791e3f9f51290d487b3ca7795"
+  }
+}

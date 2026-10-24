@@ -1,0 +1,22 @@
+{
+  "canonical_asset_id": null,
+  "certification": "NOT_GRANTED",
+  "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+  "functional_smoke": "REQUIRED",
+  "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
+  "materialization": {
+    "bytes": 9234720,
+    "file_count": 1,
+    "status": "PASS",
+    "tree_sha256": "d6cc8b7b9c1e1645b2cb543f4abf8e25fccd022190fce68be8431ebaa9176584"
+  },
+  "module_key": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static",
+  "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
+  "source_archives": [
+    {
+      "bytes": 3727204,
+      "path": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip",
+      "sha256": "1d8c6fae32af635c0a97fc7d9d6abc2708a1c7769c946f04ec25a545362200a6"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "canonical_asset_id": null,
+  "certification": "NOT_GRANTED",
+  "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+  "functional_smoke": "REQUIRED",
+  "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
+  "materialization": {
+    "bytes": 797405,
+    "file_count": 72,
+    "status": "PASS",
+    "tree_sha256": "7dd3672d272d90dba980ac3b002df46ae546cf8534e1fbb66f7690f74e833199"
+  },
+  "module_key": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master",
+  "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
+  "source_archives": [
+    {
+      "bytes": 225343,
+      "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master.zip",
+      "sha256": "93d2a4eeb811f4bc3fbe584a35385f1aae07908ef42d2893693eabd354db1e74"
+    }
+  ]
+}

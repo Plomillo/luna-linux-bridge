@@ -1,0 +1,29 @@
+{
+  "certification": "NOT_GRANTED",
+  "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+  "domain_id": "D06_SISTEMA_INTELIGENTE",
+  "engine_ids": [
+    "E10",
+    "E12",
+    "E13",
+    "E14"
+  ],
+  "functional_state": "MODULE_REGISTERED_ADAPTER_AND_NATIVE_SMOKE_REQUIRED",
+  "lifecycle_state": "MATERIALIZED_OR_SOURCE_DIRECTORY_REGISTERED",
+  "relative_path": "6. Sistema Inteligente/Runtime Android Windows",
+  "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
+  "source_identity": {
+    "companion_sha256": "c12787deeeaf08b89719c5a1c3e5e9598f8999488b0b83768027e8d907d33dd2",
+    "path": "Louksna1.md",
+    "protected_prefix_bytes": 11542631,
+    "protected_prefix_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51"
+  },
+  "target_id": "D06_RUNTIME_ANDROID_WINDOWS",
+  "target_kind": "SUBDOMAIN",
+  "target_name": "Runtime Android Windows",
+  "tree_integrity": {
+    "bytes_excluding_module_descriptors": 57594971,
+    "file_count_excluding_module_descriptors": 1132,
+    "sha256": "b3c49b66772615b9aa7ff6fbde5e4226f16d689525e0f04da8b9c80981941b7e"
+  }
+}

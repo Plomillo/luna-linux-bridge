@@ -1,0 +1,18 @@
+{
+  "schema": "LOUKSNA1_G24_EVIDENCE/1.0",
+  "gate": "G24",
+  "status": "PASS_FOR_DECLARED_SMOKE_SCOPE",
+  "decision": "PASS_FOR_DECLARED_SMOKE_SCOPE",
+  "package_sha256": "f426a8f97132c90f4b2436f457c9c38d1a7994fc873d560b16aa1eefb3733c0c",
+  "louksna1_sha256": "c12787deeeaf08b89719c5a1c3e5e9598f8999488b0b83768027e8d907d33dd2",
+  "reason": "SIX_DOMAIN_SMOKE_PASS_WITH_EFFECTIVE_ONE_CPU_1_GIB_LIMITS",
+  "smoke_return_code": 0,
+  "image_build_return_code": 0,
+  "memory_max_bytes": "1073741824",
+  "cpu_quota": "100000 100000",
+  "memory_peak_bytes": 922468352,
+  "scope": "SIX_DOMAIN_STARTUP_SMOKE_AND_RESOURCE_ENFORCEMENT_ONLY",
+  "task_adapters": "NOT_REGISTERED_FOR_ALL_END_TO_END_TASKS",
+  "semantic_quality_equivalence": "NOT_ESTABLISHED",
+  "global_integrated_product_certification": "NOT_GRANTED"
+}

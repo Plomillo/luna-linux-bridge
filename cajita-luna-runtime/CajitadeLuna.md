@@ -1311,3 +1311,21 @@ if __name__ == "__main__":
 El overlay de Calibre v9.17.0 tiene tamaño de referencia de **58.180 bytes (0,05818 MB decimal)** y SHA-256 `dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b`. Su evidencia CI está en [ejecución 40057448243](https://github.com/Plomillo/luna-linux-bridge/actions/runs/40057448243), artefacto [12545698477](https://github.com/Plomillo/luna-linux-bridge/actions/runs/40057448243/artifacts/12545698477).
 
 **Materialización física: PASS.** El archivo `calibre-slim-overlay.tar.xz` está presente en la ruta interna del árbol `main`; el tamaño y SHA-256 se verificaron tras copiarlo desde el artefacto de CI. El lanzador verifica otra vez esos valores y extrae el overlay de forma segura en el primer uso. La incorporación física está verificada: el binario está en `main`, sus bytes y SHA-256 coinciden con el artefacto ensayado, y la reconstrucción del paquete `.macrodown` pasó en CI. El candidato permanece sin certificación independiente. El overlay no contiene el runtime nativo oficial ni las dependencias Qt/WebEngine; por tanto, los 58 KB no representan una instalación independiente de Calibre.
+
+
+---
+
+## Política de fabricación V10: módulos materializados y distribución conjunta
+
+Esta sección es aditiva; se preserva el documento histórico y se aplica a esta fabricación para resolver el empaquetado durante la construcción, no durante cada ejecución.
+
+- Cada archivo ZIP o 7Z del runtime se valida y extrae durante la fabricación. Solo se elimina el contenedor después de la prueba de integridad y la verificación de colisiones. Se conserva una copia de rollback fuera del runtime distribuible.
+- Se eliminan todos los archivos cuyo nombre comienza por README, sin distinguir mayúsculas. Sus rutas, tamaños y SHA-256 quedan registrados en el manifiesto de fabricación.
+- Cada paquete extraído queda identificado como módulo mediante CAJITA_MODULE.json y module_registry.json. La materialización no autoriza a dar por conectado un consumidor: adaptador, smoke nativo y medición de recursos siguen siendo pruebas separadas.
+- Los seis artefactos de pesos deben mantener exactamente tamaño y SHA-256. No se reemplazan modelos ni motores por motivos de tamaño.
+- El árbol de trabajo materializado tiene un techo de fabricación separado de 1500000000 bytes. La puerta de distribución conjunta mide el archivo .macrodown más Louksna1.md, con máximo decimal exacto de 490000000 bytes. El techo del árbol de trabajo no amplía el presupuesto del producto final.
+- La ejecución sigue siendo secuencial y bajo demanda. La autorización de una tarea no equivale a autorización de efectos ajenos a ella.
+- El sistema antiparálisis mantiene un diario persistente encadenado por SHA-256, limita a tres las observaciones idénticas sin progreso y pasa a HOLD_CONSCIOUS al agotarlas. No realiza reintentos automáticos con efectos desconocidos ni sin idempotencia y checkpoint verificado.
+- Ningún estado de certificación se hereda automáticamente. La certificación integral exige evidencia independiente G23 y una decisión G24 separada.
+
+Estado de fabricación: 28 contenedores ZIP/7Z retirados tras extracción; 125 README retirados; 28 módulos de ruta registrados. La validación funcional completa y la certificación global permanecen pendientes de sus gates independientes.

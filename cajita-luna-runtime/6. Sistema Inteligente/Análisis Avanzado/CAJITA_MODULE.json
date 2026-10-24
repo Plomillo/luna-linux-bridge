@@ -1,0 +1,36 @@
+{
+  "certification": "NOT_GRANTED",
+  "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+  "domain_id": "D06_SISTEMA_INTELIGENTE",
+  "engine_ids": [
+    "E01",
+    "E02",
+    "E03",
+    "E04",
+    "E05",
+    "E09",
+    "E12",
+    "E13",
+    "E14",
+    "E15",
+    "E11"
+  ],
+  "functional_state": "MODULE_REGISTERED_ADAPTER_AND_NATIVE_SMOKE_REQUIRED",
+  "lifecycle_state": "MATERIALIZED_OR_SOURCE_DIRECTORY_REGISTERED",
+  "relative_path": "6. Sistema Inteligente/Análisis Avanzado",
+  "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
+  "source_identity": {
+    "companion_sha256": "c12787deeeaf08b89719c5a1c3e5e9598f8999488b0b83768027e8d907d33dd2",
+    "path": "Louksna1.md",
+    "protected_prefix_bytes": 11542631,
+    "protected_prefix_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51"
+  },
+  "target_id": "D06_ANALISIS_AVANZADO",
+  "target_kind": "SUBDOMAIN",
+  "target_name": "Análisis Avanzado",
+  "tree_integrity": {
+    "bytes_excluding_module_descriptors": 31089744,
+    "file_count_excluding_module_descriptors": 15,
+    "sha256": "d7570d80b02544c9111ee383867de5527a77ea79e2463abc748e9f83b6494068"
+  }
+}

@@ -2,7 +2,7 @@
   "schema": "CAJITA_EXTERNALIZED_ASSET_PLACEMENT/1.0",
   "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023_EXTERNAL_ASSET_PLACEMENT",
   "based_on_commit": "cf777392759b1926e9999ed4f877aa09fc88cf90",
-  "status": "TEN_ASSETS_COMPACTED_RUNTIME_SIZE_GATE_PASS",
+  "status": "MATERIALIZATION_COMPLETE_PENDING_FUNCTION_AND_G23_G24",
   "purpose": "Place recovered externalized assets at their intended six-domain source-tree paths without silently promoting them into the distributable archive.",
   "hard_cap_bytes": 470000000,
   "current_macrodown_manifest": {
@@ -24,7 +24,7 @@
       "sha256": "6c63682c55b9c536aff878613db25a2d0a4f21e57999f50a1d4718bc3b64702f",
       "size_bytes": 23103199,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
+      "placement": "MATERIALIZED_DIRECTORY",
       "included_in_current_macrodown_manifest": false,
       "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 23986647,
@@ -51,9 +51,9 @@
       "container_sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
       "container_size_bytes": 23103199,
       "expanded_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0",
-      "expanded_file_count": 251,
-      "expanded_bytes": 27295036,
-      "expanded_tree_sha256": "6c63682c55b9c536aff878613db25a2d0a4f21e57999f50a1d4718bc3b64702f",
+      "expanded_file_count": 249,
+      "expanded_bytes": 27289736,
+      "expanded_tree_sha256": "586b008046071c679739ba8e9e9512cfc88a04dc5c28136adaa37afb798b7123",
       "previous_expanded_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0",
       "previous_expanded_bytes": 27295036,
       "compact_runtime_container": {
@@ -61,7 +61,18 @@
         "sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
         "size_bytes": 23103199,
         "git_blob_sha": "b208b1ccfcb5f7702d46b0bcc5b9d5d707301ad4"
-      }
+      },
+      "factory_reconciliation": {
+        "status": "MATERIALIZED_HASH_VERIFIED",
+        "source_archive_sha256_actual": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
+        "source_archive_bytes_actual": 23103199,
+        "historical_hash_match": false,
+        "archive_removed_from_runtime": true,
+        "module_path": "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0",
+        "module_manifest": "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0/CAJITA_MODULE.json",
+        "module_manifest_sha256": "15138fa1d2214ffe636fdae7554a6d97762ced32ed427fb12948b88ab885fb84"
+      },
+      "materialized_module_path": "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0"
     },
     {
       "id": "PLAYWRIGHT_1_63_0_SOURCE",
@@ -72,7 +83,7 @@
       "sha256": "20bfbd9a2756bcb94f0a5ce6f2b9f468e75c45e1eb9c68af499c66255c893175",
       "size_bytes": 32133546,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
+      "placement": "MATERIALIZED_DIRECTORY",
       "included_in_current_macrodown_manifest": false,
       "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 40525667,
@@ -99,9 +110,9 @@
       "container_sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14",
       "container_size_bytes": 32133546,
       "expanded_path": "cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE",
-      "expanded_file_count": 3093,
-      "expanded_bytes": 68493538,
-      "expanded_tree_sha256": "20bfbd9a2756bcb94f0a5ce6f2b9f468e75c45e1eb9c68af499c66255c893175",
+      "expanded_file_count": 3084,
+      "expanded_bytes": 68708189,
+      "expanded_tree_sha256": "bf9783d3c2ed4a3df79d040901bf9ad798c3f0c6018fb9b85ad0c65e6e31ab80",
       "previous_expanded_path": "cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE",
       "previous_expanded_bytes": 68493538,
       "compact_runtime_container": {
@@ -109,7 +120,18 @@
         "sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14",
         "size_bytes": 32133546,
         "git_blob_sha": "9213396bf133cfc8fcf433f0a85f81e245533d66"
-      }
+      },
+      "factory_reconciliation": {
+        "status": "MATERIALIZED_HASH_VERIFIED",
+        "source_archive_sha256_actual": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14",
+        "source_archive_bytes_actual": 32133546,
+        "historical_hash_match": false,
+        "archive_removed_from_runtime": true,
+        "module_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE",
+        "module_manifest": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/CAJITA_MODULE.json",
+        "module_manifest_sha256": "c3bca499d1e7fdd7991bf4578f9f49cbf50cb5b10fffcf5b002b534f5bcfc916"
+      },
+      "materialized_module_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE"
     },
     {
       "id": "ONNX_RUNTIME_1_29_0_CP311",
@@ -120,7 +142,7 @@
       "sha256": "e95a255726a633b080d8c568f54dd24c23babed147c72296374fd1fa044650ec",
       "size_bytes": 10219873,
       "exact_externalized_candidate": false,
-      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
+      "placement": "MATERIALIZED_DIRECTORY",
       "included_in_current_macrodown_manifest": false,
       "notes": "Matches official PyPI digest for exact filename; differs from externalized manifest hash and size. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 23113193,
@@ -149,7 +171,7 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311",
       "expanded_file_count": 322,
       "expanded_bytes": 62736574,
-      "expanded_tree_sha256": "e95a255726a633b080d8c568f54dd24c23babed147c72296374fd1fa044650ec",
+      "expanded_tree_sha256": "799c445e18ce0c2f10ff782b745cbf7d02ec824f5d5dea6d5d020fa3deca77ab",
       "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311",
       "previous_expanded_bytes": 62736574,
       "compact_runtime_container": {
@@ -157,7 +179,18 @@
         "sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b",
         "size_bytes": 10219873,
         "git_blob_sha": "baa48c493b6e44143b5c5b212b62530697da17a2"
-      }
+      },
+      "factory_reconciliation": {
+        "status": "MATERIALIZED_HASH_VERIFIED",
+        "source_archive_sha256_actual": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b",
+        "source_archive_bytes_actual": 10219873,
+        "historical_hash_match": false,
+        "archive_removed_from_runtime": true,
+        "module_path": "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311",
+        "module_manifest": "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311/CAJITA_MODULE.json",
+        "module_manifest_sha256": "bce663fde0e50c835ad9fecb5cefe7b376e4a41a6c4574a85e87453e81baaa25"
+      },
+      "materialized_module_path": "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311"
     },
     {
       "id": "DAGGER_0_21_8_LINUX_AMD64",
@@ -168,7 +201,7 @@
       "sha256": "63b35d9ec39b40c2397f00a623519cbd52275f1a2d4e23e2379fb33810feb3ad",
       "size_bytes": 15377436,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
+      "placement": "MATERIALIZED_DIRECTORY",
       "included_in_current_macrodown_manifest": false,
       "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 21927634,
@@ -209,7 +242,7 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64",
       "expanded_file_count": 2,
       "expanded_bytes": 15382954,
-      "expanded_tree_sha256": "63b35d9ec39b40c2397f00a623519cbd52275f1a2d4e23e2379fb33810feb3ad",
+      "expanded_tree_sha256": "6be6fd2b8582f78a411e6c992bfc7d8dcfe9dee6a0b1eb27ee49dd1086732aa5",
       "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64",
       "previous_expanded_bytes": 15382954,
       "compact_runtime_container": {
@@ -217,7 +250,18 @@
         "sha256": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e",
         "size_bytes": 15377436,
         "git_blob_sha": "7cdae84185cfb60ab65ad8d2c439420232c16bad"
-      }
+      },
+      "factory_reconciliation": {
+        "status": "MATERIALIZED_HASH_VERIFIED",
+        "source_archive_sha256_actual": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e",
+        "source_archive_bytes_actual": 15377436,
+        "historical_hash_match": false,
+        "archive_removed_from_runtime": true,
+        "module_path": "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64",
+        "module_manifest": "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64/CAJITA_MODULE.json",
+        "module_manifest_sha256": "5708f166252855a216fdb6b520fe149a0148b9359d4cbf44d0b6262d5fa34bd1"
+      },
+      "materialized_module_path": "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64"
     },
     {
       "id": "OPA_STATIC_LINUX_AMD64_CANDIDATE",
@@ -228,7 +272,7 @@
       "sha256": "ae4365a9ec41b3141af6fd2319e33754ef62f16a4b0c18d7f9409bb00446fcaa",
       "size_bytes": 25273630,
       "exact_externalized_candidate": false,
-      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
+      "placement": "MATERIALIZED_DIRECTORY",
       "included_in_current_macrodown_manifest": false,
       "notes": "Official OPA v1.21.3 asset; externalized record had no pinned version and expected a different binary size/hash. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 64185579,
@@ -269,7 +313,7 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE",
       "expanded_file_count": 1,
       "expanded_bytes": 25271120,
-      "expanded_tree_sha256": "ae4365a9ec41b3141af6fd2319e33754ef62f16a4b0c18d7f9409bb00446fcaa",
+      "expanded_tree_sha256": "846a888aacea2cbc6174b77cb006c6e8832a08353b6e32c5213888325a942fd6",
       "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE",
       "previous_expanded_bytes": 25271120,
       "compact_runtime_container": {
@@ -277,7 +321,18 @@
         "sha256": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628",
         "size_bytes": 25273630,
         "git_blob_sha": "6b3c6bbad8c1a5cae80096fbe38b7a38a19c4226"
-      }
+      },
+      "factory_reconciliation": {
+        "status": "MATERIALIZED_HASH_VERIFIED",
+        "source_archive_sha256_actual": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628",
+        "source_archive_bytes_actual": 25273630,
+        "historical_hash_match": false,
+        "archive_removed_from_runtime": true,
+        "module_path": "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE",
+        "module_manifest": "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE/CAJITA_MODULE.json",
+        "module_manifest_sha256": "c967658f5c74960e61b0233814535dbe81e048058515bd782b0822085fd01c16"
+      },
+      "materialized_module_path": "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE"
     },
     {
       "id": "RQLITE_10_2_7_LINUX_AMD64",
@@ -288,7 +343,7 @@
       "sha256": "77d628dcf862c54f6a5ae4d009df8b8317a33bf93cd2943a8c58639d8dd31ef7",
       "size_bytes": 12962199,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
+      "placement": "MATERIALIZED_DIRECTORY",
       "included_in_current_macrodown_manifest": false,
       "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 17600273,
@@ -351,7 +406,7 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64",
       "expanded_file_count": 3,
       "expanded_bytes": 12970604,
-      "expanded_tree_sha256": "77d628dcf862c54f6a5ae4d009df8b8317a33bf93cd2943a8c58639d8dd31ef7",
+      "expanded_tree_sha256": "ab3c60550f815a6c9baa2edbc796d8a00810b4aff679b0e70e58afe4c8fc79d5",
       "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64",
       "previous_expanded_bytes": 12970604,
       "compact_runtime_container": {
@@ -359,7 +414,18 @@
         "sha256": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea",
         "size_bytes": 12962199,
         "git_blob_sha": "5075c99664f066982e0a089b456d8550374e77ab"
-      }
+      },
+      "factory_reconciliation": {
+        "status": "MATERIALIZED_HASH_VERIFIED",
+        "source_archive_sha256_actual": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea",
+        "source_archive_bytes_actual": 12962199,
+        "historical_hash_match": false,
+        "archive_removed_from_runtime": true,
+        "module_path": "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64",
+        "module_manifest": "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64/CAJITA_MODULE.json",
+        "module_manifest_sha256": "71f62656f8da6a4813b0c2572cf08eba1fea1026c421b8914cbfacbd18978933"
+      },
+      "materialized_module_path": "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64"
     },
     {
       "id": "SQLITE_SOURCE_3_53_4",
@@ -370,7 +436,7 @@
       "sha256": "e008d35dbb7700a017c387c85599bb9d91ba338cfb4a3fe7875f7f5bda04fd9c",
       "size_bytes": 7954439,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
+      "placement": "MATERIALIZED_DIRECTORY",
       "included_in_current_macrodown_manifest": false,
       "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 14557315,
@@ -397,9 +463,9 @@
       "container_sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e",
       "container_size_bytes": 7954439,
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4",
-      "expanded_file_count": 2208,
-      "expanded_bytes": 111974369,
-      "expanded_tree_sha256": "e008d35dbb7700a017c387c85599bb9d91ba338cfb4a3fe7875f7f5bda04fd9c",
+      "expanded_file_count": 2186,
+      "expanded_bytes": 111818024,
+      "expanded_tree_sha256": "5449bbf6c8748a6153410041438401871a7c1f86fe58bcf09e85df644bd68085",
       "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4",
       "previous_expanded_bytes": 111974369,
       "compact_runtime_container": {
@@ -407,7 +473,18 @@
         "sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e",
         "size_bytes": 7954439,
         "git_blob_sha": "73ed8e5bbe0999ca0b4b94f62879c20f013510c7"
-      }
+      },
+      "factory_reconciliation": {
+        "status": "MATERIALIZED_HASH_VERIFIED",
+        "source_archive_sha256_actual": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e",
+        "source_archive_bytes_actual": 7954439,
+        "historical_hash_match": false,
+        "archive_removed_from_runtime": true,
+        "module_path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4",
+        "module_manifest": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/CAJITA_MODULE.json",
+        "module_manifest_sha256": "858409caee167b5b9494feb8bea771ff77a06f28bcce0ed68a90e3c641bf4b9f"
+      },
+      "materialized_module_path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4"
     },
     {
       "id": "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
@@ -418,7 +495,7 @@
       "sha256": "8e4b2e9ce54787c53cd92440873a4f97cf95626dc12ecf3f3b572750d1b92ec1",
       "size_bytes": 21310484,
       "exact_externalized_candidate": false,
-      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
+      "placement": "MATERIALIZED_DIRECTORY",
       "included_in_current_macrodown_manifest": false,
       "notes": "Official CMake v4.4.3 Windows ZIP; not the originally recorded .optimized.zip candidate. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 54408599,
@@ -445,9 +522,9 @@
       "container_sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
       "container_size_bytes": 21310484,
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
-      "expanded_file_count": 8819,
-      "expanded_bytes": 143281458,
-      "expanded_tree_sha256": "8e4b2e9ce54787c53cd92440873a4f97cf95626dc12ecf3f3b572750d1b92ec1",
+      "expanded_file_count": 8818,
+      "expanded_bytes": 143281221,
+      "expanded_tree_sha256": "1df8c665076d390a6628721bae123921f09a6bcb756ca87042f84ed3ee7a540f",
       "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
       "previous_expanded_bytes": 143281458,
       "compact_runtime_container": {
@@ -455,7 +532,18 @@
         "sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
         "size_bytes": 21310484,
         "git_blob_sha": "ee472498932126cf0c9787422f78769568646bec"
-      }
+      },
+      "factory_reconciliation": {
+        "status": "MATERIALIZED_HASH_VERIFIED",
+        "source_archive_sha256_actual": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
+        "source_archive_bytes_actual": 21310484,
+        "historical_hash_match": false,
+        "archive_removed_from_runtime": true,
+        "module_path": "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+        "module_manifest": "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE/CAJITA_MODULE.json",
+        "module_manifest_sha256": "e68cddf8bca91864127cf3a6cc4858ab43636502356207d9c2199b6a15fad341"
+      },
+      "materialized_module_path": "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE"
     },
     {
       "id": "AVALONIA_12_1_1_NUGET",
@@ -466,7 +554,7 @@
       "sha256": "35e97da06469f68c0deeca2a2e393ce57cc5e35d5e1d28ebdec09becdd626323",
       "size_bytes": 3836434,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
+      "placement": "MATERIALIZED_DIRECTORY",
       "included_in_current_macrodown_manifest": false,
       "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 10112805,
@@ -495,7 +583,7 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET",
       "expanded_file_count": 121,
       "expanded_bytes": 35926924,
-      "expanded_tree_sha256": "35e97da06469f68c0deeca2a2e393ce57cc5e35d5e1d28ebdec09becdd626323",
+      "expanded_tree_sha256": "196ff464dfa68dea1c6a95d58c899bd809711d6d5dba192887bca900f9ea7d67",
       "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET",
       "previous_expanded_bytes": 35926924,
       "compact_runtime_container": {
@@ -503,7 +591,18 @@
         "sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f",
         "size_bytes": 3836434,
         "git_blob_sha": "68368033e2cd813b493057342241c68f7c3a0da4"
-      }
+      },
+      "factory_reconciliation": {
+        "status": "MATERIALIZED_HASH_VERIFIED",
+        "source_archive_sha256_actual": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f",
+        "source_archive_bytes_actual": 3836434,
+        "historical_hash_match": false,
+        "archive_removed_from_runtime": true,
+        "module_path": "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET",
+        "module_manifest": "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET/CAJITA_MODULE.json",
+        "module_manifest_sha256": "f2133f8d6b67fce9e074bee9503d428cd9f71172454d9489e1501d2dbd8d759d"
+      },
+      "materialized_module_path": "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET"
     },
     {
       "id": "TAURI_2_11_5_SOURCE_ZIP",
@@ -514,7 +613,7 @@
       "sha256": "88b3b38b4e7a90ca85a0c4911b3938bb5ea8e7b42e8f57ce536d15ded7ce3034",
       "size_bytes": 13078809,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
+      "placement": "MATERIALIZED_DIRECTORY",
       "included_in_current_macrodown_manifest": false,
       "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 16117618,
@@ -541,9 +640,9 @@
       "container_sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8",
       "container_size_bytes": 13078809,
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP",
-      "expanded_file_count": 1058,
-      "expanded_bytes": 21729836,
-      "expanded_tree_sha256": "88b3b38b4e7a90ca85a0c4911b3938bb5ea8e7b42e8f57ce536d15ded7ce3034",
+      "expanded_file_count": 1011,
+      "expanded_bytes": 21668047,
+      "expanded_tree_sha256": "9004f53d924f27227c028078d4d8dbe05cf798ca0dce5d0a48b5c0e34bd321d5",
       "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP",
       "previous_expanded_bytes": 21729836,
       "compact_runtime_container": {
@@ -551,7 +650,18 @@
         "sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8",
         "size_bytes": 13078809,
         "git_blob_sha": "3be19a44a8966a9628b4fdfed707ae4c5833eecf"
-      }
+      },
+      "factory_reconciliation": {
+        "status": "MATERIALIZED_HASH_VERIFIED",
+        "source_archive_sha256_actual": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8",
+        "source_archive_bytes_actual": 13078809,
+        "historical_hash_match": false,
+        "archive_removed_from_runtime": true,
+        "module_path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP",
+        "module_manifest": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/CAJITA_MODULE.json",
+        "module_manifest_sha256": "245dbd1f4dd4faebe23d80aa4ba87081bbf11bf1482cafb6fbcd8f9f1d4d4a88"
+      },
+      "materialized_module_path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP"
     }
   ],
   "constraints": [
@@ -934,6 +1044,953 @@
       "TAURI_2_11_5_SOURCE_ZIP"
     ],
     "q2_factor_models_promoted": 4,
+    "certification": "NOT_GRANTED"
+  },
+  "factory_reconciliation": {
+    "schema": "CAJITA_LOUKSNA1_FACTORY/1.0",
+    "generated_at_utc": "2026-10-24T20:26:24Z",
+    "archive_count_materialized": 28,
+    "archive_bytes_removed": 175255841,
+    "archives": [
+      {
+        "source_path": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642.zip",
+        "source_sha256": "55369287510f8826a66f9ce162ff0213bfdef42fc85736b82049ab7dca8315c3",
+        "source_bytes": 1230890,
+        "expanded_path": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642",
+        "expanded_file_count_at_extract": 344,
+        "expanded_bytes_at_extract": 6543869,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
+        "source_sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
+        "source_bytes": 23103199,
+        "expanded_path": "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0",
+        "expanded_file_count_at_extract": 251,
+        "expanded_bytes_at_extract": 27295036,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
+        "asset_id": "APACHE_JENA_6_2_0"
+      },
+      {
+        "source_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z",
+        "source_sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14",
+        "source_bytes": 32133546,
+        "expanded_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE",
+        "expanded_file_count_at_extract": 3093,
+        "expanded_bytes_at_extract": 68493538,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z",
+        "asset_id": "PLAYWRIGHT_1_63_0_SOURCE"
+      },
+      {
+        "source_path": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24.zip",
+        "source_sha256": "6b413b1561e30d3a027a3a14bf8b5cc68dedaebaa852ff74ab2fc60f9293f583",
+        "source_bytes": 836260,
+        "expanded_path": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24",
+        "expanded_file_count_at_extract": 812,
+        "expanded_bytes_at_extract": 2876166,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master.zip",
+        "source_sha256": "93d2a4eeb811f4bc3fbe584a35385f1aae07908ef42d2893693eabd354db1e74",
+        "source_bytes": 225343,
+        "expanded_path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master",
+        "expanded_file_count_at_extract": 77,
+        "expanded_bytes_at_extract": 804392,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z",
+        "source_sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b",
+        "source_bytes": 10219873,
+        "expanded_path": "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311",
+        "expanded_file_count_at_extract": 322,
+        "expanded_bytes_at_extract": 62736574,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z",
+        "asset_id": "ONNX_RUNTIME_1_29_0_CP311"
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip",
+        "source_sha256": "1d8c6fae32af635c0a97fc7d9d6abc2708a1c7769c946f04ec25a545362200a6",
+        "source_bytes": 3727204,
+        "expanded_path": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static",
+        "expanded_file_count_at_extract": 1,
+        "expanded_bytes_at_extract": 9234720,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z",
+        "source_sha256": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e",
+        "source_bytes": 15377436,
+        "expanded_path": "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64",
+        "expanded_file_count_at_extract": 2,
+        "expanded_bytes_at_extract": 15382954,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z",
+        "asset_id": "DAGGER_0_21_8_LINUX_AMD64"
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z",
+        "source_sha256": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628",
+        "source_bytes": 25273630,
+        "expanded_path": "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE",
+        "expanded_file_count_at_extract": 1,
+        "expanded_bytes_at_extract": 25271120,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z",
+        "asset_id": "OPA_STATIC_LINUX_AMD64_CANDIDATE"
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04.zip",
+        "source_sha256": "4a4732e2b812ce386234118ec36fa817771b474b1a335aed8fece55fb6279dae",
+        "source_bytes": 909563,
+        "expanded_path": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04",
+        "expanded_file_count_at_extract": 2,
+        "expanded_bytes_at_extract": 1898920,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400.zip",
+        "source_sha256": "087e07c19da4898889258e3f5b0d87612f02651ccfffbc0aae904c4f1c9a9769",
+        "source_bytes": 2923847,
+        "expanded_path": "6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400",
+        "expanded_file_count_at_extract": 4,
+        "expanded_bytes_at_extract": 11431269,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z",
+        "source_sha256": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea",
+        "source_bytes": 12962199,
+        "expanded_path": "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64",
+        "expanded_file_count_at_extract": 3,
+        "expanded_bytes_at_extract": 12970604,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z",
+        "asset_id": "RQLITE_10_2_7_LINUX_AMD64"
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z",
+        "source_sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e",
+        "source_bytes": 7954439,
+        "expanded_path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4",
+        "expanded_file_count_at_extract": 2208,
+        "expanded_bytes_at_extract": 111974369,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z",
+        "asset_id": "SQLITE_SOURCE_3_53_4"
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0.zip",
+        "source_sha256": "d5f5f95086ea89aaf02f414c23a2ee4ad5f953c9b04d1298093422af040e63b5",
+        "source_bytes": 38162,
+        "expanded_path": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0",
+        "expanded_file_count_at_extract": 7,
+        "expanded_bytes_at_extract": 200403,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z",
+        "source_sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
+        "source_bytes": 21310484,
+        "expanded_path": "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+        "expanded_file_count_at_extract": 8819,
+        "expanded_bytes_at_extract": 143281458,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z",
+        "asset_id": "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE"
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z",
+        "source_sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f",
+        "source_bytes": 3836434,
+        "expanded_path": "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET",
+        "expanded_file_count_at_extract": 121,
+        "expanded_bytes_at_extract": 35926924,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z",
+        "asset_id": "AVALONIA_12_1_1_NUGET"
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z",
+        "source_sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8",
+        "source_bytes": 13078809,
+        "expanded_path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP",
+        "expanded_file_count_at_extract": 1058,
+        "expanded_bytes_at_extract": 21729836,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z",
+        "asset_id": "TAURI_2_11_5_SOURCE_ZIP"
+      },
+      {
+        "source_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/blob-1.42.zip",
+        "source_sha256": "d8c25108913574c9c4d89762e55721ba30a23eac951ac4b82690feafbfee354a",
+        "source_bytes": 3931,
+        "expanded_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/blob-1.42",
+        "expanded_file_count_at_extract": 1,
+        "expanded_bytes_at_extract": 35019,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/blob-1.42.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/blob-1.52.zip",
+        "source_sha256": "7227d8730fb17dd0691935c9edeecc72b6046faac54598f488249388ebb70918",
+        "source_bytes": 61930,
+        "expanded_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/blob-1.52",
+        "expanded_file_count_at_extract": 3,
+        "expanded_bytes_at_extract": 88235,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/blob-1.52.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/chromium-linux.zip",
+        "source_sha256": "010837c1f80503cd810e6c8a4bc881def5514a44725f3990223ddefb3d04326a",
+        "source_bytes": 325,
+        "expanded_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/chromium-linux",
+        "expanded_file_count_at_extract": 1,
+        "expanded_bytes_at_extract": 13,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/chromium-linux.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/test-trace1.zip",
+        "source_sha256": "69032521791187ba72af42bbef0177de961b7c25dfe4f98dfe860754e69ca48f",
+        "source_bytes": 12214,
+        "expanded_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/test-trace1",
+        "expanded_file_count_at_extract": 4,
+        "expanded_bytes_at_extract": 78540,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/test-trace1.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/test-trace2.zip",
+        "source_sha256": "d4322d84d437b0bd8e097045c08140b46c6c603b5d0e27cbbf4c8c4fa544a981",
+        "source_bytes": 12244,
+        "expanded_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/test-trace2",
+        "expanded_file_count_at_extract": 4,
+        "expanded_bytes_at_extract": 78753,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/test-trace2.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-1.31.zip",
+        "source_sha256": "47da957658a9d32846e76a3c42452e8b4890d2de19790ec4e7239a866e20f8c4",
+        "source_bytes": 3755,
+        "expanded_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-1.31",
+        "expanded_file_count_at_extract": 6,
+        "expanded_bytes_at_extract": 12039,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-1.31.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-1.37.zip",
+        "source_sha256": "e8e846902f58089d8b96e4349ae63fa4bbd9cdbb721ac0f29e1de6253ea645df",
+        "source_bytes": 8630,
+        "expanded_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-1.37",
+        "expanded_file_count_at_extract": 9,
+        "expanded_bytes_at_extract": 30360,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-1.37.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-from-the-future.zip",
+        "source_sha256": "9645e7af7255864c8ba1b49b6687b78418b5d98d359d9389d19d8e235c47e482",
+        "source_bytes": 385,
+        "expanded_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-from-the-future",
+        "expanded_file_count_at_extract": 1,
+        "expanded_bytes_at_extract": 291,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-from-the-future.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-library-1.46.zip",
+        "source_sha256": "606b18674e2ef8bad012d98dd34ac371a6c9c36111af0686f813ffc2c671b48b",
+        "source_bytes": 1229,
+        "expanded_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-library-1.46",
+        "expanded_file_count_at_extract": 3,
+        "expanded_bytes_at_extract": 2955,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-library-1.46.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-remote-time-diff.zip",
+        "source_sha256": "cf72b06f4c1c289214a826cbf8d012cadc7f73090a604d2c36c61a0db5d272ac",
+        "source_bytes": 9102,
+        "expanded_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-remote-time-diff",
+        "expanded_file_count_at_extract": 3,
+        "expanded_bytes_at_extract": 33290,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/trace-remote-time-diff.zip",
+        "asset_id": null
+      },
+      {
+        "source_path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri/test/updater/fixture/archives/archive.windows.zip",
+        "source_sha256": "8443950796ba0889b0fbf276482a9f3418014c5f8e105cd927387afa12799460",
+        "source_bytes": 778,
+        "expanded_path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri/test/updater/fixture/archives/archive.windows",
+        "expanded_file_count_at_extract": 3,
+        "expanded_bytes_at_extract": 26,
+        "archive_removed_from_runtime": true,
+        "rollback_path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri/test/updater/fixture/archives/archive.windows.zip",
+        "asset_id": null
+      }
+    ],
+    "readmes_removed": [
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-cli/templates/plugin/__example-api/tauri-app/README.md",
+        "bytes": 439,
+        "sha256": "9a174709e2822fd78dd77ac4f790c1be623494b1beeac606880e2818df8a5545"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/image_tools/fixtures/should-fail/trivial/README.md",
+        "bytes": 58,
+        "sha256": "2c4d234e48a067bf4d206a7b78db1b3085a3f968c43fc366fc885acd17439813"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/image_tools/fixtures/should-fail/original-ssim-trap/README.md",
+        "bytes": 408,
+        "sha256": "2b9b76fd134cc43ef5e6f483ccc4b6fdc06176409af2bc0996fa9935ef655699"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/image_tools/fixtures/should-fail/julia-ssim-trap/README.md",
+        "bytes": 651,
+        "sha256": "fb842186d61bdcea62881122295a1c898cd39d98d52331429d3191c2ab8a467f"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/image_tools/fixtures/should-fail/looks-same-tests/README.md",
+        "bytes": 160,
+        "sha256": "2edee28fcac64d2c7d5483f5cb38d166c23a557b74cd6fcec9c0b1c4eba006e1"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/image_tools/fixtures/should-match/crbug-919955/README.md",
+        "bytes": 112,
+        "sha256": "b39b8d9bab42171c871b06f3077ce63ab752bdd42df633a7c28264d76aee5d75"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/image_tools/fixtures/should-match/trivial/README.md",
+        "bytes": 43,
+        "sha256": "f0182a75410c41bb5a1711802031453f4797f58568aaab9b26b73d59061f902b"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/image_tools/fixtures/should-match/webkit-rendering-artifacts/README.md",
+        "bytes": 113,
+        "sha256": "0311cb94bbf7c965b5a26fac4e891f6b199d1a3f7be18664ad8c7b0fee59660a"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/image_tools/fixtures/should-match/looks-same-tests/README.md",
+        "bytes": 160,
+        "sha256": "2edee28fcac64d2c7d5483f5cb38d166c23a557b74cd6fcec9c0b1c4eba006e1"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/image_tools/fixtures/should-match/tiny-antialiasing-sample/README.md",
+        "bytes": 395,
+        "sha256": "64d9ae1d161c237a70ed59464f6e54c19b66127f9549a832982ed360e6f9806c"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-cli/templates/plugin/ios-spm/README.md",
+        "bytes": 74,
+        "sha256": "21306ceb647682737400a2dd93cfadb634706010db16ddbbc666b47295f9943d"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/api/src-tauri/tauri-plugin-sample/ios/README.md",
+        "bytes": 54,
+        "sha256": "2b158dee39a0cb5805e144d278a419f9fb2ecb8b882e70402aa90dd63001ed94"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/cli/npm/linux-arm64-musl/README.md",
+        "bytes": 110,
+        "sha256": "bda5c4a8114e57ebb07f55403b7dd87cc86b6eb4941b57da5728142e6f1218b9"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/cli/npm/win32-x64-msvc/README.md",
+        "bytes": 104,
+        "sha256": "d4a1067f816b1625147b831c0d5f0f108dba523713cc9f1a3bb4e1e988adb22b"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/cli/npm/linux-arm64-gnu/README.md",
+        "bytes": 108,
+        "sha256": "7f1ba99ae641c600da84c30d5741aa67732148e74bd51046eb0eb9ff0479f620"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/cli/npm/linux-riscv64-gnu/README.md",
+        "bytes": 112,
+        "sha256": "23622c139783f2aeaf28ee0b69b8b26f8b8de0e47f56a0bd4e6c041a447ffee6"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/cli/npm/darwin-x64/README.md",
+        "bytes": 97,
+        "sha256": "964582ece490f42e422e27203f723ce760dbc3f00ffa8f308bcb5a49f31a3794"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/cli/npm/linux-x64-gnu/README.md",
+        "bytes": 105,
+        "sha256": "745f9a0865f513bf8e7ab4ac88f743044c2d08d458703c1073c5fd6bc00533ac"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/cli/npm/linux-x64-musl/README.md",
+        "bytes": 107,
+        "sha256": "c0038ce1b164ac2ea29259cf5809c2e2cb954168a2fa6e9d905482f4e7bcb7b5"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/cli/npm/linux-arm-gnueabihf/README.md",
+        "bytes": 116,
+        "sha256": "3d2e241742af1e86a3aef1959495befb14286279a15d9a89cc85344f6da56e02"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/cli/npm/darwin-arm64/README.md",
+        "bytes": 100,
+        "sha256": "9e441c39e297a2461242b859ab7e1a48afef0093d84fe581d398a0848768a840"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/cli/npm/win32-arm64-msvc/README.md",
+        "bytes": 107,
+        "sha256": "f8057d0ed0c7c4cce2ea47e7d7c21860016a2b4852e3eed95b786c8b7a43120f"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/cli/npm/win32-ia32-msvc/README.md",
+        "bytes": 103,
+        "sha256": "765cfad34604846b34e49752627436c2f2c85d1739759878a8bea75bf129fdb1"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-cli/templates/plugin/README.md",
+        "bytes": 42,
+        "sha256": "53a190f02313d821770b05b0dc2d094b2e6743a70083cf502159be3f5feb968c"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri/mobile/ios-api/README.md",
+        "bytes": 24,
+        "sha256": "a06a181db430708640f970ac98611e3feea64430d5b4ab82c15d778604937591"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/packages/injected/src/README.md",
+        "bytes": 226,
+        "sha256": "1e825d1f4adb215bb9ae6eebb3bb39e4f2dae548f146c05305d1545093612543"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/playwright-test/stable-test-runner/README.md",
+        "bytes": 178,
+        "sha256": "a7ebb001f5d38de228d21e088c60d846e00f334c524c24c440ddaa8ef5548c6f"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/third_party/proxy/README.md",
+        "bytes": 237,
+        "sha256": "ae42a9e752c250e517dbea2fe1422801200f32f83ae9fc7b9f98405550674eed"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/modernizr/README.md",
+        "bytes": 745,
+        "sha256": "68273fc22c9660f3f506da1f54f3952bf20d5c54747b08a47ee795e162fd1200"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/axe-core/README.md",
+        "bytes": 323,
+        "sha256": "fe5b72f39b379df9d757c77082c9a7530c267584cf734a1e0f6621384752d0b6"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/multi-value-rdn/README.md",
+        "bytes": 322,
+        "sha256": "984f3a1d9a880c4528823b0bfcc324823d311e4b2211c46a4d7d9f53d52e49a8"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/wpt/README.md",
+        "bytes": 490,
+        "sha256": "d1bdabcce8a55708136bc43fffa6357278116542fa27e154582b511737be9a44"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/to-do-notifications/README.md",
+        "bytes": 74,
+        "sha256": "4fb85d2cd355904ea27ca589eb677ab89a061c77b4ad06ce1d78a7d58a4497df"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/client-certificates/README.md",
+        "bytes": 106,
+        "sha256": "f9c287d6349e8d9c21effcf8c4634bba8a2a54c793d883f05f2b665b3494be9b"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/assets/webfont/README.md",
+        "bytes": 415,
+        "sha256": "b8e1ae9d69ef42b5a05f27891a15462b094b3e025a2eb1452bb9e81328d797c2"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/examples/mock-battery/demo-battery-api/README.md",
+        "bytes": 551,
+        "sha256": "046e5d5c126b290e96625991f2102428f3d7f1c50297518a1bdaa913c083eb0b"
+      },
+      {
+        "path": "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE/cmake-4.4.3-windows-x86_64/share/cmake-4.4/Modules/readme.txt",
+        "bytes": 237,
+        "sha256": "360cc2785d7bef9aa99c9c9bd60b2ec8e366346f02ad60ae94307fca89f099f5"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/wasm/api/README.md",
+        "bytes": 10374,
+        "sha256": "fab92320491cca7e2c8c5beb50fa949be8239ca393a4c961f3314d88cc110e8c"
+      },
+      {
+        "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master/foma-master/foma/python/README.md",
+        "bytes": 1350,
+        "sha256": "09ef98ee216eb43380be74a300fd5e96a4cc25f7ef026094739d0d3d57a13a86"
+      },
+      {
+        "path": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24/trealla-2.100.24/src/imath/README.md",
+        "bytes": 4095,
+        "sha256": "0fc37fd3a192471d5c1a5590a76ba4256c292de7bb0bc0a0417249eac82ad578"
+      },
+      {
+        "path": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24/trealla-2.100.24/src/sre/README.md",
+        "bytes": 5207,
+        "sha256": "e95a438f19cf607cd33be624fa892e3a84b0c5f87a175440cd4aeb5ae7204e5c"
+      },
+      {
+        "path": "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0/apache-jena-6.2.0/src-examples/jena-examples/README.md",
+        "bytes": 958,
+        "sha256": "a86582c0efbf64feaecd9b2d145d3ddc83586ba14f591086009e52eac6714bae"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/packages/playwright-firefox/README.md",
+        "bytes": 275,
+        "sha256": "7f66c0563bf717eedfab564aec46b64ea46e760af8ec8d799d9c1d004d0b22be"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/packages/playwright-browser-webkit/README.md",
+        "bytes": 281,
+        "sha256": "d91373fc955148fc2fc42284d33444b53d7d8d6cc5df90f5a2d8c86a9db4442d"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/packages/playwright-browser-firefox/README.md",
+        "bytes": 292,
+        "sha256": "32d8de62dc8692bddd3f87302124485a24c8394e5931b1d215cc31b597160758"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/packages/playwright-chromium/README.md",
+        "bytes": 270,
+        "sha256": "27349ae21a03406c27fe8ff16726483b11334b8cfff06d47abd381c65cdb423b"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/packages/playwright-browser-chromium/README.md",
+        "bytes": 287,
+        "sha256": "412c6f48ec19185a36d9c3d15cde88e62f4ba627791be2b8b930b599f889442d"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/packages/extension/README.md",
+        "bytes": 3450,
+        "sha256": "c5f705a9640f456c0081074f4e8ede08ee7a84f1df321f54eeda989a7dc646a1"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/packages/playwright-webkit/README.md",
+        "bytes": 264,
+        "sha256": "91068683d816bbe1a924561990c29e3fa1307e2403ed15e47f0ba97906b30559"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/packages/playwright-core/README.md",
+        "bytes": 120,
+        "sha256": "d16ff7f8e38fa1fc954f695ad551cdc118d9c9bdd5f3d83203901f4c317d7d7e"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/tests/bidi/README.md",
+        "bytes": 843,
+        "sha256": "45ff5c0013102c74152c2219fa80d1a82a9b224b857f66545c02841afbeaa7a6"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/utils/linux-browser-dependencies/README.md",
+        "bytes": 902,
+        "sha256": "7df40ce3360f9a388dbf0d4a71b4e1ce8f41b039e5bec4295601cfb516c764b3"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/utils/flakiness-dashboard/README.md",
+        "bytes": 1056,
+        "sha256": "8fd6931da6ff72ff58937795e7e6b5bb04cc7fb6bcb8778dcec081842bb9a91b"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/utils/libwebp-wasm/README.md",
+        "bytes": 5388,
+        "sha256": "f3e6a4ce890de1e9402a9d688fadd44e1cd7926c12fcdd407f53ff63d7ce440f"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/browser_patches/winldd/README.md",
+        "bytes": 622,
+        "sha256": "64d1238db73e43327a508be0ecd1ac97e9105bd355cc13e26e79af9cddc66066"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/api/README.md",
+        "bytes": 3462,
+        "sha256": "7bd6b04ac2b62058cc8f201be5af47b4e41a5d28b6bc79f409bb9986cb8a2447"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/packages/cli/README.md",
+        "bytes": 3479,
+        "sha256": "26c0aae917b3f3d87398db2b54bf4a3313198e9d5dd3f8bb376ea739c1b17a23"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-bundler/README.md",
+        "bytes": 6110,
+        "sha256": "de480421d4d2b4c76a423fed79f2218b3f64716f3f816bdb77d171c8ad1907fd"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-build/README.md",
+        "bytes": 3195,
+        "sha256": "65858ac99a783b3283b5a10928caaa6755899d59e78a9be28a34e470f999ed25"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-driver/README.md",
+        "bytes": 1617,
+        "sha256": "4abf5dbd7d6054aa1850bbcc67dd22b0d3eeed0d73e6ef759bb3d8b77d53fe15"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-schema-worker/README.md",
+        "bytes": 89,
+        "sha256": "90316e26397feb0552e6b0810ac63d0144ce103f91a22857aa310c56c6f57adc"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-runtime-wry/README.md",
+        "bytes": 3193,
+        "sha256": "cf468efdcd6eb86ef6a2c0b1fbe6aca80f0df6a9d3016f77c0bfdb64dc4091c0"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri/README.md",
+        "bytes": 3517,
+        "sha256": "d53737b76e569ea9d7af01d69be6fb729959b97bc08d0564a421c3917b584070"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-codegen/README.md",
+        "bytes": 2968,
+        "sha256": "0a821bf01d6701b18586867a87219ecbac92fc649647fda0f5e12d8124fec8fc"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-macros/README.md",
+        "bytes": 3204,
+        "sha256": "7ea900c91b5ef15ac143b9a8b4f229e74952fa08760c79cdc15b64754d8b93d7"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-macos-sign/README.md",
+        "bytes": 119,
+        "sha256": "917761dff7c6ffacdf9019a04349caed68588486a827027c7a6305f9b5e6a569"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-utils/README.md",
+        "bytes": 3280,
+        "sha256": "7c833cd45debf201be76289fe1fef84704199a5a2cf83c12ac906bf81c83f5a6"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-cli/README.md",
+        "bytes": 3245,
+        "sha256": "c3884c6c7ba2129ae2af0989821acbb3f0df3c3e9729ff2226adbf414cc2ce95"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-runtime/README.md",
+        "bytes": 3044,
+        "sha256": "28a88dafa1492da0f0819f2f88f019e9580d7c61331165904ce4cd6bf1818778"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/crates/tauri-schema-generator/README.md",
+        "bytes": 157,
+        "sha256": "e072ceed741bfd64ae0f09efbb100296fef14b57e551f5c8eb2798e3844bc9ad"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/file-associations/README.md",
+        "bytes": 669,
+        "sha256": "e722967458781852ad292034dca7ddccb0c9a65e06ad87d66587d1134a0ee9bc"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/drag/README.md",
+        "bytes": 121,
+        "sha256": "1c6af2144960db9bee7dc36c40133ae17ed43cfb2015f9c8229c5067f0342c28"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/run-return/README.md",
+        "bytes": 126,
+        "sha256": "afe80bf6d3c9ef2e751e640c4e4b20c1d5b8c24caea6b539057026a0a7eb4ce2"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/multiwindow/README.md",
+        "bytes": 173,
+        "sha256": "054211a36c0eb75ae0e07ab1cf4391e0c6b0b54319e58689ff98cdf41f0daaad"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/commands/README.md",
+        "bytes": 178,
+        "sha256": "70673255c4e0d3d4dd6ac9aa7ac0caa1a52a1e35ea9264fd29cc96d245c57933"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/state/README.md",
+        "bytes": 181,
+        "sha256": "cb989f91421bc424ee61b3c91e712e5b0833a85b86bf7c4ebb5379da540a7879"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/api/README.md",
+        "bytes": 663,
+        "sha256": "39a395393c5d9c83a3b8eddd0383babc0f5a19d82e5ea30ee5d91dba6bb9a03b"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/splashscreen/README.md",
+        "bytes": 289,
+        "sha256": "3e7519fed65c4e9ecc20b5ffa1ffad2b0f115a26f6c2494113d595ad388c87c3"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/multiwebview/README.md",
+        "bytes": 149,
+        "sha256": "a6fe4d5431c04afd67e7f00279568285ecdaedb98de07c8154728aa85e5f4bc3"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/resources/README.md",
+        "bytes": 864,
+        "sha256": "2e4d826e77973b0adac233a68832e836205f0f91094dabaa0e068d10e5f19886"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/streaming/README.md",
+        "bytes": 410,
+        "sha256": "5977530a461a7d181ae236d12959427f5d9e12b1be77d0291c06a9500089433a"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/isolation/README.md",
+        "bytes": 145,
+        "sha256": "36a9e51e70e92fc85aca8ae7428825cc060a063dbaec880e40eb1af65aec8c6c"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/helloworld/README.md",
+        "bytes": 127,
+        "sha256": "8b50e4ef8dd8674cb196e61ef550347303a18c10f0d3c525be66e8382bbee050"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/test/json/README.md",
+        "bytes": 2354,
+        "sha256": "f27dd2b264d5fd1b0baae9cf1e427495d4002555ce767009b142beb3326d5819"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/autoconf/tea/README.txt",
+        "bytes": 2972,
+        "sha256": "ae3295589f941bb8af39156dfe92e60de9dfe641b2067e97c6ebf3c35137cc06"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/expert/README.md",
+        "bytes": 3031,
+        "sha256": "919b81f31ae60e238110b0fbd67a5104ea5fc6265840d2e519bec9146da1bdc6"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/rtree/README",
+        "bytes": 4205,
+        "sha256": "9ac10f6f7a62a5468117ddc9416ff8a6bfabb7696e95dd253dbc0d60c663e32d"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/misc/README.md",
+        "bytes": 2419,
+        "sha256": "1409d2aaa2060ac7671869a7c05409b916182f10132c2a6a8ca484fc08e4e251"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/jni/README.md",
+        "bytes": 12387,
+        "sha256": "87db79c40d18aaa1743084913276f30e169b36457c2d7066f286e3600f54dcbe"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/wasm/README-dist.txt",
+        "bytes": 1890,
+        "sha256": "c2e654b60b753dcbbf4d52f30138afd8b5eef42aef42bccdd32fc94a1776674b"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/wasm/README.md",
+        "bytes": 5066,
+        "sha256": "1df1cde6e0820aec615b85a40306a9da2d6d20122d3befa6296464cb8a9af4fd"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/qrf/README.md",
+        "bytes": 36738,
+        "sha256": "3b62c3822961dad76797339926387338ff95220c803292b17482b5066736eb50"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/fts3/README.syntax",
+        "bytes": 9518,
+        "sha256": "b4a313ddaf9dbc3ef6d7371f54bab95b60b50169d6d4ce58389fc2f02dc84395"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/fts3/README.tokenizers",
+        "bytes": 5333,
+        "sha256": "c1fd7472d72fa013850c3d01fecd3d7c3c31da36601b352c793bfe66885a6129"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/fts3/README.content",
+        "bytes": 8198,
+        "sha256": "1ccb714d4c52ac37f948c3bd6c2be4e75e52defc5a7ea6b57434a76019664ba7"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/fts3/README.txt",
+        "bytes": 219,
+        "sha256": "4f6eb480595a29807c6789bad79e8aa41e270e40a5cd47a8b9c638f241009710"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/icu/README.txt",
+        "bytes": 6726,
+        "sha256": "6558fcb27b9a4fbcfbc65b2128743190e5f5cf346129ad0083c36a860879030f"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/autosetup/teaish/README.txt",
+        "bytes": 263,
+        "sha256": "4beb97d3537774ee1f508e9bec2f973a60af8522e1fbe078c0d5821c0331c476"
+      },
+      {
+        "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master/foma-master/foma/README.symbols",
+        "bytes": 1699,
+        "sha256": "3acf687d7300b0cc6d766978383ce2a3f1f6b715480f18d9eb835c4d94d2be82"
+      },
+      {
+        "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master/foma-master/foma/README.cmatrix",
+        "bytes": 1265,
+        "sha256": "2eb0650e702d5c55069b3d54fd2ac12052815b6917c7bb4743ad8eb2d1350291"
+      },
+      {
+        "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master/foma-master/foma/README",
+        "bytes": 1730,
+        "sha256": "110d2cb4e84df632444105773ef94db8f413af5014e78701f2b64cdc84d1c467"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/examples/README.md",
+        "bytes": 195,
+        "sha256": "ae75e9216e8d8cc2d6dbb2a930f83ecabad49188a83f84fb769b1cbe54fc7c31"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/bench/README.md",
+        "bytes": 2735,
+        "sha256": "cc2d85881056d75ac04f3c2e921d443ff3a10475c94c07552f0de3720ac9a72e"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/.changes/README.md",
+        "bytes": 2019,
+        "sha256": "32eb13d5b37e70e950058e587d50d25bdc396820e4d7c5a666e3c5441a68afd6"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/.devcontainer/README.md",
+        "bytes": 3457,
+        "sha256": "b0259c3a94a547a7829bec008cf4c022be8d5e0837273fdb5345ee051030e2ac"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/autosetup/README.autosetup",
+        "bytes": 382,
+        "sha256": "5a82b34f065ec4ce6f03cfa3dae158f841fa22e9381bba5489ea4083e295903e"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/autosetup/README.md",
+        "bytes": 18896,
+        "sha256": "7e5ba508c1c880b37f0e82d26fa5927d5ae8e783f1e9f771e180e85b88e200d6"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/ext/README.md",
+        "bytes": 297,
+        "sha256": "e6564864b287c1aa61b68c12b71ad22cdee6484dcbecbc2bd898cfdf5a6106c6"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/autoconf/README.txt",
+        "bytes": 3563,
+        "sha256": "6c2c52310aebc296b779d1d4f2094566394f7c184bd7e53f1d7346492528ffb7"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/autoconf/README.first",
+        "bytes": 416,
+        "sha256": "beeaf086dd435934a7c447b3bd9f46bfcd1126b30fb350cd7d431bf667e57148"
+      },
+      {
+        "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master/foma-master/README.md",
+        "bytes": 943,
+        "sha256": "0486ab2536f498c78895bd82d9fa3fb5b57b90a5ea6a6b59a8b22df05131e4bf"
+      },
+      {
+        "path": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24/trealla-2.100.24/README.md",
+        "bytes": 41360,
+        "sha256": "fea63f780677e0086eaed8bfda1185be8949caab14029d61af15412095671de8"
+      },
+      {
+        "path": "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0/apache-jena-6.2.0/README",
+        "bytes": 4342,
+        "sha256": "1a0c96dea423e0500ddf74a4cdbeaf48a5265c9ab45eb0942d385aa609cef5fa"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/playwright-1.63.0/README.md",
+        "bytes": 11282,
+        "sha256": "d195f41bed2845ab708a213675900fd3f80084268a637214495444a1b96e8e7a"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/07_security_clamav/README.md",
+        "bytes": 918,
+        "sha256": "fce5548e4615d634bbbed48f8f5f85cabf5fff053d2b0f09f02c18323a1f2d25"
+      },
+      {
+        "path": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642/clips_core_source_642/readme.txt",
+        "bytes": 949,
+        "sha256": "45dc2b27715f8d0d9681522f5db38d8d5fb2b05eaf7dd9639ad70d574edc806f"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/tauri-tauri-v2.11.5/README.md",
+        "bytes": 6055,
+        "sha256": "db8ff4de3e034289f335c1ae5527d41f3142b2ea9c2002967be5cf5f0e7d39d7"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/sqlite-src-3530400/README.md",
+        "bytes": 21098,
+        "sha256": "f3f527d4deea6ee8e8a552aa481b920aedbc91c95dbddd34100eb9ffb1efb897"
+      },
+      {
+        "path": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0/sml-1.2.0/README.md",
+        "bytes": 16013,
+        "sha256": "c7639bfc76442f6b9f5ad462e7dc4908f517e2061e2b309fd86ad944e6f85012"
+      },
+      {
+        "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/README.md",
+        "bytes": 2354,
+        "sha256": "b64a31e8c71d6b605dad7495f9499b91e22863e31bd945522669d39c9267fcb7"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_v2/README.md",
+        "bytes": 528,
+        "sha256": "238e7956bed81362d05eaa18bc2d57bd5288b3bcf0a422a6221d4ccfa3c6b3fe"
+      },
+      {
+        "path": "2. Orquestación/Confesión Eclesial Reformada/README.md",
+        "bytes": 2390,
+        "sha256": "0e767f45b6c7c2c339926fc4c4cebbcc8f01392b4d8a0b24bf1f06ddf26dbf83"
+      },
+      {
+        "path": "1. Cerebro/README.md",
+        "bytes": 7111,
+        "sha256": "92b0408cf5dce04e4c5e4e5f2be0361da710d3650baefd7d7519badd1c687919"
+      },
+      {
+        "path": "3. Transcripción/README.md",
+        "bytes": 21196,
+        "sha256": "aaef74a740faca90fa1899c4233ebe17f2093b9846d0acf16d9131bf650e9585"
+      },
+      {
+        "path": "RUNTIME_CANDIDATE_V1/README.md",
+        "bytes": 6859,
+        "sha256": "5cb55ea1be0a87366eb1ead6befb043f0315765153d052aab0c506de19f7b3a1"
+      }
+    ],
+    "module_count": 28,
+    "rollback_copies_retained_outside_runtime": true,
+    "all_zip_7z_removed": true,
     "certification": "NOT_GRANTED"
   }
 }
