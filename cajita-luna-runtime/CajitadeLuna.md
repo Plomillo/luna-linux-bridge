@@ -349,3 +349,954 @@ Evidencia registrada: docs/cajita-luna/CAJITA_CLI_HOST_AUDIT_20261024.json. Arte
 4. **Calidad de modelos:** siguen sin establecerse equivalencia de calidad e independencia de validación para el conjunto completo. El PASS del límite de tamaño no equivale a certificación integral.
 
 **Estado final de la evidencia disponible:** inventario de distribución actualizado y reproducible; infraestructura CLI modular presente y probada; presencia real de proveedores auditada parcialmente; gates funcionales independientes aún pendientes; CERTIFICATION=NOT_GRANTED.
+
+## Código fuente íntegro del subsistema CLI — embebido en CajitadeLuna.md
+
+Este bloque contiene una copia literal, ligada por ruta y SHA de blob Git, de la infraestructura operativa que también se conserva como archivos ejecutables en el runtime. Se incorpora aquí para que CajitadeLuna.md no sea solo una referencia descriptiva. La ubicación operativa sigue siendo `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/`; `CLIS.txt` permanece eliminado. La especificación no certifica por sí sola que todos los proveedores estén instalados.
+
+Commit de origen leído: `3424c96aebfa215a4f090e85e4e7089221ba18bc`.
+
+### `punto.json`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/punto.json`  
+Blob SHA de Git: `b08ba089ccf8e646ecf7e582c066cd6a8d9dfd4a`  
+Longitud en bytes/characters devuelta por el repositorio: 6295
+
+````json
+{
+  "authority": "Louksna.md",
+  "certification": "NOT_GRANTED",
+  "cli_extension_framework": {
+    "role": "EXTENSIBLE_INFRASTRUCTURE_NOT_NINTH_CLI"
+  },
+  "cli_spec": {
+    "migration_status": "IMPLEMENTED_MODULAR_INFRASTRUCTURE_LEGACY_TEXT_REMOVED",
+    "legacy_git_path": "cajita-luna-runtime/2. Orquestación/Orquestador/CLIS.txt",
+    "legacy_git_blob_sha": "146afab4ef88e659cba5b94c2e989f7106fdd1e4",
+    "replacement_contract_path": "CLIs/cli_contract.json",
+    "replacement_registry_path": "CLIs/cli_registry.py",
+    "replacement_manager_path": "CLIs/cli_manager.py",
+    "policy": "TEXT_SPEC_MIGRATED_TO_VERSIONED_MODULAR_IMPLEMENTATION; HOST_PROVIDER_INSTALLATION_IS_TRACKED_SEPARATELY"
+  },
+  "created_at_utc": "2026-10-17T20:36:25Z",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "domain_order": [
+    "CLI_MOJO",
+    "CLI_CPP23_TOOLCHAIN",
+    "CLI_CLAUDE_CODE",
+    "CLI_PYTHON",
+    "CLI_GITHUB",
+    "CLI_GEMINI",
+    "CLI_GROK",
+    "CLI_HUGGING_FACE"
+  ],
+  "domains": [
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "mojo"
+      },
+      "id": "CLI_MOJO",
+      "initial_state": "HOST_AUDIT_PENDING",
+      "module": "CLIs/cli_mojo.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "g++"
+      },
+      "id": "CLI_CPP23_TOOLCHAIN",
+      "initial_state": "HOST_AUDIT_PENDING",
+      "module": "CLIs/cli_cpp23_toolchain.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "claude"
+      },
+      "id": "CLI_CLAUDE_CODE",
+      "initial_state": "HOST_AUDIT_PENDING",
+      "module": "CLIs/cli_claude_code.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "python3"
+      },
+      "id": "CLI_PYTHON",
+      "initial_state": "HOST_AUDIT_PENDING",
+      "module": "CLIs/cli_python.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "binary": "gh",
+        "argv": [
+          "--version"
+        ],
+        "support_binary": "git",
+        "support_is_not_substitute": true
+      },
+      "id": "CLI_GITHUB",
+      "initial_state": "HOST_AUDIT_PENDING",
+      "module": "CLIs/cli_github.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "gemini"
+      },
+      "id": "CLI_GEMINI",
+      "initial_state": "HOST_AUDIT_PENDING",
+      "module": "CLIs/cli_gemini.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "binary": "grok",
+        "argv": [
+          "--version"
+        ],
+        "provider_package": "@xai-official/grok",
+        "official_source": "https://x.ai/cli/install.sh",
+        "execution_only_after_official_installation_identity_verification": true
+      },
+      "id": "CLI_GROK",
+      "initial_state": "HOST_AUDIT_PENDING",
+      "module": "CLIs/cli_grok.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "binary": "hf",
+        "argv": [
+          "--help"
+        ],
+        "legacy_discovery_only": "huggingface-cli"
+      },
+      "id": "CLI_HUGGING_FACE",
+      "initial_state": "HOST_AUDIT_PENDING",
+      "module": "CLIs/cli_hugging_face.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    }
+  ],
+  "role": "DECLARATIVE_ENTRYPOINT_NOT_MONOLITHIC_IMPLEMENTATION",
+  "schema": "CUSTOSZ_ORCHESTRATOR_MANIFEST/1.0",
+  "security": {
+    "checkpoint_before_mutation": true,
+    "credential_values_never_logged": true,
+    "fail_closed_for_unauthorized_mutation": true,
+    "independent_validation_required": true,
+    "install_update_requires_explicit_versioned_plan": true,
+    "no_silent_path_or_shell_mutation": true,
+    "official_hash_signature_used_when_published": true,
+    "read_only_discovery_before_changes": true,
+    "rollback_and_post_validation_required": true
+  },
+  "shared_runtime_policy": {
+    "evidence_jsonl_hash_chain": true,
+    "idempotent": true,
+    "max_concurrency": 1,
+    "subprocess_shell": false,
+    "timeout_seconds_default": 30
+  },
+  "cli_subsystem": {
+    "contract": "CLIs/cli_contract.json",
+    "registry": "CLIs/cli_registry.py",
+    "manager": "CLIs/cli_manager.py",
+    "test_path": "CLIs/tests/test_cli_registry.py",
+    "host_audit_workflow": ".github/workflows/cajita-cli-host-audit.yml",
+    "default_mode": "READ_ONLY_AUDIT_AND_PLAN",
+    "install_requires": [
+      "EXACT_VERSION_PIN",
+      "OFFICIAL_SOURCE_AND_INTEGRITY",
+      "PRE_MUTATION_CHECKPOINT",
+      "ROLLBACK",
+      "POST_VALIDATION",
+      "EXACT_PLAN_SHA256_APPROVAL"
+    ],
+    "certification": "NOT_GRANTED"
+  }
+}
+````
+
+### `cli_contract.json`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_contract.json`  
+Blob SHA de Git: `d32da89a22a6e569a94619fac28ddc0c7562b5e9`  
+Longitud en bytes/characters devuelta por el repositorio: 4477
+
+````json
+{
+  "schema": "CAJITA_CLI_INFRASTRUCTURE_CONTRACT/1.0",
+  "authority": "Louksna.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "legacy_specification": {
+    "path": "cajita-luna-runtime/2. Orquestación/Orquestador/CLIS.txt",
+    "git_blob_sha": "146afab4ef88e659cba5b94c2e989f7106fdd1e4",
+    "migration_status": "MIGRATED_TO_MODULAR_CONTRACT"
+  },
+  "domain_order": [
+    "CLI_MOJO",
+    "CLI_CPP23_TOOLCHAIN",
+    "CLI_CLAUDE_CODE",
+    "CLI_PYTHON",
+    "CLI_GITHUB",
+    "CLI_GEMINI",
+    "CLI_GROK",
+    "CLI_HUGGING_FACE"
+  ],
+  "governance": {
+    "default_mode": "READ_ONLY_AUDIT_AND_PLAN",
+    "allowed_default_effects": [
+      "DISCOVER",
+      "VERSION_PROBE",
+      "DIAGNOSE"
+    ],
+    "install_requires": [
+      "EXACT_VERSION_PIN",
+      "OFFICIAL_SOURCE",
+      "SOURCE_INTEGRITY",
+      "EXPLICIT_PLAN_SHA256_APPROVAL",
+      "PRE_MUTATION_CHECKPOINT",
+      "ROLLBACK_PLAN",
+      "POST_VALIDATION",
+      "STRUCTURED_EVIDENCE"
+    ],
+    "shell": false,
+    "implicit_sudo": false,
+    "secret_logging": false,
+    "cross_domain_mutation": false,
+    "fail_closed": true,
+    "certification_propagation": false,
+    "extension_framework": "CLI_EXTENSION_FRAMEWORK"
+  },
+  "domains": [
+    {
+      "id": "CLI_MOJO",
+      "provider": "Modular",
+      "module": "cli_mojo.py",
+      "package": "mojo",
+      "binary": "mojo",
+      "official_sources": [
+        "https://docs.modular.com/mojo/manual/install",
+        "https://mojolang.static.modular.com/install/"
+      ],
+      "status": "PIN_REQUIRED"
+    },
+    {
+      "id": "CLI_CPP23_TOOLCHAIN",
+      "provider": "GNU/LLVM, CMake, Ninja",
+      "module": "cli_cpp23_toolchain.py",
+      "package": "system toolchain",
+      "binary": "g++ or clang++ plus cmake and ninja",
+      "official_sources": [
+        "https://gcc.gnu.org/",
+        "https://clang.llvm.org/",
+        "https://cmake.org/",
+        "https://ninja-build.org/"
+      ],
+      "status": "VERSIONED_PLATFORM_PLAN_REQUIRED"
+    },
+    {
+      "id": "CLI_CLAUDE_CODE",
+      "provider": "Anthropic",
+      "module": "cli_claude_code.py",
+      "package": "@anthropic-ai/claude-code",
+      "binary": "claude",
+      "official_sources": [
+        "https://docs.anthropic.com/en/docs/claude-code/getting-started"
+      ],
+      "status": "PIN_REQUIRED"
+    },
+    {
+      "id": "CLI_PYTHON",
+      "provider": "Python / OS distribution",
+      "module": "cli_python.py",
+      "package": "python3",
+      "binary": "python3",
+      "official_sources": [
+        "https://docs.python.org/3/using/unix.html"
+      ],
+      "status": "HOST_AUDIT_ONLY_DO_NOT_REPLACE_SYSTEM_PYTHON"
+    },
+    {
+      "id": "CLI_GITHUB",
+      "provider": "GitHub CLI maintainers",
+      "module": "cli_github.py",
+      "package": "gh",
+      "binary": "gh",
+      "official_sources": [
+        "https://cli.github.com/",
+        "https://github.com/cli/cli/blob/trunk/docs/install_linux.md"
+      ],
+      "status": "PIN_AND_INTEGRITY_REQUIRED"
+    },
+    {
+      "id": "CLI_GEMINI",
+      "provider": "Google",
+      "module": "cli_gemini.py",
+      "package": "@google/gemini-cli",
+      "binary": "gemini",
+      "official_sources": [
+        "https://geminicli.com/docs/get-started/installation/"
+      ],
+      "status": "PIN_REQUIRED"
+    },
+    {
+      "id": "CLI_GROK",
+      "provider": "xAI",
+      "module": "cli_grok.py",
+      "package": "@xai-official/grok",
+      "binary": "grok",
+      "official_sources": [
+        "https://x.ai/cli/install.sh",
+        "https://docs.x.ai/build/overview"
+      ],
+      "status": "OFFICIAL_DISTRIBUTION_IDENTIFIED_PIN_REQUIRED"
+    },
+    {
+      "id": "CLI_HUGGING_FACE",
+      "provider": "Hugging Face",
+      "module": "cli_hugging_face.py",
+      "package": "huggingface_hub",
+      "binary": "hf",
+      "official_sources": [
+        "https://huggingface.co/docs/huggingface_hub/guides/cli"
+      ],
+      "status": "PIN_REQUIRED"
+    }
+  ],
+  "extension": {
+    "id": "CLI_EXTENSION_FRAMEWORK",
+    "role": "EXTENSIBLE_CONTRACT_NOT_NINTH_CLI",
+    "required_fields": [
+      "canonical_id",
+      "official_source",
+      "version_pin",
+      "package",
+      "binary",
+      "dependencies",
+      "health_check",
+      "integrity",
+      "rollback",
+      "provenance",
+      "independent_validation"
+    ],
+    "activation": [
+      "DISCOVER",
+      "REGISTER",
+      "RESOLVE",
+      "EVIDENCE",
+      "VALIDATE",
+      "INDEPENDENT_VALIDATE",
+      "CERTIFY",
+      "ACTIVATE"
+    ]
+  }
+}
+````
+
+### `cli_manager.py`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_manager.py`  
+Blob SHA de Git: `0fe88a61f69ab5978ae53962941faa97adfcf97d`  
+Longitud en bytes/characters devuelta por el repositorio: 13436
+
+````python
+from __future__ import annotations
+import argparse
+import hashlib
+import json
+import os
+import pathlib
+import re
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+
+ROOT=pathlib.Path(__file__).resolve().parent
+ORCHESTRATOR=ROOT.parent
+sys.path.insert(0,str(ROOT))
+import cli_registry
+CONTRACT=ROOT/"cli_contract.json"
+MANIFEST=ORCHESTRATOR/"punto.json"
+SENSITIVE=re.compile(r"(token|password|passwd|secret|api[_-]?key|authorization|credential)",re.I)
+INSTALL_TOOLS={"npm","uv","pipx","apt-get","dnf"}
+def utc(): return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+def digest(data): return hashlib.sha256(data).hexdigest()
+def read_json(path):
+    obj=json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+    if not isinstance(obj,dict): raise ValueError("JSON_ROOT_NOT_OBJECT")
+    return obj
+def atomic_write(path,obj):
+    path=pathlib.Path(path); path.parent.mkdir(parents=True,exist_ok=True)
+    tmp=path.with_name(path.name+".tmp")
+    tmp.write_text(json.dumps(obj,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+    tmp.replace(path)
+def build_plan():
+    contract=read_json(CONTRACT); actions=[]
+    for d in contract["domains"]:
+        if d.get("id")=="CLI_PYTHON":
+            status="AUDIT_ONLY_NO_INSTALL_MUTATION"
+        elif not d.get("version_pin"):
+            status="BLOCKED_VERSION_PIN_REQUIRED"
+        elif d.get("status","").startswith("BLOCKED"):
+            status="BLOCKED_OFFICIAL_SOURCE_UNVERIFIED"
+        else:
+            status="BLOCKED_SOURCE_INTEGRITY_EVIDENCE_REQUIRED"
+        actions.append({"domain_id":d["id"],"package":d.get("package"),"version_pin":d.get("version_pin"),"status":status,"mutations_authorized":False})
+    return {"schema":"CAJITA_CLI_INSTALL_PLAN/1.0","created_at_utc":utc(),"contract_sha256":digest(CONTRACT.read_bytes()),"manifest_sha256":digest(MANIFEST.read_bytes()),"domain_order":contract["domain_order"],"status":"BLOCKED_FAIL_CLOSED","actions":actions,"commands":[],"no_mutations":True,"reason":"No vendor install is run without exact contract pins, source-integrity evidence, rollback steps and an approved exact plan SHA-256.","certification":"NOT_GRANTED"}
+def validate_argv(step,domain,rollback=False):
+    if not isinstance(step,dict) or not isinstance(step.get("argv"),list) or not step["argv"] or any(not isinstance(x,str) or not x for x in step["argv"]):
+        raise ValueError("INSTALL_STEP_ARGV_INVALID:"+domain)
+    argv=step["argv"]; exe=pathlib.Path(argv[0]).name; args=argv[1:]
+    if exe not in INSTALL_TOOLS: raise ValueError("INSTALL_EXECUTABLE_NOT_ALLOWLISTED:"+exe)
+    if any(SENSITIVE.search(x) for x in argv): raise ValueError("POSSIBLE_SECRET_IN_ARGV_DENIED:"+domain)
+    if any(x in {"upgrade","dist-upgrade","purge","autoremove","autoclean","clean"} for x in args):
+        raise ValueError("DESTRUCTIVE_PACKAGE_OPERATION_DENIED")
+    if exe=="npm":
+        allowed={"install","uninstall"}
+        if not args or args[0] not in ({"uninstall"} if rollback else {"install"}): raise ValueError("NPM_OPERATION_NOT_ALLOWLISTED")
+        if "--global" not in args or "--prefix" not in args: raise ValueError("NPM_INSTALL_MUST_USE_EXPLICIT_USER_PREFIX")
+        package_args=[x for x in args if not x.startswith("-") and x not in allowed]
+        if not package_args: raise ValueError("NPM_PACKAGE_REQUIRED")
+        if not rollback and not any(re.search(r"@(?:[0-9]+\.){1,2}[0-9]+",x) for x in package_args):
+            raise ValueError("NPM_EXACT_VERSION_PIN_REQUIRED")
+    elif exe=="uv":
+        expected=["tool","uninstall"] if rollback else ["tool","install"]
+        if len(args)<2 or args[:2]!=expected: raise ValueError("UV_OPERATION_NOT_ALLOWLISTED")
+        if not rollback and not any(re.search(r"==[^=]+$",x) for x in args): raise ValueError("UV_EXACT_VERSION_PIN_REQUIRED")
+    elif exe=="pipx":
+        expected="uninstall" if rollback else "install"
+        if not args or args[0]!=expected: raise ValueError("PIPX_OPERATION_NOT_ALLOWLISTED")
+        if not rollback and not any(re.search(r"==[^=]+$",x) for x in args): raise ValueError("PIPX_EXACT_VERSION_PIN_REQUIRED")
+    elif exe=="apt-get":
+        required="remove" if rollback else "install"
+        if required not in args or (not rollback and not any(re.search(r"=[^=]+$",x) for x in args if not x.startswith("-"))):
+            raise ValueError("APT_EXACT_VERSIONED_OPERATION_REQUIRED")
+        if any(x in {"-y","--yes"} for x in args) is False: raise ValueError("APT_INTERACTIVE_OR_UNCONFIRMED_OPERATION_DENIED")
+    elif exe=="dnf":
+        required="remove" if rollback else "install"
+        if required not in args or (not rollback and not any(re.search(r"=[^=]+$",x) for x in args if not x.startswith("-"))):
+            raise ValueError("DNF_EXACT_VERSIONED_OPERATION_REQUIRED")
+        if "-y" not in args and "--assumeyes" not in args: raise ValueError("DNF_INTERACTIVE_OR_UNCONFIRMED_OPERATION_DENIED")
+    return argv
+def verify_source_evidence(action,domain,version_pin,plan_dir,contract_domain):
+    evidence=action.get("source_evidence")
+    if not isinstance(evidence,dict): raise ValueError("SOURCE_INTEGRITY_EVIDENCE_REQUIRED:"+domain)
+    raw_path=evidence.get("path")
+    if not raw_path: raise ValueError("SOURCE_EVIDENCE_PATH_REQUIRED:"+domain)
+    p=(plan_dir/raw_path).resolve(strict=True)
+    try: p.relative_to(plan_dir.resolve())
+    except ValueError: raise ValueError("SOURCE_EVIDENCE_PATH_ESCAPE:"+domain)
+    raw=p.read_bytes()
+    if digest(raw).lower()!=str(evidence.get("sha256","")).lower(): raise ValueError("SOURCE_EVIDENCE_HASH_MISMATCH:"+domain)
+    doc=json.loads(raw.decode("utf-8"))
+    official_source=evidence.get("official_source")
+    if official_source not in contract_domain.get("official_sources",[]): raise ValueError("OFFICIAL_SOURCE_BINDING_MISMATCH:"+domain)
+    if doc.get("official_source")!=official_source or doc.get("version_pin")!=version_pin or doc.get("source_integrity_status")!="PASS":
+        raise ValueError("SOURCE_INTEGRITY_EVIDENCE_NOT_PASS:"+domain)
+    if not re.fullmatch(r"[0-9a-fA-F]{64}",str(doc.get("artifact_sha256",""))): raise ValueError("SOURCE_ARTIFACT_SHA256_MISSING:"+domain)
+    return {"path":str(p),"sha256":digest(raw),"artifact_sha256":doc["artifact_sha256"],"official_source":official_source,"version_pin":version_pin}
+def verify_plan(path,approved):
+    path=pathlib.Path(path).resolve(strict=True)
+    raw=path.read_bytes()
+    if not approved or digest(raw).lower()!=approved.lower(): raise ValueError("PLAN_SHA256_APPROVAL_MISMATCH")
+    plan=json.loads(raw.decode("utf-8"))
+    if plan.get("schema")!="CAJITA_CLI_INSTALL_PLAN/1.0" or plan.get("status")!="READY_TO_APPLY": raise ValueError("INSTALL_PLAN_NOT_READY_FAIL_CLOSED")
+    if plan.get("no_mutations") is True: raise ValueError("READ_ONLY_PLAN_CANNOT_BE_APPLIED")
+    if plan.get("contract_sha256")!=digest(CONTRACT.read_bytes()) or plan.get("manifest_sha256")!=digest(MANIFEST.read_bytes()): raise ValueError("INPUT_CHANGED_SINCE_PLAN")
+    c=read_json(CONTRACT); cmap={d["id"]:d for d in c["domains"]}
+    if plan.get("domain_order")!=c["domain_order"]: raise ValueError("INSTALL_PLAN_DOMAIN_ORDER_INVALID")
+    actions=plan.get("actions")
+    if not isinstance(actions,list) or not actions: raise ValueError("INSTALL_PLAN_HAS_NO_ACTIONS")
+    seen=set(); validated=[]
+    for action in actions:
+        domain=action.get("domain_id")
+        if domain not in cmap or domain in seen: raise ValueError("UNKNOWN_OR_DUPLICATE_DOMAIN:"+str(domain))
+        seen.add(domain); d=cmap[domain]; pin=action.get("version_pin")
+        if not pin or pin!=d.get("version_pin"): raise ValueError("VERSION_PIN_MISMATCH:"+domain)
+        if action.get("mutations_authorized") is not True: raise ValueError("MUTATION_NOT_AUTHORIZED_IN_PLAN:"+domain)
+        if not d.get("official_sources") or d.get("status","").startswith("BLOCKED"): raise ValueError("OFFICIAL_DISTRIBUTION_UNVERIFIED:"+domain)
+        evidence=verify_source_evidence(action,domain,pin,path.parent,d)
+        steps=action.get("steps"); rollback=action.get("rollback_steps")
+        if not isinstance(steps,list) or not steps or not isinstance(rollback,list) or not rollback: raise ValueError("INSTALL_STEPS_OR_ROLLBACK_MISSING:"+domain)
+        step_args=[validate_argv(x,domain,False) for x in steps]
+        rollback_args=[validate_argv(x,domain,True) for x in rollback]
+        validated.append((domain,steps,rollback,evidence))
+    return plan,validated
+def run_step(step,domain,rollback=False):
+    argv=validate_argv(step,domain,rollback); started=time.monotonic()
+    proc=subprocess.run(argv,shell=False,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=min(900,max(1,int(step.get("timeout_seconds",300)))),check=False)
+    return {"executable":pathlib.Path(argv[0]).name,"argv_sha256":digest(json.dumps(argv,separators=(",",":")).encode()),"returncode":proc.returncode,"elapsed_seconds":round(time.monotonic()-started,3),"stdout_sha256":digest((proc.stdout or "").encode()),"stderr_sha256":digest((proc.stderr or "").encode()),"stdout_bytes":len((proc.stdout or "").encode()),"stderr_bytes":len((proc.stderr or "").encode()),"status":"PASS" if proc.returncode==0 else "FAIL"}
+def probe_one(domain):
+    contract=read_json(CONTRACT)
+    d=next(x for x in contract["domains"] if x["id"]==domain)
+    module=(ROOT/d["module"]).resolve()
+    module.relative_to(ROOT.resolve())
+    spec=__import__("importlib.util",fromlist=["spec_from_file_location"]).spec_from_file_location("cajita_"+domain.lower(),module)
+    if spec is None or spec.loader is None: raise RuntimeError("PROBE_MODULE_UNAVAILABLE")
+    mod=__import__("importlib.util",fromlist=["module_from_spec"]).module_from_spec(spec); spec.loader.exec_module(mod)
+    return mod.probe()
+def apply_plan(path,approved,evidence_root=None):
+    plan,actions=verify_plan(path,approved)
+    before=cli_registry.run_registry()
+    base=pathlib.Path(evidence_root or pathlib.Path.home()/".local/state/cajita-cli/checkpoints").resolve()
+    base.mkdir(parents=True,exist_ok=True)
+    operation=datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")+"-"+approved[:12]
+    checkpoint=base/operation; checkpoint.mkdir(exist_ok=False)
+    atomic_write(checkpoint/"before.json",before)
+    action_results=[]; overall_ok=True
+    for domain,steps,rollback_steps,evidence in actions:
+        before_row=next((x for x in before["results"] if x.get("domain_id")==domain),{})
+        step_results=[]; failed=False
+        for step in steps:
+            row=run_step(step,domain,False); step_results.append(row)
+            if row["status"]!="PASS": failed=True; break
+        post=None
+        if not failed:
+            post=probe_one(domain)
+            if post.get("status")!="AVAILABLE": failed=True
+        rollback_results=[]; rollback_verified=None
+        if failed:
+            overall_ok=False
+            for step in reversed(rollback_steps):
+                row=run_step(step,domain,True); rollback_results.append(row)
+            after_rollback=probe_one(domain)
+            rollback_verified=(all(x["status"]=="PASS" for x in rollback_results) and after_rollback.get("status")==before_row.get("status"))
+            step_results.append({"post_install_status":None if post is None else post.get("status"),"status":"FAIL"})
+        action_results.append({"domain_id":domain,"source_evidence":evidence,"status":"FAIL_ROLLED_BACK" if failed and rollback_verified else ("FAIL_ROLLBACK_UNVERIFIED" if failed else "PASS"),"steps":step_results,"rollback_steps":rollback_results,"rollback_verified":rollback_verified})
+        if failed: break
+    receipt={"schema":"CAJITA_CLI_INSTALL_EXECUTION/1.0","operation_id":operation,"created_at_utc":utc(),"plan_sha256":approved,"checkpoint_path":str(checkpoint),"pre_install_audit_sha256":digest(json.dumps(before,sort_keys=True).encode()),"status":"PASS" if overall_ok else "FAIL_ROLLBACK_ATTEMPTED","actions":action_results,"certification":"NOT_GRANTED"}
+    atomic_write(checkpoint/"execution.json",receipt)
+    return receipt
+def main():
+    p=argparse.ArgumentParser(description="Cajita CLI governance manager; audit/plan is read-only, installs require an approved immutable plan.")
+    sub=p.add_subparsers(dest="command",required=True)
+    a=sub.add_parser("audit"); a.add_argument("--output",type=pathlib.Path)
+    b=sub.add_parser("plan"); b.add_argument("--output",type=pathlib.Path)
+    c=sub.add_parser("apply-plan"); c.add_argument("--plan",required=True); c.add_argument("--approve-sha256",required=True); c.add_argument("--evidence-dir",type=pathlib.Path)
+    x=p.parse_args()
+    if x.command=="audit":
+        result=cli_registry.run_registry(); result["manager"]={"status":"IMPLEMENTED","mode":"READ_ONLY_AUDIT","side_effects":False}
+    elif x.command=="plan": result=build_plan()
+    else:
+        try: result=apply_plan(x.plan,x.approve_sha256,x.evidence_dir)
+        except Exception as e: result={"status":"DENIED_FAIL_CLOSED","reason":str(e)[:700],"mutations_performed":False,"certification":"NOT_GRANTED"}
+    if x.output: atomic_write(x.output,result)
+    print(json.dumps(result,indent=2,sort_keys=True,ensure_ascii=False))
+    return 0 if (x.command=="plan" or (x.command=="audit" and result.get("infrastructure_status")=="PASS") or result.get("status")=="PASS") else 2
+if __name__=="__main__": raise SystemExit(main())
+````
+
+### `cli_registry.py`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_registry.py`  
+Blob SHA de Git: `89ebf3f2841f93ffb94c0c577f77872ccbb7948d`  
+Longitud en bytes/characters devuelta por el repositorio: 5907
+
+````python
+from __future__ import annotations
+import argparse, hashlib, importlib.util, json, os, pathlib, sys
+from datetime import datetime, timezone
+ROOT=pathlib.Path(__file__).resolve().parent
+ORCHESTRATOR=ROOT.parent
+sys.path.insert(0,str(ROOT))
+ORDER=["CLI_MOJO","CLI_CPP23_TOOLCHAIN","CLI_CLAUDE_CODE","CLI_PYTHON","CLI_GITHUB","CLI_GEMINI","CLI_GROK","CLI_HUGGING_FACE"]
+def utc(): return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+def read_json(p):
+    v=json.loads(pathlib.Path(p).read_text(encoding="utf-8"))
+    if not isinstance(v,dict): raise ValueError("JSON_ROOT_NOT_OBJECT")
+    return v
+def load_inputs(manifest_path=None,contract_path=None):
+    mp=pathlib.Path(manifest_path or ORCHESTRATOR/"punto.json")
+    cp=pathlib.Path(contract_path or ROOT/"cli_contract.json")
+    m=read_json(mp); c=read_json(cp)
+    if m.get("domain_order")!=ORDER or c.get("domain_order")!=ORDER: raise ValueError("DOMAIN_ORDER_MISMATCH")
+    if m.get("role")!="DECLARATIVE_ENTRYPOINT_NOT_MONOLITHIC_IMPLEMENTATION": raise ValueError("MANIFEST_ROLE_INVALID")
+    if len(m.get("domains",[]))!=8 or [x.get("id") for x in m["domains"]]!=ORDER: raise ValueError("MANIFEST_DOMAIN_COUNT_OR_ORDER_INVALID")
+    if [x.get("id") for x in c.get("domains",[])]!=ORDER: raise ValueError("CONTRACT_DOMAIN_COUNT_OR_ORDER_INVALID")
+    if any(m["domains"][i].get("module","").split("/")[-1]!=c["domains"][i].get("module") for i in range(8)): raise ValueError("MODULE_BINDING_MISMATCH")
+    return mp,cp,m,c
+def selftest(manifest_path=None,contract_path=None):
+    mp,cp,m,c=load_inputs(manifest_path,contract_path)
+    missing=[]
+    for d in c["domains"]:
+        p=(ROOT/pathlib.Path(d["module"]).name).resolve()
+        try: p.relative_to(ROOT.resolve())
+        except ValueError: missing.append({"id":d["id"],"status":"MODULE_PATH_ESCAPE"}); continue
+        if not p.is_file(): missing.append({"id":d["id"],"status":"MODULE_ABSENT"})
+    legacy_absent = not (ORCHESTRATOR/"CLIS.txt").exists()
+    return {"schema":"CAJITA_CLI_INFRASTRUCTURE_SELFTEST/1.0","status":"PASS" if not missing and legacy_absent else "FAIL","domain_count":8,"unique_domain_count":len(set(ORDER)),"contract_present":cp.is_file(),"manifest_present":mp.is_file(),"all_adapters_present":not missing,"missing_adapters":missing,"legacy_spec_git_blob_sha":c.get("legacy_specification",{}).get("git_blob_sha"),"legacy_spec_absent_after_migration":legacy_absent,"side_effects":False,"certification":"NOT_GRANTED"}
+def run_registry(manifest_path=None,contract_path=None):
+    mp,cp,m,c=load_inputs(manifest_path,contract_path)
+    cmap={d["id"]:d for d in c["domains"]}; rows=[]
+    for d in m["domains"]:
+        p=(ROOT/pathlib.Path(d["module"]).name).resolve()
+        try: p.relative_to(ROOT.resolve())
+        except ValueError: rows.append({"domain_id":d["id"],"status":"MODULE_PATH_ESCAPE"}); continue
+        if not p.is_file(): rows.append({"domain_id":d["id"],"status":"ADAPTER_ABSENT"}); continue
+        try:
+            spec=importlib.util.spec_from_file_location("cajita_"+d["id"].lower(),p)
+            if spec is None or spec.loader is None: raise ImportError("MODULE_LOADER_UNAVAILABLE")
+            mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+            row=mod.probe(); row["official_sources"]=cmap[d["id"]].get("official_sources",[]); row["installation_policy_status"]=cmap[d["id"]].get("status"); rows.append(row)
+        except Exception as e: rows.append({"domain_id":d["id"],"status":"PROBE_ERROR","error_type":type(e).__name__,"reason":str(e)[:400]})
+    infrastructure="PASS" if len(rows)==8 and all(r.get("status") not in {"PROBE_ERROR","ADAPTER_ABSENT","MODULE_PATH_ESCAPE"} for r in rows) else "FAIL"
+    counts={}
+    for r in rows: counts[r.get("status","UNKNOWN")]=counts.get(r.get("status","UNKNOWN"),0)+1
+    available=sum(1 for r in rows if r.get("status")=="AVAILABLE")
+    return {"schema":"CAJITA_CLI_HOST_AUDIT/1.0","captured_at_utc":utc(),"repository":"Plomillo/luna-linux-bridge","source_commit":os.getenv("GITHUB_SHA"),"runtime_relative_path":"2. Orquestación/Orquestador/CLIs","manifest_sha256":sha(mp),"contract_sha256":sha(cp),"legacy_specification":{"path":"2. Orquestación/Orquestador/CLIS.txt","git_blob_sha":c.get("legacy_specification",{}).get("git_blob_sha"),"working_tree_present":(ORCHESTRATOR/"CLIS.txt").exists()},"domain_order":ORDER,"domain_count":len(rows),"available_domain_count":available,"status_counts":counts,"infrastructure_status":infrastructure,"provider_host_readiness":"ALL_REQUIRED_PROBES_PASS" if available==8 else "PARTIAL","results":rows,"read_only":True,"mutations_performed":False,"shell_invoked":False,"credential_values_logged":False,"certification":"NOT_GRANTED"}
+def write(path,value):
+    p=pathlib.Path(path); p.parent.mkdir(parents=True,exist_ok=True); t=p.with_name(p.name+".tmp"); t.write_text(json.dumps(value,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8"); t.replace(p)
+def main():
+    ap=argparse.ArgumentParser(); ap.add_argument("--manifest",type=pathlib.Path,default=ORCHESTRATOR/"punto.json"); ap.add_argument("--contract",type=pathlib.Path,default=ROOT/"cli_contract.json"); ap.add_argument("--output",type=pathlib.Path); ap.add_argument("--self-test",action="store_true"); a=ap.parse_args()
+    try: result=selftest(a.manifest,a.contract) if a.self_test else run_registry(a.manifest,a.contract)
+    except Exception as e: result={"status":"ERROR","infrastructure_status":"FAIL","reason":str(e)[:700],"certification":"NOT_GRANTED"}
+    if a.output: write(a.output,result)
+    print(json.dumps(result,indent=2,sort_keys=True,ensure_ascii=False))
+    return 0 if (result.get("status")=="PASS" if a.self_test else result.get("infrastructure_status")=="PASS") else 2
+if __name__=="__main__": raise SystemExit(main())
+````
+
+### `common.py`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/common.py`  
+Blob SHA de Git: `2329b8034b7ac3fdaf0b13b444b71ba6ee11360b`  
+Longitud en bytes/characters devuelta por el repositorio: 2505
+
+````python
+from __future__ import annotations
+import hashlib, os, shutil, subprocess, time
+from pathlib import Path
+
+def sha256_file(path):
+    h=hashlib.sha256()
+    try:
+        with Path(path).open("rb") as f:
+            for block in iter(lambda:f.read(1024*1024), b""): h.update(block)
+        return h.hexdigest()
+    except OSError: return None
+
+def probe_version(binary, argv, timeout_seconds=20, input_text=None):
+    env=os.environ.copy()
+    resolved=shutil.which(binary, path=env.get("PATH"))
+    if not resolved:
+        return {"binary":binary,"argv":list(argv),"status":"ABSENT","reason":"EXECUTABLE_NOT_FOUND","shell":False,"mutations_performed":False}
+    started=time.monotonic()
+    kwargs={"stdout":subprocess.PIPE,"stderr":subprocess.PIPE,"text":True,"timeout":max(1,min(int(timeout_seconds),60)),"shell":False,"env":env,"check":False}
+    kwargs["stdin"]=subprocess.DEVNULL if input_text is None else None
+    if input_text is not None: kwargs["input"]=input_text
+    try:
+        p=subprocess.run([resolved,*list(argv)],**kwargs)
+        return {"binary":binary,"resolved_path":resolved,"binary_sha256":sha256_file(resolved),"argv":list(argv),"returncode":p.returncode,"status":"PASS" if p.returncode==0 else "NONZERO_EXIT","stdout":(p.stdout or "")[:1200],"stderr":(p.stderr or "")[:800],"elapsed_seconds":round(time.monotonic()-started,3),"shell":False,"mutations_performed":False}
+    except subprocess.TimeoutExpired:
+        return {"binary":binary,"resolved_path":resolved,"argv":list(argv),"status":"TIMEOUT","elapsed_seconds":round(time.monotonic()-started,3),"shell":False,"mutations_performed":False}
+    except OSError as e:
+        return {"binary":binary,"resolved_path":resolved,"argv":list(argv),"status":"EXECUTION_ERROR","error_type":type(e).__name__,"shell":False,"mutations_performed":False}
+
+def probe_domain(domain_id,candidates,official_source_verified=True):
+    rows=[]
+    for binary,argv,required in candidates:
+        row=probe_version(binary,argv); row["required"]=bool(required); rows.append(row)
+    required=[r for r in rows if r.get("required")]
+    if not official_source_verified: status="BLOCKED_OFFICIAL_DISTRIBUTION_UNVERIFIED"
+    elif required and all(r["status"]=="PASS" for r in required): status="AVAILABLE"
+    elif any(r["status"] not in {"ABSENT"} for r in rows): status="PARTIAL"
+    else: status="ABSENT"
+    return {"domain_id":domain_id,"status":status,"probes":rows,"read_only":True,"mutations_performed":False,"certification":"NOT_GRANTED"}
+````
+
+### `cli_mojo.py`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_mojo.py`  
+Blob SHA de Git: `e683593c8af04fafd285029c2dbc465f9f0f4cba`  
+Longitud en bytes/characters devuelta por el repositorio: 154
+
+````python
+from common import probe_domain
+DOMAIN_ID="CLI_MOJO"
+CANDIDATES=[("mojo",["--version"],True)]
+def probe(): return probe_domain(DOMAIN_ID,CANDIDATES,True)
+````
+
+### `cli_cpp23_toolchain.py`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_cpp23_toolchain.py`  
+Blob SHA de Git: `20e407f1499d211f681d02cff49e98e2e4428c5d`  
+Longitud en bytes/characters devuelta por el repositorio: 952
+
+````python
+from common import probe_version
+DOMAIN_ID="CLI_CPP23_TOOLCHAIN"
+def probe():
+    compilers=[probe_version(x,["--version"]) for x in ("g++","clang++")]
+    cmake=probe_version("cmake",["--version"]); ninja=probe_version("ninja",["--version"])
+    source="#include <version>\nint main() { return 0; }\n"
+    tests=[probe_version(x,["-std=c++23","-x","c++","-fsyntax-only","-"],30,source) for x in ("g++","clang++")]
+    accepted=[x["binary"] for x in tests if x["status"]=="PASS"]
+    status="AVAILABLE" if accepted and cmake["status"]=="PASS" and ninja["status"]=="PASS" else ("PARTIAL" if any(x["status"]!="ABSENT" for x in compilers+[cmake,ninja]) else "ABSENT")
+    return {"domain_id":DOMAIN_ID,"status":status,"probes":compilers+[cmake,ninja],
+            "cxx23_smoke":{"status":"PASS" if accepted else "FAIL","accepted_compilers":accepted,"results":tests},
+            "read_only":True,"mutations_performed":False,"certification":"NOT_GRANTED"}
+````
+
+### `cli_claude_code.py`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_claude_code.py`  
+Blob SHA de Git: `94b774358e86a5f100b15b311afcb5e9875e2be1`  
+Longitud en bytes/characters devuelta por el repositorio: 163
+
+````python
+from common import probe_domain
+DOMAIN_ID="CLI_CLAUDE_CODE"
+CANDIDATES=[("claude",["--version"],True)]
+def probe(): return probe_domain(DOMAIN_ID,CANDIDATES,True)
+````
+
+### `cli_python.py`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_python.py`  
+Blob SHA de Git: `4b236bfbebe2f6cea6ec88518e9713ba401d919a`  
+Longitud en bytes/characters devuelta por el repositorio: 219
+
+````python
+from common import probe_domain
+DOMAIN_ID="CLI_PYTHON"
+CANDIDATES=[("python3",["--version"],True),("python",["--version"],False),("pip3",["--version"],False)]
+def probe(): return probe_domain(DOMAIN_ID,CANDIDATES,True)
+````
+
+### `cli_github.py`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_github.py`  
+Blob SHA de Git: `0bd08d760e886b05c004d4d9e2e527560f262859`  
+Longitud en bytes/characters devuelta por el repositorio: 257
+
+````python
+from common import probe_domain
+DOMAIN_ID="CLI_GITHUB"
+# git is auxiliary and cannot substitute for the required GitHub CLI (gh).
+CANDIDATES=[("gh",["--version"],True),("git",["--version"],False)]
+def probe(): return probe_domain(DOMAIN_ID,CANDIDATES,True)
+````
+
+### `cli_gemini.py`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_gemini.py`  
+Blob SHA de Git: `126c1925db73ad1a3d9436b2d1e501aad4056c7d`  
+Longitud en bytes/characters devuelta por el repositorio: 158
+
+````python
+from common import probe_domain
+DOMAIN_ID="CLI_GEMINI"
+CANDIDATES=[("gemini",["--version"],True)]
+def probe(): return probe_domain(DOMAIN_ID,CANDIDATES,True)
+````
+
+### `cli_grok.py`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_grok.py`  
+Blob SHA de Git: `9b4b01fb71308d5c5e3c757abe0908ee59310ce7`  
+Longitud en bytes/characters devuelta por el repositorio: 620
+
+````python
+from __future__ import annotations
+import shutil
+DOMAIN_ID="CLI_GROK"
+def probe():
+    # First-party distribution is documented by xAI as @xai-official/grok; only report
+    # presence here. Never execute an interactive agent in an inventory probe.
+    path=shutil.which("grok")
+    return {"domain_id":DOMAIN_ID,"status":"PRESENT_REQUIRES_VERSION_PROBE" if path else "ABSENT",
+            "binary_path":path,"official_package":"@xai-official/grok","official_source":"https://x.ai/cli/install.sh",
+            "candidate_binary_executed":False,"read_only":True,"mutations_performed":False,"certification":"NOT_GRANTED"}
+````
+
+### `cli_hugging_face.py`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_hugging_face.py`  
+Blob SHA de Git: `10e12f5dfa65a00b29a88452b4d6a1058c1a13ca`  
+Longitud en bytes/characters devuelta por el repositorio: 276
+
+````python
+from common import probe_domain
+DOMAIN_ID="CLI_HUGGING_FACE"
+# hf is the official CLI name; legacy huggingface-cli is not a substitute for hf.
+CANDIDATES=[("hf",["--help"],True),("huggingface-cli",["--help"],False)]
+def probe(): return probe_domain(DOMAIN_ID,CANDIDATES,True)
+````
+
+### `test_cli_registry.py`
+
+Ruta canónica: `cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/tests/test_cli_registry.py`  
+Blob SHA de Git: `a4e9b5240c9f93147380543211c7938fbcbf638d`  
+Longitud en bytes/characters devuelta por el repositorio: 4978
+
+````python
+import json
+import os
+import pathlib
+import tempfile
+import unittest
+from unittest.mock import patch
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(ROOT) not in __import__("sys").path:
+    __import__("sys").path.insert(0, str(ROOT))
+import common
+import cli_registry
+import cli_manager
+
+class CLIModuleTests(unittest.TestCase):
+    def test_missing_binary_is_absent_without_mutation(self):
+        result = common.probe_version("definitely-not-installed-cajita-cli-test", ["--version"])
+        self.assertEqual(result["status"], "ABSENT")
+        self.assertFalse(result["shell"])
+        self.assertFalse(result["mutations_performed"])
+
+    def test_probe_invokes_direct_argv_without_shell(self):
+        with tempfile.TemporaryDirectory() as temp:
+            exe = pathlib.Path(temp) / "fixture-cli"
+            exe.write_text("#!/usr/bin/env python3\nprint('fixture 1.0')\n", encoding="utf-8")
+            exe.chmod(0o750)
+            old_path = os.environ.get("PATH", "")
+            with patch.dict(os.environ, {"PATH": temp + os.pathsep + old_path}, clear=False):
+                with patch("common.subprocess.run", wraps=common.subprocess.run) as runner:
+                    result = common.probe_version("fixture-cli", ["--version"])
+            self.assertEqual(result["status"], "PASS")
+            self.assertFalse(result["shell"])
+            self.assertIn("fixture 1.0", result["stdout"])
+            args, kwargs = runner.call_args
+            self.assertEqual(args[0], [str(exe), "--version"])
+            self.assertIs(kwargs["shell"], False)
+
+    def test_contract_and_manifest_keep_the_eight_canonical_domains(self):
+        _mp, _cp, manifest, contract = cli_registry.load_inputs()
+        expected = ["CLI_MOJO", "CLI_CPP23_TOOLCHAIN", "CLI_CLAUDE_CODE", "CLI_PYTHON",
+                    "CLI_GITHUB", "CLI_GEMINI", "CLI_GROK", "CLI_HUGGING_FACE"]
+        self.assertEqual(manifest["domain_order"], expected)
+        self.assertEqual(contract["domain_order"], expected)
+        self.assertEqual([d["id"] for d in contract["domains"]], expected)
+
+    def test_all_eight_modular_adapters_are_present(self):
+        result = cli_registry.selftest()
+        self.assertEqual(result["status"], "PASS", result)
+        self.assertTrue(result["all_adapters_present"])
+        self.assertTrue(result["legacy_spec_absent_after_migration"])
+        self.assertEqual(result["domain_count"], 8)
+
+    def test_git_does_not_substitute_for_github_cli(self):
+        import cli_github
+        with patch("common.probe_version", side_effect=[
+            {"binary": "gh", "status": "ABSENT"},
+            {"binary": "git", "status": "PASS"}
+        ]):
+            result = cli_github.probe()
+        self.assertNotEqual(result["status"], "AVAILABLE")
+
+    def test_grok_audit_does_not_execute_a_candidate_binary(self):
+        import cli_grok
+        with patch("shutil.which", return_value="/usr/local/bin/grok"), patch("subprocess.run") as run:
+            result = cli_grok.probe()
+        self.assertFalse(result["candidate_binary_executed"])
+        run.assert_not_called()
+
+    def test_read_only_registry_separates_infrastructure_from_provider_state(self):
+        result = cli_registry.run_registry()
+        self.assertEqual(result["infrastructure_status"], "PASS", result)
+        self.assertEqual(result["domain_count"], 8)
+        self.assertFalse(result["mutations_performed"])
+        self.assertEqual(result["certification"], "NOT_GRANTED")
+
+    def test_install_plan_does_not_mutate_without_version_pins(self):
+        result = cli_manager.build_plan()
+        self.assertEqual(result["schema"], "CAJITA_CLI_INSTALL_PLAN/1.0")
+        self.assertEqual(result["status"], "BLOCKED_FAIL_CLOSED")
+        self.assertEqual(result["commands"], [])
+        self.assertTrue(result["no_mutations"])
+        statuses = {x["domain_id"]: x["status"] for x in result["actions"]}
+        self.assertEqual(statuses["CLI_MOJO"], "BLOCKED_VERSION_PIN_REQUIRED")
+        self.assertEqual(statuses["CLI_PYTHON"], "AUDIT_ONLY_NO_INSTALL_MUTATION")
+
+    def test_install_command_allowlist_requires_pinned_package_and_correct_uv_syntax(self):
+        self.assertEqual(cli_manager.validate_argv({"argv": ["uv", "tool", "install", "demo==1.2.3"]}, "CLI_MOJO"), ["uv", "tool", "install", "demo==1.2.3"])
+        with self.assertRaisesRegex(ValueError, "UV_OPERATION_NOT_ALLOWLISTED"):
+            cli_manager.validate_argv({"argv": ["uv", "uninstall", "demo"]}, "CLI_MOJO", rollback=False)
+
+    def test_apply_plan_rejects_wrong_plan_sha_before_any_mutation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            plan_path = pathlib.Path(temp) / "plan.json"
+            plan_path.write_text(json.dumps(cli_manager.build_plan()), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "PLAN_SHA256_APPROVAL_MISMATCH"):
+                cli_manager.apply_plan(plan_path, "0" * 64)
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
+````
+
