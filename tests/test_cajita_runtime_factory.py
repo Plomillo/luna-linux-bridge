@@ -1,11 +1,16 @@
 from __future__ import annotations
 import json, tempfile, unittest, zipfile
 from pathlib import Path
-from cajita_runtime_factory import safe_rel, extract, tree_hash, tree_rows, factory_materialize, sha_file
-from reproduce_macrodown import BINARY_SUFFIXES, add_stream
-from cajita_runtime import KNOWN_INFRASTRUCTURE_TEST_FIXTURES, classify_model_like_paths
+from cajita_runtime_factory import safe_rel, extract, tree_hash, tree_rows, factory_materialize, sha_file, COMBINED_CAP
+from reproduce_macrodown import BINARY_SUFFIXES, add_stream, DEFAULT_COMBINED_CAP_BYTES
+from cajita_runtime import KNOWN_INFRASTRUCTURE_TEST_FIXTURES, classify_model_like_paths, COMBINED_DISTRIBUTION_CAP_BYTES
 
 class FactorySafetyTests(unittest.TestCase):
+ def test_global_distribution_cap_is_exactly_479000000_bytes(self):
+  self.assertEqual(COMBINED_CAP, 479_000_000)
+  self.assertEqual(DEFAULT_COMBINED_CAP_BYTES, 479_000_000)
+  self.assertEqual(COMBINED_DISTRIBUTION_CAP_BYTES, 479_000_000)
+
  def test_archive_free_rerun_preserves_and_revalidates_materialized_modules_and_history(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d); runtime=root/"runtime"; runtime.mkdir(); rollback=root/"rollback"; rollback.mkdir()
