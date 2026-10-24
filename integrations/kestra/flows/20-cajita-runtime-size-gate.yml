@@ -40,7 +40,15 @@ tasks:
          and outputs.placement_record.code == 200
          and fromJson(outputs.runtime_report.body).size_gate == 'PASS'
          and fromJson(outputs.runtime_report.body).runtime_bytes_after <= 470000000
-         and fromJson(outputs.runtime_report.body).q2_factor_models_promoted == 4
+         and fromJson(outputs.runtime_report.body).q2_factor_models_promoted == 0
+         and fromJson(outputs.runtime_report.body).q2_factor_results[0].id == 'W01_CEREBRO'
+         and fromJson(outputs.runtime_report.body).q2_factor_results[0].status == 'ALREADY_Q2_PACKED'
+         and fromJson(outputs.runtime_report.body).q2_factor_results[1].id == 'W02_TRANSCRIPTION'
+         and fromJson(outputs.runtime_report.body).q2_factor_results[1].status == 'ALREADY_Q2_PACKED'
+         and fromJson(outputs.runtime_report.body).q2_factor_results[2].id == 'W03_TRANSLATION'
+         and fromJson(outputs.runtime_report.body).q2_factor_results[2].status == 'ALREADY_Q2_PACKED'
+         and fromJson(outputs.runtime_report.body).q2_factor_results[3].id == 'W05_QWEN3'
+         and fromJson(outputs.runtime_report.body).q2_factor_results[3].status == 'ALREADY_Q2_PACKED'
          and fromJson(outputs.runtime_report.body).certification == 'NOT_GRANTED'
          and fromJson(outputs.macrodown_report.body).build_status == 'PASS'
          and fromJson(outputs.macrodown_report.body).raw_payload_size_gate == 'PASS'
@@ -63,9 +71,24 @@ tasks:
           hard_cap_bytes=470000000
           registered_assets=10
           q2_factor_models_promoted={{ fromJson(outputs.runtime_report.body).q2_factor_models_promoted }}
+          q2_factor_models_already_packed=4
           certification=NOT_GRANTED
           kestra_execution={{ execution.id }}
     else:
+      - id: audit_failed_predicates
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          CAJITA_SIZE_AUDIT_DIAGNOSTICS
+          runtime_http={{ outputs.runtime_report.code }}
+          macrodown_http={{ outputs.macrodown_report.code }}
+          placement_http={{ outputs.placement_record.code }}
+          runtime_bytes={{ fromJson(outputs.runtime_report.body).runtime_bytes_after }}
+          q2_promoted={{ fromJson(outputs.runtime_report.body).q2_factor_models_promoted }}
+          q2_packed_first={{ fromJson(outputs.runtime_report.body).q2_factor_results[0].status }}
+          raw_payload_bytes={{ fromJson(outputs.macrodown_report.body).gross_raw_payload_bytes_including_manifest }}
+          archive_bytes={{ fromJson(outputs.macrodown_report.body).archive_bytes }}
+          registered_assets={{ fromJson(outputs.macrodown_report.body).registered_assets_preserved }}
+          placement_gate={{ fromJson(outputs.placement_record.body).runtime_size_gate.size_gate }}
       - id: fail_closed
         type: io.kestra.plugin.core.execution.Fail
         errorMessage: >-
