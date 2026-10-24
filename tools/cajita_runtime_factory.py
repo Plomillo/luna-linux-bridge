@@ -140,6 +140,53 @@ def verify_weights(runtime,manifest):
  if len(out)!=6: raise RuntimeError("WEIGHT_COUNT_NOT_SIX")
  return out
 
+
+def load_registered_materialized_modules(runtime, registry):
+ if registry.get("schema")!="CAJITA_MODULE_REGISTRY/1.0":
+  raise RuntimeError("MATERIALIZED_MODULE_REGISTRY_SCHEMA_MISMATCH")
+ entries=registry.get("modules")
+ if not isinstance(entries,list) or not entries:
+  raise RuntimeError("MATERIALIZED_MODULE_REGISTRY_EMPTY_WITH_NO_ARCHIVES")
+ declared=registry.get("materialized_module_count")
+ if isinstance(declared,bool) or declared!=len(entries):
+  raise RuntimeError("MATERIALIZED_MODULE_REGISTRY_COUNT_MISMATCH")
+ out=[]; seen=set()
+ for row in entries:
+  if not isinstance(row,dict): raise RuntimeError("MATERIALIZED_MODULE_REGISTRY_ROW_INVALID")
+  key=row.get("module_key")
+  if not isinstance(key,str) or key in seen: raise RuntimeError("MATERIALIZED_MODULE_KEY_DUPLICATE_OR_INVALID")
+  seen.add(key)
+  relative=safe_rel(key)
+  folder=runtime.joinpath(*relative.parts)
+  descriptor=folder/"CAJITA_MODULE.json"
+  expected_manifest=(relative/"CAJITA_MODULE.json").as_posix()
+  if row.get("manifest")!=expected_manifest: raise RuntimeError("MATERIALIZED_MODULE_MANIFEST_PATH_MISMATCH:"+key)
+  if folder.is_symlink() or not folder.is_dir() or descriptor.is_symlink() or not descriptor.is_file():
+   raise RuntimeError("MATERIALIZED_MODULE_DESCRIPTOR_MISSING:"+key)
+  check_tree(folder)
+  descriptor_bytes=descriptor.read_bytes()
+  descriptor_sha=sha_bytes(descriptor_bytes)
+  if descriptor_sha!=row.get("manifest_sha256"): raise RuntimeError("MATERIALIZED_MODULE_DESCRIPTOR_HASH_MISMATCH:"+key)
+  data=json.loads(descriptor_bytes.decode("utf-8"))
+  if data.get("schema")!="CAJITA_MATERIALIZED_MODULE/1.0" or data.get("module_key")!=key:
+   raise RuntimeError("MATERIALIZED_MODULE_DESCRIPTOR_IDENTITY_MISMATCH:"+key)
+  if data.get("canonical_asset_id")!=row.get("canonical_asset_id"):
+   raise RuntimeError("MATERIALIZED_MODULE_ASSET_ID_MISMATCH:"+key)
+  materialization=data.get("materialization",{})
+  rows_now=tree_rows(folder,True)
+  actual_tree=sha_bytes(canon(rows_now))
+  actual_bytes=sum(x["bytes"] for x in rows_now)
+  if (materialization.get("status")!="PASS"
+      or materialization.get("file_count")!=len(rows_now)
+      or materialization.get("bytes")!=actual_bytes
+      or materialization.get("tree_sha256")!=actual_tree
+      or row.get("tree_sha256")!=actual_tree
+      or row.get("file_count")!=len(rows_now)
+      or row.get("bytes")!=actual_bytes):
+   raise RuntimeError("MATERIALIZED_MODULE_TREE_INTEGRITY_MISMATCH:"+key)
+  out.append({**data,"module_manifest_path":expected_manifest,"module_manifest_sha256":descriptor_sha})
+ return sorted(out,key=lambda item:item["module_key"].encode("utf-8"))
+
 def factory_materialize(runtime,rollback,raw_cap):
  placement_path=runtime/"EXTERNALIZED_ASSET_PLACEMENT.json"
  routing_path=runtime/"command_subdomain_routing.json"
@@ -147,6 +194,14 @@ def factory_materialize(runtime,rollback,raw_cap):
  routing=json.loads(routing_path.read_text(encoding="utf-8"))
  original=json.loads((runtime/"MACRODOWN_MANIFEST.json").read_text(encoding="utf-8"))
  original_files={r["path"]:r for r in original.get("files",[])}
+ module_registry_path=runtime/"module_registry.json"
+ if module_registry_path.is_symlink() or not module_registry_path.is_file():
+  raise RuntimeError("MATERIALIZED_MODULE_REGISTRY_MISSING")
+ prior_registry=json.loads(module_registry_path.read_text(encoding="utf-8"))
+ prior_reconciliation=placement.get("factory_reconciliation",{})
+ if not isinstance(prior_reconciliation,dict): prior_reconciliation={}
+ prior_archive_rows=prior_reconciliation.get("archives",[])
+ prior_readme_rows=prior_reconciliation.get("readmes_removed",[])
  registered={}
  for a in placement.get("assets",[]):
   prefix="cajita-luna-runtime/"
@@ -197,6 +252,16 @@ def factory_materialize(runtime,rollback,raw_cap):
   descriptor.write_text(json.dumps(data,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
   module_records.append({**data,"module_manifest_path":descriptor.relative_to(runtime).as_posix(),"module_manifest_sha256":sha_file(descriptor)})
 
+ # The distributed runtime is already materialized on subsequent builds: source
+ # ZIP/7Z containers are intentionally absent. Re-use prior records only after
+ # validating descriptor hashes, every module file, and exact recorded tree hashes.
+ prior_modules=load_registered_materialized_modules(runtime,prior_registry) if prior_registry.get("materialized_module_count",0) else []
+ new_keys={m["module_key"] for m in module_records}
+ for module in prior_modules:
+  if module["module_key"] not in new_keys: module_records.append(module)
+ module_records.sort(key=lambda item:item["module_key"].encode("utf-8"))
+ if not module_records: raise RuntimeError("NO_MATERIALIZED_MODULES_VERIFIED")
+
  by_path={r["source_path"]:r for r in records}; by_id={m.get("canonical_asset_id"):m for m in module_records if m.get("canonical_asset_id")}
  for a in placement.get("assets",[]):
   prefix="cajita-luna-runtime/"; rel=a.get("placed_path","")
@@ -210,7 +275,18 @@ def factory_materialize(runtime,rollback,raw_cap):
   if m:
    a["expanded_file_count"]=m["materialization"]["file_count"]; a["expanded_bytes"]=m["materialization"]["bytes"]; a["expanded_tree_sha256"]=m["materialization"]["tree_sha256"]
   a["placement"]="MATERIALIZED_DIRECTORY"
- placement["factory_reconciliation"]={"schema":SCHEMA,"generated_at_utc":utc(),"archive_count_materialized":len(records),"archive_bytes_removed":removed_bytes,"archives":records,"readmes_removed":readmes,"module_count":len(module_records),"rollback_copies_retained_outside_runtime":True,"all_zip_7z_removed":True,"certification":"NOT_GRANTED"}
+ # Merge historical extraction/removal evidence instead of erasing it on archive-free reruns.
+ def merge_history(old_rows,new_rows,path_key,hash_key):
+  merged={}
+  for row in list(old_rows or [])+list(new_rows or []):
+   if not isinstance(row,dict) or not row.get(path_key) or not row.get(hash_key):
+    raise RuntimeError("MATERIALIZATION_HISTORY_ROW_INVALID")
+   merged[(row[path_key],row[hash_key])]=row
+  return sorted(merged.values(),key=lambda row:(str(row[path_key]).encode("utf-8"),str(row[hash_key])))
+ archive_history=merge_history(prior_archive_rows,records,"source_path","source_sha256")
+ readme_history=merge_history(prior_readme_rows,readmes,"path","sha256")
+ total_removed_bytes=sum(int(row["source_bytes"]) for row in archive_history)
+ placement["factory_reconciliation"]={"schema":SCHEMA,"generated_at_utc":utc(),"archive_count_materialized":len(archive_history),"archive_bytes_removed":total_removed_bytes,"archives":archive_history,"readmes_removed":readme_history,"module_count":len(module_records),"rollback_copies_retained_outside_runtime":bool(records) or bool(prior_reconciliation.get("rollback_copies_retained_outside_runtime",False)),"all_zip_7z_removed":True,"last_run_archive_count_materialized":len(records),"last_run_readme_count_removed":len(readmes),"materialized_module_revalidation":"PASS","certification":"NOT_GRANTED"}
  placement["status"]="MATERIALIZATION_COMPLETE_PENDING_FUNCTION_AND_G23_G24"
  placement["certification"]="NOT_GRANTED"
  placement_path.write_text(json.dumps(placement,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
@@ -220,7 +296,7 @@ def factory_materialize(runtime,rollback,raw_cap):
   if r:
    m=by_id.get(r["asset_id"])
    a.update({"source_archive_path":rel,"source_archive_sha256":r["source_sha256"],"source_archive_bytes":r["source_bytes"],"materialized_path":r["expanded_path"],"expanded_bytes":m["materialization"]["bytes"] if m else None,"expanded_tree_sha256":m["materialization"]["tree_sha256"] if m else None,"module_manifest_path":m["module_manifest_path"] if m else None,"module_manifest_sha256":m["module_manifest_sha256"] if m else None,"activation_status":"MATERIALIZED_NOT_FUNCTIONALLY_VALIDATED","archive_removed_from_runtime":True})
- routing["materialization"]={"schema":"CAJITA_MATERIALIZATION_REGISTRY/1.0","archive_policy":"ZIP_7Z_MATERIALIZED_DURING_BUILD_AND_REMOVED","readme_policy":"ALL_README_PREFIX_FILES_REMOVED","module_registry":"module_registry.json","module_count":len(module_records),"archive_count_removed":len(records),"certification":"NOT_GRANTED"}
+ routing["materialization"]={"schema":"CAJITA_MATERIALIZATION_REGISTRY/1.0","archive_policy":"ZIP_7Z_MATERIALIZED_DURING_BUILD_AND_REMOVED","readme_policy":"ALL_README_PREFIX_FILES_REMOVED","module_registry":"module_registry.json","module_count":len(module_records),"archive_count_removed":len(archive_history),"archive_count_this_run":len(records),"certification":"NOT_GRANTED"}
  routing["state"]["status"]="ROUTING_MAP_REGISTERED_MATERIALIZED_MODULES_EXECUTION_REMAINS_FAIL_CLOSED"
  routing["state"]["task_dispatch"]="PLAN_ONLY_UNTIL_TASK_ADAPTERS_AND_RESOURCE_EVIDENCE_PASS"
  routing["state"]["certification"]="NOT_GRANTED"
@@ -229,7 +305,7 @@ def factory_materialize(runtime,rollback,raw_cap):
  (runtime/"module_registry.json").write_text(json.dumps(registry,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
  _,raw=measure(runtime,False)
  if raw>raw_cap: raise RuntimeError(f"RAW_STAGING_CEILING_EXCEEDED:{raw}>{raw_cap}")
- return {"archive_count":len(records),"archive_bytes_removed":removed_bytes,"archives":records,"readme_count":len(readmes),"readmes_removed":readmes,"module_count":len(module_records),"modules":module_records,"raw_tree_bytes_after_materialization":raw}
+ return {"archive_count":len(archive_history),"archive_count_this_run":len(records),"archive_bytes_removed":total_removed_bytes,"archives":archive_history,"readme_count":len(readme_history),"readme_count_this_run":len(readmes),"readmes_removed":readme_history,"module_count":len(module_records),"modules":module_records,"materialized_module_revalidation":"PASS","raw_tree_bytes_after_materialization":raw}
 
 def append_runtime_policy(runtime,factory_data):
  p=runtime/"CajitadeLuna.md"; original=p.read_bytes()

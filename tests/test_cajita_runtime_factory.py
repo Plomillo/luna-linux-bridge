@@ -1,11 +1,61 @@
 from __future__ import annotations
 import tempfile, unittest, zipfile
 from pathlib import Path
-from cajita_runtime_factory import safe_rel, extract, tree_hash, tree_rows
+from cajita_runtime_factory import safe_rel, extract, tree_hash, tree_rows, factory_materialize, sha_file
 from reproduce_macrodown import BINARY_SUFFIXES, add_stream
 from cajita_runtime import KNOWN_INFRASTRUCTURE_TEST_FIXTURES, classify_model_like_paths
 
 class FactorySafetyTests(unittest.TestCase):
+ def test_archive_free_rerun_preserves_and_revalidates_materialized_modules_and_history(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d); runtime=root/"runtime"; runtime.mkdir(); rollback=root/"rollback"; rollback.mkdir()
+   module_key="engines/sample_engine"; module=runtime/module_key; module.mkdir(parents=True)
+   payload=module/"engine.py"; payload.write_text("VALUE = 7\\n",encoding="utf-8")
+   rows=tree_rows(module,True)
+   descriptor={
+    "schema":"CAJITA_MATERIALIZED_MODULE/1.0","module_key":module_key,
+    "identity_type":"PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT","canonical_asset_id":"SAMPLE_ENGINE",
+    "source_archives":[{"path":"engines/sample_engine.zip","bytes":123,"sha256":"a"*64}],
+    "materialization":{"status":"PASS","file_count":len(rows),"bytes":sum(x["bytes"] for x in rows),"tree_sha256":tree_hash(module)},
+    "consumer_adapter":"NOT_PROVEN_BY_EXTRACTION","functional_smoke":"REQUIRED","certification":"NOT_GRANTED"}
+   descriptor_path=module/"CAJITA_MODULE.json"
+   descriptor_path.write_text(json.dumps(descriptor,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
+   descriptor_sha=sha_file(descriptor_path)
+   historic_archive={"source_path":"engines/sample_engine.zip","source_sha256":"a"*64,"source_bytes":123,
+    "expanded_path":module_key,"expanded_file_count_at_extract":1,"expanded_bytes_at_extract":len(payload.read_bytes()),
+    "archive_removed_from_runtime":True,"rollback_path":"engines/sample_engine.zip","asset_id":"SAMPLE_ENGINE"}
+   historic_readme={"path":"README.md","bytes":5,"sha256":"b"*64}
+   registry={"schema":"CAJITA_MODULE_REGISTRY/1.0","materialized_module_count":1,"modules":[
+    {"module_key":module_key,"canonical_asset_id":"SAMPLE_ENGINE","path":module_key,
+     "manifest":module_key+"/CAJITA_MODULE.json","manifest_sha256":descriptor_sha,
+     "tree_sha256":tree_hash(module),"bytes":sum(x["bytes"] for x in rows),"file_count":len(rows),
+     "state":"MATERIALIZED_HASH_VERIFIED","consumer_adapter":"NOT_PROVEN_BY_EXTRACTION","execution":"NOT_GRANTED_WITHOUT_ADAPTER_AND_SMOKE","certification":"NOT_GRANTED"}],
+    "certification":"NOT_GRANTED"}
+   (runtime/"module_registry.json").write_text(json.dumps(registry,indent=2)+"\\n",encoding="utf-8")
+   (runtime/"MACRODOWN_MANIFEST.json").write_text(json.dumps({"files":[]})+"\\n",encoding="utf-8")
+   placement={"assets":[],"factory_reconciliation":{"schema":"CAJITA_LOUKSNA1_FACTORY/1.0","archive_count_materialized":1,
+    "archive_bytes_removed":123,"archives":[historic_archive],"readmes_removed":[historic_readme],
+    "module_count":1,"rollback_copies_retained_outside_runtime":True,"all_zip_7z_removed":True}}
+   (runtime/"EXTERNALIZED_ASSET_PLACEMENT.json").write_text(json.dumps(placement,indent=2)+"\\n",encoding="utf-8")
+   routing={"state":{"status":"OLD","task_dispatch":"PLAN_ONLY","certification":"NOT_GRANTED"},
+    "domain_order":[],"engine_registry":[],"route_profiles":[],"support_assets":[],
+    "materialization":{"archive_count_removed":1,"module_count":1}}
+   (runtime/"command_subdomain_routing.json").write_text(json.dumps(routing,indent=2)+"\\n",encoding="utf-8")
+   result=factory_materialize(runtime,rollback,10_000_000)
+   registry_after=json.loads((runtime/"module_registry.json").read_text(encoding="utf-8"))
+   placement_after=json.loads((runtime/"EXTERNALIZED_ASSET_PLACEMENT.json").read_text(encoding="utf-8"))
+   routing_after=json.loads((runtime/"command_subdomain_routing.json").read_text(encoding="utf-8"))
+   self.assertEqual(result["archive_count"],1)
+   self.assertEqual(result["archive_count_this_run"],0)
+   self.assertEqual(result["module_count"],1)
+   self.assertEqual(registry_after["materialized_module_count"],1)
+   self.assertEqual(len(registry_after["modules"]),1)
+   self.assertEqual(placement_after["factory_reconciliation"]["archives"],[historic_archive])
+   self.assertEqual(placement_after["factory_reconciliation"]["readmes_removed"],[historic_readme])
+   self.assertEqual(routing_after["materialization"]["archive_count_removed"],1)
+   self.assertEqual(routing_after["materialization"]["archive_count_this_run"],0)
+   self.assertFalse(any(p.suffix.lower() in {".zip",".7z"} for p in runtime.rglob("*")))
+
  def test_parent_traversal_is_denied(self):
   with self.assertRaisesRegex(RuntimeError,"TRAVERSAL"): safe_rel("../outside")
  def test_onnxruntime_dataset_models_are_infrastructure_fixtures_not_extra_weights(self):
