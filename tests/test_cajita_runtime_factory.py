@@ -52,4 +52,19 @@ class FactorySafetyTests(unittest.TestCase):
    with self.assertRaisesRegex(RuntimeError,"TRAVERSAL"): extract(arc,dest,rollback)
    self.assertFalse((root/"outside.txt").exists())
 
+
+ def test_model_runtimes_resolve_packaged_root_by_materializer_file(self):
+  root = Path(__file__).resolve().parents[1] / "cajita-luna-runtime"
+  paths = (
+   "1. Cerebro/cerebro_180mb_runtime.py",
+   "3. Transcripción/lowrank_runtime.py",
+   "4. Traductor Inteligente/Traducción general/lowrank_runtime.py",
+   "6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py",
+  )
+  for rel in paths:
+   with self.subTest(path=rel):
+    source = (root / rel).read_text(encoding="utf-8")
+    self.assertIn('(parent / "cajita_weight_materializer.py").is_file()', source)
+    self.assertNotIn('p.name == "cajita-luna-runtime"', source)
+
 if __name__=="__main__": unittest.main()

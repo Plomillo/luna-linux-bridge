@@ -6,7 +6,14 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 import sys
-sys.path.insert(0, str(next(p for p in pathlib.Path(__file__).resolve().parents if p.name == "cajita-luna-runtime")))
+_RUNTIME_ROOT = next(
+    (parent for parent in pathlib.Path(__file__).resolve().parents
+     if (parent / "cajita_weight_materializer.py").is_file()),
+    None,
+)
+if _RUNTIME_ROOT is None:
+    raise RuntimeError("CAJITA_RUNTIME_ROOT_NOT_FOUND")
+sys.path.insert(0, str(_RUNTIME_ROOT))
 from cajita_weight_materializer import load_model_state
 from transformers import AutoConfig, AutoTokenizer, Qwen3ForCausalLM
 
