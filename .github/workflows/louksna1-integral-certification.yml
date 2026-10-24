@@ -12,6 +12,10 @@ on:
       - "tests/test_cajita_axiom_graph_audit.py"
       - ".github/workflows/louksna1-integral-certification.yml"
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Cajita V10 materialization and Louksna1 governed factory"]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
@@ -22,17 +26,18 @@ concurrency:
 
 jobs:
   graph-audit:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout source and candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 1
           lfs: false
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -53,6 +58,9 @@ jobs:
           PYTHONPATH=tools python -m unittest discover -s tests -p 'test_cajita_axiom_graph_audit.py' -v
 
       - name: Materialize source-bound RDF and execute Apache Jena
+        env:
+          LOUKSNA_FACTORY_RUN_ID: ${{ github.event.workflow_run.id || '' }}
+          LOUKSNA_FACTORY_HEAD_SHA: ${{ github.event.workflow_run.head_sha || '' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -86,3 +94,23 @@ jobs:
             echo "- This is a structural graph-execution result, not a semantic proof or global certificate."
             echo "- Global certification remains NOT_GRANTED until all registered task adapters, semantic-quality baselines and full-runtime evidence pass."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Persist source-bound assessment after a successful factory release
+        if: success() && github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="out/louksna1-integral-certification/LOUKSNA1_INTEGRAL_CERTIFICATION_ASSESSMENT.json"
+          test -s "$report"
+          mkdir -p docs/cajita-luna
+          cp "$report" docs/cajita-luna/LOUKSNA1_INTEGRAL_CERTIFICATION_ASSESSMENT.json
+          git diff --check
+          git add docs/cajita-luna/LOUKSNA1_INTEGRAL_CERTIFICATION_ASSESSMENT.json
+          if git diff --cached --quiet; then
+            echo "ASSESSMENT_EVIDENCE_UNCHANGED"
+          else
+            git config --local user.name "github-actions[bot]"
+            git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Record source-bound Louksna1 integral certification assessment"
+            git push origin HEAD:main
+          fi
