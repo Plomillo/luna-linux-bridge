@@ -1,21 +1,21 @@
 {
   "schema": "CAJITA_INVENTORY_AUDIT/1.0",
   "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
-  "generated_at_utc": "2026-10-24T19:10:23.777258+00:00",
+  "generated_at_utc": "2026-10-24T19:19:23.315122+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "09841d989f7dc79698b7dca17c921a2fcd6941b1",
+  "source_commit": "847153822924b50ac631b5f40bb51a4ea0e60a27",
   "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
   "distribution": {
     "archive_format": "deterministic ZIP container with .macrodown extension",
     "member_count_including_manifest": 159,
     "file_count_excluding_manifest": 158,
-    "runtime_payload_bytes_excluding_manifest": 464229143,
-    "gross_raw_payload_bytes_including_manifest": 464270880,
-    "archive_bytes": 412321628,
+    "runtime_payload_bytes_excluding_manifest": 464229105,
+    "gross_raw_payload_bytes_including_manifest": 464270859,
+    "archive_bytes": 370823616,
     "hard_cap_bytes": 470000000,
-    "raw_bytes_under_cap": 5729120,
-    "archive_bytes_under_cap": 57678372,
-    "archive_sha256": "5be838448d8c6f917f2766e50a68951582fd993df854da9e104fa4151d208287",
+    "raw_bytes_under_cap": 5729141,
+    "archive_bytes_under_cap": 99176384,
+    "archive_sha256": "e29cc16931abb7b3e393bec14859ebe75ef3a6a394b12f57ed98e36a5d66c372",
     "raw_gate": "PASS",
     "archive_gate": "PASS",
     "certification": "NOT_GRANTED"
@@ -100,7 +100,7 @@
     },
     "ROOT_OR_SUPPORT": {
       "file_count": 17,
-      "bytes": 440176
+      "bytes": 440138
     }
   },
   "prior_manifest_reconciliation": {
@@ -196,7 +196,7 @@
       "route_type": "cerebro",
       "sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0",
       "size_bytes": 40489120,
-      "zip_method": "STORED"
+      "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D01_CEREBRO",
@@ -620,7 +620,7 @@
       "route_type": "transcripcion",
       "sha256": "67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f",
       "size_bytes": 10399882,
-      "zip_method": "STORED"
+      "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D03_TRANSCRIPCION",
@@ -732,7 +732,7 @@
       "route_type": "traductor_inteligente",
       "sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f",
       "size_bytes": 11720882,
-      "zip_method": "STORED"
+      "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D04_TRADUCTOR_INTELIGENTE",
@@ -756,7 +756,7 @@
       "route_type": "traductor_inteligente",
       "sha256": "026a76827537db9f1348e4d5aaa127bb10a2f2ff633243f3a52d16be82d73f9d",
       "size_bytes": 5165809,
-      "zip_method": "STORED"
+      "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D04_TRADUCTOR_INTELIGENTE",
@@ -772,7 +772,7 @@
       "route_type": "traductor_inteligente",
       "sha256": "9e7f2075dbc38dbe11d2414bfa4fb8e900022e87bbff4f74c97817e32a7ab493",
       "size_bytes": 368901,
-      "zip_method": "STORED"
+      "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D04_TRADUCTOR_INTELIGENTE",
@@ -924,7 +924,7 @@
       "route_type": "inteligencia_documental",
       "sha256": "4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88",
       "size_bytes": 13483380,
-      "zip_method": "STORED"
+      "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
@@ -980,7 +980,7 @@
       "route_type": "sistema_inteligente",
       "sha256": "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7",
       "size_bytes": 110516001,
-      "zip_method": "STORED"
+      "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D06_SISTEMA_INTELIGENTE",
@@ -1076,7 +1076,7 @@
       "route_type": "sistema_inteligente",
       "sha256": "01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56",
       "size_bytes": 14956240,
-      "zip_method": "STORED"
+      "zip_method": "DEFLATED"
     },
     {
       "domain_id": "D06_SISTEMA_INTELIGENTE",
@@ -1282,7 +1282,7 @@
       "domain_id": null,
       "path": "EXTERNALIZED_ASSET_PLACEMENT.json",
       "route_type": null,
-      "sha256": "24fe871f45775c5a1e7c0087340c91b653c74a225fb8c5a16f8aef18a1c0e826",
+      "sha256": "2c195d72450e27ca4eb6d6d451012e15fbac9005aee36e99672c37e3bf85e718",
       "size_bytes": 56838,
       "zip_method": "DEFLATED"
     },
@@ -1378,14 +1378,14 @@
       "domain_id": null,
       "path": "reproduce_macrodown.py",
       "route_type": null,
-      "sha256": "95ffabf1925c18eaa7d0b41b85873846987b8e18234f574c3feae14832feae11",
-      "size_bytes": 9800,
+      "sha256": "4cbb6ab06b6e94e14f357fe74c412764f50e91b7a711f043ed71e0517c9de5de",
+      "size_bytes": 9762,
       "zip_method": "DEFLATED"
     },
     {
       "path": "MACRODOWN_MANIFEST.json",
-      "size_bytes": 41737,
-      "sha256": "5b733da19c8e852b94a23ff976e8650303418771c8ea0a4a9b5313feb609390d",
+      "size_bytes": 41754,
+      "sha256": "c367e0188d9d07c15f3a49b7ede1f2863c8dd341c312990ca5251880cc7fa81e",
       "domain_id": null,
       "route_type": null,
       "zip_method": "DEFLATED",
