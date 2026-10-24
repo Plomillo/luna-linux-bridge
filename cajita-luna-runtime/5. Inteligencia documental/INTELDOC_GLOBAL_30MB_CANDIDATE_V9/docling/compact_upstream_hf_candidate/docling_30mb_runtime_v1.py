@@ -138,6 +138,18 @@ def make_test_image():
         d.text((28,28+i*48),line,fill="black")
     return im
 
+def prepare_bounded_square_image(image, side):
+    """Letterbox a document into the exact square expected by the bounded Idefics3 profile."""
+    from PIL import Image
+    if side < 1:
+        raise ValueError("BOUNDED_IMAGE_SIDE_INVALID")
+    image = image.convert("RGB")
+    image.thumbnail((side, side), Image.Resampling.LANCZOS)
+    # Neutral mid-grey maps close to zero under the packaged processor's mean/std normalization.
+    canvas = Image.new("RGB", (side, side), (127, 127, 127))
+    canvas.paste(image, ((side - image.width) // 2, (side - image.height) // 2))
+    return canvas
+
 ROOT=Path(__file__).resolve().parent
 
 def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert this page to docling."):
@@ -147,15 +159,29 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     proc=AutoProcessor.from_pretrained(candidate_dir,local_files_only=True,trust_remote_code=False)
     # The packaged preprocessor defaults to a 2048-edge resize plus 512-edge
     # image splitting. That can exceed the 1 GiB CPU contract even with splitting
-    # disabled. Use one bounded 256px view and no high-resolution tiles.
-    # This is a resource-bounded smoke profile, not a quality-equivalence claim,
-    # and does not alter the pinned model weights.
+    # disabled. Use one bounded 256px square view and no high-resolution tiles.
+    # Idefics3 expands each image into a fixed sequence of <image> tokens. Its count
+    # must match the vision encoder after pixel-shuffle: (side / patch / scale)^2.
+    # Letterboxing keeps the visual input square so one sequence length works for
+    # arbitrary document aspect ratios without changing the pinned model weights.
+    # This is a resource-bounded smoke profile, not a quality-equivalence claim.
     image_processor=getattr(proc,"image_processor",None)
     if image_processor is None:
         raise RuntimeError("DOCLING_IMAGE_PROCESSOR_MISSING")
+    image_side=256
+    vision_config=model.config.vision_config
+    patch_size=int(vision_config.patch_size)
+    scale_factor=int(model.config.scale_factor)
+    if image_side % (patch_size * scale_factor) != 0:
+        raise RuntimeError("DOCLING_BOUNDED_IMAGE_GEOMETRY_INVALID")
+    image_seq_len=((image_side // patch_size) ** 2) // (scale_factor ** 2)
+    if image_seq_len < 1:
+        raise RuntimeError("DOCLING_IMAGE_SEQUENCE_LENGTH_INVALID")
     image_processor.do_image_splitting=False
-    image_processor.size={"longest_edge":256}
-    image_processor.max_image_size={"longest_edge":256}
+    image_processor.do_pad=True
+    image_processor.size={"longest_edge":image_side}
+    image_processor.max_image_size={"longest_edge":image_side}
+    proc.image_seq_len=image_seq_len
     if image_path:
         from PIL import Image
         path=Path(image_path)
@@ -163,12 +189,16 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
         image=Image.open(path).convert("RGB")
     else:
         image=make_test_image()
+    image=prepare_bounded_square_image(image, image_side)
     try:
         msgs=[{"role":"user","content":[{"type":"image","image":image},{"type":"text","text":prompt}]}]
         inputs=proc.apply_chat_template(msgs,add_generation_prompt=True,tokenize=True,return_dict=True,return_tensors="pt")
     except Exception:
         inputs=proc(images=image,text=prompt,return_tensors="pt")
     inputs={k:(v.to("cpu") if isinstance(v,torch.Tensor) else v) for k,v in inputs.items()}
+    image_token_count=int((inputs["input_ids"] == int(model.config.image_token_id)).sum().item())
+    if image_token_count != image_seq_len:
+        raise RuntimeError(f"DOCLING_IMAGE_TOKEN_COUNT_MISMATCH:{image_token_count}!={image_seq_len}")
     with torch.inference_mode():
         out=model.generate(**inputs,max_new_tokens=int(max_new_tokens),do_sample=False)
     decoded=proc.batch_decode(out,skip_special_tokens=False)[0]
