@@ -592,7 +592,8 @@ jobs:
           cp "$TASK_EVIDENCE" docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json
           if [ -s "$FACTORY/CUSTOSZV9_EVIDENCE.json" ]; then cp "$FACTORY/CUSTOSZV9_EVIDENCE.json" docs/cajita-luna/CUSTOSZV9_FACTORY_HELPER_EVIDENCE.json; fi
           git diff --check
-          git add -A -- cajita-luna-runtime Louksna1.md docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json docs/cajita-luna/CAJITA_LOUKSNA1_FACTORY_REPORT.json docs/cajita-luna/LOUKSNA1_G23_EVIDENCE.json docs/cajita-luna/LOUKSNA1_G24_EVIDENCE.json docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json docs/cajita-luna/CUSTOSZV9_FACTORY_HELPER_EVIDENCE.json
+          git add -f -A -- cajita-luna-runtime
+          git add -A -- Louksna1.md docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json docs/cajita-luna/CAJITA_LOUKSNA1_FACTORY_REPORT.json docs/cajita-luna/LOUKSNA1_G23_EVIDENCE.json docs/cajita-luna/LOUKSNA1_G24_EVIDENCE.json docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json docs/cajita-luna/CUSTOSZV9_FACTORY_HELPER_EVIDENCE.json
           if git diff --cached --quiet; then
             echo "NO_CANDIDATE_DIFF"
           else
