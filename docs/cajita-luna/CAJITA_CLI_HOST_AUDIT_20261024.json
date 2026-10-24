@@ -1,0 +1,135 @@
+{
+  "schema": "CAJITA_CLI_HOST_AUDIT/1.0",
+  "audit_id": "CAJITA_CLI_HOST_AUDIT_20261024",
+  "captured_at_utc": "2026-10-24T00:57:32Z",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch_at_audit": "main",
+  "source_commit": "1b488a426ad85fb75c80777b70ac2d01daa9189a",
+  "workflow_run": {
+    "id": 40047411263,
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40047411263",
+    "job_id": 120732190351,
+    "artifact_id": 12541213550,
+    "artifact_name": "cajita-cli-host-audit-40047411263",
+    "artifact_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40047411263/artifacts/12541213550",
+    "artifact_zip_sha256": "6579cbff448173a08a66ef35b4df729867689920dbbb9144e9c176603060aa55"
+  },
+  "runner": {
+    "type": "self-hosted Linux x64",
+    "labels": [
+      "self-hosted",
+      "linux",
+      "x64",
+      "luna-aux"
+    ],
+    "mode": "READ_ONLY"
+  },
+  "status": {
+    "infrastructure_status": "PASS",
+    "provider_host_readiness": "PARTIAL",
+    "domain_count": 8,
+    "available_domain_count": 4,
+    "status_counts": {
+      "AVAILABLE": 4,
+      "ABSENT": 4
+    },
+    "read_only": true,
+    "mutations_performed": false,
+    "shell_invoked": false,
+    "credential_values_logged": false,
+    "certification": "NOT_GRANTED"
+  },
+  "domains": [
+    {
+      "id": "CLI_MOJO",
+      "status": "AVAILABLE",
+      "binary": "mojo",
+      "version": "1.1.0",
+      "build_id": "8189361e",
+      "observed_path": "~/.local/bin/mojo",
+      "version_probe_returncode": 0
+    },
+    {
+      "id": "CLI_CPP23_TOOLCHAIN",
+      "status": "AVAILABLE",
+      "required_capabilities": {
+        "cxx23_compiler": "g++ 14.2.0",
+        "cmake": "3.31.6",
+        "ninja": "1.12.1",
+        "clang_optional": "ABSENT"
+      },
+      "observed_paths": {
+        "gxx": "/usr/bin/g++",
+        "cmake": "/usr/bin/cmake",
+        "ninja": "/usr/bin/ninja"
+      },
+      "cxx23_smoke": "PASS",
+      "cxx23_compiler_candidates": [
+        "g++"
+      ],
+      "mutations_performed": false
+    },
+    {
+      "id": "CLI_CLAUDE_CODE",
+      "status": "ABSENT",
+      "required_binary": "claude",
+      "reason": "EXECUTABLE_NOT_FOUND"
+    },
+    {
+      "id": "CLI_PYTHON",
+      "status": "AVAILABLE",
+      "required_binary": "python3",
+      "python_version": "3.13.5",
+      "pip_version": "25.1.1",
+      "observed_paths": {
+        "python3": "/usr/bin/python3",
+        "pip3": "/usr/bin/pip3"
+      },
+      "optional_python_alias": "ABSENT"
+    },
+    {
+      "id": "CLI_GITHUB",
+      "status": "AVAILABLE",
+      "required_binary": "gh",
+      "gh_version": "2.46.0",
+      "git_version": "2.47.3",
+      "observed_paths": {
+        "gh": "/usr/bin/gh",
+        "git": "/usr/bin/git"
+      },
+      "note": "git is recorded as support infrastructure and never substitutes for gh"
+    },
+    {
+      "id": "CLI_GEMINI",
+      "status": "ABSENT",
+      "required_binary": "gemini",
+      "reason": "EXECUTABLE_NOT_FOUND"
+    },
+    {
+      "id": "CLI_GROK",
+      "status": "ABSENT",
+      "required_binary": "grok",
+      "reason": "EXECUTABLE_NOT_FOUND"
+    },
+    {
+      "id": "CLI_HUGGING_FACE",
+      "status": "ABSENT",
+      "required_binary": "hf",
+      "legacy_binary": "huggingface-cli",
+      "reason": "EXECUTABLE_NOT_FOUND"
+    }
+  ],
+  "install_gate": {
+    "status": "BLOCKED_FAIL_CLOSED",
+    "reason": "No exact version pins and source-integrity evidence are set in the contract for the missing providers; a versioned plan with verified source, checkpoint, rollback and explicit plan-SHA256 approval is required. No provider installation or upgrade was performed by this read-only audit.",
+    "next_authorized_operation": "Prepare and validate an exact per-provider installation plan before any host mutation."
+  },
+  "links": {
+    "contract_path": "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_contract.json",
+    "manager_path": "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_manager.py",
+    "registry_path": "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_registry.py",
+    "manifest_path": "cajita-luna-runtime/MACRODOWN_MANIFEST.json",
+    "full_inventory_path": "docs/cajita-luna/CAJITA_INVENTORY_AUDIT_20261024.json"
+  },
+  "certification": "NOT_GRANTED"
+}
