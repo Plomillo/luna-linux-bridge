@@ -364,12 +364,17 @@ jobs:
       contents: read
       actions: read
     steps:
-      - name: Download candidate and G23 evidence
+      - name: Download candidate for runtime smoke
         uses: actions/download-artifact@v4
         with:
-          pattern: louksna1-*
-          path: evidence
-          merge-multiple: false
+          name: louksna1-candidate
+          path: evidence/louksna1-candidate
+
+      - name: Download G23 evidence for runtime smoke
+        uses: actions/download-artifact@v4
+        with:
+          name: louksna1-g23-evidence
+          path: evidence/louksna1-g23-evidence
 
       - name: Execute six-domain smoke under one CPU and 1 GiB cgroup limits
         id: resource_limited_smoke
@@ -477,12 +482,23 @@ jobs:
           lfs: false
           persist-credentials: true
 
-      - name: Download candidate and independent gate evidence
+      - name: Download product candidate
         uses: actions/download-artifact@v4
         with:
-          pattern: louksna1-*
-          path: downloaded
-          merge-multiple: false
+          name: louksna1-candidate
+          path: downloaded/louksna1-candidate
+
+      - name: Download independent G23 evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: louksna1-g23-evidence
+          path: downloaded/louksna1-g23-evidence
+
+      - name: Download independent G24 evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: louksna1-g24-evidence
+          path: downloaded/louksna1-g24-evidence
 
       - name: Verify exact source prefix, record gate states, and commit the candidate directly
         shell: bash
