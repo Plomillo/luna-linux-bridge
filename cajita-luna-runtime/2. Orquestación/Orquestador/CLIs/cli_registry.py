@@ -25,8 +25,8 @@ def selftest(manifest_path=None,contract_path=None):
     mp,cp,m,c=load_inputs(manifest_path,contract_path)
     missing=[]
     for d in c["domains"]:
-        p=(ORCHESTRATOR/d["module"]).resolve()
-        try: p.relative_to(ORCHESTRATOR.resolve())
+        p=(ROOT/d["module"]).resolve()
+        try: p.relative_to(ROOT.resolve())
         except ValueError: missing.append({"id":d["id"],"status":"MODULE_PATH_ESCAPE"}); continue
         if not p.is_file(): missing.append({"id":d["id"],"status":"MODULE_ABSENT"})
     legacy_absent = not (ORCHESTRATOR/"CLIS.txt").exists()
@@ -35,8 +35,8 @@ def run_registry(manifest_path=None,contract_path=None):
     mp,cp,m,c=load_inputs(manifest_path,contract_path)
     cmap={d["id"]:d for d in c["domains"]}; rows=[]
     for d in m["domains"]:
-        p=(ORCHESTRATOR/d["module"]).resolve()
-        try: p.relative_to(ORCHESTRATOR.resolve())
+        p=(ROOT/d["module"]).resolve()
+        try: p.relative_to(ROOT.resolve())
         except ValueError: rows.append({"domain_id":d["id"],"status":"MODULE_PATH_ESCAPE"}); continue
         if not p.is_file(): rows.append({"domain_id":d["id"],"status":"ADAPTER_ABSENT"}); continue
         try:
