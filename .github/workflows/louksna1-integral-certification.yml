@@ -69,7 +69,6 @@ jobs:
           name: louksna1-integral-certification-assessment
           path: |
             out/louksna1-integral-certification/
-            \${{ runner.temp }}/louksna1-integral-certification.log
           if-no-files-found: warn
           retention-days: 90
           compression-level: 6
