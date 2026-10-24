@@ -145,7 +145,7 @@ def audit(args):
     if companion_sha!=manifest["louksna1"]["sha256"]: raise ValueError("LOUKSNA1_SHA256_MISMATCH")
     text=source.decode("utf-8"); legacy=parse_legacy(text); axiom_rows=parse_materialized(text)
     legacy_result=legacy_census(legacy); axiom_result=validate_materialized(axiom_rows)
-    output=Path(args.output); graph=output/"louksna1-axiom-provenance.nt"
+    output=Path(args.output).resolve(); graph=output/"louksna1-axiom-provenance.nt"
     triple_count,graph_sha,graph_bytes=build_graph(axiom_rows,legacy,graph)
     root=Path(args.runtime).resolve()
     jena=root/"2. Orquestación"/"Multi + Interdisciplinar"/"APACHE_JENA_6_2_0"/"apache-jena-6.2.0"
