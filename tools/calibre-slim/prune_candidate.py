@@ -24,14 +24,15 @@ UPSTREAM = {
 CONVERSION_IMPORTS = """# Conversion plugins {{{
 from calibre.ebooks.conversion.plugins.epub_input import EPUBInput
 from calibre.ebooks.conversion.plugins.epub_output import EPUBOutput
+from calibre.ebooks.conversion.plugins.html_input import HTMLInput
 from calibre.ebooks.conversion.plugins.oeb_output import OEBOutput
 from calibre.ebooks.conversion.plugins.pdf_input import PDFInput
 from calibre.ebooks.conversion.plugins.pdf_output import PDFOutput
 from calibre.ebooks.conversion.plugins.txt_input import TXTInput
 
+# HTML is an internal dependency of the upstream TXT conversion pipeline; the public wrapper rejects HTML input.
 # OEB is internal to the upstream conversion pipeline, never exposed as an output.
-# TXT is retained only as a minimal source for creating PDF/EPUB files.
-plugins += [EPUBInput, PDFInput, TXTInput, EPUBOutput, PDFOutput, OEBOutput]
+plugins += [EPUBInput, PDFInput, TXTInput, HTMLInput, EPUBOutput, PDFOutput, OEBOutput]
 # }}}
 """
 
@@ -94,6 +95,7 @@ UNRELATED_LAUNCHERS = {
 TARGET_PLUGIN_FILES = {
     "__init__.py",
     "epub_input.py",
+    "html_input.py",
     "epub_output.py",
     "archive_input.py",
     "oeb_output.py",
@@ -231,7 +233,7 @@ def prune_builtin_registry(builtins_path: Path, removed: list[dict[str, Any]]) -
     # classes remain upstream code; this change only narrows registration.
     updated = updated.replace(
         "plugins += [x for x in list(locals().values()) if isinstance(x, type) and x.__name__.endswith('MetadataReader')]",
-        "plugins += [x for x in list(locals().values()) if isinstance(x, type) and x.__name__.endswith('MetadataReader') and bool(getattr(x, 'file_types', set()) & {'pdf', 'epub', 'txt'})]",
+        "plugins += [x for x in list(locals().values()) if isinstance(x, type) and x.__name__.endswith('MetadataReader') and bool(getattr(x, 'file_types', set()) & {'pdf', 'epub', 'txt', 'html', 'xhtml'})]",
     )
     updated = updated.replace(
         "plugins += [x for x in list(locals().values()) if isinstance(x, type) and x.__name__.endswith('MetadataWriter')]",
@@ -388,6 +390,7 @@ def main() -> int:
         "target_public_inputs": ["pdf", "epub", "txt"],
         "target_public_outputs": ["pdf", "epub"],
         "retained_plugins": sorted(TARGET_PLUGIN_FILES),
+         "internal_only_plugins": ["html_input.py (required by TXTInput conversion pipeline)"],
         "removed": [],
     }
     if not args.apply:
