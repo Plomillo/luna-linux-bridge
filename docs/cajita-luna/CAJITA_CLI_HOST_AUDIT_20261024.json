@@ -1,18 +1,18 @@
 {
   "schema": "CAJITA_CLI_HOST_AUDIT/1.0",
   "audit_id": "CAJITA_CLI_HOST_AUDIT_20261024",
-  "captured_at_utc": "2026-10-24T00:57:32Z",
+  "captured_at_utc": "2026-10-24T01:02:11Z",
   "repository": "Plomillo/luna-linux-bridge",
   "branch_at_audit": "main",
-  "source_commit": "1b488a426ad85fb75c80777b70ac2d01daa9189a",
+  "source_commit": "c2ff22412dc5dcda716f1941ff8f04fa27f54470",
   "workflow_run": {
-    "id": 40047411263,
-    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40047411263",
-    "job_id": 120732190351,
-    "artifact_id": 12541213550,
-    "artifact_name": "cajita-cli-host-audit-40047411263",
-    "artifact_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40047411263/artifacts/12541213550",
-    "artifact_zip_sha256": "6579cbff448173a08a66ef35b4df729867689920dbbb9144e9c176603060aa55"
+    "id": 40047811719,
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40047811719",
+    "job_id": 120733420414,
+    "artifact_id": 12541913289,
+    "artifact_name": "cajita-cli-host-audit-40047811719",
+    "artifact_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40047811719/artifacts/12541913289",
+    "artifact_zip_sha256": "235e2d4c24ac5c07a88753b638291fb9ed5bc544abf70723907e61adacfc601d"
   },
   "runner": {
     "type": "self-hosted Linux x64",
