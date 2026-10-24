@@ -25,11 +25,11 @@ MODEL_CASES = [
     {"task_id":"e2e-docling-image-extraction","domain_id":"D05_INTELIGENCIA_DOCUMENTAL","operation":"extract_document_image",
      "input":{"image_path":"@IMAGE@","prompt":"Read the invoice total. Return only the numeric amount."},
      "limits":{"timeout_seconds":900,"max_new_tokens":8},
-     "quality_check":{"id":"invoice-total-133-45","mode":"regex","pattern":r"\\b133[.,]45\\b"}},
+     "quality_check":{"id":"invoice-total-133-45","mode":"regex","pattern":r"\b133[.,]45\b"}},
     {"task_id":"e2e-qwen3-reasoning","domain_id":"D06_SISTEMA_INTELIGENTE","operation":"analyze_reasoning",
      "input":{"prompt":"What is 2 + 2? Return only the numeric answer."},
      "limits":{"timeout_seconds":900,"max_new_tokens":8},
-     "quality_check":{"id":"arithmetic-2-plus-2","mode":"regex","pattern":r"\\b4\\b"}},
+     "quality_check":{"id":"arithmetic-2-plus-2","mode":"regex","pattern":r"\b4\b"}},
 ]
 def normalized_text(value):
     text=unicodedata.normalize("NFKD",str(value).casefold())
@@ -47,7 +47,7 @@ def quality_acceptance(record, output_text):
     else:
         normalized=normalized_text(raw)
         phrases=[normalized_text(p) for p in spec.get("phrases",[]) if isinstance(p,str) and p.strip()]
-        observed=[p for p in phrases if p and re.search(r"\\b"+re.escape(p)+r"\\b",normalized)]
+        observed=[p for p in phrases if p and (" "+normalized+" ").find(" "+p+" ") >= 0]
         if mode=="contains_any": matched=bool(observed)
         elif mode=="contains_all": matched=bool(phrases) and len(observed)==len(phrases)
         else: return {"status":"FAIL","check_id":spec["id"],"reason":"QUALITY_CHECK_MODE_INVALID"}
