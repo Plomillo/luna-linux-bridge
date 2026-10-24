@@ -199,6 +199,32 @@ def prune_builtin_registry(builtins_path: Path, removed: list[dict[str, Any]]) -
         "from calibre.ebooks.metadata.archive import ArchiveExtract, KPFExtract, get_comic_metadata\n",
         "from calibre.ebooks.metadata.archive import get_comic_metadata\n",
     )
+    # Remove imports used only by the removed AI, archive, device, GUI,
+    # preference and store sections. Preserve metadata base classes and _().
+    for import_line in (
+        "from calibre.ai.anthropic import AnthropicAI",
+        "from calibre.ai.google import GoogleAI",
+        "from calibre.ai.grok import GrokAI",
+        "from calibre.ai.lm_studio import LMStudioAI",
+        "from calibre.ai.ollama import OllamaAI",
+        "from calibre.ai.open_router import OpenRouterAI",
+        "from calibre.ai.openai import OpenAI",
+        "from calibre.ai.openai_compatible import OpenAICompatible",
+        "from calibre.ai.venice import VeniceAI",
+    ):
+        updated = updated.replace(import_line + "\n", "")
+    updated = updated.replace(
+        "from calibre.customize import FileTypePlugin, InterfaceActionBase, MetadataReaderPlugin, MetadataWriterPlugin, PreferencesPlugin, StoreBase",
+        "from calibre.customize import MetadataReaderPlugin, MetadataWriterPlugin",
+    )
+    updated = updated.replace(
+        "from calibre.constants import ismacos, numeric_version",
+        "from calibre.constants import numeric_version",
+    )
+    updated = updated.replace(
+        "from calibre.ebooks.metadata.archive import get_comic_metadata\n",
+        "",
+    )
 
     # Keep metadata readers/writers needed for supported document types. The
     # classes remain upstream code; this change only narrows registration.
