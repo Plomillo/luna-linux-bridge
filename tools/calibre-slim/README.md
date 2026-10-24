@@ -14,7 +14,9 @@ The pruning script replaces the broad built-in plugin registry with a narrow reg
 
 The script edits only a disposable extracted candidate tree. It does not edit the canonical runtime or the upstream download. It preserves LICENSE and COPYRIGHT material in the candidate.
 
-The source pruning step produces a reviewable, pruned Python source overlay. The upstream Linux binary is not rebuilt from source by this candidate workflow. Calibre's native launcher embeds the Python import index for the 81,999,364-byte `python-lib.bypy.frozen` archive, so the candidate retains that original frozen archive as a fallback and lets the pruned overlay override the active conversion registry. This gives a tested narrow conversion feature surface but does **not** mean every out-of-scope Python module has been physically removed from the binary. A fully rebuilt frozen archive requires rebuilding Calibre's native launcher/index and is a separate release gate.
+The source pruning step produces a reviewable, pruned Python source snapshot; the runtime overlay contains the narrowed `builtins.py` registry. The upstream native launcher is not rebuilt and its frozen import index is not regenerated. Instead, the workflow asks the official embedded runtime for the authoritative path/offset/size index, records the index and archive hashes, and zeroes payloads for explicitly excluded modules in place while preserving every offset and the frozen archive's exact byte length. The post-pruning conversion suite is required to pass before packaging.
+
+This method makes the selected out-of-scope module payloads unavailable without risking offset drift, but it is not a proof that all dead code has been removed. Unclassified modules remain intact, and the raw frozen archive length does not decrease; the benefit is in the compressed distribution and the feature payload that remains usable. A full frozen archive rebuild with a regenerated native index is still a separate release gate.
 
 ## What must not be mistaken for junk
 
