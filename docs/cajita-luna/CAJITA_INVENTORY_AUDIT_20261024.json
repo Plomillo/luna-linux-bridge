@@ -1,29 +1,29 @@
 {
   "schema": "CAJITA_INVENTORY_AUDIT/1.0",
   "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
-  "generated_at_utc": "2026-10-24T01:16:23.318640+00:00",
+  "generated_at_utc": "2026-10-24T03:33:09.638549+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "1b8bc8922b8219cde8d7528e51d19df8333b8809",
+  "source_commit": "4fdd9f28c63a3edde1fa9d46977f4f1ad512610e",
   "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
   "distribution": {
     "archive_format": "deterministic ZIP container with .macrodown extension",
-    "member_count_including_manifest": 152,
-    "file_count_excluding_manifest": 151,
-    "runtime_payload_bytes_excluding_manifest": 464140311,
-    "gross_raw_payload_bytes_including_manifest": 464179988,
-    "archive_bytes": 412249703,
+    "member_count_including_manifest": 157,
+    "file_count_excluding_manifest": 156,
+    "runtime_payload_bytes_excluding_manifest": 464152509,
+    "gross_raw_payload_bytes_including_manifest": 464193639,
+    "archive_bytes": 412257417,
     "hard_cap_bytes": 470000000,
-    "raw_bytes_under_cap": 5820012,
-    "archive_bytes_under_cap": 57750297,
-    "archive_sha256": "fb3cbe8e36f301f6767b7a854104205818016fff4008e5cd87e26fbd81f99270",
+    "raw_bytes_under_cap": 5806361,
+    "archive_bytes_under_cap": 57742583,
+    "archive_sha256": "250aea0b9cd6bb0a2aba7e4571627aa112e103c6c2476ca3def6202b7b174d05",
     "raw_gate": "PASS",
     "archive_gate": "PASS",
     "certification": "NOT_GRANTED"
   },
   "runtime_root_document": {
     "path": "CajitadeLuna.md",
-    "size_bytes": 84988,
-    "sha256": "5d5f3a72531e08effdade5146799d47bd055ec37dba0d762881256a3041f53c3"
+    "size_bytes": 86624,
+    "sha256": "04f765aceb63e7b6b342819f0d8753e0b3d4626b01236e498109d82ce1149169"
   },
   "cli_infrastructure": {
     "path": "2. Orquestación/Orquestador/CLIs",
@@ -91,8 +91,8 @@
       "bytes": 19098198
     },
     "D05_INTELIGENCIA_DOCUMENTAL": {
-      "file_count": 17,
-      "bytes": 21661837
+      "file_count": 22,
+      "bytes": 21672399
     },
     "D06_SISTEMA_INTELIGENTE": {
       "file_count": 35,
@@ -100,21 +100,20 @@
     },
     "ROOT_OR_SUPPORT": {
       "file_count": 16,
-      "bytes": 424076
+      "bytes": 425712
     }
   },
   "prior_manifest_reconciliation": {
-    "prior_file_count_excluding_manifest": 151,
-    "current_file_count_excluding_manifest": 151,
+    "prior_file_count_excluding_manifest": 156,
+    "current_file_count_excluding_manifest": 156,
     "added_paths": [],
     "removed_paths": [],
     "changed_paths": [
-      "CajitadeLuna.md",
       "EXTERNALIZED_ASSET_PLACEMENT.json"
     ],
     "added_count": 0,
     "removed_count": 0,
-    "changed_count": 2,
+    "changed_count": 1,
     "prior_manifest_was_in_sync": false
   },
   "inventory": [
@@ -784,6 +783,46 @@
     },
     {
       "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/ARTIFACT_REFERENCE.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "22e7d6bcef0658afd6820440f6d41e2f37dde27c61ae94b404b045fae4aba5d8",
+      "size_bytes": 1516,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/README.md",
+      "route_type": "inteligencia_documental",
+      "sha256": "cd459418e771fc2b6996157a700fb6e02ecad180e205174855ab3fdda90fe8dc",
+      "size_bytes": 2430,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py",
+      "route_type": "inteligencia_documental",
+      "sha256": "b383793e6c36ab285406b7da10a898cec7fc9a06cf5175f2d61d0a98ebe53013",
+      "size_bytes": 2718,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/profile.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "d636213de8ad3d3fcebf067594ccf95adca05d55d9028fca6330af51d8c3a3b7",
+      "size_bytes": 1764,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/Conversión documental/Calibre Slim/source-lock.json",
+      "route_type": "inteligencia_documental",
+      "sha256": "fbbdeac746ca357dfffcdb8ca5eed3b8f5844b84fea772d722c51a74f2456c28",
+      "size_bytes": 2134,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
       "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/HOST_TOOL_INVENTORY.json",
       "route_type": "inteligencia_documental",
       "sha256": "1fe0fe5d941657c8133ec7530cda7d709c69386066f07545174511efcc7dde6f",
@@ -1218,8 +1257,8 @@
       "domain_id": null,
       "path": "CajitadeLuna.md",
       "route_type": null,
-      "sha256": "5d5f3a72531e08effdade5146799d47bd055ec37dba0d762881256a3041f53c3",
-      "size_bytes": 84988,
+      "sha256": "04f765aceb63e7b6b342819f0d8753e0b3d4626b01236e498109d82ce1149169",
+      "size_bytes": 86624,
       "zip_method": "DEFLATED"
     },
     {
@@ -1234,7 +1273,7 @@
       "domain_id": null,
       "path": "EXTERNALIZED_ASSET_PLACEMENT.json",
       "route_type": null,
-      "sha256": "71cf89c9a19a4ca511ebe1d90c7540079bdccb17178e5a0f25cd7ca8953c8457",
+      "sha256": "ceba110b8eb5ae963e89cc977db0922f52e50cbdf908ffd6711d9e22fe74f00c",
       "size_bytes": 56838,
       "zip_method": "DEFLATED"
     },
@@ -1328,8 +1367,8 @@
     },
     {
       "path": "MACRODOWN_MANIFEST.json",
-      "size_bytes": 39677,
-      "sha256": "a9b4de445ffb9f9a3d4b144feddd3e678cc26a290278d06da7f6618fab01349c",
+      "size_bytes": 41130,
+      "sha256": "d5fb4621863cea17d223508480503f5d41b5bda97abddd398a85f1109f346eea",
       "domain_id": null,
       "route_type": null,
       "zip_method": "DEFLATED",
