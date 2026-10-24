@@ -60,8 +60,8 @@ tasks:
          and fromJson(outputs.latest_factory_run.body).id > 0
          and fromJson(outputs.latest_factory_run.body).conclusion == 'success'
          and fromJson(outputs.release_manifest.body).combined_distribution.status == 'PASS'
-         and fromJson(outputs.release_manifest.body).combined_distribution.bytes <= 490000000
-         and fromJson(outputs.release_manifest.body).combined_distribution.cap_bytes == 490000000
+         and fromJson(outputs.release_manifest.body).combined_distribution.bytes <= 479000000
+         and fromJson(outputs.release_manifest.body).combined_distribution.cap_bytes == 479000000
          and fromJson(outputs.release_manifest.body).protected_architecture.modified == false
          and fromJson(outputs.g23_evidence.body).status == 'PASS'
          and fromJson(outputs.release_manifest.body).source_commit == fromJson(outputs.latest_factory_run.body).head_sha
@@ -85,7 +85,7 @@ tasks:
         message: >-
           LOUKSNA1_READ_ONLY_RELEASE_AUDIT=PASS
           combined_distribution_bytes={{ fromJson(outputs.release_manifest.body).combined_distribution.bytes }}
-          combined_distribution_cap_bytes=490000000
+          combined_distribution_cap_bytes=479000000
           G23={{ fromJson(outputs.release_manifest.body).gates.G23 }}
           G24={{ fromJson(outputs.release_manifest.body).gates.G24 }}
           task_adapter_evidence={{ fromJson(outputs.task_adapter_evidence.body).status }}
