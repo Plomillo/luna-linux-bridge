@@ -114,12 +114,6 @@ jobs:
           after='SOURCE_PATH = ROOT / "externalized-assets-staging/2-Orquestacion/BTX/Biblia_Textual_BTX_original_rollback.7z"'
           assert text.count(before)==1, "AUDIT_SOURCE_PATH_NOT_UNIQUE"
           p.write_text(text.replace(before,after),encoding="utf-8")
-          p=root/".github/workflows/btx-source-audit.yml"
-          text=p.read_text(encoding="utf-8")
-          anchor='      - "cajita-luna-runtime/2. Orquestación/Confesión Eclesial Reformada/**"'
-          assert text.count(anchor)==2, "AUDIT_WORKFLOW_PATH_ANCHOR_COUNT"
-          text=text.replace(anchor,anchor+'\n      - "externalized-assets-staging/2-Orquestacion/BTX/**"')
-          p.write_text(text,encoding="utf-8")
           regpath=root/"cajita-luna-runtime/RUNTIME_CANDIDATE_V1/registry.json"
           data=json.loads(regpath.read_text(encoding="utf-8"))
           found=[]
@@ -251,7 +245,7 @@ jobs:
       - name: Commit replacement with rollback provenance
         run: |
           set -euo pipefail
-          git rm .github/workflows/btx-sqlite-swap.yml
+          find tools/btx-audit -type d -name __pycache__ -prune -exec rm -rf {} +
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
