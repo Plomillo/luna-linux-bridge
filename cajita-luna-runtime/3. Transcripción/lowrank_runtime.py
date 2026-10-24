@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Offline smoke runtime for a low-rank INT8-factor Whisper transcription candidate."""
 from __future__ import annotations
-import json, pathlib, time
+import json, pathlib, time, wave
 import numpy as np
 import torch
 from torch import nn
@@ -124,28 +124,68 @@ def load_candidate():
     model.eval()
     return model
 
-def smoke_test():
-    t0=time.monotonic()
-    processor=WhisperProcessor.from_pretrained(ROOT,local_files_only=True)
-    model=load_candidate()
-    audio=np.zeros(16000,dtype=np.float32)
-    inputs=processor(audio,sampling_rate=16000,return_tensors="pt")
+def load_waveform(audio_path):
+    path = pathlib.Path(audio_path)
+    if path.is_symlink() or not path.is_file():
+        raise RuntimeError("AUDIO_FILE_MISSING_OR_SYMLINK")
+    with wave.open(str(path), "rb") as stream:
+        channels, width, rate, frame_count = stream.getnchannels(), stream.getsampwidth(), stream.getframerate(), stream.getnframes()
+        if stream.getcomptype() != "NONE" or width != 2:
+            raise RuntimeError("AUDIO_REQUIRES_UNCOMPRESSED_PCM16_WAV")
+        if rate <= 0 or channels not in (1, 2) or frame_count <= 0:
+            raise RuntimeError("AUDIO_WAV_FORMAT_INVALID")
+        if frame_count > rate * 60:
+            raise RuntimeError("AUDIO_DURATION_OVER_60_SECONDS")
+        raw = stream.readframes(frame_count)
+    samples = np.frombuffer(raw, dtype="<i2").astype(np.float32) / 32768.0
+    if channels == 2:
+        samples = samples.reshape(-1, 2).mean(axis=1)
+    if rate != 16000:
+        source_times = np.arange(samples.size, dtype=np.float64) / float(rate)
+        count = max(1, int(round(samples.size * 16000 / rate)))
+        target_times = np.arange(count, dtype=np.float64) / 16000.0
+        samples = np.interp(target_times, source_times, samples).astype(np.float32)
+    return samples.astype(np.float32), rate
+
+
+def smoke_test(audio_path=None, max_new_tokens=4):
+    t0 = time.monotonic()
+    if isinstance(max_new_tokens, bool) or not 1 <= int(max_new_tokens) <= 128:
+        raise ValueError("MAX_NEW_TOKENS_OUT_OF_RANGE")
+    original_rate = 16000
+    if audio_path:
+        audio, original_rate = load_waveform(audio_path)
+    else:
+        audio = np.zeros(16000, dtype=np.float32)
+    processor = WhisperProcessor.from_pretrained(ROOT, local_files_only=True)
+    model = load_candidate()
+    inputs = processor(audio, sampling_rate=16000, return_tensors="pt")
     inputs["input_features"] = inputs["input_features"].to(dtype=torch.float32)
     with torch.inference_mode():
-        generated=model.generate(**inputs,max_new_tokens=4)
-    if not isinstance(generated,torch.Tensor) or generated.ndim!=2 or generated.shape[0]!=1:
+        generated = model.generate(**inputs, max_new_tokens=int(max_new_tokens), do_sample=False)
+    if not isinstance(generated, torch.Tensor) or generated.ndim != 2 or generated.shape[0] != 1 or generated.shape[-1] < 1:
         raise RuntimeError("MALFORMED_TRANSCRIPTION_OUTPUT")
-    decoded=processor.batch_decode(generated,skip_special_tokens=True)
-    return {"status":"PASS_TRANSCRIPTION_GENERATION","model_type":model.config.model_type,
-            "input_feature_shape":list(inputs["input_features"].shape),
-            "generated_token_count":int(generated.shape[-1]),
-            "decoded":decoded[0] if decoded else "",
-            "elapsed_seconds":round(time.monotonic()-t0,3),
-            "quality_equivalence":"NOT_ESTABLISHED_BY_SMOKE_TEST"}
+    decoded = processor.batch_decode(generated, skip_special_tokens=True)
+    return {"status": "PASS_TRANSCRIPTION_GENERATION", "model_type": model.config.model_type,
+            "input_feature_shape": list(inputs["input_features"].shape),
+            "generated_token_count": int(generated.shape[-1]),
+            "output_text": decoded[0][:8192] if decoded else "",
+            "original_sample_rate_hz": original_rate, "processed_sample_rate_hz": 16000,
+            "duration_seconds": round(len(audio) / 16000, 3),
+            "elapsed_seconds": round(time.monotonic() - t0, 3),
+            "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST"}
+
 if __name__=="__main__":
-    import argparse
+    import argparse, sys
     parser=argparse.ArgumentParser()
     parser.add_argument("--smoke-test",action="store_true")
+    parser.add_argument("--task-json-stdin",action="store_true")
     args=parser.parse_args()
-    if not args.smoke_test: parser.error("Use --smoke-test")
-    print(json.dumps(smoke_test(),indent=2,ensure_ascii=False))
+    if args.task_json_stdin:
+        task=json.load(sys.stdin)
+        if task.get("operation")!="transcribe_audio": parser.error("Unsupported task operation")
+        result=smoke_test(task.get("audio_path"),int(task.get("max_new_tokens",8)))
+    else:
+        if not args.smoke_test: parser.error("Use --smoke-test or --task-json-stdin")
+        result=smoke_test()
+    print(json.dumps(result,indent=2,ensure_ascii=False))
