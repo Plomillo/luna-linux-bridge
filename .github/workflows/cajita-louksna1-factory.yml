@@ -351,7 +351,7 @@ jobs:
           python candidate/runtime/cajita_runtime.py audit-weights --root candidate/runtime
           (cd candidate/runtime && python "2. Orquestación/Orquestador/CLIs/cli_registry.py" --self-test)
           python - <<'PY'
-          import hashlib,json
+          import hashlib,json,os
           from pathlib import Path
           root=Path("candidate"); p=root/"CAJITA_LUNA_RUNTIME_V10.macrodown"; d=root/"Louksna1.md"
           source_commit=os.environ["LOUKSNA_FACTORY_HEAD_SHA"]
