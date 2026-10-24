@@ -8,7 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-INPUTS = {".pdf", ".epub", ".html", ".htm", ".txt", ".docx"}
+INPUTS = {".pdf", ".epub", ".txt"}
 OUTPUTS = {".pdf", ".epub"}
 COMMAND = "ebook-convert"
 
@@ -31,7 +31,7 @@ def find_converter() -> str | None:
 
 def main(argv: list[str]) -> int:
     if argv in (["--help"], ["-h"]):
-        print("Usage: calibre-slim-convert INPUT.(pdf|epub|html|htm|txt|docx) OUTPUT.(pdf|epub) [Calibre conversion options]")
+        print("Usage: calibre-slim-convert INPUT.(pdf|epub|txt) OUTPUT.(pdf|epub) [Calibre conversion options]")
         return 0
     if len(argv) < 2 or argv[0].startswith("-") or argv[1].startswith("-"):
         print("Usage: calibre-slim-convert INPUT OUTPUT [conversion options]", file=sys.stderr)
