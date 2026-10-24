@@ -27,7 +27,11 @@
       "TXT -> EPUB (create EPUB)"
     ],
     "internal_intermediate_format": "oeb",
-    "entrypoint": "calibre-slim-convert"
+    "entrypoint": "calibre-slim-convert",
+    "internal_pipeline_formats": [
+      "html",
+      "oeb"
+    ]
   },
   "retained": {
     "runtime_language_modules": [
@@ -42,7 +46,8 @@
       "pdf_input.py",
       "pdf_output.py",
       "txt_input.py",
-      "archive_input.py (shared helper required by TXTInput)"
+      "archive_input.py (shared helper required by TXTInput)",
+      "html_input.py (internal-only dependency invoked by TXTInput; wrapper rejects HTML as public input)"
     ],
     "profiles": [
       "default input profile",
@@ -58,7 +63,6 @@
   "excluded_from_candidate": [
     "all UI translation catalogs and language packs",
     "OCR engines and OCR assets",
-    "non-target conversion input/output plugins (including HTML and DOCX)",
     "Calibre GUI action modules",
     "ebook store modules",
     "device drivers not required by the generic conversion interface",
@@ -66,7 +70,8 @@
     "ebook editor modules",
     "news recipe modules",
     "non-conversion command launchers",
-    "nonessential translated man pages and UI resources"
+    "nonessential translated man pages and UI resources",
+    "public HTML input (HTML engine is retained only as an internal TXT conversion dependency)"
   ],
   "safety_rules": {
     "mutates_cajitadeluna_md": false,
