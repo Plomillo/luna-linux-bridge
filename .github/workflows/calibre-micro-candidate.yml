@@ -1,0 +1,143 @@
+name: Cajita PDF EPUB Micro Candidate
+
+on:
+  push:
+    branches:
+      - cajita/calibre-micro-16mb-v1
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cajita-pdf-epub-micro-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+      - name: Set up host Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch pinned wheels and verify hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/cajita-micro"
+          mkdir -p "$WORK/wheels" "$WORK/runtime/vendor" "$WORK/evidence" "$WORK/dist"
+          python -m pip download --only-binary=:all: --no-deps --no-cache-dir pypdf==6.21.2 reportlab==5.1.0 pillow==12.0.0 --dest "$WORK/wheels"
+          echo "1d44d1a3a200f25062adff0085b02040e4646431ac2ccac22e42679e91466084  $WORK/wheels/pypdf-6.21.2-py3-none-any.whl" | sha256sum --check -
+          echo "59fdbaec5efe437095ad1d7292ec9a271c8ca2d3ec75e889c6e61400929b90df  $WORK/wheels/reportlab-5.1.0-py3-none-any.whl" | sha256sum --check -
+          echo "b87843e225e74576437fd5b6a4c2205d422754f84a06942cfaf1dc32243e45a8  $WORK/wheels/pillow-12.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" | sha256sum --check -
+          python -m pip install --no-deps --no-compile --no-index --target "$WORK/runtime/vendor" "$WORK/wheels/pypdf-6.21.2-py3-none-any.whl" "$WORK/wheels/reportlab-5.1.0-py3-none-any.whl" "$WORK/wheels/pillow-12.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"
+          cp tools/calibre-micro/micro_convert.py "$WORK/runtime/"
+          cp tools/calibre-micro/launch "$WORK/runtime/"
+          cp tools/calibre-micro/README.md "$WORK/runtime/README.md"
+          cp tools/calibre-micro/dependencies.json "$WORK/runtime/"
+          chmod 0755 "$WORK/runtime/launch"
+          find "$WORK/runtime" -type d -name __pycache__ -prune -exec rm -rf {} +
+          find "$WORK/runtime" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+          mkdir -p "$WORK/runtime/licenses"
+          PYPDF_LICENSE="$(find "$WORK/runtime/vendor" -path '*pypdf-*.dist-info/licenses/*' -type f -iname 'license*' -print -quit)"
+          REPORTLAB_LICENSE="$(find "$WORK/runtime/vendor" -path '*reportlab-*.dist-info/licenses/*' -type f -iname 'license*' -print -quit)"
+          PILLOW_LICENSE="$(find "$WORK/runtime/vendor" -path '*pillow-*.dist-info/licenses/*' -type f -iname 'license*' -print -quit)"
+          VERA_LICENSE="$(find "$WORK/runtime/vendor/reportlab" -type f -iname '*vera*license*' -print -quit)"
+          test -n "$PYPDF_LICENSE"; test -n "$REPORTLAB_LICENSE"; test -n "$PILLOW_LICENSE"; test -n "$VERA_LICENSE"
+          cp "$PYPDF_LICENSE" "$WORK/runtime/licenses/PYPDF-LICENSE.txt"
+          cp "$REPORTLAB_LICENSE" "$WORK/runtime/licenses/REPORTLAB-LICENSE.txt"
+          cp "$PILLOW_LICENSE" "$WORK/runtime/licenses/PILLOW-LICENSE.txt"
+          cp "$VERA_LICENSE" "$WORK/runtime/licenses/BITSTREAM-VERA-LICENSE.txt"
+          echo "WORK=$WORK" >> "$GITHUB_ENV"
+      - name: Static validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/cajita-micro"
+          python -m py_compile tools/calibre-micro/micro_convert.py tools/calibre-micro/smoke_test.py
+          python -m json.tool tools/calibre-micro/dependencies.json >/dev/null
+          python -m json.tool "$WORK/runtime/dependencies.json" >/dev/null
+          PYTHONPATH="$WORK/runtime/vendor" python -c "import pypdf, reportlab, PIL; print('pypdf', pypdf.__version__, 'reportlab', reportlab.Version, 'Pillow', PIL.__version__)"
+      - name: Functional tests for four routes and scope guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/cajita-micro"
+          PYTHONPATH="$WORK/runtime/vendor" python tools/calibre-micro/smoke_test.py --engine "$WORK/runtime/micro_convert.py" --vendor "$WORK/runtime/vendor" --report "$WORK/evidence/smoke-report.json"
+      - name: Deterministic package, byte budget and integrity evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/cajita-micro"
+          PACKAGE="$WORK/dist/cajita-pdf-epub-micro-linux-x86_64.tar.xz"
+          tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner --use-compress-program='xz -T2 -9e' -cf "$PACKAGE" -C "$WORK/runtime" .
+          SIZE="$(stat -c %s "$PACKAGE")"
+          MAX=16000000
+          test "$SIZE" -le "$MAX" || { echo "FAIL_CLOSED: package is over budget: $SIZE > $MAX"; exit 1; }
+          SHA="$(sha256sum "$PACKAGE" | awk '{print $1}')"
+          python - "$PACKAGE" "$WORK/evidence/package-evidence.json" "$SIZE" "$MAX" "$SHA" <<'PY'
+          import json, sys, tarfile
+          from pathlib import Path
+          package, evidence, size, limit, digest = Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), sys.argv[5]
+          with tarfile.open(package, "r:xz") as archive:
+              members = [m for m in archive.getmembers() if m.isfile()]
+              inventory = [{"path": m.name, "size_bytes": m.size} for m in members]
+          report = {
+            "schema": "CAJITA_PDF_EPUB_MICRO_PACKAGE_EVIDENCE/1.0",
+            "candidate": "CAJITA_PDF_EPUB_MICRO_V1",
+            "status": "PASS_BUDGET_AND_FUNCTIONAL_TESTS_NOT_CERTIFIED",
+            "package": package.name,
+            "package_size_bytes": size,
+            "budget_max_bytes": limit,
+            "bytes_under_budget": limit-size,
+            "budget_result": "PASS" if size <= limit else "FAIL",
+            "archive_sha256": digest,
+            "runtime_file_count": len(inventory),
+            "runtime_uncompressed_payload_bytes": sum(row["size_bytes"] for row in inventory),
+            "runtime_interpreter_included": False,
+            "host_dependency": "CPython >= 3.9 and glibc",
+            "pinned_dependencies": {
+              "pypdf-6.21.2-py3-none-any.whl": "1d44d1a3a200f25062adff0085b02040e4646431ac2ccac22e42679e91466084",
+              "reportlab-5.1.0-py3-none-any.whl": "59fdbaec5efe437095ad1d7292ec9a271c8ca2d3ec75e889c6e61400929b90df",
+              "pillow-12.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl": "b87843e225e74576437fd5b6a4c2205d422754f84a06942cfaf1dc32243e45a8"
+            },
+            "feature_scope": ["PDF->EPUB", "EPUB->PDF", "TXT->PDF", "TXT->EPUB"],
+            "non_goals": ["HTML", "DOCX", "OCR", "GUI", "stores", "catalogs", "device drivers", "translation catalogs"],
+            "limitations": [
+              "Independent small converter; not the Calibre upstream binary.",
+              "Text-only extraction and reflow; image, layout, annotation and OCR fidelity are not provided.",
+              "Python interpreter and glibc are host dependencies."
+            ],
+            "inventory": inventory,
+            "certification": "NOT_GRANTED"
+          }
+          evidence.write_text(json.dumps(report, indent=2, sort_keys=True)+"\n", encoding="utf-8")
+          print(json.dumps(report, indent=2))
+          PY
+          sha256sum "$PACKAGE" > "$WORK/dist/SHA256SUMS.txt"
+      - name: Upload runtime and test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cajita-pdf-epub-micro-${{ github.run_number }}
+          path: |
+            ${{ runner.temp }}/cajita-micro/dist/**
+            ${{ runner.temp }}/cajita-micro/evidence/**
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Summarize results
+        if: always()
+        shell: bash
+        run: |
+          echo "## Cajita PDF/EPUB Micro Candidate" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Scope: PDF<->EPUB and TXT->PDF/EPUB only." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Exact package cap: 16,000,000 bytes." >> "$GITHUB_STEP_SUMMARY"
+          echo "- This independent text-reflow implementation is not Calibre feature parity." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Certification: NOT GRANTED." >> "$GITHUB_STEP_SUMMARY"
