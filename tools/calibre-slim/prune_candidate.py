@@ -155,7 +155,7 @@ def replace_section(text: str, marker: str, replacement: str) -> str:
     # outer section's balanced markers; stopping at the first close would
     # leave part of a feature registered and is therefore forbidden.
     lines = text.splitlines(keepends=True)
-    exact = [i for i, line in enumerate(lines) if line.rstrip("\\r\\n") == marker]
+    exact = [i for i, line in enumerate(lines) if line.rstrip("\r\n") == marker]
     if len(exact) != 1:
         raise RuntimeError(f"Expected exactly one section marker {marker!r}; found {len(exact)}")
     start = exact[0]
