@@ -5,14 +5,23 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/cajita-kestra-audit.yml"
+      - ".github/workflows/cajita-louksna1-factory.yml"
+      - "integrations/kestra/flows/21-louksna1-release-audit.yml"
+      - "integrations/kestra/validate.py"
+      - "docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json"
       - "integrations/kestra/flows/20-cajita-runtime-size-gate.yml"
       - "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json"
       - "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json"
       - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
+  workflow_run:
+    workflows: ["Cajita V10 materialization and Louksna1 governed factory"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: cajita-kestra-audit-main
@@ -20,7 +29,7 @@ concurrency:
 
 jobs:
   audit:
-    if: github.actor != 'github-actions[bot]'
+    if: github.event_name == 'workflow_run' || github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -162,6 +171,81 @@ jobs:
           done
           echo "KESTRA_CAJITA_SIZE_AUDIT=TIMEOUT last_state=$state"
           cat "$RUNNER_TEMP/cajita-kestra-execution-status.json" 2>/dev/null || true
+          exit 1
+
+      - name: Import Louksna1 release audit after successful factory completion
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          auth_cfg="$RUNNER_TEMP/louksna1-kestra-auth"
+          umask 077
+          printf 'user = "%s:%s"\n' "$KESTRA_ADMIN_USER" "$KESTRA_ADMIN_PASSWORD" > "$auth_cfg"
+          trap 'rm -f "$auth_cfg"' EXIT
+          response="$RUNNER_TEMP/louksna1-kestra-flow-import.json"
+          code="$(curl --connect-timeout 3 --max-time 20 --config "$auth_cfg" --silent --show-error \
+            --output "$response" --write-out '%{http_code}' --request POST \
+            --header 'Content-Type: application/x-yaml' \
+            --data-binary @integrations/kestra/flows/21-louksna1-release-audit.yml \
+            http://localhost:8080/api/v1/main/flows || true)"
+          if [[ ! "$code" =~ ^2[0-9][0-9]$ ]]; then
+            echo "KESTRA_LOUKSNA1_FLOW_IMPORT=FAIL HTTP=$code"
+            cat "$response" 2>/dev/null || true
+            exit 1
+          fi
+          echo "KESTRA_LOUKSNA1_FLOW_IMPORT=PASS"
+
+      - name: Execute Louksna1 read-only release audit and require SUCCESS
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          auth_cfg="$RUNNER_TEMP/louksna1-kestra-auth"
+          umask 077
+          printf 'user = "%s:%s"\n' "$KESTRA_ADMIN_USER" "$KESTRA_ADMIN_PASSWORD" > "$auth_cfg"
+          trap 'rm -f "$auth_cfg"' EXIT
+          start="$RUNNER_TEMP/louksna1-kestra-execution-start.json"
+          http="$(curl --connect-timeout 3 --max-time 20 --config "$auth_cfg" --silent --show-error \
+            --output "$start" --write-out '%{http_code}' --request POST \
+            http://localhost:8080/api/v1/main/executions/louksna.kestra/louksna1_release_audit || true)"
+          if [[ ! "$http" =~ ^2[0-9][0-9]$ ]]; then
+            echo "KESTRA_LOUKSNA1_AUDIT_START=FAIL HTTP=$http"
+            cat "$start" 2>/dev/null || true
+            exit 1
+          fi
+          id="$(jq -r '.id // empty' "$start")"
+          if [ -z "$id" ]; then
+            echo "KESTRA_LOUKSNA1_AUDIT_START=FAIL missing-id"
+            cat "$start"
+            exit 1
+          fi
+          state=""
+          for attempt in $(seq 1 90); do
+            current="$RUNNER_TEMP/louksna1-kestra-execution-status.json"
+            status_http="$(curl --connect-timeout 3 --max-time 10 --config "$auth_cfg" --silent --show-error \
+              --output "$current" --write-out '%{http_code}' \
+              "http://localhost:8080/api/v1/main/executions/$id" || true)"
+            if [[ "$status_http" =~ ^2[0-9][0-9]$ ]]; then
+              state="$(jq -r '.state.current // .state // "UNKNOWN"' "$current")"
+              if [ "$state" = "SUCCESS" ]; then
+                echo "KESTRA_LOUKSNA1_RELEASE_AUDIT=PASS execution_id=$id"
+                {
+                  echo "Louksna1 Kestra release audit: PASS_FOR_DECLARED_E2E_EVIDENCE_SCOPE"
+                  echo "G24 scope: five synthetic model-domain task executions plus six-domain startup smoke"
+                  echo "Global integrated product certification: NOT_GRANTED"
+                } >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              if [[ "$state" == "FAILED" || "$state" == "KILLED" || "$state" == "CANCELLED" || "$state" == "WARNING" ]]; then
+                echo "KESTRA_LOUKSNA1_RELEASE_AUDIT=FAIL state=$state"
+                cat "$current"
+                exit 1
+              fi
+            fi
+            sleep 2
+          done
+          echo "KESTRA_LOUKSNA1_RELEASE_AUDIT=TIMEOUT last_state=$state"
+          cat "$RUNNER_TEMP/louksna1-kestra-execution-status.json" 2>/dev/null || true
           exit 1
 
       - name: Stop ephemeral Kestra
