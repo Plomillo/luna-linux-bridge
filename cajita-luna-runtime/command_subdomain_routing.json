@@ -1433,10 +1433,11 @@
     "module_registry": "module_registry.json",
     "module_count": 28,
     "archive_count_removed": 28,
+    "archive_count_this_run": 28,
     "certification": "NOT_GRANTED",
     "canonical_target_module_count": 21,
     "axiom_interdisciplinary_binding": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
-    "axiom_interdisciplinary_binding_sha256": "e2da482c555f68394f741b67e83f00c4ae313d44069c28091f33cd7b58b21340",
+    "axiom_interdisciplinary_binding_sha256": "7b8bc8c037bfd320044203a559e4b7c2e34ecd546bb4b7e687074e5a802f197a",
     "axiom_source_state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
   }
 }
