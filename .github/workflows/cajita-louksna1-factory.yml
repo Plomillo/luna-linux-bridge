@@ -444,12 +444,13 @@ jobs:
           d=Path("evidence/louksna1-candidate/Louksna1.md")
           raw_path=Path(os.environ["RUNNER_TEMP"])/"task-adapter-e2e-raw.json"
           task_report=json.loads(raw_path.read_text(encoding="utf-8")) if raw_path.is_file() else {"status":"NOT_COMPLETED","task_results":[]}
-          task_bytes=(json.dumps(task_report,sort_keys=True,ensure_ascii=False,indent=2)+"\\n").encode("utf-8")
+          release=json.loads(Path("evidence/louksna1-candidate/LOUKSNA1_RELEASE_MANIFEST.json").read_text(encoding="utf-8"))
+          task_report["source_commit"]=release.get("source_commit")
+          task_bytes=(json.dumps(task_report,sort_keys=True,ensure_ascii=False,indent=2)+"\n").encode("utf-8")
           task_path=Path("evidence/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json")
           task_path.parent.mkdir(parents=True,exist_ok=True)
           task_path.write_bytes(task_bytes)
           task_sha=hashlib.sha256(task_bytes).hexdigest()
-          release=json.loads(Path("evidence/louksna1-candidate/LOUKSNA1_RELEASE_MANIFEST.json").read_text(encoding="utf-8"))
           task_status=task_report.get("status","NOT_COMPLETED")
           task_rows=task_report.get("task_results",[])
           result={"schema":"LOUKSNA1_G24_EVIDENCE/1.0","gate":"G24","status":os.environ["STATUS"],
@@ -467,7 +468,7 @@ jobs:
             "task_adapters":"PASS_FOR_DECLARED_SCOPE" if task_status=="PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY" else "FAIL_OR_NOT_COMPLETED",
             "semantic_quality_equivalence":"NOT_ESTABLISHED","all_21_target_adapters":"NOT_ESTABLISHED",
             "global_integrated_product_certification":"NOT_GRANTED"}
-          Path("evidence/LOUKSNA1_G24_EVIDENCE.json").write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\\n",encoding="utf-8")
+          Path("evidence/LOUKSNA1_G24_EVIDENCE.json").write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
           print(json.dumps(result,indent=2,ensure_ascii=False))
           PY
           if [ "$STATUS" = "PASS_FOR_DECLARED_SMOKE_SCOPE" ]; then
