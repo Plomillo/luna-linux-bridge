@@ -214,9 +214,28 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
-          import hashlib, json, zipfile
+          import hashlib, json, os, zipfile
           from pathlib import Path
           root=Path("candidate")
+          def canonical_tree_rows(directory):
+            rows=[]
+            for base, dirs, files in os.walk(directory, topdown=True, followlinks=False):
+              bp=Path(base)
+              if any((bp/child).is_symlink() for child in dirs):
+                raise AssertionError("MODULE_SYMLINK_DIRECTORY:"+str(directory))
+              dirs[:]=sorted(dirs)
+              for name in sorted(files):
+                path=bp/name
+                if path.is_symlink() or not path.is_file():
+                  raise AssertionError("MODULE_NON_REGULAR_FILE:"+str(path.relative_to(directory)))
+                if name=="CAJITA_MODULE.json":
+                  continue
+                data=path.read_bytes()
+                rows.append({"path":path.relative_to(directory).as_posix(),"bytes":len(data),"sha256":hashlib.sha256(data).hexdigest()})
+            return sorted(rows,key=lambda row:row["path"].encode("utf-8"))
+          def tree_sha256(rows):
+            payload=json.dumps(rows,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")
+            return hashlib.sha256(payload).hexdigest()
           package=root/"CAJITA_LUNA_RUNTIME_V10.macrodown"
           doc=root/"Louksna1.md"
           report=json.loads((root/"factory-report.json").read_text())
@@ -255,10 +274,20 @@ jobs:
           assert len(registry["target_modules"]) == 21
           for target_module in registry["target_modules"]:
             target_manifest = runtime / target_module["manifest"]
-            assert target_manifest.is_file()
-            target_data = json.loads(target_manifest.read_text())
+            assert target_manifest.is_file() and not target_manifest.is_symlink()
+            manifest_bytes = target_manifest.read_bytes()
+            assert hashlib.sha256(manifest_bytes).hexdigest() == target_module["manifest_sha256"], "TARGET_MODULE_MANIFEST_HASH:" + target_module["target_id"]
+            target_data = json.loads(manifest_bytes)
             assert target_data["target_id"] == target_module["target_id"]
-            assert target_data["tree_integrity"]["sha256"] == target_module["tree_sha256"]
+            target_dir = runtime / target_module["path"]
+            assert target_dir.is_dir() and not target_dir.is_symlink()
+            actual_rows = canonical_tree_rows(target_dir)
+            actual_tree_hash = tree_sha256(actual_rows)
+            recorded = target_data["tree_integrity"]
+            assert len(actual_rows) == int(recorded["file_count_excluding_module_descriptors"]), "TARGET_MODULE_FILE_COUNT:" + target_module["target_id"]
+            assert sum(row["bytes"] for row in actual_rows) == int(recorded["bytes_excluding_module_descriptors"]), "TARGET_MODULE_BYTE_COUNT:" + target_module["target_id"]
+            assert actual_tree_hash == target_module["tree_sha256"], "TARGET_MODULE_TREE_HASH:" + target_module["target_id"]
+            assert actual_tree_hash == recorded["sha256"], "TARGET_MODULE_MANIFEST_TREE_HASH:" + target_module["target_id"]
           binding_meta = registry["axiom_interdisciplinary_binding"]
           binding_path = runtime / binding_meta["path"]
           assert binding_path.is_file()
@@ -272,9 +301,18 @@ jobs:
           assert binding["framework_count"] == 18
           for module in registry["modules"]:
             path=runtime/module["manifest"]
-            manifest=json.loads(path.read_text())
+            assert path.is_file() and not path.is_symlink()
+            manifest_bytes=path.read_bytes()
+            assert hashlib.sha256(manifest_bytes).hexdigest()==module["module_manifest_sha256"], "MATERIALIZED_MODULE_MANIFEST_HASH:"+module["module_key"]
+            manifest=json.loads(manifest_bytes)
             assert manifest["materialization"]["status"]=="PASS"
             assert manifest["module_key"]==module["module_key"]
+            module_dir=runtime/module["module_key"]
+            assert module_dir.is_dir() and not module_dir.is_symlink()
+            rows=canonical_tree_rows(module_dir)
+            assert len(rows)==int(manifest["materialization"]["file_count"]), "MATERIALIZED_MODULE_FILE_COUNT:"+module["module_key"]
+            assert sum(row["bytes"] for row in rows)==int(manifest["materialization"]["bytes"]), "MATERIALIZED_MODULE_BYTE_COUNT:"+module["module_key"]
+            assert tree_sha256(rows)==module["tree_sha256"], "MATERIALIZED_MODULE_TREE_HASH:"+module["module_key"]
           weights=json.loads((runtime/"CAJITA_RUNTIME_V1/weights_manifest.json").read_text())
           for w in weights["artifacts"]:
             p=runtime/w["path"]
@@ -309,6 +347,8 @@ jobs:
   g24-resource-limited-runtime-smoke:
     needs: [manufacture, g23-independent-validation]
     if: needs.manufacture.outputs.candidate_ready == 'true' && needs.g23-independent-validation.result == 'success'
+    outputs:
+      gate_pass: ${{ steps.resource_limited_smoke.outputs.gate_pass }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
@@ -323,6 +363,7 @@ jobs:
           merge-multiple: false
 
       - name: Execute six-domain smoke under one CPU and 1 GiB cgroup limits
+        id: resource_limited_smoke
         shell: bash
         run: |
           set +e
@@ -373,6 +414,11 @@ jobs:
           Path("evidence/LOUKSNA1_G24_EVIDENCE.json").write_text(json.dumps(result,indent=2)+"\n")
           print(json.dumps(result,indent=2))
           PY
+          if [ "$STATUS" = "PASS_FOR_DECLARED_SMOKE_SCOPE" ]; then
+            echo "gate_pass=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "gate_pass=false" >> "$GITHUB_OUTPUT"
+          fi
           exit 0
 
       - name: Upload G24 decision and telemetry
@@ -392,7 +438,7 @@ jobs:
 
   publish-candidate:
     needs: [manufacture, g23-independent-validation, g24-resource-limited-runtime-smoke]
-    if: needs.manufacture.outputs.candidate_ready == 'true' && needs.g23-independent-validation.result == 'success'
+    if: needs.manufacture.outputs.candidate_ready == 'true' && needs.g23-independent-validation.result == 'success' && needs.g24-resource-limited-runtime-smoke.result == 'success' && needs.g24-resource-limited-runtime-smoke.outputs.gate_pass == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
