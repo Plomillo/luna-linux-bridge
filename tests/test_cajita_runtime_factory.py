@@ -10,7 +10,7 @@ class FactorySafetyTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d); runtime=root/"runtime"; runtime.mkdir(); rollback=root/"rollback"; rollback.mkdir()
    module_key="engines/sample_engine"; module=runtime/module_key; module.mkdir(parents=True)
-   payload=module/"engine.py"; payload.write_text("VALUE = 7\\n",encoding="utf-8")
+   payload=module/"engine.py"; payload.write_text("VALUE = 7\n",encoding="utf-8")
    rows=tree_rows(module,True)
    descriptor={
     "schema":"CAJITA_MATERIALIZED_MODULE/1.0","module_key":module_key,
@@ -19,7 +19,7 @@ class FactorySafetyTests(unittest.TestCase):
     "materialization":{"status":"PASS","file_count":len(rows),"bytes":sum(x["bytes"] for x in rows),"tree_sha256":tree_hash(module)},
     "consumer_adapter":"NOT_PROVEN_BY_EXTRACTION","functional_smoke":"REQUIRED","certification":"NOT_GRANTED"}
    descriptor_path=module/"CAJITA_MODULE.json"
-   descriptor_path.write_text(json.dumps(descriptor,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
+   descriptor_path.write_text(json.dumps(descriptor,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
    descriptor_sha=sha_file(descriptor_path)
    historic_archive={"source_path":"engines/sample_engine.zip","source_sha256":"a"*64,"source_bytes":123,
     "expanded_path":module_key,"expanded_file_count_at_extract":1,"expanded_bytes_at_extract":len(payload.read_bytes()),
@@ -31,16 +31,16 @@ class FactorySafetyTests(unittest.TestCase):
      "tree_sha256":tree_hash(module),"bytes":sum(x["bytes"] for x in rows),"file_count":len(rows),
      "state":"MATERIALIZED_HASH_VERIFIED","consumer_adapter":"NOT_PROVEN_BY_EXTRACTION","execution":"NOT_GRANTED_WITHOUT_ADAPTER_AND_SMOKE","certification":"NOT_GRANTED"}],
     "certification":"NOT_GRANTED"}
-   (runtime/"module_registry.json").write_text(json.dumps(registry,indent=2)+"\\n",encoding="utf-8")
-   (runtime/"MACRODOWN_MANIFEST.json").write_text(json.dumps({"files":[]})+"\\n",encoding="utf-8")
+   (runtime/"module_registry.json").write_text(json.dumps(registry,indent=2)+"\n",encoding="utf-8")
+   (runtime/"MACRODOWN_MANIFEST.json").write_text(json.dumps({"files":[]})+"\n",encoding="utf-8")
    placement={"assets":[],"factory_reconciliation":{"schema":"CAJITA_LOUKSNA1_FACTORY/1.0","archive_count_materialized":1,
     "archive_bytes_removed":123,"archives":[historic_archive],"readmes_removed":[historic_readme],
     "module_count":1,"rollback_copies_retained_outside_runtime":True,"all_zip_7z_removed":True}}
-   (runtime/"EXTERNALIZED_ASSET_PLACEMENT.json").write_text(json.dumps(placement,indent=2)+"\\n",encoding="utf-8")
+   (runtime/"EXTERNALIZED_ASSET_PLACEMENT.json").write_text(json.dumps(placement,indent=2)+"\n",encoding="utf-8")
    routing={"state":{"status":"OLD","task_dispatch":"PLAN_ONLY","certification":"NOT_GRANTED"},
     "domain_order":[],"engine_registry":[],"route_profiles":[],"support_assets":[],
     "materialization":{"archive_count_removed":1,"module_count":1}}
-   (runtime/"command_subdomain_routing.json").write_text(json.dumps(routing,indent=2)+"\\n",encoding="utf-8")
+   (runtime/"command_subdomain_routing.json").write_text(json.dumps(routing,indent=2)+"\n",encoding="utf-8")
    result=factory_materialize(runtime,rollback,10_000_000)
    registry_after=json.loads((runtime/"module_registry.json").read_text(encoding="utf-8"))
    placement_after=json.loads((runtime/"EXTERNALIZED_ASSET_PLACEMENT.json").read_text(encoding="utf-8"))
