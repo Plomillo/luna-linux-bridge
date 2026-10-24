@@ -5,7 +5,7 @@ import argparse, hashlib, json, os, shutil, stat, zipfile
 from pathlib import Path
 SCHEMA="CAJITA_RUNTIME_MACRODOWN/1.0"
 DEFAULT_RAW_CAP_BYTES=1_500_000_000
-DEFAULT_COMBINED_CAP_BYTES=490_000_000
+DEFAULT_COMBINED_CAP_BYTES=479_000_000
 MANIFEST_NAME="MACRODOWN_MANIFEST.json"
 BINARY_SUFFIXES={".7z",".zip",".gz",".xz",".whl",".nupkg",".gguf",".parquet",".pdf"}
 EXCLUDED_DIRS={".git","__pycache__",".pytest_cache"}
