@@ -151,19 +151,26 @@ def find_builtin(root: Path) -> Path:
 
 
 def replace_section(text: str, marker: str, replacement: str) -> str:
-    positions = [i for i in range(len(text)) if text.startswith(marker, i)]
-    if len(positions) != 1:
-        raise RuntimeError(f"Expected exactly one section marker {marker!r}; found {len(positions)}")
-    start = positions[0]
-    end_marker = text.find("# }}}", start + len(marker))
-    if end_marker < 0:
-        raise RuntimeError(f"Section {marker!r} has no closing marker")
-    end = text.find("\n", end_marker)
-    if end < 0:
-        end = len(text)
-    else:
-        end += 1
-    return text[:start] + replacement + text[end:]
+    # Calibre sections can contain nested {{{ / # }}} regions. Match the
+    # outer section's balanced markers; stopping at the first close would
+    # leave part of a feature registered and is therefore forbidden.
+    lines = text.splitlines(keepends=True)
+    exact = [i for i, line in enumerate(lines) if line.rstrip("\\r\\n") == marker]
+    if len(exact) != 1:
+        raise RuntimeError(f"Expected exactly one section marker {marker!r}; found {len(exact)}")
+    start = exact[0]
+    depth = 0
+    for index in range(start, len(lines)):
+        stripped = lines[index].strip()
+        if stripped.startswith("# ") and stripped.endswith("{{{"):
+            depth += 1
+        elif stripped == "# }}}":
+            depth -= 1
+            if depth == 0:
+                return "".join(lines[:start]) + replacement + "".join(lines[index + 1:])
+            if depth < 0:
+                raise RuntimeError(f"Unbalanced section markers while replacing {marker!r}")
+    raise RuntimeError(f"Section {marker!r} has no balanced closing marker")
 
 
 def prune_builtin_registry(builtins_path: Path, removed: list[dict[str, Any]]) -> dict[str, str]:
