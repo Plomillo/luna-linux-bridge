@@ -157,8 +157,8 @@ def main() -> int:
     for rel in REQUIRED_PATHS:
         if not (root / rel).exists():
             raise RuntimeError(f"Required PDF/EPUB runtime component is absent: {rel}")
-    if (root / "source").exists():
-        raise RuntimeError("Expected to prune binary before attaching the pruned source overlay")
+    if not (root / "source" / "calibre").is_dir():
+        raise RuntimeError("The pruned source overlay must be attached at <root>/source/calibre before binary pruning")
 
     report: dict[str, Any] = {
         "schema": "CAJITA_CALIBRE_SLIM_BINARY_PRUNE_REPORT/1.0",
