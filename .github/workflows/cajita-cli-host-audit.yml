@@ -1,0 +1,83 @@
+name: Cajita CLI infrastructure — tests and Linux host audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "cajita-luna-runtime/2. Orquestación/Orquestador/CLIS.txt"
+      - "cajita-luna-runtime/2. Orquestación/Orquestador/punto.json"
+      - "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/**"
+      - "cajita-luna-runtime/CajitadeLuna.md"
+      - ".github/workflows/cajita-cli-host-audit.yml"
+  push:
+    branches: [main]
+    paths:
+      - "cajita-luna-runtime/2. Orquestación/Orquestador/CLIS.txt"
+      - "cajita-luna-runtime/2. Orquestación/Orquestador/punto.json"
+      - "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/**"
+      - "cajita-luna-runtime/CajitadeLuna.md"
+      - ".github/workflows/cajita-cli-host-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cajita-cli-audit-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    name: "Infrastructure unit tests — not provider certification"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          lfs: false
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+      - name: Compile CLI infrastructure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile             "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/common.py"             "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_registry.py"             "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_manager.py"             "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_mojo.py"             "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_cpp23_toolchain.py"             "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_claude_code.py"             "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_python.py"             "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_github.py"             "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_gemini.py"             "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_grok.py"             "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_hugging_face.py"             "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/tests/test_cli_registry.py"
+      - name: Run registry, idempotency and fail-closed tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover             -s "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/tests"             -p "test_cli_registry.py" -v
+          python "cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_registry.py" --self-test
+
+  host-audit:
+    name: "Read-only probe of the registered Linux host"
+    if: github.event_name != 'pull_request'
+    runs-on: [self-hosted, linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          path: "_cajita_cli_audit_${{ github.run_id }}"
+          fetch-depth: 1
+          lfs: false
+          clean: false
+          persist-credentials: false
+      - name: Audit provider binaries without installing or altering PATH
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          WORKTREE="$GITHUB_WORKSPACE/_cajita_cli_audit_${GITHUB_RUN_ID}"
+          PYTHONPATH="$WORKTREE/cajita-luna-runtime/2. Orquestación/Orquestador/CLIs"             python3 "$WORKTREE/cajita-luna-runtime/2. Orquestación/Orquestador/CLIs/cli_manager.py"             audit --output "$RUNNER_TEMP/cajita-cli-host-audit-${GITHUB_RUN_ID}.json"
+          echo "CLI_AUDIT_MODE=READ_ONLY"
+      - name: Preserve host audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cajita-cli-host-audit-${{ github.run_id }}
+          path: ${{ runner.temp }}/cajita-cli-host-audit-${{ github.run_id }}.json
+          if-no-files-found: warn
+          retention-days: 30
