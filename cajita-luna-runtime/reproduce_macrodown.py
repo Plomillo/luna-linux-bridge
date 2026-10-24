@@ -7,7 +7,7 @@ SCHEMA="CAJITA_RUNTIME_MACRODOWN/1.0"
 DEFAULT_RAW_CAP_BYTES=1_500_000_000
 DEFAULT_COMBINED_CAP_BYTES=490_000_000
 MANIFEST_NAME="MACRODOWN_MANIFEST.json"
-BINARY_SUFFIXES={".safetensors",".onnx",".bin",".7z",".zip",".gz",".xz",".whl",".nupkg",".model",".gguf",".parquet",".pdf"}
+BINARY_SUFFIXES={".7z",".zip",".gz",".xz",".whl",".nupkg",".gguf",".parquet",".pdf"}
 EXCLUDED_DIRS={".git","__pycache__",".pytest_cache"}
 EXCLUDED_SUFFIXES={".pyc",".pyo",".tmp",".part"}
 
@@ -49,7 +49,7 @@ def manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,c
           "route_type":domain_map.get(top,(None,None))[1],
           "zip_method":"STORED" if p.suffix.lower() in BINARY_SUFFIXES else "DEFLATED"})
     m={"schema":SCHEMA,"format":"ZIP archive with deterministic metadata; file extension .macrodown",
-      "candidate_id":"CAJITA_LUNA_RUNTIME_V9_20261023","hard_cap_raw_bytes":raw_cap_bytes,
+      "candidate_id":"CAJITA_LUNA_RUNTIME_V10_20261024","hard_cap_raw_bytes":raw_cap_bytes,
       "hard_cap_archive_bytes":max(0,combined_cap_bytes-companion_bytes),
       "combined_distribution_cap_bytes":combined_cap_bytes,
       "companion_artifact":{"path":"Louksna1.md","size_bytes":companion_bytes,"sha256":companion_sha256},
