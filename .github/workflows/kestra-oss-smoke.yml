@@ -3,6 +3,7 @@ name: Kestra Open Source - branch smoke test
 on:
   push:
     branches:
+      - main
       - custosz/super-1200-implementation-20261007
     paths:
       - "integrations/kestra/**"
@@ -150,6 +151,47 @@ jobs:
           fi
           echo "SUPER1200 continuity flow YAML/parser import: PASS (disabled copy; no schedule or worker dispatch)" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Parse the Louksna1 audit flow in disabled mode using live Kestra
+        working-directory: integrations/kestra
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          set -a
+          . ./.env
+          set +a
+          umask 077
+          auth_cfg="$RUNNER_TEMP/kestra-curl-auth-louksna1"
+          printf 'user = "%s:%s"\n' "$KESTRA_ADMIN_EMAIL" "$KESTRA_ADMIN_PASSWORD" > "$auth_cfg"
+          trap 'rm -f "$auth_cfg" "$RUNNER_TEMP/louksna1-release-audit-disabled.yml"' EXIT
+          python3 - "$RUNNER_TEMP/louksna1-release-audit-disabled.yml" <<'PY'
+          import sys
+          from pathlib import Path
+          source=Path("flows/21-louksna1-release-audit.yml").read_text(encoding="utf-8")
+          marker="namespace: louksna.kestra\n"
+          if source.count(marker)!=1:
+              raise SystemExit("Expected exactly one namespace declaration")
+          disabled=source.replace(marker,marker+"disabled: true\n",1)
+          lower=disabled.lower()
+          if "io.kestra.plugin.core.http.request" not in lower:
+              raise SystemExit("Expected the registered HTTP request plugin")
+          if "io.kestra.plugin.core.flow.if" not in lower or "490000000" not in disabled:
+              raise SystemExit("Read-only audit and its byte gate must be present")
+          if "schedule:" in lower or "triggers:" in lower:
+              raise SystemExit("Release audit must not schedule or trigger itself")
+          Path(sys.argv[1]).write_text(disabled,encoding="utf-8")
+          PY
+          audit_http="$(curl --connect-timeout 3 --max-time 15 --config "$auth_cfg" --silent --show-error \
+            --output "$EVIDENCE_DIR/louksna1-flow-import-response.json" --write-out '%{http_code}' \
+            --request POST --header 'Content-Type: application/x-yaml' \
+            --data-binary @"$RUNNER_TEMP/louksna1-release-audit-disabled.yml" \
+            http://127.0.0.1:8080/api/v1/main/flows || true)"
+          if [[ ! "$audit_http" =~ ^2[0-9][0-9]$ ]]; then
+            echo "Louksna1 audit flow parser/import failed: HTTP $audit_http"
+            cat "$EVIDENCE_DIR/louksna1-flow-import-response.json" 2>/dev/null || true
+            exit 1
+          fi
+          echo "Louksna1 read-only audit flow imported into live Kestra parser: PASS (disabled copy; no external requests dispatched)" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Import and execute the no-side-effect Kestra smoke flow
         working-directory: integrations/kestra
         shell: bash
@@ -269,7 +311,7 @@ jobs:
           done
           docker compose -f compose.yml logs --no-color --tail=250 \
             > "$EVIDENCE_DIR/startup.log" 2>&1
-          sha256sum compose.yml .env.example validate.py GOVERNANCE.json flows/00-smoke-test.yml \
+          sha256sum compose.yml .env.example validate.py GOVERNANCE.json flows/00-smoke-test.yml flows/21-louksna1-release-audit.yml \
             > "$EVIDENCE_DIR/source-files-sha256.txt" 2>&1
           {
             echo "## Kestra Open Source branch smoke"
