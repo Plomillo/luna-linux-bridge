@@ -60,9 +60,7 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         raise RuntimeError("AXIOM_SOURCE_LOADER_SOURCE_MISSING")
     loader_dest = multi_dir / "cajita_axiom_source_loader.py"
     binding_path = multi_dir / "axiom_interdisciplinary_binding.json"
-    if loader_dest.exists() or binding_path.exists():
-        raise RuntimeError("AXIOM_BINDING_DESTINATION_COLLISION")
-    shutil.copy2(loader_source, loader_dest)
+    loader_source_bytes = loader_source.read_bytes()
     binding = {
         "schema": "LOUKSNA_AXIOM_MULTI_INTERDISCIPLINAR_BINDING/1.0",
         "status": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING",
@@ -84,7 +82,17 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         "graph_execution": "NOT_PROVEN_BY_SOURCE_BINDING",
         "certification": "NOT_GRANTED"
     }
-    binding_path.write_text(json.dumps(binding, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    binding_bytes = (json.dumps(binding, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
+    if loader_dest.exists():
+        if loader_dest.is_symlink() or loader_dest.read_bytes() != loader_source_bytes:
+            raise RuntimeError("AXIOM_SOURCE_LOADER_CONTENT_COLLISION")
+    else:
+        shutil.copy2(loader_source, loader_dest)
+    if binding_path.exists():
+        if binding_path.is_symlink() or binding_path.read_bytes() != binding_bytes:
+            raise RuntimeError("AXIOM_BINDING_CONTENT_COLLISION")
+    else:
+        binding_path.write_bytes(binding_bytes)
     target_modules = []
     for target in targets:
         relative = _safe_rel(target["path"])
@@ -92,8 +100,6 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         if not directory.is_dir() or directory.is_symlink():
             raise RuntimeError("CANONICAL_TARGET_DIRECTORY_MISSING:" + target["id"])
         manifest_path = directory / "CAJITA_MODULE.json"
-        if manifest_path.exists():
-            raise RuntimeError("CANONICAL_TARGET_MODULE_MANIFEST_COLLISION:" + target["id"])
         rows = _rows(directory)
         manifest = {
             "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
@@ -110,7 +116,22 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
             "lifecycle_state": "MATERIALIZED_OR_SOURCE_DIRECTORY_REGISTERED",
             "certification": "NOT_GRANTED"
         }
-        manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+        manifest_bytes = (json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
+        if manifest_path.exists():
+            if manifest_path.is_symlink():
+                raise RuntimeError("CANONICAL_TARGET_MODULE_MANIFEST_SYMLINK:" + target["id"])
+            prior = json.loads(manifest_path.read_text(encoding="utf-8"))
+            prior_source = prior.get("source_identity", {})
+            if (prior.get("schema") != "CAJITA_CANONICAL_TARGET_MODULE/1.0"
+                or prior.get("target_id") != target["id"]
+                or prior_source.get("path") != "Louksna1.md"
+                or prior_source.get("protected_prefix_sha256") != source_sha
+                or prior_source.get("protected_prefix_bytes") != len(source_bytes)
+                or prior_source.get("companion_sha256") != doc_sha):
+                raise RuntimeError("CANONICAL_TARGET_MODULE_IDENTITY_COLLISION:" + target["id"])
+            manifest_path.write_bytes(manifest_bytes)
+        else:
+            manifest_path.write_bytes(manifest_bytes)
         target_modules.append({
             "target_id": target["id"], "domain_id": target["domain_id"], "path": target["path"],
             "manifest": manifest_path.relative_to(runtime).as_posix(), "manifest_sha256": _sha(manifest_path.read_bytes()),
