@@ -62,9 +62,16 @@ def main(argv: list[str]) -> int:
         print("FAIL_CLOSED: ebook-convert binary not found; set CALIBRE_EBOOK_CONVERT", file=sys.stderr)
         return 2
     destination.parent.mkdir(parents=True, exist_ok=True)
+    # When the pruned Python overlay is bundled beside this wrapper, tell
+    # the official binary to load the reviewable, narrowed source tree. Calibre
+    # documents CALIBRE_DEVELOP_FROM as the supported source-overlay mechanism.
+    env = os.environ.copy()
+    overlay = Path(__file__).resolve().parent / "source"
+    if (overlay / "calibre").is_dir():
+        env["CALIBRE_DEVELOP_FROM"] = str(overlay)
     command = [converter, str(source), str(destination), *argv[2:]]
     try:
-        return subprocess.run(command, check=False).returncode
+        return subprocess.run(command, check=False, env=env).returncode
     except OSError as exc:
         print(f"FAIL_CLOSED: unable to launch ebook-convert: {exc}", file=sys.stderr)
         return 2
