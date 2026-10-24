@@ -302,3 +302,50 @@ Dominios, en orden inmutable:
 - Cada build debe medir el contenido real con objetos Git LFS materializados y comprobar el límite duro de `470.000.000` bytes. Ningún número histórico sustituye la medición del build actual.
 
 **Estado de esta sección:** inventario trazable y actualización continua prevista; certificación integral `NOT_GRANTED`.
+
+
+## Estado reconciliado de inventario y CLI — evidencia final 2026-10-24
+
+Esta adenda registra el estado posterior a la sustitución BTX, la instalación del subsistema CLI y la reconstrucción reproducible de Macrodown. Las menciones anteriores a “manifiesto no regenerado” y “paquete no reconstruido” describen un estado histórico anterior a esta adenda; no describen el artefacto validado abajo. Se conservan para trazabilidad, sin que prevalezcan sobre esta evidencia posterior.
+
+### Distribución actual comprobada en GitHub
+
+- Inventario distribuido: 151 archivos más MACRODOWN_MANIFEST.json = 152 miembros en el paquete.
+- Payload bruto sin manifiesto: 464.090.916 bytes.
+- Payload bruto incluido manifiesto: 464.130.593 bytes.
+- Archivo Macrodown reproducible: 412.237.160 bytes.
+- Límite duro: 470.000.000 bytes. Puertas de tamaño bruto y de archivo: PASS.
+- SHA-256 del artefacto Macrodown: 9fc7dedde0076524d1f1c98bb353521cc914de5217d4fb18e1b276ddc401b580.
+- MACRODOWN_MANIFEST.json está regenerado y versionado con el mismo inventario que fue incrustado en el archivo construido.
+
+Inventario individual completo, tamaños, SHA-256, clasificación por dominio y comparación de rutas con la versión previa: docs/cajita-luna/CAJITA_INVENTORY_AUDIT_20261024.json. Manifiesto de contenido: MACRODOWN_MANIFEST.json. Evidencia de build: docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json.
+
+### Subsistema CLIs
+
+La infraestructura en 2. Orquestación/Orquestador/CLIs/ contiene el contrato de dominios, registro de sondas, gestor de operaciones, utilidades comunes, ocho adaptadores y pruebas. punto.json está vinculado a esos módulos y conserva el orden canónico de los ocho dominios. CLIS.txt fue retirado de esta ruta después de migrar su especificación al contrato modular; su SHA histórico se conserva como procedencia. Las pruebas de CI de la infraestructura pasaron (compilación sintáctica y nueve pruebas de regresión).
+
+Auditoría de solo lectura del host Linux registrado (runner luna-aux), capturada el 2026-10-24 a las 00:57:32 UTC:
+
+| Dominio | Estado observado | Evidencia resumida |
+|---|---|---|
+| CLI_MOJO | AVAILABLE | Mojo 1.1.0 |
+| CLI_CPP23_TOOLCHAIN | AVAILABLE | g++ 14.2.0, smoke C++23 PASS; CMake 3.31.6; Ninja 1.12.1; clang++ ausente pero opcional |
+| CLI_CLAUDE_CODE | ABSENT | No se encontró claude |
+| CLI_PYTHON | AVAILABLE | Python 3.13.5; pip 25.1.1 |
+| CLI_GITHUB | AVAILABLE | GitHub CLI 2.46.0; Git 2.47.3 como soporte |
+| CLI_GEMINI | ABSENT | No se encontró gemini |
+| CLI_GROK | ABSENT | No se encontró grok |
+| CLI_HUGGING_FACE | ABSENT | No se encontraron hf ni huggingface-cli |
+
+Resultado de la infraestructura: PASS. Disponibilidad de proveedores en el host: PARTIAL (4/8). La auditoría no instaló ni actualizó proveedores ni modificó PATH. La instalación de los cuatro ausentes permanece bloqueada hasta definir pines de versión exactos, verificar procedencia e integridad, crear checkpoint y rollback, y aprobar el plan versionado mediante su SHA-256. Por ello no se declara que los ocho proveedores estén instalados o certificados.
+
+Evidencia registrada: docs/cajita-luna/CAJITA_CLI_HOST_AUDIT_20261024.json. Artefacto original de ejecución: cajita-cli-host-audit-40047411263.
+
+### Pendientes funcionales y de gobernanza
+
+1. **BTX en SQLite:** archivo activo 2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).sqlite3, 6.750.208 bytes, SHA-256 fdb4a43776a06e76cf772242bc8c802970b2b55c9544cd03826aa8453bc993e0. La ruta del antiguo archivo PDF/7z está ausente del inventario de distribución y su original se conserva fuera del runtime para rollback. La equivalencia versículo por versículo y el aparato editorial no han recibido validación independiente: certificación no concedida.
+2. **Registro de recursos externos:** 121 referencias siguen con dependencias y operatividad UNVERIFIED. No se deben tratar como parte de los 151 archivos que sí contiene el paquete, ni como dependencias ya resueltas.
+3. **Diez activos de infraestructura:** el intento previo de expansión fue abortado de forma fail-closed por DESTINATION_EXISTS_FAIL_CLOSED:APACHE_JENA_6_2_0. La colocación/compresión verificada no constituye prueba de ejecución nativa ni cableado funcional integral.
+4. **Calidad de modelos:** siguen sin establecerse equivalencia de calidad e independencia de validación para el conjunto completo. El PASS del límite de tamaño no equivale a certificación integral.
+
+**Estado final de la evidencia disponible:** inventario de distribución actualizado y reproducible; infraestructura CLI modular presente y probada; presencia real de proveedores auditada parcialmente; gates funcionales independientes aún pendientes; CERTIFICATION=NOT_GRANTED.
