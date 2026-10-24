@@ -435,13 +435,21 @@ jobs:
           fi
           exit 0
 
-      - name: Upload G24 decision and telemetry
+      - name: Upload standalone G24 decision for release gate
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: louksna1-g24-evidence
+          path: evidence/LOUKSNA1_G24_EVIDENCE.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload G24 runtime telemetry separately
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: louksna1-g24-telemetry
           path: |
-            evidence/LOUKSNA1_G24_EVIDENCE.json
             ${{ runner.temp }}/smoke-all.log
             ${{ runner.temp }}/docker-build.log
             ${{ runner.temp }}/cgroup-memory-max.txt
