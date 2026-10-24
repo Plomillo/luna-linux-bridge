@@ -9,6 +9,7 @@ on:
       - "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/**"
       - "docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json"
       - "tools/cajita_axiom_graph_audit.py"
+      - "tests/test_cajita_axiom_graph_audit.py"
       - ".github/workflows/louksna1-integral-certification.yml"
   workflow_dispatch:
 
@@ -48,7 +49,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m py_compile tools/cajita_axiom_graph_audit.py
+          python -m py_compile tools/cajita_axiom_graph_audit.py tests/test_cajita_axiom_graph_audit.py
+          PYTHONPATH=tools python -m unittest discover -s tests -p 'test_cajita_axiom_graph_audit.py' -v
 
       - name: Materialize source-bound RDF and execute Apache Jena
         shell: bash
