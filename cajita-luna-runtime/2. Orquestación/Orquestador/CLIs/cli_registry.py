@@ -1,113 +1,61 @@
 from __future__ import annotations
-import argparse
-import hashlib
-import importlib.util
-import json
-import os
-import pathlib
-import sys
-import tempfile
+import argparse, hashlib, importlib.util, json, os, pathlib, sys
 from datetime import datetime, timezone
-
-ROOT = pathlib.Path(__file__).resolve().parent
-ORCHESTRATOR = ROOT.parent
-sys.path.insert(0, str(ROOT))
-ORDER = ["CLI_MOJO", "CLI_CPP23_TOOLCHAIN", "CLI_CLAUDE_CODE", "CLI_PYTHON",
-         "CLI_GITHUB", "CLI_GEMINI", "CLI_GROK", "CLI_HUGGING_FACE"]
-
-def utc():
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
-
-def sha(path):
-    h = hashlib.sha256()
-    with pathlib.Path(path).open("rb") as f:
-        for block in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(block)
-    return h.hexdigest()
-
-def load_manifest(path):
-    with pathlib.Path(path).open("r", encoding="utf-8") as f:
-        value = json.load(f)
-    if not isinstance(value, dict) or value.get("domain_order") != ORDER:
-        raise ValueError("MANIFEST_DOMAIN_ORDER_INVALID")
-    if value.get("role") != "DECLARATIVE_ENTRYPOINT_NOT_MONOLITHIC_IMPLEMENTATION":
-        raise ValueError("MANIFEST_ROLE_INVALID")
-    if len(value.get("domains", [])) != 8:
-        raise ValueError("MANIFEST_DOMAIN_COUNT_INVALID")
-    return value
-
-def run_registry(manifest_path):
-    manifest = load_manifest(manifest_path)
-    results = []
-    for domain in manifest["domains"]:
-        domain_id = domain.get("id")
-        module_path = (ORCHESTRATOR / domain.get("module", "")).resolve()
+ROOT=pathlib.Path(__file__).resolve().parent
+ORCHESTRATOR=ROOT.parent
+sys.path.insert(0,str(ROOT))
+ORDER=["CLI_MOJO","CLI_CPP23_TOOLCHAIN","CLI_CLAUDE_CODE","CLI_PYTHON","CLI_GITHUB","CLI_GEMINI","CLI_GROK","CLI_HUGGING_FACE"]
+def utc(): return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+def read_json(p):
+    v=json.loads(pathlib.Path(p).read_text(encoding="utf-8"))
+    if not isinstance(v,dict): raise ValueError("JSON_ROOT_NOT_OBJECT")
+    return v
+def load_inputs(manifest_path=None,contract_path=None):
+    mp=pathlib.Path(manifest_path or ORCHESTRATOR/"punto.json")
+    cp=pathlib.Path(contract_path or ROOT/"cli_contract.json")
+    m=read_json(mp); c=read_json(cp)
+    if m.get("domain_order")!=ORDER or c.get("domain_order")!=ORDER: raise ValueError("DOMAIN_ORDER_MISMATCH")
+    if m.get("role")!="DECLARATIVE_ENTRYPOINT_NOT_MONOLITHIC_IMPLEMENTATION": raise ValueError("MANIFEST_ROLE_INVALID")
+    if len(m.get("domains",[]))!=8 or [x.get("id") for x in m["domains"]]!=ORDER: raise ValueError("MANIFEST_DOMAIN_COUNT_OR_ORDER_INVALID")
+    if [x.get("id") for x in c.get("domains",[])]!=ORDER: raise ValueError("CONTRACT_DOMAIN_COUNT_OR_ORDER_INVALID")
+    if any(m["domains"][i].get("module","").split("/")[-1]!=c["domains"][i].get("module") for i in range(8)): raise ValueError("MODULE_BINDING_MISMATCH")
+    return mp,cp,m,c
+def selftest(manifest_path=None,contract_path=None):
+    mp,cp,m,c=load_inputs(manifest_path,contract_path)
+    missing=[]
+    for d in c["domains"]:
+        p=(ORCHESTRATOR/d["module"]).resolve()
+        try: p.relative_to(ORCHESTRATOR.resolve())
+        except ValueError: missing.append({"id":d["id"],"status":"MODULE_PATH_ESCAPE"}); continue
+        if not p.is_file(): missing.append({"id":d["id"],"status":"MODULE_ABSENT"})
+    return {"schema":"CAJITA_CLI_INFRASTRUCTURE_SELFTEST/1.0","status":"PASS" if not missing else "FAIL","domain_count":8,"unique_domain_count":len(set(ORDER)),"contract_present":cp.is_file(),"manifest_present":mp.is_file(),"all_adapters_present":not missing,"missing_adapters":missing,"legacy_spec_git_blob_sha":c.get("legacy_specification",{}).get("git_blob_sha"),"legacy_spec_migrated":True,"side_effects":False,"certification":"NOT_GRANTED"}
+def run_registry(manifest_path=None,contract_path=None):
+    mp,cp,m,c=load_inputs(manifest_path,contract_path)
+    cmap={d["id"]:d for d in c["domains"]}; rows=[]
+    for d in m["domains"]:
+        p=(ORCHESTRATOR/d["module"]).resolve()
+        try: p.relative_to(ORCHESTRATOR.resolve())
+        except ValueError: rows.append({"domain_id":d["id"],"status":"MODULE_PATH_ESCAPE"}); continue
+        if not p.is_file(): rows.append({"domain_id":d["id"],"status":"ADAPTER_ABSENT"}); continue
         try:
-            module_path.relative_to(ORCHESTRATOR.resolve())
-        except ValueError:
-            raise ValueError("MODULE_PATH_ESCAPES_ORCHESTRATOR:" + str(domain_id))
-        if not module_path.is_file():
-            results.append({"domain_id": domain_id, "status": "ADAPTER_ABSENT", "module": str(module_path)})
-            continue
-        spec = importlib.util.spec_from_file_location("custosz_cli_" + str(domain_id).lower(), module_path)
-        if spec is None or spec.loader is None:
-            results.append({"domain_id": domain_id, "status": "IMPORT_UNAVAILABLE", "module": str(module_path)})
-            continue
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        result = module.probe()
-        results.append(result)
-    present = sum(1 for x in results if x.get("status") == "AVAILABLE")
-    report = {"schema": "CUSTOSZ_CLI_REGISTRY_PROBE/1.0", "captured_at_utc": utc(),
-              "manifest_path": str(manifest_path), "manifest_sha256": sha(manifest_path),
-              "cli_spec_path": str(ORCHESTRATOR / "CLIS.txt"),
-              "cli_spec_sha256": sha(ORCHESTRATOR / "CLIS.txt"),
-              "domain_order": ORDER, "domain_count": len(results), "available_domain_count": present,
-              "results": results, "read_only": True, "mutations_performed": False,
-              "remote_writes": False, "credential_values_logged": False,
-              "status": "PASS" if len(results) == 8 and all(x.get("status") == "AVAILABLE" for x in results)
-                        else "PARTIAL", "certification": "NOT_GRANTED"}
-    return report
-
-def write_atomic(path, value):
-    path = pathlib.Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temp = tempfile.mkstemp(prefix=path.name + ".", dir=str(path.parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(value, f, indent=2, sort_keys=True, ensure_ascii=False)
-            f.write("\n")
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(temp, path)
-    finally:
-        try:
-            os.unlink(temp)
-        except FileNotFoundError:
-            pass
-
-def selftest():
-    manifest = ROOT / ".." / "punto.json"
-    return {"status": "PASS" if len(ORDER) == 8 and len(set(ORDER)) == 8 else "FAIL",
-            "ordered_domains": ORDER, "manifest_present": manifest.resolve().is_file(),
-            "project_mutations": False, "certification": "NOT_GRANTED"}
-
+            spec=importlib.util.spec_from_file_location("cajita_"+d["id"].lower(),p)
+            if spec is None or spec.loader is None: raise ImportError("MODULE_LOADER_UNAVAILABLE")
+            mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+            row=mod.probe(); row["official_sources"]=cmap[d["id"]].get("official_sources",[]); row["installation_policy_status"]=cmap[d["id"]].get("status"); rows.append(row)
+        except Exception as e: rows.append({"domain_id":d["id"],"status":"PROBE_ERROR","error_type":type(e).__name__,"reason":str(e)[:400]})
+    infrastructure="PASS" if len(rows)==8 and all(r.get("status") not in {"PROBE_ERROR","ADAPTER_ABSENT","MODULE_PATH_ESCAPE"} for r in rows) else "FAIL"
+    counts={}
+    for r in rows: counts[r.get("status","UNKNOWN")]=counts.get(r.get("status","UNKNOWN"),0)+1
+    available=sum(1 for r in rows if r.get("status")=="AVAILABLE")
+    return {"schema":"CAJITA_CLI_HOST_AUDIT/1.0","captured_at_utc":utc(),"repository":"Plomillo/luna-linux-bridge","source_commit":os.getenv("GITHUB_SHA"),"runtime_relative_path":"2. Orquestación/Orquestador/CLIs","manifest_sha256":sha(mp),"contract_sha256":sha(cp),"legacy_specification":{"path":"2. Orquestación/Orquestador/CLIS.txt","git_blob_sha":c.get("legacy_specification",{}).get("git_blob_sha"),"working_tree_present":(ORCHESTRATOR/"CLIS.txt").exists()},"domain_order":ORDER,"domain_count":len(rows),"available_domain_count":available,"status_counts":counts,"infrastructure_status":infrastructure,"provider_host_readiness":"ALL_REQUIRED_PROBES_PASS" if available==8 else "PARTIAL","results":rows,"read_only":True,"mutations_performed":False,"shell_invoked":False,"credential_values_logged":False,"certification":"NOT_GRANTED"}
+def write(path,value):
+    p=pathlib.Path(path); p.parent.mkdir(parents=True,exist_ok=True); t=p.with_name(p.name+".tmp"); t.write_text(json.dumps(value,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8"); t.replace(p)
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--manifest", type=pathlib.Path, default=ORCHESTRATOR / "punto.json")
-    parser.add_argument("--output", type=pathlib.Path)
-    parser.add_argument("--self-test", action="store_true")
-    args = parser.parse_args()
-    try:
-        report = selftest() if args.self_test else run_registry(args.manifest)
-        if args.output:
-            write_atomic(args.output, report)
-        print(json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False))
-        return 0 if report.get("status") in {"PASS", "PARTIAL"} else 2
-    except Exception as exc:
-        print(json.dumps({"status": "ERROR", "error_type": type(exc).__name__, "reason": str(exc)[:1000],
-                          "certification": "NOT_GRANTED"}, indent=2))
-        return 2
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    ap=argparse.ArgumentParser(); ap.add_argument("--manifest",type=pathlib.Path,default=ORCHESTRATOR/"punto.json"); ap.add_argument("--contract",type=pathlib.Path,default=ROOT/"cli_contract.json"); ap.add_argument("--output",type=pathlib.Path); ap.add_argument("--self-test",action="store_true"); a=ap.parse_args()
+    try: result=selftest(a.manifest,a.contract) if a.self_test else run_registry(a.manifest,a.contract)
+    except Exception as e: result={"status":"ERROR","infrastructure_status":"FAIL","reason":str(e)[:700],"certification":"NOT_GRANTED"}
+    if a.output: write(a.output,result)
+    print(json.dumps(result,indent=2,sort_keys=True,ensure_ascii=False))
+    return 0 if (result.get("status")=="PASS" if a.self_test else result.get("infrastructure_status")=="PASS") else 2
+if __name__=="__main__": raise SystemExit(main())
