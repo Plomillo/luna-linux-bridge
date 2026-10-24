@@ -123,8 +123,13 @@ class CajitaRouterTests(unittest.TestCase):
     def test_every_selected_asset_has_activation_gates_and_no_direct_execution(self):
         result = build_plan("/play AE integra el runtime y valida la arquitectura")
         for asset in result["selected_support_assets"]:
-            self.assertEqual(asset["activation_status"], "MAPPED_CONTAINER_NOT_ACTIVATED")
+            if asset.get("materialized_path"):
+                self.assertEqual(asset["activation_status"], "MATERIALIZED_NOT_FUNCTIONALLY_VALIDATED")
+                self.assertTrue(asset["archive_removed_from_runtime"])
+            else:
+                self.assertEqual(asset["activation_status"], "MAPPED_CONTAINER_NOT_ACTIVATED")
             self.assertIn("verify-sha256", asset["activation_requirements"])
+            self.assertIn("verify-module-manifest", asset["activation_requirements"])
             self.assertIn("register-real-consumer-adapter", asset["activation_requirements"])
         self.assertFalse(result["execution_authorized"])
         self.assertEqual(result["orchestration_mode"], "PLAN_ONLY; SUBDOMAIN_TASK_DISPATCH_NOT_IMPLEMENTED")
