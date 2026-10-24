@@ -123,6 +123,8 @@ jobs:
             --report "$WORK/reports/source-prune.json"
           mkdir -p "$WORK/artifacts" "$DIST_ROOT/source"
           cp -a "$SOURCE_ROOT/src/." "$DIST_ROOT/source/"
+          cp "$SOURCE_ROOT/LICENSE" "$DIST_ROOT/CALIBRE_UPSTREAM_LICENSE"
+          cp "$SOURCE_ROOT/COPYRIGHT" "$DIST_ROOT/CALIBRE_UPSTREAM_COPYRIGHT"
           tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
             -cJf "$WORK/artifacts/calibre-9.17.0-cajita-source-pruned.tar.xz" \
             -C "$SOURCE_ROOT/src" .
@@ -132,8 +134,8 @@ jobs:
           cp tools/calibre-slim/inspect_layout.py "$WORK/artifacts/"
           cp tools/calibre-slim/calibre-slim-convert "$WORK/artifacts/"
           cp tools/calibre-slim/profile.json "$WORK/artifacts/"
-          cp "$SOURCE_ROOT/LICENSE" "$WORK/artifacts/" 2>/dev/null || true
-          cp "$SOURCE_ROOT/COPYRIGHT" "$WORK/artifacts/" 2>/dev/null || true
+          cp "$SOURCE_ROOT/LICENSE" "$WORK/artifacts/CALIBRE_UPSTREAM_LICENSE"
+          cp "$SOURCE_ROOT/COPYRIGHT" "$WORK/artifacts/CALIBRE_UPSTREAM_COPYRIGHT"
 
       - name: Prune disposable binary distribution
         id: binary-prune
