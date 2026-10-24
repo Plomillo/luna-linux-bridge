@@ -1,29 +1,29 @@
 {
   "schema": "CAJITA_INVENTORY_AUDIT/1.0",
   "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
-  "generated_at_utc": "2026-10-24T00:58:44.397141+00:00",
+  "generated_at_utc": "2026-10-24T01:01:27.090167+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "b7980762efe0776cf60ef9e4c9cdbb3398c8bca3",
+  "source_commit": "c2ff22412dc5dcda716f1941ff8f04fa27f54470",
   "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
   "distribution": {
     "archive_format": "deterministic ZIP container with .macrodown extension",
     "member_count_including_manifest": 152,
     "file_count_excluding_manifest": 151,
-    "runtime_payload_bytes_excluding_manifest": 464090916,
-    "gross_raw_payload_bytes_including_manifest": 464130593,
-    "archive_bytes": 412237160,
+    "runtime_payload_bytes_excluding_manifest": 464095721,
+    "gross_raw_payload_bytes_including_manifest": 464135398,
+    "archive_bytes": 412238651,
     "hard_cap_bytes": 470000000,
-    "raw_bytes_under_cap": 5869407,
-    "archive_bytes_under_cap": 57762840,
-    "archive_sha256": "9fc7dedde0076524d1f1c98bb353521cc914de5217d4fb18e1b276ddc401b580",
+    "raw_bytes_under_cap": 5864602,
+    "archive_bytes_under_cap": 57761349,
+    "archive_sha256": "a896edaee8be85e297819830d70467629ead9f38bdbb5af6512d2f91f13d22b4",
     "raw_gate": "PASS",
     "archive_gate": "PASS",
     "certification": "NOT_GRANTED"
   },
   "runtime_root_document": {
     "path": "CajitadeLuna.md",
-    "size_bytes": 35593,
-    "sha256": "28a9dda9d9650ff1f9a51a5fd53dbd2e48e0427cd2cb11d2d694274d2a9e9d11"
+    "size_bytes": 40398,
+    "sha256": "1584a3380519d48b112fac4ced4ebfc6824bd9301dd4d15a7e7c0ce1467bfedd"
   },
   "cli_infrastructure": {
     "path": "2. Orquestación/Orquestador/CLIs",
@@ -100,69 +100,21 @@
     },
     "ROOT_OR_SUPPORT": {
       "file_count": 16,
-      "bytes": 374681
+      "bytes": 379486
     }
   },
   "prior_manifest_reconciliation": {
-    "prior_file_count_excluding_manifest": 132,
+    "prior_file_count_excluding_manifest": 151,
     "current_file_count_excluding_manifest": 151,
-    "added_paths": [
-      "1. Cerebro/model.safetensors.q4.json",
-      "2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).sqlite3",
-      "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
-      "2. Orquestación/Orquestador/CLIs/cli_contract.json",
-      "2. Orquestación/Orquestador/CLIs/cli_manager.py",
-      "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z",
-      "3. Transcripción/model.safetensors.q4.json",
-      "4. Traductor Inteligente/Traducción general/model.safetensors.q4.json",
-      "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z",
-      "6. Sistema Inteligente/Análisis Avanzado/model.safetensors.q4.json",
-      "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z",
-      "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z",
-      "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z",
-      "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z",
-      "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z",
-      "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z",
-      "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z",
-      "EXTERNALIZED_ASSET_PLACEMENT.json",
-      "cajita_router.py",
-      "cajita_weight_materializer.py",
-      "command_subdomain_routing.json"
-    ],
-    "removed_paths": [
-      "2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).7z",
-      "2. Orquestación/Orquestador/CLIS.txt"
-    ],
+    "added_paths": [],
+    "removed_paths": [],
     "changed_paths": [
-      "1. Cerebro/cerebro_180mb_runtime.py",
-      "1. Cerebro/model.safetensors",
-      "2. Orquestación/Orquestador/CLIs/cli_claude_code.py",
-      "2. Orquestación/Orquestador/CLIs/cli_cpp23_toolchain.py",
-      "2. Orquestación/Orquestador/CLIs/cli_gemini.py",
-      "2. Orquestación/Orquestador/CLIs/cli_github.py",
-      "2. Orquestación/Orquestador/CLIs/cli_grok.py",
-      "2. Orquestación/Orquestador/CLIs/cli_hugging_face.py",
-      "2. Orquestación/Orquestador/CLIs/cli_mojo.py",
-      "2. Orquestación/Orquestador/CLIs/cli_python.py",
-      "2. Orquestación/Orquestador/CLIs/cli_registry.py",
-      "2. Orquestación/Orquestador/CLIs/common.py",
-      "2. Orquestación/Orquestador/CLIs/tests/test_cli_registry.py",
-      "2. Orquestación/Orquestador/punto.json",
-      "3. Transcripción/lowrank_runtime.py",
-      "3. Transcripción/model.safetensors",
-      "4. Traductor Inteligente/Traducción general/lowrank_runtime.py",
-      "4. Traductor Inteligente/Traducción general/model.safetensors",
-      "6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py",
-      "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
-      "CAJITA_RUNTIME_V1/weights_manifest.json",
       "CajitadeLuna.md",
-      "RUNTIME_CANDIDATE_V1/registry.json",
-      "cajita_runtime.py",
-      "reproduce_macrodown.py"
+      "EXTERNALIZED_ASSET_PLACEMENT.json"
     ],
-    "added_count": 21,
-    "removed_count": 2,
-    "changed_count": 25,
+    "added_count": 0,
+    "removed_count": 0,
+    "changed_count": 2,
     "prior_manifest_was_in_sync": false
   },
   "inventory": [
@@ -1266,8 +1218,8 @@
       "domain_id": null,
       "path": "CajitadeLuna.md",
       "route_type": null,
-      "sha256": "28a9dda9d9650ff1f9a51a5fd53dbd2e48e0427cd2cb11d2d694274d2a9e9d11",
-      "size_bytes": 35593,
+      "sha256": "1584a3380519d48b112fac4ced4ebfc6824bd9301dd4d15a7e7c0ce1467bfedd",
+      "size_bytes": 40398,
       "zip_method": "DEFLATED"
     },
     {
@@ -1282,7 +1234,7 @@
       "domain_id": null,
       "path": "EXTERNALIZED_ASSET_PLACEMENT.json",
       "route_type": null,
-      "sha256": "ef2897321b8055ccfd758442f00547cf5c3966be00a5173675bcc3ae4f811dcc",
+      "sha256": "ebfdf7585f286792eed8885866ebbf2382a8f76350fa2e03a2a17e214f64b817",
       "size_bytes": 56838,
       "zip_method": "DEFLATED"
     },
@@ -1377,7 +1329,7 @@
     {
       "path": "MACRODOWN_MANIFEST.json",
       "size_bytes": 39677,
-      "sha256": "b6dc1ee28eb6aa254325507792064c1917f8fbc6615a03505948c4c64a4d7491",
+      "sha256": "66fdf26e8993ded4c8c021c1175e61727a9444549e96eb9e135128b9c280e9e9",
       "domain_id": null,
       "route_type": null,
       "zip_method": "DEFLATED",
