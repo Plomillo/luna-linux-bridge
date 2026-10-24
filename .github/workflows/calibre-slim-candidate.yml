@@ -1,4 +1,5 @@
 name: Cajita Calibre Slim Candidate
+# v2 scope: PDF/EPUB public outputs; HTML is retained only as an internal TXT conversion dependency.
 
 on:
   push:
