@@ -1,21 +1,21 @@
 {
   "schema": "CAJITA_INVENTORY_AUDIT/1.0",
   "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
-  "generated_at_utc": "2026-10-24T19:00:07.953897+00:00",
+  "generated_at_utc": "2026-10-24T19:01:10.467534+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "631d582da6a7090c85bfaf93332cf4b9a354d7fe",
+  "source_commit": "ef9c9e95ea4f93bbcd7d9bd51b89ceeb81d55732",
   "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
   "distribution": {
     "archive_format": "deterministic ZIP container with .macrodown extension",
     "member_count_including_manifest": 159,
     "file_count_excluding_manifest": 158,
-    "runtime_payload_bytes_excluding_manifest": 464229124,
-    "gross_raw_payload_bytes_including_manifest": 464270860,
-    "archive_bytes": 412321623,
+    "runtime_payload_bytes_excluding_manifest": 464229141,
+    "gross_raw_payload_bytes_including_manifest": 464270877,
+    "archive_bytes": 412321628,
     "hard_cap_bytes": 470000000,
-    "raw_bytes_under_cap": 5729140,
-    "archive_bytes_under_cap": 57678377,
-    "archive_sha256": "b4f86f34191285699325bc1f2ebb834b2c3e86deb3d2ada480987e606f8feb84",
+    "raw_bytes_under_cap": 5729123,
+    "archive_bytes_under_cap": 57678372,
+    "archive_sha256": "6052a1d10409061b2cce5690b56a7bef4d2fd30eb469fcd07bd9b1aa3e707211",
     "raw_gate": "PASS",
     "archive_gate": "PASS",
     "certification": "NOT_GRANTED"
@@ -100,7 +100,7 @@
     },
     "ROOT_OR_SUPPORT": {
       "file_count": 17,
-      "bytes": 440157
+      "bytes": 440174
     }
   },
   "prior_manifest_reconciliation": {
@@ -1282,7 +1282,7 @@
       "domain_id": null,
       "path": "EXTERNALIZED_ASSET_PLACEMENT.json",
       "route_type": null,
-      "sha256": "21bb5ec8b4b332c4ef06fe768aa4703ee39f0c2aa55138a4dfabef9fb9e2074e",
+      "sha256": "787d5863bec2820260daf7d7db84a9ebec3888677a44cf048afb37b1b6d8df01",
       "size_bytes": 56838,
       "zip_method": "DEFLATED"
     },
@@ -1346,8 +1346,8 @@
       "domain_id": null,
       "path": "cajita_router.py",
       "route_type": null,
-      "sha256": "3580c098ae959aef16790e7210b65859b6c70370bfefda391543e5715735da56",
-      "size_bytes": 28398,
+      "sha256": "0b32ad832771a5871865e6fb8c283bc9a49c6886ddf95adfe36a23eab4679eca",
+      "size_bytes": 28415,
       "zip_method": "DEFLATED"
     },
     {
@@ -1385,7 +1385,7 @@
     {
       "path": "MACRODOWN_MANIFEST.json",
       "size_bytes": 41736,
-      "sha256": "a16e4c9e7dd287b1ee77ef0b7ca25d0f78dabdacea8d8653960b8e9e72fae405",
+      "sha256": "7b477b7f9715dd99faae0dd67a4791c24093cbb8f74619b670cd84db56bd1642",
       "domain_id": null,
       "route_type": null,
       "zip_method": "DEFLATED",
