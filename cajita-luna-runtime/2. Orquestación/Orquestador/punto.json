@@ -5,8 +5,13 @@
     "role": "EXTENSIBLE_INFRASTRUCTURE_NOT_NINTH_CLI"
   },
   "cli_spec": {
-    "path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/2. Orquestación/Orquestador/CLIS.txt",
-    "sha256": "ecac2319f8d1cdc2aef0046a6cabd2c25de39801f07eea15021c38ed6e30d7fb"
+    "migration_status": "IMPLEMENTED_MODULAR_INFRASTRUCTURE_LEGACY_TEXT_REMOVED",
+    "legacy_git_path": "cajita-luna-runtime/2. Orquestación/Orquestador/CLIS.txt",
+    "legacy_git_blob_sha": "146afab4ef88e659cba5b94c2e989f7106fdd1e4",
+    "replacement_contract_path": "CLIs/cli_contract.json",
+    "replacement_registry_path": "CLIs/cli_registry.py",
+    "replacement_manager_path": "CLIs/cli_manager.py",
+    "policy": "TEXT_SPEC_MIGRATED_TO_VERSIONED_MODULAR_IMPLEMENTATION; HOST_PROVIDER_INSTALLATION_IS_TRACKED_SEPARATELY"
   },
   "created_at_utc": "2026-10-17T20:36:25Z",
   "doctrine": "EXTEND_DO_NOT_REPLACE",
@@ -35,7 +40,7 @@
         "binary": "mojo"
       },
       "id": "CLI_MOJO",
-      "initial_state": "ADAPTER_PENDING",
+      "initial_state": "HOST_AUDIT_PENDING",
       "module": "CLIs/cli_mojo.py",
       "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
     },
@@ -53,7 +58,7 @@
         "binary": "g++"
       },
       "id": "CLI_CPP23_TOOLCHAIN",
-      "initial_state": "ADAPTER_PENDING",
+      "initial_state": "HOST_AUDIT_PENDING",
       "module": "CLIs/cli_cpp23_toolchain.py",
       "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
     },
@@ -71,7 +76,7 @@
         "binary": "claude"
       },
       "id": "CLI_CLAUDE_CODE",
-      "initial_state": "ADAPTER_PENDING",
+      "initial_state": "HOST_AUDIT_PENDING",
       "module": "CLIs/cli_claude_code.py",
       "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
     },
@@ -89,7 +94,7 @@
         "binary": "python3"
       },
       "id": "CLI_PYTHON",
-      "initial_state": "ADAPTER_PENDING",
+      "initial_state": "HOST_AUDIT_PENDING",
       "module": "CLIs/cli_python.py",
       "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
     },
@@ -101,13 +106,15 @@
       ],
       "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
       "executable_probe": {
+        "binary": "gh",
         "argv": [
           "--version"
         ],
-        "binary": "gh"
+        "support_binary": "git",
+        "support_is_not_substitute": true
       },
       "id": "CLI_GITHUB",
-      "initial_state": "ADAPTER_PENDING",
+      "initial_state": "HOST_AUDIT_PENDING",
       "module": "CLIs/cli_github.py",
       "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
     },
@@ -125,7 +132,7 @@
         "binary": "gemini"
       },
       "id": "CLI_GEMINI",
-      "initial_state": "ADAPTER_PENDING",
+      "initial_state": "HOST_AUDIT_PENDING",
       "module": "CLIs/cli_gemini.py",
       "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
     },
@@ -137,13 +144,16 @@
       ],
       "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
       "executable_probe": {
+        "binary": "grok",
         "argv": [
           "--version"
         ],
-        "binary": "grok"
+        "provider_package": "@xai-official/grok",
+        "official_source": "https://x.ai/cli/install.sh",
+        "execution_only_after_official_installation_identity_verification": true
       },
       "id": "CLI_GROK",
-      "initial_state": "ADAPTER_PENDING",
+      "initial_state": "HOST_AUDIT_PENDING",
       "module": "CLIs/cli_grok.py",
       "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
     },
@@ -155,13 +165,14 @@
       ],
       "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
       "executable_probe": {
+        "binary": "hf",
         "argv": [
-          "--version"
+          "--help"
         ],
-        "binary": "hf"
+        "legacy_discovery_only": "huggingface-cli"
       },
       "id": "CLI_HUGGING_FACE",
-      "initial_state": "ADAPTER_PENDING",
+      "initial_state": "HOST_AUDIT_PENDING",
       "module": "CLIs/cli_hugging_face.py",
       "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
     }
@@ -185,5 +196,22 @@
     "max_concurrency": 1,
     "subprocess_shell": false,
     "timeout_seconds_default": 30
+  },
+  "cli_subsystem": {
+    "contract": "CLIs/cli_contract.json",
+    "registry": "CLIs/cli_registry.py",
+    "manager": "CLIs/cli_manager.py",
+    "test_path": "CLIs/tests/test_cli_registry.py",
+    "host_audit_workflow": ".github/workflows/cajita-cli-host-audit.yml",
+    "default_mode": "READ_ONLY_AUDIT_AND_PLAN",
+    "install_requires": [
+      "EXACT_VERSION_PIN",
+      "OFFICIAL_SOURCE_AND_INTEGRITY",
+      "PRE_MUTATION_CHECKPOINT",
+      "ROLLBACK",
+      "POST_VALIDATION",
+      "EXACT_PLAN_SHA256_APPROVAL"
+    ],
+    "certification": "NOT_GRANTED"
   }
 }
