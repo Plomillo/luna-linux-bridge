@@ -47,6 +47,7 @@ class CLIModuleTests(unittest.TestCase):
         result = cli_registry.selftest()
         self.assertEqual(result["status"], "PASS", result)
         self.assertTrue(result["all_adapters_present"])
+        self.assertTrue(result["legacy_spec_absent_after_migration"])
         self.assertEqual(result["domain_count"], 8)
 
     def test_git_does_not_substitute_for_github_cli(self):
