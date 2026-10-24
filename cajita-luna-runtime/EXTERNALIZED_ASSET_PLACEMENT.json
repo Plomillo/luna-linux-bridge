@@ -1048,7 +1048,7 @@
   },
   "factory_reconciliation": {
     "schema": "CAJITA_LOUKSNA1_FACTORY/1.0",
-    "generated_at_utc": "2026-10-24T23:28:47Z",
+    "generated_at_utc": "2026-10-24T23:43:17Z",
     "archive_count_materialized": 28,
     "archive_bytes_removed": 175255841,
     "archives": [

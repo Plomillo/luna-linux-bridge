@@ -1,7 +1,7 @@
 {
   "schema": "LOUKSNA1_RELEASE_MANIFEST/1.0",
-  "source_commit": "1b83532afddd78dc0c63b0e61f07eaa67403701e",
-  "generated_at_utc": "2026-10-24T23:29:26Z",
+  "source_commit": "ef850aa02d6d24a6df87a705a7a25fdfdaa474d6",
+  "generated_at_utc": "2026-10-24T23:44:02Z",
   "protected_architecture": {
     "path": "LOUKSNAMEJORADA.md",
     "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
@@ -10,22 +10,22 @@
   },
   "louksna1": {
     "path": "Louksna1.md",
-    "bytes": 11635952,
-    "sha256": "53b47667f5596c7cfce6e685c280b675fc93df3d0424a06ea4b48ba7d65b389d"
+    "bytes": 11638160,
+    "sha256": "26e89b971a9b334393b7797a30bb049358c4af7a822923c201b580f9a20a1604"
   },
   "runtime_distribution": {
     "path": "CAJITA_LUNA_RUNTIME_V10.macrodown",
-    "bytes": 446908532,
-    "sha256": "7ef7479b524dd20a90105059780afcc58cec5342e58e7992c16bc8b38366c736"
+    "bytes": 446908557,
+    "sha256": "68398a51e3ca522a9709daef56fd67c223e75e8c8308de9b7204566b80c92178"
   },
   "combined_distribution": {
-    "bytes": 458544484,
+    "bytes": 458546717,
     "cap_bytes": 490000000,
     "status": "PASS"
   },
   "axiom_interdisciplinary_binding": {
     "path": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
-    "sha256": "7b8bc8c037bfd320044203a559e4b7c2e34ecd546bb4b7e687074e5a802f197a",
+    "sha256": "adf7ac869146c465e793f4ebbd2948875eac1616c2c38247afc7d13a8e79245d",
     "target_module_count": 21,
     "declared_materialized_axioms": 11757,
     "declared_historical_gaps": 657,
@@ -42,13 +42,13 @@
   "status": "PUBLISHED_CANDIDATE_GLOBAL_CERTIFICATION_NOT_GRANTED",
   "task_adapter_evidence": {
     "path": "docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json",
-    "sha256": "7f29193b013482556ac37798ec2102e85e042367305c3f03dd0a65b2c35c6e5b",
+    "sha256": "9500adbdd2d0580a8e7eb14c826681a33da47a0aec0a84d32baa1d9e4926be7c",
     "status": "PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY",
     "tested_model_domain_count": 5,
     "registered_model_domain_count": 5
   },
-  "G23_evidence_sha256": "81f490623d92ca791cd29159d77a6c3706b7bcc189a29d691b6dfb14d1b3892b",
-  "G24_evidence_sha256": "cf30cd703ba4d1b34b83f5efe098c33b74d7c351c79119265cf03dffe43db557",
+  "G23_evidence_sha256": "bc1830f329d86789f2ec6aea244627edce103fb0862a307971ae2b19eea3863e",
+  "G24_evidence_sha256": "05cdde5e2bb453b1c3d9c43d79099497a02a1878297429297650f0435ae8aa7a",
   "certification_scope": "DISTRIBUTION_INTEGRITY_PLUS_SCOPED_SYNTHETIC_TASK_EXECUTION",
   "reason_global_certification_not_granted": "Five synthetic model-domain tasks have scoped execution evidence only; all 21 target adapters, graph execution and semantic quality equivalence remain unestablished.",
   "CUSTOSZV9": {

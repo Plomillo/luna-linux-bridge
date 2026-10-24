@@ -1437,7 +1437,7 @@
     "certification": "NOT_GRANTED",
     "canonical_target_module_count": 21,
     "axiom_interdisciplinary_binding": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
-    "axiom_interdisciplinary_binding_sha256": "7b8bc8c037bfd320044203a559e4b7c2e34ecd546bb4b7e687074e5a802f197a",
+    "axiom_interdisciplinary_binding_sha256": "adf7ac869146c465e793f4ebbd2948875eac1616c2c38247afc7d13a8e79245d",
     "axiom_source_state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
   }
 }
