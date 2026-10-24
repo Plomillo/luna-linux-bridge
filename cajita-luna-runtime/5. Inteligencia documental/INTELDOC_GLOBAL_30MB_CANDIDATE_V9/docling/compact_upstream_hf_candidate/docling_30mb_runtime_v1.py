@@ -146,16 +146,16 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     from transformers import AutoProcessor
     proc=AutoProcessor.from_pretrained(candidate_dir,local_files_only=True,trust_remote_code=False)
     # The packaged preprocessor defaults to a 2048-edge resize plus 512-edge
-    # image splitting. A 640x480 page becomes an original image plus many tiles,
-    # exceeding this runtime's 1 GiB CPU resource contract. Use the bounded CPU
-    # profile for this candidate runtime: one 512px square view, no high-res tiles.
-    # Quality equivalence is assessed separately; this does not alter model weights.
+    # image splitting. That can exceed the 1 GiB CPU contract even with splitting
+    # disabled. Use one bounded 256px view and no high-resolution tiles.
+    # This is a resource-bounded smoke profile, not a quality-equivalence claim,
+    # and does not alter the pinned model weights.
     image_processor=getattr(proc,"image_processor",None)
     if image_processor is None:
         raise RuntimeError("DOCLING_IMAGE_PROCESSOR_MISSING")
     image_processor.do_image_splitting=False
-    image_processor.size={"longest_edge":512}
-    image_processor.max_image_size={"longest_edge":512}
+    image_processor.size={"longest_edge":256}
+    image_processor.max_image_size={"longest_edge":256}
     if image_path:
         from PIL import Image
         path=Path(image_path)

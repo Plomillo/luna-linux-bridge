@@ -21,7 +21,7 @@ MODEL_CASES = [
      "limits":{"timeout_seconds":900,"max_new_tokens":8}},
     {"task_id":"e2e-docling-image-extraction","domain_id":"D05_INTELIGENCIA_DOCUMENTAL","operation":"extract_document_image",
      "input":{"image_path":"@IMAGE@","prompt":"Extract the visible invoice text and total."},
-     "limits":{"timeout_seconds":900,"max_new_tokens":24}},
+     "limits":{"timeout_seconds":900,"max_new_tokens":8}},
     {"task_id":"e2e-qwen3-reasoning","domain_id":"D06_SISTEMA_INTELIGENTE","operation":"analyze_reasoning",
      "input":{"prompt":"What is 2 + 2? Give the answer and a brief reason."},
      "limits":{"timeout_seconds":900,"max_new_tokens":8}},

@@ -9,6 +9,18 @@ def req(domain="D01_CEREBRO",op="generate_text",**payload):
     return {"schema":adapters.REQUEST_SCHEMA,"task_id":"unit-task-001","domain_id":domain,"operation":op,
             "input":payload,"limits":{"timeout_seconds":30,"max_new_tokens":2}}
 class AdapterTests(unittest.TestCase):
+    def test_docling_e2e_profile_is_bounded_to_single_256px_view(self):
+        source=RUNTIME/"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py"
+        text=source.read_text(encoding="utf-8")
+        self.assertIn("image_processor.do_image_splitting=False",text)
+        self.assertIn('image_processor.size={"longest_edge":256}',text)
+        self.assertIn('image_processor.max_image_size={"longest_edge":256}',text)
+        self.assertIn("not a quality-equivalence claim",text)
+        harness=Path(__file__).resolve().parents[1]/"tools"/"cajita_task_e2e.py"
+        e2e=harness.read_text(encoding="utf-8")
+        self.assertIn('"task_id":"e2e-docling-image-extraction"',e2e)
+        self.assertIn('"max_new_tokens":8',e2e)
+
     def test_five_model_contracts_and_plan_only_orchestration(self):
         report=adapters.registry_report()
         self.assertEqual(report["model_task_adapter_count"],5)
