@@ -58,16 +58,6 @@ REMOVE_BUILTIN_SECTIONS = (
     "# Store plugins {{{",
 )
 
-REMOVE_BUILTIN_SECTIONS = (
-    "# Catalog plugins {{{",
-    "# To archive plugins {{{",
-    "# Device driver plugins {{{",
-    "# New metadata download plugins {{{",
-    "# Interface Actions {{{",
-    "# Preferences Plugins {{{",
-    "# Store plugins {{{",
-)
-
 OPTIONAL_PACKAGE_PATHS = (
     "calibre/ai",
     "calibre/gui2/actions",
@@ -192,11 +182,15 @@ def prune_builtin_registry(builtins_path: Path, removed: list[dict[str, Any]]) -
         if original.count(marker) != 1:
             raise RuntimeError(f"Refusing unknown builtins.py layout: marker count for {marker!r} != 1")
 
-    updated = replace_section(original, "# To archive plugins {{{", "")
-    updated = replace_section(updated, "# Conversion plugins {{{", CONVERSION_IMPORTS)
+    updated = replace_section(original, "# Conversion plugins {{{", CONVERSION_IMPORTS)
     for marker in REMOVE_BUILTIN_SECTIONS:
         updated = replace_section(updated, marker, "")
     updated = replace_section(updated, "# Profiles {{{", PROFILE_SECTION)
+    updated = updated.replace("from calibre.ebooks.html.to_zip import HTML2ZIP\n", "")
+    updated = updated.replace(
+        "from calibre.ebooks.metadata.archive import ArchiveExtract, KPFExtract, get_comic_metadata\n",
+        "from calibre.ebooks.metadata.archive import get_comic_metadata\n",
+    )
 
     # Keep metadata readers/writers needed for supported document types. The
     # classes remain upstream code; this change only narrows registration.
