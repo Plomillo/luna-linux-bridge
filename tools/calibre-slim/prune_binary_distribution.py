@@ -27,7 +27,6 @@ NON_CONVERSION_LAUNCHERS = {
     "calibre-smtp",
     "calibre-customize",
     "calibre-debug",
-    "calibre-parallel",
     "calibredb",
     "ebook-edit",
     "ebook-viewer",
