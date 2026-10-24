@@ -22,6 +22,24 @@ tasks:
       Accept: application/vnd.github.raw+json
       Cache-Control: no-cache, no-store
       Pragma: no-cache
+  - id: task_adapter_evidence
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json?ref=main&cache_bust={{ execution.id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
+  - id: latest_factory_run
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/cajita-louksna1-factory.yml/runs?branch=main&per_page=1&cache_bust={{ execution.id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
   - id: g24_evidence
     type: io.kestra.plugin.core.http.Request
     uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/docs/cajita-luna/LOUKSNA1_G24_EVIDENCE.json?ref=main&cache_bust={{ execution.id }}"
@@ -37,15 +55,30 @@ tasks:
       {{ outputs.release_manifest.code == 200
          and outputs.g23_evidence.code == 200
          and outputs.g24_evidence.code == 200
+         and outputs.task_adapter_evidence.code == 200
+         and outputs.latest_factory_run.code == 200
+         and fromJson(outputs.latest_factory_run.body).total_count > 0
+         and fromJson(outputs.latest_factory_run.body).workflow_runs[0].conclusion == 'success'
          and fromJson(outputs.release_manifest.body).combined_distribution.status == 'PASS'
          and fromJson(outputs.release_manifest.body).combined_distribution.bytes <= 490000000
          and fromJson(outputs.release_manifest.body).combined_distribution.cap_bytes == 490000000
          and fromJson(outputs.release_manifest.body).protected_architecture.modified == false
          and fromJson(outputs.g23_evidence.body).status == 'PASS'
-         and fromJson(outputs.g24_evidence.body).status == 'PASS_FOR_DECLARED_SMOKE_SCOPE'
-         and fromJson(outputs.release_manifest.body).gates.G24 == 'PASS_FOR_DECLARED_SMOKE_SCOPE'
+         and fromJson(outputs.release_manifest.body).source_commit == fromJson(outputs.latest_factory_run.body).workflow_runs[0].head_sha
+         and fromJson(outputs.g24_evidence.body).source_commit == fromJson(outputs.latest_factory_run.body).workflow_runs[0].head_sha
+         and fromJson(outputs.task_adapter_evidence.body).source_commit == fromJson(outputs.latest_factory_run.body).workflow_runs[0].head_sha
+         and fromJson(outputs.release_manifest.body).gates.G24 == 'PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE'
+         and fromJson(outputs.g24_evidence.body).status == 'PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE'
+         and fromJson(outputs.g24_evidence.body).task_adapter_evidence_status == 'PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY'
+         and fromJson(outputs.task_adapter_evidence.body).status == 'PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY'
+         and fromJson(outputs.task_adapter_evidence.body).tested_model_domain_count == 5
+         and fromJson(outputs.task_adapter_evidence.body).registered_model_domain_count == 5
+         and fromJson(outputs.release_manifest.body).task_adapter_evidence.status == 'PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY'
+         and fromJson(outputs.release_manifest.body).task_adapter_evidence.sha256 == fromJson(outputs.g24_evidence.body).task_adapter_evidence_sha256
+         and fromJson(outputs.g24_evidence.body).task_adapter_evidence_sha256 == fromJson(outputs.task_adapter_evidence.body).evidence_sha256
          and fromJson(outputs.release_manifest.body).global_certification == 'NOT_GRANTED'
-         and fromJson(outputs.g24_evidence.body).global_integrated_product_certification == 'NOT_GRANTED' }}
+         and fromJson(outputs.g24_evidence.body).global_integrated_product_certification == 'NOT_GRANTED'
+         and fromJson(outputs.task_adapter_evidence.body).global_certification == 'NOT_GRANTED' }}
     then:
       - id: record_candidate_audit
         type: io.kestra.plugin.core.log.Log
@@ -55,12 +88,15 @@ tasks:
           combined_distribution_cap_bytes=490000000
           G23={{ fromJson(outputs.release_manifest.body).gates.G23 }}
           G24={{ fromJson(outputs.release_manifest.body).gates.G24 }}
+          task_adapter_evidence={{ fromJson(outputs.task_adapter_evidence.body).status }}
+          tested_model_domain_count={{ fromJson(outputs.task_adapter_evidence.body).tested_model_domain_count }}
+          source_commit={{ fromJson(outputs.latest_factory_run.body).workflow_runs[0].head_sha }}
           global_certification=NOT_GRANTED
           execution={{ execution.id }}
     else:
       - id: fail_closed
         type: io.kestra.plugin.core.execution.Fail
         errorMessage: >-
-          LOUKSNA1_RELEASE_AUDIT_HOLD: release, combined size, protected source,
-          G23 or scoped G24 evidence is missing or inconsistent. No certification
-          is inferred from a successful read-only audit.
+          LOUKSNA1_RELEASE_AUDIT_HOLD: release, source commit, combined size, protected source,
+          G23, scoped G24, task-adapter hashes, or latest factory run evidence is missing
+          or inconsistent. No global certification is inferred from this read-only audit.
