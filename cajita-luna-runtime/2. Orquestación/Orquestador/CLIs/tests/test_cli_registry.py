@@ -83,6 +83,11 @@ class CLIModuleTests(unittest.TestCase):
         self.assertEqual(statuses["CLI_MOJO"], "BLOCKED_VERSION_PIN_REQUIRED")
         self.assertEqual(statuses["CLI_PYTHON"], "AUDIT_ONLY_NO_INSTALL_MUTATION")
 
+    def test_install_command_allowlist_requires_pinned_package_and_correct_uv_syntax(self):
+        self.assertEqual(cli_manager.validate_argv({"argv": ["uv", "tool", "install", "demo==1.2.3"]}, "CLI_MOJO"), ["uv", "tool", "install", "demo==1.2.3"])
+        with self.assertRaisesRegex(ValueError, "UV_OPERATION_NOT_ALLOWLISTED"):
+            cli_manager.validate_argv({"argv": ["uv", "uninstall", "demo"]}, "CLI_MOJO", rollback=False)
+
     def test_apply_plan_rejects_wrong_plan_sha_before_any_mutation(self):
         with tempfile.TemporaryDirectory() as temp:
             plan_path = pathlib.Path(temp) / "plan.json"
