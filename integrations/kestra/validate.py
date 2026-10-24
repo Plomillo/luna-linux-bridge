@@ -102,8 +102,10 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
                 "Louksna1 release manifest and G24 evidence must agree on the new scoped runtime gate.")
         require("outputs.task_adapter_evidence.code == 200" in body and "outputs.latest_factory_run.code == 200" in body,
                 "Louksna1 release audit must read task evidence and latest factory run evidence.")
-        require("fromJson(outputs.task_adapter_evidence.body).source_commit == fromJson(outputs.latest_factory_run.body).workflow_runs[0].head_sha" in body,
-                "Task evidence must bind to the latest factory source commit.")
+        require("fromJson(outputs.task_adapter_evidence.body).source_commit == fromJson(outputs.latest_factory_run.body).head_sha" in body,
+                "Task evidence must bind to the exact factory run selected by its immutable run id.")
+        require("actions/runs/{{ envs.factory_run_id }}" in body,
+                "Louksna1 audit must inspect the exact workflow_run trigger, not a race-prone latest-run query.")
         require("fromJson(outputs.release_manifest.body).task_adapter_evidence.sha256 == fromJson(outputs.g24_evidence.body).task_adapter_evidence_sha256" in body,
                 "Release manifest and G24 evidence must bind the same task evidence digest.")
 

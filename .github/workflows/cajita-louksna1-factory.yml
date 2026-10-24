@@ -372,6 +372,23 @@ jobs:
       contents: read
       actions: read
     steps:
+      - name: Checkout exact producer commit for the E2E harness
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.manufacture.outputs.source_commit }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Verify E2E harness is a regular checked-out file
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f tools/cajita_task_e2e.py
+          test ! -L tools/cajita_task_e2e.py
+          test -s tools/cajita_task_e2e.py
+          python -m py_compile tools/cajita_task_e2e.py
+
       - name: Download candidate for runtime smoke
         uses: actions/download-artifact@v4
         with:
