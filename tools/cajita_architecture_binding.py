@@ -89,8 +89,22 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
     else:
         shutil.copy2(loader_source, loader_dest)
     if binding_path.exists():
-        if binding_path.is_symlink() or binding_path.read_bytes() != binding_bytes:
-            raise RuntimeError("AXIOM_BINDING_CONTENT_COLLISION")
+        if binding_path.is_symlink():
+            raise RuntimeError("AXIOM_BINDING_SYMLINK")
+        prior = json.loads(binding_path.read_text(encoding="utf-8"))
+        prior_prefix = prior.get("protected_architecture_prefix", {})
+        prior_target = prior.get("target", {})
+        if (prior.get("schema") != "LOUKSNA_AXIOM_MULTI_INTERDISCIPLINAR_BINDING/1.0"
+            or prior_prefix.get("sha256") != source_sha
+            or prior_prefix.get("bytes") != len(source_bytes)
+            or prior_prefix.get("mutation_allowed") is not False
+            or prior_target.get("id") != multi.get("id")
+            or prior_target.get("domain_id") != multi.get("domain_id")
+            or prior_target.get("path") != multi.get("path")):
+            raise RuntimeError("AXIOM_BINDING_CANONICAL_IDENTITY_COLLISION")
+        # Rebuild the derived companion-document digest only after re-verifying
+        # the immutable architecture bytes and canonical target identity above.
+        binding_path.write_bytes(binding_bytes)
     else:
         binding_path.write_bytes(binding_bytes)
     target_modules = []
@@ -127,7 +141,8 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
                 or prior_source.get("path") != "Louksna1.md"
                 or prior_source.get("protected_prefix_sha256") != source_sha
                 or prior_source.get("protected_prefix_bytes") != len(source_bytes)
-                or prior_source.get("companion_sha256") != doc_sha):
+                or not isinstance(prior_source.get("companion_sha256"), str)
+                or len(prior_source.get("companion_sha256", "")) != 64):
                 raise RuntimeError("CANONICAL_TARGET_MODULE_IDENTITY_COLLISION:" + target["id"])
             manifest_path.write_bytes(manifest_bytes)
         else:
