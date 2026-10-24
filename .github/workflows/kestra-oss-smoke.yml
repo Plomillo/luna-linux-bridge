@@ -176,7 +176,7 @@ jobs:
           lower=disabled.lower()
           if "io.kestra.plugin.core.http.request" not in lower:
               raise SystemExit("Expected the registered HTTP request plugin")
-          if "io.kestra.plugin.core.flow.if" not in lower or "490000000" not in disabled:
+          if "io.kestra.plugin.core.flow.if" not in lower or "479000000" not in disabled:
               raise SystemExit("Read-only audit and its byte gate must be present")
           if "schedule:" in lower or "triggers:" in lower:
               raise SystemExit("Release audit must not schedule or trigger itself")
