@@ -96,9 +96,6 @@ def legacy_census(rows):
             "numeric_gaps_1_2414":len(gaps),"gap_ids_first_32":[f"AX{n:04d}" for n in gaps[:32]],
             "ids_with_repeated_records":sum(v>1 for v in freq.values()),
             "historical_657_gap_claim":"DISCLOSED_NONBLOCKING_HISTORICAL_DEBT"}
-    expected={"definition_records":1927,"distinct_numeric_ids":1708,"repeated_definition_records":219,"numeric_gaps_1_2414":706}
-    for key,value in expected.items():
-        if result[key]!=value: raise ValueError(f"LEGACY_CENSUS_MISMATCH:{key}:{result[key]}!={value}")
     return result
 
 def build_graph(axioms, legacy, out):
@@ -162,7 +159,13 @@ def audit(args):
     if not companion.startswith(source): raise ValueError("LOUKSNA1_PREFIX_NOT_BYTE_EXACT")
     if companion_sha!=manifest["louksna1"]["sha256"]: raise ValueError("LOUKSNA1_SHA256_MISMATCH")
     text=source.decode("utf-8"); legacy=parse_legacy(text); axiom_rows=parse_materialized(text)
-    legacy_result=legacy_census(legacy); axiom_result=validate_materialized(axiom_rows)
+    legacy_result=legacy_census(legacy)
+    expected_legacy={"definition_records":1927,"distinct_numeric_ids":1708,
+                     "repeated_definition_records":219,"numeric_gaps_1_2414":706}
+    for key,value in expected_legacy.items():
+        if legacy_result[key]!=value:
+            raise ValueError(f"LEGACY_SOURCE_CENSUS_MISMATCH:{key}:{legacy_result[key]}!={value}")
+    axiom_result=validate_materialized(axiom_rows)
     output=Path(args.output).resolve(); graph=output/"louksna1-axiom-provenance.nt"
     triple_count,graph_sha,graph_bytes=build_graph(axiom_rows,legacy,graph)
     root=Path(args.runtime).resolve()
