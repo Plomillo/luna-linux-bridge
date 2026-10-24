@@ -35,7 +35,10 @@ permissions:
   attestations: write
 
 concurrency:
-  group: cajita-louksna1-factory-main
+  # Bind serialization to an immutable producer revision. A stuck/slow historical
+  # smoke run must not block a repaired candidate from starting; publication still
+  # uses a normal fast-forward push, so stale producers cannot overwrite main.
+  group: cajita-louksna1-factory-main-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
