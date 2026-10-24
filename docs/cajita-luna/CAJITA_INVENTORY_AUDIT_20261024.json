@@ -1,21 +1,21 @@
 {
   "schema": "CAJITA_INVENTORY_AUDIT/1.0",
   "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
-  "generated_at_utc": "2026-10-24T19:01:10.467534+00:00",
+  "generated_at_utc": "2026-10-24T19:10:23.777258+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "ef9c9e95ea4f93bbcd7d9bd51b89ceeb81d55732",
+  "source_commit": "09841d989f7dc79698b7dca17c921a2fcd6941b1",
   "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
   "distribution": {
     "archive_format": "deterministic ZIP container with .macrodown extension",
     "member_count_including_manifest": 159,
     "file_count_excluding_manifest": 158,
-    "runtime_payload_bytes_excluding_manifest": 464229141,
-    "gross_raw_payload_bytes_including_manifest": 464270877,
+    "runtime_payload_bytes_excluding_manifest": 464229143,
+    "gross_raw_payload_bytes_including_manifest": 464270880,
     "archive_bytes": 412321628,
     "hard_cap_bytes": 470000000,
-    "raw_bytes_under_cap": 5729123,
+    "raw_bytes_under_cap": 5729120,
     "archive_bytes_under_cap": 57678372,
-    "archive_sha256": "6052a1d10409061b2cce5690b56a7bef4d2fd30eb469fcd07bd9b1aa3e707211",
+    "archive_sha256": "5be838448d8c6f917f2766e50a68951582fd993df854da9e104fa4151d208287",
     "raw_gate": "PASS",
     "archive_gate": "PASS",
     "certification": "NOT_GRANTED"
@@ -100,7 +100,7 @@
     },
     "ROOT_OR_SUPPORT": {
       "file_count": 17,
-      "bytes": 440174
+      "bytes": 440176
     }
   },
   "prior_manifest_reconciliation": {
@@ -110,7 +110,7 @@
     "removed_paths": [],
     "changed_paths": [
       "EXTERNALIZED_ASSET_PLACEMENT.json",
-      "cajita_router.py"
+      "reproduce_macrodown.py"
     ],
     "added_count": 0,
     "removed_count": 0,
@@ -1282,7 +1282,7 @@
       "domain_id": null,
       "path": "EXTERNALIZED_ASSET_PLACEMENT.json",
       "route_type": null,
-      "sha256": "787d5863bec2820260daf7d7db84a9ebec3888677a44cf048afb37b1b6d8df01",
+      "sha256": "24fe871f45775c5a1e7c0087340c91b653c74a225fb8c5a16f8aef18a1c0e826",
       "size_bytes": 56838,
       "zip_method": "DEFLATED"
     },
@@ -1378,14 +1378,14 @@
       "domain_id": null,
       "path": "reproduce_macrodown.py",
       "route_type": null,
-      "sha256": "9c65a51dd6af0344016b5bf2dc31d60a66bf1bf155dd9bf8ba855f9d5484bf91",
-      "size_bytes": 9798,
+      "sha256": "95ffabf1925c18eaa7d0b41b85873846987b8e18234f574c3feae14832feae11",
+      "size_bytes": 9800,
       "zip_method": "DEFLATED"
     },
     {
       "path": "MACRODOWN_MANIFEST.json",
-      "size_bytes": 41736,
-      "sha256": "7b477b7f9715dd99faae0dd67a4791c24093cbb8f74619b670cd84db56bd1642",
+      "size_bytes": 41737,
+      "sha256": "5b733da19c8e852b94a23ff976e8650303418771c8ea0a4a9b5313feb609390d",
       "domain_id": null,
       "route_type": null,
       "zip_method": "DEFLATED",
