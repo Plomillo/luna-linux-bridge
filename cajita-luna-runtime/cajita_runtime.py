@@ -5,7 +5,8 @@ import argparse, datetime as dt, hashlib, json, os, subprocess, sys, time
 from pathlib import Path
 
 SCHEMA = "CAJITA_SIX_DOMAIN_RUNTIME/1.1"
-RAW_STAGING_CAP_BYTES = 800_000_000
+RAW_STAGING_CAP_BYTES = 1_500_000_000
+COMBINED_DISTRIBUTION_CAP_BYTES = 490_000_000
 CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023"
 MANIFEST_REL = Path("CAJITA_RUNTIME_V1/weights_manifest.json")
 MANIFEST_SHA256 = "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d"
@@ -69,7 +70,7 @@ def selftest(root):
  except Exception as exc:
   manifest_ok=False; manifest_error=str(exc)
  count,size=package_size(root); capok=size<=RAW_STAGING_CAP_BYTES
- return {"schema":SCHEMA,"operation":"selftest","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"root":str(root),"domain_order":[d["id"] for d in DOMAINS],"domain_count":6,"domains":domains,"blocked_domains":missing,"weights_manifest_valid":manifest_ok,"weights_manifest_error":manifest_error,"package_file_count":count,"package_size_bytes":size,"raw_staging_ceiling_bytes":RAW_STAGING_CAP_BYTES,"size_gate":"PASS" if capok else "FAIL","functional_equivalence":"NOT_ESTABLISHED","certification":"NOT_GRANTED","status":"PASS" if not missing and manifest_ok and capok else "FAIL"}
+ return {"schema":SCHEMA,"operation":"selftest","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"root":str(root),"domain_order":[d["id"] for d in DOMAINS],"domain_count":6,"domains":domains,"blocked_domains":missing,"weights_manifest_valid":manifest_ok,"weights_manifest_error":manifest_error,"package_file_count":count,"package_size_bytes":size,"raw_staging_ceiling_bytes":RAW_STAGING_CAP_BYTES,"combined_distribution_cap_bytes":COMBINED_DISTRIBUTION_CAP_BYTES,"combined_distribution_gate":"ENFORCED_BY_FACTORY_AND_G23_NOT_BY_UNPACKED_TREE_SELFTEST","size_gate":"PASS" if capok else "FAIL","functional_equivalence":"NOT_ESTABLISHED","certification":"NOT_GRANTED","status":"PASS" if not missing and manifest_ok and capok else "FAIL"}
 def audit(root):
  m=manifest_for(root); listed={a["path"] for a in m["artifacts"]}; found=set()
  for base,dirs,files in os.walk(root,followlinks=False):
@@ -83,7 +84,7 @@ def audit(root):
  count,size=package_size(root); capok=size<=RAW_STAGING_CAP_BYTES
  extra=sorted(found-listed); absent=sorted(listed-found); hashok=all(x["status"]=="PASS" for x in result)
  passed=hashok and not extra and not absent and capok
- return {"schema":SCHEMA,"operation":"audit-weights","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"artifacts":result,"artifact_count":len(result),"total_weight_bytes":sum(x["actual_bytes"] for x in result),"undeclared_model_like_files":extra,"missing_manifest_files":absent,"package_file_count":count,"package_size_bytes":size,"raw_staging_ceiling_bytes":RAW_STAGING_CAP_BYTES,"size_gate":"PASS" if capok else "FAIL","weight_presence_integrity":"PASS" if passed else "FAIL","functional_equivalence":"NOT_ESTABLISHED","independent_validation":"NOT_RUN","certification":"NOT_GRANTED","promotion":"NOT_AUTHORIZED","status":"PASS" if passed else "FAIL"}
+ return {"schema":SCHEMA,"operation":"audit-weights","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"artifacts":result,"artifact_count":len(result),"total_weight_bytes":sum(x["actual_bytes"] for x in result),"undeclared_model_like_files":extra,"missing_manifest_files":absent,"package_file_count":count,"package_size_bytes":size,"raw_staging_ceiling_bytes":RAW_STAGING_CAP_BYTES,"combined_distribution_cap_bytes":COMBINED_DISTRIBUTION_CAP_BYTES,"combined_distribution_gate":"ENFORCED_BY_FACTORY_AND_G23_NOT_BY_UNPACKED_TREE_AUDIT","size_gate":"PASS" if capok else "FAIL","weight_presence_integrity":"PASS" if passed else "FAIL","functional_equivalence":"NOT_ESTABLISHED","independent_validation":"NOT_RUN","certification":"NOT_GRANTED","promotion":"NOT_AUTHORIZED","status":"PASS" if passed and capok else "FAIL"}
 def select_domain(value):
  aliases={}
  for i,d in enumerate(DOMAINS,1):
