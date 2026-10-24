@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""Constrained entrypoint exposing only the Cajita PDF/EPUB conversion scope."""
+from __future__ import annotations
+
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+INPUTS = {".pdf", ".epub", ".html", ".htm", ".txt", ".docx"}
+OUTPUTS = {".pdf", ".epub"}
+COMMAND = "ebook-convert"
+
+
+def find_converter() -> str | None:
+    configured = os.environ.get("CALIBRE_EBOOK_CONVERT")
+    candidates = []
+    if configured:
+        candidates.append(Path(configured))
+    here = Path(__file__).resolve().parent
+    candidates.extend([here / COMMAND, here / "bin" / COMMAND, here / "usr" / "bin" / COMMAND])
+    for candidate in candidates:
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    found = shutil.which(COMMAND)
+    if found:
+        return found
+    return None
+
+
+def main(argv: list[str]) -> int:
+    if argv in (["--help"], ["-h"]):
+        print("Usage: calibre-slim-convert INPUT.(pdf|epub|html|htm|txt|docx) OUTPUT.(pdf|epub) [Calibre conversion options]")
+        return 0
+    if len(argv) < 2 or argv[0].startswith("-") or argv[1].startswith("-"):
+        print("Usage: calibre-slim-convert INPUT OUTPUT [conversion options]", file=sys.stderr)
+        return 2
+
+    source = Path(argv[0]).expanduser().resolve()
+    destination = Path(argv[1]).expanduser().resolve()
+    source_ext = source.suffix.lower()
+    output_ext = destination.suffix.lower()
+    if source_ext not in INPUTS:
+        print(f"FAIL_CLOSED: unsupported input format: {source_ext or '(no extension)'}", file=sys.stderr)
+        return 2
+    if output_ext not in OUTPUTS:
+        print(f"FAIL_CLOSED: only PDF and EPUB outputs are permitted: {output_ext or '(no extension)'}", file=sys.stderr)
+        return 2
+    if not source.is_file() or not os.access(source, os.R_OK):
+        print(f"FAIL_CLOSED: input is missing or unreadable: {source}", file=sys.stderr)
+        return 2
+    if source == destination:
+        print("FAIL_CLOSED: input and output paths must differ", file=sys.stderr)
+        return 2
+    if destination.exists() and destination.is_dir():
+        print("FAIL_CLOSED: output path is a directory", file=sys.stderr)
+        return 2
+
+    converter = find_converter()
+    if converter is None:
+        print("FAIL_CLOSED: ebook-convert binary not found; set CALIBRE_EBOOK_CONVERT", file=sys.stderr)
+        return 2
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    command = [converter, str(source), str(destination), *argv[2:]]
+    try:
+        return subprocess.run(command, check=False).returncode
+    except OSError as exc:
+        print(f"FAIL_CLOSED: unable to launch ebook-convert: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))
