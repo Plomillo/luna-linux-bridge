@@ -1,9 +1,9 @@
 {
   "schema": "CAJITA_INVENTORY_AUDIT/1.0",
   "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
-  "generated_at_utc": "2026-10-24T01:01:27.090167+00:00",
+  "generated_at_utc": "2026-10-24T01:02:11.017657+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "c2ff22412dc5dcda716f1941ff8f04fa27f54470",
+  "source_commit": "92e615bade62ad696c3677d51771bb24ea39abce",
   "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
   "distribution": {
     "archive_format": "deterministic ZIP container with .macrodown extension",
@@ -108,14 +108,11 @@
     "current_file_count_excluding_manifest": 151,
     "added_paths": [],
     "removed_paths": [],
-    "changed_paths": [
-      "CajitadeLuna.md",
-      "EXTERNALIZED_ASSET_PLACEMENT.json"
-    ],
+    "changed_paths": [],
     "added_count": 0,
     "removed_count": 0,
-    "changed_count": 2,
-    "prior_manifest_was_in_sync": false
+    "changed_count": 0,
+    "prior_manifest_was_in_sync": true
   },
   "inventory": [
     {

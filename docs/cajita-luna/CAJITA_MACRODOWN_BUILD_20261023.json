@@ -1,9 +1,9 @@
 {
   "schema": "CAJITA_MACRODOWN_BUILD_AUDIT/1.0",
   "audit_id": "CAJITA_MACRODOWN_BUILD_20261023",
-  "created_at_utc": "2026-10-24T01:01:27.087230+00:00",
+  "created_at_utc": "2026-10-24T01:02:11.014421+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "c2ff22412dc5dcda716f1941ff8f04fa27f54470",
+  "source_commit": "92e615bade62ad696c3677d51771bb24ea39abce",
   "format": "deterministic ZIP container with .macrodown extension",
   "runtime_payload_bytes_excluding_generated_manifest": 464095721,
   "gross_raw_payload_bytes_including_manifest": 464135398,
