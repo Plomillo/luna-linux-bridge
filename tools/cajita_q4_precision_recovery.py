@@ -113,6 +113,37 @@ def validate_manifest_transition(current: dict[str, Any], historical_q4: dict[st
     return q4_rows
 
 
+def resolve_historical_weight_blob(data: bytes, expected_sha256: str, expected_bytes: int, object_root: str | Path) -> dict[str, Any]:
+    """Accept a verified LFS pointer/object or a raw Git-show payload with exact pinned identity."""
+    try:
+        pointer = parse_lfs_pointer(data)
+    except ValueError:
+        if len(data) == expected_bytes and sha256_bytes(data) == expected_sha256:
+            return {
+                "source_kind": "RAW_GIT_SHOW_PAYLOAD_SHA256_VERIFIED",
+                "source_object": None,
+                "source_bytes": data,
+                "bytes": expected_bytes,
+                "sha256": expected_sha256,
+            }
+        raise RuntimeError("HISTORICAL_WEIGHT_NOT_POINTER_OR_PINNED_PAYLOAD")
+    if pointer != {"sha256": expected_sha256, "bytes": expected_bytes}:
+        raise RuntimeError("PINNED_Q4_LFS_POINTER_MISMATCH")
+    root = Path(object_root).resolve()
+    obj = root / pointer["sha256"][:2] / pointer["sha256"][2:4] / pointer["sha256"]
+    if obj.is_symlink() or not obj.is_file():
+        raise RuntimeError("PINNED_Q4_LFS_OBJECT_MISSING")
+    if obj.stat().st_size != pointer["bytes"] or sha256_file(obj) != pointer["sha256"]:
+        raise RuntimeError("PINNED_Q4_LFS_OBJECT_IDENTITY_MISMATCH")
+    return {
+        "source_kind": "LFS_POINTER_AND_OBJECT_SHA256_VERIFIED",
+        "source_object": obj,
+        "source_bytes": None,
+        "bytes": pointer["bytes"],
+        "sha256": pointer["sha256"],
+    }
+
+
 def validate_q4_sidecar(data: bytes, expected_sha256: str) -> dict[str, Any]:
     try:
         sidecar = json.loads(data.decode("utf-8"))
@@ -211,20 +242,16 @@ def restore_q4_precision(repo_root: str | Path, runtime_root: str | Path) -> dic
     for artifact_id in RESTORE_IDS:
         row = q4_rows[artifact_id]
         rel = row["path"]
-        lfs_pointer = parse_lfs_pointer(_git_show(repo, Q4_SOURCE_REF + ":cajita-luna-runtime/" + rel))
-        if lfs_pointer != {"sha256": row["sha256"], "bytes": row["bytes"]}:
-            raise RuntimeError("PINNED_Q4_LFS_POINTER_MISMATCH:" + artifact_id)
-        obj = object_root / lfs_pointer["sha256"][:2] / lfs_pointer["sha256"][2:4] / lfs_pointer["sha256"]
-        if obj.is_symlink() or not obj.is_file():
-            raise RuntimeError("PINNED_Q4_LFS_OBJECT_MISSING:" + artifact_id)
-        if obj.stat().st_size != lfs_pointer["bytes"] or sha256_file(obj) != lfs_pointer["sha256"]:
-            raise RuntimeError("PINNED_Q4_LFS_OBJECT_IDENTITY_MISMATCH:" + artifact_id)
+        historical_blob = _git_show(repo, Q4_SOURCE_REF + ":cajita-luna-runtime/" + rel)
+        resolved = resolve_historical_weight_blob(historical_blob, row["sha256"], row["bytes"], object_root)
         sidecar_rel = "cajita-luna-runtime/" + rel + ".q4.json"
         sidecar_bytes = _git_show(repo, Q4_SOURCE_REF + ":" + sidecar_rel)
-        sidecar = validate_q4_sidecar(sidecar_bytes, lfs_pointer["sha256"])
+        sidecar = validate_q4_sidecar(sidecar_bytes, row["sha256"])
         staged.append({
-            "id": artifact_id, "path": rel, "source_object": obj, "bytes": lfs_pointer["bytes"],
-            "sha256": lfs_pointer["sha256"], "sidecar_bytes": sidecar_bytes,
+            "id": artifact_id, "path": rel,
+            "source_object": resolved["source_object"], "source_bytes": resolved["source_bytes"],
+            "source_kind": resolved["source_kind"], "bytes": resolved["bytes"],
+            "sha256": resolved["sha256"], "sidecar_bytes": sidecar_bytes,
             "sidecar_sha256": sha256_bytes(sidecar_bytes), "factor_tensor_count": len(sidecar["tensors"]),
         })
 
@@ -237,7 +264,10 @@ def restore_q4_precision(repo_root: str | Path, runtime_root: str | Path) -> dic
         destination = runtime / item["path"]
         temporary = destination.with_name(destination.name + ".q4-restoring")
         try:
-            shutil.copyfile(item["source_object"], temporary)
+            if item["source_object"] is not None:
+                shutil.copyfile(item["source_object"], temporary)
+            else:
+                temporary.write_bytes(item["source_bytes"])
             os.replace(temporary, destination)
         finally:
             if temporary.exists():
@@ -283,6 +313,7 @@ def restore_q4_precision(repo_root: str | Path, runtime_root: str | Path) -> dic
         actual_rows.append({
             "id": item["id"], "path": item["path"], "bytes": item["bytes"],
             "sha256": item["sha256"], "sidecar_sha256": item["sidecar_sha256"],
+            "source_kind": item["source_kind"],
             "factor_tensor_count": item["factor_tensor_count"],
         })
     return {

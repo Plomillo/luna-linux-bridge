@@ -8,6 +8,7 @@ from cajita_q4_precision_recovery import (
     RESTORE_IDS,
     UNCHANGED_IDS,
     parse_lfs_pointer,
+    resolve_historical_weight_blob,
     validate_manifest_transition,
     validate_q4_sidecar,
 )
@@ -33,6 +34,21 @@ class Q4PrecisionRecoveryTests(unittest.TestCase):
         self.assertEqual(parse_lfs_pointer(data), {"sha256": "a" * 64, "bytes": 12345})
         with self.assertRaisesRegex(ValueError, "NOT_A_GIT_LFS_POINTER"):
             parse_lfs_pointer(b"arbitrary model bytes")
+
+    def test_historical_blob_accepts_exact_raw_payload_and_rejects_tampering(self):
+        import hashlib
+        import tempfile
+        from pathlib import Path
+        payload = b"same-candidate-pinned-model-bytes"
+        sha = hashlib.sha256(payload).hexdigest()
+        with tempfile.TemporaryDirectory() as tmp:
+            resolved = resolve_historical_weight_blob(payload, sha, len(payload), tmp)
+        self.assertEqual(resolved["source_kind"], "RAW_GIT_SHOW_PAYLOAD_SHA256_VERIFIED")
+        self.assertEqual(resolved["source_bytes"], payload)
+        self.assertIsNone(resolved["source_object"])
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(RuntimeError, "NOT_POINTER_OR_PINNED_PAYLOAD"):
+                resolve_historical_weight_blob(payload + b"tampered", sha, len(payload), tmp)
 
     def test_manifest_transition_preserves_candidate_paths_and_unrelated_weights(self):
         current = _manifest()
