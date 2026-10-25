@@ -1,6 +1,8 @@
 name: Cajita V9 materialization and Louksna1 governed factory
+# Current release budgets: Cajita runtime <=470000000 bytes; LOUKSNAPG container <=490000000 bytes.
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
