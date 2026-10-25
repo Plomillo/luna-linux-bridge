@@ -1,7 +1,7 @@
 {
   "schema": "LOUKSNA1_RELEASE_MANIFEST/1.0",
-  "source_commit": "3ee71796cc0116a96c8c4d0a9fc041300d355795",
-  "generated_at_utc": "2026-10-25T00:38:27Z",
+  "source_commit": "2002af4f71f1bb135e1992abb711c5475b09f13c",
+  "generated_at_utc": "2026-10-25T02:19:21Z",
   "protected_architecture": {
     "path": "LOUKSNAMEJORADA.md",
     "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
@@ -10,22 +10,85 @@
   },
   "louksna1": {
     "path": "Louksna1.md",
-    "bytes": 11642576,
-    "sha256": "23cedcdc3d4c36665b3a1a8b440278a50db5ecdf9ddfa18d6d04296653dd440e"
+    "bytes": 11644784,
+    "sha256": "f670c5376bca8e041f81566f5be268be1f4eec8319b1b4c2855d4d87b489939d"
   },
   "runtime_distribution": {
     "path": "CAJITA_LUNA_RUNTIME_V10.macrodown",
-    "bytes": 446908562,
-    "sha256": "8021ecddc0329d6ce9ddf212ca30678ff1b8aa56a73d714f24cd16310722eebe"
+    "bytes": 370863089,
+    "sha256": "da955c807ac70d24f85dad3f4d6da0171786dfe60a0d8ceac4962982c5bb79b3"
   },
+  "externalized_archives": [
+    {
+      "id": "APACHE_JENA_6_2_0",
+      "path": "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
+      "bytes": 23103199,
+      "sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a"
+    },
+    {
+      "id": "PLAYWRIGHT_1_63_0_SOURCE",
+      "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z",
+      "bytes": 32133546,
+      "sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14"
+    },
+    {
+      "id": "ONNX_RUNTIME_1_29_0_CP311",
+      "path": "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z",
+      "bytes": 10219873,
+      "sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b"
+    },
+    {
+      "id": "DAGGER_0_21_8_LINUX_AMD64",
+      "path": "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z",
+      "bytes": 15377436,
+      "sha256": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e"
+    },
+    {
+      "id": "OPA_STATIC_LINUX_AMD64_CANDIDATE",
+      "path": "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z",
+      "bytes": 25273630,
+      "sha256": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628"
+    },
+    {
+      "id": "RQLITE_10_2_7_LINUX_AMD64",
+      "path": "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z",
+      "bytes": 12962199,
+      "sha256": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea"
+    },
+    {
+      "id": "SQLITE_SOURCE_3_53_4",
+      "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z",
+      "bytes": 7954439,
+      "sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e"
+    },
+    {
+      "id": "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+      "path": "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z",
+      "bytes": 21310484,
+      "sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37"
+    },
+    {
+      "id": "AVALONIA_12_1_1_NUGET",
+      "path": "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z",
+      "bytes": 3836434,
+      "sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f"
+    },
+    {
+      "id": "TAURI_2_11_5_SOURCE_ZIP",
+      "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z",
+      "bytes": 13078809,
+      "sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8"
+    }
+  ],
+  "externalized_archive_contract_status": "PASS_EXACTLY_TEN_REGISTERED_SHA256_PINNED_7Z_CONTAINERS",
   "combined_distribution": {
-    "bytes": 458551138,
+    "bytes": 382507873,
     "cap_bytes": 479000000,
     "status": "PASS"
   },
   "axiom_interdisciplinary_binding": {
     "path": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
-    "sha256": "05de75e7458a4458249a19111f7a675049bfab01994a415b33c347924244920c",
+    "sha256": "f0dddebdfa31e785a69489a83da3b24e4941bd48d8845cece94ace03281859da",
     "target_module_count": 21,
     "declared_materialized_axioms": 11757,
     "declared_historical_gaps": 657,
@@ -42,13 +105,13 @@
   "status": "PUBLISHED_CANDIDATE_GLOBAL_CERTIFICATION_NOT_GRANTED",
   "task_adapter_evidence": {
     "path": "docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json",
-    "sha256": "a3d8e76cab6f3450074714ead364db1bb394d64659d22d147c460df39b62e186",
+    "sha256": "2a981932d95e4f9f4cf392f3bf3b4444d315b82a05cd1c6d4040703362fc78d3",
     "status": "PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY",
     "tested_model_domain_count": 5,
     "registered_model_domain_count": 5
   },
-  "G23_evidence_sha256": "71233a5017022611936b308c843a43fc6c8f48b8a557722e028fb0699432bcc1",
-  "G24_evidence_sha256": "7f8fbeb63bd5ab49b6e45a6a6368dd199914628033d1207eea4ce4622e2ca7dc",
+  "G23_evidence_sha256": "86d6268efdd8a988eb60838cada27262a0b2e232709d3e6f2516320f104ab563",
+  "G24_evidence_sha256": "c343d39adced48cda1e3f07f90f8bfa1f4ff4461c7286829d0ec381c0cc1e339",
   "certification_scope": "DISTRIBUTION_INTEGRITY_PLUS_SCOPED_SYNTHETIC_TASK_EXECUTION",
   "reason_global_certification_not_granted": "Five synthetic model-domain tasks have scoped execution evidence only; all 21 target adapters, graph execution and semantic quality equivalence remain unestablished.",
   "CUSTOSZV9": {

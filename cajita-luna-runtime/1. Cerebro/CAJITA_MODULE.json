@@ -14,7 +14,7 @@
   "relative_path": "1. Cerebro",
   "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
   "source_identity": {
-    "companion_sha256": "23cedcdc3d4c36665b3a1a8b440278a50db5ecdf9ddfa18d6d04296653dd440e",
+    "companion_sha256": "f670c5376bca8e041f81566f5be268be1f4eec8319b1b4c2855d4d87b489939d",
     "path": "Louksna1.md",
     "protected_prefix_bytes": 11542631,
     "protected_prefix_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51"
@@ -23,8 +23,8 @@
   "target_kind": "DOMAIN_ROOT",
   "target_name": "Cerebro",
   "tree_integrity": {
-    "bytes_excluding_module_descriptors": 68719936,
+    "bytes_excluding_module_descriptors": 68720047,
     "file_count_excluding_module_descriptors": 14,
-    "sha256": "e3455bdf9a5d2b9fd3b1cc52a708399380956248fc118c6d65f60bd0eeecbf97"
+    "sha256": "ab7e21c084cb6c78f4c36d847bbf290a27d5e1312476571de76d903e65b59cb9"
   }
 }

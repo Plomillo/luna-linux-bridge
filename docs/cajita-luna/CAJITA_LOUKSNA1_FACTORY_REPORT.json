@@ -1,10 +1,10 @@
 {
   "schema": "CAJITA_LOUKSNA1_FACTORY/1.0",
-  "generated_at_utc": "2026-10-25T00:37:00Z",
+  "generated_at_utc": "2026-10-25T02:17:55Z",
   "status": "PASS_MANUFACTURED_CANDIDATE_PENDING_G23_G24",
   "certification": "NOT_GRANTED",
   "blockers": [],
-  "source_commit": "3ee71796cc0116a96c8c4d0a9fc041300d355795",
+  "source_commit": "2002af4f71f1bb135e1992abb711c5475b09f13c",
   "weights_before": [
     {
       "id": "W01",
@@ -1780,7 +1780,7 @@
       ],
       "reason": "RECORDED_MODULE_TREE_DRIFT; REPLAY_SOURCE_ARCHIVES_AND_REVALIDATE"
     },
-    "raw_tree_bytes_after_materialization": 853144548
+    "raw_tree_bytes_after_materialization": 847979170
   },
   "weights_after": [
     {
@@ -1829,11 +1829,11 @@
   "weights_preserved": true,
   "louksna1": {
     "path": "Louksna1.md",
-    "bytes": 11642576,
-    "sha256": "23cedcdc3d4c36665b3a1a8b440278a50db5ecdf9ddfa18d6d04296653dd440e",
+    "bytes": 11644784,
+    "sha256": "f670c5376bca8e041f81566f5be268be1f4eec8319b1b4c2855d4d87b489939d",
     "source_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
     "prefix_byte_exact": true,
-    "cajita_doc_sha256": "064d4de4cf05718475e07113a47bb62647186e23b3b97cf1c21b08dce1ff5499"
+    "cajita_doc_sha256": "ed95ad3f25387928a14385de143d5f4546bcf017a17ed160de9cec1dc2256e47"
   },
   "axiom_interdisciplinary_binding": {
     "target_module_count": 21,
@@ -1843,8 +1843,8 @@
         "domain_id": "D01_CEREBRO",
         "path": "1. Cerebro",
         "manifest": "1. Cerebro/CAJITA_MODULE.json",
-        "manifest_sha256": "bd96004e8ee0d0138ea22d2abeedf52721820fb65031744b0dd156f1e14d385b",
-        "tree_sha256": "e3455bdf9a5d2b9fd3b1cc52a708399380956248fc118c6d65f60bd0eeecbf97",
+        "manifest_sha256": "a4af60ee191afdc0646473b4a311493793a1f8c1337a33e8aede424a79947dbc",
+        "tree_sha256": "ab7e21c084cb6c78f4c36d847bbf290a27d5e1312476571de76d903e65b59cb9",
         "engine_ids": [
           "E01",
           "E02",
@@ -1860,7 +1860,7 @@
         "domain_id": "D02_ORQUESTACION",
         "path": "2. Orquestación/Confesión Eclesial Reformada",
         "manifest": "2. Orquestación/Confesión Eclesial Reformada/CAJITA_MODULE.json",
-        "manifest_sha256": "8256ebfd406a8bc6b54fc0b0b750cce170681e0a2192bd7527354ecac7e397a8",
+        "manifest_sha256": "da81abe80572abfae449cdaae9f828c3c83d4ad8516a969220a88707a2ed9f0a",
         "tree_sha256": "b5ae8a768268df9fd376e881763519cd53a755020c9c67dc073872d7f2205e56",
         "engine_ids": [
           "E09",
@@ -1879,8 +1879,8 @@
         "domain_id": "D02_ORQUESTACION",
         "path": "2. Orquestación/Multi + Interdisciplinar",
         "manifest": "2. Orquestación/Multi + Interdisciplinar/CAJITA_MODULE.json",
-        "manifest_sha256": "835351058b360e653044e4f9fcf7778f605e0fda0e4ff2c92f1b1109fd377bfc",
-        "tree_sha256": "025206a9588a90ae4ecdc157b17acbb3f79b9422a355bbf48c1a738d8e5a2c95",
+        "manifest_sha256": "17a4f98c13d8170dd8b28918e76c623637d9327ee21ab739a379a11165710cb2",
+        "tree_sha256": "524b229952f77a2226f1d34c09ecacc0ee19185b042fde0eee202e6426ad57b9",
         "engine_ids": [
           "E03",
           "E04",
@@ -1902,7 +1902,7 @@
         "domain_id": "D02_ORQUESTACION",
         "path": "2. Orquestación/Orquestador",
         "manifest": "2. Orquestación/Orquestador/CAJITA_MODULE.json",
-        "manifest_sha256": "1ad714c73c6f9efc793d60587c4107ad2dbefcfe1ef79b378d079c22c0045aed",
+        "manifest_sha256": "ff647a9f8c440b1f55cc2ffd6a4b487f578471cd0f586a6d4c4c8886dd7a9722",
         "tree_sha256": "52f79c56c0cf17cf524df58ced88fe1048161aa791e3f9f51290d487b3ca7795",
         "engine_ids": [
           "E10",
@@ -1919,8 +1919,8 @@
         "domain_id": "D03_TRANSCRIPCION",
         "path": "3. Transcripción",
         "manifest": "3. Transcripción/CAJITA_MODULE.json",
-        "manifest_sha256": "5ec1e42cce9ac8b69744f4208c7e979422a1cacd4afc011ff59f721f1db4cd6c",
-        "tree_sha256": "14ff0c5b096fc0533334acafc154bb6efd43fd696e51d95ba5760da1f26a9586",
+        "manifest_sha256": "ffc995c26531d4aea952d934ae210de98be1e0db4255e742447236e63d5aa322",
+        "tree_sha256": "036f46e61162b467e9f2f2f40e1e9afca6b6d4498391805e77ed78c51384ffd9",
         "engine_ids": [
           "E02",
           "E03",
@@ -1935,7 +1935,7 @@
         "domain_id": "D04_TRADUCTOR_INTELIGENTE",
         "path": "4. Traductor Inteligente/Hermenéutica H-G",
         "manifest": "4. Traductor Inteligente/Hermenéutica H-G/CAJITA_MODULE.json",
-        "manifest_sha256": "0a58e1c9384b288a3d8c204ed09e687d8430dad0d0b490621abfb24101af6ff6",
+        "manifest_sha256": "4b8946be8626ca28e148695693fd40e1196ff61716ba9a4feac9033ae24043db",
         "tree_sha256": "ad77c7f176831c2f9f430b8f6dd6251841300f521518d2a5976e73428b1e5884",
         "engine_ids": [
           "E09",
@@ -1953,7 +1953,7 @@
         "domain_id": "D04_TRADUCTOR_INTELIGENTE",
         "path": "4. Traductor Inteligente/Traducción de lenguas antiguas",
         "manifest": "4. Traductor Inteligente/Traducción de lenguas antiguas/CAJITA_MODULE.json",
-        "manifest_sha256": "0243ca81ea7cfa84df67919eccfba9e9e9d27ec4d879d0ec8b3d66e1d38c4825",
+        "manifest_sha256": "97a12a3f30bbe140764b02275649c850932f851d968c451a4183430a8cc5cc55",
         "tree_sha256": "ccc2d8db85945f0864bb3bb26bd67737332d7cdccdfe034dc5b6607947ed6a26",
         "engine_ids": [
           "E02",
@@ -1972,8 +1972,8 @@
         "domain_id": "D04_TRADUCTOR_INTELIGENTE",
         "path": "4. Traductor Inteligente/Traducción general",
         "manifest": "4. Traductor Inteligente/Traducción general/CAJITA_MODULE.json",
-        "manifest_sha256": "5e1bf7833da1de960f699767a8bc3882956cc53351ee83a1cc0aea4076e83153",
-        "tree_sha256": "4e6bb82cdb0e1c9a0f7cbe5aeb663f5e72547174b4f2c5065d2ca9a0162828b3",
+        "manifest_sha256": "66aeae4cb62faba4e20b0e1e3be6d3f301b49fdcef6bb9faad0e913f0dd305d1",
+        "tree_sha256": "22f22eb0efeab980a03be87c6231c2da2db99bfd4df8723850bcf310e53d8f0c",
         "engine_ids": [
           "E01",
           "E02",
@@ -1993,7 +1993,7 @@
         "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
         "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre",
         "manifest": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre/CAJITA_MODULE.json",
-        "manifest_sha256": "4e79d8347979ede0208ec1bbe86a683041e2123dc4d27704341a64dd1ad225a6",
+        "manifest_sha256": "8d59d90fc8c8a3f916cff1e7322768009ea21bb8c1f3ec7adc3aa8f40f521ed7",
         "tree_sha256": "21600fc622cfceddf2ccd5e67cde37713b69500e6a4737c9e9383eda2ec0ba96",
         "engine_ids": [
           "E02",
@@ -2009,8 +2009,8 @@
         "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
         "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate",
         "manifest": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/CAJITA_MODULE.json",
-        "manifest_sha256": "ba3c2cdc66f98f777d95413f11d634ac6a2885034fe5b74850ad3d7ab912f534",
-        "tree_sha256": "d38c0ec3434685ef0cf3958ce17662a4f5626a8ae2d56545b1c8d0b0e4f58df1",
+        "manifest_sha256": "7384ca82c7c107d23a53ca5844a7eccf3c941c385c9ce09581b3a866182c8068",
+        "tree_sha256": "212e3cc0275403a265d3bcb6b612288290257499e6b86e711e1b806a31a7008c",
         "engine_ids": [
           "E01",
           "E02",
@@ -2028,7 +2028,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Anti-Alucinaciones",
         "manifest": "6. Sistema Inteligente/Anti-Alucinaciones/CAJITA_MODULE.json",
-        "manifest_sha256": "07e428b92520bb6e9aff0afcf30758c362c662f503da6badda6ae5cd5e74f541",
+        "manifest_sha256": "26b9843e4df8e3b0a69726e5251fe55e4eebcbb78c7f1e2fa7db8f269219246e",
         "tree_sha256": "f8630817435841cfab027f95bb59ad43556f527e537a68e31ef7f801c09453b5",
         "engine_ids": [
           "E09",
@@ -2045,8 +2045,8 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Análisis Avanzado",
         "manifest": "6. Sistema Inteligente/Análisis Avanzado/CAJITA_MODULE.json",
-        "manifest_sha256": "941922e0f957103bd6610af2d8c2504109aaf35f21d9ef62cc56e38e340f465d",
-        "tree_sha256": "51a04e98b9ba195a80fb8c0386a1ca380bb17bc9251a87d2ce9d330af41fa3f9",
+        "manifest_sha256": "90a065f37e738d35cf2ffac9f56f6376862f236fd58bab6bb40e997cbc6bfd9c",
+        "tree_sha256": "9fdad0222abac132d99d9734c87e671273a1801945d8b4d90126b9b718762f60",
         "engine_ids": [
           "E01",
           "E02",
@@ -2068,7 +2068,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Archivado Deteccion",
         "manifest": "6. Sistema Inteligente/Archivado Deteccion/CAJITA_MODULE.json",
-        "manifest_sha256": "141f60143d6afca24ecb5c70335dc7d5ffc753a790588dc2aa00a3a50663c43c",
+        "manifest_sha256": "d7c29afd8c9d82e176a3e1e5e82b2815419ba1744925645c7bd500dde5848906",
         "tree_sha256": "728e3f88d4ab067b57577fa4ac6d09feea19f926fa139e48790c58b294f1b809",
         "engine_ids": [
           "E02",
@@ -2084,7 +2084,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Cognitive CI - CD",
         "manifest": "6. Sistema Inteligente/Cognitive CI - CD/CAJITA_MODULE.json",
-        "manifest_sha256": "e12fd0a56b71fd2d36dfc399d396dc02046e3d82b0c51e64f10e5d8c1c9b5826",
+        "manifest_sha256": "f2fcb40455aea834365073e08bf9ba642d4c1a3bb690c464522e2f1a36014dd6",
         "tree_sha256": "ba88d46baa8a0c72be3144fd01bde8be02353f40c811ddb42604cb98d11a94b9",
         "engine_ids": [
           "E10",
@@ -2101,7 +2101,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Consola",
         "manifest": "6. Sistema Inteligente/Consola/CAJITA_MODULE.json",
-        "manifest_sha256": "f719578e1c8aa0c3a0764a6dffcccbcd91f7c67bd10c2096143f5e2effd95f76",
+        "manifest_sha256": "57ffc050d80b00b75076d8e526d738432a624b0da75119a3b21cfe95c4278764",
         "tree_sha256": "3d6c1bb36a54ebac6c5cc25b5624e9930756359a781717911e058bd5933bf9bf",
         "engine_ids": [
           "E10",
@@ -2117,7 +2117,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Memoria Gobernada",
         "manifest": "6. Sistema Inteligente/Memoria Gobernada/CAJITA_MODULE.json",
-        "manifest_sha256": "d50de3bd8765d2c9e7442ac386c252030f5b68ef23905384abfd4959fe8e6105",
+        "manifest_sha256": "d235eb81c5c6df2ceead003656de167ca9e06a587f88d48749aa720004879d11",
         "tree_sha256": "2eef878772d8a8b9d46798d17daf07affa3d329c62c1bcbf72c5ce9653060ec3",
         "engine_ids": [
           "E03",
@@ -2136,7 +2136,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Migración y Persistencia",
         "manifest": "6. Sistema Inteligente/Migración y Persistencia/CAJITA_MODULE.json",
-        "manifest_sha256": "92464c2da80d2bea1eb565b2585159e223da292b27e9ed3ac490ed17b620ec67",
+        "manifest_sha256": "2deb94cdd64138d1135ff027bce72292b69da568059dc442832f1c86f1277973",
         "tree_sha256": "f970bee40096c876c6a12ce4e28b706c1c69dc623cf40679fa2d23f3e4f4aaa7",
         "engine_ids": [
           "E06",
@@ -2155,7 +2155,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Motor - Protocolar",
         "manifest": "6. Sistema Inteligente/Motor - Protocolar/CAJITA_MODULE.json",
-        "manifest_sha256": "d4a555d8e3a27d841aab8bd0fe1e08da400ad1b2591f89d1c52ab709ced369fe",
+        "manifest_sha256": "97dfc367f6778e2d21e989c2aadaf9015b5706ed69d5c8a73fedc9adf9afe63b",
         "tree_sha256": "14a77569114d4a475cce434ca338e153e01029408fb8212185cc9e5c889c205c",
         "engine_ids": [
           "E10",
@@ -2172,7 +2172,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Portabilidad base",
         "manifest": "6. Sistema Inteligente/Portabilidad base/CAJITA_MODULE.json",
-        "manifest_sha256": "df7c525ae62f54dfffb8a914782736bd723368228170f563665a5afb144eb654",
+        "manifest_sha256": "d1f34ff042195022a808a977e6e037530e0af8d34ddf1e1019e1ad0a06596ce9",
         "tree_sha256": "67d99d38f6f2be2e6b4aa92e315d94430268abfeb2da1539dbce6a7aad9bc364",
         "engine_ids": [
           "E10",
@@ -2188,7 +2188,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Runtime Android Windows",
         "manifest": "6. Sistema Inteligente/Runtime Android Windows/CAJITA_MODULE.json",
-        "manifest_sha256": "61e4d834b605e4cab8aaddfcd477192c883ceecaf3981854bb939a08e0de51c4",
+        "manifest_sha256": "a0b18712d44042936037d78f0d6a5d7295c8cbb82b165b3ab6505eef070c310f",
         "tree_sha256": "b3c49b66772615b9aa7ff6fbde5e4226f16d689525e0f04da8b9c80981941b7e",
         "engine_ids": [
           "E10",
@@ -2204,7 +2204,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Testing",
         "manifest": "6. Sistema Inteligente/Testing/CAJITA_MODULE.json",
-        "manifest_sha256": "54ec38408f0798033b538d42c0dae0e74d2497a31e511a6b72ba8935c86201f2",
+        "manifest_sha256": "b881ee667d4748028ee10aa26310af35bc5ad9ff30fec2235f1bc16091eac292",
         "tree_sha256": "8f07bd7200b63ec6b98a345f3c850b3947fe9382e47389fbdcd409ee3ef21752",
         "engine_ids": [
           "E10",
@@ -2217,25 +2217,25 @@
       }
     ],
     "binding_path": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
-    "binding_sha256": "05de75e7458a4458249a19111f7a675049bfab01994a415b33c347924244920c",
+    "binding_sha256": "f0dddebdfa31e785a69489a83da3b24e4941bd48d8845cece94ace03281859da",
     "protected_source_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
-    "companion_document_sha256": "23cedcdc3d4c36665b3a1a8b440278a50db5ecdf9ddfa18d6d04296653dd440e",
+    "companion_document_sha256": "f670c5376bca8e041f81566f5be268be1f4eec8319b1b4c2855d4d87b489939d",
     "declared_materialized_axioms": 11757,
     "declared_historical_gaps": 657,
     "block_count": 134,
     "framework_count": 18,
     "state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
   },
-  "builder_output": "{\n  \"status\": \"PASS\",\n  \"output\": \"/home/runner/work/luna-linux-bridge/luna-linux-bridge/out/CAJITA_LUNA_RUNTIME_V10.macrodown\",\n  \"archive_bytes\": 446908562,\n  \"gross_raw_payload_bytes\": 853032213,\n  \"raw_build_tree_ceiling_bytes\": 1500000000,\n  \"combined_distribution_cap_bytes\": 479000000,\n  \"companion_bytes\": 11642576,\n  \"combined_distribution_bytes\": 458551138,\n  \"member_count\": 17222,\n  \"sha256\": \"8021ecddc0329d6ce9ddf212ca30678ff1b8aa56a73d714f24cd16310722eebe\",\n  \"rebuildable\": true\n}\n",
+  "builder_output": "{\n  \"status\": \"PASS\",\n  \"output\": \"/home/runner/work/luna-linux-bridge/luna-linux-bridge/out/CAJITA_LUNA_RUNTIME_V10.macrodown\",\n  \"archive_bytes\": 370863089,\n  \"gross_raw_payload_bytes\": 447348837,\n  \"raw_build_tree_ceiling_bytes\": 1500000000,\n  \"combined_distribution_cap_bytes\": 479000000,\n  \"companion_bytes\": 11644784,\n  \"combined_distribution_bytes\": 382507873,\n  \"member_count\": 1418,\n  \"sha256\": \"da955c807ac70d24f85dad3f4d6da0171786dfe60a0d8ceac4962982c5bb79b3\",\n  \"rebuildable\": true,\n  \"externalized_asset_reconstruction\": {\n    \"status\": \"PASS_CONTAINER_RECONSTRUCTION_ONLY\",\n    \"asset_count\": 10,\n    \"passed_count\": 10,\n    \"failed_count\": 0,\n    \"assets\": [\n      {\n        \"id\": \"APACHE_JENA_6_2_0\",\n        \"status\": \"PASS\",\n        \"bytes\": 27289736,\n        \"file_count\": 249,\n        \"tree_sha256\": \"586b008046071c679739ba8e9e9512cfc88a04dc5c28136adaa37afb798b7123\",\n        \"container_sha256\": \"a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a\"\n      },\n      {\n        \"id\": \"PLAYWRIGHT_1_63_0_SOURCE\",\n        \"status\": \"PASS\",\n        \"bytes\": 68708189,\n        \"file_count\": 3084,\n        \"tree_sha256\": \"bf9783d3c2ed4a3df79d040901bf9ad798c3f0c6018fb9b85ad0c65e6e31ab80\",\n        \"container_sha256\": \"395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14\"\n      },\n      {\n        \"id\": \"ONNX_RUNTIME_1_29_0_CP311\",\n        \"status\": \"PASS\",\n        \"bytes\": 62736574,\n        \"file_count\": 322,\n        \"tree_sha256\": \"799c445e18ce0c2f10ff782b745cbf7d02ec824f5d5dea6d5d020fa3deca77ab\",\n        \"container_sha256\": \"d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b\"\n      },\n      {\n        \"id\": \"DAGGER_0_21_8_LINUX_AMD64\",\n        \"status\": \"PASS\",\n        \"bytes\": 15382954,\n        \"file_count\": 2,\n        \"tree_sha256\": \"6be6fd2b8582f78a411e6c992bfc7d8dcfe9dee6a0b1eb27ee49dd1086732aa5\",\n        \"container_sha256\": \"bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e\"\n      },\n      {\n        \"id\": \"OPA_STATIC_LINUX_AMD64_CANDIDATE\",\n        \"status\": \"PASS\",\n        \"bytes\": 25271120,\n        \"file_count\": 1,\n        \"tree_sha256\": \"846a888aacea2cbc6174b77cb006c6e8832a08353b6e32c5213888325a942fd6\",\n        \"container_sha256\": \"75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628\"\n      },\n      {\n        \"id\": \"RQLITE_10_2_7_LINUX_AMD64\",\n        \"status\": \"PASS\",\n        \"bytes\": 12970604,\n        \"file_count\": 3,\n        \"tree_sha256\": \"ab3c60550f815a6c9baa2edbc796d8a00810b4aff679b0e70e58afe4c8fc79d5\",\n        \"container_sha256\": \"bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea\"\n      },\n      {\n        \"id\": \"SQLITE_SOURCE_3_53_4\",\n        \"status\": \"PASS\",\n        \"bytes\": 111818024,\n        \"file_count\": 2186,\n        \"tree_sha256\": \"5449bbf6c8748a6153410041438401871a7c1f86fe58bcf09e85df644bd68085\",\n        \"container_sha256\": \"e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e\"\n      },\n      {\n        \"id\": \"CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE\",\n        \"status\": \"PASS\",\n        \"bytes\": 143281221,\n        \"file_count\": 8818,\n        \"tree_sha256\": \"1df8c665076d390a6628721bae123921f09a6bcb756ca87042f84ed3ee7a540f\",\n        \"container_sha256\": \"fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37\"\n      },\n      {\n        \"id\": \"AVALONIA_12_1_1_NUGET\",\n        \"status\": \"PASS\",\n        \"bytes\": 35926924,\n        \"file_count\": 121,\n        \"tree_sha256\": \"196ff464dfa68dea1c6a95d58c899bd809711d6d5dba192887bca900f9ea7d67\",\n        \"container_sha256\": \"46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f\"\n      },\n      {\n        \"id\": \"TAURI_2_11_5_SOURCE_ZIP\",\n        \"status\": \"PASS\",\n        \"bytes\": 21668047,\n        \"file_count\": 1011,\n        \"tree_sha256\": \"9004f53d924f27227c028078d4d8dbe05cf798ca0dce5d0a48b5c0e34bd321d5\",\n        \"container_sha256\": \"04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8\"\n      }\n    ],\n    \"consumer_adapter_validation\": \"NOT_ESTABLISHED\",\n    \"native_smoke_validation\": \"REQUIRED\",\n    \"global_certification\": \"NOT_GRANTED\"\n  }\n}\n",
   "distribution": {
-    "archive_bytes": 446908562,
-    "archive_sha256": "8021ecddc0329d6ce9ddf212ca30678ff1b8aa56a73d714f24cd16310722eebe",
-    "louksna1_bytes": 11642576,
-    "louksna1_sha256": "23cedcdc3d4c36665b3a1a8b440278a50db5ecdf9ddfa18d6d04296653dd440e",
-    "combined_bytes": 458551138,
+    "archive_bytes": 370863089,
+    "archive_sha256": "da955c807ac70d24f85dad3f4d6da0171786dfe60a0d8ceac4962982c5bb79b3",
+    "louksna1_bytes": 11644784,
+    "louksna1_sha256": "f670c5376bca8e041f81566f5be268be1f4eec8319b1b4c2855d4d87b489939d",
+    "combined_bytes": 382507873,
     "combined_cap_bytes": 479000000,
     "status": "PASS",
-    "raw_tree_bytes": 853032213
+    "raw_tree_bytes": 447348837
   },
   "next_gate": "INDEPENDENT_G23_G24_AND_REAL_ONE_CPU_1_GIB_FUNCTIONAL_TESTS"
 }
