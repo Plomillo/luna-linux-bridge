@@ -164,6 +164,20 @@ def _verify_required_files(runtime: Path, module: Path, spec: dict) -> list[dict
             "bytes": len(data),
             "sha256": _sha(data)
         })
+    descriptor = json.loads((module / "CAJITA_MODULE.json").read_text(encoding="utf-8"))
+    target_id = next((target_id for target_id, row in TARGET_ADAPTERS.items() if row is spec), None)
+    registration = descriptor.get("runtime_engine_scope_registration")
+    if not isinstance(registration, dict) or registration.get("status") != "REGISTERED_RUNTIME_SMOKE_SCOPE_ONLY":
+        raise TargetAdapterError("TARGET_ADAPTER_RUNTIME_SCOPE_NOT_REGISTERED:" + str(target_id))
+    if registration.get("target_id") != target_id or registration.get("adapter_id") != spec["adapter_id"] or registration.get("operation") != spec["operation"]:
+        raise TargetAdapterError("TARGET_ADAPTER_RUNTIME_SCOPE_IDENTITY_MISMATCH:" + str(target_id))
+    if registration.get("source_files") != rows:
+        raise TargetAdapterError("TARGET_ADAPTER_SOURCE_FILE_IDENTITY_MISMATCH:" + str(target_id))
+    adapter_source = _regular_file(runtime, "cajita_target_adapters.py").read_bytes()
+    if registration.get("adapter_source_sha256") != _sha(adapter_source):
+        raise TargetAdapterError("TARGET_ADAPTER_SOURCE_CODE_HASH_MISMATCH:" + str(target_id))
+    if registration.get("certification") != "NOT_GRANTED" or registration.get("reference_quality_equivalence") != "NOT_ESTABLISHED":
+        raise TargetAdapterError("TARGET_ADAPTER_SCOPE_OVERCLAIMS_CERTIFICATION:" + str(target_id))
     return rows
 
 
