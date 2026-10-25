@@ -15,6 +15,7 @@ from cajita_axiom_graph_audit import (
     parse_legacy,
     parse_materialized,
     validate_materialized,
+    canonical_target_adapter_summary,
 )
 
 
@@ -82,6 +83,63 @@ class AxiomGraphAuditTests(unittest.TestCase):
         self.assertTrue(result["contiguous"])
         self.assertEqual(result["block_counts"]["B015"], 84)
         self.assertEqual(result["block_counts"]["B134"], 83)
+
+
+class CanonicalTargetAdapterSummaryTests(unittest.TestCase):
+    def _write_registry(self, runtime: Path):
+        registry = {
+            "schema": "CAJITA_MODULE_REGISTRY/1.0",
+            "canonical_target_module_count": 2,
+            "target_modules": [
+                {
+                    "target_id": "D01_CEREBRO_ROOT",
+                    "domain_id": "D01_CEREBRO",
+                    "consumer_adapter": "CAJITA_CEREBRO_TEXT_GENERATION/1.0",
+                    "consumer_adapter_registration": {
+                        "status": "REGISTERED_SYNTHETIC_SCOPE_ONLY",
+                        "certification": "NOT_GRANTED",
+                        "reference_quality_equivalence": "NOT_ESTABLISHED",
+                    },
+                },
+                {
+                    "target_id": "D02_ORQUESTADOR",
+                    "domain_id": "D02_ORQUESTACION",
+                    "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+                    "consumer_adapter_registration": {"status": "NOT_REGISTERED", "certification": "NOT_GRANTED"},
+                },
+            ],
+        }
+        (runtime / "module_registry.json").write_text(json.dumps(registry), encoding="utf-8")
+
+    def test_reports_five_style_partial_registration_without_promoting_certification(self):
+        with tempfile.TemporaryDirectory() as temp_name:
+            runtime = Path(temp_name) / "runtime"
+            runtime.mkdir()
+            self._write_registry(runtime)
+            task = {
+                "task_results": [{
+                    "domain_id": "D01_CEREBRO",
+                    "status": "PASS_FUNCTIONAL_EXECUTION",
+                    "exit_code": 0,
+                }]
+            }
+            summary = canonical_target_adapter_summary(runtime, task)
+            self.assertEqual(summary["canonical_target_count"], 2)
+            self.assertEqual(summary["synthetic_scope_registered_target_count"], 1)
+            self.assertEqual(summary["unregistered_target_count"], 1)
+            self.assertEqual(summary["registered_target_ids"], ["D01_CEREBRO_ROOT"])
+            self.assertEqual(summary["unregistered_target_ids"], ["D02_ORQUESTADOR"])
+            self.assertEqual(summary["all_21_target_task_adapters"], "NOT_ESTABLISHED")
+            self.assertEqual(summary["reference_quality_equivalence"], "NOT_ESTABLISHED")
+            self.assertEqual(summary["certification"], "NOT_GRANTED")
+
+    def test_registered_adapter_requires_source_bound_passing_task_evidence(self):
+        with tempfile.TemporaryDirectory() as temp_name:
+            runtime = Path(temp_name) / "runtime"
+            runtime.mkdir()
+            self._write_registry(runtime)
+            with self.assertRaisesRegex(ValueError, "REGISTERED_SYNTHETIC_ADAPTER_WITHOUT_CURRENT_E2E_EVIDENCE"):
+                canonical_target_adapter_summary(runtime, {"task_results": []})
 
 
 class ExternalizedJenaInputTests(unittest.TestCase):
