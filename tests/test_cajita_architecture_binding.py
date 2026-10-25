@@ -229,7 +229,7 @@ class CanonicalRuntimeEngineScopeRegistrationTests(unittest.TestCase):
             "'required_files':['cajita_axiom_source_loader.py','axiom_interdisciplinary_binding.json','APACHE_JENA_6_2_0.7z'],"
             "'engine':'SOURCE_BOUND_AXIOM_READER',"
             "'scope':'PROTECTED_SOURCE_PREFIX_AND_COMPANION_HASH_VERIFICATION'"
-            "}\n",
+            "}}\n",
             encoding="utf-8",
         )
 
