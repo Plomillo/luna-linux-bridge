@@ -1,8 +1,12 @@
 from __future__ import annotations
+import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from cajita_externalized_packaging import materialize_registered_asset
 from cajita_axiom_graph_audit import (
     END_HEADING,
     HEADING,
@@ -78,6 +82,57 @@ class AxiomGraphAuditTests(unittest.TestCase):
         self.assertTrue(result["contiguous"])
         self.assertEqual(result["block_counts"]["B015"], 84)
         self.assertEqual(result["block_counts"]["B134"], 83)
+
+
+class ExternalizedJenaInputTests(unittest.TestCase):
+    def _fixture(self, root: Path, declared_sha: str | None = None):
+        root.mkdir(parents=True, exist_ok=True)
+        payload = b"test-container-bytes-not-a-real-archive"
+        digest = hashlib.sha256(payload).hexdigest()
+        (root / "test-jena.7z").write_bytes(payload)
+        expected_sha = declared_sha or digest
+        placement = {
+            "assets": [{
+                "id": "APACHE_JENA_6_2_0",
+                "expanded_path": "cajita-luna-runtime/APACHE_JENA_6_2_0",
+                "expanded_bytes": 123,
+                "expanded_file_count": 7,
+                "expanded_tree_sha256": "a" * 64,
+                "container_sha256": expected_sha,
+                "container_size_bytes": len(payload),
+                "compact_runtime_container": {
+                    "path": "cajita-luna-runtime/test-jena.7z",
+                    "sha256": expected_sha,
+                    "size_bytes": len(payload),
+                },
+            }]
+        }
+        (root / "EXTERNALIZED_ASSET_PLACEMENT.json").write_text(
+            json.dumps(placement), encoding="utf-8"
+        )
+        return {"bytes": 123, "file_count": 7, "tree_sha256": "a" * 64}, digest
+
+    def test_registered_jena_container_is_hash_bound_before_extraction(self):
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name) / "runtime"
+            expected_tree, digest = self._fixture(root)
+            destination = Path(temp_name) / "extracted" / "jena"
+            with patch("cajita_externalized_packaging._extract_raw_tree", return_value=expected_tree) as extract:
+                result = materialize_registered_asset(root, "APACHE_JENA_6_2_0", destination)
+            self.assertEqual(result["status"], "PASS_REGISTERED_CONTAINER_RECONSTRUCTION")
+            self.assertEqual(result["container_sha256"], digest)
+            self.assertEqual(result["expanded_tree_sha256"], expected_tree["tree_sha256"])
+            self.assertEqual(extract.call_count, 1)
+
+    def test_tampered_registered_jena_container_fails_before_extraction(self):
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name) / "runtime"
+            self._fixture(root, declared_sha="0" * 64)
+            destination = Path(temp_name) / "extracted" / "jena"
+            with patch("cajita_externalized_packaging._extract_raw_tree") as extract:
+                with self.assertRaisesRegex(RuntimeError, "EXTERNALIZED_CONTAINER_IDENTITY_MISMATCH"):
+                    materialize_registered_asset(root, "APACHE_JENA_6_2_0", destination)
+            extract.assert_not_called()
 
 
 if __name__ == "__main__":
