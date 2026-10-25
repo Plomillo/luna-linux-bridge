@@ -556,7 +556,7 @@ jobs:
           mkdir -p "$DOCKERCTX"
           cat > "$DOCKERCTX/Dockerfile" <<'EOF'
           FROM python:3.13-slim-bookworm
-          RUN apt-get update && apt-get install -y --no-install-recommends espeak-ng \
+          RUN apt-get update && apt-get install -y --no-install-recommends espeak-ng build-essential \
               && rm -rf /var/lib/apt/lists/* \
               && pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.11.0+cpu numpy==2.2.6 safetensors==0.8.0 transformers==4.57.6 sentencepiece==0.2.2 tokenizers==0.22.2 pillow==13.0.0 Jinja2==3.1.6 protobuf==4.25.9 PyYAML==6.0.3
           EOF
@@ -574,7 +574,9 @@ jobs:
             docker run --rm --memory=1073741824 --memory-swap=1073741824 --cpus=1 \
               -e OMP_NUM_THREADS=1 -e OPENBLAS_NUM_THREADS=1 -e MKL_NUM_THREADS=1 -e NUMEXPR_NUM_THREADS=1 \
               -e TOKENIZERS_PARALLELISM=false -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \
+              -e LOUKSNA1_COMPANION_PATH=/telemetry/Louksna1.md \
               -v "$ROOT:/runtime:ro" -v "$RUNNER_TEMP:/telemetry:rw" \
+              -v "$GITHUB_WORKSPACE/evidence/louksna1-candidate/Louksna1.md:/telemetry/Louksna1.md:ro" \
               -v "$GITHUB_WORKSPACE/tools/cajita_task_e2e.py:/harness/cajita_task_e2e.py:ro" -w /runtime \
               cajita-louksna1-smoke sh -lc \
               'cat /sys/fs/cgroup/memory.max > /telemetry/cgroup-memory-max.txt; cat /sys/fs/cgroup/cpu.max > /telemetry/cgroup-cpu-max.txt; python cajita_runtime.py smoke-all --timeout 600 > /telemetry/smoke-all.log 2>&1; smoke_rc=$?; echo "$smoke_rc" > /telemetry/smoke-all.rc; python /harness/cajita_task_e2e.py --root /runtime --output-dir /telemetry/task-adapter-fixtures --output /telemetry/task-adapter-e2e-raw.json --timeout 900 > /telemetry/task-adapter-e2e.log 2>&1; task_rc=$?; echo "$task_rc" > /telemetry/task-adapter-e2e.rc; cat /sys/fs/cgroup/memory.peak > /telemetry/cgroup-memory-peak.txt; if [ "$smoke_rc" -eq 0 ] && [ "$task_rc" -eq 0 ]; then exit 0; else exit 1; fi'
@@ -601,7 +603,7 @@ jobs:
             PEAK="$(cat "$RUNNER_TEMP/cgroup-memory-peak.txt" 2>/dev/null)"
             if [ "$SMOKE_RC" -eq 0 ] && [ "$TASK_RC" -eq 0 ] && [ "$MEMMAX" = "1073741824" ] && [ "$CPUMAX" = "100000 100000" ] && [ -n "$PEAK" ] && [ "$PEAK" -le 1073741824 ]; then
               STATUS="PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE"
-              REASON="SIX_DOMAIN_SMOKE_AND_FIVE_MODEL_TASK_ADAPTERS_PASS_WITH_EFFECTIVE_ONE_CPU_1_GIB_LIMITS"
+              REASON="SIX_DOMAIN_SMOKE_PLUS_FIVE_KNOWN_ANSWER_MODEL_TASKS_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_PASS_WITH_EFFECTIVE_ONE_CPU_1_GIB_LIMITS"
             else
               REASON="SMOKE_TASK_ADAPTER_OR_RESOURCE_GATE_FAILED_SMOKE_RC_${SMOKE_RC}_TASK_RC_${TASK_RC}"
             fi
@@ -625,6 +627,10 @@ jobs:
           task_sha=hashlib.sha256(task_bytes).hexdigest()
           task_status=task_report.get("status","NOT_COMPLETED")
           task_rows=task_report.get("task_results",[])
+          target_engine_rows=task_report.get("target_engine_results",[])
+          target_engine_pass_count=sum(1 for x in target_engine_rows if x.get("status")=="PASS_TARGET_ENGINE_EXECUTION" and x.get("exit_code")==0)
+          target_engine_expected_count=task_report.get("target_engine_expected_count",6)
+          target_engine_status=task_report.get("target_engine_smoke_status","NOT_COMPLETED")
           result={"schema":"LOUKSNA1_G24_EVIDENCE/1.0","gate":"G24","status":os.environ["STATUS"],
             "decision":os.environ["STATUS"] if os.environ["STATUS"].startswith("PASS_") else "NOT_GRANTED",
             "package_sha256":hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None,
@@ -633,12 +639,21 @@ jobs:
             "smoke_return_code":int(os.environ["SMOKE_RC"]),"task_adapter_return_code":int(os.environ.get("TASK_RC","125")),
             "task_adapter_evidence_sha256":task_sha,"task_adapter_evidence_status":task_status,
             "task_adapter_pass_count":sum(1 for x in task_rows if x.get("status")=="PASS_FUNCTIONAL_EXECUTION" and x.get("exit_code")==0),
-            "task_adapter_expected_count":5,"image_build_return_code":int(os.environ["BUILD_RC"]),
+            "task_adapter_expected_count":5,
+            "target_engine_smoke_status":target_engine_status,
+            "target_engine_pass_count":target_engine_pass_count,
+            "target_engine_expected_count":target_engine_expected_count,
+            "target_engine_scope":"SIX_SOURCE_BOUND_RUNTIME_ENGINE_SMOKES_ONLY",
+            "target_engine_task_coverage":"NOT_ESTABLISHED",
+            "image_build_return_code":int(os.environ["BUILD_RC"]),
             "memory_max_bytes":os.environ.get("MEMMAX") or None,"cpu_quota":os.environ.get("CPUMAX") or None,
             "memory_peak_bytes":int(os.environ["PEAK"]) if os.environ.get("PEAK","").isdigit() else None,
-            "scope":"SIX_DOMAIN_STARTUP_SMOKE_PLUS_FIVE_SYNTHETIC_MODEL_TASK_EXECUTIONS_AND_FAIL_CLOSED_ORCHESTRATION_GUARD",
+            "scope":"SIX_DOMAIN_STARTUP_SMOKE_PLUS_FIVE_KNOWN_ANSWER_SYNTHETIC_MODEL_TASKS_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_AND_FAIL_CLOSED_ORCHESTRATION_GUARD",
             "task_adapters":"PASS_FOR_DECLARED_SCOPE" if task_status=="PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY" else "FAIL_OR_NOT_COMPLETED",
             "semantic_quality_equivalence":"NOT_ESTABLISHED","all_21_target_adapters":"NOT_ESTABLISHED",
+            "runtime_engine_scope_registration":"NOT_A_CONSUMER_TASK_ADAPTER_COMPLETION",
+            "reference_quality_equivalence":"NOT_ESTABLISHED",
+            "native_hardware_validation":"REQUIRED",
             "global_integrated_product_certification":"NOT_GRANTED"}
           Path("evidence/LOUKSNA1_G24_EVIDENCE.json").write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
           print(json.dumps(result,indent=2,ensure_ascii=False))
