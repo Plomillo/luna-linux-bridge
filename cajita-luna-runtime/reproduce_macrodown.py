@@ -136,7 +136,6 @@ def build(root,output,raw_cap_bytes=DEFAULT_RAW_CAP_BYTES,combined_cap_bytes=DEF
     reconstruction=verify_all_archives(root)
     if reconstruction.get("status")!="PASS_CONTAINER_RECONSTRUCTION_ONLY" or reconstruction.get("asset_count")!=10:
         raise RuntimeError("EXTERNALIZED_ASSET_RECONSTRUCTION_GATE_NOT_PASS")
-    print(json.dumps({"externalized_asset_reconstruction":reconstruction,"global_certification":"NOT_GRANTED"},ensure_ascii=False,indent=2))
     files=iter_files(root,output); manifest,gross=manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,companion_sha256,externalized_contract)
     output.parent.mkdir(parents=True,exist_ok=True); temp=output.with_name(output.name+".building")
     try:
@@ -172,7 +171,17 @@ def build(root,output,raw_cap_bytes=DEFAULT_RAW_CAP_BYTES,combined_cap_bytes=DEF
           "gross_raw_payload_bytes":gross,"raw_build_tree_ceiling_bytes":raw_cap_bytes,
           "combined_distribution_cap_bytes":combined_cap_bytes,"companion_bytes":companion_bytes,
           "combined_distribution_bytes":archive_size+companion_bytes,
-          "member_count":len(files)+1,"sha256":digest,"rebuildable":True}
+          "member_count":len(files)+1,"sha256":digest,"rebuildable":True,
+          "externalized_asset_reconstruction":{
+              "status":reconstruction.get("status"),
+              "asset_count":reconstruction.get("asset_count"),
+              "passed_count":reconstruction.get("passed_count"),
+              "failed_count":reconstruction.get("failed_count"),
+              "assets":[{"id":item.get("id"),"status":item.get("status"),"bytes":item.get("bytes"),"file_count":item.get("file_count"),"tree_sha256":item.get("tree_sha256"),"container_sha256":item.get("container_sha256")} for item in reconstruction.get("assets",[])],
+              "consumer_adapter_validation":reconstruction.get("consumer_adapter_validation"),
+              "native_smoke_validation":reconstruction.get("native_smoke_validation"),
+              "global_certification":"NOT_GRANTED"
+          }}
     finally:
         if temp.exists(): temp.unlink()
 
