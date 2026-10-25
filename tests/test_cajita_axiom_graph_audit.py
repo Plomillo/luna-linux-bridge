@@ -190,7 +190,7 @@ class SourceMaterializationPreparationTests(unittest.TestCase):
                     "canonical_asset_id": asset_id,
                     "module_key": expanded_rel,
                     "path": expanded_rel,
-                    "container_path": container_path,
+                    "container_path": container_path.removeprefix("cajita-luna-runtime/"),
                     "container_sha256": container_sha,
                     "container_bytes": container_bytes,
                     **tree,
