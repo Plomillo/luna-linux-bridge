@@ -1,10 +1,10 @@
 {
   "schema": "CAJITA_LOUKSNA1_FACTORY/1.0",
-  "generated_at_utc": "2026-10-25T02:17:55Z",
+  "generated_at_utc": "2026-10-25T03:11:54Z",
   "status": "PASS_MANUFACTURED_CANDIDATE_PENDING_G23_G24",
   "certification": "NOT_GRANTED",
   "blockers": [],
-  "source_commit": "2002af4f71f1bb135e1992abb711c5475b09f13c",
+  "source_commit": "3fb11b81cc9cd55f8791e58fb561ad2aa539a26b",
   "weights_before": [
     {
       "id": "W01",
@@ -51,7 +51,7 @@
   ],
   "materialization": {
     "archive_count": 28,
-    "archive_count_this_run": 28,
+    "archive_count_this_run": 21,
     "archive_bytes_removed": 175255841,
     "archives": [
       {
@@ -364,7 +364,7 @@
       }
     ],
     "readme_count": 125,
-    "readme_count_this_run": 118,
+    "readme_count_this_run": 108,
     "readmes_removed": [
       {
         "path": "1. Cerebro/README.md",
@@ -995,26 +995,26 @@
     "module_count": 28,
     "modules": [
       {
-        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
-        "module_key": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642",
-        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
         "canonical_asset_id": null,
+        "certification": "NOT_GRANTED",
+        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+        "functional_smoke": "REQUIRED",
+        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
+        "materialization": {
+          "bytes": 6542920,
+          "file_count": 343,
+          "status": "PASS",
+          "tree_sha256": "437f68292a82dbb230919710f9fabc173cd1ccf05ec05ec0d01b18d1c47557c2"
+        },
+        "module_key": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642",
+        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
         "source_archives": [
           {
-            "path": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642.zip",
             "bytes": 1230890,
+            "path": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642.zip",
             "sha256": "55369287510f8826a66f9ce162ff0213bfdef42fc85736b82049ab7dca8315c3"
           }
         ],
-        "materialization": {
-          "status": "PASS",
-          "file_count": 343,
-          "bytes": 6542920,
-          "tree_sha256": "437f68292a82dbb230919710f9fabc173cd1ccf05ec05ec0d01b18d1c47557c2"
-        },
-        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
-        "functional_smoke": "REQUIRED",
-        "certification": "NOT_GRANTED",
         "module_manifest_path": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642/CAJITA_MODULE.json",
         "module_manifest_sha256": "c3d484b3cb972043c4e9214e12afc0552e03ee274ef24a64495402deb73585c8"
       },
@@ -1307,50 +1307,50 @@
         "module_manifest_sha256": "f6b7bbbeed74d5d2de5cd0eba9d495fdaccab95bb93180a1527014e67478198d"
       },
       {
-        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
-        "module_key": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24",
-        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
         "canonical_asset_id": null,
+        "certification": "NOT_GRANTED",
+        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+        "functional_smoke": "REQUIRED",
+        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
+        "materialization": {
+          "bytes": 2825504,
+          "file_count": 809,
+          "status": "PASS",
+          "tree_sha256": "e9f543012cf90fd584976dc2d5d1ccc887ec33446615a2d7e638085772a0612b"
+        },
+        "module_key": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24",
+        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
         "source_archives": [
           {
-            "path": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24.zip",
             "bytes": 836260,
+            "path": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24.zip",
             "sha256": "6b413b1561e30d3a027a3a14bf8b5cc68dedaebaa852ff74ab2fc60f9293f583"
           }
         ],
-        "materialization": {
-          "status": "PASS",
-          "file_count": 809,
-          "bytes": 2825504,
-          "tree_sha256": "e9f543012cf90fd584976dc2d5d1ccc887ec33446615a2d7e638085772a0612b"
-        },
-        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
-        "functional_smoke": "REQUIRED",
-        "certification": "NOT_GRANTED",
         "module_manifest_path": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24/CAJITA_MODULE.json",
         "module_manifest_sha256": "5e25bcda3c1018041e07e08ae417d40d1fb7b47bd95960f0f81806b7374dcc76"
       },
       {
-        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
-        "module_key": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master",
-        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
         "canonical_asset_id": null,
+        "certification": "NOT_GRANTED",
+        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+        "functional_smoke": "REQUIRED",
+        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
+        "materialization": {
+          "bytes": 797405,
+          "file_count": 72,
+          "status": "PASS",
+          "tree_sha256": "7dd3672d272d90dba980ac3b002df46ae546cf8534e1fbb66f7690f74e833199"
+        },
+        "module_key": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master",
+        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
         "source_archives": [
           {
-            "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master.zip",
             "bytes": 225343,
+            "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master.zip",
             "sha256": "93d2a4eeb811f4bc3fbe584a35385f1aae07908ef42d2893693eabd354db1e74"
           }
         ],
-        "materialization": {
-          "status": "PASS",
-          "file_count": 72,
-          "bytes": 797405,
-          "tree_sha256": "7dd3672d272d90dba980ac3b002df46ae546cf8534e1fbb66f7690f74e833199"
-        },
-        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
-        "functional_smoke": "REQUIRED",
-        "certification": "NOT_GRANTED",
         "module_manifest_path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master/CAJITA_MODULE.json",
         "module_manifest_sha256": "bef4f21ecd2039b9152da7db3b0a90bcba7694097a2458419cf2231708fcf153"
       },
@@ -1379,26 +1379,26 @@
         "module_manifest_sha256": "bce663fde0e50c835ad9fecb5cefe7b376e4a41a6c4574a85e87453e81baaa25"
       },
       {
-        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
-        "module_key": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static",
-        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
         "canonical_asset_id": null,
+        "certification": "NOT_GRANTED",
+        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+        "functional_smoke": "REQUIRED",
+        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
+        "materialization": {
+          "bytes": 9234720,
+          "file_count": 1,
+          "status": "PASS",
+          "tree_sha256": "d6cc8b7b9c1e1645b2cb543f4abf8e25fccd022190fce68be8431ebaa9176584"
+        },
+        "module_key": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static",
+        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
         "source_archives": [
           {
-            "path": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip",
             "bytes": 3727204,
+            "path": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip",
             "sha256": "1d8c6fae32af635c0a97fc7d9d6abc2708a1c7769c946f04ec25a545362200a6"
           }
         ],
-        "materialization": {
-          "status": "PASS",
-          "file_count": 1,
-          "bytes": 9234720,
-          "tree_sha256": "d6cc8b7b9c1e1645b2cb543f4abf8e25fccd022190fce68be8431ebaa9176584"
-        },
-        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
-        "functional_smoke": "REQUIRED",
-        "certification": "NOT_GRANTED",
         "module_manifest_path": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static/CAJITA_MODULE.json",
         "module_manifest_sha256": "036b25075b8ef01490db45f0d8220c6433bc182be67ca94f4450bb10d678910b"
       },
@@ -1451,50 +1451,50 @@
         "module_manifest_sha256": "c967658f5c74960e61b0233814535dbe81e048058515bd782b0822085fd01c16"
       },
       {
-        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
-        "module_key": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04",
-        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
         "canonical_asset_id": null,
+        "certification": "NOT_GRANTED",
+        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+        "functional_smoke": "REQUIRED",
+        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
+        "materialization": {
+          "bytes": 1898920,
+          "file_count": 2,
+          "status": "PASS",
+          "tree_sha256": "e5e2c2f1f099e03e99d834fecc32afa65fb0d19acab2f0c760c5a6d6a07b29a5"
+        },
+        "module_key": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04",
+        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
         "source_archives": [
           {
-            "path": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04.zip",
             "bytes": 909563,
+            "path": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04.zip",
             "sha256": "4a4732e2b812ce386234118ec36fa817771b474b1a335aed8fece55fb6279dae"
           }
         ],
-        "materialization": {
-          "status": "PASS",
-          "file_count": 2,
-          "bytes": 1898920,
-          "tree_sha256": "e5e2c2f1f099e03e99d834fecc32afa65fb0d19acab2f0c760c5a6d6a07b29a5"
-        },
-        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
-        "functional_smoke": "REQUIRED",
-        "certification": "NOT_GRANTED",
         "module_manifest_path": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04/CAJITA_MODULE.json",
         "module_manifest_sha256": "a0ef381e6b3768778e18989ada575824ab3d146ee92688cf00a4d329d38de8e6"
       },
       {
-        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
-        "module_key": "6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400",
-        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
         "canonical_asset_id": null,
+        "certification": "NOT_GRANTED",
+        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+        "functional_smoke": "REQUIRED",
+        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
+        "materialization": {
+          "bytes": 11431269,
+          "file_count": 4,
+          "status": "PASS",
+          "tree_sha256": "b0f2ae31d94d667d5ee93dd358ac57448d34b313bb5b0e9753c2152916f53d0d"
+        },
+        "module_key": "6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400",
+        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
         "source_archives": [
           {
-            "path": "6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400.zip",
             "bytes": 2923847,
+            "path": "6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400.zip",
             "sha256": "087e07c19da4898889258e3f5b0d87612f02651ccfffbc0aae904c4f1c9a9769"
           }
         ],
-        "materialization": {
-          "status": "PASS",
-          "file_count": 4,
-          "bytes": 11431269,
-          "tree_sha256": "b0f2ae31d94d667d5ee93dd358ac57448d34b313bb5b0e9753c2152916f53d0d"
-        },
-        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
-        "functional_smoke": "REQUIRED",
-        "certification": "NOT_GRANTED",
         "module_manifest_path": "6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400/CAJITA_MODULE.json",
         "module_manifest_sha256": "102da629aed778c181191fc4559acb3b28c1fcdeb11de9dbc365439fbb80b709"
       },
@@ -1547,26 +1547,26 @@
         "module_manifest_sha256": "858409caee167b5b9494feb8bea771ff77a06f28bcce0ed68a90e3c641bf4b9f"
       },
       {
-        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
-        "module_key": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0",
-        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
         "canonical_asset_id": null,
+        "certification": "NOT_GRANTED",
+        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+        "functional_smoke": "REQUIRED",
+        "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
+        "materialization": {
+          "bytes": 184390,
+          "file_count": 6,
+          "status": "PASS",
+          "tree_sha256": "25317fdc20ea3eaaed2d46824ae914509a52611c72e5a964d9b6fe7da41cb0c2"
+        },
+        "module_key": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0",
+        "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
         "source_archives": [
           {
-            "path": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0.zip",
             "bytes": 38162,
+            "path": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0.zip",
             "sha256": "d5f5f95086ea89aaf02f414c23a2ee4ad5f953c9b04d1298093422af040e63b5"
           }
         ],
-        "materialization": {
-          "status": "PASS",
-          "file_count": 6,
-          "bytes": 184390,
-          "tree_sha256": "25317fdc20ea3eaaed2d46824ae914509a52611c72e5a964d9b6fe7da41cb0c2"
-        },
-        "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
-        "functional_smoke": "REQUIRED",
-        "certification": "NOT_GRANTED",
         "module_manifest_path": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0/CAJITA_MODULE.json",
         "module_manifest_sha256": "1e8eb95a98c200bcc890303dd364e8df4ff065cfee14ff8a1d59890f0d8a08ed"
       },
@@ -1668,119 +1668,8 @@
       }
     ],
     "materialized_module_revalidation": "PASS",
-    "source_tree_recovery": {
-      "status": "PASS_SOURCE_ARCHIVE_REPLAY_REQUIRED",
-      "source_commit": "f2771dd76c2c99967bbf1f7b032f8e6d15b0e387",
-      "archive_count_restored": 17,
-      "archives": [
-        {
-          "path": "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642.zip",
-          "bytes": 1230890,
-          "sha256": "55369287510f8826a66f9ce162ff0213bfdef42fc85736b82049ab7dca8315c3"
-        },
-        {
-          "path": "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
-          "bytes": 23103199,
-          "sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a"
-        },
-        {
-          "path": "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z",
-          "bytes": 32133546,
-          "sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14"
-        },
-        {
-          "path": "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24.zip",
-          "bytes": 836260,
-          "sha256": "6b413b1561e30d3a027a3a14bf8b5cc68dedaebaa852ff74ab2fc60f9293f583"
-        },
-        {
-          "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master.zip",
-          "bytes": 225343,
-          "sha256": "93d2a4eeb811f4bc3fbe584a35385f1aae07908ef42d2893693eabd354db1e74"
-        },
-        {
-          "path": "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z",
-          "bytes": 10219873,
-          "sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b"
-        },
-        {
-          "path": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip",
-          "bytes": 3727204,
-          "sha256": "1d8c6fae32af635c0a97fc7d9d6abc2708a1c7769c946f04ec25a545362200a6"
-        },
-        {
-          "path": "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z",
-          "bytes": 15377436,
-          "sha256": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e"
-        },
-        {
-          "path": "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z",
-          "bytes": 25273630,
-          "sha256": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628"
-        },
-        {
-          "path": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04.zip",
-          "bytes": 909563,
-          "sha256": "4a4732e2b812ce386234118ec36fa817771b474b1a335aed8fece55fb6279dae"
-        },
-        {
-          "path": "6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400.zip",
-          "bytes": 2923847,
-          "sha256": "087e07c19da4898889258e3f5b0d87612f02651ccfffbc0aae904c4f1c9a9769"
-        },
-        {
-          "path": "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z",
-          "bytes": 12962199,
-          "sha256": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea"
-        },
-        {
-          "path": "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z",
-          "bytes": 7954439,
-          "sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e"
-        },
-        {
-          "path": "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0.zip",
-          "bytes": 38162,
-          "sha256": "d5f5f95086ea89aaf02f414c23a2ee4ad5f953c9b04d1298093422af040e63b5"
-        },
-        {
-          "path": "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z",
-          "bytes": 21310484,
-          "sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37"
-        },
-        {
-          "path": "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z",
-          "bytes": 3836434,
-          "sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f"
-        },
-        {
-          "path": "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z",
-          "bytes": 13078809,
-          "sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8"
-        }
-      ],
-      "expanded_module_paths_reset": [
-        "2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642",
-        "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0",
-        "2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE",
-        "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24",
-        "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master",
-        "6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311",
-        "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static",
-        "6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64",
-        "6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE",
-        "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04",
-        "6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400",
-        "6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64",
-        "6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4",
-        "6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0",
-        "6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
-        "6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET",
-        "6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP"
-      ],
-      "reason": "RECORDED_MODULE_TREE_DRIFT; REPLAY_SOURCE_ARCHIVES_AND_REVALIDATE"
-    },
-    "raw_tree_bytes_after_materialization": 847979170
+    "source_tree_recovery": null,
+    "raw_tree_bytes_after_materialization": 807479027
   },
   "weights_after": [
     {
@@ -1829,11 +1718,11 @@
   "weights_preserved": true,
   "louksna1": {
     "path": "Louksna1.md",
-    "bytes": 11644784,
-    "sha256": "f670c5376bca8e041f81566f5be268be1f4eec8319b1b4c2855d4d87b489939d",
+    "bytes": 11646992,
+    "sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486",
     "source_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
     "prefix_byte_exact": true,
-    "cajita_doc_sha256": "ed95ad3f25387928a14385de143d5f4546bcf017a17ed160de9cec1dc2256e47"
+    "cajita_doc_sha256": "3e96a8ab0c2777510112712052c4efad792d841def72b5249ff30f732d5abe1b"
   },
   "axiom_interdisciplinary_binding": {
     "target_module_count": 21,
@@ -1843,7 +1732,7 @@
         "domain_id": "D01_CEREBRO",
         "path": "1. Cerebro",
         "manifest": "1. Cerebro/CAJITA_MODULE.json",
-        "manifest_sha256": "a4af60ee191afdc0646473b4a311493793a1f8c1337a33e8aede424a79947dbc",
+        "manifest_sha256": "7d574511464df36acb6240337c8211918e0c1e9dcbc9a2e2ee7519a3d4302236",
         "tree_sha256": "ab7e21c084cb6c78f4c36d847bbf290a27d5e1312476571de76d903e65b59cb9",
         "engine_ids": [
           "E01",
@@ -1860,7 +1749,7 @@
         "domain_id": "D02_ORQUESTACION",
         "path": "2. Orquestación/Confesión Eclesial Reformada",
         "manifest": "2. Orquestación/Confesión Eclesial Reformada/CAJITA_MODULE.json",
-        "manifest_sha256": "da81abe80572abfae449cdaae9f828c3c83d4ad8516a969220a88707a2ed9f0a",
+        "manifest_sha256": "9a9a3d27c116fa324034c209d6ff5030707b940e68ea3fe1acd59fff25b76c01",
         "tree_sha256": "b5ae8a768268df9fd376e881763519cd53a755020c9c67dc073872d7f2205e56",
         "engine_ids": [
           "E09",
@@ -1879,8 +1768,8 @@
         "domain_id": "D02_ORQUESTACION",
         "path": "2. Orquestación/Multi + Interdisciplinar",
         "manifest": "2. Orquestación/Multi + Interdisciplinar/CAJITA_MODULE.json",
-        "manifest_sha256": "17a4f98c13d8170dd8b28918e76c623637d9327ee21ab739a379a11165710cb2",
-        "tree_sha256": "524b229952f77a2226f1d34c09ecacc0ee19185b042fde0eee202e6426ad57b9",
+        "manifest_sha256": "2b491f617da5b264ad84c662897ad06bfa163af64990c16236e563afa82e5a47",
+        "tree_sha256": "e23a3c52f261ee465149dc47519e2c262434fbe2ca3ab2b990027cf13467b6a3",
         "engine_ids": [
           "E03",
           "E04",
@@ -1902,7 +1791,7 @@
         "domain_id": "D02_ORQUESTACION",
         "path": "2. Orquestación/Orquestador",
         "manifest": "2. Orquestación/Orquestador/CAJITA_MODULE.json",
-        "manifest_sha256": "ff647a9f8c440b1f55cc2ffd6a4b487f578471cd0f586a6d4c4c8886dd7a9722",
+        "manifest_sha256": "9596a9a3fc84acda3b3ae13a00b17795c0e204feb502ceffd5bb9e7fd9db733d",
         "tree_sha256": "52f79c56c0cf17cf524df58ced88fe1048161aa791e3f9f51290d487b3ca7795",
         "engine_ids": [
           "E10",
@@ -1919,7 +1808,7 @@
         "domain_id": "D03_TRANSCRIPCION",
         "path": "3. Transcripción",
         "manifest": "3. Transcripción/CAJITA_MODULE.json",
-        "manifest_sha256": "ffc995c26531d4aea952d934ae210de98be1e0db4255e742447236e63d5aa322",
+        "manifest_sha256": "a3064100ca2782f52b61b41368621ee11bcc97f3a450ea6e67e1a0d7923d833f",
         "tree_sha256": "036f46e61162b467e9f2f2f40e1e9afca6b6d4498391805e77ed78c51384ffd9",
         "engine_ids": [
           "E02",
@@ -1935,7 +1824,7 @@
         "domain_id": "D04_TRADUCTOR_INTELIGENTE",
         "path": "4. Traductor Inteligente/Hermenéutica H-G",
         "manifest": "4. Traductor Inteligente/Hermenéutica H-G/CAJITA_MODULE.json",
-        "manifest_sha256": "4b8946be8626ca28e148695693fd40e1196ff61716ba9a4feac9033ae24043db",
+        "manifest_sha256": "5776c2ea45f97565336ec1ce71db46bce0273a17a335fd95b087c556105c72a7",
         "tree_sha256": "ad77c7f176831c2f9f430b8f6dd6251841300f521518d2a5976e73428b1e5884",
         "engine_ids": [
           "E09",
@@ -1953,7 +1842,7 @@
         "domain_id": "D04_TRADUCTOR_INTELIGENTE",
         "path": "4. Traductor Inteligente/Traducción de lenguas antiguas",
         "manifest": "4. Traductor Inteligente/Traducción de lenguas antiguas/CAJITA_MODULE.json",
-        "manifest_sha256": "97a12a3f30bbe140764b02275649c850932f851d968c451a4183430a8cc5cc55",
+        "manifest_sha256": "bcabcb02feb319bd9d76de5a2a2273f061aed6dd3edd52fec5f976af590b679b",
         "tree_sha256": "ccc2d8db85945f0864bb3bb26bd67737332d7cdccdfe034dc5b6607947ed6a26",
         "engine_ids": [
           "E02",
@@ -1972,7 +1861,7 @@
         "domain_id": "D04_TRADUCTOR_INTELIGENTE",
         "path": "4. Traductor Inteligente/Traducción general",
         "manifest": "4. Traductor Inteligente/Traducción general/CAJITA_MODULE.json",
-        "manifest_sha256": "66aeae4cb62faba4e20b0e1e3be6d3f301b49fdcef6bb9faad0e913f0dd305d1",
+        "manifest_sha256": "593b41eedd9b097b9a9716665523e2330eb962f75aaa5e25e165f8e671f604d4",
         "tree_sha256": "22f22eb0efeab980a03be87c6231c2da2db99bfd4df8723850bcf310e53d8f0c",
         "engine_ids": [
           "E01",
@@ -1993,7 +1882,7 @@
         "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
         "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre",
         "manifest": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre/CAJITA_MODULE.json",
-        "manifest_sha256": "8d59d90fc8c8a3f916cff1e7322768009ea21bb8c1f3ec7adc3aa8f40f521ed7",
+        "manifest_sha256": "9da402afd6be31ade716375413c6bd2c5ffe97330f453d642b4a41bbe43d2024",
         "tree_sha256": "21600fc622cfceddf2ccd5e67cde37713b69500e6a4737c9e9383eda2ec0ba96",
         "engine_ids": [
           "E02",
@@ -2009,7 +1898,7 @@
         "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
         "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate",
         "manifest": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/CAJITA_MODULE.json",
-        "manifest_sha256": "7384ca82c7c107d23a53ca5844a7eccf3c941c385c9ce09581b3a866182c8068",
+        "manifest_sha256": "5d9790ca214a554c2395c7f8dabdbde2047b0cc71010a43479c31a98746bceea",
         "tree_sha256": "212e3cc0275403a265d3bcb6b612288290257499e6b86e711e1b806a31a7008c",
         "engine_ids": [
           "E01",
@@ -2028,7 +1917,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Anti-Alucinaciones",
         "manifest": "6. Sistema Inteligente/Anti-Alucinaciones/CAJITA_MODULE.json",
-        "manifest_sha256": "26b9843e4df8e3b0a69726e5251fe55e4eebcbb78c7f1e2fa7db8f269219246e",
+        "manifest_sha256": "34e9fec48898b3b96735792e570b48a9796ee041b877ac3298f3016699522be2",
         "tree_sha256": "f8630817435841cfab027f95bb59ad43556f527e537a68e31ef7f801c09453b5",
         "engine_ids": [
           "E09",
@@ -2045,7 +1934,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Análisis Avanzado",
         "manifest": "6. Sistema Inteligente/Análisis Avanzado/CAJITA_MODULE.json",
-        "manifest_sha256": "90a065f37e738d35cf2ffac9f56f6376862f236fd58bab6bb40e997cbc6bfd9c",
+        "manifest_sha256": "485830103b30ccff165c5588e57e992bcf0caf61afb7f98d8f31281edabdffcd",
         "tree_sha256": "9fdad0222abac132d99d9734c87e671273a1801945d8b4d90126b9b718762f60",
         "engine_ids": [
           "E01",
@@ -2068,7 +1957,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Archivado Deteccion",
         "manifest": "6. Sistema Inteligente/Archivado Deteccion/CAJITA_MODULE.json",
-        "manifest_sha256": "d7c29afd8c9d82e176a3e1e5e82b2815419ba1744925645c7bd500dde5848906",
+        "manifest_sha256": "00ce5837a565739b03026d4fc51ff82ec703d6974de4626ec243ab905c7b39e0",
         "tree_sha256": "728e3f88d4ab067b57577fa4ac6d09feea19f926fa139e48790c58b294f1b809",
         "engine_ids": [
           "E02",
@@ -2084,7 +1973,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Cognitive CI - CD",
         "manifest": "6. Sistema Inteligente/Cognitive CI - CD/CAJITA_MODULE.json",
-        "manifest_sha256": "f2fcb40455aea834365073e08bf9ba642d4c1a3bb690c464522e2f1a36014dd6",
+        "manifest_sha256": "d05d069a1d02cb79fe1b1aee26efcbb57d8bbb6f298ed35d35d004010afe9f40",
         "tree_sha256": "ba88d46baa8a0c72be3144fd01bde8be02353f40c811ddb42604cb98d11a94b9",
         "engine_ids": [
           "E10",
@@ -2101,7 +1990,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Consola",
         "manifest": "6. Sistema Inteligente/Consola/CAJITA_MODULE.json",
-        "manifest_sha256": "57ffc050d80b00b75076d8e526d738432a624b0da75119a3b21cfe95c4278764",
+        "manifest_sha256": "f34120d4bbd40fa327cb02cf9d667e2f2953829f0be37c3b8e47c5348a2ba3ab",
         "tree_sha256": "3d6c1bb36a54ebac6c5cc25b5624e9930756359a781717911e058bd5933bf9bf",
         "engine_ids": [
           "E10",
@@ -2117,7 +2006,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Memoria Gobernada",
         "manifest": "6. Sistema Inteligente/Memoria Gobernada/CAJITA_MODULE.json",
-        "manifest_sha256": "d235eb81c5c6df2ceead003656de167ca9e06a587f88d48749aa720004879d11",
+        "manifest_sha256": "5df2d2ab547c2353af9731992099b0875c60428bc9383ba7a9f6318e043aa6e2",
         "tree_sha256": "2eef878772d8a8b9d46798d17daf07affa3d329c62c1bcbf72c5ce9653060ec3",
         "engine_ids": [
           "E03",
@@ -2136,7 +2025,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Migración y Persistencia",
         "manifest": "6. Sistema Inteligente/Migración y Persistencia/CAJITA_MODULE.json",
-        "manifest_sha256": "2deb94cdd64138d1135ff027bce72292b69da568059dc442832f1c86f1277973",
+        "manifest_sha256": "2a5c397312dbe61c315a771a61b7896801ac5ef4a2be4bd294f8891108341b08",
         "tree_sha256": "f970bee40096c876c6a12ce4e28b706c1c69dc623cf40679fa2d23f3e4f4aaa7",
         "engine_ids": [
           "E06",
@@ -2155,7 +2044,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Motor - Protocolar",
         "manifest": "6. Sistema Inteligente/Motor - Protocolar/CAJITA_MODULE.json",
-        "manifest_sha256": "97dfc367f6778e2d21e989c2aadaf9015b5706ed69d5c8a73fedc9adf9afe63b",
+        "manifest_sha256": "00aa425eaa1150a4734e822ca29c8219c0c256ab4cb5245009cb04cb0e3c81ff",
         "tree_sha256": "14a77569114d4a475cce434ca338e153e01029408fb8212185cc9e5c889c205c",
         "engine_ids": [
           "E10",
@@ -2172,7 +2061,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Portabilidad base",
         "manifest": "6. Sistema Inteligente/Portabilidad base/CAJITA_MODULE.json",
-        "manifest_sha256": "d1f34ff042195022a808a977e6e037530e0af8d34ddf1e1019e1ad0a06596ce9",
+        "manifest_sha256": "eef0781880e6cae2f1408f5569ff644740fa723cd6920fd6909916f5c800ff53",
         "tree_sha256": "67d99d38f6f2be2e6b4aa92e315d94430268abfeb2da1539dbce6a7aad9bc364",
         "engine_ids": [
           "E10",
@@ -2188,7 +2077,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Runtime Android Windows",
         "manifest": "6. Sistema Inteligente/Runtime Android Windows/CAJITA_MODULE.json",
-        "manifest_sha256": "a0b18712d44042936037d78f0d6a5d7295c8cbb82b165b3ab6505eef070c310f",
+        "manifest_sha256": "c445fa914c5df882d460b01e0135cc71d74f660f13039af73dff67bb3cea492a",
         "tree_sha256": "b3c49b66772615b9aa7ff6fbde5e4226f16d689525e0f04da8b9c80981941b7e",
         "engine_ids": [
           "E10",
@@ -2204,7 +2093,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Testing",
         "manifest": "6. Sistema Inteligente/Testing/CAJITA_MODULE.json",
-        "manifest_sha256": "b881ee667d4748028ee10aa26310af35bc5ad9ff30fec2235f1bc16091eac292",
+        "manifest_sha256": "58abec0b4a0ba0e51ab8b78cdbbdf935295c10fa1c5653af0969c250e2c4895a",
         "tree_sha256": "8f07bd7200b63ec6b98a345f3c850b3947fe9382e47389fbdcd409ee3ef21752",
         "engine_ids": [
           "E10",
@@ -2217,25 +2106,25 @@
       }
     ],
     "binding_path": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
-    "binding_sha256": "f0dddebdfa31e785a69489a83da3b24e4941bd48d8845cece94ace03281859da",
+    "binding_sha256": "bc63ae32329d36dd44413e8dbe2b11604d779c81fd28fdd682f1ef147b433c8b",
     "protected_source_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
-    "companion_document_sha256": "f670c5376bca8e041f81566f5be268be1f4eec8319b1b4c2855d4d87b489939d",
+    "companion_document_sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486",
     "declared_materialized_axioms": 11757,
     "declared_historical_gaps": 657,
     "block_count": 134,
     "framework_count": 18,
     "state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
   },
-  "builder_output": "{\n  \"status\": \"PASS\",\n  \"output\": \"/home/runner/work/luna-linux-bridge/luna-linux-bridge/out/CAJITA_LUNA_RUNTIME_V10.macrodown\",\n  \"archive_bytes\": 370863089,\n  \"gross_raw_payload_bytes\": 447348837,\n  \"raw_build_tree_ceiling_bytes\": 1500000000,\n  \"combined_distribution_cap_bytes\": 479000000,\n  \"companion_bytes\": 11644784,\n  \"combined_distribution_bytes\": 382507873,\n  \"member_count\": 1418,\n  \"sha256\": \"da955c807ac70d24f85dad3f4d6da0171786dfe60a0d8ceac4962982c5bb79b3\",\n  \"rebuildable\": true,\n  \"externalized_asset_reconstruction\": {\n    \"status\": \"PASS_CONTAINER_RECONSTRUCTION_ONLY\",\n    \"asset_count\": 10,\n    \"passed_count\": 10,\n    \"failed_count\": 0,\n    \"assets\": [\n      {\n        \"id\": \"APACHE_JENA_6_2_0\",\n        \"status\": \"PASS\",\n        \"bytes\": 27289736,\n        \"file_count\": 249,\n        \"tree_sha256\": \"586b008046071c679739ba8e9e9512cfc88a04dc5c28136adaa37afb798b7123\",\n        \"container_sha256\": \"a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a\"\n      },\n      {\n        \"id\": \"PLAYWRIGHT_1_63_0_SOURCE\",\n        \"status\": \"PASS\",\n        \"bytes\": 68708189,\n        \"file_count\": 3084,\n        \"tree_sha256\": \"bf9783d3c2ed4a3df79d040901bf9ad798c3f0c6018fb9b85ad0c65e6e31ab80\",\n        \"container_sha256\": \"395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14\"\n      },\n      {\n        \"id\": \"ONNX_RUNTIME_1_29_0_CP311\",\n        \"status\": \"PASS\",\n        \"bytes\": 62736574,\n        \"file_count\": 322,\n        \"tree_sha256\": \"799c445e18ce0c2f10ff782b745cbf7d02ec824f5d5dea6d5d020fa3deca77ab\",\n        \"container_sha256\": \"d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b\"\n      },\n      {\n        \"id\": \"DAGGER_0_21_8_LINUX_AMD64\",\n        \"status\": \"PASS\",\n        \"bytes\": 15382954,\n        \"file_count\": 2,\n        \"tree_sha256\": \"6be6fd2b8582f78a411e6c992bfc7d8dcfe9dee6a0b1eb27ee49dd1086732aa5\",\n        \"container_sha256\": \"bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e\"\n      },\n      {\n        \"id\": \"OPA_STATIC_LINUX_AMD64_CANDIDATE\",\n        \"status\": \"PASS\",\n        \"bytes\": 25271120,\n        \"file_count\": 1,\n        \"tree_sha256\": \"846a888aacea2cbc6174b77cb006c6e8832a08353b6e32c5213888325a942fd6\",\n        \"container_sha256\": \"75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628\"\n      },\n      {\n        \"id\": \"RQLITE_10_2_7_LINUX_AMD64\",\n        \"status\": \"PASS\",\n        \"bytes\": 12970604,\n        \"file_count\": 3,\n        \"tree_sha256\": \"ab3c60550f815a6c9baa2edbc796d8a00810b4aff679b0e70e58afe4c8fc79d5\",\n        \"container_sha256\": \"bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea\"\n      },\n      {\n        \"id\": \"SQLITE_SOURCE_3_53_4\",\n        \"status\": \"PASS\",\n        \"bytes\": 111818024,\n        \"file_count\": 2186,\n        \"tree_sha256\": \"5449bbf6c8748a6153410041438401871a7c1f86fe58bcf09e85df644bd68085\",\n        \"container_sha256\": \"e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e\"\n      },\n      {\n        \"id\": \"CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE\",\n        \"status\": \"PASS\",\n        \"bytes\": 143281221,\n        \"file_count\": 8818,\n        \"tree_sha256\": \"1df8c665076d390a6628721bae123921f09a6bcb756ca87042f84ed3ee7a540f\",\n        \"container_sha256\": \"fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37\"\n      },\n      {\n        \"id\": \"AVALONIA_12_1_1_NUGET\",\n        \"status\": \"PASS\",\n        \"bytes\": 35926924,\n        \"file_count\": 121,\n        \"tree_sha256\": \"196ff464dfa68dea1c6a95d58c899bd809711d6d5dba192887bca900f9ea7d67\",\n        \"container_sha256\": \"46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f\"\n      },\n      {\n        \"id\": \"TAURI_2_11_5_SOURCE_ZIP\",\n        \"status\": \"PASS\",\n        \"bytes\": 21668047,\n        \"file_count\": 1011,\n        \"tree_sha256\": \"9004f53d924f27227c028078d4d8dbe05cf798ca0dce5d0a48b5c0e34bd321d5\",\n        \"container_sha256\": \"04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8\"\n      }\n    ],\n    \"consumer_adapter_validation\": \"NOT_ESTABLISHED\",\n    \"native_smoke_validation\": \"REQUIRED\",\n    \"global_certification\": \"NOT_GRANTED\"\n  }\n}\n",
+  "builder_output": "{\n  \"status\": \"PASS\",\n  \"output\": \"/home/runner/work/luna-linux-bridge/luna-linux-bridge/out/CAJITA_LUNA_RUNTIME_V10.macrodown\",\n  \"archive_bytes\": 370865781,\n  \"gross_raw_payload_bytes\": 447370518,\n  \"raw_build_tree_ceiling_bytes\": 1500000000,\n  \"combined_distribution_cap_bytes\": 479000000,\n  \"companion_bytes\": 11646992,\n  \"combined_distribution_bytes\": 382512773,\n  \"member_count\": 1418,\n  \"sha256\": \"f8646e4b655eb25c1da148480148dc237a746466e2c1c3847ce795b7bf7a0153\",\n  \"rebuildable\": true,\n  \"externalized_asset_reconstruction\": {\n    \"status\": \"PASS_CONTAINER_RECONSTRUCTION_ONLY\",\n    \"asset_count\": 10,\n    \"passed_count\": 10,\n    \"failed_count\": 0,\n    \"assets\": [\n      {\n        \"id\": \"APACHE_JENA_6_2_0\",\n        \"status\": \"PASS\",\n        \"bytes\": 27289736,\n        \"file_count\": 249,\n        \"tree_sha256\": \"586b008046071c679739ba8e9e9512cfc88a04dc5c28136adaa37afb798b7123\",\n        \"container_sha256\": \"a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a\"\n      },\n      {\n        \"id\": \"PLAYWRIGHT_1_63_0_SOURCE\",\n        \"status\": \"PASS\",\n        \"bytes\": 68708189,\n        \"file_count\": 3084,\n        \"tree_sha256\": \"bf9783d3c2ed4a3df79d040901bf9ad798c3f0c6018fb9b85ad0c65e6e31ab80\",\n        \"container_sha256\": \"395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14\"\n      },\n      {\n        \"id\": \"ONNX_RUNTIME_1_29_0_CP311\",\n        \"status\": \"PASS\",\n        \"bytes\": 62736574,\n        \"file_count\": 322,\n        \"tree_sha256\": \"799c445e18ce0c2f10ff782b745cbf7d02ec824f5d5dea6d5d020fa3deca77ab\",\n        \"container_sha256\": \"d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b\"\n      },\n      {\n        \"id\": \"DAGGER_0_21_8_LINUX_AMD64\",\n        \"status\": \"PASS\",\n        \"bytes\": 15382954,\n        \"file_count\": 2,\n        \"tree_sha256\": \"6be6fd2b8582f78a411e6c992bfc7d8dcfe9dee6a0b1eb27ee49dd1086732aa5\",\n        \"container_sha256\": \"bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e\"\n      },\n      {\n        \"id\": \"OPA_STATIC_LINUX_AMD64_CANDIDATE\",\n        \"status\": \"PASS\",\n        \"bytes\": 25271120,\n        \"file_count\": 1,\n        \"tree_sha256\": \"846a888aacea2cbc6174b77cb006c6e8832a08353b6e32c5213888325a942fd6\",\n        \"container_sha256\": \"75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628\"\n      },\n      {\n        \"id\": \"RQLITE_10_2_7_LINUX_AMD64\",\n        \"status\": \"PASS\",\n        \"bytes\": 12970604,\n        \"file_count\": 3,\n        \"tree_sha256\": \"ab3c60550f815a6c9baa2edbc796d8a00810b4aff679b0e70e58afe4c8fc79d5\",\n        \"container_sha256\": \"bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea\"\n      },\n      {\n        \"id\": \"SQLITE_SOURCE_3_53_4\",\n        \"status\": \"PASS\",\n        \"bytes\": 111818024,\n        \"file_count\": 2186,\n        \"tree_sha256\": \"5449bbf6c8748a6153410041438401871a7c1f86fe58bcf09e85df644bd68085\",\n        \"container_sha256\": \"e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e\"\n      },\n      {\n        \"id\": \"CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE\",\n        \"status\": \"PASS\",\n        \"bytes\": 143281221,\n        \"file_count\": 8818,\n        \"tree_sha256\": \"1df8c665076d390a6628721bae123921f09a6bcb756ca87042f84ed3ee7a540f\",\n        \"container_sha256\": \"fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37\"\n      },\n      {\n        \"id\": \"AVALONIA_12_1_1_NUGET\",\n        \"status\": \"PASS\",\n        \"bytes\": 35926924,\n        \"file_count\": 121,\n        \"tree_sha256\": \"196ff464dfa68dea1c6a95d58c899bd809711d6d5dba192887bca900f9ea7d67\",\n        \"container_sha256\": \"46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f\"\n      },\n      {\n        \"id\": \"TAURI_2_11_5_SOURCE_ZIP\",\n        \"status\": \"PASS\",\n        \"bytes\": 21668047,\n        \"file_count\": 1011,\n        \"tree_sha256\": \"9004f53d924f27227c028078d4d8dbe05cf798ca0dce5d0a48b5c0e34bd321d5\",\n        \"container_sha256\": \"04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8\"\n      }\n    ],\n    \"consumer_adapter_validation\": \"NOT_ESTABLISHED\",\n    \"native_smoke_validation\": \"REQUIRED\",\n    \"global_certification\": \"NOT_GRANTED\"\n  }\n}\n",
   "distribution": {
-    "archive_bytes": 370863089,
-    "archive_sha256": "da955c807ac70d24f85dad3f4d6da0171786dfe60a0d8ceac4962982c5bb79b3",
-    "louksna1_bytes": 11644784,
-    "louksna1_sha256": "f670c5376bca8e041f81566f5be268be1f4eec8319b1b4c2855d4d87b489939d",
-    "combined_bytes": 382507873,
+    "archive_bytes": 370865781,
+    "archive_sha256": "f8646e4b655eb25c1da148480148dc237a746466e2c1c3847ce795b7bf7a0153",
+    "louksna1_bytes": 11646992,
+    "louksna1_sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486",
+    "combined_bytes": 382512773,
     "combined_cap_bytes": 479000000,
     "status": "PASS",
-    "raw_tree_bytes": 447348837
+    "raw_tree_bytes": 447370518
   },
   "next_gate": "INDEPENDENT_G23_G24_AND_REAL_ONE_CPU_1_GIB_FUNCTIONAL_TESTS"
 }

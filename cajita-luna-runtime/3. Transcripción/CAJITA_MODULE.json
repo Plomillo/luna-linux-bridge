@@ -13,7 +13,7 @@
   "relative_path": "3. Transcripción",
   "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
   "source_identity": {
-    "companion_sha256": "f670c5376bca8e041f81566f5be268be1f4eec8319b1b4c2855d4d87b489939d",
+    "companion_sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486",
     "path": "Louksna1.md",
     "protected_prefix_bytes": 11542631,
     "protected_prefix_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51"

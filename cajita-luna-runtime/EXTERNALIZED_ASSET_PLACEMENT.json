@@ -2,7 +2,7 @@
   "schema": "CAJITA_EXTERNALIZED_ASSET_PLACEMENT/1.0",
   "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023_EXTERNAL_ASSET_PLACEMENT",
   "based_on_commit": "cf777392759b1926e9999ed4f877aa09fc88cf90",
-  "status": "COMPACT_DISTRIBUTION_RAW_INPUT_CEILING_PASS",
+  "status": "MATERIALIZATION_COMPLETE_PENDING_FUNCTION_AND_G23_G24",
   "purpose": "Place recovered externalized assets at their intended six-domain source-tree paths without silently promoting them into the distributable archive.",
   "hard_cap_bytes": 470000000,
   "current_macrodown_manifest": {
@@ -1095,7 +1095,7 @@
   },
   "factory_reconciliation": {
     "schema": "CAJITA_LOUKSNA1_FACTORY/1.0",
-    "generated_at_utc": "2026-10-25T02:18:38Z",
+    "generated_at_utc": "2026-10-25T03:12:22Z",
     "archive_count_materialized": 28,
     "archive_bytes_removed": 10005792,
     "archives": [
@@ -2048,8 +2048,8 @@
     "module_count": 28,
     "rollback_copies_retained_outside_runtime": true,
     "all_zip_7z_removed": false,
-    "last_run_archive_count_materialized": 28,
-    "last_run_readme_count_removed": 118,
+    "last_run_archive_count_materialized": 21,
+    "last_run_readme_count_removed": 108,
     "materialized_module_revalidation": "PASS",
     "source_tree_recovery": {
       "status": "PASS_SOURCE_ARCHIVE_REPLAY_REQUIRED",
