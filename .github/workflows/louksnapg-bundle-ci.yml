@@ -6,6 +6,8 @@ on:
       - "louksnapg/**"
     paths:
       - ".github/workflows/louksnapg-bundle-ci.yml"
+      - ".github/workflows/cajita-louksna1-factory.yml"
+      - "tools/louksnapg_worker_mission.py"
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
       - "tests/test_louksnapg_bundle.py"
@@ -13,6 +15,8 @@ on:
   pull_request:
     paths:
       - ".github/workflows/louksnapg-bundle-ci.yml"
+      - ".github/workflows/cajita-louksna1-factory.yml"
+      - "tools/louksnapg_worker_mission.py"
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
       - "tests/test_louksnapg_bundle.py"
@@ -22,7 +26,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: louksnapg-branch-ci-\${{ github.ref }}
+  group: louksnapg-branch-ci-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -33,7 +37,7 @@ jobs:
       - name: Check out exact branch commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: \${{ github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -41,7 +45,7 @@ jobs:
           python-version: "3.13"
       - name: Compile LOUKSNAPG packaging and independent validator
         run: |
-          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tests/test_louksnapg_bundle.py
+          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py tests/test_louksnapg_bundle.py
       - name: Exercise ZIP build, cap, tamper and independent source-binding tests
         run: |
           python -m unittest discover -s tests -p 'test_louksnapg*.py' -v
