@@ -362,7 +362,10 @@ def prepare_source_materializations(root: Path) -> dict:
         container_meta = asset.get("compact_runtime_container")
         if not isinstance(container_meta, dict):
             raise RuntimeError("EXTERNALIZED_CONTAINER_METADATA_MISSING:" + asset_id)
-        for field, row_field in (("path", "container_path"), ("sha256", "container_sha256"), ("size_bytes", "container_bytes")):
+        container_rel = _runtime_relative(container_meta.get("path"), asset_id + ":container_path")
+        if row.get("container_path") != container_rel:
+            raise RuntimeError("DISTRIBUTION_CONTAINER_BINDING_MISMATCH:" + asset_id + ":path")
+        for field, row_field in (("sha256", "container_sha256"), ("size_bytes", "container_bytes")):
             if container_meta.get(field) != row.get(row_field):
                 raise RuntimeError("DISTRIBUTION_CONTAINER_BINDING_MISMATCH:" + asset_id + ":" + field)
 
