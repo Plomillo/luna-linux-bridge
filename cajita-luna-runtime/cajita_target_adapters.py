@@ -342,7 +342,7 @@ def _run_sqlite_roundtrip(runtime: Path, module: Path, spec: dict, companion: Pa
 
 def _run_sml_protocol(runtime: Path, module: Path, spec: dict, companion: Path | None) -> dict:
     header = _regular_file(module, spec["entry"])
-    include = header.parents[2]  # .../include/boost/sml.hpp -> .../include
+    include = header.parents[1]  # .../include/boost/sml.hpp -> .../include
     with tempfile.TemporaryDirectory(prefix="cajita-sml-smoke-") as temp_name:
         temp = Path(temp_name)
         source = temp / "protocol_smoke.cpp"
