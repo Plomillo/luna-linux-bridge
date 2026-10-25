@@ -106,6 +106,17 @@ class CanonicalTargetAdapterSummaryTests(unittest.TestCase):
                     "domain_id": "D02_ORQUESTACION",
                     "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
                     "consumer_adapter_registration": {"status": "NOT_REGISTERED", "certification": "NOT_GRANTED"},
+                    "runtime_engine_scope_registration": {
+                        "status": "REGISTERED_RUNTIME_SMOKE_SCOPE_ONLY",
+                        "target_id": "D02_ORQUESTADOR",
+                        "adapter_id": "CAJITA_CLI_REGISTRY_SELFTEST/1.0",
+                        "operation": "audit_cli_registry",
+                        "certification": "NOT_GRANTED",
+                        "reference_quality_equivalence": "NOT_ESTABLISHED",
+                        "consumer_task_adapter_completion": "NOT_ESTABLISHED",
+                        "source_files": [{"path": "2. Orquestación/Orquestador/CLIs/cli_registry.py",
+                                          "bytes": 1, "sha256": "a" * 64}],
+                    },
                 },
             ],
         }
@@ -119,7 +130,14 @@ class CanonicalTargetAdapterSummaryTests(unittest.TestCase):
             task = {
                 "task_results": [{
                     "domain_id": "D01_CEREBRO",
+                    "target_id": "D01_CEREBRO_ROOT",
                     "status": "PASS_FUNCTIONAL_EXECUTION",
+                    "exit_code": 0,
+                }],
+                "target_engine_results": [{
+                    "domain_id": "D02_ORQUESTACION",
+                    "target_id": "D02_ORQUESTADOR",
+                    "status": "PASS_TARGET_ENGINE_EXECUTION",
                     "exit_code": 0,
                 }]
             }
@@ -129,9 +147,27 @@ class CanonicalTargetAdapterSummaryTests(unittest.TestCase):
             self.assertEqual(summary["unregistered_target_count"], 1)
             self.assertEqual(summary["registered_target_ids"], ["D01_CEREBRO_ROOT"])
             self.assertEqual(summary["unregistered_target_ids"], ["D02_ORQUESTADOR"])
+            self.assertEqual(summary["runtime_engine_smoke_scope_registered_target_count"], 1)
+            self.assertEqual(summary["runtime_engine_smoke_scope_passed_target_count"], 1)
+            self.assertEqual(summary["runtime_engine_smoke_scope_target_ids"], ["D02_ORQUESTADOR"])
+            self.assertEqual(summary["unregistered_task_adapter_requirement_count"], 1)
             self.assertEqual(summary["all_21_target_task_adapters"], "NOT_ESTABLISHED")
             self.assertEqual(summary["reference_quality_equivalence"], "NOT_ESTABLISHED")
             self.assertEqual(summary["certification"], "NOT_GRANTED")
+
+    def test_runtime_engine_scope_requires_exact_target_evidence_but_does_not_register_task_adapter(self):
+        with tempfile.TemporaryDirectory() as temp_name:
+            runtime = Path(temp_name) / "runtime"
+            runtime.mkdir()
+            self._write_registry(runtime)
+            task = {"task_results": [{
+                "domain_id": "D01_CEREBRO",
+                "target_id": "D01_CEREBRO_ROOT",
+                "status": "PASS_FUNCTIONAL_EXECUTION",
+                "exit_code": 0,
+            }], "target_engine_results": []}
+            with self.assertRaisesRegex(ValueError, "REGISTERED_RUNTIME_SCOPE_WITHOUT_CURRENT_E2E_EVIDENCE"):
+                canonical_target_adapter_summary(runtime, task)
 
     def test_registered_adapter_requires_source_bound_passing_task_evidence(self):
         with tempfile.TemporaryDirectory() as temp_name:
