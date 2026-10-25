@@ -565,7 +565,29 @@ jobs:
             git diff --cached --check
             git diff --cached --stat
             git commit -m "Record Cajita final raw and Macrodown size-gate evidence"
-            git push origin HEAD:main
+            # Other governed workflows may advance main while this build is
+            # producing reports. Rebase only the evidence commit; any conflict
+            # fails closed so a newer report is never silently overwritten.
+            pushed=false
+            for attempt in 1 2 3; do
+              git fetch origin main
+              if ! git rebase origin/main; then
+                git rebase --abort || true
+                echo "CAJITA_EVIDENCE_REBASE_CONFLICT_FAIL_CLOSED" >&2
+                exit 1
+              fi
+              if git push origin HEAD:main; then
+                echo "CAJITA_EVIDENCE_PUSH=PASS attempt=$attempt"
+                pushed=true
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                echo "CAJITA_EVIDENCE_NON_FAST_FORWARD_RETRIES_EXHAUSTED" >&2
+                exit 1
+              fi
+              echo "CAJITA_EVIDENCE_PUSH_RETRY=$attempt" >&2
+            done
+            test "$pushed" = true
           fi
 
       - name: Enforce final raw and reproducible archive gates
