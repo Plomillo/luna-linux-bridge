@@ -99,6 +99,64 @@ def _tree_summary(root: Path) -> dict:
     }
 
 
+def _tree_rows(root: Path) -> list[dict]:
+    root = Path(root).resolve()
+    if not root.is_dir():
+        raise RuntimeError("EXTERNALIZED_TREE_ROOT_INVALID:" + str(root))
+    rows = []
+    for base, dirs, names in os.walk(root, topdown=True, followlinks=False):
+        base_path = Path(base)
+        kept_dirs = []
+        for name in sorted(dirs):
+            directory = base_path / name
+            if directory.is_symlink() or not directory.resolve().is_relative_to(root):
+                raise RuntimeError("EXTERNALIZED_TREE_SYMLINK_OR_ESCAPE:" + str(directory))
+            kept_dirs.append(name)
+        dirs[:] = kept_dirs
+        for name in sorted(names):
+            path = base_path / name
+            if path.is_symlink() or not path.resolve().is_relative_to(root):
+                raise RuntimeError("EXTERNALIZED_TREE_SYMLINK_OR_ESCAPE:" + str(path))
+            if not path.is_file() or not stat.S_ISREG(path.stat().st_mode):
+                raise RuntimeError("EXTERNALIZED_TREE_NON_REGULAR:" + str(path))
+            if name == MODULE_DESCRIPTOR_NAME:
+                continue
+            rows.append({
+                "path": path.relative_to(root).as_posix(),
+                "bytes": path.stat().st_size,
+                "sha256": sha_file(path),
+            })
+    rows.sort(key=lambda item: item["path"].encode("utf-8"))
+    return rows
+
+
+def _tree_diff(source: Path, reconstructed: Path, sample_limit: int = 80) -> dict:
+    source_rows = _tree_rows(source)
+    reconstructed_rows = _tree_rows(reconstructed)
+    a = {row["path"]: row for row in source_rows}
+    b = {row["path"]: row for row in reconstructed_rows}
+    source_only = [a[key] for key in sorted(a.keys() - b.keys(), key=lambda x: x.encode("utf-8"))]
+    archive_only = [b[key] for key in sorted(b.keys() - a.keys(), key=lambda x: x.encode("utf-8"))]
+    changed = [
+        {"path": key, "source": a[key], "archive": b[key]}
+        for key in sorted(a.keys() & b.keys(), key=lambda x: x.encode("utf-8"))
+        if a[key]["bytes"] != b[key]["bytes"] or a[key]["sha256"] != b[key]["sha256"]
+    ]
+    return {
+        "source_file_count": len(source_rows),
+        "archive_file_count": len(reconstructed_rows),
+        "source_bytes": sum(row["bytes"] for row in source_rows),
+        "archive_bytes": sum(row["bytes"] for row in reconstructed_rows),
+        "source_only_count": len(source_only),
+        "archive_only_count": len(archive_only),
+        "changed_count": len(changed),
+        "source_only_sample": source_only[:sample_limit],
+        "archive_only_sample": archive_only[:sample_limit],
+        "changed_sample": changed[:sample_limit],
+        "sample_limit": sample_limit,
+    }
+
+
 def placement_binding_sha256(placement: dict) -> str:
     # The placement gate/status fields are updated during every build. Bind only
     # the immutable externalized-asset identities and tree/container evidence.
@@ -645,7 +703,14 @@ def _extract_raw_tree(root: Path, item: dict, destination: Path) -> dict:
         "tree_sha256": item["expanded_tree_sha256"],
     }
     if actual != {"bytes": expected["bytes"], "file_count": expected["file_count"], "tree_sha256": expected["tree_sha256"]}:
-        raise RuntimeError("EXTERNALIZED_ARCHIVE_RECONSTRUCTION_MISMATCH:" + item["id"] + ":" + json.dumps({"expected": expected, "actual": actual}, sort_keys=True))
+        detail = {"expected": expected, "archive_reconstructed": actual}
+        try:
+            source_root = root / Path(*PurePosixPath(item["expanded_relpath"]).parts)
+            detail["working_copy_actual"] = _tree_summary(source_root)
+            detail["working_copy_vs_archive"] = _tree_diff(source_root, destination)
+        except Exception as exc:
+            detail["comparison_error"] = type(exc).__name__ + ":" + str(exc)[:300]
+        raise RuntimeError("EXTERNALIZED_ARCHIVE_RECONSTRUCTION_MISMATCH:" + item["id"] + ":" + json.dumps(detail, sort_keys=True))
     return actual
 
 
