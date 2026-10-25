@@ -23,6 +23,7 @@ on:
       - completed
     branches:
       - main
+      - "louksnapg/**"
 
 permissions:
   actions: read
