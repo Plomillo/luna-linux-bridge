@@ -28,8 +28,12 @@ def iter_files(root,output):
     placement=json.loads((Path(root)/"EXTERNALIZED_ASSET_PLACEMENT.json").read_text(encoding="utf-8"))
     archive_history=placement.get("factory_reconciliation",{}).get("archives",[])
     archive_source_paths={row.get("source_path") for row in archive_history if isinstance(row,dict) and isinstance(row.get("source_path"),str)}
+    source_container_paths={
+        str(asset.get("compact_runtime_container",{}).get("path","")).replace("\\","/").removeprefix("cajita-luna-runtime/")
+        for asset in placement.get("assets",[]) if isinstance(asset,dict)
+    }
     externalized_container_paths={item["container_relpath"] for item in contract}
-    build_only_archive_paths=archive_source_paths-externalized_container_paths
+    build_only_archive_paths=(archive_source_paths | source_container_paths)-externalized_container_paths
     for base,dirs,names in os.walk(root,topdown=True,followlinks=False):
         bp=Path(base)
         kept=[]
