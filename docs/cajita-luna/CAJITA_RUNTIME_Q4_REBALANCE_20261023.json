@@ -1,12 +1,12 @@
 {
   "schema": "CAJITA_RUNTIME_HARD_CAP_REBALANCE/1.0",
   "audit_id": "CAJITA_RUNTIME_Q4_REBALANCE_20261023",
-  "created_at_utc": "2026-10-25T06:46:13.763419+00:00",
+  "created_at_utc": "2026-10-25T23:16:36.640793+00:00",
   "repository": "Plomillo/luna-linux-bridge",
   "branch": "main",
   "hard_cap_bytes": 470000000,
   "size_basis": "sum of actual runtime file bytes excluding only the regenerated MACRODOWN_MANIFEST.json",
-  "runtime_bytes_before": 447142112,
+  "runtime_bytes_before": 447152630,
   "runtime_file_count_before": 1424,
   "weight_factor_results": [
     {
@@ -171,7 +171,7 @@
     }
   },
   "weights_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
-  "runtime_bytes_after": 447142112,
+  "runtime_bytes_after": 447152630,
   "runtime_file_count_after": 1424,
   "saved_bytes": 0,
   "bytes_over_cap": 0,
@@ -185,6 +185,6 @@
   "quality_equivalence": "SMOKE_SIGNATURE_ONLY; TASK_LEVEL_QUALITY_NOT_ESTABLISHED",
   "independent_validation": "NOT_RUN",
   "certification": "NOT_GRANTED",
-  "elapsed_seconds": 4.234,
+  "elapsed_seconds": 3.629,
   "status": "SIZE_GATE_PASS_CERTIFICATION_NOT_GRANTED"
 }
