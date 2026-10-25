@@ -192,11 +192,41 @@ def read_request(path):
  if not isinstance(r,dict):raise AdapterError("REQUEST_ROOT_MUST_BE_OBJECT")
  return r
 def registry_report():
- rows=[{"domain_id":d,"operation":s["op"],"adapter_id":s["id"],"entrypoint":s["entry"],"input_contract":"JSON_ON_STDIN",
-        "integrity_gate":"MODULE_TREE_AND_WEIGHT_SHA256","semantic_quality_equivalence":"NOT_ESTABLISHED"} for d,s in ADAPTERS.items()]
- rows.append({"domain_id":PLAN_ONLY["domain"],"operation":PLAN_ONLY["op"],"adapter_id":PLAN_ONLY["id"],"execution":"NOT_IMPLEMENTED","status":"PLAN_ONLY_FAIL_CLOSED"})
- return {"schema":"CAJITA_TASK_ADAPTER_REGISTRY/1.0","model_task_adapter_count":len(ADAPTERS),"execution_contract":"SHELL_FREE_JSON_STDIN_OFFLINE",
-         "registered":rows,"pdf_generation":"NOT_REGISTERED","all_21_target_adapters":"NOT_REGISTERED","global_certification":"NOT_GRANTED"}
+ routing_path=Path(__file__).resolve().parent/"command_subdomain_routing.json"
+ if routing_path.is_symlink() or not routing_path.is_file():
+  raise AdapterError("CANONICAL_TARGET_ROUTING_MISSING_OR_UNSAFE")
+ try:routing=json.loads(routing_path.read_text(encoding="utf-8"))
+ except (OSError,json.JSONDecodeError) as exc:raise AdapterError("CANONICAL_TARGET_ROUTING_INVALID") from exc
+ targets=routing.get("targets")
+ if not isinstance(targets,list) or not targets:raise AdapterError("CANONICAL_TARGET_ROUTING_TARGETS_MISSING")
+ targets_by_id={}
+ for target in targets:
+  if not isinstance(target,dict) or not isinstance(target.get("id"),str) or target["id"] in targets_by_id:
+   raise AdapterError("CANONICAL_TARGET_ROUTING_ID_INVALID_OR_DUPLICATE")
+  targets_by_id[target["id"]]=target
+ rows=[]
+ registered_target_ids=set()
+ for domain,spec in ADAPTERS.items():
+  target=targets_by_id.get(spec["target"])
+  if target is None or target.get("domain_id")!=domain or target.get("path")!=spec["module"]:
+   raise AdapterError("TASK_ADAPTER_TARGET_BINDING_MISMATCH:"+domain)
+  if spec["target"] in registered_target_ids:raise AdapterError("TASK_ADAPTER_TARGET_DUPLICATE:"+spec["target"])
+  registered_target_ids.add(spec["target"])
+  rows.append({"domain_id":domain,"target_id":spec["target"],"operation":spec["op"],"adapter_id":spec["id"],
+               "entrypoint":spec["entry"],"input_contract":"JSON_ON_STDIN",
+               "integrity_gate":"MODULE_TREE_AND_WEIGHT_SHA256","registration_scope":"SYNTHETIC_TASK_EXECUTION_ONLY",
+               "native_smoke":"REQUIRED","semantic_quality_equivalence":"NOT_ESTABLISHED","certification":"NOT_GRANTED"})
+ rows.append({"domain_id":PLAN_ONLY["domain"],"operation":PLAN_ONLY["op"],"adapter_id":PLAN_ONLY["id"],
+              "execution":"NOT_IMPLEMENTED","status":"PLAN_ONLY_FAIL_CLOSED","target_id":None})
+ target_count=len(targets_by_id)
+ unregistered_count=target_count-len(registered_target_ids)
+ return {"schema":"CAJITA_TASK_ADAPTER_REGISTRY/1.0","model_task_adapter_count":len(ADAPTERS),
+         "synthetic_scope_registered_target_count":len(registered_target_ids),"canonical_target_count":target_count,
+         "unregistered_target_count":unregistered_count,"execution_contract":"SHELL_FREE_JSON_STDIN_OFFLINE",
+         "registered":rows,"pdf_generation":"NOT_REGISTERED",
+         "all_21_target_adapters":"REGISTERED" if unregistered_count==0 else "PARTIAL_REGISTRATION_ONLY_NOT_ESTABLISHED",
+         "reference_quality_equivalence":"NOT_ESTABLISHED","native_hardware_validation":"REQUIRED",
+         "global_certification":"NOT_GRANTED"}
 def main(argv=None):
  p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest="command",required=True);sub.add_parser("registry")
  run=sub.add_parser("execute");run.add_argument("--request-json",required=True);run.add_argument("--root",default=str(Path(__file__).resolve().parent));run.add_argument("--timeout",type=int,default=600)
