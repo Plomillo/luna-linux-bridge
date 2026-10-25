@@ -56,10 +56,11 @@ TARGET_ADAPTERS = {
         "required_files": [
             "cajita_axiom_source_loader.py",
             "axiom_interdisciplinary_binding.json",
+            "block_engine_binding.json",
             "APACHE_JENA_6_2_0.7z"
         ],
         "engine": "SOURCE_BOUND_AXIOM_READER",
-        "scope": "PROTECTED_SOURCE_PREFIX_AND_COMPANION_HASH_VERIFICATION"
+        "scope": "BYTE_EXACT_PREFIX_AND_CANONICAL_B1_B134_ROUTING_TO_MULTI_INTERDISCIPLINAR"
     },
     "D06_CONSOLA": {
         "domain_id": "D06_SISTEMA_INTELIGENTE",
@@ -247,8 +248,16 @@ def _run_axiom_binding(runtime: Path, module: Path, spec: dict, companion: Path 
     result = imported.verify_binding(runtime, companion)
     if result.get("status") != "PASS_SOURCE_PREFIX_VERIFIED":
         raise TargetAdapterError("AXIOM_SOURCE_BINDING_NOT_PASS")
-    if result.get("semantic_graph_execution") != "NOT_PERFORMED_BY_SOURCE_LOADER":
-        raise TargetAdapterError("AXIOM_SOURCE_LOADER_SCOPE_DRIFT")
+    if result.get("semantic_graph_execution") != "PASS_STRUCTURAL_BLOCK_ROUTING_ONLY":
+        raise TargetAdapterError("AXIOM_SOURCE_LOADER_GRAPH_EXECUTION_NOT_PASS")
+    graph_result = result.get("block_engine_graph", {})
+    if (graph_result.get("status") != "PASS_CANONICAL_B1_B134_ROUTING"
+        or graph_result.get("block_count") != 134
+        or graph_result.get("first_block_id") != "B1"
+        or graph_result.get("last_block_id") != "B134"
+        or graph_result.get("route_edge_count") != 134
+        or graph_result.get("engine_ids") != ["E03", "E04", "E05", "E06", "E07", "E08", "E09", "E12", "E13", "E14", "E15"]):
+        raise TargetAdapterError("CANONICAL_B1_B134_ENGINE_WIRING_NOT_PASS")
     if result.get("certification") != "NOT_GRANTED":
         raise TargetAdapterError("AXIOM_SOURCE_LOADER_CERTIFICATION_SCOPE_DRIFT")
     if result.get("target", {}).get("id") != "D02_MULTI_INTERDISCIPLINAR":
@@ -261,7 +270,8 @@ def _run_axiom_binding(runtime: Path, module: Path, spec: dict, companion: Path 
         "axiom_inventory": result["axiom_inventory"],
         "block_inventory": result["block_inventory"],
         "framework_count": result["framework_count"],
-        "graph_execution": "SEPARATELY_GATED_BY_G23",
+        "graph_execution": "PASS_STRUCTURAL_BLOCK_ROUTING_ONLY",
+        "block_engine_graph": graph_result,
         "certification": "NOT_GRANTED"
     }
 
