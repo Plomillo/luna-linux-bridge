@@ -189,6 +189,16 @@ class LouksnapgBundleTests(unittest.TestCase):
             self.build(cap=1)
         self.assertFalse(self.output.exists())
 
+    def test_runtime_archive_is_capped_at_470mb_even_when_product_ceiling_is_490mb(self):
+        self.assertEqual(bundle.DEFAULT_MAX_BYTES, 490_000_000)
+        self.assertEqual(bundle.MAX_RUNTIME_BYTES, 470_000_000)
+        self.assertEqual(validator.CAP_BYTES, 490_000_000)
+        with self.runtime.open("wb") as stream:
+            stream.truncate(bundle.MAX_RUNTIME_BYTES + 1)
+        with self.assertRaisesRegex(ValueError, "CAJITA_RUNTIME_OVER_CAP"):
+            self.build()
+        self.assertFalse(self.output.exists())
+
     def test_protected_prefix_cannot_drift(self):
         wrong = self.root / "wrong-source.md"
         wrong.write_bytes(b"# changed architecture\n")
