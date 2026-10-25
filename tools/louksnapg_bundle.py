@@ -242,6 +242,8 @@ def build_bundle(document: Path, runtime_archive: Path, output: Path,
     report = verify_bundle(output, max_bytes=max_bytes)
     report.update({
         "built_at_utc": utc_now(),
+        "bundle_sha256": sha256_file(output),
+        "source_commit": os.environ.get("GITHUB_SHA") or "UNKNOWN",
         "source_document_sha256": sha256_bytes(document_bytes),
         "source_runtime_archive_sha256": runtime_sha,
         "source_runtime_archive_bytes": runtime_bytes,
