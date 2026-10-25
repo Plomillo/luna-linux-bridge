@@ -95,6 +95,17 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
             f"{flow_path.relative_to(ROOT)} declares script execution before runner isolation is approved.")
     require("docker.sock" not in lower,
             f"{flow_path.relative_to(ROOT)} references a Docker socket.")
+    if flow_path.name == "20-cajita-runtime-size-gate.yml":
+        require("fromJson(outputs.macrodown_report.body).gross_raw_payload_bytes_including_manifest <= 470000000" in body,
+                "Kestra must enforce the raw compact Macrodown distribution cap including its manifest.")
+        require("fromJson(outputs.macrodown_report.body).archive_bytes <= 470000000" in body,
+                "Kestra must enforce the deterministic Macrodown archive cap.")
+        require("fromJson(outputs.runtime_report.body).q2_factor_models_promoted == 0" in body
+                and "fromJson(outputs.runtime_report.body).q2_factor_results[3].status == 'ALREADY_Q2_PACKED'" in body,
+                "Kestra must retain Q2 factor-integrity invariants.")
+        require("fromJson(outputs.runtime_report.body).size_gate == 'PASS'" not in body
+                and "fromJson(outputs.runtime_report.body).runtime_bytes_after <= 470000000" not in body,
+                "Expanded-tree bytes from the legacy rebalance report must not replace the compact distribution size gate.")
     if flow_path.name == "21-louksna1-release-audit.yml":
         require("fromJson(outputs.g24_evidence.body).status == 'PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE'" in body,
                 "Louksna1 release audit must fail closed unless scoped synthetic task execution evidence passes.")
