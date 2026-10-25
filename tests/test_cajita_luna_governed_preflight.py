@@ -66,10 +66,10 @@ class GovernedPreflightTests(unittest.TestCase):
             self.assertEqual(result["status"], "RECONCILIATION_REQUIRED")
 
     def test_reduction_math_is_exact_and_uses_decimal_cap(self):
-        self.assertEqual(1_656_649_690 - 479_000_000, 1_177_649_690)
+        self.assertEqual(1_656_649_690 - 470_000_000, 1_186_649_690)
         projected = ctl.calculate_projected_final(1_000, 600, 50, 100)
         self.assertEqual(projected, 550)
-        self.assertTrue(ctl.calculate_projected_final(1_000, 600, 50, 100) <= 479_000_000)
+        self.assertTrue(ctl.calculate_projected_final(1_000, 600, 50, 100) <= 470_000_000)
 
     def test_preflight_never_self_certifies_and_never_transforms_payload(self):
         with tempfile.TemporaryDirectory() as temp:

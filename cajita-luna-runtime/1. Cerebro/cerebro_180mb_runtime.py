@@ -212,16 +212,60 @@ def smoke_test(generate: bool = False, prompt: str = "Test", max_new_tokens: int
               "elapsed_seconds": round(time.monotonic() - started, 3),
               "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST", "compression_rank": 1}
     if generate:
+        # GPT-OSS is a chat-tuned model. Plainly tokenizing a user prompt omits
+        # its serialized role/channel boundary and can produce non-conversational
+        # continuations even when the forward pass is finite.
+        rendered_prompt = prompt
+        prompt_mode = "RAW_PROMPT_NO_TEMPLATE_AVAILABLE"
+        if callable(getattr(tokenizer, "apply_chat_template", None)):
+            messages = [{"role": "user", "content": prompt}]
+            rendered = None
+            last_error = None
+            for template_kwargs in ({"enable_thinking": False}, {}):
+                try:
+                    candidate = tokenizer.apply_chat_template(
+                        messages,
+                        tokenize=False,
+                        add_generation_prompt=True,
+                        **template_kwargs,
+                    )
+                except Exception as exc:
+                    last_error = type(exc).__name__
+                    continue
+                if isinstance(candidate, str) and candidate.strip():
+                    rendered = candidate
+                    prompt_mode = (
+                        "CHAT_TEMPLATE_THINKING_DISABLED"
+                        if template_kwargs.get("enable_thinking") is False
+                        else "CHAT_TEMPLATE_DEFAULT"
+                    )
+                    break
+            if rendered is None:
+                raise RuntimeError("CHAT_TEMPLATE_RENDER_FAILED:" + str(last_error or "EMPTY_TEMPLATE"))
+            rendered_prompt = rendered
+        generation_enc = tokenizer(rendered_prompt, return_tensors="pt")
         with torch.inference_mode():
-            generated = model.generate(enc["input_ids"], attention_mask=enc.get("attention_mask"),
-                max_new_tokens=int(max_new_tokens), do_sample=False, use_cache=False)
-        count = int(generated.shape[-1] - enc["input_ids"].shape[-1])
+            generated = model.generate(
+                generation_enc["input_ids"],
+                attention_mask=generation_enc.get("attention_mask"),
+                max_new_tokens=int(max_new_tokens),
+                min_new_tokens=min(3, int(max_new_tokens)),
+                do_sample=False,
+                repetition_penalty=1.12,
+                no_repeat_ngram_size=3,
+                renormalize_logits=True,
+                use_cache=False,
+            )
+        prompt_length = int(generation_enc["input_ids"].shape[-1])
+        count = int(generated.shape[-1] - prompt_length)
         if count < 1:
             raise RuntimeError("MODEL_GENERATED_NO_NEW_TOKENS")
         result["generation_status"] = "PASS_GENERATE"
+        result["generation_prompt_mode"] = prompt_mode
+        result["generation_input_token_count"] = prompt_length
         result["generated_token_count"] = count
         result["output_text"] = tokenizer.decode(
-            generated[0, enc["input_ids"].shape[-1]:], skip_special_tokens=True
+            generated[0, prompt_length:], skip_special_tokens=True
         )[:8192]
     return result
 

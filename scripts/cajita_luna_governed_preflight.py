@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-CAP_BYTES = 479_000_000
+CAP_BYTES = 470_000_000
 MIN_EVIDENCE_RESERVE_BYTES = 1_048_576
 BUFFER_BYTES = 1024 * 1024
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")

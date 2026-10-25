@@ -1,8 +1,11 @@
 name: Cajita V9 materialization and Louksna1 governed factory
+# Current release budgets: Cajita runtime <=470000000 bytes; LOUKSNAPG container <=490000000 bytes.
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - "louksnapg/**"
     paths:
       - ".github/workflows/cajita-louksna1-factory.yml"
       - "tools/cajita_runtime_factory.py"
@@ -23,6 +26,11 @@ on:
       - "tests/test_cajita_task_e2e.py"
       - "tools/cajita_axiom_graph_audit.py"
       - "tests/test_cajita_axiom_graph_audit.py"
+      - "tools/louksnapg_bundle.py"
+      - "tools/louksnapg_independent_validator.py"
+      - "tools/louksnapg_worker_mission.py"
+      - "tests/test_louksnapg_bundle.py"
+      - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
       - "cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py"
       - "cajita-luna-runtime/3. Transcripción/lowrank_runtime.py"
       - "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/lowrank_runtime.py"
@@ -250,7 +258,7 @@ jobs:
           }, ensure_ascii=False, sort_keys=True))
           PY
 
-      - name: Manufacture candidate and enforce aggregate 479,000,000-byte cap
+      - name: Manufacture candidate and enforce aggregate 470,000,000-byte Cajita cap
         id: factory
         shell: bash
         env:
@@ -268,6 +276,56 @@ jobs:
           echo "source_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           exit "$RC"
 
+      - name: Build and independently verify the single-file LOUKSNAPG product
+        shell: bash
+        env:
+          PYTHONPATH: tools:scripts:cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          test -s out/Louksna1.md
+          test -s out/CAJITA_LUNA_RUNTIME_V10.macrodown
+          test -s out/stage/cajita-luna-runtime/CajitadeLuna.md
+          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py
+          python -m unittest discover -s tests -p 'test_louksnapg*.py' -v
+          python tools/louksnapg_worker_mission.py \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --worker "$RUNNER_TEMP/CUSTOSZV9.pyz" \
+            --document out/Louksna1.md \
+            --runtime out/CAJITA_LUNA_RUNTIME_V10.macrodown \
+            --source-architecture LOUKSNAMEJORADA.md \
+            --cajita-doc out/stage/cajita-luna-runtime/CajitadeLuna.md \
+            --output out/LOUKSNAPG.md \
+            --max-bytes 490000000 \
+            --report out/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json
+          python tools/louksnapg_independent_validator.py \
+            --bundle out/LOUKSNAPG.md \
+            --max-bytes 490000000 \
+            --expected-source-commit "$GITHUB_SHA" \
+            --report out/LOUKSNAPG_INDEPENDENT_VALIDATION.json
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          bundle = Path("out/LOUKSNAPG.md")
+          report = json.loads(Path("out/LOUKSNAPG_BUILD_REPORT.json").read_text())
+          independent = json.loads(Path("out/LOUKSNAPG_INDEPENDENT_VALIDATION.json").read_text())
+          assert report["bundle_bytes"] == bundle.stat().st_size
+          assert report["bundle_bytes"] <= 490000000
+          assert report["source_commit"] == os.environ["GITHUB_SHA"]
+          assert independent["source_commit"] == os.environ["GITHUB_SHA"]
+          assert independent["container_integrity"] == "PASS"
+          assert independent["runtime_member_integrity"] == "PASS"
+          assert independent["single_distribution_container"] == "PASS"
+          assert independent["global_certification"] == "NOT_GRANTED"
+          print(json.dumps({
+              "artifact": bundle.name,
+              "bytes": bundle.stat().st_size,
+              "sha256": hashlib.sha256(bundle.read_bytes()).hexdigest(),
+              "source_commit": os.environ["GITHUB_SHA"],
+              "independent_integrity": "PASS",
+              "functional_certification": "NOT_GRANTED_PENDING_21_TARGET_AND_SEMANTIC_GATES"
+          }, indent=2))
+          PY
+
       - name: Upload exact candidate and factory report
         if: always()
         uses: actions/upload-artifact@v4
@@ -280,6 +338,10 @@ jobs:
             out/LOUKSNA1_RELEASE_MANIFEST.json
             out/factory-report.json
             out/CUSTOSZV9_EVIDENCE.json
+            out/LOUKSNAPG.md
+            out/LOUKSNAPG_BUILD_REPORT.json
+            out/LOUKSNAPG_INDEPENDENT_VALIDATION.json
+            out/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json
           if-no-files-found: warn
           retention-days: 90
 
@@ -334,6 +396,52 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+
+      - name: Independently validate the final single-file LOUKSNAPG artifact
+        shell: bash
+        env:
+          LOUKSNA_FACTORY_HEAD_SHA: ${{ needs.manufacture.outputs.source_commit }}
+        run: |
+          set -euo pipefail
+          test -s candidate/LOUKSNAPG.md
+          python tools/louksnapg_independent_validator.py \
+            --bundle candidate/LOUKSNAPG.md \
+            --max-bytes 490000000 \
+            --expected-source-commit "$LOUKSNA_FACTORY_HEAD_SHA" \
+            --extract-to candidate/louksnapg-runtime \
+            --report candidate/LOUKSNAPG_INDEPENDENT_VALIDATION_G23.json
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          bundle=Path("candidate/LOUKSNAPG.md")
+          report=json.loads(Path("candidate/LOUKSNAPG_INDEPENDENT_VALIDATION_G23.json").read_text())
+          assert report["artifact"]=="LOUKSNAPG.md"
+          assert report["source_commit"]==os.environ["LOUKSNA_FACTORY_HEAD_SHA"]
+          assert bundle.stat().st_size==report["bundle_bytes"]<=490000000
+          assert report["budget_status"]=="PASS"
+          assert report["container_integrity"]=="PASS"
+          assert report["protected_prefix_integrity"]=="PASS"
+          assert report["cajita_document_copy_integrity"]=="PASS"
+          assert report["runtime_member_integrity"]=="PASS"
+          assert report["single_distribution_container"]=="PASS"
+          assert report["runtime_routing_registry"]=="PASS_DECLARATION_ONLY"
+          assert report["module_registry"]=="PASS_DECLARATION_ONLY"
+          root=Path("candidate/louksnapg-runtime")
+          for required in ("cajita_runtime.py","cajita_router.py","cajita_task_adapters.py","command_subdomain_routing.json","CAJITA_DISTRIBUTION_MODULE_REGISTRY.json"):
+              assert (root/required).is_file(), "RUNTIME_MEMBER_MISSING:"+required
+          print(json.dumps({
+              "status":"PASS_SINGLE_FILE_PACKAGE_INTEGRITY",
+              "artifact":"LOUKSNAPG.md",
+              "bytes":bundle.stat().st_size,
+              "sha256":hashlib.sha256(bundle.read_bytes()).hexdigest(),
+              "source_commit":report["source_commit"],
+              "declared_domains":report["declared_domain_count"],
+              "declared_targets":report["declared_target_count"],
+              "declared_engines":report["declared_engine_count"],
+              "declared_commands":report["declared_command_count"],
+              "functional_certification":"NOT_GRANTED_PENDING_END_TO_END_GATES"
+          },ensure_ascii=False,indent=2))
+          PY
 
       - name: Install pinned test-only YAML parser
         run: python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==44.0.3
@@ -403,7 +511,8 @@ jobs:
           assert hashlib.sha256(protected).hexdigest()==release["protected_architecture"]["sha256"]
           assert hashlib.sha256(package.read_bytes()).hexdigest()==release["runtime_distribution"]["sha256"]
           assert hashlib.sha256(doc.read_bytes()).hexdigest()==release["louksna1"]["sha256"]
-          assert package.stat().st_size+doc.stat().st_size<=479_000_000, "COMBINED_SIZE_GATE"
+          assert package.stat().st_size<=470_000_000, "CAJITA_RUNTIME_SIZE_GATE"
+          assert package.stat().st_size+doc.stat().st_size<=490_000_000, "COMBINED_SIZE_GATE"
           with zipfile.ZipFile(package) as z:
             assert z.testzip() is None, "ZIP_CRC"
             names=z.namelist()
@@ -547,8 +656,24 @@ jobs:
           binding_path = runtime / binding_meta["path"]
           assert binding_path.is_file()
           binding = json.loads(binding_path.read_text())
-          assert binding["status"] == "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
+          assert binding["status"] == "SOURCE_BOUND_BLOCK_ENGINE_GRAPH_BOUND"
           assert binding["target"]["id"] == "D02_MULTI_INTERDISCIPLINAR"
+          graph_meta=binding["block_engine_graph"]
+          assert graph_meta["block_count"] == 134
+          assert graph_meta["state"] == "DECLARED_STRUCTURAL_ROUTING_ONLY"
+          assert binding["graph_execution"] == "STRUCTURAL_BLOCK_ROUTING_DECLARED_RUNTIME_VERIFICATION_REQUIRED"
+          graph_path=runtime/graph_meta["path_from_runtime_root"]
+          assert graph_path.is_file() and not graph_path.is_symlink(), "B1_B134_ENGINE_GRAPH_MISSING"
+          graph_bytes=graph_path.read_bytes()
+          assert hashlib.sha256(graph_bytes).hexdigest()==graph_meta["sha256"], "B1_B134_ENGINE_GRAPH_SHA256"
+          graph=json.loads(graph_bytes)
+          assert graph["block_inventory"]["ids"] == [f"B{i}" for i in range(1,135)], "B1_B134_CANONICAL_IDS"
+          assert len(graph["block_routes"]) == 134, "B1_B134_ROUTE_COUNT"
+          assert graph["target"]["id"] == "D02_MULTI_INTERDISCIPLINAR"
+          assert graph["engine_routes"] == [
+              {"from_target_id":"D02_MULTI_INTERDISCIPLINAR","relation":"uses_canonical_engine","to_engine_id":engine_id}
+              for engine_id in ["E03","E04","E05","E06","E07","E08","E09","E12","E13","E14","E15"]
+          ], "MULTI_INTERDISCIPLINAR_ENGINE_IDENTITY"
           assert binding["axiom_inventory"]["range"] == "AX0001-AX12414"
           assert binding["axiom_inventory"]["declared_materialized_count"] == 11757
           assert binding["axiom_inventory"]["declared_historical_gap_count"] == 657
@@ -582,12 +707,20 @@ jobs:
           python candidate/runtime/cajita_runtime.py audit-weights --root candidate/runtime
           (cd candidate/runtime && python "2. Orquestación/Orquestador/CLIs/cli_registry.py" --self-test)
           python - <<'PY'
-          import hashlib,json,os
+          import hashlib,json,os,zipfile
           from pathlib import Path
           root=Path("candidate"); p=root/"CAJITA_LUNA_RUNTIME_V10.macrodown"; d=root/"Louksna1.md"
           source_commit=os.environ["LOUKSNA_FACTORY_HEAD_SHA"]
           assert len(source_commit)==40 and all(ch in "0123456789abcdef" for ch in source_commit), "G23_SOURCE_COMMIT_INVALID"
-          out={"schema":"LOUKSNA1_G23_EVIDENCE/1.0","gate":"G23","status":"PASS","independent_job":True,"source_commit":source_commit,"package_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"package_bytes":p.stat().st_size,"louksna1_sha256":hashlib.sha256(d.read_bytes()).hexdigest(),"louksna1_bytes":d.stat().st_size,"combined_bytes":p.stat().st_size+d.stat().st_size,"combined_cap_bytes":479000000,"certification_scope":"DISTRIBUTION_INTEGRITY_STRUCTURE_WEIGHT_IDENTITY_AND_REGISTERED_SMOKES","task_adapter_completion":"NOT_ESTABLISHED","semantic_quality_equivalence":"NOT_ESTABLISHED","global_certification":"NOT_GRANTED"}
+          bundle=Path("candidate/LOUKSNAPG.md")
+          bundle_validation=Path("candidate/LOUKSNAPG_INDEPENDENT_VALIDATION_G23.json")
+          assert bundle.is_file() and bundle_validation.is_file(), "G23_LOUKSNAPG_EVIDENCE_MISSING"
+          lv=json.loads(bundle_validation.read_text(encoding="utf-8"))
+          assert lv.get("source_commit")==source_commit and lv.get("bundle_bytes")==bundle.stat().st_size
+          bundle_sha=hashlib.sha256(bundle.read_bytes()).hexdigest()
+          assert lv.get("bundle_sha256")==bundle_sha, "G23_LOUKSNAPG_SHA256_DIVERGENCE"
+          out={"schema":"LOUKSNA1_G23_EVIDENCE/1.0","gate":"G23","status":"PASS","independent_job":True,"source_commit":source_commit,"package_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"package_bytes":p.stat().st_size,"louksna1_sha256":hashlib.sha256(d.read_bytes()).hexdigest(),"louksna1_bytes":d.stat().st_size,"combined_bytes":p.stat().st_size+d.stat().st_size,"combined_cap_bytes":490000000,"certification_scope":"DISTRIBUTION_INTEGRITY_STRUCTURE_WEIGHT_IDENTITY_AND_REGISTERED_SMOKES","task_adapter_completion":"NOT_ESTABLISHED","semantic_quality_equivalence":"NOT_ESTABLISHED","louksnapg":{"artifact":"LOUKSNAPG.md","sha256":bundle_sha,"bytes":bundle.stat().st_size,"cap_bytes":490000000,"budget_status":lv.get("budget_status"),"container_integrity":lv.get("container_integrity"),"runtime_member_integrity":lv.get("runtime_member_integrity"),"single_distribution_container":lv.get("single_distribution_container"),"runtime_routing_registry":lv.get("runtime_routing_registry"),"module_registry":lv.get("module_registry"),"validation_report_sha256":hashlib.sha256(bundle_validation.read_bytes()).hexdigest(),"global_certification":"NOT_GRANTED"},"global_certification":"NOT_GRANTED"}
+          assert out["louksnapg"]["bytes"]<=490000000 and out["louksnapg"]["budget_status"]=="PASS"
           Path("candidate/G23_EVIDENCE.json").write_text(json.dumps(out,indent=2)+"\n")
           print(json.dumps(out,indent=2))
           PY
@@ -597,7 +730,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: louksna1-g23-evidence
-          path: candidate/G23_EVIDENCE.json
+          path: |
+            candidate/G23_EVIDENCE.json
+            candidate/LOUKSNAPG_INDEPENDENT_VALIDATION_G23.json
           if-no-files-found: warn
           retention-days: 90
 
@@ -641,14 +776,21 @@ jobs:
           name: louksna1-g23-evidence
           path: evidence/louksna1-g23-evidence
 
-      - name: Execute six-domain smoke under one CPU and 1 GiB cgroup limits
+      - name: Execute final LOUKSNAPG bundle under one CPU and 1 GiB cgroup limits
         id: resource_limited_smoke
         shell: bash
+        env:
+          LOUKSNA_FACTORY_HEAD_SHA: ${{ needs.manufacture.outputs.source_commit }}
         run: |
           set +e
-          ROOT="$RUNNER_TEMP/cajita-runtime"
-          mkdir -p "$ROOT"
-          unzip -q "evidence/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown" -d "$ROOT"
+          ROOT="$RUNNER_TEMP/louksnapg-runtime"
+          python tools/louksnapg_independent_validator.py \
+            --bundle "evidence/louksna1-candidate/LOUKSNAPG.md" \
+            --max-bytes 490000000 \
+            --expected-source-commit "$LOUKSNA_FACTORY_HEAD_SHA" \
+            --extract-to "$ROOT" \
+            --report "$RUNNER_TEMP/LOUKSNAPG_G24_INDEPENDENT_VALIDATION.json"
+          VALIDATOR_RC=$?
           DOCKERCTX="$RUNNER_TEMP/cajita-smoke-image"
           mkdir -p "$DOCKERCTX"
           cat > "$DOCKERCTX/Dockerfile" <<'EOF'
@@ -673,7 +815,7 @@ jobs:
               -e TOKENIZERS_PARALLELISM=false -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \
               -e LOUKSNA1_COMPANION_PATH=/telemetry/Louksna1.md \
               -v "$ROOT:/runtime:ro" -v "$RUNNER_TEMP:/telemetry:rw" \
-              -v "$GITHUB_WORKSPACE/evidence/louksna1-candidate/Louksna1.md:/telemetry/Louksna1.md:ro" \
+              -v "$ROOT/Louksna1.md:/telemetry/Louksna1.md:ro" \
               -v "$GITHUB_WORKSPACE/tools/cajita_task_e2e.py:/harness/cajita_task_e2e.py:ro" -w /runtime \
               cajita-louksna1-smoke sh -lc \
               'cat /sys/fs/cgroup/memory.max > /telemetry/cgroup-memory-max.txt; cat /sys/fs/cgroup/cpu.max > /telemetry/cgroup-cpu-max.txt; python cajita_runtime.py smoke-all --timeout 600 > /telemetry/smoke-all.log 2>&1; smoke_rc=$?; echo "$smoke_rc" > /telemetry/smoke-all.rc; python /harness/cajita_task_e2e.py --root /runtime --output-dir /telemetry/task-adapter-fixtures --output /telemetry/task-adapter-e2e-raw.json --timeout 900 > /telemetry/task-adapter-e2e.log 2>&1; task_rc=$?; echo "$task_rc" > /telemetry/task-adapter-e2e.rc; cat /sys/fs/cgroup/memory.peak > /telemetry/cgroup-memory-peak.txt; if [ "$smoke_rc" -eq 0 ] && [ "$task_rc" -eq 0 ]; then exit 0; else exit 1; fi'
@@ -698,21 +840,25 @@ jobs:
             MEMMAX="$(cat "$RUNNER_TEMP/cgroup-memory-max.txt" 2>/dev/null)"
             CPUMAX="$(cat "$RUNNER_TEMP/cgroup-cpu-max.txt" 2>/dev/null)"
             PEAK="$(cat "$RUNNER_TEMP/cgroup-memory-peak.txt" 2>/dev/null)"
-            if [ "$SMOKE_RC" -eq 0 ] && [ "$TASK_RC" -eq 0 ] && [ "$MEMMAX" = "1073741824" ] && [ "$CPUMAX" = "100000 100000" ] && [ -n "$PEAK" ] && [ "$PEAK" -le 1073741824 ]; then
+            if [ "$VALIDATOR_RC" -eq 0 ] && [ "$SMOKE_RC" -eq 0 ] && [ "$TASK_RC" -eq 0 ] && [ "$MEMMAX" = "1073741824" ] && [ "$CPUMAX" = "100000 100000" ] && [ -n "$PEAK" ] && [ "$PEAK" -le 1073741824 ]; then
               STATUS="PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE"
               REASON="SIX_DOMAIN_SMOKE_PLUS_FIVE_KNOWN_ANSWER_MODEL_TASKS_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_PASS_WITH_EFFECTIVE_ONE_CPU_1_GIB_LIMITS"
             else
-              REASON="SMOKE_TASK_ADAPTER_OR_RESOURCE_GATE_FAILED_SMOKE_RC_${SMOKE_RC}_TASK_RC_${TASK_RC}"
+              REASON="BUNDLE_VALIDATOR_RC_${VALIDATOR_RC}_OR_SMOKE_TASK_ADAPTER_RESOURCE_GATE_FAILED_SMOKE_RC_${SMOKE_RC}_TASK_RC_${TASK_RC}"
             fi
           else
             REASON="SMOKE_IMAGE_BUILD_FAILED"
           fi
-          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC TASK_RC BUILD_RC
+          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC TASK_RC BUILD_RC VALIDATOR_RC
           python - <<'PY'
-          import hashlib,json,os
+          import hashlib,json,os,zipfile
           from pathlib import Path
-          p=Path("evidence/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown")
+          p=Path("evidence/louksna1-candidate/LOUKSNAPG.md")
           d=Path("evidence/louksna1-candidate/Louksna1.md")
+          runtime_source=Path("evidence/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown")
+          bundle_manifest=json.loads(zipfile.ZipFile(p).read("LOUKSNAPG_MANIFEST.json").decode("utf-8"))
+          assert bundle_manifest["source"]["louksna1_sha256"]==hashlib.sha256(d.read_bytes()).hexdigest(), "G24_BUNDLE_DOCUMENT_HASH_MISMATCH"
+          assert bundle_manifest["source"]["runtime_archive_sha256"]==hashlib.sha256(runtime_source.read_bytes()).hexdigest(), "G24_RUNTIME_SOURCE_HASH_MISMATCH"
           raw_path=Path(os.environ["RUNNER_TEMP"])/"task-adapter-e2e-raw.json"
           task_report=json.loads(raw_path.read_text(encoding="utf-8")) if raw_path.is_file() else {"status":"NOT_COMPLETED","task_results":[]}
           release=json.loads(Path("evidence/louksna1-candidate/LOUKSNA1_RELEASE_MANIFEST.json").read_text(encoding="utf-8"))
@@ -731,6 +877,9 @@ jobs:
           result={"schema":"LOUKSNA1_G24_EVIDENCE/1.0","gate":"G24","status":os.environ["STATUS"],
             "decision":os.environ["STATUS"] if os.environ["STATUS"].startswith("PASS_") else "NOT_GRANTED",
             "package_sha256":hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None,
+            "bundle_bytes":p.stat().st_size if p.is_file() else None,
+            "runtime_source_sha256":hashlib.sha256(runtime_source.read_bytes()).hexdigest() if runtime_source.is_file() else None,
+            "bundle_validation_return_code":int(os.environ.get("VALIDATOR_RC","125")),
             "louksna1_sha256":hashlib.sha256(d.read_bytes()).hexdigest() if d.is_file() else None,
             "source_commit":release.get("source_commit"),"reason":os.environ["REASON"],
             "smoke_return_code":int(os.environ["SMOKE_RC"]),"task_adapter_return_code":int(os.environ.get("TASK_RC","125")),
@@ -743,6 +892,9 @@ jobs:
             "target_engine_scope":"SIX_SOURCE_BOUND_RUNTIME_ENGINE_SMOKES_ONLY",
             "target_engine_task_coverage":"NOT_ESTABLISHED",
             "image_build_return_code":int(os.environ["BUILD_RC"]),
+            "bundle_validation_return_code":int(os.environ.get("VALIDATOR_RC","125")),
+            "distribution_artifact":"LOUKSNAPG.md",
+            "distribution_bytes":p.stat().st_size if p.is_file() else None,
             "memory_max_bytes":os.environ.get("MEMMAX") or None,"cpu_quota":os.environ.get("CPUMAX") or None,
             "memory_peak_bytes":int(os.environ["PEAK"]) if os.environ.get("PEAK","").isdigit() else None,
             "scope":"SIX_DOMAIN_STARTUP_SMOKE_PLUS_FIVE_KNOWN_ANSWER_SYNTHETIC_MODEL_TASKS_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_AND_FAIL_CLOSED_ORCHESTRATION_GUARD",
@@ -788,6 +940,7 @@ jobs:
             ${{ runner.temp }}/task-adapter-e2e-raw.json
             ${{ runner.temp }}/task-adapter-e2e.rc
             ${{ runner.temp }}/smoke-all.rc
+            ${{ runner.temp }}/LOUKSNAPG_G24_INDEPENDENT_VALIDATION.json
           if-no-files-found: warn
           retention-days: 90
 
@@ -806,7 +959,7 @@ jobs:
 
   publish-candidate:
     needs: [manufacture, g23-independent-validation, g24-resource-limited-runtime-smoke]
-    if: needs.manufacture.outputs.candidate_ready == 'true' && needs.g23-independent-validation.result == 'success' && needs.g24-resource-limited-runtime-smoke.result == 'success' && needs.g24-resource-limited-runtime-smoke.outputs.gate_pass == 'true'
+    if: github.ref == 'refs/heads/main' && needs.manufacture.outputs.candidate_ready == 'true' && needs.g23-independent-validation.result == 'success' && needs.g24-resource-limited-runtime-smoke.result == 'success' && needs.g24-resource-limited-runtime-smoke.outputs.gate_pass == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:

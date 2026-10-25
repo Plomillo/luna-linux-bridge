@@ -260,7 +260,7 @@ def main() -> int:
         "staging_root":"externalized-assets-staging/",
         "runtime_package_mutated":False,
         "macrodown_manifest_mutated":False,
-        "hard_cap_bytes":479000000,
+        "hard_cap_bytes":470000000,
         "source_manifests":{
             "externalization_manifest_blob_sha":"c9781166127e44a421bf7156127f61f2241b574c",
             "macrodown_manifest_blob_sha":"70d1dcc738801cff8dd3aaae17ea551594148bfc",

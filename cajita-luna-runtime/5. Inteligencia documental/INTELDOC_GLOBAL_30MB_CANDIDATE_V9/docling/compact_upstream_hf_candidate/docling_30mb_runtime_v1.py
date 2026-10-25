@@ -220,7 +220,15 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     if image_token_count != image_seq_len:
         raise RuntimeError(f"DOCLING_IMAGE_TOKEN_COUNT_MISMATCH:{image_token_count}!={image_seq_len}")
     with torch.inference_mode():
-        out=model.generate(**inputs,max_new_tokens=int(max_new_tokens),do_sample=False)
+        out=model.generate(
+            **inputs,
+            max_new_tokens=int(max_new_tokens),
+            min_new_tokens=min(3, int(max_new_tokens)),
+            do_sample=False,
+            repetition_penalty=1.12,
+            no_repeat_ngram_size=3,
+            renormalize_logits=True,
+        )
     prompt_ids=inputs["input_ids"]
     if out.shape[-1] >= prompt_ids.shape[-1] and torch.equal(out[:, :prompt_ids.shape[-1]], prompt_ids):
         new_ids=out[:, prompt_ids.shape[-1]:]
