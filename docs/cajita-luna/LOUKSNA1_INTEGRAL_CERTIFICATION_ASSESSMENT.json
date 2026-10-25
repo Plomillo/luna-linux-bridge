@@ -3,11 +3,11 @@
   "assessment": "PASS_STRUCTURAL_AXIOM_GRAPH_EXECUTION",
   "decision": "HOLD",
   "global_certification": "NOT_GRANTED",
-  "generated_at_utc": "2026-10-25T03:20:57Z",
-  "source_commit": "3fb11b81cc9cd55f8791e58fb561ad2aa539a26b",
+  "generated_at_utc": "2026-10-25T03:32:38Z",
+  "source_commit": "4ea9190df2f39581aa391584ab4ae868da82da79",
   "factory_evidence_binding": {
-    "factory_run_id": "40157216190",
-    "source_commit": "3fb11b81cc9cd55f8791e58fb561ad2aa539a26b",
+    "factory_run_id": "40158097457",
+    "source_commit": "4ea9190df2f39581aa391584ab4ae868da82da79",
     "G23": "PASS",
     "G24": "PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE",
     "task_adapter_evidence": "PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY"
@@ -16,8 +16,8 @@
     "path": "LOUKSNAMEJORADA.md",
     "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
     "bytes": 11542631,
-    "companion_sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486",
-    "companion_bytes": 11646992,
+    "companion_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+    "companion_bytes": 11649200,
     "protected_prefix_byte_exact": true
   },
   "legacy_definition_census": {
@@ -230,7 +230,7 @@
       "expanded_bytes": 27289736,
       "expanded_file_count": 249,
       "expanded_tree_sha256": "586b008046071c679739ba8e9e9512cfc88a04dc5c28136adaa37afb798b7123",
-      "placement_contract_sha256": "c454d7d7826fe288a340c46a4f3e4e1650e94c7a1196d03fc94877d290c326ca"
+      "placement_contract_sha256": "cbca922b84df4d038848ff7fab3cbeff4d6bc18078e16cc6711e7e3af4958ada"
     },
     "riot_parse": "PASS",
     "sparql_counts": {
@@ -251,6 +251,47 @@
       }
     }
   },
+  "target_adapter_registration": {
+    "canonical_target_count": 21,
+    "synthetic_scope_registered_target_count": 5,
+    "unregistered_target_count": 16,
+    "registered_target_ids": [
+      "D01_CEREBRO_ROOT",
+      "D03_TRANSCRIPCION_ROOT",
+      "D04_TRADUCCION_GENERAL",
+      "D05_DOCLING",
+      "D06_ANALISIS_AVANZADO"
+    ],
+    "unregistered_target_ids": [
+      "D02_CONFESION_ECLESIAL_REFORMADA",
+      "D02_MULTI_INTERDISCIPLINAR",
+      "D02_ORQUESTADOR",
+      "D04_HERMENEUTICA_HG",
+      "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+      "D05_CALIBRE",
+      "D06_ANTI_ALUCINACIONES",
+      "D06_ARCHIVADO_DETECCION",
+      "D06_COGNITIVE_CI_CD",
+      "D06_CONSOLA",
+      "D06_MEMORIA_GOBERNADA",
+      "D06_MIGRACION_PERSISTENCIA",
+      "D06_MOTOR_PROTOCOLAR",
+      "D06_PORTABILIDAD_BASE",
+      "D06_RUNTIME_ANDROID_WINDOWS",
+      "D06_TESTING"
+    ],
+    "registered_domains_with_passing_synthetic_e2e": [
+      "D01_CEREBRO",
+      "D03_TRANSCRIPCION",
+      "D04_TRADUCTOR_INTELIGENTE",
+      "D05_INTELIGENCIA_DOCUMENTAL",
+      "D06_SISTEMA_INTELIGENTE"
+    ],
+    "all_21_target_task_adapters": "NOT_ESTABLISHED",
+    "native_smoke": "REQUIRED",
+    "reference_quality_equivalence": "NOT_ESTABLISHED",
+    "certification": "NOT_GRANTED"
+  },
   "semantic_gates": {
     "axiom_proposition_validity": "NOT_ESTABLISHED",
     "semantic_consistency": "NOT_ESTABLISHED",
@@ -260,7 +301,7 @@
   },
   "blockers": [
     "The natural-language axiom propositions and their logical consistency have not been independently validated.",
-    "21 canonical target manifests still report consumer_adapter=NOT_REGISTERED_FOR_ALL_TASKS.",
+    "16 of 21 canonical targets remain without a registered consumer adapter; 5 are registered for synthetic scope only.",
     "Synthetic adapter execution does not establish quality equivalence to reference baselines.",
     "Required native/hardware and end-to-end rollback evidence is not complete."
   ],
