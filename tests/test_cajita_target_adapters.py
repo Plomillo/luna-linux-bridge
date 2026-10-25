@@ -50,6 +50,10 @@ class TargetEngineSmokeContractTests(unittest.TestCase):
         self.assertTrue(all("task_adapter" not in spec for spec in target_adapters.TARGET_ADAPTERS.values()))
         self.assertTrue(all(spec["scope"] not in {"FULL_TASK_ADAPTER", "ALL_TASKS", "CERTIFIED"}
                             for spec in target_adapters.TARGET_ADAPTERS.values()))
+        multi = target_adapters.TARGET_ADAPTERS["D02_MULTI_INTERDISCIPLINAR"]
+        self.assertIn("block_engine_binding.json", multi["required_files"])
+        self.assertIn("B1_B134", multi["scope"])
+        self.assertEqual(multi["engine"], "SOURCE_BOUND_AXIOM_READER")
 
 
 if __name__ == "__main__":
