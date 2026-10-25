@@ -70,9 +70,10 @@ jobs:
               supplied_run=str(event["inputs"]["source_run_id"]).strip()
               wanted_sha=str(event["inputs"]["source_commit"]).strip()
           else:
-              wanted_sha=str(event.get("before","")).strip()
+              # GitHub push events identify the pushed commit with "after"; "before"
+              # is only the predecessor and cannot bind the factory output.
+              wanted_sha=str(event.get("after") or event.get("head_commit",{}).get("id","")).strip()
               branch=str(event.get("ref","").removeprefix("refs/heads/"))
-              event_time=str(event.get("head_commit",{}).get("timestamp",""))
           headers={"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"}
           def get(path):
               req=urllib.request.Request("https://api.github.com/repos/"+repo+path,headers=headers)
@@ -98,14 +99,11 @@ jobs:
                           exact.sort(key=lambda row:(row.get("run_attempt",0),row.get("created_at","")),reverse=True)
                           selected=exact[0]
                       elif candidates:
-                          # A commit that changes only this auxiliary workflow does not
-                          # run the factory. In that case audit the newest factory
-                          # candidate on this branch no later than the triggering push.
-                          eligible=[row for row in candidates
-                              if not event_time or str(row.get("created_at","")) <= event_time]
-                          if eligible:
-                              eligible.sort(key=lambda row:(row.get("created_at",""),row.get("run_attempt",0)),reverse=True)
-                              selected=eligible[0]
+                          # The auxiliary workflow may be the only file changed by
+                          # this push. In that case audit the newest factory run on
+                          # this same branch, even if that run began after the push event.
+                          candidates.sort(key=lambda row:(row.get("created_at",""),row.get("run_attempt",0)),reverse=True)
+                          selected=candidates[0]
                   if selected and selected.get("status")=="completed":
                       break
               except urllib.error.HTTPError as exc:
