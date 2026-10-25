@@ -2,7 +2,9 @@ name: Cajita V9 materialization and Louksna1 governed factory
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - "louksnapg/**"
     paths:
       - ".github/workflows/cajita-louksna1-factory.yml"
       - "tools/cajita_runtime_factory.py"
@@ -939,7 +941,7 @@ jobs:
 
   publish-candidate:
     needs: [manufacture, g23-independent-validation, g24-resource-limited-runtime-smoke]
-    if: needs.manufacture.outputs.candidate_ready == 'true' && needs.g23-independent-validation.result == 'success' && needs.g24-resource-limited-runtime-smoke.result == 'success' && needs.g24-resource-limited-runtime-smoke.outputs.gate_pass == 'true'
+    if: github.ref == 'refs/heads/main' && needs.manufacture.outputs.candidate_ready == 'true' && needs.g23-independent-validation.result == 'success' && needs.g24-resource-limited-runtime-smoke.result == 'success' && needs.g24-resource-limited-runtime-smoke.outputs.gate_pass == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
