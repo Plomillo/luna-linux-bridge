@@ -96,6 +96,8 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
     require("docker.sock" not in lower,
             f"{flow_path.relative_to(ROOT)} references a Docker socket.")
     if flow_path.name == "20-cajita-runtime-size-gate.yml":
+        require("fromJson(outputs.macrodown_report.body).raw_payload_size_gate == 'PASS_WITHIN_INPUT_CEILING'" in body,
+                "Kestra must require the builder's explicit raw payload PASS status.")
         require("fromJson(outputs.macrodown_report.body).gross_raw_payload_bytes_including_manifest <= 470000000" in body,
                 "Kestra must enforce the raw compact Macrodown distribution cap including its manifest.")
         require("fromJson(outputs.macrodown_report.body).archive_bytes <= 470000000" in body,
@@ -104,8 +106,10 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
                 and "fromJson(outputs.runtime_report.body).q2_factor_results[3].status == 'ALREADY_Q2_PACKED'" in body,
                 "Kestra must retain Q2 factor-integrity invariants.")
         require("fromJson(outputs.runtime_report.body).size_gate == 'PASS'" not in body
-                and "fromJson(outputs.runtime_report.body).runtime_bytes_after <= 470000000" not in body,
-                "Expanded-tree bytes from the legacy rebalance report must not replace the compact distribution size gate.")
+                and "fromJson(outputs.runtime_report.body).runtime_bytes_after <= 470000000" not in body
+                and "runtime_size_gate.raw_payload_target_gate == 'PASS'" in body
+                and "runtime_size_gate.raw_payload_target_bytes == 470000000" in body,
+                "The compact payload target gate, not the legacy input ceiling, must be the distribution size authority.")
     if flow_path.name == "21-louksna1-release-audit.yml":
         require("fromJson(outputs.g24_evidence.body).status == 'PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE'" in body,
                 "Louksna1 release audit must fail closed unless scoped synthetic task execution evidence passes.")
