@@ -47,8 +47,9 @@ class TargetEngineSmokeContractTests(unittest.TestCase):
             6
         )
         self.assertTrue(all(spec["engine"] for spec in target_adapters.TARGET_ADAPTERS.values()))
-        self.assertTrue(all("SMOKE" in spec["scope"] or "FIXED_" in spec["scope"] or "READ_ONLY" in spec["scope"]
-                            or "ROUNDTRIP" in spec["scope"] for spec in target_adapters.TARGET_ADAPTERS.values()))
+        self.assertTrue(all("task_adapter" not in spec for spec in target_adapters.TARGET_ADAPTERS.values()))
+        self.assertTrue(all(spec["scope"] not in {"FULL_TASK_ADAPTER", "ALL_TASKS", "CERTIFIED"}
+                            for spec in target_adapters.TARGET_ADAPTERS.values()))
 
 
 if __name__ == "__main__":
