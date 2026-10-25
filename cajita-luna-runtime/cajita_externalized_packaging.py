@@ -592,7 +592,15 @@ def distribution_contract(root: Path) -> list[dict]:
     if registry.get("externalized_asset_placement_sha256") != placement_binding_sha256(placement):
         raise RuntimeError("DISTRIBUTION_PLACEMENT_REGISTRY_HASH_MISMATCH")
     rows = registry.get("externalized_modules")
+    # The source checkout keeps the distribution routing catalog under its
+    # generated name. The compact archive maps those exact bytes onto the
+    # canonical runtime path, command_subdomain_routing.json; accept that path
+    # only when the independent hash binding matches exactly.
     routing_path = root / "CAJITA_DISTRIBUTION_ROUTING.json"
+    if routing_path.is_symlink():
+        raise RuntimeError("DISTRIBUTION_ROUTING_SYMLINK_REFUSED")
+    if not routing_path.is_file():
+        routing_path = root / "command_subdomain_routing.json"
     routing = _load_json(routing_path, "DISTRIBUTION_ROUTING_CATALOG")
     if registry.get("distribution_routing_sha256") != sha_file(routing_path):
         raise RuntimeError("DISTRIBUTION_ROUTING_HASH_MISMATCH")
