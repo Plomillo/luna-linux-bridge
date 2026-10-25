@@ -593,6 +593,7 @@ def _source_contract(root: Path, canonical_work_root: Path) -> tuple[dict, dict,
         contract.append({
             "id": asset_id,
             "expanded_relpath": expanded_rel,
+            "source_container_path": container_meta.get("path"),
             "source_container_relpath": container_rel,
             "source_container_bytes": expected_size,
             "source_container_sha256": expected_sha,
@@ -617,10 +618,61 @@ def _source_contract(root: Path, canonical_work_root: Path) -> tuple[dict, dict,
 
 def prepare_distribution_registry(root: Path) -> list[dict]:
     root = Path(root).resolve()
-    placement, source_registry, contract = _source_contract(root)
+    with tempfile.TemporaryDirectory(prefix="cajita-registered-tree-repack-") as scratch_name:
+        scratch = Path(scratch_name)
+        placement, source_registry, contract = _source_contract(root, scratch)
+        for item in contract:
+            output_rel = _runtime_relative(item["container_relpath"], item["id"] + ":distribution_container_path")
+            output_path = root / Path(*PurePosixPath(output_rel).parts)
+            expected = {
+                "bytes": item["expanded_bytes"],
+                "file_count": item["expanded_file_count"],
+                "tree_sha256": item["expanded_tree_sha256"],
+            }
+            packed = _pack_canonical_tree(
+                Path(item["canonical_tree_path"]), output_path, expected, scratch, item["id"]
+            )
+            item["container_bytes"] = packed["bytes"]
+            item["container_sha256"] = packed["sha256"]
+            item["container_rebuild_status"] = (
+                "PASS_REPACKAGED_AND_ROUNDTRIP_VERIFIED_REUSED"
+                if packed.get("reused") else "PASS_REPACKAGED_AND_ROUNDTRIP_VERIFIED"
+            )
+            item.pop("canonical_tree_path", None)
+
     source_registry_path = root / SOURCE_REGISTRY_NAME
     placement_path = root / PLACEMENT_NAME
-    _record_externalized_container_retention(placement, contract)
+    by_asset_id = {item["id"]: item for item in contract}
+    placement["distribution_repackaging"] = {
+        "schema": "CAJITA_DISTRIBUTION_REPACKAGING/1.0",
+        "policy": "REBUILD_FROM_REGISTERED_EXPANDED_TREE_HASH_WITH_EXACT_ROUNDTRIP",
+        "source_containers_preserved_in_staging": True,
+        "source_container_blobs_embedded_in_distribution": False,
+        "derived_distribution_container_count": len(contract),
+        "all_registered_tree_hashes_verified_before_packaging": True,
+        "all_derived_container_roundtrips_verified": all(
+            item["container_rebuild_status"].startswith("PASS_REPACKAGED_AND_ROUNDTRIP_VERIFIED")
+            for item in contract
+        ),
+        "certification": "NOT_GRANTED",
+    }
+    for asset in placement.get("assets", []):
+        item = by_asset_id.get(asset.get("id"))
+        if item is None:
+            continue
+        asset["distribution_repackaging"] = {
+            "source_container_path": item["source_container_path"],
+            "source_container_bytes": item["source_container_bytes"],
+            "source_container_sha256": item["source_container_sha256"],
+            "distribution_container_path": item["container_relpath"],
+            "distribution_container_bytes": item["container_bytes"],
+            "distribution_container_sha256": item["container_sha256"],
+            "source_tree_bytes": item["expanded_bytes"],
+            "source_tree_file_count": item["expanded_file_count"],
+            "source_tree_sha256": item["expanded_tree_sha256"],
+            "status": item["container_rebuild_status"],
+            "certification": "NOT_GRANTED",
+        }
     placement_output = (json.dumps(placement, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     placement_temp = placement_path.with_name(placement_path.name + ".building")
     if placement_temp.is_symlink():
@@ -649,6 +701,11 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
             "container_path": item["container_relpath"],
             "container_bytes": item["container_bytes"],
             "container_sha256": item["container_sha256"],
+            "source_container_path": item["source_container_path"],
+            "source_container_bytes": item["source_container_bytes"],
+            "source_container_sha256": item["source_container_sha256"],
+            "container_rebuilt_from_registered_tree": True,
+            "container_rebuild_status": item["container_rebuild_status"],
             "materialization_required": True,
             "materialization": {
                 "status": "PACKED_NOT_EXPANDED",
@@ -678,7 +735,7 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
     result["externalized_module_count"] = len(externalized_modules)
     result["externalized_modules"] = externalized_modules
     result["distribution_profile"] = {
-        "policy": "PACK_CONTAINER_ONCE_AND_RECONSTRUCT_EXPANDED_TREE_ON_DEMAND",
+        "policy": "REBUILD_CONTAINER_FROM_REGISTERED_TREE_HASH_AND_RECONSTRUCT_ON_DEMAND",
         "source_only_registry_excluded": SOURCE_REGISTRY_NAME,
         "expanded_tree_file_bytes_embedded": False,
         "compressed_container_bytes_embedded": True,
@@ -722,6 +779,10 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
                     "container_path": item["container_relpath"],
                     "container_sha256": item["container_sha256"],
                     "container_bytes": item["container_bytes"],
+                    "source_container_path": item["source_container_path"],
+                    "source_container_sha256": item["source_container_sha256"],
+                    "source_container_bytes": item["source_container_bytes"],
+                    "container_rebuilt_from_registered_tree": True,
                     "container_retained_in_distribution": True,
                     "archive_removed_from_runtime": False,
                     "activation_status": "MATERIALIZED_NOT_FUNCTIONALLY_VALIDATED",
@@ -730,6 +791,10 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
     distribution_routing["externalized_assets"] = [
         {"id": item["id"], "container_path": item["container_relpath"],
          "container_sha256": item["container_sha256"], "container_bytes": item["container_bytes"],
+         "source_container_path": item["source_container_path"],
+         "source_container_sha256": item["source_container_sha256"],
+         "source_container_bytes": item["source_container_bytes"],
+         "container_rebuild_status": item["container_rebuild_status"],
          "expanded_path": item["expanded_relpath"], "expanded_tree_sha256": item["expanded_tree_sha256"],
          "materialization": "ON_DEMAND", "consumer_adapter": "NOT_ESTABLISHED",
          "native_smoke": "REQUIRED", "certification": "NOT_GRANTED"}
