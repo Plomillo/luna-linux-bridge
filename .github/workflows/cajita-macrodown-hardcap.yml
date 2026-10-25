@@ -112,6 +112,7 @@ jobs:
           python - <<'PY'
           import json
           import os
+          import subprocess
           import sys
           from pathlib import Path
 
@@ -209,8 +210,9 @@ jobs:
           def under_expanded_tree(rel):
               return any(rel == item or rel.startswith(item + "/") for item in excluded_expanded_roots)
 
-          def runtime_size():
-              total = 0
+          def runtime_inventory():
+              entries = []
+              excluded = {"expanded_trees": sum(item["expanded_bytes"] for item in externalized_contract), "source_only_registry_routing": 0, "historical_build_archives": 0, "generated_manifest": 0}
               for base, dirs, files in os.walk(root, topdown=True, followlinks=False):
                   base_path = Path(base)
                   kept_dirs = []
@@ -228,16 +230,55 @@ jobs:
                       if path.is_symlink():
                           raise SystemExit("SYMLINK_IN_RUNTIME:" + str(path))
                       rel = path.relative_to(root).as_posix()
-                      if name == "MACRODOWN_MANIFEST.json" or rel in {"module_registry.json", "command_subdomain_routing.json"} or rel in build_only_archive_paths or under_expanded_tree(rel):
+                      if not path.is_file():
                           continue
-                      if path.is_file():
-                          total += path.stat().st_size
-              return total
+                      size = path.stat().st_size
+                      if name == "MACRODOWN_MANIFEST.json":
+                          excluded["generated_manifest"] += size
+                          continue
+                      if rel in {"module_registry.json", "command_subdomain_routing.json"}:
+                          excluded["source_only_registry_routing"] += size
+                          continue
+                      if rel in build_only_archive_paths:
+                          excluded["historical_build_archives"] += size
+                          continue
+                      if under_expanded_tree(rel):
+                          continue
+                      entries.append({"path": rel, "bytes": size, "top_level": rel.split("/", 1)[0], "suffix": path.suffix.lower() or "(none)"})
+              entries.sort(key=lambda item: item["path"].encode("utf-8"))
+              return entries, excluded
+
+          def runtime_size():
+              entries, _ = runtime_inventory()
+              return sum(item["bytes"] for item in entries)
+
+          def report_payload_breakdown(entries, excluded):
+              from collections import Counter
+              by_top = Counter()
+              by_suffix = Counter()
+              for item in entries:
+                  by_top[item["top_level"]] += item["bytes"]
+                  by_suffix[item["suffix"]] += item["bytes"]
+              print(json.dumps({
+                  "schema": "CAJITA_RUNTIME_PAYLOAD_BREAKDOWN/1.0",
+                  "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+                  "included_payload_bytes": sum(item["bytes"] for item in entries),
+                  "included_file_count": len(entries),
+                  "excluded_bytes_by_policy": excluded,
+                  "excluded_historical_archive_bytes": excluded.get("historical_build_archives", 0),
+                  "bytes_by_top_level": [{"path": key, "bytes": value} for key, value in sorted(by_top.items(), key=lambda kv: (-kv[1], kv[0]))],
+                  "bytes_by_suffix": [{"suffix": key, "bytes": value} for key, value in sorted(by_suffix.items(), key=lambda kv: (-kv[1], kv[0]))],
+                  "largest_50_included_files": sorted(entries, key=lambda item: (-item["bytes"], item["path"]))[:50],
+                  "registered_container_bytes": [{"id": item["id"], "path": item["container_relpath"], "bytes": item["container_bytes"], "sha256": item["container_sha256"]} for item in externalized_contract],
+                  "distribution_certification": "NOT_GRANTED"
+              }, ensure_ascii=False, sort_keys=True))
 
           placement_path.write_text(json.dumps(placement, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           measured = None
           for _ in range(8):
-              measured = runtime_size()
+              entries, excluded_bytes = runtime_inventory()
+              measured = sum(item["bytes"] for item in entries)
+              report_payload_breakdown(entries, excluded_bytes)
               gate = "PASS" if measured <= cap else "FAIL"
               placement["status"] = "COMPACT_DISTRIBUTION_PAYLOAD_SIZE_GATE_" + gate
               placement["runtime_size_gate"].update({
