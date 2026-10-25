@@ -305,6 +305,180 @@ def _record_externalized_container_retention(placement: dict, contract: list[dic
         asset["placement"] = "MATERIALIZED_DIRECTORY_AND_HASH_PINNED_CONTAINER"
 
 
+def _same_tree(left: dict, right: dict) -> bool:
+    return (
+        left.get("bytes") == right.get("bytes")
+        and left.get("file_count") == right.get("file_count")
+        and left.get("tree_sha256") == right.get("tree_sha256")
+    )
+
+
+def _extract_archive_for_rebuild(archive: Path, destination: Path) -> dict:
+    destination = Path(destination).resolve()
+    if destination.exists() and any(destination.iterdir()):
+        raise RuntimeError("EXTERNALIZED_REBUILD_EXTRACTION_TARGET_NOT_EMPTY")
+    destination.mkdir(parents=True, exist_ok=True)
+    binary = _seven_zip()
+    _validate_archive_listing(binary, archive)
+    test = subprocess.run(
+        [binary, "t", "-bd", str(archive)],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        timeout=900, check=False,
+    )
+    if test.returncode != 0:
+        raise RuntimeError("EXTERNALIZED_REBUILD_7Z_TEST_FAILED:" + test.stdout[-700:])
+    extracted = subprocess.run(
+        [binary, "x", "-y", "-bd", "-o" + str(destination), str(archive)],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        timeout=1800, check=False,
+    )
+    if extracted.returncode != 0:
+        raise RuntimeError("EXTERNALIZED_REBUILD_7Z_EXTRACT_FAILED:" + extracted.stdout[-900:])
+    if (destination / MODULE_DESCRIPTOR_NAME).exists() or (destination / MODULE_DESCRIPTOR_NAME).is_symlink():
+        raise RuntimeError("EXTERNALIZED_REBUILD_RESERVED_DESCRIPTOR_IN_ARCHIVE")
+    return _tree_summary(destination)
+
+
+def _normalized_text_bytes(data: bytes):
+    if b"\x00" in data:
+        return None
+    try:
+        data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    return data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
+def _copy_registered_tree_from_checkout_or_archive(
+    source_root: Path,
+    source_archive: Path,
+    expected: dict,
+    destination: Path,
+    work_root: Path,
+    asset_id: str,
+) -> dict:
+    source_root = Path(source_root).resolve()
+    destination = Path(destination)
+    if destination.exists() or destination.is_symlink():
+        raise RuntimeError("EXTERNALIZED_CANONICAL_TREE_DESTINATION_COLLISION:" + asset_id)
+    destination.mkdir(parents=True)
+    source_actual = _tree_summary(source_root)
+
+    # The registered tree hash, not the compressed source blob, is the identity.
+    # A matching checked-out tree can be repacked directly, excluding the
+    # separately registered CAJITA_MODULE.json descriptor.
+    source_rows = _tree_rows(source_root)
+    if _same_tree(source_actual, expected):
+        for row in source_rows:
+            rel = PurePosixPath(row["path"])
+            src = source_root / Path(*rel.parts)
+            dst = destination / Path(*rel.parts)
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(src, dst)
+            os.chmod(dst, stat.S_IMODE(src.stat().st_mode))
+        actual = _tree_summary(destination)
+        if not _same_tree(actual, expected):
+            raise RuntimeError("EXTERNALIZED_CANONICAL_COPY_CHANGED:" + asset_id)
+        return {"status": "PASS_CHECKOUT_TREE_HASH", "tree": actual}
+
+    # Some committed text files have normalized LF line endings while the
+    # registered pre-checkout tree retained CRLF. Recover original bytes only
+    # where the archive's LF-normalized content exactly equals the checkout
+    # bytes. All paths still come from the registered checkout tree; archive-
+    # only files are never imported into the canonical candidate.
+    archive_root = work_root / (asset_id + ".archive-source")
+    archive_actual = _extract_archive_for_rebuild(source_archive, archive_root)
+    archive_rows = {row["path"]: row for row in _tree_rows(archive_root)}
+    for row in source_rows:
+        rel = PurePosixPath(row["path"])
+        src = source_root / Path(*rel.parts)
+        data = src.read_bytes()
+        archive_row = archive_rows.get(row["path"])
+        if archive_row is not None:
+            archived = archive_root / Path(*rel.parts)
+            if archived.is_symlink() or not archived.is_file():
+                raise RuntimeError("EXTERNALIZED_REBUILD_ARCHIVE_MEMBER_NOT_REGULAR:" + asset_id + ":" + row["path"])
+            archived_bytes = archived.read_bytes()
+            normalized = _normalized_text_bytes(archived_bytes)
+            if normalized is not None and normalized == data:
+                data = archived_bytes
+        dst = destination / Path(*rel.parts)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes(data)
+        os.chmod(dst, stat.S_IMODE(src.stat().st_mode))
+
+    candidate_actual = _tree_summary(destination)
+    if not _same_tree(candidate_actual, expected):
+        raise RuntimeError(
+            "EXTERNALIZED_REGISTERED_TREE_RECOVERY_FAILED:" + asset_id + ":" +
+            json.dumps({
+                "expected": expected,
+                "checkout_tree": source_actual,
+                "source_archive_tree": archive_actual,
+                "recovered_candidate": candidate_actual,
+                "policy": "RESTORE_ARCHIVE_LINE_ENDINGS_ONLY_WHEN_LF_NORMALIZATION_MATCHES_CHECKOUT",
+            }, sort_keys=True)
+        )
+    return {
+        "status": "PASS_RECONSTRUCTED_REGISTERED_TREE_WITH_VERIFIED_LINE_ENDINGS",
+        "tree": candidate_actual,
+        "source_archive_tree": archive_actual,
+    }
+
+
+def _verify_archive_tree(archive: Path, expected: dict, work_root: Path, asset_id: str) -> dict:
+    destination = work_root / (asset_id + ".roundtrip")
+    actual = _extract_archive_for_rebuild(archive, destination)
+    if not _same_tree(actual, expected):
+        raise RuntimeError(
+            "EXTERNALIZED_REPACK_ROUNDTRIP_MISMATCH:" + asset_id + ":" +
+            json.dumps({"expected": expected, "actual": actual}, sort_keys=True)
+        )
+    shutil.rmtree(destination)
+    return actual
+
+
+def _pack_registered_tree(
+    canonical_root: Path, output: Path, expected: dict, work_root: Path, asset_id: str
+) -> dict:
+    canonical_root = Path(canonical_root).resolve()
+    output = Path(output)
+    measured = _tree_summary(canonical_root)
+    if not _same_tree(measured, expected):
+        raise RuntimeError(
+            "EXTERNALIZED_REPACK_SOURCE_TREE_NOT_REGISTERED:" + asset_id + ":" +
+            json.dumps({"expected": expected, "actual": measured}, sort_keys=True)
+        )
+    if output.is_symlink():
+        raise RuntimeError("EXTERNALIZED_REPACK_OUTPUT_SYMLINK:" + asset_id)
+    output.parent.mkdir(parents=True, exist_ok=True)
+
+    # A second prepare/build invocation in the same job reuses only a container
+    # that independently reconstructs to the exact registered tree.
+    if output.is_file():
+        _verify_archive_tree(output, expected, work_root, asset_id)
+        return {"bytes": output.stat().st_size, "sha256": sha_file(output), "reused": True}
+
+    temporary = output.with_name(output.name + ".building")
+    if temporary.exists() or temporary.is_symlink():
+        raise RuntimeError("EXTERNALIZED_REPACK_TEMP_COLLISION:" + asset_id)
+    binary = _seven_zip()
+    packed = subprocess.run(
+        [binary, "a", "-t7z", "-mx=9", "-mmt=1", "-mtc=off", "-mta=off", "-mtm=off", str(temporary), "."],
+        cwd=str(canonical_root), text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        timeout=1800, check=False,
+    )
+    if packed.returncode != 0 or not temporary.is_file():
+        raise RuntimeError("EXTERNALIZED_REPACK_7Z_FAILED:" + asset_id + ":" + packed.stdout[-900:])
+    try:
+        _verify_archive_tree(temporary, expected, work_root, asset_id)
+        os.replace(temporary, output)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+    return {"bytes": output.stat().st_size, "sha256": sha_file(output), "reused": False}
+
+
 def _source_contract(root: Path) -> tuple[dict, dict, list[dict]]:
     root = Path(root).resolve()
     placement_path = root / PLACEMENT_NAME
