@@ -25,7 +25,7 @@ class TargetEngineSmokeContractTests(unittest.TestCase):
                 self.assertTrue(spec["engine"])
                 self.assertTrue(spec["scope"])
                 self.assertIn(spec["entry"], spec["required_files"])
-                self.assertIn("NOT_ESTABLISHED", spec["scope"] + " NOT_ESTABLISHED") 
+                self.assertNotIn("certification", spec)
                 self.assertTrue(spec["required_files"])
 
     def test_unknown_target_fails_closed_before_any_source_execution(self):
@@ -43,7 +43,7 @@ class TargetEngineSmokeContractTests(unittest.TestCase):
         report = target_adapters.run_target_smokes
         self.assertTrue(callable(report))
         self.assertEqual(
-            {spec["scope"] for spec in target_adapters.TARGET_ADAPTERS.values()}.__len__(),
+            len({spec["scope"] for spec in target_adapters.TARGET_ADAPTERS.values()}),
             6
         )
         self.assertTrue(all(spec["engine"] for spec in target_adapters.TARGET_ADAPTERS.values()))
