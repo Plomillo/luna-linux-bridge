@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json, tempfile, unittest, zipfile
 from pathlib import Path
-from cajita_runtime_factory import safe_rel, extract, tree_hash, tree_rows, factory_materialize, sha_file, COMBINED_CAP
+from cajita_runtime_factory import safe_rel, extract, tree_hash, tree_rows, factory_materialize, sha_file, COMBINED_CAP, externalized_container_contract, validate_packaged_archive_member_set
 from reproduce_macrodown import BINARY_SUFFIXES, add_stream, DEFAULT_COMBINED_CAP_BYTES
 from cajita_runtime import KNOWN_INFRASTRUCTURE_TEST_FIXTURES, classify_model_like_paths, COMBINED_DISTRIBUTION_CAP_BYTES
 
@@ -60,6 +60,21 @@ class FactorySafetyTests(unittest.TestCase):
    self.assertEqual(routing_after["materialization"]["archive_count_removed"],1)
    self.assertEqual(routing_after["materialization"]["archive_count_this_run"],0)
    self.assertFalse(any(p.suffix.lower() in {".zip",".7z"} for p in runtime.rglob("*")))
+
+ def test_only_registered_externalized_containers_are_allowed_in_macrodown(self):
+  runtime=Path(__file__).resolve().parents[1]/"cajita-luna-runtime"
+  contract=externalized_container_contract(runtime)
+  expected_ids={
+   "APACHE_JENA_6_2_0","PLAYWRIGHT_1_63_0_SOURCE","ONNX_RUNTIME_1_29_0_CP311",
+   "DAGGER_0_21_8_LINUX_AMD64","OPA_STATIC_LINUX_AMD64_CANDIDATE","RQLITE_10_2_7_LINUX_AMD64",
+   "SQLITE_SOURCE_3_53_4","CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE","AVALONIA_12_1_1_NUGET",
+   "TAURI_2_11_5_SOURCE_ZIP",
+  }
+  self.assertEqual(len(contract),10)
+  self.assertEqual({row["id"] for row in contract.values()},expected_ids)
+  self.assertEqual(validate_packaged_archive_member_set(list(contract),contract),list(contract))
+  with self.assertRaisesRegex(RuntimeError,"EXTERNALIZED_ARCHIVE_MEMBER_SET_MISMATCH"):
+   validate_packaged_archive_member_set(list(contract)+["unregistered/rogue.zip"],contract)
 
  def test_parent_traversal_is_denied(self):
   with self.assertRaisesRegex(RuntimeError,"TRAVERSAL"): safe_rel("../outside")
