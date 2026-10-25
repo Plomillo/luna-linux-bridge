@@ -17,7 +17,6 @@ MANIFEST_NAME = "CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json"
 DEFAULT_TOKENIZER_PATHS = (
     "1. Cerebro/tokenizer.json",
     "3. Transcripción/tokenizer.json",
-    "4. Traductor Inteligente/Traducción general/tokenizer.json",
     "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/tokenizer.json",
     "6. Sistema Inteligente/Análisis Avanzado/tokenizer.json",
 )
@@ -274,8 +273,13 @@ def load_pretrained_with_compressed_tokenizer(model_root: Path, loader_class, **
     matches = [row for row in manifest["entries"] if row.get("source_path") == source_rel]
     if len(matches) != 1:
         tokenizer_path = model_root / "tokenizer.json"
-        if tokenizer_path.is_symlink() or not tokenizer_path.is_file():
-            raise TokenizerMaterializationError("TOKENIZER_ENTRY_NOT_REGISTERED_AND_SOURCE_MISSING:" + source_rel)
+        compressed_path = model_root / "tokenizer.json.gz"
+        if tokenizer_path.is_file() and not tokenizer_path.is_symlink():
+            return loader_class.from_pretrained(str(model_root), **kwargs)
+        if compressed_path.exists() or compressed_path.is_symlink():
+            raise TokenizerMaterializationError("TOKENIZER_COMPRESSED_FILE_NOT_REGISTERED:" + source_rel)
+        # Some processors are intentionally SentencePiece/vocab based and do
+        # not contain tokenizer.json. Keep their original local-only loader.
         return loader_class.from_pretrained(str(model_root), **kwargs)
     row = matches[0]
     source = model_root / "tokenizer.json"
