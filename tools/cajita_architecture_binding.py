@@ -1,4 +1,5 @@
 from __future__ import annotations
+import ast
 import hashlib
 import json
 import shutil
@@ -49,6 +50,123 @@ def _rows(root: Path, runtime_root: Path) -> list[dict]:
         except TokenizerMaterializationError as exc:
             raise RuntimeError("TARGET_MODULE_TOKENIZER_LOGICAL_TREE_INVALID:" + str(exc)) from exc
     return rows
+
+
+def _registered_consumer_adapters(runtime_root: Path, targets: list[dict]) -> dict[str, dict]:
+    """Read actual adapter declarations and bind only verifiable target adapters.
+
+    Registration here is not certification: the scope remains synthetic-only
+    until native execution and reference-quality equivalence have separate evidence.
+    """
+    runtime = Path(runtime_root).resolve()
+    adapter_path = runtime / "cajita_task_adapters.py"
+    weights_path = runtime / "CAJITA_RUNTIME_V1" / "weights_manifest.json"
+    for path, code in ((adapter_path, "TASK_ADAPTER_SOURCE"), (weights_path, "TASK_ADAPTER_WEIGHT_MANIFEST")):
+        if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to(runtime):
+            raise RuntimeError(code + "_MISSING_OR_UNSAFE")
+    try:
+        adapter_source = adapter_path.read_bytes()
+        parsed = ast.parse(adapter_source.decode("utf-8"), filename=str(adapter_path))
+    except (OSError, UnicodeError, SyntaxError) as exc:
+        raise RuntimeError("TASK_ADAPTER_SOURCE_PARSE_FAILED:" + type(exc).__name__) from exc
+
+    literals = {}
+    for node in parsed.body:
+        if isinstance(node, ast.Assign):
+            names = [target.id for target in node.targets if isinstance(target, ast.Name)]
+            if any(name in {"ADAPTERS", "MANIFEST_SHA", "CANDIDATE_ID"} for name in names):
+                try:
+                    value = ast.literal_eval(node.value)
+                except (ValueError, TypeError) as exc:
+                    raise RuntimeError("TASK_ADAPTER_REGISTRY_MUST_BE_LITERAL") from exc
+                for name in names:
+                    if name in {"ADAPTERS", "MANIFEST_SHA", "CANDIDATE_ID"}:
+                        if name in literals:
+                            raise RuntimeError("TASK_ADAPTER_LITERAL_DUPLICATE:" + name)
+                        literals[name] = value
+    adapter_rows = literals.get("ADAPTERS")
+    manifest_sha = literals.get("MANIFEST_SHA")
+    candidate_id = literals.get("CANDIDATE_ID")
+    if not isinstance(adapter_rows, dict) or not adapter_rows:
+        raise RuntimeError("TASK_ADAPTER_REGISTRY_MISSING_OR_INVALID")
+    if not isinstance(manifest_sha, str) or len(manifest_sha) != 64 or any(ch not in "0123456789abcdef" for ch in manifest_sha):
+        raise RuntimeError("TASK_ADAPTER_WEIGHT_MANIFEST_PIN_INVALID")
+    if not isinstance(candidate_id, str) or not candidate_id:
+        raise RuntimeError("TASK_ADAPTER_CANDIDATE_ID_MISSING")
+    weight_manifest_raw = weights_path.read_bytes()
+    if _sha(weight_manifest_raw) != manifest_sha:
+        raise RuntimeError("TASK_ADAPTER_WEIGHT_MANIFEST_HASH_MISMATCH")
+    try:
+        weight_manifest = json.loads(weight_manifest_raw)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("TASK_ADAPTER_WEIGHT_MANIFEST_INVALID_JSON") from exc
+    if weight_manifest.get("candidate_id") != candidate_id or not isinstance(weight_manifest.get("artifacts"), list):
+        raise RuntimeError("TASK_ADAPTER_WEIGHT_MANIFEST_CANDIDATE_MISMATCH")
+
+    targets_by_id = {}
+    for target in targets:
+        if not isinstance(target, dict) or not isinstance(target.get("id"), str):
+            raise RuntimeError("CANONICAL_TARGET_ID_INVALID_DURING_ADAPTER_BINDING")
+        if target["id"] in targets_by_id:
+            raise RuntimeError("CANONICAL_TARGET_ID_COLLISION_DURING_ADAPTER_BINDING:" + target["id"])
+        targets_by_id[target["id"]] = target
+
+    output = {}
+    seen_adapter_ids = set()
+    seen_target_ids = set()
+    artifacts = weight_manifest["artifacts"]
+    for domain_id, spec in adapter_rows.items():
+        if not isinstance(domain_id, str) or not isinstance(spec, dict):
+            raise RuntimeError("TASK_ADAPTER_SPEC_INVALID")
+        required = ("target", "id", "op", "entry", "module", "weight", "sha", "bytes")
+        if any(key not in spec for key in required):
+            raise RuntimeError("TASK_ADAPTER_SPEC_INCOMPLETE:" + domain_id)
+        if any(not isinstance(spec[key], str) or not spec[key] for key in required if key != "bytes"):
+            raise RuntimeError("TASK_ADAPTER_SPEC_STRING_INVALID:" + domain_id)
+        if isinstance(spec["bytes"], bool) or not isinstance(spec["bytes"], int) or spec["bytes"] < 1:
+            raise RuntimeError("TASK_ADAPTER_WEIGHT_SIZE_INVALID:" + domain_id)
+        target_id = spec["target"]
+        adapter_id = spec["id"]
+        if target_id in seen_target_ids or adapter_id in seen_adapter_ids:
+            raise RuntimeError("TASK_ADAPTER_TARGET_OR_ID_COLLISION:" + domain_id)
+        seen_target_ids.add(target_id)
+        seen_adapter_ids.add(adapter_id)
+        target = targets_by_id.get(target_id)
+        if target is None or target.get("domain_id") != domain_id:
+            raise RuntimeError("TASK_ADAPTER_CANONICAL_TARGET_MISMATCH:" + domain_id + ":" + target_id)
+        module_rel = _safe_rel(spec["module"]).as_posix()
+        target_rel = _safe_rel(target.get("path", "")).as_posix()
+        if module_rel != target_rel:
+            raise RuntimeError("TASK_ADAPTER_MODULE_PATH_MISMATCH:" + domain_id)
+        entry_rel = _safe_rel(spec["entry"]).as_posix()
+        entry_path = runtime.joinpath(*PurePosixPath(entry_rel).parts)
+        if entry_path.is_symlink() or not entry_path.is_file() or not entry_path.resolve().is_relative_to(runtime):
+            raise RuntimeError("TASK_ADAPTER_ENTRYPOINT_MISSING_OR_UNSAFE:" + adapter_id)
+        weight_rel = _safe_rel(spec["weight"]).as_posix()
+        weight_rows = [row for row in artifacts if isinstance(row, dict) and row.get("path") == weight_rel]
+        if len(weight_rows) != 1:
+            raise RuntimeError("TASK_ADAPTER_WEIGHT_MANIFEST_ENTRY_COUNT:" + domain_id)
+        weight_row = weight_rows[0]
+        if weight_row.get("sha256") != spec["sha"] or weight_row.get("bytes") != spec["bytes"]:
+            raise RuntimeError("TASK_ADAPTER_WEIGHT_PIN_MISMATCH:" + domain_id)
+
+        output[target_id] = {
+            "status": "REGISTERED_SYNTHETIC_SCOPE_ONLY",
+            "domain_id": domain_id,
+            "adapter_id": adapter_id,
+            "operation": spec["op"],
+            "entrypoint": entry_rel,
+            "adapter_source_sha256": _sha(adapter_source),
+            "weight_manifest_sha256": manifest_sha,
+            "weight_path": weight_rel,
+            "weight_sha256": spec["sha"],
+            "weight_bytes": spec["bytes"],
+            "test_scope": "SYNTHETIC_FIXTURES_ONLY",
+            "native_smoke": "REQUIRED",
+            "reference_quality_equivalence": "NOT_ESTABLISHED",
+            "certification": "NOT_GRANTED",
+        }
+    return output
 
 
 def register_architecture_binding(repo_root: str | Path, runtime_root: str | Path, document_path: str | Path) -> dict:
@@ -123,6 +241,7 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         binding_path.write_bytes(binding_bytes)
     else:
         binding_path.write_bytes(binding_bytes)
+    consumer_adapters = _registered_consumer_adapters(runtime, targets)
     target_modules = []
     for target in targets:
         relative = _safe_rel(target["path"])
@@ -141,8 +260,14 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
             "engine_ids": target.get("engine_ids", []),
             "source_identity": {"path": "Louksna1.md", "protected_prefix_sha256": source_sha, "protected_prefix_bytes": len(source_bytes), "companion_sha256": doc_sha},
             "tree_integrity": {"file_count_excluding_module_descriptors": len(rows), "bytes_excluding_module_descriptors": sum(row["bytes"] for row in rows), "sha256": _sha(_canonical(rows))},
-            "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
-            "functional_state": "MODULE_REGISTERED_ADAPTER_AND_NATIVE_SMOKE_REQUIRED",
+            "consumer_adapter": consumer_adapters[target["id"]]["adapter_id"] if target["id"] in consumer_adapters else "NOT_REGISTERED_FOR_ALL_TASKS",
+            "consumer_adapter_registration": consumer_adapters.get(target["id"], {
+                "status": "NOT_REGISTERED",
+                "native_smoke": "REQUIRED",
+                "reference_quality_equivalence": "NOT_ESTABLISHED",
+                "certification": "NOT_GRANTED"
+            }),
+            "functional_state": "SYNTHETIC_ADAPTER_REGISTERED_NATIVE_SMOKE_AND_QUALITY_BASELINE_REQUIRED" if target["id"] in consumer_adapters else "MODULE_REGISTERED_ADAPTER_AND_NATIVE_SMOKE_REQUIRED",
             "lifecycle_state": "MATERIALIZED_OR_SOURCE_DIRECTORY_REGISTERED",
             "certification": "NOT_GRANTED"
         }
@@ -167,12 +292,24 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
             "target_id": target["id"], "domain_id": target["domain_id"], "path": target["path"],
             "manifest": manifest_path.relative_to(runtime).as_posix(), "manifest_sha256": _sha(manifest_path.read_bytes()),
             "tree_sha256": manifest["tree_integrity"]["sha256"], "engine_ids": target.get("engine_ids", []),
-            "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS", "certification": "NOT_GRANTED"
+            "consumer_adapter": consumer_adapters[target["id"]]["adapter_id"] if target["id"] in consumer_adapters else "NOT_REGISTERED_FOR_ALL_TASKS",
+            "consumer_adapter_registration": manifest["consumer_adapter_registration"],
+            "certification": "NOT_GRANTED"
         })
     registry_path = runtime / "module_registry.json"
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
     registry["canonical_target_module_count"] = len(target_modules)
     registry["target_modules"] = target_modules
+    registry["consumer_adapter_registration_summary"] = {
+        "canonical_target_count": len(target_modules),
+        "synthetic_scope_registered_target_count": len(consumer_adapters),
+        "unregistered_target_count": len(target_modules) - len(consumer_adapters),
+        "all_21_target_task_adapters": "NOT_ESTABLISHED",
+        "synthetic_execution_only": True,
+        "native_smoke": "REQUIRED",
+        "reference_quality_equivalence": "NOT_ESTABLISHED",
+        "certification": "NOT_GRANTED"
+    }
     registry["axiom_interdisciplinary_binding"] = {
         "path": binding_path.relative_to(runtime).as_posix(), "sha256": _sha(binding_path.read_bytes()),
         "target_id": multi["id"], "protected_architecture_sha256": source_sha,
@@ -185,6 +322,14 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
     routing["materialization"]["axiom_interdisciplinary_binding"] = binding_path.relative_to(runtime).as_posix()
     routing["materialization"]["axiom_interdisciplinary_binding_sha256"] = _sha(binding_path.read_bytes())
     routing["materialization"]["axiom_source_state"] = "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
+    routing["materialization"]["consumer_adapter_registration"] = {
+        "synthetic_scope_registered_target_count": len(consumer_adapters),
+        "unregistered_target_count": len(target_modules) - len(consumer_adapters),
+        "all_21_target_task_adapters": "NOT_ESTABLISHED",
+        "native_smoke": "REQUIRED",
+        "reference_quality_equivalence": "NOT_ESTABLISHED",
+        "certification": "NOT_GRANTED"
+    }
     routing_path.write_text(json.dumps(routing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return {
         "target_module_count": len(target_modules), "target_modules": target_modules,
@@ -192,5 +337,8 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         "binding_sha256": _sha(binding_path.read_bytes()), "protected_source_sha256": source_sha,
         "companion_document_sha256": doc_sha, "declared_materialized_axioms": 11757,
         "declared_historical_gaps": 657, "block_count": 134, "framework_count": 18,
-        "state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
+        "state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING",
+        "synthetic_scope_registered_target_count": len(consumer_adapters),
+        "unregistered_target_count": len(target_modules) - len(consumer_adapters),
+        "global_certification": "NOT_GRANTED"
     }
