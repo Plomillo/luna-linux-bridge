@@ -9,8 +9,8 @@
       "label": "GPT-OSS compactado",
       "domain_id": "1_CEREBRO",
       "path": "1. Cerebro/model.safetensors",
-      "bytes": 40489120,
-      "sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0",
+      "bytes": 58391640,
+      "sha256": "ad52cce29b454bb2d8df39cd062fcc94a7c55aefc4f718f4a41af6d67224ee8f",
       "representation": "GPT-OSS rank-1 INT8 factors",
       "presence": "VERIFIED",
       "integrity_at_manifest_creation": "SHA256_STREAMED"
@@ -20,8 +20,8 @@
       "label": "Whisper compactado",
       "domain_id": "3_TRANSCRIPCION",
       "path": "3. Transcripción/model.safetensors",
-      "bytes": 10399882,
-      "sha256": "67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f",
+      "bytes": 17918086,
+      "sha256": "200d88cf86fc85c427eeebb09fe8be489f26ba1627a7954b545ba3d547d7768a",
       "representation": "Whisper low-rank INT8 factors",
       "presence": "VERIFIED",
       "integrity_at_manifest_creation": "SHA256_STREAMED"
@@ -31,8 +31,8 @@
       "label": "SeamlessM4T v2 compactado",
       "domain_id": "4_TRADUCTOR_INTELIGENTE",
       "path": "4. Traductor Inteligente/Traducción general/model.safetensors",
-      "bytes": 11720882,
-      "sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f",
+      "bytes": 14765381,
+      "sha256": "2024c96da5476a217296c79046282c1d76b52216e002243e01c0bf89e139973a",
       "representation": "SeamlessM4T v2 low-rank INT8 factors",
       "presence": "VERIFIED",
       "integrity_at_manifest_creation": "SHA256_STREAMED"
@@ -53,8 +53,8 @@
       "label": "Qwen3 compactado",
       "domain_id": "6_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
-      "bytes": 14956240,
-      "sha256": "01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56",
+      "bytes": 28687808,
+      "sha256": "024bfb663ec29dcb45ad4c21f37bf316b8a660e758c332df820122bef1d557f8",
       "representation": "Qwen3 low-rank INT8 factors",
       "presence": "VERIFIED",
       "integrity_at_manifest_creation": "SHA256_STREAMED"
@@ -71,7 +71,7 @@
       "integrity_at_manifest_creation": "SHA256_STREAMED"
     }
   ],
-  "total_weight_bytes": 201565505,
+  "total_weight_bytes": 243762296,
   "total_weight_decimal_mb": 380.561,
   "scope_note": "All six declared model/weight payloads in this compact candidate. Presence and per-file SHA-256 are covered; these checks do not establish model quality, semantic equivalence, complete dependency closure, or functional certification.",
   "weight_presence_integrity": "REQUIRES_RUNTIME_AUDIT",

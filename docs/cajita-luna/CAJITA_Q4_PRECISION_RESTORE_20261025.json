@@ -1,0 +1,71 @@
+{
+  "schema": "CAJITA_Q4_PRECISION_RESTORE/1.0",
+  "status": "RESTORED_FROM_EXACT_HISTORICAL_MODEL_OBJECTS_PENDING_G23_G24",
+  "source_commit": "a57fc224ebe8f3ec3fba69f6b07716aa9fe8aedf",
+  "source_history": {
+    "cerebro_whisper_commit": "fb8e6fcf9a8ec31d151191f0c6e90b51e77505fb",
+    "seamless_qwen_commit": "78824309b22f249faf7a53b70a790a25b939722b",
+    "manifest_blob_sha1": "a85ad144d0806f78d8883a41d41d575c5311b6a0"
+  },
+  "operation": "RESTORE_HIGHER_PRECISION_Q4_PACKING_OF_THE_SAME_LOW_RANK_FACTOR_WEIGHTS",
+  "engine_replacement": false,
+  "canonical_model_id_mutation": false,
+  "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023",
+  "weights": [
+    {
+      "engine": "E01_LLM",
+      "domain": "D01_CEREBRO",
+      "path": "cajita-luna-runtime/1. Cerebro/model.safetensors",
+      "old_q2_bytes": 40489120,
+      "old_q2_sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0",
+      "restored_q4_bytes": 58391640,
+      "restored_q4_sha256": "ad52cce29b454bb2d8df39cd062fcc94a7c55aefc4f718f4a41af6d67224ee8f",
+      "git_lfs_pointer_blob": "d35ee429e4efa0b1c6d85c2312e73fa86842eb2c"
+    },
+    {
+      "engine": "E02_NLP",
+      "domain": "D03_TRANSCRIPCION",
+      "path": "cajita-luna-runtime/3. Transcripción/model.safetensors",
+      "old_q2_bytes": 10399882,
+      "old_q2_sha256": "67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f",
+      "restored_q4_bytes": 17918086,
+      "restored_q4_sha256": "200d88cf86fc85c427eeebb09fe8be489f26ba1627a7954b545ba3d547d7768a",
+      "git_lfs_pointer_blob": "2ad29010b40f11dce4b47cf68075f3d559629437"
+    },
+    {
+      "engine": "E01_LLM",
+      "domain": "D04_TRADUCTOR_INTELIGENTE",
+      "path": "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors",
+      "old_q2_bytes": 11720882,
+      "old_q2_sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f",
+      "restored_q4_bytes": 14765381,
+      "restored_q4_sha256": "2024c96da5476a217296c79046282c1d76b52216e002243e01c0bf89e139973a",
+      "git_lfs_pointer_blob": "37041c98eb80ee20801a1d5ef89ba104aa9565eb"
+    },
+    {
+      "engine": "E01_LLM",
+      "domain": "D06_SISTEMA_INTELIGENTE",
+      "path": "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+      "old_q2_bytes": 14956240,
+      "old_q2_sha256": "01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56",
+      "restored_q4_bytes": 28687808,
+      "restored_q4_sha256": "024bfb663ec29dcb45ad4c21f37bf316b8a660e758c332df820122bef1d557f8",
+      "git_lfs_pointer_blob": "1d4c7b8ee02f94dbdb4d8922942412bd02133841"
+    }
+  ],
+  "total_old_bytes": 77576124,
+  "total_restored_bytes": 119762915,
+  "delta_bytes": 42196791,
+  "budgets": {
+    "cajita_macrodown_max_bytes": 470000000,
+    "louksnapg_max_bytes": 490000000
+  },
+  "validation": {
+    "manifest_and_sidecar_hashes_restored_from_history": true,
+    "source_pointer_objects_reused_without_reencoding": true,
+    "semantic_quality_equivalence": "NOT_ESTABLISHED_PENDING_G24",
+    "G23": "PENDING",
+    "G24": "PENDING",
+    "global_certification": "NOT_GRANTED"
+  }
+}
