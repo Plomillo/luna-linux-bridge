@@ -73,7 +73,7 @@ class CanonicalConsumerAdapterRegistrationTests(unittest.TestCase):
             module = runtime / "1. Cerebro"
             module.mkdir()
             entry = module / "adapter_entry.py"
-            entry.write_text("# exact entrypoint\\n", encoding="utf-8")
+            entry.write_text("# exact entrypoint\n", encoding="utf-8")
             weight = module / "model.safetensors"
             weight_bytes = b"test-weight-payload"
             weight.write_bytes(weight_bytes)
@@ -88,18 +88,18 @@ class CanonicalConsumerAdapterRegistrationTests(unittest.TestCase):
             }
             weight_root = runtime / "CAJITA_RUNTIME_V1"
             weight_root.mkdir()
-            encoded_weight_manifest = (json.dumps(weight_manifest, sort_keys=True) + "\\n").encode("utf-8")
+            encoded_weight_manifest = (json.dumps(weight_manifest, sort_keys=True) + "\n").encode("utf-8")
             (weight_root / "weights_manifest.json").write_bytes(encoded_weight_manifest)
             manifest_sha = hashlib.sha256(encoded_weight_manifest).hexdigest()
             adapter_source = (
-                "MANIFEST_SHA = " + repr(manifest_sha) + "\\n"
-                "CANDIDATE_ID = 'CAJITA_TEST_CANDIDATE'\\n"
+                "MANIFEST_SHA = " + repr(manifest_sha) + "\n"
+                "CANDIDATE_ID = 'CAJITA_TEST_CANDIDATE'\n"
                 "ADAPTERS = {'D01_CEREBRO': {'target': 'D01_CEREBRO_ROOT', "
                 "'id': 'CAJITA_TEST_TEXT/1.0', 'op': 'generate_text', "
                 "'entry': '1. Cerebro/adapter_entry.py', 'module': '1. Cerebro', "
                 "'weight': '1. Cerebro/model.safetensors', "
                 "'sha': " + repr(hashlib.sha256(weight_bytes).hexdigest()) + ", "
-                "'bytes': " + str(len(weight_bytes)) + "}}\\n"
+                "'bytes': " + str(len(weight_bytes)) + "}}\n"
             )
             (runtime / "cajita_task_adapters.py").write_text(adapter_source, encoding="utf-8")
             target = {"id": "D01_CEREBRO_ROOT", "domain_id": "D01_CEREBRO", "path": "1. Cerebro"}
@@ -118,7 +118,7 @@ class CanonicalConsumerAdapterRegistrationTests(unittest.TestCase):
             runtime = Path(temporary)
             module = runtime / "1. Cerebro"
             module.mkdir()
-            (module / "adapter_entry.py").write_text("# entry\\n", encoding="utf-8")
+            (module / "adapter_entry.py").write_text("# entry\n", encoding="utf-8")
             weight_bytes = b"weight"
             (module / "model.safetensors").write_bytes(weight_bytes)
             weight_manifest = {
@@ -132,16 +132,16 @@ class CanonicalConsumerAdapterRegistrationTests(unittest.TestCase):
             }
             weight_root = runtime / "CAJITA_RUNTIME_V1"
             weight_root.mkdir()
-            encoded = (json.dumps(weight_manifest, sort_keys=True) + "\\n").encode("utf-8")
+            encoded = (json.dumps(weight_manifest, sort_keys=True) + "\n").encode("utf-8")
             (weight_root / "weights_manifest.json").write_bytes(encoded)
             adapter_source = (
-                "MANIFEST_SHA = " + repr(hashlib.sha256(encoded).hexdigest()) + "\\n"
-                "CANDIDATE_ID = 'CAJITA_TEST_CANDIDATE'\\n"
+                "MANIFEST_SHA = " + repr(hashlib.sha256(encoded).hexdigest()) + "\n"
+                "CANDIDATE_ID = 'CAJITA_TEST_CANDIDATE'\n"
                 "ADAPTERS = {'D01_CEREBRO': {'target': 'D99_UNKNOWN', 'id': 'A/1.0', "
                 "'op': 'generate_text', 'entry': '1. Cerebro/adapter_entry.py', "
                 "'module': '1. Cerebro', 'weight': '1. Cerebro/model.safetensors', "
                 "'sha': " + repr(hashlib.sha256(weight_bytes).hexdigest()) + ", "
-                "'bytes': " + str(len(weight_bytes)) + "}}\\n"
+                "'bytes': " + str(len(weight_bytes)) + "}}\n"
             )
             (runtime / "cajita_task_adapters.py").write_text(adapter_source, encoding="utf-8")
             with self.assertRaisesRegex(RuntimeError, "TASK_ADAPTER_CANONICAL_TARGET_MISMATCH"):
