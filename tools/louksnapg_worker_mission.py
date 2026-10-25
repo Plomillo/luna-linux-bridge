@@ -122,7 +122,7 @@ def main(argv=None) -> int:
     parser.add_argument("--source-architecture", type=Path, required=True)
     parser.add_argument("--cajita-doc", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--max-bytes", type=int, default=470000000)
+    parser.add_argument("--max-bytes", type=int, default=490000000
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args(argv)
 
