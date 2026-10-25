@@ -167,7 +167,7 @@ class CanonicalRuntimeEngineScopeRegistrationTests(unittest.TestCase):
                 "'module':'6. Sistema Inteligente/Consola',"
                 "'entry':'qjs','required_files':['qjs'],"
                 "'engine':'QUICKJS','scope':'FIXED_EXPRESSION_KNOWN_ANSWER_NO_USER_CODE'"
-                "}}\\n"
+                ""}\n"
             )
             (runtime / "cajita_target_adapters.py").write_text(adapter_source, encoding="utf-8")
             targets = [{
@@ -201,7 +201,7 @@ class CanonicalRuntimeEngineScopeRegistrationTests(unittest.TestCase):
                 "'module':'6. Sistema Inteligente/Consola',"
                 "'entry':'qjs','required_files':['qjs','missing-file'],"
                 "'engine':'QUICKJS','scope':'FIXED_EXPRESSION_KNOWN_ANSWER_NO_USER_CODE'"
-                "}}\\n"
+                ""}\n"
             )
             (runtime / "cajita_target_adapters.py").write_text(adapter_source, encoding="utf-8")
             with self.assertRaisesRegex(RuntimeError, "RUNTIME_TARGET_ADAPTER_REQUIRED_FILE_MISSING_OR_UNSAFE"):
