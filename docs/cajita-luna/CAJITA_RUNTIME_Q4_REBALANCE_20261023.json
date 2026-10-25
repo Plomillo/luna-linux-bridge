@@ -174,9 +174,9 @@
     }
   },
   "weights_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
-  "runtime_bytes_after": 446912338,
+  "runtime_bytes_after": 446913973,
   "runtime_file_count_after": 17229,
-  "saved_bytes": 400471451,
+  "saved_bytes": 400469816,
   "bytes_over_cap": 0,
   "size_gate": "PASS",
   "quantized_factor_models_promoted": 0,
@@ -201,9 +201,9 @@
   "externalized_asset_reconstruction": "PASS_CONTAINER_RECONSTRUCTION_ONLY; CONSUMER_ADAPTERS_NOT_ESTABLISHED",
   "registered_asset_count": 10,
   "distribution_archive_evidence_path": "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json",
-  "distribution_archive_bytes": 370862386,
-  "distribution_archive_bytes_under_cap": 99137614,
-  "distribution_archive_sha256": "bd5371dc67500c954c9479dfe8f53fcdf7aadb751393029fe1efec55a86bacce",
+  "distribution_archive_bytes": 370862660,
+  "distribution_archive_bytes_under_cap": 99137340,
+  "distribution_archive_sha256": "2a2c25030f397574ce276beff3083cb95cc08dd35a10c3e44eb65a82ab6bdc6f",
   "distribution_archive_rebuildable": true,
-  "source_commit": "e5a421a6d8d7ccd35d8e3c77fed91f2d6bdd2558"
+  "source_commit": "8e2a7b773f318e55c5029d3aa4384d9ce71a24c0"
 }
