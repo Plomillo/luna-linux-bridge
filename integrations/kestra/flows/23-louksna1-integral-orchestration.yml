@@ -1,0 +1,55 @@
+id: louksna1_integral_orchestration
+namespace: louksna.kestra
+description: >-
+  Kestra orchestrates the integral decision. It does not manufacture evidence
+  and it does not accept CUSTOSZ self-certification. The independent validator
+  must already have re-executed the mission and published one decision for the
+  same candidate. This flow grants nothing unless that decision is GRANTED.
+tasks:
+  - id: decision
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/docs/cajita-luna/LOUKSNA1_INTEGRAL_DECISION.json?ref=main&cache_bust={{ execution.id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
+  - id: gate
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ outputs.decision.code == 200
+         and fromJson(outputs.decision.body).global_certification == 'GRANTED'
+         and fromJson(outputs.decision.body).decision == 'GRANTED'
+         and fromJson(outputs.decision.body).authority == 'INDEPENDENT_VALIDATOR_NOT_SELF_CERTIFICATION'
+         and fromJson(outputs.decision.body).worker.certification == 'NOT_GRANTED'
+         and fromJson(outputs.decision.body).worker.worker == 'CUSTOSZV9'
+         and fromJson(outputs.decision.body).target_adapter_registration.canonical_target_count == 21
+         and fromJson(outputs.decision.body).target_adapter_registration.all_21_target_task_adapters == 'ESTABLISHED'
+         and fromJson(outputs.decision.body).semantic_gates.model_quality_equivalence == 'ESTABLISHED'
+         and fromJson(outputs.decision.body).semantic_gates.axiom_proposition_validity == 'ESTABLISHED'
+         and fromJson(outputs.decision.body).semantic_gates.semantic_consistency == 'ESTABLISHED'
+         and fromJson(outputs.decision.body).semantic_gates.full_integrated_runtime_behaviour == 'ESTABLISHED'
+         and fromJson(outputs.decision.body).gates.identity.status == 'PASS'
+         and fromJson(outputs.decision.body).gates.coverage_21.status == 'PASS'
+         and fromJson(outputs.decision.body).gates.semantic_quality.status == 'PASS'
+         and fromJson(outputs.decision.body).gates.axiom_semantics.status == 'PASS'
+         and fromJson(outputs.decision.body).gates.host_resources.status == 'PASS'
+         and fromJson(outputs.decision.body).gates.rollback.status == 'PASS'
+         and fromJson(outputs.decision.body).gates.provenance.status == 'PASS'
+         and fromJson(outputs.decision.body).gates.independence.status == 'PASS'
+         and fromJson(outputs.decision.body).gates.baseline_integrity.status == 'PASS' }}
+    then:
+      - id: record_grant
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNA1_INTEGRAL_CERTIFICATION=GRANTED
+          producer_commit={{ fromJson(outputs.decision.body).producer_commit }}
+          execution={{ execution.id }}
+    else:
+      - id: fail_closed
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNA1_INTEGRAL_DECISION=NOT_GRANTED. A green size gate, a structural
+          graph audit, or a CUSTOSZ self-test cannot be promoted to an integral
+          certificate.

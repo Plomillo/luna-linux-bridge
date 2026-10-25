@@ -1,0 +1,46 @@
+name: Louksna1 integral execution
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker-and-independent-validator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Fetch pinned CUSTOSZ V9 worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          REF='refs/heads/artifacts/custoszv9-b09353cbfff4efddfdec0cf853ae9658055fad2d'
+          git fetch origin "+$REF:refs/remotes/origin/custoszv9-v9"
+          git show refs/remotes/origin/custoszv9-v9:dist/CUSTOSZV9.pyz > "$RUNNER_TEMP/CUSTOSZV9.pyz"
+          echo "d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817  $RUNNER_TEMP/CUSTOSZV9.pyz" | sha256sum -c -
+
+      - name: Fail closed unless the independent validator grants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest tests/test_louksna1_integral_mission.py -v
+          python3 tools/louksna1_integral_mission.py \
+            --repo . \
+            --custosz "$RUNNER_TEMP/CUSTOSZV9.pyz" \
+            --output "$RUNNER_TEMP/LOUKSNA1_INTEGRAL_DECISION.json"
+
+      - name: Upload decision evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: louksna1-integral-decision
+          path: ${{ runner.temp }}/LOUKSNA1_INTEGRAL_DECISION.json
+          if-no-files-found: warn
+          retention-days: 90

@@ -15,7 +15,7 @@ on:
       - ".github/workflows/louksna1-integral-certification.yml"
   workflow_dispatch:
   workflow_run:
-    workflows: ["Cajita V10 materialization and Louksna1 governed factory"]
+    workflows: ["Cajita V9 materialization and Louksna1 governed factory"]
     types: [completed]
     branches: [main]
 

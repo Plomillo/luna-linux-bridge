@@ -14,7 +14,7 @@ on:
       - "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json"
       - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
   workflow_run:
-    workflows: ["Cajita V10 materialization and Louksna1 governed factory"]
+    workflows: ["Cajita V9 materialization and Louksna1 governed factory"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
