@@ -257,14 +257,24 @@ def quantize_onnx():
    result["attempts"].append({"method":"ONNX_DYNAMIC_INT8","status":"CANDIDATE_BUILD_FAILED",
                               "error":type(exc).__name__+":"+str(exc)[:1200]})
   fp16=tmp/"candidate.float16.onnx"
-  try:
-   from onnxconverter_common import float16 as onnx_float16
-   model_fp16=onnx_float16.convert_float_to_float16(source_model,keep_io_types=True,disable_shape_infer=True)
-   onnx.save_model(model_fp16,str(fp16))
-   candidates.append({"method":"ONNX_FLOAT16_CONVERSION","path":fp16})
-  except Exception as exc:
-   result["attempts"].append({"method":"ONNX_FLOAT16_CONVERSION","status":"CANDIDATE_BUILD_FAILED",
-                              "error":type(exc).__name__+":"+str(exc)[:1500]})
+  # ONNX Runtime rejects FP16 DequantizeLinear scales in this candidate graph.
+  # Do not repeatedly build a candidate already known to violate the runtime type
+  # contract; keep dynamic INT8 as the independently checked candidate path.
+  if op_counts.get("DequantizeLinear", 0):
+   result["attempts"].append({
+    "method":"ONNX_FLOAT16_CONVERSION",
+    "status":"SKIPPED_KNOWN_RUNTIME_TYPE_INCOMPATIBILITY",
+    "reason":"GRAPH_CONTAINS_DEQUANTIZELINEAR; FP16 conversion can produce invalid float16 scale inputs"
+   })
+  else:
+   try:
+    from onnxconverter_common import float16 as onnx_float16
+    model_fp16=onnx_float16.convert_float_to_float16(source_model,keep_io_types=True,disable_shape_infer=True)
+    onnx.save_model(model_fp16,str(fp16))
+    candidates.append({"method":"ONNX_FLOAT16_CONVERSION","path":fp16})
+   except Exception as exc:
+    result["attempts"].append({"method":"ONNX_FLOAT16_CONVERSION","status":"CANDIDATE_BUILD_FAILED",
+                               "error":type(exc).__name__+":"+str(exc)[:1500]})
   for candidate in candidates:
    cp=candidate["path"]; method=candidate["method"]
    attempt={"method":method,"candidate_bytes":cp.stat().st_size,"candidate_sha256":sha256(cp)}
