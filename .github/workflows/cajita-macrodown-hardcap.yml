@@ -222,7 +222,8 @@ jobs:
               "raw_payload_target_bytes": raw_payload_target,
               "raw_payload_target_gate": "PENDING_REMEASUREMENT",
               "archive_cap_bytes": archive_cap,
-              "archive_size_gate": "PENDING_FINAL_ZIP_BUILD",
+              "archive_size_gate": "DEFERRED_TO_EXTERNAL_MACRODOWN_BUILD_AUDIT",
+              "archive_size_evidence_path": "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json",
               "registered_asset_count": len(assets),
               "registered_asset_ids": [x["id"] for x in assets],
               "q2_factor_models_promoted": int(report.get("q2_factor_models_promoted", 0)),
@@ -339,6 +340,7 @@ jobs:
           report["raw_bytes_over_target"] = max(0, measured - raw_payload_target)
           report["distribution_archive_cap_bytes"] = archive_cap
           report["distribution_archive_gate"] = "PENDING_FINAL_ZIP_BUILD"
+          report["distribution_archive_evidence_path"] = "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json"
           report["placement_size_gate_recorded"] = True
           report["runtime_measurement_scope"] = "REPRODUCIBLE_DISTRIBUTION_PAYLOAD; RAW INPUT CEILING IS 1.5 GB; 470 MB IS AN ARCHIVE TARGET, NOT THE PRE-COMPRESSION SUM"
           report["externalized_asset_reconstruction"] = "PASS_CONTAINER_RECONSTRUCTION_ONLY; CONSUMER_ADAPTERS_NOT_ESTABLISHED"
@@ -399,12 +401,25 @@ jobs:
           if int(placement["runtime_size_gate"]["registered_asset_count"]) != 10:
               raise SystemExit("TEN_REGISTERED_ASSETS_NOT_PRESERVED")
 
+          # Final ZIP evidence is kept outside the packaged runtime. Bind the
+          # Q4 report to the exact archive result so it cannot remain marked
+          # pending after the final archive gate passed.
+          raw_report["distribution_archive_cap_bytes"] = archive_cap
+          raw_report["distribution_archive_bytes"] = int(result["archive_bytes"])
+          raw_report["distribution_archive_bytes_under_cap"] = max(0, archive_cap - int(result["archive_bytes"]))
+          raw_report["distribution_archive_sha256"] = result["sha256"]
+          raw_report["distribution_archive_rebuildable"] = bool(result["rebuildable"])
+          raw_report["distribution_archive_gate"] = "PASS"
+          raw_report["status"] = "RAW_INPUT_AND_ARCHIVE_GATES_PASS"
+          raw_report["source_commit"] = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          raw_report_path.write_text(json.dumps(raw_report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           record = {
               "schema": "CAJITA_MACRODOWN_BUILD_AUDIT/1.0",
               "audit_id": "CAJITA_MACRODOWN_BUILD_20261023",
               "created_at_utc": datetime.now(timezone.utc).isoformat(),
               "repository": "Plomillo/luna-linux-bridge",
               "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+              "q4_size_report_sha256": hashlib.sha256(raw_report_path.read_bytes()).hexdigest(),
               "format": "deterministic ZIP container with .macrodown extension",
               "runtime_payload_bytes_excluding_generated_manifest": int(raw_report["runtime_bytes_after"]),
               "gross_raw_payload_bytes_including_manifest": int(result["gross_raw_payload_bytes"]),
@@ -616,10 +631,16 @@ jobs:
               "registered_assets":p["runtime_size_gate"]["registered_asset_count"],
               "certification":b["certification"]
           },indent=2))
-          if r["size_gate"]!="PASS" or b["build_status"]!="PASS" or b["archive_size_gate"]!="PASS":
+          if r["size_gate"]!="PASS" or b["build_status"]!="PASS" or b["archive_size_gate"]!="PASS" or r.get("distribution_archive_gate")!="PASS":
               raise SystemExit("CAJITA_FINAL_HARD_GATE_FAIL")
           if int(r["runtime_bytes_after"])>raw_input_ceiling or int(b["gross_raw_payload_bytes_including_manifest"])>raw_input_ceiling or int(b["archive_bytes"])>archive_cap:
               raise SystemExit("CAJITA_FINAL_BYTE_LIMIT_EXCEEDED")
+          if int(r.get("distribution_archive_bytes",-1)) != int(b["archive_bytes"]):
+              raise SystemExit("CAJITA_Q4_ARCHIVE_BYTE_EVIDENCE_MISMATCH")
+          if r.get("distribution_archive_sha256") != b.get("archive_sha256"):
+              raise SystemExit("CAJITA_Q4_ARCHIVE_SHA256_EVIDENCE_MISMATCH")
+          if not r.get("distribution_archive_rebuildable"):
+              raise SystemExit("CAJITA_Q4_ARCHIVE_REBUILDABILITY_EVIDENCE_MISSING")
           if int(p["runtime_size_gate"]["registered_asset_count"])!=10:
               raise SystemExit("CAJITA_REGISTERED_ASSET_COUNT_MISMATCH")
           PY
