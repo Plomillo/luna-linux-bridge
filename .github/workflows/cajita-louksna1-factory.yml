@@ -23,6 +23,10 @@ on:
       - "tests/test_cajita_task_e2e.py"
       - "tools/cajita_axiom_graph_audit.py"
       - "tests/test_cajita_axiom_graph_audit.py"
+      - "tools/louksnapg_bundle.py"
+      - "tools/louksnapg_independent_validator.py"
+      - "tests/test_louksnapg_bundle.py"
+      - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
       - "cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py"
       - "cajita-luna-runtime/3. Transcripción/lowrank_runtime.py"
       - "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/lowrank_runtime.py"
@@ -268,6 +272,53 @@ jobs:
           echo "source_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           exit "$RC"
 
+      - name: Build and independently verify the single-file LOUKSNAPG product
+        shell: bash
+        env:
+          PYTHONPATH: tools:scripts:cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          test -s out/Louksna1.md
+          test -s out/CAJITA_LUNA_RUNTIME_V10.macrodown
+          test -s out/stage/cajita-luna-runtime/CajitadeLuna.md
+          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py
+          python -m unittest discover -s tests -p 'test_louksnapg*.py' -v
+          python tools/louksnapg_bundle.py \
+            --document out/Louksna1.md \
+            --runtime out/CAJITA_LUNA_RUNTIME_V10.macrodown \
+            --source-architecture LOUKSNAMEJORADA.md \
+            --cajita-doc out/stage/cajita-luna-runtime/CajitadeLuna.md \
+            --output out/LOUKSNAPG.md \
+            --max-bytes 470000000
+          python tools/louksnapg_independent_validator.py \
+            --bundle out/LOUKSNAPG.md \
+            --max-bytes 470000000 \
+            --expected-source-commit "$GITHUB_SHA" \
+            --report out/LOUKSNAPG_INDEPENDENT_VALIDATION.json
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          bundle = Path("out/LOUKSNAPG.md")
+          report = json.loads(Path("out/LOUKSNAPG_BUILD_REPORT.json").read_text())
+          independent = json.loads(Path("out/LOUKSNAPG_INDEPENDENT_VALIDATION.json").read_text())
+          assert report["bundle_bytes"] == bundle.stat().st_size
+          assert report["bundle_bytes"] <= 470000000
+          assert report["source_commit"] == os.environ["GITHUB_SHA"]
+          assert independent["source_commit"] == os.environ["GITHUB_SHA"]
+          assert independent["container_integrity"] == "PASS"
+          assert independent["runtime_member_integrity"] == "PASS"
+          assert independent["single_distribution_container"] == "PASS"
+          assert independent["global_certification"] == "NOT_GRANTED"
+          print(json.dumps({
+              "artifact": bundle.name,
+              "bytes": bundle.stat().st_size,
+              "sha256": hashlib.sha256(bundle.read_bytes()).hexdigest(),
+              "source_commit": os.environ["GITHUB_SHA"],
+              "independent_integrity": "PASS",
+              "functional_certification": "NOT_GRANTED_PENDING_21_TARGET_AND_SEMANTIC_GATES"
+          }, indent=2))
+          PY
+
       - name: Upload exact candidate and factory report
         if: always()
         uses: actions/upload-artifact@v4
@@ -280,6 +331,9 @@ jobs:
             out/LOUKSNA1_RELEASE_MANIFEST.json
             out/factory-report.json
             out/CUSTOSZV9_EVIDENCE.json
+            out/LOUKSNAPG.md
+            out/LOUKSNAPG_BUILD_REPORT.json
+            out/LOUKSNAPG_INDEPENDENT_VALIDATION.json
           if-no-files-found: warn
           retention-days: 90
 
