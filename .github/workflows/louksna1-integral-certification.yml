@@ -101,11 +101,45 @@ jobs:
         run: |
           set -euo pipefail
           report="out/louksna1-integral-certification/LOUKSNA1_INTEGRAL_CERTIFICATION_ASSESSMENT.json"
+          target="docs/cajita-luna/LOUKSNA1_INTEGRAL_CERTIFICATION_ASSESSMENT.json"
           test -s "$report"
           mkdir -p docs/cajita-luna
-          cp "$report" docs/cajita-luna/LOUKSNA1_INTEGRAL_CERTIFICATION_ASSESSMENT.json
+          # A fresh timestamp must not create a new commit when all source-bound
+          # assessment evidence is unchanged; concurrent workflows otherwise race
+          # while rewriting this same report on main.
+          if [ -e "$target" ]; then
+            if [ -L "$target" ] || [ ! -f "$target" ]; then
+              echo "ASSESSMENT_TARGET_NOT_REGULAR_FILE_FAIL_CLOSED" >&2
+              exit 1
+            fi
+            set +e
+            python - "$report" "$target" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          try:
+              incoming = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+              existing = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
+          except Exception as exc:
+              print("ASSESSMENT_JSON_COMPARISON_INVALID:" + type(exc).__name__, file=sys.stderr)
+              sys.exit(2)
+          incoming.pop("generated_at_utc", None)
+          existing.pop("generated_at_utc", None)
+          sys.exit(0 if incoming == existing else 1)
+          PY
+            compare_rc=$?
+            set -e
+            if [ "$compare_rc" -eq 0 ]; then
+              echo "ASSESSMENT_EVIDENCE_UNCHANGED_SUBSTANTIVE_FIELDS"
+              exit 0
+            elif [ "$compare_rc" -ne 1 ]; then
+              echo "ASSESSMENT_COMPARISON_INVALID_FAIL_CLOSED" >&2
+              exit "$compare_rc"
+            fi
+          fi
+          cp "$report" "$target"
           git diff --check
-          git add docs/cajita-luna/LOUKSNA1_INTEGRAL_CERTIFICATION_ASSESSMENT.json
+          git add "$target"
           if git diff --cached --quiet; then
             echo "ASSESSMENT_EVIDENCE_UNCHANGED"
           else
