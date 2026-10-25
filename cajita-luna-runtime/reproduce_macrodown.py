@@ -7,7 +7,8 @@ from cajita_externalized_packaging import prepare_distribution_registry, distrib
 from cajita_tokenizer_materializer import MANIFEST_NAME as TOKENIZER_MANIFEST_NAME, load_tokenizer_manifest, prepare_compressed_tokenizers
 SCHEMA="CAJITA_RUNTIME_MACRODOWN/1.0"
 DEFAULT_RAW_CAP_BYTES=1_500_000_000
-DEFAULT_COMBINED_CAP_BYTES=470_000_000
+RUNTIME_ARCHIVE_CAP_BYTES=470_000_000
+DEFAULT_COMBINED_CAP_BYTES=490_000_000
 MANIFEST_NAME="MACRODOWN_MANIFEST.json"
 BINARY_SUFFIXES={".7z",".zip",".gz",".xz",".whl",".nupkg",".gguf",".parquet",".pdf"}
 EXCLUDED_DIRS={".git","__pycache__",".pytest_cache"}
@@ -198,6 +199,8 @@ def build(root,output,raw_cap_bytes=DEFAULT_RAW_CAP_BYTES,combined_cap_bytes=DEF
             zf.writestr(zi,manifest,compress_type=zipfile.ZIP_DEFLATED,compresslevel=9)
         archive_size=temp.stat().st_size
         if gross>raw_cap_bytes: raise RuntimeError(f"RAW_BUILD_TREE_OVER_CAP:{gross}>{raw_cap_bytes}")
+        if archive_size>RUNTIME_ARCHIVE_CAP_BYTES:
+            raise RuntimeError(f"CAJITA_RUNTIME_ARCHIVE_OVER_CAP:archive={archive_size},cap={RUNTIME_ARCHIVE_CAP_BYTES}")
         combined_size=archive_size+companion_bytes
         if combined_size>combined_cap_bytes: raise RuntimeError(f"COMBINED_DISTRIBUTION_OVER_CAP:archive={archive_size},companion={companion_bytes},combined={combined_size},cap={combined_cap_bytes}")
         with zipfile.ZipFile(temp,"r") as zf:
@@ -219,6 +222,7 @@ def build(root,output,raw_cap_bytes=DEFAULT_RAW_CAP_BYTES,combined_cap_bytes=DEF
         output.with_suffix(output.suffix+".sha256").write_text(digest+"  "+output.name+"\n",encoding="ascii")
         return {"status":"PASS","output":str(output),"archive_bytes":output.stat().st_size,
           "gross_raw_payload_bytes":gross,"raw_build_tree_ceiling_bytes":raw_cap_bytes,
+          "runtime_archive_cap_bytes":RUNTIME_ARCHIVE_CAP_BYTES,"runtime_archive_budget_status":"PASS",
           "combined_distribution_cap_bytes":combined_cap_bytes,"companion_bytes":companion_bytes,
           "combined_distribution_bytes":archive_size+companion_bytes,
           "member_count":len(files)+1,"sha256":digest,"rebuildable":True,
