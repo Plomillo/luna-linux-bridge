@@ -165,6 +165,79 @@ jobs:
           python cajita-luna-runtime/cajita_antiparalysis.py selftest --state-dir "$RUNNER_TEMP/anti-paralysis-selftest"
           python cajita-luna-runtime/cajita_router.py selftest
 
+      - name: Verify QuickJS bytes and restore its executable mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import stat
+          from pathlib import Path
+
+          runtime = Path("cajita-luna-runtime").resolve(strict=True)
+          module = runtime / "6. Sistema Inteligente" / "Consola"
+          qjs = module / "quickjs-linux-x86_64-2026-06-04" / "qjs"
+          descriptor_path = module / "CAJITA_MODULE.json"
+          if module.is_symlink() or not module.is_dir() or not module.resolve().is_relative_to(runtime):
+              raise SystemExit("QUICKJS_MODULE_ROOT_INVALID")
+          if descriptor_path.is_symlink() or not descriptor_path.is_file():
+              raise SystemExit("QUICKJS_MODULE_DESCRIPTOR_MISSING")
+          if qjs.is_symlink() or not qjs.is_file() or not qjs.resolve().is_relative_to(module.resolve()):
+              raise SystemExit("QUICKJS_BINARY_MISSING_OR_UNSAFE")
+          descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+          expected = descriptor.get("tree_integrity", {})
+          rows = []
+          for base, dirs, names in os.walk(module, topdown=True, followlinks=False):
+              base_path = Path(base)
+              for name in dirs:
+                  child = base_path / name
+                  if child.is_symlink() or not child.resolve().is_relative_to(module.resolve()):
+                      raise SystemExit("QUICKJS_MODULE_SYMLINK_OR_PATH_ESCAPE")
+              dirs[:] = sorted(dirs)
+              for name in sorted(names):
+                  child = base_path / name
+                  if name == "CAJITA_MODULE.json":
+                      continue
+                  if child.is_symlink() or not child.is_file() or not child.resolve().is_relative_to(module.resolve()):
+                      raise SystemExit("QUICKJS_MODULE_NON_REGULAR_FILE_OR_PATH_ESCAPE")
+                  data_sha = hashlib.sha256(child.read_bytes()).hexdigest()
+                  rows.append({"path": child.relative_to(module).as_posix(), "bytes": child.stat().st_size, "sha256": data_sha})
+          rows.sort(key=lambda row: row["path"].encode("utf-8"))
+          tree_sha = hashlib.sha256(json.dumps(rows, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest()
+          total_bytes = sum(row["bytes"] for row in rows)
+          if len(rows) != expected.get("file_count_excluding_module_descriptors") or total_bytes != expected.get("bytes_excluding_module_descriptors") or tree_sha != expected.get("sha256"):
+              raise SystemExit("QUICKJS_MODULE_FROZEN_TREE_IDENTITY_MISMATCH")
+          qjs_row = [row for row in rows if row["path"] == "quickjs-linux-x86_64-2026-06-04/qjs"]
+          if len(qjs_row) != 1:
+              raise SystemExit("QUICKJS_BINARY_NOT_UNIQUELY_REGISTERED")
+          before = qjs.stat().st_mode
+          before_sha = hashlib.sha256(qjs.read_bytes()).hexdigest()
+          before_bytes = qjs.stat().st_size
+          if qjs_row[0]["sha256"] != before_sha or qjs_row[0]["bytes"] != before_bytes:
+              raise SystemExit("QUICKJS_BINARY_FROZEN_IDENTITY_MISMATCH")
+          if not before & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
+              os.chmod(qjs, stat.S_IMODE(before) | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+          after = qjs.stat().st_mode
+          after_sha = hashlib.sha256(qjs.read_bytes()).hexdigest()
+          if not after & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
+              raise SystemExit("QUICKJS_EXECUTABLE_MODE_RESTORE_FAILED")
+          if before_sha != after_sha or before_bytes != qjs.stat().st_size:
+              raise SystemExit("QUICKJS_CONTENT_CHANGED_DURING_MODE_RESTORE")
+          print(json.dumps({
+              "status": "PASS_QUICKJS_EXECUTABLE_MODE_RESTORED",
+              "path": qjs.relative_to(runtime).as_posix(),
+              "mode_before": oct(stat.S_IMODE(before)),
+              "mode_after": oct(stat.S_IMODE(after)),
+              "bytes": before_bytes,
+              "sha256": after_sha,
+              "module_tree_sha256": tree_sha,
+              "content_changed": False,
+              "certification": "NOT_GRANTED"
+          }, ensure_ascii=False, sort_keys=True))
+          PY
+
       - name: Manufacture candidate and enforce aggregate 479,000,000-byte cap
         id: factory
         shell: bash
