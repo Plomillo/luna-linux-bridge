@@ -3,6 +3,7 @@
 from __future__ import annotations
 import argparse, hashlib, json, os, shutil, stat, zipfile
 from pathlib import Path
+from cajita_externalized_packaging import prepare_distribution_registry, distribution_contract
 SCHEMA="CAJITA_RUNTIME_MACRODOWN/1.0"
 DEFAULT_RAW_CAP_BYTES=1_500_000_000
 DEFAULT_COMBINED_CAP_BYTES=479_000_000
@@ -17,11 +18,23 @@ def sha256_file(path):
         for chunk in iter(lambda:f.read(8*1024*1024),b""): h.update(chunk)
     return h.hexdigest()
 
+def _under_externalized_tree(rel, excluded_roots):
+    return any(rel == item or rel.startswith(item + "/") for item in excluded_roots)
+
 def iter_files(root,output):
     result=[]
+    contract=distribution_contract(root)
+    excluded_roots={item["expanded_relpath"] for item in contract}
     for base,dirs,names in os.walk(root,topdown=True,followlinks=False):
         bp=Path(base)
-        dirs[:]=sorted(d for d in dirs if d not in EXCLUDED_DIRS and not (bp/d).is_symlink())
+        kept=[]
+        for d in dirs:
+            directory=bp/d
+            if directory.is_symlink(): raise RuntimeError("SYMLINK_REFUSED:"+directory.relative_to(root).as_posix())
+            rel_dir=directory.relative_to(root).as_posix()
+            if d in EXCLUDED_DIRS or _under_externalized_tree(rel_dir,excluded_roots): continue
+            kept.append(d)
+        dirs[:]=sorted(kept)
         for name in sorted(names):
             p=bp/name
             if p.is_symlink(): raise RuntimeError("SYMLINK_REFUSED:"+p.relative_to(root).as_posix())
@@ -29,11 +42,14 @@ def iter_files(root,output):
             if not p.is_file(): raise RuntimeError("NON_REGULAR_FILE:"+str(p))
             if p.resolve()==output.resolve(): continue
             rel=p.relative_to(root).as_posix()
+            if rel == "module_registry.json" or _under_externalized_tree(rel,excluded_roots): continue
             if rel.startswith("../") or rel.startswith("/"): raise RuntimeError("PATH_ESCAPE:"+rel)
             result.append((rel,p))
+    if not any(rel == "CAJITA_DISTRIBUTION_MODULE_REGISTRY.json" for rel,_ in result):
+        raise RuntimeError("DISTRIBUTION_MODULE_REGISTRY_MISSING_FROM_PAYLOAD")
     return sorted(result,key=lambda x:x[0].encode("utf-8"))
 
-def manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,companion_sha256):
+def manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,companion_sha256,externalized_contract):
     domain_map={
       "1. Cerebro":("D01_CEREBRO","cerebro"),
       "2. Orquestación":("D02_ORQUESTACION","orquestacion"),
@@ -65,7 +81,21 @@ def manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,c
        {"id":"D05_INTELIGENCIA_DOCUMENTAL","route_type":"inteligencia_documental","root":"5. Inteligencia documental/"},
        {"id":"D06_SISTEMA_INTELIGENTE","route_type":"sistema_inteligente","root":"6. Sistema Inteligente/"}],
       "runtime_entrypoint":"cajita_runtime.py","rebuild_script":"reproduce_macrodown.py",
-      "external_22_domain_repository_included":False,"files":records}
+      "external_22_domain_repository_included":False,
+      "externalized_asset_policy":{
+        "policy":"PACK_COMPRESSED_CONTAINER_ONCE_AND_RECONSTRUCT_EXPANDED_TREE_ON_DEMAND",
+        "source_only_registry_excluded":"module_registry.json",
+        "distribution_registry":"CAJITA_DISTRIBUTION_MODULE_REGISTRY.json",
+        "expanded_materialization_trees_included":False,
+        "compressed_containers_included":True,
+        "reconstruction_helper":"cajita_externalized_asset_loader.py",
+        "reconstruction_requires_explicit_materialization":True,
+        "consumer_adapter_validation":"NOT_ESTABLISHED",
+        "native_smoke_validation":"REQUIRED",
+        "certification":"NOT_GRANTED",
+        "assets":[{"id":item["id"],"container_path":item["container_relpath"],"container_bytes":item["container_bytes"],"container_sha256":item["container_sha256"],"expanded_path":item["expanded_relpath"],"expanded_bytes":item["expanded_bytes"],"expanded_file_count":item["expanded_file_count"],"expanded_tree_sha256":item["expanded_tree_sha256"],"module_descriptor_sha256":item["module_descriptor_sha256"]} for item in externalized_contract]
+      },
+      "files":records}
     for _ in range(10):
         enc=(json.dumps(m,ensure_ascii=False,sort_keys=True,separators=(",",":"))+"\n").encode()
         new_total=total+len(enc)
@@ -92,7 +122,8 @@ def build(root,output,raw_cap_bytes=DEFAULT_RAW_CAP_BYTES,combined_cap_bytes=DEF
     missing=[d for d in domains if not (root/d).is_dir()]
     if missing: raise RuntimeError("DOMAIN_ROOTS_MISSING:"+",".join(missing))
     if not (root/"cajita_runtime.py").is_file(): raise RuntimeError("RUNTIME_ENTRYPOINT_MISSING")
-    files=iter_files(root,output); manifest,gross=manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,companion_sha256)
+    externalized_contract=prepare_distribution_registry(root)
+    files=iter_files(root,output); manifest,gross=manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,companion_sha256,externalized_contract)
     output.parent.mkdir(parents=True,exist_ok=True); temp=output.with_name(output.name+".building")
     try:
         if temp.exists(): temp.unlink()
@@ -139,7 +170,12 @@ def main():
     ap.add_argument("--combined-cap-bytes",type=int,default=DEFAULT_COMBINED_CAP_BYTES)
     ap.add_argument("--companion-bytes",type=int,default=0)
     ap.add_argument("--companion-sha256",default=None)
+    ap.add_argument("--prepare-distribution-registry",action="store_true",help="Validate the ten source trees and containers, then write the distribution-only module registry.")
     a=ap.parse_args(); root=Path(a.root).resolve()
+    if a.prepare_distribution_registry:
+        contract=prepare_distribution_registry(root)
+        print(json.dumps({"status":"PASS_DISTRIBUTION_REGISTRY_PREPARED","asset_count":len(contract),"externalized_expanded_bytes":sum(x["expanded_bytes"] for x in contract),"compressed_container_bytes":sum(x["container_bytes"] for x in contract),"certification":"NOT_GRANTED"},ensure_ascii=False,indent=2))
+        return
     output=Path(a.output).resolve() if a.output else root.parent/"CAJITA_LUNA_RUNTIME_V10.macrodown"
     if min(a.raw_cap_bytes,a.combined_cap_bytes)<1 or a.companion_bytes<0:
         ap.error("byte limits must be positive and companion bytes must be non-negative")
