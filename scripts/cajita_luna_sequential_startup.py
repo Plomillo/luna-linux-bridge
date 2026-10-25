@@ -59,7 +59,7 @@ FROZEN_SCOPES = {
     "INTELIGENCIA_DOCUMENTAL": "5. Inteligencia documental",
     "ANALISIS_AVANZADO": "6. Sistema Inteligente/Análisis Avanzado",
 }
-CAP_BYTES = 479_000_000
+CAP_BYTES = 470_000_000
 EDGE_REL = (
     "2. Orquestación/Orquestador/EdgeBackup_20260907_170357_d18dac86743a/"
     "EdgeBackup_20260907_170357_d18dac86743a.7z"
