@@ -629,6 +629,77 @@ jobs:
           ROOT="$RUNNER_TEMP/cajita-runtime"
           mkdir -p "$ROOT"
           unzip -q "evidence/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown" -d "$ROOT"
+          # ZIP extraction does not reliably preserve Unix execute bits. Verify the
+          # frozen Consola tree and qjs bytes in the exact extracted candidate before
+          # restoring only the mode bit, then perform a known-answer executable check.
+          python - "$ROOT" <<'PY'
+          import hashlib
+          import json
+          import os
+          import stat
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          root = Path(sys.argv[1]).resolve(strict=True)
+          module = root / "6. Sistema Inteligente" / "Consola"
+          descriptor_path = module / "CAJITA_MODULE.json"
+          qjs = module / "quickjs-linux-x86_64-2026-06-04" / "qjs"
+          if module.is_symlink() or not module.is_dir() or not module.resolve().is_relative_to(root):
+              raise SystemExit("G24_QUICKJS_MODULE_ROOT_INVALID")
+          if descriptor_path.is_symlink() or not descriptor_path.is_file():
+              raise SystemExit("G24_QUICKJS_DESCRIPTOR_MISSING")
+          if qjs.is_symlink() or not qjs.is_file() or not qjs.resolve().is_relative_to(module.resolve()):
+              raise SystemExit("G24_QUICKJS_BINARY_MISSING_OR_UNSAFE")
+          descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+          expected = descriptor.get("tree_integrity", {})
+          rows = []
+          for base, dirs, names in os.walk(module, topdown=True, followlinks=False):
+              base_path = Path(base)
+              for name in sorted(dirs):
+                  p = base_path / name
+                  if p.is_symlink() or not p.resolve().is_relative_to(module.resolve()):
+                      raise SystemExit("G24_QUICKJS_TREE_SYMLINK_OR_ESCAPE")
+              dirs[:] = sorted(dirs)
+              for name in sorted(names):
+                  p = base_path / name
+                  if name == "CAJITA_MODULE.json":
+                      continue
+                  if p.is_symlink() or not p.is_file() or not p.resolve().is_relative_to(module.resolve()):
+                      raise SystemExit("G24_QUICKJS_TREE_NON_REGULAR_OR_ESCAPE")
+                  data = p.read_bytes()
+                  rows.append({"path": p.relative_to(module).as_posix(), "bytes": len(data),
+                               "sha256": hashlib.sha256(data).hexdigest()})
+          rows.sort(key=lambda row: row["path"].encode("utf-8"))
+          tree_sha = hashlib.sha256(json.dumps(rows, sort_keys=True, separators=(",", ":"),
+              ensure_ascii=False).encode("utf-8")).hexdigest()
+          if len(rows) != expected.get("file_count_excluding_module_descriptors") or sum(r["bytes"] for r in rows) != expected.get("bytes_excluding_module_descriptors") or tree_sha != expected.get("sha256"):
+              raise SystemExit("G24_QUICKJS_FROZEN_TREE_IDENTITY_MISMATCH")
+          qrow = [r for r in rows if r["path"] == "quickjs-linux-x86_64-2026-06-04/qjs"]
+          if len(qrow) != 1:
+              raise SystemExit("G24_QUICKJS_TREE_ENTRY_NOT_UNIQUE")
+          before = qjs.read_bytes()
+          before_sha = hashlib.sha256(before).hexdigest()
+          if len(before) != qrow[0]["bytes"] or before_sha != qrow[0]["sha256"]:
+              raise SystemExit("G24_QUICKJS_CONTENT_IDENTITY_MISMATCH")
+          mode_before = stat.S_IMODE(qjs.stat().st_mode)
+          if not qjs.stat().st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
+              os.chmod(qjs, mode_before | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+          after = qjs.read_bytes()
+          if hashlib.sha256(after).hexdigest() != before_sha or len(after) != len(before):
+              raise SystemExit("G24_QUICKJS_CONTENT_CHANGED_WHILE_RESTORING_MODE")
+          if not qjs.stat().st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
+              raise SystemExit("G24_QUICKJS_EXECUTE_BIT_RESTORE_FAILED")
+          probe = subprocess.run([str(qjs), "-e", "print('LOUKSNA_QUICKJS_EXEC_MODE_PASS')"],
+              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=5, check=False)
+          if probe.returncode != 0 or probe.stdout.strip() != "LOUKSNA_QUICKJS_EXEC_MODE_PASS":
+              raise SystemExit("G24_QUICKJS_EXECUTION_PROBE_FAILED:" + probe.stderr[-240:])
+          print(json.dumps({"status": "PASS_G24_QUICKJS_EXTRACTED_MODE_AND_PROBE",
+              "path": qjs.relative_to(root).as_posix(), "mode_before": oct(mode_before),
+              "mode_after": oct(stat.S_IMODE(qjs.stat().st_mode)), "bytes": len(before),
+              "sha256": before_sha, "module_tree_sha256": tree_sha, "content_changed": False},
+              sort_keys=True))
+          PY
           DOCKERCTX="$RUNNER_TEMP/cajita-smoke-image"
           mkdir -p "$DOCKERCTX"
           cat > "$DOCKERCTX/Dockerfile" <<'EOF'
