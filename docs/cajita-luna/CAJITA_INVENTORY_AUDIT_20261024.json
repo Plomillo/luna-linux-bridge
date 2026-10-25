@@ -1,9 +1,9 @@
 {
   "schema": "CAJITA_INVENTORY_AUDIT/1.0",
   "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
-  "generated_at_utc": "2026-10-25T01:27:48.328043+00:00",
+  "generated_at_utc": "2026-10-25T01:37:27.610155+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "42b163588e6ef754915627c194862913a2b8e89c",
+  "source_commit": "9de2d80b5e133345a46cde981c4474fa135bd5c6",
   "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
   "distribution": {
     "archive_format": "deterministic ZIP container with .macrodown extension",
@@ -11,7 +11,7 @@
     "file_count_excluding_manifest": 1417,
     "runtime_payload_bytes_excluding_manifest": 446884442,
     "gross_raw_payload_bytes_including_manifest": 447315571,
-    "archive_bytes": 370859080,
+    "archive_bytes": 370859085,
     "hard_cap_bytes": 470000000,
     "raw_input_ceiling_bytes": 1500000000,
     "raw_bytes_under_input_ceiling": 1052684429,
@@ -20,8 +20,8 @@
     "raw_bytes_over_target": 0,
     "archive_target_bytes": 470000000,
     "raw_bytes_under_cap": 1052684429,
-    "archive_bytes_under_cap": 99140920,
-    "archive_sha256": "ddaefea0f99763620dfe9c6a776b9de808f1cc9dad79aeb1550f48fc8a6ea252",
+    "archive_bytes_under_cap": 99140915,
+    "archive_sha256": "2a06a76708b7984f59c75b088af9c0ab5707097c8286a4343c2eddde6507df70",
     "raw_gate": "PASS",
     "archive_gate": "PASS",
     "certification": "NOT_GRANTED"
@@ -110,35 +110,16 @@
     }
   },
   "prior_manifest_reconciliation": {
-    "prior_file_count_excluding_manifest": 1415,
+    "prior_file_count_excluding_manifest": 1417,
     "current_file_count_excluding_manifest": 1417,
-    "added_paths": [
-      "1. Cerebro/tokenizer.json.gz",
-      "3. Transcripción/tokenizer.json.gz",
-      "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/tokenizer.json.gz",
-      "6. Sistema Inteligente/Análisis Avanzado/tokenizer.json.gz",
-      "CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json",
-      "cajita_tokenizer_materializer.py"
-    ],
-    "removed_paths": [
-      "1. Cerebro/tokenizer.json",
-      "3. Transcripción/tokenizer.json",
-      "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/tokenizer.json",
-      "6. Sistema Inteligente/Análisis Avanzado/tokenizer.json"
-    ],
+    "added_paths": [],
+    "removed_paths": [],
     "changed_paths": [
-      "1. Cerebro/cerebro_180mb_runtime.py",
-      "3. Transcripción/lowrank_runtime.py",
-      "4. Traductor Inteligente/Traducción general/lowrank_runtime.py",
-      "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py",
-      "6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py",
-      "EXTERNALIZED_ASSET_PLACEMENT.json",
-      "cajita_task_adapters.py",
-      "reproduce_macrodown.py"
+      "CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json"
     ],
-    "added_count": 6,
-    "removed_count": 4,
-    "changed_count": 8,
+    "added_count": 0,
+    "removed_count": 0,
+    "changed_count": 1,
     "prior_manifest_was_in_sync": false
   },
   "inventory": [
@@ -11314,7 +11295,7 @@
       "domain_id": null,
       "path": "CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json",
       "route_type": null,
-      "sha256": "835d9cb1e7bfa577676ef23baecb738a4209b563480851271438460b75070970",
+      "sha256": "646887599b4c8d4e7905258ef55ebdcbcb4973808001ba63cfa90aa3f8346084",
       "size_bytes": 3479,
       "zip_method": "DEFLATED"
     },
@@ -11481,7 +11462,7 @@
     {
       "path": "MACRODOWN_MANIFEST.json",
       "size_bytes": 431129,
-      "sha256": "d5ad32bbef2a1cf1e384e6ac3f6cf22e8892e88823974b4422dfba8486342376",
+      "sha256": "8881bace7d1fb342145714e3a6625ff2ceb7f1b6504d75e63b8f0b2246d07fa7",
       "domain_id": null,
       "route_type": null,
       "zip_method": "DEFLATED",
