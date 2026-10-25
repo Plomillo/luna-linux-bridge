@@ -1110,6 +1110,96 @@ def _extract_raw_tree(root: Path, item: dict, destination: Path) -> dict:
     return actual
 
 
+def materialize_registered_asset(root: Path, asset_id: str, destination: Path) -> dict:
+    """Verify a registered compressed runtime asset and reconstruct its frozen tree.
+
+    This entry point deliberately does not require the generated distribution
+    registry. It is for source-bound audits (such as the Louksna1 RDF/Jena
+    audit) that need one registered tool from the canonical runtime repository.
+    """
+    root = Path(root).resolve()
+    placement_path = root / PLACEMENT_NAME
+    placement = _load_json(placement_path, "EXTERNALIZED_ASSET_PLACEMENT")
+    assets = placement.get("assets")
+    if not isinstance(assets, list):
+        raise RuntimeError("EXTERNALIZED_ASSET_LIST_INVALID")
+    matches = [row for row in assets if isinstance(row, dict) and row.get("id") == asset_id]
+    if len(matches) != 1:
+        raise RuntimeError("EXTERNALIZED_ASSET_ID_NOT_UNIQUE:" + str(asset_id))
+    asset = matches[0]
+    container_meta = asset.get("compact_runtime_container")
+    if not isinstance(container_meta, dict):
+        raise RuntimeError("EXTERNALIZED_CONTAINER_METADATA_MISSING:" + asset_id)
+
+    container_rel = _runtime_relative(container_meta.get("path"), asset_id + ":container_path")
+    container = root / Path(*PurePosixPath(container_rel).parts)
+    if container.is_symlink() or not container.is_file():
+        raise RuntimeError("EXTERNALIZED_CONTAINER_MISSING_OR_SYMLINK:" + asset_id)
+    if not container.resolve().is_relative_to(root):
+        raise RuntimeError("EXTERNALIZED_CONTAINER_PATH_ESCAPE:" + asset_id)
+
+    expected_bytes = container_meta.get("size_bytes")
+    expected_sha = container_meta.get("sha256")
+    if isinstance(expected_bytes, bool) or not isinstance(expected_bytes, int) or expected_bytes < 1:
+        raise RuntimeError("EXTERNALIZED_CONTAINER_SIZE_INVALID:" + asset_id)
+    if not isinstance(expected_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_sha):
+        raise RuntimeError("EXTERNALIZED_CONTAINER_SHA256_INVALID:" + asset_id)
+    if asset.get("container_size_bytes", expected_bytes) != expected_bytes:
+        raise RuntimeError("EXTERNALIZED_CONTAINER_SIZE_METADATA_CONFLICT:" + asset_id)
+    if asset.get("container_sha256", expected_sha) != expected_sha:
+        raise RuntimeError("EXTERNALIZED_CONTAINER_HASH_METADATA_CONFLICT:" + asset_id)
+    actual_bytes = container.stat().st_size
+    actual_sha = sha_file(container)
+    if actual_bytes != expected_bytes or actual_sha != expected_sha:
+        raise RuntimeError(
+            "EXTERNALIZED_CONTAINER_IDENTITY_MISMATCH:" + asset_id + ":" +
+            json.dumps({"expected_bytes": expected_bytes, "actual_bytes": actual_bytes,
+                        "expected_sha256": expected_sha, "actual_sha256": actual_sha}, sort_keys=True)
+        )
+
+    expected_tree = {
+        "bytes": asset.get("expanded_bytes"),
+        "file_count": asset.get("expanded_file_count"),
+        "tree_sha256": asset.get("expanded_tree_sha256"),
+    }
+    if (
+        isinstance(expected_tree["bytes"], bool) or not isinstance(expected_tree["bytes"], int) or expected_tree["bytes"] < 1
+        or isinstance(expected_tree["file_count"], bool) or not isinstance(expected_tree["file_count"], int) or expected_tree["file_count"] < 1
+        or not isinstance(expected_tree["tree_sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", expected_tree["tree_sha256"])
+    ):
+        raise RuntimeError("EXTERNALIZED_EXPECTED_TREE_METADATA_INVALID:" + asset_id)
+
+    destination = Path(destination)
+    if destination.is_symlink():
+        raise RuntimeError("EXTERNALIZED_AUDIT_DESTINATION_SYMLINK:" + asset_id)
+    if destination.exists() and (not destination.is_dir() or any(destination.iterdir())):
+        raise RuntimeError("EXTERNALIZED_AUDIT_DESTINATION_NOT_EMPTY_DIRECTORY:" + asset_id)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
+    item = {
+        "id": asset_id,
+        "container_relpath": container_rel,
+        "expanded_relpath": _runtime_relative(asset.get("expanded_path"), asset_id + ":expanded_path"),
+        "expanded_bytes": expected_tree["bytes"],
+        "expanded_file_count": expected_tree["file_count"],
+        "expanded_tree_sha256": expected_tree["tree_sha256"],
+        "nested_modules": [],
+    }
+    actual_tree = _extract_raw_tree(root, item, destination)
+    return {
+        "id": asset_id,
+        "status": "PASS_REGISTERED_CONTAINER_RECONSTRUCTION",
+        "container_path": container_meta["path"],
+        "container_bytes": actual_bytes,
+        "container_sha256": actual_sha,
+        "expanded_path": asset["expanded_path"],
+        "expanded_bytes": actual_tree["bytes"],
+        "expanded_file_count": actual_tree["file_count"],
+        "expanded_tree_sha256": actual_tree["tree_sha256"],
+        "placement_contract_sha256": sha_file(placement_path),
+    }
+
+
 def verify_all_archives(root: Path) -> dict:
     root = Path(root).resolve()
     contract = distribution_contract(root)

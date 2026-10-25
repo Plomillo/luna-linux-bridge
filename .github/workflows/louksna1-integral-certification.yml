@@ -7,6 +7,8 @@ on:
       - "LOUKSNAMEJORADA.md"
       - "Louksna1.md"
       - "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/**"
+      - "cajita-luna-runtime/cajita_externalized_packaging.py"
+      - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
       - "docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json"
       - "tools/cajita_axiom_graph_audit.py"
       - "tests/test_cajita_axiom_graph_audit.py"
@@ -50,12 +52,20 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      - name: Install extractor for the registered Apache Jena container
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends p7zip-full
+          command -v 7z
+
       - name: Verify audit script syntax
         shell: bash
         run: |
           set -euo pipefail
           python -m py_compile tools/cajita_axiom_graph_audit.py tests/test_cajita_axiom_graph_audit.py
-          PYTHONPATH=tools python -m unittest discover -s tests -p 'test_cajita_axiom_graph_audit.py' -v
+          PYTHONPATH=tools:cajita-luna-runtime python -m unittest discover -s tests -p 'test_cajita_axiom_graph_audit.py' -v
 
       - name: Materialize source-bound RDF and execute Apache Jena
         env:
