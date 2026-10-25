@@ -857,11 +857,27 @@ def distribution_contract(root: Path) -> list[dict]:
         if row is None:
             raise RuntimeError("DISTRIBUTION_EXTERNALIZED_MODULE_MISSING:" + str(asset_id))
         expanded_rel = _runtime_relative(asset.get("expanded_path"), str(asset_id) + ":expanded_path")
-        container = asset.get("compact_runtime_container", {})
-        container_rel = _runtime_relative(container.get("path"), str(asset_id) + ":container_path")
+        source_container = asset.get("compact_runtime_container", {})
+        source_container_rel = _runtime_relative(source_container.get("path"), str(asset_id) + ":source_container_path")
+        distribution_meta = asset.get("distribution_repackaging")
+        if not isinstance(distribution_meta, dict):
+            raise RuntimeError("DISTRIBUTION_REPACKAGING_EVIDENCE_MISSING:" + str(asset_id))
+        container_rel = _runtime_relative(row.get("container_path"), str(asset_id) + ":distribution_container_path")
         if row.get("path") != expanded_rel or row.get("module_key") != expanded_rel:
             raise RuntimeError("DISTRIBUTION_MODULE_PATH_MISMATCH:" + str(asset_id))
-        if row.get("container_path") != container_rel or row.get("container_sha256") != container.get("sha256") or row.get("container_bytes") != container.get("size_bytes"):
+        if (
+            row.get("source_container_path") != source_container.get("path")
+            or row.get("source_container_sha256") != source_container.get("sha256")
+            or row.get("source_container_bytes") != source_container.get("size_bytes")
+            or distribution_meta.get("source_container_path") != source_container.get("path")
+            or distribution_meta.get("source_container_sha256") != source_container.get("sha256")
+            or distribution_meta.get("source_container_bytes") != source_container.get("size_bytes")
+            or distribution_meta.get("distribution_container_path") != row.get("container_path")
+            or distribution_meta.get("distribution_container_sha256") != row.get("container_sha256")
+            or distribution_meta.get("distribution_container_bytes") != row.get("container_bytes")
+            or row.get("container_rebuilt_from_registered_tree") is not True
+            or not str(row.get("container_rebuild_status", "")).startswith("PASS_REPACKAGED_AND_ROUNDTRIP_VERIFIED")
+        ):
             raise RuntimeError("DISTRIBUTION_CONTAINER_BINDING_MISMATCH:" + str(asset_id))
         if row.get("tree_sha256") != asset.get("expanded_tree_sha256") or row.get("bytes") != asset.get("expanded_bytes") or row.get("file_count") != asset.get("expanded_file_count"):
             raise RuntimeError("DISTRIBUTION_TREE_BINDING_MISMATCH:" + str(asset_id))
@@ -882,9 +898,13 @@ def distribution_contract(root: Path) -> list[dict]:
         output.append({
             "id": asset_id,
             "expanded_relpath": expanded_rel,
+            "source_container_relpath": source_container_rel,
+            "source_container_bytes": source_container.get("size_bytes"),
+            "source_container_sha256": source_container.get("sha256"),
             "container_relpath": container_rel,
             "container_bytes": actual_bytes,
             "container_sha256": actual_sha,
+            "container_rebuild_status": row.get("container_rebuild_status"),
             "expanded_bytes": row["bytes"],
             "expanded_file_count": row["file_count"],
             "expanded_tree_sha256": row["tree_sha256"],
