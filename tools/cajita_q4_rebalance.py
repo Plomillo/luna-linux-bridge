@@ -652,7 +652,27 @@ def main():
  report["elapsed_seconds"]=round(time.monotonic()-started,3)
  report["status"]="SIZE_GATE_PASS_CERTIFICATION_NOT_GRANTED" if post<=HARD_CAP else "SIZE_GATE_FAIL_OPTIMIZATION_RESULTS_COMMITTED_FOR_NEXT_PASS"
  REPORT.parent.mkdir(parents=True,exist_ok=True)
- REPORT.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+ # Keep audit evidence byte-stable when the substantive outcome has not changed.
+ # Otherwise this timestamp alone creates a bot commit on every no-op rebalance,
+ # advances main during the factory/G23/G24 evidence chain, and causes source-SHA
+ # races without promoting a single model. Wall-clock data remains in Actions logs.
+ persist_report = True
+ if REPORT.is_file() and not REPORT.is_symlink():
+  try:
+   previous = json.loads(REPORT.read_text(encoding="utf-8"))
+   current_comparable = dict(report)
+   previous_comparable = dict(previous) if isinstance(previous, dict) else {}
+   for field in ("created_at_utc", "elapsed_seconds"):
+    current_comparable.pop(field, None)
+    previous_comparable.pop(field, None)
+   if isinstance(previous, dict) and current_comparable == previous_comparable:
+    persist_report = False
+    print("REBALANCE_REPORT_UNCHANGED_NO_TIMESTAMP_ONLY_WRITE")
+  except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+   # Invalid prior evidence is not treated as matching; write a fresh complete report.
+   persist_report = True
+ if persist_report:
+  REPORT.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
  print(json.dumps({"status":report["status"],"runtime_bytes_before":pre,"runtime_bytes_after":post,
    "saved_bytes":pre-post,"hard_cap_bytes":HARD_CAP,"bytes_over_cap":report["bytes_over_cap"],
    "size_gate":report["size_gate"],"q4_models_promoted":report["quantized_factor_models_promoted"],
