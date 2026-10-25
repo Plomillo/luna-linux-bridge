@@ -664,7 +664,7 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         "binding_sha256": _sha(binding_path.read_bytes()), "protected_source_sha256": source_sha,
         "companion_document_sha256": doc_sha, "declared_materialized_axioms": 11757,
         "declared_historical_gaps": 657, "block_count": 134, "framework_count": 18,
-        "state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING",
+        "state": "SOURCE_BOUND_BLOCK_ENGINE_GRAPH_BOUND",
         "synthetic_scope_registered_target_count": len(consumer_adapters),
         "runtime_engine_smoke_scope_registered_target_count": len(runtime_engine_scopes),
         "runtime_engine_smoke_scope_target_ids": sorted(runtime_engine_scopes),
