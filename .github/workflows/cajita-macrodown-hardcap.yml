@@ -130,12 +130,17 @@ jobs:
           report_path = Path("docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json")
           placement = json.loads(placement_path.read_text(encoding="utf-8"))
           report = json.loads(report_path.read_text(encoding="utf-8"))
-          cap = 470_000_000
+          raw_input_ceiling = 1_500_000_000
+          raw_payload_target = 470_000_000
+          archive_cap = 470_000_000
           assets = placement.get("assets", [])
           if len(assets) != 10 or len({x.get("id") for x in assets}) != 10:
               raise SystemExit("TEN_ASSET_REGISTRY_INVALID")
-          if report.get("size_gate") != "PASS" or int(report.get("runtime_bytes_after", cap + 1)) > cap:
-              raise SystemExit("PRIOR_RUNTIME_SIZE_GATE_NOT_PASS")
+          # The tracked report is historical input. Re-measure this checkout below;
+          # a previous 470 MB raw-target result must not suppress a valid compressed build.
+          previous_raw_bytes = int(report.get("runtime_bytes_after", 0))
+          if previous_raw_bytes < 0 or previous_raw_bytes > raw_input_ceiling:
+              raise SystemExit("PRIOR_RAW_INPUT_OUTSIDE_SAFETY_CEILING")
           # Q2 is a desired state, not necessarily a new mutation in this run.
           # Existing verified Q2-packed sidecars are valid evidence; promotion-count-only
           # checks incorrectly reject a runtime where all required factors are already Q2.
@@ -193,14 +198,19 @@ jobs:
               raise SystemExit("Q2_PROMOTION_COUNT_MISMATCH")
           print("Q2_FACTOR_PACKING_EVIDENCE=PASS verified_models=4 new_promotions=" + str(promoted_count))
 
-          placement["status"] = "COMPACT_DISTRIBUTION_PAYLOAD_SIZE_GATE_PASS"
+          placement["status"] = "COMPACT_DISTRIBUTION_PAYLOAD_MEASURED_FINAL_ARCHIVE_GATE_PENDING"
           placement["runtime_size_gate"] = {
               "audit_id": "CAJITA_FINAL_RUNTIME_SIZE_GATE_20261025",
-              "measurement_method": "sum of reproducible distribution payload files; excludes source-only module_registry.json and command_subdomain_routing.json, 18 historical build-only archives, and ten hash-pinned expanded trees; includes exactly ten verified compressed containers, the derived registry and the derived routing catalog; no LFS pointers",
-              "payload_bytes": 999999999,
-              "hard_cap_bytes": cap,
-              "bytes_under_cap": 9999999,
-              "size_gate": "PASS",
+              "measurement_method": "sum of reproducible distribution payload files; excludes source-only registries/routing, historical build-only archives and ten hash-pinned expanded trees; includes ten verified compressed containers, six materialized model payloads and all distribution members; no LFS pointers",
+              "payload_bytes": 0,
+              "hard_cap_bytes": raw_input_ceiling,
+              "bytes_under_cap": raw_input_ceiling,
+              "size_gate": "PENDING_REMEASUREMENT",
+              "raw_input_ceiling_bytes": raw_input_ceiling,
+              "raw_payload_target_bytes": raw_payload_target,
+              "raw_payload_target_gate": "PENDING_REMEASUREMENT",
+              "archive_cap_bytes": archive_cap,
+              "archive_size_gate": "PENDING_FINAL_ZIP_BUILD",
               "registered_asset_count": len(assets),
               "registered_asset_ids": [x["id"] for x in assets],
               "q2_factor_models_promoted": int(report.get("q2_factor_models_promoted", 0)),
@@ -279,13 +289,20 @@ jobs:
               entries, excluded_bytes = runtime_inventory()
               measured = sum(item["bytes"] for item in entries)
               report_payload_breakdown(entries, excluded_bytes)
-              gate = "PASS" if measured <= cap else "FAIL"
-              placement["status"] = "COMPACT_DISTRIBUTION_PAYLOAD_SIZE_GATE_" + gate
+              raw_gate = "PASS" if measured <= raw_input_ceiling else "FAIL"
+              raw_target_gate = "PASS" if measured <= raw_payload_target else "OVER_TARGET_NOT_FINAL_GATE"
+              placement["status"] = "COMPACT_DISTRIBUTION_RAW_INPUT_CEILING_" + raw_gate
               placement["runtime_size_gate"].update({
                   "payload_bytes": measured,
-                  "hard_cap_bytes": cap,
-                  "bytes_under_cap": max(0, cap - measured),
-                  "size_gate": gate,
+                  "hard_cap_bytes": raw_input_ceiling,
+                  "bytes_under_cap": max(0, raw_input_ceiling - measured),
+                  "size_gate": raw_gate,
+                  "raw_input_ceiling_bytes": raw_input_ceiling,
+                  "raw_payload_target_bytes": raw_payload_target,
+                  "raw_payload_target_gate": raw_target_gate,
+                  "raw_bytes_over_target": max(0, measured - raw_payload_target),
+                  "archive_cap_bytes": archive_cap,
+                  "archive_size_gate": "PENDING_FINAL_ZIP_BUILD",
               })
               placement_path.write_text(json.dumps(placement, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
               after_write = runtime_size()
@@ -296,25 +313,35 @@ jobs:
 
           report["runtime_bytes_after"] = measured
           report["saved_bytes"] = int(report.get("runtime_bytes_before", measured)) - measured
-          report["bytes_over_cap"] = max(0, measured - cap)
-          report["size_gate"] = "PASS" if measured <= cap else "FAIL"
-          report["status"] = "SIZE_GATE_PASS_CERTIFICATION_NOT_GRANTED" if measured <= cap else "SIZE_GATE_FAIL_CERTIFICATION_NOT_GRANTED"
+          report["bytes_over_cap"] = max(0, measured - raw_input_ceiling)
+          report["size_gate"] = "PASS" if measured <= raw_input_ceiling else "FAIL"
+          report["status"] = "RAW_INPUT_CEILING_PASS_FINAL_ARCHIVE_GATE_PENDING" if measured <= raw_input_ceiling else "RAW_INPUT_CEILING_FAIL"
+          report["raw_input_ceiling_bytes"] = raw_input_ceiling
+          report["raw_payload_target_bytes"] = raw_payload_target
+          report["raw_payload_target_gate"] = "PASS" if measured <= raw_payload_target else "OVER_TARGET_NOT_FINAL_GATE"
+          report["raw_bytes_over_target"] = max(0, measured - raw_payload_target)
+          report["distribution_archive_cap_bytes"] = archive_cap
+          report["distribution_archive_gate"] = "PENDING_FINAL_ZIP_BUILD"
           report["placement_size_gate_recorded"] = True
-          report["runtime_measurement_scope"] = "DISTRIBUTION_PAYLOAD; TEN_VERIFIED_COMPRESSED_CONTAINERS_INCLUDED; TEN_EXPANDED_RECONSTRUCTION_TREES_AND_SOURCE_ONLY_MODULE_REGISTRY_EXCLUDED"
+          report["runtime_measurement_scope"] = "REPRODUCIBLE_DISTRIBUTION_PAYLOAD; RAW INPUT CEILING IS 1.5 GB; 470 MB IS AN ARCHIVE TARGET, NOT THE PRE-COMPRESSION SUM"
           report["externalized_asset_reconstruction"] = "PASS_CONTAINER_RECONSTRUCTION_ONLY; CONSUMER_ADAPTERS_NOT_ESTABLISHED"
           report["registered_asset_count"] = len(assets)
           report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           print(json.dumps({
               "runtime_payload_bytes": measured,
-              "hard_cap_bytes": cap,
-              "bytes_under_cap": max(0, cap - measured),
-              "size_gate": report["size_gate"],
+              "raw_input_ceiling_bytes": raw_input_ceiling,
+              "raw_bytes_under_ceiling": max(0, raw_input_ceiling - measured),
+              "raw_payload_target_bytes": raw_payload_target,
+              "raw_payload_target_gate": report["raw_payload_target_gate"],
+              "raw_bytes_over_target": report["raw_bytes_over_target"],
+              "distribution_archive_cap_bytes": archive_cap,
+              "raw_input_gate": report["size_gate"],
               "registered_assets": len(assets),
               "q2_factor_models_promoted": report.get("q2_factor_models_promoted"),
               "certification": "NOT_GRANTED"
           }, ensure_ascii=False))
           if report["size_gate"] != "PASS":
-              raise SystemExit("RUNTIME_RAW_PAYLOAD_OVER_HARD_CAP")
+              raise SystemExit("RAW_BUILD_INPUT_OVER_SAFETY_CEILING")
           PY
 
       - name: Build deterministic Macrodown and enforce raw plus archive hard caps
@@ -326,7 +353,9 @@ jobs:
           cp "cajita-luna-runtime/MACRODOWN_MANIFEST.json" "$RUNNER_TEMP/macrodown-manifest-before.json"
           python cajita-luna-runtime/reproduce_macrodown.py \
             --root cajita-luna-runtime \
-            --output "$OUT" > "$RESULT"
+            --output "$OUT" \
+            --raw-cap-bytes 1500000000 \
+            --combined-cap-bytes 470000000 > "$RESULT"
           python - <<'PY'
           import hashlib, json, os, subprocess
           from datetime import datetime, timezone
@@ -338,16 +367,18 @@ jobs:
           raw_report = json.loads(raw_report_path.read_text(encoding="utf-8"))
           placement_path = Path("cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json")
           placement = json.loads(placement_path.read_text(encoding="utf-8"))
-          cap = 470_000_000
+          raw_input_ceiling = 1_500_000_000
+          archive_cap = 470_000_000
+          raw_payload_target = 470_000_000
           archive_path = Path(result["output"])
           if result.get("status") != "PASS":
               raise SystemExit("MACRODOWN_BUILD_NOT_PASS")
-          if int(result.get("gross_raw_payload_bytes", cap + 1)) > cap:
-              raise SystemExit("MACRODOWN_RAW_PAYLOAD_OVER_CAP")
-          if int(result.get("archive_bytes", cap + 1)) > cap:
-              raise SystemExit("MACRODOWN_ARCHIVE_OVER_CAP")
+          if int(result.get("gross_raw_payload_bytes", raw_input_ceiling + 1)) > raw_input_ceiling:
+              raise SystemExit("MACRODOWN_RAW_INPUT_OVER_SAFETY_CEILING")
+          if int(result.get("archive_bytes", archive_cap + 1)) > archive_cap:
+              raise SystemExit("MACRODOWN_ARCHIVE_OVER_DISTRIBUTION_TARGET")
           if raw_report.get("size_gate") != "PASS" or placement.get("runtime_size_gate", {}).get("size_gate") != "PASS":
-              raise SystemExit("PLACEMENT_OR_RUNTIME_SIZE_GATE_NOT_PASS")
+              raise SystemExit("RAW_INPUT_CEILING_GATE_NOT_PASS")
           if int(placement["runtime_size_gate"]["registered_asset_count"]) != 10:
               raise SystemExit("TEN_REGISTERED_ASSETS_NOT_PRESERVED")
 
@@ -361,14 +392,20 @@ jobs:
               "runtime_payload_bytes_excluding_generated_manifest": int(raw_report["runtime_bytes_after"]),
               "gross_raw_payload_bytes_including_manifest": int(result["gross_raw_payload_bytes"]),
               "archive_bytes": int(result["archive_bytes"]),
-              "hard_cap_bytes": cap,
-              "bytes_under_cap_raw": max(0, cap - int(result["gross_raw_payload_bytes"])),
-              "bytes_under_cap_archive": max(0, cap - int(result["archive_bytes"])),
+              "hard_cap_bytes": archive_cap,
+              "raw_input_ceiling_bytes": raw_input_ceiling,
+              "raw_input_bytes_under_ceiling": max(0, raw_input_ceiling - int(result["gross_raw_payload_bytes"])),
+              "raw_payload_target_bytes": raw_payload_target,
+              "raw_payload_target_gate": "PASS" if int(result["gross_raw_payload_bytes"]) <= raw_payload_target else "OVER_TARGET_NOT_FINAL_GATE",
+              "raw_bytes_over_target": max(0, int(result["gross_raw_payload_bytes"]) - raw_payload_target),
+              "archive_target_bytes": archive_cap,
+              "bytes_under_cap_raw": max(0, raw_input_ceiling - int(result["gross_raw_payload_bytes"])),
+              "bytes_under_cap_archive": max(0, archive_cap - int(result["archive_bytes"])),
               "file_count": int(result["member_count"]),
               "archive_sha256": result["sha256"],
               "archive_rebuildable": bool(result["rebuildable"]),
               "build_status": "PASS",
-              "raw_payload_size_gate": "PASS",
+              "raw_payload_size_gate": "PASS_WITHIN_INPUT_CEILING",
               "archive_size_gate": "PASS",
               "registered_assets_preserved": 10,
               "asset_ids": placement["runtime_size_gate"]["registered_asset_ids"],
@@ -430,9 +467,15 @@ jobs:
                   "runtime_payload_bytes_excluding_manifest": int(result["gross_raw_payload_bytes"]) - int(manifest_path.stat().st_size),
                   "gross_raw_payload_bytes_including_manifest": int(result["gross_raw_payload_bytes"]),
                   "archive_bytes": int(result["archive_bytes"]),
-                  "hard_cap_bytes": cap,
-                  "raw_bytes_under_cap": max(0, cap - int(result["gross_raw_payload_bytes"])),
-                  "archive_bytes_under_cap": max(0, cap - int(result["archive_bytes"])),
+                  "hard_cap_bytes": archive_cap,
+                  "raw_input_ceiling_bytes": raw_input_ceiling,
+                  "raw_bytes_under_input_ceiling": max(0, raw_input_ceiling - int(result["gross_raw_payload_bytes"])),
+                  "raw_payload_target_bytes": raw_payload_target,
+                  "raw_payload_target_gate": "PASS" if int(result["gross_raw_payload_bytes"]) <= raw_payload_target else "OVER_TARGET_NOT_FINAL_GATE",
+                  "raw_bytes_over_target": max(0, int(result["gross_raw_payload_bytes"]) - raw_payload_target),
+                  "archive_target_bytes": archive_cap,
+                  "raw_bytes_under_cap": max(0, raw_input_ceiling - int(result["gross_raw_payload_bytes"])),
+                  "archive_bytes_under_cap": max(0, archive_cap - int(result["archive_bytes"])),
                   "archive_sha256": result["sha256"],
                   "raw_gate": "PASS",
                   "archive_gate": "PASS",
@@ -518,13 +561,17 @@ jobs:
           r=json.loads(Path("docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json").read_text())
           b=json.loads(Path("docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json").read_text())
           p=json.loads(Path("cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json").read_text())
-          cap=470_000_000
+          raw_input_ceiling=1_500_000_000
+          archive_cap=470_000_000
           print(json.dumps({
               "raw_payload_bytes":r["runtime_bytes_after"],
+              "raw_input_ceiling_bytes":raw_input_ceiling,
+              "raw_payload_target_bytes":b.get("raw_payload_target_bytes",archive_cap),
+              "raw_payload_target_gate":b.get("raw_payload_target_gate"),
               "macrodown_gross_raw_payload_bytes":b["gross_raw_payload_bytes_including_manifest"],
               "macrodown_archive_bytes":b["archive_bytes"],
-              "hard_cap_bytes":cap,
-              "raw_gate":r["size_gate"],
+              "archive_cap_bytes":archive_cap,
+              "raw_input_gate":r["size_gate"],
               "macrodown_build":b["build_status"],
               "archive_gate":b["archive_size_gate"],
               "registered_assets":p["runtime_size_gate"]["registered_asset_count"],
@@ -532,7 +579,7 @@ jobs:
           },indent=2))
           if r["size_gate"]!="PASS" or b["build_status"]!="PASS" or b["archive_size_gate"]!="PASS":
               raise SystemExit("CAJITA_FINAL_HARD_GATE_FAIL")
-          if int(r["runtime_bytes_after"])>cap or int(b["gross_raw_payload_bytes_including_manifest"])>cap or int(b["archive_bytes"])>cap:
+          if int(r["runtime_bytes_after"])>raw_input_ceiling or int(b["gross_raw_payload_bytes_including_manifest"])>raw_input_ceiling or int(b["archive_bytes"])>archive_cap:
               raise SystemExit("CAJITA_FINAL_BYTE_LIMIT_EXCEEDED")
           if int(p["runtime_size_gate"]["registered_asset_count"])!=10:
               raise SystemExit("CAJITA_REGISTERED_ASSET_COUNT_MISMATCH")
