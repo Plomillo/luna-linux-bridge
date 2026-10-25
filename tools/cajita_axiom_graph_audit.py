@@ -241,7 +241,7 @@ def canonical_target_adapter_summary(runtime_root: Path, task: dict) -> dict:
         if row.get("target_id") not in passing_model_targets
     )
     if missing_model_targets:
-        raise ValueError("REGISTERED_SYNTHETIC_ADAPTER_WITHOUT_CURRENT_TARGET_E2E_EVIDENCE:" + ",".join(missing_model_targets))
+        raise ValueError("REGISTERED_SYNTHETIC_ADAPTER_WITHOUT_CURRENT_E2E_EVIDENCE:" + ",".join(missing_model_targets))
 
     target_engine_results = task.get("target_engine_results", [])
     if not isinstance(target_engine_results, list):
