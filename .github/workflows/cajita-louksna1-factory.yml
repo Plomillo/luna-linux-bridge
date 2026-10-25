@@ -25,6 +25,7 @@ on:
       - "tests/test_cajita_axiom_graph_audit.py"
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
+      - "tools/louksnapg_worker_mission.py"
       - "tests/test_louksnapg_bundle.py"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
       - "cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py"
@@ -281,15 +282,18 @@ jobs:
           test -s out/Louksna1.md
           test -s out/CAJITA_LUNA_RUNTIME_V10.macrodown
           test -s out/stage/cajita-luna-runtime/CajitadeLuna.md
-          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py
+          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py
           python -m unittest discover -s tests -p 'test_louksnapg*.py' -v
-          python tools/louksnapg_bundle.py \
+          python tools/louksnapg_worker_mission.py \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --worker "$RUNNER_TEMP/CUSTOSZV9.pyz" \
             --document out/Louksna1.md \
             --runtime out/CAJITA_LUNA_RUNTIME_V10.macrodown \
             --source-architecture LOUKSNAMEJORADA.md \
             --cajita-doc out/stage/cajita-luna-runtime/CajitadeLuna.md \
             --output out/LOUKSNAPG.md \
-            --max-bytes 470000000
+            --max-bytes 470000000 \
+            --report out/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json
           python tools/louksnapg_independent_validator.py \
             --bundle out/LOUKSNAPG.md \
             --max-bytes 470000000 \
@@ -334,6 +338,7 @@ jobs:
             out/LOUKSNAPG.md
             out/LOUKSNAPG_BUILD_REPORT.json
             out/LOUKSNAPG_INDEPENDENT_VALIDATION.json
+            out/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json
           if-no-files-found: warn
           retention-days: 90
 
