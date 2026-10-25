@@ -264,9 +264,6 @@ jobs:
           def tree_sha256(rows):
             payload=json.dumps(rows,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")
             return hashlib.sha256(payload).hexdigest()
-          import sys
-          sys.path.insert(0,str(runtime))
-          from cajita_tokenizer_materializer import tokenizer_tree_rows, TokenizerMaterializationError
           def logical_tree_rows(directory):
             rows=canonical_tree_rows(directory)
             manifest_path=runtime/"CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json"
@@ -332,6 +329,9 @@ jobs:
               target.parent.mkdir(parents=True,exist_ok=True)
               target.write_bytes(z.read(name))
           runtime=root/"runtime"
+          import sys
+          sys.path.insert(0,str(runtime))
+          from cajita_tokenizer_materializer import tokenizer_tree_rows, TokenizerMaterializationError
           routing=json.loads((runtime/"command_subdomain_routing.json").read_text())
           assert routing["domain_order"]==["D01_CEREBRO","D02_ORQUESTACION","D03_TRANSCRIPCION","D04_TRADUCTOR_INTELIGENTE","D05_INTELIGENCIA_DOCUMENTAL","D06_SISTEMA_INTELIGENTE"]
           assert len(routing["engine_registry"])==15 and len(routing["route_profiles"])==14 and len(routing["targets"])==21
