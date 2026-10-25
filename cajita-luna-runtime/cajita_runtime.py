@@ -57,11 +57,35 @@ def package_size(root):
    if p.is_symlink() or not p.is_file(): raise RuntimeError("NON_REGULAR_FILE_REJECTED:"+str(p.relative_to(root)))
    count+=1; total+=p.stat().st_size
  return count,total
+def asset_presence(root, rel):
+ root=Path(root).resolve()
+ p=root/rel
+ if p.is_symlink():
+  return {"path":rel,"present":False,"representation":"SYMLINK_REFUSED"}
+ if p.is_file():
+  return {"path":rel,"present":True,"representation":"RAW_FILE","bytes":p.stat().st_size,"sha256":sha256(p)}
+ if Path(rel).name=="tokenizer.json":
+  manifest_path=root/"CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json"
+  if manifest_path.is_symlink():
+   return {"path":rel,"present":False,"representation":"COMPRESSED_MANIFEST_SYMLINK_REFUSED"}
+  if manifest_path.is_file():
+   try:
+    import cajita_tokenizer_materializer as tokenizer_materializer
+    manifest=tokenizer_materializer.load_tokenizer_manifest(root)
+    matches=[row for row in manifest.get("entries",[]) if row.get("source_path")==Path(rel).as_posix()]
+    if len(matches)==1 and matches[0].get("packed") is True:
+     row=matches[0]
+     return {"path":rel,"present":True,"representation":"GZIP_HASH_PINNED_TOKENIZER","bytes":row["source_bytes"],"sha256":row["source_sha256"],"compressed_path":row["compressed_path"],"compressed_bytes":row["compressed_bytes"],"compressed_sha256":row["compressed_sha256"]}
+    return {"path":rel,"present":False,"representation":"TOKENIZER_NOT_HASH_PINNED_AS_COMPRESSED"}
+   except Exception as exc:
+    return {"path":rel,"present":False,"representation":"COMPRESSED_TOKENIZER_VALIDATION_FAILED","validation_error":type(exc).__name__+":"+str(exc)[:240]}
+ return {"path":rel,"present":False,"representation":"MISSING"}
+
 def selftest(root):
  domains=[]; missing=[]
  for d in DOMAINS:
   entry=root/d["entrypoint"]
-  assets=[{"path":a,"present":(root/a).is_file() and not (root/a).is_symlink()} for a in d["assets"]]
+  assets=[asset_presence(root,a) for a in d["assets"]]
   route= (root/d["directory"]).is_dir() and entry.is_file() and not entry.is_symlink() and all(a["present"] for a in assets)
   domains.append({"id":d["id"],"directory_present":(root/d["directory"]).is_dir(),"entrypoint":d["entrypoint"],"entrypoint_present":entry.is_file() and not entry.is_symlink(),"assets":assets,"route_state":"WIRED" if route else "BLOCKED","scope":d["scope"]})
   if not route: missing.append(d["id"])
