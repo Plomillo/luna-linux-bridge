@@ -260,7 +260,17 @@ def smoke_test(text="Hello world.", src_lang="eng", tgt_lang="spa", max_new_toke
     model.generation_config.text_decoder_lang_to_code_id = decoder_map
     inputs = processor(text=text, src_lang=src_lang, return_tensors="pt")
     with torch.inference_mode():
-        generated = model.generate(**inputs, tgt_lang=tgt_lang, max_new_tokens=int(max_new_tokens), generate_speech=False)
+        generated = model.generate(
+            **inputs,
+            tgt_lang=tgt_lang,
+            max_new_tokens=int(max_new_tokens),
+            min_new_tokens=min(3, int(max_new_tokens)),
+            repetition_penalty=1.12,
+            no_repeat_ngram_size=3,
+            renormalize_logits=True,
+            do_sample=False,
+            generate_speech=False,
+        )
     seq = generated.sequences if hasattr(generated, "sequences") else generated
     if not isinstance(seq, torch.Tensor) or seq.ndim != 2 or seq.shape[0] != 1:
         raise RuntimeError("MALFORMED_TEXT_TRANSLATION_OUTPUT:" + type(generated).__name__)
