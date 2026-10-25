@@ -1,7 +1,7 @@
 id: louksna1_release_audit
 namespace: louksna.kestra
 description: >-
-  Read-only verification of the published Louksna1 candidate, aggregate 490 MB
+  Read-only verification of the published Louksna1 candidate, exact 479,000,000-byte
   distribution cap, independent G23 evidence and separately scoped G24 evidence.
 tasks:
   - id: release_manifest
