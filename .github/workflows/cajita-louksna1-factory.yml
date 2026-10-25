@@ -91,19 +91,49 @@ jobs:
           LFS_INCLUDE='cajita-luna-runtime/1. Cerebro/model.safetensors,cajita-luna-runtime/3. Transcripción/model.safetensors,cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors,cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin,cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors,cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx,cajita-luna-runtime/2. Orquestación/Confesión Eclesial Reformada/clips_core_source_642.zip,cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z,cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z,cajita-luna-runtime/4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24.zip,cajita-luna-runtime/4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master.zip,cajita-luna-runtime/6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip,cajita-luna-runtime/6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04.zip,cajita-luna-runtime/6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400.zip,cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z,cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z,cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z,cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z,cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z,cajita-luna-runtime/6. Sistema Inteligente/Motor - Protocolar/sml-1.2.0.zip,cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z,cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z,cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z'
           git lfs pull --include="$LFS_INCLUDE" --exclude="" origin "$GITHUB_SHA"
           python - <<'PY'
-          import hashlib
+          import hashlib, json, re
           from pathlib import Path
-          expected = {
-            "cajita-luna-runtime/1. Cerebro/model.safetensors": ("e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0", 40489120),
-            "cajita-luna-runtime/3. Transcripción/model.safetensors": ("67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f", 10399882),
-            "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors": ("630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f", 11720882),
-            "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin": ("4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88", 13483380),
-            "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors": ("01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56", 14956240),
-            "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx": ("c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7", 110516001),
+
+          runtime_root = Path("cajita-luna-runtime").resolve(strict=True)
+          manifest_path = runtime_root / "CAJITA_RUNTIME_V1" / "weights_manifest.json"
+          if manifest_path.is_symlink() or not manifest_path.is_file():
+            raise SystemExit("WEIGHT_MANIFEST_MISSING_OR_UNSAFE")
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          expected_paths = {
+            "1. Cerebro/model.safetensors",
+            "3. Transcripción/model.safetensors",
+            "4. Traductor Inteligente/Traducción general/model.safetensors",
+            "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin",
+            "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+            "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
           }
-          for name, (digest, size) in expected.items():
-            p = Path(name)
-            if not p.is_file() or p.stat().st_size != size or hashlib.sha256(p.read_bytes()).hexdigest() != digest:
+          rows = manifest.get("artifacts")
+          if not isinstance(rows, list) or len(rows) != 6 or {
+              row.get("path") for row in rows if isinstance(row, dict)
+          } != expected_paths:
+            raise SystemExit("WEIGHT_MANIFEST_CANONICAL_PATH_SET_MISMATCH")
+
+          for row in rows:
+            name = row["path"]
+            relative = Path(name)
+            candidate = runtime_root / relative
+            if relative.is_absolute() or ".." in relative.parts:
+              raise SystemExit("WEIGHT_PATH_UNSAFE:" + name)
+            if candidate.is_symlink() or not candidate.resolve(strict=True).is_relative_to(runtime_root):
+              raise SystemExit("WEIGHT_PATH_ESCAPE_OR_SYMLINK:" + name)
+            if not candidate.is_file():
+              raise SystemExit("WEIGHT_FILE_MISSING:" + name)
+            expected_size = row.get("bytes")
+            expected_sha = row.get("sha256")
+            if isinstance(expected_size, bool) or not isinstance(expected_size, int) or expected_size <= 0:
+              raise SystemExit("WEIGHT_MANIFEST_SIZE_INVALID:" + name)
+            if not isinstance(expected_sha, str) or re.fullmatch(r"[0-9a-f]{64}", expected_sha) is None:
+              raise SystemExit("WEIGHT_MANIFEST_SHA256_INVALID:" + name)
+            digest = hashlib.sha256()
+            with candidate.open("rb") as stream:
+              for chunk in iter(lambda: stream.read(8 * 1024 * 1024), b""):
+                digest.update(chunk)
+            if candidate.stat().st_size != expected_size or digest.hexdigest() != expected_sha:
               raise SystemExit("WEIGHT_IDENTITY_MISMATCH:" + name)
           print("SIX_WEIGHTS_EXACT_HASH_AND_SIZE=PASS")
           PY
