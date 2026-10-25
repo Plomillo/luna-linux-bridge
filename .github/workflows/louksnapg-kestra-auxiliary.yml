@@ -29,7 +29,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: louksnapg-aux-audit-${{ github.ref }}
+  # Each run is bound to one concrete producer/source SHA. Avoid a stale
+  # polling run monopolizing the branch and blocking the replacement audit.
+  group: louksnapg-aux-audit-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
