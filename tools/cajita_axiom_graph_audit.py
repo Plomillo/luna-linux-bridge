@@ -4,7 +4,7 @@
 This is a structural/provenance execution gate only; it is not a proof of semantic truth.
 """
 from __future__ import annotations
-import argparse, collections, datetime as dt, hashlib, json, os, re, subprocess
+import argparse, collections, datetime as dt, hashlib, json, os, re, subprocess, sys, tempfile
 from pathlib import Path
 
 HEADING = "# LUNACORE V15 --- B15-B134 AXIOM MATERIALIZATION REGISTRY"
@@ -133,28 +133,65 @@ def jena_query(jena_root, graph, query_text, query_path):
     if len(bindings)!=1 or "count" not in bindings[0]: raise RuntimeError("JENA_ARQ_COUNT_RESULT_INVALID")
     return int(bindings[0]["count"]["value"])
 
+def execute_jena_graph(jena, graph, output):
+    jena = Path(jena).resolve()
+    for path in (jena, jena / "bin" / "riot", jena / "bin" / "arq"):
+        if path.is_symlink() or not (path.is_dir() if path == jena else path.is_file()):
+            raise RuntimeError("PACKAGED_JENA_MISSING_OR_SYMLINK:" + str(path))
+        if not path.resolve().is_relative_to(jena):
+            raise RuntimeError("PACKAGED_JENA_PATH_ESCAPE:" + str(path))
+    riot = subprocess.run(
+        ["sh", str(jena / "bin" / "riot"), "--syntax=NT", str(graph)],
+        cwd=jena, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+        text=True, timeout=300, check=False,
+    )
+    if riot.returncode:
+        raise RuntimeError("JENA_RIOT_PARSE_FAILED:" + riot.stderr[-2500:])
+    counts = {}
+    queries = {
+        "materialized_axioms": (
+            "SELECT (COUNT(DISTINCT ?s) AS ?count) WHERE { ?s <urn:louksna:traceId> ?o . }", 10000
+        ),
+        "legacy_definition_occurrences": (
+            "SELECT (COUNT(DISTINCT ?s) AS ?count) WHERE { ?s a <urn:louksna:LegacyDefinitionOccurrence> . }", 1927
+        ),
+        "legacy_distinct_numeric_ids": (
+            "SELECT (COUNT(DISTINCT ?n) AS ?count) WHERE { ?s <urn:louksna:legacyNumericId> ?n . }", 1708
+        ),
+    }
+    for name, (query, expected) in queries.items():
+        actual = jena_query(jena, graph, query, output / (name + ".rq"))
+        if actual != expected:
+            raise ValueError(f"JENA_QUERY_COUNT_MISMATCH:{name}:{actual}!={expected}")
+        counts[name] = {"count": actual, "expected": expected, "status": "PASS"}
+    return {"riot_parse": "PASS", "sparql_counts": counts}
+
+
 def audit(args):
     source=Path(args.source).read_bytes(); companion=Path(args.companion).read_bytes()
     manifest=json.loads(Path(args.manifest).read_text(encoding="utf-8"))
     source_sha=sha(source); companion_sha=sha(companion)
     expected_factory_sha=os.environ.get("LOUKSNA_FACTORY_HEAD_SHA","").strip()
     factory_run_id=os.environ.get("LOUKSNA_FACTORY_RUN_ID","").strip()
-    bound_factory_evidence=None
-    if expected_factory_sha:
-        if manifest.get("source_commit") != expected_factory_sha:
-            raise ValueError("FACTORY_SOURCE_COMMIT_MISMATCH_WITH_RELEASE_MANIFEST")
-        evidence_root=Path("docs/cajita-luna")
-        g23=json.loads((evidence_root/"LOUKSNA1_G23_EVIDENCE.json").read_text(encoding="utf-8"))
-        g24=json.loads((evidence_root/"LOUKSNA1_G24_EVIDENCE.json").read_text(encoding="utf-8"))
-        task=json.loads((evidence_root/"LOUKSNA1_TASK_ADAPTER_EVIDENCE.json").read_text(encoding="utf-8"))
-        if g23.get("status")!="PASS" or g23.get("source_commit")!=expected_factory_sha:
-            raise ValueError("G23_EVIDENCE_NOT_PASS_OR_SOURCE_MISMATCH")
-        if g24.get("status")!="PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE" or g24.get("source_commit")!=expected_factory_sha:
-            raise ValueError("G24_EVIDENCE_NOT_PASS_OR_SOURCE_MISMATCH")
-        if task.get("status")!="PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY" or task.get("source_commit")!=expected_factory_sha:
-            raise ValueError("TASK_ADAPTER_EVIDENCE_NOT_PASS_OR_SOURCE_MISMATCH")
-        bound_factory_evidence={"factory_run_id":factory_run_id,"source_commit":expected_factory_sha,
-                                "G23":g23["status"],"G24":g24["status"],"task_adapter_evidence":task["status"]}
+    manifest_source_sha=manifest.get("source_commit")
+    if not isinstance(manifest_source_sha,str) or not re.fullmatch(r"[0-9a-f]{40}",manifest_source_sha):
+        raise ValueError("RELEASE_MANIFEST_SOURCE_COMMIT_INVALID")
+    if expected_factory_sha and manifest_source_sha != expected_factory_sha:
+        raise ValueError("FACTORY_SOURCE_COMMIT_MISMATCH_WITH_RELEASE_MANIFEST")
+    # Always bind the structural graph audit to evidence for the manifest's exact
+    # candidate. An empty workflow_run environment must not bypass this gate.
+    evidence_root=Path("docs/cajita-luna")
+    g23=json.loads((evidence_root/"LOUKSNA1_G23_EVIDENCE.json").read_text(encoding="utf-8"))
+    g24=json.loads((evidence_root/"LOUKSNA1_G24_EVIDENCE.json").read_text(encoding="utf-8"))
+    task=json.loads((evidence_root/"LOUKSNA1_TASK_ADAPTER_EVIDENCE.json").read_text(encoding="utf-8"))
+    if g23.get("status")!="PASS" or g23.get("source_commit")!=manifest_source_sha:
+        raise ValueError("G23_EVIDENCE_NOT_PASS_OR_SOURCE_MISMATCH")
+    if g24.get("status")!="PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE" or g24.get("source_commit")!=manifest_source_sha:
+        raise ValueError("G24_EVIDENCE_NOT_PASS_OR_SOURCE_MISMATCH")
+    if task.get("status")!="PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY" or task.get("source_commit")!=manifest_source_sha:
+        raise ValueError("TASK_ADAPTER_EVIDENCE_NOT_PASS_OR_SOURCE_MISMATCH")
+    bound_factory_evidence={"factory_run_id":factory_run_id,"source_commit":manifest_source_sha,
+                            "G23":g23["status"],"G24":g24["status"],"task_adapter_evidence":task["status"]}
     if source_sha!=manifest["protected_architecture"]["sha256"]: raise ValueError("PROTECTED_SOURCE_SHA256_MISMATCH")
     if not companion.startswith(source): raise ValueError("LOUKSNA1_PREFIX_NOT_BYTE_EXACT")
     if companion_sha!=manifest["louksna1"]["sha256"]: raise ValueError("LOUKSNA1_SHA256_MISMATCH")
@@ -169,22 +206,14 @@ def audit(args):
     output=Path(args.output).resolve(); graph=output/"louksna1-axiom-provenance.nt"
     triple_count,graph_sha,graph_bytes=build_graph(axiom_rows,legacy,graph)
     root=Path(args.runtime).resolve()
-    jena=root/"2. Orquestación"/"Multi + Interdisciplinar"/"APACHE_JENA_6_2_0"/"apache-jena-6.2.0"
-    for p in [jena,jena/"bin"/"riot",jena/"bin"/"arq"]:
-        if not p.exists() or p.is_symlink(): raise RuntimeError("PACKAGED_JENA_MISSING_OR_SYMLINK:"+str(p))
-    riot=subprocess.run(["sh",str(jena/"bin"/"riot"),"--syntax=NT",str(graph)],cwd=jena,
-                        stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True,timeout=300,check=False)
-    if riot.returncode: raise RuntimeError("JENA_RIOT_PARSE_FAILED:"+riot.stderr[-2500:])
-    counts={}
-    queries={
-      "materialized_axioms":("SELECT (COUNT(DISTINCT ?s) AS ?count) WHERE { ?s <urn:louksna:traceId> ?o . }",10000),
-      "legacy_definition_occurrences":("SELECT (COUNT(DISTINCT ?s) AS ?count) WHERE { ?s a <urn:louksna:LegacyDefinitionOccurrence> . }",1927),
-      "legacy_distinct_numeric_ids":("SELECT (COUNT(DISTINCT ?n) AS ?count) WHERE { ?s <urn:louksna:legacyNumericId> ?n . }",1708),
-    }
-    for name,(query,expected) in queries.items():
-        actual=jena_query(jena,graph,query,output/(name+".rq"))
-        if actual!=expected: raise ValueError(f"JENA_QUERY_COUNT_MISMATCH:{name}:{actual}!={expected}")
-        counts[name]={"count":actual,"expected":expected,"status":"PASS"}
+    sys.path.insert(0,str(root))
+    from cajita_externalized_packaging import materialize_registered_asset
+    with tempfile.TemporaryDirectory(prefix="louksna1-jena-verified-") as temp_name:
+        extraction_root=Path(temp_name)/"jena-runtime"
+        jena_reconstruction=materialize_registered_asset(root,"APACHE_JENA_6_2_0",extraction_root)
+        jena=extraction_root/"apache-jena-6.2.0"
+        jena_results=execute_jena_graph(jena,graph,output)
+
     return {
       "schema":"LOUKSNA1_INTEGRAL_CERTIFICATION_ASSESSMENT/1.0",
       "assessment":"PASS_STRUCTURAL_AXIOM_GRAPH_EXECUTION","decision":"HOLD","global_certification":"NOT_GRANTED",
@@ -195,7 +224,7 @@ def audit(args):
       "legacy_definition_census":legacy_result,"materialized_axiom_census":axiom_result,
       "rdf_graph":{"path":graph.name,"bytes":graph_bytes,"sha256":graph_sha,"triples":triple_count,
                    "format":"N-Triples","scope":"CONTENT_CLASS_BLOCK_TRACE_SOURCE_LINE_PROVENANCE"},
-      "jena":{"riot_parse":"PASS","sparql_counts":counts},
+      "jena":{"container_reconstruction":jena_reconstruction,**jena_results},
       "semantic_gates":{"axiom_proposition_validity":"NOT_ESTABLISHED",
         "semantic_consistency":"NOT_ESTABLISHED","model_quality_equivalence":"NOT_ESTABLISHED",
         "all_21_target_task_adapters":"NOT_ESTABLISHED","full_integrated_runtime_behaviour":"NOT_ESTABLISHED"},
