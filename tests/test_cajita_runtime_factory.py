@@ -6,10 +6,10 @@ from reproduce_macrodown import BINARY_SUFFIXES, add_stream, DEFAULT_COMBINED_CA
 from cajita_runtime import KNOWN_INFRASTRUCTURE_TEST_FIXTURES, classify_model_like_paths, COMBINED_DISTRIBUTION_CAP_BYTES
 
 class FactorySafetyTests(unittest.TestCase):
- def test_global_distribution_cap_is_exactly_479000000_bytes(self):
-  self.assertEqual(COMBINED_CAP, 479_000_000)
-  self.assertEqual(DEFAULT_COMBINED_CAP_BYTES, 479_000_000)
-  self.assertEqual(COMBINED_DISTRIBUTION_CAP_BYTES, 479_000_000)
+ def test_cajita_runtime_distribution_cap_is_exactly_470000000_bytes(self):
+  self.assertEqual(COMBINED_CAP, 470_000_000)
+  self.assertEqual(DEFAULT_COMBINED_CAP_BYTES, 470_000_000)
+  self.assertEqual(COMBINED_DISTRIBUTION_CAP_BYTES, 470_000_000)
 
  def test_archive_free_rerun_preserves_and_revalidates_materialized_modules_and_history(self):
   with tempfile.TemporaryDirectory() as d:
