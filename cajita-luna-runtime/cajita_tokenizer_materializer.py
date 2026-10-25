@@ -39,6 +39,19 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _decompress_bounded(data: bytes, expected_bytes: int) -> bytes:
+    if isinstance(expected_bytes, bool) or not isinstance(expected_bytes, int) or not 1 <= expected_bytes <= 128_000_000:
+        raise TokenizerMaterializationError("TOKENIZER_EXPANSION_SIZE_OUT_OF_RANGE")
+    try:
+        with gzip.GzipFile(fileobj=io.BytesIO(data), mode="rb") as stream:
+            raw = stream.read(expected_bytes + 1)
+            if len(raw) != expected_bytes or stream.read(1):
+                raise TokenizerMaterializationError("TOKENIZER_EXPANSION_SIZE_MISMATCH")
+            return raw
+    except (OSError, EOFError) as exc:
+        raise TokenizerMaterializationError("TOKENIZER_GZIP_INVALID") from exc
+
+
 def _safe_rel(value: str) -> str:
     if not isinstance(value, str) or not value or "\\" in value:
         raise TokenizerMaterializationError("TOKENIZER_PATH_INVALID")
@@ -281,7 +294,7 @@ def load_pretrained_with_compressed_tokenizer(model_root: Path, loader_class, **
     if len(packed_bytes) != row["compressed_bytes"] or sha256_bytes(packed_bytes) != row["compressed_sha256"]:
         raise TokenizerMaterializationError("TOKENIZER_PACKED_PAYLOAD_CHANGED:" + packed_rel)
     try:
-        raw = gzip.decompress(packed_bytes)
+        raw = _decompress_bounded(packed_bytes, row["source_bytes"])
     except (OSError, EOFError) as exc:
         raise TokenizerMaterializationError("TOKENIZER_GZIP_INVALID:" + packed_rel) from exc
     if len(raw) != row["source_bytes"] or sha256_bytes(raw) != row["source_sha256"]:
@@ -332,7 +345,7 @@ def tokenizer_tree_rows(module_root: Path, runtime_root: Path, rows: list[dict])
             compressed = root.joinpath(*PurePosixPath(compressed_rel).parts)
             if compressed.is_symlink() or not compressed.is_file() or sha256_file(compressed) != entry["compressed_sha256"]:
                 raise TokenizerMaterializationError("TOKENIZER_TREE_COMPRESSED_SHA_MISMATCH:" + candidate)
-            raw = gzip.decompress(compressed.read_bytes())
+            raw = _decompress_bounded(compressed.read_bytes(), entry["source_bytes"])
             if len(raw) != entry["source_bytes"] or sha256_bytes(raw) != entry["source_sha256"]:
                 raise TokenizerMaterializationError("TOKENIZER_TREE_RECONSTRUCTION_MISMATCH:" + candidate)
             filtered.append({"path": "tokenizer.json", "bytes": entry["source_bytes"], "sha256": entry["source_sha256"]})
