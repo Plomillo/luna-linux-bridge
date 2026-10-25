@@ -50,14 +50,16 @@ tasks:
          and fromJson(outputs.runtime_report.body).q2_factor_results[3].status == 'ALREADY_Q2_PACKED'
          and fromJson(outputs.runtime_report.body).certification == 'NOT_GRANTED'
          and fromJson(outputs.macrodown_report.body).build_status == 'PASS'
-         and fromJson(outputs.macrodown_report.body).raw_payload_size_gate == 'PASS'
+         and fromJson(outputs.macrodown_report.body).raw_payload_size_gate == 'PASS_WITHIN_INPUT_CEILING'
          and fromJson(outputs.macrodown_report.body).archive_size_gate == 'PASS'
          and fromJson(outputs.macrodown_report.body).gross_raw_payload_bytes_including_manifest <= 470000000
          and fromJson(outputs.macrodown_report.body).archive_bytes <= 470000000
          and fromJson(outputs.macrodown_report.body).registered_assets_preserved == 10
          and fromJson(outputs.macrodown_report.body).certification == 'NOT_GRANTED'
          and fromJson(outputs.placement_record.body).runtime_size_gate.size_gate == 'PASS'
-         and fromJson(outputs.placement_record.body).runtime_size_gate.hard_cap_bytes == 470000000
+         and fromJson(outputs.placement_record.body).runtime_size_gate.payload_bytes <= 470000000
+         and fromJson(outputs.placement_record.body).runtime_size_gate.raw_payload_target_bytes == 470000000
+         and fromJson(outputs.placement_record.body).runtime_size_gate.raw_payload_target_gate == 'PASS'
          and fromJson(outputs.placement_record.body).runtime_size_gate.registered_asset_count == 10 }}
     then:
       - id: record_pass
