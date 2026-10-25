@@ -115,7 +115,7 @@ def load_candidate(candidate_dir):
     if meta.get("schema")!="DOCLING_BINARY_QUANTIZED_MANIFEST/1.0" or meta.get("hard_cap_bytes")!=30_000_000:
         raise RuntimeError("CANDIDATE_MANIFEST_OR_CAP_MISMATCH")
     if sha256_file(bp)!=meta.get("weights_sha256"): raise RuntimeError("WEIGHTS_HASH_MISMATCH")
-    from transformers import AutoConfig, AutoModelForImageTextToText
+    from transformers import AutoConfig, AutoModelForImageTextToText, GenerationConfig
     config=AutoConfig.from_pretrained(str(p),local_files_only=True,trust_remote_code=False)
     old=torch.get_default_dtype()
     try:
@@ -136,6 +136,17 @@ def load_candidate(candidate_dir):
     missing=sorted(params-loaded)
     if meta.get("tie_word_embeddings") and "lm_head.weight" in missing: missing.remove("lm_head.weight")
     if missing: raise RuntimeError("UNINITIALIZED_MODEL_PARAMETERS:"+",".join(missing[:10]))
+    # Bind EOS/PAD behavior to the exact local generation policy shipped with this candidate.
+    generation_config = GenerationConfig.from_pretrained(p, local_files_only=True)
+    expected_eos = getattr(model.config, "eos_token_id", None)
+    expected_eos_ids = set(expected_eos if isinstance(expected_eos, (list, tuple, set)) else ([expected_eos] if expected_eos is not None else []))
+    observed_eos = generation_config.eos_token_id
+    observed_eos_ids = set(observed_eos if isinstance(observed_eos, (list, tuple, set)) else ([observed_eos] if observed_eos is not None else []))
+    if expected_eos_ids and not expected_eos_ids.issubset(observed_eos_ids):
+        raise RuntimeError("GENERATION_CONFIG_EOS_MISMATCH")
+    if model.config.pad_token_id is not None and generation_config.pad_token_id != model.config.pad_token_id:
+        raise RuntimeError("GENERATION_CONFIG_PAD_MISMATCH")
+    model.generation_config = generation_config
     model.eval()
     return model,meta
 

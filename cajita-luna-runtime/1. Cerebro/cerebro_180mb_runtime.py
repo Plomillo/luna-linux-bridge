@@ -19,7 +19,7 @@ if _RUNTIME_ROOT is None:
 sys.path.insert(0, str(_RUNTIME_ROOT))
 from cajita_weight_materializer import load_model_state
 from cajita_tokenizer_materializer import load_pretrained_with_compressed_tokenizer
-from transformers import AutoTokenizer, GptOssConfig, GptOssForCausalLM
+from transformers import AutoTokenizer, GenerationConfig, GptOssConfig, GptOssForCausalLM
 from transformers.models.gpt_oss.modeling_gpt_oss import GptOssExperts, GptOssTopKRouter
 
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -176,6 +176,17 @@ def build_model():
             rope_count += 1
     if rope_count < 1:
         raise RuntimeError("GPTOSS_ROPE_MODULE_NOT_MATERIALIZED")
+    # Bind EOS/PAD behavior to the exact local generation policy shipped with the weights.
+    generation_config = GenerationConfig.from_pretrained(ROOT, local_files_only=True)
+    expected_eos = getattr(model.config, "eos_token_id", None)
+    expected_eos_ids = set(expected_eos if isinstance(expected_eos, (list, tuple, set)) else ([expected_eos] if expected_eos is not None else []))
+    observed_eos = generation_config.eos_token_id
+    observed_eos_ids = set(observed_eos if isinstance(observed_eos, (list, tuple, set)) else ([observed_eos] if observed_eos is not None else []))
+    if expected_eos_ids and not expected_eos_ids.issubset(observed_eos_ids):
+        raise RuntimeError("GENERATION_CONFIG_EOS_MISMATCH")
+    if model.config.pad_token_id is not None and generation_config.pad_token_id != model.config.pad_token_id:
+        raise RuntimeError("GENERATION_CONFIG_PAD_MISMATCH")
+    model.generation_config = generation_config
     model.eval()
     return model
 
