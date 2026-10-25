@@ -68,7 +68,8 @@ jobs:
               wanted_sha=str(event["inputs"]["source_commit"]).strip()
           else:
               wanted_sha=str(event.get("before","")).strip()
-              branch=str(event.get("ref","").split("/")[-1])
+              branch=str(event.get("ref","").removeprefix("refs/heads/"))
+              event_time=str(event.get("head_commit",{}).get("timestamp",""))
           headers={"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"}
           def get(path):
               req=urllib.request.Request("https://api.github.com/repos/"+repo+path,headers=headers)
@@ -85,13 +86,23 @@ jobs:
                   else:
                       query=urllib.parse.urlencode({"branch":branch,"per_page":100})
                       result=get("/actions/workflows/cajita-louksna1-factory.yml/runs?"+query)
-                      matches=[row for row in result.get("workflow_runs",[])
-                          if row.get("head_sha")==wanted_sha
-                          and row.get("path")==".github/workflows/cajita-louksna1-factory.yml"
-                          and row.get("event")=="push"]
-                      if matches:
-                          matches.sort(key=lambda row:(row.get("run_attempt",0),row.get("created_at","")),reverse=True)
-                          selected=matches[0]
+                      candidates=[row for row in result.get("workflow_runs",[])
+                          if row.get("path")==".github/workflows/cajita-louksna1-factory.yml"
+                          and row.get("event")=="push"
+                          and row.get("head_branch")==branch]
+                      exact=[row for row in candidates if row.get("head_sha")==wanted_sha]
+                      if exact:
+                          exact.sort(key=lambda row:(row.get("run_attempt",0),row.get("created_at","")),reverse=True)
+                          selected=exact[0]
+                      elif candidates:
+                          # A commit that changes only this auxiliary workflow does not
+                          # run the factory. In that case audit the newest factory
+                          # candidate on this branch no later than the triggering push.
+                          eligible=[row for row in candidates
+                              if not event_time or str(row.get("created_at","")) <= event_time]
+                          if eligible:
+                              eligible.sort(key=lambda row:(row.get("created_at",""),row.get("run_attempt",0)),reverse=True)
+                              selected=eligible[0]
                   if selected and selected.get("status")=="completed":
                       break
               except urllib.error.HTTPError as exc:
