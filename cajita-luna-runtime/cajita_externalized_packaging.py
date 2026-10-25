@@ -1,0 +1,520 @@
+#!/usr/bin/env python3
+"""Fail-closed packaging and reconstruction contract for Cajita externalized assets."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+from pathlib import Path, PurePosixPath
+
+RUNTIME_PREFIX = "cajita-luna-runtime/"
+PLACEMENT_NAME = "EXTERNALIZED_ASSET_PLACEMENT.json"
+SOURCE_REGISTRY_NAME = "module_registry.json"
+DISTRIBUTION_REGISTRY_NAME = "CAJITA_DISTRIBUTION_MODULE_REGISTRY.json"
+MODULE_DESCRIPTOR_NAME = "CAJITA_MODULE.json"
+EXPECTED_ASSET_COUNT = 10
+
+
+def canonical_json(value) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def sha_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def sha_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(4 * 1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _runtime_relative(value: str, field: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise RuntimeError("EXTERNALIZED_PATH_MISSING:" + field)
+    value = value.replace("\\", "/")
+    if not value.startswith(RUNTIME_PREFIX):
+        raise RuntimeError("EXTERNALIZED_PATH_PREFIX_INVALID:" + field + ":" + value[:180])
+    rel = value[len(RUNTIME_PREFIX):]
+    p = PurePosixPath(rel)
+    if p.is_absolute() or not rel or any(part in {"", ".."} for part in p.parts):
+        raise RuntimeError("EXTERNALIZED_PATH_UNSAFE:" + field + ":" + value[:180])
+    if re.match(r"^[A-Za-z]:", rel) or p.as_posix() in {"", ".", ".."}:
+        raise RuntimeError("EXTERNALIZED_PATH_UNSAFE:" + field + ":" + value[:180])
+    return p.as_posix()
+
+
+def _safe_archive_member(value: str) -> str:
+    value = value.replace("\\", "/")
+    value = value.rstrip("/")
+    if not value or value.startswith("/") or re.match(r"^[A-Za-z]:", value):
+        raise RuntimeError("EXTERNALIZED_ARCHIVE_ABSOLUTE_MEMBER:" + value[:180])
+    p = PurePosixPath(value)
+    if any(part in {"", ".."} for part in p.parts) or p.as_posix() in {"", ".", ".."}:
+        raise RuntimeError("EXTERNALIZED_ARCHIVE_TRAVERSAL_MEMBER:" + value[:180])
+    return p.as_posix()
+
+
+def _tree_summary(root: Path) -> dict:
+    root = Path(root).resolve()
+    if not root.is_dir() or root.is_symlink():
+        raise RuntimeError("EXTERNALIZED_TREE_ROOT_INVALID:" + str(root))
+    rows = []
+    for base, dirs, names in os.walk(root, topdown=True, followlinks=False):
+        base_path = Path(base)
+        kept_dirs = []
+        for name in sorted(dirs):
+            directory = base_path / name
+            if directory.is_symlink() or not directory.resolve().is_relative_to(root):
+                raise RuntimeError("EXTERNALIZED_TREE_SYMLINK_OR_ESCAPE:" + str(directory))
+            kept_dirs.append(name)
+        dirs[:] = kept_dirs
+        for name in sorted(names):
+            path = base_path / name
+            if path.is_symlink() or not path.resolve().is_relative_to(root):
+                raise RuntimeError("EXTERNALIZED_TREE_SYMLINK_OR_ESCAPE:" + str(path))
+            if not path.is_file() or not stat.S_ISREG(path.stat().st_mode):
+                raise RuntimeError("EXTERNALIZED_TREE_NON_REGULAR:" + str(path))
+            if name == MODULE_DESCRIPTOR_NAME:
+                continue
+            rows.append({
+                "path": path.relative_to(root).as_posix(),
+                "bytes": path.stat().st_size,
+                "sha256": sha_file(path),
+            })
+    rows.sort(key=lambda item: item["path"].encode("utf-8"))
+    return {
+        "file_count": len(rows),
+        "bytes": sum(item["bytes"] for item in rows),
+        "tree_sha256": sha_bytes(canonical_json(rows)),
+    }
+
+
+def _load_json(path: Path, label: str) -> dict:
+    if path.is_symlink() or not path.is_file():
+        raise RuntimeError(label + "_NOT_REGULAR_FILE:" + str(path))
+    try:
+        result = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise RuntimeError(label + "_INVALID_JSON:" + type(exc).__name__) from exc
+    if not isinstance(result, dict):
+        raise RuntimeError(label + "_ROOT_NOT_OBJECT")
+    return result
+
+
+def _source_contract(root: Path) -> tuple[dict, dict, list[dict]]:
+    root = Path(root).resolve()
+    placement_path = root / PLACEMENT_NAME
+    registry_path = root / SOURCE_REGISTRY_NAME
+    placement = _load_json(placement_path, "EXTERNALIZED_ASSET_PLACEMENT")
+    source_registry = _load_json(registry_path, "SOURCE_MODULE_REGISTRY")
+    assets = placement.get("assets")
+    if not isinstance(assets, list) or len(assets) != EXPECTED_ASSET_COUNT:
+        raise RuntimeError("EXTERNALIZED_ASSET_COUNT_INVALID")
+    modules = source_registry.get("modules")
+    if source_registry.get("schema") != "CAJITA_MODULE_REGISTRY/1.0" or not isinstance(modules, list):
+        raise RuntimeError("SOURCE_MODULE_REGISTRY_SCHEMA_INVALID")
+
+    seen_ids = set()
+    seen_expanded = set()
+    contract = []
+    for asset in assets:
+        if not isinstance(asset, dict):
+            raise RuntimeError("EXTERNALIZED_ASSET_ROW_INVALID")
+        asset_id = asset.get("id")
+        if not isinstance(asset_id, str) or not asset_id or asset_id in seen_ids:
+            raise RuntimeError("EXTERNALIZED_ASSET_ID_COLLISION_OR_MISSING")
+        seen_ids.add(asset_id)
+
+        expanded_rel = _runtime_relative(asset.get("expanded_path"), asset_id + ":expanded_path")
+        container_meta = asset.get("compact_runtime_container")
+        if not isinstance(container_meta, dict):
+            raise RuntimeError("EXTERNALIZED_CONTAINER_METADATA_MISSING:" + asset_id)
+        container_rel = _runtime_relative(container_meta.get("path"), asset_id + ":container_path")
+        if expanded_rel in seen_expanded:
+            raise RuntimeError("EXTERNALIZED_EXPANSION_PATH_COLLISION:" + expanded_rel)
+        seen_expanded.add(expanded_rel)
+        if expanded_rel == container_rel or expanded_rel.startswith(container_rel + "/") or container_rel.startswith(expanded_rel + "/"):
+            raise RuntimeError("EXTERNALIZED_CONTAINER_TREE_OVERLAP:" + asset_id)
+        if not container_rel.lower().endswith(".7z"):
+            raise RuntimeError("EXTERNALIZED_CONTAINER_SUFFIX_INVALID:" + asset_id)
+        if asset.get("placed_path") != container_meta.get("path"):
+            raise RuntimeError("EXTERNALIZED_PLACED_PATH_MISMATCH:" + asset_id)
+
+        container = root / Path(*PurePosixPath(container_rel).parts)
+        if container.is_symlink() or not container.is_file():
+            raise RuntimeError("EXTERNALIZED_CONTAINER_MISSING:" + asset_id)
+        expected_size = container_meta.get("size_bytes", asset.get("container_size_bytes"))
+        expected_sha = container_meta.get("sha256", asset.get("container_sha256"))
+        if isinstance(expected_size, bool) or not isinstance(expected_size, int) or expected_size < 1:
+            raise RuntimeError("EXTERNALIZED_CONTAINER_SIZE_INVALID:" + asset_id)
+        if not isinstance(expected_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_sha):
+            raise RuntimeError("EXTERNALIZED_CONTAINER_SHA256_INVALID:" + asset_id)
+        actual_size = container.stat().st_size
+        actual_sha = sha_file(container)
+        if actual_size != expected_size or actual_sha != expected_sha:
+            raise RuntimeError("EXTERNALIZED_CONTAINER_IDENTITY_MISMATCH:" + asset_id)
+        if asset.get("container_size_bytes", expected_size) != expected_size or asset.get("container_sha256", expected_sha) != expected_sha:
+            raise RuntimeError("EXTERNALIZED_CONTAINER_DUPLICATE_METADATA_MISMATCH:" + asset_id)
+
+        expanded = root / Path(*PurePosixPath(expanded_rel).parts)
+        if expanded.is_symlink() or not expanded.is_dir():
+            raise RuntimeError("EXTERNALIZED_SOURCE_TREE_MISSING:" + asset_id)
+        measured = _tree_summary(expanded)
+        expected_tree = {
+            "bytes": asset.get("expanded_bytes"),
+            "file_count": asset.get("expanded_file_count"),
+            "tree_sha256": asset.get("expanded_tree_sha256"),
+        }
+        if measured["bytes"] != expected_tree["bytes"] or measured["file_count"] != expected_tree["file_count"] or measured["tree_sha256"] != expected_tree["tree_sha256"]:
+            raise RuntimeError("EXTERNALIZED_SOURCE_TREE_IDENTITY_MISMATCH:" + asset_id + ":" + json.dumps({"expected": expected_tree, "actual": measured}, sort_keys=True))
+
+        descriptor_path = expanded / MODULE_DESCRIPTOR_NAME
+        descriptor_raw = descriptor_path.read_text(encoding="utf-8")
+        descriptor_sha = sha_bytes(descriptor_raw.encode("utf-8"))
+        expected_descriptor_sha = asset.get("factory_reconciliation", {}).get("module_manifest_sha256")
+        if descriptor_sha != expected_descriptor_sha:
+            raise RuntimeError("EXTERNALIZED_MODULE_DESCRIPTOR_HASH_MISMATCH:" + asset_id)
+        descriptor = _load_json(descriptor_path, "EXTERNALIZED_MODULE_DESCRIPTOR")
+        if descriptor.get("canonical_asset_id") != asset_id or descriptor.get("module_key") != expanded_rel:
+            raise RuntimeError("EXTERNALIZED_MODULE_DESCRIPTOR_IDENTITY_MISMATCH:" + asset_id)
+        descriptor_materialization = descriptor.get("materialization", {})
+        for key, value in (("bytes", measured["bytes"]), ("file_count", measured["file_count"]), ("tree_sha256", measured["tree_sha256"])):
+            if descriptor_materialization.get(key) != value:
+                raise RuntimeError("EXTERNALIZED_DESCRIPTOR_TREE_METADATA_MISMATCH:" + asset_id + ":" + key)
+        source_archives = descriptor.get("source_archives")
+        if not isinstance(source_archives, list) or len(source_archives) != 1:
+            raise RuntimeError("EXTERNALIZED_DESCRIPTOR_ARCHIVE_SET_INVALID:" + asset_id)
+        descriptor_archive = source_archives[0]
+        if descriptor_archive.get("path") != container_meta.get("path") or descriptor_archive.get("sha256") != expected_sha or descriptor_archive.get("bytes") != expected_size:
+            raise RuntimeError("EXTERNALIZED_DESCRIPTOR_ARCHIVE_BINDING_MISMATCH:" + asset_id)
+
+        module_matches = [m for m in modules if isinstance(m, dict) and m.get("module_key") == expanded_rel and m.get("path") == expanded_rel]
+        if len(module_matches) != 1:
+            raise RuntimeError("EXTERNALIZED_SOURCE_REGISTRY_BINDING_COUNT:" + asset_id)
+        source_module = module_matches[0]
+        if source_module.get("tree_sha256") != measured["tree_sha256"] or source_module.get("bytes") != measured["bytes"] or source_module.get("file_count") != measured["file_count"]:
+            raise RuntimeError("EXTERNALIZED_SOURCE_REGISTRY_TREE_MISMATCH:" + asset_id)
+        if source_module.get("manifest_sha256") != descriptor_sha:
+            raise RuntimeError("EXTERNALIZED_SOURCE_REGISTRY_DESCRIPTOR_MISMATCH:" + asset_id)
+
+        contract.append({
+            "id": asset_id,
+            "expanded_relpath": expanded_rel,
+            "container_relpath": container_rel,
+            "container_bytes": expected_size,
+            "container_sha256": expected_sha,
+            "expanded_bytes": measured["bytes"],
+            "expanded_file_count": measured["file_count"],
+            "expanded_tree_sha256": measured["tree_sha256"],
+            "module_descriptor_sha256": descriptor_sha,
+            "module_descriptor_raw": descriptor_raw,
+            "module_descriptor": descriptor,
+            "source_module_registry_row": source_module,
+        })
+
+    if seen_ids.__len__() != EXPECTED_ASSET_COUNT:
+        raise RuntimeError("EXTERNALIZED_ASSET_ID_SET_INVALID")
+    return placement, source_registry, contract
+
+
+def prepare_distribution_registry(root: Path) -> list[dict]:
+    root = Path(root).resolve()
+    placement, source_registry, contract = _source_contract(root)
+    source_registry_path = root / SOURCE_REGISTRY_NAME
+    placement_path = root / PLACEMENT_NAME
+    placement_sha = sha_file(placement_path)
+    source_registry_sha = sha_file(source_registry_path)
+    externalized_paths = {item["expanded_relpath"] for item in contract}
+
+    source_modules = source_registry.get("modules", [])
+    extracted_modules = []
+    externalized_modules = []
+    by_key = {item["expanded_relpath"]: item for item in contract}
+    for row in source_modules:
+        key = row.get("module_key") if isinstance(row, dict) else None
+        if key not in by_key:
+            extracted_modules.append(row)
+            continue
+        item = by_key[key]
+        if item["source_module_registry_row"] != row:
+            raise RuntimeError("EXTERNALIZED_REGISTRY_ROW_CHANGED_DURING_BUILD:" + str(key))
+        distribution_row = dict(row)
+        distribution_row.update({
+            "state": "EXTERNALIZED_COMPRESSED_CONTAINER_NOT_MATERIALIZED",
+            "container_path": item["container_relpath"],
+            "container_bytes": item["container_bytes"],
+            "container_sha256": item["container_sha256"],
+            "materialization_required": True,
+            "materialization": {
+                "status": "PACKED_NOT_EXPANDED",
+                "bytes": item["expanded_bytes"],
+                "file_count": item["expanded_file_count"],
+                "tree_sha256": item["expanded_tree_sha256"],
+            },
+            "module_descriptor_raw": item["module_descriptor_raw"],
+            "module_descriptor_sha256": item["module_descriptor_sha256"],
+            "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+            "execution": "NOT_GRANTED_WITHOUT_ADAPTER_AND_SMOKE",
+            "certification": "NOT_GRANTED",
+        })
+        externalized_modules.append(distribution_row)
+
+    if len(externalized_modules) != EXPECTED_ASSET_COUNT or len(extracted_modules) + len(externalized_modules) != len(source_modules):
+        raise RuntimeError("DISTRIBUTION_REGISTRY_MODULE_PARTITION_INVALID")
+    externalized_modules.sort(key=lambda row: row["module_key"].encode("utf-8"))
+    extracted_modules.sort(key=lambda row: row["module_key"].encode("utf-8"))
+
+    result = dict(source_registry)
+    result["source_module_registry_sha256"] = source_registry_sha
+    result["externalized_asset_placement_sha256"] = placement_sha
+    result["source_materialized_module_count"] = len(source_modules)
+    result["materialized_module_count"] = len(extracted_modules)
+    result["modules"] = extracted_modules
+    result["externalized_module_count"] = len(externalized_modules)
+    result["externalized_modules"] = externalized_modules
+    result["distribution_profile"] = {
+        "policy": "PACK_CONTAINER_ONCE_AND_RECONSTRUCT_EXPANDED_TREE_ON_DEMAND",
+        "source_only_registry_excluded": SOURCE_REGISTRY_NAME,
+        "expanded_tree_file_bytes_embedded": False,
+        "compressed_container_bytes_embedded": True,
+        "materialization_helper": "cajita_externalized_asset_loader.py",
+        "consumer_adapter_validation": "NOT_ESTABLISHED",
+        "native_smoke_validation": "REQUIRED",
+        "certification": "NOT_GRANTED",
+    }
+    output_path = root / DISTRIBUTION_REGISTRY_NAME
+    if output_path.is_symlink():
+        raise RuntimeError("DISTRIBUTION_REGISTRY_SYMLINK_REFUSED")
+    output = (json.dumps(result, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    current = output_path.read_bytes() if output_path.is_file() else None
+    if current != output:
+        temporary = output_path.with_name(output_path.name + ".building")
+        if temporary.is_symlink():
+            raise RuntimeError("DISTRIBUTION_REGISTRY_TEMP_SYMLINK_REFUSED")
+        temporary.write_bytes(output)
+        os.replace(temporary, output_path)
+    return contract
+
+
+def distribution_contract(root: Path) -> list[dict]:
+    root = Path(root).resolve()
+    placement_path = root / PLACEMENT_NAME
+    registry_path = root / DISTRIBUTION_REGISTRY_NAME
+    placement = _load_json(placement_path, "EXTERNALIZED_ASSET_PLACEMENT")
+    registry = _load_json(registry_path, "DISTRIBUTION_MODULE_REGISTRY")
+    if registry.get("schema") != "CAJITA_MODULE_REGISTRY/1.0":
+        raise RuntimeError("DISTRIBUTION_MODULE_REGISTRY_SCHEMA_INVALID")
+    if registry.get("externalized_asset_placement_sha256") != sha_file(placement_path):
+        raise RuntimeError("DISTRIBUTION_PLACEMENT_REGISTRY_HASH_MISMATCH")
+    rows = registry.get("externalized_modules")
+    assets = placement.get("assets")
+    if not isinstance(rows, list) or len(rows) != EXPECTED_ASSET_COUNT or not isinstance(assets, list) or len(assets) != EXPECTED_ASSET_COUNT:
+        raise RuntimeError("DISTRIBUTION_EXTERNALIZED_ASSET_SET_INVALID")
+    by_id = {row.get("canonical_asset_id"): row for row in rows if isinstance(row, dict)}
+    if len(by_id) != EXPECTED_ASSET_COUNT:
+        raise RuntimeError("DISTRIBUTION_EXTERNALIZED_ASSET_ID_COLLISION")
+    output = []
+    for asset in assets:
+        asset_id = asset.get("id")
+        row = by_id.get(asset_id)
+        if row is None:
+            raise RuntimeError("DISTRIBUTION_EXTERNALIZED_MODULE_MISSING:" + str(asset_id))
+        expanded_rel = _runtime_relative(asset.get("expanded_path"), str(asset_id) + ":expanded_path")
+        container = asset.get("compact_runtime_container", {})
+        container_rel = _runtime_relative(container.get("path"), str(asset_id) + ":container_path")
+        if row.get("path") != expanded_rel or row.get("module_key") != expanded_rel:
+            raise RuntimeError("DISTRIBUTION_MODULE_PATH_MISMATCH:" + str(asset_id))
+        if row.get("container_path") != container_rel or row.get("container_sha256") != container.get("sha256") or row.get("container_bytes") != container.get("size_bytes"):
+            raise RuntimeError("DISTRIBUTION_CONTAINER_BINDING_MISMATCH:" + str(asset_id))
+        if row.get("tree_sha256") != asset.get("expanded_tree_sha256") or row.get("bytes") != asset.get("expanded_bytes") or row.get("file_count") != asset.get("expanded_file_count"):
+            raise RuntimeError("DISTRIBUTION_TREE_BINDING_MISMATCH:" + str(asset_id))
+        descriptor_raw = row.get("module_descriptor_raw")
+        descriptor_sha = row.get("module_descriptor_sha256")
+        if not isinstance(descriptor_raw, str) or sha_bytes(descriptor_raw.encode("utf-8")) != descriptor_sha:
+            raise RuntimeError("DISTRIBUTION_DESCRIPTOR_RAW_HASH_MISMATCH:" + str(asset_id))
+        descriptor = json.loads(descriptor_raw)
+        if descriptor.get("canonical_asset_id") != asset_id or descriptor.get("module_key") != expanded_rel:
+            raise RuntimeError("DISTRIBUTION_DESCRIPTOR_IDENTITY_MISMATCH:" + str(asset_id))
+        container_path = root / Path(*PurePosixPath(container_rel).parts)
+        if container_path.is_symlink() or not container_path.is_file():
+            raise RuntimeError("DISTRIBUTION_CONTAINER_MISSING:" + str(asset_id))
+        actual_bytes = container_path.stat().st_size
+        actual_sha = sha_file(container_path)
+        if actual_bytes != row.get("container_bytes") or actual_sha != row.get("container_sha256"):
+            raise RuntimeError("DISTRIBUTION_CONTAINER_IDENTITY_MISMATCH:" + str(asset_id))
+        output.append({
+            "id": asset_id,
+            "expanded_relpath": expanded_rel,
+            "container_relpath": container_rel,
+            "container_bytes": actual_bytes,
+            "container_sha256": actual_sha,
+            "expanded_bytes": row["bytes"],
+            "expanded_file_count": row["file_count"],
+            "expanded_tree_sha256": row["tree_sha256"],
+            "module_descriptor_sha256": descriptor_sha,
+            "module_descriptor_raw": descriptor_raw,
+            "module_descriptor": descriptor,
+        })
+    return output
+
+
+def _seven_zip() -> str:
+    binary = shutil.which("7z") or shutil.which("7zz")
+    if not binary:
+        raise RuntimeError("SEVEN_ZIP_EXECUTABLE_MISSING")
+    return binary
+
+
+def _validate_archive_listing(binary: str, archive: Path) -> None:
+    listing = subprocess.run([binary, "l", "-slt", str(archive)], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=180, check=False)
+    if listing.returncode != 0:
+        raise RuntimeError("EXTERNALIZED_7Z_LIST_FAILED:" + listing.stdout[-500:])
+    entries = [line[7:] for line in listing.stdout.splitlines() if line.startswith("Path = ")]
+    if len(entries) < 2:
+        raise RuntimeError("EXTERNALIZED_7Z_HAS_NO_MEMBERS:" + archive.name)
+    # 7z -slt prints the archive path first, followed by member paths.
+    for entry in entries[1:]:
+        _safe_archive_member(entry)
+    for block in listing.stdout.split("\n\n")[1:]:
+        fields = {}
+        for line in block.splitlines():
+            if " = " in line:
+                key, value = line.split(" = ", 1)
+                fields[key.strip()] = value.strip()
+        mode = fields.get("Mode", "")
+        attributes = fields.get("Attributes", "")
+        if mode.startswith("l") or fields.get("Symbolic Link") or fields.get("Hard Link"):
+            raise RuntimeError("EXTERNALIZED_7Z_LINK_MEMBER_REFUSED:" + str(fields.get("Path", "")))
+        if attributes.lower().startswith("l"):
+            raise RuntimeError("EXTERNALIZED_7Z_LINK_ATTRIBUTE_REFUSED:" + str(fields.get("Path", "")))
+
+
+def _extract_raw_tree(root: Path, item: dict, destination: Path) -> dict:
+    root = Path(root).resolve()
+    destination = Path(destination).resolve()
+    if destination.exists() and any(destination.iterdir()):
+        raise RuntimeError("EXTERNALIZED_EXTRACTION_TARGET_NOT_EMPTY")
+    destination.mkdir(parents=True, exist_ok=True)
+    archive = root / Path(*PurePosixPath(item["container_relpath"]).parts)
+    binary = _seven_zip()
+    _validate_archive_listing(binary, archive)
+    test = subprocess.run([binary, "t", "-bd", str(archive)], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=900, check=False)
+    if test.returncode != 0:
+        raise RuntimeError("EXTERNALIZED_7Z_TEST_FAILED:" + test.stdout[-500:])
+    extracted = subprocess.run([binary, "x", "-y", "-bd", "-o" + str(destination), str(archive)], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=1800, check=False)
+    if extracted.returncode != 0:
+        raise RuntimeError("EXTERNALIZED_7Z_EXTRACT_FAILED:" + extracted.stdout[-700:])
+    if (destination / MODULE_DESCRIPTOR_NAME).exists() or (destination / MODULE_DESCRIPTOR_NAME).is_symlink():
+        raise RuntimeError("EXTERNALIZED_ARCHIVE_CONTAINS_RESERVED_MODULE_DESCRIPTOR")
+    actual = _tree_summary(destination)
+    expected = {
+        "bytes": item["expanded_bytes"],
+        "file_count": item["expanded_file_count"],
+        "tree_sha256": item["expanded_tree_sha256"],
+    }
+    if actual != {"bytes": expected["bytes"], "file_count": expected["file_count"], "tree_sha256": expected["tree_sha256"]}:
+        raise RuntimeError("EXTERNALIZED_ARCHIVE_RECONSTRUCTION_MISMATCH:" + item["id"] + ":" + json.dumps({"expected": expected, "actual": actual}, sort_keys=True))
+    return actual
+
+
+def verify_all_archives(root: Path) -> dict:
+    root = Path(root).resolve()
+    contract = distribution_contract(root)
+    results = []
+    with tempfile.TemporaryDirectory(prefix="cajita-externalized-verify-") as temp_name:
+        temporary_root = Path(temp_name)
+        for item in contract:
+            destination = temporary_root / item["id"]
+            actual = _extract_raw_tree(root, item, destination)
+            results.append({"id": item["id"], "status": "PASS", **actual, "container_bytes": item["container_bytes"], "container_sha256": item["container_sha256"]})
+    return {
+        "schema": "CAJITA_EXTERNALIZED_ASSET_RECONSTRUCTION/1.0",
+        "status": "PASS_CONTAINER_RECONSTRUCTION_ONLY",
+        "asset_count": len(results),
+        "assets": results,
+        "consumer_adapter_validation": "NOT_ESTABLISHED",
+        "native_smoke_validation": "REQUIRED",
+        "certification": "NOT_GRANTED",
+    }
+
+
+def materialize_asset(root: Path, asset_id: str) -> dict:
+    root = Path(root).resolve()
+    contract = distribution_contract(root)
+    matches = [item for item in contract if item["id"] == asset_id]
+    if len(matches) != 1:
+        raise RuntimeError("EXTERNALIZED_ASSET_ID_NOT_REGISTERED:" + str(asset_id))
+    item = matches[0]
+    target = root / Path(*PurePosixPath(item["expanded_relpath"]).parts)
+    if not target.resolve().is_relative_to(root) or target.is_symlink():
+        raise RuntimeError("EXTERNALIZED_MATERIALIZATION_PATH_ESCAPE_OR_SYMLINK")
+    if target.exists():
+        if not target.is_dir():
+            raise RuntimeError("EXTERNALIZED_MATERIALIZATION_TARGET_NOT_DIRECTORY")
+        current = _tree_summary(target)
+        descriptor_path = target / MODULE_DESCRIPTOR_NAME
+        descriptor_hash = sha_file(descriptor_path) if descriptor_path.is_file() and not descriptor_path.is_symlink() else None
+        expected = {"bytes": item["expanded_bytes"], "file_count": item["expanded_file_count"], "tree_sha256": item["expanded_tree_sha256"]}
+        if current != expected or descriptor_hash != item["module_descriptor_sha256"]:
+            raise RuntimeError("EXTERNALIZED_EXISTING_TREE_MISMATCH_FAIL_CLOSED:" + asset_id)
+        return {"id": asset_id, "status": "ALREADY_MATERIALIZED_EXACT", **current, "certification": "NOT_GRANTED"}
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = Path(tempfile.mkdtemp(prefix=".cajita-materializing-" + asset_id + "-", dir=str(target.parent)))
+    try:
+        actual = _extract_raw_tree(root, item, temporary)
+        descriptor_path = temporary / MODULE_DESCRIPTOR_NAME
+        descriptor_raw = item["module_descriptor_raw"].encode("utf-8")
+        descriptor_path.write_bytes(descriptor_raw)
+        if sha_file(descriptor_path) != item["module_descriptor_sha256"]:
+            raise RuntimeError("EXTERNALIZED_DESCRIPTOR_RESTORE_HASH_MISMATCH:" + asset_id)
+        try:
+            os.replace(temporary, target)
+        except OSError as exc:
+            raise RuntimeError("EXTERNALIZED_MATERIALIZATION_ATOMIC_COMMIT_FAILED:" + asset_id + ":" + type(exc).__name__) from exc
+        return {"id": asset_id, "status": "PASS_MATERIALIZED_FROM_HASH_PINNED_CONTAINER", **actual, "descriptor_sha256": item["module_descriptor_sha256"], "certification": "NOT_GRANTED"}
+    finally:
+        if temporary.exists():
+            shutil.rmtree(temporary, ignore_errors=True)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=("verify-all", "materialize"))
+    parser.add_argument("--root", default=str(Path(__file__).resolve().parent))
+    parser.add_argument("--asset-id")
+    args = parser.parse_args()
+    try:
+        if args.command == "verify-all":
+            if args.asset_id:
+                parser.error("--asset-id is valid only for materialize")
+            result = verify_all_archives(Path(args.root))
+        else:
+            if not args.asset_id:
+                parser.error("materialize requires --asset-id")
+            result = materialize_asset(Path(args.root), args.asset_id)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
+    except Exception as exc:
+        print(json.dumps({
+            "schema": "CAJITA_EXTERNALIZED_ASSET_RECONSTRUCTION/1.0",
+            "status": "FAIL_CLOSED",
+            "error_type": type(exc).__name__,
+            "reason": str(exc)[:1200],
+            "certification": "NOT_GRANTED",
+        }, ensure_ascii=False, indent=2), file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
