@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from cajita_externalized_packaging import materialize_registered_asset
+from cajita_externalized_packaging import materialize_registered_asset, prepare_source_materializations
 from cajita_axiom_graph_audit import (
     END_HEADING,
     HEADING,
@@ -133,6 +133,129 @@ class ExternalizedJenaInputTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "EXTERNALIZED_CONTAINER_IDENTITY_MISMATCH"):
                     materialize_registered_asset(root, "APACHE_JENA_6_2_0", destination)
             extract.assert_not_called()
+
+
+class SourceMaterializationPreparationTests(unittest.TestCase):
+    def test_compact_checkout_reconstructs_only_registered_trees_and_restores_descriptors(self):
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name) / "runtime"
+            root.mkdir()
+            source_rows = []
+            placement_assets = []
+            distribution_rows = []
+            expected = {}
+            for index in range(10):
+                asset_id = f"ASSET_{index:02d}"
+                expanded_rel = f"domain/{asset_id}"
+                expanded_path = "cajita-luna-runtime/" + expanded_rel
+                container_path = "cajita-luna-runtime/containers/" + asset_id + ".7z"
+                tree = {"bytes": index + 10, "file_count": 1, "tree_sha256": f"{index + 1:064x}"}
+                descriptor = {
+                    "schema": "CAJITA_MATERIALIZED_MODULE/1.0",
+                    "canonical_asset_id": asset_id,
+                    "module_key": expanded_rel,
+                    "materialization": {"status": "PASS", **tree},
+                    "source_archives": [{"path": container_path, "sha256": f"{index + 101:064x}", "bytes": index + 1000}],
+                    "certification": "NOT_GRANTED",
+                }
+                raw = json.dumps(descriptor, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+                descriptor_sha = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+                container_sha = descriptor["source_archives"][0]["sha256"]
+                container_bytes = descriptor["source_archives"][0]["bytes"]
+                placement_assets.append({
+                    "id": asset_id,
+                    "expanded_path": expanded_path,
+                    "expanded_bytes": tree["bytes"],
+                    "expanded_file_count": tree["file_count"],
+                    "expanded_tree_sha256": tree["tree_sha256"],
+                    "placed_path": container_path,
+                    "container_sha256": container_sha,
+                    "container_size_bytes": container_bytes,
+                    "compact_runtime_container": {
+                        "path": container_path,
+                        "sha256": container_sha,
+                        "size_bytes": container_bytes,
+                    },
+                    "factory_reconciliation": {"module_manifest_sha256": descriptor_sha},
+                })
+                source_rows.append({
+                    "module_key": expanded_rel,
+                    "path": expanded_rel,
+                    "bytes": tree["bytes"],
+                    "file_count": tree["file_count"],
+                    "tree_sha256": tree["tree_sha256"],
+                    "manifest_sha256": descriptor_sha,
+                })
+                distribution_rows.append({
+                    "canonical_asset_id": asset_id,
+                    "module_key": expanded_rel,
+                    "path": expanded_rel,
+                    "container_path": container_path,
+                    "container_sha256": container_sha,
+                    "container_bytes": container_bytes,
+                    **tree,
+                    "materialization": {"status": "PACKED_NOT_EXPANDED", **tree},
+                    "manifest_sha256": descriptor_sha,
+                    "module_descriptor_raw": raw,
+                    "module_descriptor_sha256": descriptor_sha,
+                    "nested_modules": [],
+                })
+                expected[asset_id] = (expanded_rel, tree, raw)
+
+            (root / "module_registry.json").write_text(json.dumps({
+                "schema": "CAJITA_MODULE_REGISTRY/1.0",
+                "materialized_module_count": 10,
+                "modules": source_rows,
+            }), encoding="utf-8")
+            (root / "EXTERNALIZED_ASSET_PLACEMENT.json").write_text(json.dumps({
+                "assets": placement_assets,
+            }), encoding="utf-8")
+            (root / "CAJITA_DISTRIBUTION_MODULE_REGISTRY.json").write_text(json.dumps({
+                "schema": "CAJITA_MODULE_REGISTRY/1.0",
+                "externalized_modules": distribution_rows,
+            }), encoding="utf-8")
+
+            def reconstruct(_root, asset_id, destination):
+                rel, tree, _raw = expected[asset_id]
+                Path(destination).mkdir(parents=True, exist_ok=True)
+                return {
+                    "id": asset_id,
+                    "status": "PASS_REGISTERED_CONTAINER_RECONSTRUCTION",
+                    "expanded_bytes": tree["bytes"],
+                    "expanded_file_count": tree["file_count"],
+                    "expanded_tree_sha256": tree["tree_sha256"],
+                }
+
+            with patch("cajita_externalized_packaging.materialize_registered_asset", side_effect=reconstruct) as extract:
+                result = prepare_source_materializations(root)
+
+            self.assertEqual(result["status"], "PASS")
+            self.assertEqual(result["asset_count"], 10)
+            self.assertEqual(result["reconstructed_count"], 10)
+            self.assertEqual(extract.call_count, 10)
+            for asset_id, (rel, _tree, raw) in expected.items():
+                self.assertEqual((root / rel / "CAJITA_MODULE.json").read_text(encoding="utf-8"), raw)
+
+    def test_source_materialization_refuses_distribution_descriptor_hash_drift(self):
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name) / "runtime"
+            root.mkdir()
+            payload = b"{}"
+            (root / "module_registry.json").write_text(json.dumps({
+                "schema": "CAJITA_MODULE_REGISTRY/1.0",
+                "modules": [],
+            }), encoding="utf-8")
+            (root / "EXTERNALIZED_ASSET_PLACEMENT.json").write_text(json.dumps({
+                "assets": [{"id": f"ASSET_{i:02d}"} for i in range(10)],
+            }), encoding="utf-8")
+            (root / "CAJITA_DISTRIBUTION_MODULE_REGISTRY.json").write_text(json.dumps({
+                "schema": "CAJITA_MODULE_REGISTRY/1.0",
+                "externalized_modules": [],
+            }), encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "DISTRIBUTION_EXTERNALIZED_MODULE_SET_INVALID"):
+                prepare_source_materializations(root)
+
+
 
 
 if __name__ == "__main__":
