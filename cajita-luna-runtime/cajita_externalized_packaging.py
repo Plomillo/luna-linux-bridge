@@ -303,6 +303,43 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
         "native_smoke_validation": "REQUIRED",
         "certification": "NOT_GRANTED",
     }
+
+    # The distribution's route file must point to the distribution registry,
+    # while the source route file continues to point to the full factory registry.
+    source_routing_path = root / "command_subdomain_routing.json"
+    source_routing = _load_json(source_routing_path, "SOURCE_ROUTING_CATALOG")
+    source_materialization = source_routing.get("materialization")
+    if not isinstance(source_materialization, dict):
+        raise RuntimeError("SOURCE_ROUTING_MATERIALIZATION_BLOCK_MISSING")
+    distribution_routing = dict(source_routing)
+    distribution_routing["source_materialization_history"] = source_materialization
+    routing_materialization = dict(source_materialization)
+    routing_materialization.update({
+        "module_registry": DISTRIBUTION_REGISTRY_NAME,
+        "distribution_module_registry": DISTRIBUTION_REGISTRY_NAME,
+        "module_count": len(source_modules),
+        "materialized_module_count": len(extracted_modules),
+        "externalized_asset_module_count": len(externalized_modules),
+        "externalized_container_count": len(externalized_modules),
+        "archive_policy": "HASH_PINNED_COMPRESSED_CONTAINERS_WITH_EXPLICIT_ON_DEMAND_RECONSTRUCTION",
+        "reconstruction_helper": "cajita_externalized_asset_loader.py",
+        "native_execution_smoke": "REQUIRED",
+        "certification": "NOT_GRANTED",
+    })
+    distribution_routing["materialization"] = routing_materialization
+    routing_path = root / "CAJITA_DISTRIBUTION_ROUTING.json"
+    if routing_path.is_symlink():
+        raise RuntimeError("DISTRIBUTION_ROUTING_SYMLINK_REFUSED")
+    routing_output = (json.dumps(distribution_routing, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    current_routing = routing_path.read_bytes() if routing_path.is_file() else None
+    if current_routing != routing_output:
+        routing_temp = routing_path.with_name(routing_path.name + ".building")
+        if routing_temp.is_symlink():
+            raise RuntimeError("DISTRIBUTION_ROUTING_TEMP_SYMLINK_REFUSED")
+        routing_temp.write_bytes(routing_output)
+        os.replace(routing_temp, routing_path)
+    result["distribution_routing_sha256"] = sha_bytes(routing_output)
+
     output_path = root / DISTRIBUTION_REGISTRY_NAME
     if output_path.is_symlink():
         raise RuntimeError("DISTRIBUTION_REGISTRY_SYMLINK_REFUSED")
@@ -328,6 +365,12 @@ def distribution_contract(root: Path) -> list[dict]:
     if registry.get("externalized_asset_placement_sha256") != placement_binding_sha256(placement):
         raise RuntimeError("DISTRIBUTION_PLACEMENT_REGISTRY_HASH_MISMATCH")
     rows = registry.get("externalized_modules")
+    routing_path = root / "CAJITA_DISTRIBUTION_ROUTING.json"
+    routing = _load_json(routing_path, "DISTRIBUTION_ROUTING_CATALOG")
+    if registry.get("distribution_routing_sha256") != sha_file(routing_path):
+        raise RuntimeError("DISTRIBUTION_ROUTING_HASH_MISMATCH")
+    if routing.get("materialization", {}).get("module_registry") != DISTRIBUTION_REGISTRY_NAME:
+        raise RuntimeError("DISTRIBUTION_ROUTING_REGISTRY_TARGET_MISMATCH")
     assets = placement.get("assets")
     if not isinstance(rows, list) or len(rows) != EXPECTED_ASSET_COUNT or not isinstance(assets, list) or len(assets) != EXPECTED_ASSET_COUNT:
         raise RuntimeError("DISTRIBUTION_EXTERNALIZED_ASSET_SET_INVALID")
