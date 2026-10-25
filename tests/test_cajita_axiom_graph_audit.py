@@ -155,7 +155,7 @@ class CanonicalTargetAdapterSummaryTests(unittest.TestCase):
             self.assertEqual(summary["reference_quality_equivalence"], "NOT_ESTABLISHED")
             self.assertEqual(summary["certification"], "NOT_GRANTED")
 
-    def test_runtime_engine_scope_requires_exact_target_evidence_but_does_not_register_task_adapter(self):
+    def test_g23_reports_g24_runtime_engine_evidence_as_pending_without_promoting_task_adapter(self):
         with tempfile.TemporaryDirectory() as temp_name:
             runtime = Path(temp_name) / "runtime"
             runtime.mkdir()
@@ -166,8 +166,12 @@ class CanonicalTargetAdapterSummaryTests(unittest.TestCase):
                 "status": "PASS_FUNCTIONAL_EXECUTION",
                 "exit_code": 0,
             }], "target_engine_results": []}
-            with self.assertRaisesRegex(ValueError, "REGISTERED_RUNTIME_SCOPE_WITHOUT_CURRENT_E2E_EVIDENCE"):
-                canonical_target_adapter_summary(runtime, task)
+            summary = canonical_target_adapter_summary(runtime, task)
+            self.assertEqual(summary["runtime_engine_smoke_scope_validation_status"], "PENDING_G24_TARGET_ENGINE_EVIDENCE")
+            self.assertEqual(summary["runtime_engine_smoke_scope_missing_target_ids"], ["D02_ORQUESTADOR"])
+            self.assertEqual(summary["unregistered_target_count"], 1)
+            self.assertEqual(summary["all_21_target_task_adapters"], "NOT_ESTABLISHED")
+            self.assertEqual(summary["certification"], "NOT_GRANTED")
 
     def test_registered_adapter_requires_source_bound_passing_task_evidence(self):
         with tempfile.TemporaryDirectory() as temp_name:
