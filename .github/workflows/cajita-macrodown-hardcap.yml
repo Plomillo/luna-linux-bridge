@@ -580,8 +580,21 @@ jobs:
             git diff --cached --check
             git diff --cached --stat
             git commit -m "Record Cajita final raw and Macrodown size-gate evidence"
+            # The builder computes two derived catalogs in its checkout. They
+            # are regenerated inputs, not source-authority commits; restore their
+            # tracked source versions before rebasing the independently scoped
+            # size-gate evidence commit.
+            git restore --source=HEAD --worktree -- \
+              "cajita-luna-runtime/CAJITA_DISTRIBUTION_MODULE_REGISTRY.json" \
+              "cajita-luna-runtime/CAJITA_DISTRIBUTION_ROUTING.json"
+            if ! git diff --quiet; then
+              echo "CAJITA_EVIDENCE_WORKTREE_NOT_CLEAN_AFTER_DERIVED_CATALOG_RESTORE" >&2
+              git status --short >&2
+              git diff --name-only >&2
+              exit 1
+            fi
             # Other governed workflows may advance main while this build is
-            # producing reports. Rebase only the evidence commit; any conflict
+                       producing reports. Rebase only the evidence commit; any conflict
             # fails closed so a newer report is never silently overwritten.
             pushed=false
             for attempt in 1 2 3; do
