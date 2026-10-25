@@ -6,26 +6,54 @@ non-empty model output where applicable, bounded child memory and fail-closed
 orchestration. Synthetic inputs do not prove semantic-quality equivalence.
 """
 from __future__ import annotations
-import argparse, datetime as dt, hashlib, json, math, os, struct, subprocess, sys, time, wave
+import argparse, datetime as dt, hashlib, json, os, re, shutil, subprocess, sys, time, unicodedata, wave
 from pathlib import Path
 
 SCHEMA = "LOUKSNA1_TASK_ADAPTER_EVIDENCE/1.0"
 MODEL_CASES = [
     {"task_id":"e2e-cerebro-text-generation","domain_id":"D01_CEREBRO","operation":"generate_text",
-     "input":{"prompt":"In one sentence, describe the purpose of a version-controlled repository."},
-     "limits":{"timeout_seconds":900,"max_new_tokens":8}},
+     "input":{"prompt":"What does a version-controlled repository store? Answer briefly."},
+     "limits":{"timeout_seconds":900,"max_new_tokens":12},
+     "quality_check":{"id":"repository-storage","mode":"contains_any","phrases":["files","source code","documents"]}},
     {"task_id":"e2e-whisper-audio-pipeline","domain_id":"D03_TRANSCRIPCION","operation":"transcribe_audio",
-     "input":{"audio_path":"@AUDIO@"},"limits":{"timeout_seconds":900,"max_new_tokens":8}},
+     "input":{"audio_path":"@AUDIO@"},"limits":{"timeout_seconds":900,"max_new_tokens":8},
+     "quality_check":{"id":"known-speech-hello-world","mode":"contains_all","phrases":["hello","world"]}},
     {"task_id":"e2e-seamless-translation","domain_id":"D04_TRADUCTOR_INTELIGENTE","operation":"translate_text",
      "input":{"text":"Good morning. How are you?","src_lang":"eng","tgt_lang":"spa"},
-     "limits":{"timeout_seconds":900,"max_new_tokens":8}},
+     "limits":{"timeout_seconds":900,"max_new_tokens":12},
+     "quality_check":{"id":"english-to-spanish-greeting","mode":"contains_any","phrases":["buenos dias","buen dia"]}},
     {"task_id":"e2e-docling-image-extraction","domain_id":"D05_INTELIGENCIA_DOCUMENTAL","operation":"extract_document_image",
-     "input":{"image_path":"@IMAGE@","prompt":"Extract the visible invoice text and total."},
-     "limits":{"timeout_seconds":900,"max_new_tokens":8}},
+     "input":{"image_path":"@IMAGE@","prompt":"Read the invoice total. Return only the numeric amount."},
+     "limits":{"timeout_seconds":900,"max_new_tokens":8},
+     "quality_check":{"id":"invoice-total-133-45","mode":"regex","pattern":r"\b133[.,]45\b"}},
     {"task_id":"e2e-qwen3-reasoning","domain_id":"D06_SISTEMA_INTELIGENTE","operation":"analyze_reasoning",
-     "input":{"prompt":"What is 2 + 2? Give the answer and a brief reason."},
-     "limits":{"timeout_seconds":900,"max_new_tokens":8}},
+     "input":{"prompt":"What is 2 + 2? Return only the numeric answer."},
+     "limits":{"timeout_seconds":900,"max_new_tokens":8},
+     "quality_check":{"id":"arithmetic-2-plus-2","mode":"regex","pattern":r"\b4\b"}},
 ]
+def normalized_text(value):
+    text=unicodedata.normalize("NFKD",str(value).casefold())
+    text="".join(ch for ch in text if not unicodedata.combining(ch))
+    return re.sub(r"[^a-z0-9]+"," ",text).strip()
+def quality_acceptance(record, output_text):
+    spec=record.get("quality_check",{})
+    if not isinstance(spec,dict) or not spec.get("id"):
+        return {"status":"NOT_CONFIGURED","reason":"QUALITY_CHECK_SPEC_MISSING"}
+    raw=str(output_text or "")
+    mode=spec.get("mode")
+    if mode=="regex":
+        matched=bool(re.search(str(spec.get("pattern","(?!)")),raw,re.IGNORECASE))
+        observed=[spec.get("pattern")] if matched else []
+    else:
+        normalized=normalized_text(raw)
+        phrases=[normalized_text(p) for p in spec.get("phrases",[]) if isinstance(p,str) and p.strip()]
+        observed=[p for p in phrases if p and (" "+normalized+" ").find(" "+p+" ") >= 0]
+        if mode=="contains_any": matched=bool(observed)
+        elif mode=="contains_all": matched=bool(phrases) and len(observed)==len(phrases)
+        else: return {"status":"FAIL","check_id":spec["id"],"reason":"QUALITY_CHECK_MODE_INVALID"}
+    return {"status":"PASS" if matched else "FAIL","check_id":spec["id"],
+            "observed_matches":observed,"reference_kind":"FIXED_SYNTHETIC_EXPECTATION",
+            "does_not_establish_reference_model_equivalence":True}
 def utc_now():
     return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
 def digest(path):
@@ -34,13 +62,14 @@ def digest(path):
         for chunk in iter(lambda:stream.read(1024*1024),b""): h.update(chunk)
     return h.hexdigest()
 def make_audio(path):
-    rate=16000
-    frames=bytearray()
-    # A synthetic tone verifies decoding/resampling/feature extraction, not speech accuracy.
-    for i in range(rate//2):
-        frames.extend(struct.pack("<h",int(1500*math.sin(2*math.pi*440*i/rate))))
-    with wave.open(str(path),"wb") as out:
-        out.setnchannels(1);out.setsampwidth(2);out.setframerate(rate);out.writeframes(frames)
+    executable=shutil.which("espeak-ng")
+    if not executable:
+        raise RuntimeError("ESPEAK_NG_REQUIRED_FOR_KNOWN_SPEECH_FIXTURE")
+    subprocess.run([executable,"-v","en-us","-s","135","-w",str(path),"hello world"],
+                   check=True,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True,timeout=30)
+    with wave.open(str(path),"rb") as audio:
+        if audio.getnframes()<=0 or audio.getnchannels() not in (1,2) or audio.getsampwidth()!=2:
+            raise RuntimeError("ESPEAK_NG_FIXTURE_WAV_INVALID")
 def make_image(path):
     from PIL import Image,ImageDraw
     image=Image.new("RGB",(640,480),"white");draw=ImageDraw.Draw(image)
@@ -71,6 +100,10 @@ def run_case(root,outdir,record,timeout):
                 "stderr_sha256": hashlib.sha256(p.stderr.encode("utf-8", errors="replace")).hexdigest(),
                 "stdout_sha256": hashlib.sha256(p.stdout.encode("utf-8", errors="replace")).hexdigest(),
             }
+        output_text=result.get("output_text","") if isinstance(result,dict) else ""
+        quality=quality_acceptance(record,output_text) if p.returncode==0 else {
+            "status":"NOT_RUN","check_id":record.get("quality_check",{}).get("id"),
+            "reason":"MODEL_EXECUTION_FAILED","does_not_establish_reference_model_equivalence":True}
         return {"task_id":record["task_id"],"domain_id":record["domain_id"],"operation":record["operation"],
                 "status":result.get("status","NO_JSON_RESULT"),"exit_code":p.returncode,
                 "elapsed_seconds":round(time.monotonic()-started,3),"input_sha256":result.get("input_sha256"),
@@ -78,7 +111,8 @@ def run_case(root,outdir,record,timeout):
                 "weight_sha256":result.get("integrity",{}).get("weight_sha256"),
                 "module_tree_sha256":result.get("integrity",{}).get("module_tree_sha256"),
                 "peak_rss_bytes":result.get("peak_rss_bytes"),"generated_token_count":result.get("generated_token_count"),
-                "failure_reason":result.get("reason"),"semantic_quality_equivalence":"NOT_ESTABLISHED",
+                "failure_reason":result.get("reason"),"quality_acceptance":quality,
+                "semantic_quality_equivalence":"NOT_ESTABLISHED_REFERENCE_MODEL_EQUIVALENCE",
                 "model_runtime_stderr_tail":result.get("diagnostic_stderr_tail"),
                 "model_runtime_stdout_tail":result.get("diagnostic_stdout_tail"),
                 **diagnostics}
@@ -123,6 +157,7 @@ def main():
     guard["execution_authorized"]=False
     model_pass=all(
         r.get("status")=="PASS_FUNCTIONAL_EXECUTION" and r.get("exit_code")==0
+        and r.get("quality_acceptance",{}).get("status")=="PASS"
         and all(isinstance(r.get(k),str) and len(r[k])==64 for k in ("input_sha256","output_sha256","weight_sha256","module_tree_sha256"))
         and isinstance(r.get("peak_rss_bytes"),int) and 0<r["peak_rss_bytes"]<=1_073_741_824
         for r in rows
@@ -133,14 +168,16 @@ def main():
             "runtime_root":str(root),"adapter_runtime_sha256":digest(root/"cajita_task_adapters.py"),
             "harness_sha256":digest(Path(__file__).resolve()),"weight_manifest_sha256":digest(root/"CAJITA_RUNTIME_V1"/"weights_manifest.json"),
             "tested_model_domain_count":len(rows),"registered_model_domain_count":5,"task_results":rows,
-            "orchestration_guard":guard,"inputs":"SYNTHETIC_FIXTURES_ONLY",
+            "orchestration_guard":guard,"inputs":"ESPEAK_NG_KNOWN_SPEECH_AND_SYNTHETIC_INVOICE_FIXTURES",
             "resource_gate":"EACH_TASK_CHILD_PEAK_RSS_MUST_BE_AT_MOST_1_GIB",
-            "functional_scope":"FIVE_MODEL_DOMAIN_TASK_EXECUTIONS_PLUS_FAIL_CLOSED_ORCHESTRATION_GUARD",
-            "semantic_quality_equivalence":"NOT_ESTABLISHED","all_21_target_adapters":"NOT_ESTABLISHED","global_certification":"NOT_GRANTED"}
+            "functional_scope":"FIVE_MODEL_DOMAIN_TASK_EXECUTIONS_WITH_FIXED_EXPECTATION_ACCEPTANCE_PLUS_FAIL_CLOSED_ORCHESTRATION_GUARD",
+            "synthetic_quality_acceptance":"PASS" if passed else "FAIL",
+            "semantic_quality_equivalence":"NOT_ESTABLISHED_REFERENCE_MODEL_EQUIVALENCE","all_21_target_adapters":"NOT_ESTABLISHED","global_certification":"NOT_GRANTED"}
     output=Path(args.output);output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(json.dumps(report,sort_keys=True,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({"schema":SCHEMA,"status":report["status"],
        "task_statuses":{r["domain_id"]:r["status"] for r in rows},"orchestration_guard":guard["status"],
-       "semantic_quality_equivalence":"NOT_ESTABLISHED","global_certification":"NOT_GRANTED"},ensure_ascii=False,indent=2))
+       "synthetic_quality_acceptance":report["synthetic_quality_acceptance"],
+       "semantic_quality_equivalence":"NOT_ESTABLISHED_REFERENCE_MODEL_EQUIVALENCE","global_certification":"NOT_GRANTED"},ensure_ascii=False,indent=2))
     return 0 if passed else 3
 if __name__=="__main__": raise SystemExit(main())
