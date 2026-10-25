@@ -73,7 +73,8 @@ def extract_validated(archive: zipfile.ZipFile, destination: Path, members: set[
             raise ValueError("EXTRACTED_ENTRY_NOT_REGULAR_FILE:" + name)
 
 
-def verify(path: Path, max_bytes: int = CAP_BYTES, extract_dir: Path | None = None) -> dict:
+def verify(path: Path, max_bytes: int = CAP_BYTES, extract_dir: Path | None = None,
+           expected_source_commit: str | None = None) -> dict:
     if path.is_symlink() or not path.is_file():
         raise ValueError("BUNDLE_NOT_REGULAR_FILE")
     observed_bytes = path.stat().st_size
@@ -93,6 +94,9 @@ def verify(path: Path, max_bytes: int = CAP_BYTES, extract_dir: Path | None = No
         manifest = json.loads(archive.read(BUNDLE_MANIFEST).decode("utf-8"))
         if manifest.get("schema") != "LOUKSNAPG_BUNDLE/1.0" or manifest.get("product_name") != "LOUKSNAPG":
             raise ValueError("BUNDLE_IDENTITY_MISMATCH")
+        source_commit = manifest.get("source_commit")
+        if expected_source_commit is not None and source_commit != expected_source_commit:
+            raise ValueError("BUNDLE_SOURCE_COMMIT_MISMATCH")
         records = manifest.get("members")
         if not isinstance(records, list):
             raise ValueError("MEMBER_INVENTORY_MISSING")
@@ -140,12 +144,47 @@ def verify(path: Path, max_bytes: int = CAP_BYTES, extract_dir: Path | None = No
             raise ValueError("NESTED_RUNTIME_ARCHIVE_PRESENT")
         if RUNTIME_MANIFEST not in actual:
             raise ValueError("RUNTIME_INTERNAL_MANIFEST_MISSING")
-        runtime_manifest = json.loads(archive.read(RUNTIME_MANIFEST).decode("utf-8"))
+        runtime_manifest_bytes = archive.read(RUNTIME_MANIFEST)
+        if sha256_bytes(runtime_manifest_bytes) != source.get("runtime_manifest_sha256"):
+            raise ValueError("RUNTIME_INTERNAL_MANIFEST_SHA256_MISMATCH")
+        runtime_manifest = json.loads(runtime_manifest_bytes.decode("utf-8"))
         if runtime_manifest.get("schema") != "CAJITA_RUNTIME_MACRODOWN/1.0":
             raise ValueError("RUNTIME_INTERNAL_MANIFEST_SCHEMA_MISMATCH")
-        for row in manifest.get("runtime_member_inventory", []):
-            if row.get("path") not in actual:
-                raise ValueError("RUNTIME_MEMBER_NOT_PRESENT:" + str(row.get("path")))
+        runtime_rows = runtime_manifest.get("files")
+        if not isinstance(runtime_rows, list):
+            raise ValueError("RUNTIME_INTERNAL_MANIFEST_FILE_TABLE_MISSING")
+        runtime_table = {}
+        for row in runtime_rows:
+            name = safe_path(row.get("path", ""))
+            if name in runtime_table or name == RUNTIME_MANIFEST:
+                raise ValueError("RUNTIME_INTERNAL_MANIFEST_PATH_COLLISION:" + name)
+            runtime_table[name] = row
+        bundle_runtime_rows = manifest.get("runtime_member_inventory", [])
+        if not isinstance(bundle_runtime_rows, list):
+            raise ValueError("BUNDLE_RUNTIME_INVENTORY_INVALID")
+        bundle_runtime_table = {}
+        for row in bundle_runtime_rows:
+            name = safe_path(row.get("path", ""))
+            if name in bundle_runtime_table:
+                raise ValueError("BUNDLE_RUNTIME_INVENTORY_COLLISION:" + name)
+            bundle_runtime_table[name] = row
+        if set(runtime_table) != set(bundle_runtime_table):
+            raise ValueError("RUNTIME_INVENTORY_DIFFERS_FROM_INTERNAL_MANIFEST")
+        for name, runtime_row in runtime_table.items():
+            if name not in actual:
+                raise ValueError("RUNTIME_MEMBER_NOT_PRESENT:" + name)
+            with archive.open(name, "r") as stream:
+                byte_count, digest = sha256_stream(stream)
+            if byte_count != runtime_row.get("size_bytes") or digest != runtime_row.get("sha256"):
+                raise ValueError("RUNTIME_MEMBER_DIFFERS_FROM_INTERNAL_MANIFEST:" + name)
+            registered = bundle_runtime_table[name]
+            if byte_count != registered.get("bytes") or digest != registered.get("sha256"):
+                raise ValueError("RUNTIME_MEMBER_DIFFERS_FROM_BUNDLE_INVENTORY:" + name)
+        if "Louksna1.md" not in actual:
+            raise ValueError("GOVERNED_DOCUMENT_MISSING")
+        document_bytes = archive.read("Louksna1.md")
+        if len(document_bytes) != source.get("louksna1_bytes") or sha256_bytes(document_bytes) != source.get("louksna1_sha256"):
+            raise ValueError("LOUKSNA1_DOCUMENT_DIFFERS_FROM_SOURCE_BINDING")
 
         routing_status = "NOT_PRESENT"
         module_registry_status = "NOT_PRESENT"
@@ -212,9 +251,10 @@ def main(argv=None) -> int:
     parser.add_argument("--max-bytes", type=int, default=CAP_BYTES)
     parser.add_argument("--extract-to", type=Path)
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--expected-source-commit")
     args = parser.parse_args(argv)
     try:
-        report = verify(args.bundle, args.max_bytes, args.extract_to)
+        report = verify(args.bundle, args.max_bytes, args.extract_to, args.expected_source_commit)
         if args.report:
             args.report.parent.mkdir(parents=True, exist_ok=True)
             args.report.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
