@@ -150,5 +150,67 @@ class CanonicalConsumerAdapterRegistrationTests(unittest.TestCase):
                 )
 
 
+class CanonicalRuntimeEngineScopeRegistrationTests(unittest.TestCase):
+    def test_registers_only_hash_bound_runtime_scope_without_promoting_task_adapter(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            module = runtime / "6. Sistema Inteligente" / "Consola"
+            module.mkdir(parents=True)
+            qjs = module / "qjs"
+            qjs.write_bytes(b"fixture-quickjs-binary")
+            adapter_source = (
+                "TARGET_ADAPTERS = {"
+                "'D06_CONSOLA': {"
+                "'domain_id':'D06_SISTEMA_INTELIGENTE',"
+                "'adapter_id':'CAJITA_QUICKJS_KNOWN_ANSWER/1.0',"
+                "'operation':'evaluate_fixed_javascript_fixture',"
+                "'module':'6. Sistema Inteligente/Consola',"
+                "'entry':'qjs','required_files':['qjs'],"
+                "'engine':'QUICKJS','scope':'FIXED_EXPRESSION_KNOWN_ANSWER_NO_USER_CODE'"
+                "}}\n"
+            )
+            (runtime / "cajita_target_adapters.py").write_text(adapter_source, encoding="utf-8")
+            targets = [{
+                "id": "D06_CONSOLA",
+                "domain_id": "D06_SISTEMA_INTELIGENTE",
+                "path": "6. Sistema Inteligente/Consola",
+            }]
+
+            registered = binding._registered_runtime_engine_scopes(runtime, targets)
+            row = registered["D06_CONSOLA"]
+            self.assertEqual(row["status"], "REGISTERED_RUNTIME_SMOKE_SCOPE_ONLY")
+            self.assertEqual(row["adapter_id"], "CAJITA_QUICKJS_KNOWN_ANSWER/1.0")
+            self.assertEqual(row["consumer_task_adapter_completion"], "NOT_ESTABLISHED")
+            self.assertEqual(row["reference_quality_equivalence"], "NOT_ESTABLISHED")
+            self.assertEqual(row["certification"], "NOT_GRANTED")
+            self.assertEqual(row["source_files"][0]["path"], "6. Sistema Inteligente/Consola/qjs")
+            self.assertEqual(row["source_files"][0]["sha256"], hashlib.sha256(qjs.read_bytes()).hexdigest())
+
+    def test_runtime_scope_rejects_undeclared_required_file(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            module = runtime / "6. Sistema Inteligente" / "Consola"
+            module.mkdir(parents=True)
+            (module / "qjs").write_bytes(b"fixture-quickjs-binary")
+            adapter_source = (
+                "TARGET_ADAPTERS = {"
+                "'D06_CONSOLA': {"
+                "'domain_id':'D06_SISTEMA_INTELIGENTE',"
+                "'adapter_id':'CAJITA_QUICKJS_KNOWN_ANSWER/1.0',"
+                "'operation':'evaluate_fixed_javascript_fixture',"
+                "'module':'6. Sistema Inteligente/Consola',"
+                "'entry':'qjs','required_files':['qjs','missing-file'],"
+                "'engine':'QUICKJS','scope':'FIXED_EXPRESSION_KNOWN_ANSWER_NO_USER_CODE'"
+                "}}\n"
+            )
+            (runtime / "cajita_target_adapters.py").write_text(adapter_source, encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "RUNTIME_TARGET_ADAPTER_REQUIRED_FILE_MISSING_OR_UNSAFE"):
+                binding._registered_runtime_engine_scopes(runtime, [{
+                    "id": "D06_CONSOLA",
+                    "domain_id": "D06_SISTEMA_INTELIGENTE",
+                    "path": "6. Sistema Inteligente/Consola",
+                }])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

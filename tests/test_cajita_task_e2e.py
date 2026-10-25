@@ -35,6 +35,17 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
         self.assertEqual(quality_acceptance(row, "4")["status"], "PASS")
         self.assertEqual(quality_acceptance(row, "5")["status"], "FAIL")
 
+    def test_failed_expectation_emits_only_bounded_normalized_diagnostics(self):
+        row = MODEL_CASES[4]
+        bad_output = "NOT THE ANSWER" + chr(10) + "with <control>" + chr(92) + ("x" * 500)
+        result = quality_acceptance(row, bad_output)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertEqual(result["output_char_count"], 530)
+        self.assertEqual(len(result["normalized_output_excerpt"]), 180)
+        self.assertNotIn(chr(10), result["normalized_output_excerpt"])
+        self.assertNotIn("<control>", result["normalized_output_excerpt"])
+        self.assertEqual(len(result["output_text_sha256"]), 64)
+
     def test_report_does_not_claim_reference_model_equivalence(self):
         for row in MODEL_CASES:
             evidence = quality_acceptance(row, "synthetic output")

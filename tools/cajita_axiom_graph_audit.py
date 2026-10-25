@@ -187,45 +187,101 @@ def canonical_target_adapter_summary(runtime_root: Path, task: dict) -> dict:
 
     registered_adapters = []
     unregistered_adapters = []
+    registered_runtime_scopes = []
     for row in target_modules:
+        target_id = row.get("target_id")
         registration = row.get("consumer_adapter_registration", {})
         if not isinstance(registration, dict):
-            raise ValueError("CANONICAL_TARGET_ADAPTER_REGISTRATION_INVALID:" + str(row.get("target_id")))
+            raise ValueError("CANONICAL_TARGET_ADAPTER_REGISTRATION_INVALID:" + str(target_id))
         state = registration.get("status")
         if state == "REGISTERED_SYNTHETIC_SCOPE_ONLY":
             if (not isinstance(row.get("consumer_adapter"), str)
                 or row.get("consumer_adapter") in {"", "NOT_REGISTERED_FOR_ALL_TASKS"}
                 or registration.get("certification") != "NOT_GRANTED"
                 or registration.get("reference_quality_equivalence") != "NOT_ESTABLISHED"):
-                raise ValueError("CANONICAL_TARGET_SYNTHETIC_ADAPTER_SCOPE_INCOMPLETE:" + str(row.get("target_id")))
+                raise ValueError("CANONICAL_TARGET_SYNTHETIC_ADAPTER_SCOPE_INCOMPLETE:" + str(target_id))
             registered_adapters.append(row)
         else:
             if row.get("consumer_adapter") != "NOT_REGISTERED_FOR_ALL_TASKS":
-                raise ValueError("CANONICAL_TARGET_ADAPTER_STATUS_MISMATCH:" + str(row.get("target_id")))
+                raise ValueError("CANONICAL_TARGET_ADAPTER_STATUS_MISMATCH:" + str(target_id))
             unregistered_adapters.append(row)
+
+        runtime_scope = row.get("runtime_engine_scope_registration", {})
+        if runtime_scope is None:
+            runtime_scope = {}
+        if not isinstance(runtime_scope, dict):
+            raise ValueError("CANONICAL_TARGET_RUNTIME_ENGINE_SCOPE_REGISTRATION_INVALID:" + str(target_id))
+        scope_state = runtime_scope.get("status", "NOT_REGISTERED")
+        if scope_state == "REGISTERED_RUNTIME_SMOKE_SCOPE_ONLY":
+            if (runtime_scope.get("target_id") != target_id
+                or not isinstance(runtime_scope.get("adapter_id"), str)
+                or not runtime_scope.get("adapter_id")
+                or runtime_scope.get("certification") != "NOT_GRANTED"
+                or runtime_scope.get("reference_quality_equivalence") != "NOT_ESTABLISHED"
+                or runtime_scope.get("consumer_task_adapter_completion") != "NOT_ESTABLISHED"
+                or not isinstance(runtime_scope.get("source_files"), list)
+                or not runtime_scope.get("source_files")):
+                raise ValueError("CANONICAL_TARGET_RUNTIME_ENGINE_SCOPE_INCOMPLETE:" + str(target_id))
+            if row.get("consumer_adapter") != "NOT_REGISTERED_FOR_ALL_TASKS":
+                raise ValueError("RUNTIME_ENGINE_SCOPE_MUST_NOT_PROMOTE_CONSUMER_ADAPTER:" + str(target_id))
+            registered_runtime_scopes.append(row)
+        elif scope_state != "NOT_REGISTERED":
+            raise ValueError("CANONICAL_TARGET_RUNTIME_ENGINE_SCOPE_STATUS_INVALID:" + str(target_id))
 
     task_results = task.get("task_results", [])
     if not isinstance(task_results, list):
         raise ValueError("TASK_ADAPTER_EVIDENCE_RESULTS_INVALID")
-    passing_task_domains = {
-        item.get("domain_id") for item in task_results
+    passing_model_targets = {
+        item.get("target_id") for item in task_results
         if isinstance(item, dict) and item.get("status") == "PASS_FUNCTIONAL_EXECUTION"
-        and item.get("exit_code") == 0
+        and item.get("exit_code") == 0 and isinstance(item.get("target_id"), str)
     }
-    registered_domains = {row.get("domain_id") for row in registered_adapters}
-    missing_task_evidence = sorted(registered_domains - passing_task_domains)
-    if missing_task_evidence:
-        raise ValueError("REGISTERED_SYNTHETIC_ADAPTER_WITHOUT_CURRENT_E2E_EVIDENCE:" + ",".join(missing_task_evidence))
+    missing_model_targets = sorted(
+        row.get("target_id") for row in registered_adapters
+        if row.get("target_id") not in passing_model_targets
+    )
+    if missing_model_targets:
+        raise ValueError("REGISTERED_SYNTHETIC_ADAPTER_WITHOUT_CURRENT_E2E_EVIDENCE:" + ",".join(missing_model_targets))
 
+    target_engine_results = task.get("target_engine_results", [])
+    if not isinstance(target_engine_results, list):
+        raise ValueError("TARGET_ENGINE_EVIDENCE_RESULTS_INVALID")
+    passing_runtime_targets = {
+        item.get("target_id") for item in target_engine_results
+        if isinstance(item, dict) and item.get("status") == "PASS_TARGET_ENGINE_EXECUTION"
+        and item.get("exit_code") == 0 and isinstance(item.get("target_id"), str)
+    }
+    registered_runtime_ids = {row.get("target_id") for row in registered_runtime_scopes}
+    undeclared_runtime_evidence = sorted(passing_runtime_targets - registered_runtime_ids)
+    if undeclared_runtime_evidence:
+        raise ValueError("UNREGISTERED_RUNTIME_ENGINE_SCOPE_EVIDENCE:" + ",".join(undeclared_runtime_evidence))
+    # G23 runs before the separately gated G24 runtime smoke. Absence of G24
+    # results here is a pending downstream evidence state, not grounds to corrupt
+    # or skip structural G23 validation. The final assessment must still refuse
+    # integral certification while any registered scope remains pending.
+    missing_runtime_targets = sorted(registered_runtime_ids - passing_runtime_targets)
+    registered_domains = {row.get("domain_id") for row in registered_adapters}
+    runtime_scope_status = (
+        "PASS_FOR_DECLARED_TARGET_ENGINE_SCOPE"
+        if not missing_runtime_targets
+        else "PENDING_G24_TARGET_ENGINE_EVIDENCE"
+    )
     return {
         "canonical_target_count": target_count,
         "synthetic_scope_registered_target_count": len(registered_adapters),
-        "unregistered_target_count": len(unregistered_adapters),
         "registered_target_ids": sorted(row["target_id"] for row in registered_adapters),
+        "unregistered_target_count": len(unregistered_adapters),
         "unregistered_target_ids": sorted(row["target_id"] for row in unregistered_adapters),
         "registered_domains_with_passing_synthetic_e2e": sorted(registered_domains),
+        "runtime_engine_smoke_scope_registered_target_count": len(registered_runtime_scopes),
+        "runtime_engine_smoke_scope_passed_target_count": len(passing_runtime_targets),
+        "runtime_engine_smoke_scope_target_ids": sorted(registered_runtime_ids),
+        "runtime_engine_smoke_scope_passed_target_ids": sorted(passing_runtime_targets),
+        "runtime_engine_smoke_scope_missing_target_ids": missing_runtime_targets,
+        "runtime_engine_smoke_scope_validation_status": runtime_scope_status,
+        "unregistered_task_adapter_requirement_count": len(unregistered_adapters),
         "all_21_target_task_adapters": "NOT_ESTABLISHED" if len(registered_adapters) != target_count else "REGISTERED_PENDING_QUALITY_NATIVE_AND_ROLLBACK_GATES",
-        "native_smoke": "REQUIRED",
+        "native_smoke": "PASS_FOR_DECLARED_RUNTIME_ENGINE_SCOPE_ONLY; HARDWARE_AND_FULL_PRODUCT_VALIDATION_REQUIRED",
         "reference_quality_equivalence": "NOT_ESTABLISHED",
         "certification": "NOT_GRANTED",
     }

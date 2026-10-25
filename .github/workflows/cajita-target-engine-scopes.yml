@@ -1,0 +1,118 @@
+name: Cajita source-bound target-engine scope regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/cajita-target-engine-scopes.yml"
+      - ".github/workflows/cajita-louksna1-factory.yml"
+      - "cajita-luna-runtime/cajita_target_adapters.py"
+      - "cajita-luna-runtime/cajita_task_adapters.py"
+      - "tools/cajita_architecture_binding.py"
+      - "tools/cajita_axiom_graph_audit.py"
+      - "tools/cajita_task_e2e.py"
+      - "tests/test_cajita_target_adapters.py"
+      - "tests/test_cajita_architecture_binding.py"
+      - "tests/test_cajita_axiom_graph_audit.py"
+      - "tests/test_cajita_task_e2e.py"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cajita-target-engine-scopes.yml"
+      - ".github/workflows/cajita-louksna1-factory.yml"
+      - "cajita-luna-runtime/cajita_target_adapters.py"
+      - "cajita-luna-runtime/cajita_task_adapters.py"
+      - "tools/cajita_architecture_binding.py"
+      - "tools/cajita_axiom_graph_audit.py"
+      - "tools/cajita_task_e2e.py"
+      - "tests/test_cajita_target_adapters.py"
+      - "tests/test_cajita_architecture_binding.py"
+      - "tests/test_cajita_axiom_graph_audit.py"
+      - "tests/test_cajita_task_e2e.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cajita-target-engine-scopes-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-bound-target-engine-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout candidate source without LFS payload downloads
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          lfs: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install safe archive verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends p7zip-full
+
+      - name: Compile changed adapter, binding and evidence code
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B -m py_compile \
+            cajita-luna-runtime/cajita_target_adapters.py \
+            cajita-luna-runtime/cajita_task_adapters.py \
+            tools/cajita_architecture_binding.py \
+            tools/cajita_axiom_graph_audit.py \
+            tools/cajita_task_e2e.py \
+            tests/test_cajita_target_adapters.py \
+            tests/test_cajita_architecture_binding.py \
+            tests/test_cajita_axiom_graph_audit.py \
+            tests/test_cajita_task_e2e.py
+
+      - name: Test six target-engine scope contracts
+        shell: bash
+        env:
+          PYTHONPATH: tools:cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          python -B -m unittest discover -s tests -p "test_cajita_target_adapters.py" -v
+
+      - name: Test source-bound architecture registration
+        shell: bash
+        env:
+          PYTHONPATH: tools:cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          python -B -m unittest discover -s tests -p "test_cajita_architecture_binding.py" -v
+
+      - name: Test graph evidence ordering and fail-closed behavior
+        shell: bash
+        env:
+          PYTHONPATH: tools:cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          python -B -m unittest discover -s tests -p "test_cajita_axiom_graph_audit.py" -v
+
+      - name: Test known-answer acceptance and bounded diagnostics
+        shell: bash
+        env:
+          PYTHONPATH: tools:cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          python -B -m unittest discover -s tests -p "test_cajita_task_e2e.py" -v
+
+      - name: Record scope boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "TARGET_ENGINE_SCOPE_TESTS=PASS"
+          echo "FULL_TASK_ADAPTERS=NOT_ESTABLISHED"
+          echo "REFERENCE_QUALITY_EQUIVALENCE=NOT_ESTABLISHED"
+          echo "GLOBAL_CERTIFICATION=NOT_GRANTED"

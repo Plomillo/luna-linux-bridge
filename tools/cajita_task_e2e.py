@@ -51,9 +51,20 @@ def quality_acceptance(record, output_text):
         if mode=="contains_any": matched=bool(observed)
         elif mode=="contains_all": matched=bool(phrases) and len(observed)==len(phrases)
         else: return {"status":"FAIL","check_id":spec["id"],"reason":"QUALITY_CHECK_MODE_INVALID"}
-    return {"status":"PASS" if matched else "FAIL","check_id":spec["id"],
+    result={"status":"PASS" if matched else "FAIL","check_id":spec["id"],
             "observed_matches":observed,"reference_kind":"FIXED_SYNTHETIC_EXPECTATION",
             "does_not_establish_reference_model_equivalence":True}
+    if not matched:
+        # These tasks contain only deterministic synthetic prompts/fixtures. A short
+        # normalized excerpt is retained solely to diagnose a failed expectation;
+        # the full model response and prompt are never written to the evidence file.
+        normalized_for_diagnostics=normalized_text(raw)
+        result.update({
+            "output_char_count":len(raw),
+            "output_text_sha256":hashlib.sha256(raw.encode("utf-8",errors="replace")).hexdigest(),
+            "normalized_output_excerpt":normalized_for_diagnostics[:180],
+        })
+    return result
 def utc_now():
     return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
 def digest(path):
@@ -104,7 +115,7 @@ def run_case(root,outdir,record,timeout):
         quality=quality_acceptance(record,output_text) if p.returncode==0 else {
             "status":"NOT_RUN","check_id":record.get("quality_check",{}).get("id"),
             "reason":"MODEL_EXECUTION_FAILED","does_not_establish_reference_model_equivalence":True}
-        return {"task_id":record["task_id"],"domain_id":record["domain_id"],"operation":record["operation"],
+        return {"task_id":record["task_id"],"domain_id":record["domain_id"],"target_id":result.get("target_id"),"operation":record["operation"],
                 "status":result.get("status","NO_JSON_RESULT"),"exit_code":p.returncode,
                 "elapsed_seconds":round(time.monotonic()-started,3),"input_sha256":result.get("input_sha256"),
                 "output_sha256":result.get("output_sha256"),"entrypoint_sha256":result.get("entrypoint_sha256"),
@@ -117,11 +128,11 @@ def run_case(root,outdir,record,timeout):
                 "model_runtime_stdout_tail":result.get("diagnostic_stdout_tail"),
                 **diagnostics}
     except subprocess.TimeoutExpired:
-        return {"task_id":record["task_id"],"domain_id":record["domain_id"],"operation":record["operation"],
+        return {"task_id":record["task_id"],"domain_id":record["domain_id"],"target_id":record.get("target"),"operation":record["operation"],
                 "status":"FAIL_TIMEOUT","exit_code":124,"elapsed_seconds":round(time.monotonic()-started,3),
                 "semantic_quality_equivalence":"NOT_ESTABLISHED"}
     except (OSError,ValueError,json.JSONDecodeError) as exc:
-        return {"task_id":record["task_id"],"domain_id":record["domain_id"],"operation":record["operation"],
+        return {"task_id":record["task_id"],"domain_id":record["domain_id"],"target_id":record.get("target"),"operation":record["operation"],
                 "status":"FAIL_HARNESS","exit_code":125,"elapsed_seconds":round(time.monotonic()-started,3),
                 "failure_reason":type(exc).__name__,"semantic_quality_equivalence":"NOT_ESTABLISHED"}
 def main():
@@ -162,21 +173,55 @@ def main():
         and isinstance(r.get("peak_rss_bytes"),int) and 0<r["peak_rss_bytes"]<=1_073_741_824
         for r in rows
     )
-    passed=model_pass and guard_ok
+    try:
+        sys.path.insert(0, str(root))
+        from cajita_target_adapters import run_target_smokes
+        target_engine_report = run_target_smokes(root, os.environ.get("LOUKSNA1_COMPANION_PATH"))
+    except Exception as exc:
+        target_engine_report = {
+            "schema":"CAJITA_RUNTIME_TARGET_ENGINE_E2E/1.0",
+            "status":"FAIL_TARGET_ENGINE_E2E_SCOPE",
+            "expected_count":6,"pass_count":0,"failed_count":6,"results":[],
+            "error_type":type(exc).__name__,"reason":str(exc)[:700],
+            "certification":"NOT_GRANTED"
+        }
+    finally:
+        try:
+            sys.path.remove(str(root))
+        except ValueError:
+            pass
+    target_engine_ok = (
+        target_engine_report.get("status")=="PASS_TARGET_ENGINE_E2E_SCOPE_ONLY"
+        and target_engine_report.get("expected_count")==6
+        and target_engine_report.get("pass_count")==6
+        and target_engine_report.get("failed_count")==0
+        and len(target_engine_report.get("results",[]))==6
+    )
+    passed=model_pass and guard_ok and target_engine_ok
     report={"schema":SCHEMA,"status":"PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY" if passed else "FAIL",
             "generated_at_utc":utc_now(),"runtime_candidate_id":"CAJITA_LUNA_RUNTIME_V9_20261023",
             "runtime_root":str(root),"adapter_runtime_sha256":digest(root/"cajita_task_adapters.py"),
+            "target_engine_adapter_runtime_sha256":digest(root/"cajita_target_adapters.py"),
             "harness_sha256":digest(Path(__file__).resolve()),"weight_manifest_sha256":digest(root/"CAJITA_RUNTIME_V1"/"weights_manifest.json"),
             "tested_model_domain_count":len(rows),"registered_model_domain_count":5,"task_results":rows,
-            "orchestration_guard":guard,"inputs":"ESPEAK_NG_KNOWN_SPEECH_AND_SYNTHETIC_INVOICE_FIXTURES",
-            "resource_gate":"EACH_TASK_CHILD_PEAK_RSS_MUST_BE_AT_MOST_1_GIB",
-            "functional_scope":"FIVE_MODEL_DOMAIN_TASK_EXECUTIONS_WITH_FIXED_EXPECTATION_ACCEPTANCE_PLUS_FAIL_CLOSED_ORCHESTRATION_GUARD",
-            "synthetic_quality_acceptance":"PASS" if passed else "FAIL",
+            "target_engine_smoke_status":target_engine_report.get("status","NOT_COMPLETED"),
+            "target_engine_expected_count":target_engine_report.get("expected_count",6),
+            "target_engine_pass_count":target_engine_report.get("pass_count",0),
+            "target_engine_failed_count":target_engine_report.get("failed_count",6),
+            "target_engine_results":target_engine_report.get("results",[]),
+            "target_engine_scope":target_engine_report.get("scope","SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES; NO_FULL_TASK_OR_QUALITY_CLAIM"),
+            "orchestration_guard":guard,"inputs":"ESPEAK_NG_KNOWN_SPEECH_AND_SYNTHETIC_INVOICE_FIXTURES_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_FIXTURES",
+            "resource_gate":"EACH_TASK_CHILD_PEAK_RSS_MUST_BE_AT_MOST_1_GIB; TARGET_ENGINE_BUILD_AND_EXECUTION_BOUNDED",
+            "functional_scope":"FIVE_MODEL_DOMAIN_TASK_EXECUTIONS_WITH_FIXED_EXPECTATION_ACCEPTANCE_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_PLUS_FAIL_CLOSED_ORCHESTRATION_GUARD",
+            "synthetic_quality_acceptance":"PASS" if model_pass and guard_ok else "FAIL",
+            "full_target_task_coverage":"NOT_ESTABLISHED",
             "semantic_quality_equivalence":"NOT_ESTABLISHED_REFERENCE_MODEL_EQUIVALENCE","all_21_target_adapters":"NOT_ESTABLISHED","global_certification":"NOT_GRANTED"}
     output=Path(args.output);output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(json.dumps(report,sort_keys=True,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({"schema":SCHEMA,"status":report["status"],
        "task_statuses":{r["domain_id"]:r["status"] for r in rows},"orchestration_guard":guard["status"],
+       "target_engine_smoke_status":report["target_engine_smoke_status"],
+       "target_engine_pass_count":report["target_engine_pass_count"],"target_engine_expected_count":report["target_engine_expected_count"],
        "synthetic_quality_acceptance":report["synthetic_quality_acceptance"],
        "semantic_quality_equivalence":"NOT_ESTABLISHED_REFERENCE_MODEL_EQUIVALENCE","global_certification":"NOT_GRANTED"},ensure_ascii=False,indent=2))
     return 0 if passed else 3
