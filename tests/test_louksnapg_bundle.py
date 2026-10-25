@@ -12,6 +12,12 @@ bundle = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(bundle)
 
+VALIDATOR_PATH = Path(__file__).resolve().parents[1] / "tools" / "louksnapg_independent_validator.py"
+VALIDATOR_SPEC = importlib.util.spec_from_file_location("louksnapg_independent_validator", VALIDATOR_PATH)
+validator = importlib.util.module_from_spec(VALIDATOR_SPEC)
+assert VALIDATOR_SPEC and VALIDATOR_SPEC.loader
+VALIDATOR_SPEC.loader.exec_module(validator)
+
 
 def sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -36,10 +42,26 @@ class LouksnapgBundleTests(unittest.TestCase):
             + b"\n---\n# Unification marker\n\n# Documento central del runtime Cajita de Luna (copia literal)\n\n"
             + self.cajita_bytes
         )
+        routing = {
+            "domain_order": [
+                "D01_CEREBRO", "D02_ORQUESTACION", "D03_TRANSCRIPCION",
+                "D04_TRADUCTOR_INTELIGENTE", "D05_INTELIGENCIA_DOCUMENTAL",
+                "D06_SISTEMA_INTELIGENTE",
+            ],
+            "targets": [{"id": f"D{i:02d}_TEST"} for i in range(1, 22)],
+            "state": {"engine_count": 15},
+        }
+        registry = {
+            "schema": "CAJITA_MODULE_REGISTRY/1.0",
+            "canonical_engine_count": 15,
+            "canonical_command_count": 14,
+        }
         self.runtime_rows = [
             ("cajita_runtime.py", b"def main():\n    return 0\n", "DEFLATED"),
             ("cajita_router.py", b"ROUTE_TABLE = 21\n", "DEFLATED"),
             ("model.bin", b"\x00\x01\x02runtime-bytes", "STORED"),
+            ("command_subdomain_routing.json", json.dumps(routing).encode(), "DEFLATED"),
+            ("CAJITA_DISTRIBUTION_MODULE_REGISTRY.json", json.dumps(registry).encode(), "DEFLATED"),
         ]
         files = [
             {"path": name, "size_bytes": len(data), "sha256": sha(data), "zip_method": method}
@@ -101,6 +123,24 @@ class LouksnapgBundleTests(unittest.TestCase):
                 zout.writestr(info.filename, data)
         with self.assertRaisesRegex(ValueError, "CRC_FAILURE|HASH_OR_SIZE_MISMATCH|MEMBER_SET"):
             bundle.verify_bundle(tampered)
+
+    def test_independent_validator_checks_source_binding_and_member_table(self):
+        self.build()
+        report = validator.verify(self.output, max_bytes=bundle.DEFAULT_MAX_BYTES)
+        self.assertEqual(report["budget_status"], "PASS")
+        self.assertEqual(report["container_integrity"], "PASS")
+        self.assertEqual(report["protected_prefix_integrity"], "PASS")
+        self.assertEqual(report["cajita_document_copy_integrity"], "PASS")
+        self.assertEqual(report["runtime_member_integrity"], "PASS")
+        self.assertEqual(report["single_distribution_container"], "PASS")
+        self.assertEqual(report["runtime_routing_registry"], "PASS_DECLARATION_ONLY")
+        self.assertEqual(report["module_registry"], "PASS_DECLARATION_ONLY")
+        self.assertEqual(report["global_certification"], "NOT_GRANTED")
+
+    def test_independent_validator_rejects_wrong_commit_binding(self):
+        self.build()
+        with self.assertRaisesRegex(ValueError, "SOURCE_COMMIT_MISMATCH"):
+            validator.verify(self.output, expected_source_commit="a" * 40)
 
     def test_hard_byte_cap_is_enforced_and_candidate_removed(self):
         with self.assertRaisesRegex(ValueError, "LOUKSNAPG_OVER_CAP"):
