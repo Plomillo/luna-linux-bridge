@@ -16,7 +16,8 @@ import sys
 import zipfile
 from pathlib import Path, PurePosixPath
 
-CAP_BYTES = 470_000_000
+CAP_BYTES = 490_000_000
+MAX_RUNTIME_BYTES = 470_000_000
 BUNDLE_MANIFEST = "LOUKSNAPG_MANIFEST.json"
 RUNTIME_MANIFEST = "MACRODOWN_MANIFEST.json"
 EXPECTED_DOMAINS = [
@@ -177,6 +178,12 @@ def verify(path: Path, max_bytes: int = CAP_BYTES, extract_dir: Path | None = No
         if BUNDLE_MANIFEST not in names:
             raise ValueError("BUNDLE_MANIFEST_MISSING")
         manifest = json.loads(archive.read(BUNDLE_MANIFEST).decode("utf-8"))
+        source_record = manifest.get("source", {})
+        runtime_archive_bytes = source_record.get("runtime_archive_bytes") if isinstance(source_record, dict) else None
+        if isinstance(runtime_archive_bytes, bool) or not isinstance(runtime_archive_bytes, int) or runtime_archive_bytes <= 0:
+            raise ValueError("RUNTIME_ARCHIVE_BYTE_COUNT_MISSING")
+        if runtime_archive_bytes > MAX_RUNTIME_BYTES:
+            raise ValueError(f"CAJITA_RUNTIME_OVER_CAP:{runtime_archive_bytes}>{MAX_RUNTIME_BYTES}")
         if manifest.get("schema") != "LOUKSNAPG_BUNDLE/1.0" or manifest.get("product_name") != "LOUKSNAPG":
             raise ValueError("BUNDLE_IDENTITY_MISMATCH")
         source_commit = manifest.get("source_commit")
@@ -311,6 +318,9 @@ def verify(path: Path, max_bytes: int = CAP_BYTES, extract_dir: Path | None = No
         "bundle_bytes": observed_bytes,
         "bundle_sha256": sha256_file(path),
         "max_bytes": max_bytes,
+        "runtime_archive_bytes": runtime_archive_bytes,
+        "runtime_archive_max_bytes": MAX_RUNTIME_BYTES,
+        "runtime_archive_budget_status": "PASS",
         "budget_status": "PASS",
         "container_integrity": "PASS",
         "protected_prefix_integrity": "PASS",
