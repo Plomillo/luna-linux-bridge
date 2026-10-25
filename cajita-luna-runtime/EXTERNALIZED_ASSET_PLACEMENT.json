@@ -2,7 +2,7 @@
   "schema": "CAJITA_EXTERNALIZED_ASSET_PLACEMENT/1.0",
   "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023_EXTERNAL_ASSET_PLACEMENT",
   "based_on_commit": "cf777392759b1926e9999ed4f877aa09fc88cf90",
-  "status": "COMPACT_DISTRIBUTION_RAW_INPUT_CEILING_PASS",
+  "status": "MATERIALIZATION_COMPLETE_PENDING_FUNCTION_AND_G23_G24",
   "purpose": "Place recovered externalized assets at their intended six-domain source-tree paths without silently promoting them into the distributable archive.",
   "hard_cap_bytes": 470000000,
   "current_macrodown_manifest": {
@@ -1066,9 +1066,9 @@
   "runtime_size_gate": {
     "audit_id": "CAJITA_FINAL_RUNTIME_SIZE_GATE_20261025",
     "measurement_method": "sum of reproducible distribution payload files; excludes source-only registries/routing, historical build-only archives and ten hash-pinned expanded trees; includes ten verified compressed containers, six materialized model payloads and all distribution members; no LFS pointers",
-    "payload_bytes": 446941629,
+    "payload_bytes": 446937538,
     "hard_cap_bytes": 1500000000,
-    "bytes_under_cap": 1053058371,
+    "bytes_under_cap": 1053062462,
     "size_gate": "PASS",
     "raw_input_ceiling_bytes": 1500000000,
     "raw_payload_target_bytes": 470000000,
@@ -1095,7 +1095,7 @@
   },
   "factory_reconciliation": {
     "schema": "CAJITA_LOUKSNA1_FACTORY/1.0",
-    "generated_at_utc": "2026-10-25T03:12:22Z",
+    "generated_at_utc": "2026-10-25T03:25:54Z",
     "archive_count_materialized": 28,
     "archive_bytes_removed": 10005792,
     "archives": [

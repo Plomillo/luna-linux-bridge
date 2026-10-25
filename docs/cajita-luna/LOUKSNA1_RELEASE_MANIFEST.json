@@ -1,7 +1,7 @@
 {
   "schema": "LOUKSNA1_RELEASE_MANIFEST/1.0",
-  "source_commit": "3fb11b81cc9cd55f8791e58fb561ad2aa539a26b",
-  "generated_at_utc": "2026-10-25T03:12:57Z",
+  "source_commit": "4ea9190df2f39581aa391584ab4ae868da82da79",
+  "generated_at_utc": "2026-10-25T03:26:34Z",
   "protected_architecture": {
     "path": "LOUKSNAMEJORADA.md",
     "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
@@ -10,13 +10,13 @@
   },
   "louksna1": {
     "path": "Louksna1.md",
-    "bytes": 11646992,
-    "sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486"
+    "bytes": 11649200,
+    "sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b"
   },
   "runtime_distribution": {
     "path": "CAJITA_LUNA_RUNTIME_V10.macrodown",
-    "bytes": 370865781,
-    "sha256": "f8646e4b655eb25c1da148480148dc237a746466e2c1c3847ce795b7bf7a0153"
+    "bytes": 370870178,
+    "sha256": "7a7aa66d8048e504b67360d389a17e364f744d5e39acbb675724a6f117bc052d"
   },
   "externalized_archives": [
     {
@@ -82,13 +82,13 @@
   ],
   "externalized_archive_contract_status": "PASS_EXACTLY_TEN_REGISTERED_SHA256_PINNED_7Z_CONTAINERS",
   "combined_distribution": {
-    "bytes": 382512773,
+    "bytes": 382519378,
     "cap_bytes": 479000000,
     "status": "PASS"
   },
   "axiom_interdisciplinary_binding": {
     "path": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
-    "sha256": "bc63ae32329d36dd44413e8dbe2b11604d779c81fd28fdd682f1ef147b433c8b",
+    "sha256": "c90cd4f4f8af99a12e7849a07c86b1e37ae019f9e9b7d3decb3c11f00ac87570",
     "target_module_count": 21,
     "declared_materialized_axioms": 11757,
     "declared_historical_gaps": 657,
@@ -105,13 +105,13 @@
   "status": "PUBLISHED_CANDIDATE_GLOBAL_CERTIFICATION_NOT_GRANTED",
   "task_adapter_evidence": {
     "path": "docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json",
-    "sha256": "7fad6dff53988f7d718a956c9f9b4dc4486d970ce6a25ba11fc39d1333c6b811",
+    "sha256": "0c5df5e00e223446f2f4c5c78992abdd3a84b7029c969cc2dd03b53e113228ee",
     "status": "PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY",
     "tested_model_domain_count": 5,
     "registered_model_domain_count": 5
   },
-  "G23_evidence_sha256": "fe9ade1b6d3b8d737ecd817184a001a6c4a07769671875207be875a82d07af04",
-  "G24_evidence_sha256": "b9fe0159bdb0133153f46a787aeee008177f8b40e2cb8f56761cab7fc0c7312f",
+  "G23_evidence_sha256": "b8177b0ef7bba61d9a2ba295400c74ba6749b85ed10755308ef73a210ee9e63a",
+  "G24_evidence_sha256": "1cdcc2f5e402be2183ad56a09d8561b4f5fd180c603c1cf36f6ec9a6abb28668",
   "certification_scope": "DISTRIBUTION_INTEGRITY_PLUS_SCOPED_SYNTHETIC_TASK_EXECUTION",
   "reason_global_certification_not_granted": "Five synthetic model-domain tasks have scoped execution evidence only; all 21 target adapters, graph execution and semantic quality equivalence remain unestablished.",
   "CUSTOSZV9": {

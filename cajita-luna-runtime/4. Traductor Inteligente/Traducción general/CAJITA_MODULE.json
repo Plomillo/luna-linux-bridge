@@ -1,6 +1,22 @@
 {
   "certification": "NOT_GRANTED",
-  "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+  "consumer_adapter": "CAJITA_SEAMLESS_TRANSLATION/1.0",
+  "consumer_adapter_registration": {
+    "adapter_id": "CAJITA_SEAMLESS_TRANSLATION/1.0",
+    "adapter_source_sha256": "6ae10af23a55be36dde9970b1e1b02ca543beef2fca1ce98eebc1d3ad2d334c6",
+    "certification": "NOT_GRANTED",
+    "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+    "entrypoint": "4. Traductor Inteligente/Traducción general/lowrank_runtime.py",
+    "native_smoke": "REQUIRED",
+    "operation": "translate_text",
+    "reference_quality_equivalence": "NOT_ESTABLISHED",
+    "status": "REGISTERED_SYNTHETIC_SCOPE_ONLY",
+    "test_scope": "SYNTHETIC_FIXTURES_ONLY",
+    "weight_bytes": 11720882,
+    "weight_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
+    "weight_path": "4. Traductor Inteligente/Traducción general/model.safetensors",
+    "weight_sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f"
+  },
   "domain_id": "D04_TRADUCTOR_INTELIGENTE",
   "engine_ids": [
     "E01",
@@ -13,12 +29,12 @@
     "E14",
     "E15"
   ],
-  "functional_state": "MODULE_REGISTERED_ADAPTER_AND_NATIVE_SMOKE_REQUIRED",
+  "functional_state": "SYNTHETIC_ADAPTER_REGISTERED_NATIVE_SMOKE_AND_QUALITY_BASELINE_REQUIRED",
   "lifecycle_state": "MATERIALIZED_OR_SOURCE_DIRECTORY_REGISTERED",
   "relative_path": "4. Traductor Inteligente/Traducción general",
   "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
   "source_identity": {
-    "companion_sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486",
+    "companion_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
     "path": "Louksna1.md",
     "protected_prefix_bytes": 11542631,
     "protected_prefix_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51"

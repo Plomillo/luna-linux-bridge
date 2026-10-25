@@ -1477,8 +1477,16 @@
     "certification": "NOT_GRANTED",
     "canonical_target_module_count": 21,
     "axiom_interdisciplinary_binding": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
-    "axiom_interdisciplinary_binding_sha256": "bc63ae32329d36dd44413e8dbe2b11604d779c81fd28fdd682f1ef147b433c8b",
+    "axiom_interdisciplinary_binding_sha256": "c90cd4f4f8af99a12e7849a07c86b1e37ae019f9e9b7d3decb3c11f00ac87570",
     "axiom_source_state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING",
+    "consumer_adapter_registration": {
+      "synthetic_scope_registered_target_count": 5,
+      "unregistered_target_count": 16,
+      "all_21_target_task_adapters": "NOT_ESTABLISHED",
+      "native_smoke": "REQUIRED",
+      "reference_quality_equivalence": "NOT_ESTABLISHED",
+      "certification": "NOT_GRANTED"
+    },
     "distribution_module_registry": "CAJITA_DISTRIBUTION_MODULE_REGISTRY.json",
     "materialized_module_count": 7,
     "externalized_asset_module_count": 10,
@@ -1499,8 +1507,16 @@
     "certification": "NOT_GRANTED",
     "canonical_target_module_count": 21,
     "axiom_interdisciplinary_binding": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
-    "axiom_interdisciplinary_binding_sha256": "bc63ae32329d36dd44413e8dbe2b11604d779c81fd28fdd682f1ef147b433c8b",
-    "axiom_source_state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
+    "axiom_interdisciplinary_binding_sha256": "c90cd4f4f8af99a12e7849a07c86b1e37ae019f9e9b7d3decb3c11f00ac87570",
+    "axiom_source_state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING",
+    "consumer_adapter_registration": {
+      "synthetic_scope_registered_target_count": 5,
+      "unregistered_target_count": 16,
+      "all_21_target_task_adapters": "NOT_ESTABLISHED",
+      "native_smoke": "REQUIRED",
+      "reference_quality_equivalence": "NOT_ESTABLISHED",
+      "certification": "NOT_GRANTED"
+    }
   },
   "externalized_assets": [
     {

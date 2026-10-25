@@ -1,6 +1,22 @@
 {
   "certification": "NOT_GRANTED",
-  "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+  "consumer_adapter": "CAJITA_CEREBRO_TEXT_GENERATION/1.0",
+  "consumer_adapter_registration": {
+    "adapter_id": "CAJITA_CEREBRO_TEXT_GENERATION/1.0",
+    "adapter_source_sha256": "6ae10af23a55be36dde9970b1e1b02ca543beef2fca1ce98eebc1d3ad2d334c6",
+    "certification": "NOT_GRANTED",
+    "domain_id": "D01_CEREBRO",
+    "entrypoint": "1. Cerebro/cerebro_180mb_runtime.py",
+    "native_smoke": "REQUIRED",
+    "operation": "generate_text",
+    "reference_quality_equivalence": "NOT_ESTABLISHED",
+    "status": "REGISTERED_SYNTHETIC_SCOPE_ONLY",
+    "test_scope": "SYNTHETIC_FIXTURES_ONLY",
+    "weight_bytes": 40489120,
+    "weight_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
+    "weight_path": "1. Cerebro/model.safetensors",
+    "weight_sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0"
+  },
   "domain_id": "D01_CEREBRO",
   "engine_ids": [
     "E01",
@@ -9,12 +25,12 @@
     "E13",
     "E14"
   ],
-  "functional_state": "MODULE_REGISTERED_ADAPTER_AND_NATIVE_SMOKE_REQUIRED",
+  "functional_state": "SYNTHETIC_ADAPTER_REGISTERED_NATIVE_SMOKE_AND_QUALITY_BASELINE_REQUIRED",
   "lifecycle_state": "MATERIALIZED_OR_SOURCE_DIRECTORY_REGISTERED",
   "relative_path": "1. Cerebro",
   "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
   "source_identity": {
-    "companion_sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486",
+    "companion_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
     "path": "Louksna1.md",
     "protected_prefix_bytes": 11542631,
     "protected_prefix_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51"

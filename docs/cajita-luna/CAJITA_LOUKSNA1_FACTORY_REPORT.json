@@ -1,10 +1,10 @@
 {
   "schema": "CAJITA_LOUKSNA1_FACTORY/1.0",
-  "generated_at_utc": "2026-10-25T03:11:54Z",
+  "generated_at_utc": "2026-10-25T03:25:24Z",
   "status": "PASS_MANUFACTURED_CANDIDATE_PENDING_G23_G24",
   "certification": "NOT_GRANTED",
   "blockers": [],
-  "source_commit": "3fb11b81cc9cd55f8791e58fb561ad2aa539a26b",
+  "source_commit": "4ea9190df2f39581aa391584ab4ae868da82da79",
   "weights_before": [
     {
       "id": "W01",
@@ -1669,7 +1669,7 @@
     ],
     "materialized_module_revalidation": "PASS",
     "source_tree_recovery": null,
-    "raw_tree_bytes_after_materialization": 807479027
+    "raw_tree_bytes_after_materialization": 807485517
   },
   "weights_after": [
     {
@@ -1718,11 +1718,11 @@
   "weights_preserved": true,
   "louksna1": {
     "path": "Louksna1.md",
-    "bytes": 11646992,
-    "sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486",
+    "bytes": 11649200,
+    "sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
     "source_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
     "prefix_byte_exact": true,
-    "cajita_doc_sha256": "3e96a8ab0c2777510112712052c4efad792d841def72b5249ff30f732d5abe1b"
+    "cajita_doc_sha256": "f91192c3c22fceb0249a77b317f20a9647ebc9e0161f289eaf3135aea8a05a1f"
   },
   "axiom_interdisciplinary_binding": {
     "target_module_count": 21,
@@ -1732,7 +1732,7 @@
         "domain_id": "D01_CEREBRO",
         "path": "1. Cerebro",
         "manifest": "1. Cerebro/CAJITA_MODULE.json",
-        "manifest_sha256": "7d574511464df36acb6240337c8211918e0c1e9dcbc9a2e2ee7519a3d4302236",
+        "manifest_sha256": "e2a61496ae9dd69f6e50f603cefe6f3821c5e83b220f3be4ca9004f02408de51",
         "tree_sha256": "ab7e21c084cb6c78f4c36d847bbf290a27d5e1312476571de76d903e65b59cb9",
         "engine_ids": [
           "E01",
@@ -1741,7 +1741,23 @@
           "E13",
           "E14"
         ],
-        "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter": "CAJITA_CEREBRO_TEXT_GENERATION/1.0",
+        "consumer_adapter_registration": {
+          "status": "REGISTERED_SYNTHETIC_SCOPE_ONLY",
+          "domain_id": "D01_CEREBRO",
+          "adapter_id": "CAJITA_CEREBRO_TEXT_GENERATION/1.0",
+          "operation": "generate_text",
+          "entrypoint": "1. Cerebro/cerebro_180mb_runtime.py",
+          "adapter_source_sha256": "6ae10af23a55be36dde9970b1e1b02ca543beef2fca1ce98eebc1d3ad2d334c6",
+          "weight_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
+          "weight_path": "1. Cerebro/model.safetensors",
+          "weight_sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0",
+          "weight_bytes": 40489120,
+          "test_scope": "SYNTHETIC_FIXTURES_ONLY",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1749,7 +1765,7 @@
         "domain_id": "D02_ORQUESTACION",
         "path": "2. Orquestación/Confesión Eclesial Reformada",
         "manifest": "2. Orquestación/Confesión Eclesial Reformada/CAJITA_MODULE.json",
-        "manifest_sha256": "9a9a3d27c116fa324034c209d6ff5030707b940e68ea3fe1acd59fff25b76c01",
+        "manifest_sha256": "34dd5e1a1499f535b3af7c3fb8a45b9b4a08b02bc0e17b693b57f0eb4e484e41",
         "tree_sha256": "b5ae8a768268df9fd376e881763519cd53a755020c9c67dc073872d7f2205e56",
         "engine_ids": [
           "E09",
@@ -1761,6 +1777,12 @@
           "E15"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1768,8 +1790,8 @@
         "domain_id": "D02_ORQUESTACION",
         "path": "2. Orquestación/Multi + Interdisciplinar",
         "manifest": "2. Orquestación/Multi + Interdisciplinar/CAJITA_MODULE.json",
-        "manifest_sha256": "2b491f617da5b264ad84c662897ad06bfa163af64990c16236e563afa82e5a47",
-        "tree_sha256": "e23a3c52f261ee465149dc47519e2c262434fbe2ca3ab2b990027cf13467b6a3",
+        "manifest_sha256": "707a29e8f10bb135400f8648d9406b110b05b129aa9f0a1189950d7952d8e402",
+        "tree_sha256": "49921ba301aa5db6a3df6a75d64f3be2fdf9951fef90c15d8183e5cb8ea08479",
         "engine_ids": [
           "E03",
           "E04",
@@ -1784,6 +1806,12 @@
           "E15"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1791,7 +1819,7 @@
         "domain_id": "D02_ORQUESTACION",
         "path": "2. Orquestación/Orquestador",
         "manifest": "2. Orquestación/Orquestador/CAJITA_MODULE.json",
-        "manifest_sha256": "9596a9a3fc84acda3b3ae13a00b17795c0e204feb502ceffd5bb9e7fd9db733d",
+        "manifest_sha256": "cf15cf6408340e3fcce495f90b3b2067c720cffb91896ca75d38beebb86ec624",
         "tree_sha256": "52f79c56c0cf17cf524df58ced88fe1048161aa791e3f9f51290d487b3ca7795",
         "engine_ids": [
           "E10",
@@ -1801,6 +1829,12 @@
           "E15"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1808,7 +1842,7 @@
         "domain_id": "D03_TRANSCRIPCION",
         "path": "3. Transcripción",
         "manifest": "3. Transcripción/CAJITA_MODULE.json",
-        "manifest_sha256": "a3064100ca2782f52b61b41368621ee11bcc97f3a450ea6e67e1a0d7923d833f",
+        "manifest_sha256": "8716c6119a6dc3fc1aa69e74a231af18f69787956117e68b74eab64014b887d2",
         "tree_sha256": "036f46e61162b467e9f2f2f40e1e9afca6b6d4498391805e77ed78c51384ffd9",
         "engine_ids": [
           "E02",
@@ -1816,7 +1850,23 @@
           "E13",
           "E14"
         ],
-        "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter": "CAJITA_WHISPER_TRANSCRIPTION/1.0",
+        "consumer_adapter_registration": {
+          "status": "REGISTERED_SYNTHETIC_SCOPE_ONLY",
+          "domain_id": "D03_TRANSCRIPCION",
+          "adapter_id": "CAJITA_WHISPER_TRANSCRIPTION/1.0",
+          "operation": "transcribe_audio",
+          "entrypoint": "3. Transcripción/lowrank_runtime.py",
+          "adapter_source_sha256": "6ae10af23a55be36dde9970b1e1b02ca543beef2fca1ce98eebc1d3ad2d334c6",
+          "weight_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
+          "weight_path": "3. Transcripción/model.safetensors",
+          "weight_sha256": "67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f",
+          "weight_bytes": 10399882,
+          "test_scope": "SYNTHETIC_FIXTURES_ONLY",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1824,7 +1874,7 @@
         "domain_id": "D04_TRADUCTOR_INTELIGENTE",
         "path": "4. Traductor Inteligente/Hermenéutica H-G",
         "manifest": "4. Traductor Inteligente/Hermenéutica H-G/CAJITA_MODULE.json",
-        "manifest_sha256": "5776c2ea45f97565336ec1ce71db46bce0273a17a335fd95b087c556105c72a7",
+        "manifest_sha256": "e07c3995434535c974133fd652729f02f7bc1244cbe55b2aceebcad5ff05d581",
         "tree_sha256": "ad77c7f176831c2f9f430b8f6dd6251841300f521518d2a5976e73428b1e5884",
         "engine_ids": [
           "E09",
@@ -1835,6 +1885,12 @@
           "E15"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1842,7 +1898,7 @@
         "domain_id": "D04_TRADUCTOR_INTELIGENTE",
         "path": "4. Traductor Inteligente/Traducción de lenguas antiguas",
         "manifest": "4. Traductor Inteligente/Traducción de lenguas antiguas/CAJITA_MODULE.json",
-        "manifest_sha256": "bcabcb02feb319bd9d76de5a2a2273f061aed6dd3edd52fec5f976af590b679b",
+        "manifest_sha256": "dff9e534cff3a6e475e6fb4e5f8e17bd29511eb6de93b32b6f4560ea2184ec9c",
         "tree_sha256": "ccc2d8db85945f0864bb3bb26bd67737332d7cdccdfe034dc5b6607947ed6a26",
         "engine_ids": [
           "E02",
@@ -1854,6 +1910,12 @@
           "E15"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1861,7 +1923,7 @@
         "domain_id": "D04_TRADUCTOR_INTELIGENTE",
         "path": "4. Traductor Inteligente/Traducción general",
         "manifest": "4. Traductor Inteligente/Traducción general/CAJITA_MODULE.json",
-        "manifest_sha256": "593b41eedd9b097b9a9716665523e2330eb962f75aaa5e25e165f8e671f604d4",
+        "manifest_sha256": "13ab56ab94a6d7512e6207f5dbdec63dcc0edfe14f87a1e48acaf38cb4de2900",
         "tree_sha256": "22f22eb0efeab980a03be87c6231c2da2db99bfd4df8723850bcf310e53d8f0c",
         "engine_ids": [
           "E01",
@@ -1874,7 +1936,23 @@
           "E14",
           "E15"
         ],
-        "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter": "CAJITA_SEAMLESS_TRANSLATION/1.0",
+        "consumer_adapter_registration": {
+          "status": "REGISTERED_SYNTHETIC_SCOPE_ONLY",
+          "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+          "adapter_id": "CAJITA_SEAMLESS_TRANSLATION/1.0",
+          "operation": "translate_text",
+          "entrypoint": "4. Traductor Inteligente/Traducción general/lowrank_runtime.py",
+          "adapter_source_sha256": "6ae10af23a55be36dde9970b1e1b02ca543beef2fca1ce98eebc1d3ad2d334c6",
+          "weight_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
+          "weight_path": "4. Traductor Inteligente/Traducción general/model.safetensors",
+          "weight_sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f",
+          "weight_bytes": 11720882,
+          "test_scope": "SYNTHETIC_FIXTURES_ONLY",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1882,7 +1960,7 @@
         "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
         "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre",
         "manifest": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre/CAJITA_MODULE.json",
-        "manifest_sha256": "9da402afd6be31ade716375413c6bd2c5ffe97330f453d642b4a41bbe43d2024",
+        "manifest_sha256": "bdc191e4aa46c92724c7e4f23591a3f2add6b1f5fc30ca7c7d5f46a4028d5963",
         "tree_sha256": "21600fc622cfceddf2ccd5e67cde37713b69500e6a4737c9e9383eda2ec0ba96",
         "engine_ids": [
           "E02",
@@ -1891,6 +1969,12 @@
           "E14"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1898,7 +1982,7 @@
         "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
         "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate",
         "manifest": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/CAJITA_MODULE.json",
-        "manifest_sha256": "5d9790ca214a554c2395c7f8dabdbde2047b0cc71010a43479c31a98746bceea",
+        "manifest_sha256": "39728668474c42e5b96a76d1859ffc92c6152b2b34e5672a0b1a0523130e0daf",
         "tree_sha256": "212e3cc0275403a265d3bcb6b612288290257499e6b86e711e1b806a31a7008c",
         "engine_ids": [
           "E01",
@@ -1909,7 +1993,23 @@
           "E13",
           "E14"
         ],
-        "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter": "CAJITA_DOCLING_IMAGE_EXTRACTION/1.0",
+        "consumer_adapter_registration": {
+          "status": "REGISTERED_SYNTHETIC_SCOPE_ONLY",
+          "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+          "adapter_id": "CAJITA_DOCLING_IMAGE_EXTRACTION/1.0",
+          "operation": "extract_document_image",
+          "entrypoint": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py",
+          "adapter_source_sha256": "6ae10af23a55be36dde9970b1e1b02ca543beef2fca1ce98eebc1d3ad2d334c6",
+          "weight_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
+          "weight_path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin",
+          "weight_sha256": "4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88",
+          "weight_bytes": 13483380,
+          "test_scope": "SYNTHETIC_FIXTURES_ONLY",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1917,7 +2017,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Anti-Alucinaciones",
         "manifest": "6. Sistema Inteligente/Anti-Alucinaciones/CAJITA_MODULE.json",
-        "manifest_sha256": "34e9fec48898b3b96735792e570b48a9796ee041b877ac3298f3016699522be2",
+        "manifest_sha256": "1ab94baf703678b3cd18e6e6e5a133cd3f9bf9d6a45ea2a1377835c5c2edd299",
         "tree_sha256": "f8630817435841cfab027f95bb59ad43556f527e537a68e31ef7f801c09453b5",
         "engine_ids": [
           "E09",
@@ -1927,6 +2027,12 @@
           "E15"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1934,7 +2040,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Análisis Avanzado",
         "manifest": "6. Sistema Inteligente/Análisis Avanzado/CAJITA_MODULE.json",
-        "manifest_sha256": "485830103b30ccff165c5588e57e992bcf0caf61afb7f98d8f31281edabdffcd",
+        "manifest_sha256": "1637c2938e0db098422b4c30c3de9e2ca39aa5a4382180eff0cc296ec3cd69db",
         "tree_sha256": "9fdad0222abac132d99d9734c87e671273a1801945d8b4d90126b9b718762f60",
         "engine_ids": [
           "E01",
@@ -1949,7 +2055,23 @@
           "E15",
           "E11"
         ],
-        "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter": "CAJITA_QWEN3_REASONING/1.0",
+        "consumer_adapter_registration": {
+          "status": "REGISTERED_SYNTHETIC_SCOPE_ONLY",
+          "domain_id": "D06_SISTEMA_INTELIGENTE",
+          "adapter_id": "CAJITA_QWEN3_REASONING/1.0",
+          "operation": "analyze_reasoning",
+          "entrypoint": "6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py",
+          "adapter_source_sha256": "6ae10af23a55be36dde9970b1e1b02ca543beef2fca1ce98eebc1d3ad2d334c6",
+          "weight_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
+          "weight_path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+          "weight_sha256": "01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56",
+          "weight_bytes": 14956240,
+          "test_scope": "SYNTHETIC_FIXTURES_ONLY",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1957,7 +2079,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Archivado Deteccion",
         "manifest": "6. Sistema Inteligente/Archivado Deteccion/CAJITA_MODULE.json",
-        "manifest_sha256": "00ce5837a565739b03026d4fc51ff82ec703d6974de4626ec243ab905c7b39e0",
+        "manifest_sha256": "23d9dc3ac22f82854f8b57c52f8f2fe1bf7b7afd77badfcc8165b34f0803b00e",
         "tree_sha256": "728e3f88d4ab067b57577fa4ac6d09feea19f926fa139e48790c58b294f1b809",
         "engine_ids": [
           "E02",
@@ -1966,6 +2088,12 @@
           "E14"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1973,7 +2101,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Cognitive CI - CD",
         "manifest": "6. Sistema Inteligente/Cognitive CI - CD/CAJITA_MODULE.json",
-        "manifest_sha256": "d05d069a1d02cb79fe1b1aee26efcbb57d8bbb6f298ed35d35d004010afe9f40",
+        "manifest_sha256": "ef284bcdb2580b92a48a5e943f662e7963f0be4987b2758ee75df6913d8331fd",
         "tree_sha256": "ba88d46baa8a0c72be3144fd01bde8be02353f40c811ddb42604cb98d11a94b9",
         "engine_ids": [
           "E10",
@@ -1983,6 +2111,12 @@
           "E15"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -1990,7 +2124,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Consola",
         "manifest": "6. Sistema Inteligente/Consola/CAJITA_MODULE.json",
-        "manifest_sha256": "f34120d4bbd40fa327cb02cf9d667e2f2953829f0be37c3b8e47c5348a2ba3ab",
+        "manifest_sha256": "4de44d7226a68012c5dd7f19fbf822eb458948e8d70da610b2e0591f4ec7f186",
         "tree_sha256": "3d6c1bb36a54ebac6c5cc25b5624e9930756359a781717911e058bd5933bf9bf",
         "engine_ids": [
           "E10",
@@ -1999,6 +2133,12 @@
           "E14"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -2006,7 +2146,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Memoria Gobernada",
         "manifest": "6. Sistema Inteligente/Memoria Gobernada/CAJITA_MODULE.json",
-        "manifest_sha256": "5df2d2ab547c2353af9731992099b0875c60428bc9383ba7a9f6318e043aa6e2",
+        "manifest_sha256": "35c240d17d0ff38c16ba0c6a12fa9a9d63cfd1fa23dbd55172dc5d805c1394f6",
         "tree_sha256": "2eef878772d8a8b9d46798d17daf07affa3d329c62c1bcbf72c5ce9653060ec3",
         "engine_ids": [
           "E03",
@@ -2018,6 +2158,12 @@
           "E15"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -2025,7 +2171,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Migración y Persistencia",
         "manifest": "6. Sistema Inteligente/Migración y Persistencia/CAJITA_MODULE.json",
-        "manifest_sha256": "2a5c397312dbe61c315a771a61b7896801ac5ef4a2be4bd294f8891108341b08",
+        "manifest_sha256": "0cde83de1ac442fc4e5b2279510bf23c46dbcd84965cb00460546dedfe6fb64c",
         "tree_sha256": "f970bee40096c876c6a12ce4e28b706c1c69dc623cf40679fa2d23f3e4f4aaa7",
         "engine_ids": [
           "E06",
@@ -2037,6 +2183,12 @@
           "E14"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -2044,7 +2196,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Motor - Protocolar",
         "manifest": "6. Sistema Inteligente/Motor - Protocolar/CAJITA_MODULE.json",
-        "manifest_sha256": "00aa425eaa1150a4734e822ca29c8219c0c256ab4cb5245009cb04cb0e3c81ff",
+        "manifest_sha256": "1aab9043e41859c1aaff5bf64fbbd6f56cf3458592a2101a93d98bde302a67e0",
         "tree_sha256": "14a77569114d4a475cce434ca338e153e01029408fb8212185cc9e5c889c205c",
         "engine_ids": [
           "E10",
@@ -2054,6 +2206,12 @@
           "E15"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -2061,7 +2219,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Portabilidad base",
         "manifest": "6. Sistema Inteligente/Portabilidad base/CAJITA_MODULE.json",
-        "manifest_sha256": "eef0781880e6cae2f1408f5569ff644740fa723cd6920fd6909916f5c800ff53",
+        "manifest_sha256": "9ec167084030a5f75150707b97e26594ed502175f35f9e8f6b8943244d65e112",
         "tree_sha256": "67d99d38f6f2be2e6b4aa92e315d94430268abfeb2da1539dbce6a7aad9bc364",
         "engine_ids": [
           "E10",
@@ -2070,6 +2228,12 @@
           "E14"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -2077,7 +2241,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Runtime Android Windows",
         "manifest": "6. Sistema Inteligente/Runtime Android Windows/CAJITA_MODULE.json",
-        "manifest_sha256": "c445fa914c5df882d460b01e0135cc71d74f660f13039af73dff67bb3cea492a",
+        "manifest_sha256": "5b690179408482e8ed9895cf096b4660c7ce7885f57b3eb98012fab965bdc24f",
         "tree_sha256": "b3c49b66772615b9aa7ff6fbde5e4226f16d689525e0f04da8b9c80981941b7e",
         "engine_ids": [
           "E10",
@@ -2086,6 +2250,12 @@
           "E14"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       },
       {
@@ -2093,7 +2263,7 @@
         "domain_id": "D06_SISTEMA_INTELIGENTE",
         "path": "6. Sistema Inteligente/Testing",
         "manifest": "6. Sistema Inteligente/Testing/CAJITA_MODULE.json",
-        "manifest_sha256": "58abec0b4a0ba0e51ab8b78cdbbdf935295c10fa1c5653af0969c250e2c4895a",
+        "manifest_sha256": "569032b912a0265a27cf86df8e8b7231d0262133fa6283164452f80612521ec8",
         "tree_sha256": "8f07bd7200b63ec6b98a345f3c850b3947fe9382e47389fbdcd409ee3ef21752",
         "engine_ids": [
           "E10",
@@ -2102,29 +2272,38 @@
           "E15"
         ],
         "consumer_adapter": "NOT_REGISTERED_FOR_ALL_TASKS",
+        "consumer_adapter_registration": {
+          "status": "NOT_REGISTERED",
+          "native_smoke": "REQUIRED",
+          "reference_quality_equivalence": "NOT_ESTABLISHED",
+          "certification": "NOT_GRANTED"
+        },
         "certification": "NOT_GRANTED"
       }
     ],
     "binding_path": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
-    "binding_sha256": "bc63ae32329d36dd44413e8dbe2b11604d779c81fd28fdd682f1ef147b433c8b",
+    "binding_sha256": "c90cd4f4f8af99a12e7849a07c86b1e37ae019f9e9b7d3decb3c11f00ac87570",
     "protected_source_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
-    "companion_document_sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486",
+    "companion_document_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
     "declared_materialized_axioms": 11757,
     "declared_historical_gaps": 657,
     "block_count": 134,
     "framework_count": 18,
-    "state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
+    "state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING",
+    "synthetic_scope_registered_target_count": 5,
+    "unregistered_target_count": 16,
+    "global_certification": "NOT_GRANTED"
   },
-  "builder_output": "{\n  \"status\": \"PASS\",\n  \"output\": \"/home/runner/work/luna-linux-bridge/luna-linux-bridge/out/CAJITA_LUNA_RUNTIME_V10.macrodown\",\n  \"archive_bytes\": 370865781,\n  \"gross_raw_payload_bytes\": 447370518,\n  \"raw_build_tree_ceiling_bytes\": 1500000000,\n  \"combined_distribution_cap_bytes\": 479000000,\n  \"companion_bytes\": 11646992,\n  \"combined_distribution_bytes\": 382512773,\n  \"member_count\": 1418,\n  \"sha256\": \"f8646e4b655eb25c1da148480148dc237a746466e2c1c3847ce795b7bf7a0153\",\n  \"rebuildable\": true,\n  \"externalized_asset_reconstruction\": {\n    \"status\": \"PASS_CONTAINER_RECONSTRUCTION_ONLY\",\n    \"asset_count\": 10,\n    \"passed_count\": 10,\n    \"failed_count\": 0,\n    \"assets\": [\n      {\n        \"id\": \"APACHE_JENA_6_2_0\",\n        \"status\": \"PASS\",\n        \"bytes\": 27289736,\n        \"file_count\": 249,\n        \"tree_sha256\": \"586b008046071c679739ba8e9e9512cfc88a04dc5c28136adaa37afb798b7123\",\n        \"container_sha256\": \"a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a\"\n      },\n      {\n        \"id\": \"PLAYWRIGHT_1_63_0_SOURCE\",\n        \"status\": \"PASS\",\n        \"bytes\": 68708189,\n        \"file_count\": 3084,\n        \"tree_sha256\": \"bf9783d3c2ed4a3df79d040901bf9ad798c3f0c6018fb9b85ad0c65e6e31ab80\",\n        \"container_sha256\": \"395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14\"\n      },\n      {\n        \"id\": \"ONNX_RUNTIME_1_29_0_CP311\",\n        \"status\": \"PASS\",\n        \"bytes\": 62736574,\n        \"file_count\": 322,\n        \"tree_sha256\": \"799c445e18ce0c2f10ff782b745cbf7d02ec824f5d5dea6d5d020fa3deca77ab\",\n        \"container_sha256\": \"d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b\"\n      },\n      {\n        \"id\": \"DAGGER_0_21_8_LINUX_AMD64\",\n        \"status\": \"PASS\",\n        \"bytes\": 15382954,\n        \"file_count\": 2,\n        \"tree_sha256\": \"6be6fd2b8582f78a411e6c992bfc7d8dcfe9dee6a0b1eb27ee49dd1086732aa5\",\n        \"container_sha256\": \"bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e\"\n      },\n      {\n        \"id\": \"OPA_STATIC_LINUX_AMD64_CANDIDATE\",\n        \"status\": \"PASS\",\n        \"bytes\": 25271120,\n        \"file_count\": 1,\n        \"tree_sha256\": \"846a888aacea2cbc6174b77cb006c6e8832a08353b6e32c5213888325a942fd6\",\n        \"container_sha256\": \"75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628\"\n      },\n      {\n        \"id\": \"RQLITE_10_2_7_LINUX_AMD64\",\n        \"status\": \"PASS\",\n        \"bytes\": 12970604,\n        \"file_count\": 3,\n        \"tree_sha256\": \"ab3c60550f815a6c9baa2edbc796d8a00810b4aff679b0e70e58afe4c8fc79d5\",\n        \"container_sha256\": \"bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea\"\n      },\n      {\n        \"id\": \"SQLITE_SOURCE_3_53_4\",\n        \"status\": \"PASS\",\n        \"bytes\": 111818024,\n        \"file_count\": 2186,\n        \"tree_sha256\": \"5449bbf6c8748a6153410041438401871a7c1f86fe58bcf09e85df644bd68085\",\n        \"container_sha256\": \"e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e\"\n      },\n      {\n        \"id\": \"CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE\",\n        \"status\": \"PASS\",\n        \"bytes\": 143281221,\n        \"file_count\": 8818,\n        \"tree_sha256\": \"1df8c665076d390a6628721bae123921f09a6bcb756ca87042f84ed3ee7a540f\",\n        \"container_sha256\": \"fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37\"\n      },\n      {\n        \"id\": \"AVALONIA_12_1_1_NUGET\",\n        \"status\": \"PASS\",\n        \"bytes\": 35926924,\n        \"file_count\": 121,\n        \"tree_sha256\": \"196ff464dfa68dea1c6a95d58c899bd809711d6d5dba192887bca900f9ea7d67\",\n        \"container_sha256\": \"46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f\"\n      },\n      {\n        \"id\": \"TAURI_2_11_5_SOURCE_ZIP\",\n        \"status\": \"PASS\",\n        \"bytes\": 21668047,\n        \"file_count\": 1011,\n        \"tree_sha256\": \"9004f53d924f27227c028078d4d8dbe05cf798ca0dce5d0a48b5c0e34bd321d5\",\n        \"container_sha256\": \"04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8\"\n      }\n    ],\n    \"consumer_adapter_validation\": \"NOT_ESTABLISHED\",\n    \"native_smoke_validation\": \"REQUIRED\",\n    \"global_certification\": \"NOT_GRANTED\"\n  }\n}\n",
+  "builder_output": "{\n  \"status\": \"PASS\",\n  \"output\": \"/home/runner/work/luna-linux-bridge/luna-linux-bridge/out/CAJITA_LUNA_RUNTIME_V10.macrodown\",\n  \"archive_bytes\": 370870178,\n  \"gross_raw_payload_bytes\": 447391541,\n  \"raw_build_tree_ceiling_bytes\": 1500000000,\n  \"combined_distribution_cap_bytes\": 479000000,\n  \"companion_bytes\": 11649200,\n  \"combined_distribution_bytes\": 382519378,\n  \"member_count\": 1418,\n  \"sha256\": \"7a7aa66d8048e504b67360d389a17e364f744d5e39acbb675724a6f117bc052d\",\n  \"rebuildable\": true,\n  \"externalized_asset_reconstruction\": {\n    \"status\": \"PASS_CONTAINER_RECONSTRUCTION_ONLY\",\n    \"asset_count\": 10,\n    \"passed_count\": 10,\n    \"failed_count\": 0,\n    \"assets\": [\n      {\n        \"id\": \"APACHE_JENA_6_2_0\",\n        \"status\": \"PASS\",\n        \"bytes\": 27289736,\n        \"file_count\": 249,\n        \"tree_sha256\": \"586b008046071c679739ba8e9e9512cfc88a04dc5c28136adaa37afb798b7123\",\n        \"container_sha256\": \"a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a\"\n      },\n      {\n        \"id\": \"PLAYWRIGHT_1_63_0_SOURCE\",\n        \"status\": \"PASS\",\n        \"bytes\": 68708189,\n        \"file_count\": 3084,\n        \"tree_sha256\": \"bf9783d3c2ed4a3df79d040901bf9ad798c3f0c6018fb9b85ad0c65e6e31ab80\",\n        \"container_sha256\": \"395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14\"\n      },\n      {\n        \"id\": \"ONNX_RUNTIME_1_29_0_CP311\",\n        \"status\": \"PASS\",\n        \"bytes\": 62736574,\n        \"file_count\": 322,\n        \"tree_sha256\": \"799c445e18ce0c2f10ff782b745cbf7d02ec824f5d5dea6d5d020fa3deca77ab\",\n        \"container_sha256\": \"d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b\"\n      },\n      {\n        \"id\": \"DAGGER_0_21_8_LINUX_AMD64\",\n        \"status\": \"PASS\",\n        \"bytes\": 15382954,\n        \"file_count\": 2,\n        \"tree_sha256\": \"6be6fd2b8582f78a411e6c992bfc7d8dcfe9dee6a0b1eb27ee49dd1086732aa5\",\n        \"container_sha256\": \"bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e\"\n      },\n      {\n        \"id\": \"OPA_STATIC_LINUX_AMD64_CANDIDATE\",\n        \"status\": \"PASS\",\n        \"bytes\": 25271120,\n        \"file_count\": 1,\n        \"tree_sha256\": \"846a888aacea2cbc6174b77cb006c6e8832a08353b6e32c5213888325a942fd6\",\n        \"container_sha256\": \"75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628\"\n      },\n      {\n        \"id\": \"RQLITE_10_2_7_LINUX_AMD64\",\n        \"status\": \"PASS\",\n        \"bytes\": 12970604,\n        \"file_count\": 3,\n        \"tree_sha256\": \"ab3c60550f815a6c9baa2edbc796d8a00810b4aff679b0e70e58afe4c8fc79d5\",\n        \"container_sha256\": \"bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea\"\n      },\n      {\n        \"id\": \"SQLITE_SOURCE_3_53_4\",\n        \"status\": \"PASS\",\n        \"bytes\": 111818024,\n        \"file_count\": 2186,\n        \"tree_sha256\": \"5449bbf6c8748a6153410041438401871a7c1f86fe58bcf09e85df644bd68085\",\n        \"container_sha256\": \"e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e\"\n      },\n      {\n        \"id\": \"CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE\",\n        \"status\": \"PASS\",\n        \"bytes\": 143281221,\n        \"file_count\": 8818,\n        \"tree_sha256\": \"1df8c665076d390a6628721bae123921f09a6bcb756ca87042f84ed3ee7a540f\",\n        \"container_sha256\": \"fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37\"\n      },\n      {\n        \"id\": \"AVALONIA_12_1_1_NUGET\",\n        \"status\": \"PASS\",\n        \"bytes\": 35926924,\n        \"file_count\": 121,\n        \"tree_sha256\": \"196ff464dfa68dea1c6a95d58c899bd809711d6d5dba192887bca900f9ea7d67\",\n        \"container_sha256\": \"46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f\"\n      },\n      {\n        \"id\": \"TAURI_2_11_5_SOURCE_ZIP\",\n        \"status\": \"PASS\",\n        \"bytes\": 21668047,\n        \"file_count\": 1011,\n        \"tree_sha256\": \"9004f53d924f27227c028078d4d8dbe05cf798ca0dce5d0a48b5c0e34bd321d5\",\n        \"container_sha256\": \"04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8\"\n      }\n    ],\n    \"consumer_adapter_validation\": \"NOT_ESTABLISHED\",\n    \"native_smoke_validation\": \"REQUIRED\",\n    \"global_certification\": \"NOT_GRANTED\"\n  }\n}\n",
   "distribution": {
-    "archive_bytes": 370865781,
-    "archive_sha256": "f8646e4b655eb25c1da148480148dc237a746466e2c1c3847ce795b7bf7a0153",
-    "louksna1_bytes": 11646992,
-    "louksna1_sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486",
-    "combined_bytes": 382512773,
+    "archive_bytes": 370870178,
+    "archive_sha256": "7a7aa66d8048e504b67360d389a17e364f744d5e39acbb675724a6f117bc052d",
+    "louksna1_bytes": 11649200,
+    "louksna1_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+    "combined_bytes": 382519378,
     "combined_cap_bytes": 479000000,
     "status": "PASS",
-    "raw_tree_bytes": 447370518
+    "raw_tree_bytes": 447391541
   },
   "next_gate": "INDEPENDENT_G23_G24_AND_REAL_ONE_CPU_1_GIB_FUNCTIONAL_TESTS"
 }

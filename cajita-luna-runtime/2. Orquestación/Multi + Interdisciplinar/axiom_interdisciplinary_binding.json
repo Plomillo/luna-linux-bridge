@@ -16,9 +16,9 @@
   },
   "certification": "NOT_GRANTED",
   "companion_artifact": {
-    "bytes": 11646992,
+    "bytes": 11649200,
     "path_from_runtime_root": "../Louksna1.md",
-    "sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486"
+    "sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b"
   },
   "framework_count": 18,
   "graph_execution": "NOT_PROVEN_BY_SOURCE_BINDING",
