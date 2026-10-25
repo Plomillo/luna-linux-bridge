@@ -320,7 +320,7 @@ jobs:
                   "raw_payload_target_gate": raw_target_gate,
                   "raw_bytes_over_target": max(0, measured - raw_payload_target),
                   "archive_cap_bytes": archive_cap,
-                  "archive_size_gate": "PENDING_FINAL_ZIP_BUILD",
+                  "archive_size_gate": "DEFERRED_TO_EXTERNAL_MACRODOWN_BUILD_AUDIT",
               })
               placement_path.write_text(json.dumps(placement, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
               after_write = runtime_size()
