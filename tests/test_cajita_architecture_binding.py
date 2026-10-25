@@ -216,8 +216,8 @@ class CanonicalRuntimeEngineScopeRegistrationTests(unittest.TestCase):
         runtime = repo_root / "cajita-luna-runtime"
         module = runtime / "2. Orquestación" / "Multi + Interdisciplinar"
         module.mkdir(parents=True)
-        (module / "cajita_axiom_source_loader.py").write_text("# source-bound reader\\n", encoding="utf-8")
-        (module / "axiom_interdisciplinary_binding.json").write_text('{"status":"SOURCE_BOUND_GRAPH_EXECUTION_PENDING"}\\n', encoding="utf-8")
+        (module / "cajita_axiom_source_loader.py").write_text("# source-bound reader\n", encoding="utf-8")
+        (module / "axiom_interdisciplinary_binding.json").write_text('{"status":"SOURCE_BOUND_GRAPH_EXECUTION_PENDING"}\n', encoding="utf-8")
         (runtime / "cajita_target_adapters.py").write_text(
             "TARGET_ADAPTERS = {"
             "'D02_MULTI_INTERDISCIPLINAR': {"
@@ -229,11 +229,11 @@ class CanonicalRuntimeEngineScopeRegistrationTests(unittest.TestCase):
             "'required_files':['cajita_axiom_source_loader.py','axiom_interdisciplinary_binding.json','APACHE_JENA_6_2_0.7z'],"
             "'engine':'SOURCE_BOUND_AXIOM_READER',"
             "'scope':'PROTECTED_SOURCE_PREFIX_AND_COMPANION_HASH_VERIFICATION'"
-            "}}\\n",
+            "}\n",
             encoding="utf-8",
         )
 
-        payload = b"registered Jena compact-container test payload\\n" * 512
+        payload = b"registered Jena compact-container test payload\n" * 512
         staging_rel = "externalized-assets-staging/optimized-containers/APACHE_JENA_6_2_0.7z"
         staging = repo_root / staging_rel
         staging.parent.mkdir(parents=True)
@@ -262,7 +262,7 @@ class CanonicalRuntimeEngineScopeRegistrationTests(unittest.TestCase):
             }]
         }
         (runtime / "EXTERNALIZED_ASSET_PLACEMENT.json").write_text(
-            json.dumps(placement, sort_keys=True) + "\\n", encoding="utf-8"
+            json.dumps(placement, sort_keys=True) + "\n", encoding="utf-8"
         )
         targets = [{
             "id": "D02_MULTI_INTERDISCIPLINAR",
