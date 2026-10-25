@@ -9,6 +9,11 @@ on:
       - "cajita-luna-runtime/command_subdomain_routing.json"
       - "cajita-luna-runtime/CajitadeLuna.md"
       - "cajita-luna-runtime/reproduce_macrodown.py"
+      - "cajita-luna-runtime/cajita_externalized_packaging.py"
+      - "cajita-luna-runtime/cajita_externalized_asset_loader.py"
+      - "cajita-luna-runtime/module_registry.json"
+      - "cajita-luna-runtime/command_subdomain_routing.json"
+      - "cajita-luna-runtime/CAJITA_DISTRIBUTION_ROUTING.json"
       - "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json"
       - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
       - "cajita-luna-runtime/2. Orquestación/Orquestador/punto.json"
@@ -63,15 +68,30 @@ jobs:
           print("CAJITA_LFS_MATERIALIZATION=PASS files=6")
           PY
 
+      - name: Verify compressed externalized assets and prepare distribution registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full
+          python cajita-luna-runtime/reproduce_macrodown.py --root cajita-luna-runtime --prepare-distribution-registry
+          python cajita-luna-runtime/cajita_externalized_asset_loader.py verify-all --root cajita-luna-runtime
+
       - name: Reconcile the ten-asset placement record with the measured tree size
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           import json
+          import os
+          import sys
           from pathlib import Path
 
           root = Path("cajita-luna-runtime")
+          sys.path.insert(0, str(root.resolve()))
+          from cajita_externalized_packaging import distribution_contract
+          externalized_contract = distribution_contract(root)
+          excluded_expanded_roots = {item["expanded_relpath"] for item in externalized_contract}
           placement_path = root / "EXTERNALIZED_ASSET_PLACEMENT.json"
           report_path = Path("docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json")
           placement = json.loads(placement_path.read_text(encoding="utf-8"))
@@ -139,10 +159,10 @@ jobs:
               raise SystemExit("Q2_PROMOTION_COUNT_MISMATCH")
           print("Q2_FACTOR_PACKING_EVIDENCE=PASS verified_models=4 new_promotions=" + str(promoted_count))
 
-          placement["status"] = "TEN_ASSETS_COMPACTED_RUNTIME_SIZE_GATE_PASS"
+          placement["status"] = "COMPACT_DISTRIBUTION_PAYLOAD_SIZE_GATE_PASS"
           placement["runtime_size_gate"] = {
-              "audit_id": "CAJITA_FINAL_RUNTIME_SIZE_GATE_20261023",
-              "measurement_method": "sum of every regular file byte under cajita-luna-runtime except MACRODOWN_MANIFEST.json; no LFS pointers",
+              "audit_id": "CAJITA_FINAL_RUNTIME_SIZE_GATE_20261025",
+              "measurement_method": "sum of files in the reproducible distribution payload; excludes the source-only module_registry.json and exactly ten hash-pinned expanded asset trees; includes all ten verified .7z containers and CAJITA_DISTRIBUTION_MODULE_REGISTRY.json; no LFS pointers",
               "payload_bytes": 999999999,
               "hard_cap_bytes": cap,
               "bytes_under_cap": 9999999,
@@ -153,13 +173,32 @@ jobs:
               "certification": "NOT_GRANTED"
           }
 
+          def under_expanded_tree(rel):
+              return any(rel == item or rel.startswith(item + "/") for item in excluded_expanded_roots)
+
           def runtime_size():
               total = 0
-              for p in root.rglob("*"):
-                  if p.is_symlink():
-                      raise SystemExit("SYMLINK_IN_RUNTIME:" + str(p))
-                  if p.is_file() and p.name != "MACRODOWN_MANIFEST.json":
-                      total += p.stat().st_size
+              for base, dirs, files in os.walk(root, topdown=True, followlinks=False):
+                  base_path = Path(base)
+                  kept_dirs = []
+                  for name in dirs:
+                      directory = base_path / name
+                      if directory.is_symlink():
+                          raise SystemExit("SYMLINK_IN_RUNTIME:" + str(directory))
+                      rel_dir = directory.relative_to(root).as_posix()
+                      if under_expanded_tree(rel_dir):
+                          continue
+                      kept_dirs.append(name)
+                  dirs[:] = kept_dirs
+                  for name in files:
+                      path = base_path / name
+                      if path.is_symlink():
+                          raise SystemExit("SYMLINK_IN_RUNTIME:" + str(path))
+                      rel = path.relative_to(root).as_posix()
+                      if name == "MACRODOWN_MANIFEST.json" or rel in {"module_registry.json", "command_subdomain_routing.json"} or under_expanded_tree(rel):
+                          continue
+                      if path.is_file():
+                          total += path.stat().st_size
               return total
 
           placement_path.write_text(json.dumps(placement, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -167,7 +206,7 @@ jobs:
           for _ in range(8):
               measured = runtime_size()
               gate = "PASS" if measured <= cap else "FAIL"
-              placement["status"] = "TEN_ASSETS_COMPACTED_RUNTIME_SIZE_GATE_" + gate
+              placement["status"] = "COMPACT_DISTRIBUTION_PAYLOAD_SIZE_GATE_" + gate
               placement["runtime_size_gate"].update({
                   "payload_bytes": measured,
                   "hard_cap_bytes": cap,
@@ -187,6 +226,8 @@ jobs:
           report["size_gate"] = "PASS" if measured <= cap else "FAIL"
           report["status"] = "SIZE_GATE_PASS_CERTIFICATION_NOT_GRANTED" if measured <= cap else "SIZE_GATE_FAIL_CERTIFICATION_NOT_GRANTED"
           report["placement_size_gate_recorded"] = True
+          report["runtime_measurement_scope"] = "DISTRIBUTION_PAYLOAD; TEN_VERIFIED_COMPRESSED_CONTAINERS_INCLUDED; TEN_EXPANDED_RECONSTRUCTION_TREES_AND_SOURCE_ONLY_MODULE_REGISTRY_EXCLUDED"
+          report["externalized_asset_reconstruction"] = "PASS_CONTAINER_RECONSTRUCTION_ONLY; CONSUMER_ADAPTERS_NOT_ESTABLISHED"
           report["registered_asset_count"] = len(assets)
           report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           print(json.dumps({
@@ -361,7 +402,7 @@ jobs:
               "inventory": full_inventory,
               "known_unresolved_gates": [
                   "121 external registry entries report operability/dependencies UNVERIFIED; external registered bytes are not part of the bundled distribution unless separately materialized.",
-                  "Ten-asset expansion workflow previously aborted with DESTINATION_EXISTS_FAIL_CLOSED:APACHE_JENA_6_2_0; no native execution or full functional integration is inferred.",
+                  "Ten compact containers are verified to reconstruct their hash-pinned materialized trees in isolation; consumer adapters, native execution smoke, and full functional integration remain unproven.",
                   "Model quality equivalence, independent validation, and BTX verse-level equivalence remain unproven."
               ],
               "certification": "NOT_GRANTED"
@@ -381,6 +422,8 @@ jobs:
           git add -- \
             "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json" \
             "cajita-luna-runtime/MACRODOWN_MANIFEST.json" \
+            "cajita-luna-runtime/CAJITA_DISTRIBUTION_MODULE_REGISTRY.json" \
+            "cajita-luna-runtime/CAJITA_DISTRIBUTION_ROUTING.json" \
             "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json" \
             "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json" \
             "docs/cajita-luna/CAJITA_INVENTORY_AUDIT_20261024.json"
