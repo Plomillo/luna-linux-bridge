@@ -609,14 +609,27 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
                       support.get("relative_path"), support.get("materialized_path"), support.get("source_archive_path")}
         for item in contract:
             if item["id"] in candidates or item["expanded_relpath"] in candidates or item["container_relpath"] in candidates:
+                # The compact package contains the verified container, not
+                # its expanded directory. Do not expose a source-tree path as
+                # materialized in this distribution-specific routing catalog.
                 support.update({
+                    "relative_path": item["container_relpath"],
+                    "sha256": item["container_sha256"],
+                    "bytes": item["container_bytes"],
+                    "source_archive_path": item["container_relpath"],
+                    "source_archive_sha256": item["container_sha256"],
+                    "source_archive_bytes": item["container_bytes"],
                     "container_path": item["container_relpath"],
                     "container_sha256": item["container_sha256"],
                     "container_bytes": item["container_bytes"],
                     "container_retained_in_distribution": True,
                     "archive_removed_from_runtime": False,
-                    "activation_status": "MATERIALIZED_NOT_FUNCTIONALLY_VALIDATED",
+                    "activation_status": "MAPPED_CONTAINER_NOT_ACTIVATED",
+                    "expanded_path": item["expanded_relpath"],
+                    "expanded_bytes": item["expanded_bytes"],
+                    "expanded_tree_sha256": item["expanded_tree_sha256"],
                 })
+                support.pop("materialized_path", None)
                 break
     distribution_routing["externalized_assets"] = [
         {"id": item["id"], "container_path": item["container_relpath"],
