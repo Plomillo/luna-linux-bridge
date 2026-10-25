@@ -14,7 +14,6 @@
       "failed": [
         "D01_CEREBRO_ROOT",
         "D03_TRANSCRIPCION_ROOT",
-        "D04_HERMENEUTICA_HG",
         "D04_TRADUCCION_LENGUAS_ANTIGUAS",
         "D04_TRADUCCION_GENERAL",
         "D05_CALIBRE",
@@ -28,6 +27,7 @@
         "D02_CONFESION_ECLESIAL_REFORMADA",
         "D02_MULTI_INTERDISCIPLINAR",
         "D02_ORQUESTADOR",
+        "D04_HERMENEUTICA_HG",
         "D06_ARCHIVADO_DETECCION",
         "D06_COGNITIVE_CI_CD",
         "D06_CONSOLA",
@@ -42,13 +42,13 @@
       "measurement": {
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 90405265408,
+        "disk_available_bytes": 90409984000,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 11766099968
+        "ram_available_bytes": 11913523200
       },
       "reason": "LINUX_RESOURCE_MEASUREMENT_IS_NOT_THE_DECLARED_ANDROID_WINDOWS_MATRIX",
       "status": "FAIL"
@@ -84,7 +84,7 @@
       "status": "FAIL"
     }
   },
-  "generated_at_utc": "2026-10-25T07:53:01Z",
+  "generated_at_utc": "2026-10-25T07:56:57Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -180,13 +180,21 @@
     },
     {
       "detail": {
-        "executed": false
+        "build_flags": [
+          "NOFFI=1",
+          "NOSSL=1",
+          "ISOCLINE=1"
+        ],
+        "readme_stub": true,
+        "return_code": 0,
+        "source_makefile_sha256": "39c6ec8702e1918945d41432b3512987a3e1569cefb65725f49029ccdc72f966",
+        "stdout": "4"
       },
-      "exit_code": 2,
+      "exit_code": 0,
       "operation": "interpret_fixture",
-      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "TREALLA_CONSUMER_OPERATION_NOT_EXECUTED",
-      "status": "FAIL",
+      "output_sha256": "429007094c3385a0ecd30c73aa947880ff8eb1beb495d6815696f84121187fed",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D04_HERMENEUTICA_HG",
       "worker_certification": "NOT_GRANTED"
     },
@@ -268,11 +276,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "f2f1bdde731bf84bba6fa96c2e10183436f1d811d4aaec4af4cf6f311b88e6b5"
+        "stdout_sha256": "3c1aafc80a1fb9540100b5875e61acbdc9e1502787e25752af1ee3b79ceebd2d"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "fea83aff3ba43b108a84facc9b6aacf54d3679d9ab1b3daa5afd24fba2a1daea",
+      "output_sha256": "4ff5313a85b34368101ba3a56ec9759d21146570091d32c27f5d459d90dae439",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -329,12 +337,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "15e94083793d1237607f1b56614b4ec81f16e157db4642bc8f447977127cc3ef",
+        "query_sha256": "ceea72e27edf48f3ea7a06c8d7630440994f441ad0f25ef943282a92fd3dccd5",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "6aa422564ce1e067f44362e369c2f0d1cb841a3e5a7892b1d9555fb6f332ac1d",
+      "output_sha256": "683094e692f9c47c0e4eaa8e5c944bbc9dc59d5f644c409798eab53e742b6b95",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -402,7 +410,7 @@
       "worker_certification": "NOT_GRANTED"
     }
   ],
-  "producer_commit": "667544634ff3a587b7200dd509f6980bb2e03ba7",
+  "producer_commit": "b67d511ad01f6c47d8d85f1b7aad9e15d1c23a7e",
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
     "axiom_proposition_validity": "NOT_ESTABLISHED",
@@ -424,7 +432,6 @@
       "failed_targets": [
         "D01_CEREBRO_ROOT",
         "D03_TRANSCRIPCION_ROOT",
-        "D04_HERMENEUTICA_HG",
         "D04_TRADUCCION_LENGUAS_ANTIGUAS",
         "D04_TRADUCCION_GENERAL",
         "D05_CALIBRE",
@@ -434,7 +441,7 @@
         "D06_PORTABILIDAD_BASE",
         "D06_RUNTIME_ANDROID_WINDOWS"
       ],
-      "result_state_hash": "2c0492f631b977dc69a6584e3211270eae8eac3cddbdd9128e6a32deaf3eeaf1",
+      "result_state_hash": "ccfb060d2240d1e8fa03ea5cc99f9a4a2b3c2dfe510a70fe627baaf56c50f8da",
       "status": "FAIL"
     },
     "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
