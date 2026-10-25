@@ -23,6 +23,7 @@ on:
       - "cajita-luna-runtime/command_subdomain_routing.json"
       - "cajita-luna-runtime/CAJITA_DISTRIBUTION_ROUTING.json"
       - "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json"
+      - "integrations/kestra/flows/20-cajita-runtime-size-gate.yml"
       - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
       - "cajita-luna-runtime/2. Orquestación/Orquestador/punto.json"
       - "cajita-luna-runtime/2. Orquestación/Orquestador/CLIS.txt"
