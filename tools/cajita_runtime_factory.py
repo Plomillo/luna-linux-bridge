@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
 from cajita_architecture_binding import register_architecture_binding
+from cajita_q4_precision_recovery import restore_q4_precision
 
 SCHEMA = "CAJITA_LOUKSNA1_FACTORY/1.0"
 RAW_CAP = 1_500_000_000
@@ -531,6 +532,7 @@ def main():
  try:
   report["source_commit"]=subprocess.check_output(["git","-C",str(repo),"rev-parse","HEAD"],text=True).strip()
   shutil.copytree(runtime_source,runtime,symlinks=True)
+  report["precision_recovery"]=restore_q4_precision(repo,runtime)
   weights=json.loads((runtime/"CAJITA_RUNTIME_V1/weights_manifest.json").read_text(encoding="utf-8"))
   report["weights_before"]=verify_weights(runtime,weights)
   data=factory_materialize(runtime,rollback,a.raw_cap_bytes,repo_root=repo); report["materialization"]=data

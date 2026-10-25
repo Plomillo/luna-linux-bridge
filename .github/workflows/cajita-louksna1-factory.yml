@@ -9,6 +9,8 @@ on:
     paths:
       - ".github/workflows/cajita-louksna1-factory.yml"
       - "tools/cajita_runtime_factory.py"
+      - "tools/cajita_q4_precision_recovery.py"
+      - "tests/test_cajita_q4_precision_recovery.py"
       - "tools/cajita_architecture_binding.py"
       - "tools/cajita_task_e2e.py"
       - "tools/cajita_axiom_source_loader.py"
