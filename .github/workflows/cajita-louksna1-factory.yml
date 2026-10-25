@@ -392,7 +392,8 @@ jobs:
             actual_rows = logical_tree_rows(target_dir)
             actual_tree_hash = tree_sha256(actual_rows)
             recorded = target_data["tree_integrity"]
-            assert len(actual_rows) == int(recorded["file_count_excluding_module_descriptors"]), "TARGET_MODULE_FILE_COUNT:" + target_module["target_id"]
+            if len(actual_rows) != int(recorded["file_count_excluding_module_descriptors"]):
+              raise AssertionError("TARGET_MODULE_FILE_COUNT:" + target_module["target_id"] + ":expected=" + str(recorded["file_count_excluding_module_descriptors"]) + ":actual=" + str(len(actual_rows)))
             assert sum(row["bytes"] for row in actual_rows) == int(recorded["bytes_excluding_module_descriptors"]), "TARGET_MODULE_BYTE_COUNT:" + target_module["target_id"]
             assert actual_tree_hash == target_module["tree_sha256"], "TARGET_MODULE_TREE_HASH:" + target_module["target_id"]
             assert actual_tree_hash == recorded["sha256"], "TARGET_MODULE_MANIFEST_TREE_HASH:" + target_module["target_id"]
