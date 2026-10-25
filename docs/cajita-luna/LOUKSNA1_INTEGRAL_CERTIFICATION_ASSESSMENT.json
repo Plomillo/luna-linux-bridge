@@ -3,11 +3,11 @@
   "assessment": "PASS_STRUCTURAL_AXIOM_GRAPH_EXECUTION",
   "decision": "HOLD",
   "global_certification": "NOT_GRANTED",
-  "generated_at_utc": "2026-10-24T23:49:59Z",
-  "source_commit": "ef850aa02d6d24a6df87a705a7a25fdfdaa474d6",
+  "generated_at_utc": "2026-10-25T00:01:44Z",
+  "source_commit": "8eefafceab464b62a26a7ba106ca087ba51e9550",
   "factory_evidence_binding": {
-    "factory_run_id": "40143763543",
-    "source_commit": "ef850aa02d6d24a6df87a705a7a25fdfdaa474d6",
+    "factory_run_id": "40144519051",
+    "source_commit": "8eefafceab464b62a26a7ba106ca087ba51e9550",
     "G23": "PASS",
     "G24": "PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE",
     "task_adapter_evidence": "PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY"
@@ -16,8 +16,8 @@
     "path": "LOUKSNAMEJORADA.md",
     "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
     "bytes": 11542631,
-    "companion_sha256": "26e89b971a9b334393b7797a30bb049358c4af7a822923c201b580f9a20a1604",
-    "companion_bytes": 11638160,
+    "companion_sha256": "436976ec928c943fc2d3a7f83d491d7155d5d11b12b811ea36a46c6ceb1acc5f",
+    "companion_bytes": 11640368,
     "protected_prefix_byte_exact": true
   },
   "legacy_definition_census": {
