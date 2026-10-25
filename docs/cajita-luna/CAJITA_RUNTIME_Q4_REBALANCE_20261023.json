@@ -1,7 +1,7 @@
 {
   "schema": "CAJITA_RUNTIME_HARD_CAP_REBALANCE/1.0",
   "audit_id": "CAJITA_RUNTIME_Q4_REBALANCE_20261023",
-  "created_at_utc": "2026-10-25T06:33:19.578777+00:00",
+  "created_at_utc": "2026-10-25T06:42:46.075774+00:00",
   "repository": "Plomillo/luna-linux-bridge",
   "branch": "main",
   "hard_cap_bytes": 470000000,
@@ -95,6 +95,11 @@
     "status": "CANDIDATES_NOT_SMALLER_OR_FAILED_VALIDATION",
     "attempts": [
       {
+        "method": "ONNX_FLOAT16_CONVERSION",
+        "status": "SKIPPED_KNOWN_RUNTIME_TYPE_INCOMPATIBILITY",
+        "reason": "GRAPH_CONTAINS_DEQUANTIZELINEAR; FP16 conversion can produce invalid float16 scale inputs"
+      },
+      {
         "method": "ONNX_DYNAMIC_INT8",
         "candidate_bytes": 110581945,
         "candidate_sha256": "43c2ca6ec4265f59757dde21313df979c404e7a5f4d4876004111d5ba7f11319",
@@ -117,14 +122,6 @@
         },
         "output_smoke_passed": true,
         "status": "CANDIDATE_NOT_SMALLER"
-      },
-      {
-        "method": "ONNX_FLOAT16_CONVERSION",
-        "candidate_bytes": 110219194,
-        "candidate_sha256": "9361e200e97334904e29073a9662b9c5494d4c4a3ffe86a1ce3cd91eee1cd324",
-        "graph_or_runtime_check": "FAIL",
-        "error": "InvalidGraph:[ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from <ONNX_TEMP_DIR>/candidate.float16.onnx failed:This is an invalid model. Type Error: Type 'tensor(float16)' of input parameter (transformer.shared.weight__scale) of operator (DequantizeLinear) in node (UMOT_DQ_7d1903260d533211) is invalid.",
-        "status": "CANDIDATE_RUNTIME_FAILED"
       }
     ],
     "original_bytes": 110516001,
@@ -188,6 +185,6 @@
   "quality_equivalence": "SMOKE_SIGNATURE_ONLY; TASK_LEVEL_QUALITY_NOT_ESTABLISHED",
   "independent_validation": "NOT_RUN",
   "certification": "NOT_GRANTED",
-  "elapsed_seconds": 4.445,
+  "elapsed_seconds": 4.268,
   "status": "SIZE_GATE_PASS_CERTIFICATION_NOT_GRANTED"
 }
