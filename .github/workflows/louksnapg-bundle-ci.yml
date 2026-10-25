@@ -75,7 +75,7 @@ jobs:
           assert tasks["evidence_shape"]["type"] == "io.kestra.plugin.core.flow.If"
           assert tasks["release_gates"]["type"] == "io.kestra.plugin.core.flow.If"
           text = path.read_text(encoding="utf-8")
-          assert "LOUKSNAPG_AUXILIARY_AUDIT=HOLD" in text
+          assert "LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD" in text
           assert "global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION" in text
           print("LOUKSNAPG_KESTRA_CONTRACT=PASS; INTEGRAL_CERTIFICATION=SEPARATE_GATE")
           PY
