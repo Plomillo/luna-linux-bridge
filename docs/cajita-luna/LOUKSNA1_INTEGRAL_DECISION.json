@@ -1,0 +1,432 @@
+{
+  "authority": "INDEPENDENT_VALIDATOR_NOT_SELF_CERTIFICATION",
+  "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023",
+  "decision": "NOT_GRANTED",
+  "gates": {
+    "axiom_semantics": {
+      "reason": "PROPOSITION_VALIDITY_AND_LOGICAL_CONSISTENCY_NOT_ESTABLISHED",
+      "status": "FAIL"
+    },
+    "baseline_integrity": {
+      "status": "PASS"
+    },
+    "coverage_21": {
+      "failed": [
+        "D01_CEREBRO_ROOT",
+        "D03_TRANSCRIPCION_ROOT",
+        "D04_HERMENEUTICA_HG",
+        "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+        "D04_TRADUCCION_GENERAL",
+        "D05_CALIBRE",
+        "D05_DOCLING",
+        "D06_ANTI_ALUCINACIONES",
+        "D06_ANALISIS_AVANZADO",
+        "D06_MIGRACION_PERSISTENCIA",
+        "D06_PORTABILIDAD_BASE",
+        "D06_RUNTIME_ANDROID_WINDOWS",
+        "D06_TESTING"
+      ],
+      "passed": [
+        "D02_CONFESION_ECLESIAL_REFORMADA",
+        "D02_MULTI_INTERDISCIPLINAR",
+        "D02_ORQUESTADOR",
+        "D06_ARCHIVADO_DETECCION",
+        "D06_COGNITIVE_CI_CD",
+        "D06_CONSOLA",
+        "D06_MEMORIA_GOBERNADA",
+        "D06_MOTOR_PROTOCOLAR"
+      ],
+      "status": "FAIL"
+    },
+    "host_resources": {
+      "measurement": {
+        "confidence": "MEASURED",
+        "cpu_count": 2,
+        "disk_available_bytes": 47220539392,
+        "offline_env": {
+          "HF_HUB_OFFLINE": null,
+          "TRANSFORMERS_OFFLINE": null
+        },
+        "platform": "Linux-6.12.8+-x86_64-with-glibc2.36",
+        "ram_available_bytes": 2132013056
+      },
+      "reason": "LINUX_RESOURCE_MEASUREMENT_IS_NOT_THE_DECLARED_ANDROID_WINDOWS_MATRIX",
+      "status": "FAIL"
+    },
+    "identity": {
+      "problems": [],
+      "status": "PASS"
+    },
+    "independence": {
+      "evaluator": "LOUKSNA1_INDEPENDENT_VALIDATOR",
+      "status": "PASS",
+      "worker": "CUSTOSZV9",
+      "worker_claim": "NOT_GRANTED"
+    },
+    "provenance": {
+      "problems": [
+        "PUBLISHED_MANIFEST_SOURCE_COMMIT_DIFFERS_FROM_EXECUTION_HEAD"
+      ],
+      "status": "FAIL"
+    },
+    "rollback": {
+      "observed": {
+        "post_restore_exit_code": 0,
+        "reason": "",
+        "restored_hash_match": true,
+        "scope": "EXECUTED_ARTIFACT_COPY_NOT_PRODUCT_UPDATE",
+        "status": "PASS"
+      },
+      "status": "FAIL"
+    },
+    "semantic_quality": {
+      "reason": "NO_AUTHORIZED_REFERENCE_MODEL_COMPARISON",
+      "status": "FAIL"
+    }
+  },
+  "generated_at_utc": "2026-10-25T07:19:53Z",
+  "global_certification": "NOT_GRANTED",
+  "historical_debt": {
+    "declared_gaps": 657,
+    "measured_legacy_numeric_gaps": 706,
+    "source_mutation": false,
+    "status": "DISCLOSED_NONBLOCKING_HISTORICAL_DEBT"
+  },
+  "matrix": [
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "generate_text",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "REFERENCE_MODEL_EQUIVALENCE_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D01_CEREBRO_ROOT",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "database_sha256": "fdb4a43776a06e76cf772242bc8c802970b2b55c9544cd03826aa8453bc993e0",
+        "quick_check": [
+          "ok"
+        ],
+        "verse_count": 29883,
+        "verse_sha256": "5c2996b4a12fc914c4140fe11c39ca593b34b5bb96167d0e4395059a04b3cc2e",
+        "write_access": false
+      },
+      "exit_code": 0,
+      "operation": "read_genesis_1_1",
+      "output_sha256": "6c7d035afbc684445d231ceb87235d460dde57c4d6465928bb3dc56bd4b483d3",
+      "reason": "",
+      "status": "PASS",
+      "target_id": "D02_CONFESION_ECLESIAL_REFORMADA",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "certification": "NOT_GRANTED",
+        "companion_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+        "framework_count": 18,
+        "protected_prefix_bytes": 11542631,
+        "protected_prefix_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+        "semantic_graph_execution": "NOT_PERFORMED_BY_SOURCE_LOADER",
+        "status": "PASS_SOURCE_PREFIX_VERIFIED"
+      },
+      "exit_code": 0,
+      "operation": "verify_axiom_source_binding",
+      "output_sha256": "ae0573db263cf06063fb37bfe0fabf20b941946b7f54334295944b77c3fe5636",
+      "reason": "",
+      "status": "PASS",
+      "target_id": "D02_MULTI_INTERDISCIPLINAR",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "registry": {
+          "all_adapters_present": true,
+          "certification": "NOT_GRANTED",
+          "contract_present": true,
+          "domain_count": 8,
+          "legacy_spec_absent_after_migration": true,
+          "legacy_spec_git_blob_sha": "146afab4ef88e659cba5b94c2e989f7106fdd1e4",
+          "manifest_present": true,
+          "missing_adapters": [],
+          "schema": "CAJITA_CLI_INFRASTRUCTURE_SELFTEST/1.0",
+          "side_effects": false,
+          "status": "PASS",
+          "unique_domain_count": 8
+        }
+      },
+      "exit_code": 0,
+      "operation": "audit_cli_registry",
+      "output_sha256": "34648bf849f65e2f11d18137543a29c0c18bbab760b77e8274ccac7c79178e35",
+      "reason": "",
+      "status": "PASS",
+      "target_id": "D02_ORQUESTADOR",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "transcribe_audio",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "REFERENCE_TRANSCRIPT_EQUIVALENCE_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D03_TRANSCRIPCION_ROOT",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "interpret_fixture",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "TREALLA_CONSUMER_OPERATION_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D04_HERMENEUTICA_HG",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "analyze_morphology",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "FOMA_CONSUMER_OPERATION_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "translate_text",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "REFERENCE_TRANSLATION_EQUIVALENCE_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D04_TRADUCCION_GENERAL",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "convert_document",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "CALIBRE_BINARY_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D05_CALIBRE",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "extract_document_image",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "REFERENCE_EXTRACTION_EQUIVALENCE_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D05_DOCLING",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "score_grounding",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "ONNX_GROUNDING_OPERATION_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D06_ANTI_ALUCINACIONES",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "analyze_reasoning",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "REFERENCE_REASONING_EQUIVALENCE_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D06_ANALISIS_AVANZADO",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "binary_sha256": "cdae17eedcb7737c48ca9c112769aec56d169ba0c10072f86e9f2bcefaa00c98",
+        "identified_png": true,
+        "return_code": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "966fd4b6e3271e20ca532b14f8f154a1849ea8e13fecd224fd57efc56b57a865"
+      },
+      "exit_code": 0,
+      "operation": "identify_png_signature",
+      "output_sha256": "b2fb753d34c4fce632bcb77430718d4d051bd466945a2b03553b6db3cff96a52",
+      "reason": "",
+      "status": "PASS",
+      "target_id": "D06_ARCHIVADO_DETECCION",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "binary_sha256": "add7c9dcf56e1ce1538426a6ee595ea1cc7ee830bbedd4c23219825b02b19a79",
+        "return_code": 0,
+        "stderr_tail": "",
+        "stdout_sha256": "227f1fbd67b5b9bbb5bc9b4f011e3703aa265a6d2eb4a17b0fe9792c9c68d883"
+      },
+      "exit_code": 0,
+      "operation": "evaluate_policy",
+      "output_sha256": "a185dffad4ff3ee748260a5971f9a53cf668945862a190c7c9e00f0dc04ca29a",
+      "reason": "",
+      "status": "PASS",
+      "target_id": "D06_COGNITIVE_CI_CD",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "binary_sha256": "772504dcdc78b5ebb3f2c991e8d121ec727c002ac81d4208546fcd3b81c97cd1",
+        "return_code": 0,
+        "source_bytes_unchanged": true,
+        "stdout_sha256": "5d7574046f2c9e1e0db7fc9acd5489d475b220998d579ea6e2190a500797e189"
+      },
+      "exit_code": 0,
+      "operation": "evaluate_fixed_javascript_fixture",
+      "output_sha256": "f86073beb2c4ab95941259223ddb5755ae642db8ea861db0c12a100b37d980e2",
+      "reason": "",
+      "status": "PASS",
+      "target_id": "D06_CONSOLA",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "lines": [
+          "smoke-key|smoke-value|435a5844646d72abfcffedf86d4fd35a02f03815d01e0a09174f23c4127e81a8",
+          "ok"
+        ],
+        "return_code": 0
+      },
+      "exit_code": 0,
+      "operation": "sqlite_roundtrip",
+      "output_sha256": "a1693912eba4a60e3183a0ab7bd33147ab5df878ef18b8538ab74d99c64a3845",
+      "reason": "",
+      "status": "PASS",
+      "target_id": "D06_MEMORIA_GOBERNADA",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "apply_migration",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "RQLITE_MIGRATION_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D06_MIGRACION_PERSISTENCIA",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "header_sha256": "f67d3bf7a4681c93a88f7a04db55b42a99ce45c4687b2f40c0f2d99ecb16c849",
+        "known_answer": "idle>active>done"
+      },
+      "exit_code": 0,
+      "operation": "protocol_transitions",
+      "output_sha256": "f749265115d0644c12e2a616c51becfbebfb082c6a5e51adc45d41b13a451598",
+      "reason": "",
+      "status": "PASS",
+      "target_id": "D06_MOTOR_PROTOCOLAR",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "host_matrix",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "WINDOWS_CMAKE_HOST_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D06_PORTABILIDAD_BASE",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "native_host_matrix",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "ANDROID_AND_WINDOWS_NATIVE_HOSTS_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D06_RUNTIME_ANDROID_WINDOWS",
+      "worker_certification": "NOT_GRANTED"
+    },
+    {
+      "detail": {
+        "executed": false
+      },
+      "exit_code": 2,
+      "operation": "run_pinned_pytest",
+      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
+      "reason": "PINNED_PYTEST_SUITE_NOT_EXECUTED",
+      "status": "FAIL",
+      "target_id": "D06_TESTING",
+      "worker_certification": "NOT_GRANTED"
+    }
+  ],
+  "producer_commit": "c103277a1030ff091e3bead7651f7bd312191578",
+  "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
+  "semantic_gates": {
+    "axiom_proposition_validity": "NOT_ESTABLISHED",
+    "full_integrated_runtime_behaviour": "NOT_ESTABLISHED",
+    "model_quality_equivalence": "NOT_ESTABLISHED",
+    "semantic_consistency": "NOT_ESTABLISHED"
+  },
+  "target_adapter_registration": {
+    "all_21_target_task_adapters": "NOT_ESTABLISHED",
+    "canonical_target_count": 21
+  },
+  "worker": {
+    "certification": "NOT_GRANTED",
+    "completed": [],
+    "coordinator_shim": "READ_VALIDATED_SOURCE_STATE_HASH_PROPERTY",
+    "failed_action": "execute_consumer_matrix",
+    "failure": {
+      "certification": "NOT_GRANTED",
+      "failed_targets": [
+        "D01_CEREBRO_ROOT",
+        "D03_TRANSCRIPCION_ROOT",
+        "D04_HERMENEUTICA_HG",
+        "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+        "D04_TRADUCCION_GENERAL",
+        "D05_CALIBRE",
+        "D05_DOCLING",
+        "D06_ANTI_ALUCINACIONES",
+        "D06_ANALISIS_AVANZADO",
+        "D06_MIGRACION_PERSISTENCIA",
+        "D06_PORTABILIDAD_BASE",
+        "D06_RUNTIME_ANDROID_WINDOWS",
+        "D06_TESTING"
+      ],
+      "result_state_hash": "ebbd1884b51a674ac069b55cd59578eb1356fe22e3398ce13c8de3027062e95b",
+      "status": "FAIL"
+    },
+    "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
+    "pyz_bytes_modified": false,
+    "pyz_sha256": "d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817",
+    "status": "BLOCKED",
+    "worker": "CUSTOSZV9"
+  }
+}
