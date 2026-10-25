@@ -169,7 +169,97 @@ def _registered_consumer_adapters(runtime_root: Path, targets: list[dict]) -> di
     return output
 
 
-def _registered_runtime_engine_scopes(runtime_root: Path, targets: list[dict]) -> dict[str, dict]:
+def _externalized_runtime_file_identity(
+    runtime: Path, logical_runtime_path: str, repo_root: Path | None, target_id: str
+) -> dict:
+    """Resolve a missing runtime file only through its exact hash-pinned externalized record."""
+    if repo_root is None:
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_SOURCE_ROOT_REQUIRED:" + target_id)
+    repo = Path(repo_root).resolve()
+    placement_path = runtime / "EXTERNALIZED_ASSET_PLACEMENT.json"
+    if placement_path.is_symlink() or not placement_path.is_file() or not placement_path.resolve().is_relative_to(runtime):
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_PLACEMENT_MISSING_OR_UNSAFE:" + target_id)
+    try:
+        placement = json.loads(placement_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_PLACEMENT_INVALID:" + target_id) from exc
+    assets = placement.get("assets")
+    if not isinstance(assets, list):
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_ASSET_LIST_INVALID:" + target_id)
+
+    canonical_path = "cajita-luna-runtime/" + _safe_rel(logical_runtime_path).as_posix()
+    matches = []
+    for asset in assets:
+        if not isinstance(asset, dict):
+            continue
+        meta = asset.get("compact_runtime_container")
+        if not isinstance(meta, dict):
+            continue
+        if meta.get("path") == canonical_path or asset.get("placed_path") == canonical_path:
+            matches.append((asset, meta))
+    if len(matches) != 1:
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_ASSET_BINDING_COUNT:" + target_id + ":" + str(len(matches)))
+    asset, meta = matches[0]
+    if asset.get("exact_externalized_candidate") is not True:
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_ASSET_NOT_REGISTERED:" + target_id)
+    if asset.get("placed_path") != canonical_path or meta.get("path") != canonical_path:
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_CANONICAL_PATH_MISMATCH:" + target_id)
+
+    expected_sha = meta.get("sha256")
+    expected_bytes = meta.get("size_bytes")
+    if (not isinstance(expected_sha, str) or len(expected_sha) != 64
+        or any(ch not in "0123456789abcdef" for ch in expected_sha)
+        or isinstance(expected_bytes, bool) or not isinstance(expected_bytes, int) or expected_bytes <= 0):
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_IDENTITY_INVALID:" + target_id)
+
+    factory_record = asset.get("factory_reconciliation", {})
+    optimization = asset.get("optimization", {})
+    if not isinstance(factory_record, dict) or not isinstance(optimization, dict):
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_PROVENANCE_INVALID:" + target_id)
+    declared_paths = [
+        asset.get("container_path_outside_runtime"),
+        factory_record.get("container_source"),
+        optimization.get("optimized_path"),
+    ]
+    declared_paths = [item for item in declared_paths if item not in (None, "")]
+    if not declared_paths or any(not isinstance(item, str) for item in declared_paths):
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_SOURCE_PATH_MISSING:" + target_id)
+    normalized_paths = {_safe_rel(item).as_posix() for item in declared_paths}
+    if len(normalized_paths) != 1:
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_SOURCE_PATH_COLLISION:" + target_id)
+    source_rel = next(iter(normalized_paths))
+    source = repo.joinpath(*PurePosixPath(source_rel).parts)
+    if not source.resolve(strict=False).is_relative_to(repo):
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_SOURCE_PATH_ESCAPE:" + target_id)
+    cursor = repo
+    for part in PurePosixPath(source_rel).parts:
+        cursor = cursor / part
+        if cursor.is_symlink():
+            raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_SOURCE_SYMLINK:" + target_id)
+    if not source.is_file():
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_SOURCE_MISSING:" + target_id)
+    actual_bytes = source.stat().st_size
+    actual_sha = _sha(source.read_bytes())
+    if actual_bytes != expected_bytes or actual_sha != expected_sha:
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_SOURCE_IDENTITY_MISMATCH:" + target_id)
+    for label, value in (
+        ("container_sha256_verified", factory_record.get("container_sha256_verified")),
+        ("optimized_sha256", optimization.get("optimized_sha256")),
+    ):
+        if value is not None and value != expected_sha:
+            raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_DUPLICATE_HASH_MISMATCH:" + target_id + ":" + label)
+    for label, value in (
+        ("container_bytes_verified", factory_record.get("container_bytes_verified")),
+        ("optimized_size_bytes", optimization.get("optimized_size_bytes")),
+    ):
+        if value is not None and value != expected_bytes:
+            raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_DUPLICATE_SIZE_MISMATCH:" + target_id + ":" + label)
+    return {"path": logical_runtime_path, "bytes": actual_bytes, "sha256": actual_sha}
+
+
+def _registered_runtime_engine_scopes(
+    runtime_root: Path, targets: list[dict], repo_root: Path | None = None
+) -> dict[str, dict]:
     """Bind target-specific engine smoke adapters without promoting them to full task adapters."""
     runtime = Path(runtime_root).resolve()
     adapter_path = runtime / "cajita_target_adapters.py"
@@ -244,14 +334,25 @@ def _registered_runtime_engine_scopes(runtime_root: Path, targets: list[dict]) -
                 raise RuntimeError("RUNTIME_TARGET_ADAPTER_REQUIRED_FILE_DUPLICATE:" + target_id)
             seen_paths.add(file_rel)
             file_path = module_root.joinpath(*PurePosixPath(file_rel).parts)
-            if file_path.is_symlink() or not file_path.is_file() or not file_path.resolve().is_relative_to(module_root.resolve()):
+            logical_file = (PurePosixPath(module_rel) / PurePosixPath(file_rel)).as_posix()
+            if file_path.is_symlink():
                 raise RuntimeError("RUNTIME_TARGET_ADAPTER_REQUIRED_FILE_MISSING_OR_UNSAFE:" + target_id + ":" + file_rel)
-            data = file_path.read_bytes()
-            source_files.append({
-                "path": (PurePosixPath(module_rel) / PurePosixPath(file_rel)).as_posix(),
-                "bytes": len(data),
-                "sha256": _sha(data),
-            })
+            if file_path.is_file():
+                if not file_path.resolve().is_relative_to(module_root.resolve()):
+                    raise RuntimeError("RUNTIME_TARGET_ADAPTER_REQUIRED_FILE_PATH_ESCAPE:" + target_id + ":" + file_rel)
+                data = file_path.read_bytes()
+                source_files.append({"path": logical_file, "bytes": len(data), "sha256": _sha(data)})
+            elif file_path.exists():
+                raise RuntimeError("RUNTIME_TARGET_ADAPTER_REQUIRED_FILE_NOT_REGULAR:" + target_id + ":" + file_rel)
+            else:
+                # Without a repository staging root, or without an exact
+                # externalized identity, missing files retain the original
+                # fail-closed required-file result.
+                if repo_root is None:
+                    raise RuntimeError("RUNTIME_TARGET_ADAPTER_REQUIRED_FILE_MISSING_OR_UNSAFE:" + target_id + ":" + file_rel)
+                source_files.append(_externalized_runtime_file_identity(
+                    runtime, logical_file, repo_root, target_id
+                ))
         output[target_id] = {
             "status": "REGISTERED_RUNTIME_SMOKE_SCOPE_ONLY",
             "target_id": target_id,
@@ -346,7 +447,7 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
     else:
         binding_path.write_bytes(binding_bytes)
     consumer_adapters = _registered_consumer_adapters(runtime, targets)
-    runtime_engine_scopes = _registered_runtime_engine_scopes(runtime, targets)
+    runtime_engine_scopes = _registered_runtime_engine_scopes(runtime, targets, repo_root=repo)
     if set(consumer_adapters).intersection(runtime_engine_scopes):
         raise RuntimeError("MODEL_ADAPTER_AND_RUNTIME_SCOPE_TARGET_COLLISION")
     target_modules = []

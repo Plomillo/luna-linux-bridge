@@ -165,7 +165,7 @@ jobs:
           python cajita-luna-runtime/cajita_antiparalysis.py selftest --state-dir "$RUNNER_TEMP/anti-paralysis-selftest"
           python cajita-luna-runtime/cajita_router.py selftest
 
-      - name: Manufacture candidate and enforce aggregate 490 MB cap
+      - name: Manufacture candidate and enforce aggregate 479,000,000-byte cap
         id: factory
         shell: bash
         env:
