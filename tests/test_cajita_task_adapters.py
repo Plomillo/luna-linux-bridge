@@ -83,6 +83,7 @@ class AdapterTests(unittest.TestCase):
         with patch.object(adapters,"verify_integrity",return_value=integrity),patch.object(adapters.subprocess,"run",return_value=completed) as run:
             result,code=adapters.execute_task(row,RUNTIME,60)
         self.assertEqual(code,0);self.assertEqual(result["status"],"PASS_FUNCTIONAL_EXECUTION")
+        self.assertEqual(result["target_id"],"D01_CEREBRO_ROOT")
         self.assertFalse(run.call_args.kwargs["shell"]);self.assertIn("--task-json-stdin",run.call_args.args[0])
         self.assertEqual(run.call_args.kwargs["env"]["HF_HUB_OFFLINE"],"1")
         self.assertNotIn("PRIVATE_PROMPT_MUST_NOT_APPEAR",json.dumps(result))
@@ -90,6 +91,7 @@ class AdapterTests(unittest.TestCase):
     def test_orchestration_never_executes_plan(self):
         result,code=adapters.execute_task(req("D02_ORQUESTACION","route_plan",request_text="transcribe audio"),RUNTIME,60)
         self.assertEqual(code,3);self.assertIn(result["status"],{"PLAN_ONLY_BLOCKED","PLAN_READY_NOT_EXECUTED"})
+        self.assertIsNone(result["target_id"])
         self.assertFalse(result["execution_authorized"])
     def test_runtime_cli_exposes_execute_task(self):
         result=subprocess.run([sys.executable,"-B",str(RUNTIME/"cajita_runtime.py"),"execute-task","--help"],
