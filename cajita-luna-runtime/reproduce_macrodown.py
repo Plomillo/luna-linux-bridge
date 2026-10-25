@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse, hashlib, json, os, shutil, stat, zipfile
 from pathlib import Path
 from cajita_externalized_packaging import prepare_distribution_registry, distribution_contract, verify_all_archives
+from cajita_tokenizer_materializer import MANIFEST_NAME as TOKENIZER_MANIFEST_NAME, load_tokenizer_manifest, prepare_compressed_tokenizers
 SCHEMA="CAJITA_RUNTIME_MACRODOWN/1.0"
 DEFAULT_RAW_CAP_BYTES=1_500_000_000
 DEFAULT_COMBINED_CAP_BYTES=479_000_000
@@ -30,6 +31,8 @@ def iter_files(root,output):
     archive_source_paths={row.get("source_path") for row in archive_history if isinstance(row,dict) and isinstance(row.get("source_path"),str)}
     externalized_container_paths={item["container_relpath"] for item in contract}
     build_only_archive_paths=archive_source_paths-externalized_container_paths
+    tokenizer_manifest=load_tokenizer_manifest(root) if (Path(root)/TOKENIZER_MANIFEST_NAME).is_file() else {"entries":[]}
+    tokenizer_source_paths={row["source_path"] for row in tokenizer_manifest.get("entries",[]) if row.get("packed")}
     for base,dirs,names in os.walk(root,topdown=True,followlinks=False):
         bp=Path(base)
         kept=[]
@@ -47,7 +50,7 @@ def iter_files(root,output):
             if not p.is_file(): raise RuntimeError("NON_REGULAR_FILE:"+str(p))
             if p.resolve()==output.resolve(): continue
             rel=p.relative_to(root).as_posix()
-            if rel in {"module_registry.json", "command_subdomain_routing.json"} or rel in build_only_archive_paths or _under_externalized_tree(rel,excluded_roots): continue
+            if rel in {"module_registry.json", "command_subdomain_routing.json"} or rel in build_only_archive_paths or rel in tokenizer_source_paths or _under_externalized_tree(rel,excluded_roots): continue
             if rel.startswith("../") or rel.startswith("/"): raise RuntimeError("PATH_ESCAPE:"+rel)
             # Deliver the generated distribution-only routes under the canonical
             # runtime path. The full source routing catalog remains in the repo.
@@ -74,6 +77,8 @@ def manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,c
           "domain_id":domain_map.get(top,(None,None))[0],
           "route_type":domain_map.get(top,(None,None))[1],
           "zip_method":"STORED" if p.suffix.lower() in BINARY_SUFFIXES else "DEFLATED"})
+    tokenizer_manifest_path=Path(root)/TOKENIZER_MANIFEST_NAME
+    tokenizer_manifest=json.loads(tokenizer_manifest_path.read_text(encoding="utf-8")) if tokenizer_manifest_path.is_file() else {"entries":[]}
     m={"schema":SCHEMA,"format":"ZIP archive with deterministic metadata; file extension .macrodown",
       "candidate_id":"CAJITA_LUNA_RUNTIME_V10_20261024","hard_cap_raw_bytes":raw_cap_bytes,
       "hard_cap_archive_bytes":max(0,combined_cap_bytes-companion_bytes),
@@ -92,6 +97,19 @@ def manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,c
        {"id":"D06_SISTEMA_INTELIGENTE","route_type":"sistema_inteligente","root":"6. Sistema Inteligente/"}],
       "runtime_entrypoint":"cajita_runtime.py","rebuild_script":"reproduce_macrodown.py",
       "external_22_domain_repository_included":False,
+      "lossless_tokenizer_compression":{
+        "policy":"GZIP_LEVEL9_MTIME0_HASH_PINNED_TEMPORARY_VIEW",
+        "manifest":"CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json",
+        "source_tokenizer_bytes_excluded_only_when_registered_gzip_is_smaller":True,
+        "semantic_change":False,
+        "source_files_preserved_in_repository":True,
+        "entries":[{"id":row["id"],"source_path":row["source_path"],"source_bytes":row["source_bytes"],"source_sha256":row["source_sha256"],"packed":row["packed"],"compressed_path":row["compressed_path"],"compressed_bytes":row["compressed_bytes"],"compressed_sha256":row["compressed_sha256"]} for row in tokenizer_manifest.get("entries",[])],
+        "source_bytes_total":tokenizer_manifest.get("source_bytes_total",0),
+        "compressed_bytes_total":tokenizer_manifest.get("compressed_bytes_total",0),
+        "bytes_saved_total":tokenizer_manifest.get("bytes_saved_total",0),
+        "quality_equivalence":"NOT_ESTABLISHED",
+        "certification":"NOT_GRANTED"
+      },
       "externalized_asset_policy":{
         "policy":"PACK_COMPRESSED_CONTAINER_ONCE_AND_RECONSTRUCT_EXPANDED_TREE_ON_DEMAND",
         "source_only_registry_excluded":"module_registry.json",
@@ -133,6 +151,7 @@ def build(root,output,raw_cap_bytes=DEFAULT_RAW_CAP_BYTES,combined_cap_bytes=DEF
     if missing: raise RuntimeError("DOMAIN_ROOTS_MISSING:"+",".join(missing))
     if not (root/"cajita_runtime.py").is_file(): raise RuntimeError("RUNTIME_ENTRYPOINT_MISSING")
     externalized_contract=prepare_distribution_registry(root)
+    tokenizer_manifest=prepare_compressed_tokenizers(root)
     reconstruction=verify_all_archives(root)
     if reconstruction.get("status")!="PASS_CONTAINER_RECONSTRUCTION_ONLY" or reconstruction.get("asset_count")!=10:
         raise RuntimeError("EXTERNALIZED_ASSET_RECONSTRUCTION_GATE_NOT_PASS")
@@ -197,7 +216,8 @@ def main():
     a=ap.parse_args(); root=Path(a.root).resolve()
     if a.prepare_distribution_registry:
         contract=prepare_distribution_registry(root)
-        print(json.dumps({"status":"PASS_DISTRIBUTION_REGISTRY_PREPARED","asset_count":len(contract),"externalized_expanded_bytes":sum(x["expanded_bytes"] for x in contract),"compressed_container_bytes":sum(x["container_bytes"] for x in contract),"certification":"NOT_GRANTED"},ensure_ascii=False,indent=2))
+        tokenizer_manifest=prepare_compressed_tokenizers(root)
+        print(json.dumps({"status":"PASS_DISTRIBUTION_REGISTRY_PREPARED","asset_count":len(contract),"externalized_expanded_bytes":sum(x["expanded_bytes"] for x in contract),"compressed_container_bytes":sum(x["container_bytes"] for x in contract),"tokenizer_count":len(tokenizer_manifest.get("entries",[])),"tokenizer_source_bytes":tokenizer_manifest.get("source_bytes_total",0),"tokenizer_compressed_bytes":tokenizer_manifest.get("compressed_bytes_total",0),"tokenizer_bytes_saved":tokenizer_manifest.get("bytes_saved_total",0),"tokenizer_manifest":"CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json","semantic_change":False,"certification":"NOT_GRANTED"},ensure_ascii=False,indent=2))
         return
     output=Path(a.output).resolve() if a.output else root.parent/"CAJITA_LUNA_RUNTIME_V10.macrodown"
     if min(a.raw_cap_bytes,a.combined_cap_bytes)<1 or a.companion_bytes<0:
