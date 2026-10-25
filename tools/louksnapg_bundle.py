@@ -144,116 +144,123 @@ def build_bundle(document: Path, runtime_archive: Path, output: Path,
     if output.exists() or output.is_symlink():
         output.unlink()
 
-    payload_rows: list[dict] = []
-    runtime_member_rows: list[dict] = []
-    with zipfile.ZipFile(runtime_archive, "r") as zin:
-        bad = zin.testzip()
-        if bad:
-            raise ValueError("RUNTIME_CRC_FAILURE:" + bad)
-        runtime_manifest, runtime_table = _read_runtime_manifest(zin)
-        reserved = {Path(n).name for n in (BUNDLE_MANIFEST, OPS_DOC, document.name)}
-        collisions = reserved.intersection(runtime_table)
-        if collisions:
-            raise ValueError("RUNTIME_MEMBER_COLLIDES_WITH_BUNDLE_METADATA:" + ",".join(sorted(collisions)))
-
-        with zipfile.ZipFile(output, "w", allowZip64=True) as zout:
-            doc_row = _write_bytes(zout, "Louksna1.md", document_bytes, zipfile.ZIP_DEFLATED)
-            doc_row["role"] = "GOVERNED_ARCHITECTURE_DOCUMENT"
-            payload_rows.append(doc_row)
-
-            # Flatten the verified runtime files into the same outer distribution.
-            for name in sorted(runtime_table, key=lambda value: value.encode("utf-8")):
-                source_info = zin.getinfo(name)
-                source_mode = (source_info.external_attr >> 16) & 0o777
-                target_info = regular_file_info(
-                    name,
-                    zipfile.ZIP_STORED if runtime_table[name]["zip_method"] == "STORED" else zipfile.ZIP_DEFLATED,
-                    source_mode or 0o644,
+    try:
+        payload_rows: list[dict] = []
+        runtime_member_rows: list[dict] = []
+        with zipfile.ZipFile(runtime_archive, "r") as zin:
+            bad = zin.testzip()
+            if bad:
+                raise ValueError("RUNTIME_CRC_FAILURE:" + bad)
+            runtime_manifest, runtime_table = _read_runtime_manifest(zin)
+            reserved = {Path(n).name for n in (BUNDLE_MANIFEST, OPS_DOC, document.name)}
+            collisions = reserved.intersection(runtime_table)
+            if collisions:
+                raise ValueError("RUNTIME_MEMBER_COLLIDES_WITH_BUNDLE_METADATA:" + ",".join(sorted(collisions)))
+    
+            with zipfile.ZipFile(output, "w", allowZip64=True) as zout:
+                doc_row = _write_bytes(zout, "Louksna1.md", document_bytes, zipfile.ZIP_DEFLATED)
+                doc_row["role"] = "GOVERNED_ARCHITECTURE_DOCUMENT"
+                payload_rows.append(doc_row)
+    
+                # Flatten the verified runtime files into the same outer distribution.
+                for name in sorted(runtime_table, key=lambda value: value.encode("utf-8")):
+                    source_info = zin.getinfo(name)
+                    source_mode = (source_info.external_attr >> 16) & 0o777
+                    target_info = regular_file_info(
+                        name,
+                        zipfile.ZIP_STORED if runtime_table[name]["zip_method"] == "STORED" else zipfile.ZIP_DEFLATED,
+                        source_mode or 0o644,
+                    )
+                    row = _stream_entry(zin, source_info, zout, target_info)
+                    expected = runtime_table[name]
+                    if row["bytes"] != expected["size_bytes"] or row["sha256"] != expected["sha256"]:
+                        raise ValueError("RUNTIME_MEMBER_HASH_OR_SIZE_MISMATCH:" + name)
+                    row["role"] = "CAJITA_RUNTIME_MEMBER"
+                    row["source_zip_method"] = expected["zip_method"]
+                    payload_rows.append(row)
+                    runtime_member_rows.append({"path": name, "bytes": row["bytes"], "sha256": row["sha256"]})
+    
+                runtime_manifest_payload = zin.read(RUNTIME_MANIFEST)
+                runtime_manifest_row = _write_bytes(zout, RUNTIME_MANIFEST, runtime_manifest_payload, zipfile.ZIP_DEFLATED)
+                runtime_manifest_row["role"] = "CAJITA_RUNTIME_MANIFEST"
+                payload_rows.append(runtime_manifest_row)
+    
+                operations = (
+                    "# LOUKSNAPG distribution instructions\n\n"
+                    "This file is a single ZIP distribution container with the requested filename LOUKSNAPG.md.\n\n"
+                    "Extract it with a ZIP-compatible archive manager. Louksna1.md is the governed architecture document. "
+                    "The Cajita runtime files are installed at the archive root with their original relative paths; "
+                    "MACRODOWN_MANIFEST.json records the source runtime member hashes. The original macrodown is "
+                    "not shipped as a second payload. Do not treat this container as plain Markdown or execute it in place.\n\n"
+                    "The container carries integrity and provenance evidence, not an automatic functional certificate. "
+                    "Use the accompanying build/independent-validation evidence; global certification remains NOT_GRANTED "
+                    "until every mandatory functional, semantic, host-resource and rollback gate is independently PASS.\n"
+                ).encode("utf-8")
+                ops_row = _write_bytes(zout, OPS_DOC, operations, zipfile.ZIP_DEFLATED)
+                ops_row["role"] = "DISTRIBUTION_OPERATIONS_DOCUMENT"
+                payload_rows.append(ops_row)
+    
+                bundle_manifest = {
+                    "schema": SCHEMA,
+                    "product_name": "LOUKSNAPG",
+                    "distribution_filename": output.name,
+                    "container_format": "ZIP_ARCHIVE_WITH_MARKDOWN_SUFFIX",
+                    "source_commit": os.environ.get("GITHUB_SHA") or "UNKNOWN",
+                    "built_at_utc": utc_now(),
+                    "source": {
+                        "louksna1_path": document.name,
+                        "louksna1_bytes": len(document_bytes),
+                        "louksna1_sha256": sha256_bytes(document_bytes),
+                        "protected_architecture_path": source_architecture.name,
+                        "protected_architecture_bytes": len(protected_bytes),
+                        "protected_architecture_sha256": sha256_bytes(protected_bytes),
+                        "protected_prefix_byte_exact": True,
+                        "embedded_cajita_document_bytes": len(cajita_bytes),
+                        "embedded_cajita_document_sha256": sha256_bytes(cajita_bytes),
+                        "runtime_archive_path": runtime_archive.name,
+                        "runtime_archive_bytes": runtime_bytes,
+                        "runtime_archive_sha256": runtime_sha,
+                        "runtime_manifest_sha256": sha256_bytes(runtime_manifest_payload),
+                        "runtime_candidate_id": runtime_manifest.get("candidate_id"),
+                    },
+                    "budget": {"max_bytes": max_bytes, "status": "CAP_ENFORCED_AFTER_ARCHIVE_CLOSE", "measurement_method": "stat_size_after_zip_close"},
+                    "members": payload_rows,
+                    "runtime_member_count": len(runtime_member_rows),
+                    "runtime_member_inventory": runtime_member_rows,
+                    "global_certification": "NOT_GRANTED",
+                    "certification_reason": "Bundle construction and member integrity do not establish full 21-target functionality, semantic equivalence, target-host coverage or product-update rollback.",
+                }
+                _write_bytes(
+                    zout, BUNDLE_MANIFEST,
+                    (json.dumps(bundle_manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8"),
+                    zipfile.ZIP_DEFLATED,
                 )
-                row = _stream_entry(zin, source_info, zout, target_info)
-                expected = runtime_table[name]
-                if row["bytes"] != expected["size_bytes"] or row["sha256"] != expected["sha256"]:
-                    raise ValueError("RUNTIME_MEMBER_HASH_OR_SIZE_MISMATCH:" + name)
-                row["role"] = "CAJITA_RUNTIME_MEMBER"
-                row["source_zip_method"] = expected["zip_method"]
-                payload_rows.append(row)
-                runtime_member_rows.append({"path": name, "bytes": row["bytes"], "sha256": row["sha256"]})
-
-            runtime_manifest_payload = zin.read(RUNTIME_MANIFEST)
-            runtime_manifest_row = _write_bytes(zout, RUNTIME_MANIFEST, runtime_manifest_payload, zipfile.ZIP_DEFLATED)
-            runtime_manifest_row["role"] = "CAJITA_RUNTIME_MANIFEST"
-            payload_rows.append(runtime_manifest_row)
-
-            operations = (
-                "# LOUKSNAPG distribution instructions\n\n"
-                "This file is a single ZIP distribution container with the requested filename LOUKSNAPG.md.\n\n"
-                "Extract it with a ZIP-compatible archive manager. Louksna1.md is the governed architecture document. "
-                "The Cajita runtime files are installed at the archive root with their original relative paths; "
-                "MACRODOWN_MANIFEST.json records the source runtime member hashes. The original macrodown is "
-                "not shipped as a second payload. Do not treat this container as plain Markdown or execute it in place.\n\n"
-                "The container carries integrity and provenance evidence, not an automatic functional certificate. "
-                "Use the accompanying build/independent-validation evidence; global certification remains NOT_GRANTED "
-                "until every mandatory functional, semantic, host-resource and rollback gate is independently PASS.\n"
-            ).encode("utf-8")
-            ops_row = _write_bytes(zout, OPS_DOC, operations, zipfile.ZIP_DEFLATED)
-            ops_row["role"] = "DISTRIBUTION_OPERATIONS_DOCUMENT"
-            payload_rows.append(ops_row)
-
-            bundle_manifest = {
-                "schema": SCHEMA,
-                "product_name": "LOUKSNAPG",
-                "distribution_filename": output.name,
-                "container_format": "ZIP_ARCHIVE_WITH_MARKDOWN_SUFFIX",
-                "source_commit": os.environ.get("GITHUB_SHA") or "UNKNOWN",
-                "built_at_utc": utc_now(),
-                "source": {
-                    "louksna1_path": document.name,
-                    "louksna1_bytes": len(document_bytes),
-                    "louksna1_sha256": sha256_bytes(document_bytes),
-                    "protected_architecture_path": source_architecture.name,
-                    "protected_architecture_bytes": len(protected_bytes),
-                    "protected_architecture_sha256": sha256_bytes(protected_bytes),
-                    "protected_prefix_byte_exact": True,
-                    "embedded_cajita_document_bytes": len(cajita_bytes),
-                    "embedded_cajita_document_sha256": sha256_bytes(cajita_bytes),
-                    "runtime_archive_path": runtime_archive.name,
-                    "runtime_archive_bytes": runtime_bytes,
-                    "runtime_archive_sha256": runtime_sha,
-                    "runtime_manifest_sha256": sha256_bytes(runtime_manifest_payload),
-                    "runtime_candidate_id": runtime_manifest.get("candidate_id"),
-                },
-                "budget": {"max_bytes": max_bytes, "status": "CAP_ENFORCED_AFTER_ARCHIVE_CLOSE", "measurement_method": "stat_size_after_zip_close"},
-                "members": payload_rows,
-                "runtime_member_count": len(runtime_member_rows),
-                "runtime_member_inventory": runtime_member_rows,
-                "global_certification": "NOT_GRANTED",
-                "certification_reason": "Bundle construction and member integrity do not establish full 21-target functionality, semantic equivalence, target-host coverage or product-update rollback.",
-            }
-            _write_bytes(
-                zout, BUNDLE_MANIFEST,
-                (json.dumps(bundle_manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8"),
-                zipfile.ZIP_DEFLATED,
-            )
-
-    size = output.stat().st_size
-    if size > max_bytes:
+    
+        size = output.stat().st_size
+        if size > max_bytes:
+            output.unlink(missing_ok=True)
+            raise ValueError(f"LOUKSNAPG_OVER_CAP:{size}>{max_bytes}")
+        report = verify_bundle(output, max_bytes=max_bytes)
+        report.update({
+            "built_at_utc": utc_now(),
+            "bundle_sha256": sha256_file(output),
+            "source_commit": os.environ.get("GITHUB_SHA") or "UNKNOWN",
+            "source_document_sha256": sha256_bytes(document_bytes),
+            "source_runtime_archive_sha256": runtime_sha,
+            "source_runtime_archive_bytes": runtime_bytes,
+            "protected_architecture_sha256": sha256_bytes(protected_bytes),
+            "embedded_cajita_document_sha256": sha256_bytes(cajita_bytes),
+            "global_certification": "NOT_GRANTED",
+        })
+        report_path = output.with_name("LOUKSNAPG_BUILD_REPORT.json")
+        report_path.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+        return report
+    
+    except Exception:
+        # Fail closed: never leave a partial/invalid package looking like a candidate.
         output.unlink(missing_ok=True)
-        raise ValueError(f"LOUKSNAPG_OVER_CAP:{size}>{max_bytes}")
-    report = verify_bundle(output, max_bytes=max_bytes)
-    report.update({
-        "built_at_utc": utc_now(),
-        "bundle_sha256": sha256_file(output),
-        "source_commit": os.environ.get("GITHUB_SHA") or "UNKNOWN",
-        "source_document_sha256": sha256_bytes(document_bytes),
-        "source_runtime_archive_sha256": runtime_sha,
-        "source_runtime_archive_bytes": runtime_bytes,
-        "protected_architecture_sha256": sha256_bytes(protected_bytes),
-        "embedded_cajita_document_sha256": sha256_bytes(cajita_bytes),
-        "global_certification": "NOT_GRANTED",
-    })
-    report_path = output.with_name("LOUKSNAPG_BUILD_REPORT.json")
-    report_path.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
-    return report
+        output.with_name("LOUKSNAPG_BUILD_REPORT.json").unlink(missing_ok=True)
+        raise
 
 
 def verify_bundle(bundle: Path, max_bytes: int = DEFAULT_MAX_BYTES) -> dict:
