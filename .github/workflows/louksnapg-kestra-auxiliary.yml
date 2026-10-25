@@ -1,0 +1,274 @@
+name: LOUKSNAPG product artifact and Kestra auxiliary audit
+
+on:
+  push:
+    branches:
+      - "louksnapg/**"
+    paths:
+      - ".github/workflows/louksnapg-kestra-auxiliary.yml"
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Factory workflow run ID to audit
+        required: true
+        type: string
+      source_commit:
+        description: Exact source commit SHA for that run
+        required: true
+        type: string
+  workflow_run:
+    workflows:
+      - "Cajita V9 materialization and Louksna1 governed factory"
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: louksnapg-aux-audit-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  independently-validate-and-publish-product-artifact:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Check out verifier at the auxiliary workflow revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Resolve exact factory run and source SHA
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, sys, time, urllib.error, urllib.parse, urllib.request
+          event=json.loads(open(os.environ["GITHUB_EVENT_PATH"],encoding="utf-8").read())
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+          supplied_run=None
+          wanted_sha=None
+          branch=None
+          if "workflow_run" in event:
+              wr=event["workflow_run"]
+              supplied_run=str(wr["id"])
+              wanted_sha=wr["head_sha"]
+              branch=wr["head_branch"]
+          elif event.get("inputs"):
+              supplied_run=str(event["inputs"]["source_run_id"]).strip()
+              wanted_sha=str(event["inputs"]["source_commit"]).strip()
+          else:
+              wanted_sha=str(event.get("before","")).strip()
+              branch=str(event.get("ref","").split("/")[-1])
+          headers={"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"}
+          def get(path):
+              req=urllib.request.Request("https://api.github.com/repos/"+repo+path,headers=headers)
+              with urllib.request.urlopen(req,timeout=30) as response:
+                  return json.load(response)
+          selected=None
+          for attempt in range(361):
+              try:
+                  if supplied_run:
+                      candidate=get("/actions/runs/"+urllib.parse.quote(supplied_run,safe=""))
+                      if wanted_sha and candidate.get("head_sha")!=wanted_sha:
+                          raise RuntimeError("SUPPLIED_RUN_SOURCE_COMMIT_MISMATCH")
+                      selected=candidate
+                  else:
+                      query=urllib.parse.urlencode({"branch":branch,"per_page":100})
+                      result=get("/actions/workflows/cajita-louksna1-factory.yml/runs?"+query)
+                      matches=[row for row in result.get("workflow_runs",[])
+                          if row.get("head_sha")==wanted_sha
+                          and row.get("path")==".github/workflows/cajita-louksna1-factory.yml"
+                          and row.get("event")=="push"]
+                      if matches:
+                          matches.sort(key=lambda row:(row.get("run_attempt",0),row.get("created_at","")),reverse=True)
+                          selected=matches[0]
+                  if selected and selected.get("status")=="completed":
+                      break
+              except urllib.error.HTTPError as exc:
+                  if exc.code not in (404,429,500,502,503,504):
+                      raise
+              if attempt==360:
+                  raise SystemExit("FACTORY_RUN_NOT_COMPLETED_WITHIN_AUXILIARY_WAIT_WINDOW")
+              time.sleep(10)
+          if not selected:
+              raise SystemExit("EXACT_FACTORY_RUN_NOT_FOUND")
+          output=os.environ["GITHUB_OUTPUT"]
+          with open(output,"a",encoding="utf-8") as handle:
+              handle.write("run_id="+str(selected["id"])+"\n")
+              handle.write("source_sha="+selected["head_sha"]+"\n")
+              handle.write("run_conclusion="+str(selected.get("conclusion") or "unknown")+"\n")
+              handle.write("source_branch="+str(selected.get("head_branch") or "")+"\n")
+          print(json.dumps({"run_id":selected["id"],"source_sha":selected["head_sha"],"conclusion":selected.get("conclusion"),"branch":selected.get("head_branch")},indent=2))
+          PY
+
+      - name: Download candidate and reports from the exact factory run
+        uses: actions/download-artifact@v4
+        with:
+          name: louksna1-candidate
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: evidence
+
+      - name: Locate the actual single-file product and source-bound reports
+        id: locate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p candidate
+          find evidence -type f -name 'LOUKSNAPG.md' -print -quit | grep -q .
+          PRODUCT="$(find evidence -type f -name 'LOUKSNAPG.md' -print -quit)"
+          cp "$PRODUCT" candidate/LOUKSNAPG.md
+          for name in LOUKSNAPG_BUILD_REPORT.json LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json; do
+            source="$(find evidence -type f -name "$name" -print -quit)"
+            test -n "$source"
+            cp "$source" "candidate/$name"
+          done
+          echo "product_path=candidate/LOUKSNAPG.md" >> "$GITHUB_OUTPUT"
+          ls -lh candidate
+
+      - name: Independently verify single-file package, exact hash, provenance and hard cap
+        id: verify
+        continue-on-error: true
+        shell: bash
+        env:
+          SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/louksnapg_independent_validator.py
+          python tools/louksnapg_independent_validator.py \
+            --bundle candidate/LOUKSNAPG.md \
+            --max-bytes 470000000 \
+            --expected-source-commit "$SOURCE_COMMIT" \
+            --report candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          b=Path("candidate/LOUKSNAPG.md")
+          build=json.loads(Path("candidate/LOUKSNAPG_BUILD_REPORT.json").read_text(encoding="utf-8"))
+          worker=json.loads(Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json").read_text(encoding="utf-8"))
+          check=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
+          sha=hashlib.sha256(b.read_bytes()).hexdigest()
+          assert b.stat().st_size==check["bundle_bytes"]<=470000000
+          assert sha==check["bundle_sha256"]==build["bundle_sha256"]==worker["artifact"]["sha256"]
+          assert check["source_commit"]==build["source_commit"]==worker["source_commit"]==os.environ["SOURCE_COMMIT"]
+          assert check["container_integrity"]=="PASS"
+          assert check["protected_prefix_integrity"]=="PASS"
+          assert check["cajita_document_copy_integrity"]=="PASS"
+          assert check["runtime_member_integrity"]=="PASS"
+          assert check["single_distribution_container"]=="PASS"
+          assert build["global_certification"]=="NOT_GRANTED"
+          assert worker["worker_status"]=="PASS"
+          print(json.dumps({"status":"PASS_SINGLE_FILE_PACKAGE_INTEGRITY","artifact":b.name,"bytes":b.stat().st_size,"sha256":sha,"source_commit":check["source_commit"],"worker_status":worker["worker_status"],"global_certification":"NOT_GRANTED"},indent=2))
+          PY
+
+      - name: Upload the single product file as its own download artifact
+        if: steps.verify.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: LOUKSNAPG-PRODUCT-CANDIDATE
+          path: candidate/LOUKSNAPG.md
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Invoke Kestra auxiliary audit when credentials are configured
+        id: kestra
+        if: steps.verify.outcome == 'success'
+        continue-on-error: true
+        env:
+          KESTRA_URL: ${{ vars.KESTRA_URL || secrets.KESTRA_URL }}
+          KESTRA_API_TOKEN: ${{ secrets.KESTRA_API_TOKEN }}
+          SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          build=json.loads(Path("candidate/LOUKSNAPG_BUILD_REPORT.json").read_text(encoding="utf-8"))
+          worker=json.loads(Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json").read_text(encoding="utf-8"))
+          validation=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
+          bundle=Path("candidate/LOUKSNAPG.md")
+          token=os.environ.get("KESTRA_API_TOKEN","")
+          base=os.environ.get("KESTRA_URL","").rstrip("/")
+          receipt={
+            "schema":"LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT/1.0",
+            "source_commit":os.environ["SOURCE_COMMIT"],
+            "artifact":"LOUKSNAPG.md",
+            "bundle_bytes":bundle.stat().st_size,
+            "bundle_sha256":hashlib.sha256(bundle.read_bytes()).hexdigest(),
+            "integrity_status":"PASS",
+            "global_certification":"NOT_GRANTED",
+          }
+          if not base or not token:
+            receipt.update({"status":"NOT_CONFIGURED","reason":"KESTRA_URL_OR_KESTRA_API_TOKEN_MISSING"})
+            Path("candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json").write_text(json.dumps(receipt,indent=2)+"\n",encoding="utf-8")
+            print(json.dumps(receipt,indent=2))
+            sys_exit=0
+          else:
+            import subprocess,sys
+            fields={
+              "source_commit":os.environ["SOURCE_COMMIT"],
+              "bundle_sha256":validation["bundle_sha256"],
+              "bundle_bytes":str(validation["bundle_bytes"]),
+              "max_bytes":"470000000",
+              "document_sha256":build["source_document_sha256"],
+              "runtime_source_sha256":build["source_runtime_archive_sha256"],
+              "worker_status":worker["worker_status"],
+              "independent_integrity_status":"PASS",
+              "functional_status":"NOT_ESTABLISHED",
+              "semantic_quality_status":"NOT_ESTABLISHED",
+              "host_matrix_status":"NOT_ESTABLISHED",
+              "rollback_status":"NOT_ESTABLISHED",
+              "axiom_binding_status":"NOT_ESTABLISHED",
+              "block_binding_status":"NOT_ESTABLISHED",
+            }
+            cmd=["curl","--fail-with-body","--silent","--show-error","--max-time","60","-X","POST",
+                 base+"/api/v1/main/executions/louksna.kestra/louksnapg_bundle_audit",
+                 "-H","Authorization: Bearer "+token]
+            for key,value in fields.items():
+              cmd.extend(["-F",key+"="+value])
+            proc=subprocess.run(cmd,capture_output=True,text=True,check=False)
+            receipt["status"]="SUBMITTED_FAIL_CLOSED_AUDIT" if proc.returncode==0 else "SUBMISSION_FAILED"
+            receipt["http_response_sha256"]=hashlib.sha256(proc.stdout.encode()).hexdigest()
+            receipt["curl_return_code"]=proc.returncode
+            try:
+              response=json.loads(proc.stdout)
+              receipt["execution_id"]=response.get("id")
+              receipt["execution_url"]=response.get("url")
+            except json.JSONDecodeError:
+              receipt["response_tail"]=proc.stdout[-800:]
+            if proc.returncode!=0:
+              receipt["error_tail"]=proc.stderr[-800:]
+            Path("candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json").write_text(json.dumps(receipt,indent=2)+"\n",encoding="utf-8")
+            print(json.dumps(receipt,indent=2))
+            sys_exit=0
+          raise SystemExit(sys_exit)
+          PY
+
+      - name: Upload candidate validation and Kestra receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LOUKSNAPG-AUXILIARY-EVIDENCE
+          path: |
+            candidate/LOUKSNAPG_BUILD_REPORT.json
+            candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json
+            candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json
+            candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Fail closed if the exact product fails independent validation
+        if: steps.verify.outcome != 'success'
+        run: exit 1
