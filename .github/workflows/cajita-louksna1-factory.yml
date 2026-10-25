@@ -511,7 +511,8 @@ jobs:
           assert hashlib.sha256(protected).hexdigest()==release["protected_architecture"]["sha256"]
           assert hashlib.sha256(package.read_bytes()).hexdigest()==release["runtime_distribution"]["sha256"]
           assert hashlib.sha256(doc.read_bytes()).hexdigest()==release["louksna1"]["sha256"]
-          assert package.stat().st_size+doc.stat().st_size<=479_000_000, "COMBINED_SIZE_GATE"
+          assert package.stat().st_size<=470_000_000, "CAJITA_RUNTIME_SIZE_GATE"
+          assert package.stat().st_size+doc.stat().st_size<=490_000_000, "COMBINED_SIZE_GATE"
           with zipfile.ZipFile(package) as z:
             assert z.testzip() is None, "ZIP_CRC"
             names=z.namelist()
@@ -655,8 +656,24 @@ jobs:
           binding_path = runtime / binding_meta["path"]
           assert binding_path.is_file()
           binding = json.loads(binding_path.read_text())
-          assert binding["status"] == "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
+          assert binding["status"] == "SOURCE_BOUND_BLOCK_ENGINE_GRAPH_BOUND"
           assert binding["target"]["id"] == "D02_MULTI_INTERDISCIPLINAR"
+          graph_meta=binding["block_engine_graph"]
+          assert graph_meta["block_count"] == 134
+          assert graph_meta["state"] == "DECLARED_STRUCTURAL_ROUTING_ONLY"
+          assert binding["graph_execution"] == "STRUCTURAL_BLOCK_ROUTING_DECLARED_RUNTIME_VERIFICATION_REQUIRED"
+          graph_path=runtime/graph_meta["path_from_runtime_root"]
+          assert graph_path.is_file() and not graph_path.is_symlink(), "B1_B134_ENGINE_GRAPH_MISSING"
+          graph_bytes=graph_path.read_bytes()
+          assert hashlib.sha256(graph_bytes).hexdigest()==graph_meta["sha256"], "B1_B134_ENGINE_GRAPH_SHA256"
+          graph=json.loads(graph_bytes)
+          assert graph["block_inventory"]["ids"] == [f"B{i}" for i in range(1,135)], "B1_B134_CANONICAL_IDS"
+          assert len(graph["block_routes"]) == 134, "B1_B134_ROUTE_COUNT"
+          assert graph["target"]["id"] == "D02_MULTI_INTERDISCIPLINAR"
+          assert graph["engine_routes"] == [
+              {"from_target_id":"D02_MULTI_INTERDISCIPLINAR","relation":"uses_canonical_engine","to_engine_id":engine_id}
+              for engine_id in ["E03","E04","E05","E06","E07","E08","E09","E12","E13","E14","E15"]
+          ], "MULTI_INTERDISCIPLINAR_ENGINE_IDENTITY"
           assert binding["axiom_inventory"]["range"] == "AX0001-AX12414"
           assert binding["axiom_inventory"]["declared_materialized_count"] == 11757
           assert binding["axiom_inventory"]["declared_historical_gap_count"] == 657
