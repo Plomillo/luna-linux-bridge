@@ -479,8 +479,9 @@ def _pack_registered_tree(
     return {"bytes": output.stat().st_size, "sha256": sha_file(output), "reused": False}
 
 
-def _source_contract(root: Path) -> tuple[dict, dict, list[dict]]:
+def _source_contract(root: Path, canonical_work_root: Path) -> tuple[dict, dict, list[dict]]:
     root = Path(root).resolve()
+    canonical_work_root = Path(canonical_work_root).resolve()
     placement_path = root / PLACEMENT_NAME
     registry_path = root / SOURCE_REGISTRY_NAME
     placement = _load_json(placement_path, "EXTERNALIZED_ASSET_PLACEMENT")
@@ -552,11 +553,13 @@ def _source_contract(root: Path) -> tuple[dict, dict, list[dict]]:
             or not isinstance(expected_tree["tree_sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", expected_tree["tree_sha256"])
         ):
             raise RuntimeError("EXTERNALIZED_EXPECTED_TREE_METADATA_INVALID:" + asset_id)
-        # The expanded directory is only a working-copy cache. Its byte identity
-        # must not silently replace the registered tree contract. The delivery
-        # archive is verified by verify_all_archives() against this exact
-        # registered tree hash before any release build is accepted.
-        measured = expected_tree
+        canonical_tree = canonical_work_root / (asset_id + ".canonical")
+        recovery = _copy_registered_tree_from_checkout_or_archive(
+            expanded, container, expected_tree, canonical_tree, canonical_work_root, asset_id
+        )
+        measured = recovery["tree"]
+        if not _same_tree(measured, expected_tree):
+            raise RuntimeError("EXTERNALIZED_REGISTERED_TREE_CONTRACT_MISMATCH:" + asset_id)
 
         descriptor_path = expanded / MODULE_DESCRIPTOR_NAME
         descriptor_raw = descriptor_path.read_text(encoding="utf-8")
@@ -590,9 +593,14 @@ def _source_contract(root: Path) -> tuple[dict, dict, list[dict]]:
         contract.append({
             "id": asset_id,
             "expanded_relpath": expanded_rel,
-            "container_relpath": container_rel,
-            "container_bytes": expected_size,
-            "container_sha256": expected_sha,
+            "source_container_relpath": container_rel,
+            "source_container_bytes": expected_size,
+            "source_container_sha256": expected_sha,
+            "container_relpath": RUNTIME_PREFIX + "CAJITA_DISTRIBUTION_ASSETS/" + asset_id + ".7z",
+            "container_bytes": 0,
+            "container_sha256": "",
+            "container_rebuild_status": recovery["status"],
+            "canonical_tree_path": str(canonical_tree),
             "expanded_bytes": measured["bytes"],
             "expanded_file_count": measured["file_count"],
             "expanded_tree_sha256": measured["tree_sha256"],
