@@ -3,11 +3,11 @@
   "assessment": "PASS_STRUCTURAL_AXIOM_GRAPH_EXECUTION",
   "decision": "HOLD",
   "global_certification": "NOT_GRANTED",
-  "generated_at_utc": "2026-10-25T00:45:37Z",
-  "source_commit": "3ee71796cc0116a96c8c4d0a9fc041300d355795",
+  "generated_at_utc": "2026-10-25T03:20:57Z",
+  "source_commit": "3fb11b81cc9cd55f8791e58fb561ad2aa539a26b",
   "factory_evidence_binding": {
-    "factory_run_id": "40147340114",
-    "source_commit": "3ee71796cc0116a96c8c4d0a9fc041300d355795",
+    "factory_run_id": "40157216190",
+    "source_commit": "3fb11b81cc9cd55f8791e58fb561ad2aa539a26b",
     "G23": "PASS",
     "G24": "PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE",
     "task_adapter_evidence": "PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY"
@@ -16,8 +16,8 @@
     "path": "LOUKSNAMEJORADA.md",
     "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
     "bytes": 11542631,
-    "companion_sha256": "23cedcdc3d4c36665b3a1a8b440278a50db5ecdf9ddfa18d6d04296653dd440e",
-    "companion_bytes": 11642576,
+    "companion_sha256": "e47c86b07285945bf070feb8c64fe6e65308eb13fb0c8af4210259db1b343486",
+    "companion_bytes": 11646992,
     "protected_prefix_byte_exact": true
   },
   "legacy_definition_census": {
@@ -220,6 +220,18 @@
     "scope": "CONTENT_CLASS_BLOCK_TRACE_SOURCE_LINE_PROVENANCE"
   },
   "jena": {
+    "container_reconstruction": {
+      "id": "APACHE_JENA_6_2_0",
+      "status": "PASS_REGISTERED_CONTAINER_RECONSTRUCTION",
+      "container_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
+      "container_bytes": 23103199,
+      "container_sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
+      "expanded_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0",
+      "expanded_bytes": 27289736,
+      "expanded_file_count": 249,
+      "expanded_tree_sha256": "586b008046071c679739ba8e9e9512cfc88a04dc5c28136adaa37afb798b7123",
+      "placement_contract_sha256": "c454d7d7826fe288a340c46a4f3e4e1650e94c7a1196d03fc94877d290c326ca"
+    },
     "riot_parse": "PASS",
     "sparql_counts": {
       "materialized_axioms": {
