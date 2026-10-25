@@ -1066,9 +1066,9 @@
   "runtime_size_gate": {
     "audit_id": "CAJITA_FINAL_RUNTIME_SIZE_GATE_20261025",
     "measurement_method": "sum of reproducible distribution payload files; excludes source-only registries/routing, historical build-only archives and ten hash-pinned expanded trees; includes ten verified compressed containers, six materialized model payloads and all distribution members; no LFS pointers",
-    "payload_bytes": 446884442,
+    "payload_bytes": 446884931,
     "hard_cap_bytes": 1500000000,
-    "bytes_under_cap": 1053115558,
+    "bytes_under_cap": 1053115069,
     "size_gate": "PASS",
     "raw_input_ceiling_bytes": 1500000000,
     "raw_payload_target_bytes": 470000000,

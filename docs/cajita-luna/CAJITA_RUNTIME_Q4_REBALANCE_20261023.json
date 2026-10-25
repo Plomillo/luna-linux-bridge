@@ -174,9 +174,9 @@
     }
   },
   "weights_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
-  "runtime_bytes_after": 446884442,
+  "runtime_bytes_after": 446884931,
   "runtime_file_count_after": 17229,
-  "saved_bytes": 400499347,
+  "saved_bytes": 400498858,
   "bytes_over_cap": 0,
   "size_gate": "PASS",
   "quantized_factor_models_promoted": 0,
