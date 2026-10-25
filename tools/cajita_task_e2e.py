@@ -51,9 +51,20 @@ def quality_acceptance(record, output_text):
         if mode=="contains_any": matched=bool(observed)
         elif mode=="contains_all": matched=bool(phrases) and len(observed)==len(phrases)
         else: return {"status":"FAIL","check_id":spec["id"],"reason":"QUALITY_CHECK_MODE_INVALID"}
-    return {"status":"PASS" if matched else "FAIL","check_id":spec["id"],
+    result={"status":"PASS" if matched else "FAIL","check_id":spec["id"],
             "observed_matches":observed,"reference_kind":"FIXED_SYNTHETIC_EXPECTATION",
             "does_not_establish_reference_model_equivalence":True}
+    if not matched:
+        # These tasks contain only deterministic synthetic prompts/fixtures. A short
+        # normalized excerpt is retained solely to diagnose a failed expectation;
+        # the full model response and prompt are never written to the evidence file.
+        normalized_for_diagnostics=normalized_text(raw)
+        result.update({
+            "output_char_count":len(raw),
+            "output_text_sha256":hashlib.sha256(raw.encode("utf-8",errors="replace")).hexdigest(),
+            "normalized_output_excerpt":normalized_for_diagnostics[:180],
+        })
+    return result
 def utc_now():
     return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
 def digest(path):
