@@ -294,7 +294,6 @@ def run_matrix(repo: Path) -> list[dict]:
     blocked = {
         "D01_CEREBRO_ROOT": ("generate_text", "REFERENCE_MODEL_EQUIVALENCE_NOT_EXECUTED"),
         "D03_TRANSCRIPCION_ROOT": ("transcribe_audio", "REFERENCE_TRANSCRIPT_EQUIVALENCE_NOT_EXECUTED"),
-        "D04_HERMENEUTICA_HG": ("interpret_fixture", "TREALLA_CONSUMER_OPERATION_NOT_EXECUTED"),
         "D04_TRADUCCION_LENGUAS_ANTIGUAS": ("analyze_morphology", "FOMA_CONSUMER_OPERATION_NOT_EXECUTED"),
         "D04_TRADUCCION_GENERAL": ("translate_text", "REFERENCE_TRANSLATION_EQUIVALENCE_NOT_EXECUTED"),
         "D05_CALIBRE": ("convert_document", "CALIBRE_BINARY_NOT_EXECUTED"),
@@ -326,6 +325,8 @@ def run_matrix(repo: Path) -> list[dict]:
             rows.append(op_rqlite(repo))
         elif target_id == "D06_TESTING":
             rows.append(op_pytest(runtime))
+        elif target_id == "D04_HERMENEUTICA_HG":
+            rows.append(op_trealla(runtime))
         else:
             operation, reason = blocked[target_id]
             rows.append(op_not_executable(target_id, operation, reason))
@@ -459,6 +460,45 @@ def op_pytest(runtime: Path) -> dict:
             "crate_sha256": sha256_file(crate),
         },
         reason="" if ok else "PINNED_PYTEST_SUITE_FAILED",
+    )
+
+
+def op_trealla(runtime: Path) -> dict:
+    target = "D04_HERMENEUTICA_HG"
+    source = runtime / "4. Traductor Inteligente" / "Hermenéutica H-G" / "trealla-2.100.24" / "trealla-2.100.24"
+    if (source / "Makefile").is_symlink() or not (source / "Makefile").is_file():
+        return record(target, "interpret_fixture", "FAIL", exit_code=2, detail={}, reason="TREALLA_SOURCE_MISSING")
+    with tempfile.TemporaryDirectory(prefix="louksna1-trealla-") as temp_name:
+        dest = Path(temp_name) / "trealla"
+        shutil.copytree(source, dest, symlinks=False)
+        readme = dest / "README.md"
+        readme_stub = False
+        if not readme.is_file():
+            readme.write_text("Vendored snapshot omitted README.md. This file only satisfies the Makefile prerequisite.\n", encoding="utf-8")
+            readme_stub = True
+        build = subprocess.run(
+            ["make", "-j", str(os.cpu_count() or 1), "NOFFI=1", "NOSSL=1", "ISOCLINE=1", "CC=cc"],
+            cwd=dest, capture_output=True, text=True, timeout=240, check=False,
+        )
+        binary = dest / "tpl"
+        if build.returncode != 0 or not binary.is_file():
+            return record(target, "interpret_fixture", "FAIL", exit_code=4, detail={"return_code": build.returncode, "stderr_tail": build.stderr[-400:], "readme_stub": readme_stub}, reason="TREALLA_BUILD_FAILED")
+        os.chmod(binary, 0o755)
+        proc = subprocess.run([str(binary), "-g", "X is 2+2, write(X), nl, halt."], capture_output=True, text=True, timeout=20, check=False)
+    ok = proc.returncode == 0 and proc.stdout.strip() == "4"
+    return record(
+        target,
+        "interpret_fixture",
+        "PASS" if ok else "FAIL",
+        exit_code=0 if ok else 4,
+        detail={
+            "return_code": proc.returncode,
+            "stdout": proc.stdout.strip()[:80],
+            "build_flags": ["NOFFI=1", "NOSSL=1", "ISOCLINE=1"],
+            "readme_stub": readme_stub,
+            "source_makefile_sha256": sha256_file(source / "Makefile"),
+        },
+        reason="" if ok else "TREALLA_KNOWN_ANSWER_MISMATCH",
     )
 
 
