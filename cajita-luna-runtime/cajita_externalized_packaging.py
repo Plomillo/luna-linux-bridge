@@ -453,39 +453,104 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
     source_modules = source_registry.get("modules", [])
     extracted_modules = []
     externalized_modules = []
+    nested_externalized_modules = []
     by_key = {item["expanded_relpath"]: item for item in contract}
     for row in source_modules:
-        key = row.get("module_key") if isinstance(row, dict) else None
-        if key not in by_key:
-            extracted_modules.append(row)
+        if not isinstance(row, dict):
+            raise RuntimeError("SOURCE_MODULE_REGISTRY_ROW_INVALID")
+        key = row.get("module_key")
+        if not isinstance(key, str) or not key:
+            raise RuntimeError("SOURCE_MODULE_REGISTRY_KEY_MISSING")
+        if key in by_key:
+            item = by_key[key]
+            if item["source_module_registry_row"] != row:
+                raise RuntimeError("EXTERNALIZED_REGISTRY_ROW_CHANGED_DURING_BUILD:" + key)
+            distribution_row = dict(row)
+            distribution_row.update({
+                "state": "EXTERNALIZED_COMPRESSED_CONTAINER_NOT_MATERIALIZED",
+                "container_path": item["container_relpath"],
+                "container_bytes": item["container_bytes"],
+                "container_sha256": item["container_sha256"],
+                "materialization_required": True,
+                "materialization": {
+                    "status": "PACKED_NOT_EXPANDED",
+                    "bytes": item["expanded_bytes"],
+                    "file_count": item["expanded_file_count"],
+                    "tree_sha256": item["expanded_tree_sha256"],
+                },
+                "module_descriptor_raw": item["module_descriptor_raw"],
+                "module_descriptor_sha256": item["module_descriptor_sha256"],
+                "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+                "execution": "NOT_GRANTED_WITHOUT_ADAPTER_AND_SMOKE",
+                "certification": "NOT_GRANTED",
+                "nested_modules": [],
+            })
+            externalized_modules.append(distribution_row)
             continue
-        item = by_key[key]
-        if item["source_module_registry_row"] != row:
-            raise RuntimeError("EXTERNALIZED_REGISTRY_ROW_CHANGED_DURING_BUILD:" + str(key))
-        distribution_row = dict(row)
-        distribution_row.update({
-            "state": "EXTERNALIZED_COMPRESSED_CONTAINER_NOT_MATERIALIZED",
-            "container_path": item["container_relpath"],
-            "container_bytes": item["container_bytes"],
-            "container_sha256": item["container_sha256"],
-            "materialization_required": True,
-            "materialization": {
-                "status": "PACKED_NOT_EXPANDED",
-                "bytes": item["expanded_bytes"],
-                "file_count": item["expanded_file_count"],
-                "tree_sha256": item["expanded_tree_sha256"],
-            },
-            "module_descriptor_raw": item["module_descriptor_raw"],
-            "module_descriptor_sha256": item["module_descriptor_sha256"],
-            "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
-            "execution": "NOT_GRANTED_WITHOUT_ADAPTER_AND_SMOKE",
-            "certification": "NOT_GRANTED",
-        })
-        externalized_modules.append(distribution_row)
 
-    if len(externalized_modules) != EXPECTED_ASSET_COUNT or len(extracted_modules) + len(externalized_modules) != len(source_modules):
-        raise RuntimeError("DISTRIBUTION_REGISTRY_MODULE_PARTITION_INVALID")
+        parents = [item for item in contract if key.startswith(item["expanded_relpath"] + "/")]
+        if parents:
+            parent = max(parents, key=lambda item: len(item["expanded_relpath"]))
+            descriptor_rel = row.get("manifest")
+            if not isinstance(descriptor_rel, str) or descriptor_rel != key + "/" + MODULE_DESCRIPTOR_NAME:
+                raise RuntimeError("NESTED_EXTERNALIZED_DESCRIPTOR_PATH_MISMATCH:" + key)
+            descriptor_path = root / Path(*PurePosixPath(descriptor_rel).parts)
+            if descriptor_path.is_symlink() or not descriptor_path.is_file():
+                raise RuntimeError("NESTED_EXTERNALIZED_DESCRIPTOR_MISSING:" + key)
+            descriptor_raw = descriptor_path.read_text(encoding="utf-8")
+            descriptor_sha = sha_bytes(descriptor_raw.encode("utf-8"))
+            if descriptor_sha != row.get("manifest_sha256"):
+                raise RuntimeError("NESTED_EXTERNALIZED_DESCRIPTOR_HASH_MISMATCH:" + key)
+            try:
+                descriptor = json.loads(descriptor_raw)
+            except Exception as exc:
+                raise RuntimeError("NESTED_EXTERNALIZED_DESCRIPTOR_INVALID_JSON:" + key) from exc
+            if descriptor.get("module_key") != key:
+                raise RuntimeError("NESTED_EXTERNALIZED_DESCRIPTOR_IDENTITY_MISMATCH:" + key)
+            materialization = descriptor.get("materialization", {})
+            if (
+                materialization.get("bytes") != row.get("bytes")
+                or materialization.get("file_count") != row.get("file_count")
+                or materialization.get("tree_sha256") != row.get("tree_sha256")
+                or materialization.get("status") != "PASS"
+            ):
+                raise RuntimeError("NESTED_EXTERNALIZED_DESCRIPTOR_TREE_BINDING_MISMATCH:" + key)
+            nested_row = dict(row)
+            nested_row.update({
+                "state": "NESTED_IN_HASH_PINNED_EXTERNALIZED_CONTAINER",
+                "externalized_parent_asset_id": parent["id"],
+                "externalized_parent_module_key": parent["expanded_relpath"],
+                "module_descriptor_raw": descriptor_raw,
+                "module_descriptor_sha256": descriptor_sha,
+                "materialization_required": True,
+                "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
+                "execution": "NOT_GRANTED_WITHOUT_ADAPTER_AND_SMOKE",
+                "certification": "NOT_GRANTED",
+            })
+            nested_externalized_modules.append(nested_row)
+            continue
+
+        extracted_modules.append(row)
+
+    externalized_by_key = {row["module_key"]: row for row in externalized_modules}
+    if len(externalized_by_key) != EXPECTED_ASSET_COUNT:
+        raise RuntimeError("DISTRIBUTION_EXTERNALIZED_ROOT_MODULE_COUNT_INVALID")
+    for row in nested_externalized_modules:
+        parent = externalized_by_key.get(row["externalized_parent_module_key"])
+        if parent is None:
+            raise RuntimeError("NESTED_EXTERNALIZED_PARENT_NOT_REGISTERED:" + row["module_key"])
+        parent["nested_modules"].append(row)
+    for row in externalized_modules:
+        row["nested_modules"].sort(key=lambda item: item["module_key"].encode("utf-8"))
+
+    represented_count = len(extracted_modules) + len(externalized_modules) + len(nested_externalized_modules)
+    if len(externalized_modules) != EXPECTED_ASSET_COUNT or represented_count != len(source_modules):
+        raise RuntimeError("DISTRIBUTION_REGISTRY_MODULE_PARTITION_INVALID:" + json.dumps({
+            "source": len(source_modules), "materialized": len(extracted_modules),
+            "externalized_roots": len(externalized_modules), "nested_externalized": len(nested_externalized_modules),
+        }, sort_keys=True))
     externalized_modules.sort(key=lambda row: row["module_key"].encode("utf-8"))
+    nested_externalized_modules.sort(key=lambda row: row["module_key"].encode("utf-8"))
     extracted_modules.sort(key=lambda row: row["module_key"].encode("utf-8"))
 
     result = dict(source_registry)
@@ -495,12 +560,17 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
     result["materialized_module_count"] = len(extracted_modules)
     result["modules"] = extracted_modules
     result["externalized_module_count"] = len(externalized_modules)
+    result["nested_externalized_module_count"] = len(nested_externalized_modules)
+    result["represented_module_count"] = len(extracted_modules) + len(externalized_modules) + len(nested_externalized_modules)
     result["externalized_modules"] = externalized_modules
     result["distribution_profile"] = {
         "policy": "PACK_CONTAINER_ONCE_AND_RECONSTRUCT_EXPANDED_TREE_ON_DEMAND",
         "source_only_registry_excluded": SOURCE_REGISTRY_NAME,
         "expanded_tree_file_bytes_embedded": False,
         "compressed_container_bytes_embedded": True,
+        "nested_module_descriptors_preserved": True,
+        "nested_externalized_module_count": len(nested_externalized_modules),
+        "represented_module_count": len(extracted_modules) + len(externalized_modules) + len(nested_externalized_modules),
         "materialization_helper": "cajita_externalized_asset_loader.py",
         "consumer_adapter_validation": "NOT_ESTABLISHED",
         "native_smoke_validation": "REQUIRED",
@@ -524,6 +594,8 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
         "materialized_module_count": len(extracted_modules),
         "externalized_asset_module_count": len(externalized_modules),
         "externalized_container_count": len(externalized_modules),
+        "nested_externalized_module_count": len(nested_externalized_modules),
+        "represented_module_count": len(extracted_modules) + len(externalized_modules) + len(nested_externalized_modules),
         "archive_policy": "HASH_PINNED_COMPRESSED_CONTAINERS_WITH_EXPLICIT_ON_DEMAND_RECONSTRUCTION",
         "reconstruction_helper": "cajita_externalized_asset_loader.py",
         "native_execution_smoke": "REQUIRED",
