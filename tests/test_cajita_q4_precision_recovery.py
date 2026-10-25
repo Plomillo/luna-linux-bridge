@@ -60,6 +60,9 @@ class Q4PrecisionRecoveryTests(unittest.TestCase):
     def test_manifest_transition_rejects_change_to_w04_or_w06(self):
         current = _manifest()
         historical = json.loads(json.dumps(current))
+        for row in historical["artifacts"]:
+            if row["id"] in RESTORE_IDS:
+                row["bytes"] += 100
         historical["artifacts"][3]["bytes"] += 1
         with self.assertRaisesRegex(RuntimeError, "UNRELATED_MODEL_WEIGHT_MUTATION"):
             validate_manifest_transition(current, historical)
