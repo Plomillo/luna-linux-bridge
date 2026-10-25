@@ -37,6 +37,13 @@ class _FakeLoader:
         }
 
 
+class _AlternateProcessor:
+    @classmethod
+    def from_pretrained(cls, model_path, **kwargs):
+        model = Path(model_path)
+        return {"config": (model / "config.json").read_bytes(), "kwargs": kwargs}
+
+
 class TokenizerMaterializerTests(unittest.TestCase):
     def _fixture(self, root: Path) -> tuple[Path, bytes]:
         model = root / "D01" / "Cerebro"
@@ -113,6 +120,21 @@ class TokenizerMaterializerTests(unittest.TestCase):
             self.assertEqual(canonical_tree_hash(source_tree), canonical_tree_hash(package_tree))
             self.assertEqual(package_tree[-1]["path"], "tokenizer.json")
             self.assertEqual(package_tree[-1]["sha256"], entry["source_sha256"])
+
+    def test_processor_without_tokenizer_json_uses_original_local_loader(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            model, _ = self._fixture(root)
+            rel = (model.relative_to(root) / "tokenizer.json").as_posix()
+            materializer.prepare_compressed_tokenizers(root, (rel,))
+            alternate = root / "4. Traductor Inteligente" / "Traducción general"
+            alternate.mkdir(parents=True)
+            (alternate / "config.json").write_bytes(b'{"processor":"sentencepiece"}\\n')
+            result = materializer.load_pretrained_with_compressed_tokenizer(
+                alternate, _AlternateProcessor, local_files_only=True
+            )
+            self.assertEqual(result["config"], b'{"processor":"sentencepiece"}\\n')
+            self.assertTrue(result["kwargs"]["local_files_only"])
 
     def test_tampered_compressed_payload_fails_closed(self):
         with tempfile.TemporaryDirectory() as temporary:
