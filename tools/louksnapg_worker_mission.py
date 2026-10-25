@@ -134,9 +134,14 @@ def main(argv=None) -> int:
         "cajita_doc": args.cajita_doc.resolve(),
         "output": args.output.resolve(),
     }
-    for key, path in paths.items():
+    for key in ("document", "runtime", "source_architecture", "cajita_doc"):
+        path = paths[key]
         if path.is_symlink() or not path.is_file():
             raise SystemExit("REQUIRED_INPUT_NOT_REGULAR_FILE:" + key + ":" + str(path))
+    # The output is an expected build product, not a prerequisite. Refuse to
+    # overwrite a pre-existing candidate so each worker run starts cleanly.
+    if paths["output"].exists() or paths["output"].is_symlink():
+        raise SystemExit("OUTPUT_CANDIDATE_ALREADY_EXISTS_FAIL_CLOSED:" + str(paths["output"]))
     head = os.environ.get("GITHUB_SHA", "").strip()
     if len(head) != 40 or any(ch not in "0123456789abcdef" for ch in head):
         raise SystemExit("GITHUB_SHA_MISSING_OR_INVALID")
