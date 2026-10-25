@@ -66,5 +66,89 @@ class ArchitectureBindingLogicalTokenizerTreeTests(unittest.TestCase):
             self.assertEqual(sum(row["bytes"] for row in rows), len(tokenizer_bytes))
 
 
+class CanonicalConsumerAdapterRegistrationTests(unittest.TestCase):
+    def test_registers_only_hash_pinned_synthetic_adapter_target(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            module = runtime / "1. Cerebro"
+            module.mkdir()
+            entry = module / "adapter_entry.py"
+            entry.write_text("# exact entrypoint\n", encoding="utf-8")
+            weight = module / "model.safetensors"
+            weight_bytes = b"test-weight-payload"
+            weight.write_bytes(weight_bytes)
+            weight_manifest = {
+                "schema": "CAJITA_SIX_DOMAIN_WEIGHT_MANIFEST/1.0",
+                "candidate_id": "CAJITA_TEST_CANDIDATE",
+                "artifacts": [{
+                    "path": "1. Cerebro/model.safetensors",
+                    "bytes": len(weight_bytes),
+                    "sha256": hashlib.sha256(weight_bytes).hexdigest(),
+                }],
+            }
+            weight_root = runtime / "CAJITA_RUNTIME_V1"
+            weight_root.mkdir()
+            encoded_weight_manifest = (json.dumps(weight_manifest, sort_keys=True) + "\n").encode("utf-8")
+            (weight_root / "weights_manifest.json").write_bytes(encoded_weight_manifest)
+            manifest_sha = hashlib.sha256(encoded_weight_manifest).hexdigest()
+            adapter_source = (
+                "MANIFEST_SHA = " + repr(manifest_sha) + "\n"
+                "CANDIDATE_ID = 'CAJITA_TEST_CANDIDATE'\n"
+                "ADAPTERS = {'D01_CEREBRO': {'target': 'D01_CEREBRO_ROOT', "
+                "'id': 'CAJITA_TEST_TEXT/1.0', 'op': 'generate_text', "
+                "'entry': '1. Cerebro/adapter_entry.py', 'module': '1. Cerebro', "
+                "'weight': '1. Cerebro/model.safetensors', "
+                "'sha': " + repr(hashlib.sha256(weight_bytes).hexdigest()) + ", "
+                "'bytes': " + str(len(weight_bytes)) + "}}\n"
+            )
+            (runtime / "cajita_task_adapters.py").write_text(adapter_source, encoding="utf-8")
+            target = {"id": "D01_CEREBRO_ROOT", "domain_id": "D01_CEREBRO", "path": "1. Cerebro"}
+
+            registered = binding._registered_consumer_adapters(runtime, [target])
+            row = registered["D01_CEREBRO_ROOT"]
+            self.assertEqual(row["status"], "REGISTERED_SYNTHETIC_SCOPE_ONLY")
+            self.assertEqual(row["adapter_id"], "CAJITA_TEST_TEXT/1.0")
+            self.assertEqual(row["weight_sha256"], hashlib.sha256(weight_bytes).hexdigest())
+            self.assertEqual(row["native_smoke"], "REQUIRED")
+            self.assertEqual(row["reference_quality_equivalence"], "NOT_ESTABLISHED")
+            self.assertEqual(row["certification"], "NOT_GRANTED")
+
+    def test_adapter_registry_must_bind_to_a_canonical_target(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            module = runtime / "1. Cerebro"
+            module.mkdir()
+            (module / "adapter_entry.py").write_text("# entry\n", encoding="utf-8")
+            weight_bytes = b"weight"
+            (module / "model.safetensors").write_bytes(weight_bytes)
+            weight_manifest = {
+                "schema": "CAJITA_SIX_DOMAIN_WEIGHT_MANIFEST/1.0",
+                "candidate_id": "CAJITA_TEST_CANDIDATE",
+                "artifacts": [{
+                    "path": "1. Cerebro/model.safetensors",
+                    "bytes": len(weight_bytes),
+                    "sha256": hashlib.sha256(weight_bytes).hexdigest(),
+                }],
+            }
+            weight_root = runtime / "CAJITA_RUNTIME_V1"
+            weight_root.mkdir()
+            encoded = (json.dumps(weight_manifest, sort_keys=True) + "\n").encode("utf-8")
+            (weight_root / "weights_manifest.json").write_bytes(encoded)
+            adapter_source = (
+                "MANIFEST_SHA = " + repr(hashlib.sha256(encoded).hexdigest()) + "\n"
+                "CANDIDATE_ID = 'CAJITA_TEST_CANDIDATE'\n"
+                "ADAPTERS = {'D01_CEREBRO': {'target': 'D99_UNKNOWN', 'id': 'A/1.0', "
+                "'op': 'generate_text', 'entry': '1. Cerebro/adapter_entry.py', "
+                "'module': '1. Cerebro', 'weight': '1. Cerebro/model.safetensors', "
+                "'sha': " + repr(hashlib.sha256(weight_bytes).hexdigest()) + ", "
+                "'bytes': " + str(len(weight_bytes)) + "}}\n"
+            )
+            (runtime / "cajita_task_adapters.py").write_text(adapter_source, encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "TASK_ADAPTER_CANONICAL_TARGET_MISMATCH"):
+                binding._registered_consumer_adapters(
+                    runtime, [{"id": "D01_CEREBRO_ROOT", "domain_id": "D01_CEREBRO", "path": "1. Cerebro"}]
+                )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
