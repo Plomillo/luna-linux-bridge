@@ -30,6 +30,14 @@ def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(4 * 1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def sha256_stream(stream) -> tuple[int, str]:
     total = 0
     digest = hashlib.sha256()
@@ -223,6 +231,7 @@ def verify(path: Path, max_bytes: int = CAP_BYTES, extract_dir: Path | None = No
         "schema": "LOUKSNAPG_INDEPENDENT_VALIDATION/1.0",
         "artifact": path.name,
         "bundle_bytes": observed_bytes,
+        "bundle_sha256": sha256_file(path),
         "max_bytes": max_bytes,
         "budget_status": "PASS",
         "container_integrity": "PASS",
