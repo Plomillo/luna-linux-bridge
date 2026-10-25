@@ -566,44 +566,70 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          source_sha="$GITHUB_SHA"
+          evidence_paths=(
+            "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
+            "cajita-luna-runtime/MACRODOWN_MANIFEST.json"
+            "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json"
+            "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json"
+            "docs/cajita-luna/CAJITA_INVENTORY_AUDIT_20261024.json"
+          )
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- \
-            "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json" \
-            "cajita-luna-runtime/MACRODOWN_MANIFEST.json" \
-            "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json" \
-            "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json" \
-            "docs/cajita-luna/CAJITA_INVENTORY_AUDIT_20261024.json"
-          if git diff --cached --quiet; then
-            echo "CAJITA_FINAL_BUILD_EVIDENCE_ALREADY_CURRENT"
-          else
-            git diff --cached --check
-            git diff --cached --stat
-            git commit -m "Record Cajita final raw and Macrodown size-gate evidence"
-            # Other governed workflows may advance main while this build is
-            # producing reports. Rebase only the evidence commit; any conflict
-            # fails closed so a newer report is never silently overwritten.
-            pushed=false
-            for attempt in 1 2 3; do
-              git fetch origin main
-              if ! git rebase origin/main; then
-                git rebase --abort || true
-                echo "CAJITA_EVIDENCE_REBASE_CONFLICT_FAIL_CLOSED" >&2
-                exit 1
-              fi
-              if git push origin HEAD:main; then
-                echo "CAJITA_EVIDENCE_PUSH=PASS attempt=$attempt"
-                pushed=true
-                break
-              fi
-              if [ "$attempt" -eq 3 ]; then
-                echo "CAJITA_EVIDENCE_NON_FAST_FORWARD_RETRIES_EXHAUSTED" >&2
-                exit 1
-              fi
-              echo "CAJITA_EVIDENCE_PUSH_RETRY=$attempt" >&2
+
+          # Persist only in a clean worktree. The build intentionally modifies
+          # runtime files in its own checkout, so rebasing there can fail with
+          # unstaged changes even after the five evidence files were committed.
+          # Never overwrite newer source/evidence from another governed writer.
+          for attempt in 1 2 3; do
+            git fetch origin main
+            base_sha="$(git rev-parse origin/main)"
+
+            if ! git diff --quiet "$source_sha" "$base_sha" -- \
+              "LOUKSNAMEJORADA.md" "CajitadeLuna.md" "Louksna1.md" \
+              "cajita-luna-runtime/" "tools/" ".github/workflows/cajita-macrodown-hardcap.yml"; then
+              echo "CAJITA_BUILD_SOURCE_ADVANCED_FAIL_CLOSED source=$source_sha main=$base_sha" >&2
+              exit 1
+            fi
+            if ! git diff --quiet "$source_sha" "$base_sha" -- "${evidence_paths[@]}"; then
+              echo "CAJITA_EVIDENCE_TARGET_ADVANCED_FAIL_CLOSED source=$source_sha main=$base_sha" >&2
+              exit 1
+            fi
+
+            wt="$RUNNER_TEMP/cajita-evidence-worktree-$attempt"
+            rm -rf "$wt"
+            git worktree add --detach "$wt" "$base_sha"
+
+            for file in "${evidence_paths[@]}"; do
+              mkdir -p "$wt/$(dirname "$file")"
+              cp -- "$GITHUB_WORKSPACE/$file" "$wt/$file"
             done
-            test "$pushed" = true
-          fi
+            git -C "$wt" add -- "${evidence_paths[@]}"
+            if git -C "$wt" diff --cached --quiet; then
+              echo "CAJITA_FINAL_BUILD_EVIDENCE_ALREADY_CURRENT"
+              git worktree remove --force "$wt"
+              exit 0
+            fi
+
+            git -C "$wt" diff --cached --check
+            git -C "$wt" diff --cached --stat
+            git -C "$wt" -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "Record Cajita final raw and Macrodown size-gate evidence"
+
+            if git -C "$wt" push origin HEAD:main; then
+              echo "CAJITA_EVIDENCE_PUSH=PASS attempt=$attempt base=$base_sha"
+              git worktree remove --force "$wt"
+              exit 0
+            fi
+
+            git worktree remove --force "$wt"
+            if [ "$attempt" -eq 3 ]; then
+              echo "CAJITA_EVIDENCE_NON_FAST_FORWARD_RETRIES_EXHAUSTED" >&2
+              exit 1
+            fi
+            echo "CAJITA_EVIDENCE_PUSH_RETRY=$attempt" >&2
+          done
+          exit 1
 
       - name: Enforce final raw and reproducible archive gates
         shell: bash
