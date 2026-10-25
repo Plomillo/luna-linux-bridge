@@ -9,7 +9,7 @@ from cajita_architecture_binding import register_architecture_binding
 
 SCHEMA = "CAJITA_LOUKSNA1_FACTORY/1.0"
 RAW_CAP = 1_500_000_000
-COMBINED_CAP = 479_000_000
+COMBINED_CAP = 470_000_000
 MATERIALIZATION_SOURCE_COMMIT = "f2771dd76c2c99967bbf1f7b032f8e6d15b0e387"
 ARCHIVE_SUFFIXES = {".zip", ".7z"}
 WEIGHT_PATHS = (
