@@ -216,10 +216,32 @@ def main(argv=None) -> int:
         maximum_steps=1,
         planning_budget=4,
     )
-    worker_status = outcome.get("status", "UNKNOWN")
+    coordinator_status = outcome.get("status", "UNKNOWN")
     output_exists = paths["output"].is_file()
     output_size = paths["output"].stat().st_size if output_exists else None
     output_hash = sha256_file(paths["output"]) if output_exists else None
+    build_report_path = paths["output"].with_name("LOUKSNAPG_BUILD_REPORT.json")
+    build_report = {}
+    if build_report_path.is_file() and not build_report_path.is_symlink():
+        try:
+            build_report = json.loads(build_report_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            build_report = {}
+    action_succeeded = (
+        coordinator_status in {"PASS", "COMPLETED"}
+        and action_result.get("exit_code") == 0
+        and output_exists
+        and output_size is not None
+        and output_size <= args.max_bytes
+        and build_report.get("bundle_bytes") == output_size
+        and build_report.get("bundle_sha256") == output_hash
+        and build_report.get("source_commit") == head
+    )
+    # CUSTOSZ's coordinator uses COMPLETED for a successful bounded mission.
+    # The build action's return code plus the exact independent-report binding
+    # determines whether the worker job succeeded; the coordinator status alone
+    # is not a product certification.
+    worker_status = "PASS" if action_succeeded else "FAIL"
     report = {
         "schema": "LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE/1.0",
         "generated_at_utc": utc_now(),
@@ -230,7 +252,16 @@ def main(argv=None) -> int:
         "task_id": TASK_ID,
         "authorized_scope": SCOPE,
         "worker_status": worker_status,
+        "coordinator_status": coordinator_status,
         "worker_outcome": outcome,
+        "action_success_criteria": {
+            "action_exit_code_zero": action_result.get("exit_code") == 0,
+            "artifact_exists": output_exists,
+            "within_cap": bool(output_size is not None and output_size <= args.max_bytes),
+            "build_report_size_matches": build_report.get("bundle_bytes") == output_size,
+            "build_report_hash_matches": build_report.get("bundle_sha256") == output_hash,
+            "build_report_source_commit_matches": build_report.get("source_commit") == head,
+        },
         "input_sha256": input_hashes,
         "action": action_result,
         "artifact": {
@@ -248,13 +279,14 @@ def main(argv=None) -> int:
     args.report.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({
         "status": worker_status,
+        "coordinator_status": coordinator_status,
         "worker": WORKER_ID,
         "artifact": paths["output"].name,
         "bytes": output_size,
         "sha256": output_hash,
         "global_certification": "NOT_GRANTED",
     }, ensure_ascii=False, indent=2))
-    return 0 if worker_status == "PASS" and output_exists and output_size is not None and output_size <= args.max_bytes else 2
+    return 0 if worker_status == "PASS" else 2
 
 
 if __name__ == "__main__":
