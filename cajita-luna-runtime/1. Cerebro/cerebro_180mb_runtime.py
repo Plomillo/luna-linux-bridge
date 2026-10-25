@@ -249,7 +249,11 @@ def smoke_test(generate: bool = False, prompt: str = "Test", max_new_tokens: int
                 generation_enc["input_ids"],
                 attention_mask=generation_enc.get("attention_mask"),
                 max_new_tokens=int(max_new_tokens),
+                min_new_tokens=min(3, int(max_new_tokens)),
                 do_sample=False,
+                repetition_penalty=1.12,
+                no_repeat_ngram_size=3,
+                renormalize_logits=True,
                 use_cache=False,
             )
         prompt_length = int(generation_enc["input_ids"].shape[-1])
