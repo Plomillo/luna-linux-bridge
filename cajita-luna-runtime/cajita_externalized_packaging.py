@@ -718,17 +718,33 @@ def verify_all_archives(root: Path) -> dict:
     root = Path(root).resolve()
     contract = distribution_contract(root)
     results = []
+    failures = []
     with tempfile.TemporaryDirectory(prefix="cajita-externalized-verify-") as temp_name:
         temporary_root = Path(temp_name)
         for item in contract:
             destination = temporary_root / item["id"]
-            actual = _extract_raw_tree(root, item, destination)
-            results.append({"id": item["id"], "status": "PASS", **actual, "container_bytes": item["container_bytes"], "container_sha256": item["container_sha256"]})
+            try:
+                actual = _extract_raw_tree(root, item, destination)
+                results.append({"id": item["id"], "status": "PASS", **actual, "container_bytes": item["container_bytes"], "container_sha256": item["container_sha256"]})
+            except Exception as exc:
+                # Continue independent asset checks to collect the full failure set,
+                # but never turn any individual failure into a pass.
+                failures.append({
+                    "id": item["id"],
+                    "status": "FAIL",
+                    "error_type": type(exc).__name__,
+                    "reason": str(exc)[:12000],
+                    "container_bytes": item["container_bytes"],
+                    "container_sha256": item["container_sha256"],
+                })
     return {
         "schema": "CAJITA_EXTERNALIZED_ASSET_RECONSTRUCTION/1.0",
-        "status": "PASS_CONTAINER_RECONSTRUCTION_ONLY",
-        "asset_count": len(results),
+        "status": "PASS_CONTAINER_RECONSTRUCTION_ONLY" if not failures and len(results) == len(contract) else "FAIL_CONTAINER_RECONSTRUCTION",
+        "asset_count": len(contract),
+        "passed_count": len(results),
+        "failed_count": len(failures),
         "assets": results,
+        "failures": failures,
         "consumer_adapter_validation": "NOT_ESTABLISHED",
         "native_smoke_validation": "REQUIRED",
         "certification": "NOT_GRANTED",

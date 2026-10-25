@@ -26,6 +26,8 @@ def main() -> int:
                 parser.error("materialize requires --asset-id")
             result = materialize_asset(Path(args.root), args.asset_id)
         print(json.dumps(result, ensure_ascii=False, indent=2))
+        if args.command == "verify-all" and result.get("status") != "PASS_CONTAINER_RECONSTRUCTION_ONLY":
+            return 2
         return 0
     except Exception as exc:
         print(json.dumps({
