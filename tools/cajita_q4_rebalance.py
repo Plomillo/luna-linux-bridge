@@ -301,6 +301,18 @@ def quantize_onnx():
    result["status"]="CANDIDATES_NOT_SMALLER_OR_FAILED_VALIDATION"
   else:
    result["status"]="NO_SMALLER_VALIDATED_CANDIDATE"
+  # Normalize scratch paths in recorded exception text. TemporaryDirectory names
+  # are random; retaining them creates a new report/main commit on every no-op run.
+  temp_prefix = str(tmp)
+  def stable_temp_paths(value):
+   if isinstance(value, str):
+    return value.replace(temp_prefix, "<ONNX_TEMP_DIR>")
+   if isinstance(value, list):
+    return [stable_temp_paths(item) for item in value]
+   if isinstance(value, dict):
+    return {key: stable_temp_paths(item) for key, item in value.items()}
+   return value
+  result = stable_temp_paths(result)
   return result
 
 def pack_q2_affine_tensor(tensor, group_size, torch):
