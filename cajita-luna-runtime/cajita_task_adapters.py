@@ -84,7 +84,7 @@ def normalize(record,root,timeout_cap=600):
  else:data["prompt"]=required_text(payload.get("prompt"),"prompt")
  tokens=limits.get("max_new_tokens",spec["tokens"])
  if isinstance(tokens,bool) or not isinstance(tokens,int) or not 1<=tokens<=MAX_TOKENS: raise AdapterError("MAX_NEW_TOKENS_OUT_OF_RANGE")
- return {"task_id":tid,"domain_id":domain,"operation":op,"adapter_id":spec["id"],"input":data,"limits":{"timeout_seconds":timeout,"max_new_tokens":tokens},"input_files":files}
+ return {"task_id":tid,"domain_id":domain,"target_id":spec["target"],"operation":op,"adapter_id":spec["id"],"input":data,"limits":{"timeout_seconds":timeout,"max_new_tokens":tokens},"input_files":files}
 def tree_rows(directory):
  rows=[]
  for base,dirs,files in os.walk(directory,topdown=True,followlinks=False):
@@ -145,7 +145,7 @@ def execute_task(record,root,timeout_cap=600):
  try:
   row=normalize(record,root,timeout_cap)
   identity={"domain_id":row["domain_id"],"operation":row["operation"],"input":row["input"],"input_files":row["input_files"],"limits":row["limits"]}
-  out={**base,"task_id":row["task_id"],"domain_id":row["domain_id"],"target_id":row["target_id"],"operation":row["operation"],"adapter_id":row["adapter_id"],
+  out={**base,"task_id":row["task_id"],"domain_id":row["domain_id"],"target_id":row.get("target_id"),"operation":row["operation"],"adapter_id":row["adapter_id"],
        "input_sha256":digest_bytes(canonical(identity)),"input_files":row["input_files"],"started_at_utc":utc_now()}
   if row["domain_id"]==PLAN_ONLY["domain"]:
    from cajita_router import build_plan
