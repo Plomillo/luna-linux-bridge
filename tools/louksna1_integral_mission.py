@@ -294,7 +294,6 @@ def run_matrix(repo: Path) -> list[dict]:
     blocked = {
         "D01_CEREBRO_ROOT": ("generate_text", "REFERENCE_MODEL_EQUIVALENCE_NOT_EXECUTED"),
         "D03_TRANSCRIPCION_ROOT": ("transcribe_audio", "REFERENCE_TRANSCRIPT_EQUIVALENCE_NOT_EXECUTED"),
-        "D04_TRADUCCION_LENGUAS_ANTIGUAS": ("analyze_morphology", "FOMA_CONSUMER_OPERATION_NOT_EXECUTED"),
         "D04_TRADUCCION_GENERAL": ("translate_text", "REFERENCE_TRANSLATION_EQUIVALENCE_NOT_EXECUTED"),
         "D05_CALIBRE": ("convert_document", "CALIBRE_BINARY_NOT_EXECUTED"),
         "D05_DOCLING": ("extract_document_image", "REFERENCE_EXTRACTION_EQUIVALENCE_NOT_EXECUTED"),
@@ -327,6 +326,8 @@ def run_matrix(repo: Path) -> list[dict]:
             rows.append(op_pytest(runtime))
         elif target_id == "D04_HERMENEUTICA_HG":
             rows.append(op_trealla(runtime))
+        elif target_id == "D04_TRADUCCION_LENGUAS_ANTIGUAS":
+            rows.append(op_foma(runtime))
         else:
             operation, reason = blocked[target_id]
             rows.append(op_not_executable(target_id, operation, reason))
@@ -499,6 +500,47 @@ def op_trealla(runtime: Path) -> dict:
             "source_makefile_sha256": sha256_file(source / "Makefile"),
         },
         reason="" if ok else "TREALLA_KNOWN_ANSWER_MISMATCH",
+    )
+
+
+def op_foma(runtime: Path) -> dict:
+    target = "D04_TRADUCCION_LENGUAS_ANTIGUAS"
+    source = runtime / "4. Traductor Inteligente" / "Traducción de lenguas antiguas" / "foma-master" / "foma-master" / "foma"
+    if (source / "Makefile").is_symlink() or not (source / "Makefile").is_file():
+        return record(target, "analyze_morphology", "FAIL", exit_code=2, detail={}, reason="FOMA_SOURCE_MISSING")
+    missing = [name for name in ("flex", "bison", "m4") if shutil.which(name) is None]
+    if missing:
+        return record(target, "analyze_morphology", "FAIL", exit_code=2, detail={"missing_tools": missing}, reason="FOMA_BUILD_TOOLS_MISSING")
+    with tempfile.TemporaryDirectory(prefix="louksna1-foma-") as temp_name:
+        dest = Path(temp_name) / "foma"
+        shutil.copytree(source, dest, symlinks=False)
+        build = subprocess.run(
+            ["make", "-j", str(os.cpu_count() or 1), "foma"],
+            cwd=dest, capture_output=True, text=True, timeout=240, check=False,
+        )
+        binary = dest / "foma"
+        if build.returncode != 0 or not binary.is_file():
+            return record(target, "analyze_morphology", "FAIL", exit_code=4, detail={"return_code": build.returncode, "stderr_tail": (build.stderr or "")[-400:]}, reason="FOMA_BUILD_FAILED")
+        os.chmod(binary, 0o755)
+        proc = subprocess.run(
+            [str(binary), "-q", "-r", "-e", "regex a -> b ;", "-e", "apply down a", "-s"],
+            capture_output=True, text=True, timeout=20, check=False,
+        )
+    ok = proc.returncode == 0 and proc.stdout.strip() == "b"
+    return record(
+        target,
+        "analyze_morphology",
+        "PASS" if ok else "FAIL",
+        exit_code=0 if ok else 4,
+        detail={
+            "return_code": proc.returncode,
+            "stdout": proc.stdout.strip()[:80],
+            "rule": "a -> b",
+            "input": "a",
+            "expected": "b",
+            "source_makefile_sha256": sha256_file(source / "Makefile"),
+        },
+        reason="" if ok else "FOMA_REWRITE_MISMATCH",
     )
 
 

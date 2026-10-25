@@ -17,6 +17,13 @@ jobs:
           fetch-depth: 1
           persist-credentials: true
 
+      - name: Install source-build tools for vendored Foma
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends flex bison libreadline-dev zlib1g-dev
+
       - name: Fetch pinned CUSTOSZ V9 worker
         shell: bash
         run: |
