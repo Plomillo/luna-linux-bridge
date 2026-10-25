@@ -423,7 +423,22 @@ jobs:
               missing = sorted(source_names - actual_names, key=lambda x:x.encode("utf-8"))[:20]
               extra = sorted(actual_names - source_names, key=lambda x:x.encode("utf-8"))[:20]
               raise AssertionError("TARGET_MODULE_FILE_COUNT:" + target_module["target_id"] + ":expected=" + str(recorded["file_count_excluding_module_descriptors"]) + ":actual=" + str(len(actual_rows)) + ":source=" + str(len(source_rows)) + ":missing=" + json.dumps(missing) + ":extra=" + json.dumps(extra))
-            assert sum(row["bytes"] for row in actual_rows) == int(recorded["bytes_excluding_module_descriptors"]), "TARGET_MODULE_BYTE_COUNT:" + target_module["target_id"]
+            actual_bytes = sum(row["bytes"] for row in actual_rows)
+            expected_bytes = int(recorded["bytes_excluding_module_descriptors"])
+            if actual_bytes != expected_bytes:
+              raise AssertionError("TARGET_MODULE_BYTE_COUNT:" + target_module["target_id"] + ":" + json.dumps({
+                "manifest_path": target_module["manifest"],
+                "manifest_sha256": target_module["manifest_sha256"],
+                "registry_tree_sha256": target_module["tree_sha256"],
+                "manifest_tree_sha256": recorded["sha256"],
+                "actual_tree_sha256": actual_tree_hash,
+                "expected_bytes": expected_bytes,
+                "actual_bytes": actual_bytes,
+                "difference_bytes": actual_bytes - expected_bytes,
+                "expected_file_count": int(recorded["file_count_excluding_module_descriptors"]),
+                "actual_file_count": len(actual_rows),
+                "file_bytes": [{"path": row["path"], "bytes": row["bytes"], "sha256": row["sha256"]} for row in actual_rows],
+              }, ensure_ascii=False, sort_keys=True))
             assert actual_tree_hash == target_module["tree_sha256"], "TARGET_MODULE_TREE_HASH:" + target_module["target_id"]
             assert actual_tree_hash == recorded["sha256"], "TARGET_MODULE_MANIFEST_TREE_HASH:" + target_module["target_id"]
           binding_meta = registry["axiom_interdisciplinary_binding"]
