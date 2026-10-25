@@ -42,11 +42,16 @@ def iter_files(root,output):
             if not p.is_file(): raise RuntimeError("NON_REGULAR_FILE:"+str(p))
             if p.resolve()==output.resolve(): continue
             rel=p.relative_to(root).as_posix()
-            if rel == "module_registry.json" or _under_externalized_tree(rel,excluded_roots): continue
+            if rel in {"module_registry.json", "command_subdomain_routing.json"} or _under_externalized_tree(rel,excluded_roots): continue
             if rel.startswith("../") or rel.startswith("/"): raise RuntimeError("PATH_ESCAPE:"+rel)
-            result.append((rel,p))
+            # Deliver the generated distribution-only routes under the canonical
+            # runtime path. The full source routing catalog remains in the repo.
+            archive_rel = "command_subdomain_routing.json" if rel == "CAJITA_DISTRIBUTION_ROUTING.json" else rel
+            result.append((archive_rel,p))
     if not any(rel == "CAJITA_DISTRIBUTION_MODULE_REGISTRY.json" for rel,_ in result):
         raise RuntimeError("DISTRIBUTION_MODULE_REGISTRY_MISSING_FROM_PAYLOAD")
+    if not any(rel == "command_subdomain_routing.json" for rel,_ in result):
+        raise RuntimeError("DISTRIBUTION_ROUTING_CATALOG_MISSING_FROM_PAYLOAD")
     return sorted(result,key=lambda x:x[0].encode("utf-8"))
 
 def manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,companion_sha256,externalized_contract):
