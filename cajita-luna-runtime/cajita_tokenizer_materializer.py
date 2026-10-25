@@ -310,25 +310,20 @@ def tokenizer_tree_rows(module_root: Path, runtime_root: Path, rows: list[dict])
         raise TokenizerMaterializationError("TOKENIZER_TREE_MODULE_OUTSIDE_RUNTIME")
     manifest = load_tokenizer_manifest(root)
     by_source = {row["source_path"]: row for row in manifest["entries"] if row.get("packed")}
+    by_compressed = {row["compressed_path"]: row for row in manifest["entries"] if row.get("packed")}
     module_rel = module.relative_to(root).as_posix()
     filtered = []
-    virtual = []
     for row in rows:
         rel = (PurePosixPath(module_rel) / PurePosixPath(row["path"])).as_posix()
-        entry = by_source.get(rel)
-        if entry:
-            if row["path"] == "tokenizer.json":
-                # Keep the byte/hash row for the original file; it is already
-                # represented by the raw source in a source checkout.
-                filtered.append(row)
-                continue
-            if row["path"] == Path(entry["compressed_path"]).name:
-                continue
+        if rel in by_compressed:
+            # Gzip is a storage representation, not a new logical module file.
+            continue
+        if rel in by_source and row["path"] == "tokenizer.json":
+            # Source checkout: keep the exact original row in the module hash.
+            filtered.append(row)
+            continue
         filtered.append(row)
     has_raw = any(row["path"] == "tokenizer.json" for row in filtered)
-    for source_rel, entry in by_source.items():
-        if source_rel.startswith(module_rel + "/") and source_rel.count("/") == module_rel.count("/") + 0:
-            pass
     if not has_raw:
         candidate = (PurePosixPath(module_rel) / "tokenizer.json").as_posix()
         entry = by_source.get(candidate)
