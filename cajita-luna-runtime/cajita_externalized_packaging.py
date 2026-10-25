@@ -206,7 +206,7 @@ def _source_contract(root: Path) -> tuple[dict, dict, list[dict]]:
         if not isinstance(source_archives, list) or len(source_archives) != 1:
             raise RuntimeError("EXTERNALIZED_DESCRIPTOR_ARCHIVE_SET_INVALID:" + asset_id)
         descriptor_archive = source_archives[0]
-        if descriptor_archive.get("path") != container_meta.get("path") or descriptor_archive.get("sha256") != expected_sha or descriptor_archive.get("bytes") != expected_size:
+        if descriptor_archive.get("path") != container_rel or descriptor_archive.get("sha256") != expected_sha or descriptor_archive.get("bytes") != expected_size:
             raise RuntimeError("EXTERNALIZED_DESCRIPTOR_ARCHIVE_BINDING_MISMATCH:" + asset_id)
 
         module_matches = [m for m in modules if isinstance(m, dict) and m.get("module_key") == expanded_rel and m.get("path") == expanded_rel]
