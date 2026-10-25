@@ -200,7 +200,7 @@ def _externalized_runtime_file_identity(
     if len(matches) != 1:
         raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_ASSET_BINDING_COUNT:" + target_id + ":" + str(len(matches)))
     asset, meta = matches[0]
-    if asset.get("id") not in {"APACHE_JENA_6_2_0"} and asset.get("exact_externalized_candidate") is not True:
+    if asset.get("exact_externalized_candidate") is not True:
         raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_ASSET_NOT_REGISTERED:" + target_id)
     if asset.get("placed_path") != canonical_path or meta.get("path") != canonical_path:
         raise RuntimeError("RUNTIME_TARGET_ADAPTER_EXTERNALIZED_CANONICAL_PATH_MISMATCH:" + target_id)
@@ -445,7 +445,7 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
     else:
         binding_path.write_bytes(binding_bytes)
     consumer_adapters = _registered_consumer_adapters(runtime, targets)
-    runtime_engine_scopes = _registered_runtime_engine_scopes(runtime, targets)
+    runtime_engine_scopes = _registered_runtime_engine_scopes(runtime, targets, repo_root=repo)
     if set(consumer_adapters).intersection(runtime_engine_scopes):
         raise RuntimeError("MODEL_ADAPTER_AND_RUNTIME_SCOPE_TARGET_COLLISION")
     target_modules = []
