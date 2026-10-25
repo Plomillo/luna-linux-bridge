@@ -817,7 +817,7 @@ jobs:
           fi
           export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC TASK_RC BUILD_RC VALIDATOR_RC
           python - <<'PY'
-          import hashlib,json,os
+          import hashlib,json,os,zipfile
           from pathlib import Path
           p=Path("evidence/louksna1-candidate/LOUKSNAPG.md")
           d=Path("evidence/louksna1-candidate/Louksna1.md")
