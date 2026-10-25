@@ -25,6 +25,11 @@ def iter_files(root,output):
     result=[]
     contract=distribution_contract(root)
     excluded_roots={item["expanded_relpath"] for item in contract}
+    placement=json.loads((Path(root)/"EXTERNALIZED_ASSET_PLACEMENT.json").read_text(encoding="utf-8"))
+    archive_history=placement.get("factory_reconciliation",{}).get("archives",[])
+    archive_source_paths={row.get("source_path") for row in archive_history if isinstance(row,dict) and isinstance(row.get("source_path"),str)}
+    externalized_container_paths={item["container_relpath"] for item in contract}
+    build_only_archive_paths=archive_source_paths-externalized_container_paths
     for base,dirs,names in os.walk(root,topdown=True,followlinks=False):
         bp=Path(base)
         kept=[]
@@ -42,7 +47,7 @@ def iter_files(root,output):
             if not p.is_file(): raise RuntimeError("NON_REGULAR_FILE:"+str(p))
             if p.resolve()==output.resolve(): continue
             rel=p.relative_to(root).as_posix()
-            if rel in {"module_registry.json", "command_subdomain_routing.json"} or _under_externalized_tree(rel,excluded_roots): continue
+            if rel in {"module_registry.json", "command_subdomain_routing.json"} or rel in build_only_archive_paths or _under_externalized_tree(rel,excluded_roots): continue
             if rel.startswith("../") or rel.startswith("/"): raise RuntimeError("PATH_ESCAPE:"+rel)
             # Deliver the generated distribution-only routes under the canonical
             # runtime path. The full source routing catalog remains in the repo.
