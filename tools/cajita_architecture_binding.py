@@ -399,6 +399,7 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         raise RuntimeError("AXIOM_SOURCE_LOADER_SOURCE_MISSING")
     loader_dest = multi_dir / "cajita_axiom_source_loader.py"
     binding_path = multi_dir / "axiom_interdisciplinary_binding.json"
+    block_graph_path = multi_dir / "block_engine_binding.json"
     loader_source_bytes = loader_source.read_bytes()
     binding = {
         "schema": "LOUKSNA_AXIOM_MULTI_INTERDISCIPLINAR_BINDING/1.0",
@@ -421,6 +422,61 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         "graph_execution": "NOT_PROVEN_BY_SOURCE_BINDING",
         "certification": "NOT_GRANTED"
     }
+    expected_multi_engines = ["E03", "E04", "E05", "E06", "E07", "E08", "E09", "E12", "E13", "E14", "E15"]
+    multi_engine_ids = list(multi.get("engine_ids", []))
+    if multi_engine_ids != expected_multi_engines:
+        raise RuntimeError("MULTI_INTERDISCIPLINAR_ENGINE_BINDING_MISMATCH")
+    canonical_block_ids = [f"B{i}" for i in range(1, 135)]
+    block_graph = {
+        "schema": "LOUKSNA_BLOCK_ENGINE_BINDING/1.0",
+        "status": "DECLARED_STRUCTURAL_ROUTING_ONLY",
+        "scope": "CANONICAL_IDENTIFIER_ROUTING_NOT_SEMANTIC_PROOF",
+        "source": {
+            "document_path": "Louksna1.md", "document_sha256": doc_sha,
+            "protected_architecture_path": "LOUKSNAMEJORADA.md",
+            "protected_architecture_sha256": source_sha,
+            "protected_architecture_bytes": len(source_bytes),
+            "provenance_mode": "EXACT_DOCUMENT_AND_PROTECTED_PREFIX_HASHES"
+        },
+        "block_inventory": {
+            "range": "B1-B134", "count": 134, "ids": canonical_block_ids,
+            "mutation_allowed": False
+        },
+        "target": {
+            "id": multi["id"], "domain_id": multi["domain_id"],
+            "path": multi["path"], "engine_ids": multi_engine_ids
+        },
+        "block_routes": [
+            {
+                "from_block_id": block_id,
+                "relation": "routes_to_interdisciplinary_target",
+                "to_target_id": multi["id"],
+                "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+                "provenance_sha256": doc_sha
+            } for block_id in canonical_block_ids
+        ],
+        "engine_routes": [
+            {"from_target_id": multi["id"], "relation": "uses_canonical_engine", "to_engine_id": engine_id}
+            for engine_id in multi_engine_ids
+        ],
+        "invariants": {
+            "canonical_block_identity_mutation": False,
+            "canonical_engine_reassignment": False,
+            "synthetic_block_ids": False,
+            "semantic_content_reconstructed": False
+        },
+        "certification": "NOT_GRANTED"
+    }
+    block_graph_bytes = (json.dumps(block_graph, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
+    block_graph_sha = _sha(block_graph_bytes)
+    binding["block_engine_graph"] = {
+        "path_from_runtime_root": block_graph_path.relative_to(runtime).as_posix(),
+        "sha256": block_graph_sha, "block_count": 134,
+        "state": "DECLARED_STRUCTURAL_ROUTING_ONLY"
+    }
+    binding["graph_execution"] = "STRUCTURAL_BLOCK_ROUTING_DECLARED_RUNTIME_VERIFICATION_REQUIRED"
+    binding["status"] = "SOURCE_BOUND_BLOCK_ENGINE_GRAPH_BOUND"
+    binding["reader"]["operation"] = "VERIFY_DOCUMENT_SHA256_PREFIX_AND_B1_B134_BLOCK_ENGINE_ROUTES"
     binding_bytes = (json.dumps(binding, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
     if loader_dest.exists():
         if loader_dest.is_symlink() or loader_dest.read_bytes() != loader_source_bytes:
@@ -446,6 +502,27 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         binding_path.write_bytes(binding_bytes)
     else:
         binding_path.write_bytes(binding_bytes)
+    if block_graph_path.exists():
+        if block_graph_path.is_symlink() or not block_graph_path.is_file():
+            raise RuntimeError("BLOCK_ENGINE_GRAPH_PATH_UNSAFE")
+        prior_graph = json.loads(block_graph_path.read_text(encoding="utf-8"))
+        prior_target = prior_graph.get("target", {})
+        prior_inventory = prior_graph.get("block_inventory", {})
+        if (
+            prior_graph.get("schema") != "LOUKSNA_BLOCK_ENGINE_BINDING/1.0"
+            or prior_target.get("id") != multi.get("id")
+            or prior_target.get("domain_id") != multi.get("domain_id")
+            or prior_target.get("path") != multi.get("path")
+            or prior_target.get("engine_ids") != expected_multi_engines
+            or prior_inventory.get("range") != "B1-B134"
+            or prior_inventory.get("count") != 134
+            or prior_inventory.get("ids") != canonical_block_ids
+            or prior_inventory.get("mutation_allowed") is not False
+        ):
+            raise RuntimeError("BLOCK_ENGINE_GRAPH_CANONICAL_IDENTITY_COLLISION")
+        block_graph_path.write_bytes(block_graph_bytes)
+    else:
+        block_graph_path.write_bytes(block_graph_bytes)
     consumer_adapters = _registered_consumer_adapters(runtime, targets)
     runtime_engine_scopes = _registered_runtime_engine_scopes(runtime, targets, repo_root=repo)
     if set(consumer_adapters).intersection(runtime_engine_scopes):
@@ -544,14 +621,26 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         "path": binding_path.relative_to(runtime).as_posix(), "sha256": _sha(binding_path.read_bytes()),
         "target_id": multi["id"], "protected_architecture_sha256": source_sha,
         "declared_materialized_axiom_count": 11757, "declared_historical_gap_count": 657,
-        "block_count": 134, "framework_count": 18, "state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
+        "block_count": 134, "framework_count": 18, "state": "SOURCE_BOUND_BLOCK_ENGINE_GRAPH_BOUND"
+    }
+    registry["block_engine_graph"] = {
+        "path": block_graph_path.relative_to(runtime).as_posix(),
+        "sha256": _sha(block_graph_path.read_bytes()), "block_count": 134,
+        "target_id": multi["id"], "engine_ids": expected_multi_engines,
+        "state": "DECLARED_STRUCTURAL_ROUTING_ONLY", "certification": "NOT_GRANTED"
     }
     registry["certification"] = "NOT_GRANTED"
     registry_path.write_text(json.dumps(registry, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     routing.setdefault("materialization", {})["canonical_target_module_count"] = len(target_modules)
     routing["materialization"]["axiom_interdisciplinary_binding"] = binding_path.relative_to(runtime).as_posix()
     routing["materialization"]["axiom_interdisciplinary_binding_sha256"] = _sha(binding_path.read_bytes())
-    routing["materialization"]["axiom_source_state"] = "SOURCE_BOUND_GRAPH_EXECUTION_PENDING"
+    routing["materialization"]["axiom_source_state"] = "SOURCE_BOUND_BLOCK_ENGINE_GRAPH_BOUND"
+    routing["materialization"]["block_engine_graph"] = {
+        "path": block_graph_path.relative_to(runtime).as_posix(),
+        "sha256": _sha(block_graph_path.read_bytes()), "block_count": 134,
+        "target_id": multi["id"], "engine_ids": expected_multi_engines,
+        "state": "DECLARED_STRUCTURAL_ROUTING_ONLY", "certification": "NOT_GRANTED"
+    }
     routing["materialization"]["consumer_adapter_registration"] = {
         "synthetic_scope_registered_target_count": len(consumer_adapters),
         "unregistered_target_count": len(target_modules) - len(consumer_adapters),
