@@ -65,7 +65,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile tools/cajita_axiom_graph_audit.py tests/test_cajita_axiom_graph_audit.py
-          PYTHONPATH=tools python -m unittest discover -s tests -p 'test_cajita_axiom_graph_audit.py' -v
+          PYTHONPATH=tools:cajita-luna-runtime python -m unittest discover -s tests -p 'test_cajita_axiom_graph_audit.py' -v
 
       - name: Materialize source-bound RDF and execute Apache Jena
         env:
