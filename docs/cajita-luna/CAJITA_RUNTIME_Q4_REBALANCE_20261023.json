@@ -1,7 +1,7 @@
 {
   "schema": "CAJITA_RUNTIME_HARD_CAP_REBALANCE/1.0",
   "audit_id": "CAJITA_RUNTIME_Q4_REBALANCE_20261023",
-  "created_at_utc": "2026-10-25T06:30:27.731347+00:00",
+  "created_at_utc": "2026-10-25T06:33:19.578777+00:00",
   "repository": "Plomillo/luna-linux-bridge",
   "branch": "main",
   "hard_cap_bytes": 470000000,
@@ -104,7 +104,7 @@
           "outputs": [
             {
               "index": 0,
-              "relative_l2_error": 0.02539970797956496,
+              "relative_l2_error": 0.006748258135160156,
               "top1_same": true,
               "shape": [
                 1,
@@ -123,7 +123,7 @@
         "candidate_bytes": 110219194,
         "candidate_sha256": "9361e200e97334904e29073a9662b9c5494d4c4a3ffe86a1ce3cd91eee1cd324",
         "graph_or_runtime_check": "FAIL",
-        "error": "InvalidGraph:[ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/cajita-onnx-rebalance-vdyvbjxl/candidate.float16.onnx failed:This is an invalid model. Type Error: Type 'tensor(float16)' of input parameter (transformer.shared.weight__scale) of operator (DequantizeLinear) in node (UMOT_DQ_7d1903260d533211) is invalid.",
+        "error": "InvalidGraph:[ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from <ONNX_TEMP_DIR>/candidate.float16.onnx failed:This is an invalid model. Type Error: Type 'tensor(float16)' of input parameter (transformer.shared.weight__scale) of operator (DequantizeLinear) in node (UMOT_DQ_7d1903260d533211) is invalid.",
         "status": "CANDIDATE_RUNTIME_FAILED"
       }
     ],
@@ -188,6 +188,6 @@
   "quality_equivalence": "SMOKE_SIGNATURE_ONLY; TASK_LEVEL_QUALITY_NOT_ESTABLISHED",
   "independent_validation": "NOT_RUN",
   "certification": "NOT_GRANTED",
-  "elapsed_seconds": 2.466,
+  "elapsed_seconds": 4.445,
   "status": "SIZE_GATE_PASS_CERTIFICATION_NOT_GRANTED"
 }
