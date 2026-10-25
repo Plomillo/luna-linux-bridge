@@ -122,6 +122,131 @@ def _load_json(path: Path, label: str) -> dict:
     return result
 
 
+def _stage_container_from_externalized_source(
+    root: Path, container_rel: str, expected_size: int, expected_sha: str, asset_id: str
+) -> Path:
+    """Copy a container from the governed staging store into the build runtime."""
+    root = Path(root).resolve()
+    rel = PurePosixPath(container_rel)
+    destination = root / Path(*rel.parts)
+    if destination.is_symlink():
+        raise RuntimeError("EXTERNALIZED_CONTAINER_DESTINATION_SYMLINK:" + asset_id)
+    if destination.exists():
+        raise RuntimeError("EXTERNALIZED_CONTAINER_DESTINATION_COLLISION:" + asset_id)
+    if not destination.resolve().is_relative_to(root):
+        raise RuntimeError("EXTERNALIZED_CONTAINER_DESTINATION_ESCAPE:" + asset_id)
+
+    basename = rel.name
+    source = None
+    for ancestor in (root, *root.parents):
+        candidate = ancestor / "externalized-assets-staging" / "optimized-containers" / basename
+        if candidate.is_symlink():
+            raise RuntimeError("EXTERNALIZED_STAGING_CONTAINER_SYMLINK:" + asset_id)
+        if candidate.is_file():
+            source = candidate
+            break
+    if source is None:
+        raise RuntimeError("EXTERNALIZED_STAGING_CONTAINER_MISSING:" + asset_id)
+
+    source_size = source.stat().st_size
+    source_sha = sha_file(source)
+    if source_size != expected_size or source_sha != expected_sha:
+        raise RuntimeError(
+            "EXTERNALIZED_STAGING_CONTAINER_IDENTITY_MISMATCH:" + asset_id + ":" +
+            json.dumps({"expected_bytes": expected_size, "actual_bytes": source_size,
+                        "expected_sha256": expected_sha, "actual_sha256": source_sha}, sort_keys=True)
+        )
+
+    parent = destination.parent
+    if not parent.resolve().is_relative_to(root):
+        raise RuntimeError("EXTERNALIZED_CONTAINER_PARENT_ESCAPE:" + asset_id)
+    cursor = root
+    for part in parent.relative_to(root).parts:
+        cursor = cursor / part
+        if cursor.is_symlink():
+            raise RuntimeError("EXTERNALIZED_CONTAINER_PARENT_SYMLINK:" + asset_id)
+        cursor.mkdir(exist_ok=True)
+
+    temporary = destination.with_name(destination.name + ".verified-building")
+    if temporary.exists() or temporary.is_symlink():
+        raise RuntimeError("EXTERNALIZED_CONTAINER_TEMP_COLLISION:" + asset_id)
+    try:
+        shutil.copyfile(source, temporary)
+        if temporary.stat().st_size != expected_size or sha_file(temporary) != expected_sha:
+            raise RuntimeError("EXTERNALIZED_CONTAINER_COPY_REVERIFY_FAILED:" + asset_id)
+        if destination.exists() or destination.is_symlink():
+            raise RuntimeError("EXTERNALIZED_CONTAINER_DESTINATION_RACE:" + asset_id)
+        os.replace(temporary, destination)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+    return destination
+
+
+def _record_externalized_container_retention(placement: dict, contract: list[dict]) -> None:
+    by_id = {item["id"]: item for item in contract}
+    retained_paths = {item["container_relpath"] for item in contract}
+    factory = placement.get("factory_reconciliation")
+    if not isinstance(factory, dict):
+        raise RuntimeError("FACTORY_RECONCILIATION_MISSING_FOR_CONTAINER_RETENTION")
+    history = factory.get("archives")
+    if not isinstance(history, list):
+        raise RuntimeError("FACTORY_ARCHIVE_HISTORY_MISSING_FOR_CONTAINER_RETENTION")
+
+    for row in history:
+        if not isinstance(row, dict):
+            raise RuntimeError("FACTORY_ARCHIVE_HISTORY_ROW_INVALID")
+        if row.get("source_path") in retained_paths:
+            row["archive_removed_from_runtime"] = False
+            row["container_retained_in_distribution"] = True
+
+    present_paths = {row.get("source_path") for row in history}
+    for item in contract:
+        rel = item["container_relpath"]
+        if rel not in present_paths:
+            history.append({
+                "source_path": rel,
+                "source_sha256": item["container_sha256"],
+                "source_bytes": item["container_bytes"],
+                "expanded_path": item["expanded_relpath"],
+                "archive_removed_from_runtime": False,
+                "container_retained_in_distribution": True,
+                "rollback_path": "externalized-assets-staging/optimized-containers/" + Path(rel).name,
+                "asset_id": item["id"],
+            })
+    history.sort(key=lambda row: (str(row.get("source_path", "")).encode("utf-8"), str(row.get("source_sha256", ""))))
+    removed = [row for row in history if row.get("archive_removed_from_runtime") is True]
+    retained = [row for row in history if row.get("archive_removed_from_runtime") is False]
+    factory.update({
+        "archive_count_materialized": len(history),
+        "archive_count_removed": len(removed),
+        "archive_count_retained": len(retained),
+        "archive_bytes_removed": sum(int(row.get("source_bytes", 0)) for row in removed),
+        "archive_bytes_retained": sum(int(row.get("source_bytes", 0)) for row in retained),
+        "all_zip_7z_removed": len(retained) == 0,
+        "all_unregistered_archives_removed": True,
+        "externalized_container_retention": "PASS_HASH_AND_SIZE_VERIFIED",
+        "retained_externalized_container_paths": sorted(retained_paths, key=lambda value: value.encode("utf-8")),
+    })
+    for asset in placement.get("assets", []):
+        item = by_id.get(asset.get("id"))
+        if item is None:
+            continue
+        nested = asset.get("factory_reconciliation")
+        if not isinstance(nested, dict):
+            nested = {}
+        nested.update({
+            "archive_removed_from_runtime": False,
+            "container_retained_in_distribution": True,
+            "container_source": "externalized-assets-staging/optimized-containers/" + Path(item["container_relpath"]).name,
+            "container_sha256_verified": item["container_sha256"],
+            "container_bytes_verified": item["container_bytes"],
+        })
+        asset["factory_reconciliation"] = nested
+        asset["included_in_current_macrodown_manifest"] = True
+        asset["placement"] = "MATERIALIZED_DIRECTORY_AND_HASH_PINNED_CONTAINER"
+
+
 def _source_contract(root: Path) -> tuple[dict, dict, list[dict]]:
     root = Path(root).resolve()
     placement_path = root / PLACEMENT_NAME
@@ -162,14 +287,18 @@ def _source_contract(root: Path) -> tuple[dict, dict, list[dict]]:
             raise RuntimeError("EXTERNALIZED_PLACED_PATH_MISMATCH:" + asset_id)
 
         container = root / Path(*PurePosixPath(container_rel).parts)
-        if container.is_symlink() or not container.is_file():
-            raise RuntimeError("EXTERNALIZED_CONTAINER_MISSING:" + asset_id)
         expected_size = container_meta.get("size_bytes", asset.get("container_size_bytes"))
         expected_sha = container_meta.get("sha256", asset.get("container_sha256"))
         if isinstance(expected_size, bool) or not isinstance(expected_size, int) or expected_size < 1:
             raise RuntimeError("EXTERNALIZED_CONTAINER_SIZE_INVALID:" + asset_id)
         if not isinstance(expected_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_sha):
             raise RuntimeError("EXTERNALIZED_CONTAINER_SHA256_INVALID:" + asset_id)
+        if container.is_symlink():
+            raise RuntimeError("EXTERNALIZED_CONTAINER_SYMLINK_REFUSED:" + asset_id)
+        if not container.is_file():
+            container = _stage_container_from_externalized_source(
+                root, container_rel, expected_size, expected_sha, asset_id
+            )
         actual_size = container.stat().st_size
         actual_sha = sha_file(container)
         if actual_size != expected_size or actual_sha != expected_sha:
@@ -243,6 +372,13 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
     placement, source_registry, contract = _source_contract(root)
     source_registry_path = root / SOURCE_REGISTRY_NAME
     placement_path = root / PLACEMENT_NAME
+    _record_externalized_container_retention(placement, contract)
+    placement_output = (json.dumps(placement, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    placement_temp = placement_path.with_name(placement_path.name + ".building")
+    if placement_temp.is_symlink():
+        raise RuntimeError("PLACEMENT_TEMP_SYMLINK_REFUSED")
+    placement_temp.write_bytes(placement_output)
+    os.replace(placement_temp, placement_path)
     placement_sha = placement_binding_sha256(placement)
     source_registry_sha = sha_file(source_registry_path)
     externalized_paths = {item["expanded_relpath"] for item in contract}
@@ -327,6 +463,30 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
         "certification": "NOT_GRANTED",
     })
     distribution_routing["materialization"] = routing_materialization
+    for support in distribution_routing.get("support_assets", []):
+        if not isinstance(support, dict):
+            continue
+        candidates = {support.get("id"), support.get("asset_id"), support.get("canonical_asset_id"),
+                      support.get("relative_path"), support.get("materialized_path"), support.get("source_archive_path")}
+        for item in contract:
+            if item["id"] in candidates or item["expanded_relpath"] in candidates or item["container_relpath"] in candidates:
+                support.update({
+                    "container_path": item["container_relpath"],
+                    "container_sha256": item["container_sha256"],
+                    "container_bytes": item["container_bytes"],
+                    "container_retained_in_distribution": True,
+                    "archive_removed_from_runtime": False,
+                    "activation_status": "MATERIALIZED_NOT_FUNCTIONALLY_VALIDATED",
+                })
+                break
+    distribution_routing["externalized_assets"] = [
+        {"id": item["id"], "container_path": item["container_relpath"],
+         "container_sha256": item["container_sha256"], "container_bytes": item["container_bytes"],
+         "expanded_path": item["expanded_relpath"], "expanded_tree_sha256": item["expanded_tree_sha256"],
+         "materialization": "ON_DEMAND", "consumer_adapter": "NOT_ESTABLISHED",
+         "native_smoke": "REQUIRED", "certification": "NOT_GRANTED"}
+        for item in contract
+    ]
     routing_path = root / "CAJITA_DISTRIBUTION_ROUTING.json"
     if routing_path.is_symlink():
         raise RuntimeError("DISTRIBUTION_ROUTING_SYMLINK_REFUSED")

@@ -47,9 +47,11 @@ jobs:
         run: |
           set -euo pipefail
           git lfs install
-          LFS_INCLUDE='cajita-luna-runtime/1. Cerebro/model.safetensors,cajita-luna-runtime/3. Transcripción/model.safetensors,cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors,cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin,cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors,cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx,cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z,cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z,cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z,cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z,cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z,cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z,cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z,cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z,cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z,cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z'
+          LFS_INCLUDE='cajita-luna-runtime/1. Cerebro/model.safetensors,cajita-luna-runtime/3. Transcripción/model.safetensors,cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors,cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin,cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors,cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx'
           git lfs pull --include="$LFS_INCLUDE" --exclude="" origin main
           python - <<'PY'
+          import hashlib
+          import json
           from pathlib import Path
           model_files = [
               "cajita-luna-runtime/1. Cerebro/model.safetensors",
@@ -59,26 +61,39 @@ jobs:
               "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
               "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
           ]
-          container_files = [
-              "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
-              "cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z",
-              "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z",
-              "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z",
-              "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z",
-              "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z",
-              "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z",
-              "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z",
-              "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z",
-              "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z",
-          ]
-          for group, files in (("MODEL", model_files), ("CONTAINER", container_files)):
-              for item in files:
-                  p = Path(item)
-                  if not p.is_file() or p.stat().st_size < 4096:
-                      raise SystemExit(f"LFS_{group}_PAYLOAD_NOT_MATERIALIZED:" + item)
-                  if p.read_bytes()[:80].startswith(b"version https://git-lfs.github.com/spec/v1"):
-                      raise SystemExit(f"LFS_{group}_POINTER_REMAINS:" + item)
-          print("CAJITA_LFS_MATERIALIZATION=PASS models=6 containers=10") 
+          for item in model_files:
+              p = Path(item)
+              if not p.is_file() or p.stat().st_size < 4096:
+                  raise SystemExit("LFS_MODEL_PAYLOAD_NOT_MATERIALIZED:" + item)
+              if p.read_bytes()[:80].startswith(b"version https://git-lfs.github.com/spec/v1"):
+                  raise SystemExit("LFS_MODEL_POINTER_REMAINS:" + item)
+          placement = json.loads(Path("cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json").read_text(encoding="utf-8"))
+          assets = placement.get("assets", [])
+          expected_ids = {
+              "APACHE_JENA_6_2_0", "PLAYWRIGHT_1_63_0_SOURCE", "ONNX_RUNTIME_1_29_0_CP311",
+              "DAGGER_0_21_8_LINUX_AMD64", "OPA_STATIC_LINUX_AMD64_CANDIDATE",
+              "RQLITE_10_2_7_LINUX_AMD64", "SQLITE_SOURCE_3_53_4",
+              "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE", "AVALONIA_12_1_1_NUGET", "TAURI_2_11_5_SOURCE_ZIP",
+          }
+          if len(assets) != 10 or {a.get("id") for a in assets} != expected_ids:
+              raise SystemExit("EXTERNALIZED_ASSET_ID_SET_INVALID")
+          for asset in assets:
+              meta = asset["compact_runtime_container"]
+              source = Path("externalized-assets-staging/optimized-containers") / Path(meta["path"]).name
+              if source.is_symlink() or not source.is_file():
+                  raise SystemExit("EXTERNALIZED_STAGING_CONTAINER_MISSING:" + str(source))
+              digest = hashlib.sha256()
+              size = 0
+              with source.open("rb") as stream:
+                  for block in iter(lambda: stream.read(4 * 1024 * 1024), b""):
+                      digest.update(block)
+                      size += len(block)
+              if size != meta["size_bytes"] or digest.hexdigest() != meta["sha256"]:
+                  raise SystemExit("EXTERNALIZED_STAGING_CONTAINER_IDENTITY_MISMATCH:" + asset["id"])
+              with source.open("rb") as stream:
+                  if stream.read(80).startswith(b"version https://git-lfs.github.com/spec/v1"):
+                      raise SystemExit("EXTERNALIZED_STAGING_CONTAINER_POINTER_REMAINS:" + asset["id"])
+          print("CAJITA_INPUT_MATERIALIZATION=PASS models=6 externalized_containers=10")
           PY
 
       - name: Verify compressed externalized assets and prepare distribution registry
@@ -106,6 +121,11 @@ jobs:
           externalized_contract = distribution_contract(root)
           excluded_expanded_roots = {item["expanded_relpath"] for item in externalized_contract}
           placement_path = root / "EXTERNALIZED_ASSET_PLACEMENT.json"
+          archive_placement = json.loads(placement_path.read_text(encoding="utf-8"))
+          archive_history = archive_placement.get("factory_reconciliation", {}).get("archives", [])
+          archive_source_paths = {row.get("source_path") for row in archive_history if isinstance(row, dict) and isinstance(row.get("source_path"), str)}
+          container_paths = {item["container_relpath"] for item in externalized_contract}
+          build_only_archive_paths = archive_source_paths - container_paths
           report_path = Path("docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json")
           placement = json.loads(placement_path.read_text(encoding="utf-8"))
           report = json.loads(report_path.read_text(encoding="utf-8"))
@@ -175,7 +195,7 @@ jobs:
           placement["status"] = "COMPACT_DISTRIBUTION_PAYLOAD_SIZE_GATE_PASS"
           placement["runtime_size_gate"] = {
               "audit_id": "CAJITA_FINAL_RUNTIME_SIZE_GATE_20261025",
-              "measurement_method": "sum of files in the reproducible distribution payload; excludes the source-only module_registry.json and exactly ten hash-pinned expanded asset trees; includes all ten verified .7z containers and CAJITA_DISTRIBUTION_MODULE_REGISTRY.json; no LFS pointers",
+              "measurement_method": "sum of reproducible distribution payload files; excludes source-only module_registry.json and command_subdomain_routing.json, 18 historical build-only archives, and ten hash-pinned expanded trees; includes exactly ten verified compressed containers, the derived registry and the derived routing catalog; no LFS pointers",
               "payload_bytes": 999999999,
               "hard_cap_bytes": cap,
               "bytes_under_cap": 9999999,
@@ -208,7 +228,7 @@ jobs:
                       if path.is_symlink():
                           raise SystemExit("SYMLINK_IN_RUNTIME:" + str(path))
                       rel = path.relative_to(root).as_posix()
-                      if name == "MACRODOWN_MANIFEST.json" or rel in {"module_registry.json", "command_subdomain_routing.json"} or under_expanded_tree(rel):
+                      if name == "MACRODOWN_MANIFEST.json" or rel in {"module_registry.json", "command_subdomain_routing.json"} or rel in build_only_archive_paths or under_expanded_tree(rel):
                           continue
                       if path.is_file():
                           total += path.stat().st_size
@@ -435,8 +455,6 @@ jobs:
           git add -- \
             "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json" \
             "cajita-luna-runtime/MACRODOWN_MANIFEST.json" \
-            "cajita-luna-runtime/CAJITA_DISTRIBUTION_MODULE_REGISTRY.json" \
-            "cajita-luna-runtime/CAJITA_DISTRIBUTION_ROUTING.json" \
             "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json" \
             "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json" \
             "docs/cajita-luna/CAJITA_INVENTORY_AUDIT_20261024.json"
