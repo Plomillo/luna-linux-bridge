@@ -21,10 +21,8 @@
         "D05_DOCLING",
         "D06_ANTI_ALUCINACIONES",
         "D06_ANALISIS_AVANZADO",
-        "D06_MIGRACION_PERSISTENCIA",
         "D06_PORTABILIDAD_BASE",
-        "D06_RUNTIME_ANDROID_WINDOWS",
-        "D06_TESTING"
+        "D06_RUNTIME_ANDROID_WINDOWS"
       ],
       "passed": [
         "D02_CONFESION_ECLESIAL_REFORMADA",
@@ -34,21 +32,23 @@
         "D06_COGNITIVE_CI_CD",
         "D06_CONSOLA",
         "D06_MEMORIA_GOBERNADA",
-        "D06_MOTOR_PROTOCOLAR"
+        "D06_MIGRACION_PERSISTENCIA",
+        "D06_MOTOR_PROTOCOLAR",
+        "D06_TESTING"
       ],
       "status": "FAIL"
     },
     "host_resources": {
       "measurement": {
         "confidence": "MEASURED",
-        "cpu_count": 2,
-        "disk_available_bytes": 47220539392,
+        "cpu_count": 4,
+        "disk_available_bytes": 90405265408,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
-        "platform": "Linux-6.12.8+-x86_64-with-glibc2.36",
-        "ram_available_bytes": 2132013056
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "ram_available_bytes": 11766099968
       },
       "reason": "LINUX_RESOURCE_MEASUREMENT_IS_NOT_THE_DECLARED_ANDROID_WINDOWS_MATRIX",
       "status": "FAIL"
@@ -84,7 +84,7 @@
       "status": "FAIL"
     }
   },
-  "generated_at_utc": "2026-10-25T07:19:53Z",
+  "generated_at_utc": "2026-10-25T07:53:01Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -268,11 +268,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "966fd4b6e3271e20ca532b14f8f154a1849ea8e13fecd224fd57efc56b57a865"
+        "stdout_sha256": "f2f1bdde731bf84bba6fa96c2e10183436f1d811d4aaec4af4cf6f311b88e6b5"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "b2fb753d34c4fce632bcb77430718d4d051bd466945a2b03553b6db3cff96a52",
+      "output_sha256": "fea83aff3ba43b108a84facc9b6aacf54d3679d9ab1b3daa5afd24fba2a1daea",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -326,13 +326,17 @@
     },
     {
       "detail": {
-        "executed": false
+        "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
+        "cli_rc": 0,
+        "query_contains_migration_sha256": true,
+        "query_sha256": "15e94083793d1237607f1b56614b4ec81f16e157db4642bc8f447977127cc3ef",
+        "server_version_banner": true
       },
-      "exit_code": 2,
+      "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "RQLITE_MIGRATION_NOT_EXECUTED",
-      "status": "FAIL",
+      "output_sha256": "6aa422564ce1e067f44362e369c2f0d1cb841a3e5a7892b1d9555fb6f332ac1d",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
       "worker_certification": "NOT_GRANTED"
     },
@@ -368,25 +372,37 @@
       "exit_code": 2,
       "operation": "native_host_matrix",
       "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "ANDROID_AND_WINDOWS_NATIVE_HOSTS_NOT_EXECUTED",
+      "reason": "ANDROID_WINDOWS_NATIVE_HOSTS_NOT_EXECUTED",
       "status": "FAIL",
       "target_id": "D06_RUNTIME_ANDROID_WINDOWS",
       "worker_certification": "NOT_GRANTED"
     },
     {
       "detail": {
-        "executed": false
+        "crate_sha256": "950046b2aa2492f9a536f5f4f9a3de7b9e2476e575e05bd6c333371add4d98f3",
+        "installed_dist_info": [
+          "iniconfig-2.3.1.dist-info",
+          "packaging-26.3.dist-info",
+          "pluggy-1.7.0.dist-info",
+          "py-1.11.0.dist-info",
+          "pygments-2.21.0.dist-info",
+          "pytest-9.1.1.dist-info"
+        ],
+        "return_code": 0,
+        "stderr_tail": "",
+        "stdout_tail": ".                                                                        [100%]\n1 passed in 0.01s\n",
+        "wheel_sha256": "4d441dfcdbc9517dde8859b3f07b82bdb581119a865938e2560884bdf00cafd5"
       },
-      "exit_code": 2,
+      "exit_code": 0,
       "operation": "run_pinned_pytest",
-      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "PINNED_PYTEST_SUITE_NOT_EXECUTED",
-      "status": "FAIL",
+      "output_sha256": "dfad410e58f41dabeeddea7ce1f5a64e88d7b046620cc66186be7c5fa0eedb43",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D06_TESTING",
       "worker_certification": "NOT_GRANTED"
     }
   ],
-  "producer_commit": "c103277a1030ff091e3bead7651f7bd312191578",
+  "producer_commit": "667544634ff3a587b7200dd509f6980bb2e03ba7",
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
     "axiom_proposition_validity": "NOT_ESTABLISHED",
@@ -415,12 +431,10 @@
         "D05_DOCLING",
         "D06_ANTI_ALUCINACIONES",
         "D06_ANALISIS_AVANZADO",
-        "D06_MIGRACION_PERSISTENCIA",
         "D06_PORTABILIDAD_BASE",
-        "D06_RUNTIME_ANDROID_WINDOWS",
-        "D06_TESTING"
+        "D06_RUNTIME_ANDROID_WINDOWS"
       ],
-      "result_state_hash": "ebbd1884b51a674ac069b55cd59578eb1356fe22e3398ce13c8de3027062e95b",
+      "result_state_hash": "2c0492f631b977dc69a6584e3211270eae8eac3cddbdd9128e6a32deaf3eeaf1",
       "status": "FAIL"
     },
     "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
