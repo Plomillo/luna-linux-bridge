@@ -166,7 +166,8 @@ jobs:
           assert integral_gate["type"] == "io.kestra.plugin.core.flow.If"
           assert "global_certification == 'GRANTED'" in integral_gate["condition"]
           assert "all_21_target_task_adapters == 'ESTABLISHED'" in integral_gate["condition"]
-          assert integral_tasks["fail_closed"]["type"] == "io.kestra.plugin.core.execution.Fail"
+          else_tasks = {task["id"]: task for task in integral_gate["else"]}
+          assert else_tasks["fail_closed"]["type"] == "io.kestra.plugin.core.execution.Fail"
           harness = Path("tools/cajita_task_e2e.py").read_text(encoding="utf-8")
           assert "synthetic_quality_acceptance" in harness
           assert "ESPEAK_NG_REQUIRED_FOR_KNOWN_SPEECH_FIXTURE" in harness
