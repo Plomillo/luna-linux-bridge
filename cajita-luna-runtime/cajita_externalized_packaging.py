@@ -403,7 +403,8 @@ def prepare_source_materializations(root: Path) -> dict:
         target = root / Path(*PurePosixPath(expanded_rel).parts)
         if target.is_symlink() or not target.resolve().is_relative_to(root):
             raise RuntimeError("EXTERNALIZED_EXPANSION_PATH_SYMLINK_OR_ESCAPE:" + asset_id)
-        if not target.exists():
+        target_was_present = target.exists()
+        if not target_was_present:
             reconstructed = materialize_registered_asset(root, asset_id, target)
             if (
                 reconstructed.get("status") != "PASS_REGISTERED_CONTAINER_RECONSTRUCTION"
@@ -515,7 +516,7 @@ def prepare_source_materializations(root: Path) -> dict:
 
         completed.append({
             "id": asset_id,
-            "status": "PASS_ALREADY_MATERIALIZED" if target.exists() else "PASS_RECONSTRUCTED",
+            "status": "PASS_ALREADY_MATERIALIZED" if target_was_present else "PASS_RECONSTRUCTED",
             "expanded_path": expanded_rel,
             **expected_tree,
             "container_sha256": container_meta["sha256"],
