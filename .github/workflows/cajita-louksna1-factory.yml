@@ -392,7 +392,14 @@ jobs:
             actual_rows = logical_tree_rows(target_dir)
             actual_tree_hash = tree_sha256(actual_rows)
             recorded = target_data["tree_integrity"]
-            assert len(actual_rows) == int(recorded["file_count_excluding_module_descriptors"]), "TARGET_MODULE_FILE_COUNT:" + target_module["target_id"]
+            if len(actual_rows) != int(recorded["file_count_excluding_module_descriptors"]):
+              source_dir = Path("cajita-luna-runtime") / target_module["path"]
+              source_rows = canonical_tree_rows(source_dir) if source_dir.is_dir() and not source_dir.is_symlink() else []
+              source_names = {row["path"] for row in source_rows}
+              actual_names = {row["path"] for row in actual_rows}
+              missing = sorted(source_names - actual_names, key=lambda x:x.encode("utf-8"))[:20]
+              extra = sorted(actual_names - source_names, key=lambda x:x.encode("utf-8"))[:20]
+              raise AssertionError("TARGET_MODULE_FILE_COUNT:" + target_module["target_id"] + ":expected=" + str(recorded["file_count_excluding_module_descriptors"]) + ":actual=" + str(len(actual_rows)) + ":source=" + str(len(source_rows)) + ":missing=" + json.dumps(missing) + ":extra=" + json.dumps(extra))
             assert sum(row["bytes"] for row in actual_rows) == int(recorded["bytes_excluding_module_descriptors"]), "TARGET_MODULE_BYTE_COUNT:" + target_module["target_id"]
             assert actual_tree_hash == target_module["tree_sha256"], "TARGET_MODULE_TREE_HASH:" + target_module["target_id"]
             assert actual_tree_hash == recorded["sha256"], "TARGET_MODULE_MANIFEST_TREE_HASH:" + target_module["target_id"]
