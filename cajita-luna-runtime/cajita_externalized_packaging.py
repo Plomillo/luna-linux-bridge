@@ -753,6 +753,24 @@ def distribution_contract(root: Path) -> list[dict]:
                 or nested.get("externalized_parent_module_key") != expanded_rel
             ):
                 raise RuntimeError("DISTRIBUTION_NESTED_DESCRIPTOR_TREE_BINDING_INVALID:" + nested_key)
+            source_archives = nested_descriptor.get("source_archives")
+            if not isinstance(source_archives, list) or len(source_archives) != 1:
+                raise RuntimeError("DISTRIBUTION_NESTED_SOURCE_ARCHIVE_SET_INVALID:" + nested_key)
+            nested_archive = source_archives[0]
+            nested_archive_path = nested_archive.get("path")
+            nested_archive_bytes = nested_archive.get("bytes")
+            nested_archive_sha = nested_archive.get("sha256")
+            if (
+                not isinstance(nested_archive_path, str)
+                or not nested_archive_path.startswith(expanded_rel + "/")
+                or not nested_archive_path.lower().endswith(".zip")
+                or PurePosixPath(nested_archive_path).with_suffix("").as_posix() != nested_key
+                or isinstance(nested_archive_bytes, bool)
+                or not isinstance(nested_archive_bytes, int) or nested_archive_bytes < 1
+                or not isinstance(nested_archive_sha, str)
+                or not re.fullmatch(r"[0-9a-f]{64}", nested_archive_sha)
+            ):
+                raise RuntimeError("DISTRIBUTION_NESTED_SOURCE_ARCHIVE_BINDING_INVALID:" + nested_key)
             nested_contract.append({
                 "module_key": nested_key,
                 "path": nested_key,
@@ -761,6 +779,10 @@ def distribution_contract(root: Path) -> list[dict]:
                 "tree_sha256": nested_expected["tree_sha256"],
                 "module_descriptor_raw": nested_raw,
                 "module_descriptor_sha256": nested_sha,
+                "source_archive_path": nested_archive_path,
+                "source_archive_relpath": nested_archive_path[len(expanded_relpath) + 1:],
+                "source_archive_bytes": nested_archive_bytes,
+                "source_archive_sha256": nested_archive_sha,
             })
         nested_contract.sort(key=lambda item: item["module_key"].encode("utf-8"))
 
@@ -1012,6 +1034,20 @@ def _extract_raw_tree(root: Path, item: dict, destination: Path) -> dict:
         raise RuntimeError("EXTERNALIZED_7Z_EXTRACT_FAILED:" + extracted.stdout[-700:])
     if (destination / MODULE_DESCRIPTOR_NAME).exists() or (destination / MODULE_DESCRIPTOR_NAME).is_symlink():
         raise RuntimeError("EXTERNALIZED_ARCHIVE_CONTAINS_RESERVED_MODULE_DESCRIPTOR")
+
+    # Confirm the exact inner ZIP inputs before factory normalization expands
+    # those ZIPs and removes the source archive members from the logical tree.
+    for nested in item.get("nested_modules", []):
+        archive_member = nested["source_archive_relpath"]
+        nested_archive_path = destination / Path(*PurePosixPath(archive_member).parts)
+        if nested_archive_path.is_symlink() or not nested_archive_path.is_file():
+            raise RuntimeError("EXTERNALIZED_NESTED_SOURCE_ARCHIVE_MISSING:" + nested["module_key"])
+        if (
+            nested_archive_path.stat().st_size != nested["source_archive_bytes"]
+            or sha_file(nested_archive_path) != nested["source_archive_sha256"]
+        ):
+            raise RuntimeError("EXTERNALIZED_NESTED_SOURCE_ARCHIVE_IDENTITY_MISMATCH:" + nested["module_key"])
+
     normalization = _normalize_factory_materialization(destination)
     actual = _tree_summary(destination)
     expected = {
@@ -1029,23 +1065,16 @@ def _extract_raw_tree(root: Path, item: dict, destination: Path) -> dict:
             detail["comparison_error"] = type(exc).__name__ + ":" + str(exc)[:300]
         raise RuntimeError("EXTERNALIZED_ARCHIVE_RECONSTRUCTION_MISMATCH:" + item["id"] + ":" + json.dumps(detail, sort_keys=True))
 
-    # Nested CAJITA_MODULE descriptors are excluded from the parent logical
-    # tree hash. Verify each one explicitly against source-registry evidence.
+    # Nested module directories are derived by the same normalizer from inner
+    # ZIP members. Their generated descriptors are not part of the upstream
+    # source container, so bind the ZIP bytes first and restore descriptors only
+    # after the reconstructed directory's own frozen tree identity passes.
     for nested in item.get("nested_modules", []):
         nested_key = nested["module_key"]
         nested_rel = nested_key[len(item["expanded_relpath"]) + 1:]
         nested_dir = destination / Path(*PurePosixPath(nested_rel).parts)
         if nested_dir.is_symlink() or not nested_dir.is_dir():
             raise RuntimeError("EXTERNALIZED_NESTED_MODULE_DIRECTORY_MISSING:" + nested_key)
-        nested_descriptor_path = nested_dir / MODULE_DESCRIPTOR_NAME
-        if nested_descriptor_path.is_symlink() or not nested_descriptor_path.is_file():
-            raise RuntimeError("EXTERNALIZED_NESTED_DESCRIPTOR_MISSING:" + nested_key)
-        nested_raw = nested["module_descriptor_raw"].encode("utf-8")
-        if (
-            nested_descriptor_path.read_bytes() != nested_raw
-            or sha_file(nested_descriptor_path) != nested["module_descriptor_sha256"]
-        ):
-            raise RuntimeError("EXTERNALIZED_NESTED_DESCRIPTOR_ARCHIVE_MISMATCH:" + nested_key)
         nested_actual = _tree_summary(nested_dir)
         nested_expected = {
             "bytes": nested["bytes"],
@@ -1054,6 +1083,17 @@ def _extract_raw_tree(root: Path, item: dict, destination: Path) -> dict:
         }
         if nested_actual != nested_expected:
             raise RuntimeError("EXTERNALIZED_NESTED_MODULE_TREE_MISMATCH:" + nested_key + ":" + json.dumps({"expected": nested_expected, "actual": nested_actual}, sort_keys=True))
+        nested_descriptor_path = nested_dir / MODULE_DESCRIPTOR_NAME
+        if nested_descriptor_path.is_symlink():
+            raise RuntimeError("EXTERNALIZED_NESTED_DESCRIPTOR_SYMLINK_REFUSED:" + nested_key)
+        nested_raw = nested["module_descriptor_raw"].encode("utf-8")
+        if nested_descriptor_path.exists():
+            if not nested_descriptor_path.is_file() or nested_descriptor_path.read_bytes() != nested_raw:
+                raise RuntimeError("EXTERNALIZED_NESTED_DESCRIPTOR_CONFLICT:" + nested_key)
+        else:
+            nested_descriptor_path.write_bytes(nested_raw)
+        if sha_file(nested_descriptor_path) != nested["module_descriptor_sha256"]:
+            raise RuntimeError("EXTERNALIZED_NESTED_DESCRIPTOR_RESTORE_HASH_MISMATCH:" + nested_key)
     return actual
 
 
