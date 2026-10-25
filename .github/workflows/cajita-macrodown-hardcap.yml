@@ -247,6 +247,8 @@ jobs:
                       if name == "MACRODOWN_MANIFEST.json":
                           excluded["generated_manifest"] += size
                           continue
+                      if path.suffix.lower() in {".pyc", ".pyo", ".tmp", ".part"}:
+                          continue
                       if rel in {"module_registry.json", "command_subdomain_routing.json"}:
                           excluded["source_only_registry_routing"] += size
                           continue
