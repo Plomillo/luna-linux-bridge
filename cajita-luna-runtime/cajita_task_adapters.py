@@ -3,6 +3,7 @@
 from __future__ import annotations
 import argparse, datetime as dt, hashlib, json, os, platform, re, resource, subprocess, sys, time
 from pathlib import Path
+from cajita_tokenizer_materializer import MANIFEST_NAME as TOKENIZER_MANIFEST_NAME, TokenizerMaterializationError, tokenizer_tree_rows
 
 REQUEST_SCHEMA = "CAJITA_TASK_REQUEST/1.0"
 RESULT_SCHEMA = "CAJITA_TASK_RESULT/1.0"
@@ -110,7 +111,12 @@ def verify_integrity(root,domain):
  if module.is_symlink() or not module.is_dir() or descriptor.is_symlink() or not descriptor.is_file():raise AdapterError("TARGET_MODULE_DESCRIPTOR_MISSING")
  meta=json.loads(descriptor.read_text(encoding="utf-8"))
  if meta.get("target_id")!=spec["target"]:raise AdapterError("TARGET_MODULE_IDENTITY_MISMATCH")
- rows=tree_rows(module); integ=meta.get("tree_integrity",{})
+ rows=tree_rows(module)
+ tokenizer_manifest=root/TOKENIZER_MANIFEST_NAME
+ if tokenizer_manifest.is_file():
+  try: rows=tokenizer_tree_rows(module,root,rows)
+  except TokenizerMaterializationError as exc: raise AdapterError("TOKENIZER_TREE_INTEGRITY_INVALID:"+str(exc)[:180]) from exc
+ integ=meta.get("tree_integrity",{})
  treehash=digest_bytes(json.dumps(rows,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8"))
  if len(rows)!=int(integ.get("file_count_excluding_module_descriptors",-1)):raise AdapterError("TARGET_MODULE_FILE_COUNT_MISMATCH")
  if sum(x["bytes"] for x in rows)!=int(integ.get("bytes_excluding_module_descriptors",-1)):raise AdapterError("TARGET_MODULE_BYTE_COUNT_MISMATCH")

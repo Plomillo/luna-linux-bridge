@@ -16,6 +16,7 @@ if _RUNTIME_ROOT is None:
     raise RuntimeError("CAJITA_RUNTIME_ROOT_NOT_FOUND")
 sys.path.insert(0, str(_RUNTIME_ROOT))
 from cajita_weight_materializer import load_model_state
+from cajita_tokenizer_materializer import load_pretrained_with_compressed_tokenizer
 from transformers import AutoConfig, WhisperForConditionalGeneration, WhisperProcessor
 
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -157,7 +158,7 @@ def smoke_test(audio_path=None, max_new_tokens=4):
         audio, original_rate = load_waveform(audio_path)
     else:
         audio = np.zeros(16000, dtype=np.float32)
-    processor = WhisperProcessor.from_pretrained(ROOT, local_files_only=True)
+    processor = load_pretrained_with_compressed_tokenizer(ROOT, WhisperProcessor, local_files_only=True)
     model = load_candidate()
     inputs = processor(audio, sampling_rate=16000, return_tensors="pt")
     inputs["input_features"] = inputs["input_features"].to(dtype=torch.float32)

@@ -9,6 +9,14 @@ on:
       - "cajita-luna-runtime/command_subdomain_routing.json"
       - "cajita-luna-runtime/CajitadeLuna.md"
       - "cajita-luna-runtime/reproduce_macrodown.py"
+      - "cajita-luna-runtime/cajita_tokenizer_materializer.py"
+      - "cajita-luna-runtime/cajita_task_adapters.py"
+      - "cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py"
+      - "cajita-luna-runtime/3. Transcripción/lowrank_runtime.py"
+      - "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/lowrank_runtime.py"
+      - "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py"
+      - "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py"
+      - "tests/test_cajita_tokenizer_materializer.py"
       - "cajita-luna-runtime/cajita_externalized_packaging.py"
       - "cajita-luna-runtime/cajita_externalized_asset_loader.py"
       - "cajita-luna-runtime/module_registry.json"
@@ -119,8 +127,11 @@ jobs:
           root = Path("cajita-luna-runtime")
           sys.path.insert(0, str(root.resolve()))
           from cajita_externalized_packaging import distribution_contract
+          from cajita_tokenizer_materializer import MANIFEST_NAME as TOKENIZER_MANIFEST_NAME, load_tokenizer_manifest
           externalized_contract = distribution_contract(root)
           excluded_expanded_roots = {item["expanded_relpath"] for item in externalized_contract}
+          tokenizer_manifest = load_tokenizer_manifest(root)
+          compressed_tokenizer_sources = {row["source_path"] for row in tokenizer_manifest.get("entries", []) if row.get("packed")}
           placement_path = root / "EXTERNALIZED_ASSET_PLACEMENT.json"
           archive_placement = json.loads(placement_path.read_text(encoding="utf-8"))
           archive_history = archive_placement.get("factory_reconciliation", {}).get("archives", [])
@@ -222,7 +233,7 @@ jobs:
 
           def runtime_inventory():
               entries = []
-              excluded = {"expanded_trees": sum(item["expanded_bytes"] for item in externalized_contract), "source_only_registry_routing": 0, "historical_build_archives": 0, "generated_manifest": 0}
+              excluded = {"expanded_trees": sum(item["expanded_bytes"] for item in externalized_contract), "source_only_registry_routing": 0, "historical_build_archives": 0, "generated_manifest": 0, "compressed_tokenizer_sources": 0}
               for base, dirs, files in os.walk(root, topdown=True, followlinks=False):
                   base_path = Path(base)
                   kept_dirs = []
@@ -231,7 +242,7 @@ jobs:
                       if directory.is_symlink():
                           raise SystemExit("SYMLINK_IN_RUNTIME:" + str(directory))
                       rel_dir = directory.relative_to(root).as_posix()
-                      if under_expanded_tree(rel_dir):
+                      if name in {".git", "__pycache__", ".pytest_cache"} or under_expanded_tree(rel_dir):
                           continue
                       kept_dirs.append(name)
                   dirs[:] = kept_dirs
@@ -246,8 +257,13 @@ jobs:
                       if name == "MACRODOWN_MANIFEST.json":
                           excluded["generated_manifest"] += size
                           continue
+                      if path.suffix.lower() in {".pyc", ".pyo", ".tmp", ".part"}:
+                          continue
                       if rel in {"module_registry.json", "command_subdomain_routing.json"}:
                           excluded["source_only_registry_routing"] += size
+                          continue
+                      if rel in compressed_tokenizer_sources:
+                          excluded["compressed_tokenizer_sources"] += size
                           continue
                       if rel in build_only_archive_paths:
                           excluded["historical_build_archives"] += size

@@ -3,6 +3,15 @@
 from __future__ import annotations
 import argparse, hashlib, json, time, sys
 from pathlib import Path
+
+_TOKENIZER_RUNTIME_ROOT = next(
+    (parent for parent in Path(__file__).resolve().parents if (parent / "cajita_tokenizer_materializer.py").is_file()),
+    None,
+)
+if _TOKENIZER_RUNTIME_ROOT is None:
+    raise RuntimeError("CAJITA_TOKENIZER_RUNTIME_ROOT_NOT_FOUND")
+sys.path.insert(0, str(_TOKENIZER_RUNTIME_ROOT))
+from cajita_tokenizer_materializer import load_pretrained_with_compressed_tokenizer
 import numpy as np
 import torch
 
@@ -156,7 +165,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     t=time.time()
     model,meta=load_candidate(candidate_dir)
     from transformers import AutoProcessor
-    proc=AutoProcessor.from_pretrained(candidate_dir,local_files_only=True,trust_remote_code=False)
+    proc=load_pretrained_with_compressed_tokenizer(candidate_dir,AutoProcessor,local_files_only=True,trust_remote_code=False)
     # The packaged preprocessor defaults to a 2048-edge resize plus 512-edge
     # image splitting. That can exceed the 1 GiB CPU contract even with splitting
     # disabled. Use one bounded 256px square view and no high-resolution tiles.
