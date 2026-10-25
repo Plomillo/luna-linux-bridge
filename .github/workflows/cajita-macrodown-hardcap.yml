@@ -82,8 +82,62 @@ jobs:
               raise SystemExit("TEN_ASSET_REGISTRY_INVALID")
           if report.get("size_gate") != "PASS" or int(report.get("runtime_bytes_after", cap + 1)) > cap:
               raise SystemExit("PRIOR_RUNTIME_SIZE_GATE_NOT_PASS")
-          if int(report.get("q2_factor_models_promoted", 0)) < 1:
-              raise SystemExit("Q2_FACTOR_PACKING_EVIDENCE_MISSING")
+          # Q2 is a desired state, not necessarily a new mutation in this run.
+          # Existing verified Q2-packed sidecars are valid evidence; promotion-count-only
+          # checks incorrectly reject a runtime where all required factors are already Q2.
+          import hashlib
+          expected_q2 = {
+              "W01_CEREBRO": "1. Cerebro/model.safetensors",
+              "W02_TRANSCRIPTION": "3. Transcripción/model.safetensors",
+              "W03_TRANSLATION": "4. Traductor Inteligente/Traducción general/model.safetensors",
+              "W05_QWEN3": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+          }
+          q2_rows = report.get("q2_factor_results", [])
+          if not isinstance(q2_rows, list) or len(q2_rows) != len(expected_q2):
+              raise SystemExit("Q2_FACTOR_EVIDENCE_SET_INVALID")
+          rows_by_id = {row.get("id"): row for row in q2_rows if isinstance(row, dict)}
+          if set(rows_by_id) != set(expected_q2):
+              raise SystemExit("Q2_FACTOR_EVIDENCE_IDS_INVALID")
+          manifest_path = root / "CAJITA_RUNTIME_V1" / "weights_manifest.json"
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          manifest_by_path = {item.get("path"): item for item in manifest.get("artifacts", [])}
+          promoted_count = 0
+          for model_id, rel in expected_q2.items():
+              row = rows_by_id[model_id]
+              if row.get("path") != rel:
+                  raise SystemExit("Q2_FACTOR_EVIDENCE_PATH_MISMATCH:" + model_id)
+              status = row.get("status")
+              if status not in {"ALREADY_Q2_PACKED", "PROMOTED_Q2_BLOCKWISE"}:
+                  raise SystemExit("Q2_FACTOR_PACKING_EVIDENCE_MISSING:" + model_id + ":" + str(status))
+              if status == "PROMOTED_Q2_BLOCKWISE":
+                  promoted_count += 1
+                  if int(row.get("saved_bytes", 0)) <= 0:
+                      raise SystemExit("Q2_PROMOTION_WITHOUT_SIZE_REDUCTION:" + model_id)
+              model_path = root / rel
+              sidecar_path = model_path.with_name(model_path.name + ".q4.json")
+              if not model_path.is_file() or not sidecar_path.is_file():
+                  raise SystemExit("Q2_MODEL_OR_SIDECAR_MISSING:" + model_id)
+              actual_bytes = model_path.stat().st_size
+              actual_sha256 = hashlib.sha256(model_path.read_bytes()).hexdigest()
+              artifact = manifest_by_path.get(rel)
+              if not isinstance(artifact, dict):
+                  raise SystemExit("Q2_WEIGHT_MANIFEST_ENTRY_MISSING:" + model_id)
+              if int(row.get("candidate_bytes", -1)) != actual_bytes or int(artifact.get("bytes", -1)) != actual_bytes:
+                  raise SystemExit("Q2_MODEL_SIZE_EVIDENCE_MISMATCH:" + model_id)
+              if artifact.get("sha256") != actual_sha256:
+                  raise SystemExit("Q2_MODEL_SHA256_EVIDENCE_MISMATCH:" + model_id)
+              sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+              tensors = sidecar.get("tensors", [])
+              q2_pass = sidecar.get("q2_factor_pass", {})
+              if not tensors or any(t.get("encoding") != "UNSIGNED_INT2_ASYMMETRIC" for t in tensors):
+                  raise SystemExit("Q2_SIDECAR_ENCODING_INVALID:" + model_id)
+              if q2_pass.get("packed_tensor_count") != len(tensors):
+                  raise SystemExit("Q2_SIDECAR_TENSOR_COUNT_MISMATCH:" + model_id)
+              if sidecar.get("candidate_sha256") != actual_sha256:
+                  raise SystemExit("Q2_SIDECAR_MODEL_HASH_MISMATCH:" + model_id)
+          if int(report.get("q2_factor_models_promoted", 0)) != promoted_count:
+              raise SystemExit("Q2_PROMOTION_COUNT_MISMATCH")
+          print("Q2_FACTOR_PACKING_EVIDENCE=PASS verified_models=4 new_promotions=" + str(promoted_count))
 
           placement["status"] = "TEN_ASSETS_COMPACTED_RUNTIME_SIZE_GATE_PASS"
           placement["runtime_size_gate"] = {
