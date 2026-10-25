@@ -170,9 +170,9 @@ def smoke(root,d,timeout):
 
 def main():
  ap=argparse.ArgumentParser(description=__doc__)
- ap.add_argument("command",choices=("status","selftest","audit-weights","smoke","smoke-all","routes","plan","execute-task"))
+ ap.add_argument("command",choices=("status","selftest","audit-weights","smoke","smoke-all","routes","plan","execute-task","materialize-asset"))
  ap.add_argument("--root"); ap.add_argument("--domain"); ap.add_argument("--timeout",type=int,default=600)
- ap.add_argument("--request"); ap.add_argument("--route-command"); ap.add_argument("--trace-file"); ap.add_argument("--request-json")
+ ap.add_argument("--request"); ap.add_argument("--route-command"); ap.add_argument("--trace-file"); ap.add_argument("--request-json"); ap.add_argument("--asset-id")
  a=ap.parse_args()
  if a.command=="execute-task":
   if not a.request_json: ap.error("execute-task requires --request-json")
@@ -190,6 +190,12 @@ def main():
  try:
   root=root_for(a.root)
   if not 1<=a.timeout<=7200: raise ValueError("TIMEOUT_OUT_OF_RANGE")
+  if a.command=="materialize-asset":
+   if not a.asset_id: raise ValueError("MATERIALIZE_ASSET_ID_REQUIRED")
+   from cajita_externalized_packaging import materialize_asset
+   result=materialize_asset(root,a.asset_id)
+   print(json.dumps(result,indent=2,ensure_ascii=False))
+   return 0
   if a.command in {"status","selftest"}:
    r=selftest(root); r["operation"]=a.command
    print(json.dumps(r,indent=2,ensure_ascii=False)); return 0 if r["status"]=="PASS" else 2
