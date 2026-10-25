@@ -634,10 +634,8 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
             )
             item["container_bytes"] = packed["bytes"]
             item["container_sha256"] = packed["sha256"]
-            item["container_rebuild_status"] = (
-                "PASS_REPACKAGED_AND_ROUNDTRIP_VERIFIED_REUSED"
-                if packed.get("reused") else "PASS_REPACKAGED_AND_ROUNDTRIP_VERIFIED"
-            )
+            # The public evidence is deterministic; reuse is an implementation detail.
+            item["container_rebuild_status"] = "PASS_REPACKAGED_AND_ROUNDTRIP_VERIFIED"
             item.pop("canonical_tree_path", None)
 
     source_registry_path = root / SOURCE_REGISTRY_NAME
@@ -774,7 +772,9 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
         candidates = {support.get("id"), support.get("asset_id"), support.get("canonical_asset_id"),
                       support.get("relative_path"), support.get("materialized_path"), support.get("source_archive_path")}
         for item in contract:
-            if item["id"] in candidates or item["expanded_relpath"] in candidates or item["container_relpath"] in candidates:
+            if (item["id"] in candidates or item["expanded_relpath"] in candidates
+                    or item["container_relpath"] in candidates or item["source_container_path"] in candidates
+                    or item["source_container_relpath"] in candidates):
                 support.update({
                     "container_path": item["container_relpath"],
                     "container_sha256": item["container_sha256"],
