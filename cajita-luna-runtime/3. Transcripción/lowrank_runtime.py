@@ -172,7 +172,14 @@ def smoke_test(audio_path=None, max_new_tokens=4):
     model = load_candidate()
     inputs = processor(audio, sampling_rate=16000, return_tensors="pt")
     inputs["input_features"] = inputs["input_features"].to(dtype=torch.float32)
-    generate_kwargs = {"max_new_tokens": int(max_new_tokens), "do_sample": False}
+    generate_kwargs = {
+        "max_new_tokens": int(max_new_tokens),
+        "min_new_tokens": min(3, int(max_new_tokens)),
+        "do_sample": False,
+        "repetition_penalty": 1.08,
+        "no_repeat_ngram_size": 3,
+        "renormalize_logits": True,
+    }
     if audio_path:
         # This candidate carries a legacy forced_decoder_ids value in its
         # generation config. Transformers rejects passing language/task while
