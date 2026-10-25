@@ -18,6 +18,7 @@ if _RUNTIME_ROOT is None:
     raise RuntimeError("CAJITA_RUNTIME_ROOT_NOT_FOUND")
 sys.path.insert(0, str(_RUNTIME_ROOT))
 from cajita_weight_materializer import load_model_state
+from cajita_tokenizer_materializer import load_pretrained_with_compressed_tokenizer
 from transformers import AutoTokenizer, GptOssConfig, GptOssForCausalLM
 from transformers.models.gpt_oss.modeling_gpt_oss import GptOssExperts, GptOssTopKRouter
 
@@ -185,7 +186,7 @@ def smoke_test(generate: bool = False, prompt: str = "Test", max_new_tokens: int
     if isinstance(max_new_tokens, bool) or not 1 <= int(max_new_tokens) <= 128:
         raise ValueError("MAX_NEW_TOKENS_OUT_OF_RANGE")
     started = time.monotonic()
-    tokenizer = AutoTokenizer.from_pretrained(ROOT, local_files_only=True)
+    tokenizer = load_pretrained_with_compressed_tokenizer(ROOT, AutoTokenizer, local_files_only=True)
     model = build_model()
     enc = tokenizer(prompt, return_tensors="pt")
     with torch.inference_mode():
