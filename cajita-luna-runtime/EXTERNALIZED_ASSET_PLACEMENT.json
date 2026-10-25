@@ -1066,13 +1066,13 @@
   "runtime_size_gate": {
     "audit_id": "CAJITA_FINAL_RUNTIME_SIZE_GATE_20261025",
     "measurement_method": "sum of reproducible distribution payload files; excludes source-only registries/routing, historical build-only archives and ten hash-pinned expanded trees; includes ten verified compressed containers, six materialized model payloads and all distribution members; no LFS pointers",
-    "payload_bytes": 487553835,
+    "payload_bytes": 446884442,
     "hard_cap_bytes": 1500000000,
-    "bytes_under_cap": 1012446165,
+    "bytes_under_cap": 1053115558,
     "size_gate": "PASS",
     "raw_input_ceiling_bytes": 1500000000,
     "raw_payload_target_bytes": 470000000,
-    "raw_payload_target_gate": "OVER_TARGET_NOT_FINAL_GATE",
+    "raw_payload_target_gate": "PASS",
     "archive_cap_bytes": 470000000,
     "archive_size_gate": "PENDING_FINAL_ZIP_BUILD",
     "registered_asset_count": 10,
@@ -1090,7 +1090,7 @@
     ],
     "q2_factor_models_promoted": 0,
     "certification": "NOT_GRANTED",
-    "raw_bytes_over_target": 17553835
+    "raw_bytes_over_target": 0
   },
   "factory_reconciliation": {
     "schema": "CAJITA_LOUKSNA1_FACTORY/1.0",

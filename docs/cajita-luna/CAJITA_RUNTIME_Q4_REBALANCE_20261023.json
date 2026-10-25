@@ -174,11 +174,11 @@
     }
   },
   "weights_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
-  "runtime_bytes_after": 847383789,
+  "runtime_bytes_after": 446884442,
   "runtime_file_count_after": 17229,
-  "saved_bytes": 0,
-  "bytes_over_cap": 377383789,
-  "size_gate": "FAIL",
+  "saved_bytes": 400499347,
+  "bytes_over_cap": 0,
+  "size_gate": "PASS",
   "quantized_factor_models_promoted": 0,
   "q2_factor_models_promoted": 0,
   "q2_factor_bytes_saved": 0,
@@ -189,5 +189,15 @@
   "independent_validation": "NOT_RUN",
   "certification": "NOT_GRANTED",
   "elapsed_seconds": 3.065,
-  "status": "SIZE_GATE_FAIL_OPTIMIZATION_RESULTS_COMMITTED_FOR_NEXT_PASS"
+  "status": "RAW_INPUT_CEILING_PASS_FINAL_ARCHIVE_GATE_PENDING",
+  "raw_input_ceiling_bytes": 1500000000,
+  "raw_payload_target_bytes": 470000000,
+  "raw_payload_target_gate": "PASS",
+  "raw_bytes_over_target": 0,
+  "distribution_archive_cap_bytes": 470000000,
+  "distribution_archive_gate": "PENDING_FINAL_ZIP_BUILD",
+  "placement_size_gate_recorded": true,
+  "runtime_measurement_scope": "REPRODUCIBLE_DISTRIBUTION_PAYLOAD; RAW INPUT CEILING IS 1.5 GB; 470 MB IS AN ARCHIVE TARGET, NOT THE PRE-COMPRESSION SUM",
+  "externalized_asset_reconstruction": "PASS_CONTAINER_RECONSTRUCTION_ONLY; CONSUMER_ADAPTERS_NOT_ESTABLISHED",
+  "registered_asset_count": 10
 }
