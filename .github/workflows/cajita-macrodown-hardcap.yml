@@ -47,11 +47,11 @@ jobs:
         run: |
           set -euo pipefail
           git lfs install
-          LFS_INCLUDE='cajita-luna-runtime/1. Cerebro/model.safetensors,cajita-luna-runtime/3. Transcripción/model.safetensors,cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors,cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin,cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors,cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx'
+          LFS_INCLUDE='cajita-luna-runtime/1. Cerebro/model.safetensors,cajita-luna-runtime/3. Transcripción/model.safetensors,cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors,cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin,cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors,cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx,cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z,cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z,cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z,cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z,cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z,cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z,cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z,cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z,cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z,cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z'
           git lfs pull --include="$LFS_INCLUDE" --exclude="" origin main
           python - <<'PY'
           from pathlib import Path
-          files = [
+          model_files = [
               "cajita-luna-runtime/1. Cerebro/model.safetensors",
               "cajita-luna-runtime/3. Transcripción/model.safetensors",
               "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors",
@@ -59,13 +59,26 @@ jobs:
               "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
               "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
           ]
-          for item in files:
-              p = Path(item)
-              if not p.is_file() or p.stat().st_size < 4096:
-                  raise SystemExit("LFS_PAYLOAD_NOT_MATERIALIZED:" + item)
-              if p.read_bytes()[:80].startswith(b"version https://git-lfs.github.com/spec/v1"):
-                  raise SystemExit("LFS_POINTER_REMAINS:" + item)
-          print("CAJITA_LFS_MATERIALIZATION=PASS files=6")
+          container_files = [
+              "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
+              "cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z",
+              "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z",
+              "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z",
+              "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z",
+              "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z",
+              "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z",
+              "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z",
+              "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z",
+              "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z",
+          ]
+          for group, files in (("MODEL", model_files), ("CONTAINER", container_files)):
+              for item in files:
+                  p = Path(item)
+                  if not p.is_file() or p.stat().st_size < 4096:
+                      raise SystemExit(f"LFS_{group}_PAYLOAD_NOT_MATERIALIZED:" + item)
+                  if p.read_bytes()[:80].startswith(b"version https://git-lfs.github.com/spec/v1"):
+                      raise SystemExit(f"LFS_{group}_POINTER_REMAINS:" + item)
+          print("CAJITA_LFS_MATERIALIZATION=PASS models=6 containers=10") 
           PY
 
       - name: Verify compressed externalized assets and prepare distribution registry
