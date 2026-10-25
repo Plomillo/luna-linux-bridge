@@ -1,0 +1,109 @@
+name: Cajita compact source reconstruction contract
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/cajita-compact-source-regression.yml"
+      - "cajita-luna-runtime/module_registry.json"
+      - "cajita-luna-runtime/CAJITA_DISTRIBUTION_MODULE_REGISTRY.json"
+      - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
+      - "cajita-luna-runtime/cajita_externalized_packaging.py"
+      - "cajita-luna-runtime/cajita_externalized_asset_loader.py"
+      - "cajita-luna-runtime/reproduce_macrodown.py"
+      - "cajita-luna-runtime/cajita_tokenizer_materializer.py"
+      - "tests/test_cajita_axiom_graph_audit.py"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cajita-compact-source-regression.yml"
+      - "cajita-luna-runtime/module_registry.json"
+      - "cajita-luna-runtime/CAJITA_DISTRIBUTION_MODULE_REGISTRY.json"
+      - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
+      - "cajita-luna-runtime/cajita_externalized_packaging.py"
+      - "cajita-luna-runtime/cajita_externalized_asset_loader.py"
+      - "cajita-luna-runtime/reproduce_macrodown.py"
+      - "cajita-luna-runtime/cajita_tokenizer_materializer.py"
+      - "tests/test_cajita_axiom_graph_audit.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cajita-compact-source-regression-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-contract-and-roundtrip:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout without blanket LFS materialization
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: false
+
+      - name: Install safe archive extractor
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends p7zip-full unzip
+
+      - name: Compile the source contract and test harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            cajita-luna-runtime/cajita_externalized_packaging.py \
+            cajita-luna-runtime/cajita_externalized_asset_loader.py \
+            cajita-luna-runtime/reproduce_macrodown.py \
+            cajita-luna-runtime/cajita_tokenizer_materializer.py \
+            tools/cajita_axiom_graph_audit.py \
+            tests/test_cajita_axiom_graph_audit.py
+
+      - name: Run focused axiom and source-materialization tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=tools:cajita-luna-runtime python -m unittest discover -s tests -p 'test_cajita_axiom_graph_audit.py' -v
+
+      - name: Reconstruct missing source trees and derive the distribution registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          python cajita-luna-runtime/reproduce_macrodown.py --root cajita-luna-runtime --prepare-distribution-registry
+
+      - name: Verify all ten container-to-tree round trips
+        shell: bash
+        run: |
+          set -euo pipefail
+          python cajita-luna-runtime/cajita_externalized_asset_loader.py verify-all --root cajita-luna-runtime
+
+      - name: Assert source registry is preserved and excluded from the package profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("cajita-luna-runtime")
+          source = json.loads((root / "module_registry.json").read_text(encoding="utf-8"))
+          distribution = json.loads((root / "CAJITA_DISTRIBUTION_MODULE_REGISTRY.json").read_text(encoding="utf-8"))
+          assert source["schema"] == "CAJITA_MODULE_REGISTRY/1.0"
+          assert len(source["modules"]) == 28
+          assert source["canonical_target_module_count"] == 21
+          assert len(source["target_modules"]) == 21
+          assert distribution["source_materialized_module_count"] == 28
+          assert distribution["represented_module_count"] == 28
+          assert distribution["externalized_module_count"] == 10
+          assert distribution["nested_externalized_module_count"] == 11
+          profile = distribution["distribution_profile"]
+          assert profile["source_only_registry_excluded"] == "module_registry.json"
+          assert profile["expanded_tree_file_bytes_embedded"] is False
+          assert profile["compressed_container_bytes_embedded"] is True
+          assert distribution["certification"] == "NOT_GRANTED"
+          print("COMPACT_SOURCE_REGISTRY_PRESERVED=PASS; distribution source-only exclusion and 10+11+7 registry partition verified")
+          PY
