@@ -345,9 +345,11 @@ def _registered_runtime_engine_scopes(
             elif file_path.exists():
                 raise RuntimeError("RUNTIME_TARGET_ADAPTER_REQUIRED_FILE_NOT_REGULAR:" + target_id + ":" + file_rel)
             else:
-                # Only a missing path with an exact placement-registry identity
-                # may be satisfied by a registered compact container outside
-                # the runtime tree. Arbitrary missing files still fail closed.
+                # Without a repository staging root, or without an exact
+                # externalized identity, missing files retain the original
+                # fail-closed required-file result.
+                if repo_root is None:
+                    raise RuntimeError("RUNTIME_TARGET_ADAPTER_REQUIRED_FILE_MISSING_OR_UNSAFE:" + target_id + ":" + file_rel)
                 source_files.append(_externalized_runtime_file_identity(
                     runtime, logical_file, repo_root, target_id
                 ))
