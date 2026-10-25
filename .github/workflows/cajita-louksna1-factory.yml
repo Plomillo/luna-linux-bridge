@@ -235,6 +235,13 @@ jobs:
       - name: Install pinned test-only YAML parser
         run: python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==44.0.3
 
+      - name: Install archive extractor for independent externalized reconstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full
+
       - name: Independently recompute package, document, modules and six weight identities
         shell: bash
         env:
@@ -242,7 +249,7 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
-          import hashlib, json, os, zipfile
+          import hashlib, json, os, subprocess, sys, zipfile
           from pathlib import Path
           root=Path("candidate")
           def canonical_tree_rows(directory):
@@ -344,17 +351,32 @@ jobs:
           assert registry_path.is_file() and not registry_path.is_symlink(), "DISTRIBUTION_MODULE_REGISTRY_MISSING"
           registry=json.loads(registry_path.read_text())
           assert registry["schema"]=="CAJITA_MODULE_REGISTRY/1.0"
-          if registry_path.name=="CAJITA_DISTRIBUTION_MODULE_REGISTRY.json":
-            profile=registry["distribution_profile"]
-            assert profile["policy"]=="PACK_CONTAINER_ONCE_AND_RECONSTRUCT_EXPANDED_TREE_ON_DEMAND"
-            assert profile["certification"]=="NOT_GRANTED"
-            externalized=registry.get("externalized_modules",[])
-            assert len(externalized)==10 and len({row["canonical_asset_id"] for row in externalized})==10
-            for row in externalized:
-              container=runtime/row["container_path"]
-              assert container.is_file() and not container.is_symlink(), "EXTERNALIZED_CONTAINER_MISSING:"+row["canonical_asset_id"]
-              payload=container.read_bytes()
-              assert len(payload)==int(row["container_bytes"]) and hashlib.sha256(payload).hexdigest()==row["container_sha256"], "EXTERNALIZED_CONTAINER_HASH_OR_SIZE:"+row["canonical_asset_id"]
+          assert registry_path.name=="CAJITA_DISTRIBUTION_MODULE_REGISTRY.json", "SOURCE_REGISTRY_NOT_ALLOWED_IN_COMPACT_DISTRIBUTION"
+          profile=registry["distribution_profile"]
+          assert profile["policy"]=="PACK_CONTAINER_ONCE_AND_RECONSTRUCT_EXPANDED_TREE_ON_DEMAND"
+          assert profile["certification"]=="NOT_GRANTED"
+          externalized=registry.get("externalized_modules",[])
+          assert len(externalized)==10 and len({row["canonical_asset_id"] for row in externalized})==10
+          for row in externalized:
+            container=runtime/row["container_path"]
+            assert container.is_file() and not container.is_symlink(), "EXTERNALIZED_CONTAINER_MISSING:"+row["canonical_asset_id"]
+            payload=container.read_bytes()
+            assert len(payload)==int(row["container_bytes"]) and hashlib.sha256(payload).hexdigest()==row["container_sha256"], "EXTERNALIZED_CONTAINER_HASH_OR_SIZE:"+row["canonical_asset_id"]
+          # The package intentionally omits expanded externalized trees. Rebuild
+          # those exact trees from the hash-pinned containers before recomputing
+          # target-level tree counts and hashes; never weaken the frozen checks.
+          asset_ids=sorted((row["canonical_asset_id"] for row in externalized))
+          assert set(asset_ids)=={asset["id"] for asset in assets}, "EXTERNALIZED_REGISTRY_PLACEMENT_ID_SET"
+          materialization_results=[]
+          for asset_id in asset_ids:
+            command=[sys.executable,str(runtime/"cajita_runtime.py"),"materialize-asset","--asset-id",asset_id,"--root",str(runtime)]
+            result=subprocess.run(command,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=1800,check=False)
+            if result.returncode != 0:
+              raise AssertionError("G23_EXTERNALIZED_MATERIALIZATION:"+asset_id+":"+result.stderr[-3000:]+result.stdout[-1000:])
+            evidence=json.loads(result.stdout)
+            assert evidence.get("id")==asset_id and evidence.get("status") in {"PASS_MATERIALIZED_FROM_HASH_PINNED_CONTAINER","ALREADY_MATERIALIZED_EXACT"}, "G23_EXTERNALIZED_MATERIALIZATION_STATUS:"+asset_id
+            materialization_results.append({"id":asset_id,"status":evidence["status"],"bytes":evidence.get("bytes"),"file_count":evidence.get("file_count"),"tree_sha256":evidence.get("tree_sha256")})
+          print(json.dumps({"g23_externalized_reconstruction":"PASS","asset_count":len(materialization_results),"assets":materialization_results},ensure_ascii=False))
           assert registry["materialized_module_count"]>=1
           assert registry["canonical_target_module_count"] == 21
           assert len(registry["target_modules"]) == 21
