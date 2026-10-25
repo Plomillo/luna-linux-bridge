@@ -546,7 +546,7 @@ def main():
   registry=json.loads((runtime/"module_registry.json").read_text(encoding="utf-8"))
   if registry.get("canonical_target_module_count")!=21 or len(registry.get("target_modules",[]))!=21:
    raise RuntimeError("CANONICAL_TARGET_MODULE_COUNT_MISMATCH")
-  if registry.get("axiom_interdisciplinary_binding",{}).get("state")!="SOURCE_BOUND_GRAPH_EXECUTION_PENDING":
+  if registry.get("axiom_interdisciplinary_binding",{}).get("state")!="SOURCE_BOUND_BLOCK_ENGINE_GRAPH_BOUND":
    raise RuntimeError("AXIOM_INTERDISCIPLINARY_BINDING_MISSING")
   pkg=out/"CAJITA_LUNA_RUNTIME_V10.macrodown"
   builder=subprocess.run([sys.executable,str(runtime/"reproduce_macrodown.py"),"--root",str(runtime),"--output",str(pkg),"--raw-cap-bytes",str(a.raw_cap_bytes),"--combined-cap-bytes",str(a.combined_cap_bytes),"--companion-bytes",str(doc.stat().st_size),"--companion-sha256",sha_file(doc)],text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=1800)
