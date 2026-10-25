@@ -143,7 +143,17 @@ def smoke_test(generate=False, prompt="Test", max_new_tokens=1):
                     break
         gen_tok = tokenizer(rendered, return_tensors="pt")
         with torch.inference_mode():
-            generated = model.generate(gen_tok["input_ids"], attention_mask=gen_tok.get("attention_mask"), max_new_tokens=int(max_new_tokens), do_sample=False, use_cache=False)
+            generated = model.generate(
+                gen_tok["input_ids"],
+                attention_mask=gen_tok.get("attention_mask"),
+                max_new_tokens=int(max_new_tokens),
+                min_new_tokens=min(3, int(max_new_tokens)),
+                do_sample=False,
+                repetition_penalty=1.12,
+                no_repeat_ngram_size=3,
+                renormalize_logits=True,
+                use_cache=False,
+            )
         count = int(generated.shape[-1] - gen_tok["input_ids"].shape[-1])
         if count < 1: raise RuntimeError("MODEL_GENERATED_NO_NEW_TOKENS")
         result.update({"generation_status":"PASS_GENERATE","generated_token_count":count,
