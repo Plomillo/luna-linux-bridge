@@ -17,7 +17,7 @@ if _RUNTIME_ROOT is None:
 sys.path.insert(0, str(_RUNTIME_ROOT))
 from cajita_weight_materializer import load_model_state
 from cajita_tokenizer_materializer import load_pretrained_with_compressed_tokenizer
-from transformers import AutoConfig, WhisperForConditionalGeneration, WhisperProcessor
+from transformers import AutoConfig, GenerationConfig, WhisperForConditionalGeneration, WhisperProcessor
 
 ROOT = pathlib.Path(__file__).resolve().parent
 
@@ -121,6 +121,16 @@ def load_candidate():
     missing,unexpected=model.load_state_dict(weights,strict=True,assign=True)
     if missing or unexpected:
         raise RuntimeError("STATE_MAPPING_MISMATCH:"+json.dumps({"missing":missing[:30],"unexpected":unexpected[:30]}))
+    # AutoConfig supplies architecture metadata but not the full generation
+    # control maps required by current Transformers Whisper decoding. Load the
+    # exact, hash-bound generation_config.json shipped with this checkpoint so
+    # lang_to_id/task_to_id are present. The selected runtime task below removes
+    # the legacy forced_decoder_ids only after this complete config is loaded.
+    generation_config = GenerationConfig.from_pretrained(ROOT, local_files_only=True)
+    for field in ("lang_to_id", "task_to_id"):
+        if not isinstance(getattr(generation_config, field, None), dict) or not getattr(generation_config, field):
+            raise RuntimeError("WHISPER_GENERATION_CONFIG_MAP_MISSING:" + field)
+    model.generation_config = generation_config
     model = model.float()
     model.eval()
     return model
