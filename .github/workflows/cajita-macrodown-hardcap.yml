@@ -112,6 +112,7 @@ jobs:
           python - <<'PY'
           import json
           import os
+          import subprocess
           import sys
           from pathlib import Path
 
@@ -211,8 +212,7 @@ jobs:
 
           def runtime_inventory():
               entries = []
-              excluded = {"expanded_trees": 0, "source_only_registry_routing": 0, "historical_build_archives": 0, "generated_manifest": 0}
-              excluded_archive_bytes = 0
+              excluded = {"expanded_trees": sum(item["expanded_bytes"] for item in externalized_contract), "source_only_registry_routing": 0, "historical_build_archives": 0, "generated_manifest": 0}
               for base, dirs, files in os.walk(root, topdown=True, followlinks=False):
                   base_path = Path(base)
                   kept_dirs = []
@@ -241,10 +241,8 @@ jobs:
                           continue
                       if rel in build_only_archive_paths:
                           excluded["historical_build_archives"] += size
-                          excluded_archive_bytes += size
                           continue
                       if under_expanded_tree(rel):
-                          excluded["expanded_trees"] += size
                           continue
                       entries.append({"path": rel, "bytes": size, "top_level": rel.split("/", 1)[0], "suffix": path.suffix.lower() or "(none)"})
               entries.sort(key=lambda item: item["path"].encode("utf-8"))
@@ -267,7 +265,7 @@ jobs:
                   "included_payload_bytes": sum(item["bytes"] for item in entries),
                   "included_file_count": len(entries),
                   "excluded_bytes_by_policy": excluded,
-                  "excluded_historical_archive_bytes": sum(item["bytes"] for item in entries if item["path"] in build_only_archive_paths),
+                  "excluded_historical_archive_bytes": excluded.get("historical_build_archives", 0),
                   "bytes_by_top_level": [{"path": key, "bytes": value} for key, value in sorted(by_top.items(), key=lambda kv: (-kv[1], kv[0]))],
                   "bytes_by_suffix": [{"suffix": key, "bytes": value} for key, value in sorted(by_suffix.items(), key=lambda kv: (-kv[1], kv[0]))],
                   "largest_50_included_files": sorted(entries, key=lambda item: (-item["bytes"], item["path"]))[:50],
