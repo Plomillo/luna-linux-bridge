@@ -122,8 +122,22 @@ class CajitaRouterTests(unittest.TestCase):
 
     def test_every_selected_asset_has_activation_gates_and_no_direct_execution(self):
         result = build_plan("/play AE integra el runtime y valida la arquitectura")
+        self.assertTrue(result["selected_support_assets"])
         for asset in result["selected_support_assets"]:
-            if asset.get("materialized_path"):
+            if asset.get("container_retained_in_distribution"):
+                # In a compact distribution the verified .7z is present, while
+                # its expanded tree is absent until an explicit materialization.
+                self.assertFalse(asset.get("materialized_path"))
+                self.assertEqual(asset["activation_status"], "MAPPED_CONTAINER_NOT_ACTIVATED")
+                self.assertFalse(asset["archive_removed_from_runtime"])
+                self.assertEqual(asset["path"], asset["container_path"])
+                self.assertEqual(asset["bytes"], asset["container_bytes"])
+                self.assertEqual(asset["sha256"], asset["container_sha256"])
+                self.assertIn("verify-container-sha256", asset["activation_requirements"])
+                self.assertIn("verify-expanded-tree-sha256-before-materialization", asset["activation_requirements"])
+                self.assertEqual(len(asset["container_sha256"]), 64)
+                self.assertEqual(len(asset["expanded_tree_sha256"]), 64)
+            elif asset.get("materialized_path"):
                 self.assertEqual(asset["activation_status"], "MATERIALIZED_NOT_FUNCTIONALLY_VALIDATED")
                 self.assertTrue(asset["archive_removed_from_runtime"])
             else:
