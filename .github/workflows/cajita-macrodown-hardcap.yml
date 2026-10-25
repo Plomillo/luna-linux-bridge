@@ -9,6 +9,9 @@ on:
       - "cajita-luna-runtime/command_subdomain_routing.json"
       - "cajita-luna-runtime/CajitadeLuna.md"
       - "cajita-luna-runtime/reproduce_macrodown.py"
+      - "cajita-luna-runtime/cajita_externalized_packaging.py"
+      - "cajita-luna-runtime/cajita_externalized_asset_loader.py"
+      - "cajita-luna-runtime/module_registry.json"
       - "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json"
       - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
       - "cajita-luna-runtime/2. Orquestación/Orquestador/punto.json"
@@ -397,7 +400,7 @@ jobs:
               "inventory": full_inventory,
               "known_unresolved_gates": [
                   "121 external registry entries report operability/dependencies UNVERIFIED; external registered bytes are not part of the bundled distribution unless separately materialized.",
-                  "Ten-asset expansion workflow previously aborted with DESTINATION_EXISTS_FAIL_CLOSED:APACHE_JENA_6_2_0; no native execution or full functional integration is inferred.",
+                  "Ten compact containers are verified to reconstruct their hash-pinned materialized trees in isolation; consumer adapters, native execution smoke, and full functional integration remain unproven.",
                   "Model quality equivalence, independent validation, and BTX verse-level equivalence remain unproven."
               ],
               "certification": "NOT_GRANTED"
@@ -417,6 +420,7 @@ jobs:
           git add -- \
             "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json" \
             "cajita-luna-runtime/MACRODOWN_MANIFEST.json" \
+            "cajita-luna-runtime/CAJITA_DISTRIBUTION_MODULE_REGISTRY.json" \
             "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json" \
             "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json" \
             "docs/cajita-luna/CAJITA_INVENTORY_AUDIT_20261024.json"
