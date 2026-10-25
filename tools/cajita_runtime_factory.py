@@ -9,7 +9,8 @@ from cajita_architecture_binding import register_architecture_binding
 
 SCHEMA = "CAJITA_LOUKSNA1_FACTORY/1.0"
 RAW_CAP = 1_500_000_000
-COMBINED_CAP = 470_000_000
+RUNTIME_ARCHIVE_CAP = 470_000_000
+COMBINED_CAP = 490_000_000
 MATERIALIZATION_SOURCE_COMMIT = "f2771dd76c2c99967bbf1f7b032f8e6d15b0e387"
 ARCHIVE_SUFFIXES = {".zip", ".7z"}
 WEIGHT_PATHS = (
@@ -569,7 +570,10 @@ def main():
     content=z.read(name)
     if len(content)!=expected["bytes"] or sha_bytes(content)!=expected["sha256"]:
      raise RuntimeError("EXTERNALIZED_ARCHIVE_CONTENT_IDENTITY_MISMATCH:"+expected["id"]+":"+name)
-  combined=pkg.stat().st_size+doc.stat().st_size
+  archive_bytes=pkg.stat().st_size
+  if archive_bytes>RUNTIME_ARCHIVE_CAP:
+   raise RuntimeError(f"CAJITA_RUNTIME_ARCHIVE_OVER_CAP:{archive_bytes}>{RUNTIME_ARCHIVE_CAP}")
+  combined=archive_bytes+doc.stat().st_size
   if combined>a.combined_cap_bytes: raise RuntimeError(f"COMBINED_DISTRIBUTION_OVER_CAP:{combined}>{a.combined_cap_bytes}")
   release={"schema":"LOUKSNA1_RELEASE_MANIFEST/1.0","source_commit":report["source_commit"],"generated_at_utc":utc(),
    "protected_architecture":{"path":"LOUKSNAMEJORADA.md","sha256":report["louksna1"]["source_sha256"],"modified":False,"prefix_byte_exact":True},
@@ -577,8 +581,9 @@ def main():
    "runtime_distribution":{"path":pkg.name,"bytes":pkg.stat().st_size,"sha256":sha_file(pkg)},
    "externalized_archives":[{"id":meta["id"],"path":name,"bytes":meta["bytes"],"sha256":meta["sha256"]} for name,meta in externalized_archives.items()],
    "externalized_archive_contract_status":"PASS_EXACTLY_TEN_REGISTERED_SHA256_PINNED_7Z_CONTAINERS",
+   "cajita_runtime_archive":{"path":pkg.name,"bytes":archive_bytes,"cap_bytes":RUNTIME_ARCHIVE_CAP,"status":"PASS"},
    "combined_distribution":{"bytes":combined,"cap_bytes":a.combined_cap_bytes,"status":"PASS"},
-   "axiom_interdisciplinary_binding":{"path":report["axiom_interdisciplinary_binding"]["binding_path"],"sha256":report["axiom_interdisciplinary_binding"]["binding_sha256"],"target_module_count":report["axiom_interdisciplinary_binding"]["target_module_count"],"declared_materialized_axioms":11757,"declared_historical_gaps":657,"block_count":134,"framework_count":18,"source_binding":"PASS_PENDING_GRAPH_EXECUTION"},
+   "axiom_interdisciplinary_binding":{"path":report["axiom_interdisciplinary_binding"]["binding_path"],"sha256":report["axiom_interdisciplinary_binding"]["binding_sha256"],"target_module_count":report["axiom_interdisciplinary_binding"]["target_module_count"],"declared_materialized_axioms":11757,"declared_historical_gaps":657,"block_count":134,"framework_count":18,"source_binding":"PASS_STRUCTURAL_BLOCK_ROUTING_ONLY"},
    "gates":{"G23":"NOT_PERFORMED","G24":"NOT_GRANTED"},"global_certification":"NOT_GRANTED",
    "functional_scope":"MATERIALIZATION_HASHES_STRUCTURE_PACKAGE_CRC_PENDING_NATIVE_TASK_ADAPTERS_AND_HARDWARE_SMOKE",
    "status":"BUILT_CANDIDATE_PENDING_G23_G24"}
