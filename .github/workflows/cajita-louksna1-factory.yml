@@ -24,6 +24,8 @@ on:
       - "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py"
       - "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py"
       - "cajita-luna-runtime/reproduce_macrodown.py"
+      - "cajita-luna-runtime/cajita_externalized_packaging.py"
+      - "cajita-luna-runtime/cajita_externalized_asset_loader.py"
       - "integrations/kestra/flows/21-louksna1-release-audit.yml"
       - "integrations/kestra/validate.py"
   workflow_dispatch:
