@@ -1,0 +1,75 @@
+name: LOUKSNAPG bundle branch validation
+
+on:
+  push:
+    branches:
+      - "louksnapg/**"
+    paths:
+      - ".github/workflows/louksnapg-bundle-ci.yml"
+      - "tools/louksnapg_bundle.py"
+      - "tools/louksnapg_independent_validator.py"
+      - "tests/test_louksnapg_bundle.py"
+      - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/louksnapg-bundle-ci.yml"
+      - "tools/louksnapg_bundle.py"
+      - "tools/louksnapg_independent_validator.py"
+      - "tests/test_louksnapg_bundle.py"
+      - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg-branch-ci-\${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  unit-and-contract-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact branch commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: \${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile LOUKSNAPG packaging and independent validator
+        run: |
+          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tests/test_louksnapg_bundle.py
+      - name: Exercise ZIP build, cap, tamper and independent source-binding tests
+        run: |
+          python -m unittest discover -s tests -p 'test_louksnapg*.py' -v
+      - name: Validate Kestra contract and pinned release ceiling
+        shell: bash
+        run: |
+          python - <<'PY'
+          import yaml
+          from pathlib import Path
+          path = Path("integrations/kestra/flows/24-louksnapg-bundle-audit.yml")
+          flow = yaml.safe_load(path.read_text(encoding="utf-8"))
+          assert flow["id"] == "louksnapg_bundle_audit"
+          assert flow["namespace"] == "louksna.kestra"
+          inputs = {row["id"]: row for row in flow["inputs"]}
+          assert inputs["max_bytes"]["defaults"] == 470000000
+          required = {
+              "source_commit", "bundle_sha256", "bundle_bytes", "document_sha256",
+              "runtime_source_sha256", "worker_status", "independent_integrity_status",
+              "functional_status", "semantic_quality_status", "host_matrix_status",
+              "rollback_status", "axiom_binding_status", "block_binding_status",
+          }
+          assert required <= set(inputs)
+          tasks = {row["id"]: row for row in flow["tasks"]}
+          assert {"evidence_shape", "release_gates"} <= set(tasks)
+          assert tasks["evidence_shape"]["type"] == "io.kestra.plugin.core.flow.If"
+          assert tasks["release_gates"]["type"] == "io.kestra.plugin.core.flow.If"
+          text = path.read_text(encoding="utf-8")
+          assert "LOUKSNAPG_AUXILIARY_AUDIT=HOLD" in text
+          assert "global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION" in text
+          print("LOUKSNAPG_KESTRA_CONTRACT=PASS; INTEGRAL_CERTIFICATION=SEPARATE_GATE")
+          PY
