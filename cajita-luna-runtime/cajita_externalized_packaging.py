@@ -12,6 +12,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path, PurePosixPath
 
 RUNTIME_PREFIX = "cajita-luna-runtime/"
@@ -679,6 +680,182 @@ def _validate_archive_listing(binary: str, archive: Path) -> None:
             raise RuntimeError("EXTERNALIZED_7Z_LINK_ATTRIBUTE_REFUSED:" + str(fields.get("Path", "")))
 
 
+def _merge_tree_checked(source: Path, destination: Path, allowed_root: Path) -> None:
+    source = Path(source).resolve()
+    destination = Path(destination)
+    allowed_root = Path(allowed_root).resolve()
+    if not source.is_dir() or source.is_symlink():
+        raise RuntimeError("NESTED_ARCHIVE_SOURCE_ROOT_INVALID")
+    if not destination.resolve().is_relative_to(allowed_root):
+        raise RuntimeError("NESTED_ARCHIVE_DESTINATION_ESCAPE")
+    destination.mkdir(parents=True, exist_ok=True)
+    for base, dirs, names in os.walk(source, topdown=True, followlinks=False):
+        base_path = Path(base)
+        kept = []
+        for name in sorted(dirs):
+            p = base_path / name
+            if p.is_symlink() or not p.resolve().is_relative_to(source):
+                raise RuntimeError("NESTED_ARCHIVE_SYMLINK_OR_ESCAPE:" + str(p))
+            kept.append(name)
+        dirs[:] = kept
+        rel_dir = base_path.relative_to(source)
+        out_dir = destination / rel_dir
+        out_dir.mkdir(parents=True, exist_ok=True)
+        if out_dir.is_symlink() or not out_dir.resolve().is_relative_to(allowed_root):
+            raise RuntimeError("NESTED_ARCHIVE_DESTINATION_SYMLINK_OR_ESCAPE:" + str(out_dir))
+        for name in sorted(names):
+            src = base_path / name
+            if src.is_symlink() or not src.is_file() or not src.resolve().is_relative_to(source):
+                raise RuntimeError("NESTED_ARCHIVE_NON_REGULAR_SOURCE:" + str(src))
+            rel = src.relative_to(source)
+            out = destination / rel
+            if not out.resolve().is_relative_to(allowed_root):
+                raise RuntimeError("NESTED_ARCHIVE_DESTINATION_ESCAPE:" + str(out))
+            if out.exists() or out.is_symlink():
+                if out.is_symlink() or not out.is_file():
+                    raise RuntimeError("NESTED_ARCHIVE_CONTENT_COLLISION:" + rel.as_posix())
+                if out.stat().st_size != src.stat().st_size or sha_file(out) != sha_file(src):
+                    raise RuntimeError("NESTED_ARCHIVE_CONTENT_COLLISION:" + rel.as_posix())
+                continue
+            out.parent.mkdir(parents=True, exist_ok=True)
+            if out.parent.is_symlink() or not out.parent.resolve().is_relative_to(allowed_root):
+                raise RuntimeError("NESTED_ARCHIVE_PARENT_ESCAPE:" + str(out.parent))
+            shutil.copy2(src, out)
+
+
+def _extract_nested_archive(archive: Path, destination: Path, temp_parent: Path) -> None:
+    archive = Path(archive).resolve()
+    temp_parent = Path(temp_parent).resolve()
+    destination = Path(destination)
+    if archive.is_symlink() or not archive.is_file():
+        raise RuntimeError("NESTED_ARCHIVE_NOT_REGULAR:" + str(archive))
+    if destination.resolve() == archive or not destination.resolve().is_relative_to(temp_parent):
+        raise RuntimeError("NESTED_ARCHIVE_DESTINATION_INVALID:" + str(destination))
+    with tempfile.TemporaryDirectory(prefix="cajita-nested-archive-", dir=str(temp_parent)) as temp_name:
+        temp = Path(temp_name)
+        suffix = archive.suffix.lower()
+        if suffix == ".zip":
+            try:
+                with zipfile.ZipFile(archive, "r") as zf:
+                    bad = zf.testzip()
+                    if bad:
+                        raise RuntimeError("NESTED_ZIP_CRC_FAILURE:" + str(bad)[:160])
+                    infos = zf.infolist()
+                    names = [info.filename for info in infos]
+                    if len(names) != len(set(names)):
+                        raise RuntimeError("NESTED_ZIP_DUPLICATE_MEMBER")
+                    if len(infos) > 200000:
+                        raise RuntimeError("NESTED_ZIP_MEMBER_COUNT_LIMIT")
+                    declared_bytes = sum(int(info.file_size) for info in infos if not info.is_dir())
+                    if declared_bytes > 1_500_000_000:
+                        raise RuntimeError("NESTED_ZIP_EXPANSION_LIMIT")
+                    for info in infos:
+                        name = info.filename.rstrip("/")
+                        if not name:
+                            continue
+                        rel = PurePosixPath(_safe_archive_member(name))
+                        mode = (info.external_attr >> 16) & 0xFFFF
+                        file_type = stat.S_IFMT(mode)
+                        if stat.S_ISLNK(mode):
+                            raise RuntimeError("NESTED_ZIP_SYMLINK_REFUSED:" + name[:180])
+                        if file_type not in (0, stat.S_IFREG, stat.S_IFDIR):
+                            raise RuntimeError("NESTED_ZIP_SPECIAL_FILE_REFUSED:" + name[:180])
+                        out = temp.joinpath(*rel.parts)
+                        if not out.resolve().is_relative_to(temp):
+                            raise RuntimeError("NESTED_ZIP_PATH_ESCAPE:" + name[:180])
+                        if info.is_dir():
+                            out.mkdir(parents=True, exist_ok=True)
+                        else:
+                            out.parent.mkdir(parents=True, exist_ok=True)
+                            with zf.open(info, "r") as src, out.open("xb") as dst:
+                                shutil.copyfileobj(src, dst, 1024 * 1024)
+                            os.chmod(out, 0o755 if mode & 0o111 else 0o644)
+            except zipfile.BadZipFile as exc:
+                raise RuntimeError("NESTED_ZIP_INVALID:" + archive.name) from exc
+        elif suffix == ".7z":
+            binary = _seven_zip()
+            _validate_archive_listing(binary, archive)
+            test = subprocess.run(
+                [binary, "t", "-bd", str(archive)],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                timeout=600, check=False,
+            )
+            if test.returncode:
+                raise RuntimeError("NESTED_7Z_TEST_FAILED:" + test.stdout[-400:])
+            extracted = subprocess.run(
+                [binary, "x", "-y", "-bd", "-o" + str(temp), str(archive)],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                timeout=900, check=False,
+            )
+            if extracted.returncode:
+                raise RuntimeError("NESTED_7Z_EXTRACT_FAILED:" + extracted.stdout[-500:])
+        else:
+            raise RuntimeError("NESTED_ARCHIVE_SUFFIX_UNSUPPORTED:" + suffix)
+
+        # Every extracted member must be a regular file/directory inside the
+        # isolated temporary root before it is merged into the module tree.
+        for base, dirs, names in os.walk(temp, topdown=True, followlinks=False):
+            bp = Path(base)
+            kept = []
+            for name in sorted(dirs):
+                p = bp / name
+                if p.is_symlink() or not p.resolve().is_relative_to(temp):
+                    raise RuntimeError("NESTED_ARCHIVE_SYMLINK_OR_ESCAPE:" + str(p))
+                kept.append(name)
+            dirs[:] = kept
+            for name in sorted(names):
+                p = bp / name
+                if p.is_symlink() or not p.is_file() or not p.resolve().is_relative_to(temp):
+                    raise RuntimeError("NESTED_ARCHIVE_NON_REGULAR_ENTRY:" + str(p))
+        _merge_tree_checked(temp, destination, temp_parent)
+
+
+def _normalize_factory_materialization(destination: Path) -> dict:
+    """Mirror cajita_runtime_factory: recursively expand ZIP/7Z members and remove README* files."""
+    destination = Path(destination).resolve()
+    processed = set()
+    expanded_count = 0
+    while True:
+        pending = sorted(
+            (p for p in destination.rglob("*") if p.is_file() and p.suffix.lower() in {".zip", ".7z"}),
+            key=lambda p: p.relative_to(destination).as_posix().encode("utf-8"),
+        )
+        if not pending:
+            break
+        if len(processed) + len(pending) > 200:
+            raise RuntimeError("NESTED_ARCHIVE_COUNT_LIMIT")
+        for archive in pending:
+            if not archive.exists():
+                continue
+            rel = archive.relative_to(destination).as_posix()
+            if rel in processed:
+                raise RuntimeError("NESTED_ARCHIVE_REAPPEARED:" + rel)
+            dest = archive.with_suffix("")
+            _extract_nested_archive(archive, dest, destination)
+            archive.unlink()
+            processed.add(rel)
+            expanded_count += 1
+            total = sum(p.stat().st_size for p in destination.rglob("*") if p.is_file() and not p.is_symlink())
+            if total > 1_500_000_000:
+                raise RuntimeError("NESTED_ARCHIVE_TOTAL_EXPANSION_LIMIT")
+
+    readmes = []
+    for path in sorted(destination.rglob("*"), key=lambda p: (-len(p.parts), p.relative_to(destination).as_posix().encode("utf-8"))):
+        if path.is_symlink():
+            raise RuntimeError("README_CLEANUP_SYMLINK_REFUSED:" + str(path))
+        if path.is_file() and path.name.upper().startswith("README"):
+            readmes.append({"path": path.relative_to(destination).as_posix(), "bytes": path.stat().st_size, "sha256": sha_file(path)})
+            path.unlink()
+    remaining_archives = sorted(
+        p.relative_to(destination).as_posix()
+        for p in destination.rglob("*")
+        if p.is_file() and p.suffix.lower() in {".zip", ".7z"}
+    )
+    if remaining_archives:
+        raise RuntimeError("NESTED_ARCHIVES_REMAIN:" + ",".join(remaining_archives[:20]))
+    return {"nested_archives_expanded": expanded_count, "readme_files_removed": len(readmes)}
+
+
 def _extract_raw_tree(root: Path, item: dict, destination: Path) -> dict:
     root = Path(root).resolve()
     destination = Path(destination).resolve()
@@ -696,6 +873,7 @@ def _extract_raw_tree(root: Path, item: dict, destination: Path) -> dict:
         raise RuntimeError("EXTERNALIZED_7Z_EXTRACT_FAILED:" + extracted.stdout[-700:])
     if (destination / MODULE_DESCRIPTOR_NAME).exists() or (destination / MODULE_DESCRIPTOR_NAME).is_symlink():
         raise RuntimeError("EXTERNALIZED_ARCHIVE_CONTAINS_RESERVED_MODULE_DESCRIPTOR")
+    normalization = _normalize_factory_materialization(destination)
     actual = _tree_summary(destination)
     expected = {
         "bytes": item["expanded_bytes"],
@@ -703,7 +881,7 @@ def _extract_raw_tree(root: Path, item: dict, destination: Path) -> dict:
         "tree_sha256": item["expanded_tree_sha256"],
     }
     if actual != {"bytes": expected["bytes"], "file_count": expected["file_count"], "tree_sha256": expected["tree_sha256"]}:
-        detail = {"expected": expected, "archive_reconstructed": actual}
+        detail = {"expected": expected, "archive_reconstructed": actual, "factory_normalization": normalization}
         try:
             source_root = root / Path(*PurePosixPath(item["expanded_relpath"]).parts)
             detail["working_copy_actual"] = _tree_summary(source_root)
