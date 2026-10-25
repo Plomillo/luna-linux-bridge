@@ -162,8 +162,14 @@ def smoke_test(audio_path=None, max_new_tokens=4):
     model = load_candidate()
     inputs = processor(audio, sampling_rate=16000, return_tensors="pt")
     inputs["input_features"] = inputs["input_features"].to(dtype=torch.float32)
+    generate_kwargs = {"max_new_tokens": int(max_new_tokens), "do_sample": False}
+    if audio_path:
+        # Control tokens must not consume the acceptance budget. This does not
+        # change weights and does not claim reference-model equivalence.
+        generate_kwargs["language"] = "en"
+        generate_kwargs["task"] = "transcribe"
     with torch.inference_mode():
-        generated = model.generate(**inputs, max_new_tokens=int(max_new_tokens), do_sample=False)
+        generated = model.generate(**inputs, **generate_kwargs)
     if not isinstance(generated, torch.Tensor) or generated.ndim != 2 or generated.shape[0] != 1 or generated.shape[-1] < 1:
         raise RuntimeError("MALFORMED_TRANSCRIPTION_OUTPUT")
     decoded = processor.batch_decode(generated, skip_special_tokens=True)

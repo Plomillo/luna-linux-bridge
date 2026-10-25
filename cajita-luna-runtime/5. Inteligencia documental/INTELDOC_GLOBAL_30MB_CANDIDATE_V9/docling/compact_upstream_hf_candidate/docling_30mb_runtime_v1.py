@@ -210,12 +210,20 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
         raise RuntimeError(f"DOCLING_IMAGE_TOKEN_COUNT_MISMATCH:{image_token_count}!={image_seq_len}")
     with torch.inference_mode():
         out=model.generate(**inputs,max_new_tokens=int(max_new_tokens),do_sample=False)
-    decoded=proc.batch_decode(out,skip_special_tokens=False)[0]
-    if len(decoded.strip())<4: raise RuntimeError("RUNTIME_SMOKE_EMPTY_OR_SHORT_OUTPUT")
+    prompt_ids=inputs["input_ids"]
+    if out.shape[-1] >= prompt_ids.shape[-1] and torch.equal(out[:, :prompt_ids.shape[-1]], prompt_ids):
+        new_ids=out[:, prompt_ids.shape[-1]:]
+    else:
+        new_ids=out
+    if int(new_ids.shape[-1]) < 1:
+        raise RuntimeError("DOCLING_GENERATED_NO_NEW_TOKENS")
+    decoded=proc.batch_decode(new_ids, skip_special_tokens=True)[0]
+    if len(decoded.strip())<1: raise RuntimeError("RUNTIME_SMOKE_EMPTY_OUTPUT")
     return {"status":"PASS","candidate_id":meta["candidate_id"],"model_load":"PASS","processor_load":"PASS",
-            "image_preprocess":"PASS","generation":"PASS","generated_token_count":int(out.shape[-1]),
+            "image_preprocess":"PASS","generation":"PASS","generated_token_count":int(new_ids.shape[-1]),
             "output_text":decoded[:8192],"output_sha256":hashlib.sha256(decoded.encode("utf-8")).hexdigest(),
-            "decoded_chars":len(decoded),"elapsed_seconds":round(time.time()-t,3),"quality_equivalence":"NOT_ESTABLISHED"}
+            "decoded_chars":len(decoded),"elapsed_seconds":round(time.time()-t,3),
+            "decoded_span":"NEW_TOKENS_ONLY","quality_equivalence":"NOT_ESTABLISHED"}
 
 
 def main():

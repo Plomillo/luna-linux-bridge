@@ -157,6 +157,16 @@ jobs:
           assert "NOT_GRANTED" in gate["condition"]
           assert ".id > 0" in gate["condition"]
           assert ".total_count > 0" not in gate["condition"]
+          integral_path = Path("integrations/kestra/flows/22-louksna1-integral-decision.yml")
+          integral = yaml.safe_load(integral_path.read_text(encoding="utf-8"))
+          assert integral["id"] == "louksna1_integral_decision"
+          assert integral["namespace"] == "louksna.kestra"
+          integral_tasks = {task["id"]: task for task in integral["tasks"]}
+          integral_gate = integral_tasks["gate"]
+          assert integral_gate["type"] == "io.kestra.plugin.core.flow.If"
+          assert "global_certification == 'GRANTED'" in integral_gate["condition"]
+          assert "all_21_target_task_adapters == 'ESTABLISHED'" in integral_gate["condition"]
+          assert integral_tasks["fail_closed"]["type"] == "io.kestra.plugin.core.execution.Fail"
           harness = Path("tools/cajita_task_e2e.py").read_text(encoding="utf-8")
           assert "synthetic_quality_acceptance" in harness
           assert "ESPEAK_NG_REQUIRED_FOR_KNOWN_SPEECH_FIXTURE" in harness
@@ -164,6 +174,7 @@ jobs:
           PY
           python cajita-luna-runtime/cajita_antiparalysis.py selftest --state-dir "$RUNNER_TEMP/anti-paralysis-selftest"
           python cajita-luna-runtime/cajita_router.py selftest
+          python cajita-luna-runtime/cajita_target_adapters.py --selftest-verified-exec
 
       - name: Verify QuickJS bytes and restore its executable mode
         shell: bash
@@ -340,7 +351,7 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
-          import hashlib, json, os, subprocess, sys, zipfile
+          import hashlib, json, os, re, subprocess, sys, zipfile
           from pathlib import Path
           root=Path("candidate")
           # Runtime-container paths are validated separately by exact SHA-256/size.
@@ -439,6 +450,14 @@ jobs:
               target.write_bytes(z.read(name))
           runtime=root/"runtime"
           runtime_root=runtime.resolve()
+          macrodown_manifest=m
+          runtime_source=(runtime/"cajita_runtime.py").read_text(encoding="utf-8")
+          identity=re.search(r'^CANDIDATE_ID = "([A-Z0-9_]+)"$', runtime_source, re.M)
+          weights=json.loads((runtime/"CAJITA_RUNTIME_V1"/"weights_manifest.json").read_text(encoding="utf-8"))
+          assert identity and macrodown_manifest["candidate_id"]==identity.group(1)==weights["candidate_id"], "RUNTIME_IDENTITY_DIVERGENCE"
+          assert macrodown_manifest["distribution_container_filename"]=="CAJITA_LUNA_RUNTIME_V10.macrodown"
+          assert macrodown_manifest["distribution_filename_is_historical_container_name"] is True
+          assert macrodown_manifest["candidate_id"]!="CAJITA_LUNA_RUNTIME_V10_20261024"
           externalized_container_paths=set(allowed_archives)
           assert len(externalized_container_paths)==10, "EXTERNALIZED_CONTAINER_LOGICAL_PATH_SET"
           import sys

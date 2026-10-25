@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build a deterministic ZIP-container distributed with the .macrodown extension."""
 from __future__ import annotations
-import argparse, hashlib, json, os, shutil, stat, zipfile
+import argparse, hashlib, json, os, re, shutil, stat, zipfile
 from pathlib import Path
 from cajita_externalized_packaging import prepare_distribution_registry, distribution_contract, verify_all_archives
 from cajita_tokenizer_materializer import MANIFEST_NAME as TOKENIZER_MANIFEST_NAME, load_tokenizer_manifest, prepare_compressed_tokenizers
@@ -12,6 +12,33 @@ MANIFEST_NAME="MACRODOWN_MANIFEST.json"
 BINARY_SUFFIXES={".7z",".zip",".gz",".xz",".whl",".nupkg",".gguf",".parquet",".pdf"}
 EXCLUDED_DIRS={".git","__pycache__",".pytest_cache"}
 EXCLUDED_SUFFIXES={".pyc",".pyo",".tmp",".part"}
+# Historical container name. It is not a second runtime identity.
+DISTRIBUTION_CONTAINER_FILENAME="CAJITA_LUNA_RUNTIME_V10.macrodown"
+# Content hash is independent of mode. This member is an executable engine;
+# every other member stays 0644 so the archive remains deterministic.
+EXECUTABLE_MEMBER_PATHS=frozenset({
+    "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04/qjs",
+})
+
+def canonical_runtime_identity(root):
+    """Identity comes from the packaged runtime constant and the weight manifest, not from the filename."""
+    root=Path(root)
+    runtime_source=(root/"cajita_runtime.py").read_text(encoding="utf-8")
+    found=re.search(r'^CANDIDATE_ID = "([A-Z0-9_]+)"$', runtime_source, re.M)
+    if not found:
+        raise RuntimeError("RUNTIME_CANDIDATE_ID_LITERAL_MISSING")
+    runtime_id=found.group(1)
+    manifest_path=root/"CAJITA_RUNTIME_V1"/"weights_manifest.json"
+    if manifest_path.is_symlink() or not manifest_path.is_file():
+        raise RuntimeError("WEIGHTS_MANIFEST_MISSING_FOR_IDENTITY")
+    weights=json.loads(manifest_path.read_text(encoding="utf-8"))
+    weight_id=weights.get("candidate_id")
+    if weight_id!=runtime_id:
+        raise RuntimeError("RUNTIME_WEIGHT_IDENTITY_DIVERGENCE:"+runtime_id+"!="+str(weight_id))
+    return runtime_id
+
+def member_mode(rel):
+    return 0o755 if rel in EXECUTABLE_MEMBER_PATHS else 0o644
 
 def sha256_file(path):
     h=hashlib.sha256()
@@ -80,7 +107,11 @@ def manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,c
     tokenizer_manifest_path=Path(root)/TOKENIZER_MANIFEST_NAME
     tokenizer_manifest=json.loads(tokenizer_manifest_path.read_text(encoding="utf-8")) if tokenizer_manifest_path.is_file() else {"entries":[]}
     m={"schema":SCHEMA,"format":"ZIP archive with deterministic metadata; file extension .macrodown",
-      "candidate_id":"CAJITA_LUNA_RUNTIME_V10_20261024","hard_cap_raw_bytes":raw_cap_bytes,
+      "candidate_id":canonical_runtime_identity(root),
+      "distribution_container_filename":DISTRIBUTION_CONTAINER_FILENAME,
+      "distribution_filename_is_historical_container_name":True,
+      "runtime_identity_source":"cajita_runtime.CANDIDATE_ID_MATCHES_WEIGHTS_MANIFEST",
+      "hard_cap_raw_bytes":raw_cap_bytes,
       "hard_cap_archive_bytes":max(0,combined_cap_bytes-companion_bytes),
       "combined_distribution_cap_bytes":combined_cap_bytes,
       "companion_artifact":{"path":"Louksna1.md","size_bytes":companion_bytes,"sha256":companion_sha256},
@@ -138,7 +169,7 @@ def manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,c
 
 def add_stream(zf,rel,path):
     zi=zipfile.ZipInfo(rel,date_time=(2024,1,1,0,0,0))
-    zi.create_system=3; zi.external_attr=(stat.S_IFREG|0o644)<<16
+    zi.create_system=3; zi.external_attr=(stat.S_IFREG|member_mode(rel))<<16
     zi.compress_type=zipfile.ZIP_STORED if path.suffix.lower() in BINARY_SUFFIXES else zipfile.ZIP_DEFLATED
     zi.extra=b""; zi.comment=b""
     with zf.open(zi,"w",force_zip64=True) as dst, path.open("rb") as src:

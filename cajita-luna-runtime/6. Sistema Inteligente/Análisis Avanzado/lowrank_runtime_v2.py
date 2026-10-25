@@ -119,12 +119,25 @@ def smoke_test(generate=False, prompt="Test", max_new_tokens=1):
             "elapsed_seconds":round(time.monotonic()-t0,3),"rope_buffers_materialized":int(getattr(model,"_lowrank_rope_materialized",0)),
             "quality_equivalence":"NOT_ESTABLISHED_BY_SMOKE_TEST"}
     if generate:
+        rendered = prompt
+        if hasattr(tokenizer, "apply_chat_template"):
+            messages = [{"role": "user", "content": prompt}]
+            for extra in ({"enable_thinking": False}, {}):
+                try:
+                    candidate = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, **extra)
+                except Exception:
+                    continue
+                if isinstance(candidate, str) and candidate.strip():
+                    rendered = candidate
+                    break
+        gen_tok = tokenizer(rendered, return_tensors="pt")
         with torch.inference_mode():
-            generated=model.generate(tok["input_ids"],attention_mask=tok.get("attention_mask"),max_new_tokens=int(max_new_tokens),do_sample=False,use_cache=False)
-        count=int(generated.shape[-1]-tok["input_ids"].shape[-1])
-        if count<1: raise RuntimeError("MODEL_GENERATED_NO_NEW_TOKENS")
+            generated = model.generate(gen_tok["input_ids"], attention_mask=gen_tok.get("attention_mask"), max_new_tokens=int(max_new_tokens), do_sample=False, use_cache=False)
+        count = int(generated.shape[-1] - gen_tok["input_ids"].shape[-1])
+        if count < 1: raise RuntimeError("MODEL_GENERATED_NO_NEW_TOKENS")
         result.update({"generation_status":"PASS_GENERATE","generated_token_count":count,
-                       "output_text":tokenizer.decode(generated[0,tok["input_ids"].shape[-1]:],skip_special_tokens=True)[:8192]})
+                       "output_text":tokenizer.decode(generated[0, gen_tok["input_ids"].shape[-1]:], skip_special_tokens=True)[:8192],
+                       "generation_prompt":"CHAT_TEMPLATE_THINKING_DISABLED_WHEN_AVAILABLE"})
     return result
 
 if __name__ == "__main__":

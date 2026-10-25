@@ -266,18 +266,64 @@ def _run_axiom_binding(runtime: Path, module: Path, spec: dict, companion: Path 
     }
 
 
+def _execute_verified_binary(binary: Path, args: list[str], *, timeout: float, env: dict) -> subprocess.CompletedProcess:
+    """Run a hash-verified copy so a 0644 archive or a read-only mount cannot block execution.
+
+    The source bytes and mode are not modified. The copy is the only file marked executable.
+    """
+    payload = binary.read_bytes()
+    digest = _sha(payload)
+    with tempfile.TemporaryDirectory(prefix="cajita-verified-exec-") as temp_name:
+        exe = Path(temp_name) / "verified-exec"
+        exe.write_bytes(payload)
+        os.chmod(exe, 0o755)
+        copied = exe.read_bytes()
+        if copied != payload or _sha(copied) != digest:
+            raise TargetAdapterError("VERIFIED_BINARY_COPY_IDENTITY_MISMATCH")
+        try:
+            return subprocess.run(
+                [str(exe), *args],
+                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, timeout=timeout, check=False, shell=False, env=env,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise TargetAdapterError("VERIFIED_BINARY_TIMEOUT") from exc
+        except OSError as exc:
+            raise TargetAdapterError("VERIFIED_BINARY_EXECUTION_FAILED:" + type(exc).__name__) from exc
+
+
+def selftest_verified_exec() -> dict:
+    with tempfile.TemporaryDirectory(prefix="cajita-verified-exec-selftest-") as temp_name:
+        source = Path(temp_name) / "fixture-bin"
+        source.write_bytes(b"#!/bin/sh\nprintf '4\\n'\n")
+        os.chmod(source, 0o644)
+        before = source.read_bytes()
+        before_mode = os.stat(source).st_mode
+        proc = _execute_verified_binary(source, [], timeout=5, env={"PATH": "/usr/bin:/bin", "HOME": ""})
+        if proc.returncode != 0 or proc.stdout != "4\n":
+            raise TargetAdapterError("VERIFIED_EXEC_SELFTEST_OUTPUT_MISMATCH")
+        if source.read_bytes() != before or os.stat(source).st_mode != before_mode:
+            raise TargetAdapterError("VERIFIED_EXEC_SELFTEST_MUTATED_SOURCE")
+        if before_mode & 0o111:
+            raise TargetAdapterError("VERIFIED_EXEC_SELFTEST_SOURCE_WAS_ALREADY_EXECUTABLE")
+    return {
+        "status": "PASS",
+        "source_bytes_unchanged": True,
+        "source_mode_unchanged": True,
+        "executed_exact_bytes": True,
+        "certification": "NOT_GRANTED",
+    }
+
+
 def _run_quickjs(runtime: Path, module: Path, spec: dict, companion: Path | None) -> dict:
     qjs = _regular_file(module, spec["entry"])
     code = 'print(JSON.stringify({answer:2+2,strict:true}))'
-    try:
-        proc = subprocess.run(
-            [str(qjs), "--std", "-e", code],
-            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, timeout=5, check=False, shell=False,
-            env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": "", "LANG": "C.UTF-8"}
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        raise TargetAdapterError("QUICKJS_EXECUTION_FAILED:" + type(exc).__name__) from exc
+    proc = _execute_verified_binary(
+        qjs,
+        ["--std", "-e", code],
+        timeout=5,
+        env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": "", "LANG": "C.UTF-8"},
+    )
     if proc.returncode != 0:
         raise TargetAdapterError("QUICKJS_NONZERO_EXIT:" + proc.stderr[-250:])
     try:
@@ -286,7 +332,7 @@ def _run_quickjs(runtime: Path, module: Path, spec: dict, companion: Path | None
         raise TargetAdapterError("QUICKJS_OUTPUT_NOT_JSON") from exc
     if result != {"answer": 4, "strict": True}:
         raise TargetAdapterError("QUICKJS_KNOWN_ANSWER_MISMATCH")
-    return {"status": "PASS", "known_answer": result, "shell": False, "user_code_executed": False}
+    return {"status": "PASS", "known_answer": result, "shell": False, "user_code_executed": False, "source_bytes_unchanged": True}
 
 
 def _run_sqlite_roundtrip(runtime: Path, module: Path, spec: dict, companion: Path | None) -> dict:
@@ -479,8 +525,13 @@ def main(argv=None) -> int:
     parser.add_argument("--root", default=str(Path(__file__).resolve().parent))
     parser.add_argument("--companion", default=os.environ.get("LOUKSNA1_COMPANION_PATH"))
     parser.add_argument("--target-id", choices=EXPECTED_TARGET_IDS)
+    parser.add_argument("--selftest-verified-exec", action="store_true")
     args = parser.parse_args(argv)
     try:
+        if args.selftest_verified_exec:
+            result = selftest_verified_exec()
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
         if args.target_id:
             result = execute_target_task(args.root, args.target_id, args.companion)
             print(json.dumps(result, ensure_ascii=False, indent=2))

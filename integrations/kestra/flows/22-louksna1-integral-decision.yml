@@ -1,0 +1,45 @@
+id: louksna1_integral_decision
+namespace: louksna.kestra
+description: >-
+  Orchestrates the integral certification decision for one published candidate.
+  Kestra does not manufacture the runtime and cannot certify its own result.
+  The read-only release audit remains a separate auxiliary control. This flow
+  grants nothing unless the published assessment already records every mandatory
+  gate as established for that same evidence bundle.
+tasks:
+  - id: assessment
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/docs/cajita-luna/LOUKSNA1_INTEGRAL_CERTIFICATION_ASSESSMENT.json?ref=main&cache_bust={{ execution.id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
+  - id: gate
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ outputs.assessment.code == 200
+         and fromJson(outputs.assessment.body).global_certification == 'GRANTED'
+         and fromJson(outputs.assessment.body).decision == 'GRANTED'
+         and fromJson(outputs.assessment.body).target_adapter_registration.canonical_target_count == 21
+         and fromJson(outputs.assessment.body).target_adapter_registration.all_21_target_task_adapters == 'ESTABLISHED'
+         and fromJson(outputs.assessment.body).semantic_gates.model_quality_equivalence == 'ESTABLISHED'
+         and fromJson(outputs.assessment.body).semantic_gates.axiom_proposition_validity == 'ESTABLISHED'
+         and fromJson(outputs.assessment.body).semantic_gates.semantic_consistency == 'ESTABLISHED'
+         and fromJson(outputs.assessment.body).semantic_gates.full_integrated_runtime_behaviour == 'ESTABLISHED'
+         and fromJson(outputs.assessment.body).authority == 'INDEPENDENT_VALIDATOR_NOT_SELF_CERTIFICATION' }}
+    then:
+      - id: record_grant
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNA1_INTEGRAL_CERTIFICATION=GRANTED
+          source_commit={{ fromJson(outputs.assessment.body).source_commit }}
+          execution={{ execution.id }}
+    else:
+      - id: fail_closed
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNA1_INTEGRAL_DECISION=NOT_GRANTED. Partial synthetic execution,
+          a size-gate pass, or a read-only audit cannot be promoted to an
+          integral certificate.
