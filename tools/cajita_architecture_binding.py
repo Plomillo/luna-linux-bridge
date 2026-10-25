@@ -169,6 +169,110 @@ def _registered_consumer_adapters(runtime_root: Path, targets: list[dict]) -> di
     return output
 
 
+def _registered_runtime_engine_scopes(runtime_root: Path, targets: list[dict]) -> dict[str, dict]:
+    """Bind target-specific engine smoke adapters without promoting them to full task adapters."""
+    runtime = Path(runtime_root).resolve()
+    adapter_path = runtime / "cajita_target_adapters.py"
+    if adapter_path.is_symlink() or not adapter_path.is_file() or not adapter_path.resolve().is_relative_to(runtime):
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_SOURCE_MISSING_OR_UNSAFE")
+    try:
+        adapter_source = adapter_path.read_bytes()
+        parsed = ast.parse(adapter_source.decode("utf-8"), filename=str(adapter_path))
+    except (OSError, UnicodeError, SyntaxError) as exc:
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_SOURCE_PARSE_FAILED:" + type(exc).__name__) from exc
+
+    specs = None
+    for node in parsed.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "TARGET_ADAPTERS"
+            for target in node.targets
+        ):
+            try:
+                specs = ast.literal_eval(node.value)
+            except (ValueError, TypeError) as exc:
+                raise RuntimeError("RUNTIME_TARGET_ADAPTER_REGISTRY_MUST_BE_LITERAL") from exc
+            break
+    if not isinstance(specs, dict) or not specs:
+        raise RuntimeError("RUNTIME_TARGET_ADAPTER_REGISTRY_MISSING_OR_INVALID")
+
+    targets_by_id = {}
+    for target in targets:
+        if not isinstance(target, dict) or not isinstance(target.get("id"), str):
+            raise RuntimeError("CANONICAL_TARGET_ID_INVALID_DURING_RUNTIME_SCOPE_BINDING")
+        if target["id"] in targets_by_id:
+            raise RuntimeError("CANONICAL_TARGET_ID_COLLISION_DURING_RUNTIME_SCOPE_BINDING:" + target["id"])
+        targets_by_id[target["id"]] = target
+
+    output = {}
+    seen_adapter_ids = set()
+    required_keys = ("domain_id", "adapter_id", "operation", "module", "entry", "required_files", "engine", "scope")
+    for target_id, spec in specs.items():
+        if not isinstance(target_id, str) or not isinstance(spec, dict):
+            raise RuntimeError("RUNTIME_TARGET_ADAPTER_SPEC_INVALID")
+        if any(key not in spec for key in required_keys):
+            raise RuntimeError("RUNTIME_TARGET_ADAPTER_SPEC_INCOMPLETE:" + str(target_id))
+        for key in ("domain_id", "adapter_id", "operation", "module", "entry", "engine", "scope"):
+            if not isinstance(spec[key], str) or not spec[key]:
+                raise RuntimeError("RUNTIME_TARGET_ADAPTER_SPEC_FIELD_INVALID:" + target_id + ":" + key)
+        if not isinstance(spec["required_files"], list) or not spec["required_files"]:
+            raise RuntimeError("RUNTIME_TARGET_ADAPTER_REQUIRED_FILES_MISSING:" + target_id)
+        adapter_id = spec["adapter_id"]
+        if adapter_id in seen_adapter_ids:
+            raise RuntimeError("RUNTIME_TARGET_ADAPTER_ID_COLLISION:" + adapter_id)
+        seen_adapter_ids.add(adapter_id)
+
+        target = targets_by_id.get(target_id)
+        if target is None or target.get("domain_id") != spec["domain_id"]:
+            raise RuntimeError("RUNTIME_TARGET_ADAPTER_CANONICAL_TARGET_MISMATCH:" + target_id)
+        module_rel = _safe_rel(spec["module"]).as_posix()
+        target_rel = _safe_rel(target.get("path", "")).as_posix()
+        if module_rel != target_rel:
+            raise RuntimeError("RUNTIME_TARGET_ADAPTER_MODULE_PATH_MISMATCH:" + target_id)
+
+        module_root = runtime.joinpath(*PurePosixPath(module_rel).parts)
+        if module_root.is_symlink() or not module_root.is_dir() or not module_root.resolve().is_relative_to(runtime):
+            raise RuntimeError("RUNTIME_TARGET_ADAPTER_MODULE_ROOT_MISSING_OR_UNSAFE:" + target_id)
+        entry_rel = _safe_rel(spec["entry"]).as_posix()
+        if entry_rel not in { _safe_rel(item).as_posix() for item in spec["required_files"] }:
+            raise RuntimeError("RUNTIME_TARGET_ADAPTER_ENTRY_NOT_HASH_BOUND:" + target_id)
+
+        source_files = []
+        seen_paths = set()
+        for item in spec["required_files"]:
+            file_rel = _safe_rel(item).as_posix()
+            if file_rel in seen_paths:
+                raise RuntimeError("RUNTIME_TARGET_ADAPTER_REQUIRED_FILE_DUPLICATE:" + target_id)
+            seen_paths.add(file_rel)
+            file_path = module_root.joinpath(*PurePosixPath(file_rel).parts)
+            if file_path.is_symlink() or not file_path.is_file() or not file_path.resolve().is_relative_to(module_root.resolve()):
+                raise RuntimeError("RUNTIME_TARGET_ADAPTER_REQUIRED_FILE_MISSING_OR_UNSAFE:" + target_id + ":" + file_rel)
+            data = file_path.read_bytes()
+            source_files.append({
+                "path": (PurePosixPath(module_rel) / PurePosixPath(file_rel)).as_posix(),
+                "bytes": len(data),
+                "sha256": _sha(data),
+            })
+        output[target_id] = {
+            "status": "REGISTERED_RUNTIME_SMOKE_SCOPE_ONLY",
+            "target_id": target_id,
+            "domain_id": spec["domain_id"],
+            "adapter_id": adapter_id,
+            "operation": spec["operation"],
+            "engine": spec["engine"],
+            "module_path": module_rel,
+            "entrypoint": (PurePosixPath(module_rel) / PurePosixPath(entry_rel)).as_posix(),
+            "adapter_source_path": adapter_path.relative_to(runtime).as_posix(),
+            "adapter_source_sha256": _sha(adapter_source),
+            "source_files": source_files,
+            "execution_scope": spec["scope"],
+            "consumer_task_adapter_completion": "NOT_ESTABLISHED",
+            "reference_quality_equivalence": "NOT_ESTABLISHED",
+            "native_hardware_validation": "REQUIRED",
+            "certification": "NOT_GRANTED",
+        }
+    return output
+
+
 def register_architecture_binding(repo_root: str | Path, runtime_root: str | Path, document_path: str | Path) -> dict:
     repo = Path(repo_root).resolve()
     runtime = Path(runtime_root).resolve()
@@ -242,6 +346,9 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
     else:
         binding_path.write_bytes(binding_bytes)
     consumer_adapters = _registered_consumer_adapters(runtime, targets)
+    runtime_engine_scopes = _registered_runtime_engine_scopes(runtime, targets)
+    if set(consumer_adapters).intersection(runtime_engine_scopes):
+        raise RuntimeError("MODEL_ADAPTER_AND_RUNTIME_SCOPE_TARGET_COLLISION")
     target_modules = []
     for target in targets:
         relative = _safe_rel(target["path"])
@@ -267,7 +374,18 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
                 "reference_quality_equivalence": "NOT_ESTABLISHED",
                 "certification": "NOT_GRANTED"
             }),
-            "functional_state": "SYNTHETIC_ADAPTER_REGISTERED_NATIVE_SMOKE_AND_QUALITY_BASELINE_REQUIRED" if target["id"] in consumer_adapters else "MODULE_REGISTERED_ADAPTER_AND_NATIVE_SMOKE_REQUIRED",
+            "runtime_engine_scope_registration": runtime_engine_scopes.get(target["id"], {
+                "status": "NOT_REGISTERED",
+                "consumer_task_adapter_completion": "NOT_ESTABLISHED",
+                "certification": "NOT_GRANTED"
+            }),
+            "functional_state": (
+                "SYNTHETIC_ADAPTER_REGISTERED_NATIVE_SMOKE_AND_QUALITY_BASELINE_REQUIRED"
+                if target["id"] in consumer_adapters
+                else ("RUNTIME_ENGINE_SMOKE_SCOPE_ONLY_FULL_TASK_ADAPTER_NOT_ESTABLISHED"
+                      if target["id"] in runtime_engine_scopes
+                      else "MODULE_REGISTERED_ADAPTER_AND_NATIVE_SMOKE_REQUIRED")
+            ),
             "lifecycle_state": "MATERIALIZED_OR_SOURCE_DIRECTORY_REGISTERED",
             "certification": "NOT_GRANTED"
         }
@@ -294,6 +412,7 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
             "tree_sha256": manifest["tree_integrity"]["sha256"], "engine_ids": target.get("engine_ids", []),
             "consumer_adapter": consumer_adapters[target["id"]]["adapter_id"] if target["id"] in consumer_adapters else "NOT_REGISTERED_FOR_ALL_TASKS",
             "consumer_adapter_registration": manifest["consumer_adapter_registration"],
+            "runtime_engine_scope_registration": manifest["runtime_engine_scope_registration"],
             "certification": "NOT_GRANTED"
         })
     registry_path = runtime / "module_registry.json"
@@ -308,6 +427,16 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         "synthetic_execution_only": True,
         "native_smoke": "REQUIRED",
         "reference_quality_equivalence": "NOT_ESTABLISHED",
+        "certification": "NOT_GRANTED"
+    }
+    registry["runtime_engine_scope_registration_summary"] = {
+        "canonical_target_count": len(target_modules),
+        "runtime_engine_smoke_scope_registered_target_count": len(runtime_engine_scopes),
+        "runtime_engine_smoke_scope_target_ids": sorted(runtime_engine_scopes),
+        "runtime_engine_smoke_scope_only": True,
+        "consumer_task_adapter_completion": "NOT_ESTABLISHED",
+        "reference_quality_equivalence": "NOT_ESTABLISHED",
+        "native_hardware_validation": "REQUIRED",
         "certification": "NOT_GRANTED"
     }
     registry["axiom_interdisciplinary_binding"] = {
@@ -330,6 +459,14 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         "reference_quality_equivalence": "NOT_ESTABLISHED",
         "certification": "NOT_GRANTED"
     }
+    routing["materialization"]["runtime_engine_scope_registration"] = {
+        "runtime_engine_smoke_scope_registered_target_count": len(runtime_engine_scopes),
+        "runtime_engine_smoke_scope_target_ids": sorted(runtime_engine_scopes),
+        "scope_only_not_consumer_task_adapter": True,
+        "reference_quality_equivalence": "NOT_ESTABLISHED",
+        "native_hardware_validation": "REQUIRED",
+        "certification": "NOT_GRANTED"
+    }
     routing_path.write_text(json.dumps(routing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return {
         "target_module_count": len(target_modules), "target_modules": target_modules,
@@ -339,6 +476,8 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         "declared_historical_gaps": 657, "block_count": 134, "framework_count": 18,
         "state": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING",
         "synthetic_scope_registered_target_count": len(consumer_adapters),
+        "runtime_engine_smoke_scope_registered_target_count": len(runtime_engine_scopes),
+        "runtime_engine_smoke_scope_target_ids": sorted(runtime_engine_scopes),
         "unregistered_target_count": len(target_modules) - len(consumer_adapters),
         "global_certification": "NOT_GRANTED"
     }
