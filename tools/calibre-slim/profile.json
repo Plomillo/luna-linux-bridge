@@ -1,0 +1,95 @@
+{
+  "schema": "CAJITA_CALIBRE_SLIM_PROFILE/1.0",
+  "candidate_id": "CAJITA_CALIBRE_SLIM_PDF_EPUB_V2_20261024",
+  "status": "EXPERIMENTAL_NOT_CERTIFIED",
+  "authority": "SUBORDINATE_OPERATIONAL_CANDIDATE",
+  "upstream": {
+    "repository": "kovidgoyal/calibre",
+    "tag": "v9.17.0",
+    "commit": "e6b9e09472f6e63f8a12bf376eb54836042f0f5f",
+    "tag_object": "58cfea71a2c2d893b853d73ca586ec9b28f7b2ba",
+    "tag_signature_status_reported_by_github": "VERIFIED"
+  },
+  "user_visible_scope": {
+    "allowed_input_formats": [
+      "pdf",
+      "epub",
+      "txt"
+    ],
+    "allowed_output_formats": [
+      "pdf",
+      "epub"
+    ],
+    "required_paths": [
+      "PDF -> EPUB",
+      "EPUB -> PDF",
+      "TXT -> PDF (create PDF)",
+      "TXT -> EPUB (create EPUB)"
+    ],
+    "internal_intermediate_format": "oeb",
+    "entrypoint": "calibre-slim-convert",
+    "internal_pipeline_formats": [
+      "html",
+      "oeb"
+    ]
+  },
+  "retained": {
+    "runtime_language_modules": [
+      "calibre/translations/dynamic.py (runtime translation helper used by OEB rendering)",
+      "calibre/translations/__init__.py",
+      "calibre/translations/msgfmt.py"
+    ],
+    "conversion_plugins": [
+      "epub_input.py",
+      "epub_output.py",
+      "oeb_output.py",
+      "pdf_input.py",
+      "pdf_output.py",
+      "txt_input.py",
+      "archive_input.py (shared helper required by TXTInput)",
+      "html_input.py (internal-only dependency invoked by TXTInput; wrapper rejects HTML as public input)"
+    ],
+    "profiles": [
+      "default input profile",
+      "default output profile"
+    ],
+    "content_language_support": "PRESERVE_UNICODE_FONTS_RTL_CJK_AND_DOCUMENT_LANGUAGE_RESOURCES",
+    "pdf_rendering": "PINNED_CALIBRE_V9_17_0_BASE_RUNTIME_REQUIRED_OUTSIDE_LAYER; QT WEBENGINE RENDERER RETAINED THERE",
+    "legal_material": [
+      "LICENSE",
+      "COPYRIGHT"
+    ]
+  },
+  "excluded_from_candidate": [
+    "all UI translation catalogs and language packs",
+    "OCR engines and OCR assets",
+    "Calibre GUI action modules",
+    "ebook store modules",
+    "device drivers not required by the generic conversion interface",
+    "catalog generation modules",
+    "ebook editor modules",
+    "news recipe modules",
+    "non-conversion command launchers",
+    "nonessential translated man pages and UI resources",
+    "public HTML input (HTML engine is retained only as an internal TXT conversion dependency)"
+  ],
+  "safety_rules": {
+    "mutates_cajitadeluna_md": false,
+    "mutates_main_branch": false,
+    "deletes_upstream_download": false,
+    "removes_document_language_support": false,
+    "removes_pdf_rendering_dependencies": false,
+    "claims_all_upstream_bugs_fixed": false,
+    "claims_dead_code_without_reachability_evidence": false,
+    "fail_closed": true,
+    "artifact_release_requires_smoke_tests": true,
+    "certification": "NOT_GRANTED"
+  },
+  "package_contract": {
+    "maximum_archive_bytes": 16000000,
+    "payload": "PRUNED_UPSTREAM_CALIBRE_SOURCE_OVERLAY_AND_SCOPE_WRAPPER",
+    "self_contained_native_runtime": false,
+    "required_external_runtime": "Official Calibre v9.17.0 Linux x86_64 runtime, provisioned outside this overlay archive",
+    "note": "The 16 MB cap applies to this overlay artifact only. It is not a 16 MB self-contained Calibre installation."
+  }
+}
