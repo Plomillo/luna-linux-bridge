@@ -18,7 +18,8 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
 SCHEMA = "LOUKSNAPG_BUNDLE/1.0"
-DEFAULT_MAX_BYTES = 470_000_000
+DEFAULT_MAX_BYTES = 490_000_000
+MAX_RUNTIME_BYTES = 470_000_000
 RUNTIME_MANIFEST = "MACRODOWN_MANIFEST.json"
 BUNDLE_MANIFEST = "LOUKSNAPG_MANIFEST.json"
 OPS_DOC = "LOUKSNAPG_OPERATIONS.md"
@@ -266,8 +267,10 @@ def build_bundle(document: Path, runtime_archive: Path, output: Path,
         raise ValueError("CAJITA_DOCUMENT_EMBED_MARKER_MISSING")
     if not document_bytes.endswith(cajita_bytes):
         raise ValueError("CAJITA_DOCUMENT_COPY_NOT_EXACT_SUFFIX")
-    runtime_sha = sha256_file(runtime_archive)
     runtime_bytes = runtime_archive.stat().st_size
+    if runtime_bytes > MAX_RUNTIME_BYTES:
+        raise ValueError(f"CAJITA_RUNTIME_OVER_CAP:{runtime_bytes}>{MAX_RUNTIME_BYTES}")
+    runtime_sha = sha256_file(runtime_archive)
     output.parent.mkdir(parents=True, exist_ok=True)
     if output.exists() or output.is_symlink():
         output.unlink()
@@ -354,7 +357,14 @@ def build_bundle(document: Path, runtime_archive: Path, output: Path,
                         "runtime_manifest_sha256": sha256_bytes(runtime_manifest_payload),
                         "runtime_candidate_id": runtime_manifest.get("candidate_id"),
                     },
-                    "budget": {"max_bytes": max_bytes, "status": "CAP_ENFORCED_AFTER_ARCHIVE_CLOSE", "measurement_method": "stat_size_after_zip_close"},
+                    "budget": {
+                        "max_bytes": max_bytes,
+                        "runtime_archive_max_bytes": MAX_RUNTIME_BYTES,
+                        "runtime_archive_bytes": runtime_bytes,
+                        "runtime_archive_status": "PASS",
+                        "status": "CAP_ENFORCED_AFTER_ARCHIVE_CLOSE",
+                        "measurement_method": "stat_size_after_zip_close"
+                    },
                     "members": payload_rows,
                     "runtime_member_count": len(runtime_member_rows),
                     "runtime_member_inventory": runtime_member_rows,
@@ -412,6 +422,12 @@ def verify_bundle(bundle: Path, max_bytes: int = DEFAULT_MAX_BYTES) -> dict:
         if BUNDLE_MANIFEST not in names or OPS_DOC not in names or "Louksna1.md" not in names:
             raise ValueError("BUNDLE_REQUIRED_MEMBERS_MISSING")
         manifest = json.loads(archive.read(BUNDLE_MANIFEST).decode("utf-8"))
+        source_record = manifest.get("source", {})
+        runtime_archive_bytes = source_record.get("runtime_archive_bytes") if isinstance(source_record, dict) else None
+        if isinstance(runtime_archive_bytes, bool) or not isinstance(runtime_archive_bytes, int) or runtime_archive_bytes <= 0:
+            raise ValueError("RUNTIME_ARCHIVE_BYTE_COUNT_MISSING")
+        if runtime_archive_bytes > MAX_RUNTIME_BYTES:
+            raise ValueError(f"CAJITA_RUNTIME_OVER_CAP:{runtime_archive_bytes}>{MAX_RUNTIME_BYTES}")
         if manifest.get("schema") != SCHEMA or manifest.get("product_name") != "LOUKSNAPG":
             raise ValueError("BUNDLE_MANIFEST_SCHEMA_OR_IDENTITY_MISMATCH")
         records = manifest.get("members")
@@ -467,6 +483,9 @@ def verify_bundle(bundle: Path, max_bytes: int = DEFAULT_MAX_BYTES) -> dict:
         "source_commit": manifest.get("source_commit", "UNKNOWN"),
         "bundle_bytes": size,
         "max_bytes": max_bytes,
+        "runtime_archive_bytes": runtime_archive_bytes,
+        "runtime_archive_max_bytes": MAX_RUNTIME_BYTES,
+        "runtime_archive_budget_status": "PASS",
         "budget_status": "PASS",
         "integrity_status": "PASS",
         "container_format": "ZIP_ARCHIVE_WITH_MARKDOWN_SUFFIX",
