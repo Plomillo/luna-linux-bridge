@@ -255,11 +255,17 @@ def canonical_target_adapter_summary(runtime_root: Path, task: dict) -> dict:
     undeclared_runtime_evidence = sorted(passing_runtime_targets - registered_runtime_ids)
     if undeclared_runtime_evidence:
         raise ValueError("UNREGISTERED_RUNTIME_ENGINE_SCOPE_EVIDENCE:" + ",".join(undeclared_runtime_evidence))
+    # G23 runs before the separately gated G24 runtime smoke. Absence of G24
+    # results here is a pending downstream evidence state, not grounds to corrupt
+    # or skip structural G23 validation. The final assessment must still refuse
+    # integral certification while any registered scope remains pending.
     missing_runtime_targets = sorted(registered_runtime_ids - passing_runtime_targets)
-    if missing_runtime_targets:
-        raise ValueError("REGISTERED_RUNTIME_SCOPE_WITHOUT_CURRENT_E2E_EVIDENCE:" + ",".join(missing_runtime_targets))
-
     registered_domains = {row.get("domain_id") for row in registered_adapters}
+    runtime_scope_status = (
+        "PASS_FOR_DECLARED_TARGET_ENGINE_SCOPE"
+        if not missing_runtime_targets
+        else "PENDING_G24_TARGET_ENGINE_EVIDENCE"
+    )
     return {
         "canonical_target_count": target_count,
         "synthetic_scope_registered_target_count": len(registered_adapters),
@@ -271,6 +277,8 @@ def canonical_target_adapter_summary(runtime_root: Path, task: dict) -> dict:
         "runtime_engine_smoke_scope_passed_target_count": len(passing_runtime_targets),
         "runtime_engine_smoke_scope_target_ids": sorted(registered_runtime_ids),
         "runtime_engine_smoke_scope_passed_target_ids": sorted(passing_runtime_targets),
+        "runtime_engine_smoke_scope_missing_target_ids": missing_runtime_targets,
+        "runtime_engine_smoke_scope_validation_status": runtime_scope_status,
         "unregistered_task_adapter_requirement_count": len(unregistered_adapters),
         "all_21_target_task_adapters": "NOT_ESTABLISHED" if len(registered_adapters) != target_count else "REGISTERED_PENDING_QUALITY_NATIVE_AND_ROLLBACK_GATES",
         "native_smoke": "PASS_FOR_DECLARED_RUNTIME_ENGINE_SCOPE_ONLY; HARDWARE_AND_FULL_PRODUCT_VALIDATION_REQUIRED",
