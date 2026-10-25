@@ -780,7 +780,7 @@ def distribution_contract(root: Path) -> list[dict]:
                 "module_descriptor_raw": nested_raw,
                 "module_descriptor_sha256": nested_sha,
                 "source_archive_path": nested_archive_path,
-                "source_archive_relpath": nested_archive_path[len(expanded_relpath) + 1:],
+                "source_archive_relpath": nested_archive_path[len(expanded_rel) + 1:],
                 "source_archive_bytes": nested_archive_bytes,
                 "source_archive_sha256": nested_archive_sha,
             })
