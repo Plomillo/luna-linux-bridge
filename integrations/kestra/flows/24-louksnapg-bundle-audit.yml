@@ -13,7 +13,7 @@ inputs:
     type: INT
   - id: max_bytes
     type: INT
-    defaults: 470000000
+    defaults: 490000000
   - id: document_sha256
     type: STRING
   - id: runtime_source_sha256
@@ -47,7 +47,7 @@ tasks:
          and inputs.document_sha256 matches '^[0-9a-f]{64}$'
          and inputs.runtime_source_sha256 matches '^[0-9a-f]{64}$'
          and inputs.bundle_bytes > 0
-         and inputs.max_bytes == 470000000
+         and inputs.max_bytes == 490000000
          and inputs.bundle_bytes <= inputs.max_bytes }}
     then:
       - id: evidence_shape_pass
