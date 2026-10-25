@@ -1,35 +1,35 @@
 {
   "schema": "CAJITA_INVENTORY_AUDIT/1.0",
   "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
-  "generated_at_utc": "2026-10-25T02:11:59.010981+00:00",
+  "generated_at_utc": "2026-10-25T03:05:33.135835+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "8e2a7b773f318e55c5029d3aa4384d9ce71a24c0",
+  "source_commit": "0337817836c6d930f30ac291ef65e78315eb67fb",
   "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
   "distribution": {
     "archive_format": "deterministic ZIP container with .macrodown extension",
     "member_count_including_manifest": 1418,
     "file_count_excluding_manifest": 1417,
-    "runtime_payload_bytes_excluding_manifest": 446913973,
-    "gross_raw_payload_bytes_including_manifest": 447345102,
-    "archive_bytes": 370862660,
+    "runtime_payload_bytes_excluding_manifest": 446937538,
+    "gross_raw_payload_bytes_including_manifest": 447368667,
+    "archive_bytes": 370865668,
     "hard_cap_bytes": 470000000,
     "raw_input_ceiling_bytes": 1500000000,
-    "raw_bytes_under_input_ceiling": 1052654898,
+    "raw_bytes_under_input_ceiling": 1052631333,
     "raw_payload_target_bytes": 470000000,
     "raw_payload_target_gate": "PASS",
     "raw_bytes_over_target": 0,
     "archive_target_bytes": 470000000,
-    "raw_bytes_under_cap": 1052654898,
-    "archive_bytes_under_cap": 99137340,
-    "archive_sha256": "2a2c25030f397574ce276beff3083cb95cc08dd35a10c3e44eb65a82ab6bdc6f",
+    "raw_bytes_under_cap": 1052631333,
+    "archive_bytes_under_cap": 99134332,
+    "archive_sha256": "d4f8ea9c190d352d4943a25c01bd4187f8c7dfb5baed65e8da9ff313d731598a",
     "raw_gate": "PASS",
     "archive_gate": "PASS",
     "certification": "NOT_GRANTED"
   },
   "runtime_root_document": {
     "path": "CajitadeLuna.md",
-    "size_bytes": 97693,
-    "sha256": "064d4de4cf05718475e07113a47bb62647186e23b3b97cf1c21b08dce1ff5499"
+    "size_bytes": 99901,
+    "sha256": "ed95ad3f25387928a14385de143d5f4546bcf017a17ed160de9cec1dc2256e47"
   },
   "cli_infrastructure": {
     "path": "2. Orquestación/Orquestador/CLIs",
@@ -106,7 +106,7 @@
     },
     "ROOT_OR_SUPPORT": {
       "file_count": 22,
-      "bytes": 719272
+      "bytes": 742837
     }
   },
   "prior_manifest_reconciliation": {
@@ -115,16 +115,14 @@
     "added_paths": [],
     "removed_paths": [],
     "changed_paths": [
-      "CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json",
       "CAJITA_DISTRIBUTION_MODULE_REGISTRY.json",
       "EXTERNALIZED_ASSET_PLACEMENT.json",
       "cajita_externalized_packaging.py",
-      "cajita_router.py",
       "command_subdomain_routing.json"
     ],
     "added_count": 0,
     "removed_count": 0,
-    "changed_count": 6,
+    "changed_count": 4,
     "prior_manifest_was_in_sync": false
   },
   "inventory": [
@@ -132,7 +130,7 @@
       "domain_id": "D01_CEREBRO",
       "path": "1. Cerebro/CAJITA_MODULE.json",
       "route_type": "cerebro",
-      "sha256": "bd96004e8ee0d0138ea22d2abeedf52721820fb65031744b0dd156f1e14d385b",
+      "sha256": "a4af60ee191afdc0646473b4a311493793a1f8c1337a33e8aede424a79947dbc",
       "size_bytes": 1017,
       "zip_method": "DEFLATED"
     },
@@ -260,7 +258,7 @@
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Confesión Eclesial Reformada/CAJITA_MODULE.json",
       "route_type": "orquestacion",
-      "sha256": "8256ebfd406a8bc6b54fc0b0b750cce170681e0a2192bd7527354ecac7e397a8",
+      "sha256": "da81abe80572abfae449cdaae9f828c3c83d4ad8516a969220a88707a2ed9f0a",
       "size_bytes": 1117,
       "zip_method": "DEFLATED"
     },
@@ -3036,7 +3034,7 @@
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Multi + Interdisciplinar/CAJITA_MODULE.json",
       "route_type": "orquestacion",
-      "sha256": "835351058b360e653044e4f9fcf7778f605e0fda0e4ff2c92f1b1109fd377bfc",
+      "sha256": "17a4f98c13d8170dd8b28918e76c623637d9327ee21ab739a379a11165710cb2",
       "size_bytes": 1145,
       "zip_method": "DEFLATED"
     },
@@ -3044,7 +3042,7 @@
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
       "route_type": "orquestacion",
-      "sha256": "05de75e7458a4458249a19111f7a675049bfab01994a415b33c347924244920c",
+      "sha256": "f0dddebdfa31e785a69489a83da3b24e4941bd48d8845cece94ace03281859da",
       "size_bytes": 1655,
       "zip_method": "DEFLATED"
     },
@@ -3092,7 +3090,7 @@
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Orquestador/CAJITA_MODULE.json",
       "route_type": "orquestacion",
-      "sha256": "1ad714c73c6f9efc793d60587c4107ad2dbefcfe1ef79b378d079c22c0045aed",
+      "sha256": "ff647a9f8c440b1f55cc2ffd6a4b487f578471cd0f586a6d4c4c8886dd7a9722",
       "size_bytes": 1043,
       "zip_method": "DEFLATED"
     },
@@ -3324,7 +3322,7 @@
       "domain_id": "D03_TRANSCRIPCION",
       "path": "3. Transcripción/CAJITA_MODULE.json",
       "route_type": "transcripcion",
-      "sha256": "5ec1e42cce9ac8b69744f4208c7e979422a1cacd4afc011ff59f721f1db4cd6c",
+      "sha256": "ffc995c26531d4aea952d934ae210de98be1e0db4255e742447236e63d5aa322",
       "size_bytes": 1032,
       "zip_method": "DEFLATED"
     },
@@ -3452,7 +3450,7 @@
       "domain_id": "D04_TRADUCTOR_INTELIGENTE",
       "path": "4. Traductor Inteligente/Hermenéutica H-G/CAJITA_MODULE.json",
       "route_type": "traductor_inteligente",
-      "sha256": "0a58e1c9384b288a3d8c204ed09e687d8430dad0d0b490621abfb24101af6ff6",
+      "sha256": "4b8946be8626ca28e148695693fd40e1196ff61716ba9a4feac9033ae24043db",
       "size_bytes": 1085,
       "zip_method": "DEFLATED"
     },
@@ -9940,7 +9938,7 @@
       "domain_id": "D04_TRADUCTOR_INTELIGENTE",
       "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/CAJITA_MODULE.json",
       "route_type": "traductor_inteligente",
-      "sha256": "0243ca81ea7cfa84df67919eccfba9e9e9d27ec4d879d0ec8b3d66e1d38c4825",
+      "sha256": "97a12a3f30bbe140764b02275649c850932f851d968c451a4183430a8cc5cc55",
       "size_bytes": 1134,
       "zip_method": "DEFLATED"
     },
@@ -10532,7 +10530,7 @@
       "domain_id": "D04_TRADUCTOR_INTELIGENTE",
       "path": "4. Traductor Inteligente/Traducción general/CAJITA_MODULE.json",
       "route_type": "traductor_inteligente",
-      "sha256": "5e1bf7833da1de960f699767a8bc3882956cc53351ee83a1cc0aea4076e83153",
+      "sha256": "66aeae4cb62faba4e20b0e1e3be6d3f301b49fdcef6bb9faad0e913f0dd305d1",
       "size_bytes": 1125,
       "zip_method": "DEFLATED"
     },
@@ -10676,7 +10674,7 @@
       "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
       "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre/CAJITA_MODULE.json",
       "route_type": "inteligencia_documental",
-      "sha256": "4e79d8347979ede0208ec1bbe86a683041e2123dc4d27704341a64dd1ad225a6",
+      "sha256": "8d59d90fc8c8a3f916cff1e7322768009ea21bb8c1f3ec7adc3aa8f40f521ed7",
       "size_bytes": 1068,
       "zip_method": "DEFLATED"
     },
@@ -10700,7 +10698,7 @@
       "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
       "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/CAJITA_MODULE.json",
       "route_type": "inteligencia_documental",
-      "sha256": "ba3c2cdc66f98f777d95413f11d634ac6a2885034fe5b74850ad3d7ab912f534",
+      "sha256": "7384ca82c7c107d23a53ca5844a7eccf3c941c385c9ce09581b3a866182c8068",
       "size_bytes": 1136,
       "zip_method": "DEFLATED"
     },
@@ -10820,7 +10818,7 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Anti-Alucinaciones/CAJITA_MODULE.json",
       "route_type": "sistema_inteligente",
-      "sha256": "07e428b92520bb6e9aff0afcf30758c362c662f503da6badda6ae5cd5e74f541",
+      "sha256": "26b9843e4df8e3b0a69726e5251fe55e4eebcbb78c7f1e2fa7db8f269219246e",
       "size_bytes": 1077,
       "zip_method": "DEFLATED"
     },
@@ -10860,7 +10858,7 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Análisis Avanzado/CAJITA_MODULE.json",
       "route_type": "sistema_inteligente",
-      "sha256": "941922e0f957103bd6610af2d8c2504109aaf35f21d9ef62cc56e38e340f465d",
+      "sha256": "90a065f37e738d35cf2ffac9f56f6376862f236fd58bab6bb40e997cbc6bfd9c",
       "size_bytes": 1140,
       "zip_method": "DEFLATED"
     },
@@ -10996,7 +10994,7 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Archivado Deteccion/CAJITA_MODULE.json",
       "route_type": "sistema_inteligente",
-      "sha256": "141f60143d6afca24ecb5c70335dc7d5ffc753a790588dc2aa00a3a50663c43c",
+      "sha256": "d7c29afd8c9d82e176a3e1e5e82b2815419ba1744925645c7bd500dde5848906",
       "size_bytes": 1066,
       "zip_method": "DEFLATED"
     },
@@ -11028,7 +11026,7 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Cognitive CI - CD/CAJITA_MODULE.json",
       "route_type": "sistema_inteligente",
-      "sha256": "e12fd0a56b71fd2d36dfc399d396dc02046e3d82b0c51e64f10e5d8c1c9b5826",
+      "sha256": "f2fcb40455aea834365073e08bf9ba642d4c1a3bb690c464522e2f1a36014dd6",
       "size_bytes": 1069,
       "zip_method": "DEFLATED"
     },
@@ -11052,7 +11050,7 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Consola/CAJITA_MODULE.json",
       "route_type": "sistema_inteligente",
-      "sha256": "f719578e1c8aa0c3a0764a6dffcccbcd91f7c67bd10c2096143f5e2effd95f76",
+      "sha256": "57ffc050d80b00b75076d8e526d738432a624b0da75119a3b21cfe95c4278764",
       "size_bytes": 1029,
       "zip_method": "DEFLATED"
     },
@@ -11084,7 +11082,7 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Memoria Gobernada/CAJITA_MODULE.json",
       "route_type": "sistema_inteligente",
-      "sha256": "d50de3bd8765d2c9e7442ac386c252030f5b68ef23905384abfd4959fe8e6105",
+      "sha256": "d235eb81c5c6df2ceead003656de167ca9e06a587f88d48749aa720004879d11",
       "size_bytes": 1093,
       "zip_method": "DEFLATED"
     },
@@ -11140,7 +11138,7 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Migración y Persistencia/CAJITA_MODULE.json",
       "route_type": "sistema_inteligente",
-      "sha256": "92464c2da80d2bea1eb565b2585159e223da292b27e9ed3ac490ed17b620ec67",
+      "sha256": "2deb94cdd64138d1135ff027bce72292b69da568059dc442832f1c86f1277973",
       "size_bytes": 1118,
       "zip_method": "DEFLATED"
     },
@@ -11164,7 +11162,7 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Motor - Protocolar/CAJITA_MODULE.json",
       "route_type": "sistema_inteligente",
-      "sha256": "d4a555d8e3a27d841aab8bd0fe1e08da400ad1b2591f89d1c52ab709ced369fe",
+      "sha256": "97dfc367f6778e2d21e989c2aadaf9015b5706ed69d5c8a73fedc9adf9afe63b",
       "size_bytes": 1070,
       "zip_method": "DEFLATED"
     },
@@ -11228,7 +11226,7 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Portabilidad base/CAJITA_MODULE.json",
       "route_type": "sistema_inteligente",
-      "sha256": "df7c525ae62f54dfffb8a914782736bd723368228170f563665a5afb144eb654",
+      "sha256": "d1f34ff042195022a808a977e6e037530e0af8d34ddf1e1019e1ad0a06596ce9",
       "size_bytes": 1064,
       "zip_method": "DEFLATED"
     },
@@ -11252,7 +11250,7 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Runtime Android Windows/CAJITA_MODULE.json",
       "route_type": "sistema_inteligente",
-      "sha256": "61e4d834b605e4cab8aaddfcd477192c883ceecaf3981854bb939a08e0de51c4",
+      "sha256": "a0b18712d44042936037d78f0d6a5d7295c8cbb82b165b3ab6505eef070c310f",
       "size_bytes": 1081,
       "zip_method": "DEFLATED"
     },
@@ -11268,7 +11266,7 @@
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "path": "6. Sistema Inteligente/Testing/CAJITA_MODULE.json",
       "route_type": "sistema_inteligente",
-      "sha256": "54ec38408f0798033b538d42c0dae0e74d2497a31e511a6b72ba8935c86201f2",
+      "sha256": "b881ee667d4748028ee10aa26310af35bc5ad9ff30fec2235f1bc16091eac292",
       "size_bytes": 1028,
       "zip_method": "DEFLATED"
     },
@@ -11300,7 +11298,7 @@
       "domain_id": null,
       "path": "CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json",
       "route_type": null,
-      "sha256": "7847e54fb20430fa3f61b19312b8a68d3590c9029114d4a7c51e88ffa550ef36",
+      "sha256": "80846990ecf69855b968bec9243daf740e7e74d23ab83c62da4b419425c523d8",
       "size_bytes": 3479,
       "zip_method": "DEFLATED"
     },
@@ -11308,7 +11306,7 @@
       "domain_id": null,
       "path": "CAJITA_DISTRIBUTION_MODULE_REGISTRY.json",
       "route_type": null,
-      "sha256": "4bdc8c5b82f4b4993051efe74f1dd266111ca952c1b93ce5042a24d3d96817b1",
+      "sha256": "ddf9a11a43ed437b59bd5ad9a911d51636f3113b610a0d475efe3072f7c2c491",
       "size_bytes": 68347,
       "zip_method": "DEFLATED"
     },
@@ -11324,8 +11322,8 @@
       "domain_id": null,
       "path": "CajitadeLuna.md",
       "route_type": null,
-      "sha256": "064d4de4cf05718475e07113a47bb62647186e23b3b97cf1c21b08dce1ff5499",
-      "size_bytes": 97693,
+      "sha256": "ed95ad3f25387928a14385de143d5f4546bcf017a17ed160de9cec1dc2256e47",
+      "size_bytes": 99901,
       "zip_method": "DEFLATED"
     },
     {
@@ -11340,7 +11338,7 @@
       "domain_id": null,
       "path": "EXTERNALIZED_ASSET_PLACEMENT.json",
       "route_type": null,
-      "sha256": "1201f84645c82c8c4dfeb2f6b2c57a6ef179cd09a574f3f2aad5d7669f10b409",
+      "sha256": "65cf7bbdafafa82e60d291c7fe85761695d3fc8b8352de7eb664f88523402388",
       "size_bytes": 126014,
       "zip_method": "DEFLATED"
     },
@@ -11404,8 +11402,8 @@
       "domain_id": null,
       "path": "cajita_externalized_packaging.py",
       "route_type": null,
-      "sha256": "f454812a177e9ab7b60c3c1ac61a9524ac969d74e3448766ffee4a6cc08434b1",
-      "size_bytes": 66215,
+      "sha256": "aa29bcb5e3d9ab314cd70713d6b8557ee1919e0919cc6f4ca6df9b8ebb90b5d5",
+      "size_bytes": 85687,
       "zip_method": "DEFLATED"
     },
     {
@@ -11420,8 +11418,8 @@
       "domain_id": null,
       "path": "cajita_runtime.py",
       "route_type": null,
-      "sha256": "40358e8515a1d09c23df5216cc99a9ab6686c18fe2a63d86b14a744edb1c6bc7",
-      "size_bytes": 16734,
+      "sha256": "87f2e953807669f0814eefec85dda355c80bbcd236073d5867625975c2129a8a",
+      "size_bytes": 18182,
       "zip_method": "DEFLATED"
     },
     {
@@ -11452,8 +11450,8 @@
       "domain_id": null,
       "path": "command_subdomain_routing.json",
       "route_type": null,
-      "sha256": "125c64d20e6f7a309c9b0803ae3d878e66a1508a204fa73564b11b466b6b8f94",
-      "size_bytes": 57412,
+      "sha256": "011ff5d6f10a801fbf3a201c7d71182952a5670340ec7cccf6f41cf1734bfd97",
+      "size_bytes": 57849,
       "zip_method": "DEFLATED"
     },
     {
@@ -11467,7 +11465,7 @@
     {
       "path": "MACRODOWN_MANIFEST.json",
       "size_bytes": 431129,
-      "sha256": "e3959ec4e863e5091bc31fa86d32d9df576395bb5121ca5541c4bbaccaab696d",
+      "sha256": "d494686b7886067a25b80da68d782f77840d486d5c5c26db8fa390cfa9b7f0af",
       "domain_id": null,
       "route_type": null,
       "zip_method": "DEFLATED",
