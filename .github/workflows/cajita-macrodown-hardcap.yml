@@ -124,8 +124,12 @@ jobs:
           archive_placement = json.loads(placement_path.read_text(encoding="utf-8"))
           archive_history = archive_placement.get("factory_reconciliation", {}).get("archives", [])
           archive_source_paths = {row.get("source_path") for row in archive_history if isinstance(row, dict) and isinstance(row.get("source_path"), str)}
+          source_container_paths = {
+              str(asset.get("compact_runtime_container", {}).get("path", "")).replace("\\", "/").removeprefix("cajita-luna-runtime/")
+              for asset in archive_placement.get("assets", []) if isinstance(asset, dict)
+          }
           container_paths = {item["container_relpath"] for item in externalized_contract}
-          build_only_archive_paths = archive_source_paths - container_paths
+          build_only_archive_paths = (archive_source_paths | source_container_paths) - container_paths
           report_path = Path("docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json")
           placement = json.loads(placement_path.read_text(encoding="utf-8"))
           report = json.loads(report_path.read_text(encoding="utf-8"))
