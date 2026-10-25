@@ -22,6 +22,10 @@ inputs:
     type: STRING
   - id: independent_integrity_status
     type: STRING
+  - id: identity_binding_status
+    type: STRING
+  - id: engine_replacement_status
+    type: STRING
   - id: functional_status
     type: STRING
   - id: semantic_quality_status
@@ -63,6 +67,8 @@ tasks:
     condition: >-
       {{ inputs.worker_status == 'PASS'
          and inputs.independent_integrity_status == 'PASS'
+         and inputs.identity_binding_status == 'PASS_SOURCE_IDENTITY_PRESERVED'
+         and inputs.engine_replacement_status == 'FORBIDDEN'
          and inputs.functional_status == 'PASS_ALL_21_REQUIRED_TARGETS'
          and inputs.semantic_quality_status == 'PASS'
          and inputs.host_matrix_status == 'PASS'
@@ -83,5 +89,5 @@ tasks:
         type: io.kestra.plugin.core.execution.Fail
         errorMessage: >-
           LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD.
-          One or more functional, semantic-quality, host, rollback, axiom or block gates
-          are not independently PASS for this exact candidate. Global certification is NOT_GRANTED.
+          Identity bindings, engine non-replacement, functional, semantic-quality, host, rollback,
+          axiom or block gates are not independently PASS for this exact candidate. Global certification is NOT_GRANTED.

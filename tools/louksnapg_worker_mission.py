@@ -236,6 +236,8 @@ def main(argv=None) -> int:
         and build_report.get("bundle_bytes") == output_size
         and build_report.get("bundle_sha256") == output_hash
         and build_report.get("source_commit") == head
+        and build_report.get("identity_preservation_status") == "PASS_SOURCE_IDENTITY_PRESERVED"
+        and build_report.get("engine_replacement") == "FORBIDDEN"
     )
     # CUSTOSZ's coordinator uses COMPLETED for a successful bounded mission.
     # The build action's return code plus the exact independent-report binding
@@ -261,6 +263,8 @@ def main(argv=None) -> int:
             "build_report_size_matches": build_report.get("bundle_bytes") == output_size,
             "build_report_hash_matches": build_report.get("bundle_sha256") == output_hash,
             "build_report_source_commit_matches": build_report.get("source_commit") == head,
+            "identity_preservation_pass": build_report.get("identity_preservation_status") == "PASS_SOURCE_IDENTITY_PRESERVED",
+            "engine_replacement_forbidden": build_report.get("engine_replacement") == "FORBIDDEN",
         },
         "input_sha256": input_hashes,
         "action": action_result,

@@ -66,6 +66,7 @@ jobs:
           required = {
               "source_commit", "bundle_sha256", "bundle_bytes", "document_sha256",
               "runtime_source_sha256", "worker_status", "independent_integrity_status",
+              "identity_binding_status", "engine_replacement_status",
               "functional_status", "semantic_quality_status", "host_matrix_status",
               "rollback_status", "axiom_binding_status", "block_binding_status",
           }

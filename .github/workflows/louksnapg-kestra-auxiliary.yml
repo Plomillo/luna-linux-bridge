@@ -180,6 +180,10 @@ jobs:
           assert check["cajita_document_copy_integrity"]=="PASS"
           assert check["runtime_member_integrity"]=="PASS"
           assert check["single_distribution_container"]=="PASS"
+          assert check["identity_preservation_status"]=="PASS_SOURCE_IDENTITY_PRESERVED"
+          assert check["engine_replacement"]=="FORBIDDEN"
+          assert build["identity_preservation_status"]=="PASS_SOURCE_IDENTITY_PRESERVED"
+          assert build["engine_replacement"]=="FORBIDDEN"
           assert build["global_certification"]=="NOT_GRANTED"
           assert worker["worker_status"]=="PASS"
           print(json.dumps({"status":"PASS_SINGLE_FILE_PACKAGE_INTEGRITY","artifact":b.name,"bytes":b.stat().st_size,"sha256":sha,"source_commit":check["source_commit"],"worker_status":worker["worker_status"],"global_certification":"NOT_GRANTED"},indent=2))
@@ -240,6 +244,8 @@ jobs:
               "runtime_source_sha256":build["source_runtime_archive_sha256"],
               "worker_status":worker["worker_status"],
               "independent_integrity_status":"PASS",
+              "identity_binding_status":validation["identity_preservation_status"],
+              "engine_replacement_status":validation["engine_replacement"],
               "functional_status":"NOT_ESTABLISHED",
               "semantic_quality_status":"NOT_ESTABLISHED",
               "host_matrix_status":"NOT_ESTABLISHED",
