@@ -145,7 +145,7 @@ def execute_task(record,root,timeout_cap=600):
  try:
   row=normalize(record,root,timeout_cap)
   identity={"domain_id":row["domain_id"],"operation":row["operation"],"input":row["input"],"input_files":row["input_files"],"limits":row["limits"]}
-  out={**base,"task_id":row["task_id"],"domain_id":row["domain_id"],"operation":row["operation"],"adapter_id":row["adapter_id"],
+  out={**base,"task_id":row["task_id"],"domain_id":row["domain_id"],"target_id":row["target_id"],"operation":row["operation"],"adapter_id":row["adapter_id"],
        "input_sha256":digest_bytes(canonical(identity)),"input_files":row["input_files"],"started_at_utc":utc_now()}
   if row["domain_id"]==PLAN_ONLY["domain"]:
    from cajita_router import build_plan
