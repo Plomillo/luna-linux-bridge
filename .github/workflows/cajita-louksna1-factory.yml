@@ -189,6 +189,15 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
+      - name: Upload source-only module registry for safe candidate publication
+        if: always() && hashFiles('out/stage/cajita-luna-runtime/module_registry.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: cajita-source-module-registry
+          path: out/stage/cajita-luna-runtime/module_registry.json
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Upload standalone Louksna1 document for direct retrieval
         if: always() && hashFiles('out/Louksna1.md') != ''
         uses: actions/upload-artifact@v4
@@ -686,6 +695,12 @@ jobs:
           name: louksna1-candidate
           path: downloaded/louksna1-candidate
 
+      - name: Download source-only module registry
+        uses: actions/download-artifact@v4
+        with:
+          name: cajita-source-module-registry
+          path: downloaded/cajita-source-module-registry
+
       - name: Download independent G23 evidence
         uses: actions/download-artifact@v4
         with:
@@ -737,6 +752,34 @@ jobs:
           unzip -q "$FACTORY/CAJITA_LUNA_RUNTIME_V10.macrodown" -d "$RUNNER_TEMP/cajita-unpacked"
           test -s "$RUNNER_TEMP/cajita-unpacked/MACRODOWN_MANIFEST.json"
           rsync -a --delete "$RUNNER_TEMP/cajita-unpacked/" "cajita-luna-runtime/"
+          # The compact Macrodown intentionally excludes the full source registry.
+          # Restore the exact stage-built registry as a separate governed source artifact.
+          SOURCE_REGISTRY="downloaded/cajita-source-module-registry/module_registry.json"
+          test -s "$SOURCE_REGISTRY"
+          test ! -L "$SOURCE_REGISTRY"
+          cp "$SOURCE_REGISTRY" cajita-luna-runtime/module_registry.json
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path("cajita-luna-runtime")
+          source_path = root / "module_registry.json"
+          distribution_path = root / "CAJITA_DISTRIBUTION_MODULE_REGISTRY.json"
+          if source_path.is_symlink() or not source_path.is_file():
+              raise SystemExit("SOURCE_MODULE_REGISTRY_NOT_REGULAR_AFTER_RESTORE")
+          source_bytes = source_path.read_bytes()
+          source = json.loads(source_bytes)
+          distribution = json.loads(distribution_path.read_text(encoding="utf-8"))
+          if source.get("schema") != "CAJITA_MODULE_REGISTRY/1.0":
+              raise SystemExit("SOURCE_MODULE_REGISTRY_SCHEMA_INVALID")
+          if len(source.get("modules", [])) != 28:
+              raise SystemExit("SOURCE_MODULE_REGISTRY_COUNT_INVALID")
+          if source.get("canonical_target_module_count") != 21 or len(source.get("target_modules", [])) != 21:
+              raise SystemExit("SOURCE_CANONICAL_TARGET_REGISTRY_INVALID")
+          actual_sha = hashlib.sha256(source_bytes).hexdigest()
+          if distribution.get("source_module_registry_sha256") != actual_sha:
+              raise SystemExit("SOURCE_DISTRIBUTION_REGISTRY_BINDING_MISMATCH")
+          print(json.dumps({"status":"PASS_SOURCE_REGISTRY_RESTORED","source_registry_sha256":actual_sha,"materialized_module_count":len(source["modules"]),"canonical_target_module_count":len(source["target_modules"]),"distribution_registry_bound":True}))
+          PY
           cp "$FACTORY/Louksna1.md" Louksna1.md
           mkdir -p docs/cajita-luna
           cp "$FACTORY/LOUKSNA1_RELEASE_MANIFEST.json" docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json
