@@ -1,13 +1,13 @@
 {
   "schema": "CAJITA_RUNTIME_HARD_CAP_REBALANCE/1.0",
   "audit_id": "CAJITA_RUNTIME_Q4_REBALANCE_20261023",
-  "created_at_utc": "2026-10-24T19:56:25.245143+00:00",
+  "created_at_utc": "2026-10-25T01:25:40.637916+00:00",
   "repository": "Plomillo/luna-linux-bridge",
   "branch": "main",
   "hard_cap_bytes": 470000000,
   "size_basis": "sum of actual runtime file bytes excluding only the regenerated MACRODOWN_MANIFEST.json",
-  "runtime_bytes_before": 464321271,
-  "runtime_file_count_before": 163,
+  "runtime_bytes_before": 847383789,
+  "runtime_file_count_before": 17229,
   "weight_factor_results": [
     {
       "id": "W01_CEREBRO",
@@ -104,7 +104,7 @@
           "outputs": [
             {
               "index": 0,
-              "relative_l2_error": 0.006748258135160156,
+              "relative_l2_error": 0.02539970797956496,
               "top1_same": true,
               "shape": [
                 1,
@@ -123,7 +123,7 @@
         "candidate_bytes": 110219194,
         "candidate_sha256": "9361e200e97334904e29073a9662b9c5494d4c4a3ffe86a1ce3cd91eee1cd324",
         "graph_or_runtime_check": "FAIL",
-        "error": "InvalidGraph:[ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/cajita-onnx-rebalance-1x8u9p88/candidate.float16.onnx failed:This is an invalid model. Type Error: Type 'tensor(float16)' of input parameter (transformer.shared.weight__scale) of operator (DequantizeLinear) in node (UMOT_DQ_7d1903260d533211) is invalid.",
+        "error": "InvalidGraph:[ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/cajita-onnx-rebalance-u94igka3/candidate.float16.onnx failed:This is an invalid model. Type Error: Type 'tensor(float16)' of input parameter (transformer.shared.weight__scale) of operator (DequantizeLinear) in node (UMOT_DQ_7d1903260d533211) is invalid.",
         "status": "CANDIDATE_RUNTIME_FAILED"
       }
     ],
@@ -174,11 +174,11 @@
     }
   },
   "weights_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
-  "runtime_bytes_after": 487553835,
-  "runtime_file_count_after": 163,
-  "saved_bytes": -23232564,
-  "bytes_over_cap": 0,
-  "size_gate": "PASS",
+  "runtime_bytes_after": 847383789,
+  "runtime_file_count_after": 17229,
+  "saved_bytes": 0,
+  "bytes_over_cap": 377383789,
+  "size_gate": "FAIL",
   "quantized_factor_models_promoted": 0,
   "q2_factor_models_promoted": 0,
   "q2_factor_bytes_saved": 0,
@@ -188,16 +188,6 @@
   "quality_equivalence": "SMOKE_SIGNATURE_ONLY; TASK_LEVEL_QUALITY_NOT_ESTABLISHED",
   "independent_validation": "NOT_RUN",
   "certification": "NOT_GRANTED",
-  "elapsed_seconds": 3.992,
-  "status": "RAW_INPUT_CEILING_PASS_FINAL_ARCHIVE_GATE_PENDING",
-  "raw_input_ceiling_bytes": 1500000000,
-  "raw_payload_target_bytes": 470000000,
-  "raw_payload_target_gate": "OVER_TARGET_NOT_FINAL_GATE",
-  "raw_bytes_over_target": 17553835,
-  "distribution_archive_cap_bytes": 470000000,
-  "distribution_archive_gate": "PENDING_FINAL_ZIP_BUILD",
-  "placement_size_gate_recorded": true,
-  "runtime_measurement_scope": "REPRODUCIBLE_DISTRIBUTION_PAYLOAD; RAW INPUT CEILING IS 1.5 GB; 470 MB IS AN ARCHIVE TARGET, NOT THE PRE-COMPRESSION SUM",
-  "externalized_asset_reconstruction": "PASS_CONTAINER_RECONSTRUCTION_ONLY; CONSUMER_ADAPTERS_NOT_ESTABLISHED",
-  "registered_asset_count": 10
+  "elapsed_seconds": 3.065,
+  "status": "SIZE_GATE_FAIL_OPTIMIZATION_RESULTS_COMMITTED_FOR_NEXT_PASS"
 }
