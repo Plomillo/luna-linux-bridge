@@ -79,6 +79,25 @@ jobs:
               req=urllib.request.Request("https://api.github.com/repos/"+repo+path,headers=headers)
               with urllib.request.urlopen(req,timeout=30) as response:
                   return json.load(response)
+          def product_candidate_ready(run):
+              # The distribution may be independently integrity-checked as soon
+              # as manufacture and G23 are successful. Do not wait for the slower
+              # G24 model-quality gate merely to make the un-certified candidate
+              # downloadable; this workflow still passes NOT_ESTABLISHED to Kestra.
+              jobs_result=get("/actions/runs/"+urllib.parse.quote(str(run["id"]),safe="")+"/jobs?per_page=100")
+              jobs_by_name={item.get("name"):item for item in jobs_result.get("jobs",[])}
+              required=("manufacture","g23-independent-validation")
+              if any(name not in jobs_by_name for name in required):
+                  return False
+              for name in required:
+                  item=jobs_by_name[name]
+                  if item.get("status")=="completed" and item.get("conclusion")!="success":
+                      raise RuntimeError("SOURCE_FACTORY_OR_G23_FAILED_CLOSED:"+name+":"+str(item.get("conclusion")))
+              return all(
+                  jobs_by_name[name].get("status")=="completed"
+                  and jobs_by_name[name].get("conclusion")=="success"
+                  for name in required
+              )
           selected=None
           for attempt in range(361):
               try:
@@ -104,13 +123,13 @@ jobs:
                           # this same branch, even if that run began after the push event.
                           candidates.sort(key=lambda row:(row.get("created_at",""),row.get("run_attempt",0)),reverse=True)
                           selected=candidates[0]
-                  if selected and selected.get("status")=="completed":
+                  if selected and product_candidate_ready(selected):
                       break
               except urllib.error.HTTPError as exc:
                   if exc.code not in (404,429,500,502,503,504):
                       raise
               if attempt==360:
-                  raise SystemExit("FACTORY_RUN_NOT_COMPLETED_WITHIN_AUXILIARY_WAIT_WINDOW")
+                  raise SystemExit("FACTORY_MANUFACTURE_AND_G23_NOT_PASSED_WITHIN_AUXILIARY_WAIT_WINDOW")
               time.sleep(10)
           if not selected:
               raise SystemExit("EXACT_FACTORY_RUN_NOT_FOUND")
