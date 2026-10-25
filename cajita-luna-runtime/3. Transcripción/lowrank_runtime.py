@@ -164,8 +164,13 @@ def smoke_test(audio_path=None, max_new_tokens=4):
     inputs["input_features"] = inputs["input_features"].to(dtype=torch.float32)
     generate_kwargs = {"max_new_tokens": int(max_new_tokens), "do_sample": False}
     if audio_path:
-        # Control tokens must not consume the acceptance budget. This does not
-        # change weights and does not claim reference-model equivalence.
+        # This candidate carries a legacy forced_decoder_ids value in its
+        # generation config. Transformers rejects passing language/task while
+        # that legacy field is set. Use the explicit language/task arguments,
+        # and remove only the conflicting generation-config override.
+        # Model weights and token identities remain unchanged.
+        if getattr(model.generation_config, "forced_decoder_ids", None) is not None:
+            model.generation_config.forced_decoder_ids = None
         generate_kwargs["language"] = "en"
         generate_kwargs["task"] = "transcribe"
     with torch.inference_mode():
