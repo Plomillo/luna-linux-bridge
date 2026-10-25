@@ -12,6 +12,8 @@ on:
       - "cajita-luna-runtime/cajita_externalized_packaging.py"
       - "cajita-luna-runtime/cajita_externalized_asset_loader.py"
       - "cajita-luna-runtime/module_registry.json"
+      - "cajita-luna-runtime/command_subdomain_routing.json"
+      - "cajita-luna-runtime/CAJITA_DISTRIBUTION_ROUTING.json"
       - "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json"
       - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
       - "cajita-luna-runtime/2. Orquestación/Orquestador/punto.json"
@@ -193,7 +195,7 @@ jobs:
                       if path.is_symlink():
                           raise SystemExit("SYMLINK_IN_RUNTIME:" + str(path))
                       rel = path.relative_to(root).as_posix()
-                      if name == "MACRODOWN_MANIFEST.json" or rel == "module_registry.json" or under_expanded_tree(rel):
+                      if name == "MACRODOWN_MANIFEST.json" or rel in {"module_registry.json", "command_subdomain_routing.json"} or under_expanded_tree(rel):
                           continue
                       if path.is_file():
                           total += path.stat().st_size
@@ -421,6 +423,7 @@ jobs:
             "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json" \
             "cajita-luna-runtime/MACRODOWN_MANIFEST.json" \
             "cajita-luna-runtime/CAJITA_DISTRIBUTION_MODULE_REGISTRY.json" \
+            "cajita-luna-runtime/CAJITA_DISTRIBUTION_ROUTING.json" \
             "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json" \
             "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json" \
             "docs/cajita-luna/CAJITA_INVENTORY_AUDIT_20261024.json"
