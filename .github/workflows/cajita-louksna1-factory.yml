@@ -18,6 +18,7 @@ on:
       - "cajita-luna-runtime/cajita_runtime.py"
       - "cajita-luna-runtime/cajita_task_adapters.py"
       - "tests/test_cajita_task_adapters.py"
+      - "tests/test_cajita_task_e2e.py"
       - "cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py"
       - "cajita-luna-runtime/3. Transcripción/lowrank_runtime.py"
       - "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/lowrank_runtime.py"
@@ -152,6 +153,9 @@ jobs:
           assert "NOT_GRANTED" in gate["condition"]
           assert ".id > 0" in gate["condition"]
           assert ".total_count > 0" not in gate["condition"]
+          harness = Path("tools/cajita_task_e2e.py").read_text(encoding="utf-8")
+          assert "synthetic_quality_acceptance" in harness
+          assert "ESPEAK_NG_REQUIRED_FOR_KNOWN_SPEECH_FIXTURE" in harness
           print("LOUKSNA1_KESTRA_FLOW_STATIC_CONTRACT=PASS")
           PY
           python cajita-luna-runtime/cajita_antiparalysis.py selftest --state-dir "$RUNNER_TEMP/anti-paralysis-selftest"
@@ -552,7 +556,9 @@ jobs:
           mkdir -p "$DOCKERCTX"
           cat > "$DOCKERCTX/Dockerfile" <<'EOF'
           FROM python:3.13-slim-bookworm
-          RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.11.0+cpu numpy==2.2.6 safetensors==0.8.0 transformers==4.57.6 sentencepiece==0.2.2 tokenizers==0.22.2 pillow==13.0.0 Jinja2==3.1.6 protobuf==4.25.9 PyYAML==6.0.3
+          RUN apt-get update && apt-get install -y --no-install-recommends espeak-ng \
+              && rm -rf /var/lib/apt/lists/* \
+              && pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.11.0+cpu numpy==2.2.6 safetensors==0.8.0 transformers==4.57.6 sentencepiece==0.2.2 tokenizers==0.22.2 pillow==13.0.0 Jinja2==3.1.6 protobuf==4.25.9 PyYAML==6.0.3
           EOF
           docker build -t cajita-louksna1-smoke "$DOCKERCTX" > "$RUNNER_TEMP/docker-build.log" 2>&1
           BUILD_RC=$?
