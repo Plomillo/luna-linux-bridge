@@ -34,7 +34,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: cajita-target-engine-scopes-\${{ github.event.pull_request.number || github.ref }}
+  group: cajita-target-engine-scopes-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -60,7 +60,6 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends p7zip-full
-          7z | head -n 2
 
       - name: Compile changed adapter, binding and evidence code
         shell: bash
