@@ -252,6 +252,8 @@ jobs:
           import hashlib, json, os, subprocess, sys, zipfile
           from pathlib import Path
           root=Path("candidate")
+          runtime_root=None
+          externalized_container_paths=set()
           def canonical_tree_rows(directory):
             rows=[]
             for base, dirs, files in os.walk(directory, topdown=True, followlinks=False):
@@ -265,6 +267,15 @@ jobs:
                   raise AssertionError("MODULE_NON_REGULAR_FILE:"+str(path.relative_to(directory)))
                 if name=="CAJITA_MODULE.json":
                   continue
+                # A hash-pinned compressed container is separately verified
+                # as a distribution member; it is not a logical module-tree file.
+                if runtime_root is not None:
+                  try:
+                    runtime_rel=path.resolve().relative_to(runtime_root).as_posix()
+                  except ValueError:
+                    runtime_rel=None
+                  if runtime_rel in externalized_container_paths:
+                    continue
                 data=path.read_bytes()
                 rows.append({"path":path.relative_to(directory).as_posix(),"bytes":len(data),"sha256":hashlib.sha256(data).hexdigest()})
             return sorted(rows,key=lambda row:row["path"].encode("utf-8"))
@@ -336,6 +347,9 @@ jobs:
               target.parent.mkdir(parents=True,exist_ok=True)
               target.write_bytes(z.read(name))
           runtime=root/"runtime"
+          runtime_root=runtime.resolve()
+          externalized_container_paths=set(allowed_archives)
+          assert len(externalized_container_paths)==10, "EXTERNALIZED_CONTAINER_LOGICAL_PATH_SET"
           import sys
           sys.path.insert(0,str(runtime))
           from cajita_tokenizer_materializer import tokenizer_tree_rows, TokenizerMaterializationError
