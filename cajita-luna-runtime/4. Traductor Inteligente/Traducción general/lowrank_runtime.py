@@ -15,6 +15,7 @@ if _RUNTIME_ROOT is None:
     raise RuntimeError("CAJITA_RUNTIME_ROOT_NOT_FOUND")
 sys.path.insert(0, str(_RUNTIME_ROOT))
 from cajita_weight_materializer import load_model_state
+from cajita_tokenizer_materializer import load_pretrained_with_compressed_tokenizer
 from transformers import AutoConfig, AutoProcessor, SeamlessM4Tv2Model
 
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -242,7 +243,7 @@ def smoke_test(text="Hello world.", src_lang="eng", tgt_lang="spa", max_new_toke
         raise ValueError("TRANSLATION_TEXT_REQUIRED")
     if isinstance(max_new_tokens, bool) or not 1 <= int(max_new_tokens) <= 128:
         raise ValueError("MAX_NEW_TOKENS_OUT_OF_RANGE")
-    processor = AutoProcessor.from_pretrained(ROOT, local_files_only=True)
+    processor = load_pretrained_with_compressed_tokenizer(ROOT, AutoProcessor, local_files_only=True)
     model = load_candidate()
     tok = getattr(processor, "tokenizer", None)
     if tok is None:
