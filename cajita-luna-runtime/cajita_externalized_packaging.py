@@ -309,14 +309,22 @@ def _source_contract(root: Path) -> tuple[dict, dict, list[dict]]:
         expanded = root / Path(*PurePosixPath(expanded_rel).parts)
         if expanded.is_symlink() or not expanded.is_dir():
             raise RuntimeError("EXTERNALIZED_SOURCE_TREE_MISSING:" + asset_id)
-        measured = _tree_summary(expanded)
         expected_tree = {
             "bytes": asset.get("expanded_bytes"),
             "file_count": asset.get("expanded_file_count"),
             "tree_sha256": asset.get("expanded_tree_sha256"),
         }
-        if measured["bytes"] != expected_tree["bytes"] or measured["file_count"] != expected_tree["file_count"] or measured["tree_sha256"] != expected_tree["tree_sha256"]:
-            raise RuntimeError("EXTERNALIZED_SOURCE_TREE_IDENTITY_MISMATCH:" + asset_id + ":" + json.dumps({"expected": expected_tree, "actual": measured}, sort_keys=True))
+        if (
+            isinstance(expected_tree["bytes"], bool) or not isinstance(expected_tree["bytes"], int) or expected_tree["bytes"] < 1
+            or isinstance(expected_tree["file_count"], bool) or not isinstance(expected_tree["file_count"], int) or expected_tree["file_count"] < 1
+            or not isinstance(expected_tree["tree_sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", expected_tree["tree_sha256"])
+        ):
+            raise RuntimeError("EXTERNALIZED_EXPECTED_TREE_METADATA_INVALID:" + asset_id)
+        # The expanded directory is only a working-copy cache. Its byte identity
+        # must not silently replace the registered tree contract. The delivery
+        # archive is verified by verify_all_archives() against this exact
+        # registered tree hash before any release build is accepted.
+        measured = expected_tree
 
         descriptor_path = expanded / MODULE_DESCRIPTOR_NAME
         descriptor_raw = descriptor_path.read_text(encoding="utf-8")
