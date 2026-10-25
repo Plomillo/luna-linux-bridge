@@ -167,6 +167,70 @@ def execute_jena_graph(jena, graph, output):
     return {"riot_parse": "PASS", "sparql_counts": counts}
 
 
+def canonical_target_adapter_summary(runtime_root: Path, task: dict) -> dict:
+    runtime = Path(runtime_root).resolve()
+    registry_path = runtime / "module_registry.json"
+    if registry_path.is_symlink() or not registry_path.is_file():
+        raise ValueError("CANONICAL_TARGET_MODULE_REGISTRY_MISSING_OR_UNSAFE")
+    try:
+        module_registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("CANONICAL_TARGET_MODULE_REGISTRY_INVALID") from exc
+    target_modules = module_registry.get("target_modules")
+    target_count = module_registry.get("canonical_target_module_count")
+    if (not isinstance(target_modules, list) or isinstance(target_count, bool)
+        or not isinstance(target_count, int) or target_count != len(target_modules)):
+        raise ValueError("CANONICAL_TARGET_MODULE_REGISTRY_COUNT_MISMATCH")
+    target_ids = [row.get("target_id") for row in target_modules if isinstance(row, dict)]
+    if len(target_ids) != len(target_modules) or len(set(target_ids)) != len(target_ids):
+        raise ValueError("CANONICAL_TARGET_MODULE_REGISTRY_ID_INVALID")
+
+    registered_adapters = []
+    unregistered_adapters = []
+    for row in target_modules:
+        registration = row.get("consumer_adapter_registration", {})
+        if not isinstance(registration, dict):
+            raise ValueError("CANONICAL_TARGET_ADAPTER_REGISTRATION_INVALID:" + str(row.get("target_id")))
+        state = registration.get("status")
+        if state == "REGISTERED_SYNTHETIC_SCOPE_ONLY":
+            if (not isinstance(row.get("consumer_adapter"), str)
+                or row.get("consumer_adapter") in {"", "NOT_REGISTERED_FOR_ALL_TASKS"}
+                or registration.get("certification") != "NOT_GRANTED"
+                or registration.get("reference_quality_equivalence") != "NOT_ESTABLISHED"):
+                raise ValueError("CANONICAL_TARGET_SYNTHETIC_ADAPTER_SCOPE_INCOMPLETE:" + str(row.get("target_id")))
+            registered_adapters.append(row)
+        else:
+            if row.get("consumer_adapter") != "NOT_REGISTERED_FOR_ALL_TASKS":
+                raise ValueError("CANONICAL_TARGET_ADAPTER_STATUS_MISMATCH:" + str(row.get("target_id")))
+            unregistered_adapters.append(row)
+
+    task_results = task.get("task_results", [])
+    if not isinstance(task_results, list):
+        raise ValueError("TASK_ADAPTER_EVIDENCE_RESULTS_INVALID")
+    passing_task_domains = {
+        item.get("domain_id") for item in task_results
+        if isinstance(item, dict) and item.get("status") == "PASS_FUNCTIONAL_EXECUTION"
+        and item.get("exit_code") == 0
+    }
+    registered_domains = {row.get("domain_id") for row in registered_adapters}
+    missing_task_evidence = sorted(registered_domains - passing_task_domains)
+    if missing_task_evidence:
+        raise ValueError("REGISTERED_SYNTHETIC_ADAPTER_WITHOUT_CURRENT_E2E_EVIDENCE:" + ",".join(missing_task_evidence))
+
+    return {
+        "canonical_target_count": target_count,
+        "synthetic_scope_registered_target_count": len(registered_adapters),
+        "unregistered_target_count": len(unregistered_adapters),
+        "registered_target_ids": sorted(row["target_id"] for row in registered_adapters),
+        "unregistered_target_ids": sorted(row["target_id"] for row in unregistered_adapters),
+        "registered_domains_with_passing_synthetic_e2e": sorted(registered_domains),
+        "all_21_target_task_adapters": "NOT_ESTABLISHED" if len(registered_adapters) != target_count else "REGISTERED_PENDING_QUALITY_NATIVE_AND_ROLLBACK_GATES",
+        "native_smoke": "REQUIRED",
+        "reference_quality_equivalence": "NOT_ESTABLISHED",
+        "certification": "NOT_GRANTED",
+    }
+
+
 def audit(args):
     source=Path(args.source).read_bytes(); companion=Path(args.companion).read_bytes()
     manifest=json.loads(Path(args.manifest).read_text(encoding="utf-8"))
@@ -206,6 +270,10 @@ def audit(args):
     output=Path(args.output).resolve(); graph=output/"louksna1-axiom-provenance.nt"
     triple_count,graph_sha,graph_bytes=build_graph(axiom_rows,legacy,graph)
     root=Path(args.runtime).resolve()
+    adapter_registration_summary=canonical_target_adapter_summary(root,task)
+    registered_count=adapter_registration_summary["synthetic_scope_registered_target_count"]
+    unregistered_count=adapter_registration_summary["unregistered_target_count"]
+    target_count=adapter_registration_summary["canonical_target_count"]
     sys.path.insert(0,str(root))
     from cajita_externalized_packaging import materialize_registered_asset
     with tempfile.TemporaryDirectory(prefix="louksna1-jena-verified-") as temp_name:
@@ -225,13 +293,19 @@ def audit(args):
       "rdf_graph":{"path":graph.name,"bytes":graph_bytes,"sha256":graph_sha,"triples":triple_count,
                    "format":"N-Triples","scope":"CONTENT_CLASS_BLOCK_TRACE_SOURCE_LINE_PROVENANCE"},
       "jena":{"container_reconstruction":jena_reconstruction,**jena_results},
+      "target_adapter_registration":adapter_registration_summary,
       "semantic_gates":{"axiom_proposition_validity":"NOT_ESTABLISHED",
         "semantic_consistency":"NOT_ESTABLISHED","model_quality_equivalence":"NOT_ESTABLISHED",
-        "all_21_target_task_adapters":"NOT_ESTABLISHED","full_integrated_runtime_behaviour":"NOT_ESTABLISHED"},
-      "blockers":["The natural-language axiom propositions and their logical consistency have not been independently validated.",
-        "21 canonical target manifests still report consumer_adapter=NOT_REGISTERED_FOR_ALL_TASKS.",
-        "Synthetic adapter execution does not establish quality equivalence to reference baselines.",
-        "Required native/hardware and end-to-end rollback evidence is not complete."],
+        "all_21_target_task_adapters":adapter_registration_summary["all_21_target_task_adapters"],
+        "full_integrated_runtime_behaviour":"NOT_ESTABLISHED"},
+      "blockers":(
+        ["The natural-language axiom propositions and their logical consistency have not been independently validated."]
+        + ([f"{unregistered_count} of {target_count} canonical targets remain without a registered consumer adapter; {registered_count} are registered for synthetic scope only."]
+           if unregistered_count else [])
+        + (["Synthetic adapter execution does not establish quality equivalence to reference baselines."]
+           if registered_count else [])
+        + ["Required native/hardware and end-to-end rollback evidence is not complete."]
+      ),
       "historical_debt":{"declared_gaps":657,"measured_legacy_numeric_gaps":legacy_result["numeric_gaps_1_2414"],
         "status":"DISCLOSED_NONBLOCKING_HISTORICAL_DEBT","source_mutation":False},
       "certification_scope":"STRUCTURAL_AXIOM_PROVENANCE_GRAPH_ONLY","authority":"ASSESSMENT_ONLY_NOT_A_CERTIFICATE"
