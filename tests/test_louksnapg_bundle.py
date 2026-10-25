@@ -42,13 +42,30 @@ class LouksnapgBundleTests(unittest.TestCase):
             + b"\n---\n# Unification marker\n\n# Documento central del runtime Cajita de Luna (copia literal)\n\n"
             + self.cajita_bytes
         )
+        engine_bindings = [
+            {"id": "E01", "name": "LLM"}, {"id": "E02", "name": "NLP"}, {"id": "E03", "name": "RAG"},
+            {"id": "E04", "name": "EMBEDDINGS"}, {"id": "E05", "name": "VECTOR_SEARCH"}, {"id": "E06", "name": "KNOWLEDGE_GRAPH"},
+            {"id": "E07", "name": "RDF"}, {"id": "E08", "name": "OWL"}, {"id": "E09", "name": "SEMANTIC_INFERENCE"},
+            {"id": "E10", "name": "RULE_ENGINE"}, {"id": "E11", "name": "HERMENEUTIC"}, {"id": "E12", "name": "FORMALIZATION"},
+            {"id": "E13", "name": "VALIDATION"}, {"id": "E14", "name": "PROVENANCE"}, {"id": "E15", "name": "CONSENSUS"},
+        ]
+        target_ids = [
+            "D01_CEREBRO_ROOT", "D02_CONFESION_ECLESIAL_REFORMADA", "D02_MULTI_INTERDISCIPLINAR", "D02_ORQUESTADOR",
+            "D03_TRANSCRIPCION_ROOT", "D04_HERMENEUTICA_HG", "D04_TRADUCCION_LENGUAS_ANTIGUAS", "D04_TRADUCCION_GENERAL",
+            "D05_CALIBRE", "D05_DOCLING", "D06_ANTI_ALUCINACIONES", "D06_ANALISIS_AVANZADO", "D06_ARCHIVADO_DETECCION",
+            "D06_COGNITIVE_CI_CD", "D06_CONSOLA", "D06_MEMORIA_GOBERNADA", "D06_MIGRACION_PERSISTENCIA", "D06_MOTOR_PROTOCOLAR",
+            "D06_PORTABILIDAD_BASE", "D06_RUNTIME_ANDROID_WINDOWS", "D06_TESTING",
+        ]
+        command_ids = ["HELP", "PT", "PA", "DCI", "DCIL", "TRAD", "E", "EMA", "P", "C", "CP", "MA", "H", "AE"]
         routing = {
             "domain_order": [
                 "D01_CEREBRO", "D02_ORQUESTACION", "D03_TRANSCRIPCION",
                 "D04_TRADUCTOR_INTELIGENTE", "D05_INTELIGENCIA_DOCUMENTAL",
                 "D06_SISTEMA_INTELIGENTE",
             ],
-            "targets": [{"id": f"D{i:02d}_TEST"} for i in range(1, 22)],
+            "engine_registry": engine_bindings,
+            "targets": [{"id": target_id} for target_id in target_ids],
+            "route_profiles": [{"id": command_id} for command_id in command_ids],
             "state": {"engine_count": 15},
         }
         registry = {
@@ -56,12 +73,20 @@ class LouksnapgBundleTests(unittest.TestCase):
             "canonical_engine_count": 15,
             "canonical_command_count": 14,
         }
+        model_metadata = [
+            ("1. Cerebro/compression_metadata.json", {"model_id": "OPENAI_GPT_OSS_CEREBRO_MXFP4"}),
+            ("3. Transcripción/compression_metadata.json", {"model_id": "CAJITA_TRANSCRIPCION_WHISPER_TURBO"}),
+            ("4. Traductor Inteligente/Traducción general/compression_metadata.json", {"model_id": "CAJITA_TRADUCCION_SEAMLESSM4T_V2_LARGE"}),
+            ("5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_manifest.json", {"model_id": "ibm-granite/granite-docling-258M"}),
+            ("6. Sistema Inteligente/Análisis Avanzado/compression_metadata.json", {"model_id": "CAJITA_SISTEMA_INTELIGENTE_ANALISIS_AVANZADO_QWEN3"}),
+        ]
         self.runtime_rows = [
             ("cajita_runtime.py", b"def main():\n    return 0\n", "DEFLATED"),
             ("cajita_router.py", b"ROUTE_TABLE = 21\n", "DEFLATED"),
             ("model.bin", b"\x00\x01\x02runtime-bytes", "STORED"),
             ("command_subdomain_routing.json", json.dumps(routing).encode(), "DEFLATED"),
             ("CAJITA_DISTRIBUTION_MODULE_REGISTRY.json", json.dumps(registry).encode(), "DEFLATED"),
+            *[(path, json.dumps(data).encode(), "DEFLATED") for path, data in model_metadata],
         ]
         files = [
             {"path": name, "size_bytes": len(data), "sha256": sha(data), "zip_method": method}
@@ -133,6 +158,8 @@ class LouksnapgBundleTests(unittest.TestCase):
         self.assertEqual(report["cajita_document_copy_integrity"], "PASS")
         self.assertEqual(report["runtime_member_integrity"], "PASS")
         self.assertEqual(report["single_distribution_container"], "PASS")
+        self.assertEqual(report["identity_preservation_status"], "PASS_SOURCE_IDENTITY_PRESERVED")
+        self.assertEqual(report["engine_replacement"], "FORBIDDEN")
         self.assertEqual(report["runtime_routing_registry"], "PASS_DECLARATION_ONLY")
         self.assertEqual(report["module_registry"], "PASS_DECLARATION_ONLY")
         self.assertEqual(report["global_certification"], "NOT_GRANTED")
@@ -141,6 +168,21 @@ class LouksnapgBundleTests(unittest.TestCase):
         self.build()
         with self.assertRaisesRegex(ValueError, "SOURCE_COMMIT_MISMATCH"):
             validator.verify(self.output, expected_source_commit="a" * 40)
+
+
+    def test_independent_validator_rejects_engine_replacement_claim(self):
+        self.build()
+        tampered = self.root / "identity-tampered.md"
+        with zipfile.ZipFile(self.output, "r") as zin, zipfile.ZipFile(tampered, "w") as zout:
+            for info in zin.infolist():
+                payload = zin.read(info.filename)
+                if info.filename == "LOUKSNAPG_MANIFEST.json":
+                    manifest = json.loads(payload.decode("utf-8"))
+                    manifest["identity_preservation"]["engine_bindings"][0]["name"] = "REPLACEMENT_ENGINE"
+                    payload = json.dumps(manifest, ensure_ascii=False, sort_keys=True).encode("utf-8")
+                zout.writestr(info, payload)
+        with self.assertRaisesRegex(ValueError, "ENGINE_BINDING_IDENTITY_MISMATCH"):
+            validator.verify(tampered)
 
     def test_hard_byte_cap_is_enforced_and_candidate_removed(self):
         with self.assertRaisesRegex(ValueError, "LOUKSNAPG_OVER_CAP"):

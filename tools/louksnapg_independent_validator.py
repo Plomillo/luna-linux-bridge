@@ -25,6 +25,32 @@ EXPECTED_DOMAINS = [
     "D06_SISTEMA_INTELIGENTE",
 ]
 
+EXPECTED_DOMAIN_ORDER = ["D01_CEREBRO", "D02_ORQUESTACION", "D03_TRANSCRIPCION", "D04_TRADUCTOR_INTELIGENTE", "D05_INTELIGENCIA_DOCUMENTAL", "D06_SISTEMA_INTELIGENTE"]
+EXPECTED_ENGINE_BINDINGS = [
+    {"id": "E01", "name": "LLM"}, {"id": "E02", "name": "NLP"}, {"id": "E03", "name": "RAG"},
+    {"id": "E04", "name": "EMBEDDINGS"}, {"id": "E05", "name": "VECTOR_SEARCH"}, {"id": "E06", "name": "KNOWLEDGE_GRAPH"},
+    {"id": "E07", "name": "RDF"}, {"id": "E08", "name": "OWL"}, {"id": "E09", "name": "SEMANTIC_INFERENCE"},
+    {"id": "E10", "name": "RULE_ENGINE"}, {"id": "E11", "name": "HERMENEUTIC"}, {"id": "E12", "name": "FORMALIZATION"},
+    {"id": "E13", "name": "VALIDATION"}, {"id": "E14", "name": "PROVENANCE"}, {"id": "E15", "name": "CONSENSUS"},
+]
+EXPECTED_TARGET_IDS = [
+    "D01_CEREBRO_ROOT", "D02_CONFESION_ECLESIAL_REFORMADA", "D02_MULTI_INTERDISCIPLINAR", "D02_ORQUESTADOR",
+    "D03_TRANSCRIPCION_ROOT", "D04_HERMENEUTICA_HG", "D04_TRADUCCION_LENGUAS_ANTIGUAS", "D04_TRADUCCION_GENERAL",
+    "D05_CALIBRE", "D05_DOCLING", "D06_ANTI_ALUCINACIONES", "D06_ANALISIS_AVANZADO", "D06_ARCHIVADO_DETECCION",
+    "D06_COGNITIVE_CI_CD", "D06_CONSOLA", "D06_MEMORIA_GOBERNADA", "D06_MIGRACION_PERSISTENCIA", "D06_MOTOR_PROTOCOLAR",
+    "D06_PORTABILIDAD_BASE", "D06_RUNTIME_ANDROID_WINDOWS", "D06_TESTING",
+]
+EXPECTED_COMMAND_IDS = ["HELP", "PT", "PA", "DCI", "DCIL", "TRAD", "E", "EMA", "P", "C", "CP", "MA", "H", "AE"]
+EXPECTED_MODEL_IDENTITY_SPECS = [
+    ("D01_CEREBRO", "1. Cerebro/compression_metadata.json", "OPENAI_GPT_OSS_CEREBRO_MXFP4"),
+    ("D03_TRANSCRIPCION", "3. Transcripción/compression_metadata.json", "CAJITA_TRANSCRIPCION_WHISPER_TURBO"),
+    ("D04_TRADUCTOR_INTELIGENTE", "4. Traductor Inteligente/Traducción general/compression_metadata.json", "CAJITA_TRADUCCION_SEAMLESSM4T_V2_LARGE"),
+    ("D05_INTELIGENCIA_DOCUMENTAL", "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_manifest.json", "ibm-granite/granite-docling-258M"),
+    ("D06_SISTEMA_INTELIGENTE", "6. Sistema Inteligente/Análisis Avanzado/compression_metadata.json", "CAJITA_SISTEMA_INTELIGENTE_ANALISIS_AVANZADO_QWEN3"),
+]
+EXPECTED_AXIOM_DEBT_POLICY = "PRESERVE_DECLARED_AXIOM_DEBT_NO_SYNTHETIC_ADMISSION"
+EXPECTED_BLOCK_IDENTITY_POLICY = "PRESERVE_B1_B134_NO_RENUMBERING_OR_REASSIGNMENT"
+
 
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -79,6 +105,57 @@ def extract_validated(archive: zipfile.ZipFile, destination: Path, members: set[
                 sink.write(chunk)
         if not target.is_file() or target.is_symlink():
             raise ValueError("EXTRACTED_ENTRY_NOT_REGULAR_FILE:" + name)
+
+
+
+
+def verify_identity_preservation(archive: zipfile.ZipFile, actual: set[str], identity: dict) -> str:
+    if not isinstance(identity, dict) or identity.get("status") != "PASS_SOURCE_IDENTITY_PRESERVED":
+        raise ValueError("ENGINE_IDENTITY_PRESERVATION_PROOF_MISSING")
+    if identity.get("engine_replacement") != "FORBIDDEN":
+        raise ValueError("ENGINE_REPLACEMENT_POLICY_MISMATCH")
+    if identity.get("axiom_debt_policy") != EXPECTED_AXIOM_DEBT_POLICY or identity.get("block_identity_policy") != EXPECTED_BLOCK_IDENTITY_POLICY:
+        raise ValueError("AXIOM_DEBT_OR_BLOCK_PRESERVATION_POLICY_MISMATCH")
+    if identity.get("synthetic_identity_admission") is not False:
+        raise ValueError("SYNTHETIC_IDENTITY_ADMISSION_FORBIDDEN")
+    if "command_subdomain_routing.json" not in actual:
+        raise ValueError("CANONICAL_ROUTING_MEMBER_MISSING")
+    routing_bytes = archive.read("command_subdomain_routing.json")
+    if sha256_bytes(routing_bytes) != identity.get("routing_metadata_sha256"):
+        raise ValueError("CANONICAL_ROUTING_HASH_BINDING_MISMATCH")
+    routing = json.loads(routing_bytes.decode("utf-8"))
+    engines = [{"id": x.get("id"), "name": x.get("name")} for x in routing.get("engine_registry", [])]
+    targets = [x.get("id") for x in routing.get("targets", [])]
+    commands = [x.get("id") for x in routing.get("route_profiles", [])]
+    if routing.get("domain_order") != EXPECTED_DOMAIN_ORDER or identity.get("domain_order") != EXPECTED_DOMAIN_ORDER:
+        raise ValueError("CANONICAL_DOMAIN_ORDER_IDENTITY_MISMATCH")
+    if engines != EXPECTED_ENGINE_BINDINGS or identity.get("engine_bindings") != EXPECTED_ENGINE_BINDINGS:
+        raise ValueError("ENGINE_BINDING_IDENTITY_MISMATCH")
+    if targets != EXPECTED_TARGET_IDS or identity.get("target_ids") != EXPECTED_TARGET_IDS:
+        raise ValueError("CANONICAL_TARGET_IDENTITY_MISMATCH")
+    if commands != EXPECTED_COMMAND_IDS or identity.get("command_ids") != EXPECTED_COMMAND_IDS:
+        raise ValueError("CANONICAL_COMMAND_IDENTITY_MISMATCH")
+    if routing.get("state", {}).get("engine_count") != 15:
+        raise ValueError("CANONICAL_ENGINE_COUNT_MISMATCH")
+    bindings = identity.get("model_identity_bindings")
+    if not isinstance(bindings, list) or len(bindings) != len(EXPECTED_MODEL_IDENTITY_SPECS):
+        raise ValueError("MODEL_IDENTITY_BINDING_COUNT_MISMATCH")
+    by_target = {x.get("target_id"): x for x in bindings if isinstance(x, dict)}
+    if len(by_target) != len(EXPECTED_MODEL_IDENTITY_SPECS):
+        raise ValueError("MODEL_IDENTITY_BINDING_COLLISION")
+    for target_id, path, model_id in EXPECTED_MODEL_IDENTITY_SPECS:
+        record = by_target.get(target_id)
+        if not isinstance(record, dict) or record.get("metadata_path") != path or record.get("model_id") != model_id:
+            raise ValueError("MODEL_IDENTITY_BINDING_MUTATION:" + target_id)
+        if path not in actual:
+            raise ValueError("MODEL_IDENTITY_METADATA_MISSING:" + path)
+        payload = archive.read(path)
+        if sha256_bytes(payload) != record.get("metadata_sha256"):
+            raise ValueError("MODEL_IDENTITY_METADATA_HASH_MISMATCH:" + target_id)
+        if json.loads(payload.decode("utf-8")).get("model_id") != model_id:
+            raise ValueError("MODEL_ENGINE_REPLACEMENT_DETECTED:" + target_id)
+    return "PASS_SOURCE_IDENTITY_PRESERVED"
+
 
 
 def verify(path: Path, max_bytes: int = CAP_BYTES, extract_dir: Path | None = None,
@@ -194,6 +271,7 @@ def verify(path: Path, max_bytes: int = CAP_BYTES, extract_dir: Path | None = No
         if len(document_bytes) != source.get("louksna1_bytes") or sha256_bytes(document_bytes) != source.get("louksna1_sha256"):
             raise ValueError("LOUKSNA1_DOCUMENT_DIFFERS_FROM_SOURCE_BINDING")
 
+        identity_status = verify_identity_preservation(archive, actual, manifest.get("identity_preservation"))
         routing_status = "NOT_PRESENT"
         module_registry_status = "NOT_PRESENT"
         target_count = None
@@ -247,6 +325,8 @@ def verify(path: Path, max_bytes: int = CAP_BYTES, extract_dir: Path | None = No
         "declared_command_count": command_count,
         "document_sha256": source.get("louksna1_sha256"),
         "runtime_source_sha256": source.get("runtime_archive_sha256"),
+        "identity_preservation_status": identity_status,
+        "engine_replacement": "FORBIDDEN",
         "source_commit": manifest.get("source_commit"),
         "global_certification": "NOT_GRANTED",
         "functional_status": "NOT_ESTABLISHED_BY_CONTAINER_INTEGRITY_CHECK",
@@ -268,7 +348,7 @@ def main(argv=None) -> int:
             args.report.parent.mkdir(parents=True, exist_ok=True)
             args.report.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2))
-        return 0 if report["runtime_routing_registry"] != "FAIL" and report["module_registry"] != "FAIL" else 2
+        return 0 if report["runtime_routing_registry"] != "FAIL" and report["module_registry"] != "FAIL" and report["identity_preservation_status"] == "PASS_SOURCE_IDENTITY_PRESERVED" else 2
     except Exception as exc:
         report = {"status": "FAIL_CLOSED", "error": f"{type(exc).__name__}:{str(exc)[:1200]}", "global_certification": "NOT_GRANTED"}
         if args.report:
