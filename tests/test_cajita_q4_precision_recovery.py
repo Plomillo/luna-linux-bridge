@@ -9,6 +9,7 @@ from cajita_q4_precision_recovery import (
     UNCHANGED_IDS,
     parse_lfs_pointer,
     resolve_historical_weight_blob,
+    rebind_runtime_manifest_sha,
     validate_manifest_transition,
     validate_q4_sidecar,
 )
@@ -49,6 +50,18 @@ class Q4PrecisionRecoveryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaisesRegex(RuntimeError, "NOT_POINTER_OR_PINNED_PAYLOAD"):
                 resolve_historical_weight_blob(payload + b"tampered", sha, len(payload), tmp)
+
+    def test_runtime_entrypoint_manifest_sha_is_rebound_exactly(self):
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime_file = Path(tmp) / "cajita_runtime.py"
+            runtime_file.write_text('MANIFEST_SHA256 = "' + "a" * 64 + '"\\nCANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023"\\n', encoding="utf-8")
+            digest = "b" * 64
+            result = rebind_runtime_manifest_sha(runtime_file, digest)
+            self.assertEqual(result["status"], "PASS")
+            self.assertEqual(result["manifest_sha256"], digest)
+            self.assertIn('MANIFEST_SHA256 = "' + digest + '"', runtime_file.read_text(encoding="utf-8"))
 
     def test_manifest_transition_preserves_candidate_paths_and_unrelated_weights(self):
         current = _manifest()

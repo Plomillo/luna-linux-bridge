@@ -206,6 +206,22 @@ def _update_adapter_bindings(adapter_path: Path, rows: dict[str, dict[str, Any]]
     return {"status": "PASS", "manifest_sha256": manifest_sha, "updated_weight_bindings": changed}
 
 
+def rebind_runtime_manifest_sha(runtime_file: str | Path, manifest_sha: str) -> dict[str, str]:
+    path = Path(runtime_file)
+    if path.is_symlink() or not path.is_file():
+        raise RuntimeError("RUNTIME_ENTRYPOINT_MISSING_OR_UNSAFE")
+    original = path.read_text(encoding="utf-8")
+    pattern = re.compile(r'^MANIFEST_SHA256 = "[0-9a-f]{64}"$', re.MULTILINE)
+    updated, replacements = pattern.subn('MANIFEST_SHA256 = "' + manifest_sha + '"', original, count=1)
+    if replacements != 1:
+        raise RuntimeError("RUNTIME_MANIFEST_SHA_CONSTANT_NOT_UNIQUE")
+    path.write_text(updated, encoding="utf-8")
+    reread = path.read_text(encoding="utf-8")
+    if reread != updated or ('MANIFEST_SHA256 = "' + manifest_sha + '"') not in reread:
+        raise RuntimeError("RUNTIME_MANIFEST_SHA_REBIND_POSTCHECK_FAILED")
+    return {"status": "PASS", "path": path.name, "manifest_sha256": manifest_sha}
+
+
 def restore_q4_precision(repo_root: str | Path, runtime_root: str | Path) -> dict[str, Any]:
     """Fetch and restore the pinned Q4 blobs into the staging tree only."""
     repo = Path(repo_root).resolve(strict=True)
@@ -301,6 +317,7 @@ def restore_q4_precision(repo_root: str | Path, runtime_root: str | Path) -> dic
     manifest_path.write_bytes(manifest_bytes)
     manifest_sha = sha256_bytes(manifest_bytes)
     adapter_report = _update_adapter_bindings(runtime / "cajita_task_adapters.py", q4_rows, manifest_sha)
+    runtime_entrypoint_report = rebind_runtime_manifest_sha(runtime / "cajita_runtime.py", manifest_sha)
 
     actual_rows = []
     for item in staged:
@@ -327,6 +344,7 @@ def restore_q4_precision(repo_root: str | Path, runtime_root: str | Path) -> dic
         "weight_manifest_total_weight_bytes": actual_weight_bytes,
         "weight_manifest_decimal_mb": historical["total_weight_decimal_mb"],
         "task_adapter_binding": adapter_report,
+        "runtime_entrypoint_manifest_binding": runtime_entrypoint_report,
         "candidate_id_preserved": True,
         "canonical_engine_identities_changed": False,
         "model_id_or_factorization_rank_changed": False,
