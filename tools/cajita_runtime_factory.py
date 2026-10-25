@@ -142,6 +142,71 @@ def verify_weights(runtime,manifest):
  return out
 
 
+EXTERNALIZED_CONTAINER_IDS = frozenset({
+ "APACHE_JENA_6_2_0",
+ "PLAYWRIGHT_1_63_0_SOURCE",
+ "ONNX_RUNTIME_1_29_0_CP311",
+ "DAGGER_0_21_8_LINUX_AMD64",
+ "OPA_STATIC_LINUX_AMD64_CANDIDATE",
+ "RQLITE_10_2_7_LINUX_AMD64",
+ "SQLITE_SOURCE_3_53_4",
+ "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+ "AVALONIA_12_1_1_NUGET",
+ "TAURI_2_11_5_SOURCE_ZIP",
+})
+
+
+def externalized_container_contract(runtime):
+ runtime=Path(runtime).resolve()
+ placement_path=runtime/"EXTERNALIZED_ASSET_PLACEMENT.json"
+ if placement_path.is_symlink() or not placement_path.is_file():
+  raise RuntimeError("EXTERNALIZED_CONTAINER_PLACEMENT_MISSING")
+ placement=json.loads(placement_path.read_text(encoding="utf-8"))
+ assets=placement.get("assets")
+ if not isinstance(assets,list) or len(assets)!=len(EXTERNALIZED_CONTAINER_IDS):
+  raise RuntimeError("EXTERNALIZED_CONTAINER_REGISTRY_COUNT_INVALID")
+ result={}
+ seen_ids=set()
+ prefix="cajita-luna-runtime/"
+ for asset in assets:
+  if not isinstance(asset,dict):
+   raise RuntimeError("EXTERNALIZED_CONTAINER_REGISTRY_ROW_INVALID")
+  asset_id=asset.get("id")
+  meta=asset.get("compact_runtime_container")
+  if not isinstance(asset_id,str) or asset_id in seen_ids or not isinstance(meta,dict):
+   raise RuntimeError("EXTERNALIZED_CONTAINER_REGISTRY_ID_COLLISION_OR_METADATA_MISSING")
+  seen_ids.add(asset_id)
+  archive_path=meta.get("path")
+  if not isinstance(archive_path,str) or not archive_path.startswith(prefix):
+   raise RuntimeError("EXTERNALIZED_CONTAINER_PATH_PREFIX_INVALID:"+str(asset_id))
+  rel=safe_rel(archive_path[len(prefix):]).as_posix()
+  if Path(rel).suffix.lower()!=".7z" or asset.get("placed_path")!=archive_path:
+   raise RuntimeError("EXTERNALIZED_CONTAINER_PATH_BINDING_INVALID:"+str(asset_id))
+  size=meta.get("size_bytes")
+  digest=meta.get("sha256")
+  if isinstance(size,bool) or not isinstance(size,int) or size<=0:
+   raise RuntimeError("EXTERNALIZED_CONTAINER_SIZE_INVALID:"+str(asset_id))
+  if not isinstance(digest,str) or len(digest)!=64 or any(c not in "0123456789abcdef" for c in digest):
+   raise RuntimeError("EXTERNALIZED_CONTAINER_SHA256_INVALID:"+str(asset_id))
+  if rel in result:
+   raise RuntimeError("EXTERNALIZED_CONTAINER_PATH_COLLISION:"+rel)
+  result[rel]={"id":asset_id,"bytes":size,"sha256":digest}
+ if seen_ids!=EXTERNALIZED_CONTAINER_IDS:
+  raise RuntimeError("EXTERNALIZED_CONTAINER_CANONICAL_ID_SET_MISMATCH")
+ return dict(sorted(result.items(),key=lambda item:item[0].encode("utf-8")))
+
+
+def validate_packaged_archive_member_set(names, externalized_contract):
+ actual={name for name in names if Path(name).suffix.lower() in ARCHIVE_SUFFIXES}
+ expected=set(externalized_contract)
+ if actual!=expected:
+  raise RuntimeError("EXTERNALIZED_ARCHIVE_MEMBER_SET_MISMATCH:"+json.dumps({
+   "missing_registered":sorted(expected-actual),
+   "unexpected_archives":sorted(actual-expected),
+  },ensure_ascii=False,separators=(",",":")))
+ return sorted(actual,key=lambda name:name.encode("utf-8"))
+
+
 def load_registered_materialized_modules(runtime, registry):
  if registry.get("schema")!="CAJITA_MODULE_REGISTRY/1.0":
   raise RuntimeError("MATERIALIZED_MODULE_REGISTRY_SCHEMA_MISMATCH")
@@ -493,18 +558,25 @@ def main():
    names=z.namelist()
    if len(names)!=len(set(names)): raise RuntimeError("MACRODOWN_DUPLICATE_MEMBERS")
    if any(Path(n).name.upper().startswith("README") for n in names): raise RuntimeError("README_STILL_PACKAGED")
-   if any(Path(n).suffix.lower() in ARCHIVE_SUFFIXES for n in names): raise RuntimeError("ZIP_7Z_STILL_PACKAGED")
+   externalized_archives=externalized_container_contract(runtime)
+   validate_packaged_archive_member_set(names,externalized_archives)
    manifest=json.loads(z.read("MACRODOWN_MANIFEST.json")); table={x["path"]:x for x in manifest["files"]}
    if set(table)!=set(names)-{"MACRODOWN_MANIFEST.json"}: raise RuntimeError("MACRODOWN_MANIFEST_MEMBER_SET_MISMATCH")
    for name,row in table.items():
     content=z.read(name)
     if len(content)!=int(row["size_bytes"]) or sha_bytes(content)!=row["sha256"]: raise RuntimeError("MACRODOWN_MEMBER_HASH_MISMATCH:"+name)
+   for name,expected in externalized_archives.items():
+    content=z.read(name)
+    if len(content)!=expected["bytes"] or sha_bytes(content)!=expected["sha256"]:
+     raise RuntimeError("EXTERNALIZED_ARCHIVE_CONTENT_IDENTITY_MISMATCH:"+expected["id"]+":"+name)
   combined=pkg.stat().st_size+doc.stat().st_size
   if combined>a.combined_cap_bytes: raise RuntimeError(f"COMBINED_DISTRIBUTION_OVER_CAP:{combined}>{a.combined_cap_bytes}")
   release={"schema":"LOUKSNA1_RELEASE_MANIFEST/1.0","source_commit":report["source_commit"],"generated_at_utc":utc(),
    "protected_architecture":{"path":"LOUKSNAMEJORADA.md","sha256":report["louksna1"]["source_sha256"],"modified":False,"prefix_byte_exact":True},
    "louksna1":{"path":doc.name,"bytes":doc.stat().st_size,"sha256":sha_file(doc)},
    "runtime_distribution":{"path":pkg.name,"bytes":pkg.stat().st_size,"sha256":sha_file(pkg)},
+   "externalized_archives":[{"id":meta["id"],"path":name,"bytes":meta["bytes"],"sha256":meta["sha256"]} for name,meta in externalized_archives.items()],
+   "externalized_archive_contract_status":"PASS_EXACTLY_TEN_REGISTERED_SHA256_PINNED_7Z_CONTAINERS",
    "combined_distribution":{"bytes":combined,"cap_bytes":a.combined_cap_bytes,"status":"PASS"},
    "axiom_interdisciplinary_binding":{"path":report["axiom_interdisciplinary_binding"]["binding_path"],"sha256":report["axiom_interdisciplinary_binding"]["binding_sha256"],"target_module_count":report["axiom_interdisciplinary_binding"]["target_module_count"],"declared_materialized_axioms":11757,"declared_historical_gaps":657,"block_count":134,"framework_count":18,"source_binding":"PASS_PENDING_GRAPH_EXECUTION"},
    "gates":{"G23":"NOT_PERFORMED","G24":"NOT_GRANTED"},"global_certification":"NOT_GRANTED",

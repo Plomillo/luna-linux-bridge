@@ -277,7 +277,34 @@ jobs:
             names=z.namelist()
             assert len(names)==len(set(names)), "DUPLICATE_MEMBERS"
             assert not any(Path(n).name.upper().startswith("README") for n in names), "README_MEMBER"
-            assert not any(Path(n).suffix.lower() in {".zip",".7z"} for n in names), "ARCHIVE_MEMBER"
+            placement=json.loads(z.read("EXTERNALIZED_ASSET_PLACEMENT.json"))
+            assets=placement.get("assets",[])
+            expected_ids={
+              "APACHE_JENA_6_2_0","PLAYWRIGHT_1_63_0_SOURCE","ONNX_RUNTIME_1_29_0_CP311",
+              "DAGGER_0_21_8_LINUX_AMD64","OPA_STATIC_LINUX_AMD64_CANDIDATE","RQLITE_10_2_7_LINUX_AMD64",
+              "SQLITE_SOURCE_3_53_4","CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE","AVALONIA_12_1_1_NUGET",
+              "TAURI_2_11_5_SOURCE_ZIP",
+            }
+            assert len(assets)==10 and {x.get("id") for x in assets}==expected_ids, "EXTERNALIZED_ASSET_ID_SET"
+            allowed_archives={}
+            for asset in assets:
+              meta=asset.get("compact_runtime_container",{})
+              full_path=meta.get("path","")
+              prefix="cajita-luna-runtime/"
+              assert isinstance(full_path,str) and full_path.startswith(prefix), "EXTERNALIZED_ARCHIVE_PATH_PREFIX"
+              rel=full_path[len(prefix):]
+              assert Path(rel).suffix.lower()==".7z", "EXTERNALIZED_ARCHIVE_SUFFIX:"+str(asset.get("id"))
+              assert asset.get("placed_path")==full_path and rel not in allowed_archives, "EXTERNALIZED_ARCHIVE_PATH_COLLISION"
+              size=meta.get("size_bytes")
+              digest=meta.get("sha256")
+              assert isinstance(size,int) and not isinstance(size,bool) and size>0, "EXTERNALIZED_ARCHIVE_SIZE"
+              assert isinstance(digest,str) and len(digest)==64 and all(c in "0123456789abcdef" for c in digest), "EXTERNALIZED_ARCHIVE_SHA256"
+              allowed_archives[rel]={"id":asset["id"],"bytes":size,"sha256":digest}
+            archive_members={name for name in names if Path(name).suffix.lower() in {".zip",".7z"}}
+            assert archive_members==set(allowed_archives), "ARCHIVE_MEMBER_SET_MISMATCH:"+json.dumps({"expected":sorted(allowed_archives),"actual":sorted(archive_members)})
+            for name,expected in allowed_archives.items():
+              payload=z.read(name)
+              assert len(payload)==expected["bytes"] and hashlib.sha256(payload).hexdigest()==expected["sha256"], "EXTERNALIZED_ARCHIVE_HASH_OR_SIZE:"+expected["id"]
             m=json.loads(z.read("MACRODOWN_MANIFEST.json"))
             table={x["path"]:x for x in m["files"]}
             assert set(table)==set(names)-{"MACRODOWN_MANIFEST.json"}, "MANIFEST_SET"
