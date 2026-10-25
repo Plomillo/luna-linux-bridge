@@ -56,7 +56,7 @@ class Q4PrecisionRecoveryTests(unittest.TestCase):
         from pathlib import Path
         with tempfile.TemporaryDirectory() as tmp:
             runtime_file = Path(tmp) / "cajita_runtime.py"
-            runtime_file.write_text('MANIFEST_SHA256 = "' + "a" * 64 + '"\\nCANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023"\\n', encoding="utf-8")
+            runtime_file.write_text('MANIFEST_SHA256 = "' + "a" * 64 + '"\nCANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023"\n', encoding="utf-8")
             digest = "b" * 64
             result = rebind_runtime_manifest_sha(runtime_file, digest)
             self.assertEqual(result["status"], "PASS")
