@@ -349,23 +349,35 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
         if asset["id"] in selected_asset_ids:
             selected_support_assets.append({
                 "id": asset["id"], "version": asset["version"],
-                "path": asset.get("materialized_path", asset["relative_path"]),
+                "path": asset.get("materialized_path") or asset["relative_path"],
                 "materialized_path": asset.get("materialized_path"),
                 "source_archive_path": asset.get("source_archive_path", asset["relative_path"]),
                 "source_archive_bytes": asset.get("source_archive_bytes", asset["bytes"]),
                 "source_archive_sha256": asset.get("source_archive_sha256", asset["sha256"]),
-                "bytes": asset.get("expanded_bytes") or asset["bytes"],
-                "sha256": asset.get("expanded_tree_sha256") or asset["sha256"],
+                "bytes": (asset.get("expanded_bytes") if asset.get("materialized_path") else None)
+                         or asset.get("container_bytes") or asset["bytes"],
+                "sha256": (asset.get("expanded_tree_sha256") if asset.get("materialized_path") else None)
+                          or asset.get("container_sha256") or asset["sha256"],
+                "expanded_path": asset.get("expanded_path"),
+                "expanded_bytes": asset.get("expanded_bytes"),
                 "expanded_tree_sha256": asset.get("expanded_tree_sha256"),
+                "container_path": asset.get("container_path"),
+                "container_bytes": asset.get("container_bytes"),
+                "container_sha256": asset.get("container_sha256"),
+                "container_retained_in_distribution": bool(asset.get("container_retained_in_distribution", False)),
                 "module_manifest_path": asset.get("module_manifest_path"),
                 "module_manifest_sha256": asset.get("module_manifest_sha256"),
                 "role": asset["role"],
-                "activation_status": "MATERIALIZED_NOT_FUNCTIONALLY_VALIDATED" if asset.get("materialized_path") else "MAPPED_CONTAINER_NOT_ACTIVATED",
+                "activation_status": asset.get("activation_status") or (
+                    "MATERIALIZED_NOT_FUNCTIONALLY_VALIDATED" if asset.get("materialized_path")
+                    else "MAPPED_CONTAINER_NOT_ACTIVATED"
+                ),
                 "archive_removed_from_runtime": asset.get("archive_removed_from_runtime", False),
                 "activation_requirements": [
                     "verify-sha256", "verify-module-manifest", "register-real-consumer-adapter",
                     "native-smoke-test", "measure-resource-profile"
-                ],
+                ] + (["verify-container-sha256", "verify-expanded-tree-sha256-before-materialization"]
+                     if asset.get("container_retained_in_distribution") else []),
             })
 
     for target in selected_targets:
