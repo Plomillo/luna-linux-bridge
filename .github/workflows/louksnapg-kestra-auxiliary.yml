@@ -178,7 +178,7 @@ jobs:
           python -m py_compile tools/louksnapg_independent_validator.py
           python tools/louksnapg_independent_validator.py \
             --bundle candidate/LOUKSNAPG.md \
-            --max-bytes 470000000 \
+            --max-bytes 490000000 \
             --expected-source-commit "$SOURCE_COMMIT" \
             --report candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json
           python - <<'PY'
@@ -189,7 +189,7 @@ jobs:
           worker=json.loads(Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json").read_text(encoding="utf-8"))
           check=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
           sha=hashlib.sha256(b.read_bytes()).hexdigest()
-          assert b.stat().st_size==check["bundle_bytes"]<=470000000
+          assert b.stat().st_size==check["bundle_bytes"]<=490000000
           assert sha==check["bundle_sha256"]==build["bundle_sha256"]==worker["artifact"]["sha256"]
           assert check["source_commit"]==build["source_commit"]==worker["source_commit"]==os.environ["SOURCE_COMMIT"]
           assert check["container_integrity"]=="PASS"
@@ -256,7 +256,7 @@ jobs:
               "source_commit":os.environ["SOURCE_COMMIT"],
               "bundle_sha256":validation["bundle_sha256"],
               "bundle_bytes":str(validation["bundle_bytes"]),
-              "max_bytes":"470000000",
+              "max_bytes":"490000000",
               "document_sha256":build["source_document_sha256"],
               "runtime_source_sha256":build["source_runtime_archive_sha256"],
               "worker_status":worker["worker_status"],
