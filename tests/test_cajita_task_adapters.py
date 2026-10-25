@@ -30,8 +30,16 @@ class AdapterTests(unittest.TestCase):
     def test_five_model_contracts_and_plan_only_orchestration(self):
         report=adapters.registry_report()
         self.assertEqual(report["model_task_adapter_count"],5)
-        self.assertEqual(report["all_21_target_adapters"],"NOT_REGISTERED")
+        self.assertEqual(report["synthetic_scope_registered_target_count"],5)
+        self.assertEqual(report["canonical_target_count"],21)
+        self.assertEqual(report["unregistered_target_count"],16)
+        self.assertEqual(report["all_21_target_adapters"],"PARTIAL_REGISTRATION_ONLY_NOT_ESTABLISHED")
+        self.assertEqual(report["reference_quality_equivalence"],"NOT_ESTABLISHED")
         self.assertEqual(report["global_certification"],"NOT_GRANTED")
+        registered=[row for row in report["registered"] if row.get("target_id")]
+        self.assertEqual(len(registered),5)
+        self.assertTrue(all(row["registration_scope"]=="SYNTHETIC_TASK_EXECUTION_ONLY" for row in registered))
+        self.assertTrue(all(row["certification"]=="NOT_GRANTED" for row in registered))
         self.assertEqual(report["registered"][-1]["status"],"PLAN_ONLY_FAIL_CLOSED")
         self.assertEqual(report["pdf_generation"],"NOT_REGISTERED")
     def test_unique_contracts_and_weight_pins(self):
