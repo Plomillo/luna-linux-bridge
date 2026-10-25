@@ -1,27 +1,27 @@
 {
   "schema": "CAJITA_INVENTORY_AUDIT/1.0",
   "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
-  "generated_at_utc": "2026-10-25T05:17:01.946452+00:00",
+  "generated_at_utc": "2026-10-25T05:24:16.470735+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "353ed98babdfe4594bd9868f7cde7e8d1d981f12",
+  "source_commit": "30bbe0b86fe355ab55eb2cf231eb03490e40739c",
   "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
   "distribution": {
     "archive_format": "deterministic ZIP container with .macrodown extension",
     "member_count_including_manifest": 1419,
     "file_count_excluding_manifest": 1418,
-    "runtime_payload_bytes_excluding_manifest": 446984866,
-    "gross_raw_payload_bytes_including_manifest": 447416187,
-    "archive_bytes": 370876651,
+    "runtime_payload_bytes_excluding_manifest": 446984897,
+    "gross_raw_payload_bytes_including_manifest": 447416218,
+    "archive_bytes": 370876652,
     "hard_cap_bytes": 470000000,
     "raw_input_ceiling_bytes": 1500000000,
-    "raw_bytes_under_input_ceiling": 1052583813,
+    "raw_bytes_under_input_ceiling": 1052583782,
     "raw_payload_target_bytes": 470000000,
     "raw_payload_target_gate": "PASS",
     "raw_bytes_over_target": 0,
     "archive_target_bytes": 470000000,
-    "raw_bytes_under_cap": 1052583813,
-    "archive_bytes_under_cap": 99123349,
-    "archive_sha256": "3aa6811ea1e4e8a355dac2e18218d99811ff8483f5b03cb8e155d172c773dd05",
+    "raw_bytes_under_cap": 1052583782,
+    "archive_bytes_under_cap": 99123348,
+    "archive_sha256": "ebde0c215a3bc80d8321bf0e000214212ef9da82ca820053745e1b6018ddd85a",
     "raw_gate": "PASS",
     "archive_gate": "PASS",
     "certification": "NOT_GRANTED"
@@ -106,25 +106,21 @@
     },
     "ROOT_OR_SUPPORT": {
       "file_count": 23,
-      "bytes": 782516
+      "bytes": 782547
     }
   },
   "prior_manifest_reconciliation": {
-    "prior_file_count_excluding_manifest": 1417,
+    "prior_file_count_excluding_manifest": 1418,
     "current_file_count_excluding_manifest": 1418,
-    "added_paths": [
-      "cajita_target_adapters.py"
-    ],
+    "added_paths": [],
     "removed_paths": [],
     "changed_paths": [
-      "CAJITA_DISTRIBUTION_MODULE_REGISTRY.json",
       "EXTERNALIZED_ASSET_PLACEMENT.json",
-      "cajita_task_adapters.py",
-      "command_subdomain_routing.json"
+      "cajita_task_adapters.py"
     ],
-    "added_count": 1,
+    "added_count": 0,
     "removed_count": 0,
-    "changed_count": 4,
+    "changed_count": 2,
     "prior_manifest_was_in_sync": false
   },
   "inventory": [
@@ -11340,7 +11336,7 @@
       "domain_id": null,
       "path": "EXTERNALIZED_ASSET_PLACEMENT.json",
       "route_type": null,
-      "sha256": "5e6a435e3c3d224e13810c8966c86286f012a0d49dac4f40c92956cfcdc3247a",
+      "sha256": "d1b48f7edaf728ea890edd1a1cb60f4ca19484da5179a315f4ff2806f7a43781",
       "size_bytes": 126014,
       "zip_method": "DEFLATED"
     },
@@ -11436,8 +11432,8 @@
       "domain_id": null,
       "path": "cajita_task_adapters.py",
       "route_type": null,
-      "sha256": "41cf3fecce8483bd739cd5a3401ca893e82946626f4cb2b4d8a25b8fb0e4ad44",
-      "size_bytes": 19781,
+      "sha256": "dad1ea755ff3574ecb36637a40589295d52adf4486dcd73ac65e5b7158434b88",
+      "size_bytes": 19812,
       "zip_method": "DEFLATED"
     },
     {
@@ -11475,7 +11471,7 @@
     {
       "path": "MACRODOWN_MANIFEST.json",
       "size_bytes": 431321,
-      "sha256": "731c2d7467c2ef99bc2e8aa904662bff0dc9c2900eebce7c4ed6a1bf34183360",
+      "sha256": "36df9635ed0ae908abed999cdb4dafdd9ea8e81517b58e8ecc880ae20c5f5b42",
       "domain_id": null,
       "route_type": null,
       "zip_method": "DEFLATED",
