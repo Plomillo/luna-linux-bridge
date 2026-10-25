@@ -7,7 +7,7 @@ from cajita_externalized_packaging import prepare_distribution_registry, distrib
 from cajita_tokenizer_materializer import MANIFEST_NAME as TOKENIZER_MANIFEST_NAME, load_tokenizer_manifest, prepare_compressed_tokenizers
 SCHEMA="CAJITA_RUNTIME_MACRODOWN/1.0"
 DEFAULT_RAW_CAP_BYTES=1_500_000_000
-DEFAULT_COMBINED_CAP_BYTES=479_000_000
+DEFAULT_COMBINED_CAP_BYTES=470_000_000
 MANIFEST_NAME="MACRODOWN_MANIFEST.json"
 BINARY_SUFFIXES={".7z",".zip",".gz",".xz",".whl",".nupkg",".gguf",".parquet",".pdf"}
 EXCLUDED_DIRS={".git","__pycache__",".pytest_cache"}
