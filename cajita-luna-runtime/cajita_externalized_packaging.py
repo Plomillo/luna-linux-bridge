@@ -451,6 +451,8 @@ def _pack_registered_tree(
         )
     if output.is_symlink():
         raise RuntimeError("EXTERNALIZED_REPACK_OUTPUT_SYMLINK:" + asset_id)
+    if output.exists() and not output.is_file():
+        raise RuntimeError("EXTERNALIZED_REPACK_OUTPUT_NOT_REGULAR_FILE:" + asset_id)
     output.parent.mkdir(parents=True, exist_ok=True)
 
     # A second prepare/build invocation in the same job reuses only a container
@@ -600,7 +602,8 @@ def _source_contract(root: Path, canonical_work_root: Path) -> tuple[dict, dict,
             "container_relpath": RUNTIME_PREFIX + "CAJITA_DISTRIBUTION_ASSETS/" + asset_id + ".7z",
             "container_bytes": 0,
             "container_sha256": "",
-            "container_rebuild_status": recovery["status"],
+            "registered_tree_recovery_status": recovery["status"],
+            "container_rebuild_status": "",
             "canonical_tree_path": str(canonical_tree),
             "expanded_bytes": measured["bytes"],
             "expanded_file_count": measured["file_count"],
@@ -668,6 +671,7 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
             "source_tree_bytes": item["expanded_bytes"],
             "source_tree_file_count": item["expanded_file_count"],
             "source_tree_sha256": item["expanded_tree_sha256"],
+            "registered_tree_recovery_status": item["registered_tree_recovery_status"],
             "status": item["container_rebuild_status"],
             "certification": "NOT_GRANTED",
         }
@@ -704,6 +708,7 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
             "source_container_sha256": item["source_container_sha256"],
             "container_rebuilt_from_registered_tree": True,
             "container_rebuild_status": item["container_rebuild_status"],
+            "registered_tree_recovery_status": item["registered_tree_recovery_status"],
             "materialization_required": True,
             "materialization": {
                 "status": "PACKED_NOT_EXPANDED",
@@ -795,6 +800,7 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
          "source_container_sha256": item["source_container_sha256"],
          "source_container_bytes": item["source_container_bytes"],
          "container_rebuild_status": item["container_rebuild_status"],
+         "registered_tree_recovery_status": item["registered_tree_recovery_status"],
          "expanded_path": item["expanded_relpath"], "expanded_tree_sha256": item["expanded_tree_sha256"],
          "materialization": "ON_DEMAND", "consumer_adapter": "NOT_ESTABLISHED",
          "native_smoke": "REQUIRED", "certification": "NOT_GRANTED"}
