@@ -1,0 +1,70 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+REPOSITORY = Path(__file__).resolve().parents[1]
+RUNTIME = REPOSITORY / "cajita-luna-runtime"
+sys.path.insert(0, str(REPOSITORY / "tools"))
+sys.path.insert(0, str(RUNTIME))
+
+import cajita_architecture_binding as binding
+import cajita_tokenizer_materializer as tokenizer_materializer
+
+
+class ArchitectureBindingLogicalTokenizerTreeTests(unittest.TestCase):
+    def test_target_descriptor_uses_source_tokenizer_identity_when_only_gzip_is_packed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            module = runtime / "1. Cerebro"
+            module.mkdir()
+            tokenizer_bytes = json.dumps(
+                {"version": "test-1", "tokens": [f"token-{i:05d}" for i in range(12000)]},
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ).encode("utf-8")
+            config_bytes = b'{"model_type":"test"}\n'
+            (module / "tokenizer.json").write_bytes(tokenizer_bytes)
+            (module / "config.json").write_bytes(config_bytes)
+            tokenizer_rel = (module.relative_to(runtime) / "tokenizer.json").as_posix()
+            manifest = tokenizer_materializer.prepare_compressed_tokenizers(runtime, (tokenizer_rel,))
+            entry = manifest["entries"][0]
+            self.assertTrue(entry["packed"])
+            self.assertEqual(entry["source_bytes"], len(tokenizer_bytes))
+            self.assertNotEqual(entry["source_bytes"], entry["compressed_bytes"])
+
+            # Simulate the compact distribution: raw tokenizer JSON is absent,
+            # while the deterministic gzip and source-bound manifest remain.
+            (module / "tokenizer.json").unlink()
+            rows = binding._rows(module, runtime)
+            indexed = {row["path"]: row for row in rows}
+            self.assertIn("tokenizer.json", indexed)
+            self.assertNotIn("tokenizer.json.gz", indexed)
+            self.assertEqual(indexed["tokenizer.json"]["bytes"], len(tokenizer_bytes))
+            self.assertEqual(indexed["tokenizer.json"]["sha256"], hashlib.sha256(tokenizer_bytes).hexdigest())
+            self.assertEqual(indexed["config.json"]["bytes"], len(config_bytes))
+            self.assertEqual(sum(row["bytes"] for row in rows), len(tokenizer_bytes) + len(config_bytes))
+
+    def test_target_descriptor_uses_logical_tree_when_source_and_gzip_coexist(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = Path(temporary)
+            module = runtime / "3. Transcripción"
+            module.mkdir()
+            tokenizer_bytes = b'{"version":"source","tokens":["hola","mundo"]}\n'
+            (module / "tokenizer.json").write_bytes(tokenizer_bytes)
+            tokenizer_rel = (module.relative_to(runtime) / "tokenizer.json").as_posix()
+            tokenizer_materializer.prepare_compressed_tokenizers(runtime, (tokenizer_rel,))
+            rows = binding._rows(module, runtime)
+            indexed = {row["path"]: row for row in rows}
+            self.assertIn("tokenizer.json", indexed)
+            self.assertNotIn("tokenizer.json.gz", indexed)
+            self.assertEqual(indexed["tokenizer.json"]["sha256"], hashlib.sha256(tokenizer_bytes).hexdigest())
+            self.assertEqual(sum(row["bytes"] for row in rows), len(tokenizer_bytes))
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

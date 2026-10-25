@@ -20,7 +20,7 @@ def _safe_rel(value: str) -> PurePosixPath:
     return p
 
 
-def _rows(root: Path) -> list[dict]:
+def _rows(root: Path, runtime_root: Path) -> list[dict]:
     rows = []
     for base, dirs, files in __import__("os").walk(root, topdown=True, followlinks=False):
         bp = Path(base)
@@ -32,7 +32,23 @@ def _rows(root: Path) -> list[dict]:
             if name == "CAJITA_MODULE.json":
                 continue
             rows.append({"path": path.relative_to(root).as_posix(), "bytes": path.stat().st_size, "sha256": _sha(path.read_bytes())})
-    return sorted(rows, key=lambda row: row["path"].encode("utf-8"))
+    rows = sorted(rows, key=lambda row: row["path"].encode("utf-8"))
+
+    # Target descriptors and G23 must hash the same logical tree. A packed
+    # tokenizer.json.gz is storage, not the logical module file; replace it in
+    # the canonical row set with the byte-exact source tokenizer.json identity
+    # registered in CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json.
+    runtime = Path(runtime_root).resolve()
+    tokenizer_manifest = runtime / "CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json"
+    if tokenizer_manifest.is_symlink():
+        raise RuntimeError("TARGET_MODULE_TOKENIZER_MANIFEST_SYMLINK")
+    if tokenizer_manifest.is_file():
+        try:
+            from cajita_tokenizer_materializer import tokenizer_tree_rows, TokenizerMaterializationError
+            rows = tokenizer_tree_rows(root, runtime, rows)
+        except TokenizerMaterializationError as exc:
+            raise RuntimeError("TARGET_MODULE_TOKENIZER_LOGICAL_TREE_INVALID:" + str(exc)) from exc
+    return rows
 
 
 def register_architecture_binding(repo_root: str | Path, runtime_root: str | Path, document_path: str | Path) -> dict:
@@ -114,7 +130,7 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
         if not directory.is_dir() or directory.is_symlink():
             raise RuntimeError("CANONICAL_TARGET_DIRECTORY_MISSING:" + target["id"])
         manifest_path = directory / "CAJITA_MODULE.json"
-        rows = _rows(directory)
+        rows = _rows(directory, runtime)
         manifest = {
             "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
             "target_id": target["id"],
