@@ -212,5 +212,89 @@ class CanonicalRuntimeEngineScopeRegistrationTests(unittest.TestCase):
                 }])
 
 
+    def _make_externalized_jena_fixture(self, repo_root: Path, declared_sha: str | None = None):
+        runtime = repo_root / "cajita-luna-runtime"
+        module = runtime / "2. Orquestación" / "Multi + Interdisciplinar"
+        module.mkdir(parents=True)
+        (module / "cajita_axiom_source_loader.py").write_text("# source-bound reader\\n", encoding="utf-8")
+        (module / "axiom_interdisciplinary_binding.json").write_text('{"status":"SOURCE_BOUND_GRAPH_EXECUTION_PENDING"}\\n', encoding="utf-8")
+        (runtime / "cajita_target_adapters.py").write_text(
+            "TARGET_ADAPTERS = {"
+            "'D02_MULTI_INTERDISCIPLINAR': {"
+            "'domain_id':'D02_ORQUESTACION',"
+            "'adapter_id':'CAJITA_AXIOM_SOURCE_PREFIX_BINDING/1.0',"
+            "'operation':'verify_axiom_source_binding',"
+            "'module':'2. Orquestación/Multi + Interdisciplinar',"
+            "'entry':'cajita_axiom_source_loader.py',"
+            "'required_files':['cajita_axiom_source_loader.py','axiom_interdisciplinary_binding.json','APACHE_JENA_6_2_0.7z'],"
+            "'engine':'SOURCE_BOUND_AXIOM_READER',"
+            "'scope':'PROTECTED_SOURCE_PREFIX_AND_COMPANION_HASH_VERIFICATION'"
+            "}}\\n",
+            encoding="utf-8",
+        )
+
+        payload = b"registered Jena compact-container test payload\\n" * 512
+        staging_rel = "externalized-assets-staging/optimized-containers/APACHE_JENA_6_2_0.7z"
+        staging = repo_root / staging_rel
+        staging.parent.mkdir(parents=True)
+        staging.write_bytes(payload)
+        actual_sha = hashlib.sha256(payload).hexdigest()
+        expected_sha = declared_sha or actual_sha
+        logical_path = "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z"
+        placement = {
+            "schema": "CAJITA_EXTERNALIZED_ASSET_PLACEMENT/1.0",
+            "assets": [{
+                "id": "APACHE_JENA_6_2_0",
+                "placed_path": logical_path,
+                "exact_externalized_candidate": True,
+                "container_path_outside_runtime": staging_rel,
+                "compact_runtime_container": {
+                    "path": logical_path, "sha256": expected_sha, "size_bytes": len(payload)
+                },
+                "optimization": {
+                    "optimized_path": staging_rel, "optimized_sha256": expected_sha,
+                    "optimized_size_bytes": len(payload)
+                },
+                "factory_reconciliation": {
+                    "container_source": staging_rel, "container_sha256_verified": expected_sha,
+                    "container_bytes_verified": len(payload)
+                }
+            }]
+        }
+        (runtime / "EXTERNALIZED_ASSET_PLACEMENT.json").write_text(
+            json.dumps(placement, sort_keys=True) + "\\n", encoding="utf-8"
+        )
+        targets = [{
+            "id": "D02_MULTI_INTERDISCIPLINAR",
+            "domain_id": "D02_ORQUESTACION",
+            "path": "2. Orquestación/Multi + Interdisciplinar",
+        }]
+        return runtime, targets, len(payload), actual_sha
+
+    def test_runtime_scope_binds_exact_externalized_jena_container_from_staging(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repo_root = Path(temporary)
+            runtime, targets, expected_bytes, expected_sha = self._make_externalized_jena_fixture(repo_root)
+            registered = binding._registered_runtime_engine_scopes(runtime, targets, repo_root=repo_root)
+            row = registered["D02_MULTI_INTERDISCIPLINAR"]
+            jena = next(x for x in row["source_files"] if x["path"].endswith("/APACHE_JENA_6_2_0.7z"))
+            self.assertEqual(jena["path"], "2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z")
+            self.assertEqual(jena["bytes"], expected_bytes)
+            self.assertEqual(jena["sha256"], expected_sha)
+            self.assertEqual(row["status"], "REGISTERED_RUNTIME_SMOKE_SCOPE_ONLY")
+            self.assertEqual(row["consumer_task_adapter_completion"], "NOT_ESTABLISHED")
+            self.assertEqual(row["certification"], "NOT_GRANTED")
+
+    def test_runtime_scope_rejects_tampered_externalized_jena_staging_container(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repo_root = Path(temporary)
+            runtime, targets, _, actual_sha = self._make_externalized_jena_fixture(
+                repo_root, declared_sha="0" * 64
+            )
+            self.assertNotEqual(actual_sha, "0" * 64)
+            with self.assertRaisesRegex(RuntimeError, "RUNTIME_TARGET_ADAPTER_EXTERNALIZED_SOURCE_IDENTITY_MISMATCH"):
+                binding._registered_runtime_engine_scopes(runtime, targets, repo_root=repo_root)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
