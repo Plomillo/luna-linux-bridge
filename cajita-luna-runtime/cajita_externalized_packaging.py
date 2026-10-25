@@ -99,6 +99,17 @@ def _tree_summary(root: Path) -> dict:
     }
 
 
+def placement_binding_sha256(placement: dict) -> str:
+    # The placement gate/status fields are updated during every build. Bind only
+    # the immutable externalized-asset identities and tree/container evidence.
+    binding = {
+        "schema": placement.get("schema"),
+        "hard_cap_bytes": placement.get("hard_cap_bytes"),
+        "assets": placement.get("assets"),
+    }
+    return sha_bytes(canonical_json(binding))
+
+
 def _load_json(path: Path, label: str) -> dict:
     if path.is_symlink() or not path.is_file():
         raise RuntimeError(label + "_NOT_REGULAR_FILE:" + str(path))
@@ -232,7 +243,7 @@ def prepare_distribution_registry(root: Path) -> list[dict]:
     placement, source_registry, contract = _source_contract(root)
     source_registry_path = root / SOURCE_REGISTRY_NAME
     placement_path = root / PLACEMENT_NAME
-    placement_sha = sha_file(placement_path)
+    placement_sha = placement_binding_sha256(placement)
     source_registry_sha = sha_file(source_registry_path)
     externalized_paths = {item["expanded_relpath"] for item in contract}
 
@@ -314,7 +325,7 @@ def distribution_contract(root: Path) -> list[dict]:
     registry = _load_json(registry_path, "DISTRIBUTION_MODULE_REGISTRY")
     if registry.get("schema") != "CAJITA_MODULE_REGISTRY/1.0":
         raise RuntimeError("DISTRIBUTION_MODULE_REGISTRY_SCHEMA_INVALID")
-    if registry.get("externalized_asset_placement_sha256") != sha_file(placement_path):
+    if registry.get("externalized_asset_placement_sha256") != placement_binding_sha256(placement):
         raise RuntimeError("DISTRIBUTION_PLACEMENT_REGISTRY_HASH_MISMATCH")
     rows = registry.get("externalized_modules")
     assets = placement.get("assets")
