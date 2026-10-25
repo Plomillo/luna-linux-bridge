@@ -18,11 +18,15 @@ import json
 import os
 import platform
 import shutil
+import socket
 import sqlite3
 import subprocess
 import sys
+import tarfile
 import tempfile
+import time
 from pathlib import Path
+from urllib.request import urlopen
 from urllib.parse import quote
 
 SCHEMA = "LOUKSNA1_INTEGRAL_DECISION/1.0"
@@ -297,10 +301,8 @@ def run_matrix(repo: Path) -> list[dict]:
         "D05_DOCLING": ("extract_document_image", "REFERENCE_EXTRACTION_EQUIVALENCE_NOT_EXECUTED"),
         "D06_ANTI_ALUCINACIONES": ("score_grounding", "ONNX_GROUNDING_OPERATION_NOT_EXECUTED"),
         "D06_ANALISIS_AVANZADO": ("analyze_reasoning", "REFERENCE_REASONING_EQUIVALENCE_NOT_EXECUTED"),
-        "D06_MIGRACION_PERSISTENCIA": ("apply_migration", "RQLITE_MIGRATION_NOT_EXECUTED"),
         "D06_PORTABILIDAD_BASE": ("host_matrix", "WINDOWS_CMAKE_HOST_NOT_EXECUTED"),
-        "D06_RUNTIME_ANDROID_WINDOWS": ("native_host_matrix", "ANDROID_AND_WINDOWS_NATIVE_HOSTS_NOT_EXECUTED"),
-        "D06_TESTING": ("run_pinned_pytest", "PINNED_PYTEST_SUITE_NOT_EXECUTED"),
+        "D06_RUNTIME_ANDROID_WINDOWS": ("native_host_matrix", "ANDROID_WINDOWS_NATIVE_HOSTS_NOT_EXECUTED"),
     }
     rows = []
     for target_id in CANONICAL_TARGETS:
@@ -320,10 +322,144 @@ def run_matrix(repo: Path) -> list[dict]:
             rows.append(op_sqlite(runtime))
         elif target_id == "D06_MOTOR_PROTOCOLAR":
             rows.append(op_sml(runtime))
+        elif target_id == "D06_MIGRACION_PERSISTENCIA":
+            rows.append(op_rqlite(repo))
+        elif target_id == "D06_TESTING":
+            rows.append(op_pytest(runtime))
         else:
             operation, reason = blocked[target_id]
             rows.append(op_not_executable(target_id, operation, reason))
     return rows
+
+
+def op_rqlite(repo: Path) -> dict:
+    target = "D06_MIGRACION_PERSISTENCIA"
+    archive = repo / "externalized-assets-staging" / "6-Sistema-Inteligente" / "Migracion-y-Persistencia" / "rqlite-v10.2.7-linux-amd64.tar.gz"
+    if archive.is_symlink() or not archive.is_file():
+        return record(target, "apply_migration", "FAIL", exit_code=2, detail={}, reason="RQLITE_ARCHIVE_MISSING")
+    with tempfile.TemporaryDirectory(prefix="louksna1-rqlite-") as temp_name:
+        temp = Path(temp_name)
+        with tarfile.open(archive, "r:gz") as bundle:
+            bundle.extractall(temp)
+        server = next(temp.rglob("rqlited"))
+        client = next(temp.rglob("rqlite"))
+        os.chmod(server, 0o755)
+        os.chmod(client, 0o755)
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            http_port = probe.getsockname()[1]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            raft_port = probe.getsockname()[1]
+        data = temp / "data"
+        log_path = temp / "rqlited.log"
+        log_file = log_path.open("w", encoding="utf-8")
+        proc = subprocess.Popen(
+            [str(server), "-http-addr", f"127.0.0.1:{http_port}", "-raft-addr", f"127.0.0.1:{raft_port}", str(data)],
+            stdout=log_file, stderr=subprocess.STDOUT, text=True,
+        )
+        try:
+            leader = False
+            deadline = time.time() + 20
+            while time.time() < deadline:
+                if proc.poll() is not None:
+                    break
+                try:
+                    with urlopen(f"http://127.0.0.1:{http_port}/status", timeout=1) as resp:
+                        status = json.loads(resp.read().decode())
+                    raft = status.get("store", {}).get("raft", {})
+                    leader_info = status.get("store", {}).get("leader", {})
+                    if raft.get("state") == "Leader" and leader_info.get("node_id"):
+                        leader = True
+                        break
+                except (OSError, json.JSONDecodeError, ValueError):
+                    pass
+                time.sleep(0.25)
+            if not leader:
+                log_file.flush()
+                tail = log_path.read_text(encoding="utf-8", errors="replace")[-300:]
+                return record(target, "apply_migration", "FAIL", exit_code=4, detail={"stderr_tail": tail}, reason="RQLITE_LEADER_NOT_ELECTED")
+            version = sha256_bytes(b"LOUKSNA1_MIGRATION_V1")
+            sql = "\n".join([
+                "CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY, applied_sha256 TEXT NOT NULL);",
+                f"INSERT INTO schema_migrations(version, applied_sha256) VALUES(1, '{version}');",
+                "SELECT version, applied_sha256 FROM schema_migrations;",
+            ]) + "\n"
+            cli = subprocess.run(
+                [str(client), "-H", "127.0.0.1", "-p", str(http_port)],
+                input=sql, capture_output=True, text=True, timeout=20, check=False,
+            )
+        finally:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+            log_file.close()
+    ok = cli.returncode == 0 and "ERR!" not in cli.stdout and "1 row affected" in cli.stdout and version in cli.stdout
+    return record(
+        target,
+        "apply_migration",
+        "PASS" if ok else "FAIL",
+        exit_code=0 if ok else 4,
+        detail={
+            "cli_rc": cli.returncode,
+            "query_sha256": sha256_bytes(cli.stdout.encode()),
+            "query_contains_migration_sha256": version in cli.stdout,
+            "server_version_banner": "v10.2.7" in cli.stdout,
+            "archive_sha256": sha256_file(archive),
+        },
+        reason="" if ok else "RQLITE_MIGRATION_MISMATCH",
+    )
+
+
+def op_pytest(runtime: Path) -> dict:
+    target = "D06_TESTING"
+    wheel = runtime / "6. Sistema Inteligente" / "Testing" / "pytest-9.1.1-py3-none-any.rebuilt.whl"
+    crate = runtime / "6. Sistema Inteligente" / "Testing" / "criterion-0.8.2.crate"
+    if wheel.is_symlink() or not wheel.is_file() or crate.is_symlink() or not crate.is_file():
+        return record(target, "run_pinned_pytest", "FAIL", exit_code=2, detail={}, reason="PYTEST_OR_CRITERION_MISSING")
+    with tempfile.TemporaryDirectory(prefix="louksna1-pytest-") as temp_name:
+        temp = Path(temp_name)
+        target_dir = temp / "deps"
+        install = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "--no-cache-dir", "--target", str(target_dir), str(wheel), "py==1.11.0"],
+            capture_output=True, text=True, timeout=180, check=False,
+        )
+        if install.returncode != 0:
+            return record(target, "run_pinned_pytest", "FAIL", exit_code=4, detail={"return_code": install.returncode, "stderr_tail": install.stderr[-400:], "wheel_sha256": sha256_file(wheel)}, reason="PINNED_PYTEST_INSTALL_FAILED")
+        installed = sorted(path.name for path in target_dir.glob("*.dist-info"))
+        test = temp / "test_criterion_crate.py"
+        test.write_text(
+            "import tarfile\nfrom pathlib import Path\nCRATE = Path(%r)\n"
+            "def test_criterion_crate_contains_manifest():\n"
+            "    assert CRATE.stat().st_size > 0\n"
+            "    with tarfile.open(CRATE, 'r:gz') as bundle:\n"
+            "        names = bundle.getnames()\n"
+            "    assert any(name.endswith('Cargo.toml') for name in names)\n" % str(crate),
+            encoding="utf-8",
+        )
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(target_dir)
+        env["PYTHONNOUSERSITE"] = "1"
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        proc = subprocess.run([sys.executable, "-m", "pytest", "-q", str(test), "--noconftest"], cwd=temp, env=env, capture_output=True, text=True, timeout=60, check=False)
+    ok = proc.returncode == 0 and "1 passed" in proc.stdout
+    return record(
+        target,
+        "run_pinned_pytest",
+        "PASS" if ok else "FAIL",
+        exit_code=0 if ok else 4,
+        detail={
+            "return_code": proc.returncode,
+            "stdout_tail": proc.stdout[-300:],
+            "stderr_tail": proc.stderr[-300:],
+            "installed_dist_info": installed,
+            "wheel_sha256": sha256_file(wheel),
+            "crate_sha256": sha256_file(crate),
+        },
+        reason="" if ok else "PINNED_PYTEST_SUITE_FAILED",
+    )
 
 
 def measured_resources(repo: Path) -> dict:

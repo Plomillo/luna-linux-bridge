@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   worker-and-independent-validator:
@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 1
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Fetch pinned CUSTOSZ V9 worker
         shell: bash
@@ -26,21 +26,52 @@ jobs:
           git show refs/remotes/origin/custoszv9-v9:dist/CUSTOSZV9.pyz > "$RUNNER_TEMP/CUSTOSZV9.pyz"
           echo "d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817  $RUNNER_TEMP/CUSTOSZV9.pyz" | sha256sum -c -
 
-      - name: Fail closed unless the independent validator grants
+      - name: Re-execute the mission under the independent validator
+        id: validate
         shell: bash
         run: |
           set -euo pipefail
           python3 -m unittest tests/test_louksna1_integral_mission.py -v
+          set +e
           python3 tools/louksna1_integral_mission.py \
             --repo . \
             --custosz "$RUNNER_TEMP/CUSTOSZV9.pyz" \
-            --output "$RUNNER_TEMP/LOUKSNA1_INTEGRAL_DECISION.json"
+            --output docs/cajita-luna/LOUKSNA1_INTEGRAL_DECISION.json
+          code=$?
+          set -e
+          echo "validator_exit=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then
+            exit "$code"
+          fi
 
       - name: Upload decision evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: louksna1-integral-decision
-          path: ${{ runner.temp }}/LOUKSNA1_INTEGRAL_DECISION.json
+          path: docs/cajita-luna/LOUKSNA1_INTEGRAL_DECISION.json
           if-no-files-found: warn
           retention-days: 90
+
+      - name: Publish the decision produced by this GitHub run
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git add docs/cajita-luna/LOUKSNA1_INTEGRAL_DECISION.json
+          if git diff --cached --quiet; then
+            echo "DECISION_UNCHANGED"
+            exit 0
+          fi
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Record Louksna1 integral decision from GitHub execution"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
+
+      - name: Fail closed unless the independent validator grants
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.validate.outputs.validator_exit }}" = "0"
