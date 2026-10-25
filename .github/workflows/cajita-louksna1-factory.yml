@@ -682,7 +682,7 @@ jobs:
           python candidate/runtime/cajita_runtime.py audit-weights --root candidate/runtime
           (cd candidate/runtime && python "2. Orquestación/Orquestador/CLIs/cli_registry.py" --self-test)
           python - <<'PY'
-          import hashlib,json,os
+          import hashlib,json,os,zipfile
           from pathlib import Path
           root=Path("candidate"); p=root/"CAJITA_LUNA_RUNTIME_V10.macrodown"; d=root/"Louksna1.md"
           source_commit=os.environ["LOUKSNA_FACTORY_HEAD_SHA"]
@@ -741,14 +741,22 @@ jobs:
           name: louksna1-g23-evidence
           path: evidence/louksna1-g23-evidence
 
-      - name: Execute six-domain smoke under one CPU and 1 GiB cgroup limits
+      - name: Execute final LOUKSNAPG bundle under one CPU and 1 GiB cgroup limits
         id: resource_limited_smoke
         shell: bash
+        env:
+          LOUKSNA_FACTORY_HEAD_SHA: ${{ needs.manufacture.outputs.source_commit }}
         run: |
           set +e
-          ROOT="$RUNNER_TEMP/cajita-runtime"
+          ROOT="$RUNNER_TEMP/louksnapg-runtime"
           mkdir -p "$ROOT"
-          unzip -q "evidence/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown" -d "$ROOT"
+          python tools/louksnapg_independent_validator.py \
+            --bundle "evidence/louksna1-candidate/LOUKSNAPG.md" \
+            --max-bytes 470000000 \
+            --expected-source-commit "$LOUKSNA_FACTORY_HEAD_SHA" \
+            --extract-to "$ROOT" \
+            --report "$RUNNER_TEMP/LOUKSNAPG_G24_INDEPENDENT_VALIDATION.json"
+          VALIDATOR_RC=$?
           DOCKERCTX="$RUNNER_TEMP/cajita-smoke-image"
           mkdir -p "$DOCKERCTX"
           cat > "$DOCKERCTX/Dockerfile" <<'EOF'
@@ -773,7 +781,7 @@ jobs:
               -e TOKENIZERS_PARALLELISM=false -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \
               -e LOUKSNA1_COMPANION_PATH=/telemetry/Louksna1.md \
               -v "$ROOT:/runtime:ro" -v "$RUNNER_TEMP:/telemetry:rw" \
-              -v "$GITHUB_WORKSPACE/evidence/louksna1-candidate/Louksna1.md:/telemetry/Louksna1.md:ro" \
+              -v "$ROOT/Louksna1.md:/telemetry/Louksna1.md:ro" \
               -v "$GITHUB_WORKSPACE/tools/cajita_task_e2e.py:/harness/cajita_task_e2e.py:ro" -w /runtime \
               cajita-louksna1-smoke sh -lc \
               'cat /sys/fs/cgroup/memory.max > /telemetry/cgroup-memory-max.txt; cat /sys/fs/cgroup/cpu.max > /telemetry/cgroup-cpu-max.txt; python cajita_runtime.py smoke-all --timeout 600 > /telemetry/smoke-all.log 2>&1; smoke_rc=$?; echo "$smoke_rc" > /telemetry/smoke-all.rc; python /harness/cajita_task_e2e.py --root /runtime --output-dir /telemetry/task-adapter-fixtures --output /telemetry/task-adapter-e2e-raw.json --timeout 900 > /telemetry/task-adapter-e2e.log 2>&1; task_rc=$?; echo "$task_rc" > /telemetry/task-adapter-e2e.rc; cat /sys/fs/cgroup/memory.peak > /telemetry/cgroup-memory-peak.txt; if [ "$smoke_rc" -eq 0 ] && [ "$task_rc" -eq 0 ]; then exit 0; else exit 1; fi'
@@ -798,21 +806,25 @@ jobs:
             MEMMAX="$(cat "$RUNNER_TEMP/cgroup-memory-max.txt" 2>/dev/null)"
             CPUMAX="$(cat "$RUNNER_TEMP/cgroup-cpu-max.txt" 2>/dev/null)"
             PEAK="$(cat "$RUNNER_TEMP/cgroup-memory-peak.txt" 2>/dev/null)"
-            if [ "$SMOKE_RC" -eq 0 ] && [ "$TASK_RC" -eq 0 ] && [ "$MEMMAX" = "1073741824" ] && [ "$CPUMAX" = "100000 100000" ] && [ -n "$PEAK" ] && [ "$PEAK" -le 1073741824 ]; then
+            if [ "$VALIDATOR_RC" -eq 0 ] && [ "$SMOKE_RC" -eq 0 ] && [ "$TASK_RC" -eq 0 ] && [ "$MEMMAX" = "1073741824" ] && [ "$CPUMAX" = "100000 100000" ] && [ -n "$PEAK" ] && [ "$PEAK" -le 1073741824 ]; then
               STATUS="PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE"
               REASON="SIX_DOMAIN_SMOKE_PLUS_FIVE_KNOWN_ANSWER_MODEL_TASKS_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_PASS_WITH_EFFECTIVE_ONE_CPU_1_GIB_LIMITS"
             else
-              REASON="SMOKE_TASK_ADAPTER_OR_RESOURCE_GATE_FAILED_SMOKE_RC_${SMOKE_RC}_TASK_RC_${TASK_RC}"
+              REASON="BUNDLE_VALIDATOR_RC_${VALIDATOR_RC}_OR_SMOKE_TASK_ADAPTER_RESOURCE_GATE_FAILED_SMOKE_RC_${SMOKE_RC}_TASK_RC_${TASK_RC}"
             fi
           else
             REASON="SMOKE_IMAGE_BUILD_FAILED"
           fi
-          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC TASK_RC BUILD_RC
+          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC TASK_RC BUILD_RC VALIDATOR_RC
           python - <<'PY'
           import hashlib,json,os
           from pathlib import Path
-          p=Path("evidence/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown")
+          p=Path("evidence/louksna1-candidate/LOUKSNAPG.md")
           d=Path("evidence/louksna1-candidate/Louksna1.md")
+          runtime_source=Path("evidence/louksna1-candidate/CAJITA_LUNA_RUNTIME_V10.macrodown")
+          bundle_manifest=json.loads(zipfile.ZipFile(p).read("LOUKSNAPG_MANIFEST.json").decode("utf-8"))
+          assert bundle_manifest["source"]["louksna1_sha256"]==hashlib.sha256(d.read_bytes()).hexdigest(), "G24_BUNDLE_DOCUMENT_HASH_MISMATCH"
+          assert bundle_manifest["source"]["runtime_archive_sha256"]==hashlib.sha256(runtime_source.read_bytes()).hexdigest(), "G24_RUNTIME_SOURCE_HASH_MISMATCH"
           raw_path=Path(os.environ["RUNNER_TEMP"])/"task-adapter-e2e-raw.json"
           task_report=json.loads(raw_path.read_text(encoding="utf-8")) if raw_path.is_file() else {"status":"NOT_COMPLETED","task_results":[]}
           release=json.loads(Path("evidence/louksna1-candidate/LOUKSNA1_RELEASE_MANIFEST.json").read_text(encoding="utf-8"))
@@ -831,6 +843,9 @@ jobs:
           result={"schema":"LOUKSNA1_G24_EVIDENCE/1.0","gate":"G24","status":os.environ["STATUS"],
             "decision":os.environ["STATUS"] if os.environ["STATUS"].startswith("PASS_") else "NOT_GRANTED",
             "package_sha256":hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None,
+            "bundle_bytes":p.stat().st_size if p.is_file() else None,
+            "runtime_source_sha256":hashlib.sha256(runtime_source.read_bytes()).hexdigest() if runtime_source.is_file() else None,
+            "bundle_validation_return_code":int(os.environ.get("VALIDATOR_RC","125")),
             "louksna1_sha256":hashlib.sha256(d.read_bytes()).hexdigest() if d.is_file() else None,
             "source_commit":release.get("source_commit"),"reason":os.environ["REASON"],
             "smoke_return_code":int(os.environ["SMOKE_RC"]),"task_adapter_return_code":int(os.environ.get("TASK_RC","125")),
@@ -843,6 +858,9 @@ jobs:
             "target_engine_scope":"SIX_SOURCE_BOUND_RUNTIME_ENGINE_SMOKES_ONLY",
             "target_engine_task_coverage":"NOT_ESTABLISHED",
             "image_build_return_code":int(os.environ["BUILD_RC"]),
+            "bundle_validation_return_code":int(os.environ.get("VALIDATOR_RC","125")),
+            "distribution_artifact":"LOUKSNAPG.md",
+            "distribution_bytes":p.stat().st_size if p.is_file() else None,
             "memory_max_bytes":os.environ.get("MEMMAX") or None,"cpu_quota":os.environ.get("CPUMAX") or None,
             "memory_peak_bytes":int(os.environ["PEAK"]) if os.environ.get("PEAK","").isdigit() else None,
             "scope":"SIX_DOMAIN_STARTUP_SMOKE_PLUS_FIVE_KNOWN_ANSWER_SYNTHETIC_MODEL_TASKS_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_AND_FAIL_CLOSED_ORCHESTRATION_GUARD",
@@ -888,6 +906,7 @@ jobs:
             ${{ runner.temp }}/task-adapter-e2e-raw.json
             ${{ runner.temp }}/task-adapter-e2e.rc
             ${{ runner.temp }}/smoke-all.rc
+            ${{ runner.temp }}/LOUKSNAPG_G24_INDEPENDENT_VALIDATION.json
           if-no-files-found: warn
           retention-days: 90
 
