@@ -764,7 +764,6 @@ jobs:
         run: |
           set +e
           ROOT="$RUNNER_TEMP/louksnapg-runtime"
-          mkdir -p "$ROOT"
           python tools/louksnapg_independent_validator.py \
             --bundle "evidence/louksna1-candidate/LOUKSNAPG.md" \
             --max-bytes 470000000 \
