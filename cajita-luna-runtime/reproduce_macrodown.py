@@ -3,7 +3,7 @@
 from __future__ import annotations
 import argparse, hashlib, json, os, shutil, stat, zipfile
 from pathlib import Path
-from cajita_externalized_packaging import prepare_distribution_registry, distribution_contract
+from cajita_externalized_packaging import prepare_distribution_registry, distribution_contract, verify_all_archives
 SCHEMA="CAJITA_RUNTIME_MACRODOWN/1.0"
 DEFAULT_RAW_CAP_BYTES=1_500_000_000
 DEFAULT_COMBINED_CAP_BYTES=479_000_000
@@ -133,6 +133,10 @@ def build(root,output,raw_cap_bytes=DEFAULT_RAW_CAP_BYTES,combined_cap_bytes=DEF
     if missing: raise RuntimeError("DOMAIN_ROOTS_MISSING:"+",".join(missing))
     if not (root/"cajita_runtime.py").is_file(): raise RuntimeError("RUNTIME_ENTRYPOINT_MISSING")
     externalized_contract=prepare_distribution_registry(root)
+    reconstruction=verify_all_archives(root)
+    if reconstruction.get("status")!="PASS_CONTAINER_RECONSTRUCTION_ONLY" or reconstruction.get("asset_count")!=10:
+        raise RuntimeError("EXTERNALIZED_ASSET_RECONSTRUCTION_GATE_NOT_PASS")
+    print(json.dumps({"externalized_asset_reconstruction":reconstruction,"global_certification":"NOT_GRANTED"},ensure_ascii=False,indent=2))
     files=iter_files(root,output); manifest,gross=manifest_bytes(root,files,raw_cap_bytes,combined_cap_bytes,companion_bytes,companion_sha256,externalized_contract)
     output.parent.mkdir(parents=True,exist_ok=True); temp=output.with_name(output.name+".building")
     try:
@@ -180,7 +184,7 @@ def main():
     ap.add_argument("--combined-cap-bytes",type=int,default=DEFAULT_COMBINED_CAP_BYTES)
     ap.add_argument("--companion-bytes",type=int,default=0)
     ap.add_argument("--companion-sha256",default=None)
-    ap.add_argument("--prepare-distribution-registry",action="store_true",help="Validate the ten source trees and containers, then write the distribution-only module registry.")
+    ap.add_argument("--prepare-distribution-registry",action="store_true",help="Validate source-registry/descriptor bindings and write the distribution-only registry; the explicit loader verification performs the container round-trip.")
     a=ap.parse_args(); root=Path(a.root).resolve()
     if a.prepare_distribution_registry:
         contract=prepare_distribution_registry(root)
