@@ -1,9 +1,10 @@
 id: cajita_runtime_size_gate
 namespace: louksna.kestra
 description: >-
-  Read-only cross-check of Cajita's measured raw payload, deterministic Macrodown
-  build, and ten registered asset identities. It cannot modify files, commits,
-  weights, manifests, branches, or certification.
+  Read-only cross-check of the actual deterministic Macrodown distribution payload,
+  its exact byte cap, Q2 factor evidence, and ten registered asset identities.
+  The Q4 expanded-tree byte count is retained as informational provenance only;
+  it is not the distribution-size gate. This flow cannot mutate source or certify globally.
 tasks:
   - id: runtime_report
     type: io.kestra.plugin.core.http.Request
@@ -38,8 +39,6 @@ tasks:
       {{ outputs.runtime_report.code == 200
          and outputs.macrodown_report.code == 200
          and outputs.placement_record.code == 200
-         and fromJson(outputs.runtime_report.body).size_gate == 'PASS'
-         and fromJson(outputs.runtime_report.body).runtime_bytes_after <= 470000000
          and fromJson(outputs.runtime_report.body).q2_factor_models_promoted == 0
          and fromJson(outputs.runtime_report.body).q2_factor_results[0].id == 'W01_CEREBRO'
          and fromJson(outputs.runtime_report.body).q2_factor_results[0].status == 'ALREADY_Q2_PACKED'
@@ -65,7 +64,8 @@ tasks:
         type: io.kestra.plugin.core.log.Log
         message: >-
           CAJITA_SIZE_AUDIT=PASS
-          runtime_payload_bytes={{ fromJson(outputs.runtime_report.body).runtime_bytes_after }}
+          expanded_tree_bytes_informational={{ fromJson(outputs.runtime_report.body).runtime_bytes_after }}
+          macrodown_payload_bytes={{ fromJson(outputs.macrodown_report.body).runtime_payload_bytes_excluding_generated_manifest }}
           macrodown_gross_raw_bytes={{ fromJson(outputs.macrodown_report.body).gross_raw_payload_bytes_including_manifest }}
           macrodown_archive_bytes={{ fromJson(outputs.macrodown_report.body).archive_bytes }}
           hard_cap_bytes=470000000
@@ -82,7 +82,8 @@ tasks:
           runtime_http={{ outputs.runtime_report.code }}
           macrodown_http={{ outputs.macrodown_report.code }}
           placement_http={{ outputs.placement_record.code }}
-          runtime_bytes={{ fromJson(outputs.runtime_report.body).runtime_bytes_after }}
+          expanded_tree_bytes_informational={{ fromJson(outputs.runtime_report.body).runtime_bytes_after }}
+          macrodown_payload_bytes={{ fromJson(outputs.macrodown_report.body).runtime_payload_bytes_excluding_generated_manifest }}
           q2_promoted={{ fromJson(outputs.runtime_report.body).q2_factor_models_promoted }}
           q2_packed_first={{ fromJson(outputs.runtime_report.body).q2_factor_results[0].status }}
           raw_payload_bytes={{ fromJson(outputs.macrodown_report.body).gross_raw_payload_bytes_including_manifest }}
