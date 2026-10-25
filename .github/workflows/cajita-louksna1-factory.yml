@@ -26,6 +26,7 @@ on:
       - "cajita-luna-runtime/reproduce_macrodown.py"
       - "cajita-luna-runtime/cajita_tokenizer_materializer.py"
       - "tests/test_cajita_tokenizer_materializer.py"
+      - "tests/test_cajita_architecture_binding.py"
       - "cajita-luna-runtime/cajita_externalized_packaging.py"
       - "cajita-luna-runtime/cajita_externalized_asset_loader.py"
       - "integrations/kestra/flows/21-louksna1-release-audit.yml"
