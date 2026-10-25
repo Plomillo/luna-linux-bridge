@@ -264,6 +264,18 @@ jobs:
           def tree_sha256(rows):
             payload=json.dumps(rows,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")
             return hashlib.sha256(payload).hexdigest()
+          import sys
+          sys.path.insert(0,str(runtime))
+          from cajita_tokenizer_materializer import tokenizer_tree_rows, TokenizerMaterializationError
+          def logical_tree_rows(directory):
+            rows=canonical_tree_rows(directory)
+            manifest_path=runtime/"CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json"
+            if manifest_path.is_file() and not manifest_path.is_symlink():
+              try:
+                return tokenizer_tree_rows(directory,runtime,rows)
+              except TokenizerMaterializationError as exc:
+                raise AssertionError("TOKENIZER_LOGICAL_TREE_IDENTITY:"+str(exc)) from exc
+            return rows
           package=root/"CAJITA_LUNA_RUNTIME_V10.macrodown"
           doc=root/"Louksna1.md"
           report=json.loads((root/"factory-report.json").read_text())
@@ -323,7 +335,26 @@ jobs:
           routing=json.loads((runtime/"command_subdomain_routing.json").read_text())
           assert routing["domain_order"]==["D01_CEREBRO","D02_ORQUESTACION","D03_TRANSCRIPCION","D04_TRADUCTOR_INTELIGENTE","D05_INTELIGENCIA_DOCUMENTAL","D06_SISTEMA_INTELIGENTE"]
           assert len(routing["engine_registry"])==15 and len(routing["route_profiles"])==14 and len(routing["targets"])==21
-          registry=json.loads((runtime/"module_registry.json").read_text())
+          # The compact distribution excludes the source-only registry and carries
+          # its derived registry with the same 21 target declarations.
+          source_registry_path=runtime/"module_registry.json"
+          distribution_registry_path=runtime/"CAJITA_DISTRIBUTION_MODULE_REGISTRY.json"
+          assert not (source_registry_path.exists() and distribution_registry_path.exists()), "SOURCE_AND_DISTRIBUTION_REGISTRIES_MUST_NOT_COEXIST"
+          registry_path=source_registry_path if source_registry_path.is_file() and not source_registry_path.is_symlink() else distribution_registry_path
+          assert registry_path.is_file() and not registry_path.is_symlink(), "DISTRIBUTION_MODULE_REGISTRY_MISSING"
+          registry=json.loads(registry_path.read_text())
+          assert registry["schema"]=="CAJITA_MODULE_REGISTRY/1.0"
+          if registry_path.name=="CAJITA_DISTRIBUTION_MODULE_REGISTRY.json":
+            profile=registry["distribution_profile"]
+            assert profile["policy"]=="PACK_CONTAINER_ONCE_AND_RECONSTRUCT_EXPANDED_TREE_ON_DEMAND"
+            assert profile["certification"]=="NOT_GRANTED"
+            externalized=registry.get("externalized_modules",[])
+            assert len(externalized)==10 and len({row["canonical_asset_id"] for row in externalized})==10
+            for row in externalized:
+              container=runtime/row["container_path"]
+              assert container.is_file() and not container.is_symlink(), "EXTERNALIZED_CONTAINER_MISSING:"+row["canonical_asset_id"]
+              payload=container.read_bytes()
+              assert len(payload)==int(row["container_bytes"]) and hashlib.sha256(payload).hexdigest()==row["container_sha256"], "EXTERNALIZED_CONTAINER_HASH_OR_SIZE:"+row["canonical_asset_id"]
           assert registry["materialized_module_count"]>=1
           assert registry["canonical_target_module_count"] == 21
           assert len(registry["target_modules"]) == 21
@@ -336,7 +367,7 @@ jobs:
             assert target_data["target_id"] == target_module["target_id"]
             target_dir = runtime / target_module["path"]
             assert target_dir.is_dir() and not target_dir.is_symlink()
-            actual_rows = canonical_tree_rows(target_dir)
+            actual_rows = logical_tree_rows(target_dir)
             actual_tree_hash = tree_sha256(actual_rows)
             recorded = target_data["tree_integrity"]
             assert len(actual_rows) == int(recorded["file_count_excluding_module_descriptors"]), "TARGET_MODULE_FILE_COUNT:" + target_module["target_id"]
@@ -364,7 +395,7 @@ jobs:
             assert manifest["module_key"]==module["module_key"]
             module_dir=runtime/module["module_key"]
             assert module_dir.is_dir() and not module_dir.is_symlink()
-            rows=canonical_tree_rows(module_dir)
+            rows=logical_tree_rows(module_dir)
             assert len(rows)==int(manifest["materialization"]["file_count"]), "MATERIALIZED_MODULE_FILE_COUNT:"+module["module_key"]
             assert sum(row["bytes"] for row in rows)==int(manifest["materialization"]["bytes"]), "MATERIALIZED_MODULE_BYTE_COUNT:"+module["module_key"]
             assert tree_sha256(rows)==module["tree_sha256"], "MATERIALIZED_MODULE_TREE_HASH:"+module["module_key"]
