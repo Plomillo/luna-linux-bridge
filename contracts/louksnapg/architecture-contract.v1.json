@@ -365,6 +365,7 @@
     "candidate_repair_run_must_execute": true,
     "required_for_release": [
       "repair_preflight_status_PASS",
+      "candidate_integrity_PASS",
       "all_three_repair_targets_PASS_PRIMITIVE_SMOKE",
       "primitive_report_hash_verified",
       "source_commit_contract_and_bundle_hashes_match"
