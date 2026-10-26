@@ -93,7 +93,7 @@ class SixObligationAuditTests(unittest.TestCase):
             self.assertEqual(obligations["C6_PROHIBITIONS_AND_RECOVERY"]["status"], "PASS_PROHIBITIONS_OBSERVED")
             self.assertFalse(result["summary"]["release_eligible"])
             self.assertEqual(result["summary"]["decision"], "HOLD_NOT_CERTIFIED")
-            self.assertEqual(result["summary"]["global_certification"], "NOT_GRANTED")
+            self.assertEqual(result["summary"]["global_certification"], "NOT_GRANTED_BY_THIS_AUDIT")
 
     def test_telemetry_payload_and_envelope_hashes_are_recomputed(self):
         with tempfile.TemporaryDirectory(prefix="louksnapg-telemetry-binding-") as tmp:
