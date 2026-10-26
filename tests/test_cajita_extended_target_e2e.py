@@ -491,6 +491,12 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             self.assertEqual(result["consumer_task_equivalence"], "NOT_ESTABLISHED_ANCIENT_LANGUAGE_LEXICON_MISSING")
             self.assertEqual(len(result["flookup_sha256"]), 64)
 
+    def test_foma_probe_requires_forward_lookup_mode(self):
+        import inspect
+        source = inspect.getsource(coverage.probe_foma)
+        self.assertIn('run_process([str(flookup_binary),"-i",str(fst)]', source)
+        self.assertIn("assert '-i' in sys.argv", Path(__file__).read_text(encoding="utf-8"))
+
     def test_opa_policy_uses_rego_v1_rule_syntax(self):
         policy = coverage.rego_release_policy()
         self.assertIn("default allow := false", policy)
