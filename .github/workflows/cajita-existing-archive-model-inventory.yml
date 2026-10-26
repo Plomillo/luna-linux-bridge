@@ -50,7 +50,7 @@ jobs:
           7z l -slt "$archive" > "$RUNNER_TEMP/archive-listing.txt"
           test -s "$RUNNER_TEMP/archive-listing.txt"
           python - "$RUNNER_TEMP/archive-listing.txt" "$RUNNER_TEMP/archive-inventory.json" "$EXPECTED_SHA256" "$EXPECTED_BYTES" "$ARCHIVE_URL" <<'PY'
-          import json, pathlib, sys
+          import json, pathlib, re, sys
           listing_path, out_path, digest, archive_bytes, url = sys.argv[1:]
           text = pathlib.Path(listing_path).read_text(encoding="utf-8", errors="replace")
           records = []
