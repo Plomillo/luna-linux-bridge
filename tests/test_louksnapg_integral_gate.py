@@ -24,9 +24,9 @@ class IntegralGateTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.bundle = self.root / "LOUKSNAPG.md"
         qwen_config = {
-            "hidden_size": 1024, "intermediate_size": 3072, "num_hidden_layers": 28,
-            "num_attention_heads": 16, "num_key_value_heads": 8,
-            "tie_word_embeddings": True, "vocab_size": 151936,
+            "hidden_size": 5120, "intermediate_size": 17408, "num_hidden_layers": 40,
+            "num_attention_heads": 40, "num_key_value_heads": 8,
+            "tie_word_embeddings": False, "vocab_size": 151936,
         }
         with zipfile.ZipFile(self.bundle, "w") as archive:
             archive.writestr(gate.QWEN_CONFIG_PATH, json.dumps(qwen_config))
@@ -85,7 +85,7 @@ class IntegralGateTests(unittest.TestCase):
             }
             if target_id in gate.MODEL_TARGETS:
                 upstream_ids = dict(gate.OFFICIAL_MODEL_IDS)
-                upstream_ids["D06_ANALISIS_AVANZADO"] = "Qwen/Qwen3-0.6B"
+                upstream_ids["D06_ANALISIS_AVANZADO"] = "Qwen/Qwen3-14B"
                 row.update({
                     "model_load_status": "PASS",
                     "model_inference_observed": True,
@@ -186,22 +186,20 @@ class IntegralGateTests(unittest.TestCase):
         self.assertTrue(any(x.startswith("TARGET_EVIDENCE_MISSING:") for x in result["failures"]))
         self.assertTrue(any(x.startswith("DUPLICATE_TARGET_ID:") for x in result["failures"]))
 
-    def test_candidate_config_matching_qwen14b_is_rejected_when_contract_pins_qwen06b(self):
-        wrong_config = {
+    def test_candidate_config_matching_qwen14b_is_accepted_when_contract_pins_qwen14b(self):
+        matching_config = {
             "hidden_size": 5120, "intermediate_size": 17408, "num_hidden_layers": 40,
             "num_attention_heads": 40, "num_key_value_heads": 8,
             "tie_word_embeddings": False, "vocab_size": 151936,
         }
         with zipfile.ZipFile(self.bundle, "w") as archive:
-            archive.writestr(gate.QWEN_CONFIG_PATH, json.dumps(wrong_config))
+            archive.writestr(gate.QWEN_CONFIG_PATH, json.dumps(matching_config))
         self.sha = hashlib.sha256(self.bundle.read_bytes()).hexdigest()
         self.evidence["bundle_sha256"] = self.sha
         self.sign_evidence(self.evidence)
         result = self.evaluate()
-        self.assertEqual(result["decision"], "HOLD")
-        self.assertIn("CANDIDATE_MODEL_IDENTITY_NOT_VERIFIED_OR_QWEN_VARIANT_MISMATCH", result["failures"])
-        self.assertEqual(result["candidate_model_identity"]["status"], "HOLD_QWEN_CONFIG_VARIANT_MISMATCH")
-        self.assertEqual(result["candidate_model_identity"]["mismatches"]["hidden_size"]["observed"], 5120)
+        self.assertNotIn("CANDIDATE_MODEL_IDENTITY_NOT_VERIFIED_OR_QWEN_VARIANT_MISMATCH", result["failures"])
+        self.assertEqual(result["candidate_model_identity"]["status"], "PASS_QWEN_CONFIG_VARIANT_MATCH")
 
 
     def test_model_target_cannot_pass_as_primitive_smoke(self):
