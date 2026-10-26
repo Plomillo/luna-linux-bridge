@@ -76,6 +76,7 @@ jobs:
         shell: bash
         run: |
           python - <<'PY'
+          import json
           import yaml
           from pathlib import Path
           path = Path("integrations/kestra/flows/24-louksnapg-bundle-audit.yml")
