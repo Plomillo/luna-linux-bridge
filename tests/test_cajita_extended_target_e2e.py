@@ -382,7 +382,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             binary = source / "tpl"
             binary.write_text(
                 "#!/usr/bin/env python3\n"
-                "import pathlib,sys\n"
+                "import pathlib,sys,os\n"
                 "assert pathlib.Path('samples/grammar.pl').is_file()\n"                "assert os.environ.get('TPL_LIBRARY_PATH') == str(pathlib.Path('library').resolve())\n"
                 "assert '-g' in sys.argv and '-l' in sys.argv\n"
                 "assert sys.argv[sys.argv.index('-g')+1] == 'use_module(library(dcgs)),phrase(sentence,[the,man,shoots]),write(true),halt'\n"
