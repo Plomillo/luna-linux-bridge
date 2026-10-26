@@ -925,6 +925,19 @@ def probe_runtime_android_windows(root: Path) -> dict[str, Any]:
     }
 
 
+def select_target_specs(requested: list[str] | None) -> dict[str, str]:
+    """Select a unique, explicitly registered set of primitive targets."""
+    selected = list(requested) if requested else list(TARGETS)
+    if len(selected) != len(set(selected)):
+        raise ValueError("DUPLICATE_PRIMITIVE_TARGET_SELECTION")
+    unknown = [target_id for target_id in selected if target_id not in TARGETS]
+    if unknown:
+        raise ValueError("UNKNOWN_PRIMITIVE_TARGET_SELECTION:" + ",".join(unknown))
+    if not selected:
+        raise ValueError("EMPTY_PRIMITIVE_TARGET_SELECTION")
+    return {target_id: TARGETS[target_id] for target_id in selected}
+
+
 def probe_testing(root: Path) -> dict[str, Any]:
     module, _ = module_for(root, "D06_TESTING")
     wheels = regular_files(module, suffix=".whl")
@@ -986,8 +999,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bundle-sha256", default=os.environ.get("LOUKSNAPG_BUNDLE_SHA256", ""))
     parser.add_argument("--contract", default="contracts/louksnapg/architecture-contract.v1.json")
     parser.add_argument("--report")
+    parser.add_argument("--only-target", action="append", choices=sorted(TARGETS), help="Run only this registered target; may be repeated")
     args = parser.parse_args(argv)
     root = Path(args.root).resolve(strict=True)
+    try:
+        selected_targets = select_target_specs(args.only_target)
+    except ValueError as exc:
+        parser.error(str(exc))
     if not root.is_dir():
         raise SystemExit("RUNTIME_ROOT_INVALID")
     report: dict[str, Any] = {
@@ -998,7 +1016,7 @@ def main(argv: list[str] | None = None) -> int:
         "bundle_sha256": args.bundle_sha256 or None,
         "contract_sha256": sha256_file(Path(args.contract)) if Path(args.contract).is_file() else None,
         "candidate_runtime_root": str(root),
-        "target_expected_count": len(TARGETS),
+        "target_expected_count": len(selected_targets),
         "targets": [],
         "coverage_execution": "IN_PROGRESS",
         "product_certification": "NOT_GRANTED",
@@ -1007,7 +1025,7 @@ def main(argv: list[str] | None = None) -> int:
         "remote_commander_used": False,
         "synthetic_evidence_used_as_product_proof": False,
     }
-    for target_id, purpose in TARGETS.items():
+    for target_id, purpose in selected_targets.items():
         started = time.monotonic()
         try:
             module, descriptor = module_for(root, target_id)
@@ -1044,12 +1062,12 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"target_id": target_id, "status": row["status"], "elapsed_seconds": row["elapsed_seconds"], "reason": row.get("reason")}, ensure_ascii=False))
     counts = {status: sum(1 for row in report["targets"] if row["status"] == status) for status in (PASS, BLOCKED, FAIL)}
     report["summary"] = {
-        "expected_targets": len(TARGETS),
+        "expected_targets": len(selected_targets),
         "terminal_outcomes": len(report["targets"]),
         "pass_primitive_smoke": counts[PASS],
         "blocked": counts[BLOCKED],
         "fail": counts[FAIL],
-        "all_target_outcomes_recorded": len(report["targets"]) == len(TARGETS) and {row["target_id"] for row in report["targets"]} == set(TARGETS),
+        "all_target_outcomes_recorded": len(report["targets"]) == len(selected_targets) and {row["target_id"] for row in report["targets"]} == set(selected_targets),
         "all_primitive_targets_passed": counts[PASS] == len(TARGETS),
         "interpretation": "Complete diagnostic coverage is not integral product certification; blocked and failed targets remain release blockers.",
     }
