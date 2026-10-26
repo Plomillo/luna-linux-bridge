@@ -822,7 +822,7 @@ jobs:
           name: louksna1-g23-evidence
           path: evidence/louksna1-g23-evidence
 
-      - name: Execute final LOUKSNAPG bundle under one CPU and 1 GiB cgroup limits
+      - name: Execute final LOUKSNAPG bundle under one CPU and 2 GiB cgroup limits
         id: resource_limited_smoke
         shell: bash
         env:
