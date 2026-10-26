@@ -26,7 +26,13 @@ LOCK = {
     "candidate_id": "CAJITA_CALIBRE_SLIM_PDF_EPUB_V2_20261024",
     "upstream_repository": "https://github.com/kovidgoyal/calibre",
     "tag": "v9.17.0",
+    "tag_object_sha": "58cfea71a2c2d893b853d73ca586ec9b28f7b2ba",
+    "tag_signature_status": {"reported_by_github": "verified"},
     "commit_sha": "e6b9e09472f6e63f8a12bf376eb54836042f0f5f",
+    "artifacts": [
+        {"id":"CALIBRE_V9_17_0_LINUX_X86_64_BINARY","url":"https://github.com/kovidgoyal/calibre/releases/download/v9.17.0/calibre-9.17.0-x86_64.txz","filename":"calibre-9.17.0-x86_64.txz","size_bytes":201590724,"sha256":"953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53"},
+        {"id":"CALIBRE_V9_17_0_SOURCE","url":"https://github.com/kovidgoyal/calibre/releases/download/v9.17.0/calibre-9.17.0.tar.xz","filename":"calibre-9.17.0.tar.xz","size_bytes":50661596,"sha256":"07507ea8ace5f8a0f768c13afdb799ad685a636c1cdbd8b11162ddb419743be5"}
+    ],
 }
 
 
@@ -128,6 +134,41 @@ class CalibreSlimIntegrityTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "CALIBRE_RUNTIME_VERSION_MISMATCH"):
                 launcher.verify_pinned_converter(str(converter), self.here)
 
+    def test_wrong_official_tag_object_in_lock_fails_closed(self):
+        lock = json.loads(json.dumps(LOCK))
+        lock["tag_object_sha"] = "0" * 40
+        (self.here / "source-lock.json").write_text(json.dumps(lock), encoding="utf-8")
+        converter = self.here / "ebook-convert"
+        converter.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        converter.chmod(0o755)
+        with self.assertRaisesRegex(RuntimeError, "CALIBRE_SOURCE_LOCK_IDENTITY_MISMATCH"):
+            launcher.verify_pinned_converter(str(converter), self.here)
+
+    def test_official_release_asset_digest_and_size_are_locked(self):
+        for field, bad_value in (("sha256", "0" * 64), ("size_bytes", 1)):
+            with self.subTest(field=field):
+                lock = json.loads(json.dumps(LOCK))
+                lock["artifacts"][0][field] = bad_value
+                (self.here / "source-lock.json").write_text(json.dumps(lock), encoding="utf-8")
+                converter = self.here / "ebook-convert"
+                converter.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+                converter.chmod(0o755)
+                with self.assertRaisesRegex(RuntimeError, "CALIBRE_SOURCE_LOCK_ARTIFACT_IDENTITY_MISMATCH"):
+                    launcher.verify_pinned_converter(str(converter), self.here)
+
+    def test_nonexact_calibre_versions_fail_closed(self):
+        lock_path = self.here / "source-lock.json"
+        lock_path.write_text(json.dumps(LOCK), encoding="utf-8")
+        converter = self.here / "ebook-convert"
+        converter.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        converter.chmod(0o755)
+        for output in ("ebook-convert (calibre 19.17.0)\\n", "ebook-convert (calibre 9.17.00)\\n"):
+            with self.subTest(output=output):
+                with patch.object(launcher.subprocess, "run", return_value=SimpleNamespace(returncode=0, stdout=output)):
+                    with self.assertRaisesRegex(RuntimeError, "CALIBRE_RUNTIME_VERSION_MISMATCH"):
+                        launcher.verify_pinned_converter(str(converter), self.here)
+
+    def test_wrong_official_source_commit_in_lock_fails_closed(self):
     def test_wrong_official_source_commit_in_lock_fails_closed(self):
         lock = dict(LOCK)
         lock["commit_sha"] = "0" * 40

@@ -14,6 +14,13 @@ This preserves the preaudit evidence sent to Kestra and eliminates a false-posit
 
 ## Pinned official sources
 
+### Calibre Slim document-conversion runtime
+
+The document-conversion shim is bound to the signed official Calibre release **v9.17.0**. GitHub's official release metadata confirms the tag object `58cfea71a2c2d893b853d73ca586ec9b28f7b2ba`, whose signed payload points to source commit `e6b9e09472f6e63f8a12bf376eb54836042f0f5f` ("version 9.17.0"). The source-lock validator now binds both official release assets by exact ID, URL, filename, byte size and SHA-256; it also requires the verified tag-signature status reported by GitHub. This workflow only reads release metadata and **does not download the 201,590,724-byte Calibre binary or its source archive**.
+
+The embedded overlay is separately locked to `calibre-slim-overlay.tar.xz`, 58,180 bytes, SHA-256 `dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b`. On every invocation the converter re-reads that archive, rejects unsafe/duplicate paths, validates the complete cached file set, file sizes, SHA-256 values, modes and directory set, and refuses cache drift. The discovered system `ebook-convert --version` output must contain exactly one Calibre version token and that token must equal `9.17.0`; partial substring matches such as `19.17.0` or `9.17.00` are denied. Its source-lock SHA-256 and executable SHA-256 are emitted with the runtime identity. This proves the runtime's reported version against the signed release pin; it is not a separate reproduction build from source.
+
+
 All repository revisions below were recorded as metadata only; model checkpoint payloads were **not** downloaded.
 
 | Target | Official source/code revision | Official model repository revision | Task constraint |

@@ -285,5 +285,43 @@
   "global_luna_hard_max_bytes": 479000000,
   "candidate_distribution_max_bytes": 479000000,
   "cajita_runtime_archive_max_bytes": 470000000,
-  "byte_budget_policy": "GLOBAL_LUNA_HARD_MAX_BYTES_APPLIES_TO_COMPLETE_SINGLE_FILE_DISTRIBUTION; NO_REWARD_FOR_APPROACHING_CAP; CAJITA_RUNTIME_CAP_IS_SEPARATE"
+  "byte_budget_policy": "GLOBAL_LUNA_HARD_MAX_BYTES_APPLIES_TO_COMPLETE_SINGLE_FILE_DISTRIBUTION; NO_REWARD_FOR_APPROACHING_CAP; CAJITA_RUNTIME_CAP_IS_SEPARATE",
+  "toolchain_pins": [
+    {
+      "id": "CAJITA_CALIBRE_SLIM",
+      "upstream_repository": "https://github.com/kovidgoyal/calibre",
+      "official_release_url": "https://github.com/kovidgoyal/calibre/releases/tag/v9.17.0",
+      "tag": "v9.17.0",
+      "tag_object_sha": "58cfea71a2c2d893b853d73ca586ec9b28f7b2ba",
+      "tag_signature_verified": true,
+      "tag_signature_key_id": "06BC317B515ACE7C",
+      "commit_sha": "e6b9e09472f6e63f8a12bf376eb54836042f0f5f",
+      "runtime_version": "9.17.0",
+      "source_lock_path": "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/source-lock.json",
+      "release_assets": [
+        {
+          "id": "CALIBRE_V9_17_0_LINUX_X86_64_BINARY",
+          "url": "https://github.com/kovidgoyal/calibre/releases/download/v9.17.0/calibre-9.17.0-x86_64.txz",
+          "filename": "calibre-9.17.0-x86_64.txz",
+          "size_bytes": 201590724,
+          "sha256": "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53"
+        },
+        {
+          "id": "CALIBRE_V9_17_0_SOURCE",
+          "url": "https://github.com/kovidgoyal/calibre/releases/download/v9.17.0/calibre-9.17.0.tar.xz",
+          "filename": "calibre-9.17.0.tar.xz",
+          "size_bytes": 50661596,
+          "sha256": "07507ea8ace5f8a0f768c13afdb799ad685a636c1cdbd8b11162ddb419743be5"
+        }
+      ],
+      "overlay_archive": {
+        "path": "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-overlay.tar.xz",
+        "filename": "calibre-slim-overlay.tar.xz",
+        "size_bytes": 58180,
+        "sha256": "dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b"
+      },
+      "inventory_policy": "RECOMPUTE_ARCHIVE_AND_FULL_CACHE_FILE_SET_SIZE_SHA256_MODE_DIRECTORY_SET_ON_EVERY_INVOCATION",
+      "runtime_policy": "DISCOVER_SYSTEM_EBOOK_CONVERT_AND_REQUIRE_EXACT_CALIBRE_VERSION_TOKEN"
+    }
+  ]
 }

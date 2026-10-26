@@ -37,6 +37,19 @@ class ArchitectureContractTests(unittest.TestCase):
         failures = contract_gate.validate_contract(bad_variant)
         self.assertIn("UNAUTHORIZED_MODEL_VARIANT_SUBSTITUTION_ALLOWED:D06_ANALISIS_AVANZADO", failures)
 
+    def test_calibre_official_source_lock_and_overlay_match_contract(self):
+        self.assertEqual(contract_gate.validate_calibre_source_lock(self.contract), [])
+
+        changed = deepcopy(self.contract)
+        changed["toolchain_pins"][0]["commit_sha"] = "0" * 40
+        failures = contract_gate.validate_contract(changed)
+        self.assertIn("CALIBRE_TOOLCHAIN_PIN_MISMATCH:commit_sha", failures)
+
+        changed = deepcopy(self.contract)
+        changed["toolchain_pins"][0]["overlay_archive"]["sha256"] = "0" * 64
+        failures = contract_gate.validate_contract(changed)
+        self.assertIn("CALIBRE_OVERLAY_ARCHIVE_PIN_MISMATCH", failures)
+
     def test_global_distribution_and_runtime_caps_are_immutable(self):
         bad = deepcopy(self.contract)
         bad["candidate_distribution_max_bytes"] = 490000000

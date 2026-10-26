@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -167,19 +168,50 @@ def materialize_overlay(here: Path) -> Path:
         raise
 
 
+EXPECTED_CALIBRE_RELEASE_ASSETS = {
+    "CALIBRE_V9_17_0_LINUX_X86_64_BINARY": {
+        "url": "https://github.com/kovidgoyal/calibre/releases/download/v9.17.0/calibre-9.17.0-x86_64.txz",
+        "filename": "calibre-9.17.0-x86_64.txz",
+        "size_bytes": 201590724,
+        "sha256": "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53",
+    },
+    "CALIBRE_V9_17_0_SOURCE": {
+        "url": "https://github.com/kovidgoyal/calibre/releases/download/v9.17.0/calibre-9.17.0.tar.xz",
+        "filename": "calibre-9.17.0.tar.xz",
+        "size_bytes": 50661596,
+        "sha256": "07507ea8ace5f8a0f768c13afdb799ad685a636c1cdbd8b11162ddb419743be5",
+    },
+}
+
+
 def verify_pinned_converter(converter: str, here: Path) -> dict:
-    """Require the official runtime version declared by the source lock."""
+    """Require the official signed Calibre v9.17.0 source lock and an exact version token."""
     lock_path = here / "source-lock.json"
     if lock_path.is_symlink() or not lock_path.is_file():
         raise RuntimeError("CALIBRE_SOURCE_LOCK_MISSING_OR_UNSAFE")
     lock = json.loads(lock_path.read_text(encoding="utf-8"))
+    signature = lock.get("tag_signature_status")
     if (
         lock.get("schema") != "CAJITA_CALIBRE_SLIM_SOURCE_LOCK/1.0"
         or lock.get("upstream_repository") != "https://github.com/kovidgoyal/calibre"
         or lock.get("tag") != "v9.17.0"
+        or lock.get("tag_object_sha") != "58cfea71a2c2d893b853d73ca586ec9b28f7b2ba"
         or lock.get("commit_sha") != "e6b9e09472f6e63f8a12bf376eb54836042f0f5f"
+        or not isinstance(signature, dict)
+        or signature.get("reported_by_github") != "verified"
     ):
         raise RuntimeError("CALIBRE_SOURCE_LOCK_IDENTITY_MISMATCH")
+    rows = lock.get("artifacts")
+    indexed = {
+        row.get("id"): row for row in rows if isinstance(row, dict)
+    } if isinstance(rows, list) else {}
+    if not isinstance(rows, list) or len(indexed) != len(rows) or set(indexed) != set(EXPECTED_CALIBRE_RELEASE_ASSETS):
+        raise RuntimeError("CALIBRE_SOURCE_LOCK_ARTIFACT_SET_MISMATCH")
+    for artifact_id, expected in EXPECTED_CALIBRE_RELEASE_ASSETS.items():
+        row = indexed[artifact_id]
+        if any(row.get(field) != value for field, value in expected.items()):
+            raise RuntimeError("CALIBRE_SOURCE_LOCK_ARTIFACT_IDENTITY_MISMATCH:" + artifact_id)
+
     executable = Path(converter).resolve(strict=True)
     if not executable.is_file() or not os.access(executable, os.X_OK):
         raise RuntimeError("CALIBRE_CONVERTER_NOT_EXECUTABLE")
@@ -192,9 +224,24 @@ def verify_pinned_converter(converter: str, here: Path) -> dict:
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise RuntimeError("CALIBRE_CONVERTER_VERSION_PROBE_FAILED:" + type(exc).__name__) from exc
     output = probe.stdout[-2000:]
-    if probe.returncode != 0 or "9.17.0" not in output:
+    versions = re.findall(r"\bcalibre\s+([0-9]+\.[0-9]+\.[0-9]+)\b", output, flags=re.IGNORECASE)
+    if probe.returncode != 0 or versions != ["9.17.0"]:
         raise RuntimeError("CALIBRE_RUNTIME_VERSION_MISMATCH:" + output[-500:])
-    return {"executable": str(executable), "version_output": output, "expected_version": "9.17.0", "status": "PASS_PINNED_VERSION"}
+    return {
+        "executable": str(executable),
+        "executable_bytes": executable.stat().st_size,
+        "executable_sha256": sha256_file(executable),
+        "version_output": output,
+        "expected_version": "9.17.0",
+        "upstream_repository": "https://github.com/kovidgoyal/calibre",
+        "upstream_tag": "v9.17.0",
+        "upstream_tag_object_sha": "58cfea71a2c2d893b853d73ca586ec9b28f7b2ba",
+        "upstream_commit_sha": "e6b9e09472f6e63f8a12bf376eb54836042f0f5f",
+        "tag_signature_verified_in_lock": True,
+        "source_lock_sha256": sha256_file(lock_path),
+        "official_release_asset_ids": sorted(EXPECTED_CALIBRE_RELEASE_ASSETS),
+        "status": "PASS_PINNED_VERSION",
+    }
 
 
 def main(argv: list[str]) -> int:
