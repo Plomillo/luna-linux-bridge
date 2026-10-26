@@ -274,7 +274,14 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
         if row is None:
             continue
         target_failures = []
-        evidence_kind = row.get("evidence_kind", "MODEL_TASK")
+        evidence_kind = row.get("evidence_kind")
+        # A target registered as model-backed can never be certified by a primitive
+        # startup probe. It must carry the model-task, weight-bound evidence below.
+        if target_id in MODEL_TARGETS and evidence_kind != "MODEL_TASK":
+            target_failures.append("MODEL_TARGET_REQUIRES_MODEL_TASK_EVIDENCE")
+            target_checks.append({"target_id": target_id, "status": "HOLD", "failures": target_failures})
+            failures.extend("TARGET:" + target_id + ":" + item for item in target_failures)
+            continue
         if evidence_kind == "PRIMITIVE_SMOKE":
             if row.get("status") not in {"PASS_PRIMITIVE_SMOKE", "PASS_TARGET_ENGINE_EXECUTION"} or row.get("exit_code") != 0:
                 target_failures.append("PRIMITIVE_SMOKE_NOT_PASS")
@@ -289,8 +296,8 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
             target_checks.append({"target_id": target_id, "status": "PASS" if not target_failures else "HOLD", "failures": target_failures})
             failures.extend("TARGET:" + target_id + ":" + item for item in target_failures)
             continue
-        if evidence_kind not in {"MODEL_TASK", None}:
-            target_failures.append("TARGET_EVIDENCE_KIND_INVALID")
+        if evidence_kind != "MODEL_TASK":
+            target_failures.append("TARGET_EVIDENCE_KIND_MISSING_OR_INVALID")
             target_checks.append({"target_id": target_id, "status": "HOLD", "failures": target_failures})
             failures.extend("TARGET:" + target_id + ":" + item for item in target_failures)
             continue
@@ -304,7 +311,8 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
             target_failures.append("TEST_CASE_COUNT_INVALID")
         if isinstance(passed_cases, bool) or not isinstance(passed_cases, int) or passed_cases != cases:
             target_failures.append("NOT_ALL_BEHAVIOR_CASES_PASSED")
-        if row.get("quality_status", "PASS") != "PASS":
+        # No default PASS: missing quality evidence is a failure, not a success.
+        if row.get("quality_status") != "PASS":
             target_failures.append("MODEL_QUALITY_NOT_PASS")
         if isinstance(row.get("output_char_count"), bool) or not isinstance(row.get("output_char_count"), int) or row.get("output_char_count") <= 0:
             target_failures.append("NONEMPTY_OUTPUT_NOT_ESTABLISHED")
@@ -319,17 +327,53 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
                 target_failures.append("REAL_MODEL_LOAD_OR_INFERENCE_NOT_ESTABLISHED")
             if not _is_sha(row.get("weight_sha256")):
                 target_failures.append("WEIGHT_SHA256_INVALID")
+
             model_id = row.get("upstream_model_id")
             if not isinstance(model_id, str) or not model_id.strip():
                 target_failures.append("UPSTREAM_MODEL_ID_MISSING")
-            elif target_id in OFFICIAL_MODEL_IDS and model_id != OFFICIAL_MODEL_IDS[target_id]:
+            elif model_id != OFFICIAL_MODEL_IDS[target_id]:
                 target_failures.append("UPSTREAM_MODEL_ID_NOT_OFFICIAL_EXPECTED_VARIANT")
-            if row.get("upstream_source_url") != OFFICIAL_SOURCE_URLS[target_id]:
+
+            # Match the names and semantics of REQUIRED_REPAIR_FIELDS in the
+            # architecture contract. Older aliases are not accepted as proof.
+            if row.get("official_source_url") != OFFICIAL_SOURCE_URLS[target_id]:
                 target_failures.append("UPSTREAM_SOURCE_NOT_OFFICIAL_EXPECTED_URL")
-            if row.get("upstream_revision_sha256") != OFFICIAL_SOURCE_REVISIONS[target_id]:
+            if row.get("upstream_revision_commit") != OFFICIAL_SOURCE_REVISIONS[target_id]:
                 target_failures.append("UPSTREAM_SOURCE_REVISION_MISMATCH")
             if row.get("model_repository_revision_commit") != OFFICIAL_MODEL_REVISIONS[target_id]:
                 target_failures.append("MODEL_REPOSITORY_REVISION_NOT_PINNED")
+
+            for field in (
+                "upstream_weights_sha256",
+                "candidate_before_weights_sha256",
+                "candidate_after_weights_sha256",
+                "test_evidence_sha256",
+                "quality_report_sha256",
+            ):
+                if not _is_sha(row.get(field)):
+                    target_failures.append(field.upper() + "_INVALID")
+
+            repair_commit = row.get("repair_implementation_commit")
+            if not isinstance(repair_commit, str) or not COMMIT_RE.fullmatch(repair_commit):
+                target_failures.append("REPAIR_IMPLEMENTATION_COMMIT_INVALID")
+
+            expected_tests = row.get("expected_test_count")
+            passed_tests = row.get("passed_test_count")
+            if isinstance(expected_tests, bool) or not isinstance(expected_tests, int) or expected_tests < 1:
+                target_failures.append("MODEL_REPAIR_EXPECTED_TEST_COUNT_INVALID")
+            if (isinstance(passed_tests, bool) or not isinstance(passed_tests, int)
+                    or passed_tests != expected_tests or passed_tests < 1):
+                target_failures.append("MODEL_REPAIR_TEST_CASES_NOT_ALL_PASS")
+            if row.get("semantic_quality_status") != "PASS":
+                target_failures.append("MODEL_REPAIR_SEMANTIC_QUALITY_NOT_PASS")
+
+            before_weights = row.get("candidate_before_weights_sha256")
+            after_weights = row.get("candidate_after_weights_sha256")
+            if _is_sha(before_weights) and _is_sha(after_weights):
+                if before_weights == after_weights:
+                    target_failures.append("CANDIDATE_WEIGHTS_NOT_MATERIALLY_REPAIRED")
+                if _is_sha(row.get("weight_sha256")) and after_weights != row.get("weight_sha256"):
+                    target_failures.append("CANDIDATE_AFTER_HASH_DIFFERS_FROM_FUNCTIONAL_GATE_WEIGHT_HASH")
         target_checks.append({"target_id": target_id, "status": "PASS" if not target_failures else "HOLD",
                               "failures": target_failures})
         failures.extend("TARGET:" + target_id + ":" + item for item in target_failures)
