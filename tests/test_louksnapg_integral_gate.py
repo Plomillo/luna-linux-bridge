@@ -76,7 +76,7 @@ class IntegralGateTests(unittest.TestCase):
             }
             if target_id in gate.MODEL_TARGETS:
                 upstream_ids = dict(gate.OFFICIAL_MODEL_IDS)
-                upstream_ids["D06_ANALISIS_AVANZADO"] = "Qwen/Qwen3-8B"
+                upstream_ids["D06_ANALISIS_AVANZADO"] = "Qwen/Qwen3-0.6B"
                 row.update({
                     "model_load_status": "PASS",
                     "model_inference_observed": True,
@@ -84,6 +84,13 @@ class IntegralGateTests(unittest.TestCase):
                     "upstream_model_id": upstream_ids[target_id],
                     "upstream_source_url": gate.OFFICIAL_SOURCE_URLS[target_id],
                     "upstream_revision_sha256": "6" * 40,
+                    "model_repository_revision_commit": {
+                        "D01_CEREBRO_ROOT": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+                        "D03_TRANSCRIPCION_ROOT": "41f01f3fe87f28c78e2fbf8b568835947dd65ed9",
+                        "D04_TRADUCCION_GENERAL": "b8d7691bcced0d24b2655f534b6148be78346b72",
+                        "D05_DOCLING": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+                        "D06_ANALISIS_AVANZADO": "c1899de289a04d12100db370d81485cdf75e47ca",
+                    }[target_id],
                 })
             rows.append(row)
         evidence = {
@@ -144,6 +151,14 @@ class IntegralGateTests(unittest.TestCase):
         self.assertEqual(result["decision"], "HOLD")
         self.assertTrue(any(x.startswith("TARGET_EVIDENCE_MISSING:") for x in result["failures"]))
         self.assertTrue(any(x.startswith("DUPLICATE_TARGET_ID:") for x in result["failures"]))
+
+    def test_model_repository_revision_must_match_pinned_official_snapshot(self):
+        row = next(x for x in self.evidence["target_results"] if x["target_id"] == "D06_ANALISIS_AVANZADO")
+        row["model_repository_revision_commit"] = "0" * 40
+        self.sign_evidence(self.evidence)
+        result = self.evaluate()
+        self.assertEqual(result["decision"], "HOLD")
+        self.assertIn("MODEL_REPOSITORY_REVISION_NOT_PINNED", result["failures"])
 
     def test_model_without_pinned_upstream_revision_is_blocked(self):
         row = next(x for x in self.evidence["target_results"] if x["target_id"] in gate.MODEL_TARGETS)
