@@ -457,11 +457,25 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             self.assertEqual(result["consumer_task_equivalence"], "NOT_ESTABLISHED_ANCIENT_LANGUAGE_LEXICON_MISSING")
             self.assertEqual(len(result["flookup_sha256"]), 64)
 
+    def test_opa_policy_uses_rego_v1_rule_syntax(self):
+        policy = coverage.rego_release_policy()
+        self.assertIn("default allow := false", policy)
+        self.assertIn("allow if {", policy)
+        self.assertNotIn("allow {", policy)
+
+    def test_rqlite_statement_body_is_the_documented_json_array(self):
+        self.assertEqual(
+            coverage.rqlite_statement_batch("CREATE TABLE x(id INTEGER)", "SELECT 1"),
+            ["CREATE TABLE x(id INTEGER)", "SELECT 1"],
+        )
+        with self.assertRaisesRegex(ValueError, "RQLITE_SQL_STATEMENT_BATCH_INVALID"):
+            coverage.rqlite_statement_batch("")
+
     def test_runtime_image_declares_native_build_and_offline_test_dependencies(self):
         workflow = (REPOSITORY / ".github" / "workflows" / "cajita-louksna1-factory.yml").read_text(encoding="utf-8")
         for package in ("git", "zlib1g-dev", "p7zip-full", "build-essential"):
             self.assertIn(package, workflow)
-        for package in ("iniconfig==2.3.0", "pluggy==1.6.0", "packaging==25.0", "pygments==2.21.0"):
+        for package in ("iniconfig==2.3.0", "pluggy==1.6.0", "packaging==25.0", "pygments==2.21.0", "py==1.11.0"):
             self.assertIn(package, workflow)
         self.assertIn("build-essential tcl git", workflow)
         source = (REPOSITORY / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
