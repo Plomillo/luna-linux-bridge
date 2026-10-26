@@ -282,6 +282,9 @@ jobs:
           aux_text = aux_path.read_text(encoding="utf-8")
           assert 'base+"/api/v1/main/flows/search?size=1"' in aux_text
           assert 'Request(base+"/api/v1/main/flows",headers=' not in aux_text
+          assert "for name in LOUKSNAPG_BUILD_REPORT.json LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json LOUKSNAPG_CUSTOSZV9_PRIMITIVE_REPAIR_EVIDENCE.json;" in aux_text
+          assert aux_text.count("CUSTOSZ_PRIMITIVE_REPAIR_REPORT_MISSING_OR_INVALID_SHA256") == 2
+          assert '"custosz_repair_report_sha256":repair_sha' in aux_text
           assert 'g24_name="g24-resource-limited-runtime-smoke"' in aux_text
           assert 'return jobs_by_name[g24_name].get("status")=="completed"' in aux_text
           assert "FACTORY_MANUFACTURE_G23_AND_G24_NOT_TERMINAL_WITHIN_AUXILIARY_WAIT_WINDOW" in aux_text
