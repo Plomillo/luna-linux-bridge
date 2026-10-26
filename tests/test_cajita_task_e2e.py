@@ -25,6 +25,11 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
         self.assertEqual(quality_acceptance(row, "Buenos días. ¿Cómo estás?")["status"], "PASS")
         self.assertEqual(quality_acceptance(row, "Good morning. How are you?")["status"], "FAIL")
 
+    def test_docling_uses_official_page_conversion_instruction_and_full_output_budget(self):
+        row = MODEL_CASES[3]
+        self.assertEqual(row["input"]["prompt"], "Convert this page to docling.")
+        self.assertGreaterEqual(row["limits"]["max_new_tokens"], 64)
+
     def test_document_extraction_requires_the_fixture_total(self):
         row = MODEL_CASES[3]
         self.assertEqual(quality_acceptance(row, "TOTAL 133.45")["status"], "PASS")
