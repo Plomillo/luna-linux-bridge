@@ -37,6 +37,17 @@ class ArchitectureContractTests(unittest.TestCase):
         failures = contract_gate.validate_contract(bad_variant)
         self.assertIn("UNAUTHORIZED_MODEL_VARIANT_SUBSTITUTION_ALLOWED:D06_ANALISIS_AVANZADO", failures)
 
+    def test_global_distribution_and_runtime_caps_are_immutable(self):
+        bad = deepcopy(self.contract)
+        bad["candidate_distribution_max_bytes"] = 490000000
+        failures = contract_gate.validate_contract(bad)
+        self.assertIn("CANDIDATE_DISTRIBUTION_CAP_MISMATCH", failures)
+
+        bad = deepcopy(self.contract)
+        bad["cajita_runtime_archive_max_bytes"] = 479000000
+        failures = contract_gate.validate_contract(bad)
+        self.assertIn("CAJITA_RUNTIME_CAP_MISMATCH", failures)
+
     def test_custosz_must_remain_primary_and_kestra_secondary(self):
         bad = deepcopy(self.contract)
         bad["workers"]["primary"]["id"] = "KESTRA"
