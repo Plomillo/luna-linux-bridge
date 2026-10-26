@@ -395,14 +395,19 @@ def evaluate(
 
     safety = telemetry.get("safety", {}) if isinstance(telemetry.get("safety", {}), dict) else {}
     prohibitions = contract.get("prohibitions", {})
+    g24_certification_state = g24_evidence.get(
+        "global_certification",
+        g24_evidence.get("global_integrated_product_certification"),
+    )
     safety_ok = (
         safety.get("heavy_model_download_count") == 0
         and safety.get("remote_commander_used") is False
         and safety.get("canonical_mutation") is False
         and safety.get("synthetic_evidence_used_as_product_proof") is False
         and isinstance(prohibitions, dict)
+        and bool(prohibitions)
         and all(value is False for value in prohibitions.values())
-        and g24_evidence.get("global_certification") in {"NOT_GRANTED", None}
+        and g24_certification_state == "NOT_GRANTED"
     )
     c6 = _result(
         "PASS_PROHIBITIONS_OBSERVED" if safety_ok else "HOLD",
