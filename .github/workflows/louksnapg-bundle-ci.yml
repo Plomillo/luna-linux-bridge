@@ -24,6 +24,8 @@ on:
       - "docs/cajita-luna/LOUKSNAPG_FUNCTIONAL_REPAIR_AUDIT_20261026.md"
       - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md"
       - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT_40302483781_20261026.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT_40302483781_20261026.md"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
   pull_request:
     paths:
@@ -46,6 +48,8 @@ on:
       - "docs/cajita-luna/LOUKSNAPG_FUNCTIONAL_REPAIR_AUDIT_20261026.md"
       - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md"
       - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT_40302483781_20261026.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT_40302483781_20261026.md"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
 
 permissions:
@@ -114,6 +118,20 @@ jobs:
           assert "output_within_479000000_bytes" in worker_mission
           assert "runtime_archive_within_470000000_bytes" in worker_mission
           assert "output_within_470000000_bytes" not in worker_mission
+          audit_path = Path("docs/cajita-luna/LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT_40302483781_20261026.json")
+          execution_audit = json.loads(audit_path.read_text(encoding="utf-8"))
+          assert execution_audit["schema"] == "LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT/1.0"
+          assert execution_audit["evidence_sources"]["factory_workflow_run_id"] == 40302483781
+          assert execution_audit["evidence_sources"]["source_commit"] == "59bedb1c47739e577068eeb31576ddea21b21467"
+          assert execution_audit["candidate"]["bytes"] == 371947709
+          assert execution_audit["candidate"]["sha256"] == "515b6e9c164c0e5add32ea7968c2ef00aab3a849eb756f76448c4e47f97e40a8"
+          assert execution_audit["summary"]["decision"] == "HOLD_NOT_CERTIFIED"
+          assert execution_audit["summary"]["obligations_passed"] == 2
+          assert execution_audit["summary"]["obligations_held"] == 4
+          assert execution_audit["six_obligations"]["C4_TELEMETRY_AND_AUDIT"]["status"] == "PASS_TRACEABILITY_WITH_RELEASE_HOLD"
+          assert execution_audit["six_obligations"]["C6_PROHIBITIONS_AND_RECOVERY"]["status"] == "PASS_PROHIBITIONS_OBSERVED"
+          assert all(execution_audit["model_tasks"]["task_results"][i]["quality_status"] == "FAIL" for i in range(5))
+          assert execution_audit["worker_receipts"]["secondary"]["status"] == "NOT_CONFIGURED"
           required = {
               "source_commit", "bundle_sha256", "bundle_bytes", "document_sha256",
               "runtime_source_sha256", "worker_status", "independent_integrity_status",
