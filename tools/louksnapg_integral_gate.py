@@ -12,6 +12,7 @@ import base64
 import hashlib
 import json
 import re
+import zipfile
 from pathlib import Path
 
 SCHEMA = "LOUKSNAPG_FUNCTIONAL_EVIDENCE/1.0"
@@ -76,6 +77,17 @@ OFFICIAL_MODEL_REVISIONS = {
     "D05_DOCLING": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
     "D06_ANALISIS_AVANZADO": "c1899de289a04d12100db370d81485cdf75e47ca",
 }
+QWEN_CONFIG_PATH = "6. Sistema Inteligente/Análisis Avanzado/config.json"
+QWEN_VARIANT_CONFIGS = {
+    "Qwen/Qwen3-0.6B": {
+        "hidden_size": 1024, "intermediate_size": 3072, "num_hidden_layers": 28,
+        "num_attention_heads": 16, "num_key_value_heads": 8, "tie_word_embeddings": True,
+    },
+    "Qwen/Qwen3-14B": {
+        "hidden_size": 5120, "intermediate_size": 17408, "num_hidden_layers": 40,
+        "num_attention_heads": 40, "num_key_value_heads": 8, "tie_word_embeddings": False,
+    },
+}
 
 
 def sha256_file(path: Path) -> str:
@@ -84,6 +96,48 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: stream.read(4 * 1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def inspect_qwen_model_identity(bundle_path: Path) -> dict:
+    """Verify the model architecture config shipped in the actual candidate container."""
+    expected_model_id = OFFICIAL_MODEL_IDS["D06_ANALISIS_AVANZADO"]
+    expected = QWEN_VARIANT_CONFIGS[expected_model_id]
+    try:
+        with zipfile.ZipFile(bundle_path, "r") as archive:
+            names = archive.namelist()
+            if names.count(QWEN_CONFIG_PATH) != 1:
+                return {
+                    "status": "HOLD_QWEN_CONFIG_MISSING_OR_DUPLICATED",
+                    "expected_model_id": expected_model_id,
+                    "config_path": QWEN_CONFIG_PATH,
+                }
+            raw = archive.read(QWEN_CONFIG_PATH)
+        config = json.loads(raw.decode("utf-8"))
+        if not isinstance(config, dict):
+            raise ValueError("QWEN_CONFIG_ROOT_NOT_OBJECT")
+    except (OSError, zipfile.BadZipFile, KeyError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        return {
+            "status": "HOLD_QWEN_CONFIG_UNREADABLE",
+            "expected_model_id": expected_model_id,
+            "config_path": QWEN_CONFIG_PATH,
+            "error_type": type(exc).__name__,
+        }
+    mismatches = {
+        field: {"expected": value, "observed": config.get(field)}
+        for field, value in expected.items()
+        if config.get(field) != value
+    }
+    return {
+        "status": "PASS_CONFIG_MATCHES_PINNED_VARIANT" if not mismatches else "HOLD_QWEN_CONFIG_VARIANT_MISMATCH",
+        "expected_model_id": expected_model_id,
+        "config_path": QWEN_CONFIG_PATH,
+        "config_bytes": len(raw),
+        "config_sha256": hashlib.sha256(raw).hexdigest(),
+        "observed_config": {field: config.get(field) for field in sorted(expected)},
+        "expected_config": expected,
+        "mismatches": mismatches,
+        "reference": "https://huggingface.co/Qwen/Qwen3-0.6B",
+    }
 
 
 def validate_bundle_size(path: Path) -> int:
@@ -161,7 +215,8 @@ def _verify_g23_envelope(envelope: object, public_key_pem: str | None,
 
 
 def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_commit: str,
-                      g23_public_key_pem: str | None = None) -> dict:
+                      g23_public_key_pem: str | None = None,
+                      candidate_model_identity: dict | None = None) -> dict:
     """Return a deterministic PASS/HOLD decision for a source- and artifact-bound envelope."""
     failures: list[str] = []
     if not isinstance(evidence, dict):
@@ -279,6 +334,17 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
                               "failures": target_failures})
         failures.extend("TARGET:" + target_id + ":" + item for item in target_failures)
 
+    identity = candidate_model_identity if isinstance(candidate_model_identity, dict) else {}
+    identity_valid = (
+        identity.get("status") == "PASS_CONFIG_MATCHES_PINNED_VARIANT"
+        and identity.get("expected_model_id") == OFFICIAL_MODEL_IDS["D06_ANALISIS_AVANZADO"]
+        and identity.get("config_path") == QWEN_CONFIG_PATH
+        and _is_sha(identity.get("config_sha256"))
+        and identity.get("mismatches") == {}
+    )
+    if not identity_valid:
+        failures.append("CANDIDATE_MODEL_IDENTITY_NOT_VERIFIED_OR_QWEN_VARIANT_MISMATCH")
+
     evidence_without_g23 = dict(evidence)
     evidence_without_g23.pop("g23", None)
     failures.extend(_verify_g23_envelope(
@@ -295,6 +361,7 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
         "expected_target_count": len(EXPECTED_TARGET_IDS),
         "observed_target_count": len(actual),
         "model_backed_target_count": len(MODEL_TARGETS),
+        "candidate_model_identity": identity,
         "target_checks": target_checks,
         "failure_count": len(failures),
         "failures": sorted(set(failures)),
@@ -325,7 +392,11 @@ def main(argv: list[str] | None = None) -> int:
             if args.g23_public_key.is_symlink() or not args.g23_public_key.is_file():
                 raise ValueError("G23_TRUSTED_PUBLIC_KEY_NOT_REGULAR_FILE")
             public_pem = args.g23_public_key.read_text(encoding="ascii")
-        report = evaluate_evidence(evidence, sha256_file(args.bundle), args.expected_source_commit, public_pem)
+        candidate_model_identity = inspect_qwen_model_identity(args.bundle)
+        report = evaluate_evidence(
+            evidence, sha256_file(args.bundle), args.expected_source_commit, public_pem,
+            candidate_model_identity=candidate_model_identity,
+        )
     except Exception as exc:
         report = {
             "schema": "LOUKSNAPG_INTEGRAL_FUNCTIONAL_GATE/1.0",
