@@ -111,6 +111,20 @@ class IntegralGateTests(unittest.TestCase):
             self.public_pem if public_key is None else public_key,
         )
 
+    def test_primitive_smoke_without_complete_scope_is_not_functional_certification(self):
+        row = next(x for x in self.evidence["target_results"] if x["target_id"] == "D05_CALIBRE")
+        row.update({
+            "evidence_kind": "PRIMITIVE_SMOKE", "status": "PASS_PRIMITIVE_SMOKE",
+            "scope_complete": False, "primitive_evidence_sha256": "6" * 64,
+            "runtime_sha256": "7" * 64, "synthetic_only": False,
+        })
+        self.sign_evidence(self.evidence)
+        result = self.evaluate()
+        self.assertEqual(result["decision"], "HOLD")
+        check = next(x for x in result["target_checks"] if x["target_id"] == "D05_CALIBRE")
+        self.assertIn("PRIMITIVE_SCOPE_INCOMPLETE", check["failures"])
+        self.assertNotIn("FUNCTIONAL_EXECUTION_NOT_PASS", check["failures"])
+
     def test_global_luna_byte_ceiling_is_enforced_by_integral_gate(self):
         from unittest.mock import patch
         with patch.object(gate, "GLOBAL_LUNA_HARD_MAX_BYTES", self.bundle.stat().st_size - 1):

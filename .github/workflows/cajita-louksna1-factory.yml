@@ -35,6 +35,8 @@ on:
       - "tools/louksnapg_worker_mission.py"
       - "tests/test_louksnapg_worker_mission.py"
       - "tools/louksnapg_integral_gate.py"
+      - "tools/louksnapg_evidence_adapter.py"
+      - "tests/test_louksnapg_evidence_adapter.py"
       - "tests/test_louksnapg_bundle.py"
       - "tools/louksnapg_architecture_contract.py"
       - "tests/test_louksnapg_architecture_contract.py"
@@ -957,8 +959,18 @@ jobs:
               chmod 0444 "$G23_KEY_PATH"
               G23_KEY_ARGS=(--g23-public-key "$G23_KEY_PATH")
             fi
+            python tools/louksnapg_evidence_adapter.py \
+              --task-report "$RUNNER_TEMP/task-adapter-e2e-raw.json" \
+              --extended-report "$RUNNER_TEMP/extended-target-e2e.json" \
+              --bundle "evidence/louksna1-candidate/LOUKSNAPG.md" \
+              --runtime-root "$ROOT" \
+              --expected-source-commit "$LOUKSNA_FACTORY_HEAD_SHA" \
+              --output "$RUNNER_TEMP/LOUKSNAPG_FUNCTIONAL_EVIDENCE.json" \
+              > "$RUNNER_TEMP/LOUKSNAPG_EVIDENCE_ADAPTER.log" 2>&1
+            EVIDENCE_ADAPTER_RC=$?
+            cat "$RUNNER_TEMP/LOUKSNAPG_EVIDENCE_ADAPTER.log"
             python tools/louksnapg_integral_gate.py \
-              --evidence "$RUNNER_TEMP/task-adapter-e2e-raw.json" \
+              --evidence "$RUNNER_TEMP/LOUKSNAPG_FUNCTIONAL_EVIDENCE.json" \
               --bundle "evidence/louksna1-candidate/LOUKSNAPG.md" \
               --expected-source-commit "$LOUKSNA_FACTORY_HEAD_SHA" \
               "${G23_KEY_ARGS[@]}" \
@@ -971,14 +983,15 @@ jobs:
               REASON="ALL_21_REAL_TARGETS_AND_VERIFIED_G23_EVIDENCE_PASS_WITH_EFFECTIVE_ONE_CPU_1_GIB_LIMITS"
             else
               STATUS="HOLD_INTEGRAL_FUNCTIONAL_EVIDENCE_INCOMPLETE"
-              REASON="INTEGRAL_GATE_RC_${FUNCTIONAL_GATE_RC}; VALIDATOR_RC_${VALIDATOR_RC}; SMOKE_RC_${SMOKE_RC}; TASK_RC_${TASK_RC}; EXT_RC_${EXT_RC}; EXT_PASS_${EXT_PASS_COUNT}/10; EXT_BLOCKED_${EXT_BLOCKED_COUNT}; EXT_FAIL_${EXT_FAIL_COUNT}; NO_G24_CERTIFICATION_GRANTED"
+              REASON="EVIDENCE_ADAPTER_RC_${EVIDENCE_ADAPTER_RC}; INTEGRAL_GATE_RC_${FUNCTIONAL_GATE_RC}; VALIDATOR_RC_${VALIDATOR_RC}; SMOKE_RC_${SMOKE_RC}; TASK_RC_${TASK_RC}; EXT_RC_${EXT_RC}; EXT_PASS_${EXT_PASS_COUNT}/10; EXT_BLOCKED_${EXT_BLOCKED_COUNT}; EXT_FAIL_${EXT_FAIL_COUNT}; NO_G24_CERTIFICATION_GRANTED"
             fi
           else
             STATUS="HOLD_INTEGRAL_FUNCTIONAL_EVIDENCE_INCOMPLETE"
             FUNCTIONAL_GATE_RC=125
+          EVIDENCE_ADAPTER_RC=125
             REASON="SMOKE_IMAGE_BUILD_FAILED"
           fi
-          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC TASK_RC EXT_RC EXT_PASS_COUNT EXT_BLOCKED_COUNT EXT_FAIL_COUNT EXT_EXPECTED_COUNT EXT_REPORT_SHA256 BUILD_RC VALIDATOR_RC FUNCTIONAL_GATE_RC BUNDLE_SHA256
+          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC TASK_RC EXT_RC EXT_PASS_COUNT EXT_BLOCKED_COUNT EXT_FAIL_COUNT EXT_EXPECTED_COUNT EXT_REPORT_SHA256 BUILD_RC VALIDATOR_RC EVIDENCE_ADAPTER_RC FUNCTIONAL_GATE_RC BUNDLE_SHA256
           python - <<'PY'
           import hashlib,json,os,zipfile
           from pathlib import Path
@@ -1186,6 +1199,8 @@ jobs:
             ${{ runner.temp }}/LOUKSNAPG_G24_INDEPENDENT_VALIDATION.json
             ${{ runner.temp }}/LOUKSNAPG_FUNCTIONAL_GATE.json
             ${{ runner.temp }}/LOUKSNAPG_FUNCTIONAL_GATE.log
+            ${{ runner.temp }}/LOUKSNAPG_FUNCTIONAL_EVIDENCE.json
+            ${{ runner.temp }}/LOUKSNAPG_EVIDENCE_ADAPTER.log
             docs/cajita-luna/LOUKSNAPG_ARCHITECTURAL_CONTRACT.md
             docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md
             docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json

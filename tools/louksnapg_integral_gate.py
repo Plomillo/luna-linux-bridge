@@ -219,6 +219,26 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
         if row is None:
             continue
         target_failures = []
+        evidence_kind = row.get("evidence_kind", "MODEL_TASK")
+        if evidence_kind == "PRIMITIVE_SMOKE":
+            if row.get("status") not in {"PASS_PRIMITIVE_SMOKE", "PASS_TARGET_ENGINE_EXECUTION"} or row.get("exit_code") != 0:
+                target_failures.append("PRIMITIVE_SMOKE_NOT_PASS")
+            if row.get("scope_complete") is not True:
+                target_failures.append("PRIMITIVE_SCOPE_INCOMPLETE")
+            if not _is_sha(row.get("primitive_evidence_sha256")):
+                target_failures.append("PRIMITIVE_EVIDENCE_SHA256_INVALID")
+            if row.get("synthetic_only") is not False:
+                target_failures.append("TARGET_EVIDENCE_SYNTHETIC_OR_UNPROVEN")
+            if not _is_sha(row.get("runtime_sha256")):
+                target_failures.append("PRIMITIVE_RUNTIME_SHA256_INVALID")
+            target_checks.append({"target_id": target_id, "status": "PASS" if not target_failures else "HOLD", "failures": target_failures})
+            failures.extend("TARGET:" + target_id + ":" + item for item in target_failures)
+            continue
+        if evidence_kind not in {"MODEL_TASK", None}:
+            target_failures.append("TARGET_EVIDENCE_KIND_INVALID")
+            target_checks.append({"target_id": target_id, "status": "HOLD", "failures": target_failures})
+            failures.extend("TARGET:" + target_id + ":" + item for item in target_failures)
+            continue
         if row.get("status") != "PASS_FUNCTIONAL_EXECUTION":
             target_failures.append("FUNCTIONAL_EXECUTION_NOT_PASS")
         if row.get("exit_code") != 0:
@@ -229,6 +249,8 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
             target_failures.append("TEST_CASE_COUNT_INVALID")
         if isinstance(passed_cases, bool) or not isinstance(passed_cases, int) or passed_cases != cases:
             target_failures.append("NOT_ALL_BEHAVIOR_CASES_PASSED")
+        if row.get("quality_status", "PASS") != "PASS":
+            target_failures.append("MODEL_QUALITY_NOT_PASS")
         if isinstance(row.get("output_char_count"), bool) or not isinstance(row.get("output_char_count"), int) or row.get("output_char_count") <= 0:
             target_failures.append("NONEMPTY_OUTPUT_NOT_ESTABLISHED")
         for field in ("input_sha256", "output_sha256", "runtime_sha256", "module_tree_sha256"):
