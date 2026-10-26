@@ -54,7 +54,7 @@ OFFICIAL_MODEL_IDS = {
     "D03_TRANSCRIPCION_ROOT": "openai/whisper-large-v3-turbo",
     "D04_TRADUCCION_GENERAL": "facebook/seamless-m4t-v2-large",
     "D05_DOCLING": "ibm-granite/granite-docling-258M",
-    "D06_ANALISIS_AVANZADO": "Qwen/Qwen3-0.6B",
+    "D06_ANALISIS_AVANZADO": "Qwen/Qwen3-14B",
 }
 OFFICIAL_SOURCE_URLS = {
     "D01_CEREBRO_ROOT": "https://github.com/openai/gpt-oss",
@@ -75,7 +75,7 @@ OFFICIAL_MODEL_REVISIONS = {
     "D03_TRANSCRIPCION_ROOT": "41f01f3fe87f28c78e2fbf8b568835947dd65ed9",
     "D04_TRADUCCION_GENERAL": "b8d7691bcced0d24b2655f534b6148be78346b72",
     "D05_DOCLING": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
-    "D06_ANALISIS_AVANZADO": "c1899de289a04d12100db370d81485cdf75e47ca",
+    "D06_ANALISIS_AVANZADO": "40c069824f4251a91eefaf281ebe4c544efd3e18",
 }
 QWEN_CONFIG_PATH = "6. Sistema Inteligente/Análisis Avanzado/config.json"
 QWEN_VARIANT_CONFIGS = {
