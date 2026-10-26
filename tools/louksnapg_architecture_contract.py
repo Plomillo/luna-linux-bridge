@@ -195,7 +195,7 @@ def validate_contract(contract: Any, expected_target_ids: list[str] | tuple[str,
             failures.append("CUSTOSZ_REPAIR_EVIDENCE_BINDINGS_INCOMPLETE")
         if mission.get("candidate_repair_run_must_execute") is not True or mission.get("global_certification_authority") != "NONE":
             failures.append("CUSTOSZ_REPAIR_EXECUTION_OR_NO_CERTIFICATION_POLICY_INVALID")
-        if mission.get("required_for_release") != ["repair_preflight_status_PASS", "all_three_repair_targets_PASS_PRIMITIVE_SMOKE", "primitive_report_hash_verified", "source_commit_contract_and_bundle_hashes_match"]:
+        if mission.get("required_for_release") != ["repair_preflight_status_PASS", "candidate_integrity_PASS", "all_three_repair_targets_PASS_PRIMITIVE_SMOKE", "primitive_report_hash_verified", "source_commit_contract_and_bundle_hashes_match"]:
             failures.append("CUSTOSZ_REPAIR_RELEASE_REQUIREMENTS_INVALID")
         if mission.get("heavy_model_weight_download_count") != 0 or mission.get("remote_commander_used") is not False:
             failures.append("CUSTOSZ_REPAIR_SAFETY_POLICY_INVALID")
@@ -416,6 +416,14 @@ def evaluate_execution_evidence(contract: dict, contract_bytes: bytes, evidence:
                     failures.append("CUSTOSZ_REPAIR_MISSION_RECEIPT_SCHEMA_INVALID")
                 if repair_mission.get("status") != "PASS_THREE_TARGETED_PRIMITIVES":
                     failures.append("CUSTOSZ_THREE_TARGETED_PRIMITIVES_NOT_PASS")
+                if repair_mission.get("primitive_evidence_schema") != "LOUKSNAPG_CUSTOSZ_PRIMITIVE_REPAIR_EVIDENCE/1.0":
+                    failures.append("CUSTOSZ_PRIMITIVE_EVIDENCE_SCHEMA_MISMATCH")
+                if repair_mission.get("repair_preflight_status") != "PASS":
+                    failures.append("CUSTOSZ_REPAIR_PREFLIGHT_NOT_PASS")
+                if repair_mission.get("candidate_integrity_status") != "PASS":
+                    failures.append("CUSTOSZ_CANDIDATE_INTEGRITY_NOT_PASS")
+                if repair_mission.get("primitive_report_hash_verified") is not True:
+                    failures.append("CUSTOSZ_PRIMITIVE_REPORT_HASH_NOT_VERIFIED")
                 if repair_mission.get("worker_id") != "CUSTOSZV9" or repair_mission.get("task_id") != "louksnapg-integral-release" or repair_mission.get("authorized_scope") != "VERIFY_REPAIR_PRIMITIVES_AND_BUILD_LOUKSNAPG_CANDIDATE":
                     failures.append("CUSTOSZ_REPAIR_MISSION_IDENTITY_OR_SCOPE_MISMATCH")
                 if repair_mission.get("source_commit") != source_commit or repair_mission.get("bundle_sha256") != bundle_sha or repair_mission.get("contract_sha256") != contract_sha:
