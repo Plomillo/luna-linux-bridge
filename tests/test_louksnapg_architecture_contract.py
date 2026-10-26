@@ -109,6 +109,7 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertFalse(result["release_eligible"])
         self.assertEqual(result["decision"], "HOLD_NOT_CERTIFIED")
         self.assertIn("WORKER_REAL_RUN_ID_MISSING:CUSTOSZ_V9", result["failures"])
+        self.assertIn("CUSTOSZ_REPAIR_MISSION_RECEIPT_MISSING", result["failures"])
         self.assertIn("REAL_21_TARGET_FUNCTIONAL_GATE_NOT_PASS", result["failures"])
         self.assertEqual(result["global_certification"], "NOT_GRANTED_BY_THIS_VALIDATOR")
 
