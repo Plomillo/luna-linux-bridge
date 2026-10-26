@@ -111,6 +111,26 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
         self.assertEqual(set(coverage.PROBES), expected)
         self.assertEqual(len(coverage.TARGETS), 10)
 
+    def test_selected_target_runner_can_limit_to_explicit_repair_scope(self):
+        selected = coverage.select_target_specs([
+            "D04_HERMENEUTICA_HG",
+            "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+            "D06_MIGRACION_PERSISTENCIA",
+        ])
+        self.assertEqual(set(selected), {
+            "D04_HERMENEUTICA_HG",
+            "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+            "D06_MIGRACION_PERSISTENCIA",
+        })
+        self.assertEqual(len(selected), 3)
+        self.assertEqual(set(coverage.select_target_specs(None)), set(coverage.TARGETS))
+
+    def test_selected_target_runner_rejects_duplicate_or_unknown_target(self):
+        with self.assertRaisesRegex(ValueError, "DUPLICATE_PRIMITIVE_TARGET_SELECTION"):
+            coverage.select_target_specs(["D04_HERMENEUTICA_HG", "D04_HERMENEUTICA_HG"])
+        with self.assertRaisesRegex(ValueError, "UNKNOWN_PRIMITIVE_TARGET_SELECTION"):
+            coverage.select_target_specs(["D04_NOT_REGISTERED"])
+
     def test_regular_files_without_filter_returns_nested_regular_files(self):
         with tempfile.TemporaryDirectory(prefix="extended-target-list-files-") as temp:
             root = Path(temp)
