@@ -82,11 +82,12 @@ def make_audio(path):
         if audio.getnframes()<=0 or audio.getnchannels() not in (1,2) or audio.getsampwidth()!=2:
             raise RuntimeError("ESPEAK_NG_FIXTURE_WAV_INVALID")
 def make_image(path):
-    from PIL import Image,ImageDraw
-    image=Image.new("RGB",(640,480),"white");draw=ImageDraw.Draw(image)
+    from PIL import Image,ImageDraw,ImageFont
+    image=Image.new("RGB",(1024,1024),"white");draw=ImageDraw.Draw(image)
+    font=ImageFont.load_default(size=32)
     lines=["INVOICE","Invoice number: INV-1042","Date: 2026-10-21",
            "Description                Amount","Document processing        123.45","Tax                          10.00","TOTAL                       133.45"]
-    for i,line in enumerate(lines): draw.text((28,24+i*52),line,fill="black")
+    for i,line in enumerate(lines): draw.text((64,64+i*128),line,fill="black",font=font)
     image.save(path,format="PNG")
 def run_case(root,outdir,record,timeout):
     request_path=outdir/(record["domain_id"]+".request.json")
