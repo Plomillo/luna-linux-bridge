@@ -70,6 +70,7 @@ def authorize(task: dict) -> dict:
 
 
 def build_task(head: str, paths: dict[str, Path]) -> dict:
+    contract_sha256 = sha256_file(paths["architecture_contract"])
     return {
         "task_id": TASK_ID,
         "mission_id": "issue-155",
@@ -77,6 +78,7 @@ def build_task(head: str, paths: dict[str, Path]) -> dict:
         "source_identity": WORKER_ID,
         "target_identity": "LOUKSNAPG",
         "source_state_hash": sha256_bytes(head.encode("ascii")),
+        "architecture_contract_sha256": contract_sha256,
         "dependency_set": ["issue-155"],
         "authorized_scope": SCOPE,
         "required_capabilities": ["build_single_file_distribution"],
@@ -85,6 +87,7 @@ def build_task(head: str, paths: dict[str, Path]) -> dict:
             str(paths["runtime"]),
             str(paths["source_architecture"]),
             str(paths["cajita_doc"]),
+            str(paths["architecture_contract"]),
         ],
         "preconditions": ["NO_SELF_CERTIFICATION", "FAIL_CLOSED", "INPUT_HASHES_VERIFIABLE"],
         "permitted_effects": ["WRITE_EVIDENCE"],
@@ -121,6 +124,7 @@ def main(argv=None) -> int:
     parser.add_argument("--runtime", type=Path, required=True)
     parser.add_argument("--source-architecture", type=Path, required=True)
     parser.add_argument("--cajita-doc", type=Path, required=True)
+    parser.add_argument("--architecture-contract", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--max-bytes", type=int, default=490000000)
     parser.add_argument("--report", type=Path, required=True)
@@ -132,9 +136,10 @@ def main(argv=None) -> int:
         "runtime": args.runtime.resolve(),
         "source_architecture": args.source_architecture.resolve(),
         "cajita_doc": args.cajita_doc.resolve(),
+        "architecture_contract": args.architecture_contract.resolve(),
         "output": args.output.resolve(),
     }
-    for key in ("document", "runtime", "source_architecture", "cajita_doc"):
+    for key in ("document", "runtime", "source_architecture", "cajita_doc", "architecture_contract"):
         path = paths[key]
         if path.is_symlink() or not path.is_file():
             raise SystemExit("REQUIRED_INPUT_NOT_REGULAR_FILE:" + key + ":" + str(path))
@@ -146,7 +151,10 @@ def main(argv=None) -> int:
     if len(head) != 40 or any(ch not in "0123456789abcdef" for ch in head):
         raise SystemExit("GITHUB_SHA_MISSING_OR_INVALID")
 
-    input_hashes = {key: sha256_file(paths[key]) for key in ("document", "runtime", "source_architecture", "cajita_doc")}
+    input_hashes = {key: sha256_file(paths[key]) for key in ("document", "runtime", "source_architecture", "cajita_doc", "architecture_contract")}
+    expected_contract_sha = os.environ.get("LOUKSNAPG_CONTRACT_SHA256", "").strip()
+    if expected_contract_sha and expected_contract_sha != input_hashes["architecture_contract"]:
+        raise SystemExit("ARCHITECTURE_CONTRACT_SHA256_MISMATCH")
     run_bounded_mission, ActionSpec, probe_host_resources, worker_hash = load_worker(args.worker.resolve())
     task = build_task(head, paths)
     snapshot = probe_host_resources(repo)
@@ -173,6 +181,7 @@ def main(argv=None) -> int:
         )
         action_result.update({
             "exit_code": proc.returncode,
+            "architecture_contract_sha256": input_hashes["architecture_contract"],
             "stdout_tail": proc.stdout[-6000:],
             "stderr_tail": proc.stderr[-4000:],
             "command_sha256": sha256_bytes(json.dumps(command, separators=(",", ":")).encode()),
@@ -238,6 +247,7 @@ def main(argv=None) -> int:
         and build_report.get("source_commit") == head
         and build_report.get("identity_preservation_status") == "PASS_SOURCE_IDENTITY_PRESERVED"
         and build_report.get("engine_replacement") == "FORBIDDEN"
+        and action_result.get("architecture_contract_sha256") == input_hashes["architecture_contract"]
     )
     # CUSTOSZ's coordinator uses COMPLETED for a successful bounded mission.
     # The build action's return code plus the exact independent-report binding
@@ -248,6 +258,7 @@ def main(argv=None) -> int:
         "schema": "LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE/1.0",
         "generated_at_utc": utc_now(),
         "source_commit": head,
+        "architecture_contract_sha256": input_hashes["architecture_contract"],
         "worker": WORKER_ID,
         "worker_sha256": worker_hash,
         "mission_id": "issue-155",
@@ -265,6 +276,7 @@ def main(argv=None) -> int:
             "build_report_source_commit_matches": build_report.get("source_commit") == head,
             "identity_preservation_pass": build_report.get("identity_preservation_status") == "PASS_SOURCE_IDENTITY_PRESERVED",
             "engine_replacement_forbidden": build_report.get("engine_replacement") == "FORBIDDEN",
+            "architecture_contract_binding_pass": action_result.get("architecture_contract_sha256") == input_hashes["architecture_contract"],
         },
         "input_sha256": input_hashes,
         "action": action_result,
