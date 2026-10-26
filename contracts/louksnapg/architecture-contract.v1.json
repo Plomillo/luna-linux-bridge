@@ -81,7 +81,7 @@
     },
     {
       "target_id": "D03_TRANSCRIPCION_ROOT",
-      "model_id": "turbo",
+      "model_id": "openai/whisper-large-v3-turbo",
       "official_url": "https://github.com/openai/whisper",
       "official_docs_url": "https://github.com/openai/whisper/blob/main/README.md",
       "task": "speech_transcription_only",
@@ -90,9 +90,9 @@
       "official_source_revision_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
       "official_source_revision_url": "https://github.com/openai/whisper/commit/86098128c0b4f24f0e2aa2994de830614b474227",
       "source_pin_type": "official_source_code_commit",
-      "model_repository": "https://github.com/openai/whisper",
-      "model_repository_revision_commit": null,
-      "model_revision_source": "Whisper turbo asset URL is selected by the pinned official source code; full asset SHA-256 still required in runtime evidence"
+      "model_repository": "https://huggingface.co/openai/whisper-large-v3-turbo",
+      "model_repository_revision_commit": "41f01f3fe87f28c78e2fbf8b568835947dd65ed9",
+      "model_revision_source": "Official Hugging Face model snapshot, metadata only; 1.62 GB checkpoint not downloaded"
     },
     {
       "target_id": "D04_TRADUCCION_GENERAL",
@@ -106,8 +106,8 @@
       "official_source_revision_url": "https://github.com/facebookresearch/seamless_communication/commit/9a081e935c29c6b1e0e05bcbf3fcb623ad306524",
       "source_pin_type": "official_source_code_commit",
       "model_repository": "https://huggingface.co/facebook/seamless-m4t-v2-large",
-      "model_repository_revision_commit": null,
-      "model_revision_source": "Model repository revision must still be pinned in runtime evidence; no checkpoint weights downloaded"
+      "model_repository_revision_commit": "b8d7691bcced0d24b2655f534b6148be78346b72",
+      "model_revision_source": "Official Hugging Face model snapshot; upstream checkpoint SHA256 f2122cedcffc532d6048847092414e638cfb4db402881cb8146a606008e9ff56 from file metadata; checkpoint not downloaded"
     },
     {
       "target_id": "D05_DOCLING",
@@ -144,8 +144,8 @@
       "official_source_revision_url": "https://github.com/QwenLM/Qwen3/commit/7a2f61ffc7a20d47efcd2bf97f6f2bf52729042e",
       "source_pin_type": "official_source_code_commit",
       "model_repository": "https://huggingface.co/Qwen/Qwen3-0.6B",
-      "model_repository_revision_commit": null,
-      "model_revision_source": "Model repository revision must still be pinned in runtime evidence; no checkpoint weights downloaded"
+      "model_repository_revision_commit": "c1899de289a04d12100db370d81485cdf75e47ca",
+      "model_revision_source": "Official Hugging Face model snapshot, metadata only; 1.52 GB checkpoint not downloaded"
     }
   ],
   "target_ids": [
@@ -288,5 +288,5 @@
     "semantic_quality_pass_required": true,
     "release_implication_if_missing": "HOLD_NOT_CERTIFIED"
   },
-  "source_catalog_reviewed_at_utc": "2026-10-26T07:00:00Z"
+  "source_catalog_reviewed_at_utc": "2026-10-26T07:22:00Z"
 }
