@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import stat
 from pathlib import Path, PurePosixPath
 
 INPUTS = {".pdf", ".epub", ".txt"}
@@ -31,67 +32,131 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _validated_archive_inventory(archive: Path) -> tuple[dict[str, bytes], dict[str, int], set[str]]:
+    """Read and validate the pinned overlay before trusting either it or its cache."""
+    file_bytes: dict[str, bytes] = {}
+    file_modes: dict[str, int] = {}
+    directories: set[str] = set()
+    seen: set[str] = set()
+    with tarfile.open(archive, mode="r:xz") as bundle:
+        for member in bundle.getmembers():
+            raw = member.name
+            parsed = PurePosixPath(raw)
+            if "\\\\" in raw or parsed.is_absolute() or any(part == ".." for part in parsed.parts):
+                raise RuntimeError(f"unsafe archive path: {raw!r}")
+            parts = tuple(part for part in parsed.parts if part not in ("", "."))
+            if not parts or (":" in parts[0]):
+                raise RuntimeError(f"unsafe archive path: {raw!r}")
+            normalized = "/".join(parts)
+            if normalized in seen:
+                raise RuntimeError(f"duplicate archive path: {normalized}")
+            seen.add(normalized)
+            if member.isdir():
+                directories.add(normalized)
+                continue
+            if not member.isfile():
+                raise RuntimeError(f"unsupported archive member type: {normalized}")
+            source_stream = bundle.extractfile(member)
+            if source_stream is None:
+                raise RuntimeError(f"could not read archive member: {normalized}")
+            with source_stream:
+                payload = source_stream.read()
+            file_bytes[normalized] = payload
+            file_modes[normalized] = member.mode & 0o777
+
+    for name in file_bytes:
+        parent = PurePosixPath(name).parent
+        while parent.as_posix() not in ("", "."):
+            directories.add(parent.as_posix())
+            parent = parent.parent
+    collision = set(file_bytes).intersection(directories)
+    if collision:
+        raise RuntimeError("archive file/directory path collision: " + ",".join(sorted(collision)))
+    return file_bytes, file_modes, directories
+
+
+def _overlay_tree_inventory(root: Path) -> tuple[dict[str, dict], set[str]]:
+    root = Path(root)
+    if root.is_symlink() or not root.is_dir():
+        raise RuntimeError("MATERIALIZED_OVERLAY_CACHE_UNSAFE")
+    base = root.resolve(strict=True)
+    files: dict[str, dict] = {}
+    directories: set[str] = set()
+    for current, dirs, names in os.walk(base, topdown=True, followlinks=False):
+        current_path = Path(current)
+        safe_dirs = []
+        for name in sorted(dirs):
+            item = current_path / name
+            if item.is_symlink() or not item.resolve(strict=True).is_relative_to(base):
+                raise RuntimeError("MATERIALIZED_OVERLAY_CACHE_SYMLINK_OR_ESCAPE")
+            directories.add(item.relative_to(base).as_posix())
+            safe_dirs.append(name)
+        dirs[:] = safe_dirs
+        for name in sorted(names):
+            item = current_path / name
+            if item.is_symlink() or not item.is_file() or not item.resolve(strict=True).is_relative_to(base):
+                raise RuntimeError("MATERIALIZED_OVERLAY_CACHE_NON_REGULAR_OR_ESCAPE")
+            rel = item.relative_to(base).as_posix()
+            files[rel] = {
+                "bytes": item.stat().st_size,
+                "sha256": sha256_file(item),
+                "mode": stat.S_IMODE(item.stat().st_mode),
+            }
+    return files, directories
+
+
 def materialize_overlay(here: Path) -> Path:
+    here = Path(here).resolve(strict=True)
     root = here / ".calibre-slim-overlay"
     source = root / "source"
-    registry = source / "calibre" / "customize" / "builtins.py"
-    if registry.is_file():
-        return source
-
     archive = here / ARCHIVE_NAME
-    if not archive.is_file():
-        raise RuntimeError(f"required embedded archive is missing: {archive}")
+    if archive.is_symlink() or not archive.is_file():
+        raise RuntimeError(f"required embedded archive is missing or unsafe: {archive}")
     actual_size = archive.stat().st_size
     if actual_size != ARCHIVE_BYTES:
         raise RuntimeError(f"archive size mismatch: expected {ARCHIVE_BYTES}, got {actual_size}")
     actual_hash = sha256_file(archive)
     if actual_hash != ARCHIVE_SHA256:
         raise RuntimeError(f"archive SHA-256 mismatch: {actual_hash}")
+
+    # Always validate the source archive and all cached members. The original
+    # fast-path trusted one existing file and would silently accept a modified cache.
+    file_bytes, file_modes, expected_directories = _validated_archive_inventory(archive)
+    expected_files = {
+        name: {"bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest(), "mode": file_modes[name]}
+        for name, payload in file_bytes.items()
+    }
+    if root.is_symlink():
+        raise RuntimeError("MATERIALIZED_OVERLAY_CACHE_UNSAFE")
     if root.exists():
-        raise RuntimeError(f"partial overlay directory exists without the required registry: {root}")
+        observed_files, observed_directories = _overlay_tree_inventory(root)
+        if observed_files != expected_files or observed_directories != expected_directories:
+            raise RuntimeError("MATERIALIZED_OVERLAY_TREE_HASH_MISMATCH")
+        if not (source / "calibre" / "customize" / "builtins.py").is_file():
+            raise RuntimeError("MATERIALIZED_OVERLAY_REQUIRED_REGISTRY_MISSING")
+        return source
 
     staging = here / ".calibre-slim-overlay.staging"
+    if staging.is_symlink():
+        raise RuntimeError("MATERIALIZED_OVERLAY_STAGING_UNSAFE")
     if staging.exists():
-        if staging.is_symlink() or not staging.is_dir():
-            raise RuntimeError(f"unsafe staging path: {staging}")
+        if not staging.is_dir():
+            raise RuntimeError("MATERIALIZED_OVERLAY_STAGING_UNSAFE")
         shutil.rmtree(staging)
     staging.mkdir(mode=0o700)
     try:
-        with tarfile.open(archive, mode="r:xz") as bundle:
-            members = bundle.getmembers()
-            seen: set[str] = set()
-            safe_members = []
-            for member in members:
-                raw = member.name
-                parsed = PurePosixPath(raw)
-                if parsed.is_absolute() or any(part == ".." for part in parsed.parts):
-                    raise RuntimeError(f"unsafe archive path: {raw!r}")
-                parts = tuple(part for part in parsed.parts if part not in ("", "."))
-                if not parts:
-                    continue
-                normalized = "/".join(parts)
-                if normalized in seen:
-                    raise RuntimeError(f"duplicate archive path: {normalized}")
-                seen.add(normalized)
-                if not (member.isdir() or member.isfile()):
-                    raise RuntimeError(f"unsupported archive member type: {normalized}")
-                member.name = normalized
-                safe_members.append(member)
-            # Extract only ordinary files/directories after validating every member path and type.
-            for member in safe_members:
-                target = staging.joinpath(*PurePosixPath(member.name).parts)
-                if member.isdir():
-                    target.mkdir(parents=True, exist_ok=True)
-                    continue
-                target.parent.mkdir(parents=True, exist_ok=True)
-                source_stream = bundle.extractfile(member)
-                if source_stream is None:
-                    raise RuntimeError(f"could not read archive member: {member.name}")
-                with source_stream, target.open("xb") as output:
-                    shutil.copyfileobj(source_stream, output)
-                target.chmod(member.mode & 0o777)
-        extracted_registry = staging / "source" / "calibre" / "customize" / "builtins.py"
-        if not extracted_registry.is_file():
+        for name in sorted(expected_directories, key=lambda value: (value.count("/"), value)):
+            (staging / Path(*PurePosixPath(name).parts)).mkdir(parents=True, exist_ok=True)
+        for name, payload in sorted(file_bytes.items()):
+            target = staging / Path(*PurePosixPath(name).parts)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with target.open("xb") as output:
+                output.write(payload)
+            target.chmod(file_modes[name])
+        observed_files, observed_directories = _overlay_tree_inventory(staging)
+        if observed_files != expected_files or observed_directories != expected_directories:
+            raise RuntimeError("MATERIALIZED_OVERLAY_EXTRACTION_HASH_MISMATCH")
+        if not (staging / "source" / "calibre" / "customize" / "builtins.py").is_file():
             raise RuntimeError("embedded overlay did not contain source/calibre/customize/builtins.py")
         os.replace(staging, root)
         return source
@@ -99,6 +164,36 @@ def materialize_overlay(here: Path) -> Path:
         if staging.exists() and staging.is_dir() and not staging.is_symlink():
             shutil.rmtree(staging, ignore_errors=True)
         raise
+
+
+def verify_pinned_converter(converter: str, here: Path) -> dict:
+    """Require the official runtime version declared by the source lock."""
+    lock_path = here / "source-lock.json"
+    if lock_path.is_symlink() or not lock_path.is_file():
+        raise RuntimeError("CALIBRE_SOURCE_LOCK_MISSING_OR_UNSAFE")
+    lock = json.loads(lock_path.read_text(encoding="utf-8"))
+    if (
+        lock.get("schema") != "CAJITA_CALIBRE_SLIM_SOURCE_LOCK/1.0"
+        or lock.get("upstream_repository") != "https://github.com/kovidgoyal/calibre"
+        or lock.get("tag") != "v9.17.0"
+        or lock.get("commit_sha") != "e6b9e09472f6e63f8a12bf376eb54836042f0f5f"
+    ):
+        raise RuntimeError("CALIBRE_SOURCE_LOCK_IDENTITY_MISMATCH")
+    executable = Path(converter).resolve(strict=True)
+    if not executable.is_file() or not os.access(executable, os.X_OK):
+        raise RuntimeError("CALIBRE_CONVERTER_NOT_EXECUTABLE")
+    try:
+        probe = subprocess.run(
+            [str(executable), "--version"],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, errors="replace", timeout=20, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError("CALIBRE_CONVERTER_VERSION_PROBE_FAILED:" + type(exc).__name__) from exc
+    output = probe.stdout[-2000:]
+    if probe.returncode != 0 or "9.17.0" not in output:
+        raise RuntimeError("CALIBRE_RUNTIME_VERSION_MISMATCH:" + output[-500:])
+    return {"executable": str(executable), "version_output": output, "expected_version": "9.17.0", "status": "PASS_PINNED_VERSION"}
 
 
 def main(argv: list[str]) -> int:
@@ -135,6 +230,11 @@ def main(argv: list[str]) -> int:
     converter = converter or shutil.which(COMMAND)
     if not converter:
         return fail("official Calibre ebook-convert runtime not found; set CALIBRE_EBOOK_CONVERT", 78)
+    try:
+        runtime_identity = verify_pinned_converter(converter, here)
+    except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
+        return fail(f"cannot verify the pinned official Calibre runtime: {exc}", 78)
+    print(f"CALIBRE_RUNTIME_IDENTITY={json.dumps(runtime_identity, sort_keys=True)}")
 
     env = os.environ.copy()
     env["CALIBRE_DEVELOP_FROM"] = str(overlay_source)
