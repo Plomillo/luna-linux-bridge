@@ -173,6 +173,15 @@ jobs:
           github-token: ${{ github.token }}
           path: evidence
 
+      - name: Download exact package-level G23 artifact from the same factory run
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: louksna1-g23-evidence
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: evidence/g23-evidence
+
       - name: Download exact G24 decision artifact from the same factory run
         uses: actions/download-artifact@v4
         continue-on-error: true
@@ -205,6 +214,8 @@ jobs:
             test -n "$source"
             cp "$source" "candidate/$name"
           done
+          G23_EVIDENCE="$(find evidence/g23-evidence -type f -name 'G23_EVIDENCE.json' -print -quit || true)"
+          if [ -n "$G23_EVIDENCE" ]; then cp "$G23_EVIDENCE" candidate/LOUKSNAPG_G23_INTEGRITY_EVIDENCE.json; fi
           G24_EVIDENCE="$(find evidence/g24-evidence -type f -name 'LOUKSNA1_G24_EVIDENCE.json' -print -quit || true)"
           G24_TASKS="$(find evidence/g24-telemetry -type f -name 'task-adapter-e2e-raw.json' -print -quit || true)"
           G24_GATE="$(find evidence/g24-telemetry -type f -name 'LOUKSNAPG_FUNCTIONAL_GATE.json' -print -quit || true)"
@@ -567,6 +578,32 @@ jobs:
           raise SystemExit(sys_exit)
           PY
 
+      - name: Evaluate the six architectural obligations against exact run-bound evidence
+        id: six_obligations
+        if: always() && steps.verify.outcome == 'success' && steps.contract.outcome == 'success'
+        continue-on-error: true
+        env:
+          SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          G23_ARGS=()
+          if [ -s candidate/LOUKSNAPG_G23_INTEGRITY_EVIDENCE.json ]; then
+            G23_ARGS=(--g23-integrity candidate/LOUKSNAPG_G23_INTEGRITY_EVIDENCE.json)
+          fi
+          python tools/louksnapg_six_obligation_audit.py \
+            --contract contracts/louksnapg/architecture-contract.v1.json \
+            --source-commit "$SOURCE_COMMIT" \
+            --bundle candidate/LOUKSNAPG.md \
+            --worker-evidence candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json \
+            --task-report candidate/LOUKSNAPG_G24_TASK_DIAGNOSTICS.json \
+            --functional-gate candidate/LOUKSNAPG_G24_FUNCTIONAL_GATE.json \
+            --g24-evidence candidate/LOUKSNAPG_G24_DECISION.json \
+            --telemetry candidate/LOUKSNAPG_TELEMETRY_PREAUDIT.json \
+            --kestra-receipt candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json \
+            "${G23_ARGS[@]}" \
+            --report candidate/LOUKSNAPG_SIX_OBLIGATION_AUDIT.json
+
       - name: Upload candidate validation and Kestra receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -582,6 +619,8 @@ jobs:
             candidate/LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json
             candidate/LOUKSNAPG_G23_ATTESTATION_NOT_PERFORMED.json
             candidate/LOUKSNAPG_G24_DECISION_NOT_GRANTED.json
+            candidate/LOUKSNAPG_G23_INTEGRITY_EVIDENCE.json
+            candidate/LOUKSNAPG_SIX_OBLIGATION_AUDIT.json
           if-no-files-found: warn
           retention-days: 90
 
