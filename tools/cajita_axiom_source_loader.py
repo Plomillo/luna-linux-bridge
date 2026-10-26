@@ -138,6 +138,8 @@ def verify_binding(runtime_root: str | Path, companion: str | Path | None = None
             break
     if doc is None:
         if existing_regular:
+            if companion is not None:
+                raise RuntimeError("LOUKSNA1_COMPANION_HASH_MISMATCH")
             raise RuntimeError("LOUKSNA1_COMPANION_HASH_OR_SIZE_MISMATCH")
         raise RuntimeError("LOUKSNA1_COMPANION_MISSING")
     data = doc.read_bytes()
