@@ -11,6 +11,8 @@ on:
       - "tools/louksnapg_worker_mission.py"
       - "tools/cajita_extended_target_e2e.py"
       - "tests/test_cajita_extended_target_e2e.py"
+      - "tests/test_calibre_slim_integrity.py"
+      - "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py"
       - "tools/louksnapg_six_obligation_audit.py"
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
@@ -39,6 +41,8 @@ on:
       - "tools/louksnapg_worker_mission.py"
       - "tools/cajita_extended_target_e2e.py"
       - "tests/test_cajita_extended_target_e2e.py"
+      - "tests/test_calibre_slim_integrity.py"
+      - "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py"
       - "tools/louksnapg_six_obligation_audit.py"
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
@@ -84,10 +88,12 @@ jobs:
       - name: Compile LOUKSNAPG packaging, evidence gate and independent validator
         run: |
           python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py tools/louksnapg_integral_gate.py tests/test_louksnapg_bundle.py tests/test_louksnapg_integral_gate.py tests/test_louksnapg_worker_mission.py tools/louksnapg_architecture_contract.py tests/test_louksnapg_architecture_contract.py tools/louksnapg_six_obligation_audit.py tests/test_louksnapg_six_obligation_audit.py tests/test_cajita_extended_target_e2e.py tools/cajita_extended_target_e2e.py
+          python -m py_compile tests/test_calibre_slim_integrity.py "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py"
       - name: Exercise ZIP build, cap, tamper and independent source-binding tests
         run: |
           python -m unittest discover -s tests -p 'test_louksnapg*.py' -v
           python -m unittest discover -s tests -p 'test_cajita_extended_target_e2e.py' -v
+          python -m unittest discover -s tests -p 'test_calibre_slim_integrity.py' -v
           python tools/louksnapg_architecture_contract.py --contract contracts/louksnapg/architecture-contract.v1.json --report "$RUNNER_TEMP/LOUKSNAPG_ARCHITECTURE_CONTRACT.json"
       - name: Validate Kestra contract and pinned release ceiling
         shell: bash
@@ -112,6 +118,13 @@ jobs:
           factory_text = Path(".github/workflows/cajita-louksna1-factory.yml").read_text(encoding="utf-8")
           extended_harness = Path("tools/cajita_extended_target_e2e.py").read_text(encoding="utf-8")
           extended_tests = Path("tests/test_cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+          calibre_slim_source = Path("cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py").read_text(encoding="utf-8")
+          calibre_slim_tests = Path("tests/test_calibre_slim_integrity.py").read_text(encoding="utf-8")
+          assert "MATERIALIZED_OVERLAY_TREE_HASH_MISMATCH" in calibre_slim_source
+          assert "CALIBRE_RUNTIME_VERSION_MISMATCH" in calibre_slim_source
+          assert "CALIBRE_SOURCE_LOCK_IDENTITY_MISMATCH" in calibre_slim_source
+          assert "test_tampered_cached_file_is_rejected_on_every_invocation" in calibre_slim_tests
+          assert "test_wrong_external_converter_version_fails_closed" in calibre_slim_tests
           assert '"D04_HERMENEUTICA_HG"' in extended_harness
           assert '"D04_TRADUCCION_LENGUAS_ANTIGUAS"' in extended_harness
           assert '"D05_CALIBRE"' in extended_harness
