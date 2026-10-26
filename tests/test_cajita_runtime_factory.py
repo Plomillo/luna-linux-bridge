@@ -11,9 +11,9 @@ class FactorySafetyTests(unittest.TestCase):
   from reproduce_macrodown import RUNTIME_ARCHIVE_CAP_BYTES
   self.assertEqual(RUNTIME_ARCHIVE_CAP, 470_000_000)
   self.assertEqual(RUNTIME_ARCHIVE_CAP_BYTES, 470_000_000)
-  self.assertEqual(COMBINED_CAP, 490_000_000)
-  self.assertEqual(DEFAULT_COMBINED_CAP_BYTES, 490_000_000)
-  self.assertEqual(COMBINED_DISTRIBUTION_CAP_BYTES, 470_000_000)
+  self.assertEqual(COMBINED_CAP, 479_000_000)
+  self.assertEqual(DEFAULT_COMBINED_CAP_BYTES, 479_000_000)
+  self.assertEqual(COMBINED_DISTRIBUTION_CAP_BYTES, 479_000_000)
 
  def test_archive_free_rerun_preserves_and_revalidates_materialized_modules_and_history(self):
   with tempfile.TemporaryDirectory() as d:
