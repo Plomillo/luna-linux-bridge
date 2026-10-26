@@ -136,7 +136,8 @@ jobs:
               "kestra_terminal_state",
               "POLL_TIMEOUT_TERMINAL_STATE_UNCONFIRMED",
               "KESTRA_SECONDARY_WORKER_NOT_VERIFIED",
-              "global_certification":"NOT_GRANTED",
+              "global_certification",
+              "NOT_GRANTED",
           ):
               assert required_text in aux_text, "auxiliary contract missing: " + required_text
           print("LOUKSNAPG_FACTORY_AND_KESTRA_RUNTIME_CONTRACT=PASS; PRODUCT_CERTIFICATION=NOT_GRANTED_UNLESS_EVIDENCED")
