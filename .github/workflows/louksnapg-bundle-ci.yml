@@ -9,6 +9,8 @@ on:
       - ".github/workflows/louksnapg-kestra-auxiliary.yml"
       - ".github/workflows/cajita-louksna1-factory.yml"
       - "tools/louksnapg_worker_mission.py"
+      - "tools/cajita_extended_target_e2e.py"
+      - "tests/test_cajita_extended_target_e2e.py"
       - "tools/louksnapg_six_obligation_audit.py"
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
@@ -35,6 +37,8 @@ on:
       - ".github/workflows/louksnapg-kestra-auxiliary.yml"
       - ".github/workflows/cajita-louksna1-factory.yml"
       - "tools/louksnapg_worker_mission.py"
+      - "tools/cajita_extended_target_e2e.py"
+      - "tests/test_cajita_extended_target_e2e.py"
       - "tools/louksnapg_six_obligation_audit.py"
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
@@ -79,10 +83,11 @@ jobs:
         run: python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==45.0.7
       - name: Compile LOUKSNAPG packaging, evidence gate and independent validator
         run: |
-          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py tools/louksnapg_integral_gate.py tests/test_louksnapg_bundle.py tests/test_louksnapg_integral_gate.py tests/test_louksnapg_worker_mission.py tools/louksnapg_architecture_contract.py tests/test_louksnapg_architecture_contract.py tools/louksnapg_six_obligation_audit.py tests/test_louksnapg_six_obligation_audit.py
+          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py tools/louksnapg_integral_gate.py tests/test_louksnapg_bundle.py tests/test_louksnapg_integral_gate.py tests/test_louksnapg_worker_mission.py tools/louksnapg_architecture_contract.py tests/test_louksnapg_architecture_contract.py tools/louksnapg_six_obligation_audit.py tests/test_louksnapg_six_obligation_audit.py tests/test_cajita_extended_target_e2e.py tools/cajita_extended_target_e2e.py
       - name: Exercise ZIP build, cap, tamper and independent source-binding tests
         run: |
           python -m unittest discover -s tests -p 'test_louksnapg*.py' -v
+          python -m unittest discover -s tests -p 'test_cajita_extended_target_e2e.py' -v
           python tools/louksnapg_architecture_contract.py --contract contracts/louksnapg/architecture-contract.v1.json --report "$RUNNER_TEMP/LOUKSNAPG_ARCHITECTURE_CONTRACT.json"
       - name: Validate Kestra contract and pinned release ceiling
         shell: bash
@@ -105,6 +110,20 @@ jobs:
           independent_validator = Path("tools/louksnapg_independent_validator.py").read_text(encoding="utf-8")
           integral_gate = Path("tools/louksnapg_integral_gate.py").read_text(encoding="utf-8")
           factory_text = Path(".github/workflows/cajita-louksna1-factory.yml").read_text(encoding="utf-8")
+          extended_harness = Path("tools/cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+          extended_tests = Path("tests/test_cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+          assert '"D04_HERMENEUTICA_HG"' in extended_harness
+          assert '"D04_TRADUCCION_LENGUAS_ANTIGUAS"' in extended_harness
+          assert '"D05_CALIBRE"' in extended_harness
+          assert '"D06_ANTI_ALUCINACIONES"' in extended_harness
+          assert '"D06_ARCHIVADO_DETECCION"' in extended_harness
+          assert '"D06_COGNITIVE_CI_CD"' in extended_harness
+          assert '"D06_MIGRACION_PERSISTENCIA"' in extended_harness
+          assert '"D06_PORTABILIDAD_BASE"' in extended_harness
+          assert '"D06_RUNTIME_ANDROID_WINDOWS"' in extended_harness
+          assert '"D06_TESTING"' in extended_harness
+          assert "test_calibre_is_held_when_only_externalization_metadata_exists" in extended_tests
+          assert "test_antihallucination_lfs_pointer_is_not_misreported_as_a_model" in extended_tests
           auxiliary_workflow_text = Path(".github/workflows/louksnapg-kestra-auxiliary.yml").read_text(encoding="utf-8")
           telemetry_writer = next((line for line in auxiliary_workflow_text.splitlines() if "tp.write_text(json.dumps(telem" in line), "")
           assert telemetry_writer, "PREAUDIT_TELEMETRY_WRITER_MISSING"
@@ -207,6 +226,11 @@ jobs:
           assert "task_adapter_quality_pass_count" in factory
           assert "task_adapter_quality_fail_count" in factory
           assert '"task_adapter_pass_count":task_quality_pass_count' in factory
+          assert "tools/cajita_extended_target_e2e.py" in factory
+          assert "tests/test_cajita_extended_target_e2e.py" in factory
+          assert "/telemetry/extended-target-e2e.json" in factory
+          assert "extended_target_pass_count" in factory
+          assert 'EXT_PASS_COUNT" -eq 10' in factory
           aux_path = Path(".github/workflows/louksnapg-kestra-auxiliary.yml")
           aux = yaml.safe_load(aux_path.read_text(encoding="utf-8"))
           aux_steps = aux["jobs"]["independently-validate-and-publish-product-artifact"]["steps"]
