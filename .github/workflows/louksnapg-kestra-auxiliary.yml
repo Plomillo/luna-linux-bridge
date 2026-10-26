@@ -527,6 +527,12 @@ jobs:
               "functional_evidence_mode":functional.get("execution_mode","NOT_PERFORMED"),
               "g23_attestation_sha256":os.environ.get("G23_ABSENCE_SHA256",""),
               "g23_signature_verification_status":"NOT_ESTABLISHED",
+              "g23_producer_id":"NOT_ESTABLISHED",
+              "g23_validator_id":"NOT_ESTABLISHED",
+              "g24_decision_sha256":os.environ.get("G24_ABSENCE_SHA256",""),
+              "g24_decision_status":"NOT_GRANTED",
+              "g24_signature_verification_status":"NOT_ESTABLISHED",
+              "g24_signer_id":"NOT_GRANTED_NO_SIGNER",
               "architecture_contract_sha256":os.environ.get("CONTRACT_SHA256",""),
               "architecture_contract_status":os.environ.get("CONTRACT_STATUS","HOLD"),
               "primary_worker_id":"CUSTOSZ_V9",
@@ -616,6 +622,241 @@ jobs:
             sys_exit=0
           raise SystemExit(sys_exit)
           PY
+
+      - name: Run the secondary Kestra audit locally if the hosted endpoint is unavailable
+        id: local_kestra
+        if: steps.verify.outcome == 'success'
+        shell: bash
+        env:
+          SOURCE_COMMIT: \${{ steps.source.outputs.source_sha }}
+          CONTRACT_SHA256: \${{ steps.contract.outputs.sha256 }}
+          CONTRACT_STATUS: \${{ steps.contract.outputs.contract_status }}
+          TELEMETRY_SHA256: \${{ steps.contract.outputs.telemetry_sha256 }}
+          CUSTOSZ_RECEIPT_SHA256: \${{ steps.contract.outputs.worker_sha256 }}
+          FUNCTIONAL_EVIDENCE_SHA256: \${{ steps.contract.outputs.functional_sha256 }}
+          G23_ABSENCE_SHA256: \${{ steps.contract.outputs.g23_sha256 }}
+          G24_ABSENCE_SHA256: \${{ steps.contract.outputs.g24_sha256 }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os, subprocess, time, urllib.error, urllib.parse, urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          receipt_path = Path("candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json")
+          image = "kestra/kestra:v2.0.3-slim"
+          base = "http://127.0.0.1:18080"
+          def sha(data): return hashlib.sha256(data).hexdigest()
+          def now(): return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+          def save_receipt(value):
+              receipt_path.write_text(json.dumps(value, sort_keys=True, ensure_ascii=False, indent=2)+"\n",encoding="utf-8")
+          receipt = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() and not receipt_path.is_symlink() else {}
+          fallback_states = {
+              "NOT_CONFIGURED", "SUBMISSION_FAILED", "DISPATCH_RESPONSE_MISSING_EXECUTION_ID",
+              "POLL_TIMEOUT_TERMINAL_STATE_UNCONFIRMED", "AUDIT_TERMINATED_WITHOUT_SUCCESS"
+          }
+          if receipt.get("status") not in fallback_states:
+              print(json.dumps({"local_kestra_fallback":"NOT_REQUIRED","existing_receipt_status":receipt.get("status"),"global_certification":"NOT_GRANTED"},indent=2))
+              raise SystemExit(0)
+
+          receipt.update({
+              "schema":"LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT/1.0",
+              "local_kestra_attempted":True,
+              "local_kestra_image":image,
+              "local_kestra_state":"STARTING",
+              "source_commit":os.environ["SOURCE_COMMIT"],
+              "global_certification":"NOT_GRANTED"
+          })
+          try:
+              pull = subprocess.run(["docker","pull",image],capture_output=True,text=True,timeout=420,check=False)
+              receipt["local_kestra_image_pull_return_code"] = pull.returncode
+              receipt["local_kestra_image_pull_output_sha256"] = sha((pull.stdout+pull.stderr).encode())
+              if pull.returncode != 0:
+                  raise RuntimeError("KESTRA_LOCAL_IMAGE_PULL_FAILED:"+pull.stderr[-700:])
+              image_meta=json.loads(subprocess.run(["docker","image","inspect",image],capture_output=True,text=True,check=True,timeout=30).stdout)[0]
+              receipt["local_kestra_image_digest"]=(image_meta.get("RepoDigests") or [""])[0]
+              start=subprocess.run([
+                  "docker","run","--detach","--name","louksnapg-kestra-local",
+                  "--publish","127.0.0.1:18080:8080",image,"server","local"
+              ],capture_output=True,text=True,check=False,timeout=60)
+              receipt["local_kestra_container_start_return_code"]=start.returncode
+              if start.returncode != 0:
+                  raise RuntimeError("KESTRA_LOCAL_CONTAINER_START_FAILED:"+start.stderr[-700:])
+              receipt["local_kestra_container_id"]=start.stdout.strip()[:80]
+              last_http="NOT_OBSERVED"
+              for attempt in range(120):
+                  req=urllib.request.Request(base+"/api/v1/main/flows",headers={"Accept":"application/json"})
+                  try:
+                      with urllib.request.urlopen(req,timeout=5) as response:
+                          body=response.read()
+                          last_http=str(response.status)
+                          if 200 <= response.status < 300:
+                              break
+                  except urllib.error.HTTPError as err:
+                      last_http=str(err.code)
+                      if err.code in (401,403):
+                          raise RuntimeError("KESTRA_LOCAL_API_AUTH_REQUIRED:"+last_http)
+                  except Exception as err:
+                      last_http=type(err).__name__
+                  time.sleep(2)
+              else:
+                  raise RuntimeError("KESTRA_LOCAL_SERVER_NOT_READY:"+last_http)
+
+              flow_path=Path("integrations/kestra/flows/24-louksnapg-bundle-audit.yml")
+              flow_bytes=flow_path.read_bytes()
+              upload=subprocess.run([
+                  "curl","--fail-with-body","--silent","--show-error","--max-time","60","-X","POST",
+                  "-H","Content-Type: application/x-yaml","--data-binary","@"+str(flow_path),
+                  base+"/api/v1/main/flows"
+              ],capture_output=True,text=True,check=False,timeout=75)
+              receipt["local_kestra_flow_upload_return_code"]=upload.returncode
+              receipt["local_kestra_flow_yaml_sha256"]=sha(flow_bytes)
+              receipt["local_kestra_flow_upload_response_sha256"]=sha(upload.stdout.encode())
+              if upload.returncode != 0:
+                  raise RuntimeError("KESTRA_LOCAL_FLOW_IMPORT_FAILED:"+upload.stderr[-900:]+upload.stdout[-500:])
+
+              build=json.loads(Path("candidate/LOUKSNAPG_BUILD_REPORT.json").read_text(encoding="utf-8"))
+              worker_path=Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json")
+              worker=json.loads(worker_path.read_text(encoding="utf-8"))
+              validation=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
+              functional=json.loads(Path("candidate/LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json").read_text(encoding="utf-8"))
+              primitive_path=Path("candidate/LOUKSNAPG_CUSTOSZV9_PRIMITIVE_REPAIR_EVIDENCE.json")
+              primitive=json.loads(primitive_path.read_text(encoding="utf-8")) if primitive_path.is_file() and not primitive_path.is_symlink() else {}
+              repair=worker.get("repair_mission",{}) if isinstance(worker.get("repair_mission"),dict) else {}
+              bundle=Path("candidate/LOUKSNAPG.md")
+              bundle_sha=sha(bundle.read_bytes())
+              repair_sha=sha(primitive_path.read_bytes()) if primitive_path.is_file() and not primitive_path.is_symlink() else ""
+              fields={
+                  "source_commit":os.environ["SOURCE_COMMIT"],
+                  "bundle_sha256":bundle_sha,
+                  "bundle_bytes":str(bundle.stat().st_size),
+                  "max_bytes":"479000000",
+                  "document_sha256":build["source_document_sha256"],
+                  "runtime_source_sha256":build["source_runtime_archive_sha256"],
+                  "worker_status":worker.get("worker_status","NOT_ESTABLISHED"),
+                  "independent_integrity_status":"PASS",
+                  "identity_binding_status":validation.get("identity_preservation_status","NOT_ESTABLISHED"),
+                  "engine_replacement_status":validation.get("engine_replacement","NOT_ESTABLISHED"),
+                  "functional_evidence_sha256":os.environ.get("FUNCTIONAL_EVIDENCE_SHA256",""),
+                  "functional_evidence_source_commit":os.environ["SOURCE_COMMIT"],
+                  "functional_evidence_status":"NOT_ESTABLISHED",
+                  "functional_target_pass_count":str(functional.get("target_pass_count",0)),
+                  "functional_target_expected_count":"21",
+                  "functional_evidence_mode":functional.get("execution_mode","NOT_PERFORMED"),
+                  "g23_attestation_sha256":os.environ.get("G23_ABSENCE_SHA256",""),
+                  "g23_signature_verification_status":"NOT_ESTABLISHED",
+                  "g23_producer_id":"NOT_ESTABLISHED",
+                  "g23_validator_id":"NOT_ESTABLISHED",
+                  "g24_decision_sha256":os.environ.get("G24_ABSENCE_SHA256",""),
+                  "g24_decision_status":"NOT_GRANTED",
+                  "g24_signature_verification_status":"NOT_ESTABLISHED",
+                  "g24_signer_id":"NOT_GRANTED_NO_SIGNER",
+                  "architecture_contract_sha256":os.environ.get("CONTRACT_SHA256",""),
+                  "architecture_contract_status":os.environ.get("CONTRACT_STATUS","HOLD"),
+                  "primary_worker_id":"CUSTOSZ_V9",
+                  "secondary_worker_id":"KESTRA",
+                  "custosz_worker_evidence_sha256":os.environ.get("CUSTOSZ_RECEIPT_SHA256",""),
+                  "custosz_repair_report_sha256":repair_sha,
+                  "custosz_repair_status":repair.get("status","NOT_ESTABLISHED"),
+                  "custosz_repair_preflight_status":repair.get("repair_preflight_status","NOT_ESTABLISHED"),
+                  "custosz_candidate_integrity_status":repair.get("candidate_integrity_status","NOT_ESTABLISHED"),
+                  "custosz_repair_target_pass_count":str(sum(1 for row in primitive.get("targets",[]) if isinstance(row,dict) and row.get("status")=="PASS_PRIMITIVE_SMOKE")),
+                  "custosz_repair_target_expected_count":"3",
+                  "custosz_repair_source_commit":repair.get("source_commit",""),
+                  "custosz_repair_bundle_sha256":repair.get("bundle_sha256",""),
+                  "custosz_repair_contract_sha256":repair.get("contract_sha256",""),
+                  "custosz_repair_hash_verified":"true" if repair_sha and repair_sha==repair.get("primitive_report_sha256") and repair.get("primitive_report_hash_verified") is True else "false",
+                  "official_source_review_status":"NOT_ESTABLISHED",
+                  "telemetry_evidence_sha256":os.environ.get("TELEMETRY_SHA256",""),
+                  "telemetry_status":"INCOMPLETE_HOLD",
+                  "heavy_model_download_count":"0",
+                  "remote_commander_used":"false",
+                  "functional_status":"FAIL" if functional.get("status")=="FAIL" else "NOT_ESTABLISHED",
+                  "semantic_quality_status":"FAIL" if int(functional.get("quality_fail_count",0))>0 else "NOT_ESTABLISHED",
+                  "host_matrix_status":"NOT_ESTABLISHED",
+                  "rollback_status":"NOT_ESTABLISHED",
+                  "axiom_binding_status":"NOT_ESTABLISHED",
+                  "block_binding_status":"NOT_ESTABLISHED"
+              }
+              cmd=["curl","--fail-with-body","--silent","--show-error","--max-time","60","-X","POST",
+                   base+"/api/v1/main/executions/louksna.kestra/louksnapg_bundle_audit"]
+              for key,value in fields.items():
+                  cmd.extend(["-F",key+"="+str(value)])
+              execution=subprocess.run(cmd,capture_output=True,text=True,check=False,timeout=75)
+              receipt["local_kestra_execution_submit_return_code"]=execution.returncode
+              receipt["local_kestra_execution_submit_response_sha256"]=sha(execution.stdout.encode())
+              if execution.returncode != 0:
+                  raise RuntimeError("KESTRA_LOCAL_FLOW_DISPATCH_FAILED:"+execution.stderr[-900:]+execution.stdout[-500:])
+              try:
+                  response=json.loads(execution.stdout)
+              except json.JSONDecodeError as err:
+                  raise RuntimeError("KESTRA_LOCAL_EXECUTION_RESPONSE_INVALID") from err
+              execution_id=response.get("id")
+              if not execution_id:
+                  raise RuntimeError("KESTRA_LOCAL_EXECUTION_ID_MISSING")
+              receipt["execution_id"]=execution_id
+              receipt["execution_url"]=base+"/ui/executions/"+urllib.parse.quote(str(execution_id),safe="")
+              terminal_states={"SUCCESS","FAILED","WARNING","KILLED","CANCELLED","SKIPPED","RESTARTED"}
+              observations=[]
+              terminal_obj=None
+              for attempt in range(90):
+                  url=base+"/api/v1/main/executions/"+urllib.parse.quote(str(execution_id),safe="")
+                  try:
+                      with urllib.request.urlopen(urllib.request.Request(url,headers={"Accept":"application/json"}),timeout=10) as response:
+                          body=response.read()
+                      execution_obj=json.loads(body.decode("utf-8"))
+                      current=((execution_obj.get("state") or {}).get("current") or "UNKNOWN")
+                      observations.append({"attempt":attempt+1,"http_status":200,"state":current,"response_sha256":sha(body)})
+                      if current in terminal_states:
+                          terminal_obj=execution_obj
+                          receipt["kestra_execution_evidence_sha256"]=sha(body)
+                          receipt["kestra_terminal_state"]=current
+                          receipt["kestra_state_observed_at_utc"]=now()
+                          break
+                  except urllib.error.HTTPError as err:
+                      observations.append({"attempt":attempt+1,"http_status":err.code,"state":"POLL_HTTP_ERROR"})
+                  except Exception as err:
+                      observations.append({"attempt":attempt+1,"state":"POLL_ERROR","error_type":type(err).__name__})
+                  time.sleep(2)
+              receipt["poll_observations"]=observations
+              receipt["local_kestra_state"]="TERMINAL" if terminal_obj else "POLL_TIMEOUT"
+              if not terminal_obj:
+                  receipt["status"]="POLL_TIMEOUT_TERMINAL_STATE_UNCONFIRMED"
+              else:
+                  tasks=[]
+                  for row in terminal_obj.get("taskRunList",[]) or []:
+                      tasks.append({"task_id":row.get("taskId"),"state":((row.get("state") or {}).get("current") or "UNKNOWN")})
+                  receipt["task_states"]=tasks
+                  hold_seen=any("auxiliary_hold" in str(row.get("task_id","")) and row.get("state")=="FAILED" for row in tasks)
+                  if receipt["kestra_terminal_state"]=="FAILED" and hold_seen:
+                      receipt["status"]="AUDIT_FAILED_OR_FAIL_CLOSED_HOLD"
+                  elif receipt["kestra_terminal_state"]=="SUCCESS":
+                      receipt["status"]="FLOW_EXECUTION_SUCCESS_RELEASE_STILL_HOLD"
+                  elif receipt["kestra_terminal_state"]=="FAILED":
+                      receipt["status"]="LOCAL_AUDIT_FAILED_NOT_VERIFIED_HOLD"
+                  else:
+                      receipt["status"]="AUDIT_TERMINATED_WITHOUT_SUCCESS"
+              receipt["execution_mode"]="LOCAL_EPHEMERAL_KESTRA"
+              receipt["local_kestra_image"]=image
+              receipt["local_kestra_flow_sha256"]=sha(flow_bytes)
+              receipt["local_kestra_evidence_bound_to"]={"source_commit":os.environ["SOURCE_COMMIT"],"bundle_sha256":bundle_sha,"contract_sha256":os.environ.get("CONTRACT_SHA256","")}
+          except Exception as exc:
+              receipt.update({"status":"LOCAL_AUDIT_FAILED","local_kestra_state":"FAILED","error_type":type(exc).__name__,"error":str(exc)[:1200]})
+          save_receipt(receipt)
+          try:
+              logs=subprocess.run(["docker","logs","louksnapg-kestra-local"],capture_output=True,text=True,timeout=20,check=False)
+              Path("candidate/LOUKSNAPG_KESTRA_LOCAL_SERVER.log").write_text((logs.stdout+"\n"+logs.stderr)[-20000:],encoding="utf-8")
+              receipt["local_kestra_server_log_sha256"]=sha(Path("candidate/LOUKSNAPG_KESTRA_LOCAL_SERVER.log").read_bytes())
+              save_receipt(receipt)
+          except Exception:
+              pass
+          print(json.dumps({k:receipt.get(k) for k in ("status","execution_mode","execution_id","kestra_terminal_state","local_kestra_image","local_kestra_image_digest","local_kestra_flow_sha256","bundle_sha256","source_commit","error_type","error","global_certification")},indent=2))
+          PY
+
+      - name: Cleanup isolated local Kestra runtime
+        if: always()
+        shell: bash
+        run: docker rm --force louksnapg-kestra-local >/dev/null 2>&1 || true
 
       - name: Append the exact Kestra receipt to final C4 telemetry
         id: final_telemetry
