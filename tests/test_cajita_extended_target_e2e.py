@@ -315,7 +315,14 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 "source": source,
                 "binaries": [("tpl", binary)],
             }])
+            # Reproduce archives where verified binary bytes survive but POSIX mode
+            # bits do not; the probe must execute an identity-checked copy only.
+            packaged = root / ".native-engine-bin" / "trealla" / "tpl"
+            packaged.chmod(0o644)
+            packaged_sha256 = coverage.sha256_file(packaged)
             result = coverage.probe_trealla(root)
+            self.assertEqual(packaged.stat().st_mode & 0o111, 0)
+            self.assertEqual(coverage.sha256_file(packaged), packaged_sha256)
             self.assertEqual(result["status"], coverage.PASS)
             self.assertTrue(result["packaged_binary_execution"])
             self.assertEqual(result["task_coverage"], "PROLOG_GRAMMAR_PRIMITIVE_ONLY_NOT_FULL_HISTORICAL_HERMENEUTICS")
@@ -369,7 +376,16 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 "source": source,
                 "binaries": [("foma", foma), ("flookup", flookup)],
             }])
+            packaged_foma = root / ".native-engine-bin" / "foma" / "foma"
+            packaged_flookup = root / ".native-engine-bin" / "foma" / "flookup"
+            packaged_foma.chmod(0o644)
+            packaged_flookup.chmod(0o644)
+            foma_sha256, flookup_sha256 = coverage.sha256_file(packaged_foma), coverage.sha256_file(packaged_flookup)
             result = coverage.probe_foma(root)
+            self.assertEqual(packaged_foma.stat().st_mode & 0o111, 0)
+            self.assertEqual(packaged_flookup.stat().st_mode & 0o111, 0)
+            self.assertEqual(coverage.sha256_file(packaged_foma), foma_sha256)
+            self.assertEqual(coverage.sha256_file(packaged_flookup), flookup_sha256)
             self.assertEqual(result["status"], coverage.PASS)
             self.assertTrue(result["packaged_binary_execution"])
             self.assertEqual(result["consumer_task_equivalence"], "NOT_ESTABLISHED_ANCIENT_LANGUAGE_LEXICON_MISSING")
