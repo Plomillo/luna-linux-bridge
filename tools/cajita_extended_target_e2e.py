@@ -15,6 +15,7 @@ import importlib.util
 import json
 import os
 import shutil
+import stat
 import socket
 import struct
 import subprocess
@@ -181,22 +182,78 @@ def copy_executable(source: Path, destination: Path) -> Path:
     return destination
 
 
+def native_engine_build(root: Path, target_id: str) -> dict[str, Any]:
+    """Resolve only build outputs covered by the runtime's factory receipt."""
+    receipt_path = root / "NATIVE_ENGINE_BUILD_RECEIPTS.json"
+    if receipt_path.is_symlink() or not receipt_path.is_file():
+        raise ProbeBlocked("NATIVE_ENGINE_BUILD_RECEIPT_MISSING")
+    routing_path = root / "command_subdomain_routing.json"
+    if routing_path.is_symlink() or not routing_path.is_file():
+        raise ProbeFailure("NATIVE_ENGINE_ROUTING_REGISTRY_MISSING")
+    routing = json.loads(routing_path.read_text(encoding="utf-8"))
+    materialization = routing.get("materialization", {})
+    if materialization.get("native_engine_build_receipt") != receipt_path.name:
+        raise ProbeFailure("NATIVE_ENGINE_BUILD_RECEIPT_NOT_BOUND")
+    if materialization.get("native_engine_build_receipt_sha256") != sha256_file(receipt_path):
+        raise ProbeFailure("NATIVE_ENGINE_BUILD_RECEIPT_HASH_MISMATCH")
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    if receipt.get("schema") != "CAJITA_NATIVE_ENGINE_BUILD_RECEIPTS/1.0":
+        raise ProbeFailure("NATIVE_ENGINE_BUILD_RECEIPT_SCHEMA_INVALID")
+    matches = [row for row in receipt.get("builds", []) if row.get("target_id") == target_id]
+    if len(matches) != 1 or matches[0].get("build_status") != "PASS" or matches[0].get("source_tree_preserved") is not True:
+        raise ProbeBlocked("NATIVE_ENGINE_BUILD_NOT_VALIDATED:" + target_id)
+    build = matches[0]
+    outputs = build.get("binary_artifacts")
+    if not isinstance(outputs, list) or not outputs:
+        raise ProbeBlocked("NATIVE_ENGINE_BINARY_RECEIPT_MISSING:" + target_id)
+    for row in outputs + build.get("shared_libraries", []):
+        rel = row.get("path")
+        if not isinstance(rel, str) or not rel or Path(rel).is_absolute() or ".." in Path(rel).parts:
+            raise ProbeFailure("NATIVE_ENGINE_RECEIPT_PATH_UNSAFE")
+        path = root / rel
+        if path.is_symlink() or not path.is_file():
+            raise ProbeBlocked("NATIVE_ENGINE_RECEIPT_ARTIFACT_MISSING:" + rel)
+        if path.stat().st_size != row.get("bytes") or sha256_file(path) != row.get("sha256"):
+            raise ProbeFailure("NATIVE_ENGINE_RECEIPT_ARTIFACT_IDENTITY_MISMATCH:" + rel)
+    return build
+
+
+def native_binary(root: Path, build: dict[str, Any], name: str) -> Path:
+    matches = [row for row in build["binary_artifacts"] if row.get("name") == name]
+    if len(matches) != 1:
+        raise ProbeFailure("NATIVE_ENGINE_RECEIPT_BINARY_NAME_MISMATCH:" + name)
+    binary = root / matches[0]["path"]
+    if not (binary.stat().st_mode & 0o111):
+        raise ProbeFailure("NATIVE_ENGINE_RECEIPT_BINARY_NOT_EXECUTABLE:" + name)
+    return binary
+
+
+def native_library_environment(root: Path, build: dict[str, Any]) -> dict[str, str]:
+    env = os.environ.copy()
+    dirs = sorted({str((root / row["path"]).parent) for row in build.get("shared_libraries", [])})
+    previous = env.get("LD_LIBRARY_PATH", "")
+    values = dirs + ([previous] if previous else [])
+    if values:
+        env["LD_LIBRARY_PATH"] = os.pathsep.join(values)
+    return env
+
+
 def probe_trealla(root: Path) -> dict[str, Any]:
     module,descriptor=module_for(root,"D04_HERMENEUTICA_HG")
     source=module/"trealla-2.100.24"/"trealla-2.100.24"
-    binary=source/"tpl"
+    build=native_engine_build(root,"D04_HERMENEUTICA_HG")
+    binary=native_binary(root,build,"tpl")
     grammar=source/"samples"/"grammar.pl"
-    if binary.is_symlink() or not binary.is_file() or not (binary.stat().st_mode&0o111):
-        raise ProbeFailure("TREALLA_PACKAGED_BINARY_MISSING")
     if grammar.is_symlink() or not grammar.is_file():
         raise ProbeFailure("TREALLA_GRAMMAR_FIXTURE_MISSING")
-    run=require_ok(run_process([str(binary),"-g","phrase(sentence,[fixture])","-l","samples/grammar.pl"],cwd=source,timeout=15),"TREALLA_PACKAGED_PROLOG_QUERY_FAILED")
+    run=require_ok(run_process([str(binary),"-g","phrase(sentence,[fixture])","-l","samples/grammar.pl"],cwd=source,timeout=15,env=native_library_environment(root,build)),"TREALLA_PACKAGED_PROLOG_QUERY_FAILED")
     if "true" not in str(run.get("stdout_excerpt","")).casefold():
         raise ProbeFailure("TREALLA_PACKAGED_PROLOG_QUERY_NOT_TRUE:"+str(run.get("stdout_excerpt",""))[-500:])
     return {
         "status":PASS,"primitive":"PACKAGED_TREALLA_PROLOG_GRAMMAR_QUERY",
         "binary_sha256":sha256_file(binary),"grammar_sha256":sha256_file(grammar),
         "module_tree_sha256_declared":descriptor.get("tree_integrity",{}).get("sha256"),
+        "native_build_receipt_sha256":sha256_file(root/"NATIVE_ENGINE_BUILD_RECEIPTS.json"),
         "consumer_task_equivalence":"NOT_ESTABLISHED_FULL_HERMENEUTICS",
         "task_coverage":"PROLOG_GRAMMAR_PRIMITIVE_ONLY_NOT_FULL_HISTORICAL_HERMENEUTICS",
         "packaged_binary_execution":True,"runtime_output_sha256":sha256_bytes(str(run.get("stdout_excerpt","")).encode()),
@@ -207,14 +264,10 @@ def probe_trealla(root: Path) -> dict[str, Any]:
 def probe_foma(root: Path) -> dict[str, Any]:
     module,descriptor=module_for(root,"D04_TRADUCCION_LENGUAS_ANTIGUAS")
     source=module/"foma-master"/"foma-master"/"foma"
-    foma_binary=source/"foma"
-    flookup_binary=source/"flookup"
-    for binary,label in ((foma_binary,"FOMA"),(flookup_binary,"FLOOKUP")):
-        if binary.is_symlink() or not binary.is_file() or not (binary.stat().st_mode&0o111):
-            raise ProbeFailure(label+"_PACKAGED_EXECUTABLE_MISSING")
-    env=os.environ.copy()
-    local_lib=source/"src"/"libfoma"/".libs"
-    env["LD_LIBRARY_PATH"]=str(local_lib)+(":"+env["LD_LIBRARY_PATH"] if env.get("LD_LIBRARY_PATH") else "")
+    build=native_engine_build(root,"D04_TRADUCCION_LENGUAS_ANTIGUAS")
+    foma_binary=native_binary(root,build,"foma")
+    flookup_binary=native_binary(root,build,"flookup")
+    env=native_library_environment(root,build)
     version=require_ok(run_process([str(foma_binary),"-v"],cwd=source,timeout=15,env=env),"FOMA_PACKAGED_VERSION_FAILED")
     lookup_version=require_ok(run_process([str(flookup_binary),"-v"],cwd=source,timeout=15,env=env),"FLOOKUP_PACKAGED_VERSION_FAILED")
     with tempfile.TemporaryDirectory(prefix="foma-packaged-primitive-") as temp:
@@ -235,7 +288,22 @@ def probe_foma(root: Path) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix="foma-source-regression-") as temp:
         build_root=Path(temp)/"foma-source"
         shutil.copytree(source,build_root,symlinks=False)
-        regression=require_ok(run_process(["make","check"],cwd=build_root,timeout=900,env=env),"FOMA_UPSTREAM_REGRESSION_FAILED")
+        test_runner=build_root/"tests"/"run.sh"
+        if test_runner.is_symlink() or not test_runner.is_file():
+            raise ProbeFailure("FOMA_UPSTREAM_TEST_RUNNER_MISSING_OR_UNSAFE")
+        source_runner=source/"tests"/"run.sh"
+        source_runner_sha=sha256_file(source_runner)
+        if sha256_file(test_runner)!=source_runner_sha:
+            raise ProbeFailure("FOMA_UPSTREAM_TEST_RUNNER_COPY_HASH_MISMATCH")
+        os.chmod(test_runner,stat.S_IMODE(test_runner.stat().st_mode)|0o111)
+        check_env=env.copy()
+        local_build_lib=build_root/"src"/"libfoma"/".libs"
+        if local_build_lib.is_dir():
+            previous=check_env.get("LD_LIBRARY_PATH","")
+            check_env["LD_LIBRARY_PATH"]=str(local_build_lib)+(os.pathsep+previous if previous else "")
+        regression=require_ok(run_process(["make","check"],cwd=build_root,timeout=900,env=check_env),"FOMA_UPSTREAM_REGRESSION_FAILED")
+        if sha256_file(source_runner)!=source_runner_sha or source_runner.stat().st_mode&0o111:
+            raise ProbeFailure("FOMA_UPSTREAM_SOURCE_RUNNER_MUTATED")
     return {
         "status":PASS,"primitive":"PACKAGED_FOMA_FLOOKUP_FINITE_STATE_TRANSLATION",
         "foma_sha256":sha256_file(foma_binary),"flookup_sha256":sha256_file(flookup_binary),
@@ -246,6 +314,7 @@ def probe_foma(root: Path) -> dict[str, Any]:
         "task_coverage":"FINITE_STATE_ENGINE_PRIMITIVE_ONLY_NOT_FULL_ANCIENT_LANGUAGE_TRANSLATION",
         "packaged_binary_execution":True,"upstream_regression_status":"PASS",
         "source_tree_sha256_declared":descriptor.get("tree_integrity",{}).get("sha256"),
+        "native_build_receipt_sha256":sha256_file(root/"NATIVE_ENGINE_BUILD_RECEIPTS.json"),
         "runtime_output_sha256":runtime_output_sha,
         "certification":"NOT_GRANTED"
     }
