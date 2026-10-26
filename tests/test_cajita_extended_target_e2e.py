@@ -132,7 +132,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             "    archive.writestr(\"OEBPS/content.opf\", \"<package version=\\\"2.0\\\"><metadata/><manifest/><spine/></package>\")",
             "    archive.writestr(\"OEBPS/chapter.xhtml\", \"<html><body>fixture</body></html>\")",
         ]
-        path.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         path.chmod(0o755)
 
     def test_calibre_is_held_if_no_external_executable_is_available(self):
