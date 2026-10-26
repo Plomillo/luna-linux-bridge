@@ -85,6 +85,21 @@ jobs:
           assert flow["namespace"] == "louksna.kestra"
           inputs = {row["id"]: row for row in flow["inputs"]}
           assert inputs["max_bytes"]["defaults"] == 479000000
+          contract = json.loads(Path("contracts/louksnapg/architecture-contract.v1.json").read_text(encoding="utf-8"))
+          assert contract["global_luna_hard_max_bytes"] == 479000000
+          assert contract["candidate_distribution_max_bytes"] == 479000000
+          assert contract["cajita_runtime_archive_max_bytes"] == 470000000
+          bundle_builder = Path("tools/louksnapg_bundle.py").read_text(encoding="utf-8")
+          independent_validator = Path("tools/louksnapg_independent_validator.py").read_text(encoding="utf-8")
+          integral_gate = Path("tools/louksnapg_integral_gate.py").read_text(encoding="utf-8")
+          factory_text = Path(".github/workflows/cajita-louksna1-factory.yml").read_text(encoding="utf-8")
+          auxiliary_workflow_text = Path(".github/workflows/louksnapg-kestra-auxiliary.yml").read_text(encoding="utf-8")
+          assert "DEFAULT_MAX_BYTES = 479_000_000" in bundle_builder
+          assert "CAP_BYTES = 479_000_000" in independent_validator
+          assert "GLOBAL_LUNA_HARD_MAX_BYTES = 479000000" in integral_gate
+          assert "BUNDLE_OVER_GLOBAL_LUNA_HARD_MAX_BYTES" in integral_gate
+          assert "--max-bytes 490000000" not in factory_text
+          assert "--max-bytes 490000000" not in auxiliary_workflow_text
           required = {
               "source_commit", "bundle_sha256", "bundle_bytes", "document_sha256",
               "runtime_source_sha256", "worker_status", "independent_integrity_status",
