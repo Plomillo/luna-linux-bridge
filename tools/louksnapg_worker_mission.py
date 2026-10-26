@@ -21,6 +21,33 @@ TASK_ID = "louksnapg-integral-release"
 SCOPE = "VERIFY_REPAIR_PRIMITIVES_AND_BUILD_LOUKSNAPG_CANDIDATE"
 WORKER_ID = "CUSTOSZV9"
 
+REQUIRED_REPAIR_SOURCE_FRAGMENTS = (
+    'query="phrase(sentence,[the,man,shoots]),write(true),halt"',
+    r'use_module(library(dcgs)).\n',
+    r"include('{grammar_literal}').\n",
+    r"initialization(({query})).\n",
+    'trealla_env["TPL_LIBRARY_PATH"]=str(packaged_library)',
+    "regex [c a t]:[g a t o];",
+    'base + "/readyz"',
+    '"rqlite_readiness": ready_receipt',
+)
+REQUIRED_REPAIR_REGRESSION_TESTS = (
+    "test_trealla_probe_executes_packaged_binary_without_source_build",
+    "test_foma_probe_executes_packaged_foma_and_flookup",
+    "test_rqlite_readiness_requires_elected_leader_and_store",
+    "test_rqlite_readiness_polls_readyz_not_status",
+)
+
+
+def repair_source_contract_failures(repair_source: str, repair_tests: str) -> list[str]:
+    """Keep the source preflight aligned with the actual packaged Trealla driver."""
+    missing = [fragment for fragment in REQUIRED_REPAIR_SOURCE_FRAGMENTS if fragment not in repair_source]
+    missing.extend(
+        "required_regression_test_missing:" + name
+        for name in REQUIRED_REPAIR_REGRESSION_TESTS if name not in repair_tests
+    )
+    return missing
+
 
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -191,24 +218,7 @@ def main(argv=None) -> int:
     def runner(payload: dict) -> dict:
         repair_source = (repo / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
         repair_tests = (repo / "tests" / "test_cajita_extended_target_e2e.py").read_text(encoding="utf-8")
-        required_source_fragments = [
-            'query="use_module(library(dcgs)),phrase(sentence,[the,man,shoots]),write(true),halt"',
-            'trealla_env["TPL_LIBRARY_PATH"]=str(packaged_library)',
-            'regex [c a t]:[g a t o];',
-            'base + "/readyz"',
-            '"rqlite_readiness": ready_receipt',
-        ]
-        absent_fragments = [fragment for fragment in required_source_fragments if fragment not in repair_source]
-        required_regression_tests = (
-            "test_trealla_probe_executes_packaged_binary_without_source_build",
-            "test_foma_probe_executes_packaged_foma_and_flookup",
-            "test_rqlite_readiness_requires_elected_leader_and_store",
-            "test_rqlite_readiness_polls_readyz_not_status",
-        )
-        absent_fragments.extend(
-            "required_regression_test_missing:" + name
-            for name in required_regression_tests if name not in repair_tests
-        )
+        absent_fragments = repair_source_contract_failures(repair_source, repair_tests)
         repair_test_command = [
             sys.executable, "-m", "unittest", "discover", "-s", "tests",
             "-p", "test_cajita_extended_target_e2e.py", "-v",
@@ -235,7 +245,7 @@ def main(argv=None) -> int:
             "status": "PASS" if py_compile.returncode == 0 and unit.returncode == 0 else "FAIL",
             "source_sha256": sha256_bytes(repair_source.encode("utf-8")),
             "test_source_sha256": sha256_bytes(repair_tests.encode("utf-8")),
-            "required_source_fragments_present": len(required_source_fragments),
+            "required_source_fragments_present": len(REQUIRED_REPAIR_SOURCE_FRAGMENTS),
             "py_compile_exit_code": py_compile.returncode,
             "unit_test_exit_code": unit.returncode,
             "unit_test_stdout_tail": unit.stdout[-8000:],
