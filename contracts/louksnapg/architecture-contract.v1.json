@@ -215,7 +215,10 @@
       "kestra_real_receipt",
       "g23_signature_verified",
       "separate_g24_signature_verified",
-      "non_regression_pass"
+      "non_regression_pass",
+      "custosz_worker_repair_preflight_pass",
+      "custosz_repair_report_subject_bound",
+      "three_candidate_bound_primitives_pass"
     ],
     "chain": [
       "SPECIFICATION",
@@ -323,5 +326,52 @@
       "inventory_policy": "RECOMPUTE_ARCHIVE_AND_FULL_CACHE_FILE_SET_SIZE_SHA256_MODE_DIRECTORY_SET_ON_EVERY_INVOCATION",
       "runtime_policy": "DISCOVER_SYSTEM_EBOOK_CONVERT_AND_REQUIRE_EXACT_CALIBRE_VERSION_TOKEN"
     }
-  ]
+  ],
+  "worker_mission": {
+    "schema": "LOUKSNAPG_CUSTOSZ_REPAIR_MISSION_CONTRACT/1.0",
+    "worker_id": "CUSTOSZV9",
+    "mission_id": "issue-155",
+    "task_id": "louksnapg-integral-release",
+    "authorized_scope": "VERIFY_REPAIR_PRIMITIVES_AND_BUILD_LOUKSNAPG_CANDIDATE",
+    "required_capabilities": [
+      "verify_repair_primitives",
+      "build_single_file_distribution"
+    ],
+    "permitted_effects": [
+      "WRITE_EVIDENCE"
+    ],
+    "required_preconditions": [
+      "NO_SELF_CERTIFICATION",
+      "FAIL_CLOSED",
+      "INPUT_HASHES_VERIFIABLE",
+      "REPAIR_SOURCE_HASHES_PINNED",
+      "REAL_CANDIDATE_PRIMITIVE_TESTS_REQUIRED"
+    ],
+    "repair_target_ids": [
+      "D04_HERMENEUTICA_HG",
+      "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+      "D06_MIGRACION_PERSISTENCIA"
+    ],
+    "evidence_schema": "LOUKSNAPG_CUSTOSZ_PRIMITIVE_REPAIR_EVIDENCE/1.0",
+    "evidence_must_bind": [
+      "source_commit",
+      "contract_sha256",
+      "bundle_sha256",
+      "repair_source_sha256",
+      "repair_test_source_sha256",
+      "primitive_report_sha256"
+    ],
+    "unit_test_fixtures_are_product_proof": false,
+    "candidate_repair_run_must_execute": true,
+    "required_for_release": [
+      "repair_preflight_status_PASS",
+      "all_three_repair_targets_PASS_PRIMITIVE_SMOKE",
+      "primitive_report_hash_verified",
+      "source_commit_contract_and_bundle_hashes_match"
+    ],
+    "global_certification_authority": "NONE",
+    "missing_or_failed_target_action": "HOLD_NOT_CERTIFIED",
+    "heavy_model_weight_download_count": 0,
+    "remote_commander_used": false
+  }
 }
