@@ -9,6 +9,13 @@ on:
       - "contracts/louksnapg/architecture-contract.v1.json"
       - "tools/louksnapg_architecture_contract.py"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
+      - ".github/workflows/cajita-louksna1-factory.yml"
+      - ".github/workflows/louksnapg-bundle-ci.yml"
+      - "tools/louksnapg_integral_gate.py"
+      - "tools/louksnapg_worker_mission.py"
+      - "docs/cajita-luna/LOUKSNAPG_ARCHITECTURAL_CONTRACT.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json"
   workflow_dispatch:
     inputs:
       source_run_id:
