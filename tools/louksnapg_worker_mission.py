@@ -107,7 +107,7 @@ def build_task(head: str, paths: dict[str, Path]) -> dict:
             "output_within_479000000_bytes",
             "runtime_archive_within_470000000_bytes",
             "input_hashes_and_protected_prefix_preserved",
-            "three_repaired_non_model_primitives_execute_on_exact_candidate",
+            "three_repaired_non_model_primitives_executed_on_exact_candidate_and_outcomes_bound",
             "candidate_bound_primitive_report_persisted",
         ],
         "expected_outputs": ["LOUKSNAPG.md", "LOUKSNAPG_BUILD_REPORT.json", "LOUKSNAPG_CUSTOSZV9_PRIMITIVE_REPAIR_EVIDENCE.json"],
@@ -340,6 +340,9 @@ def main(argv=None) -> int:
                 "--bundle-sha256", digest,
                 "--contract", str(paths["architecture_contract"]),
                 "--report", str(extended_report_path),
+                "--only-target", "D04_HERMENEUTICA_HG",
+                "--only-target", "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+                "--only-target", "D06_MIGRACION_PERSISTENCIA",
             ]
             extended_proc = subprocess.run(
                 extended_command, cwd=repo, env=os.environ.copy(),
@@ -362,7 +365,9 @@ def main(argv=None) -> int:
             and extended_obj.get("bundle_sha256") == digest
             and extended_obj.get("contract_sha256") == input_hashes["architecture_contract"]
             and extended_obj.get("coverage_execution") == "COMPLETE_DIAGNOSTIC_ONLY"
-            and len(targets) == 10
+            and len(targets) == len(repaired_target_ids)
+            and set(target_status) == set(repaired_target_ids)
+            and (extended_obj.get("summary") or {}).get("all_target_outcomes_recorded") is True
         )
         action_result["primitive_repair_evidence"] = {
             "schema": "LOUKSNAPG_CUSTOSZ_PRIMITIVE_REPAIR_EVIDENCE/1.0",
@@ -377,7 +382,7 @@ def main(argv=None) -> int:
             "target_status": target_status,
             "targeted_repairs": repaired_target_ids,
             "targeted_repairs_all_pass": repaired_pass,
-            "all_10_outcomes_recorded": exact_report_binding,
+            "all_target_outcomes_recorded": exact_report_binding,
             "summary": extended_obj.get("summary"),
             "stdout_tail": extended_proc.stdout[-5000:],
             "stderr_tail": extended_proc.stderr[-3000:],
@@ -451,7 +456,7 @@ def main(argv=None) -> int:
         and build_report.get("identity_preservation_status") == "PASS_SOURCE_IDENTITY_PRESERVED"
         and build_report.get("engine_replacement") == "FORBIDDEN"
         and action_result.get("architecture_contract_sha256") == input_hashes["architecture_contract"]
-        and action_result.get("primitive_repair_evidence", {}).get("all_10_outcomes_recorded") is True
+        and action_result.get("primitive_repair_evidence", {}).get("all_target_outcomes_recorded") is True
         and action_result.get("repair_preflight", {}).get("status") == "PASS"
     )
     # CUSTOSZ's coordinator uses COMPLETED for a successful bounded mission.
