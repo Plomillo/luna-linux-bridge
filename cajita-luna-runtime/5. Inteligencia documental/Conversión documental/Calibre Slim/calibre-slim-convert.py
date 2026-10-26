@@ -40,12 +40,22 @@ def _validated_archive_inventory(archive: Path) -> tuple[dict[str, bytes], dict[
     file_modes: dict[str, int] = {}
     directories: set[str] = set()
     seen: set[str] = set()
+    root_directory_seen = False
     with tarfile.open(archive, mode="r:xz") as bundle:
         for member in bundle.getmembers():
             raw = member.name
             parsed = PurePosixPath(raw)
             if "\\" in raw or parsed.is_absolute() or any(part == ".." for part in parsed.parts):
                 raise RuntimeError(f"unsafe archive path: {raw!r}")
+            # A tar archive may contain one explicit root-directory record. Accept
+            # only the exact "." / "./" directory marker; it does not map to an
+            # extracted child path. Any file/link named ".", alternate spelling,
+            # duplicate root marker, traversal, or absolute path remains rejected.
+            if raw in {".", "./"}:
+                if not member.isdir() or root_directory_seen:
+                    raise RuntimeError(f"unsafe or duplicate archive root path: {raw!r}")
+                root_directory_seen = True
+                continue
             parts = tuple(part for part in parsed.parts if part not in ("", "."))
             if not parts or (":" in parts[0]):
                 raise RuntimeError(f"unsafe archive path: {raw!r}")

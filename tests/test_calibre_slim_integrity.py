@@ -102,6 +102,52 @@ class CalibreSlimIntegrityTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "archive size mismatch|archive SHA-256 mismatch"):
             launcher.materialize_overlay(self.here)
 
+    def test_single_explicit_root_directory_record_is_safe_and_ignored(self):
+        # Many deterministic tar writers emit one top-level "." directory record.
+        # It is safe only as an explicit directory and must not materialize as a child.
+        root_archive = self.here / "root-directory.tar.xz"
+        with tarfile.open(root_archive, mode="w:xz") as archive:
+            root = tarfile.TarInfo(".")
+            root.type = tarfile.DIRTYPE
+            root.mode = 0o755
+            root.size = 0
+            archive.addfile(root)
+            for name, payload in self.members.items():
+                item = tarfile.TarInfo(name)
+                item.type = tarfile.REGTYPE
+                item.mode = 0o644
+                item.size = len(payload)
+                archive.addfile(item, io.BytesIO(payload))
+        files, modes, directories = launcher._validated_archive_inventory(root_archive)
+        self.assertEqual(set(files), set(self.members))
+        self.assertNotIn(".", directories)
+        self.assertIn("source/calibre", directories)
+
+    def test_root_path_as_file_or_duplicate_root_record_is_rejected(self):
+        for members in (("file",), ("duplicate",)):
+            with self.subTest(members=members):
+                bad = self.here / ("bad-root-" + members[0] + ".tar.xz")
+                with tarfile.open(bad, mode="w:xz") as archive:
+                    root = tarfile.TarInfo(".")
+                    root.type = tarfile.REGTYPE if members[0] == "file" else tarfile.DIRTYPE
+                    root.mode = 0o644
+                    root.size = 0
+                    archive.addfile(root, io.BytesIO(b"") if root.isfile() else None)
+                    if members[0] == "duplicate":
+                        root2 = tarfile.TarInfo("./")
+                        root2.type = tarfile.DIRTYPE
+                        root2.mode = 0o755
+                        root2.size = 0
+                        archive.addfile(root2)
+                    for name, payload in self.members.items():
+                        item = tarfile.TarInfo(name)
+                        item.type = tarfile.REGTYPE
+                        item.mode = 0o644
+                        item.size = len(payload)
+                        archive.addfile(item, io.BytesIO(payload))
+                with self.assertRaisesRegex(RuntimeError, "unsafe or duplicate archive root path"):
+                    launcher._validated_archive_inventory(bad)
+
     def test_archive_path_traversal_is_rejected(self):
         bad = self.here / "bad.tar.xz"
         build_archive(bad, {"../escape.py": b"pass\n"})
