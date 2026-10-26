@@ -126,6 +126,10 @@ jobs:
           factory = Path(".github/workflows/cajita-louksna1-factory.yml").read_text(encoding="utf-8")
           assert "Enforce LOUKSNAPG architectural contract before model asset access" in factory
           assert "STATIC_CONTRACT_CHECK_MUST_NOT_GRANT_PRODUCT_CERTIFICATION" in factory
+          assert "task_adapter_execution_pass_count" in factory
+          assert "task_adapter_quality_pass_count" in factory
+          assert "task_adapter_quality_fail_count" in factory
+          assert "task_adapter_pass_count":task_quality_pass_count in factory
           aux_path = Path(".github/workflows/louksnapg-kestra-auxiliary.yml")
           aux = yaml.safe_load(aux_path.read_text(encoding="utf-8"))
           aux_steps = aux["jobs"]["independently-validate-and-publish-product-artifact"]["steps"]
