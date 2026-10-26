@@ -207,6 +207,10 @@ jobs:
               "g24_signature_verification_status", "g24_signer_id",
               "architecture_contract_sha256", "architecture_contract_status",
               "primary_worker_id", "secondary_worker_id", "custosz_worker_evidence_sha256",
+              "custosz_repair_report_sha256", "custosz_repair_status", "custosz_repair_preflight_status",
+              "custosz_candidate_integrity_status", "custosz_repair_target_pass_count",
+              "custosz_repair_target_expected_count", "custosz_repair_source_commit",
+              "custosz_repair_bundle_sha256", "custosz_repair_contract_sha256", "custosz_repair_hash_verified",
               "official_source_review_status", "telemetry_evidence_sha256", "telemetry_status",
               "heavy_model_download_count", "remote_commander_used",
           }
@@ -228,6 +232,14 @@ jobs:
           assert "architecture_contract_status == 'PASS_CONTRACT_INTEGRITY'" in text
           assert "primary_worker_id == 'CUSTOSZ_V9'" in text
           assert "secondary_worker_id == 'KESTRA'" in text
+          assert "custosz_repair_status == 'PASS_THREE_TARGETED_PRIMITIVES'" in text
+          assert "custosz_repair_preflight_status == 'PASS'" in text
+          assert "custosz_candidate_integrity_status == 'PASS'" in text
+          assert "custosz_repair_target_pass_count == 3" in text
+          assert "custosz_repair_hash_verified == 'true'" in text
+          assert "custosz_repair_source_commit == inputs.source_commit" in text
+          assert "custosz_repair_bundle_sha256 == inputs.bundle_sha256" in text
+          assert "custosz_repair_contract_sha256 == inputs.architecture_contract_sha256" in text
           assert "official_source_review_status == 'PASS'" in text
           assert "telemetry_status == 'PASS'" in text
           assert "heavy_model_download_count == 0" in text
