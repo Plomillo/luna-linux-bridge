@@ -178,6 +178,79 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 with self.assertRaisesRegex(coverage.ProbeBlocked, "CALIBRE_OFFICIAL_RUNTIME_ASSET_NOT_PROVEN"):
                     coverage.probe_calibre(root)
 
+    def test_archive_detection_hashes_fixture_before_temp_cleanup(self):
+        with tempfile.TemporaryDirectory(prefix="extended-target-archive-detection-") as temp:
+            root = Path(temp)
+            relative = "6. Sistema Inteligente/Archivado/Detección de archivos"
+            module = root / relative / "siegfried_1-11-6_linux-x86_64_static"
+            module.mkdir(parents=True)
+            binary = module / "sf"
+            binary.write_text(
+                "#!/usr/bin/env python3\\n"
+                "import pathlib,sys\\n"
+                "assert pathlib.Path(sys.argv[-1]).is_file()\\n"
+                "print('{\\"matches\\":[{\\"format\\":\\"ZIP\\"}]}')\\n",
+                encoding="utf-8",
+            )
+            binary.chmod(0o755)
+            (root / relative / "CAJITA_MODULE.json").write_text(json.dumps({
+                "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
+                "target_id": "D06_ARCHIVADO_DETECCION",
+                "relative_path": relative,
+                "tree_integrity": {"sha256": "b" * 64},
+            }), encoding="utf-8")
+            (root / "command_subdomain_routing.json").write_text(json.dumps({
+                "schema": "CAJITA_COMMAND_SUBDOMAIN_ROUTING/1.0",
+                "targets": [{"id": "D06_ARCHIVADO_DETECCION", "path": relative}],
+            }), encoding="utf-8")
+            result = coverage.probe_archive_detection(root)
+            self.assertEqual(result["status"], coverage.PASS)
+            self.assertEqual(len(result["fixture_sha256"]), 64)
+            self.assertEqual(len(result["binary_sha256"]), 64)
+
+    def test_trealla_build_supplies_only_the_missing_documentation_prerequisite(self):
+        with tempfile.TemporaryDirectory(prefix="extended-target-trealla-build-") as temp:
+            root = Path(temp)
+            relative = "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24"
+            source = root / relative / "trealla-2.100.24"
+            (source / "samples").mkdir(parents=True)
+            (source / "Makefile").write_text("all: README.md\\n\\t@touch tpl\\n", encoding="utf-8")
+            (source / "samples" / "grammar.pl").write_text("sentence --> [fixture].\\n", encoding="utf-8")
+            (root / relative / "CAJITA_MODULE.json").write_text(json.dumps({
+                "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
+                "target_id": "D04_HERMENEUTICA_HG",
+                "relative_path": relative,
+                "tree_integrity": {"sha256": "c" * 64},
+            }), encoding="utf-8")
+            (root / "command_subdomain_routing.json").write_text(json.dumps({
+                "schema": "CAJITA_COMMAND_SUBDOMAIN_ROUTING/1.0",
+                "targets": [{"id": "D04_HERMENEUTICA_HG", "path": relative}],
+            }), encoding="utf-8")
+            calls = []
+            def fake_run(command, *, cwd=None, timeout=120, env=None, stdin=None):
+                calls.append((command, cwd))
+                if command[0] == "make":
+                    self.assertTrue((cwd / "README.md").is_file())
+                    self.assertIn("GIT_VERSION=2.100.24", command)
+                    (cwd / "tpl").write_text("#!/bin/sh\\necho true\\n", encoding="utf-8")
+                    (cwd / "tpl").chmod(0o755)
+                    return {"return_code": 0, "stdout_excerpt": "", "stderr_excerpt": "", "elapsed_seconds": 0.1}
+                return {"return_code": 0, "stdout_excerpt": "true\\n", "stderr_excerpt": "", "elapsed_seconds": 0.1}
+            with patch.object(coverage, "run_process", side_effect=fake_run):
+                result = coverage.probe_trealla(root)
+            self.assertEqual(result["status"], coverage.PASS)
+            self.assertFalse((source / "README.md").exists())
+            self.assertEqual(len(calls), 2)
+
+    def test_runtime_image_declares_native_build_and_offline_test_dependencies(self):
+        workflow = (REPOSITORY / ".github" / "workflows" / "cajita-louksna1-factory.yml").read_text(encoding="utf-8")
+        for package in ("git", "zlib1g-dev", "p7zip-full"):
+            self.assertIn(package, workflow)
+        for package in ("iniconfig==2.3.0", "pluggy==1.6.0", "packaging==25.0"):
+            self.assertIn(package, workflow)
+        source = (REPOSITORY / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+        self.assertIn('"--no-index", "--no-deps"', source)
+
     def test_status_contract_never_promotes_diagnostic_coverage(self):
         source = (REPOSITORY / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
         self.assertIn('"product_certification": "NOT_GRANTED"', source)

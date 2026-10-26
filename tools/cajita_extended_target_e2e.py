@@ -191,9 +191,16 @@ def probe_trealla(root: Path) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix="louksnapg-trealla-") as temp:
         build_root = Path(temp) / "trealla"
         shutil.copytree(source, build_root)
+        # The upstream Makefile lists README.md as a build prerequisite even
+        # though it is not compiled into the binary. The slim source overlay
+        # omits that documentation file, so restore a local marker only in the
+        # disposable build copy; never mutate the candidate source tree.
+        readme = build_root / "README.md"
+        if not readme.exists():
+            readme.write_text("Trealla Prolog v2.100.24 build prerequisite; source code remains hash-bound.\\n", encoding="utf-8")
         build = require_ok(
             run_process(
-                ["make", "-j1", "NOFFI=1", "NOSSL=1", "NOTHREADS=1", "ISOCLINE=1"],
+                ["make", "-j1", "GIT_VERSION=2.100.24", "NOFFI=1", "NOSSL=1", "NOTHREADS=1", "ISOCLINE=1"],
                 cwd=build_root,
                 timeout=900,
             ),
@@ -404,6 +411,7 @@ def probe_archive_detection(root: Path) -> dict[str, Any]:
         fixture = temp_path / "known-zip.zip"
         with zipfile.ZipFile(fixture, "w", compression=zipfile.ZIP_STORED) as archive:
             archive.writestr("fixture.txt", "louksnapg-format-identification-fixture\n")
+        fixture_sha256 = sha256_file(fixture)
         result = require_ok(run_process([str(executable), "-json", str(fixture)], timeout=15), "SIEGFRIED_FORMAT_IDENTIFICATION_FAILED")
         if "matches" not in result["stdout_excerpt"].casefold() and "zip" not in result["stdout_excerpt"].casefold():
             raise ProbeFailure("SIEGFRIED_KNOWN_ZIP_FORMAT_NOT_RECOGNIZED")
@@ -411,7 +419,7 @@ def probe_archive_detection(root: Path) -> dict[str, Any]:
         "status": PASS,
         "primitive": "FILE_FORMAT_IDENTIFICATION",
         "binary_sha256": sha256_file(binary),
-        "fixture_sha256": sha256_file(fixture),
+        "fixture_sha256": fixture_sha256,
         "result": result,
         "consumer_task_equivalence": "PASS_FOR_ZIP_FILE_IDENTIFICATION_ONLY",
         "certification": "NOT_GRANTED",
@@ -657,7 +665,9 @@ def probe_testing(root: Path) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix="louksnapg-pytest-") as temp:
         temp_path = Path(temp)
         site = temp_path / "site"
-        install_cmd = [sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "--no-index", "--target", str(site)]
+        # Install the bundled pytest wheel without resolving absent dependency wheels.
+        # Its pinned host dependencies are installed in the ephemeral test image; this probe remains offline.
+        install_cmd = [sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "--no-index", "--no-deps", "--target", str(site)]
         for directory in wheel_dirs:
             install_cmd.extend(["--find-links", str(directory)])
         install_cmd.append(str(wheel))
