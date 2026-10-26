@@ -23,10 +23,14 @@ class CustoszWorkerMissionTests(unittest.TestCase):
             self.assertIn("output_within_479000000_bytes", acceptance)
             self.assertIn("runtime_archive_within_470000000_bytes", acceptance)
             self.assertNotIn("output_within_470000000_bytes", acceptance)
-            self.assertEqual(task["authorized_scope"], "BUILD_LOUKSNAPG_SINGLE_FILE_CANDIDATE")
+            self.assertEqual(task["authorized_scope"], "VERIFY_REPAIR_PRIMITIVES_AND_BUILD_LOUKSNAPG_CANDIDATE")
             self.assertEqual(task["permitted_effects"], ["WRITE_EVIDENCE"])
             self.assertIn("NO_SELF_CERTIFICATION", task["preconditions"])
             self.assertIn("FAIL_CLOSED", task["preconditions"])
+            self.assertIn("REPAIR_SOURCE_HASHES_PINNED", task["preconditions"])
+            self.assertIn("REAL_CANDIDATE_PRIMITIVE_TESTS_REQUIRED", task["preconditions"])
+            self.assertEqual(set(task["required_capabilities"]), {"verify_repair_primitives", "build_single_file_distribution"})
+            self.assertIn("three_repaired_non_model_primitives_executed_on_exact_candidate_and_outcomes_bound", acceptance)
 
     def test_worker_cannot_self_certify_or_expand_scope_silently(self):
         with tempfile.TemporaryDirectory(prefix="louksnapg-worker-contract-") as tmp:
