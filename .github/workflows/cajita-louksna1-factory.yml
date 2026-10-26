@@ -29,6 +29,7 @@ on:
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
       - "tools/louksnapg_worker_mission.py"
+      - "tests/test_louksnapg_worker_mission.py"
       - "tools/louksnapg_integral_gate.py"
       - "tests/test_louksnapg_bundle.py"
       - "tools/louksnapg_architecture_contract.py"
