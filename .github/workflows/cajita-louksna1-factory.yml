@@ -993,6 +993,69 @@ jobs:
           target_engine_pass_count=sum(1 for x in target_engine_rows if x.get("status")=="PASS_TARGET_ENGINE_EXECUTION" and x.get("exit_code")==0)
           target_engine_expected_count=task_report.get("target_engine_expected_count",6)
           target_engine_status=task_report.get("target_engine_smoke_status","NOT_COMPLETED")
+          # Combine the six source-bound engine primitives with the ten additional
+          # non-model probes. This is exact diagnostic coverage of the 16 non-model
+          # targets, not 16 consumer-task certifications and not the 21-target G24 gate.
+          primitive_target_ids=[
+            "D02_ORQUESTADOR","D02_CONFESION_ECLESIAL_REFORMADA","D02_MULTI_INTERDISCIPLINAR",
+            "D06_CONSOLA","D06_MEMORIA_GOBERNADA","D06_MOTOR_PROTOCOLAR",
+            "D04_HERMENEUTICA_HG","D04_TRADUCCION_LENGUAS_ANTIGUAS","D05_CALIBRE",
+            "D06_ANTI_ALUCINACIONES","D06_ARCHIVADO_DETECCION","D06_COGNITIVE_CI_CD",
+            "D06_MIGRACION_PERSISTENCIA","D06_PORTABILIDAD_BASE","D06_RUNTIME_ANDROID_WINDOWS","D06_TESTING"
+          ]
+          engine_by_id={row.get("target_id"):row for row in target_engine_rows if isinstance(row,dict) and row.get("target_id")}
+          extended_by_id={row.get("target_id"):row for row in ext_rows if isinstance(row,dict) and row.get("target_id")}
+          primitive_rows=[]
+          for target_id in primitive_target_ids:
+            if target_id in engine_by_id:
+              source_row=engine_by_id[target_id]
+              status="PASS_PRIMITIVE_SMOKE" if source_row.get("status")=="PASS_TARGET_ENGINE_EXECUTION" and source_row.get("exit_code")==0 else "FAIL"
+              scope="SOURCE_BOUND_TARGET_ENGINE_SMOKE"
+              evidence_sha256=hashlib.sha256(json.dumps(source_row,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
+              detail={key:source_row.get(key) for key in ("adapter_id","operation","engine","execution_scope","reason","error_type")}
+            elif target_id in extended_by_id:
+              source_row=extended_by_id[target_id]
+              status=source_row.get("status") if source_row.get("status") in {"PASS_PRIMITIVE_SMOKE","BLOCKED","FAIL"} else "FAIL"
+              scope="EXTENDED_NON_MODEL_PRIMITIVE_PROBE"
+              evidence_sha256=hashlib.sha256(json.dumps(source_row,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
+              detail={key:source_row.get(key) for key in ("purpose","reason","elapsed_seconds","result")}
+            else:
+              status="NOT_OBSERVED"
+              scope="MISSING_TARGET_EVIDENCE"
+              evidence_sha256=None
+              detail={}
+            primitive_rows.append({"target_id":target_id,"status":status,"scope":scope,"evidence_sha256":evidence_sha256,"details":detail})
+          primitive_observed_ids=[row["target_id"] for row in primitive_rows if row["status"]!="NOT_OBSERVED"]
+          primitive_pass_count=sum(row["status"]=="PASS_PRIMITIVE_SMOKE" for row in primitive_rows)
+          primitive_blocked_count=sum(row["status"]=="BLOCKED" for row in primitive_rows)
+          primitive_fail_count=sum(row["status"]=="FAIL" for row in primitive_rows)
+          primitive_missing_count=sum(row["status"]=="NOT_OBSERVED" for row in primitive_rows)
+          primitive_coverage_binding_ok=(
+            release.get("source_commit")==os.environ["LOUKSNA_FACTORY_HEAD_SHA"]
+            and os.environ.get("BUNDLE_SHA256")==hashlib.sha256(p.read_bytes()).hexdigest()
+            and ext_report.get("source_commit")==release.get("source_commit")
+            and ext_report.get("bundle_sha256")==os.environ.get("BUNDLE_SHA256")
+            and ext_report.get("contract_sha256")==hashlib.sha256(Path("contracts/louksnapg/architecture-contract.v1.json").read_bytes()).hexdigest()
+          )
+          primitive_coverage={
+            "schema":"LOUKSNAPG_NON_MODEL_PRIMITIVE_COVERAGE/1.0",
+            "expected_target_count":16,"observed_target_count":len(primitive_observed_ids),
+            "unique_target_count":len(set(primitive_observed_ids)),
+            "pass_count":primitive_pass_count,"blocked_count":primitive_blocked_count,
+            "fail_count":primitive_fail_count,"missing_count":primitive_missing_count,
+            "all_16_target_ids_present":len(primitive_rows)==16 and set(primitive_observed_ids)==set(primitive_target_ids),
+            "all_16_primitive_smokes_passed":primitive_pass_count==16 and primitive_blocked_count==0 and primitive_fail_count==0 and primitive_missing_count==0,
+            "evidence_subject_binding":"PASS" if primitive_coverage_binding_ok else "FAIL",
+            "source_commit":release.get("source_commit"),
+            "bundle_sha256":hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None,
+            "contract_sha256":hashlib.sha256(Path("contracts/louksnapg/architecture-contract.v1.json").read_bytes()).hexdigest(),
+            "task_adapter_report_sha256":task_sha,
+            "extended_target_report_sha256":os.environ.get("EXT_REPORT_SHA256") or (hashlib.sha256(ext_path.read_bytes()).hexdigest() if ext_path.is_file() else None),
+            "results":primitive_rows,
+            "scope":"16_NON_MODEL_PRIMITIVE_SMOKES_ONLY; NOT_21_TARGET_CONSUMER_TASK_CERTIFICATION",
+            "product_certification":"NOT_GRANTED"
+          }
+          primitive_coverage_sha256=hashlib.sha256(json.dumps(primitive_coverage,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
           result={"schema":"LOUKSNA1_G24_EVIDENCE/1.0","gate":"G24","status":os.environ["STATUS"],
             "decision":os.environ["STATUS"] if os.environ["STATUS"].startswith("PASS_") else "NOT_GRANTED",
             "package_sha256":hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None,
@@ -1017,6 +1080,16 @@ jobs:
             "target_engine_expected_count":target_engine_expected_count,
             "target_engine_scope":"SIX_SOURCE_BOUND_RUNTIME_ENGINE_SMOKES_ONLY",
             "target_engine_task_coverage":"NOT_ESTABLISHED",
+            "primitive_target_coverage":primitive_coverage,
+            "primitive_target_coverage_sha256":primitive_coverage_sha256,
+            "primitive_target_expected_count":16,
+            "primitive_target_observed_count":len(primitive_observed_ids),
+            "primitive_target_pass_count":primitive_pass_count,
+            "primitive_target_blocked_count":primitive_blocked_count,
+            "primitive_target_fail_count":primitive_fail_count,
+            "primitive_target_missing_count":primitive_missing_count,
+            "primitive_target_evidence_binding_status":"PASS" if primitive_coverage_binding_ok else "FAIL",
+            "primitive_target_coverage_status":"PASS_DIAGNOSTIC_SCOPE_ONLY" if primitive_coverage_binding_ok and len(primitive_observed_ids)==16 and len(set(primitive_observed_ids))==16 else "HOLD",
             "extended_target_report_sha256":os.environ.get("EXT_REPORT_SHA256") or (hashlib.sha256(ext_path.read_bytes()).hexdigest() if ext_path.is_file() else None),
             "extended_target_report_source_commit":ext_report.get("source_commit"),
             "extended_target_report_bundle_sha256":ext_report.get("bundle_sha256"),
