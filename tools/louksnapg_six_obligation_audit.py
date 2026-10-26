@@ -120,6 +120,12 @@ def _result(status: str, reason_codes: list[str], details: dict[str, Any] | None
     }
 
 
+def worker_scope_matches_contract(contract: dict[str, Any], worker: dict[str, Any]) -> bool:
+    mission = contract.get("worker_mission", {})
+    expected_scope = mission.get("authorized_scope") if isinstance(mission, dict) else None
+    return isinstance(expected_scope, str) and bool(expected_scope) and worker.get("authorized_scope") == expected_scope
+
+
 def _event_fields_valid(row: Any) -> bool:
     if not isinstance(row, dict):
         return False
@@ -205,14 +211,10 @@ def evaluate(
 
     worker_run_id = worker.get("worker_run_id") or worker.get("run_id")
     worker_artifact = worker.get("artifact", {}) if isinstance(worker.get("artifact", {}), dict) else {}
-    mission_contract = contract.get("worker_mission", {}) if isinstance(contract.get("worker_mission", {}), dict) else {}
-    expected_worker_scope = mission_contract.get("authorized_scope")
     worker_receipt_ok = (
         worker.get("worker_status") == "PASS"
         and worker.get("worker_contract_role") == "CUSTOSZ_V9"
-        and isinstance(expected_worker_scope, str)
-        and bool(expected_worker_scope)
-        and worker.get("authorized_scope") == expected_worker_scope
+        and worker_scope_matches_contract(contract, worker)
         and bool(worker_run_id)
         and bool(worker.get("workflow_url"))
         and worker.get("source_commit") == source_commit
