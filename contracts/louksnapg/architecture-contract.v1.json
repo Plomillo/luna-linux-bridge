@@ -281,5 +281,9 @@
     "semantic_quality_pass_required": true,
     "release_implication_if_missing": "HOLD_NOT_CERTIFIED"
   },
-  "source_catalog_reviewed_at_utc": "2026-10-26T07:22:00Z"
+  "source_catalog_reviewed_at_utc": "2026-10-26T07:22:00Z",
+  "global_luna_hard_max_bytes": 479000000,
+  "candidate_distribution_max_bytes": 479000000,
+  "cajita_runtime_archive_max_bytes": 470000000,
+  "byte_budget_policy": "GLOBAL_LUNA_HARD_MAX_BYTES_APPLIES_TO_COMPLETE_SINGLE_FILE_DISTRIBUTION; NO_REWARD_FOR_APPROACHING_CAP; CAJITA_RUNTIME_CAP_IS_SEPARATE"
 }
