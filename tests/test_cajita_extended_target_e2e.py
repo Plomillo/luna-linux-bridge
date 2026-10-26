@@ -537,6 +537,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             self.assertIn(package, workflow)
         for package in ("iniconfig==2.3.0", "pluggy==1.6.0", "packaging==25.0", "pygments==2.21.0", "py==1.11.0"):
             self.assertIn(package, workflow)
+        self.assertIn("espeak-ng build-essential bison flex tcl git libreadline-dev zlib1g-dev", workflow)
         self.assertIn("build-essential bison flex tcl git", workflow)
         self.assertIn("sudo apt-get install -y build-essential bison flex git", workflow)
         source = (REPOSITORY / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
