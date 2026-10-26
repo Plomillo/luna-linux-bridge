@@ -113,6 +113,7 @@ class FactorySafetyTests(unittest.TestCase):
      binary=cwd/"tpl"; binary.write_bytes(Path(shutil.which("true")).read_bytes()); binary.chmod(binary.stat().st_mode|stat.S_IXUSR)
      out="trealla build fixture\n"
     elif command and command[0]=="ldd": out="statically linked\n"
+    elif command and command[0]=="objdump": out="GLIBC_2.17 GLIBC_2.35\\n"
     else: out="ok\n"
     return SimpleNamespace(returncode=0,stdout=out,stderr="")
    receipt=build_native_engine_overlays(runtime,"a"*40,runner=fake_run)
