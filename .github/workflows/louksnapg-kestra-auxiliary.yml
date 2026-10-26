@@ -451,10 +451,29 @@ jobs:
           import hashlib,json,os
           from pathlib import Path
           build=json.loads(Path("candidate/LOUKSNAPG_BUILD_REPORT.json").read_text(encoding="utf-8"))
-          worker=json.loads(Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json").read_text(encoding="utf-8"))
+          worker_path=Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json")
+          worker=json.loads(worker_path.read_text(encoding="utf-8"))
           validation=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
           functional=json.loads(Path("candidate/LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json").read_text(encoding="utf-8"))
           bundle=Path("candidate/LOUKSNAPG.md")
+          primitive_path=Path("candidate/LOUKSNAPG_CUSTOSZV9_PRIMITIVE_REPAIR_EVIDENCE.json")
+          primitive=json.loads(primitive_path.read_text(encoding="utf-8")) if primitive_path.is_file() and not primitive_path.is_symlink() else {}
+          repair=worker.get("repair_mission",{}) if isinstance(worker.get("repair_mission"),dict) else {}
+          repair_target_status={row.get("target_id"):row.get("status") for row in primitive.get("targets",[]) if isinstance(row,dict)}
+          repair_sha=hashlib.sha256(primitive_path.read_bytes()).hexdigest() if primitive_path.is_file() and not primitive_path.is_symlink() else ""
+          repair_targets_expected={"D04_HERMENEUTICA_HG","D04_TRADUCCION_LENGUAS_ANTIGUAS","D06_MIGRACION_PERSISTENCIA"}
+          repair_pass_count=sum(1 for target in repair_targets_expected if repair_target_status.get(target)=="PASS_PRIMITIVE_SMOKE")
+          repair_hash_verified=bool(repair_sha) and repair_sha==repair.get("primitive_report_sha256") and repair.get("primitive_report_hash_verified") is True
+          repair_subject_bound=repair.get("source_commit")==os.environ["SOURCE_COMMIT"] and repair.get("bundle_sha256")==hashlib.sha256(bundle.read_bytes()).hexdigest() and repair.get("contract_sha256")==os.environ.get("CONTRACT_SHA256","")
+          repair_evidence_valid=(
+            repair.get("schema")=="LOUKSNAPG_CUSTOSZ_REPAIR_MISSION_RECEIPT/1.0"
+            and repair_subject_bound
+            and repair_hash_verified
+            and repair.get("repair_preflight_status")=="PASS"
+            and repair.get("candidate_integrity_status")=="PASS"
+            and set(repair_target_status)==repair_targets_expected
+            and repair_pass_count==3
+          )
           token=os.environ.get("KESTRA_API_TOKEN","")
           base=os.environ.get("KESTRA_URL","").rstrip("/")
           receipt={
@@ -464,6 +483,14 @@ jobs:
             "bundle_bytes":bundle.stat().st_size,
             "bundle_sha256":hashlib.sha256(bundle.read_bytes()).hexdigest(),
             "integrity_status":"PASS",
+            "custosz_repair_status":repair.get("status","NOT_ESTABLISHED"),
+            "custosz_repair_preflight_status":repair.get("repair_preflight_status","NOT_ESTABLISHED"),
+            "custosz_candidate_integrity_status":repair.get("candidate_integrity_status","NOT_ESTABLISHED"),
+            "custosz_repair_report_sha256":repair_sha or None,
+            "custosz_repair_hash_verified":repair_hash_verified,
+            "custosz_repair_target_pass_count":repair_pass_count,
+            "custosz_repair_target_expected_count":len(repair_targets_expected),
+            "custosz_repair_subject_binding_status":"PASS" if repair_subject_bound else "HOLD",
             "functional_evidence_status":functional.get("status","NOT_ESTABLISHED"),
             "g23_signature_verification_status":"NOT_ESTABLISHED",
               "g23_producer_id":"NOT_ESTABLISHED",
@@ -505,6 +532,16 @@ jobs:
               "primary_worker_id":"CUSTOSZ_V9",
               "secondary_worker_id":"KESTRA",
               "custosz_worker_evidence_sha256":os.environ.get("CUSTOSZ_RECEIPT_SHA256",""),
+              "custosz_repair_report_sha256":repair_sha,
+              "custosz_repair_status":repair.get("status","NOT_ESTABLISHED"),
+              "custosz_repair_preflight_status":repair.get("repair_preflight_status","NOT_ESTABLISHED"),
+              "custosz_candidate_integrity_status":repair.get("candidate_integrity_status","NOT_ESTABLISHED"),
+              "custosz_repair_target_pass_count":str(repair_pass_count),
+              "custosz_repair_target_expected_count":str(len(repair_targets_expected)),
+              "custosz_repair_source_commit":repair.get("source_commit",""),
+              "custosz_repair_bundle_sha256":repair.get("bundle_sha256",""),
+              "custosz_repair_contract_sha256":repair.get("contract_sha256",""),
+              "custosz_repair_hash_verified":"true" if repair_evidence_valid else "false",
               "official_source_review_status":"NOT_ESTABLISHED",
               "telemetry_evidence_sha256":os.environ.get("TELEMETRY_SHA256",""),
               "telemetry_status":"INCOMPLETE_HOLD",
