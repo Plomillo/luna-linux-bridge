@@ -303,14 +303,20 @@ def evaluate(
         },
     )
 
+    g24_evidence_subject_bound = (
+        g24_evidence.get("source_commit") == source_commit
+        and g24_evidence.get("package_sha256") == bundle_sha
+    )
     g23_functional_pass = (
-        functional_gate.get("decision") == "PASS"
-        and isinstance(g24_evidence.get("integral_functional_evidence_decision"), str)
+        functional_gate_subject_bound
+        and g24_evidence_subject_bound
+        and functional_gate.get("decision") == "PASS"
         and g24_evidence.get("integral_functional_evidence_decision") == "PASS"
         and bool(g24_evidence.get("g23_signed_functional_attestation_sha256"))
     )
     g24_granted = (
-        g24_evidence.get("decision") == "GRANTED"
+        g24_evidence_subject_bound
+        and g24_evidence.get("decision") == "GRANTED"
         and g24_evidence.get("g24_signature_verification_status") == "PASS_VERIFIED"
     )
     c5_ok = (
