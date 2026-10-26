@@ -84,7 +84,7 @@ jobs:
           assert flow["id"] == "louksnapg_bundle_audit"
           assert flow["namespace"] == "louksna.kestra"
           inputs = {row["id"]: row for row in flow["inputs"]}
-          assert inputs["max_bytes"]["defaults"] == 490000000
+          assert inputs["max_bytes"]["defaults"] == 479000000
           required = {
               "source_commit", "bundle_sha256", "bundle_bytes", "document_sha256",
               "runtime_source_sha256", "worker_status", "independent_integrity_status",
