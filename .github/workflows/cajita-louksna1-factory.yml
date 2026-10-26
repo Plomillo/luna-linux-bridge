@@ -11,6 +11,7 @@ on:
       - "tools/cajita_runtime_factory.py"
       - "tools/cajita_architecture_binding.py"
       - "tools/cajita_task_e2e.py"
+      - "tools/cajita_extended_target_e2e.py"
       - "tools/cajita_axiom_source_loader.py"
       - "tests/test_cajita_axiom_source_loader.py"
       - "tests/test_cajita_runtime_factory.py"
@@ -24,6 +25,7 @@ on:
       - "tests/test_cajita_task_adapters.py"
       - "tests/test_cajita_target_adapters.py"
       - "tests/test_cajita_task_e2e.py"
+      - "tests/test_cajita_extended_target_e2e.py"
       - "tools/cajita_axiom_graph_audit.py"
       - "tests/test_cajita_axiom_graph_audit.py"
       - "tools/louksnapg_bundle.py"
@@ -794,7 +796,10 @@ jobs:
           test -f tools/cajita_task_e2e.py
           test ! -L tools/cajita_task_e2e.py
           test -s tools/cajita_task_e2e.py
-          python -m py_compile tools/cajita_task_e2e.py
+          test -f tools/cajita_extended_target_e2e.py
+          test ! -L tools/cajita_extended_target_e2e.py
+          test -s tools/cajita_extended_target_e2e.py
+          python -m py_compile tools/cajita_task_e2e.py tools/cajita_extended_target_e2e.py
 
       - name: Download candidate for runtime smoke
         uses: actions/download-artifact@v4
@@ -841,7 +846,18 @@ jobs:
           CPUMAX=""
           SMOKE_RC=125
           TASK_RC=125
+          EXT_RC=125
+          EXT_PASS_COUNT=0
+          EXT_BLOCKED_COUNT=0
+          EXT_FAIL_COUNT=0
+          EXT_EXPECTED_COUNT=10
+          EXT_REPORT_SHA256=""
           CONTAINER_RC=125
+          EXT_ROOT="$RUNNER_TEMP/louksnapg-extended-runtime"
+          BUNDLE_SHA256="$(sha256sum evidence/louksna1-candidate/LOUKSNAPG.md | awk '{print $1}')"
+          if [ "$VALIDATOR_RC" -eq 0 ] && [ -d "$ROOT" ]; then
+            cp -a "$ROOT" "$EXT_ROOT"
+          fi
           if [ "$BUILD_RC" -eq 0 ]; then
             docker run --rm --memory=1073741824 --memory-swap=1073741824 --cpus=1 \
               -e OMP_NUM_THREADS=1 -e OPENBLAS_NUM_THREADS=1 -e MKL_NUM_THREADS=1 -e NUMEXPR_NUM_THREADS=1 \
@@ -870,6 +886,39 @@ jobs:
               cat "$RUNNER_TEMP/task-adapter-e2e-raw.json"
               echo "=== CAJITA_TASK_ADAPTER_E2E_RESULT_END ==="
             fi
+            # Run the ten uncovered non-model primitive probes against a writable
+            # copy of the independently extracted candidate. The exact product is
+            # mounted read-only in the model E2E container and is never modified.
+            if [ -d "$EXT_ROOT" ]; then
+              docker run --rm --memory=1073741824 --memory-swap=1073741824 --cpus=1 \
+                -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \
+                -e TOKENIZERS_PARALLELISM=false -e OMP_NUM_THREADS=1 -e OPENBLAS_NUM_THREADS=1 \
+                -e SOURCE_COMMIT="$LOUKSNA_FACTORY_HEAD_SHA" -e BUNDLE_SHA256="$BUNDLE_SHA256" \
+                -v "$EXT_ROOT:/extended-runtime:rw" -v "$RUNNER_TEMP:/telemetry:rw" \
+                -v "$GITHUB_WORKSPACE/tools/cajita_extended_target_e2e.py:/harness/cajita_extended_target_e2e.py:ro" \
+                -v "$GITHUB_WORKSPACE/contracts/louksnapg/architecture-contract.v1.json:/harness/architecture-contract.v1.json:ro" \
+                -w /extended-runtime cajita-louksna1-smoke sh -lc \
+                'python /harness/cajita_extended_target_e2e.py --root /extended-runtime --source-commit "$SOURCE_COMMIT" --bundle-sha256 "$BUNDLE_SHA256" --contract /harness/architecture-contract.v1.json --report /telemetry/extended-target-e2e.json > /telemetry/extended-target-e2e.log 2>&1; rc=$?; echo "$rc" > /telemetry/extended-target-e2e.rc; cat /telemetry/extended-target-e2e.log; exit "$rc"'
+              EXT_RC=$?
+            fi
+            if [ -f "$RUNNER_TEMP/extended-target-e2e.json" ]; then
+              EXT_REPORT_SHA256="$(sha256sum "$RUNNER_TEMP/extended-target-e2e.json" | awk '{print $1}')"
+              readarray -t EXT_SUMMARY < <(python - "$RUNNER_TEMP/extended-target-e2e.json" <<'PY'
+          import json,sys
+          d=json.loads(open(sys.argv[1],encoding="utf-8").read())
+          rows=d.get("targets",[])
+          print(sum(r.get("status")=="PASS_PRIMITIVE_SMOKE" for r in rows))
+          print(sum(r.get("status")=="BLOCKED" for r in rows))
+          print(sum(r.get("status")=="FAIL" for r in rows))
+          print(len(rows))
+          PY
+              )
+              EXT_PASS_COUNT="${EXT_SUMMARY[0]:-0}"
+              EXT_BLOCKED_COUNT="${EXT_SUMMARY[1]:-0}"
+              EXT_FAIL_COUNT="${EXT_SUMMARY[2]:-0}"
+              EXT_EXPECTED_COUNT="${EXT_SUMMARY[3]:-0}"
+              echo "EXTENDED_TARGET_COUNTS pass=$EXT_PASS_COUNT blocked=$EXT_BLOCKED_COUNT fail=$EXT_FAIL_COUNT expected=$EXT_EXPECTED_COUNT"
+            fi
             MEMMAX="$(cat "$RUNNER_TEMP/cgroup-memory-max.txt" 2>/dev/null)"
             CPUMAX="$(cat "$RUNNER_TEMP/cgroup-cpu-max.txt" 2>/dev/null)"
             PEAK="$(cat "$RUNNER_TEMP/cgroup-memory-peak.txt" 2>/dev/null)"
@@ -893,19 +942,19 @@ jobs:
               > "$RUNNER_TEMP/LOUKSNAPG_FUNCTIONAL_GATE.log" 2>&1
             FUNCTIONAL_GATE_RC=$?
             cat "$RUNNER_TEMP/LOUKSNAPG_FUNCTIONAL_GATE.log"
-            if [ "$VALIDATOR_RC" -eq 0 ] && [ "$SMOKE_RC" -eq 0 ] && [ "$TASK_RC" -eq 0 ] && [ "$FUNCTIONAL_GATE_RC" -eq 0 ] && [ "$MEMMAX" = "1073741824" ] && [ "$CPUMAX" = "100000 100000" ] && [ -n "$PEAK" ] && [ "$PEAK" -le 1073741824 ]; then
+            if [ "$VALIDATOR_RC" -eq 0 ] && [ "$SMOKE_RC" -eq 0 ] && [ "$TASK_RC" -eq 0 ] && [ "$FUNCTIONAL_GATE_RC" -eq 0 ] && [ "$EXT_RC" -eq 0 ] && [ "$EXT_PASS_COUNT" -eq 10 ] && [ "$EXT_BLOCKED_COUNT" -eq 0 ] && [ "$EXT_FAIL_COUNT" -eq 0 ] && [ "$EXT_EXPECTED_COUNT" -eq 10 ] && [ "$MEMMAX" = "1073741824" ] && [ "$CPUMAX" = "100000 100000" ] && [ -n "$PEAK" ] && [ "$PEAK" -le 1073741824 ]; then
               STATUS="PASS_INTEGRAL_FUNCTIONAL_EVIDENCE_READY_FOR_SEPARATE_G24"
               REASON="ALL_21_REAL_TARGETS_AND_VERIFIED_G23_EVIDENCE_PASS_WITH_EFFECTIVE_ONE_CPU_1_GIB_LIMITS"
             else
               STATUS="HOLD_INTEGRAL_FUNCTIONAL_EVIDENCE_INCOMPLETE"
-              REASON="INTEGRAL_GATE_RC_${FUNCTIONAL_GATE_RC}; VALIDATOR_RC_${VALIDATOR_RC}; SMOKE_RC_${SMOKE_RC}; TASK_RC_${TASK_RC}; NO_G24_CERTIFICATION_GRANTED"
+              REASON="INTEGRAL_GATE_RC_${FUNCTIONAL_GATE_RC}; VALIDATOR_RC_${VALIDATOR_RC}; SMOKE_RC_${SMOKE_RC}; TASK_RC_${TASK_RC}; EXT_RC_${EXT_RC}; EXT_PASS_${EXT_PASS_COUNT}/10; EXT_BLOCKED_${EXT_BLOCKED_COUNT}; EXT_FAIL_${EXT_FAIL_COUNT}; NO_G24_CERTIFICATION_GRANTED"
             fi
           else
             STATUS="HOLD_INTEGRAL_FUNCTIONAL_EVIDENCE_INCOMPLETE"
             FUNCTIONAL_GATE_RC=125
             REASON="SMOKE_IMAGE_BUILD_FAILED"
           fi
-          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC TASK_RC BUILD_RC VALIDATOR_RC FUNCTIONAL_GATE_RC
+          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC TASK_RC EXT_RC EXT_PASS_COUNT EXT_BLOCKED_COUNT EXT_FAIL_COUNT EXT_EXPECTED_COUNT EXT_REPORT_SHA256 BUILD_RC VALIDATOR_RC FUNCTIONAL_GATE_RC BUNDLE_SHA256
           python - <<'PY'
           import hashlib,json,os,zipfile
           from pathlib import Path
@@ -930,6 +979,16 @@ jobs:
           task_quality_pass_count=sum(1 for x in task_rows if x.get("status")=="PASS_FUNCTIONAL_EXECUTION" and x.get("exit_code")==0 and (x.get("quality_acceptance") or {}).get("status")=="PASS")
           task_quality_fail_count=sum(1 for x in task_rows if (x.get("quality_acceptance") or {}).get("status")=="FAIL")
           task_quality_status="PASS" if task_report.get("status")=="PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY" and task_quality_pass_count==5 else "FAIL_OR_NOT_ESTABLISHED"
+          ext_path=Path(os.environ["RUNNER_TEMP"])/"extended-target-e2e.json"
+          ext_report=json.loads(ext_path.read_text(encoding="utf-8")) if ext_path.is_file() else {"coverage_execution":"NOT_COMPLETED","targets":[],"summary":{}}
+          ext_rows=ext_report.get("targets",[]) if isinstance(ext_report.get("targets",[]),list) else []
+          ext_summary=ext_report.get("summary",{}) if isinstance(ext_report.get("summary",{}),dict) else {}
+          ext_pass_count=sum(1 for row in ext_rows if row.get("status")=="PASS_PRIMITIVE_SMOKE")
+          ext_blocked_count=sum(1 for row in ext_rows if row.get("status")=="BLOCKED")
+          ext_fail_count=sum(1 for row in ext_rows if row.get("status")=="FAIL")
+          ext_count=len(ext_rows)
+          ext_integrity_ok=(ext_report.get("source_commit")==os.environ["LOUKSNA_FACTORY_HEAD_SHA"] and ext_report.get("bundle_sha256")==os.environ.get("BUNDLE_SHA256") and ext_report.get("contract_sha256") and ext_summary.get("all_target_outcomes_recorded") is True)
+          ext_quality_status="PASS_ALL_10_PRIMITIVES" if ext_integrity_ok and ext_count==10 and ext_pass_count==10 and ext_blocked_count==0 and ext_fail_count==0 else "HOLD_OR_NOT_ESTABLISHED"
           target_engine_rows=task_report.get("target_engine_results",[])
           target_engine_pass_count=sum(1 for x in target_engine_rows if x.get("status")=="PASS_TARGET_ENGINE_EXECUTION" and x.get("exit_code")==0)
           target_engine_expected_count=task_report.get("target_engine_expected_count",6)
@@ -958,13 +1017,26 @@ jobs:
             "target_engine_expected_count":target_engine_expected_count,
             "target_engine_scope":"SIX_SOURCE_BOUND_RUNTIME_ENGINE_SMOKES_ONLY",
             "target_engine_task_coverage":"NOT_ESTABLISHED",
+            "extended_target_report_sha256":os.environ.get("EXT_REPORT_SHA256") or (hashlib.sha256(ext_path.read_bytes()).hexdigest() if ext_path.is_file() else None),
+            "extended_target_report_source_commit":ext_report.get("source_commit"),
+            "extended_target_report_bundle_sha256":ext_report.get("bundle_sha256"),
+            "extended_target_report_contract_sha256":ext_report.get("contract_sha256"),
+            "extended_target_coverage_execution":ext_report.get("coverage_execution","NOT_COMPLETED"),
+            "extended_target_expected_count":10,
+            "extended_target_observed_count":ext_count,
+            "extended_target_pass_count":ext_pass_count,
+            "extended_target_blocked_count":ext_blocked_count,
+            "extended_target_fail_count":ext_fail_count,
+            "extended_target_outcomes_complete":ext_summary.get("all_target_outcomes_recorded") is True,
+            "extended_target_primitive_status":ext_quality_status,
+            "extended_target_certification_scope":"DIAGNOSTIC_PRIMITIVE_SMOKES_ONLY_NOT_CONSUMER_TASK_CERTIFICATION",
             "image_build_return_code":int(os.environ["BUILD_RC"]),
             "bundle_validation_return_code":int(os.environ.get("VALIDATOR_RC","125")),
             "distribution_artifact":"LOUKSNAPG.md",
             "distribution_bytes":p.stat().st_size if p.is_file() else None,
             "memory_max_bytes":os.environ.get("MEMMAX") or None,"cpu_quota":os.environ.get("CPUMAX") or None,
             "memory_peak_bytes":int(os.environ["PEAK"]) if os.environ.get("PEAK","").isdigit() else None,
-            "scope":"SIX_DOMAIN_STARTUP_SMOKE_PLUS_FIVE_KNOWN_ANSWER_SYNTHETIC_MODEL_TASKS_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_AND_FAIL_CLOSED_ORCHESTRATION_GUARD",
+            "scope":"SIX_DOMAIN_STARTUP_SMOKE_PLUS_FIVE_MODEL_TASK_DIAGNOSTICS_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_PLUS_TEN_EXTENDED_NON_MODEL_PRIMITIVE_PROBES; DIAGNOSTIC_COVERAGE_IS_NOT_INTEGRAL_CERTIFICATION",
             "task_adapters":"PASS_FOR_DECLARED_SCOPE" if task_status=="PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY" else "FAIL_OR_NOT_COMPLETED",
             "semantic_quality_equivalence":"NOT_ESTABLISHED","all_21_target_adapters":"NOT_ESTABLISHED",
             "runtime_engine_scope_registration":"NOT_A_CONSUMER_TASK_ADAPTER_COMPLETION",
@@ -1010,6 +1082,9 @@ jobs:
             ${{ runner.temp }}/task-adapter-e2e.log
             ${{ runner.temp }}/task-adapter-e2e-raw.json
             ${{ runner.temp }}/task-adapter-e2e.rc
+            ${{ runner.temp }}/extended-target-e2e.log
+            ${{ runner.temp }}/extended-target-e2e.json
+            ${{ runner.temp }}/extended-target-e2e.rc
             ${{ runner.temp }}/smoke-all.rc
             ${{ runner.temp }}/LOUKSNAPG_G24_INDEPENDENT_VALIDATION.json
             ${{ runner.temp }}/LOUKSNAPG_FUNCTIONAL_GATE.json
