@@ -194,6 +194,16 @@ EXPECTED_CALIBRE_RELEASE_ASSETS = {
 }
 
 
+def discover_converter(here: Path) -> str | None:
+    """Discover only an explicitly configured or packaged runtime; never trust PATH."""
+    configured = os.environ.get("CALIBRE_EBOOK_CONVERT", "").strip()
+    if configured:
+        candidate = Path(configured).expanduser()
+        return str(candidate) if candidate.is_file() and os.access(candidate, os.X_OK) else None
+    candidates = [Path(here) / COMMAND, Path(here) / "bin" / COMMAND, Path(here) / "usr" / "bin" / COMMAND]
+    return next((str(path) for path in candidates if path.is_file() and os.access(path, os.X_OK)), None)
+
+
 def verify_pinned_converter(converter: str, here: Path) -> dict:
     """Require the official signed Calibre v9.17.0 source lock and an exact version token."""
     lock_path = here / "source-lock.json"
@@ -222,9 +232,35 @@ def verify_pinned_converter(converter: str, here: Path) -> dict:
         if any(row.get(field) != value for field, value in expected.items()):
             raise RuntimeError("CALIBRE_SOURCE_LOCK_ARTIFACT_IDENTITY_MISMATCH:" + artifact_id)
 
+    expected_binary = EXPECTED_CALIBRE_RELEASE_ASSETS["CALIBRE_V9_17_0_LINUX_X86_64_BINARY"]
+    try:
+        receipt = {
+            "id": os.environ.get("CALIBRE_OFFICIAL_ASSET_ID", "").strip(),
+            "sha256": os.environ.get("CALIBRE_OFFICIAL_ASSET_SHA256", "").strip(),
+            "size_bytes": int(os.environ.get("CALIBRE_OFFICIAL_ASSET_SIZE_BYTES", "0") or "0"),
+        }
+    except ValueError as exc:
+        raise RuntimeError("CALIBRE_OFFICIAL_ASSET_RECEIPT_INVALID") from exc
+    expected_receipt = {
+        "id": "CALIBRE_V9_17_0_LINUX_X86_64_BINARY",
+        "sha256": expected_binary["sha256"],
+        "size_bytes": expected_binary["size_bytes"],
+    }
+    if receipt != expected_receipt:
+        raise RuntimeError("CALIBRE_OFFICIAL_ASSET_RECEIPT_MISMATCH")
+
+    runtime_root_value = os.environ.get("CALIBRE_RUNTIME_ROOT", "").strip()
+    if not runtime_root_value:
+        raise RuntimeError("CALIBRE_RUNTIME_ROOT_REQUIRED")
+    runtime_root = Path(runtime_root_value).resolve(strict=True)
+    if not runtime_root.is_dir():
+        raise RuntimeError("CALIBRE_RUNTIME_ROOT_NOT_DIRECTORY")
+
     executable = Path(converter).resolve(strict=True)
     if not executable.is_file() or not os.access(executable, os.X_OK):
         raise RuntimeError("CALIBRE_CONVERTER_NOT_EXECUTABLE")
+    if not executable.is_relative_to(runtime_root):
+        raise RuntimeError("CALIBRE_CONVERTER_OUTSIDE_PINNED_RUNTIME_ROOT")
     try:
         probe = subprocess.run(
             [str(executable), "--version"],
@@ -250,6 +286,8 @@ def verify_pinned_converter(converter: str, here: Path) -> dict:
         "tag_signature_verified_in_lock": True,
         "source_lock_sha256": sha256_file(lock_path),
         "official_release_asset_ids": sorted(EXPECTED_CALIBRE_RELEASE_ASSETS),
+        "official_asset_receipt": receipt,
+        "runtime_root": str(runtime_root),
         "status": "PASS_PINNED_VERSION",
     }
 
@@ -281,13 +319,12 @@ def main(argv: list[str]) -> int:
     except (OSError, RuntimeError, tarfile.TarError) as exc:
         return fail(f"cannot verify/materialize the pinned Calibre overlay: {exc}", 78)
 
-    configured = os.environ.get("CALIBRE_EBOOK_CONVERT")
-    candidates = [Path(configured)] if configured else []
-    candidates.extend([here / COMMAND, here / "bin" / COMMAND, here / "usr" / "bin" / COMMAND])
-    converter = next((str(p) for p in candidates if p.is_file() and os.access(p, os.X_OK)), None)
-    converter = converter or shutil.which(COMMAND)
+    converter = discover_converter(here)
     if not converter:
-        return fail("official Calibre ebook-convert runtime not found; set CALIBRE_EBOOK_CONVERT", 78)
+        return fail(
+            "pinned Calibre runtime not found; set CALIBRE_EBOOK_CONVERT to an executable inside CALIBRE_RUNTIME_ROOT",
+            78,
+        )
     try:
         runtime_identity = verify_pinned_converter(converter, here)
     except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
