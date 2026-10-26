@@ -349,8 +349,15 @@ def probe_trealla(root: Path) -> dict[str, Any]:
     # Trealla documents DCG support via library(dcgs); phrase/2 is not
     # assumed to be implicitly imported by the runtime. The bundled upstream
     # grammar accepts "the man shoots" (sentence -> np, vp -> verb).
-    query="use_module(library(dcgs)),phrase(sentence,[the,man,shoots])"
-    run=require_ok(run_process([str(binary),"-l","samples/grammar.pl","-g",query],cwd=source,timeout=15,env=native_library_environment(root,build)),"TREALLA_PACKAGED_PROLOG_QUERY_FAILED")
+    query="use_module(library(dcgs)),phrase(sentence,[the,man,shoots]),write(true),halt"
+    # This is a bundled upstream library. Do not depend on /usr/local/share/trealla
+    # or another host installation: bind the packaged library path explicitly.
+    trealla_env=native_library_environment(root,build)
+    packaged_library=source/"library"
+    if packaged_library.is_symlink() or not packaged_library.is_dir():
+        raise ProbeFailure("TREALLA_PACKAGED_LIBRARY_DIRECTORY_MISSING")
+    trealla_env["TPL_LIBRARY_PATH"]=str(packaged_library)
+    run=require_ok(run_process([str(binary),"-l","samples/grammar.pl","-g",query],cwd=source,timeout=15,env=trealla_env),"TREALLA_PACKAGED_PROLOG_QUERY_FAILED")
     if "true" not in str(run.get("stdout_excerpt","")).casefold():
         raise ProbeFailure("TREALLA_PACKAGED_PROLOG_QUERY_NOT_TRUE:"+str(run.get("stdout_excerpt",""))[-500:])
     return {
@@ -380,7 +387,9 @@ def probe_foma(root: Path) -> dict[str, Any]:
         # Foma regex transducers use an explicit upper:lower pair for a
         # direct lexical mapping. "->" expresses a replacement rule, not
         # this one-entry lexical transducer.
-        script.write_text("regex cat:gato;\nsave stack primitive.fst\nquit\n",encoding="utf-8")
+        # Foma treats unspaced strings as single symbols; use the official
+        # upper:lower cross-product form with each character explicitly tokenized.
+        script.write_text("regex [c a t]:[g a t o];\nsave stack primitive.fst\nquit\n",encoding="utf-8")
         compiled=require_ok(run_process([str(foma_binary),"-q","-f",str(script)],cwd=temp_path,timeout=30,env=env),"FOMA_PACKAGED_TRANSDUCER_BUILD_FAILED")
         fst=temp_path/"primitive.fst"
         if fst.is_symlink() or not fst.is_file() or fst.stat().st_size==0:
