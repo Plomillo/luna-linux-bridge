@@ -6,6 +6,7 @@ on:
       - "louksnapg/**"
     paths:
       - ".github/workflows/louksnapg-bundle-ci.yml"
+      - ".github/workflows/louksnapg-kestra-auxiliary.yml"
       - ".github/workflows/cajita-louksna1-factory.yml"
       - "tools/louksnapg_worker_mission.py"
       - "tools/louksnapg_bundle.py"
@@ -22,6 +23,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/louksnapg-bundle-ci.yml"
+      - ".github/workflows/louksnapg-kestra-auxiliary.yml"
       - ".github/workflows/cajita-louksna1-factory.yml"
       - "tools/louksnapg_worker_mission.py"
       - "tools/louksnapg_bundle.py"
@@ -115,5 +117,28 @@ jobs:
           assert "G23_ED25519_SIGNATURE_INVALID" in gate
           assert "G23_TRUSTED_PUBLIC_KEY_NOT_CONFIGURED" in gate
           assert "global_certification" in gate and "NOT_GRANTED" in gate
+          factory = Path(".github/workflows/cajita-louksna1-factory.yml").read_text(encoding="utf-8")
+          assert "Enforce LOUKSNAPG architectural contract before model asset access" in factory
+          assert "STATIC_CONTRACT_CHECK_MUST_NOT_GRANT_PRODUCT_CERTIFICATION" in factory
+          aux_path = Path(".github/workflows/louksnapg-kestra-auxiliary.yml")
+          aux = yaml.safe_load(aux_path.read_text(encoding="utf-8"))
+          aux_steps = aux["jobs"]["independently-validate-and-publish-product-artifact"]["steps"]
+          step_ids = {step.get("id"):step for step in aux_steps if step.get("id")}
+          assert "contract" in step_ids and "kestra" in step_ids
+          aux_text = aux_path.read_text(encoding="utf-8")
+          for required_text in (
+              "LOUKSNAPG_TELEMETRY_PREAUDIT.json",
+              "LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json",
+              "LOUKSNAPG_G23_ATTESTATION_NOT_PERFORMED.json",
+              "CONTRACT_SHA256:",
+              "TELEMETRY_SHA256:",
+              "/api/v1/main/executions/",
+              "kestra_terminal_state",
+              "POLL_TIMEOUT_TERMINAL_STATE_UNCONFIRMED",
+              "KESTRA_SECONDARY_WORKER_NOT_VERIFIED",
+              "global_certification":"NOT_GRANTED",
+          ):
+              assert required_text in aux_text, "auxiliary contract missing: " + required_text
+          print("LOUKSNAPG_FACTORY_AND_KESTRA_RUNTIME_CONTRACT=PASS; PRODUCT_CERTIFICATION=NOT_GRANTED_UNLESS_EVIDENCED")
           print("LOUKSNAPG_KESTRA_AND_INTEGRAL_GATE_CONTRACT=PASS; PRODUCT_CERTIFICATION=NOT_GRANTED_UNLESS_EVIDENCED")
           PY
