@@ -35,6 +35,8 @@ on:
       - "tests/test_louksnapg_architecture_contract.py"
       - "contracts/louksnapg/architecture-contract.v1.json"
       - "docs/cajita-luna/LOUKSNAPG_ARCHITECTURAL_CONTRACT.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json"
       - "tests/test_louksnapg_integral_gate.py"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
       - "cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py"
@@ -1011,6 +1013,9 @@ jobs:
             ${{ runner.temp }}/LOUKSNAPG_G24_INDEPENDENT_VALIDATION.json
             ${{ runner.temp }}/LOUKSNAPG_FUNCTIONAL_GATE.json
             ${{ runner.temp }}/LOUKSNAPG_FUNCTIONAL_GATE.log
+            docs/cajita-luna/LOUKSNAPG_ARCHITECTURAL_CONTRACT.md
+            docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md
+            docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json
           if-no-files-found: warn
           retention-days: 90
 
