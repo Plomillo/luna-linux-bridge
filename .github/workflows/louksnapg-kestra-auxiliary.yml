@@ -662,11 +662,11 @@ jobs:
               local_password = "".join(secrets.choice(alphabet) for _ in range(32))
           local_auth = base64.b64encode((local_user + ":" + local_password).encode()).decode()
           kestra_configuration = (
-              "kestra:\\n"
-              "  server:\\n"
-              "    basic-auth:\\n"
-              "      username: " + local_user + "\\n"
-              "      password: " + local_password + "\\n"
+              "kestra:\n"
+              "  server:\n"
+              "    basic-auth:\n"
+              "      username: " + local_user + "\n"
+              "      password: " + local_password + "\n"
           )
           def sha(data): return hashlib.sha256(data).hexdigest()
           def now(): return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
