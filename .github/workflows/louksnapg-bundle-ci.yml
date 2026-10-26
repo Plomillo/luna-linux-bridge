@@ -203,6 +203,14 @@ jobs:
               "NOT_GRANTED",
           ):
               assert required_text in aux_text, "auxiliary contract missing: " + required_text
+          assert "Append the exact Kestra receipt to final C4 telemetry" in aux_text
+          assert "KESTRA_AUDIT_RESULT" in aux_text
+          assert "LOUKSNAPG_TELEMETRY_FINAL.json" in aux_text
+          assert "--telemetry candidate/LOUKSNAPG_TELEMETRY_FINAL.json" in aux_text
+          six_audit = Path("tools/louksnapg_six_obligation_audit.py").read_text(encoding="utf-8")
+          assert 'POST_AUDIT_EVENT_TYPE = "KESTRA_AUDIT_RESULT"' in six_audit
+          assert "KESTRA_RECEIPT_MISSING_OR_NOT_BOUND_TO_FINAL_TELEMETRY" in six_audit
+          assert "expected_event_count" in six_audit
           blockers = json.loads(Path("docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json").read_text(encoding="utf-8"))
           assert blockers["final_decision"] == "HOLD_NOT_CERTIFIED"
           assert blockers["evidence_scope"]["source_commit"] == "d09f79a088781d26fc5b1c3e830db9abfb42c147"
