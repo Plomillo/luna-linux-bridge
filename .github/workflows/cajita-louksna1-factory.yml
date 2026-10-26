@@ -77,7 +77,7 @@ concurrency:
 jobs:
   manufacture:
     if: github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     outputs:
       candidate_ready: ${{ steps.factory.outputs.candidate_ready }}
@@ -858,7 +858,7 @@ jobs:
               && ln -sf "$calibre_bin" /usr/local/bin/ebook-convert \
               && rm -f "$asset" \
               && rm -rf /var/lib/apt/lists/* \
-              && pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.11.0+cpu numpy==2.2.6 safetensors==0.8.0 transformers==4.57.6 sentencepiece==0.2.2 tokenizers==0.22.2 pillow==13.0.0 Jinja2==3.1.6 protobuf==4.25.9 PyYAML==6.0.3 iniconfig==2.3.0 pluggy==1.6.0 packaging==25.0 pygments==2.21.0
+              && pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.11.0+cpu numpy==2.2.6 safetensors==0.8.0 transformers==4.57.6 sentencepiece==0.2.2 tokenizers==0.22.2 pillow==13.0.0 Jinja2==3.1.6 protobuf==4.25.9 PyYAML==6.0.3 iniconfig==2.3.0 pluggy==1.6.0 packaging==25.0 pygments==2.21.0 py==1.11.0
           ENV CALIBRE_EBOOK_CONVERT=/usr/local/bin/ebook-convert
           ENV CALIBRE_RUNTIME_ROOT=/opt/calibre-release
           ENV CALIBRE_OFFICIAL_ASSET_ID=CALIBRE_V9_17_0_LINUX_X86_64_BINARY
