@@ -214,12 +214,17 @@ def evaluate(
         },
     )
 
+    functional_gate_subject_bound = (
+        functional_gate.get("source_commit") == source_commit
+        and functional_gate.get("bundle_sha256") == bundle_sha
+    )
     task_pass = (
         len(target_ids) == 21
         and set(target_ids) == set(expected_targets)
         and quality_passes == len(task_rows)
         and len(task_rows) == 21
         and not synthetic_diagnostics
+        and functional_gate_subject_bound
         and functional_gate.get("decision") == "PASS"
         and functional_gate.get("eligible_for_g24") is True
     )
@@ -229,6 +234,7 @@ def evaluate(
             *(["ALL_21_TARGETS_NOT_OBSERVED"] if len(target_ids) != 21 or set(target_ids) != set(expected_targets) else []),
             *(["ONE_OR_MORE_TASK_QUALITY_ASSERTIONS_FAILED"] if quality_failures else []),
             *(["SYNTHETIC_DIAGNOSTICS_ARE_NOT_PRODUCT_PROOF"] if synthetic_diagnostics else []),
+            *(["INTEGRAL_FUNCTIONAL_GATE_SUBJECT_BINDING_MISMATCH"] if not functional_gate_subject_bound else []),
             *(["INTEGRAL_FUNCTIONAL_GATE_NOT_PASS"] if functional_gate.get("decision") != "PASS" or functional_gate.get("eligible_for_g24") is not True else []),
         ],
         {
