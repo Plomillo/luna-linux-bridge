@@ -241,8 +241,13 @@ jobs:
           functional_sha=hashlib.sha256(fp.read_bytes()).hexdigest()
           g23_absence={"schema":"LOUKSNAPG_G23_ATTESTATION_STATUS/1.0","status":"NOT_PERFORMED","source_commit":os.environ["SOURCE_COMMIT"],"bundle_sha256":bundle_sha,"reason":"No trusted independent G23 signed attestation was provided.","global_certification":"NOT_GRANTED"}
           gp=Path("candidate/LOUKSNAPG_G23_ATTESTATION_NOT_PERFORMED.json")
+            candidate/LOUKSNAPG_G24_DECISION_NOT_GRANTED.json
           gp.write_text(json.dumps(g23_absence,sort_keys=True,indent=2)+"\n",encoding="utf-8")
           g23_sha=hashlib.sha256(gp.read_bytes()).hexdigest()
+          g24_absence={"schema":"LOUKSNAPG_G24_DECISION_STATUS/1.0","status":"NOT_GRANTED","source_commit":os.environ["SOURCE_COMMIT"],"bundle_sha256":bundle_sha,"reason":"No separate authorized G24 signed decision was provided.","global_certification":"NOT_GRANTED"}
+          g24p=Path("candidate/LOUKSNAPG_G24_DECISION_NOT_GRANTED.json")
+          g24p.write_text(json.dumps(g24_absence,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          g24_sha=hashlib.sha256(g24p.read_bytes()).hexdigest()
           rows=[
             ("SOURCE","HOLD_REVISION_PIN_PENDING","Official source documentation reviewed; exact upstream revision and model weight hashes not established."),
             ("INPUT","PASS","Candidate and source-bound reports hashed."),
@@ -271,6 +276,7 @@ jobs:
             h.write("worker_sha256="+worker_sha+"\n")
             h.write("functional_sha256="+functional_sha+"\n")
             h.write("g23_sha256="+g23_sha+"\n")
+            h.write("g24_sha256="+g24_sha+"\n")
             h.write("contract_status="+("PASS_CONTRACT_INTEGRITY" if report.get("contract_status")=="PASS" else "HOLD")+"\n")
           print(json.dumps({"contract_sha256":contract_sha,"contract_status":report.get("contract_status"),"telemetry_sha256":telemetry_sha,"telemetry_events":len(events),"release_telemetry_status":"INCOMPLETE_HOLD","global_certification":"NOT_GRANTED"},indent=2))
           PY
@@ -299,6 +305,7 @@ jobs:
           CUSTOSZ_RECEIPT_SHA256: ${{ steps.contract.outputs.worker_sha256 }}
           FUNCTIONAL_EVIDENCE_SHA256: ${{ steps.contract.outputs.functional_sha256 }}
           G23_ABSENCE_SHA256: ${{ steps.contract.outputs.g23_sha256 }}
+          G24_ABSENCE_SHA256: ${{ steps.contract.outputs.g24_sha256 }}
         shell: bash
         run: |
           set -euo pipefail
@@ -320,6 +327,12 @@ jobs:
             "integrity_status":"PASS",
             "functional_evidence_status":"NOT_ESTABLISHED",
             "g23_signature_verification_status":"NOT_ESTABLISHED",
+              "g23_producer_id":"NOT_ESTABLISHED",
+              "g23_validator_id":"NOT_ESTABLISHED",
+              "g24_decision_sha256":os.environ.get("G24_ABSENCE_SHA256",""),
+              "g24_decision_status":"NOT_GRANTED",
+              "g24_signature_verification_status":"NOT_ESTABLISHED",
+              "g24_signer_id":"NOT_GRANTED_NO_SIGNER",
             "global_certification":"NOT_GRANTED",
           }
           if not base or not token:
