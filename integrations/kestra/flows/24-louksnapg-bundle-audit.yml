@@ -117,7 +117,7 @@ tasks:
   - id: evidence_shape
     type: io.kestra.plugin.core.flow.If
     condition: >-
-      {{ inputs.source_commit matches '^[0-9a-f]{40}$'
+      {{ inputs.source_commit | regexMatch('^[0-9a-f]{40}$')
          and inputs.architecture_contract_sha256 matches '^[0-9a-f]{64}$'
          and inputs.custosz_worker_evidence_sha256 matches '^[0-9a-f]{64}$'
          and inputs.custosz_repair_report_sha256 matches '^[0-9a-f]{64}$'
