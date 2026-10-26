@@ -136,7 +136,7 @@ def inspect_qwen_model_identity(bundle_path: Path) -> dict:
         "observed_config": {field: config.get(field) for field in sorted(expected)},
         "expected_config": expected,
         "mismatches": mismatches,
-        "reference": "https://huggingface.co/Qwen/Qwen3-0.6B",
+        "reference": "https://huggingface.co/Qwen/Qwen3-14B",
     }
 
 
