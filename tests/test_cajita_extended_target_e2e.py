@@ -186,10 +186,10 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             module.mkdir(parents=True)
             binary = module / "sf"
             binary.write_text(
-                "#!/usr/bin/env python3\\n"
-                "import pathlib,sys\\n"
-                "assert pathlib.Path(sys.argv[-1]).is_file()\\n"
-                "print('{\\"matches\\":[{\\"format\\":\\"ZIP\\"}]}')\\n",
+                "#!/usr/bin/env python3\n"
+                "import pathlib,sys\n"
+                "assert pathlib.Path(sys.argv[-1]).is_file()\n"
+                "print('ZIP matches')\n",
                 encoding="utf-8",
             )
             binary.chmod(0o755)
@@ -214,8 +214,8 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             relative = "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24"
             source = root / relative / "trealla-2.100.24"
             (source / "samples").mkdir(parents=True)
-            (source / "Makefile").write_text("all: README.md\\n\\t@touch tpl\\n", encoding="utf-8")
-            (source / "samples" / "grammar.pl").write_text("sentence --> [fixture].\\n", encoding="utf-8")
+            (source / "Makefile").write_text("all: README.md\n\t@touch tpl\n", encoding="utf-8")
+            (source / "samples" / "grammar.pl").write_text("sentence --> [fixture].\n", encoding="utf-8")
             (root / relative / "CAJITA_MODULE.json").write_text(json.dumps({
                 "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
                 "target_id": "D04_HERMENEUTICA_HG",
@@ -232,10 +232,10 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 if command[0] == "make":
                     self.assertTrue((cwd / "README.md").is_file())
                     self.assertIn("GIT_VERSION=2.100.24", command)
-                    (cwd / "tpl").write_text("#!/bin/sh\\necho true\\n", encoding="utf-8")
+                    (cwd / "tpl").write_text("#!/bin/sh\necho true\n", encoding="utf-8")
                     (cwd / "tpl").chmod(0o755)
                     return {"return_code": 0, "stdout_excerpt": "", "stderr_excerpt": "", "elapsed_seconds": 0.1}
-                return {"return_code": 0, "stdout_excerpt": "true\\n", "stderr_excerpt": "", "elapsed_seconds": 0.1}
+                return {"return_code": 0, "stdout_excerpt": "true\n", "stderr_excerpt": "", "elapsed_seconds": 0.1}
             with patch.object(coverage, "run_process", side_effect=fake_run):
                 result = coverage.probe_trealla(root)
             self.assertEqual(result["status"], coverage.PASS)
