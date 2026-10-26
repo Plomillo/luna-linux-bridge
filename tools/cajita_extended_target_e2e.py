@@ -350,7 +350,7 @@ def probe_trealla(root: Path) -> dict[str, Any]:
     # assumed to be implicitly imported by the runtime. The bundled upstream
     # grammar accepts "the man shoots" (sentence -> np, vp -> verb).
     query="use_module(library(dcgs)),phrase(sentence,[the,man,shoots])"
-    run=require_ok(run_process([str(binary),"-g",query,"-l","samples/grammar.pl"],cwd=source,timeout=15,env=native_library_environment(root,build)),"TREALLA_PACKAGED_PROLOG_QUERY_FAILED")
+    run=require_ok(run_process([str(binary),"-l","samples/grammar.pl","-g",query],cwd=source,timeout=15,env=native_library_environment(root,build)),"TREALLA_PACKAGED_PROLOG_QUERY_FAILED")
     if "true" not in str(run.get("stdout_excerpt","")).casefold():
         raise ProbeFailure("TREALLA_PACKAGED_PROLOG_QUERY_NOT_TRUE:"+str(run.get("stdout_excerpt",""))[-500:])
     return {
