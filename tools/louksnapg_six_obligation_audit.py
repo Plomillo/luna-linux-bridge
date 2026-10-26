@@ -251,6 +251,25 @@ def evaluate(
 
     event_rows = telemetry.get("events", []) if isinstance(telemetry.get("events", []), list) else []
     event_names = [row.get("event_type") for row in event_rows if isinstance(row, dict)]
+    event_payloads_valid = all(
+        isinstance(row, dict)
+        and row.get("output_bytes") == len(json.dumps(
+            {key: value for key, value in row.items() if key not in {"evidence_sha256", "output_sha256", "output_bytes"}},
+            sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8"))
+        and hashlib.sha256(json.dumps(
+            {key: value for key, value in row.items() if key not in {"evidence_sha256", "output_sha256", "output_bytes"}},
+            sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")).hexdigest() == row.get("evidence_sha256") == row.get("output_sha256")
+        for row in event_rows
+    )
+    telemetry_payload = {key: value for key, value in telemetry.items() if key != "evidence_sha256"} if isinstance(telemetry, dict) else {}
+    telemetry_envelope_valid = (
+        bool(telemetry.get("evidence_sha256"))
+        and hashlib.sha256(json.dumps(
+            telemetry_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")).hexdigest() == telemetry.get("evidence_sha256")
+    )
     telemetry_bound = (
         telemetry.get("source_commit") == source_commit
         and telemetry.get("bundle_sha256") == bundle_sha
@@ -258,6 +277,8 @@ def evaluate(
         and set(event_names) == REQUIRED_EVENT_TYPES
         and len(event_names) == len(REQUIRED_EVENT_TYPES)
         and [row.get("sequence_id") for row in event_rows if isinstance(row, dict)] == list(range(1, len(REQUIRED_EVENT_TYPES) + 1))
+        and event_payloads_valid
+        and telemetry_envelope_valid
         and all(
             isinstance(row, dict)
             and row.get("source_commit") == source_commit
