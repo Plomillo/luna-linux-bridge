@@ -230,7 +230,21 @@ jobs:
           assert "tests/test_cajita_extended_target_e2e.py" in factory
           assert "/telemetry/extended-target-e2e.json" in factory
           assert "extended_target_pass_count" in factory
+          assert '"primitive_target_expected_count":16' in factory
+          assert "primitive_target_coverage" in factory
           assert 'EXT_PASS_COUNT" -eq 10' in factory
+          assert "primitive_target_observed_count" in factory
+          assert "primitive_target_blocked_count" in factory
+          assert "primitive_target_missing_count" in factory
+          assert "primitive_target_coverage_sha256" in factory
+          for target_id in (
+              "D02_ORQUESTADOR","D02_CONFESION_ECLESIAL_REFORMADA","D02_MULTI_INTERDISCIPLINAR",
+              "D06_CONSOLA","D06_MEMORIA_GOBERNADA","D06_MOTOR_PROTOCOLAR",
+              "D04_HERMENEUTICA_HG","D04_TRADUCCION_LENGUAS_ANTIGUAS","D05_CALIBRE",
+              "D06_ANTI_ALUCINACIONES","D06_ARCHIVADO_DETECCION","D06_COGNITIVE_CI_CD",
+              "D06_MIGRACION_PERSISTENCIA","D06_PORTABILIDAD_BASE","D06_RUNTIME_ANDROID_WINDOWS","D06_TESTING",
+          ):
+              assert target_id in factory, "primitive target omitted from G24 telemetry: " + target_id
           aux_path = Path(".github/workflows/louksnapg-kestra-auxiliary.yml")
           aux = yaml.safe_load(aux_path.read_text(encoding="utf-8"))
           aux_steps = aux["jobs"]["independently-validate-and-publish-product-artifact"]["steps"]
