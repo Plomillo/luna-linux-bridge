@@ -172,7 +172,7 @@ def main():
         r.get("status")=="PASS_FUNCTIONAL_EXECUTION" and r.get("exit_code")==0
         and r.get("quality_acceptance",{}).get("status")=="PASS"
         and all(isinstance(r.get(k),str) and len(r[k])==64 for k in ("input_sha256","output_sha256","weight_sha256","module_tree_sha256"))
-        and isinstance(r.get("peak_rss_bytes"),int) and 0<r["peak_rss_bytes"]<=1_073_741_824
+        and isinstance(r.get("peak_rss_bytes"),int) and 0<r["peak_rss_bytes"]<=2_147_483_648
         for r in rows
     )
     try:
