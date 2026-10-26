@@ -15,6 +15,7 @@ import re
 from pathlib import Path
 
 SCHEMA = "LOUKSNAPG_FUNCTIONAL_EVIDENCE/1.0"
+GLOBAL_LUNA_HARD_MAX_BYTES = 479000000
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 EXPECTED_TARGET_IDS = (
@@ -83,6 +84,17 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: stream.read(4 * 1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def validate_bundle_size(path: Path) -> int:
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("BUNDLE_NOT_REGULAR_FILE")
+    size = path.stat().st_size
+    if size <= 0:
+        raise ValueError("BUNDLE_SIZE_NOT_POSITIVE")
+    if size > GLOBAL_LUNA_HARD_MAX_BYTES:
+        raise ValueError("BUNDLE_OVER_GLOBAL_LUNA_HARD_MAX_BYTES")
+    return size
 
 
 def _is_sha(value: object) -> bool:
@@ -285,6 +297,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.bundle.is_symlink() or not args.bundle.is_file():
             raise ValueError("BUNDLE_NOT_REGULAR_FILE")
         evidence = json.loads(args.evidence.read_text(encoding="utf-8"))
+        validate_bundle_size(args.bundle)
         public_pem = None
         if args.g23_public_key:
             if args.g23_public_key.is_symlink() or not args.g23_public_key.is_file():
