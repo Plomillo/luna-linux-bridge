@@ -1,4 +1,6 @@
+import hashlib
 import json
+import shutil
 import tempfile
 import unittest
 import subprocess
@@ -8,8 +10,104 @@ from pathlib import Path
 from cajita_router import (
     CAPABILITY_ADAPTERS, DOMAINS, ROUTES, ROUTING_REGISTRY, TARGETS_BY_ID,
     SUPPORT_ASSETS_BY_ID, append_trace, build_plan, matched_intent_targets,
-    normalize_command, route_table_selftest,
+    normalize_command, route_table_selftest, verify_interdisciplinary_graph,
 )
+
+
+
+
+MULTI_PATH = "2. Orquestación/Multi + Interdisciplinar"
+MULTI_ENGINES = ["E03", "E04", "E05", "E06", "E07", "E08", "E09", "E12", "E13", "E14", "E15"]
+BLOCK_IDS = [f"B{i}" for i in range(1, 135)]
+
+
+def _sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _write_multidisciplinary_fixture(temp_root: str) -> tuple[Path, Path, Path]:
+    install = Path(temp_root) / "install"
+    runtime = install / "cajita-luna-runtime"
+    runtime.mkdir(parents=True)
+    multi = runtime.joinpath(*Path(MULTI_PATH).parts)
+    multi.mkdir(parents=True)
+    doc = install / "Louksna1.md"
+    protected = b"LOUKSNAMEJORADA protected test prefix\\n"
+    doc_bytes = protected + b"append-only test suffix\\n"
+    doc.write_bytes(doc_bytes)
+    (runtime / "command_subdomain_routing.json").write_text(
+        json.dumps(ROUTING_REGISTRY, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8"
+    )
+    loader_source = Path(__file__).resolve().parents[1] / "tools" / "cajita_axiom_source_loader.py"
+    shutil.copy2(loader_source, multi / "cajita_axiom_source_loader.py")
+    doc_sha = _sha(doc_bytes)
+    prefix_sha = _sha(protected)
+    graph = {
+        "schema": "LOUKSNA_BLOCK_ENGINE_BINDING/1.0",
+        "status": "DECLARED_STRUCTURAL_ROUTING_ONLY",
+        "scope": "CANONICAL_IDENTIFIER_ROUTING_NOT_SEMANTIC_PROOF",
+        "source": {
+            "document_path": "Louksna1.md", "document_sha256": doc_sha,
+            "protected_architecture_path": "LOUKSNAMEJORADA.md",
+            "protected_architecture_sha256": prefix_sha,
+            "protected_architecture_bytes": len(protected),
+            "provenance_mode": "EXACT_DOCUMENT_AND_PROTECTED_PREFIX_HASHES"
+        },
+        "block_inventory": {"range": "B1-B134", "count": 134, "ids": BLOCK_IDS, "mutation_allowed": False},
+        "target": {
+            "id": "D02_MULTI_INTERDISCIPLINAR", "domain_id": "D02_ORQUESTACION",
+            "path": MULTI_PATH, "engine_ids": MULTI_ENGINES
+        },
+        "block_routes": [
+            {"from_block_id": bid, "relation": "routes_to_interdisciplinary_target",
+             "to_target_id": "D02_MULTI_INTERDISCIPLINAR",
+             "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+             "provenance_sha256": doc_sha}
+            for bid in BLOCK_IDS
+        ],
+        "engine_routes": [
+            {"from_target_id": "D02_MULTI_INTERDISCIPLINAR",
+             "relation": "uses_canonical_engine", "to_engine_id": eid}
+            for eid in MULTI_ENGINES
+        ],
+        "invariants": {
+            "canonical_block_identity_mutation": False,
+            "canonical_engine_reassignment": False,
+            "synthetic_block_ids": False,
+            "semantic_content_reconstructed": False
+        },
+        "certification": "NOT_GRANTED"
+    }
+    graph_bytes = (json.dumps(graph, ensure_ascii=False, sort_keys=True, indent=2) + "\\n").encode("utf-8")
+    graph_path = multi / "block_engine_binding.json"
+    graph_path.write_bytes(graph_bytes)
+    binding = {
+        "schema": "LOUKSNA_AXIOM_MULTI_INTERDISCIPLINAR_BINDING/1.0",
+        "status": "SOURCE_BOUND_BLOCK_ENGINE_GRAPH_BOUND",
+        "companion_artifact": {"path_from_runtime_root": "../Louksna1.md", "bytes": len(doc_bytes), "sha256": doc_sha},
+        "protected_architecture_prefix": {"source_path": "LOUKSNAMEJORADA.md", "bytes": len(protected),
+                                          "sha256": prefix_sha, "mutation_allowed": False},
+        "axiom_inventory": {"range": "AX0001-AX12414", "declared_materialized_count": 11757,
+                            "declared_historical_gap_count": 657, "gap_range": "AX0001-AX2414",
+                            "contiguous_range": "AX2415-AX12414",
+                            "state": "PRESERVED_DECLARATION_NOT_INDEPENDENTLY_REPARSED", "mutation_allowed": False},
+        "block_inventory": {"range": "B1-B134", "count": 134,
+                            "state": "PRESERVED_CANONICAL_RANGE", "mutation_allowed": False},
+        "block_engine_graph": {"path_from_runtime_root": MULTI_PATH + "/block_engine_binding.json",
+                               "sha256": _sha(graph_bytes), "block_count": 134,
+                               "state": "DECLARED_STRUCTURAL_ROUTING_ONLY"},
+        "framework_count": 18,
+        "target": {"id": "D02_MULTI_INTERDISCIPLINAR", "domain_id": "D02_ORQUESTACION",
+                   "path": MULTI_PATH, "engine_ids": MULTI_ENGINES, "support_assets": ["APACHE_JENA_6_2_0"]},
+        "reader": {"relative_path": MULTI_PATH + "/cajita_axiom_source_loader.py",
+                   "operation": "VERIFY_DOCUMENT_SHA256_PREFIX_AND_B1_B134_BLOCK_ENGINE_ROUTES"},
+        "graph_execution": "STRUCTURAL_BLOCK_ROUTING_DECLARED_RUNTIME_VERIFICATION_REQUIRED",
+        "certification": "NOT_GRANTED"
+    }
+    (multi / "axiom_interdisciplinary_binding.json").write_text(
+        json.dumps(binding, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8"
+    )
+    return runtime, doc, graph_path
 
 
 class CajitaRouterTests(unittest.TestCase):
@@ -41,6 +139,53 @@ class CajitaRouterTests(unittest.TestCase):
         self.assertIsNone(normalize_command("/HELP"))
         self.assertIsNone(normalize_command("/play UNKNOWN"))
         self.assertIsNone(normalize_command("/play  PT"))
+
+    def test_multidisciplinary_graph_validates_all_canonical_blocks_and_engine_edges(self):
+        with tempfile.TemporaryDirectory() as temp:
+            runtime, doc, graph_path = _write_multidisciplinary_fixture(temp)
+            report = verify_interdisciplinary_graph(runtime, doc)
+            self.assertEqual(report["status"], "PASS_CANONICAL_B1_B134_ROUTING", report)
+            graph = report["block_engine_graph"]
+            self.assertEqual(graph["block_count"], 134)
+            self.assertEqual(graph["first_block_id"], "B1")
+            self.assertEqual(graph["last_block_id"], "B134")
+            self.assertEqual(graph["route_edge_count"], 134)
+            self.assertEqual(graph["engine_route_count"], 11)
+            self.assertEqual(graph["engine_ids"], MULTI_ENGINES)
+            self.assertEqual(graph["scope"], "STRUCTURAL_ROUTING_ONLY_NOT_SEMANTIC_PROOF")
+            self.assertEqual(report["certification"], "NOT_GRANTED")
+            plan = build_plan("/play PA integra la arquitectura", runtime_root=runtime)
+            self.assertEqual(plan["interdisciplinary_graph_validation"]["status"], "PASS_CANONICAL_B1_B134_ROUTING")
+            self.assertFalse(any(x.startswith("MULTI_INTERDISCIPLINAR_BLOCK_GRAPH_NOT_VERIFIED:")
+                                for x in plan["blockers"]))
+            self.assertFalse(plan["execution_authorized"])
+
+    def test_multidisciplinary_graph_tampering_fails_closed_even_if_hash_is_rebound(self):
+        with tempfile.TemporaryDirectory() as temp:
+            runtime, doc, graph_path = _write_multidisciplinary_fixture(temp)
+            graph = json.loads(graph_path.read_text(encoding="utf-8"))
+            graph["block_inventory"]["ids"] = graph["block_inventory"]["ids"][:-1]
+            graph["block_routes"] = graph["block_routes"][:-1]
+            raw = (json.dumps(graph, ensure_ascii=False, sort_keys=True, indent=2) + "\\n").encode("utf-8")
+            graph_path.write_bytes(raw)
+            binding_path = graph_path.parent / "axiom_interdisciplinary_binding.json"
+            binding = json.loads(binding_path.read_text(encoding="utf-8"))
+            binding["block_engine_graph"]["sha256"] = _sha(raw)
+            binding_path.write_text(json.dumps(binding, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+            report = verify_interdisciplinary_graph(runtime, doc)
+            self.assertEqual(report["status"], "FAIL_CLOSED")
+            self.assertIn("BLOCK_ENGINE_GRAPH_CANONICAL_RANGE_MISMATCH", report["reason"])
+            plan = build_plan("/play PA integra la arquitectura", runtime_root=runtime)
+            self.assertTrue(any(x.startswith("MULTI_INTERDISCIPLINAR_BLOCK_GRAPH_NOT_VERIFIED:")
+                                for x in plan["blockers"]))
+            self.assertFalse(plan["execution_authorized"])
+
+    def test_multidisciplinary_plan_blocks_when_runtime_graph_is_absent(self):
+        result = build_plan("/play PA integra la arquitectura")
+        self.assertEqual(result["interdisciplinary_graph_validation"]["status"], "FAIL_CLOSED")
+        self.assertFalse(result["execution_authorized"])
+        self.assertTrue(any(x.startswith("MULTI_INTERDISCIPLINAR_BLOCK_GRAPH_NOT_VERIFIED:")
+                            for x in result["blockers"]))
 
     def test_unknown_command_fails_closed(self):
         result = build_plan("/play UNKNOWN haz algo")
