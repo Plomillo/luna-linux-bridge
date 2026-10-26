@@ -6,6 +6,9 @@ on:
       - "louksnapg/**"
     paths:
       - ".github/workflows/louksnapg-kestra-auxiliary.yml"
+      - "contracts/louksnapg/architecture-contract.v1.json"
+      - "tools/louksnapg_architecture_contract.py"
+      - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
   workflow_dispatch:
     inputs:
       source_run_id:
@@ -423,6 +426,8 @@ jobs:
             candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json
             candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json
             candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json
+            candidate/LOUKSNAPG_ARCHITECTURE_CONTRACT.json
+            candidate/LOUKSNAPG_TELEMETRY_PREAUDIT.json
           if-no-files-found: warn
           retention-days: 90
 
