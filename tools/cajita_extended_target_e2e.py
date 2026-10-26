@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import hashlib
+import importlib.util
 import json
 import os
 import shutil
@@ -248,22 +249,110 @@ def probe_foma(root: Path) -> dict[str, Any]:
 
 
 def probe_calibre(root: Path) -> dict[str, Any]:
-    module, _ = module_for(root, "D05_CALIBRE")
+    module, descriptor = module_for(root, "D05_CALIBRE")
     binary_manifest = module / "CALIBRE_BINARY_EXTERNALIZATION.json"
     source_manifest = module / "CALIBRE_SOURCE_PROVENANCE.json"
-    if any(p.is_symlink() or not p.is_file() for p in (binary_manifest, source_manifest)):
+    if any(path.is_symlink() or not path.is_file() for path in (binary_manifest, source_manifest)):
         raise ProbeFailure("CALIBRE_EXTERNALIZATION_EVIDENCE_MISSING")
-    binary = json.loads(binary_manifest.read_text(encoding="utf-8"))
-    source = json.loads(source_manifest.read_text(encoding="utf-8"))
-    if binary.get("bundled_binary") is not False or source.get("bundled_source_archive") is not False:
+    binary_state = json.loads(binary_manifest.read_text(encoding="utf-8"))
+    source_state = json.loads(source_manifest.read_text(encoding="utf-8"))
+    if binary_state.get("bundled_binary") is not False or source_state.get("bundled_source_archive") is not False:
         raise ProbeFailure("CALIBRE_EXTERNALIZATION_STATE_DIVERGED")
-    if binary.get("equivalence") != "NOT_ESTABLISHED" or binary.get("functional_tests") != "NOT_RUN":
+    if binary_state.get("equivalence") != "NOT_ESTABLISHED" or binary_state.get("functional_tests") != "NOT_RUN":
         raise ProbeFailure("CALIBRE_MANIFEST_OVERCLAIMS_OR_UNEXPECTED_STATE")
-    raise ProbeBlocked(
-        "CALIBRE_FUNCTIONAL_ENGINE_ABSENT:binary_and_source_are_externalized; "
-        "the target cannot convert/import ebooks in this candidate without a permitted executable"
-    )
 
+    configured_converter = os.environ.get("CALIBRE_EBOOK_CONVERT", "").strip()
+    converter = configured_converter or shutil.which("ebook-convert")
+    if not converter:
+        raise ProbeBlocked("CALIBRE_FUNCTIONAL_ENGINE_ABSENT:ebook-convert_not_found_in_test_environment")
+
+    expected_asset = {
+        "id": "CALIBRE_V9_17_0_LINUX_X86_64_BINARY",
+        "sha256": "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53",
+        "size_bytes": 201590724,
+    }
+    asset_receipt = {
+        "id": os.environ.get("CALIBRE_OFFICIAL_ASSET_ID", ""),
+        "sha256": os.environ.get("CALIBRE_OFFICIAL_ASSET_SHA256", ""),
+        "size_bytes": int(os.environ.get("CALIBRE_OFFICIAL_ASSET_SIZE_BYTES", "0") or "0"),
+    }
+    if asset_receipt != expected_asset:
+        raise ProbeBlocked("CALIBRE_OFFICIAL_RUNTIME_ASSET_NOT_PROVEN_BY_SIZE_AND_SHA256")
+
+    wrapper_dir = root / "5. Inteligencia documental" / "Conversión documental" / "Calibre Slim"
+    wrapper_path = wrapper_dir / "calibre-slim-convert.py"
+    source_lock = wrapper_dir / "source-lock.json"
+    overlay_archive = wrapper_dir / "calibre-slim-overlay.tar.xz"
+    if wrapper_dir.is_symlink() or not wrapper_dir.is_dir() or not wrapper_dir.resolve().is_relative_to(root.resolve()):
+        raise ProbeFailure("CALIBRE_SLIM_WRAPPER_DIRECTORY_MISSING_OR_UNSAFE")
+    if any(path.is_symlink() or not path.is_file() for path in (wrapper_path, source_lock, overlay_archive)):
+        raise ProbeFailure("CALIBRE_SLIM_WRAPPER_LOCK_OR_OVERLAY_MISSING_OR_UNSAFE")
+
+    spec = importlib.util.spec_from_file_location("cajita_calibre_slim_probe", wrapper_path)
+    if spec is None or spec.loader is None:
+        raise ProbeFailure("CALIBRE_SLIM_WRAPPER_IMPORT_SPEC_INVALID")
+    launcher = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = launcher
+    spec.loader.exec_module(launcher)
+    try:
+        overlay_source = launcher.materialize_overlay(wrapper_dir)
+        runtime_identity = launcher.verify_pinned_converter(str(converter), wrapper_dir)
+    except Exception as exc:
+        raise ProbeFailure("CALIBRE_PINNED_RUNTIME_OR_FULL_OVERLAY_VALIDATION_FAILED:" + type(exc).__name__ + ":" + str(exc)[:500]) from exc
+    if runtime_identity.get("status") != "PASS_PINNED_VERSION" or runtime_identity.get("expected_version") != "9.17.0":
+        raise ProbeFailure("CALIBRE_RUNTIME_IDENTITY_NOT_PASS_PINNED_VERSION")
+
+    with tempfile.TemporaryDirectory(prefix="louksnapg-calibre-e2e-") as temp:
+        temp_path = Path(temp)
+        source_txt = temp_path / "calibre-smoke-input.txt"
+        output_epub = temp_path / "calibre-smoke-output.epub"
+        source_txt.write_text("Cajita Calibre v9.17.0 conversion smoke.\nThis sentence verifies a real TXT to EPUB conversion.\n", encoding="utf-8")
+        child_env = os.environ.copy()
+        child_env["CALIBRE_EBOOK_CONVERT"] = str(Path(converter).resolve(strict=True))
+        child_env["CALIBRE_OFFICIAL_ASSET_ID"] = expected_asset["id"]
+        child_env["CALIBRE_OFFICIAL_ASSET_SHA256"] = expected_asset["sha256"]
+        child_env["CALIBRE_OFFICIAL_ASSET_SIZE_BYTES"] = str(expected_asset["size_bytes"])
+        conversion = require_ok(
+            run_process([sys.executable, str(wrapper_path), str(source_txt), str(output_epub)], cwd=wrapper_dir, timeout=180, env=child_env),
+            "CALIBRE_TEXT_TO_EPUB_CONVERSION_FAILED",
+        )
+        if output_epub.is_symlink() or not output_epub.is_file() or output_epub.stat().st_size <= 0 or not zipfile.is_zipfile(output_epub):
+            raise ProbeFailure("CALIBRE_EPUB_OUTPUT_MISSING_OR_INVALID_CONTAINER")
+        with zipfile.ZipFile(output_epub, "r") as epub:
+            names = epub.namelist()
+            if len(names) != len(set(names)) or epub.testzip() is not None:
+                raise ProbeFailure("CALIBRE_EPUB_ARCHIVE_DUPLICATE_MEMBERS_OR_CRC_FAILURE")
+            if "mimetype" not in names or epub.read("mimetype") != b"application/epub+zip":
+                raise ProbeFailure("CALIBRE_EPUB_MIMETYPE_MISSING_OR_INVALID")
+            if "META-INF/container.xml" not in names:
+                raise ProbeFailure("CALIBRE_EPUB_CONTAINER_XML_MISSING")
+            if not any(name.casefold().endswith(".opf") for name in names):
+                raise ProbeFailure("CALIBRE_EPUB_PACKAGE_DOCUMENT_MISSING")
+        epub_bytes = output_epub.stat().st_size
+        epub_sha256 = sha256_file(output_epub)
+        input_bytes = source_txt.stat().st_size
+        input_sha256 = sha256_file(source_txt)
+
+    return {
+        "status": PASS,
+        "primitive": "REAL_TXT_TO_EPUB_CONVERSION_THROUGH_PRODUCT_WRAPPER",
+        "runtime_identity": runtime_identity,
+        "official_binary_asset_receipt": asset_receipt,
+        "official_binary_asset_receipt_source": "verified_download_and_sha256_in_ephemeral_g24_test_image; not_in_product_bundle",
+        "source_lock_sha256": sha256_file(source_lock),
+        "overlay_archive_sha256": sha256_file(overlay_archive),
+        "overlay_archive_bytes": overlay_archive.stat().st_size,
+        "materialized_overlay_directory": str(overlay_source),
+        "wrapper_sha256": sha256_file(wrapper_path),
+        "module_descriptor_sha256": sha256_file(module / "CAJITA_MODULE.json"),
+        "input": {"kind": "deterministic_synthetic_text_fixture", "bytes": input_bytes, "sha256": input_sha256},
+        "conversion_process": conversion,
+        "epub_output": {"bytes": epub_bytes, "sha256": epub_sha256, "container_integrity": "PASS", "mimetype": "PASS", "container_xml": "PASS", "package_document": "PASS"},
+        "consumer_task_equivalence": "PASS_FOR_TXT_TO_EPUB_PRIMITIVE_ONLY",
+        "pdf_epub_parity": "NOT_ESTABLISHED",
+        "reference_model_equivalence": "NOT_APPLICABLE_NON_MODEL_ENGINE",
+        "global_certification": "NOT_GRANTED_BY_THIS_PRIMITIVE_PROBE",
+    }
 
 def probe_antihallucination(root: Path) -> dict[str, Any]:
     module, _ = module_for(root, "D06_ANTI_ALUCINACIONES")

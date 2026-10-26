@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY / "tools"))
@@ -89,35 +90,92 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             self.assertFalse(result["large_model_payload_downloaded"])
             self.assertEqual(result["certification"], "NOT_GRANTED")
 
-    def test_calibre_is_held_when_only_externalization_metadata_exists(self):
-        with tempfile.TemporaryDirectory(prefix="extended-target-calibre-test-") as temp:
+    def _make_calibre_test_root(self, root: Path) -> tuple[Path, Path]:
+        relative = "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre"
+        module = root / relative
+        module.mkdir(parents=True)
+        (module / "CAJITA_MODULE.json").write_text(json.dumps({
+            "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
+            "target_id": "D05_CALIBRE",
+            "relative_path": relative,
+            "tree_integrity": {"sha256": "b" * 64},
+        }), encoding="utf-8")
+        (module / "CALIBRE_BINARY_EXTERNALIZATION.json").write_text(json.dumps({
+            "bundled_binary": False, "equivalence": "NOT_ESTABLISHED", "functional_tests": "NOT_RUN",
+        }), encoding="utf-8")
+        (module / "CALIBRE_SOURCE_PROVENANCE.json").write_text(json.dumps({
+            "bundled_source_archive": False, "equivalence": "NOT_ESTABLISHED", "functional_tests": "NOT_RUN",
+        }), encoding="utf-8")
+        (root / "command_subdomain_routing.json").write_text(json.dumps({
+            "schema": "CAJITA_COMMAND_SUBDOMAIN_ROUTING/1.0",
+            "targets": [{"id": "D05_CALIBRE", "path": relative}],
+        }), encoding="utf-8")
+        wrapper_source = REPOSITORY / "cajita-luna-runtime" / "5. Inteligencia documental" / "Conversión documental" / "Calibre Slim"
+        wrapper_dest = root / "5. Inteligencia documental" / "Conversión documental" / "Calibre Slim"
+        wrapper_dest.parent.mkdir(parents=True, exist_ok=True)
+        import shutil
+        shutil.copytree(wrapper_source, wrapper_dest)
+        return module, wrapper_dest
+
+    def _write_fake_calibre_converter(self, path: Path) -> None:
+        lines = [
+            "#!/usr/bin/env python3",
+            "import pathlib,sys,zipfile",
+            "if len(sys.argv) > 1 and sys.argv[1] == \"--version\":",
+            "    print(\"ebook-convert (calibre 9.17.0)\")",
+            "    raise SystemExit(0)",
+            "source = pathlib.Path(sys.argv[-2])",
+            "destination = pathlib.Path(sys.argv[-1])",
+            "with zipfile.ZipFile(destination, \"w\") as archive:",
+            "    archive.writestr(\"mimetype\", \"application/epub+zip\", compress_type=zipfile.ZIP_STORED)",
+            "    archive.writestr(\"META-INF/container.xml\", \"<container version=\\\"1.0\\\"><rootfiles><rootfile full-path=\\\"OEBPS/content.opf\\\" media-type=\\\"application/oebps-package+xml\\\"/></rootfiles></container>\")",
+            "    archive.writestr(\"OEBPS/content.opf\", \"<package version=\\\"2.0\\\"><metadata/><manifest/><spine/></package>\")",
+            "    archive.writestr(\"OEBPS/chapter.xhtml\", \"<html><body>fixture</body></html>\")",
+        ]
+        path.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+        path.chmod(0o755)
+
+    def test_calibre_is_held_if_no_external_executable_is_available(self):
+        with tempfile.TemporaryDirectory(prefix="extended-target-calibre-missing-") as temp:
             root = Path(temp)
-            module = root / "5. Inteligencia documental" / "calibre"
-            module.mkdir(parents=True)
-            (module / "CAJITA_MODULE.json").write_text(json.dumps({
-                "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
-                "target_id": "D05_CALIBRE",
-                "relative_path": "5. Inteligencia documental/calibre",
-            }), encoding="utf-8")
-            (module / "CALIBRE_BINARY_EXTERNALIZATION.json").write_text(json.dumps({
-                "bundled_binary": False,
-                "equivalence": "NOT_ESTABLISHED",
-                "functional_tests": "NOT_RUN",
-            }), encoding="utf-8")
-            (module / "CALIBRE_SOURCE_PROVENANCE.json").write_text(json.dumps({
-                "bundled_source_archive": False,
-                "equivalence": "NOT_ESTABLISHED",
-                "functional_tests": "NOT_RUN",
-            }), encoding="utf-8")
-            (root / "command_subdomain_routing.json").write_text(json.dumps({
-                "schema": "CAJITA_COMMAND_SUBDOMAIN_ROUTING/1.0",
-                "targets": [{
-                    "id": "D05_CALIBRE",
-                    "path": "5. Inteligencia documental/calibre",
-                }],
-            }), encoding="utf-8")
-            with self.assertRaisesRegex(coverage.ProbeBlocked, "CALIBRE_FUNCTIONAL_ENGINE_ABSENT"):
-                coverage.probe_calibre(root)
+            module, wrapper = self._make_calibre_test_root(root)
+            with patch.object(coverage.shutil, "which", return_value=None), patch.dict(coverage.os.environ, {"CALIBRE_EBOOK_CONVERT": ""}):
+                with self.assertRaisesRegex(coverage.ProbeBlocked, "CALIBRE_FUNCTIONAL_ENGINE_ABSENT"):
+                    coverage.probe_calibre(root)
+
+    def test_calibre_runs_the_pinned_wrapper_and_validates_real_epub_contract(self):
+        with tempfile.TemporaryDirectory(prefix="extended-target-calibre-convert-") as temp:
+            root = Path(temp)
+            module, wrapper = self._make_calibre_test_root(root)
+            fake_converter = root / "ebook-convert-fixture"
+            self._write_fake_calibre_converter(fake_converter)
+            environment = {
+                "CALIBRE_EBOOK_CONVERT": str(fake_converter),
+                "CALIBRE_OFFICIAL_ASSET_ID": "CALIBRE_V9_17_0_LINUX_X86_64_BINARY",
+                "CALIBRE_OFFICIAL_ASSET_SHA256": "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53",
+                "CALIBRE_OFFICIAL_ASSET_SIZE_BYTES": "201590724",
+            }
+            with patch.object(coverage.shutil, "which", return_value=str(fake_converter)), patch.dict(coverage.os.environ, environment):
+                result = coverage.probe_calibre(root)
+            self.assertEqual(result["status"], coverage.PASS)
+            self.assertEqual(result["primitive"], "REAL_TXT_TO_EPUB_CONVERSION_THROUGH_PRODUCT_WRAPPER")
+            self.assertEqual(result["runtime_identity"]["expected_version"], "9.17.0")
+            self.assertEqual(result["epub_output"]["container_integrity"], "PASS")
+            self.assertEqual(result["epub_output"]["mimetype"], "PASS")
+            self.assertEqual(result["epub_output"]["container_xml"], "PASS")
+            self.assertEqual(result["epub_output"]["package_document"], "PASS")
+            self.assertEqual(len(result["epub_output"]["sha256"]), 64)
+
+    def test_calibre_runtime_asset_without_exact_hash_receipt_is_blocked(self):
+        with tempfile.TemporaryDirectory(prefix="extended-target-calibre-provenance-") as temp:
+            root = Path(temp)
+            module, wrapper = self._make_calibre_test_root(root)
+            fake_converter = root / "ebook-convert-fixture"
+            self._write_fake_calibre_converter(fake_converter)
+            environment = {"CALIBRE_EBOOK_CONVERT": str(fake_converter), "CALIBRE_OFFICIAL_ASSET_ID": "", "CALIBRE_OFFICIAL_ASSET_SHA256": "", "CALIBRE_OFFICIAL_ASSET_SIZE_BYTES": "0"}
+            with patch.object(coverage.shutil, "which", return_value=str(fake_converter)), patch.dict(coverage.os.environ, environment):
+                with self.assertRaisesRegex(coverage.ProbeBlocked, "CALIBRE_OFFICIAL_RUNTIME_ASSET_NOT_PROVEN"):
+                    coverage.probe_calibre(root)
 
     def test_status_contract_never_promotes_diagnostic_coverage(self):
         source = (REPOSITORY / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
@@ -127,6 +185,10 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
         self.assertIn('"HOLD_NOT_CERTIFIED"', source)
         self.assertIn('"heavy_model_weight_download_count": 0', source)
         self.assertIn('"synthetic_evidence_used_as_product_proof": False', source)
+        workflow = (REPOSITORY / ".github" / "workflows" / "cajita-louksna1-factory.yml").read_text(encoding="utf-8")
+        self.assertIn("calibre-9.17.0-x86_64.txz", workflow)
+        self.assertIn("953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53", workflow)
+        self.assertIn("CALIBRE_OFFICIAL_ASSET_SHA256", workflow)
         self.assertIn('"remote_commander_used": False', source)
 
 
