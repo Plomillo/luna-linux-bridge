@@ -75,6 +75,28 @@ def _result(status: str, reason_codes: list[str], details: dict[str, Any] | None
     }
 
 
+def _event_fields_valid(row: Any) -> bool:
+    if not isinstance(row, dict):
+        return False
+    for key in ("actor", "tool_name", "tool_version", "source", "rollback_reference", "status", "validation_status"):
+        if not isinstance(row.get(key), str) or not row[key].strip():
+            return False
+    for key in ("input_bytes", "output_bytes"):
+        if isinstance(row.get(key), bool) or not isinstance(row.get(key), int) or row[key] < 1:
+            return False
+    if isinstance(row.get("sequence_id"), bool) or not isinstance(row.get("sequence_id"), int) or row["sequence_id"] < 1:
+        return False
+    if row.get("count") != 1 or isinstance(row.get("count"), bool):
+        return False
+    try:
+        stamp = datetime.fromisoformat(str(row.get("timestamp_utc", "")).replace("Z", "+00:00"))
+        if stamp.tzinfo is None or stamp.utcoffset() is None:
+            return False
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
 def evaluate(
     *,
     contract: dict[str, Any],
@@ -251,6 +273,7 @@ def evaluate(
 
     event_rows = telemetry.get("events", []) if isinstance(telemetry.get("events", []), list) else []
     event_names = [row.get("event_type") for row in event_rows if isinstance(row, dict)]
+    event_fields_valid = all(_event_fields_valid(row) for row in event_rows)
     event_payloads_valid = all(
         isinstance(row, dict)
         and row.get("output_bytes") == len(json.dumps(
@@ -277,6 +300,7 @@ def evaluate(
         and set(event_names) == REQUIRED_EVENT_TYPES
         and len(event_names) == len(REQUIRED_EVENT_TYPES)
         and [row.get("sequence_id") for row in event_rows if isinstance(row, dict)] == list(range(1, len(REQUIRED_EVENT_TYPES) + 1))
+        and event_fields_valid
         and event_payloads_valid
         and telemetry_envelope_valid
         and all(
