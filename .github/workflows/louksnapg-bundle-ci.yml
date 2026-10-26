@@ -100,6 +100,10 @@ jobs:
           integral_gate = Path("tools/louksnapg_integral_gate.py").read_text(encoding="utf-8")
           factory_text = Path(".github/workflows/cajita-louksna1-factory.yml").read_text(encoding="utf-8")
           auxiliary_workflow_text = Path(".github/workflows/louksnapg-kestra-auxiliary.yml").read_text(encoding="utf-8")
+          telemetry_writer = next((line for line in auxiliary_workflow_text.splitlines() if "tp.write_text(json.dumps(telem" in line), "")
+          assert telemetry_writer, "PREAUDIT_TELEMETRY_WRITER_MISSING"
+          assert '+"\\\\n"' not in telemetry_writer, "PREAUDIT_TELEMETRY_MUST_NOT_APPEND_LITERAL_BACKSLASH_N"
+          assert "LOUKSNAPG_SIX_OBLIGATION_AUDIT.json" in auxiliary_workflow_text
           assert "DEFAULT_MAX_BYTES = 479_000_000" in bundle_builder
           assert "CAP_BYTES = 479_000_000" in independent_validator
           assert "GLOBAL_LUNA_HARD_MAX_BYTES = 479000000" in integral_gate
