@@ -853,6 +853,7 @@ def probe_migration_persistence(root: Path) -> dict[str, Any]:
             "asset_materialization": receipts,
             "sqlite_migration": migration,
             "rqlite_server_binary_sha256": sha256_file(binaries[0]),
+            "rqlite_readiness": ready_receipt,
             "rqlite_create": create,
             "rqlite_insert": insert,
             "rqlite_query": query,
