@@ -151,6 +151,45 @@ class SixObligationAuditTests(unittest.TestCase):
                 event["output_sha256"] = digest
                 event["evidence_sha256"] = digest
                 events.append(event)
+            receipt_sha = "d" * 64
+            receipt = {
+                "status": "NOT_CONFIGURED",
+                "source_commit": source_commit,
+                "bundle_sha256": bundle_sha,
+                "_evidence_file_sha256": receipt_sha,
+            }
+            receipt_event = {
+                "operation_id": "audit-test",
+                "sequence_id": len(events) + 1,
+                "timestamp_utc": "2026-10-26T10:00:01Z",
+                "actor": "unit-test",
+                "tool_name": "Kestra audit receipt materializer",
+                "tool_version": "1",
+                "source": "unit-test-source",
+                "source_commit": source_commit,
+                "bundle_sha256": bundle_sha,
+                "contract_sha256": contract_sha,
+                "input_sha256": receipt_sha,
+                "input_bytes": 1,
+                "validation_status": "HOLD_KESTRA_EXECUTION_NOT_ESTABLISHED",
+                "rollback_reference": "unit-test-checkpoint",
+                "status": "HOLD_KESTRA_EXECUTION_NOT_ESTABLISHED",
+                "event_type": "KESTRA_AUDIT_RESULT",
+                "count": 1,
+                "details": {
+                    "receipt_sha256": receipt_sha,
+                    "receipt_status": "NOT_CONFIGURED",
+                    "execution_id_present": False,
+                    "terminal_state": None,
+                },
+            }
+            receipt_payload = json.dumps(receipt_event, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+            receipt_digest = hashlib.sha256(receipt_payload).hexdigest()
+            receipt_event["output_bytes"] = len(receipt_payload)
+            receipt_event["output_sha256"] = receipt_digest
+            receipt_event["evidence_sha256"] = receipt_digest
+            events.append(receipt_event)
+
             telemetry = {
                 "schema": "LOUKSNAPG_PERSISTENT_TELEMETRY_SNAPSHOT/1.0",
                 "source_commit": source_commit,
@@ -183,11 +222,26 @@ class SixObligationAuditTests(unittest.TestCase):
                 "task_report": {},
                 "functional_gate": {"decision": "HOLD", "eligible_for_g24": False},
                 "g24_evidence": {"decision": "NOT_GRANTED", "global_certification": "NOT_GRANTED"},
-                "kestra_receipt": {"status": "NOT_CONFIGURED"},
+                "kestra_receipt": receipt,
             }
             good = audit.evaluate(**base_args, telemetry=telemetry)
             self.assertEqual(good["obligations"]["C4_TELEMETRY_AND_AUDIT"]["status"], "PASS_TRACEABILITY_WITH_RELEASE_HOLD")
+            self.assertEqual(good["obligations"]["C4_TELEMETRY_AND_AUDIT"]["details"]["event_count"], 12)
+            self.assertTrue(good["obligations"]["C4_TELEMETRY_AND_AUDIT"]["details"]["kestra_receipt_event_bound"])
             self.assertFalse(good["summary"]["release_eligible"])
+
+            missing_post_dispatch = json.loads(json.dumps(telemetry))
+            missing_post_dispatch.pop("evidence_sha256", None)
+            missing_post_dispatch["events"] = missing_post_dispatch["events"][:-1]
+            missing_post_dispatch["evidence_sha256"] = hashlib.sha256(
+                json.dumps(missing_post_dispatch, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+            ).hexdigest()
+            missing_result = audit.evaluate(**base_args, telemetry=missing_post_dispatch)
+            self.assertEqual(missing_result["obligations"]["C4_TELEMETRY_AND_AUDIT"]["status"], "HOLD")
+            self.assertIn(
+                "KESTRA_RECEIPT_MISSING_OR_NOT_BOUND_TO_FINAL_TELEMETRY",
+                missing_result["obligations"]["C4_TELEMETRY_AND_AUDIT"]["reason_codes"],
+            )
 
             tampered = json.loads(json.dumps(telemetry))
             tampered["events"][0]["details"] = "changed after hashing"
