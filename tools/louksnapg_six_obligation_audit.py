@@ -340,7 +340,7 @@ def evaluate(
             ) else []),
         ],
         {
-            "package_integrity_g23_job": (g23_integrity or {}).get("conclusion", "NOT_ESTABLISHED"),
+            "package_integrity_g23_job": (g23_integrity or {}).get("conclusion") or (g23_integrity or {}).get("status", "NOT_ESTABLISHED"),
             "functional_g23": "PASS" if g23_functional_pass else "NOT_ESTABLISHED",
             "kestra_audit": kestra_status or "NOT_ESTABLISHED",
             "g24_decision": g24_evidence.get("decision", "NOT_GRANTED"),
