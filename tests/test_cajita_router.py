@@ -32,11 +32,11 @@ def _write_multidisciplinary_fixture(temp_root: str) -> tuple[Path, Path, Path]:
     multi = runtime.joinpath(*Path(MULTI_PATH).parts)
     multi.mkdir(parents=True)
     doc = install / "Louksna1.md"
-    protected = b"LOUKSNAMEJORADA protected test prefix\\n"
-    doc_bytes = protected + b"append-only test suffix\\n"
+    protected = b"LOUKSNAMEJORADA protected test prefix\n"
+    doc_bytes = protected + b"append-only test suffix\n"
     doc.write_bytes(doc_bytes)
     (runtime / "command_subdomain_routing.json").write_text(
-        json.dumps(ROUTING_REGISTRY, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8"
+        json.dumps(ROUTING_REGISTRY, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     loader_source = Path(__file__).resolve().parents[1] / "tools" / "cajita_axiom_source_loader.py"
     shutil.copy2(loader_source, multi / "cajita_axiom_source_loader.py")
@@ -78,7 +78,7 @@ def _write_multidisciplinary_fixture(temp_root: str) -> tuple[Path, Path, Path]:
         },
         "certification": "NOT_GRANTED"
     }
-    graph_bytes = (json.dumps(graph, ensure_ascii=False, sort_keys=True, indent=2) + "\\n").encode("utf-8")
+    graph_bytes = (json.dumps(graph, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
     graph_path = multi / "block_engine_binding.json"
     graph_path.write_bytes(graph_bytes)
     binding = {
@@ -105,7 +105,7 @@ def _write_multidisciplinary_fixture(temp_root: str) -> tuple[Path, Path, Path]:
         "certification": "NOT_GRANTED"
     }
     (multi / "axiom_interdisciplinary_binding.json").write_text(
-        json.dumps(binding, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8"
+        json.dumps(binding, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     return runtime, doc, graph_path
 
