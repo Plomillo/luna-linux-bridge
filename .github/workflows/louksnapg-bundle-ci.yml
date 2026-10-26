@@ -90,6 +90,8 @@ jobs:
               "functional_evidence_status", "functional_target_pass_count",
               "functional_target_expected_count", "functional_evidence_mode",
               "g23_attestation_sha256", "g23_signature_verification_status",
+              "g23_producer_id", "g23_validator_id", "g24_decision_sha256", "g24_decision_status",
+              "g24_signature_verification_status", "g24_signer_id",
               "architecture_contract_sha256", "architecture_contract_status",
               "primary_worker_id", "secondary_worker_id", "custosz_worker_evidence_sha256",
               "official_source_review_status", "telemetry_evidence_sha256", "telemetry_status",
@@ -105,6 +107,10 @@ jobs:
           assert "global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION" in text
           assert "functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'" in text
           assert "g23_signature_verification_status == 'PASS_VERIFIED'" in text
+          assert "g24_decision_status == 'GRANTED'" in text
+          assert "g24_signature_verification_status == 'PASS_VERIFIED'" in text
+          assert "g24_signer_id != inputs.g23_producer_id" in text
+          assert "g24_signer_id != inputs.g23_validator_id" in text
           assert "functional_target_pass_count == 21" in text
           assert "architecture_contract_status == 'PASS_CONTRACT_INTEGRITY'" in text
           assert "primary_worker_id == 'CUSTOSZ_V9'" in text
