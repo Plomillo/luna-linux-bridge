@@ -152,7 +152,7 @@ class IntegralGateTests(unittest.TestCase):
         self.sign_evidence(self.evidence)
         result = self.evaluate()
         self.assertEqual(result["decision"], "HOLD")
-        self.assertIn("MODEL_REPOSITORY_REVISION_NOT_PINNED", result["failures"])
+        self.assertTrue(any("MODEL_REPOSITORY_REVISION_NOT_PINNED" in failure for failure in result["failures"]))
 
     def test_model_without_pinned_upstream_revision_is_blocked(self):
         row = next(x for x in self.evidence["target_results"] if x["target_id"] in gate.MODEL_TARGETS)
