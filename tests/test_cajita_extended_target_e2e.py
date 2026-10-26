@@ -453,6 +453,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 "#!/usr/bin/env python3\n"
                 "import sys\n"
                 "if '-v' in sys.argv: print('flookup test version'); raise SystemExit(0)\n"
+                "assert '-i' in sys.argv, 'forward translation requires -i'\n"
                 "value=sys.stdin.read()\n"
                 "assert value == 'cat'+chr(10)\n"
                 "print('cat'+chr(9)+'gato')\n",
