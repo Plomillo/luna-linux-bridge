@@ -208,39 +208,85 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             self.assertEqual(len(result["fixture_sha256"]), 64)
             self.assertEqual(len(result["binary_sha256"]), 64)
 
-    def test_trealla_build_supplies_only_the_missing_documentation_prerequisite(self):
-        with tempfile.TemporaryDirectory(prefix="extended-target-trealla-build-") as temp:
+    def test_trealla_probe_executes_packaged_binary_without_source_build(self):
+        with tempfile.TemporaryDirectory(prefix="extended-target-trealla-packaged-") as temp:
             root = Path(temp)
-            relative = "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24"
-            source = root / relative / "trealla-2.100.24" / "trealla-2.100.24"
+            relative = "4. Traductor Inteligente/Hermenéutica H-G"
+            module = root / relative
+            source = module / "trealla-2.100.24" / "trealla-2.100.24"
             (source / "samples").mkdir(parents=True)
-            (source / "Makefile").write_text("all: README.md\n\t@touch tpl\n", encoding="utf-8")
-            (source / "samples" / "grammar.pl").write_text("sentence --> [fixture].\n", encoding="utf-8")
-            (root / relative / "CAJITA_MODULE.json").write_text(json.dumps({
+            grammar = source / "samples" / "grammar.pl"
+            grammar.write_text("sentence --> [fixture].\n", encoding="utf-8")
+            binary = source / "tpl"
+            binary.write_text(
+                "#!/usr/bin/env python3\n"
+                "import pathlib,sys\n"
+                "assert pathlib.Path('samples/grammar.pl').is_file()\n"
+                "assert '-g' in sys.argv and '-l' in sys.argv\n"
+                "print('true')\n",
+                encoding="utf-8",
+            )
+            binary.chmod(0o755)
+            module.mkdir(parents=True, exist_ok=True)
+            (module / "CAJITA_MODULE.json").write_text(json.dumps({
                 "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
                 "target_id": "D04_HERMENEUTICA_HG",
                 "relative_path": relative,
-                "tree_integrity": {"sha256": "c" * 64},
+                "tree_integrity": {"sha256": "c" * 64, "file_count_excluding_module_descriptors": 2, "bytes_excluding_module_descriptors": 100},
             }), encoding="utf-8")
             (root / "command_subdomain_routing.json").write_text(json.dumps({
                 "schema": "CAJITA_COMMAND_SUBDOMAIN_ROUTING/1.0",
                 "targets": [{"id": "D04_HERMENEUTICA_HG", "path": relative}],
             }), encoding="utf-8")
-            calls = []
-            def fake_run(command, *, cwd=None, timeout=120, env=None, stdin=None):
-                calls.append((command, cwd))
-                if command[0] == "make":
-                    self.assertTrue((cwd / "README.md").is_file())
-                    self.assertIn("GIT_VERSION=2.100.24", command)
-                    (cwd / "tpl").write_text("#!/bin/sh\necho true\n", encoding="utf-8")
-                    (cwd / "tpl").chmod(0o755)
-                    return {"return_code": 0, "stdout_excerpt": "", "stderr_excerpt": "", "elapsed_seconds": 0.1}
-                return {"return_code": 0, "stdout_excerpt": "true\n", "stderr_excerpt": "", "elapsed_seconds": 0.1}
-            with patch.object(coverage, "run_process", side_effect=fake_run):
-                result = coverage.probe_trealla(root)
+            result = coverage.probe_trealla(root)
             self.assertEqual(result["status"], coverage.PASS)
-            self.assertFalse((source / "README.md").exists())
-            self.assertEqual(len(calls), 2)
+            self.assertTrue(result["packaged_binary_execution"])
+            self.assertEqual(result["task_coverage"], "PROLOG_GRAMMAR_PRIMITIVE_ONLY_NOT_FULL_HISTORICAL_HERMENEUTICS")
+            self.assertEqual(len(result["binary_sha256"]), 64)
+
+    def test_foma_probe_executes_packaged_foma_and_flookup(self):
+        with tempfile.TemporaryDirectory(prefix="extended-target-foma-packaged-") as temp:
+            root = Path(temp)
+            relative = "4. Traductor Inteligente/Traducción de lenguas antiguas"
+            module = root / relative
+            source = module / "foma-master" / "foma-master" / "foma"
+            (source / "tests").mkdir(parents=True)
+            (source / "Makefile").write_text("check:\n\t@./foma -v\n", encoding="utf-8")
+            (source / "tests" / "run.sh").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            foma = source / "foma"
+            foma.write_text(
+                "#!/usr/bin/env python3\n"
+                "import pathlib,sys\n"
+                "if '-v' in sys.argv: print('foma test version'); raise SystemExit(0)\n"
+                "if '-f' in sys.argv:\n"
+                " p=pathlib.Path('primitive.fst'); p.write_text('fixture'); print('compiled'); raise SystemExit(0)\n",
+                encoding="utf-8",
+            )
+            foma.chmod(0o755)
+            flookup = source / "flookup"
+            flookup.write_text(
+                "#!/usr/bin/env python3\n"
+                "import sys\n"
+                "if '-v' in sys.argv: print('flookup test version'); raise SystemExit(0)\n"
+                "sys.stdin.read(); print('cat\\tgato')\n",
+                encoding="utf-8",
+            )
+            flookup.chmod(0o755)
+            (module / "CAJITA_MODULE.json").write_text(json.dumps({
+                "schema": "CAJITA_CANONICAL_TARGET_MODULE/1.0",
+                "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+                "relative_path": relative,
+                "tree_integrity": {"sha256": "d" * 64, "file_count_excluding_module_descriptors": 3, "bytes_excluding_module_descriptors": 100},
+            }), encoding="utf-8")
+            (root / "command_subdomain_routing.json").write_text(json.dumps({
+                "schema": "CAJITA_COMMAND_SUBDOMAIN_ROUTING/1.0",
+                "targets": [{"id": "D04_TRADUCCION_LENGUAS_ANTIGUAS", "path": relative}],
+            }), encoding="utf-8")
+            result = coverage.probe_foma(root)
+            self.assertEqual(result["status"], coverage.PASS)
+            self.assertTrue(result["packaged_binary_execution"])
+            self.assertEqual(result["consumer_task_equivalence"], "NOT_ESTABLISHED_ANCIENT_LANGUAGE_LEXICON_MISSING")
+            self.assertEqual(len(result["flookup_sha256"]), 64)
 
     def test_runtime_image_declares_native_build_and_offline_test_dependencies(self):
         workflow = (REPOSITORY / ".github" / "workflows" / "cajita-louksna1-factory.yml").read_text(encoding="utf-8")

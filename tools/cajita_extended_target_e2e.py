@@ -182,78 +182,73 @@ def copy_executable(source: Path, destination: Path) -> Path:
 
 
 def probe_trealla(root: Path) -> dict[str, Any]:
-    module, descriptor = module_for(root, "D04_HERMENEUTICA_HG")
-    source = module / "trealla-2.100.24" / "trealla-2.100.24"
-    makefile = source / "Makefile"
-    grammar = source / "samples" / "grammar.pl"
-    if any(p.is_symlink() or not p.is_file() for p in (makefile, grammar)):
-        raise ProbeBlocked("TREALLA_BUILD_INPUTS_MISSING")
-    with tempfile.TemporaryDirectory(prefix="louksnapg-trealla-") as temp:
-        build_root = Path(temp) / "trealla"
-        shutil.copytree(source, build_root)
-        # The upstream Makefile lists README.md as a build prerequisite even
-        # though it is not compiled into the binary. The slim source overlay
-        # omits that documentation file, so restore a local marker only in the
-        # disposable build copy; never mutate the candidate source tree.
-        readme = build_root / "README.md"
-        if not readme.exists():
-            readme.write_text("Trealla Prolog v2.100.24 build prerequisite; source code remains hash-bound.\\n", encoding="utf-8")
-        build = require_ok(
-            run_process(
-                ["make", "-j1", "GIT_VERSION=2.100.24", "NOFFI=1", "NOSSL=1", "NOTHREADS=1", "ISOCLINE=1"],
-                cwd=build_root,
-                timeout=900,
-            ),
-            "TREALLA_SOURCE_BUILD_FAILED",
-        )
-        binary = build_root / "tpl"
-        exe = copy_executable(binary, Path(temp) / "tpl-probe")
-        query = "phrase(sentence,[the,woman,shoots,man])"
-        result = require_ok(
-            run_process([str(exe), "-f", "samples/grammar.pl", "-g", query], cwd=build_root, timeout=15),
-            "TREALLA_DC G_QUERY_FAILED".replace(" ", ""),
-        )
-        if "true" not in result["stdout_excerpt"].casefold():
-            raise ProbeFailure("TREALLA_DC G_KNOWN_ANSWER_MISMATCH".replace(" ", ""))
+    module,descriptor=module_for(root,"D04_HERMENEUTICA_HG")
+    source=module/"trealla-2.100.24"/"trealla-2.100.24"
+    binary=source/"tpl"
+    grammar=source/"samples"/"grammar.pl"
+    if binary.is_symlink() or not binary.is_file() or not (binary.stat().st_mode&0o111):
+        raise ProbeFailure("TREALLA_PACKAGED_BINARY_MISSING")
+    if grammar.is_symlink() or not grammar.is_file():
+        raise ProbeFailure("TREALLA_GRAMMAR_FIXTURE_MISSING")
+    run=require_ok(run_process([str(binary),"-g","phrase(sentence,[fixture])","-l","samples/grammar.pl"],cwd=source,timeout=15),"TREALLA_PACKAGED_PROLOG_QUERY_FAILED")
+    if "true" not in str(run.get("stdout_excerpt","")).casefold():
+        raise ProbeFailure("TREALLA_PACKAGED_PROLOG_QUERY_NOT_TRUE:"+str(run.get("stdout_excerpt",""))[-500:])
     return {
-        "status": PASS,
-        "primitive": "PROLOG_DC G_GRAMMAR_QUERY".replace(" ", ""),
-        "source_descriptor_sha256": sha256_file(module / "CAJITA_MODULE.json"),
-        "build": build,
-        "query": query,
-        "query_result": result,
-        "consumer_task_equivalence": "NOT_ESTABLISHED",
-        "semantic_scope": "PROLOG_RUNTIME_AND_BUNDLED_TOY_GRAMMAR_ONLY_NOT_FULL_HISTORICAL_HERMENEUTICS",
-        "certification": "NOT_GRANTED",
+        "status":PASS,"primitive":"PACKAGED_TREALLA_PROLOG_GRAMMAR_QUERY",
+        "binary_sha256":sha256_file(binary),"grammar_sha256":sha256_file(grammar),
+        "module_tree_sha256_declared":descriptor.get("tree_integrity",{}).get("sha256"),
+        "consumer_task_equivalence":"NOT_ESTABLISHED_FULL_HERMENEUTICS",
+        "task_coverage":"PROLOG_GRAMMAR_PRIMITIVE_ONLY_NOT_FULL_HISTORICAL_HERMENEUTICS",
+        "packaged_binary_execution":True,"runtime_output_sha256":sha256_bytes(str(run.get("stdout_excerpt","")).encode()),
+        "certification":"NOT_GRANTED"
     }
 
 
 def probe_foma(root: Path) -> dict[str, Any]:
-    module, _ = module_for(root, "D04_TRADUCCION_LENGUAS_ANTIGUAS")
-    source = module / "foma-master" / "foma-master" / "foma"
-    makefile = source / "Makefile"
-    test_file = source / "tests" / "run.sh"
-    if any(p.is_symlink() or not p.is_file() for p in (makefile, test_file)):
-        raise ProbeBlocked("FOMA_BUILD_INPUTS_MISSING")
-    with tempfile.TemporaryDirectory(prefix="louksnapg-foma-") as temp:
-        build_root = Path(temp) / "foma"
-        shutil.copytree(source, build_root)
-        build = require_ok(run_process(["make", "-j1"], cwd=build_root, timeout=900), "FOMA_SOURCE_BUILD_FAILED")
-        regression = require_ok(run_process(["make", "check"], cwd=build_root, timeout=180), "FOMA_NATIVE_REGRESSION_FAILED")
-        binary = build_root / "foma"
-        version = require_ok(run_process([str(binary), "-v"], cwd=build_root, timeout=10), "FOMA_VERSION_PROBE_FAILED")
+    module,descriptor=module_for(root,"D04_TRADUCCION_LENGUAS_ANTIGUAS")
+    source=module/"foma-master"/"foma-master"/"foma"
+    foma_binary=source/"foma"
+    flookup_binary=source/"flookup"
+    for binary,label in ((foma_binary,"FOMA"),(flookup_binary,"FLOOKUP")):
+        if binary.is_symlink() or not binary.is_file() or not (binary.stat().st_mode&0o111):
+            raise ProbeFailure(label+"_PACKAGED_EXECUTABLE_MISSING")
+    env=os.environ.copy()
+    local_lib=source/"src"/"libfoma"/".libs"
+    env["LD_LIBRARY_PATH"]=str(local_lib)+(":"+env["LD_LIBRARY_PATH"] if env.get("LD_LIBRARY_PATH") else "")
+    version=require_ok(run_process([str(foma_binary),"-v"],cwd=source,timeout=15,env=env),"FOMA_PACKAGED_VERSION_FAILED")
+    lookup_version=require_ok(run_process([str(flookup_binary),"-v"],cwd=source,timeout=15,env=env),"FLOOKUP_PACKAGED_VERSION_FAILED")
+    with tempfile.TemporaryDirectory(prefix="foma-packaged-primitive-") as temp:
+        temp_path=Path(temp)
+        script=temp_path/"primitive.foma"
+        script.write_text("regex cat -> gato;\\nsave stack primitive.fst\\nquit\\n",encoding="utf-8")
+        compiled=require_ok(run_process([str(foma_binary),"-q","-f",str(script)],cwd=temp_path,timeout=30,env=env),"FOMA_PACKAGED_TRANSDUCER_BUILD_FAILED")
+        fst=temp_path/"primitive.fst"
+        if fst.is_symlink() or not fst.is_file() or fst.stat().st_size==0:
+            raise ProbeFailure("FOMA_PACKAGED_TRANSDUCER_MISSING")
+        lookup=require_ok(run_process([str(flookup_binary),str(fst)],cwd=temp_path,timeout=15,env=env,stdin="cat\\n"),"FLOOKUP_PACKAGED_EXECUTION_FAILED")
+        lookup_text=str(lookup.get("stdout_excerpt",""))
+        if "gato" not in lookup_text.casefold():
+            raise ProbeFailure("FOMA_PACKAGED_TRANSLATION_FIXTURE_MISMATCH:"+lookup_text[-500:])
+        fixture_sha=sha256_file(script)
+        transducer_sha=sha256_file(fst)
+        runtime_output_sha=sha256_bytes((str(compiled.get("stdout_excerpt",""))+lookup_text).encode())
+    with tempfile.TemporaryDirectory(prefix="foma-source-regression-") as temp:
+        build_root=Path(temp)/"foma-source"
+        shutil.copytree(source,build_root,symlinks=False)
+        regression=require_ok(run_process(["make","check"],cwd=build_root,timeout=900,env=env),"FOMA_UPSTREAM_REGRESSION_FAILED")
     return {
-        "status": PASS,
-        "primitive": "FINITE_STATE_TRANSDUCER_ENGINE_AND_UPSTREAM_REGRESSION_SUITE",
-        "source_descriptor_sha256": sha256_file(module / "CAJITA_MODULE.json"),
-        "build": build,
-        "upstream_regression": regression,
-        "version": version,
-        "consumer_task_equivalence": "NOT_ESTABLISHED",
-        "semantic_scope": "FOMA_ENGINE_REGRESSION_ONLY_NO_BUNDLED_ANCIENT_LANGUAGE_LEXICON_OR_FST_PROVEN",
-        "certification": "NOT_GRANTED",
+        "status":PASS,"primitive":"PACKAGED_FOMA_FLOOKUP_FINITE_STATE_TRANSLATION",
+        "foma_sha256":sha256_file(foma_binary),"flookup_sha256":sha256_file(flookup_binary),
+        "foma_version_sha256":sha256_bytes(str(version.get("stdout_excerpt","")).encode()),
+        "flookup_version_sha256":sha256_bytes(str(lookup_version.get("stdout_excerpt","")).encode()),
+        "fixture_sha256":fixture_sha,"transducer_sha256":transducer_sha,
+        "consumer_task_equivalence":"NOT_ESTABLISHED_ANCIENT_LANGUAGE_LEXICON_MISSING",
+        "task_coverage":"FINITE_STATE_ENGINE_PRIMITIVE_ONLY_NOT_FULL_ANCIENT_LANGUAGE_TRANSLATION",
+        "packaged_binary_execution":True,"upstream_regression_status":"PASS",
+        "source_tree_sha256_declared":descriptor.get("tree_integrity",{}).get("sha256"),
+        "runtime_output_sha256":runtime_output_sha,
+        "certification":"NOT_GRANTED"
     }
-
 
 def probe_calibre(root: Path) -> dict[str, Any]:
     module, descriptor = module_for(root, "D05_CALIBRE")
