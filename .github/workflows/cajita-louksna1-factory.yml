@@ -1,5 +1,5 @@
 name: Cajita V9 materialization and Louksna1 governed factory
-# Current release budgets: Cajita runtime <=470000000 bytes; LOUKSNAPG container <=490000000 bytes.
+# Current release budgets: Cajita runtime <=470000000 bytes; LOUKSNAPG container <=479000000 bytes.
 
 on:
   push:
@@ -326,11 +326,11 @@ jobs:
             --cajita-doc out/stage/cajita-luna-runtime/CajitadeLuna.md \
             --architecture-contract contracts/louksnapg/architecture-contract.v1.json \
             --output out/LOUKSNAPG.md \
-            --max-bytes 490000000 \
+            --max-bytes 479000000 \
             --report out/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json
           python tools/louksnapg_independent_validator.py \
             --bundle out/LOUKSNAPG.md \
-            --max-bytes 490000000 \
+            --max-bytes 479000000 \
             --expected-source-commit "$GITHUB_SHA" \
             --report out/LOUKSNAPG_INDEPENDENT_VALIDATION.json
           python - <<'PY'
@@ -340,7 +340,7 @@ jobs:
           report = json.loads(Path("out/LOUKSNAPG_BUILD_REPORT.json").read_text())
           independent = json.loads(Path("out/LOUKSNAPG_INDEPENDENT_VALIDATION.json").read_text())
           assert report["bundle_bytes"] == bundle.stat().st_size
-          assert report["bundle_bytes"] <= 490000000
+          assert report["bundle_bytes"] <= 479000000
           assert report["source_commit"] == os.environ["GITHUB_SHA"]
           assert independent["source_commit"] == os.environ["GITHUB_SHA"]
           assert independent["container_integrity"] == "PASS"
@@ -437,7 +437,7 @@ jobs:
           test -s candidate/LOUKSNAPG.md
           python tools/louksnapg_independent_validator.py \
             --bundle candidate/LOUKSNAPG.md \
-            --max-bytes 490000000 \
+            --max-bytes 479000000 \
             --expected-source-commit "$LOUKSNA_FACTORY_HEAD_SHA" \
             --extract-to candidate/louksnapg-runtime \
             --report candidate/LOUKSNAPG_INDEPENDENT_VALIDATION_G23.json
@@ -448,7 +448,7 @@ jobs:
           report=json.loads(Path("candidate/LOUKSNAPG_INDEPENDENT_VALIDATION_G23.json").read_text())
           assert report["artifact"]=="LOUKSNAPG.md"
           assert report["source_commit"]==os.environ["LOUKSNA_FACTORY_HEAD_SHA"]
-          assert bundle.stat().st_size==report["bundle_bytes"]<=490000000
+          assert bundle.stat().st_size==report["bundle_bytes"]<=479000000
           assert report["budget_status"]=="PASS"
           assert report["container_integrity"]=="PASS"
           assert report["protected_prefix_integrity"]=="PASS"
@@ -543,7 +543,7 @@ jobs:
           assert hashlib.sha256(package.read_bytes()).hexdigest()==release["runtime_distribution"]["sha256"]
           assert hashlib.sha256(doc.read_bytes()).hexdigest()==release["louksna1"]["sha256"]
           assert package.stat().st_size<=470_000_000, "CAJITA_RUNTIME_SIZE_GATE"
-          assert package.stat().st_size+doc.stat().st_size<=490_000_000, "COMBINED_SIZE_GATE"
+          assert package.stat().st_size+doc.stat().st_size<=479_000_000, "COMBINED_SIZE_GATE"
           with zipfile.ZipFile(package) as z:
             assert z.testzip() is None, "ZIP_CRC"
             names=z.namelist()
@@ -750,8 +750,8 @@ jobs:
           assert lv.get("source_commit")==source_commit and lv.get("bundle_bytes")==bundle.stat().st_size
           bundle_sha=hashlib.sha256(bundle.read_bytes()).hexdigest()
           assert lv.get("bundle_sha256")==bundle_sha, "G23_LOUKSNAPG_SHA256_DIVERGENCE"
-          out={"schema":"LOUKSNA1_G23_EVIDENCE/1.0","gate":"G23","status":"PASS","independent_job":True,"source_commit":source_commit,"package_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"package_bytes":p.stat().st_size,"louksna1_sha256":hashlib.sha256(d.read_bytes()).hexdigest(),"louksna1_bytes":d.stat().st_size,"combined_bytes":p.stat().st_size+d.stat().st_size,"combined_cap_bytes":490000000,"certification_scope":"DISTRIBUTION_INTEGRITY_STRUCTURE_WEIGHT_IDENTITY_AND_REGISTERED_SMOKES","task_adapter_completion":"NOT_ESTABLISHED","semantic_quality_equivalence":"NOT_ESTABLISHED","louksnapg":{"artifact":"LOUKSNAPG.md","sha256":bundle_sha,"bytes":bundle.stat().st_size,"cap_bytes":490000000,"budget_status":lv.get("budget_status"),"container_integrity":lv.get("container_integrity"),"runtime_member_integrity":lv.get("runtime_member_integrity"),"single_distribution_container":lv.get("single_distribution_container"),"runtime_routing_registry":lv.get("runtime_routing_registry"),"module_registry":lv.get("module_registry"),"validation_report_sha256":hashlib.sha256(bundle_validation.read_bytes()).hexdigest(),"global_certification":"NOT_GRANTED"},"global_certification":"NOT_GRANTED"}
-          assert out["louksnapg"]["bytes"]<=490000000 and out["louksnapg"]["budget_status"]=="PASS"
+          out={"schema":"LOUKSNA1_G23_EVIDENCE/1.0","gate":"G23","status":"PASS","independent_job":True,"source_commit":source_commit,"package_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"package_bytes":p.stat().st_size,"louksna1_sha256":hashlib.sha256(d.read_bytes()).hexdigest(),"louksna1_bytes":d.stat().st_size,"combined_bytes":p.stat().st_size+d.stat().st_size,"combined_cap_bytes":479000000,"certification_scope":"DISTRIBUTION_INTEGRITY_STRUCTURE_WEIGHT_IDENTITY_AND_REGISTERED_SMOKES","task_adapter_completion":"NOT_ESTABLISHED","semantic_quality_equivalence":"NOT_ESTABLISHED","louksnapg":{"artifact":"LOUKSNAPG.md","sha256":bundle_sha,"bytes":bundle.stat().st_size,"cap_bytes":479000000,"budget_status":lv.get("budget_status"),"container_integrity":lv.get("container_integrity"),"runtime_member_integrity":lv.get("runtime_member_integrity"),"single_distribution_container":lv.get("single_distribution_container"),"runtime_routing_registry":lv.get("runtime_routing_registry"),"module_registry":lv.get("module_registry"),"validation_report_sha256":hashlib.sha256(bundle_validation.read_bytes()).hexdigest(),"global_certification":"NOT_GRANTED"},"global_certification":"NOT_GRANTED"}
+          assert out["louksnapg"]["bytes"]<=479000000 and out["louksnapg"]["budget_status"]=="PASS"
           Path("candidate/G23_EVIDENCE.json").write_text(json.dumps(out,indent=2)+"\n")
           print(json.dumps(out,indent=2))
           PY
@@ -818,7 +818,7 @@ jobs:
           ROOT="$RUNNER_TEMP/louksnapg-runtime"
           python tools/louksnapg_independent_validator.py \
             --bundle "evidence/louksna1-candidate/LOUKSNAPG.md" \
-            --max-bytes 490000000 \
+            --max-bytes 479000000 \
             --expected-source-commit "$LOUKSNA_FACTORY_HEAD_SHA" \
             --extract-to "$ROOT" \
             --report "$RUNNER_TEMP/LOUKSNAPG_G24_INDEPENDENT_VALIDATION.json"
