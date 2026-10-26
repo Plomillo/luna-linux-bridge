@@ -20,6 +20,16 @@ def _write_fixture(tmp: str, *, source_doc: bytes = b"protected architecture\nru
     runtime = root / "cajita-luna-runtime"
     doc = root / "Louksna1.md"
     doc.write_bytes(source_doc)
+    (runtime / "command_subdomain_routing.json").write_text(json.dumps({
+        "schema": "CAJITA_COMMAND_SUBDOMAIN_ROUTING/1.0",
+        "targets": [{
+            "id": "D02_MULTI_INTERDISCIPLINAR",
+            "domain_id": "D02_ORQUESTACION",
+            "path": MULTI_PATH,
+            "engine_ids": ENGINES,
+            "support_assets": ["APACHE_JENA_6_2_0"]
+        }]
+    }, indent=2) + "\n", encoding="utf-8")
     protected = b"protected architecture\n"
     graph = {
         "schema": "LOUKSNA_BLOCK_ENGINE_BINDING/1.0",
