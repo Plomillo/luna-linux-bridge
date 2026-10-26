@@ -111,6 +111,12 @@ class IntegralGateTests(unittest.TestCase):
             self.public_pem if public_key is None else public_key,
         )
 
+    def test_global_luna_byte_ceiling_is_enforced_by_integral_gate(self):
+        from unittest.mock import patch
+        with patch.object(gate, "GLOBAL_LUNA_HARD_MAX_BYTES", self.bundle.stat().st_size - 1):
+            with self.assertRaisesRegex(ValueError, "BUNDLE_OVER_GLOBAL_LUNA_HARD_MAX_BYTES"):
+                gate.validate_bundle_size(self.bundle)
+
     def test_complete_subject_bound_signed_evidence_is_eligible(self):
         result = self.evaluate()
         self.assertEqual(result["decision"], "PASS")
