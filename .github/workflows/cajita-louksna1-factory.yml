@@ -31,6 +31,10 @@ on:
       - "tools/louksnapg_worker_mission.py"
       - "tools/louksnapg_integral_gate.py"
       - "tests/test_louksnapg_bundle.py"
+      - "tools/louksnapg_architecture_contract.py"
+      - "tests/test_louksnapg_architecture_contract.py"
+      - "contracts/louksnapg/architecture-contract.v1.json"
+      - "docs/cajita-luna/LOUKSNAPG_ARCHITECTURAL_CONTRACT.md"
       - "tests/test_louksnapg_integral_gate.py"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
       - "cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py"
@@ -77,6 +81,27 @@ jobs:
           fetch-depth: 0
           lfs: false
           persist-credentials: true
+
+      - name: Enforce LOUKSNAPG architectural contract before model asset access
+        id: louksnapg_contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/louksnapg_architecture_contract.py \
+            --contract contracts/louksnapg/architecture-contract.v1.json \
+            --report "$RUNNER_TEMP/LOUKSNAPG_ARCHITECTURE_CONTRACT.json"
+          CONTRACT_SHA256="$(sha256sum contracts/louksnapg/architecture-contract.v1.json | awk '{print $1}')"
+          python - "$RUNNER_TEMP/LOUKSNAPG_ARCHITECTURE_CONTRACT.json" "$CONTRACT_SHA256" <<'PY'
+          import json,sys
+          from pathlib import Path
+          report=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if report.get("contract_status") != "PASS":
+              raise SystemExit("LOUKSNAPG_ARCHITECTURAL_CONTRACT_INVALID_FAIL_CLOSED")
+          if report.get("release_eligible") is not False or report.get("global_certification") != "NOT_GRANTED":
+              raise SystemExit("STATIC_CONTRACT_CHECK_MUST_NOT_GRANT_PRODUCT_CERTIFICATION")
+          print(json.dumps({"contract_sha256":sys.argv[2],"contract_status":"PASS_CONTRACT_INTEGRITY","product_certification":"NOT_GRANTED","execution_evidence":"NOT_YET_PRESENT"},indent=2))
+          PY
+          echo "sha256=$CONTRACT_SHA256" >> "$GITHUB_OUTPUT"
 
       - name: Install build-only archive extractors
         shell: bash
