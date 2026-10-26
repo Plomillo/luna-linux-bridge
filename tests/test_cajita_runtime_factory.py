@@ -1,11 +1,16 @@
 from __future__ import annotations
-import json, tempfile, unittest, zipfile
+import json, shutil, tempfile, unittest, zipfile
 from pathlib import Path
-from cajita_runtime_factory import safe_rel, extract, tree_hash, tree_rows, factory_materialize, sha_file, COMBINED_CAP, externalized_container_contract, validate_packaged_archive_member_set, build_native_engine_overlays
+from cajita_runtime_factory import safe_rel, extract, tree_hash, tree_rows, factory_materialize, sha_file, COMBINED_CAP, externalized_container_contract, validate_packaged_archive_member_set, build_native_engine_overlays, max_required_glibc_version
 from reproduce_macrodown import BINARY_SUFFIXES, add_stream, DEFAULT_COMBINED_CAP_BYTES
 from cajita_runtime import KNOWN_INFRASTRUCTURE_TEST_FIXTURES, classify_model_like_paths, COMBINED_DISTRIBUTION_CAP_BYTES
 
 class FactorySafetyTests(unittest.TestCase):
+ def test_glibc_symbol_version_parser_uses_numeric_maximum(self):
+  self.assertEqual(max_required_glibc_version("foo GLIBC_2.9 GLIBC_2.35 GLIBC_2.36"),(2,36))
+  self.assertGreater(max_required_glibc_version("GLIBC_2.35 GLIBC_2.38"),(2,36))
+  self.assertIsNone(max_required_glibc_version("statically linked with no versioned GLIBC symbols"))
+
  def test_cajita_archive_and_combined_distribution_have_distinct_caps(self):
   from cajita_runtime_factory import RUNTIME_ARCHIVE_CAP
   from reproduce_macrodown import RUNTIME_ARCHIVE_CAP_BYTES
@@ -102,10 +107,10 @@ class FactorySafetyTests(unittest.TestCase):
       out="foma regression fixture\n"
      else:
       for name in ("foma","flookup"):
-       binary=cwd/name; binary.write_text("#!/bin/sh\necho fixture\n",encoding="utf-8"); binary.chmod(binary.stat().st_mode|stat.S_IXUSR)
+       binary=cwd/name; binary.write_bytes(Path(shutil.which("true")).read_bytes()); binary.chmod(binary.stat().st_mode|stat.S_IXUSR)
       out="foma build fixture\n"
     elif command and command[0]=="make" and cwd.name=="trealla-2.100.24":
-     binary=cwd/"tpl"; binary.write_text("#!/bin/sh\necho true\n",encoding="utf-8"); binary.chmod(binary.stat().st_mode|stat.S_IXUSR)
+     binary=cwd/"tpl"; binary.write_bytes(Path(shutil.which("true")).read_bytes()); binary.chmod(binary.stat().st_mode|stat.S_IXUSR)
      out="trealla build fixture\n"
     elif command and command[0]=="ldd": out="statically linked\n"
     else: out="ok\n"
@@ -127,6 +132,9 @@ class FactorySafetyTests(unittest.TestCase):
    self.assertFalse((trealla_source/"tpl").exists())
    self.assertFalse((trealla_source/"README.md").exists())
    self.assertTrue(foma_build["source_tree_preserved"])
+   foma_row=next(row for row in foma_build["binary_artifacts"] if row["name"]=="foma")
+   self.assertEqual(foma_row["linkage"]["max_required_glibc"],"2.35")
+   self.assertEqual(trealla_build["binary_artifacts"][0]["linkage"]["glibc_compatibility"],"PASS")
    self.assertEqual(foma_build["source_tree_sha256_before_build"],foma_build["source_tree_sha256_after_build"])
    self.assertTrue(trealla_build["source_tree_preserved"])
    self.assertEqual(trealla_build["source_tree_sha256_before_build"],trealla_build["source_tree_sha256_after_build"])
