@@ -111,6 +111,43 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
         self.assertEqual(set(coverage.PROBES), expected)
         self.assertEqual(len(coverage.TARGETS), 10)
 
+    def test_regular_files_without_filter_returns_nested_regular_files(self):
+        with tempfile.TemporaryDirectory(prefix="extended-target-list-files-") as temp:
+            root = Path(temp)
+            (root / "root.txt").write_text("root", encoding="utf-8")
+            (root / "nested").mkdir()
+            (root / "nested" / "opa_linux_amd64_static").write_bytes(b"pinned-opa")
+            actual = {path.relative_to(root).as_posix() for path in coverage.regular_files(root)}
+            self.assertEqual(actual, {"root.txt", "nested/opa_linux_amd64_static"})
+
+    def test_materialized_asset_root_uses_registered_path_and_descriptor_hash(self):
+        with tempfile.TemporaryDirectory(prefix="extended-target-asset-root-") as temp:
+            root = Path(temp)
+            asset_root = root / "native" / "OPA_STATIC"
+            asset_root.mkdir(parents=True)
+            descriptor = {
+                "canonical_asset_id": "OPA_STATIC",
+                "module_key": "native/OPA_STATIC",
+                "target_id": "D06_COGNITIVE_CI_CD",
+            }
+            descriptor_bytes = (json.dumps(descriptor, sort_keys=True, indent=2) + "\n").encode()
+            (asset_root / "CAJITA_MODULE.json").write_bytes(descriptor_bytes)
+            (asset_root / "opa_linux_amd64_static").write_bytes(b"pinned-test-fixture")
+            placement = {
+                "schema": "CAJITA_EXTERNALIZED_ASSET_PLACEMENT/1.0",
+                "assets": [{
+                    "id": "OPA_STATIC",
+                    "expanded_path": "cajita-luna-runtime/native/OPA_STATIC",
+                    "factory_reconciliation": {
+                        "module_manifest_sha256": hashlib.sha256(descriptor_bytes).hexdigest()
+                    }
+                }]
+            }
+            (root / "EXTERNALIZED_ASSET_PLACEMENT.json").write_text(json.dumps(placement), encoding="utf-8")
+            resolved = coverage.materialized_asset_root(root, "OPA_STATIC")
+            self.assertEqual(resolved, asset_root)
+            self.assertEqual(coverage.regular_files(resolved)[0].name, "CAJITA_MODULE.json")
+
     def test_runner_invokes_processes_without_shell(self):
         import subprocess
         result = coverage.run_process([sys.executable, "-c", "print('primitive-ok')"], timeout=10)
@@ -395,8 +432,9 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
         workflow = (REPOSITORY / ".github" / "workflows" / "cajita-louksna1-factory.yml").read_text(encoding="utf-8")
         for package in ("git", "zlib1g-dev", "p7zip-full", "build-essential"):
             self.assertIn(package, workflow)
-        for package in ("iniconfig==2.3.0", "pluggy==1.6.0", "packaging==25.0"):
+        for package in ("iniconfig==2.3.0", "pluggy==1.6.0", "packaging==25.0", "pygments==2.21.0"):
             self.assertIn(package, workflow)
+        self.assertIn("build-essential tcl git", workflow)
         source = (REPOSITORY / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
         self.assertIn('"--no-index", "--no-deps"', source)
 
