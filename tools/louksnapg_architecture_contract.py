@@ -166,6 +166,42 @@ def validate_contract(contract: Any, expected_target_ids: list[str] | tuple[str,
         }.issubset(set(workers.get("correlation_fields", []))):
             failures.append("WORKER_CORRELATION_BINDINGS_INCOMPLETE")
 
+    mission = contract.get("worker_mission")
+    expected_repair_targets = {
+        "D04_HERMENEUTICA_HG",
+        "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+        "D06_MIGRACION_PERSISTENCIA",
+    }
+    if not _object(mission):
+        failures.append("CUSTOSZ_REPAIR_MISSION_CONTRACT_MISSING")
+    else:
+        if mission.get("schema") != "LOUKSNAPG_CUSTOSZ_REPAIR_MISSION_CONTRACT/1.0":
+            failures.append("CUSTOSZ_REPAIR_MISSION_SCHEMA_INVALID")
+        if mission.get("worker_id") != "CUSTOSZV9" or mission.get("mission_id") != "issue-155" or mission.get("task_id") != "louksnapg-integral-release":
+            failures.append("CUSTOSZ_REPAIR_MISSION_IDENTITY_MISMATCH")
+        if mission.get("authorized_scope") != "VERIFY_REPAIR_PRIMITIVES_AND_BUILD_LOUKSNAPG_CANDIDATE":
+            failures.append("CUSTOSZ_REPAIR_MISSION_SCOPE_MISMATCH")
+        if set(mission.get("required_capabilities", [])) != {"verify_repair_primitives", "build_single_file_distribution"}:
+            failures.append("CUSTOSZ_REPAIR_CAPABILITIES_INCOMPLETE")
+        if mission.get("permitted_effects") != ["WRITE_EVIDENCE"]:
+            failures.append("CUSTOSZ_REPAIR_EFFECT_SCOPE_EXPANDED")
+        if not set(mission.get("required_preconditions", [])) >= {"NO_SELF_CERTIFICATION", "FAIL_CLOSED", "REPAIR_SOURCE_HASHES_PINNED", "REAL_CANDIDATE_PRIMITIVE_TESTS_REQUIRED"}:
+            failures.append("CUSTOSZ_REPAIR_PRECONDITIONS_INCOMPLETE")
+        if set(mission.get("repair_target_ids", [])) != expected_repair_targets:
+            failures.append("CUSTOSZ_REPAIR_TARGET_REGISTRY_INVALID")
+        if mission.get("evidence_schema") != "LOUKSNAPG_CUSTOSZ_PRIMITIVE_REPAIR_EVIDENCE/1.0":
+            failures.append("CUSTOSZ_REPAIR_EVIDENCE_SCHEMA_INVALID")
+        if not set(["source_commit", "contract_sha256", "bundle_sha256", "repair_source_sha256", "repair_test_source_sha256", "primitive_report_sha256"]).issubset(set(mission.get("evidence_must_bind", []))):
+            failures.append("CUSTOSZ_REPAIR_EVIDENCE_BINDINGS_INCOMPLETE")
+        if mission.get("candidate_repair_run_must_execute") is not True or mission.get("global_certification_authority") != "NONE":
+            failures.append("CUSTOSZ_REPAIR_EXECUTION_OR_NO_CERTIFICATION_POLICY_INVALID")
+        if mission.get("required_for_release") != ["repair_preflight_status_PASS", "all_three_repair_targets_PASS_PRIMITIVE_SMOKE", "primitive_report_hash_verified", "source_commit_contract_and_bundle_hashes_match"]:
+            failures.append("CUSTOSZ_REPAIR_RELEASE_REQUIREMENTS_INVALID")
+        if mission.get("heavy_model_weight_download_count") != 0 or mission.get("remote_commander_used") is not False:
+            failures.append("CUSTOSZ_REPAIR_SAFETY_POLICY_INVALID")
+        if mission.get("missing_or_failed_target_action") != "HOLD_NOT_CERTIFIED":
+            failures.append("CUSTOSZ_REPAIR_FAILURE_MUST_HOLD")
+
     obligations = contract.get("obligations")
     ids = [o.get("id") for o in obligations if _object(o)] if isinstance(obligations, list) else []
     if ids != EXPECTED_OBLIGATIONS:
@@ -246,7 +282,7 @@ def validate_contract(contract: Any, expected_target_ids: list[str] | tuple[str,
         failures.append("GOVERNANCE_CERTIFICATION_CHAIN_INVALID")
     if not _object(gates) or gates.get("missing_evidence_action") != "HOLD_NOT_CERTIFIED" or gates.get("global_certification_before_g24") != "NOT_GRANTED" or gates.get("merge_or_promotion_before_all_gates") != "PROHIBITED":
         failures.append("FAIL_CLOSED_OR_NO_AUTO_CERTIFICATION_POLICY_INVALID")
-    if not _object(gates) or not set(["all_21_targets_pass", "real_runtime_execution", "synthetic_only_false", "custosz_v9_real_receipt", "kestra_real_receipt", "g23_signature_verified", "separate_g24_signature_verified", "rollback_pass", "non_regression_pass"]).issubset(set(gates.get("hard_requirements", []))):
+    if not _object(gates) or not set(["all_21_targets_pass", "real_runtime_execution", "synthetic_only_false", "custosz_v9_real_receipt", "kestra_real_receipt", "g23_signature_verified", "separate_g24_signature_verified", "rollback_pass", "non_regression_pass", "custosz_worker_repair_preflight_pass", "custosz_repair_report_subject_bound", "three_candidate_bound_primitives_pass"]).issubset(set(gates.get("hard_requirements", []))):
         failures.append("RELEASE_HARD_REQUIREMENTS_INCOMPLETE")
 
     prohibitions = contract.get("prohibitions")
@@ -371,6 +407,34 @@ def evaluate_execution_evidence(contract: dict, contract_bytes: bytes, evidence:
         for field in ("input_sha256", "output_sha256", "telemetry_sha256"):
             if not _sha(row.get(field)):
                 failures.append("WORKER_EVIDENCE_HASH_INVALID:" + worker_id + ":" + field)
+        if worker_id == "CUSTOSZ_V9":
+            repair_mission = row.get("repair_mission")
+            if not _object(repair_mission):
+                failures.append("CUSTOSZ_REPAIR_MISSION_RECEIPT_MISSING")
+            else:
+                if repair_mission.get("schema") != "LOUKSNAPG_CUSTOSZ_REPAIR_MISSION_RECEIPT/1.0":
+                    failures.append("CUSTOSZ_REPAIR_MISSION_RECEIPT_SCHEMA_INVALID")
+                if repair_mission.get("status") != "PASS_THREE_TARGETED_PRIMITIVES":
+                    failures.append("CUSTOSZ_THREE_TARGETED_PRIMITIVES_NOT_PASS")
+                if repair_mission.get("worker_id") != "CUSTOSZV9" or repair_mission.get("task_id") != "louksnapg-integral-release" or repair_mission.get("authorized_scope") != "VERIFY_REPAIR_PRIMITIVES_AND_BUILD_LOUKSNAPG_CANDIDATE":
+                    failures.append("CUSTOSZ_REPAIR_MISSION_IDENTITY_OR_SCOPE_MISMATCH")
+                if repair_mission.get("source_commit") != source_commit or repair_mission.get("bundle_sha256") != bundle_sha or repair_mission.get("contract_sha256") != contract_sha:
+                    failures.append("CUSTOSZ_REPAIR_MISSION_SUBJECT_BINDING_MISMATCH")
+                for field in ("repair_source_sha256", "repair_test_source_sha256", "primitive_report_sha256"):
+                    if not _sha(repair_mission.get(field)):
+                        failures.append("CUSTOSZ_REPAIR_MISSION_HASH_INVALID:" + field)
+                repair_status = repair_mission.get("target_results")
+                required_repair_targets = {"D04_HERMENEUTICA_HG", "D04_TRADUCCION_LENGUAS_ANTIGUAS", "D06_MIGRACION_PERSISTENCIA"}
+                if not _object(repair_status) or set(repair_status) != required_repair_targets:
+                    failures.append("CUSTOSZ_REPAIR_TARGET_RESULTS_INCOMPLETE")
+                elif any(repair_status.get(target) != "PASS_PRIMITIVE_SMOKE" for target in required_repair_targets):
+                    failures.append("CUSTOSZ_REPAIR_TARGET_RESULT_NOT_PASS")
+                if repair_mission.get("all_target_outcomes_recorded") is not True or repair_mission.get("targeted_repairs_all_pass") is not True:
+                    failures.append("CUSTOSZ_REPAIR_TARGET_EVIDENCE_INCOMPLETE")
+                if repair_mission.get("heavy_model_weight_download_count") != 0 or repair_mission.get("remote_commander_used") is not False:
+                    failures.append("CUSTOSZ_REPAIR_MISSION_SAFETY_POLICY_VIOLATION")
+                if repair_mission.get("synthetic_unit_fixtures_used_as_product_proof") is not False:
+                    failures.append("CUSTOSZ_SYNTHETIC_UNIT_FIXTURE_PRODUCT_PROOF_FORBIDDEN")
 
     sources = evidence.get("official_source_review")
     if not _object(sources) or sources.get("status") != "PASS":
