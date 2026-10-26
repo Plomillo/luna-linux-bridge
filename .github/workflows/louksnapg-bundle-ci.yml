@@ -11,6 +11,9 @@ on:
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
       - "tests/test_louksnapg_bundle.py"
+      - "tools/louksnapg_integral_gate.py"
+      - "tests/test_louksnapg_integral_gate.py"
+      - "docs/cajita-luna/LOUKSNAPG_FUNCTIONAL_REPAIR_AUDIT_20261026.md"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
   pull_request:
     paths:
@@ -43,11 +46,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Install pinned YAML parser for Kestra static contract validation
-        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
-      - name: Compile LOUKSNAPG packaging and independent validator
+      - name: Install pinned validation dependencies
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==45.0.7
+      - name: Compile LOUKSNAPG packaging, evidence gate and independent validator
         run: |
-          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py tests/test_louksnapg_bundle.py
+          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py tools/louksnapg_integral_gate.py tests/test_louksnapg_bundle.py tests/test_louksnapg_integral_gate.py
       - name: Exercise ZIP build, cap, tamper and independent source-binding tests
         run: |
           python -m unittest discover -s tests -p 'test_louksnapg*.py' -v
@@ -69,6 +72,10 @@ jobs:
               "identity_binding_status", "engine_replacement_status",
               "functional_status", "semantic_quality_status", "host_matrix_status",
               "rollback_status", "axiom_binding_status", "block_binding_status",
+              "functional_evidence_sha256", "functional_evidence_source_commit",
+              "functional_evidence_status", "functional_target_pass_count",
+              "functional_target_expected_count", "functional_evidence_mode",
+              "g23_attestation_sha256", "g23_signature_verification_status",
           }
           assert required <= set(inputs)
           tasks = {row["id"]: row for row in flow["tasks"]}
@@ -78,5 +85,12 @@ jobs:
           text = path.read_text(encoding="utf-8")
           assert "LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD" in text
           assert "global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION" in text
-          print("LOUKSNAPG_KESTRA_CONTRACT=PASS; INTEGRAL_CERTIFICATION=SEPARATE_GATE")
+          assert "functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'" in text
+          assert "g23_signature_verification_status == 'PASS_VERIFIED'" in text
+          assert "functional_target_pass_count == 21" in text
+          gate = Path("tools/louksnapg_integral_gate.py").read_text(encoding="utf-8")
+          assert "G23_ED25519_SIGNATURE_INVALID" in gate
+          assert "G23_TRUSTED_PUBLIC_KEY_NOT_CONFIGURED" in gate
+          assert "global_certification" in gate and "NOT_GRANTED" in gate
+          print("LOUKSNAPG_KESTRA_AND_INTEGRAL_GATE_CONTRACT=PASS; PRODUCT_CERTIFICATION=NOT_GRANTED_UNLESS_EVIDENCED")
           PY
