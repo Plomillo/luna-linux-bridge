@@ -28,12 +28,14 @@ REQUIRED_REPAIR_SOURCE_FRAGMENTS = (
     r"initialization(({query})).\n",
     'trealla_env["TPL_LIBRARY_PATH"]=str(packaged_library)',
     "regex [c a t]:[g a t o];",
+    'run_process([str(flookup_binary),"-i",str(fst)]',
     'base + "/readyz"',
     '"rqlite_readiness": ready_receipt',
 )
 REQUIRED_REPAIR_REGRESSION_TESTS = (
     "test_trealla_probe_executes_packaged_binary_without_source_build",
     "test_foma_probe_executes_packaged_foma_and_flookup",
+    "test_foma_probe_requires_forward_lookup_mode",
     "test_rqlite_readiness_requires_elected_leader_and_store",
     "test_rqlite_readiness_polls_readyz_not_status",
 )
@@ -270,7 +272,7 @@ def main(argv=None) -> int:
         "source_commit": head,
         "targets": [
             {"target_id": "D04_HERMENEUTICA_HG", "fault": "Trealla DCG probe did not import library(dcgs) and loaded the grammar after evaluating the query", "required_fix": "load bundled grammar first and explicitly import library(dcgs)"},
-            {"target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS", "fault": "Foma validation fixture treated unspaced strings as character sequences; upstream treats them as multi-character symbols", "required_fix": "compile regex [c a t]:[g a t o]; and verify packaged flookup returns gato"},
+            {"target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS", "fault": "Foma validation fixture treated unspaced strings as character sequences; upstream treats them as multi-character symbols", "required_fix": "compile official regex [c a t]:[g a t o]; invoke flookup -i because default direction is inverse; verify packaged forward lookup returns gato"},
             {"target_id": "D06_MIGRACION_PERSISTENCIA", "fault": "rqlite write raced Raft leader election because /status was mistaken for write readiness", "required_fix": "poll /readyz until node, leader and store are ready before writes"},
         ],
         "product_scope": "bounded primitive repair validation; does not claim full hermeneutics or an ancient-language lexicon",
