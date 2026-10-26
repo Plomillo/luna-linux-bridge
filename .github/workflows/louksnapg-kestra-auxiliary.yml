@@ -435,6 +435,7 @@ jobs:
           build=json.loads(Path("candidate/LOUKSNAPG_BUILD_REPORT.json").read_text(encoding="utf-8"))
           worker=json.loads(Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json").read_text(encoding="utf-8"))
           validation=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
+          functional=json.loads(Path("candidate/LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json").read_text(encoding="utf-8"))
           bundle=Path("candidate/LOUKSNAPG.md")
           token=os.environ.get("KESTRA_API_TOKEN","")
           base=os.environ.get("KESTRA_URL","").rstrip("/")
@@ -445,7 +446,7 @@ jobs:
             "bundle_bytes":bundle.stat().st_size,
             "bundle_sha256":hashlib.sha256(bundle.read_bytes()).hexdigest(),
             "integrity_status":"PASS",
-            "functional_evidence_status":"NOT_ESTABLISHED",
+            "functional_evidence_status":functional.get("status","NOT_ESTABLISHED"),
             "g23_signature_verification_status":"NOT_ESTABLISHED",
               "g23_producer_id":"NOT_ESTABLISHED",
               "g23_validator_id":"NOT_ESTABLISHED",
@@ -476,9 +477,9 @@ jobs:
               "functional_evidence_sha256":os.environ.get("FUNCTIONAL_EVIDENCE_SHA256",""),
               "functional_evidence_source_commit":os.environ["SOURCE_COMMIT"],
               "functional_evidence_status":"NOT_ESTABLISHED",
-              "functional_target_pass_count":"0",
+              "functional_target_pass_count":str(functional.get("quality_pass_count",0)),
               "functional_target_expected_count":"21",
-              "functional_evidence_mode":"NOT_ESTABLISHED",
+              "functional_evidence_mode":functional.get("execution_mode","NOT_PERFORMED"),
               "g23_attestation_sha256":os.environ.get("G23_ABSENCE_SHA256",""),
               "g23_signature_verification_status":"NOT_ESTABLISHED",
               "architecture_contract_sha256":os.environ.get("CONTRACT_SHA256",""),
@@ -491,8 +492,8 @@ jobs:
               "telemetry_status":"INCOMPLETE_HOLD",
               "heavy_model_download_count":"0",
               "remote_commander_used":"false",
-              "functional_status":"NOT_ESTABLISHED",
-              "semantic_quality_status":"NOT_ESTABLISHED",
+              "functional_status":"FAIL" if functional.get("status")=="FAIL" else "NOT_ESTABLISHED",
+              "semantic_quality_status":"FAIL" if int(functional.get("quality_fail_count",0))>0 else "NOT_ESTABLISHED",
               "host_matrix_status":"NOT_ESTABLISHED",
               "rollback_status":"NOT_ESTABLISHED",
               "axiom_binding_status":"NOT_ESTABLISHED",
