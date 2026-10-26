@@ -840,16 +840,31 @@ jobs:
             MEMMAX="$(cat "$RUNNER_TEMP/cgroup-memory-max.txt" 2>/dev/null)"
             CPUMAX="$(cat "$RUNNER_TEMP/cgroup-cpu-max.txt" 2>/dev/null)"
             PEAK="$(cat "$RUNNER_TEMP/cgroup-memory-peak.txt" 2>/dev/null)"
-            if [ "$VALIDATOR_RC" -eq 0 ] && [ "$SMOKE_RC" -eq 0 ] && [ "$TASK_RC" -eq 0 ] && [ "$MEMMAX" = "1073741824" ] && [ "$CPUMAX" = "100000 100000" ] && [ -n "$PEAK" ] && [ "$PEAK" -le 1073741824 ]; then
-              STATUS="PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE"
-              REASON="SIX_DOMAIN_SMOKE_PLUS_FIVE_KNOWN_ANSWER_MODEL_TASKS_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_PASS_WITH_EFFECTIVE_ONE_CPU_1_GIB_LIMITS"
+            # A successful synthetic harness is not integral functional evidence.
+            # This gate rejects synthetic-only evidence and requires an independently
+            # signed G23 envelope for the exact candidate and commit.
+            set +e
+            python tools/louksnapg_integral_gate.py \
+              --evidence "$RUNNER_TEMP/task-adapter-e2e-raw.json" \
+              --bundle "evidence/louksna1-candidate/LOUKSNAPG.md" \
+              --expected-source-commit "$LOUKSNA_FACTORY_HEAD_SHA" \
+              --report "$RUNNER_TEMP/LOUKSNAPG_FUNCTIONAL_GATE.json" \
+              > "$RUNNER_TEMP/LOUKSNAPG_FUNCTIONAL_GATE.log" 2>&1
+            FUNCTIONAL_GATE_RC=$?
+            cat "$RUNNER_TEMP/LOUKSNAPG_FUNCTIONAL_GATE.log"
+            if [ "$VALIDATOR_RC" -eq 0 ] && [ "$SMOKE_RC" -eq 0 ] && [ "$TASK_RC" -eq 0 ] && [ "$FUNCTIONAL_GATE_RC" -eq 0 ] && [ "$MEMMAX" = "1073741824" ] && [ "$CPUMAX" = "100000 100000" ] && [ -n "$PEAK" ] && [ "$PEAK" -le 1073741824 ]; then
+              STATUS="PASS_INTEGRAL_FUNCTIONAL_EVIDENCE_READY_FOR_SEPARATE_G24"
+              REASON="ALL_21_REAL_TARGETS_AND_VERIFIED_G23_EVIDENCE_PASS_WITH_EFFECTIVE_ONE_CPU_1_GIB_LIMITS"
             else
-              REASON="BUNDLE_VALIDATOR_RC_${VALIDATOR_RC}_OR_SMOKE_TASK_ADAPTER_RESOURCE_GATE_FAILED_SMOKE_RC_${SMOKE_RC}_TASK_RC_${TASK_RC}"
+              STATUS="HOLD_INTEGRAL_FUNCTIONAL_EVIDENCE_INCOMPLETE"
+              REASON="INTEGRAL_GATE_RC_${FUNCTIONAL_GATE_RC}; VALIDATOR_RC_${VALIDATOR_RC}; SMOKE_RC_${SMOKE_RC}; TASK_RC_${TASK_RC}; NO_G24_CERTIFICATION_GRANTED"
             fi
           else
+            STATUS="HOLD_INTEGRAL_FUNCTIONAL_EVIDENCE_INCOMPLETE"
+            FUNCTIONAL_GATE_RC=125
             REASON="SMOKE_IMAGE_BUILD_FAILED"
           fi
-          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC TASK_RC BUILD_RC VALIDATOR_RC
+          export STATUS REASON PEAK MEMMAX CPUMAX SMOKE_RC TASK_RC BUILD_RC VALIDATOR_RC FUNCTIONAL_GATE_RC
           python - <<'PY'
           import hashlib,json,os,zipfile
           from pathlib import Path
@@ -880,6 +895,9 @@ jobs:
             "bundle_bytes":p.stat().st_size if p.is_file() else None,
             "runtime_source_sha256":hashlib.sha256(runtime_source.read_bytes()).hexdigest() if runtime_source.is_file() else None,
             "bundle_validation_return_code":int(os.environ.get("VALIDATOR_RC","125")),
+            "integral_functional_gate_return_code":int(os.environ.get("FUNCTIONAL_GATE_RC","125")),
+            "integral_functional_gate_sha256":hashlib.sha256((Path(os.environ["RUNNER_TEMP"])/"LOUKSNAPG_FUNCTIONAL_GATE.json").read_bytes()).hexdigest() if (Path(os.environ["RUNNER_TEMP"])/"LOUKSNAPG_FUNCTIONAL_GATE.json").is_file() else None,
+            "integral_functional_evidence_decision":json.loads((Path(os.environ["RUNNER_TEMP"])/"LOUKSNAPG_FUNCTIONAL_GATE.json").read_text(encoding="utf-8")).get("decision","HOLD") if (Path(os.environ["RUNNER_TEMP"])/"LOUKSNAPG_FUNCTIONAL_GATE.json").is_file() else "HOLD",
             "louksna1_sha256":hashlib.sha256(d.read_bytes()).hexdigest() if d.is_file() else None,
             "source_commit":release.get("source_commit"),"reason":os.environ["REASON"],
             "smoke_return_code":int(os.environ["SMOKE_RC"]),"task_adapter_return_code":int(os.environ.get("TASK_RC","125")),
@@ -907,10 +925,14 @@ jobs:
           Path("evidence/LOUKSNA1_G24_EVIDENCE.json").write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
           print(json.dumps(result,indent=2,ensure_ascii=False))
           PY
-          if [ "$STATUS" = "PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE" ]; then
-            echo "gate_pass=true" >> "$GITHUB_OUTPUT"
+          # This output is only an eligibility prerequisite; it is not the G24 signature.
+          # Keep release publication blocked until a separate authorized G24 decision exists.
+          if [ "$STATUS" = "PASS_INTEGRAL_FUNCTIONAL_EVIDENCE_READY_FOR_SEPARATE_G24" ]; then
+            echo "gate_pass=false" >> "$GITHUB_OUTPUT"
+            echo "G24=HOLD; integral evidence is only eligible for separate G24 review"
           else
             echo "gate_pass=false" >> "$GITHUB_OUTPUT"
+            echo "G24=HOLD; integral functional evidence has not passed"
           fi
           exit 0
 
@@ -941,6 +963,8 @@ jobs:
             ${{ runner.temp }}/task-adapter-e2e.rc
             ${{ runner.temp }}/smoke-all.rc
             ${{ runner.temp }}/LOUKSNAPG_G24_INDEPENDENT_VALIDATION.json
+            ${{ runner.temp }}/LOUKSNAPG_FUNCTIONAL_GATE.json
+            ${{ runner.temp }}/LOUKSNAPG_FUNCTIONAL_GATE.log
           if-no-files-found: warn
           retention-days: 90
 
@@ -955,7 +979,7 @@ jobs:
             echo "G24=FAIL_CLOSED; candidate publication remains blocked"
             exit 1
           fi
-          echo "G24=PASS_FOR_DECLARED_SYNTHETIC_FUNCTIONAL_E2E_SCOPE"
+          echo "G24=NOT_GRANTED; no cryptographically separate G24 certification is issued by this smoke job"
 
   publish-candidate:
     needs: [manufacture, g23-independent-validation, g24-resource-limited-runtime-smoke]
