@@ -166,12 +166,12 @@ class CajitaRouterTests(unittest.TestCase):
             graph = json.loads(graph_path.read_text(encoding="utf-8"))
             graph["block_inventory"]["ids"] = graph["block_inventory"]["ids"][:-1]
             graph["block_routes"] = graph["block_routes"][:-1]
-            raw = (json.dumps(graph, ensure_ascii=False, sort_keys=True, indent=2) + "\\n").encode("utf-8")
+            raw = (json.dumps(graph, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
             graph_path.write_bytes(raw)
             binding_path = graph_path.parent / "axiom_interdisciplinary_binding.json"
             binding = json.loads(binding_path.read_text(encoding="utf-8"))
             binding["block_engine_graph"]["sha256"] = _sha(raw)
-            binding_path.write_text(json.dumps(binding, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+            binding_path.write_text(json.dumps(binding, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             report = verify_interdisciplinary_graph(runtime, doc)
             self.assertEqual(report["status"], "FAIL_CLOSED")
             self.assertIn("BLOCK_ENGINE_GRAPH_CANONICAL_RANGE_MISMATCH", report["reason"])
