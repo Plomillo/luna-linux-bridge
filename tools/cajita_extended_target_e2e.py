@@ -273,10 +273,7 @@ def probe_foma(root: Path) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix="foma-packaged-primitive-") as temp:
         temp_path=Path(temp)
         script=temp_path/"primitive.foma"
-        script.write_text("regex cat -> gato;
-save stack primitive.fst
-quit
-",encoding="utf-8")
+        script.write_text("regex cat -> gato;\nsave stack primitive.fst\nquit\n",encoding="utf-8")
         compiled=require_ok(run_process([str(foma_binary),"-q","-f",str(script)],cwd=temp_path,timeout=30,env=env),"FOMA_PACKAGED_TRANSDUCER_BUILD_FAILED")
         fst=temp_path/"primitive.fst"
         if fst.is_symlink() or not fst.is_file() or fst.stat().st_size==0:
