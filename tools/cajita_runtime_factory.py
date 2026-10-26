@@ -489,7 +489,7 @@ def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
   candidates=[p for p in root.rglob(name) if p.is_file() and not p.is_symlink() and (p.stat().st_mode&0o111)]
   if not candidates: raise RuntimeError("NATIVE_ENGINE_EXECUTABLE_MISSING:"+name+":"+str(root))
   return min(candidates,key=lambda p:(len(p.relative_to(root).parts),p.relative_to(root).as_posix().encode("utf-8")))
- def copy_shared_libraries(build_root,source_root):
+ def copy_shared_libraries(build_root,artifact_root):
   copied=[]
   for path in sorted(build_root.rglob("*"),key=lambda p:p.relative_to(build_root).as_posix().encode("utf-8")):
    if not (path.name.endswith(".so") or ".so." in path.name): continue
@@ -499,15 +499,18 @@ def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
     data=resolved.read_bytes()
    elif path.is_file(): data=path.read_bytes()
    else: continue
-   rel=path.relative_to(build_root); dest=source_root/rel; dest.parent.mkdir(parents=True,exist_ok=True)
+   rel=path.relative_to(build_root); dest=artifact_root/"lib"/rel; dest.parent.mkdir(parents=True,exist_ok=True)
    if dest.exists() or dest.is_symlink():
     if dest.is_symlink() or not dest.is_file() or sha_file(dest)!=sha_bytes(data): raise RuntimeError("NATIVE_ENGINE_SHARED_LIBRARY_COLLISION:"+str(dest))
    else:
     dest.write_bytes(data); os.chmod(dest,0o644)
    copied.append({"path":dest.relative_to(runtime).as_posix(),"bytes":len(data),"sha256":sha_bytes(data)})
   return copied
- def verify_linkage(binary,label):
-  proc=runner(["ldd",str(binary)],cwd=str(binary.parent),stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=20,check=False)
+ def verify_linkage(binary,label,library_dirs):
+  env=os.environ.copy()
+  old_ld=env.get("LD_LIBRARY_PATH","")
+  env["LD_LIBRARY_PATH"]=os.pathsep.join([str(x) for x in library_dirs]+([old_ld] if old_ld else []))
+  proc=runner(["ldd",str(binary)],cwd=str(binary.parent),env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=20,check=False)
   output=proc.stdout or ""
   if "not found" in output: raise RuntimeError("NATIVE_ENGINE_LINKED_LIBRARY_MISSING:"+label+":"+output[-2000:])
   if proc.returncode not in (0,1) or (proc.returncode==1 and "not a dynamic executable" not in output.lower() and "statically linked" not in output.lower()):
@@ -515,6 +518,9 @@ def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
   return {"return_code":proc.returncode,"output_tail":output[-2000:],"output_sha256":sha_bytes(output.encode("utf-8"))}
  def build_one(label,target_id,source,command,checks,binary_names,readme_placeholder=False):
   source_tree_sha=tree_hash(source)
+  artifact_root=runtime/".native-engine-bin"/label.lower()
+  if artifact_root.exists() or artifact_root.is_symlink(): raise RuntimeError("NATIVE_ENGINE_OUTPUT_COLLISION:"+label)
+  artifact_root.mkdir(parents=True)
   with tempfile.TemporaryDirectory(prefix="cajita-native-"+label.lower()+"-") as tmp:
    build_root=Path(tmp)/source.name; shutil.copytree(source,build_root,symlinks=False)
    placeholder=False
@@ -542,15 +548,20 @@ def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
     placeholder=True
    commands=[run(command,build_root,900,label+"_BUILD")]
    for check_command in checks: commands.append(run(check_command,build_root,900,label+"_REGRESSION"))
-   libraries=copy_shared_libraries(build_root,source)
+   libraries=copy_shared_libraries(build_root,artifact_root)
+   library_dirs=sorted({(runtime/row["path"]).parent for row in libraries},key=lambda p:p.as_posix())
    outputs=[]
    for name in binary_names:
-    built=executable(build_root,name); dest=source/name
+    built=executable(build_root,name); dest=artifact_root/name
     if dest.exists() or dest.is_symlink(): raise RuntimeError("NATIVE_ENGINE_BINARY_DESTINATION_COLLISION:"+label+":"+str(dest))
     dest.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(built,dest); os.chmod(dest,dest.stat().st_mode|0o111)
-    outputs.append({"name":name,"path":dest.relative_to(runtime).as_posix(),"bytes":dest.stat().st_size,"sha256":sha_file(dest),"linkage":verify_linkage(dest,label+"_"+name)})
+    outputs.append({"name":name,"path":dest.relative_to(runtime).as_posix(),"bytes":dest.stat().st_size,"sha256":sha_file(dest),"linkage":verify_linkage(dest,label+"_"+name,library_dirs)})
+   if tree_hash(source)!=source_tree_sha:
+    raise RuntimeError("NATIVE_ENGINE_PROTECTED_SOURCE_TREE_MUTATED:"+label)
   return {"target_id":target_id,"source_path":source.relative_to(runtime).as_posix(),"source_commit":source_commit,
-          "source_tree_sha256_before_build":source_tree_sha,"build_commands":commands,
+          "source_tree_sha256_before_build":source_tree_sha,"source_tree_sha256_after_build":tree_hash(source),
+          "source_tree_preserved":True,"build_commands":commands,
+          "native_artifact_root":artifact_root.relative_to(runtime).as_posix(),
           "temporary_readme_prerequisite_created":placeholder,"temporary_test_mode_repairs":temporary_test_mode_repairs,
           "binary_artifacts":outputs,"shared_libraries":libraries,
           "build_status":"PASS","runtime_compile_required":False,"certification":"NOT_GRANTED"}
@@ -567,6 +578,8 @@ def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
  receipt_path.write_text(json.dumps(receipt,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
  routing.setdefault("materialization",{})["native_engine_build_receipt"]="NATIVE_ENGINE_BUILD_RECEIPTS.json"
  routing["materialization"]["native_engine_build_receipt_sha256"]=sha_file(receipt_path)
+ routing["materialization"]["native_engine_artifact_root"]=".native-engine-bin"
+ routing["materialization"]["native_engine_source_tree_mutation"]=False
  routing["materialization"]["native_engine_build_status"]="PASS_TWO_PINNED_SOURCE_BUILDS"
  routing["materialization"]["native_engine_runtime_compile_required"]=False
  routing_path.write_text(json.dumps(routing,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
