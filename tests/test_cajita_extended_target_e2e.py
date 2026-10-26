@@ -388,6 +388,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 "assert '-l' in sys.argv\n"
                 "driver = pathlib.Path(sys.argv[sys.argv.index('-l')+1])\n"
                 "text = driver.read_text(encoding='utf-8')\n"
+                "assert text.count(chr(10)) >= 2 and chr(92)+'n' not in text\n"
                 "assert 'use_module(library(dcgs))' in text\n"
                 "assert 'include(' in text\n"
                 "assert 'phrase(sentence,[the,man,shoots]),write(true),halt' in text\n"
