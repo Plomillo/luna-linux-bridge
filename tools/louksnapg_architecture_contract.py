@@ -31,6 +31,20 @@ EXPECTED_MODEL_URLS = {
     "D05_DOCLING": ("https://huggingface.co/ibm-granite/granite-docling-258M", "ibm-granite/granite-docling-258M"),
     "D06_ANALISIS_AVANZADO": ("https://github.com/QwenLM/Qwen3", "Qwen/Qwen3-0.6B"),
 }
+EXPECTED_SOURCE_REVISIONS = {
+    "D01_CEREBRO_ROOT": "5681a6b6552635e7b29cde94a61ca6a7aee90ebd",
+    "D03_TRANSCRIPCION_ROOT": "86098128c0b4f24f0e2aa2994de830614b474227",
+    "D04_TRADUCCION_GENERAL": "9a081e935c29c6b1e0e05bcbf3fcb623ad306524",
+    "D05_DOCLING": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+    "D06_ANALISIS_AVANZADO": "7a2f61ffc7a20d47efcd2bf97f6f2bf52729042e",
+}
+EXPECTED_MODEL_REVISIONS = {
+    "D01_CEREBRO_ROOT": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    "D03_TRANSCRIPCION_ROOT": "41f01f3fe87f28c78e2fbf8b568835947dd65ed9",
+    "D04_TRADUCCION_GENERAL": "b8d7691bcced0d24b2655f534b6148be78346b72",
+    "D05_DOCLING": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+    "D06_ANALISIS_AVANZADO": "c1899de289a04d12100db370d81485cdf75e47ca",
+}
 REQUIRED_REPAIR_TARGETS = {
     "D01_CEREBRO_ROOT", "D03_TRANSCRIPCION_ROOT", "D04_TRADUCCION_GENERAL",
     "D05_DOCLING", "D06_ANALISIS_AVANZADO",
@@ -148,9 +162,15 @@ def validate_contract(contract: Any, expected_target_ids: list[str] | tuple[str,
             failures.append("OFFICIAL_SOURCE_PIN_TYPE_INVALID:" + target)
         if not _nonempty(row.get("model_repository")):
             failures.append("OFFICIAL_MODEL_REPOSITORY_URL_MISSING:" + target)
+        if row.get("official_source_revision_commit") != EXPECTED_SOURCE_REVISIONS[target]:
+            failures.append("OFFICIAL_SOURCE_REVISION_COMMIT_MISMATCH:" + target)
         model_revision = row.get("model_repository_revision_commit")
+        if model_revision != EXPECTED_MODEL_REVISIONS[target]:
+            failures.append("MODEL_REPOSITORY_REVISION_NOT_PINNED_OR_MISMATCHED:" + target)
         if not _commit(model_revision):
             failures.append("MODEL_REPOSITORY_REVISION_NOT_PINNED:" + target)
+        if row.get("allowed_variants") not in (None, [model_id]):
+            failures.append("UNAUTHORIZED_MODEL_VARIANT_SUBSTITUTION_ALLOWED:" + target)
     whisper = catalog.get("D03_TRANSCRIPCION_ROOT", {})
     if whisper.get("task") != "speech_transcription_only" or whisper.get("translation_use_prohibited") is not True:
         failures.append("WHISPER_TURBO_TRANSLATION_MISUSE_NOT_BLOCKED")
