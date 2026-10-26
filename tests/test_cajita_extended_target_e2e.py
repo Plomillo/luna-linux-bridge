@@ -212,7 +212,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="extended-target-trealla-build-") as temp:
             root = Path(temp)
             relative = "4. Traductor Inteligente/Hermenéutica H-G/trealla-2.100.24"
-            source = root / relative / "trealla-2.100.24"
+            source = root / relative / "trealla-2.100.24" / "trealla-2.100.24"
             (source / "samples").mkdir(parents=True)
             (source / "Makefile").write_text("all: README.md\n\t@touch tpl\n", encoding="utf-8")
             (source / "samples" / "grammar.pl").write_text("sentence --> [fixture].\n", encoding="utf-8")
