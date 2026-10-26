@@ -49,7 +49,7 @@ MODEL_TARGETS = {
 }
 OFFICIAL_MODEL_IDS = {
     "D01_CEREBRO_ROOT": "openai/gpt-oss-120b",
-    "D03_TRANSCRIPCION_ROOT": "turbo",
+    "D03_TRANSCRIPCION_ROOT": "openai/whisper-large-v3-turbo",
     "D04_TRADUCCION_GENERAL": "facebook/seamless-m4t-v2-large",
     "D05_DOCLING": "ibm-granite/granite-docling-258M",
 }
@@ -230,6 +230,8 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
                 target_failures.append("UPSTREAM_SOURCE_NOT_OFFICIAL_EXPECTED_URL")
             if not COMMIT_RE.fullmatch(str(row.get("upstream_revision_sha256", ""))):
                 target_failures.append("UPSTREAM_REVISION_NOT_PINNED_TO_COMMIT")
+            if not COMMIT_RE.fullmatch(str(row.get("model_repository_revision_commit", ""))):
+                target_failures.append("MODEL_REPOSITORY_REVISION_NOT_PINNED")
         target_checks.append({"target_id": target_id, "status": "PASS" if not target_failures else "HOLD",
                               "failures": target_failures})
         failures.extend("TARGET:" + target_id + ":" + item for item in target_failures)
