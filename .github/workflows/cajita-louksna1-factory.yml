@@ -403,7 +403,6 @@ jobs:
         shell: bash
         env:
           LOUKSNA_FACTORY_HEAD_SHA: ${{ needs.manufacture.outputs.source_commit }}
-          LOUKSNAPG_G23_PUBLIC_KEY_PEM: ${{ vars.LOUKSNAPG_G23_PUBLIC_KEY_PEM }}
         run: |
           set -euo pipefail
           test -s candidate/LOUKSNAPG.md
@@ -784,6 +783,7 @@ jobs:
         shell: bash
         env:
           LOUKSNA_FACTORY_HEAD_SHA: ${{ needs.manufacture.outputs.source_commit }}
+          LOUKSNAPG_G23_PUBLIC_KEY_PEM: ${{ vars.LOUKSNAPG_G23_PUBLIC_KEY_PEM }}
         run: |
           set +e
           ROOT="$RUNNER_TEMP/louksnapg-runtime"
