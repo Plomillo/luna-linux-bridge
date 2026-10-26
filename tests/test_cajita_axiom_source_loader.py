@@ -86,6 +86,18 @@ def _write_fixture(tmp: str, *, source_doc: bytes = b"protected architecture\nru
     return runtime, doc
 
 class AxiomBindingTests(unittest.TestCase):
+    def test_distributed_loader_copy_is_byte_exact_to_authoritative_source(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        source_loader = repo_root / "tools" / "cajita_axiom_source_loader.py"
+        runtime_loader = repo_root / "cajita-luna-runtime" / MULTI_PATH / "cajita_axiom_source_loader.py"
+        self.assertTrue(source_loader.is_file(), "AUTHORITATIVE_AXIOM_LOADER_MISSING")
+        self.assertTrue(runtime_loader.is_file(), "DISTRIBUTED_AXIOM_LOADER_MISSING")
+        self.assertEqual(
+            runtime_loader.read_bytes(),
+            source_loader.read_bytes(),
+            "AXIOM_SOURCE_LOADER_COPY_DRIFT",
+        )
+
     def test_source_prefix_and_all_134_block_routes_pass(self):
         with tempfile.TemporaryDirectory() as tmp:
             runtime, doc = _write_fixture(tmp)
