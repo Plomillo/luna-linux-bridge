@@ -151,6 +151,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             self._write_fake_calibre_converter(fake_converter)
             environment = {
                 "CALIBRE_EBOOK_CONVERT": str(fake_converter),
+                "CALIBRE_RUNTIME_ROOT": str(root),
                 "CALIBRE_OFFICIAL_ASSET_ID": "CALIBRE_V9_17_0_LINUX_X86_64_BINARY",
                 "CALIBRE_OFFICIAL_ASSET_SHA256": "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53",
                 "CALIBRE_OFFICIAL_ASSET_SIZE_BYTES": "201590724",
