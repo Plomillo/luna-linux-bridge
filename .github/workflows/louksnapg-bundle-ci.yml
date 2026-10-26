@@ -24,6 +24,8 @@ on:
       - "docs/cajita-luna/LOUKSNAPG_FUNCTIONAL_REPAIR_AUDIT_20261026.md"
       - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md"
       - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.md"
       - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT_40302483781_20261026.json"
       - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT_40302483781_20261026.md"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
@@ -132,6 +134,29 @@ jobs:
           assert execution_audit["six_obligations"]["C6_PROHIBITIONS_AND_RECOVERY"]["status"] == "PASS_PROHIBITIONS_OBSERVED"
           assert all(execution_audit["model_tasks"]["task_results"][i]["quality_status"] == "FAIL" for i in range(5))
           assert execution_audit["worker_receipts"]["secondary"]["status"] == "NOT_CONFIGURED"
+          # Preserve the prior audit above, and validate the later immutable report for run 40309113060.
+          latest_path = Path("docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.json")
+          latest = json.loads(latest_path.read_text(encoding="utf-8"))
+          assert latest["schema"] == "LOUKSNAPG_INTEGRAL_REPAIR_BLOCKER_AUDIT/1.0"
+          assert latest["audit_id"] == "LOUKSNAPG-REPAIR-HOLD-20261026-RUN40309113060"
+          assert latest["evidence_scope"]["factory_run_id"] == 40309113060
+          assert latest["evidence_scope"]["source_commit"] == "5fab498b6faae08f59962861503b1a1202fcc83c"
+          assert latest["evidence_scope"]["candidate_sha256"] == "3337c635d77d509e061768d573330345ff6673bafa8de828ad8b0bd3b1d52f7c"
+          assert latest["size_integrity"]["candidate_size_gate"] == "PASS"
+          assert latest["size_integrity"]["runtime_size_gate"] == "PASS"
+          assert latest["six_obligations"]["C1_COORDINATED_WORKERS"]["status"] == "HOLD"
+          assert latest["six_obligations"]["C2_OFFICIAL_SOURCE_REPAIR"]["status"] == "HOLD"
+          assert latest["six_obligations"]["C3_PRIMITIVE_FUNCTIONS"]["status"] == "FAIL"
+          assert latest["six_obligations"]["C4_TELEMETRY_AND_AUDIT"]["status"] == "PASS_PARTIAL"
+          assert latest["six_obligations"]["C5_GOVERNED_RELEASE_CHAIN"]["status"] == "HOLD"
+          assert latest["six_obligations"]["C6_PROHIBITIONS_AND_RECOVERY"]["status"] == "PASS_FOR_OBSERVED_RUN"
+          assert len(latest["model_task_results"]) == 5
+          assert sum(row["quality_status"] == "PASS" for row in latest["model_task_results"]) == 0
+          assert sum(row["quality_status"] == "FAIL" for row in latest["model_task_results"]) == 5
+          assert latest["exact_gate_results"]["g24_decision"] == "NOT_GRANTED"
+          assert latest["exact_gate_results"]["kestra_receipt"] == "NOT_CONFIGURED"
+          assert latest["safety_observations"]["heavy_model_weights_downloaded"] is False
+          assert latest["safety_observations"]["remote_commander_used"] is False
           required = {
               "source_commit", "bundle_sha256", "bundle_bytes", "document_sha256",
               "runtime_source_sha256", "worker_status", "independent_integrity_status",
