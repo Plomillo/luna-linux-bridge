@@ -14,6 +14,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
+from datetime import datetime
 from typing import Any
 
 DEFAULT_CONTRACT = Path(__file__).resolve().parents[1] / "contracts" / "louksnapg" / "architecture-contract.v1.json"
@@ -29,6 +30,16 @@ EXPECTED_MODEL_URLS = {
     "D04_TRADUCCION_GENERAL": ("https://github.com/facebookresearch/seamless_communication", "facebook/seamless-m4t-v2-large"),
     "D05_DOCLING": ("https://huggingface.co/ibm-granite/granite-docling-258M", "ibm-granite/granite-docling-258M"),
     "D06_ANALISIS_AVANZADO": ("https://github.com/QwenLM/Qwen3", "Qwen/Qwen3-0.6B"),
+}
+REQUIRED_REPAIR_TARGETS = {
+    "D01_CEREBRO_ROOT", "D03_TRANSCRIPCION_ROOT", "D04_TRADUCCION_GENERAL",
+    "D05_DOCLING", "D06_ANALISIS_AVANZADO",
+}
+REQUIRED_REPAIR_FIELDS = {
+    "target_id", "status", "synthetic_only", "official_source_url", "upstream_model_id",
+    "upstream_revision_commit", "upstream_weights_sha256", "candidate_before_weights_sha256",
+    "candidate_after_weights_sha256", "repair_implementation_commit", "test_evidence_sha256",
+    "quality_report_sha256", "expected_test_count", "passed_test_count", "semantic_quality_status",
 }
 REQUIRED_TELEMETRY = {
     "SOURCE", "INPUT", "OPERATION", "OUTPUT", "TEST", "VALIDATION",
@@ -174,6 +185,19 @@ def validate_contract(contract: Any, expected_target_ids: list[str] | tuple[str,
     }
     if prohibitions != expected_prohibitions:
         failures.append("PROHIBITED_ACTION_POLICY_CHANGED")
+    repair_spec = contract.get("model_repair_evidence")
+    if not _object(repair_spec):
+        failures.append("MODEL_REPAIR_EVIDENCE_SPEC_MISSING")
+    else:
+        if repair_spec.get("required_model_target_count") != 5 or set(repair_spec.get("target_ids", [])) != REQUIRED_REPAIR_TARGETS:
+            failures.append("MODEL_REPAIR_TARGET_REGISTRY_INVALID")
+        if set(repair_spec.get("required_per_target_fields", [])) != REQUIRED_REPAIR_FIELDS:
+            failures.append("MODEL_REPAIR_EVIDENCE_FIELDS_INVALID")
+        if repair_spec.get("repair_must_change_candidate_weights") is not True or repair_spec.get("candidate_after_hash_must_match_functional_gate") is not True:
+            failures.append("MATERIAL_REPAIR_AND_FUNCTIONAL_HASH_BINDING_REQUIRED")
+        if repair_spec.get("synthetic_evidence_allowed") is not False or repair_spec.get("semantic_quality_pass_required") is not True or repair_spec.get("release_implication_if_missing") != "HOLD_NOT_CERTIFIED":
+            failures.append("MODEL_REPAIR_FAIL_CLOSED_POLICY_INVALID")
+
     evidence_schema = contract.get("evidence_schema")
     if evidence_schema != "LOUKSNAPG_ARCHITECTURE_EXECUTION_EVIDENCE/1.0":
         failures.append("EXECUTION_EVIDENCE_SCHEMA_UNDECLARED")
@@ -204,8 +228,14 @@ def evaluate_execution_evidence(contract: dict, contract_bytes: bytes, evidence:
         row = worker_runs.get(worker_id, {}) if _object(worker_runs) else {}
         if row.get("status") != "PASS" or row.get("source_commit") != source_commit:
             failures.append("WORKER_STATUS_OR_COMMIT_MISMATCH:" + worker_id)
+        if row.get("contract_sha256") != contract_sha:
+            failures.append("WORKER_CONTRACT_SHA256_MISMATCH:" + worker_id)
+        if row.get("bundle_sha256") != bundle_sha:
+            failures.append("WORKER_BUNDLE_SHA256_MISMATCH:" + worker_id)
         if not _nonempty(row.get("run_id")):
             failures.append("WORKER_REAL_RUN_ID_MISSING:" + worker_id)
+        if worker_id == "KESTRA" and not _nonempty(row.get("execution_id")):
+            failures.append("KESTRA_EXECUTION_ID_MISSING")
         for field in ("input_sha256", "output_sha256", "telemetry_sha256"):
             if not _sha(row.get(field)):
                 failures.append("WORKER_EVIDENCE_HASH_INVALID:" + worker_id + ":" + field)
@@ -234,8 +264,47 @@ def evaluate_execution_evidence(contract: dict, contract_bytes: bytes, evidence:
             failures.append("MODEL_RUNTIME_OR_TOKENIZER_HASH_MISSING:" + target)
 
     repair = evidence.get("repair_result")
+    repair_rows = repair.get("model_repairs", []) if _object(repair) else []
+    repair_by_id = {row.get("target_id"): row for row in repair_rows if _object(row)}
     if not _object(repair) or repair.get("status") != "PASS" or repair.get("model_targets_repaired") != 5 or not _sha(repair.get("report_sha256")):
         failures.append("MATERIAL_MODEL_REPAIR_NOT_VERIFIED")
+    if set(repair_by_id) != REQUIRED_REPAIR_TARGETS or len(repair_rows) != 5:
+        failures.append("MODEL_REPAIR_EVIDENCE_SET_INCOMPLETE_OR_DUPLICATED")
+    repair_spec = contract.get("model_repair_evidence", {})
+    if not _object(repair_spec) or repair_spec.get("required_per_target_fields") is None:
+        failures.append("MODEL_REPAIR_EVIDENCE_CONTRACT_SCHEMA_MISSING")
+    catalog = {row.get("target_id"): row for row in contract.get("source_catalog", []) if _object(row)}
+    for target_id in sorted(REQUIRED_REPAIR_TARGETS):
+        row = repair_by_id.get(target_id, {})
+        missing_fields = REQUIRED_REPAIR_FIELDS - set(row)
+        if missing_fields:
+            failures.append("MODEL_REPAIR_REQUIRED_FIELDS_MISSING:" + target_id + ":" + ",".join(sorted(missing_fields)))
+        if row.get("status") != "PASS":
+            failures.append("MODEL_REPAIR_NOT_PASS:" + target_id)
+        if row.get("synthetic_only") is not False:
+            failures.append("MODEL_REPAIR_SYNTHETIC_OR_UNPROVEN:" + target_id)
+        if row.get("official_source_url") != catalog.get(target_id, {}).get("official_url"):
+            failures.append("MODEL_REPAIR_OFFICIAL_SOURCE_MISMATCH:" + target_id)
+        allowed_ids = catalog.get(target_id, {}).get("allowed_variants", [catalog.get(target_id, {}).get("model_id")])
+        if row.get("upstream_model_id") not in allowed_ids:
+            failures.append("MODEL_REPAIR_UPSTREAM_MODEL_ID_INVALID:" + target_id)
+        if not _commit(row.get("upstream_revision_commit")):
+            failures.append("MODEL_REPAIR_UPSTREAM_REVISION_NOT_PINNED:" + target_id)
+        if not _commit(row.get("repair_implementation_commit")):
+            failures.append("MODEL_REPAIR_IMPLEMENTATION_COMMIT_INVALID:" + target_id)
+        for field in ("upstream_weights_sha256", "candidate_before_weights_sha256", "candidate_after_weights_sha256", "test_evidence_sha256", "quality_report_sha256"):
+            if not _sha(row.get(field)):
+                failures.append("MODEL_REPAIR_HASH_INVALID:" + target_id + ":" + field)
+        if _sha(row.get("candidate_before_weights_sha256")) and row.get("candidate_before_weights_sha256") == row.get("candidate_after_weights_sha256"):
+            failures.append("MODEL_REPAIR_DID_NOT_CHANGE_CANDIDATE_WEIGHTS:" + target_id)
+        expected_cases = row.get("expected_test_count")
+        passed_cases = row.get("passed_test_count")
+        if isinstance(expected_cases, bool) or not isinstance(expected_cases, int) or expected_cases < 1:
+            failures.append("MODEL_REPAIR_EXPECTED_TEST_COUNT_INVALID:" + target_id)
+        if isinstance(passed_cases, bool) or not isinstance(passed_cases, int) or passed_cases != expected_cases:
+            failures.append("MODEL_REPAIR_TEST_CASES_NOT_ALL_PASS:" + target_id)
+        if row.get("semantic_quality_status") != "PASS":
+            failures.append("MODEL_REPAIR_SEMANTIC_QUALITY_NOT_PASS:" + target_id)
 
     functional = evidence.get("functional_gate")
     if not _object(functional) or functional.get("decision") != "PASS" or functional.get("target_pass_count") != 21 or functional.get("synthetic_only") is not False:
@@ -248,14 +317,53 @@ def evaluate_execution_evidence(contract: dict, contract_bytes: bytes, evidence:
         failures.append("FUNCTIONAL_TARGET_SET_INCOMPLETE_OR_DUPLICATED")
     if any(row.get("status") != "PASS" or row.get("synthetic_only") is not False for row in by_id.values()):
         failures.append("ONE_OR_MORE_TARGETS_NOT_REAL_FUNCTIONAL_PASS")
+    for target_id in sorted(REQUIRED_REPAIR_TARGETS):
+        repair_row = repair_by_id.get(target_id, {})
+        functional_row = by_id.get(target_id, {})
+        if _sha(repair_row.get("candidate_after_weights_sha256")) and repair_row.get("candidate_after_weights_sha256") != functional_row.get("weight_sha256"):
+            failures.append("REPAIRED_WEIGHT_HASH_NOT_BOUND_TO_FUNCTIONAL_RUN:" + target_id)
 
     telemetry = evidence.get("telemetry")
     if not _object(telemetry) or telemetry.get("status") != "PASS" or not _sha(telemetry.get("evidence_sha256")):
         failures.append("PERSISTENT_TELEMETRY_NOT_PASS")
     events = telemetry.get("events", []) if _object(telemetry) else []
-    event_names = {row.get("event_type") for row in events if _object(row) and isinstance(row.get("count"), int) and row.get("count", 0) > 0 and _sha(row.get("evidence_sha256"))}
-    if not REQUIRED_TELEMETRY.issubset(event_names):
-        failures.append("TELEMETRY_EVENT_EVIDENCE_INCOMPLETE")
+    event_names = [row.get("event_type") for row in events if _object(row)]
+    if set(event_names) != REQUIRED_TELEMETRY or len(event_names) != len(REQUIRED_TELEMETRY) or len(events) != len(REQUIRED_TELEMETRY):
+        failures.append("TELEMETRY_EVENT_SET_INCOMPLETE_OR_DUPLICATED")
+    expected_sequence = list(range(1, len(events) + 1))
+    observed_sequence = []
+    for row in events:
+        if not _object(row):
+            failures.append("TELEMETRY_EVENT_ROW_INVALID")
+            continue
+        sequence = row.get("sequence_id")
+        observed_sequence.append(sequence)
+        if row.get("source_commit") != source_commit or row.get("bundle_sha256") != bundle_sha or row.get("contract_sha256") != contract_sha:
+            failures.append("TELEMETRY_EVENT_SUBJECT_BINDING_MISMATCH")
+        if not _sha(row.get("input_sha256")) or not _sha(row.get("output_sha256")) or row.get("evidence_sha256") != row.get("output_sha256"):
+            failures.append("TELEMETRY_EVENT_HASH_INVALID")
+        if isinstance(row.get("count"), bool) or row.get("count") != 1:
+            failures.append("TELEMETRY_EVENT_COUNT_INVALID")
+        for field in ("input_bytes", "output_bytes"):
+            value = row.get(field)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                failures.append("TELEMETRY_EVENT_BYTE_COUNT_INVALID:" + field)
+        if not _nonempty(row.get("rollback_reference")) or not _nonempty(row.get("status")) or not _nonempty(row.get("actor")) or not _nonempty(row.get("tool_name")) or not _nonempty(row.get("tool_version")):
+            failures.append("TELEMETRY_EVENT_AUDIT_FIELDS_MISSING")
+        try:
+            stamp = datetime.fromisoformat(str(row.get("timestamp_utc", "")).replace("Z", "+00:00"))
+            if stamp.tzinfo is None:
+                failures.append("TELEMETRY_TIMESTAMP_MISSING_TIMEZONE")
+        except ValueError:
+            failures.append("TELEMETRY_TIMESTAMP_INVALID")
+    if observed_sequence != expected_sequence:
+        failures.append("TELEMETRY_SEQUENCE_NOT_CONTIGUOUS")
+    if _object(telemetry) and _sha(telemetry.get("evidence_sha256")):
+        telem_payload = dict(telemetry)
+        recorded_telem_sha = telem_payload.pop("evidence_sha256", None)
+        canonical_telem = json.dumps(telem_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        if hashlib.sha256(canonical_telem).hexdigest() != recorded_telem_sha:
+            failures.append("TELEMETRY_ENVELOPE_SHA256_MISMATCH")
 
     kestra = evidence.get("kestra_audit")
     if not _object(kestra) or kestra.get("status") != "PASS" or not _nonempty(kestra.get("execution_id")) or not _sha(kestra.get("report_sha256")):
