@@ -179,7 +179,7 @@ def main(argv=None) -> int:
         "source_commit": head,
         "targets": [
             {"target_id": "D04_HERMENEUTICA_HG", "fault": "Trealla DCG probe did not import library(dcgs) and loaded the grammar after evaluating the query", "required_fix": "load bundled grammar first and explicitly import library(dcgs)"},
-            {"target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS", "fault": "Foma validation fixture used replacement-rule syntax instead of a direct upper:lower transducer", "required_fix": "compile regex cat:gato; and verify flookup returns gato"},
+            {"target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS", "fault": "Foma validation fixture treated unspaced strings as character sequences; upstream treats them as multi-character symbols", "required_fix": "compile regex [c a t]:[g a t o]; and verify packaged flookup returns gato"},
             {"target_id": "D06_MIGRACION_PERSISTENCIA", "fault": "rqlite write raced Raft leader election because /status was mistaken for write readiness", "required_fix": "poll /readyz until node, leader and store are ready before writes"},
         ],
         "product_scope": "bounded primitive repair validation; does not claim full hermeneutics or an ancient-language lexicon",
@@ -192,15 +192,23 @@ def main(argv=None) -> int:
         repair_source = (repo / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
         repair_tests = (repo / "tests" / "test_cajita_extended_target_e2e.py").read_text(encoding="utf-8")
         required_source_fragments = [
-            'query="use_module(library(dcgs)),phrase(sentence,[the,man,shoots])"',
-            '["tpl","-l","samples/grammar.pl","-g",query]',
-            'regex cat:gato;',
+            'query="use_module(library(dcgs)),phrase(sentence,[the,man,shoots]),write(true),halt"',
+            'trealla_env["TPL_LIBRARY_PATH"]=str(packaged_library)',
+            'regex [c a t]:[g a t o];',
             'base + "/readyz"',
             '"rqlite_readiness": ready_receipt',
         ]
         absent_fragments = [fragment for fragment in required_source_fragments if fragment not in repair_source]
-        if "test_rqlite_readiness_requires_elected_leader_and_store" not in repair_tests or "test_rqlite_readiness_polls_readyz_not_status" not in repair_tests:
-            absent_fragments.append("rqlite_readiness_regression_tests_missing")
+        required_regression_tests = (
+            "test_trealla_probe_executes_packaged_binary_without_source_build",
+            "test_foma_probe_executes_packaged_foma_and_flookup",
+            "test_rqlite_readiness_requires_elected_leader_and_store",
+            "test_rqlite_readiness_polls_readyz_not_status",
+        )
+        absent_fragments.extend(
+            "required_regression_test_missing:" + name
+            for name in required_regression_tests if name not in repair_tests
+        )
         repair_test_command = [
             sys.executable, "-m", "unittest", "discover", "-s", "tests",
             "-p", "test_cajita_extended_target_e2e.py", "-v",
