@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import re
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,17 @@ POST_AUDIT_EVENT_TYPE = "KESTRA_AUDIT_RESULT"
 MODEL_TARGETS = {
     "D01_CEREBRO_ROOT", "D03_TRANSCRIPCION_ROOT",
     "D04_TRADUCCION_GENERAL", "D05_DOCLING", "D06_ANALISIS_AVANZADO",
+}
+QWEN_CONFIG_PATH = "6. Sistema Inteligente/Análisis Avanzado/config.json"
+QWEN_VARIANT_CONFIGS = {
+    "Qwen/Qwen3-0.6B": {
+        "hidden_size": 1024, "intermediate_size": 3072, "num_hidden_layers": 28,
+        "num_attention_heads": 16, "num_key_value_heads": 8, "tie_word_embeddings": True,
+    },
+    "Qwen/Qwen3-14B": {
+        "hidden_size": 5120, "intermediate_size": 17408, "num_hidden_layers": 40,
+        "num_attention_heads": 40, "num_key_value_heads": 8, "tie_word_embeddings": False,
+    },
 }
 OBLIGATIONS = [
     ("C1_COORDINATED_WORKERS", "CUSTOSZ_V9 primary receipt and real Kestra secondary execution receipt"),
@@ -66,6 +78,38 @@ def file_binding(path: Path | None) -> dict[str, Any]:
     if path is None or path.is_symlink() or not path.is_file():
         return {"available": False, "sha256": None, "bytes": None}
     return {"available": True, "sha256": sha256_file(path), "bytes": path.stat().st_size}
+
+
+def inspect_qwen_model_identity(bundle: Path, expected_model_id: str) -> dict[str, Any]:
+    """Compare the compact candidate's shipped config with the exact upstream variant pin."""
+    expected = QWEN_VARIANT_CONFIGS.get(expected_model_id)
+    if expected is None:
+        return {"status":"HOLD_UNKNOWN_PINNED_QWEN_VARIANT","expected_model_id":expected_model_id}
+    try:
+        with zipfile.ZipFile(bundle, "r") as archive:
+            names = archive.namelist()
+            if names.count(QWEN_CONFIG_PATH) != 1:
+                return {"status":"HOLD_QWEN_CONFIG_MISSING_OR_DUPLICATED","config_path":QWEN_CONFIG_PATH}
+            config_bytes = archive.read(QWEN_CONFIG_PATH)
+        config = json.loads(config_bytes.decode("utf-8"))
+        if not isinstance(config, dict):
+            raise ValueError("CONFIG_ROOT_NOT_OBJECT")
+    except (OSError, zipfile.BadZipFile, KeyError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        return {"status":"HOLD_QWEN_CONFIG_UNREADABLE","error_type":type(exc).__name__}
+    fields = set(expected)
+    observed = {key:config.get(key) for key in sorted(fields)}
+    mismatches = {key:{"expected":expected[key],"observed":config.get(key)} for key in sorted(fields) if config.get(key) != expected[key]}
+    return {
+        "status":"PASS_CONFIG_MATCHES_PINNED_VARIANT" if not mismatches else "HOLD_QWEN_CONFIG_VARIANT_MISMATCH",
+        "expected_model_id":expected_model_id,
+        "config_path":QWEN_CONFIG_PATH,
+        "config_sha256":sha256_bytes(config_bytes),
+        "config_bytes":len(config_bytes),
+        "observed_config":observed,
+        "mismatches":mismatches,
+        "official_reference_config_fields":expected,
+        "source":"official Hugging Face model config",
+    }
 
 
 def _result(status: str, reason_codes: list[str], details: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -161,10 +205,14 @@ def evaluate(
 
     worker_run_id = worker.get("worker_run_id") or worker.get("run_id")
     worker_artifact = worker.get("artifact", {}) if isinstance(worker.get("artifact", {}), dict) else {}
+    mission_contract = contract.get("worker_mission", {}) if isinstance(contract.get("worker_mission", {}), dict) else {}
+    expected_worker_scope = mission_contract.get("authorized_scope")
     worker_receipt_ok = (
         worker.get("worker_status") == "PASS"
         and worker.get("worker_contract_role") == "CUSTOSZ_V9"
-        and worker.get("authorized_scope") == "BUILD_LOUKSNAPG_SINGLE_FILE_CANDIDATE"
+        and isinstance(expected_worker_scope, str)
+        and bool(expected_worker_scope)
+        and worker.get("authorized_scope") == expected_worker_scope
         and bool(worker_run_id)
         and bool(worker.get("workflow_url"))
         and worker.get("source_commit") == source_commit
@@ -232,11 +280,22 @@ def evaluate(
             for row in repair_map.values()
         )
     )
+    qwen_model_id = next((
+        row.get("model_id") for row in catalog
+        if isinstance(row, dict) and row.get("target_id") == "D06_ANALISIS_AVANZADO"
+    ), "")
+    qwen_identity = inspect_qwen_model_identity(bundle, qwen_model_id) if isinstance(qwen_model_id, str) and qwen_model_id else {
+        "status":"HOLD_QWEN_MODEL_IDENTITY_PIN_MISSING"
+    }
+    qwen_identity_ok = qwen_identity.get("status") == "PASS_CONFIG_MATCHES_PINNED_VARIANT"
+    if not qwen_identity_ok:
+        failures.append("CANDIDATE_QWEN_CONFIG_DOES_NOT_MATCH_PINNED_OFFICIAL_VARIANT")
     c2 = _result(
-        "PASS_MATERIAL_REPAIR_EVIDENCED" if catalog_ok and material_repair_ok else "HOLD",
-        [] if catalog_ok and material_repair_ok else [
+        "PASS_MATERIAL_REPAIR_EVIDENCED" if catalog_ok and material_repair_ok and qwen_identity_ok else "HOLD",
+        [] if catalog_ok and material_repair_ok and qwen_identity_ok else [
             *(["OFFICIAL_SOURCE_REVISION_CATALOG_INCOMPLETE"] if not catalog_ok else []),
             *(["MATERIAL_WEIGHT_REPAIR_OR_SEMANTIC_QUALITY_NOT_EVIDENCED"] if not material_repair_ok else []),
+            *(["CANDIDATE_QWEN_CONFIG_DOES_NOT_MATCH_PINNED_OFFICIAL_VARIANT"] if not qwen_identity_ok else []),
         ],
         {
             "official_source_revision_catalog": "PASS_METADATA_PIN_CHECK" if catalog_ok else "HOLD",
@@ -244,6 +303,7 @@ def evaluate(
             "model_repair_records_observed": len(repair_map),
             "model_repairs_verified": material_repair_ok,
             "diagnostic_quality_fail_count": quality_failures,
+            "candidate_qwen_identity": qwen_identity,
             "constraint": "No heavy model weights downloaded; compact factors cannot be claimed as reconstructing discarded source information.",
         },
     )
