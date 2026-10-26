@@ -384,6 +384,7 @@ jobs:
             out/LOUKSNAPG_BUILD_REPORT.json
             out/LOUKSNAPG_INDEPENDENT_VALIDATION.json
             out/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json
+            out/LOUKSNAPG_CUSTOSZV9_PRIMITIVE_REPAIR_EVIDENCE.json
           if-no-files-found: warn
           retention-days: 90
 
