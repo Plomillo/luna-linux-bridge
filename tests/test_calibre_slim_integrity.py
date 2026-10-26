@@ -47,6 +47,17 @@ def build_archive(path: Path, members: dict[str, bytes]) -> None:
 
 
 class CalibreSlimIntegrityTests(unittest.TestCase):
+    def pinned_runtime_environment(self, **overrides):
+        env = {
+            "CALIBRE_EBOOK_CONVERT": str(self.here / "ebook-convert"),
+            "CALIBRE_RUNTIME_ROOT": str(self.here),
+            "CALIBRE_OFFICIAL_ASSET_ID": "CALIBRE_V9_17_0_LINUX_X86_64_BINARY",
+            "CALIBRE_OFFICIAL_ASSET_SHA256": "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53",
+            "CALIBRE_OFFICIAL_ASSET_SIZE_BYTES": "201590724",
+        }
+        env.update(overrides)
+        return env
+
     def setUp(self):
         launcher.ARCHIVE_NAME = "calibre-slim-overlay.tar.xz"
         self.temp = tempfile.TemporaryDirectory(prefix="calibre-slim-integrity-")
@@ -164,10 +175,51 @@ class CalibreSlimIntegrityTests(unittest.TestCase):
         converter.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
         converter.chmod(0o755)
         valid = SimpleNamespace(returncode=0, stdout="ebook-convert (calibre 9.17.0)\n")
-        with patch.object(launcher.subprocess, "run", return_value=valid):
+        with patch.dict(os.environ, self.pinned_runtime_environment()), patch.object(launcher.subprocess, "run", return_value=valid):
             result = launcher.verify_pinned_converter(str(converter), self.here)
         self.assertEqual(result["status"], "PASS_PINNED_VERSION")
         self.assertEqual(result["expected_version"], "9.17.0")
+
+    def test_system_path_is_not_used_as_an_implicit_runtime_source(self):
+        path_root = self.here / "untrusted-path"
+        path_root.mkdir()
+        system_converter = path_root / "ebook-convert"
+        system_converter.write_text("#!/bin/sh\\nexit 0\\n", encoding="utf-8")
+        system_converter.chmod(0o755)
+        with patch.dict(os.environ, {"PATH": str(path_root)}, clear=True):
+            with patch.object(launcher.shutil, "which", return_value=str(system_converter)) as which:
+                self.assertIsNone(launcher.discover_converter(self.here))
+                which.assert_not_called()
+
+    def test_official_runtime_receipt_is_required(self):
+        (self.here / "source-lock.json").write_text(json.dumps(LOCK), encoding="utf-8")
+        converter = self.here / "ebook-convert"
+        converter.write_text("#!/bin/sh\\nexit 0\\n", encoding="utf-8")
+        converter.chmod(0o755)
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesRegex(RuntimeError, "CALIBRE_OFFICIAL_ASSET_RECEIPT_MISMATCH"):
+                launcher.verify_pinned_converter(str(converter), self.here)
+
+    def test_converter_must_resolve_inside_authorized_runtime_root(self):
+        (self.here / "source-lock.json").write_text(json.dumps(LOCK), encoding="utf-8")
+        converter = self.here / "ebook-convert"
+        converter.write_text("#!/bin/sh\\nexit 0\\n", encoding="utf-8")
+        converter.chmod(0o755)
+        outside_root = self.here / "different-runtime"
+        outside_root.mkdir()
+        env = self.pinned_runtime_environment(CALIBRE_RUNTIME_ROOT=str(outside_root))
+        with patch.dict(os.environ, env):
+            with self.assertRaisesRegex(RuntimeError, "CALIBRE_CONVERTER_OUTSIDE_PINNED_RUNTIME_ROOT"):
+                launcher.verify_pinned_converter(str(converter), self.here)
+
+    def test_explicit_invalid_converter_does_not_fall_back_to_packaged_or_path_runtime(self):
+        local_dir = self.here / "bin"
+        local_dir.mkdir()
+        local_converter = local_dir / "ebook-convert"
+        local_converter.write_text("#!/bin/sh\\nexit 0\\n", encoding="utf-8")
+        local_converter.chmod(0o755)
+        with patch.dict(os.environ, {"CALIBRE_EBOOK_CONVERT": str(self.here / "missing"), "PATH": str(local_dir)}, clear=True):
+            self.assertIsNone(launcher.discover_converter(self.here))
 
     def test_wrong_external_converter_version_fails_closed(self):
         lock = self.here / "source-lock.json"
@@ -176,7 +228,7 @@ class CalibreSlimIntegrityTests(unittest.TestCase):
         converter.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
         converter.chmod(0o755)
         wrong = SimpleNamespace(returncode=0, stdout="ebook-convert (calibre 9.14.0)\n")
-        with patch.object(launcher.subprocess, "run", return_value=wrong):
+        with patch.dict(os.environ, self.pinned_runtime_environment()), patch.object(launcher.subprocess, "run", return_value=wrong):
             with self.assertRaisesRegex(RuntimeError, "CALIBRE_RUNTIME_VERSION_MISMATCH"):
                 launcher.verify_pinned_converter(str(converter), self.here)
 
@@ -210,7 +262,7 @@ class CalibreSlimIntegrityTests(unittest.TestCase):
         converter.chmod(0o755)
         for output in ("ebook-convert (calibre 19.17.0)\\n", "ebook-convert (calibre 9.17.00)\\n"):
             with self.subTest(output=output):
-                with patch.object(launcher.subprocess, "run", return_value=SimpleNamespace(returncode=0, stdout=output)):
+                with patch.dict(os.environ, self.pinned_runtime_environment()), patch.object(launcher.subprocess, "run", return_value=SimpleNamespace(returncode=0, stdout=output)):
                     with self.assertRaisesRegex(RuntimeError, "CALIBRE_RUNTIME_VERSION_MISMATCH"):
                         launcher.verify_pinned_converter(str(converter), self.here)
 
