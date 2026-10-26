@@ -6,6 +6,12 @@ This contract formalizes six mandatory obligations: (1) CUSTOSZ V9 is the bounde
 
 The static CI check proves only that the contract has not drifted. It always leaves `release_eligible=false` and `global_certification=NOT_GRANTED`. A model execution is not a semantic-quality pass; an engine startup/smoke test is not a consumer-task pass; package identity integrity is not functional certification.
 
+### C4 post-dispatch telemetry rule
+
+C4 has two distinct telemetry artifacts. `LOUKSNAPG_TELEMETRY_PREAUDIT.json` is the immutable, hash-bound input snapshot sent to the secondary auditor; it records that dispatch is pending and must not be rewritten afterward. Once dispatch is attempted, the workflow materializes the actual `LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json` and appends one final event, `KESTRA_AUDIT_RESULT`, to `LOUKSNAPG_TELEMETRY_FINAL.json`. That event binds the receipt's byte-level SHA-256, status, execution-ID presence, terminal state, source commit, candidate SHA-256 and contract SHA-256. The final envelope is re-hashed, and the six-obligation audit validates the appended event against the actual receipt file. A missing receipt or `NOT_CONFIGURED` receipt is recorded as `HOLD`; it cannot count as a Kestra execution receipt or make C1/C5 pass.
+
+This preserves the preaudit evidence sent to Kestra and eliminates a false-positive where 11/11 pre-dispatch event types passed traceability while the actual Kestra result was not bound into the audited record. The complete final telemetry remains `INCOMPLETE_HOLD` until the worker receipt, all 21 real task results, signed G23, separate signed G24, host matrix, non-regression and rollback checks are independently evidenced.
+
 ## Pinned official sources
 
 All repository revisions below were recorded as metadata only; model checkpoint payloads were **not** downloaded.
