@@ -280,6 +280,10 @@ jobs:
           KESTRA_URL: ${{ vars.KESTRA_URL || secrets.KESTRA_URL }}
           KESTRA_API_TOKEN: ${{ secrets.KESTRA_API_TOKEN }}
           SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+          CONTRACT_SHA256: ${{ steps.contract.outputs.sha256 }}
+          CONTRACT_STATUS: ${{ steps.contract.outputs.contract_status }}
+          TELEMETRY_SHA256: ${{ steps.contract.outputs.telemetry_sha256 }}
+          CUSTOSZ_RECEIPT_SHA256: ${{ steps.contract.outputs.worker_sha256 }}
         shell: bash
         run: |
           set -euo pipefail
@@ -329,6 +333,16 @@ jobs:
               "functional_evidence_mode":"SYNTHETIC_OR_UNAVAILABLE",
               "g23_attestation_sha256":"0000000000000000000000000000000000000000000000000000000000000000",
               "g23_signature_verification_status":"NOT_ESTABLISHED",
+              "architecture_contract_sha256":os.environ.get("CONTRACT_SHA256",""),
+              "architecture_contract_status":os.environ.get("CONTRACT_STATUS","HOLD"),
+              "primary_worker_id":"CUSTOSZ_V9",
+              "secondary_worker_id":"KESTRA",
+              "custosz_worker_evidence_sha256":os.environ.get("CUSTOSZ_RECEIPT_SHA256",""),
+              "official_source_review_status":"NOT_ESTABLISHED",
+              "telemetry_evidence_sha256":os.environ.get("TELEMETRY_SHA256",""),
+              "telemetry_status":"PASS",
+              "heavy_model_download_count":"0",
+              "remote_commander_used":"false",
               "functional_status":"NOT_ESTABLISHED",
               "semantic_quality_status":"NOT_ESTABLISHED",
               "host_matrix_status":"NOT_ESTABLISHED",
