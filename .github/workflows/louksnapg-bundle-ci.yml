@@ -23,6 +23,9 @@ on:
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
       - "tests/test_louksnapg_bundle.py"
+      - "tools/louksnapg_integral_gate.py"
+      - "tests/test_louksnapg_integral_gate.py"
+      - "docs/cajita-luna/LOUKSNAPG_FUNCTIONAL_REPAIR_AUDIT_20261026.md"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
 
 permissions:
