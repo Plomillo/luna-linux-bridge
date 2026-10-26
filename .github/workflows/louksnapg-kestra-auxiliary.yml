@@ -645,13 +645,29 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
-          import hashlib, json, os, subprocess, time, urllib.error, urllib.parse, urllib.request
+          import base64, hashlib, json, os, secrets, string, subprocess, time, urllib.error, urllib.parse, urllib.request
           from datetime import datetime, timezone
           from pathlib import Path
 
           receipt_path = Path("candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json")
           image = "kestra/kestra:v2.0.3-slim"
           base = "http://127.0.0.1:18080"
+          # Kestra OSS requires Basic Auth (since 0.24). Generate a one-run
+          # credential and inject it only into the isolated local container/processes;
+          # never write the password to artifacts, telemetry, or logs.
+          local_user = "louksnapg-audit@example.com"
+          alphabet = string.ascii_letters + string.digits
+          local_password = "".join(secrets.choice(alphabet) for _ in range(32))
+          while not (any(ch.isupper() for ch in local_password) and any(ch.islower() for ch in local_password) and any(ch.isdigit() for ch in local_password)):
+              local_password = "".join(secrets.choice(alphabet) for _ in range(32))
+          local_auth = base64.b64encode((local_user + ":" + local_password).encode()).decode()
+          kestra_configuration = (
+              "kestra:\\n"
+              "  server:\\n"
+              "    basic-auth:\\n"
+              "      username: " + local_user + "\\n"
+              "      password: " + local_password + "\\n"
+          )
           def sha(data): return hashlib.sha256(data).hexdigest()
           def now(): return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
           def save_receipt(value):
@@ -669,6 +685,8 @@ jobs:
               "schema":"LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT/1.0",
               "local_kestra_attempted":True,
               "local_kestra_image":image,
+              "local_kestra_authentication":"EPHEMERAL_BASIC_AUTH_CONFIGURED",
+              "local_kestra_username":local_user,
               "local_kestra_state":"STARTING",
               "source_commit":os.environ["SOURCE_COMMIT"],
               "global_certification":"NOT_GRANTED"
@@ -683,7 +701,9 @@ jobs:
               receipt["local_kestra_image_digest"]=(image_meta.get("RepoDigests") or [""])[0]
               start=subprocess.run([
                   "docker","run","--detach","--name","louksnapg-kestra-local",
-                  "--publish","127.0.0.1:18080:8080",image,"server","local"
+                  "--publish","127.0.0.1:18080:8080",
+                  "--env","KESTRA_CONFIGURATION="+kestra_configuration,
+                  image,"server","local"
               ],capture_output=True,text=True,check=False,timeout=60)
               receipt["local_kestra_container_start_return_code"]=start.returncode
               if start.returncode != 0:
@@ -691,7 +711,7 @@ jobs:
               receipt["local_kestra_container_id"]=start.stdout.strip()[:80]
               last_http="NOT_OBSERVED"
               for attempt in range(120):
-                  req=urllib.request.Request(base+"/api/v1/main/flows",headers={"Accept":"application/json"})
+                  req=urllib.request.Request(base+"/api/v1/main/flows",headers={"Accept":"application/json","Authorization":"Basic "+local_auth})
                   try:
                       with urllib.request.urlopen(req,timeout=5) as response:
                           body=response.read()
@@ -712,8 +732,8 @@ jobs:
               flow_bytes=flow_path.read_bytes()
               upload=subprocess.run([
                   "curl","--fail-with-body","--silent","--show-error","--max-time","60","-X","POST",
-                  "-H","Content-Type: application/x-yaml","--data-binary","@"+str(flow_path),
-                  base+"/api/v1/main/flows"
+                  "-H","Content-Type: application/x-yaml","-H","Authorization: Basic "+local_auth,
+                  "--data-binary","@"+str(flow_path),base+"/api/v1/main/flows"
               ],capture_output=True,text=True,check=False,timeout=75)
               receipt["local_kestra_flow_upload_return_code"]=upload.returncode
               receipt["local_kestra_flow_yaml_sha256"]=sha(flow_bytes)
@@ -785,6 +805,7 @@ jobs:
                   "block_binding_status":"NOT_ESTABLISHED"
               }
               cmd=["curl","--fail-with-body","--silent","--show-error","--max-time","60","-X","POST",
+                   "-H","Authorization: Basic "+local_auth,
                    base+"/api/v1/main/executions/louksna.kestra/louksnapg_bundle_audit"]
               for key,value in fields.items():
                   cmd.extend(["-F",key+"="+str(value)])
@@ -808,7 +829,7 @@ jobs:
               for attempt in range(90):
                   url=base+"/api/v1/main/executions/"+urllib.parse.quote(str(execution_id),safe="")
                   try:
-                      with urllib.request.urlopen(urllib.request.Request(url,headers={"Accept":"application/json"}),timeout=10) as response:
+                      with urllib.request.urlopen(urllib.request.Request(url,headers={"Accept":"application/json","Authorization":"Basic "+local_auth}),timeout=10) as response:
                           body=response.read()
                       execution_obj=json.loads(body.decode("utf-8"))
                       current=((execution_obj.get("state") or {}).get("current") or "UNKNOWN")
