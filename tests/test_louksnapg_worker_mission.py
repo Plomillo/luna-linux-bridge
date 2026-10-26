@@ -44,6 +44,14 @@ class CustoszWorkerMissionTests(unittest.TestCase):
             source,
         )
 
+    def test_foma_preflight_requires_forward_lookup_mode(self):
+        source = (ROOT / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+        tests = (ROOT / "tests" / "test_cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+        source = source.replace('run_process([str(flookup_binary),"-i",str(fst)]', 'run_process([str(flookup_binary),str(fst)]')
+        failures = worker.repair_source_contract_failures(source, tests)
+        self.assertIn('run_process([str(flookup_binary),"-i",str(fst)]', failures)
+        self.assertIn("required_regression_test_missing:test_foma_probe_requires_forward_lookup_mode", failures)
+
     def test_repair_preflight_rejects_a_missing_real_runtime_fix(self):
         source = (ROOT / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
         tests = (ROOT / "tests" / "test_cajita_extended_target_e2e.py").read_text(encoding="utf-8")
