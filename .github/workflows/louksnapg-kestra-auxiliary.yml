@@ -404,7 +404,7 @@ jobs:
           telem_canonical=json.dumps(telem,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
           telem["evidence_sha256"]=hashlib.sha256(telem_canonical).hexdigest()
           tp=Path("candidate/LOUKSNAPG_TELEMETRY_PREAUDIT.json")
-          tp.write_text(json.dumps(telem,ensure_ascii=False,sort_keys=True,indent=2)+"\\n",encoding="utf-8")
+          tp.write_text(json.dumps(telem,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
           telemetry_sha=hashlib.sha256(tp.read_bytes()).hexdigest()
           with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as h:
             h.write("sha256="+contract_sha+"\n")
