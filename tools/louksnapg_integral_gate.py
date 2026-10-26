@@ -8,6 +8,7 @@ separate release gates. Synthetic harness reports can never pass this gate.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import re
@@ -60,7 +61,67 @@ def _is_sha(value: object) -> bool:
     return isinstance(value, str) and bool(SHA256_RE.fullmatch(value))
 
 
-def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_commit: str) -> dict:
+def _canonical_json(value: dict) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def _verify_g23_envelope(envelope: object, public_key_pem: str | None,
+                         expected_source_commit: str, bundle_sha256: str,
+                         evidence_without_g23: dict) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(envelope, dict):
+        return ["G23_SIGNED_ENVELOPE_MISSING"]
+    if envelope.get("schema") != "LOUKSNAPG_G23_SIGNED/1.0" or envelope.get("status") != "SIGNED":
+        errors.append("G23_SIGNED_ENVELOPE_SCHEMA_OR_STATUS_INVALID")
+    payload = envelope.get("payload")
+    if not isinstance(payload, dict):
+        return errors + ["G23_SIGNED_PAYLOAD_MISSING"]
+    if payload.get("schema") != "LOUKSNAPG_G23_ATTESTATION_PAYLOAD/1.0":
+        errors.append("G23_PAYLOAD_SCHEMA_INVALID")
+    if payload.get("status") != "PASS":
+        errors.append("G23_PAYLOAD_NOT_PASS")
+    if payload.get("scope") != "LOUKSNAPG_INTEGRAL_FUNCTIONAL_VALIDATION":
+        errors.append("G23_SCOPE_MISMATCH")
+    if payload.get("candidate_commit") != expected_source_commit:
+        errors.append("G23_SOURCE_COMMIT_MISMATCH")
+    if payload.get("subject_bundle_sha256") != bundle_sha256:
+        errors.append("G23_SUBJECT_BUNDLE_MISMATCH")
+    expected_manifest_sha = hashlib.sha256(_canonical_json(evidence_without_g23)).hexdigest()
+    if payload.get("evidence_manifest_sha256") != expected_manifest_sha:
+        errors.append("G23_EVIDENCE_MANIFEST_SHA256_MISMATCH")
+    producer_id = payload.get("producer_id")
+    validator_id = payload.get("validator_id")
+    if not isinstance(producer_id, str) or not producer_id.strip():
+        errors.append("G23_PRODUCER_ID_MISSING")
+    if not isinstance(validator_id, str) or not validator_id.strip() or validator_id == producer_id:
+        errors.append("G23_VALIDATOR_ID_NOT_INDEPENDENT")
+    if not public_key_pem:
+        errors.append("G23_TRUSTED_PUBLIC_KEY_NOT_CONFIGURED")
+        return errors
+    try:
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+        key = serialization.load_pem_public_key(public_key_pem.encode("ascii"))
+        if not isinstance(key, Ed25519PublicKey):
+            return errors + ["G23_TRUSTED_KEY_NOT_ED25519"]
+        raw_key = key.public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+        fingerprint = hashlib.sha256(raw_key).hexdigest()
+        if envelope.get("signer_public_key_sha256") != fingerprint:
+            errors.append("G23_TRUSTED_KEY_FINGERPRINT_MISMATCH")
+        payload_bytes = _canonical_json(payload)
+        if envelope.get("payload_sha256") != hashlib.sha256(payload_bytes).hexdigest():
+            errors.append("G23_PAYLOAD_SHA256_MISMATCH")
+        signature = base64.b64decode(envelope.get("signature_b64", ""), validate=True)
+        key.verify(signature, payload_bytes)
+    except ImportError:
+        errors.append("G23_CRYPTOGRAPHY_DEPENDENCY_MISSING")
+    except Exception:
+        errors.append("G23_ED25519_SIGNATURE_INVALID")
+    return errors
+
+
+def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_commit: str,
+                      g23_public_key_pem: str | None = None) -> dict:
     """Return a deterministic PASS/HOLD decision for a source- and artifact-bound envelope."""
     failures: list[str] = []
     if not isinstance(evidence, dict):
@@ -151,18 +212,12 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
                               "failures": target_failures})
         failures.extend("TARGET:" + target_id + ":" + item for item in target_failures)
 
-    g23 = evidence.get("g23")
-    if not isinstance(g23, dict):
-        failures.append("G23_EVIDENCE_MISSING")
-        g23 = {}
-    if g23.get("status") != "PASS":
-        failures.append("G23_NOT_PASS")
-    if g23.get("source_commit") != expected_source_commit:
-        failures.append("G23_SOURCE_COMMIT_MISMATCH")
-    if g23.get("subject_bundle_sha256") != bundle_sha256:
-        failures.append("G23_SUBJECT_BUNDLE_MISMATCH")
-    if g23.get("attestation_verified") is not True:
-        failures.append("G23_ATTESTATION_NOT_VERIFIED")
+    evidence_without_g23 = dict(evidence)
+    evidence_without_g23.pop("g23", None)
+    failures.extend(_verify_g23_envelope(
+        evidence.get("g23"), g23_public_key_pem, expected_source_commit,
+        bundle_sha256, evidence_without_g23
+    ))
 
     return {
         "schema": "LOUKSNAPG_INTEGRAL_FUNCTIONAL_GATE/1.0",
@@ -177,7 +232,7 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
         "failure_count": len(failures),
         "failures": sorted(set(failures)),
         "global_certification": "NOT_GRANTED",
-        "note": "Passing this envelope check does not replace independent re-execution, cryptographic G23 verification, or G24 authorization."
+        "note": "Ed25519 G23 signature is verified against an explicitly supplied trust key. This evidence gate still does not replace separate G24 authorization."
     }
 
 
@@ -186,6 +241,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--bundle", type=Path, required=True)
     parser.add_argument("--expected-source-commit", required=True)
+    parser.add_argument("--g23-public-key", type=Path, help="trusted G23 Ed25519 public key PEM; absent means HOLD")
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
@@ -196,7 +252,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.bundle.is_symlink() or not args.bundle.is_file():
             raise ValueError("BUNDLE_NOT_REGULAR_FILE")
         evidence = json.loads(args.evidence.read_text(encoding="utf-8"))
-        report = evaluate_evidence(evidence, sha256_file(args.bundle), args.expected_source_commit)
+        public_pem = None
+        if args.g23_public_key:
+            if args.g23_public_key.is_symlink() or not args.g23_public_key.is_file():
+                raise ValueError("G23_TRUSTED_PUBLIC_KEY_NOT_REGULAR_FILE")
+            public_pem = args.g23_public_key.read_text(encoding="ascii")
+        report = evaluate_evidence(evidence, sha256_file(args.bundle), args.expected_source_commit, public_pem)
     except Exception as exc:
         report = {
             "schema": "LOUKSNAPG_INTEGRAL_FUNCTIONAL_GATE/1.0",
