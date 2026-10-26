@@ -104,7 +104,7 @@ jobs:
           assert tasks["release_gates"]["type"] == "io.kestra.plugin.core.flow.If"
           text = path.read_text(encoding="utf-8")
           assert "LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD" in text
-          assert "global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION" in text
+          assert "global_certification=PASS_ONLY_FOR_SEPARATELY_SIGNED_G24_SUBJECT" in text
           assert "functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'" in text
           assert "g23_signature_verification_status == 'PASS_VERIFIED'" in text
           assert "g24_decision_status == 'GRANTED'" in text
@@ -136,6 +136,7 @@ jobs:
               "LOUKSNAPG_TELEMETRY_PREAUDIT.json",
               "LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json",
               "LOUKSNAPG_G23_ATTESTATION_NOT_PERFORMED.json",
+              "LOUKSNAPG_G24_DECISION_NOT_GRANTED.json",
               "CONTRACT_SHA256:",
               "TELEMETRY_SHA256:",
               "/api/v1/main/executions/",
