@@ -4,6 +4,7 @@ import importlib.util
 import json
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
@@ -22,7 +23,13 @@ class IntegralGateTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.bundle = self.root / "LOUKSNAPG.md"
-        self.bundle.write_bytes(b"candidate subject bytes for gate contract tests")
+        qwen_config = {
+            "hidden_size": 1024, "intermediate_size": 3072, "num_hidden_layers": 28,
+            "num_attention_heads": 16, "num_key_value_heads": 8,
+            "tie_word_embeddings": True, "vocab_size": 151936,
+        }
+        with zipfile.ZipFile(self.bundle, "w") as archive:
+            archive.writestr(gate.QWEN_CONFIG_PATH, json.dumps(qwen_config))
         self.sha = hashlib.sha256(self.bundle.read_bytes()).hexdigest()
         self.commit = "a" * 40
         self.private_key = Ed25519PrivateKey.generate()
@@ -104,11 +111,13 @@ class IntegralGateTests(unittest.TestCase):
         return self.sign_evidence(evidence)
 
     def evaluate(self, evidence=None, public_key=None):
+        candidate_model_identity = gate.inspect_qwen_model_identity(self.bundle)
         return gate.evaluate_evidence(
             self.evidence if evidence is None else evidence,
             self.sha,
             self.commit,
             self.public_pem if public_key is None else public_key,
+            candidate_model_identity=candidate_model_identity,
         )
 
     def test_primitive_smoke_without_complete_scope_is_not_functional_certification(self):
@@ -165,6 +174,23 @@ class IntegralGateTests(unittest.TestCase):
         self.assertEqual(result["decision"], "HOLD")
         self.assertTrue(any(x.startswith("TARGET_EVIDENCE_MISSING:") for x in result["failures"]))
         self.assertTrue(any(x.startswith("DUPLICATE_TARGET_ID:") for x in result["failures"]))
+
+    def test_candidate_config_matching_qwen14b_is_rejected_when_contract_pins_qwen06b(self):
+        wrong_config = {
+            "hidden_size": 5120, "intermediate_size": 17408, "num_hidden_layers": 40,
+            "num_attention_heads": 40, "num_key_value_heads": 8,
+            "tie_word_embeddings": False, "vocab_size": 151936,
+        }
+        with zipfile.ZipFile(self.bundle, "w") as archive:
+            archive.writestr(gate.QWEN_CONFIG_PATH, json.dumps(wrong_config))
+        self.sha = hashlib.sha256(self.bundle.read_bytes()).hexdigest()
+        self.evidence["bundle_sha256"] = self.sha
+        self.sign_evidence(self.evidence)
+        result = self.evaluate()
+        self.assertEqual(result["decision"], "HOLD")
+        self.assertIn("CANDIDATE_MODEL_IDENTITY_NOT_VERIFIED_OR_QWEN_VARIANT_MISMATCH", result["failures"])
+        self.assertEqual(result["candidate_model_identity"]["status"], "HOLD_QWEN_CONFIG_VARIANT_MISMATCH")
+        self.assertEqual(result["candidate_model_identity"]["mismatches"]["hidden_size"]["observed"], 5120)
 
     def test_model_repository_revision_must_match_pinned_official_snapshot(self):
         row = next(x for x in self.evidence["target_results"] if x["target_id"] == "D06_ANALISIS_AVANZADO")
