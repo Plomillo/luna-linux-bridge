@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import hashlib
+import importlib.util
 import json
 import re
 import sys
@@ -203,6 +204,106 @@ def matched_intent_targets(request: str) -> tuple[list[str], list[str]]:
     return selected, matched_rules
 
 
+
+MULTI_INTERDISCIPLINAR_ID = "D02_MULTI_INTERDISCIPLINAR"
+MULTI_INTERDISCIPLINAR_PATH = "2. Orquestación/Multi + Interdisciplinar"
+MULTI_INTERDISCIPLINAR_ENGINES = ["E03", "E04", "E05", "E06", "E07", "E08", "E09", "E12", "E13", "E14", "E15"]
+
+
+def verify_interdisciplinary_graph(
+    runtime_root: str | Path | None = None,
+    companion_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Validate the real B1-B134 graph before planning any Multi + Interdisciplinar route.
+
+    A PASS proves canonical structural wiring and source provenance only. It does
+    not prove semantic graph execution, model quality, or grant certification.
+    """
+    root = Path(runtime_root or Path(__file__).resolve().parent).resolve()
+    target = TARGETS_BY_ID.get(MULTI_INTERDISCIPLINAR_ID)
+    if not root.is_dir() or not isinstance(target, dict):
+        return {"status": "FAIL_CLOSED", "reason": "MULTI_INTERDISCIPLINAR_RUNTIME_OR_TARGET_MISSING",
+                "target_id": MULTI_INTERDISCIPLINAR_ID, "execution_authorized": False, "certification": "NOT_GRANTED"}
+    if (target.get("domain_id") != "D02_ORQUESTACION"
+        or target.get("path") != MULTI_INTERDISCIPLINAR_PATH
+        or target.get("engine_ids") != MULTI_INTERDISCIPLINAR_ENGINES):
+        return {"status": "FAIL_CLOSED", "reason": "MULTI_INTERDISCIPLINAR_CANONICAL_TARGET_IDENTITY_MISMATCH",
+                "target_id": MULTI_INTERDISCIPLINAR_ID, "execution_authorized": False, "certification": "NOT_GRANTED"}
+    try:
+        multi_dir = root.joinpath(*Path(MULTI_INTERDISCIPLINAR_PATH).parts)
+        if multi_dir.is_symlink() or not multi_dir.is_dir() or not multi_dir.resolve().is_relative_to(root):
+            raise RuntimeError("MULTI_INTERDISCIPLINAR_DIRECTORY_MISSING_OR_UNSAFE")
+        binding_path = multi_dir / "axiom_interdisciplinary_binding.json"
+        graph_path = multi_dir / "block_engine_binding.json"
+        loader_path = multi_dir / "cajita_axiom_source_loader.py"
+        for file_path, reason in (
+            (binding_path, "AXIOM_BINDING_OR_RUNTIME_MISSING"),
+            (graph_path, "BLOCK_ENGINE_GRAPH_MISSING_OR_UNSAFE"),
+            (loader_path, "AXIOM_SOURCE_LOADER_MISSING_OR_UNSAFE"),
+        ):
+            if file_path.is_symlink() or not file_path.is_file() or not file_path.resolve().is_relative_to(root):
+                raise RuntimeError(reason)
+        if graph_path.stat().st_size > 2_000_000 or binding_path.stat().st_size > 128_000 or loader_path.stat().st_size > 128_000:
+            raise RuntimeError("MULTI_INTERDISCIPLINAR_GRAPH_ASSET_SIZE_LIMIT")
+        routing_path = root / "command_subdomain_routing.json"
+        if routing_path.is_symlink() or not routing_path.is_file() or not routing_path.resolve().is_relative_to(root):
+            raise RuntimeError("CANONICAL_ROUTING_REGISTRY_MISSING_OR_UNSAFE")
+        routing = json.loads(routing_path.read_text(encoding="utf-8"))
+        if routing.get("schema") != "CAJITA_COMMAND_SUBDOMAIN_ROUTING/1.0":
+            raise RuntimeError("CANONICAL_ROUTING_REGISTRY_SCHEMA_MISMATCH")
+        catalog_rows = [row for row in routing.get("targets", [])
+                        if isinstance(row, dict) and row.get("id") == MULTI_INTERDISCIPLINAR_ID]
+        if len(catalog_rows) != 1:
+            raise RuntimeError("MULTI_INTERDISCIPLINAR_TARGET_CATALOG_MISSING_OR_DUPLICATE")
+        catalog = catalog_rows[0]
+        if (catalog.get("domain_id") != target["domain_id"]
+            or catalog.get("path") != target["path"]
+            or catalog.get("engine_ids") != MULTI_INTERDISCIPLINAR_ENGINES):
+            raise RuntimeError("MULTI_INTERDISCIPLINAR_ROUTING_CATALOG_IDENTITY_MISMATCH")
+        loader_spec = importlib.util.spec_from_file_location("_louksnapg_multidisciplinary_source_loader", loader_path)
+        if loader_spec is None or loader_spec.loader is None:
+            raise RuntimeError("AXIOM_SOURCE_LOADER_IMPORT_SPEC_UNAVAILABLE")
+        loader_module = importlib.util.module_from_spec(loader_spec)
+        loader_spec.loader.exec_module(loader_module)
+        result = loader_module.verify_binding(root, companion_path)
+        if result.get("status") != "PASS_SOURCE_PREFIX_VERIFIED":
+            raise RuntimeError("AXIOM_SOURCE_BINDING_NOT_PASS")
+        graph = result.get("block_engine_graph", {})
+        if (graph.get("status") != "PASS_CANONICAL_B1_B134_ROUTING"
+            or graph.get("block_count") != 134
+            or graph.get("first_block_id") != "B1"
+            or graph.get("last_block_id") != "B134"
+            or graph.get("route_edge_count") != 134
+            or graph.get("target_id") != MULTI_INTERDISCIPLINAR_ID
+            or graph.get("engine_ids") != MULTI_INTERDISCIPLINAR_ENGINES
+            or graph.get("engine_route_count") != len(MULTI_INTERDISCIPLINAR_ENGINES)
+            or graph.get("scope") != "STRUCTURAL_ROUTING_ONLY_NOT_SEMANTIC_PROOF"):
+            raise RuntimeError("CANONICAL_B1_B134_MULTIDISCIPLINARY_WIRING_NOT_PASS")
+        if result.get("certification") != "NOT_GRANTED":
+            raise RuntimeError("MULTI_INTERDISCIPLINAR_CERTIFICATION_SCOPE_DRIFT")
+        return {
+            "status": "PASS_CANONICAL_B1_B134_ROUTING",
+            "target_id": MULTI_INTERDISCIPLINAR_ID,
+            "block_engine_graph": graph,
+            "companion_sha256": result.get("companion_sha256"),
+            "protected_prefix_sha256": result.get("protected_prefix_sha256"),
+            "axiom_inventory": result.get("axiom_inventory"),
+            "block_inventory": result.get("block_inventory"),
+            "scope": "STRUCTURAL_ROUTING_ONLY_NOT_SEMANTIC_PROOF",
+            "semantic_graph_execution": "NOT_PROVEN_STRUCTURAL_WIRING_ONLY",
+            "execution_authorized": False,
+            "certification": "NOT_GRANTED",
+        }
+    except Exception as exc:
+        return {
+            "status": "FAIL_CLOSED",
+            "reason": type(exc).__name__ + ":" + str(exc)[:240],
+            "target_id": MULTI_INTERDISCIPLINAR_ID,
+            "execution_authorized": False,
+            "certification": "NOT_GRANTED",
+        }
+
+
 def route_table_selftest() -> dict[str, Any]:
     errors: list[str] = []
     commands = [r["command"] for r in ROUTES]
@@ -231,6 +332,12 @@ def route_table_selftest() -> dict[str, Any]:
         if actual != expected: errors.append(f"SUBDOMAIN_COUNT_{domain_id}:{actual}!={expected}")
     if len(SUPPORT_ASSETS) != 10: errors.append(f"EXPECTED_10_SUPPORT_ASSETS_GOT_{len(SUPPORT_ASSETS)}")
     if len(ENGINE_REGISTRY) != 15 or len(VALID_ENGINE_IDS) != 15: errors.append("EXPECTED_15_CANONICAL_ENGINES")
+    multi_target = TARGETS_BY_ID.get(MULTI_INTERDISCIPLINAR_ID)
+    if (not isinstance(multi_target, dict)
+        or multi_target.get("domain_id") != "D02_ORQUESTACION"
+        or multi_target.get("path") != MULTI_INTERDISCIPLINAR_PATH
+        or multi_target.get("engine_ids") != MULTI_INTERDISCIPLINAR_ENGINES):
+        errors.append("MULTI_INTERDISCIPLINAR_CANONICAL_ENGINE_BINDING_MISMATCH")
     for target in TARGETS:
         if not target.get("engine_ids") or any(engine_id not in VALID_ENGINE_IDS for engine_id in target.get("engine_ids", [])):
             errors.append("INVALID_TARGET_ENGINE_BINDING:" + str(target.get("id")))
@@ -274,7 +381,7 @@ def available_memory_mib() -> int | None:
         pass
     return None
 
-def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]:
+def build_plan(request: str, route_command: str | None = None, runtime_root: str | Path | None = None) -> dict[str, Any]:
     request = request.strip()
     detected, invalid = extract_command(request)
     normalized_override = normalize_command(route_command) if route_command else None
@@ -322,6 +429,14 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
                 "support_assets": target.get("support_assets", []),
                 "task_adapter": TARGET_TASK_ADAPTERS.get(target["id"], "NOT_REGISTERED"),
             })
+
+    multi_target_selected = any(target.get("id") == MULTI_INTERDISCIPLINAR_ID for target in selected_targets)
+    interdisciplinary_graph_validation = (
+        verify_interdisciplinary_graph(runtime_root=runtime_root)
+        if multi_target_selected
+        else {"status": "NOT_REQUIRED_TARGET_NOT_SELECTED", "target_id": MULTI_INTERDISCIPLINAR_ID,
+              "scope": "STRUCTURAL_ROUTING_ONLY_NOT_SEMANTIC_PROOF", "certification": "NOT_GRANTED"}
+    )
 
     rank = {"D03_TRANSCRIPCION": 10, "D05_INTELIGENCIA_DOCUMENTAL": 20,
             "D04_TRADUCTOR_INTELIGENTE": 30, "D06_SISTEMA_INTELIGENTE": 40,
@@ -412,6 +527,9 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
         blockers.append("PEAK_RSS_UNMEASURED:" + ",".join(unmeasured))
     if "pdf_generation" in capabilities:
         blockers.append("PDF_GENERATION_ADAPTER_NOT_REGISTERED")
+    if multi_target_selected and interdisciplinary_graph_validation.get("status") != "PASS_CANONICAL_B1_B134_ROUTING":
+        blockers.append("MULTI_INTERDISCIPLINAR_BLOCK_GRAPH_NOT_VERIFIED:"
+                        + str(interdisciplinary_graph_validation.get("reason", "UNKNOWN_GRAPH_VALIDATION_FAILURE")))
     if selected_support_assets:
         blockers.append("SUPPORT_ASSET_ACTIVATION_NOT_VERIFIED")
     status = "PLAN_READY" if not blockers else "PLAN_ONLY_BLOCKED"
@@ -432,6 +550,7 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
         "command_default_target_ids": command_target_ids,
         "selected_targets": selected_targets,
         "selected_domain_ids": selected_target_domains,
+        "interdisciplinary_graph_validation": interdisciplinary_graph_validation,
         "selected_support_assets": selected_support_assets,
         "domain_sequence": sequence, "parallel_domain_processes": MAX_PARALLEL_DOMAINS,
         "load_policy": "ON_DEMAND_SEQUENTIAL", "unload_policy": "UNLOAD_AFTER_EACH_DOMAIN_STAGE",
@@ -452,7 +571,7 @@ def append_trace(path_value: str, plan: dict[str, Any]) -> None:
     path = Path(path_value).expanduser()
     if path.exists() and path.is_symlink(): raise RuntimeError("TRACE_SYMLINK_REJECTED")
     path.parent.mkdir(parents=True, exist_ok=True)
-    record = {key: plan.get(key) for key in ("schema", "operation", "request_sha256", "route_command", "route_id", "domain_sequence", "execution_authorized", "status", "blockers")}
+    record = {key: plan.get(key) for key in ("schema", "operation", "request_sha256", "route_command", "route_id", "domain_sequence", "interdisciplinary_graph_validation", "execution_authorized", "status", "blockers")}
     record["timestamp_utc"] = utc_now()
     with path.open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
@@ -462,6 +581,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("routes")
     sub.add_parser("selftest")
+    sub.add_parser("graph-check")
     plan_parser = sub.add_parser("plan")
     plan_parser.add_argument("--request", required=True)
     plan_parser.add_argument("--route-command")
@@ -474,6 +594,10 @@ def main(argv: list[str] | None = None) -> int:
         result = route_table_selftest()
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0 if result["status"] == "PASS" else 2
+    if args.command == "graph-check":
+        result = verify_interdisciplinary_graph()
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result["status"] == "PASS_CANONICAL_B1_B134_ROUTING" else 2
     plan = build_plan(args.request, args.route_command)
     try:
         plan["anti_paralysis"] = PersistentAntiParalysis.default().observe_plan(
