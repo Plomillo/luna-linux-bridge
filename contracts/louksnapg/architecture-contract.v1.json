@@ -71,7 +71,13 @@
       "official_docs_url": "https://github.com/openai/gpt-oss/blob/main/README.md",
       "task": "reasoning_and_generation",
       "heavy_weight_download_prohibited": true,
-      "variant_must_be_pinned": true
+      "variant_must_be_pinned": true,
+      "official_source_revision_commit": "5681a6b6552635e7b29cde94a61ca6a7aee90ebd",
+      "official_source_revision_url": "https://github.com/openai/gpt-oss/commit/5681a6b6552635e7b29cde94a61ca6a7aee90ebd",
+      "source_pin_type": "official_source_code_commit",
+      "model_repository": "https://huggingface.co/openai/gpt-oss-120b",
+      "model_repository_revision_commit": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+      "model_revision_source": "Hugging Face model API snapshot, 2026-10-26; metadata only, no weights downloaded"
     },
     {
       "target_id": "D03_TRANSCRIPCION_ROOT",
@@ -80,7 +86,13 @@
       "official_docs_url": "https://github.com/openai/whisper/blob/main/README.md",
       "task": "speech_transcription_only",
       "translation_use_prohibited": true,
-      "variant_must_be_pinned": true
+      "variant_must_be_pinned": true,
+      "official_source_revision_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
+      "official_source_revision_url": "https://github.com/openai/whisper/commit/86098128c0b4f24f0e2aa2994de830614b474227",
+      "source_pin_type": "official_source_code_commit",
+      "model_repository": "https://github.com/openai/whisper",
+      "model_repository_revision_commit": null,
+      "model_revision_source": "Whisper turbo asset URL is selected by the pinned official source code; full asset SHA-256 still required in runtime evidence"
     },
     {
       "target_id": "D04_TRADUCCION_GENERAL",
@@ -89,7 +101,13 @@
       "official_docs_url": "https://github.com/facebookresearch/seamless_communication/blob/main/docs/m4t/README.md",
       "task": "multilingual_translation",
       "heavy_weight_download_prohibited": true,
-      "variant_must_be_pinned": true
+      "variant_must_be_pinned": true,
+      "official_source_revision_commit": "9a081e935c29c6b1e0e05bcbf3fcb623ad306524",
+      "official_source_revision_url": "https://github.com/facebookresearch/seamless_communication/commit/9a081e935c29c6b1e0e05bcbf3fcb623ad306524",
+      "source_pin_type": "official_source_code_commit",
+      "model_repository": "https://huggingface.co/facebook/seamless-m4t-v2-large",
+      "model_repository_revision_commit": null,
+      "model_revision_source": "Model repository revision must still be pinned in runtime evidence; no checkpoint weights downloaded"
     },
     {
       "target_id": "D05_DOCLING",
@@ -97,7 +115,13 @@
       "official_url": "https://huggingface.co/ibm-granite/granite-docling-258M",
       "official_docs_url": "https://www.ibm.com/granite/docs/models/docling",
       "task": "document_understanding_and_structured_conversion",
-      "variant_must_be_pinned": true
+      "variant_must_be_pinned": true,
+      "official_source_revision_commit": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+      "official_source_revision_url": "https://huggingface.co/ibm-granite/granite-docling-258M/commit/982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+      "source_pin_type": "official_model_repository_commit",
+      "model_repository": "https://huggingface.co/ibm-granite/granite-docling-258M",
+      "model_repository_revision_commit": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+      "model_revision_source": "Hugging Face model API snapshot, 2026-10-26; metadata only, no weights downloaded"
     },
     {
       "target_id": "D06_ANALISIS_AVANZADO",
@@ -115,7 +139,13 @@
         "Qwen/Qwen3-32B",
         "Qwen/Qwen3-30B-A3B",
         "Qwen/Qwen3-235B-A22B"
-      ]
+      ],
+      "official_source_revision_commit": "7a2f61ffc7a20d47efcd2bf97f6f2bf52729042e",
+      "official_source_revision_url": "https://github.com/QwenLM/Qwen3/commit/7a2f61ffc7a20d47efcd2bf97f6f2bf52729042e",
+      "source_pin_type": "official_source_code_commit",
+      "model_repository": "https://huggingface.co/Qwen/Qwen3-0.6B",
+      "model_repository_revision_commit": null,
+      "model_revision_source": "Model repository revision must still be pinned in runtime evidence; no checkpoint weights downloaded"
     }
   ],
   "target_ids": [
@@ -257,5 +287,6 @@
     "synthetic_evidence_allowed": false,
     "semantic_quality_pass_required": true,
     "release_implication_if_missing": "HOLD_NOT_CERTIFIED"
-  }
+  },
+  "source_catalog_reviewed_at_utc": "2026-10-26T07:00:00Z"
 }
