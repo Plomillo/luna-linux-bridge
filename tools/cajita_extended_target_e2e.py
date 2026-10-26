@@ -219,13 +219,67 @@ def native_engine_build(root: Path, target_id: str) -> dict[str, Any]:
 
 
 def native_binary(root: Path, build: dict[str, Any], name: str) -> Path:
+    """Return an executable whose bytes are exactly the receipt-verified build output.
+
+    Distribution archives can preserve the correct native executable bytes while
+    losing POSIX execute bits. Never chmod the source artifact in place: materialize
+    a byte-identical executable copy in the writable diagnostic workspace and bind
+    the copy to the original receipt hash. This repairs an extraction/mode defect,
+    not the executable contents or source model weights.
+    """
     matches = [row for row in build["binary_artifacts"] if row.get("name") == name]
     if len(matches) != 1:
         raise ProbeFailure("NATIVE_ENGINE_RECEIPT_BINARY_NAME_MISMATCH:" + name)
-    binary = root / matches[0]["path"]
-    if not (binary.stat().st_mode & 0o111):
-        raise ProbeFailure("NATIVE_ENGINE_RECEIPT_BINARY_NOT_EXECUTABLE:" + name)
-    return binary
+    row = matches[0]
+    relative = row.get("path")
+    if not isinstance(relative, str) or not relative or Path(relative).is_absolute() or ".." in Path(relative).parts:
+        raise ProbeFailure("NATIVE_ENGINE_RECEIPT_BINARY_PATH_UNSAFE:" + name)
+    binary = root / relative
+    if binary.is_symlink() or not binary.is_file():
+        raise ProbeBlocked("NATIVE_ENGINE_RECEIPT_BINARY_MISSING:" + name)
+    source_mode = stat.S_IMODE(binary.stat().st_mode)
+    source_bytes = binary.read_bytes()
+    source_sha256 = sha256_bytes(source_bytes)
+    if len(source_bytes) != row.get("bytes") or source_sha256 != row.get("sha256"):
+        raise ProbeFailure("NATIVE_ENGINE_RECEIPT_ARTIFACT_IDENTITY_MISMATCH:" + name)
+    if binary.stat().st_mode & 0o111:
+        return binary
+
+    target_id = str(build.get("target_id", ""))
+    if not target_id or "/" in target_id or "\\" in target_id or target_id in {".", ".."}:
+        raise ProbeFailure("NATIVE_ENGINE_RECEIPT_TARGET_ID_UNSAFE")
+    cache_root = root / ".louksnapg-verified-executables"
+    if cache_root.is_symlink():
+        raise ProbeFailure("VERIFIED_EXEC_CACHE_SYMLINK_REJECTED")
+    cache_root.mkdir(mode=0o700, exist_ok=True)
+    if cache_root.is_symlink() or not cache_root.is_dir() or not cache_root.resolve().is_relative_to(root.resolve()):
+        raise ProbeFailure("VERIFIED_EXEC_CACHE_ROOT_UNSAFE")
+    target_root = cache_root / target_id
+    if target_root.is_symlink():
+        raise ProbeFailure("VERIFIED_EXEC_TARGET_DIRECTORY_SYMLINK_REJECTED")
+    target_root.mkdir(mode=0o700, exist_ok=True)
+    if target_root.is_symlink() or not target_root.is_dir() or not target_root.resolve().is_relative_to(cache_root.resolve()):
+        raise ProbeFailure("VERIFIED_EXEC_TARGET_DIRECTORY_UNSAFE")
+    executable = target_root / name
+    if executable.is_symlink():
+        raise ProbeFailure("VERIFIED_EXEC_COPY_SYMLINK_REJECTED:" + name)
+    if executable.exists() and (not executable.is_file() or executable.stat().st_size == 0):
+        raise ProbeFailure("VERIFIED_EXEC_COPY_DESTINATION_UNSAFE:" + name)
+    if executable.exists():
+        copied_bytes = executable.read_bytes()
+        if copied_bytes != source_bytes or sha256_bytes(copied_bytes) != source_sha256:
+            raise ProbeFailure("VERIFIED_EXEC_COPY_COLLISION:" + name)
+    else:
+        copy_executable(binary, executable)
+    os.chmod(executable, 0o755)
+    copied_bytes = executable.read_bytes()
+    if copied_bytes != source_bytes or sha256_bytes(copied_bytes) != source_sha256:
+        raise ProbeFailure("VERIFIED_EXEC_COPY_IDENTITY_MISMATCH:" + name)
+    if not (executable.stat().st_mode & 0o111):
+        raise ProbeFailure("VERIFIED_EXEC_COPY_MODE_NOT_EXECUTABLE:" + name)
+    if binary.read_bytes() != source_bytes or stat.S_IMODE(binary.stat().st_mode) != source_mode:
+        raise ProbeFailure("NATIVE_EXEC_MATERIALIZATION_MUTATED_SOURCE_ARTIFACT:" + name)
+    return executable
 
 
 def native_library_environment(root: Path, build: dict[str, Any]) -> dict[str, str]:
