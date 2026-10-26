@@ -140,6 +140,17 @@ def validate_contract(contract: Any, expected_target_ids: list[str] | tuple[str,
             failures.append("OFFICIAL_MODEL_IDENTITY_MISMATCH:" + target)
         if row.get("variant_must_be_pinned") is not True:
             failures.append("MODEL_VARIANT_PIN_REQUIRED:" + target)
+        if not _commit(row.get("official_source_revision_commit")):
+            failures.append("OFFICIAL_SOURCE_REVISION_NOT_PINNED:" + target)
+        if not _nonempty(row.get("official_source_revision_url")):
+            failures.append("OFFICIAL_SOURCE_REVISION_URL_MISSING:" + target)
+        if row.get("source_pin_type") not in {"official_source_code_commit", "official_model_repository_commit"}:
+            failures.append("OFFICIAL_SOURCE_PIN_TYPE_INVALID:" + target)
+        if not _nonempty(row.get("model_repository")):
+            failures.append("OFFICIAL_MODEL_REPOSITORY_URL_MISSING:" + target)
+        model_revision = row.get("model_repository_revision_commit")
+        if model_revision is not None and not _commit(model_revision):
+            failures.append("MODEL_REPOSITORY_REVISION_INVALID:" + target)
     whisper = catalog.get("D03_TRANSCRIPCION_ROOT", {})
     if whisper.get("task") != "speech_transcription_only" or whisper.get("translation_use_prohibited") is not True:
         failures.append("WHISPER_TURBO_TRANSLATION_MISUSE_NOT_BLOCKED")
@@ -252,6 +263,10 @@ def evaluate_execution_evidence(contract: dict, contract_bytes: bytes, evidence:
         row = by_target.get(target, {})
         if row.get("source_url") != url:
             failures.append("OFFICIAL_SOURCE_URL_MISMATCH:" + target)
+        if row.get("source_revision_commit") != catalog.get(target, {}).get("official_source_revision_commit"):
+            failures.append("OFFICIAL_SOURCE_REVISION_COMMIT_MISMATCH:" + target)
+        if row.get("source_revision_url") != catalog.get(target, {}).get("official_source_revision_url"):
+            failures.append("OFFICIAL_SOURCE_REVISION_URL_MISMATCH:" + target)
         model_id = row.get("model_id")
         allowed = catalog.get(target, {}).get("allowed_variants", [default_model])
         if model_id != default_model and model_id not in allowed:
