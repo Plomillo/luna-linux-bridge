@@ -90,24 +90,29 @@ jobs:
               with urllib.request.urlopen(req,timeout=30) as response:
                   return json.load(response)
           def product_candidate_ready(run):
-              # The distribution may be independently integrity-checked as soon
-              # as manufacture and G23 are successful. Do not wait for the slower
-              # G24 model-quality gate merely to make the un-certified candidate
-              # downloadable; this workflow still passes NOT_ESTABLISHED to Kestra.
+              # Wait for the exact G24 runtime task evidence as well as manufacture and
+              # package-level G23. G24 does not need to pass for Kestra to audit it:
+              # a completed failed G24 is still the truthful subject of the secondary audit.
               jobs_result=get("/actions/runs/"+urllib.parse.quote(str(run["id"]),safe="")+"/jobs?per_page=100")
               jobs_by_name={item.get("name"):item for item in jobs_result.get("jobs",[])}
-              required=("manufacture","g23-independent-validation")
-              if any(name not in jobs_by_name for name in required):
+              required_integrity=("manufacture","g23-independent-validation")
+              g24_name="g24-resource-limited-runtime-smoke"
+              if any(name not in jobs_by_name for name in (*required_integrity,g24_name)):
                   return False
-              for name in required:
+              for name in required_integrity:
                   item=jobs_by_name[name]
                   if item.get("status")=="completed" and item.get("conclusion")!="success":
                       raise RuntimeError("SOURCE_FACTORY_OR_G23_FAILED_CLOSED:"+name+":"+str(item.get("conclusion")))
-              return all(
+              if not all(
                   jobs_by_name[name].get("status")=="completed"
                   and jobs_by_name[name].get("conclusion")=="success"
-                  for name in required
-              )
+                  for name in required_integrity
+              ):
+                  return False
+              # G24 may correctly fail closed when model quality, trusted G23,
+              # or separate G24 evidence is absent. Do not suppress its failure;
+              # wait until its own signed/telemetry artifacts have been finalized.
+              return jobs_by_name[g24_name].get("status")=="completed"
           selected=None
           for attempt in range(361):
               try:
@@ -143,13 +148,19 @@ jobs:
               time.sleep(10)
           if not selected:
               raise SystemExit("EXACT_FACTORY_RUN_NOT_FOUND")
+          final_jobs=get("/actions/runs/"+urllib.parse.quote(str(selected["id"]),safe="")+"/jobs?per_page=100")
+          jobs_by_name={item.get("name"):item for item in final_jobs.get("jobs",[])}
+          g24=jobs_by_name.get("g24-resource-limited-runtime-smoke",{})
+          if g24.get("status")!="completed":
+              raise SystemExit("G24_TERMINAL_STATE_NOT_CONFIRMED")
           output=os.environ["GITHUB_OUTPUT"]
           with open(output,"a",encoding="utf-8") as handle:
               handle.write("run_id="+str(selected["id"])+"\n")
               handle.write("source_sha="+selected["head_sha"]+"\n")
               handle.write("run_conclusion="+str(selected.get("conclusion") or "unknown")+"\n")
               handle.write("source_branch="+str(selected.get("head_branch") or "")+"\n")
-          print(json.dumps({"run_id":selected["id"],"source_sha":selected["head_sha"],"conclusion":selected.get("conclusion"),"branch":selected.get("head_branch")},indent=2))
+              handle.write("g24_conclusion="+str(g24.get("conclusion") or "unknown")+"\n")
+          print(json.dumps({"run_id":selected["id"],"source_sha":selected["head_sha"],"conclusion":selected.get("conclusion"),"branch":selected.get("head_branch"),"g24_conclusion":g24.get("conclusion")},indent=2))
           PY
 
       - name: Download candidate and reports from the exact factory run
