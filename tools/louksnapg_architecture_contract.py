@@ -342,6 +342,15 @@ def evaluate_execution_evidence(contract: dict, contract_bytes: bytes, evidence:
             failures.append("TELEMETRY_EVENT_SUBJECT_BINDING_MISMATCH")
         if not _sha(row.get("input_sha256")) or not _sha(row.get("output_sha256")) or row.get("evidence_sha256") != row.get("output_sha256"):
             failures.append("TELEMETRY_EVENT_HASH_INVALID")
+        event_payload = dict(row)
+        recorded_event_sha = event_payload.pop("evidence_sha256", None)
+        event_payload.pop("output_sha256", None)
+        event_output_bytes = event_payload.pop("output_bytes", None)
+        event_canonical = json.dumps(event_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        if hashlib.sha256(event_canonical).hexdigest() != recorded_event_sha:
+            failures.append("TELEMETRY_EVENT_PAYLOAD_HASH_MISMATCH")
+        if event_output_bytes != len(event_canonical):
+            failures.append("TELEMETRY_EVENT_OUTPUT_BYTE_COUNT_MISMATCH")
         if isinstance(row.get("count"), bool) or row.get("count") != 1:
             failures.append("TELEMETRY_EVENT_COUNT_INVALID")
         for field in ("input_bytes", "output_bytes"):
