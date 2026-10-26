@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json, subprocess, tempfile, unittest
+import json, subprocess, tempfile, unittest, sys
 from pathlib import Path
 from unittest.mock import patch
 import cajita_task_adapters as adapters
