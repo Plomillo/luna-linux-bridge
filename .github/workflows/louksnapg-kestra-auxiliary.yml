@@ -235,6 +235,14 @@ jobs:
           worker_sha=hashlib.sha256(worker_path.read_bytes()).hexdigest()
           validation=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
           now=lambda:datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+          functional_absence={"schema":"LOUKSNAPG_FUNCTIONAL_EVIDENCE/1.0","status":"NOT_ESTABLISHED","execution_mode":"NOT_PERFORMED","synthetic_only":None,"source_commit":os.environ["SOURCE_COMMIT"],"bundle_sha256":bundle_sha,"reason":"No real, non-synthetic execution evidence covering all 21 required targets was found in the factory artifacts.","global_certification":"NOT_GRANTED"}
+          fp=Path("candidate/LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json")
+          fp.write_text(json.dumps(functional_absence,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          functional_sha=hashlib.sha256(fp.read_bytes()).hexdigest()
+          g23_absence={"schema":"LOUKSNAPG_G23_ATTESTATION_STATUS/1.0","status":"NOT_PERFORMED","source_commit":os.environ["SOURCE_COMMIT"],"bundle_sha256":bundle_sha,"reason":"No trusted independent G23 signed attestation was provided.","global_certification":"NOT_GRANTED"}
+          gp=Path("candidate/LOUKSNAPG_G23_ATTESTATION_NOT_PERFORMED.json")
+          gp.write_text(json.dumps(g23_absence,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          g23_sha=hashlib.sha256(gp.read_bytes()).hexdigest()
           rows=[
             ("SOURCE","HOLD_REVISION_PIN_PENDING","Official source documentation reviewed; exact upstream revision and model weight hashes not established."),
             ("INPUT","PASS","Candidate and source-bound reports hashed."),
@@ -261,6 +269,8 @@ jobs:
             h.write("sha256="+contract_sha+"\n")
             h.write("telemetry_sha256="+telemetry_sha+"\n")
             h.write("worker_sha256="+worker_sha+"\n")
+            h.write("functional_sha256="+functional_sha+"\n")
+            h.write("g23_sha256="+g23_sha+"\n")
             h.write("contract_status="+("PASS_CONTRACT_INTEGRITY" if report.get("contract_status")=="PASS" else "HOLD")+"\n")
           print(json.dumps({"contract_sha256":contract_sha,"contract_status":report.get("contract_status"),"telemetry_sha256":telemetry_sha,"telemetry_events":len(events),"release_telemetry_status":"INCOMPLETE_HOLD","global_certification":"NOT_GRANTED"},indent=2))
           PY
@@ -287,6 +297,8 @@ jobs:
           CONTRACT_STATUS: ${{ steps.contract.outputs.contract_status }}
           TELEMETRY_SHA256: ${{ steps.contract.outputs.telemetry_sha256 }}
           CUSTOSZ_RECEIPT_SHA256: ${{ steps.contract.outputs.worker_sha256 }}
+          FUNCTIONAL_EVIDENCE_SHA256: ${{ steps.contract.outputs.functional_sha256 }}
+          G23_ABSENCE_SHA256: ${{ steps.contract.outputs.g23_sha256 }}
         shell: bash
         run: |
           set -euo pipefail
@@ -328,13 +340,13 @@ jobs:
               "independent_integrity_status":"PASS",
               "identity_binding_status":validation["identity_preservation_status"],
               "engine_replacement_status":validation["engine_replacement"],
-              "functional_evidence_sha256":"0000000000000000000000000000000000000000000000000000000000000000",
+              "functional_evidence_sha256":os.environ.get("FUNCTIONAL_EVIDENCE_SHA256",""),
               "functional_evidence_source_commit":os.environ["SOURCE_COMMIT"],
               "functional_evidence_status":"NOT_ESTABLISHED",
               "functional_target_pass_count":"0",
               "functional_target_expected_count":"21",
               "functional_evidence_mode":"SYNTHETIC_OR_UNAVAILABLE",
-              "g23_attestation_sha256":"0000000000000000000000000000000000000000000000000000000000000000",
+              "g23_attestation_sha256":os.environ.get("G23_ABSENCE_SHA256",""),
               "g23_signature_verification_status":"NOT_ESTABLISHED",
               "architecture_contract_sha256":os.environ.get("CONTRACT_SHA256",""),
               "architecture_contract_status":os.environ.get("CONTRACT_STATUS","HOLD"),
@@ -428,6 +440,8 @@ jobs:
             candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json
             candidate/LOUKSNAPG_ARCHITECTURE_CONTRACT.json
             candidate/LOUKSNAPG_TELEMETRY_PREAUDIT.json
+            candidate/LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json
+            candidate/LOUKSNAPG_G23_ATTESTATION_NOT_PERFORMED.json
           if-no-files-found: warn
           retention-days: 90
 
