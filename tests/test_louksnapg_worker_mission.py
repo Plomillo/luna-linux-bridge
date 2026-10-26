@@ -32,6 +32,25 @@ class CustoszWorkerMissionTests(unittest.TestCase):
             self.assertEqual(set(task["required_capabilities"]), {"verify_repair_primitives", "build_single_file_distribution"})
             self.assertIn("three_repaired_non_model_primitives_executed_on_exact_candidate_and_outcomes_bound", acceptance)
 
+    def test_repair_preflight_matches_the_real_packaged_trealla_driver(self):
+        source = (ROOT / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+        tests = (ROOT / "tests" / "test_cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+        self.assertEqual(worker.repair_source_contract_failures(source, tests), [])
+
+        # The old, impossible requirement put use_module() inside the query;
+        # the correct implementation imports DCGs before loading the shipped grammar.
+        self.assertNotIn(
+            'query="use_module(library(dcgs)),phrase(sentence,[the,man,shoots]),write(true),halt"',
+            source,
+        )
+
+    def test_repair_preflight_rejects_a_missing_real_runtime_fix(self):
+        source = (ROOT / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+        tests = (ROOT / "tests" / "test_cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+        source = source.replace('trealla_env["TPL_LIBRARY_PATH"]=str(packaged_library)', "")
+        failures = worker.repair_source_contract_failures(source, tests)
+        self.assertIn('trealla_env["TPL_LIBRARY_PATH"]=str(packaged_library)', failures)
+
     def test_worker_cannot_self_certify_or_expand_scope_silently(self):
         with tempfile.TemporaryDirectory(prefix="louksnapg-worker-contract-") as tmp:
             root = Path(tmp)
