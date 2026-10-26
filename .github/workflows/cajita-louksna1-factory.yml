@@ -307,12 +307,13 @@ jobs:
         shell: bash
         env:
           PYTHONPATH: tools:scripts:cajita-luna-runtime
+          LOUKSNAPG_CONTRACT_SHA256: ${{ steps.louksnapg_contract.outputs.sha256 }}
         run: |
           set -euo pipefail
           test -s out/Louksna1.md
           test -s out/CAJITA_LUNA_RUNTIME_V10.macrodown
           test -s out/stage/cajita-luna-runtime/CajitadeLuna.md
-          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py
+          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py tools/louksnapg_architecture_contract.py tools/louksnapg_integral_gate.py
           python -m unittest discover -s tests -p 'test_louksnapg*.py' -v
           python tools/louksnapg_worker_mission.py \
             --repo-root "$GITHUB_WORKSPACE" \
@@ -321,6 +322,7 @@ jobs:
             --runtime out/CAJITA_LUNA_RUNTIME_V10.macrodown \
             --source-architecture LOUKSNAMEJORADA.md \
             --cajita-doc out/stage/cajita-luna-runtime/CajitadeLuna.md \
+            --architecture-contract contracts/louksnapg/architecture-contract.v1.json \
             --output out/LOUKSNAPG.md \
             --max-bytes 490000000 \
             --report out/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json
