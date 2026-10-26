@@ -169,7 +169,6 @@ class CalibreSlimIntegrityTests(unittest.TestCase):
                         launcher.verify_pinned_converter(str(converter), self.here)
 
     def test_wrong_official_source_commit_in_lock_fails_closed(self):
-    def test_wrong_official_source_commit_in_lock_fails_closed(self):
         lock = dict(LOCK)
         lock["commit_sha"] = "0" * 40
         (self.here / "source-lock.json").write_text(json.dumps(lock), encoding="utf-8")
