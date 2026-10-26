@@ -1,0 +1,229 @@
+{
+  "schema": "LOUKSNAPG_ARCHITECTURAL_CONTRACT/1.0",
+  "contract_id": "LOUKSNAPG-AC-001",
+  "contract_version": "1.0.0",
+  "state": "ACTIVE_ENFORCED",
+  "authority": "Louksna.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "mutation_policy": "APPEND_ONLY",
+  "failure_policy": "FAIL_CLOSED",
+  "purpose": "Repair the exact LOUKSNAPG candidate before any integral certification. Enforce CUSTOSZ V9 as primary worker and Kestra as independent secondary auditor, with real task evidence, telemetry, provenance and separate G23/G24 decisions.",
+  "release_state_without_complete_evidence": "HOLD_NOT_CERTIFIED",
+  "workers": {
+    "primary": {
+      "id": "CUSTOSZ_V9",
+      "responsibility": "Bounded candidate repair/build and evidence emission",
+      "must_emit_real_runtime_receipt": true,
+      "may_self_certify": false
+    },
+    "secondary": {
+      "id": "KESTRA",
+      "responsibility": "Independent orchestration, evidence-envelope audit, telemetry observation and fail-closed hold/pass decision",
+      "must_emit_real_runtime_receipt": true,
+      "may_replace_g23_or_g24": false
+    },
+    "correlation_fields": [
+      "source_commit",
+      "bundle_sha256",
+      "contract_sha256",
+      "execution_id",
+      "worker_run_id"
+    ],
+    "missing_or_disconnected_worker": "HOLD"
+  },
+  "obligations": [
+    {
+      "id": "C1_COORDINATED_WORKERS",
+      "status": "MANDATORY",
+      "rule": "CUSTOSZ_V9 is the primary bounded worker; Kestra is the independent secondary auditor. Both must have real execution receipts tied to the same source commit and candidate digest. A repository workflow definition alone is not an execution receipt."
+    },
+    {
+      "id": "C2_OFFICIAL_SOURCE_REPAIR",
+      "status": "MANDATORY",
+      "rule": "Inspect official upstream source documentation and pin exact repository/model variant/revision before model repair. Repair the existing candidate using available, identity-bound assets; do not silently substitute a model or claim that repackaging restores lost information."
+    },
+    {
+      "id": "C3_PRIMITIVE_FUNCTIONS",
+      "status": "MANDATORY",
+      "rule": "Run real, non-synthetic, behavior-specific tests for all 21 registered target IDs. Every model-backed target must prove model load and inference, bind the exact model and weights, and pass task-relevant quality criteria; exit code zero or non-empty output is insufficient."
+    },
+    {
+      "id": "C4_TELEMETRY_AND_AUDIT",
+      "status": "MANDATORY",
+      "rule": "Persist source/input/operation/output/test/validation/G23/Kestra/G24 decision telemetry with ordered IDs, UTC timestamps, actor/tool/version, hashes/sizes, status, error and rollback reference. Missing, unbound, redacted-away or non-persisted evidence is HOLD."
+    },
+    {
+      "id": "C5_GOVERNED_RELEASE_CHAIN",
+      "status": "MANDATORY",
+      "rule": "Execute SPECIFICATION -> EVIDENCE -> VALIDATION -> INDEPENDENT_VALIDATION_G23 -> KESTRA_AUDIT -> SEPARATE_CERTIFICATION_G24 -> NON_REGRESSION -> ROLLBACK_VERIFICATION -> ACTIVE. G23 and G24 are distinct; no automatic certification propagation or promotion."
+    },
+    {
+      "id": "C6_PROHIBITIONS_AND_RECOVERY",
+      "status": "MANDATORY",
+      "rule": "Do not download heavy model weights, use Remote Commander, mutate canonical identities/blocks/axioms, use synthetic evidence as product proof, or merge/promote without a complete evidence chain. Abort, restore checkpoint, verify restoration, record failure and audit."
+    }
+  ],
+  "source_catalog": [
+    {
+      "target_id": "D01_CEREBRO_ROOT",
+      "model_id": "openai/gpt-oss-120b",
+      "official_url": "https://github.com/openai/gpt-oss",
+      "official_docs_url": "https://github.com/openai/gpt-oss/blob/main/README.md",
+      "task": "reasoning_and_generation",
+      "heavy_weight_download_prohibited": true,
+      "variant_must_be_pinned": true
+    },
+    {
+      "target_id": "D03_TRANSCRIPCION_ROOT",
+      "model_id": "turbo",
+      "official_url": "https://github.com/openai/whisper",
+      "official_docs_url": "https://github.com/openai/whisper/blob/main/README.md",
+      "task": "speech_transcription_only",
+      "translation_use_prohibited": true,
+      "variant_must_be_pinned": true
+    },
+    {
+      "target_id": "D04_TRADUCCION_GENERAL",
+      "model_id": "facebook/seamless-m4t-v2-large",
+      "official_url": "https://github.com/facebookresearch/seamless_communication",
+      "official_docs_url": "https://github.com/facebookresearch/seamless_communication/blob/main/docs/m4t/README.md",
+      "task": "multilingual_translation",
+      "heavy_weight_download_prohibited": true,
+      "variant_must_be_pinned": true
+    },
+    {
+      "target_id": "D05_DOCLING",
+      "model_id": "ibm-granite/granite-docling-258M",
+      "official_url": "https://huggingface.co/ibm-granite/granite-docling-258M",
+      "official_docs_url": "https://www.ibm.com/granite/docs/models/docling",
+      "task": "document_understanding_and_structured_conversion",
+      "variant_must_be_pinned": true
+    },
+    {
+      "target_id": "D06_ANALISIS_AVANZADO",
+      "model_id": "Qwen/Qwen3-0.6B",
+      "official_url": "https://github.com/QwenLM/Qwen3",
+      "official_docs_url": "https://github.com/QwenLM/Qwen3/blob/main/docs/source/inference/transformers.md",
+      "task": "advanced_text_reasoning",
+      "variant_must_be_pinned": true,
+      "allowed_variants": [
+        "Qwen/Qwen3-0.6B",
+        "Qwen/Qwen3-1.7B",
+        "Qwen/Qwen3-4B",
+        "Qwen/Qwen3-8B",
+        "Qwen/Qwen3-14B",
+        "Qwen/Qwen3-32B",
+        "Qwen/Qwen3-30B-A3B",
+        "Qwen/Qwen3-235B-A22B"
+      ]
+    }
+  ],
+  "target_ids": [
+    "D01_CEREBRO_ROOT",
+    "D02_CONFESION_ECLESIAL_REFORMADA",
+    "D02_MULTI_INTERDISCIPLINAR",
+    "D02_ORQUESTADOR",
+    "D03_TRANSCRIPCION_ROOT",
+    "D04_HERMENEUTICA_HG",
+    "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+    "D04_TRADUCCION_GENERAL",
+    "D05_CALIBRE",
+    "D05_DOCLING",
+    "D06_ANTI_ALUCINACIONES",
+    "D06_ANALISIS_AVANZADO",
+    "D06_ARCHIVADO_DETECCION",
+    "D06_COGNITIVE_CI_CD",
+    "D06_CONSOLA",
+    "D06_MEMORIA_GOBERNADA",
+    "D06_MIGRACION_PERSISTENCIA",
+    "D06_MOTOR_PROTOCOLAR",
+    "D06_PORTABILIDAD_BASE",
+    "D06_RUNTIME_ANDROID_WINDOWS",
+    "D06_TESTING"
+  ],
+  "telemetry": {
+    "required_event_types": [
+      "SOURCE",
+      "INPUT",
+      "OPERATION",
+      "OUTPUT",
+      "TEST",
+      "VALIDATION",
+      "INDEPENDENT_VALIDATION_G23",
+      "KESTRA_AUDIT",
+      "CERTIFICATION_DECISION_G24",
+      "NON_REGRESSION",
+      "ROLLBACK"
+    ],
+    "required_fields": [
+      "operation_id",
+      "sequence_id",
+      "timestamp_utc",
+      "actor",
+      "tool_name",
+      "tool_version",
+      "source",
+      "input_sha256",
+      "output_sha256",
+      "input_bytes",
+      "output_bytes",
+      "validation_status",
+      "rollback_reference",
+      "status"
+    ],
+    "persistence_required": true,
+    "candidate_and_source_commit_binding_required": true,
+    "secrets_must_never_be_logged": true
+  },
+  "gates": {
+    "hard_requirements": [
+      "all_21_targets_pass",
+      "real_runtime_execution",
+      "synthetic_only_false",
+      "official_revision_pinned",
+      "weights_sha256_bound",
+      "semantic_quality_pass",
+      "host_matrix_pass",
+      "rollback_pass",
+      "axiom_binding_pass",
+      "block_binding_pass",
+      "telemetry_pass",
+      "custosz_v9_real_receipt",
+      "kestra_real_receipt",
+      "g23_signature_verified",
+      "separate_g24_signature_verified",
+      "non_regression_pass"
+    ],
+    "chain": [
+      "SPECIFICATION",
+      "EVIDENCE",
+      "VALIDATION",
+      "INDEPENDENT_VALIDATION_G23",
+      "KESTRA_AUDIT",
+      "SEPARATE_CERTIFICATION_G24",
+      "NON_REGRESSION",
+      "ROLLBACK_VERIFICATION",
+      "ACTIVE"
+    ],
+    "missing_evidence_action": "HOLD_NOT_CERTIFIED",
+    "global_certification_before_g24": "NOT_GRANTED",
+    "merge_or_promotion_before_all_gates": "PROHIBITED"
+  },
+  "prohibitions": {
+    "heavy_model_weights_download": false,
+    "remote_commander_use": false,
+    "canonical_identity_mutation": false,
+    "block_or_axiom_reassignment": false,
+    "engine_substitution_without_explicit_authorization": false,
+    "synthetic_evidence_as_product_proof": false,
+    "self_certification": false,
+    "automatic_g23_to_g24_propagation": false,
+    "merge_or_promotion_without_complete_chain": false
+  },
+  "evidence_schema": "LOUKSNAPG_ARCHITECTURE_EXECUTION_EVIDENCE/1.0",
+  "validator_semantics": {
+    "contract_integrity_pass_does_not_certify_product": true,
+    "missing_execution_evidence": "HOLD_NOT_CERTIFIED",
+    "actual_release_requires": "separate independently verifiable evidence for every mandatory obligation"
+  }
+}
