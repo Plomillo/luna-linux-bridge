@@ -888,7 +888,7 @@ jobs:
             cp -a "$ROOT" "$EXT_ROOT"
           fi
           if [ "$BUILD_RC" -eq 0 ]; then
-            docker run --rm --memory=1073741824 --memory-swap=1073741824 --cpus=1 \
+            docker run --rm --memory=2147483648 --memory-swap=2147483648 --cpus=1 \
               -e OMP_NUM_THREADS=1 -e OPENBLAS_NUM_THREADS=1 -e MKL_NUM_THREADS=1 -e NUMEXPR_NUM_THREADS=1 \
               -e TOKENIZERS_PARALLELISM=false -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \
               -e LOUKSNA1_COMPANION_PATH=/telemetry/Louksna1.md \
