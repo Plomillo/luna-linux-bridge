@@ -225,5 +225,37 @@
     "contract_integrity_pass_does_not_certify_product": true,
     "missing_execution_evidence": "HOLD_NOT_CERTIFIED",
     "actual_release_requires": "separate independently verifiable evidence for every mandatory obligation"
+  },
+  "model_repair_evidence": {
+    "required_model_target_count": 5,
+    "target_ids": [
+      "D01_CEREBRO_ROOT",
+      "D03_TRANSCRIPCION_ROOT",
+      "D04_TRADUCCION_GENERAL",
+      "D05_DOCLING",
+      "D06_ANALISIS_AVANZADO"
+    ],
+    "required_per_target_fields": [
+      "target_id",
+      "status",
+      "synthetic_only",
+      "official_source_url",
+      "upstream_model_id",
+      "upstream_revision_commit",
+      "upstream_weights_sha256",
+      "candidate_before_weights_sha256",
+      "candidate_after_weights_sha256",
+      "repair_implementation_commit",
+      "test_evidence_sha256",
+      "quality_report_sha256",
+      "expected_test_count",
+      "passed_test_count",
+      "semantic_quality_status"
+    ],
+    "repair_must_change_candidate_weights": true,
+    "candidate_after_hash_must_match_functional_gate": true,
+    "synthetic_evidence_allowed": false,
+    "semantic_quality_pass_required": true,
+    "release_implication_if_missing": "HOLD_NOT_CERTIFIED"
   }
 }
