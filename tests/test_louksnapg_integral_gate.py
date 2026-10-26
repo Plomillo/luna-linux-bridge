@@ -75,12 +75,14 @@ class IntegralGateTests(unittest.TestCase):
                 "synthetic_only": False,
             }
             if target_id in gate.MODEL_TARGETS:
+                upstream_ids = dict(gate.OFFICIAL_MODEL_IDS)
+                upstream_ids["D06_ANALISIS_AVANZADO"] = "Qwen/Qwen3-8B"
                 row.update({
                     "model_load_status": "PASS",
                     "model_inference_observed": True,
                     "weight_sha256": "5" * 64,
-                    "upstream_model_id": "vendor/model",
-                    "upstream_source_url": "https://example.invalid/vendor/model",
+                    "upstream_model_id": upstream_ids[target_id],
+                    "upstream_source_url": gate.OFFICIAL_SOURCE_URLS[target_id],
                     "upstream_revision_sha256": "6" * 40,
                 })
             rows.append(row)
