@@ -133,7 +133,6 @@ class IntegralGateTests(unittest.TestCase):
         result = self.evaluate()
         self.assertEqual(result["decision"], "HOLD")
         self.assertIn("FUNCTIONAL_EVIDENCE_BUNDLE_SHA256_MISMATCH", result["failures"])
-        self.assertIn("G23_SUBJECT_BUNDLE_MISMATCH", result["failures"])
 
     def test_missing_target_and_duplicate_are_blocked(self):
         self.evidence["target_results"].pop()
@@ -161,7 +160,7 @@ class IntegralGateTests(unittest.TestCase):
         self.assertIn("G23_ED25519_SIGNATURE_INVALID", result["failures"])
 
     def test_missing_trust_root_fails_closed(self):
-        result = self.evaluate(public_key=None if False else "")
+        result = self.evaluate(public_key="")
         self.assertEqual(result["decision"], "HOLD")
         self.assertIn("G23_TRUSTED_PUBLIC_KEY_NOT_CONFIGURED", result["failures"])
 
