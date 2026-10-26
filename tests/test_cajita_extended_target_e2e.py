@@ -120,6 +120,33 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             actual = {path.relative_to(root).as_posix() for path in coverage.regular_files(root)}
             self.assertEqual(actual, {"root.txt", "nested/opa_linux_amd64_static"})
 
+    def test_sqlite_probe_builds_from_canonical_source_when_amalgamation_files_are_absent(self):
+        with tempfile.TemporaryDirectory(prefix="extended-target-sqlite-canonical-build-") as temp:
+            root = Path(temp)
+            source_root = root / "SQLITE_SOURCE_3_53_4"
+            source_tree = source_root / "sqlite-src-3530400"
+            source_tree.mkdir(parents=True)
+            configure = source_tree / "configure"
+            configure.write_text(
+                "#!/bin/sh\n"
+                "cat > Makefile <<'MAKEFILE'\n"
+                "sqlite3:\n"
+                "\tprintf '%s\\n' '#!/usr/bin/env python3' 'import pathlib,sys' "
+                "'if len(sys.argv) == 2 and sys.argv[1] == \"--version\": print(\"3.53.4 fixture\"); raise SystemExit(0)' "
+                "'pathlib.Path(sys.argv[-1]).write_bytes(b\"fixture database\")' "
+                "'sys.stdin.read()' 'print(\"preserve-me|migrated\")' 'print(\"ok\")' > sqlite3\n"
+                "\tchmod +x sqlite3\n"
+                "MAKEFILE\n",
+                encoding="utf-8",
+            )
+            result = coverage.sqlite_migration_probe(source_root, root / "tmp")
+            self.assertEqual(result["migration"]["return_code"], 0)
+            self.assertIn("preserve-me|migrated", result["migration"]["stdout_excerpt"])
+            self.assertEqual(result["sqlite_version"]["return_code"], 0)
+            self.assertEqual(len(result["source_tree_sha256_before_build"]), 64)
+            self.assertTrue((source_tree / "configure").is_file())
+            self.assertFalse((source_tree / "sqlite3").exists())
+
     def test_materialized_asset_root_uses_registered_path_and_descriptor_hash(self):
         with tempfile.TemporaryDirectory(prefix="extended-target-asset-root-") as temp:
             root = Path(temp)
