@@ -429,8 +429,8 @@ def evaluate(
             "obligations_passed": sum(1 for row in obligations.values() if row["status"].startswith("PASS")),
             "obligations_held": sum(1 for row in obligations.values() if row["status"] == "HOLD"),
             "release_eligible": all_release_requirements_pass,
-            "global_certification": "NOT_GRANTED" if not all_release_requirements_pass else "REQUIRES_SEPARATE_AUTHORIZED_G24",
-            "decision": "HOLD_NOT_CERTIFIED" if not all_release_requirements_pass else "ELIGIBLE_FOR_SEPARATE_G24_REVIEW",
+            "global_certification": "NOT_GRANTED_BY_THIS_AUDIT",
+            "decision": "HOLD_NOT_CERTIFIED" if not all_release_requirements_pass else "ALL_SIX_OBLIGATIONS_VERIFIED_REQUIRES_AUTHORIZED_ACTIVATION",
         },
         "evidence_bindings": {
             "worker": file_binding(None),
