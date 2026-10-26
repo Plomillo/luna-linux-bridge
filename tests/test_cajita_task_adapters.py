@@ -1,11 +1,8 @@
 from __future__ import annotations
-import json, subprocess, tempfile, unittest, sys
+import json, subprocess, tempfile, unittest
 from pathlib import Path
 from unittest.mock import patch
 import cajita_task_adapters as adapters
-
-REPO=Path(__file__).resolve().parents[1]
-sys.path.insert(0,str(REPO/"tools"))
 
 RUNTIME=Path(__file__).resolve().parents[1]/"cajita-luna-runtime"
 def req(domain="D01_CEREBRO",op="generate_text",**payload):
@@ -13,22 +10,23 @@ def req(domain="D01_CEREBRO",op="generate_text",**payload):
             "input":payload,"limits":{"timeout_seconds":30,"max_new_tokens":2}}
 class AdapterTests(unittest.TestCase):
     def test_docling_known_answer_fixture_is_legible_at_runtime_256px_bound(self):
-        import cajita_task_e2e as e2e
-        from PIL import Image
-        with tempfile.TemporaryDirectory() as temp:
-            target=Path(temp)/"invoice.png"
-            e2e.make_image(target)
-            with Image.open(target) as image:
-                self.assertEqual(image.size,(256,256))
-                gray=image.convert("L")
-                self.assertLess(min(gray.getdata()),32)
-                dark_pixels=sum(1 for pixel in gray.getdata() if pixel<96)
-                self.assertGreater(dark_pixels,250)
-                # The fixture's high-contrast text must span more than a tiny corner.
-                bbox=Image.eval(gray,lambda value: 255 if value<96 else 0).getbbox()
-                self.assertIsNotNone(bbox)
-                self.assertGreater(bbox[2]-bbox[0],90)
-                self.assertGreater(bbox[3]-bbox[1],100)
+        # Keep the lightweight unit suite independent of Pillow. G24 renders the
+        # actual image; this contract prevents reintroducing tiny downsampled text.
+        harness=Path(__file__).resolve().parents[1]/"tools"/"cajita_task_e2e.py"
+        source=harness.read_text(encoding="utf-8")
+        start=source.index("def make_image(path):")
+        end=source.index("\\ndef run_case",start)
+        fixture=source[start:end]
+        for required in (
+            'Image.new("RGB",(256,256),"white")',
+            'ImageFont.truetype(regular,15)',
+            'ImageFont.truetype(bold,24)',
+            'ImageFont.truetype(bold,30)',
+            'draw.text((12,190),"133.45",font=total,fill="black")',
+        ):
+            self.assertIn(required,fixture)
+        self.assertNotIn('Image.new("RGB",(640,480)',fixture)
+        self.assertIn('"id":"invoice-total-133-45"',source)
 
     def test_docling_e2e_profile_is_bounded_to_single_256px_view(self):
         source=RUNTIME/"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py"
