@@ -585,7 +585,7 @@ jobs:
         if: always() && steps.verify.outcome == 'success' && steps.contract.outcome == 'success'
         shell: bash
         env:
-          SOURCE_COMMIT: \${{ steps.source.outputs.source_sha }}
+          SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
         run: |
           set -euo pipefail
           python - <<'PY'
