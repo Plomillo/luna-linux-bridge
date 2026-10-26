@@ -1,0 +1,115 @@
+name: Inspect already-published Cajita archive for reusable quantized models
+
+on:
+  push:
+    branches:
+      - louksnapg/archive-model-inventory-20261026
+    paths:
+      - ".github/workflows/cajita-existing-archive-model-inventory.yml"
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: cajita-existing-archive-model-inventory
+  cancel-in-progress: false
+
+jobs:
+  inventory:
+    name: Read-only inventory of published Cajita archive
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          lfs: false
+
+      - name: Install 7-Zip listing tool
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends p7zip-full
+
+      - name: Retrieve only the already-published archive and verify exact bytes
+        shell: bash
+        env:
+          ARCHIVE_URL: https://github.com/Plomillo/luna-linux-bridge/releases/download/cajita-luna-archive-2026-10-23-b4015050/CajitadeLuna.7z
+          EXPECTED_SHA256: b40150508f702ee456da4041927611c5f0f78639d45a8582eff2e88258eb6abf
+          EXPECTED_BYTES: "348027363"
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/CajitadeLuna.7z"
+          curl --fail --location --retry 3 --retry-delay 2 "$ARCHIVE_URL" --output "$archive"
+          test "$(stat -c '%s' "$archive")" = "$EXPECTED_BYTES"
+          echo "$EXPECTED_SHA256  $archive" | sha256sum --check -
+          7z l -slt "$archive" > "$RUNNER_TEMP/archive-listing.txt"
+          test -s "$RUNNER_TEMP/archive-listing.txt"
+          python - "$RUNNER_TEMP/archive-listing.txt" "$RUNNER_TEMP/archive-inventory.json" "$EXPECTED_SHA256" "$EXPECTED_BYTES" "$ARCHIVE_URL" <<'PY'
+          import json, pathlib, sys
+          listing_path, out_path, digest, archive_bytes, url = sys.argv[1:]
+          text = pathlib.Path(listing_path).read_text(encoding="utf-8", errors="replace")
+          records = []
+          for block in text.split("\n\n"):
+              values = {}
+              for line in block.splitlines():
+                  if " = " in line:
+                      k, v = line.split(" = ", 1)
+                      values[k.strip()] = v.strip()
+              path = values.get("Path")
+              if not path or path == "CajitadeLuna.7z" or path.endswith("/") or values.get("Folder") == "+":
+                  continue
+              try:
+                  size = int(values.get("Size", "0"))
+              except ValueError:
+                  size = 0
+              records.append({"path": path, "bytes": size})
+          exts = {".gguf", ".ggml", ".safetensors", ".onnx", ".bin", ".pt", ".pth", ".tflite", ".model"}
+          keys = ("smollm", "gpt-oss", "gptoss", "q4_k_m", "quantized", "weights", "model-000", "whisper", "seamless", "qwen", "docling")
+          candidates = []
+          for row in records:
+              p = pathlib.PurePosixPath(row["path"])
+              if p.suffix.lower() in exts or any(k in row["path"].lower() for k in keys):
+                  candidates.append(row)
+          report = {
+              "schema": "CAJITA_PUBLISHED_ARCHIVE_MODEL_INVENTORY/1.0",
+              "status": "INVENTORY_ONLY_NO_EXTRACTION_NO_INFERENCE",
+              "archive_url": url,
+              "archive_sha256_verified": digest,
+              "archive_bytes_verified": int(archive_bytes),
+              "archive_entries_count": len(records),
+              "archive_listed_payload_bytes": sum(x["bytes"] for x in records),
+              "model_candidate_entry_count": len(candidates),
+              "model_candidate_entries": sorted(candidates, key=lambda x: x["path"].lower()),
+              "no_source_model_downloads": True,
+              "no_local_pc_access": True,
+              "no_archive_contents_extracted": True,
+              "global_certification": "NOT_GRANTED_BY_THIS_INVENTORY"
+          }
+          pathlib.Path(out_path).write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps({
+              "status": report["status"],
+              "archive_sha256_verified": digest,
+              "archive_bytes_verified": int(archive_bytes),
+              "archive_entries_count": len(records),
+              "model_candidate_entry_count": len(candidates),
+              "candidate_paths": [x["path"] for x in candidates[:120]],
+              "global_certification": "NOT_GRANTED_BY_THIS_INVENTORY"
+          }, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Preserve inventory evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cajita-published-archive-inventory-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/archive-inventory.json
+            ${{ runner.temp }}/archive-listing.txt
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 6
