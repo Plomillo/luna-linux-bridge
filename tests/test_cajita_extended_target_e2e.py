@@ -383,9 +383,14 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             binary.write_text(
                 "#!/usr/bin/env python3\n"
                 "import pathlib,sys,os\n"
-                "assert pathlib.Path('samples/grammar.pl').is_file()\n"                "assert os.environ.get('TPL_LIBRARY_PATH') == str(pathlib.Path('library').resolve())\n"
-                "assert '-g' in sys.argv and '-l' in sys.argv\n"
-                "assert sys.argv[sys.argv.index('-g')+1] == 'use_module(library(dcgs)),phrase(sentence,[the,man,shoots]),write(true),halt'\n"
+                "assert pathlib.Path('samples/grammar.pl').is_file()\n"
+                "assert os.environ.get('TPL_LIBRARY_PATH') == str(pathlib.Path('library').resolve())\n"
+                "assert '-l' in sys.argv\n"
+                "driver = pathlib.Path(sys.argv[sys.argv.index('-l')+1])\n"
+                "text = driver.read_text(encoding='utf-8')\n"
+                "assert 'use_module(library(dcgs))' in text\n"
+                "assert 'include(' in text\n"
+                "assert 'phrase(sentence,[the,man,shoots]),write(true),halt' in text\n"
                 "print('true')\n",
                 encoding="utf-8",
             )
