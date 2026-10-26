@@ -89,7 +89,7 @@ class FactorySafetyTests(unittest.TestCase):
     {"id":"D04_HERMENEUTICA_HG","path":"4. Traductor Inteligente/Hermenéutica H-G"}]}
    (runtime/"command_subdomain_routing.json").write_text(json.dumps(routing),encoding="utf-8")
    observed_commands=[]
-   def fake_run(command,cwd=None,stdout=None,stderr=None,text=None,timeout=None,check=None):
+   def fake_run(command,cwd=None,stdout=None,stderr=None,text=None,timeout=None,check=None,env=None):
     observed_commands.append(list(command))
     cwd=Path(cwd) if cwd else runtime
     out=""
@@ -115,15 +115,25 @@ class FactorySafetyTests(unittest.TestCase):
    self.assertEqual(receipt["source_commit"],"a"*40)
    self.assertEqual(len(receipt["builds"]),2)
    self.assertIn(["make","-j1",'GIT_VERSION="2.100.24"',"NOFFI=1","NOSSL=1","NOTHREADS=1","ISOCLINE=1"],observed_commands)
-   self.assertTrue((foma_source/"foma").is_file())
-   self.assertTrue((foma_source/"flookup").is_file())
-   self.assertTrue((trealla_source/"tpl").is_file())
+   foma_build=next(row for row in receipt["builds"] if row["target_id"]=="D04_TRADUCCION_LENGUAS_ANTIGUAS")
+   trealla_build=next(row for row in receipt["builds"] if row["target_id"]=="D04_HERMENEUTICA_HG")
+   output_paths={row["name"]:runtime/row["path"] for row in foma_build["binary_artifacts"]}
+   trealla_binary=runtime/trealla_build["binary_artifacts"][0]["path"]
+   self.assertTrue(output_paths["foma"].is_file())
+   self.assertTrue(output_paths["flookup"].is_file())
+   self.assertTrue((runtime/trealla_binary).is_file())
+   self.assertFalse((foma_source/"foma").exists())
+   self.assertFalse((foma_source/"flookup").exists())
+   self.assertFalse((trealla_source/"tpl").exists())
    self.assertFalse((trealla_source/"README.md").exists())
+   self.assertTrue(foma_build["source_tree_preserved"])
+   self.assertEqual(foma_build["source_tree_sha256_before_build"],foma_build["source_tree_sha256_after_build"])
+   self.assertTrue(trealla_build["source_tree_preserved"])
+   self.assertEqual(trealla_build["source_tree_sha256_before_build"],trealla_build["source_tree_sha256_after_build"])
    # The downloaded source archive omitted this executable bit. Only the temporary
    # build copy may be repaired; source bytes and mode remain untouched.
    self.assertEqual(sha_file(foma_test_runner),foma_test_runner_sha)
    self.assertFalse(foma_test_runner.stat().st_mode&0o111)
-   foma_build=next(row for row in receipt["builds"] if row["target_id"]=="D04_TRADUCCION_LENGUAS_ANTIGUAS")
    repair=foma_build["temporary_test_mode_repairs"][0]
    self.assertEqual(repair["path"],"tests/run.sh")
    self.assertEqual(repair["sha256"],foma_test_runner_sha)
