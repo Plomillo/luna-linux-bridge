@@ -70,7 +70,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             "fixture_only": True,
         }
         receipt_path = root / "NATIVE_ENGINE_BUILD_RECEIPTS.json"
-        receipt_path.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\\n", encoding="utf-8")
+        receipt_path.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
         routing_path = root / "command_subdomain_routing.json"
         routing = json.loads(routing_path.read_text(encoding="utf-8"))
         materialization = routing.setdefault("materialization", {})
@@ -78,7 +78,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
         materialization["native_engine_build_receipt_sha256"] = coverage.sha256_file(receipt_path)
         materialization["native_engine_artifact_root"] = ".native-engine-bin"
         materialization["native_engine_build_status"] = "PASS_TEST_FIXTURE_ONLY"
-        routing_path.write_text(json.dumps(routing, sort_keys=True, indent=2) + "\\n", encoding="utf-8")
+        routing_path.write_text(json.dumps(routing, sort_keys=True, indent=2) + "\n", encoding="utf-8")
 
     @staticmethod
     def _fixture_tree_sha256(source_root: Path) -> str:
