@@ -346,7 +346,11 @@ def probe_trealla(root: Path) -> dict[str, Any]:
     grammar=source/"samples"/"grammar.pl"
     if grammar.is_symlink() or not grammar.is_file():
         raise ProbeFailure("TREALLA_GRAMMAR_FIXTURE_MISSING")
-    run=require_ok(run_process([str(binary),"-g","phrase(sentence,[fixture])","-l","samples/grammar.pl"],cwd=source,timeout=15,env=native_library_environment(root,build)),"TREALLA_PACKAGED_PROLOG_QUERY_FAILED")
+    # Trealla documents DCG support via library(dcgs); phrase/2 is not
+    # assumed to be implicitly imported by the runtime. The bundled upstream
+    # grammar accepts "the man shoots" (sentence -> np, vp -> verb).
+    query="use_module(library(dcgs)),phrase(sentence,[the,man,shoots])"
+    run=require_ok(run_process([str(binary),"-g",query,"-l","samples/grammar.pl"],cwd=source,timeout=15,env=native_library_environment(root,build)),"TREALLA_PACKAGED_PROLOG_QUERY_FAILED")
     if "true" not in str(run.get("stdout_excerpt","")).casefold():
         raise ProbeFailure("TREALLA_PACKAGED_PROLOG_QUERY_NOT_TRUE:"+str(run.get("stdout_excerpt",""))[-500:])
     return {
@@ -373,7 +377,10 @@ def probe_foma(root: Path) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix="foma-packaged-primitive-") as temp:
         temp_path=Path(temp)
         script=temp_path/"primitive.foma"
-        script.write_text("regex cat -> gato;\nsave stack primitive.fst\nquit\n",encoding="utf-8")
+        # Foma regex transducers use an explicit upper:lower pair for a
+        # direct lexical mapping. "->" expresses a replacement rule, not
+        # this one-entry lexical transducer.
+        script.write_text("regex cat:gato;\nsave stack primitive.fst\nquit\n",encoding="utf-8")
         compiled=require_ok(run_process([str(foma_binary),"-q","-f",str(script)],cwd=temp_path,timeout=30,env=env),"FOMA_PACKAGED_TRANSDUCER_BUILD_FAILED")
         fst=temp_path/"primitive.fst"
         if fst.is_symlink() or not fst.is_file() or fst.stat().st_size==0:
@@ -667,6 +674,52 @@ def post_json(url: str, value: Any, timeout: float = 3) -> tuple[int, Any]:
         raise ProbeFailure("HTTP_POST_FAILED:status=" + str(exc.code) + ":url=" + url.split("?", 1)[0] + ":body=" + body) from exc
 
 
+def rqlite_ready_body_is_complete(http_status: int, body: str) -> bool:
+    """Require rqlite's documented /readyz leader/store conditions before writes."""
+    if isinstance(http_status, bool) or http_status != 200 or not isinstance(body, str):
+        return False
+    normalized = body.casefold()
+    return "leader ok" in normalized and "store ok" in normalized
+
+
+def wait_for_rqlite_ready(base: str, process: subprocess.Popen, timeout_seconds: int = 25) -> dict[str, Any]:
+    """Wait for a write-ready Raft leader, not merely a live HTTP status endpoint.
+
+    rqlite's /status can answer before leader election. /readyz reports node,
+    leader, and store readiness, and prevents the first database write from racing
+    the single-node election.
+    """
+    import urllib.error
+    import urllib.request
+
+    deadline = time.monotonic() + timeout_seconds
+    attempts = 0
+    last_observation = "NO_RESPONSE"
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            raise ProbeBlocked("RQLITE_PROCESS_EXITED_BEFORE_LEADER_READY")
+        attempts += 1
+        try:
+            with urllib.request.urlopen(base + "/readyz", timeout=1) as response:
+                body = response.read(2048).decode("utf-8", errors="replace")
+                if rqlite_ready_body_is_complete(response.status, body):
+                    return {
+                        "endpoint": "/readyz",
+                        "http_status": response.status,
+                        "attempts": attempts,
+                        "body_sha256": sha256_bytes(body.encode("utf-8")),
+                        "ready_state": "NODE_LEADER_STORE_READY",
+                    }
+                last_observation = "HTTP_" + str(response.status) + ":" + body[:180].replace("\\n", " ")
+        except urllib.error.HTTPError as exc:
+            body = exc.read(512).decode("utf-8", errors="replace")
+            last_observation = "HTTP_" + str(exc.code) + ":" + body[:180].replace("\\n", " ")
+        except Exception as exc:
+            last_observation = type(exc).__name__
+        time.sleep(0.25)
+    raise ProbeBlocked("RQLITE_LEADER_READINESS_TIMEOUT:" + last_observation)
+
+
 def rqlite_statement_batch(*statements: str) -> list[str]:
     """Return the rqlite HTTP API's JSON array of SQL strings."""
     if not statements or any(not isinstance(statement, str) or not statement.strip() for statement in statements):
@@ -780,21 +833,7 @@ def probe_migration_persistence(root: Path) -> dict[str, Any]:
             )
             try:
                 base = f"http://127.0.0.1:{http_port}"
-                deadline = time.monotonic() + 25
-                ready = False
-                while time.monotonic() < deadline:
-                    if proc.poll() is not None:
-                        break
-                    try:
-                        import urllib.request
-                        with urllib.request.urlopen(base + "/status", timeout=1) as response:
-                            if response.status == 200:
-                                ready = True
-                                break
-                    except Exception:
-                        time.sleep(0.3)
-                if not ready:
-                    raise ProbeBlocked("RQLITE_SERVER_DID_NOT_REACH_READY_STATE")
+                ready_receipt = wait_for_rqlite_ready(base, proc, timeout_seconds=25)
                 create_status, create = post_json(base + "/db/execute?pretty", rqlite_statement_batch("CREATE TABLE records (id INTEGER PRIMARY KEY, value TEXT)"))
                 insert_status, insert = post_json(base + "/db/execute?pretty", rqlite_statement_batch("INSERT INTO records(id,value) VALUES(1,'durable')"))
                 query_status, query = post_json(base + "/db/query?pretty", rqlite_statement_batch("SELECT value FROM records WHERE id=1"))
