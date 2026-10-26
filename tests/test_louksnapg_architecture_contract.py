@@ -1,10 +1,12 @@
 import importlib.util
 import json
 import unittest
+import sys
 from copy import deepcopy
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools"))
 MODULE = ROOT / "tools" / "louksnapg_architecture_contract.py"
 SPEC = importlib.util.spec_from_file_location("louksnapg_architecture_contract", MODULE)
 contract_gate = importlib.util.module_from_spec(SPEC)
