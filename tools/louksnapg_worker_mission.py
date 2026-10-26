@@ -102,7 +102,8 @@ def build_task(head: str, paths: dict[str, Path]) -> dict:
         "maximum_retry_budget": 0,
         "acceptance_criteria": [
             "output_is_single_LOUKSNAPG_md_container",
-            "output_within_470000000_bytes",
+            "output_within_479000000_bytes",
+            "runtime_archive_within_470000000_bytes",
             "input_hashes_and_protected_prefix_preserved",
         ],
         "expected_outputs": ["LOUKSNAPG.md", "LOUKSNAPG_BUILD_REPORT.json"],
