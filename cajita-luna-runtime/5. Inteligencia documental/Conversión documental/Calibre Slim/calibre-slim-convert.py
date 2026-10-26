@@ -42,7 +42,7 @@ def _validated_archive_inventory(archive: Path) -> tuple[dict[str, bytes], dict[
         for member in bundle.getmembers():
             raw = member.name
             parsed = PurePosixPath(raw)
-            if "\\\\" in raw or parsed.is_absolute() or any(part == ".." for part in parsed.parts):
+            if "\\" in raw or parsed.is_absolute() or any(part == ".." for part in parsed.parts):
                 raise RuntimeError(f"unsafe archive path: {raw!r}")
             parts = tuple(part for part in parsed.parts if part not in ("", "."))
             if not parts or (":" in parts[0]):
