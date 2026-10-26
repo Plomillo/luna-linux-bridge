@@ -61,6 +61,20 @@ OFFICIAL_SOURCE_URLS = {
     "D05_DOCLING": "https://huggingface.co/ibm-granite/granite-docling-258M",
     "D06_ANALISIS_AVANZADO": "https://github.com/QwenLM/Qwen3",
 }
+OFFICIAL_SOURCE_REVISIONS = {
+    "D01_CEREBRO_ROOT": "5681a6b6552635e7b29cde94a61ca6a7aee90ebd",
+    "D03_TRANSCRIPCION_ROOT": "86098128c0b4f24f0e2aa2994de830614b474227",
+    "D04_TRADUCCION_GENERAL": "9a081e935c29c6b1e0e05bcbf3fcb623ad306524",
+    "D05_DOCLING": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+    "D06_ANALISIS_AVANZADO": "7a2f61ffc7a20d47efcd2bf97f6f2bf52729042e",
+}
+OFFICIAL_MODEL_REVISIONS = {
+    "D01_CEREBRO_ROOT": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    "D03_TRANSCRIPCION_ROOT": "41f01f3fe87f28c78e2fbf8b568835947dd65ed9",
+    "D04_TRADUCCION_GENERAL": "b8d7691bcced0d24b2655f534b6148be78346b72",
+    "D05_DOCLING": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+    "D06_ANALISIS_AVANZADO": "c1899de289a04d12100db370d81485cdf75e47ca",
+}
 
 
 def sha256_file(path: Path) -> str:
@@ -223,9 +237,9 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
                 target_failures.append("UPSTREAM_MODEL_ID_NOT_OFFICIAL_EXPECTED_VARIANT")
             if row.get("upstream_source_url") != OFFICIAL_SOURCE_URLS[target_id]:
                 target_failures.append("UPSTREAM_SOURCE_NOT_OFFICIAL_EXPECTED_URL")
-            if not COMMIT_RE.fullmatch(str(row.get("upstream_revision_sha256", ""))):
-                target_failures.append("UPSTREAM_REVISION_NOT_PINNED_TO_COMMIT")
-            if not COMMIT_RE.fullmatch(str(row.get("model_repository_revision_commit", ""))):
+            if row.get("upstream_revision_sha256") != OFFICIAL_SOURCE_REVISIONS[target_id]:
+                target_failures.append("UPSTREAM_SOURCE_REVISION_MISMATCH")
+            if row.get("model_repository_revision_commit") != OFFICIAL_MODEL_REVISIONS[target_id]:
                 target_failures.append("MODEL_REPOSITORY_REVISION_NOT_PINNED")
         target_checks.append({"target_id": target_id, "status": "PASS" if not target_failures else "HOLD",
                               "failures": target_failures})
