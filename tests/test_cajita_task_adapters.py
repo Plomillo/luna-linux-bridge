@@ -15,7 +15,7 @@ class AdapterTests(unittest.TestCase):
         harness=Path(__file__).resolve().parents[1]/"tools"/"cajita_task_e2e.py"
         source=harness.read_text(encoding="utf-8")
         start=source.index("def make_image(path):")
-        end=source.index("\\ndef run_case",start)
+        end=source.index("def run_case",start)
         fixture=source[start:end]
         for required in (
             'Image.new("RGB",(256,256),"white")',
