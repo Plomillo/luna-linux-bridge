@@ -25,7 +25,7 @@ class AdapterTests(unittest.TestCase):
                 dark_pixels=sum(1 for pixel in gray.getdata() if pixel<96)
                 self.assertGreater(dark_pixels,250)
                 # The fixture's high-contrast text must span more than a tiny corner.
-                bbox=Image.eval(gray,lambda value: 0 if value<96 else 255).getbbox()
+                bbox=Image.eval(gray,lambda value: 255 if value<96 else 0).getbbox()
                 self.assertIsNotNone(bbox)
                 self.assertGreater(bbox[2]-bbox[0],90)
                 self.assertGreater(bbox[3]-bbox[1],100)
