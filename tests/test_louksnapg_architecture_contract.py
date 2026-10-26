@@ -24,6 +24,19 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertEqual(contract_gate.validate_contract(self.contract, EXPECTED_TARGET_IDS), [])
         self.assertEqual(len(self.contract["obligations"]), 6)
 
+    def test_official_revisions_and_no_model_substitution_are_contract_invariants(self):
+        bad_source = deepcopy(self.contract)
+        row = next(x for x in bad_source["source_catalog"] if x["target_id"] == "D04_TRADUCCION_GENERAL")
+        row["official_source_revision_commit"] = "0" * 40
+        failures = contract_gate.validate_contract(bad_source)
+        self.assertIn("OFFICIAL_SOURCE_REVISION_COMMIT_MISMATCH:D04_TRADUCCION_GENERAL", failures)
+
+        bad_variant = deepcopy(self.contract)
+        row = next(x for x in bad_variant["source_catalog"] if x["target_id"] == "D06_ANALISIS_AVANZADO")
+        row["allowed_variants"] = ["Qwen/Qwen3-8B"]
+        failures = contract_gate.validate_contract(bad_variant)
+        self.assertIn("UNAUTHORIZED_MODEL_VARIANT_SUBSTITUTION_ALLOWED:D06_ANALISIS_AVANZADO", failures)
+
     def test_custosz_must_remain_primary_and_kestra_secondary(self):
         bad = deepcopy(self.contract)
         bad["workers"]["primary"]["id"] = "KESTRA"
