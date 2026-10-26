@@ -76,7 +76,7 @@ tasks:
     else:
       - id: evidence_shape_fail
         type: io.kestra.plugin.core.execution.Fail
-        errorMessage: LOUKSNAPG_AUXILIARY_AUDIT_FAIL_CLOSED_INVALID_HASH_OR_SIZE_ENVELOPE
+        errorMessage: LOUKSNAPG_AUXILIARY_AUDIT_FAIL_CLOSED_INCOMPLETE_OR_UNBOUND_EVIDENCE_ENVELOPE
   - id: release_gates
     type: io.kestra.plugin.core.flow.If
     condition: >-
