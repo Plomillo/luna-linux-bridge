@@ -153,6 +153,15 @@ def materialize(root: Path, asset_ids: list[str]) -> list[dict[str, Any]]:
 
 
 def regular_files(root: Path, *, name: str | None = None, suffix: str | None = None) -> list[Path]:
+    """Enumerate hash-verifiable regular files, recursively and without following links.
+
+    With no filter, return every regular file. The previous implementation returned
+    an empty list for that valid call shape, silently disabling fallback discovery
+    for externally materialized OPA/Dagger and portability executables.
+    """
+    root = Path(root)
+    if root.is_symlink() or not root.is_dir():
+        raise ProbeBlocked("REGULAR_FILE_SEARCH_ROOT_MISSING_OR_UNSAFE:" + str(root))
     found: list[Path] = []
     for base, dirs, files in os.walk(root, followlinks=False):
         base_path = Path(base)
@@ -163,11 +172,48 @@ def regular_files(root: Path, *, name: str | None = None, suffix: str | None = N
             path = base_path / file_name
             if path.is_symlink() or not path.is_file():
                 raise ProbeFailure("NON_REGULAR_FILE_IN_TARGET_TREE")
-            if name is not None and file_name == name:
-                found.append(path)
-            elif suffix is not None and path.suffix.casefold() == suffix.casefold():
+            matches_name = name is not None and file_name == name
+            matches_suffix = suffix is not None and path.suffix.casefold() == suffix.casefold()
+            if matches_name or matches_suffix or (name is None and suffix is None):
                 found.append(path)
     return found
+
+
+def materialized_asset_root(root: Path, asset_id: str) -> Path:
+    """Resolve an asset's exact expansion path from the hash-pinned placement manifest."""
+    root = Path(root).resolve(strict=True)
+    manifest_path = root / "EXTERNALIZED_ASSET_PLACEMENT.json"
+    if manifest_path.is_symlink() or not manifest_path.is_file():
+        raise ProbeBlocked("EXTERNALIZED_ASSET_PLACEMENT_MISSING")
+    placement = json.loads(manifest_path.read_text(encoding="utf-8"))
+    rows = [row for row in placement.get("assets", []) if isinstance(row, dict) and row.get("id") == asset_id]
+    if len(rows) != 1:
+        raise ProbeFailure("EXTERNALIZED_ASSET_ID_NOT_UNIQUE:" + asset_id)
+    row = rows[0]
+    declared = row.get("expanded_path")
+    prefix = "cajita-luna-runtime/"
+    if not isinstance(declared, str) or not declared.startswith(prefix):
+        raise ProbeFailure("EXTERNALIZED_ASSET_EXPANDED_PATH_INVALID:" + asset_id)
+    relative = Path(declared[len(prefix):])
+    if relative.is_absolute() or ".." in relative.parts or not relative.parts:
+        raise ProbeFailure("EXTERNALIZED_ASSET_EXPANDED_PATH_UNSAFE:" + asset_id)
+    target = root / relative
+    if target.is_symlink() or not target.is_dir() or not target.resolve().is_relative_to(root):
+        raise ProbeBlocked("EXTERNALIZED_ASSET_NOT_MATERIALIZED_AT_REGISTERED_PATH:" + asset_id)
+    descriptor_path = target / "CAJITA_MODULE.json"
+    if descriptor_path.is_symlink() or not descriptor_path.is_file():
+        raise ProbeFailure("EXTERNALIZED_ASSET_DESCRIPTOR_MISSING:" + asset_id)
+    descriptor_bytes = descriptor_path.read_bytes()
+    descriptor = json.loads(descriptor_bytes.decode("utf-8"))
+    expected_descriptor_sha = row.get("factory_reconciliation", {}).get("module_manifest_sha256")
+    if (
+        descriptor.get("canonical_asset_id") != asset_id
+        or descriptor.get("module_key") != relative.as_posix()
+        or not isinstance(expected_descriptor_sha, str)
+        or sha256_bytes(descriptor_bytes) != expected_descriptor_sha
+    ):
+        raise ProbeFailure("EXTERNALIZED_ASSET_DESCRIPTOR_BINDING_MISMATCH:" + asset_id)
+    return target
 
 
 def copy_executable(source: Path, destination: Path) -> Path:
@@ -547,16 +593,26 @@ def probe_archive_detection(root: Path) -> dict[str, Any]:
 def probe_cognitive_cicd(root: Path) -> dict[str, Any]:
     module, _ = module_for(root, "D06_COGNITIVE_CI_CD")
     receipts = materialize(root, ["DAGGER_0_21_8_LINUX_AMD64", "OPA_STATIC_LINUX_AMD64_CANDIDATE"])
-    candidates = regular_files(module, name="opa") + regular_files(module, name="opa_static")
-    dagger_candidates = regular_files(module, name="dagger")
-    if not candidates:
-        candidates = [p for p in regular_files(module) if p.name.casefold().startswith("opa") and os.access(p, os.R_OK)]
-    if not dagger_candidates:
-        dagger_candidates = [p for p in regular_files(module) if p.name.casefold().startswith("dagger") and os.access(p, os.R_OK)]
+    dagger_root = materialized_asset_root(root, "DAGGER_0_21_8_LINUX_AMD64")
+    opa_root = materialized_asset_root(root, "OPA_STATIC_LINUX_AMD64_CANDIDATE")
+    # Discover executable names only inside their separately hash-pinned asset trees.
+    candidates = [
+        p for p in regular_files(opa_root)
+        if p.name.casefold() in {"opa", "opa_static", "opa_linux_amd64_static"}
+        or p.name.casefold().startswith("opa_")
+    ]
+    dagger_candidates = [
+        p for p in regular_files(dagger_root)
+        if p.name.casefold() == "dagger" or p.name.casefold().startswith("dagger_")
+    ]
     opa_source = next((p for p in candidates if p.is_file() and p.stat().st_size > 100_000), None)
     dagger_source = next((p for p in dagger_candidates if p.is_file() and p.stat().st_size > 100_000), None)
     if opa_source is None or dagger_source is None:
-        raise ProbeBlocked("OPA_OR_DAGGER_EXECUTABLE_NOT_MATERIALIZED")
+        discovered = {
+            "opa_files": [p.relative_to(opa_root).as_posix() for p in regular_files(opa_root)[:30]],
+            "dagger_files": [p.relative_to(dagger_root).as_posix() for p in regular_files(dagger_root)[:30]],
+        }
+        raise ProbeBlocked("OPA_OR_DAGGER_EXECUTABLE_NOT_FOUND_IN_REGISTERED_ASSET_TREES:" + json.dumps(discovered, sort_keys=True)[:1000])
     with tempfile.TemporaryDirectory(prefix="louksnapg-policy-") as temp:
         tmp = Path(temp)
         opa = copy_executable(opa_source, tmp / "opa")
@@ -611,21 +667,44 @@ def post_json(url: str, value: Any, timeout: float = 3) -> tuple[int, Any]:
         return response.status, json.loads(response.read().decode("utf-8"))
 
 
-def sqlite_migration_probe(module: Path, temp_path: Path) -> dict[str, Any]:
-    amalgamations = regular_files(module, name="sqlite3.c")
-    shells = regular_files(module, name="shell.c")
-    headers = regular_files(module, name="sqlite3.h")
-    if not amalgamations or not shells or not headers:
-        raise ProbeBlocked("SQLITE_SOURCE_FOR_MIGRATION_NOT_MATERIALIZED")
-    source, shell = amalgamations[0], shells[0]
-    binary = temp_path / "sqlite3-migration"
-    build = require_ok(
-        run_process(
-            ["cc", "-O2", "-DSQLITE_THREADSAFE=1", str(shell), str(source), "-ldl", "-lpthread", "-lm", "-o", str(binary)],
-            timeout=180,
-        ),
-        "SQLITE_MIGRATION_ENGINE_COMPILE_FAILED",
+def sqlite_migration_probe(source_root: Path, temp_path: Path) -> dict[str, Any]:
+    """Build the SQLite CLI from the pinned canonical source tree, not absent amalgamation files.
+
+    sqlite-src is the canonical source bundle and intentionally need not contain the
+    generated sqlite3.c/shell.c amalgamation pair. SQLite's official build instructions
+    use the source tree's configure script followed by `make sqlite3`; all writes occur
+    in a temporary byte-identical copy, preserving the hash-pinned materialized input.
+    """
+    configure_candidates = regular_files(source_root, name="configure")
+    configure_candidates = [p for p in configure_candidates if os.access(p, os.R_OK)]
+    if not configure_candidates:
+        raise ProbeBlocked("SQLITE_CANONICAL_SOURCE_CONFIGURE_NOT_FOUND")
+    configure_source = min(configure_candidates, key=lambda p: (len(p.relative_to(source_root).parts), p.relative_to(source_root).as_posix()))
+    source_tree = configure_source.parent
+    if source_tree.is_symlink() or not source_tree.is_dir() or not source_tree.resolve().is_relative_to(source_root.resolve()):
+        raise ProbeFailure("SQLITE_CANONICAL_SOURCE_ROOT_UNSAFE")
+    expected_source_tree_hash = sha256_bytes(json.dumps(
+        [{"path": p.relative_to(source_tree).as_posix(), "bytes": p.stat().st_size, "sha256": sha256_file(p)}
+         for p in sorted(source_tree.rglob("*"), key=lambda p:p.relative_to(source_tree).as_posix().encode("utf-8"))
+         if p.is_file() and not p.is_symlink()],
+        sort_keys=True, separators=(",", ":")
+    ).encode("utf-8"))
+    build_root = temp_path / "sqlite-source-build"
+    if build_root.exists() or build_root.is_symlink():
+        raise ProbeFailure("SQLITE_BUILD_DESTINATION_COLLISION")
+    shutil.copytree(source_tree, build_root, symlinks=False)
+    configure_copy = build_root / configure_source.name
+    configure_build = require_ok(
+        run_process(["sh", str(configure_copy)], cwd=build_root, timeout=300),
+        "SQLITE_CANONICAL_CONFIGURE_FAILED",
     )
+    build = require_ok(
+        run_process(["make", "-j1", "sqlite3"], cwd=build_root, timeout=900),
+        "SQLITE_CANONICAL_BUILD_FAILED",
+    )
+    binary = build_root / "sqlite3"
+    if binary.is_symlink() or not binary.is_file() or not (binary.stat().st_mode & 0o111):
+        raise ProbeFailure("SQLITE_CANONICAL_BUILD_OUTPUT_MISSING_OR_NOT_EXECUTABLE")
     database = temp_path / "migration.sqlite3"
     sql = (
         "CREATE TABLE records(id INTEGER PRIMARY KEY,value TEXT NOT NULL);"
@@ -640,16 +719,22 @@ def sqlite_migration_probe(module: Path, temp_path: Path) -> dict[str, Any]:
     )
     if "preserve-me|migrated" not in result["stdout_excerpt"] or not result["stdout_excerpt"].strip().endswith("ok"):
         raise ProbeFailure("SQLITE_MIGRATION_DATA_OR_INTEGRITY_MISMATCH")
-    return {"build": build, "migration": result, "database_sha256": sha256_file(database), "source_sha256": sha256_file(source)}
+    return {"configure": configure_build, "build": build, "migration": result,
+            "database_sha256": sha256_file(database), "source_tree_sha256_before_build": expected_source_tree_hash,
+            "built_sqlite_binary_sha256": sha256_file(binary), "sqlite_version": require_ok(
+                run_process([str(binary), "--version"], cwd=temp_path, timeout=15), "SQLITE_BUILD_VERSION_PROBE_FAILED"
+            )}
 
 
 def probe_migration_persistence(root: Path) -> dict[str, Any]:
     module, _ = module_for(root, "D06_MIGRACION_PERSISTENCIA")
     receipts = materialize(root, ["RQLITE_10_2_7_LINUX_AMD64", "SQLITE_SOURCE_3_53_4"])
+    rqlite_root = materialized_asset_root(root, "RQLITE_10_2_7_LINUX_AMD64")
+    sqlite_source_root = materialized_asset_root(root, "SQLITE_SOURCE_3_53_4")
     with tempfile.TemporaryDirectory(prefix="louksnapg-migration-") as temp:
         temp_path = Path(temp)
-        migration = sqlite_migration_probe(module, temp_path)
-        binaries = regular_files(module, name="rqlited")
+        migration = sqlite_migration_probe(sqlite_source_root, temp_path)
+        binaries = regular_files(rqlite_root, name="rqlited")
         if not binaries:
             return {
                 "status": PASS,
