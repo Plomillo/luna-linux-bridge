@@ -273,12 +273,15 @@ def probe_foma(root: Path) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix="foma-packaged-primitive-") as temp:
         temp_path=Path(temp)
         script=temp_path/"primitive.foma"
-        script.write_text("regex cat -> gato;\\nsave stack primitive.fst\\nquit\\n",encoding="utf-8")
+        script.write_text("regex cat -> gato;
+save stack primitive.fst
+quit
+",encoding="utf-8")
         compiled=require_ok(run_process([str(foma_binary),"-q","-f",str(script)],cwd=temp_path,timeout=30,env=env),"FOMA_PACKAGED_TRANSDUCER_BUILD_FAILED")
         fst=temp_path/"primitive.fst"
         if fst.is_symlink() or not fst.is_file() or fst.stat().st_size==0:
             raise ProbeFailure("FOMA_PACKAGED_TRANSDUCER_MISSING")
-        lookup=require_ok(run_process([str(flookup_binary),str(fst)],cwd=temp_path,timeout=15,env=env,stdin="cat\\n"),"FLOOKUP_PACKAGED_EXECUTION_FAILED")
+        lookup=require_ok(run_process([str(flookup_binary),str(fst)],cwd=temp_path,timeout=15,env=env,stdin="cat\n"),"FLOOKUP_PACKAGED_EXECUTION_FAILED")
         lookup_text=str(lookup.get("stdout_excerpt",""))
         if "gato" not in lookup_text.casefold():
             raise ProbeFailure("FOMA_PACKAGED_TRANSLATION_FIXTURE_MISMATCH:"+lookup_text[-500:])
