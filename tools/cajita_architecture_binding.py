@@ -2,6 +2,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import os
 import shutil
 from pathlib import Path, PurePosixPath
 
@@ -404,7 +405,7 @@ def register_architecture_binding(repo_root: str | Path, runtime_root: str | Pat
     binding = {
         "schema": "LOUKSNA_AXIOM_MULTI_INTERDISCIPLINAR_BINDING/1.0",
         "status": "SOURCE_BOUND_GRAPH_EXECUTION_PENDING",
-        "companion_artifact": {"path_from_runtime_root": "../Louksna1.md", "bytes": len(doc_bytes), "sha256": doc_sha},
+        "companion_artifact": {"path_from_runtime_root": Path(os.path.relpath(doc, runtime)).as_posix(), "bytes": len(doc_bytes), "sha256": doc_sha},
         "protected_architecture_prefix": {"source_path": "LOUKSNAMEJORADA.md", "bytes": len(source_bytes), "sha256": source_sha, "mutation_allowed": False},
         "axiom_inventory": {
             "range": "AX0001-AX12414",
