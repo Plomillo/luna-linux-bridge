@@ -42,6 +42,7 @@ def build_archive(path: Path, members: dict[str, bytes]) -> None:
 
 class CalibreSlimIntegrityTests(unittest.TestCase):
     def setUp(self):
+        launcher.ARCHIVE_NAME = "calibre-slim-overlay.tar.xz"
         self.temp = tempfile.TemporaryDirectory(prefix="calibre-slim-integrity-")
         self.addCleanup(self.temp.cleanup)
         self.here = Path(self.temp.name)
