@@ -77,6 +77,18 @@ inputs:
     type: STRING
   - id: g23_signature_verification_status
     type: STRING
+  - id: g23_producer_id
+    type: STRING
+  - id: g23_validator_id
+    type: STRING
+  - id: g24_decision_sha256
+    type: STRING
+  - id: g24_decision_status
+    type: STRING
+  - id: g24_signature_verification_status
+    type: STRING
+  - id: g24_signer_id
+    type: STRING
 tasks:
   - id: evidence_shape
     type: io.kestra.plugin.core.flow.If
@@ -86,12 +98,618 @@ tasks:
          and inputs.runtime_source_sha256 matches '^[0-9a-f]{64}$'
          and inputs.functional_evidence_sha256 matches '^[0-9a-f]{64}$'
          and inputs.functional_evidence_source_commit == inputs.source_commit
+         and inputs.g23_attestation_sha256 matches '^[0-9a-f]{64}         and inputs.max_bytes == 490000000
+         and inputs.bundle_bytes <= inputs.max_bytes }}
+    then:
+      - id: evidence_shape_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_PACKAGE_INTEGRITY_ENVELOPE=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          bundle_bytes={{ inputs.bundle_bytes }}
+          hard_cap_bytes={{ inputs.max_bytes }}
+    else:
+      - id: evidence_shape_fail
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: LOUKSNAPG_AUXILIARY_AUDIT_FAIL_CLOSED_INCOMPLETE_OR_UNBOUND_EVIDENCE_ENVELOPE
+  - id: release_gates
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ inputs.worker_status == 'PASS'
+         and inputs.independent_integrity_status == 'PASS'
+         and inputs.identity_binding_status == 'PASS_SOURCE_IDENTITY_PRESERVED'
+         and inputs.engine_replacement_status == 'FORBIDDEN'
+         and inputs.functional_status == 'PASS_ALL_21_REQUIRED_TARGETS'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.g23_producer_id != inputs.g23_validator_id
+         and inputs.g24_decision_status == 'GRANTED'
+         and inputs.g24_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.g24_signer_id != inputs.g23_producer_id
+         and inputs.g24_signer_id != inputs.g23_validator_id
+         and inputs.official_source_review_status == 'PASS'
+         and inputs.telemetry_status == 'PASS'
+         and inputs.semantic_quality_status == 'PASS'
+         and inputs.host_matrix_status == 'PASS'
+         and inputs.rollback_status == 'PASS'
+         and inputs.axiom_binding_status == 'PASS'
+         and inputs.block_binding_status == 'PASS' }}
+    then:
+      - id: auxiliary_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          worker_status={{ inputs.worker_status }}
+          global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION
+    else:
+      - id: auxiliary_hold
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD.
+          Identity bindings, engine non-replacement, functional, semantic-quality, host, rollback,
+          axiom or block gates are not independently PASS for this exact candidate. Global certification is NOT_GRANTED.
+
+         and inputs.architecture_contract_status == 'PASS_CONTRACT_INTEGRITY'
+         and inputs.primary_worker_id == 'CUSTOSZ_V9'
+         and inputs.secondary_worker_id == 'KESTRA'
+         and inputs.custosz_worker_evidence_sha256 matches '^[0-9a-f]{64}         and inputs.document_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.runtime_source_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_source_commit == inputs.source_commit
          and inputs.g23_attestation_sha256 matches '^[0-9a-f]{64}$'
          and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
          and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
          and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
          and inputs.functional_target_pass_count == 21
          and inputs.functional_target_expected_count == 21
+         and inputs.bundle_bytes > 0
+         and inputs.max_bytes == 490000000
+         and inputs.bundle_bytes <= inputs.max_bytes }}
+    then:
+      - id: evidence_shape_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_PACKAGE_INTEGRITY_ENVELOPE=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          bundle_bytes={{ inputs.bundle_bytes }}
+          hard_cap_bytes={{ inputs.max_bytes }}
+    else:
+      - id: evidence_shape_fail
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: LOUKSNAPG_AUXILIARY_AUDIT_FAIL_CLOSED_INCOMPLETE_OR_UNBOUND_EVIDENCE_ENVELOPE
+  - id: release_gates
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ inputs.worker_status == 'PASS'
+         and inputs.independent_integrity_status == 'PASS'
+         and inputs.identity_binding_status == 'PASS_SOURCE_IDENTITY_PRESERVED'
+         and inputs.engine_replacement_status == 'FORBIDDEN'
+         and inputs.functional_status == 'PASS_ALL_21_REQUIRED_TARGETS'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.semantic_quality_status == 'PASS'
+         and inputs.host_matrix_status == 'PASS'
+         and inputs.rollback_status == 'PASS'
+         and inputs.axiom_binding_status == 'PASS'
+         and inputs.block_binding_status == 'PASS' }}
+    then:
+      - id: auxiliary_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          worker_status={{ inputs.worker_status }}
+          global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION
+    else:
+      - id: auxiliary_hold
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD.
+          Identity bindings, engine non-replacement, functional, semantic-quality, host, rollback,
+          axiom or block gates are not independently PASS for this exact candidate. Global certification is NOT_GRANTED.
+
+         and inputs.telemetry_evidence_sha256 matches '^[0-9a-f]{64}         and inputs.document_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.runtime_source_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_source_commit == inputs.source_commit
+         and inputs.g23_attestation_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.bundle_bytes > 0
+         and inputs.max_bytes == 490000000
+         and inputs.bundle_bytes <= inputs.max_bytes }}
+    then:
+      - id: evidence_shape_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_PACKAGE_INTEGRITY_ENVELOPE=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          bundle_bytes={{ inputs.bundle_bytes }}
+          hard_cap_bytes={{ inputs.max_bytes }}
+    else:
+      - id: evidence_shape_fail
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: LOUKSNAPG_AUXILIARY_AUDIT_FAIL_CLOSED_INCOMPLETE_OR_UNBOUND_EVIDENCE_ENVELOPE
+  - id: release_gates
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ inputs.worker_status == 'PASS'
+         and inputs.independent_integrity_status == 'PASS'
+         and inputs.identity_binding_status == 'PASS_SOURCE_IDENTITY_PRESERVED'
+         and inputs.engine_replacement_status == 'FORBIDDEN'
+         and inputs.functional_status == 'PASS_ALL_21_REQUIRED_TARGETS'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.semantic_quality_status == 'PASS'
+         and inputs.host_matrix_status == 'PASS'
+         and inputs.rollback_status == 'PASS'
+         and inputs.axiom_binding_status == 'PASS'
+         and inputs.block_binding_status == 'PASS' }}
+    then:
+      - id: auxiliary_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          worker_status={{ inputs.worker_status }}
+          global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION
+    else:
+      - id: auxiliary_hold
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD.
+          Identity bindings, engine non-replacement, functional, semantic-quality, host, rollback,
+          axiom or block gates are not independently PASS for this exact candidate. Global certification is NOT_GRANTED.
+
+         and inputs.heavy_model_download_count == 0
+         and inputs.remote_commander_used == 'false'
+         and inputs.bundle_sha256 matches '^[0-9a-f]{64}         and inputs.document_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.runtime_source_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_source_commit == inputs.source_commit
+         and inputs.g23_attestation_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.bundle_bytes > 0
+         and inputs.max_bytes == 490000000
+         and inputs.bundle_bytes <= inputs.max_bytes }}
+    then:
+      - id: evidence_shape_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_PACKAGE_INTEGRITY_ENVELOPE=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          bundle_bytes={{ inputs.bundle_bytes }}
+          hard_cap_bytes={{ inputs.max_bytes }}
+    else:
+      - id: evidence_shape_fail
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: LOUKSNAPG_AUXILIARY_AUDIT_FAIL_CLOSED_INCOMPLETE_OR_UNBOUND_EVIDENCE_ENVELOPE
+  - id: release_gates
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ inputs.worker_status == 'PASS'
+         and inputs.independent_integrity_status == 'PASS'
+         and inputs.identity_binding_status == 'PASS_SOURCE_IDENTITY_PRESERVED'
+         and inputs.engine_replacement_status == 'FORBIDDEN'
+         and inputs.functional_status == 'PASS_ALL_21_REQUIRED_TARGETS'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.semantic_quality_status == 'PASS'
+         and inputs.host_matrix_status == 'PASS'
+         and inputs.rollback_status == 'PASS'
+         and inputs.axiom_binding_status == 'PASS'
+         and inputs.block_binding_status == 'PASS' }}
+    then:
+      - id: auxiliary_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          worker_status={{ inputs.worker_status }}
+          global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION
+    else:
+      - id: auxiliary_hold
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD.
+          Identity bindings, engine non-replacement, functional, semantic-quality, host, rollback,
+          axiom or block gates are not independently PASS for this exact candidate. Global certification is NOT_GRANTED.
+
+         and inputs.document_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.runtime_source_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_source_commit == inputs.source_commit
+         and inputs.g23_attestation_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.bundle_bytes > 0
+         and inputs.max_bytes == 490000000
+         and inputs.bundle_bytes <= inputs.max_bytes }}
+    then:
+      - id: evidence_shape_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_PACKAGE_INTEGRITY_ENVELOPE=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          bundle_bytes={{ inputs.bundle_bytes }}
+          hard_cap_bytes={{ inputs.max_bytes }}
+    else:
+      - id: evidence_shape_fail
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: LOUKSNAPG_AUXILIARY_AUDIT_FAIL_CLOSED_INCOMPLETE_OR_UNBOUND_EVIDENCE_ENVELOPE
+  - id: release_gates
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ inputs.worker_status == 'PASS'
+         and inputs.independent_integrity_status == 'PASS'
+         and inputs.identity_binding_status == 'PASS_SOURCE_IDENTITY_PRESERVED'
+         and inputs.engine_replacement_status == 'FORBIDDEN'
+         and inputs.functional_status == 'PASS_ALL_21_REQUIRED_TARGETS'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.semantic_quality_status == 'PASS'
+         and inputs.host_matrix_status == 'PASS'
+         and inputs.rollback_status == 'PASS'
+         and inputs.axiom_binding_status == 'PASS'
+         and inputs.block_binding_status == 'PASS' }}
+    then:
+      - id: auxiliary_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          worker_status={{ inputs.worker_status }}
+          global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION
+    else:
+      - id: auxiliary_hold
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD.
+          Identity bindings, engine non-replacement, functional, semantic-quality, host, rollback,
+          axiom or block gates are not independently PASS for this exact candidate. Global certification is NOT_GRANTED.
+
+         and inputs.g24_decision_sha256 matches '^[0-9a-f]{64}         and inputs.max_bytes == 490000000
+         and inputs.bundle_bytes <= inputs.max_bytes }}
+    then:
+      - id: evidence_shape_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_PACKAGE_INTEGRITY_ENVELOPE=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          bundle_bytes={{ inputs.bundle_bytes }}
+          hard_cap_bytes={{ inputs.max_bytes }}
+    else:
+      - id: evidence_shape_fail
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: LOUKSNAPG_AUXILIARY_AUDIT_FAIL_CLOSED_INCOMPLETE_OR_UNBOUND_EVIDENCE_ENVELOPE
+  - id: release_gates
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ inputs.worker_status == 'PASS'
+         and inputs.independent_integrity_status == 'PASS'
+         and inputs.identity_binding_status == 'PASS_SOURCE_IDENTITY_PRESERVED'
+         and inputs.engine_replacement_status == 'FORBIDDEN'
+         and inputs.functional_status == 'PASS_ALL_21_REQUIRED_TARGETS'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.official_source_review_status == 'PASS'
+         and inputs.telemetry_status == 'PASS'
+         and inputs.semantic_quality_status == 'PASS'
+         and inputs.host_matrix_status == 'PASS'
+         and inputs.rollback_status == 'PASS'
+         and inputs.axiom_binding_status == 'PASS'
+         and inputs.block_binding_status == 'PASS' }}
+    then:
+      - id: auxiliary_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          worker_status={{ inputs.worker_status }}
+          global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION
+    else:
+      - id: auxiliary_hold
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD.
+          Identity bindings, engine non-replacement, functional, semantic-quality, host, rollback,
+          axiom or block gates are not independently PASS for this exact candidate. Global certification is NOT_GRANTED.
+
+         and inputs.architecture_contract_status == 'PASS_CONTRACT_INTEGRITY'
+         and inputs.primary_worker_id == 'CUSTOSZ_V9'
+         and inputs.secondary_worker_id == 'KESTRA'
+         and inputs.custosz_worker_evidence_sha256 matches '^[0-9a-f]{64}         and inputs.document_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.runtime_source_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_source_commit == inputs.source_commit
+         and inputs.g23_attestation_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.bundle_bytes > 0
+         and inputs.max_bytes == 490000000
+         and inputs.bundle_bytes <= inputs.max_bytes }}
+    then:
+      - id: evidence_shape_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_PACKAGE_INTEGRITY_ENVELOPE=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          bundle_bytes={{ inputs.bundle_bytes }}
+          hard_cap_bytes={{ inputs.max_bytes }}
+    else:
+      - id: evidence_shape_fail
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: LOUKSNAPG_AUXILIARY_AUDIT_FAIL_CLOSED_INCOMPLETE_OR_UNBOUND_EVIDENCE_ENVELOPE
+  - id: release_gates
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ inputs.worker_status == 'PASS'
+         and inputs.independent_integrity_status == 'PASS'
+         and inputs.identity_binding_status == 'PASS_SOURCE_IDENTITY_PRESERVED'
+         and inputs.engine_replacement_status == 'FORBIDDEN'
+         and inputs.functional_status == 'PASS_ALL_21_REQUIRED_TARGETS'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.semantic_quality_status == 'PASS'
+         and inputs.host_matrix_status == 'PASS'
+         and inputs.rollback_status == 'PASS'
+         and inputs.axiom_binding_status == 'PASS'
+         and inputs.block_binding_status == 'PASS' }}
+    then:
+      - id: auxiliary_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          worker_status={{ inputs.worker_status }}
+          global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION
+    else:
+      - id: auxiliary_hold
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD.
+          Identity bindings, engine non-replacement, functional, semantic-quality, host, rollback,
+          axiom or block gates are not independently PASS for this exact candidate. Global certification is NOT_GRANTED.
+
+         and inputs.telemetry_evidence_sha256 matches '^[0-9a-f]{64}         and inputs.document_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.runtime_source_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_source_commit == inputs.source_commit
+         and inputs.g23_attestation_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.bundle_bytes > 0
+         and inputs.max_bytes == 490000000
+         and inputs.bundle_bytes <= inputs.max_bytes }}
+    then:
+      - id: evidence_shape_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_PACKAGE_INTEGRITY_ENVELOPE=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          bundle_bytes={{ inputs.bundle_bytes }}
+          hard_cap_bytes={{ inputs.max_bytes }}
+    else:
+      - id: evidence_shape_fail
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: LOUKSNAPG_AUXILIARY_AUDIT_FAIL_CLOSED_INCOMPLETE_OR_UNBOUND_EVIDENCE_ENVELOPE
+  - id: release_gates
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ inputs.worker_status == 'PASS'
+         and inputs.independent_integrity_status == 'PASS'
+         and inputs.identity_binding_status == 'PASS_SOURCE_IDENTITY_PRESERVED'
+         and inputs.engine_replacement_status == 'FORBIDDEN'
+         and inputs.functional_status == 'PASS_ALL_21_REQUIRED_TARGETS'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.semantic_quality_status == 'PASS'
+         and inputs.host_matrix_status == 'PASS'
+         and inputs.rollback_status == 'PASS'
+         and inputs.axiom_binding_status == 'PASS'
+         and inputs.block_binding_status == 'PASS' }}
+    then:
+      - id: auxiliary_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          worker_status={{ inputs.worker_status }}
+          global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION
+    else:
+      - id: auxiliary_hold
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD.
+          Identity bindings, engine non-replacement, functional, semantic-quality, host, rollback,
+          axiom or block gates are not independently PASS for this exact candidate. Global certification is NOT_GRANTED.
+
+         and inputs.heavy_model_download_count == 0
+         and inputs.remote_commander_used == 'false'
+         and inputs.bundle_sha256 matches '^[0-9a-f]{64}         and inputs.document_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.runtime_source_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_source_commit == inputs.source_commit
+         and inputs.g23_attestation_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.bundle_bytes > 0
+         and inputs.max_bytes == 490000000
+         and inputs.bundle_bytes <= inputs.max_bytes }}
+    then:
+      - id: evidence_shape_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_PACKAGE_INTEGRITY_ENVELOPE=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          bundle_bytes={{ inputs.bundle_bytes }}
+          hard_cap_bytes={{ inputs.max_bytes }}
+    else:
+      - id: evidence_shape_fail
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: LOUKSNAPG_AUXILIARY_AUDIT_FAIL_CLOSED_INCOMPLETE_OR_UNBOUND_EVIDENCE_ENVELOPE
+  - id: release_gates
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ inputs.worker_status == 'PASS'
+         and inputs.independent_integrity_status == 'PASS'
+         and inputs.identity_binding_status == 'PASS_SOURCE_IDENTITY_PRESERVED'
+         and inputs.engine_replacement_status == 'FORBIDDEN'
+         and inputs.functional_status == 'PASS_ALL_21_REQUIRED_TARGETS'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.semantic_quality_status == 'PASS'
+         and inputs.host_matrix_status == 'PASS'
+         and inputs.rollback_status == 'PASS'
+         and inputs.axiom_binding_status == 'PASS'
+         and inputs.block_binding_status == 'PASS' }}
+    then:
+      - id: auxiliary_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          worker_status={{ inputs.worker_status }}
+          global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION
+    else:
+      - id: auxiliary_hold
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD.
+          Identity bindings, engine non-replacement, functional, semantic-quality, host, rollback,
+          axiom or block gates are not independently PASS for this exact candidate. Global certification is NOT_GRANTED.
+
+         and inputs.document_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.runtime_source_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.functional_evidence_source_commit == inputs.source_commit
+         and inputs.g23_attestation_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.bundle_bytes > 0
+         and inputs.max_bytes == 490000000
+         and inputs.bundle_bytes <= inputs.max_bytes }}
+    then:
+      - id: evidence_shape_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_PACKAGE_INTEGRITY_ENVELOPE=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          bundle_bytes={{ inputs.bundle_bytes }}
+          hard_cap_bytes={{ inputs.max_bytes }}
+    else:
+      - id: evidence_shape_fail
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: LOUKSNAPG_AUXILIARY_AUDIT_FAIL_CLOSED_INCOMPLETE_OR_UNBOUND_EVIDENCE_ENVELOPE
+  - id: release_gates
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ inputs.worker_status == 'PASS'
+         and inputs.independent_integrity_status == 'PASS'
+         and inputs.identity_binding_status == 'PASS_SOURCE_IDENTITY_PRESERVED'
+         and inputs.engine_replacement_status == 'FORBIDDEN'
+         and inputs.functional_status == 'PASS_ALL_21_REQUIRED_TARGETS'
+         and inputs.functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'
+         and inputs.functional_evidence_mode == 'REAL_RUNTIME_EXECUTION'
+         and inputs.functional_target_pass_count == 21
+         and inputs.functional_target_expected_count == 21
+         and inputs.g23_signature_verification_status == 'PASS_VERIFIED'
+         and inputs.semantic_quality_status == 'PASS'
+         and inputs.host_matrix_status == 'PASS'
+         and inputs.rollback_status == 'PASS'
+         and inputs.axiom_binding_status == 'PASS'
+         and inputs.block_binding_status == 'PASS' }}
+    then:
+      - id: auxiliary_pass
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=PASS
+          source_commit={{ inputs.source_commit }}
+          bundle_sha256={{ inputs.bundle_sha256 }}
+          worker_status={{ inputs.worker_status }}
+          global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION
+    else:
+      - id: auxiliary_hold
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: >-
+          LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD.
+          Identity bindings, engine non-replacement, functional, semantic-quality, host, rollback,
+          axiom or block gates are not independently PASS for this exact candidate. Global certification is NOT_GRANTED.
+
+         and inputs.g23_producer_id != ''
+         and inputs.g23_validator_id != ''
+         and inputs.g24_signer_id != ''
+         and inputs.g24_decision_status != ''
+         and inputs.g24_signature_verification_status != ''
          and inputs.bundle_bytes > 0
          and inputs.max_bytes == 490000000
          and inputs.bundle_bytes <= inputs.max_bytes }}
