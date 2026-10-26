@@ -636,6 +636,7 @@ def main(argv=None) -> int:
     }
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    primitive_summary = action_result.get("primitive_repair_evidence") or {}
     print(json.dumps({
         "status": worker_status,
         "coordinator_status": coordinator_status,
@@ -643,6 +644,12 @@ def main(argv=None) -> int:
         "artifact": paths["output"].name,
         "bytes": output_size,
         "sha256": output_hash,
+        "repair_status": report["repair_status"],
+        "primitive_evidence_status": primitive_summary.get("status", "NOT_ESTABLISHED"),
+        "primitive_report_sha256": primitive_summary.get("report_sha256"),
+        "target_results": primitive_summary.get("target_status", {}),
+        "all_target_outcomes_recorded": primitive_summary.get("all_target_outcomes_recorded", False),
+        "targeted_repairs_all_pass": primitive_summary.get("targeted_repairs_all_pass", False),
         "global_certification": "NOT_GRANTED",
     }, ensure_ascii=False, indent=2))
     return 0 if worker_status == "PASS" else 2
