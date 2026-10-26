@@ -203,6 +203,15 @@ jobs:
             test -n "$source"
             cp "$source" "candidate/$name"
           done
+          G24_EVIDENCE="$(find evidence/g24-evidence -type f -name 'LOUKSNA1_G24_EVIDENCE.json' -print -quit || true)"
+          G24_TASKS="$(find evidence/g24-telemetry -type f -name 'task-adapter-e2e-raw.json' -print -quit || true)"
+          G24_GATE="$(find evidence/g24-telemetry -type f -name 'LOUKSNAPG_FUNCTIONAL_GATE.json' -print -quit || true)"
+          if [ -n "$G24_EVIDENCE" ]; then cp "$G24_EVIDENCE" candidate/LOUKSNAPG_G24_DECISION.json; fi
+          if [ -n "$G24_TASKS" ]; then cp "$G24_TASKS" candidate/LOUKSNAPG_G24_TASK_DIAGNOSTICS.json; fi
+          if [ -n "$G24_GATE" ]; then cp "$G24_GATE" candidate/LOUKSNAPG_G24_FUNCTIONAL_GATE.json; fi
+          echo "g24_evidence_available=$([ -n "$G24_EVIDENCE" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "g24_task_report_available=$([ -n "$G24_TASKS" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "g24_functional_gate_available=$([ -n "$G24_GATE" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "product_path=candidate/LOUKSNAPG.md" >> "$GITHUB_OUTPUT"
           ls -lh candidate
 
