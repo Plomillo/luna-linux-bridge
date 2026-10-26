@@ -923,6 +923,10 @@ jobs:
           task_sha=hashlib.sha256(task_bytes).hexdigest()
           task_status=task_report.get("status","NOT_COMPLETED")
           task_rows=task_report.get("task_results",[])
+          task_execution_pass_count=sum(1 for x in task_rows if x.get("status")=="PASS_FUNCTIONAL_EXECUTION" and x.get("exit_code")==0)
+          task_quality_pass_count=sum(1 for x in task_rows if x.get("status")=="PASS_FUNCTIONAL_EXECUTION" and x.get("exit_code")==0 and (x.get("quality_acceptance") or {}).get("status")=="PASS")
+          task_quality_fail_count=sum(1 for x in task_rows if (x.get("quality_acceptance") or {}).get("status")=="FAIL")
+          task_quality_status="PASS" if task_report.get("status")=="PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY" and task_quality_pass_count==5 else "FAIL_OR_NOT_ESTABLISHED"
           target_engine_rows=task_report.get("target_engine_results",[])
           target_engine_pass_count=sum(1 for x in target_engine_rows if x.get("status")=="PASS_TARGET_ENGINE_EXECUTION" and x.get("exit_code")==0)
           target_engine_expected_count=task_report.get("target_engine_expected_count",6)
@@ -940,7 +944,11 @@ jobs:
             "source_commit":release.get("source_commit"),"reason":os.environ["REASON"],
             "smoke_return_code":int(os.environ["SMOKE_RC"]),"task_adapter_return_code":int(os.environ.get("TASK_RC","125")),
             "task_adapter_evidence_sha256":task_sha,"task_adapter_evidence_status":task_status,
-            "task_adapter_pass_count":sum(1 for x in task_rows if x.get("status")=="PASS_FUNCTIONAL_EXECUTION" and x.get("exit_code")==0),
+            "task_adapter_execution_pass_count":task_execution_pass_count,
+            "task_adapter_quality_pass_count":task_quality_pass_count,
+            "task_adapter_quality_fail_count":task_quality_fail_count,
+            "task_adapter_quality_status":task_quality_status,
+            "task_adapter_pass_count":task_quality_pass_count,
             "task_adapter_expected_count":5,
             "target_engine_smoke_status":target_engine_status,
             "target_engine_pass_count":target_engine_pass_count,
