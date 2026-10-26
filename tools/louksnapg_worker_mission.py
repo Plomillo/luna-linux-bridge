@@ -115,8 +115,8 @@ def build_task(head: str, paths: dict[str, Path]) -> dict:
         "evidence_requirements": ["source_commit", "input_hashes", "output_sha256", "exact_size", "exit_code"],
         "checkpoint_reference": head,
         "rollback_strategy": "REMOVE_INCOMPLETE_CANDIDATE_AND_KEEP_SOURCE_INPUTS_IMMUTABLE",
-        "completion_condition": "CANDIDATE_BUILT_AND_BOUND_AND_TREALLA_FOMA_RQLITE_PRIMITIVES_PASS",
-        "escalation_condition": "REPAIR_FIXTURE_TEST_FAILURE_OR_ANY_PRIMITIVE_FIX_FAILS_OR_BUILD_OR_HASH_OR_CAP_CHECK_FAILURE",
+        "completion_condition": "CANDIDATE_BUILT_AND_THREE_REPAIR_TARGET_OUTCOMES_BOUND; FAILURES_KEEP_G24_ON_HOLD",
+        "escalation_condition": "REPAIR_PREFLIGHT_FAILURE_OR_INCOMPLETE_EVIDENCE_OR_BUILD_HASH_CAP_FAILURE; ANY_PRIMITIVE_FAILURE_REMAINS_A_RELEASE_BLOCKER",
         "authorization_evidence_reference": "https://github.com/Plomillo/luna-linux-bridge/issues/155",
     }
 
