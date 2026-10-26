@@ -51,6 +51,88 @@ class CustoszWorkerMissionTests(unittest.TestCase):
         failures = worker.repair_source_contract_failures(source, tests)
         self.assertIn('trealla_env["TPL_LIBRARY_PATH"]=str(packaged_library)', failures)
 
+    def _bound_worker_result_with_a_primitive_blocker(self):
+        source_commit = "a" * 40
+        bundle_sha = "b" * 64
+        contract_sha = "c" * 64
+        report_sha = "d" * 64
+        primitive = {
+            "schema": "LOUKSNAPG_CUSTOSZ_PRIMITIVE_REPAIR_EVIDENCE/1.0",
+            "status": "PASS_EVIDENCE_BOUND",
+            "report_completed": True,
+            "source_commit": source_commit,
+            "bundle_sha256": bundle_sha,
+            "contract_sha256": contract_sha,
+            "report_sha256": report_sha,
+            "all_target_outcomes_recorded": True,
+            "targeted_repairs_all_pass": False,
+            "target_status": {
+                "D04_HERMENEUTICA_HG": "PASS_PRIMITIVE_SMOKE",
+                "D04_TRADUCCION_LENGUAS_ANTIGUAS": "BLOCKED",
+                "D06_MIGRACION_PERSISTENCIA": "PASS_PRIMITIVE_SMOKE",
+            },
+            "heavy_model_weight_download_count": 0,
+            "remote_commander_used": False,
+            "synthetic_evidence_used_as_product_proof": False,
+        }
+        action = {
+            "exit_code": 0,
+            "architecture_contract_sha256": contract_sha,
+            "repair_preflight": {"status": "PASS"},
+            "candidate_independent_validation": {
+                "exit_code": 0,
+                "container_integrity": "PASS",
+                "runtime_member_integrity": "PASS",
+                "source_commit": source_commit,
+                "bundle_sha256": bundle_sha,
+            },
+            "primitive_repair_evidence": primitive,
+            "primitive_report_sha256": report_sha,
+            "repair_status": "HOLD_REPAIR_BLOCKERS_RECORDED",
+        }
+        build = {
+            "bundle_bytes": 1234,
+            "bundle_sha256": bundle_sha,
+            "source_commit": source_commit,
+            "identity_preservation_status": "PASS_SOURCE_IDENTITY_PRESERVED",
+            "engine_replacement": "FORBIDDEN",
+        }
+        return source_commit, bundle_sha, contract_sha, action, build
+
+    def test_complete_primitive_failures_are_recorded_without_suppressing_g23_g24(self):
+        source_commit, bundle_sha, contract_sha, action, build = self._bound_worker_result_with_a_primitive_blocker()
+        completed = worker.bounded_mission_completion_is_valid(
+            coordinator_status="COMPLETED",
+            action_result=action,
+            output_exists=True,
+            output_size=1234,
+            max_bytes=479000000,
+            output_hash=bundle_sha,
+            expected_source_commit=source_commit,
+            expected_contract_sha256=contract_sha,
+            build_report=build,
+        )
+        self.assertTrue(completed)
+        self.assertEqual(action["repair_status"], "HOLD_REPAIR_BLOCKERS_RECORDED")
+        self.assertFalse(action["primitive_repair_evidence"]["targeted_repairs_all_pass"])
+        self.assertEqual(action["primitive_repair_evidence"]["target_status"]["D04_TRADUCCION_LENGUAS_ANTIGUAS"], "BLOCKED")
+
+    def test_incomplete_or_unbound_primitive_failure_report_still_blocks_worker_completion(self):
+        source_commit, bundle_sha, contract_sha, action, build = self._bound_worker_result_with_a_primitive_blocker()
+        del action["primitive_repair_evidence"]["target_status"]["D06_MIGRACION_PERSISTENCIA"]
+        completed = worker.bounded_mission_completion_is_valid(
+            coordinator_status="COMPLETED",
+            action_result=action,
+            output_exists=True,
+            output_size=1234,
+            max_bytes=479000000,
+            output_hash=bundle_sha,
+            expected_source_commit=source_commit,
+            expected_contract_sha256=contract_sha,
+            build_report=build,
+        )
+        self.assertFalse(completed)
+
     def test_worker_cannot_self_certify_or_expand_scope_silently(self):
         with tempfile.TemporaryDirectory(prefix="louksnapg-worker-contract-") as tmp:
             root = Path(tmp)
