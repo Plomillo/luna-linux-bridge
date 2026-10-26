@@ -18,7 +18,7 @@ from pathlib import Path
 
 CUSTOSZ_SHA256 = "d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817"
 TASK_ID = "louksnapg-integral-release"
-SCOPE = "BUILD_LOUKSNAPG_SINGLE_FILE_CANDIDATE"
+SCOPE = "VERIFY_REPAIR_PRIMITIVES_AND_BUILD_LOUKSNAPG_CANDIDATE"
 WORKER_ID = "CUSTOSZV9"
 
 
@@ -60,6 +60,8 @@ def authorize(task: dict) -> dict:
         and task.get("authorized_scope") == SCOPE
         and "NO_SELF_CERTIFICATION" in task.get("preconditions", [])
         and "FAIL_CLOSED" in task.get("preconditions", [])
+        and "REPAIR_SOURCE_HASHES_PINNED" in task.get("preconditions", [])
+        and "REAL_CANDIDATE_PRIMITIVE_TESTS_REQUIRED" in task.get("preconditions", [])
         and "WRITE_EVIDENCE" in task.get("permitted_effects", [])
     )
     return {
@@ -81,7 +83,7 @@ def build_task(head: str, paths: dict[str, Path]) -> dict:
         "architecture_contract_sha256": contract_sha256,
         "dependency_set": ["issue-155"],
         "authorized_scope": SCOPE,
-        "required_capabilities": ["build_single_file_distribution"],
+        "required_capabilities": ["verify_repair_primitives", "build_single_file_distribution"],
         "inputs": [
             str(paths["document"]),
             str(paths["runtime"]),
@@ -89,7 +91,7 @@ def build_task(head: str, paths: dict[str, Path]) -> dict:
             str(paths["cajita_doc"]),
             str(paths["architecture_contract"]),
         ],
-        "preconditions": ["NO_SELF_CERTIFICATION", "FAIL_CLOSED", "INPUT_HASHES_VERIFIABLE"],
+        "preconditions": ["NO_SELF_CERTIFICATION", "FAIL_CLOSED", "INPUT_HASHES_VERIFIABLE", "REPAIR_SOURCE_HASHES_PINNED", "REAL_CANDIDATE_PRIMITIVE_TESTS_REQUIRED"],
         "permitted_effects": ["WRITE_EVIDENCE"],
         "resource_budget": {
             "ram_required_bytes": 128 * 1024 * 1024,
@@ -105,14 +107,16 @@ def build_task(head: str, paths: dict[str, Path]) -> dict:
             "output_within_479000000_bytes",
             "runtime_archive_within_470000000_bytes",
             "input_hashes_and_protected_prefix_preserved",
+            "three_repaired_non_model_primitives_execute_on_exact_candidate",
+            "candidate_bound_primitive_report_persisted",
         ],
-        "expected_outputs": ["LOUKSNAPG.md", "LOUKSNAPG_BUILD_REPORT.json"],
+        "expected_outputs": ["LOUKSNAPG.md", "LOUKSNAPG_BUILD_REPORT.json", "LOUKSNAPG_CUSTOSZV9_PRIMITIVE_REPAIR_EVIDENCE.json"],
         "validation_strategy": "SEPARATE_INDEPENDENT_ZIP_VERIFIER",
         "evidence_requirements": ["source_commit", "input_hashes", "output_sha256", "exact_size", "exit_code"],
         "checkpoint_reference": head,
         "rollback_strategy": "REMOVE_INCOMPLETE_CANDIDATE_AND_KEEP_SOURCE_INPUTS_IMMUTABLE",
-        "completion_condition": "CANDIDATE_BUILT_AND_EXACT_SIZE_MEASURED",
-        "escalation_condition": "BUILD_ERROR_OR_ANY_INPUT_HASH_OR_CAP_CHECK_FAILURE",
+        "completion_condition": "CANDIDATE_BUILT_AND_BOUND_AND_TREALLA_FOMA_RQLITE_PRIMITIVES_PASS",
+        "escalation_condition": "REPAIR_FIXTURE_TEST_FAILURE_OR_ANY_PRIMITIVE_FIX_FAILS_OR_BUILD_OR_HASH_OR_CAP_CHECK_FAILURE",
         "authorization_evidence_reference": "https://github.com/Plomillo/luna-linux-bridge/issues/155",
     }
 
@@ -169,8 +173,75 @@ def main(argv=None) -> int:
         "--max-bytes", str(args.max_bytes),
     ]
     action_result: dict = {}
+    primitive_report_path = paths["output"].with_name("LOUKSNAPG_CUSTOSZV9_PRIMITIVE_REPAIR_EVIDENCE.json")
+    repair_manifest = {
+        "schema": "LOUKSNAPG_CUSTOSZ_REPAIR_MANIFEST/1.0",
+        "source_commit": head,
+        "targets": [
+            {"target_id": "D04_HERMENEUTICA_HG", "fault": "Trealla DCG probe did not import library(dcgs) and loaded the grammar after evaluating the query", "required_fix": "load bundled grammar first and explicitly import library(dcgs)"},
+            {"target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS", "fault": "Foma validation fixture used replacement-rule syntax instead of a direct upper:lower transducer", "required_fix": "compile regex cat:gato; and verify flookup returns gato"},
+            {"target_id": "D06_MIGRACION_PERSISTENCIA", "fault": "rqlite write raced Raft leader election because /status was mistaken for write readiness", "required_fix": "poll /readyz until node, leader and store are ready before writes"},
+        ],
+        "product_scope": "bounded primitive repair validation; does not claim full hermeneutics or an ancient-language lexicon",
+        "heavy_model_weight_download_count": 0,
+        "remote_commander_used": False,
+        "global_certification": "NOT_GRANTED",
+    }
 
     def runner(payload: dict) -> dict:
+        repair_source = (repo / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+        repair_tests = (repo / "tests" / "test_cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+        required_source_fragments = [
+            'query="use_module(library(dcgs)),phrase(sentence,[the,man,shoots])"',
+            '["tpl","-l","samples/grammar.pl","-g",query]',
+            'regex cat:gato;',
+            'base + "/readyz"',
+            '"rqlite_readiness": ready_receipt',
+        ]
+        absent_fragments = [fragment for fragment in required_source_fragments if fragment not in repair_source]
+        if "test_rqlite_readiness_requires_elected_leader_and_store" not in repair_tests or "test_rqlite_readiness_polls_readyz_not_status" not in repair_tests:
+            absent_fragments.append("rqlite_readiness_regression_tests_missing")
+        repair_test_command = [
+            sys.executable, "-m", "unittest", "discover", "-s", "tests",
+            "-p", "test_cajita_extended_target_e2e.py", "-v",
+        ]
+        if absent_fragments:
+            action_result.update({
+                "repair_source_contract_status": "FAIL",
+                "missing_repair_fragments": absent_fragments,
+                "repair_source_sha256": sha256_bytes(repair_source.encode("utf-8")),
+                "repair_test_source_sha256": sha256_bytes(repair_tests.encode("utf-8")),
+                "architecture_contract_sha256": input_hashes["architecture_contract"],
+            })
+            return {"status": "FAIL", "result_state_hash": sha256_bytes(json.dumps(action_result, sort_keys=True).encode()), "reason": "REPAIR_SOURCE_PATCH_MISSING", "certification": "NOT_GRANTED"}
+        py_compile = subprocess.run(
+            [sys.executable, "-m", "py_compile", str(repo / "tools" / "cajita_extended_target_e2e.py"), str(repo / "tests" / "test_cajita_extended_target_e2e.py")],
+            cwd=repo, env=os.environ.copy(), capture_output=True, text=True, timeout=90, check=False,
+        )
+        unit = subprocess.run(
+            repair_test_command, cwd=repo, env=os.environ.copy(),
+            capture_output=True, text=True, timeout=600, check=False,
+        )
+        action_result["repair_preflight"] = {
+            "schema": "LOUKSNAPG_REPAIR_PREFLIGHT/1.0",
+            "status": "PASS" if py_compile.returncode == 0 and unit.returncode == 0 else "FAIL",
+            "source_sha256": sha256_bytes(repair_source.encode("utf-8")),
+            "test_source_sha256": sha256_bytes(repair_tests.encode("utf-8")),
+            "required_source_fragments_present": len(required_source_fragments),
+            "py_compile_exit_code": py_compile.returncode,
+            "unit_test_exit_code": unit.returncode,
+            "unit_test_stdout_tail": unit.stdout[-8000:],
+            "unit_test_stderr_tail": unit.stderr[-4000:],
+            "synthetic_unit_fixtures": True,
+            "synthetic_fixtures_used_as_product_proof": False,
+        }
+        if py_compile.returncode != 0 or unit.returncode != 0:
+            action_result.update({
+                "exit_code": 2,
+                "architecture_contract_sha256": input_hashes["architecture_contract"],
+                "reason": "REPAIR_PREFLIGHT_TEST_FAILED",
+            })
+            return {"status": "FAIL", "result_state_hash": sha256_bytes(json.dumps(action_result, sort_keys=True).encode()), "reason": "REPAIR_PREFLIGHT_TEST_FAILED", "certification": "NOT_GRANTED"}
         proc = subprocess.run(
             command,
             cwd=repo,
