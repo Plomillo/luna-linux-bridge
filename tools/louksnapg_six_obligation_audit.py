@@ -159,12 +159,18 @@ def evaluate(
         failures.append("CONTRACT_21_TARGET_REGISTRY_INVALID")
 
     worker_run_id = worker.get("worker_run_id") or worker.get("run_id")
+    worker_artifact = worker.get("artifact", {}) if isinstance(worker.get("artifact", {}), dict) else {}
     worker_receipt_ok = (
         worker.get("worker_status") == "PASS"
+        and worker.get("worker_contract_role") == "CUSTOSZ_V9"
+        and worker.get("authorized_scope") == "BUILD_LOUKSNAPG_SINGLE_FILE_CANDIDATE"
         and bool(worker_run_id)
+        and bool(worker.get("workflow_url"))
         and worker.get("source_commit") == source_commit
         and worker.get("contract_sha256") == contract_sha256
         and worker.get("bundle_sha256") == bundle_sha
+        and worker_artifact.get("sha256") == bundle_sha
+        and worker_artifact.get("bytes") == bundle_bytes
     )
     kestra_status = kestra_receipt.get("status")
     kestra_executed = (
@@ -173,6 +179,11 @@ def evaluate(
             "AUDIT_FAILED_OR_FAIL_CLOSED_HOLD",
             "FLOW_EXECUTION_SUCCESS_RELEASE_STILL_HOLD",
         }
+        and kestra_receipt.get("source_commit") == source_commit
+        and kestra_receipt.get("bundle_sha256") == bundle_sha
+        and kestra_receipt.get("integrity_status") == "PASS"
+        and SHA256_RE.fullmatch(str(kestra_receipt.get("http_response_sha256", "")))
+        and SHA256_RE.fullmatch(str(kestra_receipt.get("kestra_execution_evidence_sha256", "")))
         and bool(kestra_receipt.get("kestra_terminal_state"))
     )
     c1 = _result(
