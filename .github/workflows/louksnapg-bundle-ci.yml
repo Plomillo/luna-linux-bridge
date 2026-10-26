@@ -280,6 +280,8 @@ jobs:
           step_ids = {step.get("id"):step for step in aux_steps if step.get("id")}
           assert "contract" in step_ids and "kestra" in step_ids
           aux_text = aux_path.read_text(encoding="utf-8")
+          assert 'base+"/api/v1/main/flows/search?size=1"' in aux_text
+          assert 'Request(base+"/api/v1/main/flows",headers=' not in aux_text
           for required_text in (
               "LOUKSNAPG_TELEMETRY_PREAUDIT.json",
               "LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json",
@@ -295,6 +297,7 @@ jobs:
               "kestra/kestra:v2.0.3-slim",
               "application/x-yaml",
               "/api/v1/main/flows",
+              "/api/v1/main/flows/search?size=1",
               "LOCAL_EPHEMERAL_KESTRA",
               "KESTRA_LOCAL_API_AUTH_REQUIRED",
               "AUDIT_FAILED_OR_FAIL_CLOSED_HOLD",
