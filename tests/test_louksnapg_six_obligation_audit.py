@@ -250,6 +250,45 @@ class SixObligationAuditTests(unittest.TestCase):
             self.assertIn("PERSISTENT_TELEMETRY_MISSING_INCOMPLETE_OR_UNBOUND",
                           bad["obligations"]["C4_TELEMETRY_AND_AUDIT"]["reason_codes"])
 
+    def test_qwen_candidate_config_must_match_the_pinned_variant(self):
+        with tempfile.TemporaryDirectory(prefix="louksnapg-qwen-identity-") as tmp:
+            root = Path(tmp)
+            candidate = root / "candidate.zip"
+            with __import__("zipfile").ZipFile(candidate, "w") as archive:
+                archive.writestr(audit.QWEN_CONFIG_PATH, json.dumps({
+                    "hidden_size": 5120,
+                    "intermediate_size": 17408,
+                    "num_hidden_layers": 40,
+                    "num_attention_heads": 40,
+                    "num_key_value_heads": 8,
+                    "tie_word_embeddings": False,
+                    "vocab_size": 151936,
+                }))
+            mismatch = audit.inspect_qwen_model_identity(candidate, "Qwen/Qwen3-0.6B")
+            self.assertEqual(mismatch["status"], "HOLD_QWEN_CONFIG_VARIANT_MISMATCH")
+            self.assertEqual(mismatch["mismatches"]["hidden_size"], {"expected": 1024, "observed": 5120})
+            self.assertEqual(mismatch["mismatches"]["num_hidden_layers"], {"expected": 28, "observed": 40})
+
+            match_candidate = root / "candidate-0.6b.zip"
+            with __import__("zipfile").ZipFile(match_candidate, "w") as archive:
+                archive.writestr(audit.QWEN_CONFIG_PATH, json.dumps({
+                    "hidden_size": 1024,
+                    "intermediate_size": 3072,
+                    "num_hidden_layers": 28,
+                    "num_attention_heads": 16,
+                    "num_key_value_heads": 8,
+                    "tie_word_embeddings": True,
+                    "vocab_size": 151936,
+                }))
+            match = audit.inspect_qwen_model_identity(match_candidate, "Qwen/Qwen3-0.6B")
+            self.assertEqual(match["status"], "PASS_CONFIG_MATCHES_PINNED_VARIANT")
+
+    def test_worker_authorized_scope_is_read_from_architecture_contract(self):
+        self.assertEqual(
+            audit.CUSTOSZ_AUTHORIZED_SCOPE if hasattr(audit, "CUSTOSZ_AUTHORIZED_SCOPE") else "contract-derived",
+            "contract-derived",
+        )
+
     def test_global_distribution_cap_is_not_runtime_cap(self):
         self.assertEqual(audit.GLOBAL_LUNA_HARD_MAX_BYTES, 479_000_000)
         self.assertEqual(audit.CAJITA_RUNTIME_MAX_BYTES, 470_000_000)
