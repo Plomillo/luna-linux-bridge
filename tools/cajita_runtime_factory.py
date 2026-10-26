@@ -514,7 +514,7 @@ def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
    raise RuntimeError("NATIVE_ENGINE_LINKAGE_CHECK_FAILED:"+label+":"+str(proc.returncode)+":"+output[-1000:])
   return {"return_code":proc.returncode,"output_tail":output[-2000:],"output_sha256":sha_bytes(output.encode("utf-8"))}
  def build_one(label,target_id,source,command,checks,binary_names,readme_placeholder=False):
-  source_tree_sha=sha_bytes(canon(tree_rows(source,False)))
+  source_tree_sha=tree_hash(source)
   with tempfile.TemporaryDirectory(prefix="cajita-native-"+label.lower()+"-") as tmp:
    build_root=Path(tmp)/source.name; shutil.copytree(source,build_root,symlinks=False)
    placeholder=False

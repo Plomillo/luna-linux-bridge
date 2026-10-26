@@ -290,7 +290,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
 
     def test_runtime_image_declares_native_build_and_offline_test_dependencies(self):
         workflow = (REPOSITORY / ".github" / "workflows" / "cajita-louksna1-factory.yml").read_text(encoding="utf-8")
-        for package in ("git", "zlib1g-dev", "p7zip-full"):
+        for package in ("git", "zlib1g-dev", "p7zip-full", "build-essential"):
             self.assertIn(package, workflow)
         for package in ("iniconfig==2.3.0", "pluggy==1.6.0", "packaging==25.0"):
             self.assertIn(package, workflow)
