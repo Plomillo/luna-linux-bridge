@@ -23,9 +23,9 @@ WORKER_ID = "CUSTOSZV9"
 
 REQUIRED_REPAIR_SOURCE_FRAGMENTS = (
     'query="phrase(sentence,[the,man,shoots]),write(true),halt"',
-    r'use_module(library(dcgs)).\n',
-    r"include('{grammar_literal}').\n",
-    r"initialization(({query})).\n",
+    r'use_module(library(dcgs)).\\n',
+    r"include('{grammar_literal}').\\n",
+    r"initialization(({query})).\\n",
     'trealla_env["TPL_LIBRARY_PATH"]=str(packaged_library)',
     "regex [c a t]:[g a t o];",
     'base + "/readyz"',
