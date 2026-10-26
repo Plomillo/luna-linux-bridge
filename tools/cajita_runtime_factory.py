@@ -518,6 +518,25 @@ def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
   with tempfile.TemporaryDirectory(prefix="cajita-native-"+label.lower()+"-") as tmp:
    build_root=Path(tmp)/source.name; shutil.copytree(source,build_root,symlinks=False)
    placeholder=False
+   temporary_test_mode_repairs=[]
+   # Some source ZIPs record shell test harnesses as mode 0644 even though the
+   # upstream Makefile invokes them as ./run.sh. Repair only the temporary build
+   # copy, bind it to the original file hash, and leave the source tree untouched.
+   if label=="FOMA" and checks:
+    test_runner=build_root/"tests"/"run.sh"
+    if test_runner.is_symlink() or not test_runner.is_file():
+     raise RuntimeError("NATIVE_ENGINE_TEST_RUNNER_MISSING_OR_UNSAFE:FOMA:tests/run.sh")
+    before_mode=stat.S_IMODE(test_runner.stat().st_mode)
+    before_sha=sha_file(test_runner)
+    os.chmod(test_runner,before_mode|0o111)
+    if sha_file(test_runner)!=before_sha or not (test_runner.stat().st_mode&0o111):
+     raise RuntimeError("NATIVE_ENGINE_TEST_RUNNER_MODE_REPAIR_FAILED:FOMA:tests/run.sh")
+    temporary_test_mode_repairs.append({
+     "path":"tests/run.sh","original_mode":oct(before_mode),
+     "temporary_build_mode":oct(stat.S_IMODE(test_runner.stat().st_mode)),
+     "sha256":before_sha,"scope":"TEMPORARY_BUILD_COPY_ONLY",
+     "source_tree_mutated":False
+    })
    if readme_placeholder and not (build_root/"README.md").is_file():
     (build_root/"README.md").write_text("Build-only prerequisite for pinned Trealla source; not shipped in runtime.\n",encoding="utf-8")
     placeholder=True
@@ -532,7 +551,8 @@ def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
     outputs.append({"name":name,"path":dest.relative_to(runtime).as_posix(),"bytes":dest.stat().st_size,"sha256":sha_file(dest),"linkage":verify_linkage(dest,label+"_"+name)})
   return {"target_id":target_id,"source_path":source.relative_to(runtime).as_posix(),"source_commit":source_commit,
           "source_tree_sha256_before_build":source_tree_sha,"build_commands":commands,
-          "temporary_readme_prerequisite_created":placeholder,"binary_artifacts":outputs,"shared_libraries":libraries,
+          "temporary_readme_prerequisite_created":placeholder,"temporary_test_mode_repairs":temporary_test_mode_repairs,
+          "binary_artifacts":outputs,"shared_libraries":libraries,
           "build_status":"PASS","runtime_compile_required":False,"certification":"NOT_GRANTED"}
  versions={}
  for name,command in (("make",["make","--version"]),("compiler",["cc","--version"])):
