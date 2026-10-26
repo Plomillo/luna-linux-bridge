@@ -360,9 +360,9 @@ def probe_trealla(root: Path) -> dict[str, Any]:
         driver=Path(temporary)/"louksnapg-grammar-smoke.pl"
         grammar_literal=str(grammar.resolve()).replace("\\","\\\\").replace("'","\\'")
         driver.write_text(
-            ":- use_module(library(dcgs)).\\n"
-            f":- include('{grammar_literal}').\\n"
-            f":- initialization(({query})).\\n",
+            ":- use_module(library(dcgs)).\n"
+            f":- include('{grammar_literal}').\n"
+            f":- initialization(({query})).\n",
             encoding="utf-8",
         )
         run=require_ok(run_process([str(binary),"-l",str(driver)],cwd=source,timeout=15,env=trealla_env),"TREALLA_PACKAGED_PROLOG_QUERY_FAILED")
