@@ -270,27 +270,158 @@ def main(argv=None) -> int:
         report_path = paths["output"].with_name("LOUKSNAPG_BUILD_REPORT.json")
         report_obj = json.loads(report_path.read_text(encoding="utf-8"))
         exact = size <= args.max_bytes and report_obj.get("bundle_sha256") == digest and report_obj.get("bundle_bytes") == size
-        state = sha256_bytes(json.dumps({"head": head, "bundle_sha256": digest, "size": size}, sort_keys=True).encode())
+        if not exact:
+            action_result["repair_status"] = "HOLD_BUNDLE_HASH_SIZE_OR_CAP_MISMATCH"
+            return {
+                "status": "FAIL",
+                "result_state_hash": sha256_bytes(json.dumps({"head": head, "action": action_result}, sort_keys=True).encode()),
+                "bundle_sha256": digest,
+                "bundle_bytes": size,
+                "cap_bytes": args.max_bytes,
+                "certification": "NOT_GRANTED",
+                "reason": "OUTPUT_SIZE_OR_HASH_REPORT_MISMATCH",
+            }
+
+        # Independently extract and exercise the exact candidate created in this
+        # worker action. This is real candidate-bound runtime evidence, not a
+        # source-only selftest. The evaluator keeps every blocker visible.
+        import tempfile
+        validator_report_path = paths["output"].with_name("LOUKSNAPG_CUSTOSZV9_PRIMITIVE_VALIDATOR.json")
+        extended_report_path = primitive_report_path
+        with tempfile.TemporaryDirectory(prefix="louksnapg-custosz-runtime-") as temp:
+            temp_root = Path(temp)
+            extracted = temp_root / "runtime"
+            validator_report = temp_root / "validator.json"
+            validator_command = [
+                sys.executable, str(repo / "tools" / "louksnapg_independent_validator.py"),
+                "--bundle", str(paths["output"]), "--max-bytes", str(args.max_bytes),
+                "--expected-source-commit", head, "--extract-to", str(extracted),
+                "--report", str(validator_report),
+            ]
+            validator_proc = subprocess.run(
+                validator_command, cwd=repo, env=os.environ.copy(),
+                capture_output=True, text=True, timeout=600, check=False,
+            )
+            validator_obj = {}
+            if validator_report.is_file() and not validator_report.is_symlink():
+                try:
+                    validator_obj = json.loads(validator_report.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    validator_obj = {}
+            action_result["candidate_independent_validation"] = {
+                "exit_code": validator_proc.returncode,
+                "report_sha256": sha256_file(validator_report) if validator_report.is_file() else None,
+                "container_integrity": validator_obj.get("container_integrity"),
+                "runtime_member_integrity": validator_obj.get("runtime_member_integrity"),
+                "identity_preservation_status": validator_obj.get("identity_preservation_status"),
+                "bundle_sha256": validator_obj.get("bundle_sha256"),
+                "bundle_bytes": validator_obj.get("bundle_bytes"),
+                "source_commit": validator_obj.get("source_commit"),
+                "stderr_tail": validator_proc.stderr[-3000:],
+            }
+            if (
+                validator_proc.returncode != 0 or not extracted.is_dir()
+                or validator_obj.get("container_integrity") != "PASS"
+                or validator_obj.get("runtime_member_integrity") != "PASS"
+                or validator_obj.get("source_commit") != head
+                or validator_obj.get("bundle_sha256") != digest
+            ):
+                action_result["repair_status"] = "HOLD_CANDIDATE_INDEPENDENT_VALIDATION_FAILED"
+                return {
+                    "status": "FAIL",
+                    "result_state_hash": sha256_bytes(json.dumps({"head": head, "action": action_result}, sort_keys=True).encode()),
+                    "bundle_sha256": digest,
+                    "certification": "NOT_GRANTED",
+                    "reason": "CANDIDATE_INDEPENDENT_VALIDATION_FAILED",
+                }
+            extended_command = [
+                sys.executable, str(repo / "tools" / "cajita_extended_target_e2e.py"),
+                "--root", str(extracted), "--source-commit", head,
+                "--bundle-sha256", digest,
+                "--contract", str(paths["architecture_contract"]),
+                "--report", str(extended_report_path),
+            ]
+            extended_proc = subprocess.run(
+                extended_command, cwd=repo, env=os.environ.copy(),
+                capture_output=True, text=True, timeout=2400, check=False,
+            )
+        extended_obj = {}
+        if extended_report_path.is_file() and not extended_report_path.is_symlink():
+            try:
+                extended_obj = json.loads(extended_report_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                extended_obj = {}
+        targets = extended_obj.get("targets", []) if isinstance(extended_obj, dict) else []
+        target_status = {row.get("target_id"): row.get("status") for row in targets if isinstance(row, dict)}
+        repaired_target_ids = [
+            "D04_HERMENEUTICA_HG", "D04_TRADUCCION_LENGUAS_ANTIGUAS", "D06_MIGRACION_PERSISTENCIA"
+        ]
+        repaired_pass = all(target_status.get(target_id) == "PASS_PRIMITIVE_SMOKE" for target_id in repaired_target_ids)
+        exact_report_binding = (
+            extended_obj.get("source_commit") == head
+            and extended_obj.get("bundle_sha256") == digest
+            and extended_obj.get("contract_sha256") == input_hashes["architecture_contract"]
+            and extended_obj.get("coverage_execution") == "COMPLETE_DIAGNOSTIC_ONLY"
+            and len(targets) == 10
+        )
+        action_result["primitive_repair_evidence"] = {
+            "schema": "LOUKSNAPG_CUSTOSZ_PRIMITIVE_REPAIR_EVIDENCE/1.0",
+            "status": "PASS" if extended_proc.returncode == 0 and exact_report_binding and repaired_pass else "HOLD",
+            "report_path": extended_report_path.name,
+            "report_sha256": sha256_file(extended_report_path) if extended_report_path.is_file() else None,
+            "exit_code": extended_proc.returncode,
+            "source_commit": extended_obj.get("source_commit"),
+            "bundle_sha256": extended_obj.get("bundle_sha256"),
+            "contract_sha256": extended_obj.get("contract_sha256"),
+            "target_count": len(targets),
+            "target_status": target_status,
+            "targeted_repairs": repaired_target_ids,
+            "targeted_repairs_all_pass": repaired_pass,
+            "all_10_outcomes_recorded": exact_report_binding,
+            "summary": extended_obj.get("summary"),
+            "stdout_tail": extended_proc.stdout[-5000:],
+            "stderr_tail": extended_proc.stderr[-3000:],
+            "heavy_model_weight_download_count": 0,
+            "remote_commander_used": False,
+            "synthetic_evidence_used_as_product_proof": False,
+            "global_certification": "NOT_GRANTED",
+        }
+        # Worker completion means the bounded repair verification actually ran
+        # against the exact candidate and recorded a complete result set. A
+        # FAIL/BLOCKED primitive is not rewritten as PASS: it remains in the
+        # report and keeps the separate G24 release gate on HOLD.
+        task_executed = (
+            extended_proc.returncode == 0 and exact_report_binding
+            and extended_obj.get("heavy_model_weight_download_count") == 0
+            and extended_obj.get("remote_commander_used") is False
+            and extended_obj.get("synthetic_evidence_used_as_product_proof") is False
+        )
+        state = sha256_bytes(json.dumps({"head": head, "bundle_sha256": digest, "size": size, "primitive_report_sha256": action_result["primitive_repair_evidence"].get("report_sha256")}, sort_keys=True).encode())
+        action_result["repair_status"] = "PASS_THREE_TARGETED_PRIMITIVES" if repaired_pass else "HOLD_REPAIR_BLOCKERS_RECORDED"
+        action_result["exit_code"] = 0 if task_executed else 2
+        action_result["primitive_report_sha256"] = action_result["primitive_repair_evidence"].get("report_sha256")
         return {
-            "status": "PASS" if exact else "FAIL",
+            "status": "PASS" if task_executed else "FAIL",
             "result_state_hash": state,
             "bundle_sha256": digest,
             "bundle_bytes": size,
             "cap_bytes": args.max_bytes,
+            "repair_status": action_result["repair_status"],
+            "primitive_report_sha256": action_result["primitive_report_sha256"],
             "certification": "NOT_GRANTED",
-            "reason": "" if exact else "OUTPUT_SIZE_OR_HASH_REPORT_MISMATCH",
+            "reason": "" if task_executed else "PRIMITIVE_REPAIR_REPORT_INCOMPLETE_OR_SAFETY_BINDING_FAILED",
         }
 
     outcome = run_bounded_mission(
         task,
         [ActionSpec(
-            "build_single_file_distribution",
-            required_capabilities=("build_single_file_distribution",),
+            "verify_repair_primitives_and_build_single_file_distribution",
+            required_capabilities=("verify_repair_primitives", "build_single_file_distribution"),
             permitted_effects=("WRITE_EVIDENCE",),
             idempotency="IDEMPOTENT",
         )],
         snapshot,
-        available_capabilities={"build_single_file_distribution"},
+        available_capabilities={"verify_repair_primitives", "build_single_file_distribution"},
         admissible_effects={"WRITE_EVIDENCE"},
         authorization_verifier=authorize,
         action_runner=runner,
@@ -320,6 +451,8 @@ def main(argv=None) -> int:
         and build_report.get("identity_preservation_status") == "PASS_SOURCE_IDENTITY_PRESERVED"
         and build_report.get("engine_replacement") == "FORBIDDEN"
         and action_result.get("architecture_contract_sha256") == input_hashes["architecture_contract"]
+        and action_result.get("primitive_repair_evidence", {}).get("all_10_outcomes_recorded") is True
+        and action_result.get("repair_preflight", {}).get("status") == "PASS"
     )
     # CUSTOSZ's coordinator uses COMPLETED for a successful bounded mission.
     # The build action's return code plus the exact independent-report binding
@@ -363,9 +496,16 @@ def main(argv=None) -> int:
             "identity_preservation_pass": build_report.get("identity_preservation_status") == "PASS_SOURCE_IDENTITY_PRESERVED",
             "engine_replacement_forbidden": build_report.get("engine_replacement") == "FORBIDDEN",
             "architecture_contract_binding_pass": action_result.get("architecture_contract_sha256") == input_hashes["architecture_contract"],
+            "repair_preflight_tests_pass": action_result.get("repair_preflight", {}).get("status") == "PASS",
+            "candidate_primitive_report_present": bool(action_result.get("primitive_repair_evidence", {}).get("report_sha256")),
+            "targeted_primitives_pass": action_result.get("primitive_repair_evidence", {}).get("targeted_repairs_all_pass") is True,
+            "repair_status": action_result.get("repair_status"),
         },
         "input_sha256": input_hashes,
         "action": action_result,
+        "repair_manifest": repair_manifest,
+        "repair_status": action_result.get("repair_status", "NOT_EXECUTED"),
+        "primitive_repair_report": action_result.get("primitive_repair_evidence"),
         "artifact": {
             "path": paths["output"].name,
             "exists": output_exists,
