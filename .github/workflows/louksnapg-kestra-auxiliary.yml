@@ -13,6 +13,8 @@ on:
       - ".github/workflows/louksnapg-bundle-ci.yml"
       - "tools/louksnapg_integral_gate.py"
       - "tools/louksnapg_six_obligation_audit.py"
+      - "tests/test_louksnapg_six_obligation_audit.py"
+      - "tools/louksnapg_six_obligation_audit.py"
       - "tools/louksnapg_worker_mission.py"
       - "tests/test_louksnapg_six_obligation_audit.py"
       - "docs/cajita-luna/LOUKSNAPG_ARCHITECTURAL_CONTRACT.md"
@@ -578,6 +580,134 @@ jobs:
           raise SystemExit(sys_exit)
           PY
 
+      - name: Append the exact Kestra receipt to final C4 telemetry
+        id: final_telemetry
+        if: always() && steps.verify.outcome == 'success' && steps.contract.outcome == 'success'
+        shell: bash
+        env:
+          SOURCE_COMMIT: \${{ steps.source.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from datetime import datetime,timezone
+          from pathlib import Path
+
+          pre_path=Path("candidate/LOUKSNAPG_TELEMETRY_PREAUDIT.json")
+          receipt_path=Path("candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json")
+          bundle=Path("candidate/LOUKSNAPG.md")
+          contract_path=Path("contracts/louksnapg/architecture-contract.v1.json")
+          if not pre_path.is_file() or pre_path.is_symlink():
+              raise SystemExit("C4_PREAUDIT_TELEMETRY_MISSING_OR_UNSAFE")
+          if not bundle.is_file() or bundle.is_symlink() or not contract_path.is_file() or contract_path.is_symlink():
+              raise SystemExit("C4_SOURCE_BINDING_INPUT_MISSING_OR_UNSAFE")
+          if not receipt_path.is_file() or receipt_path.is_symlink():
+              failure={
+                  "schema":"LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT/1.0",
+                  "status":"RECEIPT_MISSING",
+                  "reason":"KESTRA_RECEIPT_FILE_MISSING_AFTER_DISPATCH",
+                  "source_commit":os.environ["SOURCE_COMMIT"],
+                  "bundle_sha256":hashlib.sha256(bundle.read_bytes()).hexdigest(),
+                  "integrity_status":"NOT_ESTABLISHED",
+                  "global_certification":"NOT_GRANTED"
+              }
+              receipt_path.write_text(json.dumps(failure,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          receipt_bytes=receipt_path.read_bytes()
+          receipt=json.loads(receipt_bytes.decode("utf-8"))
+          if not isinstance(receipt,dict):
+              raise SystemExit("C4_KESTRA_RECEIPT_ROOT_NOT_OBJECT")
+          receipt_sha=hashlib.sha256(receipt_bytes).hexdigest()
+          bundle_sha=hashlib.sha256(bundle.read_bytes()).hexdigest()
+          contract_sha=hashlib.sha256(contract_path.read_bytes()).hexdigest()
+          telemetry=json.loads(pre_path.read_text(encoding="utf-8"))
+          if not isinstance(telemetry,dict) or not isinstance(telemetry.get("events"),list):
+              raise SystemExit("C4_PREAUDIT_TELEMETRY_SCHEMA_INVALID")
+          if telemetry.get("source_commit")!=os.environ["SOURCE_COMMIT"] or telemetry.get("bundle_sha256")!=bundle_sha or telemetry.get("contract_sha256")!=contract_sha:
+              raise SystemExit("C4_PREAUDIT_SUBJECT_BINDING_MISMATCH")
+          events=telemetry["events"]
+          if any(not isinstance(row,dict) for row in events):
+              raise SystemExit("C4_PREAUDIT_EVENT_ROW_INVALID")
+          if any(row.get("event_type")=="KESTRA_AUDIT_RESULT" for row in events):
+              raise SystemExit("C4_KESTRA_RESULT_ALREADY_APPENDED_TO_PREAUDIT")
+          if [row.get("sequence_id") for row in events]!=list(range(1,len(events)+1)):
+              raise SystemExit("C4_PREAUDIT_SEQUENCE_GAP_OR_REORDER")
+          status=receipt.get("status","NOT_ESTABLISHED")
+          terminal=receipt.get("kestra_terminal_state")
+          execution_present=bool(receipt.get("execution_id"))
+          receipt_details={
+              "receipt_sha256":receipt_sha,
+              "receipt_status":status,
+              "execution_id_present":execution_present,
+              "terminal_state":terminal,
+              "reason":receipt.get("reason") or receipt.get("error_tail") or receipt.get("status"),
+              "http_response_sha256":receipt.get("http_response_sha256"),
+              "kestra_execution_evidence_sha256":receipt.get("kestra_execution_evidence_sha256"),
+              "preaudit_telemetry_sha256":hashlib.sha256(pre_path.read_bytes()).hexdigest()
+          }
+          if execution_present and terminal:
+              event_status="PASS_EXECUTION_RECEIPT_BOUND"
+          else:
+              event_status="HOLD_KESTRA_EXECUTION_NOT_ESTABLISHED"
+          event={
+              "operation_id":"LOUKSNAPG-AUX-"+os.environ["SOURCE_COMMIT"][:12],
+              "sequence_id":len(events)+1,
+              "timestamp_utc":datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z"),
+              "actor":"github-actions",
+              "tool_name":"Kestra audit receipt materializer",
+              "tool_version":"1.0",
+              "source":"github://"+os.environ.get("GITHUB_REPOSITORY","unknown")+"/actions/runs/"+os.environ.get("GITHUB_RUN_ID","unknown"),
+              "source_commit":os.environ["SOURCE_COMMIT"],
+              "bundle_sha256":bundle_sha,
+              "contract_sha256":contract_sha,
+              "input_sha256":receipt_sha,
+              "input_bytes":len(receipt_bytes),
+              "validation_status":event_status,
+              "rollback_reference":"PR 157 feature branch only; main unchanged; preserve immutable preaudit and candidate; revert branch commit if required",
+              "status":event_status,
+              "event_type":"KESTRA_AUDIT_RESULT",
+              "count":1,
+              "details":receipt_details
+          }
+          raw=json.dumps(event,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")
+          event_digest=hashlib.sha256(raw).hexdigest()
+          event["output_bytes"]=len(raw)
+          event["output_sha256"]=event_digest
+          event["evidence_sha256"]=event_digest
+          telemetry.pop("evidence_sha256",None)
+          telemetry["events"]=events+[event]
+          telemetry["generated_at_utc"]=datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+          telemetry["trace_integrity"]="PASS_SHA256_BOUND_POSTDISPATCH_APPEND"
+          telemetry["post_dispatch_receipt_status"]=status
+          telemetry["post_dispatch_receipt_sha256"]=receipt_sha
+          telemetry["post_dispatch_receipt_bound"]=(receipt.get("source_commit")==os.environ["SOURCE_COMMIT"] and receipt.get("bundle_sha256")==bundle_sha)
+          telemetry["status"]="INCOMPLETE_HOLD"
+          telemetry["release_telemetry_status"]="INCOMPLETE_HOLD"
+          telemetry["global_certification"]="NOT_GRANTED"
+          canonical=json.dumps(telemetry,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")
+          telemetry["evidence_sha256"]=hashlib.sha256(canonical).hexdigest()
+          final_path=Path("candidate/LOUKSNAPG_TELEMETRY_FINAL.json")
+          final_path.write_text(json.dumps(telemetry,sort_keys=True,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as handle:
+              handle.write("receipt_sha256="+receipt_sha+"\n")
+              handle.write("final_telemetry_sha256="+hashlib.sha256(final_path.read_bytes()).hexdigest()+"\n")
+          print(json.dumps({
+              "schema":telemetry.get("schema"),
+              "source_commit":telemetry.get("source_commit"),
+              "bundle_sha256":bundle_sha,
+              "contract_sha256":contract_sha,
+              "preaudit_event_count":len(events),
+              "final_event_count":len(telemetry["events"]),
+              "post_dispatch_event_type":"KESTRA_AUDIT_RESULT",
+              "kestra_receipt_status":status,
+              "execution_id_present":execution_present,
+              "terminal_state":terminal,
+              "receipt_sha256":receipt_sha,
+              "final_telemetry_sha256":hashlib.sha256(final_path.read_bytes()).hexdigest(),
+              "release_telemetry_status":"INCOMPLETE_HOLD",
+              "global_certification":"NOT_GRANTED"
+          },indent=2))
+          PY
+
       - name: Evaluate the six architectural obligations against exact run-bound evidence
         id: six_obligations
         if: always() && steps.verify.outcome == 'success' && steps.contract.outcome == 'success'
@@ -599,7 +729,7 @@ jobs:
             --task-report candidate/LOUKSNAPG_G24_TASK_DIAGNOSTICS.json \
             --functional-gate candidate/LOUKSNAPG_G24_FUNCTIONAL_GATE.json \
             --g24-evidence candidate/LOUKSNAPG_G24_DECISION.json \
-            --telemetry candidate/LOUKSNAPG_TELEMETRY_PREAUDIT.json \
+            --telemetry candidate/LOUKSNAPG_TELEMETRY_FINAL.json \
             --kestra-receipt candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json \
             "${G23_ARGS[@]}" \
             --report candidate/LOUKSNAPG_SIX_OBLIGATION_AUDIT.json
@@ -616,6 +746,7 @@ jobs:
             candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json
             candidate/LOUKSNAPG_ARCHITECTURE_CONTRACT.json
             candidate/LOUKSNAPG_TELEMETRY_PREAUDIT.json
+            candidate/LOUKSNAPG_TELEMETRY_FINAL.json
             candidate/LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json
             candidate/LOUKSNAPG_G23_ATTESTATION_NOT_PERFORMED.json
             candidate/LOUKSNAPG_G24_DECISION_NOT_GRANTED.json
