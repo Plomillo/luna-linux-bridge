@@ -560,7 +560,7 @@ def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
   if proc.returncode!=0: raise RuntimeError("NATIVE_ENGINE_TOOLCHAIN_VERSION_UNAVAILABLE:"+name+":"+str(proc.returncode))
   versions[name]=(proc.stdout or "").splitlines()[0][:240]
  foma=build_one("FOMA","D04_TRADUCCION_LENGUAS_ANTIGUAS",foma_source,["make","-j1"],[["make","check"]],["foma","flookup"])
- trealla=build_one("TREALLA","D04_HERMENEUTICA_HG",trealla_source,["make","-j1","GIT_VERSION=2.100.24","NOFFI=1","NOSSL=1","NOTHREADS=1","ISOCLINE=1"],[],["tpl"],True)
+ trealla=build_one("TREALLA","D04_HERMENEUTICA_HG",trealla_source,["make","-j1",'GIT_VERSION="2.100.24"',"NOFFI=1","NOSSL=1","NOTHREADS=1","ISOCLINE=1"],[],["tpl"],True)
  receipt={"schema":"CAJITA_NATIVE_ENGINE_BUILD_RECEIPTS/1.0","source_commit":source_commit,"build_environment":versions,
           "builds":[foma,trealla],"runtime_compile_required":False,"model_weight_downloads":0,
           "remote_commander_used":False,"certification":"NOT_GRANTED"}
