@@ -424,6 +424,14 @@ def evaluate_execution_evidence(contract: dict, contract_bytes: bytes, evidence:
                     failures.append("CUSTOSZ_CANDIDATE_INTEGRITY_NOT_PASS")
                 if repair_mission.get("primitive_report_hash_verified") is not True:
                     failures.append("CUSTOSZ_PRIMITIVE_REPORT_HASH_NOT_VERIFIED")
+                if repair_mission.get("primitive_evidence_schema") != "LOUKSNAPG_CUSTOSZ_PRIMITIVE_REPAIR_EVIDENCE/1.0":
+                    failures.append("CUSTOSZ_PRIMITIVE_EVIDENCE_SCHEMA_MISMATCH")
+                if repair_mission.get("repair_preflight_status") != "PASS":
+                    failures.append("CUSTOSZ_REPAIR_PREFLIGHT_NOT_PASS")
+                if repair_mission.get("candidate_integrity_status") != "PASS":
+                    failures.append("CUSTOSZ_CANDIDATE_INTEGRITY_NOT_PASS")
+                if repair_mission.get("primitive_report_hash_verified") is not True:
+                    failures.append("CUSTOSZ_PRIMITIVE_REPORT_HASH_NOT_VERIFIED")
                 if repair_mission.get("worker_id") != "CUSTOSZV9" or repair_mission.get("task_id") != "louksnapg-integral-release" or repair_mission.get("authorized_scope") != "VERIFY_REPAIR_PRIMITIVES_AND_BUILD_LOUKSNAPG_CANDIDATE":
                     failures.append("CUSTOSZ_REPAIR_MISSION_IDENTITY_OR_SCOPE_MISMATCH")
                 if repair_mission.get("source_commit") != source_commit or repair_mission.get("bundle_sha256") != bundle_sha or repair_mission.get("contract_sha256") != contract_sha:
