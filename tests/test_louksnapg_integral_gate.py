@@ -70,7 +70,9 @@ class IntegralGateTests(unittest.TestCase):
         for target_id in gate.EXPECTED_TARGET_IDS:
             row = {
                 "target_id": target_id,
+                "evidence_kind": "MODEL_TASK",
                 "status": "PASS_FUNCTIONAL_EXECUTION",
+                "quality_status": "PASS",
                 "exit_code": 0,
                 "test_case_count": 3,
                 "test_cases_passed": 3,
@@ -89,9 +91,18 @@ class IntegralGateTests(unittest.TestCase):
                     "model_inference_observed": True,
                     "weight_sha256": "5" * 64,
                     "upstream_model_id": upstream_ids[target_id],
-                    "upstream_source_url": gate.OFFICIAL_SOURCE_URLS[target_id],
-                    "upstream_revision_sha256": gate.OFFICIAL_SOURCE_REVISIONS[target_id],
+                    "official_source_url": gate.OFFICIAL_SOURCE_URLS[target_id],
+                    "upstream_revision_commit": gate.OFFICIAL_SOURCE_REVISIONS[target_id],
                     "model_repository_revision_commit": gate.OFFICIAL_MODEL_REVISIONS[target_id],
+                    "upstream_weights_sha256": "9" * 64,
+                    "candidate_before_weights_sha256": "6" * 64,
+                    "candidate_after_weights_sha256": "5" * 64,
+                    "repair_implementation_commit": "b" * 40,
+                    "test_evidence_sha256": "7" * 64,
+                    "quality_report_sha256": "8" * 64,
+                    "expected_test_count": 3,
+                    "passed_test_count": 3,
+                    "semantic_quality_status": "PASS",
                 })
             rows.append(row)
         evidence = {
@@ -192,6 +203,59 @@ class IntegralGateTests(unittest.TestCase):
         self.assertEqual(result["candidate_model_identity"]["status"], "HOLD_QWEN_CONFIG_VARIANT_MISMATCH")
         self.assertEqual(result["candidate_model_identity"]["mismatches"]["hidden_size"]["observed"], 5120)
 
+
+    def test_model_target_cannot_pass_as_primitive_smoke(self):
+        row = next(x for x in self.evidence["target_results"] if x["target_id"] == "D03_TRANSCRIPCION_ROOT")
+        row.update({
+            "evidence_kind": "PRIMITIVE_SMOKE",
+            "status": "PASS_PRIMITIVE_SMOKE",
+            "scope_complete": True,
+            "primitive_evidence_sha256": "6" * 64,
+            "runtime_sha256": "7" * 64,
+        })
+        self.sign_evidence(self.evidence)
+        result = self.evaluate()
+        self.assertEqual(result["decision"], "HOLD")
+        check = next(x for x in result["target_checks"] if x["target_id"] == "D03_TRANSCRIPCION_ROOT")
+        self.assertIn("MODEL_TARGET_REQUIRES_MODEL_TASK_EVIDENCE", check["failures"])
+
+    def test_model_quality_status_is_required_and_has_no_pass_default(self):
+        row = next(x for x in self.evidence["target_results"] if x["target_id"] == "D01_CEREBRO_ROOT")
+        row.pop("quality_status")
+        self.sign_evidence(self.evidence)
+        result = self.evaluate()
+        self.assertEqual(result["decision"], "HOLD")
+        check = next(x for x in result["target_checks"] if x["target_id"] == "D01_CEREBRO_ROOT")
+        self.assertIn("MODEL_QUALITY_NOT_PASS", check["failures"])
+
+    def test_candidate_weights_must_change_and_match_functional_gate_hash(self):
+        row = next(x for x in self.evidence["target_results"] if x["target_id"] == "D04_TRADUCCION_GENERAL")
+        row["candidate_before_weights_sha256"] = row["candidate_after_weights_sha256"]
+        self.sign_evidence(self.evidence)
+        result = self.evaluate()
+        self.assertEqual(result["decision"], "HOLD")
+        check = next(x for x in result["target_checks"] if x["target_id"] == "D04_TRADUCCION_GENERAL")
+        self.assertIn("CANDIDATE_WEIGHTS_NOT_MATERIALLY_REPAIRED", check["failures"])
+
+        row["candidate_before_weights_sha256"] = "4" * 64
+        row["candidate_after_weights_sha256"] = "6" * 64
+        self.sign_evidence(self.evidence)
+        result = self.evaluate()
+        self.assertEqual(result["decision"], "HOLD")
+        check = next(x for x in result["target_checks"] if x["target_id"] == "D04_TRADUCCION_GENERAL")
+        self.assertIn("CANDIDATE_AFTER_HASH_DIFFERS_FROM_FUNCTIONAL_GATE_WEIGHT_HASH", check["failures"])
+
+    def test_model_repair_requires_quality_report_and_passed_case_counts(self):
+        row = next(x for x in self.evidence["target_results"] if x["target_id"] == "D05_DOCLING")
+        row.pop("quality_report_sha256")
+        row["passed_test_count"] = 2
+        self.sign_evidence(self.evidence)
+        result = self.evaluate()
+        self.assertEqual(result["decision"], "HOLD")
+        check = next(x for x in result["target_checks"] if x["target_id"] == "D05_DOCLING")
+        self.assertIn("QUALITY_REPORT_SHA256_INVALID", check["failures"])
+        self.assertIn("MODEL_REPAIR_TEST_CASES_NOT_ALL_PASS", check["failures"])
+
     def test_model_repository_revision_must_match_pinned_official_snapshot(self):
         row = next(x for x in self.evidence["target_results"] if x["target_id"] == "D06_ANALISIS_AVANZADO")
         row["model_repository_revision_commit"] = "0" * 40
@@ -202,7 +266,7 @@ class IntegralGateTests(unittest.TestCase):
 
     def test_model_without_pinned_upstream_revision_is_blocked(self):
         row = next(x for x in self.evidence["target_results"] if x["target_id"] in gate.MODEL_TARGETS)
-        row.pop("upstream_revision_sha256")
+        row.pop("upstream_revision_commit")
         self.sign_evidence(self.evidence)
         result = self.evaluate()
         self.assertEqual(result["decision"], "HOLD")
