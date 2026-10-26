@@ -336,6 +336,8 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 "import pathlib,sys\n"
                 "if '-v' in sys.argv: print('foma test version'); raise SystemExit(0)\n"
                 "if '-f' in sys.argv:\n"
+                " script=pathlib.Path(sys.argv[sys.argv.index('-f')+1]).read_text()\n"
+                " assert script.count(chr(10)) >= 2 and chr(92)+'n' not in script\n"
                 " p=pathlib.Path('primitive.fst'); p.write_text('fixture'); print('compiled'); raise SystemExit(0)\n",
                 encoding="utf-8",
             )
@@ -345,7 +347,9 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 "#!/usr/bin/env python3\n"
                 "import sys\n"
                 "if '-v' in sys.argv: print('flookup test version'); raise SystemExit(0)\n"
-                "sys.stdin.read(); print('cat\\tgato')\n",
+                "value=sys.stdin.read()\n"
+                "assert value == 'cat'+chr(10)\n"
+                "print('cat'+chr(9)+'gato')\n",
                 encoding="utf-8",
             )
             flookup.chmod(0o755)
