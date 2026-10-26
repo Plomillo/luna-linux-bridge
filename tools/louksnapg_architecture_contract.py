@@ -26,7 +26,7 @@ EXPECTED_OBLIGATIONS = [
 ]
 EXPECTED_MODEL_URLS = {
     "D01_CEREBRO_ROOT": ("https://github.com/openai/gpt-oss", "openai/gpt-oss-120b"),
-    "D03_TRANSCRIPCION_ROOT": ("https://github.com/openai/whisper", "turbo"),
+    "D03_TRANSCRIPCION_ROOT": ("https://github.com/openai/whisper", "openai/whisper-large-v3-turbo"),
     "D04_TRADUCCION_GENERAL": ("https://github.com/facebookresearch/seamless_communication", "facebook/seamless-m4t-v2-large"),
     "D05_DOCLING": ("https://huggingface.co/ibm-granite/granite-docling-258M", "ibm-granite/granite-docling-258M"),
     "D06_ANALISIS_AVANZADO": ("https://github.com/QwenLM/Qwen3", "Qwen/Qwen3-0.6B"),
@@ -149,8 +149,8 @@ def validate_contract(contract: Any, expected_target_ids: list[str] | tuple[str,
         if not _nonempty(row.get("model_repository")):
             failures.append("OFFICIAL_MODEL_REPOSITORY_URL_MISSING:" + target)
         model_revision = row.get("model_repository_revision_commit")
-        if model_revision is not None and not _commit(model_revision):
-            failures.append("MODEL_REPOSITORY_REVISION_INVALID:" + target)
+        if not _commit(model_revision):
+            failures.append("MODEL_REPOSITORY_REVISION_NOT_PINNED:" + target)
     whisper = catalog.get("D03_TRANSCRIPCION_ROOT", {})
     if whisper.get("task") != "speech_transcription_only" or whisper.get("translation_use_prohibited") is not True:
         failures.append("WHISPER_TURBO_TRANSLATION_MISUSE_NOT_BLOCKED")
@@ -273,6 +273,10 @@ def evaluate_execution_evidence(contract: dict, contract_bytes: bytes, evidence:
             failures.append("MODEL_VARIANT_NOT_ALLOWED:" + target)
         if not _commit(row.get("revision_commit")):
             failures.append("UPSTREAM_REVISION_NOT_PINNED:" + target)
+        if row.get("revision_commit") != catalog.get(target, {}).get("model_repository_revision_commit"):
+            failures.append("UPSTREAM_MODEL_REPOSITORY_REVISION_MISMATCH:" + target)
+        if row.get("model_repository_revision_commit") != catalog.get(target, {}).get("model_repository_revision_commit"):
+            failures.append("UPSTREAM_MODEL_REPOSITORY_REVISION_FIELD_MISMATCH:" + target)
         if not _sha(row.get("weights_sha256")):
             failures.append("MODEL_WEIGHTS_SHA256_MISSING:" + target)
         if not _sha(row.get("inference_code_sha256")) or not _sha(row.get("tokenizer_or_processor_sha256")):
