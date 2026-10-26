@@ -125,7 +125,8 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
         self.assertIn('"release_eligibility": False', source)
         self.assertIn('"COMPLETE_DIAGNOSTIC_ONLY"', source)
         self.assertIn('"HOLD_NOT_CERTIFIED"', source)
-        self.assertIn('"large_model_weight_download_count": 0', source)
+        self.assertIn('"heavy_model_weight_download_count": 0', source)
+        self.assertIn('"synthetic_evidence_used_as_product_proof": False', source)
         self.assertIn('"remote_commander_used": False', source)
 
 
