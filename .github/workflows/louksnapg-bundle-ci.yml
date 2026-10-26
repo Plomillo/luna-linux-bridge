@@ -105,7 +105,11 @@ jobs:
           import yaml
           from pathlib import Path
           path = Path("integrations/kestra/flows/24-louksnapg-bundle-audit.yml")
-          flow = yaml.safe_load(path.read_text(encoding="utf-8"))
+          flow_text = path.read_text(encoding="utf-8")
+          flow = yaml.safe_load(flow_text)
+          shape_condition = flow["tasks"][0]["condition"]
+          assert "| regexMatch(" in shape_condition
+          assert " matches " not in shape_condition
           assert flow["id"] == "louksnapg_bundle_audit"
           assert flow["namespace"] == "louksna.kestra"
           inputs = {row["id"]: row for row in flow["inputs"]}
