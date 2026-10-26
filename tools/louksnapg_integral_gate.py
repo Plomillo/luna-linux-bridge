@@ -220,7 +220,11 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
                 target_failures.append("UPSTREAM_MODEL_ID_MISSING")
             elif target_id in OFFICIAL_MODEL_IDS and model_id != OFFICIAL_MODEL_IDS[target_id]:
                 target_failures.append("UPSTREAM_MODEL_ID_NOT_OFFICIAL_EXPECTED_VARIANT")
-            elif target_id == "D06_ANALISIS_AVANZADO" and not re.fullmatch(r"Qwen/Qwen3-(?:0\\.6B|1\\.7B|4B|8B|14B|32B|30B-A3B|235B-A22B)", model_id):
+            elif target_id == "D06_ANALISIS_AVANZADO" and model_id not in {
+                "Qwen/Qwen3-0.6B", "Qwen/Qwen3-1.7B", "Qwen/Qwen3-4B",
+                "Qwen/Qwen3-8B", "Qwen/Qwen3-14B", "Qwen/Qwen3-32B",
+                "Qwen/Qwen3-30B-A3B", "Qwen/Qwen3-235B-A22B",
+            }:
                 target_failures.append("QWEN3_UPSTREAM_VARIANT_NOT_PINNED")
             if row.get("upstream_source_url") != OFFICIAL_SOURCE_URLS[target_id]:
                 target_failures.append("UPSTREAM_SOURCE_NOT_OFFICIAL_EXPECTED_URL")
