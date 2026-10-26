@@ -23,6 +23,77 @@ spec.loader.exec_module(coverage)
 
 
 class ExtendedTargetCoverageTests(unittest.TestCase):
+    def _bind_native_engine_receipts(self, root: Path, build_specs: list[dict]) -> None:
+        """Create hash-bound test fixture binaries in the same layout as factory outputs."""
+        artifact_root = root / ".native-engine-bin"
+        receipt_builds = []
+        for spec in build_specs:
+            engine_root = artifact_root / spec["label"]
+            engine_root.mkdir(parents=True, exist_ok=True)
+            binary_artifacts = []
+            for name, source_binary in spec["binaries"]:
+                destination = engine_root / name
+                destination.write_bytes(source_binary.read_bytes())
+                destination.chmod(0o755)
+                binary_artifacts.append({
+                    "name": name,
+                    "path": destination.relative_to(root).as_posix(),
+                    "bytes": destination.stat().st_size,
+                    "sha256": coverage.sha256_file(destination),
+                })
+            source_tree_sha = self._fixture_tree_sha256(spec["source"])
+            receipt_builds.append({
+                "target_id": spec["target_id"],
+                "source_path": spec["source"].relative_to(root).as_posix(),
+                "source_commit": "a" * 40,
+                "source_tree_sha256_before_build": source_tree_sha,
+                "source_tree_sha256_after_build": source_tree_sha,
+                "source_tree_preserved": True,
+                "build_commands": [{"command": ["fixture-only"], "return_code": 0}],
+                "native_artifact_root": engine_root.relative_to(root).as_posix(),
+                "binary_artifacts": binary_artifacts,
+                "shared_libraries": [],
+                "build_status": "PASS",
+                "runtime_compile_required": False,
+                "certification": "NOT_GRANTED",
+                "fixture_only": True,
+            })
+        receipt = {
+            "schema": "CAJITA_NATIVE_ENGINE_BUILD_RECEIPTS/1.0",
+            "source_commit": "a" * 40,
+            "build_environment": {"fixture": "unit-test-only"},
+            "builds": receipt_builds,
+            "runtime_compile_required": False,
+            "model_weight_downloads": 0,
+            "remote_commander_used": False,
+            "certification": "NOT_GRANTED",
+            "fixture_only": True,
+        }
+        receipt_path = root / "NATIVE_ENGINE_BUILD_RECEIPTS.json"
+        receipt_path.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\\n", encoding="utf-8")
+        routing_path = root / "command_subdomain_routing.json"
+        routing = json.loads(routing_path.read_text(encoding="utf-8"))
+        materialization = routing.setdefault("materialization", {})
+        materialization["native_engine_build_receipt"] = receipt_path.name
+        materialization["native_engine_build_receipt_sha256"] = coverage.sha256_file(receipt_path)
+        materialization["native_engine_artifact_root"] = ".native-engine-bin"
+        materialization["native_engine_build_status"] = "PASS_TEST_FIXTURE_ONLY"
+        routing_path.write_text(json.dumps(routing, sort_keys=True, indent=2) + "\\n", encoding="utf-8")
+
+    @staticmethod
+    def _fixture_tree_sha256(source_root: Path) -> str:
+        rows = []
+        for path in sorted(source_root.rglob("*"), key=lambda item: item.relative_to(source_root).as_posix()):
+            if path.is_symlink():
+                raise AssertionError("fixture source tree must not contain symlinks")
+            if path.is_file():
+                rows.append({
+                    "path": path.relative_to(source_root).as_posix(),
+                    "bytes": path.stat().st_size,
+                    "sha256": coverage.sha256_file(path),
+                })
+        payload = json.dumps(rows, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        return hashlib.sha256(payload).hexdigest()
     def test_exactly_ten_uncovered_non_model_targets_are_registered(self):
         expected = {
             "D04_HERMENEUTICA_HG",
@@ -238,6 +309,12 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 "schema": "CAJITA_COMMAND_SUBDOMAIN_ROUTING/1.0",
                 "targets": [{"id": "D04_HERMENEUTICA_HG", "path": relative}],
             }), encoding="utf-8")
+            self._bind_native_engine_receipts(root, [{
+                "target_id": "D04_HERMENEUTICA_HG",
+                "label": "trealla",
+                "source": source,
+                "binaries": [("tpl", binary)],
+            }])
             result = coverage.probe_trealla(root)
             self.assertEqual(result["status"], coverage.PASS)
             self.assertTrue(result["packaged_binary_execution"])
@@ -282,6 +359,12 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 "schema": "CAJITA_COMMAND_SUBDOMAIN_ROUTING/1.0",
                 "targets": [{"id": "D04_TRADUCCION_LENGUAS_ANTIGUAS", "path": relative}],
             }), encoding="utf-8")
+            self._bind_native_engine_receipts(root, [{
+                "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+                "label": "foma",
+                "source": source,
+                "binaries": [("foma", foma), ("flookup", flookup)],
+            }])
             result = coverage.probe_foma(root)
             self.assertEqual(result["status"], coverage.PASS)
             self.assertTrue(result["packaged_binary_execution"])
