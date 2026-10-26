@@ -282,6 +282,16 @@ jobs:
           aux_text = aux_path.read_text(encoding="utf-8")
           assert 'base+"/api/v1/main/flows/search?size=1"' in aux_text
           assert 'Request(base+"/api/v1/main/flows",headers=' not in aux_text
+          assert 'g24_name="g24-resource-limited-runtime-smoke"' in aux_text
+          assert 'return jobs_by_name[g24_name].get("status")=="completed"' in aux_text
+          assert "FACTORY_MANUFACTURE_G23_AND_G24_NOT_TERMINAL_WITHIN_AUXILIARY_WAIT_WINDOW" in aux_text
+          factory_yaml = yaml.safe_load(factory)
+          g24_job = factory_yaml["jobs"]["g24-resource-limited-runtime-smoke"]
+          g24_needs = g24_job.get("needs", [])
+          if isinstance(g24_needs, str):
+              g24_needs = [g24_needs]
+          assert set(g24_needs) == {"manufacture", "g23-independent-validation"}
+          assert all("kestra" not in str(need).lower() for need in g24_needs)
           for required_text in (
               "LOUKSNAPG_TELEMETRY_PREAUDIT.json",
               "LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json",
