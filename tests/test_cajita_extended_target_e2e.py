@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY / "tools"))
@@ -353,13 +353,18 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             source = module / "trealla-2.100.24" / "trealla-2.100.24"
             (source / "samples").mkdir(parents=True)
             grammar = source / "samples" / "grammar.pl"
-            grammar.write_text("sentence --> [fixture].\n", encoding="utf-8")
+            grammar.write_text(
+                ":- use_module(library(dcgs)).\n"
+                "sentence --> [the,man,shoots].\n",
+                encoding="utf-8",
+            )
             binary = source / "tpl"
             binary.write_text(
                 "#!/usr/bin/env python3\n"
                 "import pathlib,sys\n"
                 "assert pathlib.Path('samples/grammar.pl').is_file()\n"
                 "assert '-g' in sys.argv and '-l' in sys.argv\n"
+                "assert sys.argv[sys.argv.index('-g')+1] == 'use_module(library(dcgs)),phrase(sentence,[the,man,shoots])'\n"
                 "print('true')\n",
                 encoding="utf-8",
             )
@@ -411,6 +416,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 "if '-f' in sys.argv:\n"
                 " script=pathlib.Path(sys.argv[sys.argv.index('-f')+1]).read_text()\n"
                 " assert script.count(chr(10)) >= 2 and chr(92)+'n' not in script\n"
+                " assert 'regex cat:gato;' in script\n"
                 " p=pathlib.Path('primitive.fst'); p.write_text('fixture'); print('compiled'); raise SystemExit(0)\n",
                 encoding="utf-8",
             )
@@ -462,6 +468,26 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
         self.assertIn("default allow := false", policy)
         self.assertIn("allow if {", policy)
         self.assertNotIn("allow {", policy)
+
+    def test_rqlite_readiness_requires_elected_leader_and_store(self):
+        self.assertFalse(coverage.rqlite_ready_body_is_complete(503, "[+]node ok\\n[-]leader not found"))
+        self.assertFalse(coverage.rqlite_ready_body_is_complete(200, "[+]node ok\\n[-]leader not found"))
+        self.assertFalse(coverage.rqlite_ready_body_is_complete(200, "[+]node ok\\n[+]leader ok"))
+        self.assertTrue(coverage.rqlite_ready_body_is_complete(200, "[+]node ok\\n[+]leader ok\\n[+]store ok"))
+
+    def test_rqlite_readiness_polls_readyz_not_status(self):
+        response = MagicMock()
+        response.status = 200
+        response.read.return_value = b"[+]node ok\\n[+]leader ok\\n[+]store ok\\n"
+        response.__enter__.return_value = response
+        response.__exit__.return_value = False
+        process = MagicMock()
+        process.poll.return_value = None
+        with patch("urllib.request.urlopen", return_value=response) as open_url:
+            receipt = coverage.wait_for_rqlite_ready("http://127.0.0.1:4001", process, timeout_seconds=1)
+        self.assertEqual(receipt["endpoint"], "/readyz")
+        self.assertEqual(receipt["ready_state"], "NODE_LEADER_STORE_READY")
+        self.assertTrue(open_url.call_args.args[0].endswith("/readyz"))
 
     def test_rqlite_statement_body_is_the_documented_json_array(self):
         self.assertEqual(
