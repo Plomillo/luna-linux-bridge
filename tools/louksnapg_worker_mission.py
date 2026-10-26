@@ -255,9 +255,20 @@ def main(argv=None) -> int:
     # determines whether the worker job succeeded; the coordinator status alone
     # is not a product certification.
     worker_status = "PASS" if action_succeeded else "FAIL"
+    run_id = os.environ.get("GITHUB_RUN_ID", "").strip()
+    run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "").strip()
+    workflow_url = (
+        os.environ.get("GITHUB_SERVER_URL", "https://github.com").rstrip("/")
+        + "/" + os.environ.get("GITHUB_REPOSITORY", "").strip("/")
+        + "/actions/runs/" + run_id
+    ) if run_id else None
     report = {
         "schema": "LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE/1.0",
         "generated_at_utc": utc_now(),
+        "worker_run_id": run_id or None,
+        "worker_job_id": os.environ.get("GITHUB_JOB"),
+        "worker_run_attempt": run_attempt or None,
+        "workflow_url": workflow_url,
         "source_commit": head,
         "contract_sha256": input_hashes["architecture_contract"],
         "architecture_contract_sha256": input_hashes["architecture_contract"],
