@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 from cajita_router import (
-    CAPABILITY_ADAPTERS, DOMAINS, ROUTES, ROUTING_REGISTRY, TARGETS_BY_ID,
+    CAPABILITY_ADAPTERS, DOMAINS, ROUTES, ROUTE_INDEX, ROUTING_REGISTRY, TARGETS_BY_ID,
     SUPPORT_ASSETS_BY_ID, append_trace, build_plan, matched_intent_targets,
     normalize_command, route_table_selftest, verify_interdisciplinary_graph,
 )
@@ -126,6 +126,12 @@ class CajitaRouterTests(unittest.TestCase):
         self.assertEqual(result["support_asset_count"], 10)
         self.assertEqual(result["engine_count"], 15)
         self.assertEqual(result["target_engine_binding_count"], 21)
+        self.assertEqual(
+            {key: value["id"] for key, value in ROUTE_INDEX.items()},
+            {route["command"].casefold(): route["id"] for route in ROUTES},
+        )
+        self.assertEqual(ROUTE_INDEX["/play pt"]["id"], "PT")
+        self.assertEqual(ROUTE_INDEX["/play ema"]["id"], "EMA")
 
     def test_canonical_spellings_and_only_explicit_aliases(self):
         self.assertEqual(normalize_command("/play PT"), "/play PT")

@@ -46,7 +46,6 @@ ROUTES: list[dict[str, Any]] = [
     {"command": "/play H", "id": "H", "agents": ["Luna", "Josefina"], "engines": ["E11", "E12", "E13", "E14", "E15"], "domains": ["D06_SISTEMA_INTELIGENTE"], "criticality": "HIGH"},
     {"command": "/play AE", "id": "AE", "agents": ["Luna", "Ancapi"], "engines": ["E06", "E07", "E08", "E09", "E10", "E12", "E13", "E14", "E15"], "domains": ["D06_SISTEMA_INTELIGENTE"], "criticality": "CRITICAL"},
 ]
-ROUTE_INDEX = {re.sub(r"\s+", " ", r["command"].strip()).casefold(): r for r in ROUTES}
 DOMAIN_CAPABILITY = {
     "D01_CEREBRO": "answer_generation", "D02_ORQUESTACION": "job_orchestration",
     "D03_TRANSCRIPCION": "audio_transcription", "D04_TRADUCTOR_INTELIGENTE": "text_translation",
@@ -137,7 +136,7 @@ for _route in ROUTES:
     _profile = ROUTE_PROFILES_BY_COMMAND[_route["command"]]
     _target_domains = {TARGETS_BY_ID[t]["domain_id"] for t in _profile["default_targets"]}
     _route["domains"] = [domain_id for domain_id in DOMAIN_ORDER if domain_id in _target_domains]
-ROUTE_INDEX = {re.sub(r"\\s+", " ", r["command"].strip()): r for r in ROUTES}
+ROUTE_INDEX = {re.sub(r"\s+", " ", r["command"].strip()).casefold(): r for r in ROUTES}
 
 def normalize_command(value: str | None) -> str | None:
     """Accept exact canonical spellings and only explicitly registered aliases."""
@@ -313,6 +312,15 @@ def route_table_selftest() -> dict[str, Any]:
     if len(set(commands)) != len(commands): errors.append("DUPLICATE_CANONICAL_COMMAND")
     if len(set(ids)) != len(ids): errors.append("DUPLICATE_ROUTE_ID")
     if set(commands) != set(ROUTE_PROFILES_BY_COMMAND): errors.append("ROUTE_PROFILE_SET_MISMATCH")
+    expected_route_index = {
+        re.sub(r"\s+", " ", route["command"].strip()).casefold(): route["id"]
+        for route in ROUTES
+    }
+    actual_route_index = {
+        key: route.get("id") for key, route in ROUTE_INDEX.items()
+    }
+    if len(ROUTE_INDEX) != len(ROUTES) or actual_route_index != expected_route_index:
+        errors.append("ROUTE_INDEX_CANONICAL_COMMAND_MAP_MISMATCH")
     for route in ROUTES:
         if not route["agents"] or route["agents"][0] != "Luna": errors.append("LUNA_NOT_FIRST:" + route["id"])
         if not set(route["engines"]).issubset(valid_engines): errors.append("UNKNOWN_ENGINE:" + route["id"])
@@ -394,7 +402,7 @@ def build_plan(request: str, route_command: str | None = None, runtime_root: str
             "certification": "NOT_GRANTED",
         }
     requested = normalized_override or detected
-    route = next((item for item in ROUTES if item["command"] == requested), None)
+    route = ROUTE_INDEX.get(re.sub(r"\s+", " ", requested.strip()).casefold()) if requested else None
     task_text = re.sub(r"^\s*(?:/help|/play\s+[^\s]+)\s*", "", request) if detected else request
     if route_command and not detected:
         task_text = request
