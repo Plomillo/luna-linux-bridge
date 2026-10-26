@@ -76,17 +76,35 @@ def make_audio(path):
     executable=shutil.which("espeak-ng")
     if not executable:
         raise RuntimeError("ESPEAK_NG_REQUIRED_FOR_KNOWN_SPEECH_FIXTURE")
-    subprocess.run([executable,"-v","en-us","-s","135","-w",str(path),"hello world"],
+    # Slow, clean speech makes the known-answer test exercise Whisper rather than
+    # a poorly articulated synthetic clip. The acceptance oracle remains unchanged.
+    subprocess.run([executable,"-v","en-us","-s","110","-w",str(path),"hello world"],
                    check=True,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True,timeout=30)
     with wave.open(str(path),"rb") as audio:
         if audio.getnframes()<=0 or audio.getnchannels() not in (1,2) or audio.getsampwidth()!=2:
             raise RuntimeError("ESPEAK_NG_FIXTURE_WAV_INVALID")
 def make_image(path):
-    from PIL import Image,ImageDraw
-    image=Image.new("RGB",(640,480),"white");draw=ImageDraw.Draw(image)
-    lines=["INVOICE","Invoice number: INV-1042","Date: 2026-10-21",
-           "Description                Amount","Document processing        123.45","Tax                          10.00","TOTAL                       133.45"]
-    for i,line in enumerate(lines): draw.text((28,24+i*52),line,fill="black")
+    from PIL import Image,ImageDraw,ImageFont
+    # Docling's certified resource profile normalizes a single 256px square view.
+    # Draw directly at that scale and use a real scalable font; the prior default
+    # bitmap font was downsampled from 640x480 to about four pixels high.
+    image=Image.new("RGB",(256,256),"white")
+    draw=ImageDraw.Draw(image)
+    regular="/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+    bold="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    if Path(regular).is_file() and Path(bold).is_file():
+        body=ImageFont.truetype(regular,15)
+        heading=ImageFont.truetype(bold,24)
+        total=ImageFont.truetype(bold,30)
+    else:
+        # Portable fallback for environments without the DejaVu font package.
+        body=heading=total=ImageFont.load_default()
+    draw.text((12,10),"INVOICE",font=heading,fill="black")
+    draw.text((12,52),"INV-1042   2026-10-21",font=body,fill="black")
+    draw.text((12,84),"Document processing",font=body,fill="black")
+    draw.text((12,112),"Tax 10.00",font=body,fill="black")
+    draw.text((12,154),"TOTAL",font=heading,fill="black")
+    draw.text((12,190),"133.45",font=total,fill="black")
     image.save(path,format="PNG")
 def run_case(root,outdir,record,timeout):
     request_path=outdir/(record["domain_id"]+".request.json")
