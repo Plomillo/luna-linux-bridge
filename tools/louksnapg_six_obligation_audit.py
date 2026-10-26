@@ -342,12 +342,22 @@ def evaluate(
         g24_evidence.get("source_commit") == source_commit
         and g24_evidence.get("package_sha256") == bundle_sha
     )
-    g23_functional_pass = (
+    functional_target_checks = functional_gate.get("target_checks", [])
+    functional_g23_pass_verified_by_gate = (
         functional_gate_subject_bound
-        and g24_evidence_subject_bound
         and functional_gate.get("decision") == "PASS"
+        and functional_gate.get("eligible_for_g24") is True
+        and functional_gate.get("failure_count") == 0
+        and functional_gate.get("expected_target_count") == 21
+        and functional_gate.get("observed_target_count") == 21
+        and isinstance(functional_target_checks, list)
+        and len(functional_target_checks) == 21
+        and all(isinstance(row, dict) and row.get("status") == "PASS" for row in functional_target_checks)
+    )
+    g23_functional_pass = (
+        functional_g23_pass_verified_by_gate
+        and g24_evidence_subject_bound
         and g24_evidence.get("integral_functional_evidence_decision") == "PASS"
-        and bool(g24_evidence.get("g23_signed_functional_attestation_sha256"))
     )
     g24_granted = (
         g24_evidence_subject_bound
