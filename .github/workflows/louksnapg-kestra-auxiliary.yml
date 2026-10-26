@@ -206,6 +206,62 @@ jobs:
           print(json.dumps({"status":"PASS_SINGLE_FILE_PACKAGE_INTEGRITY","artifact":b.name,"bytes":b.stat().st_size,"sha256":sha,"source_commit":check["source_commit"],"worker_status":worker["worker_status"],"global_certification":"NOT_GRANTED"},indent=2))
           PY
 
+      - name: Build contract integrity report and immutable pre-audit telemetry
+        id: contract
+        if: steps.verify.outcome == 'success'
+        shell: bash
+        env:
+          SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          python tools/louksnapg_architecture_contract.py \
+            --contract contracts/louksnapg/architecture-contract.v1.json \
+            --report candidate/LOUKSNAPG_ARCHITECTURE_CONTRACT.json
+          python - <<'PY'
+          import hashlib,json,os
+          from datetime import datetime,timezone
+          from pathlib import Path
+          cp=Path("contracts/louksnapg/architecture-contract.v1.json")
+          contract_bytes=cp.read_bytes()
+          contract_sha=hashlib.sha256(contract_bytes).hexdigest()
+          report=json.loads(Path("candidate/LOUKSNAPG_ARCHITECTURE_CONTRACT.json").read_text(encoding="utf-8"))
+          bundle=Path("candidate/LOUKSNAPG.md")
+          bundle_sha=hashlib.sha256(bundle.read_bytes()).hexdigest()
+          worker_path=Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json")
+          worker=json.loads(worker_path.read_text(encoding="utf-8"))
+          worker_sha=hashlib.sha256(worker_path.read_bytes()).hexdigest()
+          validation=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
+          now=lambda:datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+          rows=[
+            ("SOURCE","HOLD_REVISION_PIN_PENDING","Official source documentation reviewed; exact upstream revision and model weight hashes not established."),
+            ("INPUT","PASS","Candidate and source-bound reports hashed."),
+            ("OPERATION","PASS" if worker.get("worker_status")=="PASS" else "HOLD","Bounded CUSTOSZ V9 package build receipt; not model inference evidence."),
+            ("OUTPUT","PASS" if validation.get("container_integrity")=="PASS" and validation.get("bundle_sha256")==bundle_sha else "HOLD","Independent package integrity bound to exact candidate SHA-256."),
+            ("TEST","HOLD_NO_REAL_21_TARGET_EVIDENCE","No real non-synthetic result envelope for all 21 primitive targets is available."),
+            ("VALIDATION","PASS" if report.get("contract_status")=="PASS" and validation.get("container_integrity")=="PASS" else "HOLD","Static contract and package integrity only."),
+            ("INDEPENDENT_VALIDATION_G23","NOT_PERFORMED","No signed product-level G23 attestation claimed."),
+            ("KESTRA_AUDIT","PENDING_DISPATCH","Immutable telemetry snapshot supplied as request evidence; outcome recorded in separate receipt."),
+            ("CERTIFICATION_DECISION_G24","NOT_GRANTED","Separate authorized G24 signature is absent."),
+            ("NON_REGRESSION","PENDING","Complete functional and no-regression evidence not established."),
+            ("ROLLBACK","NOT_RUNTIME_VERIFIED","Rollback restoration has not been runtime-tested.")
+          ]
+          events=[]
+          for i,(kind,status,detail) in enumerate(rows,1):
+            payload={"event_type":kind,"status":status,"detail":detail,"source_commit":os.environ["SOURCE_COMMIT"],"bundle_sha256":bundle_sha,"contract_sha256":contract_sha,"worker_receipt_sha256":worker_sha}
+            raw=json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+            events.append({"operation_id":"LOUKSNAPG-AUX-"+os.environ["SOURCE_COMMIT"][:12],"sequence_id":i,"timestamp_utc":now(),"actor":"github-actions","tool_name":"LOUKSNAPG auxiliary audit","tool_version":"branch-revision-bound","source":"github://"+os.environ.get("GITHUB_REPOSITORY","unknown")+"/commit/"+os.environ["SOURCE_COMMIT"],"input_sha256":contract_sha if kind in ("SOURCE","VALIDATION") else worker_sha,"output_sha256":hashlib.sha256(raw).hexdigest(),"input_bytes":len(contract_bytes) if kind in ("SOURCE","VALIDATION") else worker_path.stat().st_size,"output_bytes":len(raw),"validation_status":status,"rollback_reference":"PR 157 feature branch only; main unchanged; preserve inputs and revert branch commit if needed","status":status,"event_type":kind,"details":detail})
+          telem={"schema":"LOUKSNAPG_PERSISTENT_TELEMETRY_SNAPSHOT/1.0","source_commit":os.environ["SOURCE_COMMIT"],"bundle_sha256":bundle_sha,"contract_sha256":contract_sha,"generated_at_utc":now(),"trace_integrity":"PASS_SHA256_BOUND_IMMUTABLE_PREAUDIT_SNAPSHOT","release_telemetry_status":"INCOMPLETE_HOLD","events":events,"safety":{"heavy_model_download_count":0,"remote_commander_used":False,"canonical_mutation":False,"synthetic_evidence_used_as_product_proof":False},"missing_release_evidence":["exact pinned upstream revisions and model weight hashes","real inference for five model-backed targets","21 non-synthetic functional results","G23 signed attestation","separate signed G24 decision","host matrix","runtime rollback verification","full non-regression review"],"global_certification":"NOT_GRANTED"}
+          tp=Path("candidate/LOUKSNAPG_TELEMETRY_PREAUDIT.json")
+          tp.write_text(json.dumps(telem,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          telemetry_sha=hashlib.sha256(tp.read_bytes()).hexdigest()
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as h:
+            h.write("sha256="+contract_sha+"\n")
+            h.write("telemetry_sha256="+telemetry_sha+"\n")
+            h.write("worker_sha256="+worker_sha+"\n")
+            h.write("contract_status="+("PASS_CONTRACT_INTEGRITY" if report.get("contract_status")=="PASS" else "HOLD")+"\n")
+          print(json.dumps({"contract_sha256":contract_sha,"contract_status":report.get("contract_status"),"telemetry_sha256":telemetry_sha,"telemetry_events":len(events),"release_telemetry_status":"INCOMPLETE_HOLD","global_certification":"NOT_GRANTED"},indent=2))
+          PY
+
       - name: Upload the single product file as its own download artifact
         if: steps.verify.outcome == 'success'
         uses: actions/upload-artifact@v4
