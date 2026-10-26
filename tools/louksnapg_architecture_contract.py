@@ -118,6 +118,14 @@ def validate_contract(contract: Any, expected_target_ids: list[str] | tuple[str,
         failures.append("MUTATION_OR_FAILURE_POLICY_MISMATCH")
     if contract.get("release_state_without_complete_evidence") != "HOLD_NOT_CERTIFIED":
         failures.append("DEFAULT_RELEASE_STATE_NOT_HOLD")
+    if contract.get("global_luna_hard_max_bytes") != 479000000:
+        failures.append("GLOBAL_LUNA_HARD_MAX_BYTES_MISMATCH")
+    if contract.get("candidate_distribution_max_bytes") != 479000000:
+        failures.append("CANDIDATE_DISTRIBUTION_CAP_MISMATCH")
+    if contract.get("cajita_runtime_archive_max_bytes") != 470000000:
+        failures.append("CAJITA_RUNTIME_CAP_MISMATCH")
+    if contract.get("byte_budget_policy") != "GLOBAL_LUNA_HARD_MAX_BYTES_APPLIES_TO_COMPLETE_SINGLE_FILE_DISTRIBUTION; NO_REWARD_FOR_APPROACHING_CAP; CAJITA_RUNTIME_CAP_IS_SEPARATE":
+        failures.append("BYTE_BUDGET_POLICY_MISMATCH")
     workers = contract.get("workers")
     if not _object(workers):
         failures.append("WORKER_CONTRACT_MISSING")
@@ -252,6 +260,11 @@ def evaluate_execution_evidence(contract: dict, contract_bytes: bytes, evidence:
     bundle_sha = evidence.get("bundle_sha256")
     if not _sha(bundle_sha):
         failures.append("BUNDLE_SHA256_INVALID")
+    bundle_bytes = evidence.get("bundle_bytes")
+    if isinstance(bundle_bytes, bool) or not isinstance(bundle_bytes, int) or bundle_bytes <= 0:
+        failures.append("BUNDLE_BYTES_INVALID")
+    elif bundle_bytes > int(contract.get("global_luna_hard_max_bytes", 479000000)):
+        failures.append("BUNDLE_EXCEEDS_GLOBAL_LUNA_HARD_MAX_BYTES")
     target_ids = list(expected_target_ids or contract.get("target_ids", []))
 
     worker_runs = evidence.get("worker_runs")
