@@ -1,4 +1,5 @@
 import hashlib
+import json
 import sys
 import tempfile
 import unittest
@@ -93,6 +94,107 @@ class SixObligationAuditTests(unittest.TestCase):
             self.assertFalse(result["summary"]["release_eligible"])
             self.assertEqual(result["summary"]["decision"], "HOLD_NOT_CERTIFIED")
             self.assertEqual(result["summary"]["global_certification"], "NOT_GRANTED")
+
+    def test_telemetry_payload_and_envelope_hashes_are_recomputed(self):
+        with tempfile.TemporaryDirectory(prefix="louksnapg-telemetry-binding-") as tmp:
+            bundle = Path(tmp) / "LOUKSNAPG.md"
+            bundle.write_bytes(b"test-only bundle bytes")
+            source_commit = "c" * 40
+            contract_bytes = b'{"schema":"test"}'
+            contract = {
+                "target_ids": [f"T{i:02d}" for i in range(21)],
+                "source_catalog": [],
+                "prohibitions": {
+                    "heavy_model_weights_download": False,
+                    "remote_commander_use": False,
+                    "canonical_identity_mutation": False,
+                    "block_or_axiom_reassignment": False,
+                    "engine_substitution_without_explicit_authorization": False,
+                    "synthetic_evidence_as_product_proof": False,
+                    "self_certification": False,
+                    "automatic_g23_to_g24_propagation": False,
+                    "merge_or_promotion_without_complete_chain": False,
+                },
+            }
+            bundle_sha = audit.sha256_file(bundle)
+            contract_sha = hashlib.sha256(contract_bytes).hexdigest()
+            event_types = [
+                "SOURCE", "INPUT", "OPERATION", "OUTPUT", "TEST", "VALIDATION",
+                "INDEPENDENT_VALIDATION_G23", "KESTRA_AUDIT", "CERTIFICATION_DECISION_G24",
+                "NON_REGRESSION", "ROLLBACK",
+            ]
+            events = []
+            for sequence, event_type in enumerate(event_types, 1):
+                event = {
+                    "operation_id": "audit-test",
+                    "sequence_id": sequence,
+                    "timestamp_utc": "2026-10-26T10:00:00Z",
+                    "actor": "unit-test",
+                    "tool_name": "six-obligation-audit-test",
+                    "tool_version": "1",
+                    "source": "unit-test-source",
+                    "source_commit": source_commit,
+                    "bundle_sha256": bundle_sha,
+                    "contract_sha256": contract_sha,
+                    "input_sha256": contract_sha,
+                    "input_bytes": len(contract_bytes),
+                    "validation_status": "HOLD_TEST_ONLY",
+                    "rollback_reference": "unit-test-checkpoint",
+                    "status": "HOLD",
+                    "event_type": event_type,
+                    "count": 1,
+                    "details": "synthetic telemetry test; not product evidence",
+                }
+                payload = json.dumps(event, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+                digest = hashlib.sha256(payload).hexdigest()
+                event["output_bytes"] = len(payload)
+                event["output_sha256"] = digest
+                event["evidence_sha256"] = digest
+                events.append(event)
+            telemetry = {
+                "schema": "LOUKSNAPG_PERSISTENT_TELEMETRY_SNAPSHOT/1.0",
+                "source_commit": source_commit,
+                "bundle_sha256": bundle_sha,
+                "contract_sha256": contract_sha,
+                "generated_at_utc": "2026-10-26T10:00:00Z",
+                "trace_integrity": "PASS_TEST_FIXTURE_ONLY",
+                "status": "INCOMPLETE_HOLD",
+                "release_telemetry_status": "INCOMPLETE_HOLD",
+                "events": events,
+                "safety": {
+                    "heavy_model_download_count": 0,
+                    "remote_commander_used": False,
+                    "canonical_mutation": False,
+                    "synthetic_evidence_used_as_product_proof": False,
+                },
+                "global_certification": "NOT_GRANTED",
+            }
+            telemetry["evidence_sha256"] = hashlib.sha256(
+                json.dumps(telemetry, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+            ).hexdigest()
+            worker = {
+                "worker_status": "PASS", "worker_run_id": "12345",
+                "source_commit": source_commit, "contract_sha256": contract_sha,
+                "bundle_sha256": bundle_sha, "artifact": {"sha256": bundle_sha},
+            }
+            base_args = {
+                "contract": contract, "contract_sha256": contract_sha,
+                "source_commit": source_commit, "bundle": bundle, "worker": worker,
+                "task_report": {},
+                "functional_gate": {"decision": "HOLD", "eligible_for_g24": False},
+                "g24_evidence": {"decision": "NOT_GRANTED", "global_certification": "NOT_GRANTED"},
+                "kestra_receipt": {"status": "NOT_CONFIGURED"},
+            }
+            good = audit.evaluate(**base_args, telemetry=telemetry)
+            self.assertEqual(good["obligations"]["C4_TELEMETRY_AND_AUDIT"]["status"], "PASS_TRACEABILITY_WITH_RELEASE_HOLD")
+            self.assertFalse(good["summary"]["release_eligible"])
+
+            tampered = json.loads(json.dumps(telemetry))
+            tampered["events"][0]["details"] = "changed after hashing"
+            bad = audit.evaluate(**base_args, telemetry=tampered)
+            self.assertEqual(bad["obligations"]["C4_TELEMETRY_AND_AUDIT"]["status"], "HOLD")
+            self.assertIn("PERSISTENT_TELEMETRY_MISSING_INCOMPLETE_OR_UNBOUND",
+                          bad["obligations"]["C4_TELEMETRY_AND_AUDIT"]["reason_codes"])
 
     def test_global_distribution_cap_is_not_runtime_cap(self):
         self.assertEqual(audit.GLOBAL_LUNA_HARD_MAX_BYTES, 479_000_000)
