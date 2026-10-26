@@ -18,6 +18,8 @@ on:
       - "docs/cajita-luna/LOUKSNAPG_ARCHITECTURAL_CONTRACT.md"
       - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md"
       - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.md"
   workflow_dispatch:
     inputs:
       source_run_id:
@@ -750,6 +752,8 @@ jobs:
             candidate/LOUKSNAPG_G24_DECISION_NOT_GRANTED.json
             candidate/LOUKSNAPG_G23_INTEGRITY_EVIDENCE.json
             candidate/LOUKSNAPG_SIX_OBLIGATION_AUDIT.json
+            docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.json
+            docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.md
           if-no-files-found: warn
           retention-days: 90
 
