@@ -345,7 +345,7 @@ jobs:
               "functional_evidence_status":"NOT_ESTABLISHED",
               "functional_target_pass_count":"0",
               "functional_target_expected_count":"21",
-              "functional_evidence_mode":"SYNTHETIC_OR_UNAVAILABLE",
+              "functional_evidence_mode":"NOT_ESTABLISHED",
               "g23_attestation_sha256":os.environ.get("G23_ABSENCE_SHA256",""),
               "g23_signature_verification_status":"NOT_ESTABLISHED",
               "architecture_contract_sha256":os.environ.get("CONTRACT_SHA256",""),
@@ -355,7 +355,7 @@ jobs:
               "custosz_worker_evidence_sha256":os.environ.get("CUSTOSZ_RECEIPT_SHA256",""),
               "official_source_review_status":"NOT_ESTABLISHED",
               "telemetry_evidence_sha256":os.environ.get("TELEMETRY_SHA256",""),
-              "telemetry_status":"PASS",
+              "telemetry_status":"INCOMPLETE_HOLD",
               "heavy_model_download_count":"0",
               "remote_commander_used":"false",
               "functional_status":"NOT_ESTABLISHED",
@@ -444,6 +444,28 @@ jobs:
             candidate/LOUKSNAPG_G23_ATTESTATION_NOT_PERFORMED.json
           if-no-files-found: warn
           retention-days: 90
+
+      - name: Enforce the required secondary-worker execution receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json")
+          if not p.is_file():
+              raise SystemExit("KESTRA_RECEIPT_MISSING; SECONDARY_WORKER_GATE=HOLD")
+          r=json.loads(p.read_text(encoding="utf-8"))
+          status=r.get("status")
+          terminal=r.get("kestra_terminal_state")
+          print(json.dumps({"receipt_status":status,"terminal_state":terminal,"execution_id_present":bool(r.get("execution_id")),"global_certification":"NOT_GRANTED"},indent=2))
+          if status in {"NOT_CONFIGURED","SUBMISSION_FAILED","DISPATCH_RESPONSE_MISSING_EXECUTION_ID","POLL_TIMEOUT_TERMINAL_STATE_UNCONFIRMED","AUDIT_TERMINATED_WITHOUT_SUCCESS"}:
+              raise SystemExit("KESTRA_SECONDARY_WORKER_NOT_VERIFIED:"+str(status))
+          if status != "AUDIT_FAILED_OR_FAIL_CLOSED_HOLD" or terminal != "FAILED":
+              raise SystemExit("KESTRA_AUDIT_DID_NOT_PRODUCE_THE_EXPECTED_FAIL_CLOSED_HOLD; SECONDARY_WORKER_GATE=HOLD")
+          print("KESTRA_SECONDARY_WORKER=EXECUTED; AUDIT_RESULT=FAIL_CLOSED_HOLD; PRODUCT_CERTIFICATION=NOT_GRANTED")
+          PY
 
       - name: Fail closed if the exact product fails independent validation
         if: steps.verify.outcome != 'success'
