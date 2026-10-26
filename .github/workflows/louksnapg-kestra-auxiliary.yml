@@ -221,7 +221,7 @@ jobs:
           find evidence -type f -name 'LOUKSNAPG.md' -print -quit | grep -q .
           PRODUCT="$(find evidence -type f -name 'LOUKSNAPG.md' -print -quit)"
           cp "$PRODUCT" candidate/LOUKSNAPG.md
-          for name in LOUKSNAPG_BUILD_REPORT.json LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json; do
+          for name in LOUKSNAPG_BUILD_REPORT.json LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json LOUKSNAPG_CUSTOSZV9_PRIMITIVE_REPAIR_EVIDENCE.json; do
             source="$(find evidence -type f -name "$name" -print -quit)"
             test -n "$source"
             cp "$source" "candidate/$name"
@@ -471,6 +471,8 @@ jobs:
           repair=worker.get("repair_mission",{}) if isinstance(worker.get("repair_mission"),dict) else {}
           repair_target_status={row.get("target_id"):row.get("status") for row in primitive.get("targets",[]) if isinstance(row,dict)}
           repair_sha=hashlib.sha256(primitive_path.read_bytes()).hexdigest() if primitive_path.is_file() and not primitive_path.is_symlink() else ""
+          if not repair_sha or len(repair_sha) != 64:
+              raise RuntimeError("CUSTOSZ_PRIMITIVE_REPAIR_REPORT_MISSING_OR_INVALID_SHA256")
           repair_targets_expected={"D04_HERMENEUTICA_HG","D04_TRADUCCION_LENGUAS_ANTIGUAS","D06_MIGRACION_PERSISTENCIA"}
           repair_pass_count=sum(1 for target in repair_targets_expected if repair_target_status.get(target)=="PASS_PRIMITIVE_SMOKE")
           repair_hash_verified=bool(repair_sha) and repair_sha==repair.get("primitive_report_sha256") and repair.get("primitive_report_hash_verified") is True
@@ -756,6 +758,8 @@ jobs:
               bundle=Path("candidate/LOUKSNAPG.md")
               bundle_sha=sha(bundle.read_bytes())
               repair_sha=sha(primitive_path.read_bytes()) if primitive_path.is_file() and not primitive_path.is_symlink() else ""
+              if not repair_sha or len(repair_sha) != 64:
+                  raise RuntimeError("CUSTOSZ_PRIMITIVE_REPAIR_REPORT_MISSING_OR_INVALID_SHA256")
               fields={
                   "source_commit":os.environ["SOURCE_COMMIT"],
                   "bundle_sha256":bundle_sha,
