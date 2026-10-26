@@ -24,7 +24,7 @@ MODEL_CASES = [
      "quality_check":{"id":"english-to-spanish-greeting","mode":"contains_any","phrases":["buenos dias","buen dia"]}},
     {"task_id":"e2e-docling-image-extraction","domain_id":"D05_INTELIGENCIA_DOCUMENTAL","operation":"extract_document_image",
      "input":{"image_path":"@IMAGE@","prompt":"Convert this page to docling."},
-     "limits":{"timeout_seconds":900,"max_new_tokens":128},
+     "limits":{"timeout_seconds":900,"max_new_tokens":512},
      "quality_check":{"id":"invoice-total-133-45","mode":"regex","pattern":r"\b133[.,]45\b"}},
     {"task_id":"e2e-qwen3-reasoning","domain_id":"D06_SISTEMA_INTELIGENTE","operation":"analyze_reasoning",
      "input":{"prompt":"What is 2 + 2? Return only the numeric answer."},
