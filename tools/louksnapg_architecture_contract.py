@@ -9,6 +9,7 @@ unless every worker, target, telemetry, G23, G24, safety and rollback binding pa
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import re
@@ -56,6 +57,24 @@ def _load_json(path: Path) -> Any:
     if path.is_symlink() or not path.is_file():
         raise ValueError("INPUT_NOT_REGULAR_FILE:" + str(path))
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def canonical_target_ids_from_gate() -> list[str]:
+    """Read the registered gate IDs without importing inference/crypto dependencies."""
+    gate_path = Path(__file__).resolve().with_name("louksnapg_integral_gate.py")
+    if gate_path.is_symlink() or not gate_path.is_file():
+        raise ValueError("INTEGRAL_GATE_SOURCE_MISSING_OR_UNSAFE")
+    module = ast.parse(gate_path.read_text(encoding="utf-8"), filename=str(gate_path))
+    for node in module.body:
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if any(isinstance(target, ast.Name) and target.id == "EXPECTED_TARGET_IDS" for target in targets):
+                value_node = node.value
+                value = ast.literal_eval(value_node)
+                if not isinstance(value, (tuple, list)) or not all(isinstance(item, str) for item in value):
+                    raise ValueError("INTEGRAL_GATE_TARGET_ID_DECLARATION_INVALID")
+                return list(value)
+    raise ValueError("INTEGRAL_GATE_TARGET_ID_DECLARATION_NOT_FOUND")
 
 
 def validate_contract(contract: Any, expected_target_ids: list[str] | tuple[str, ...] | None = None) -> list[str]:
@@ -288,11 +307,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.contract.is_symlink() or not args.contract.is_file():
             raise ValueError("CONTRACT_NOT_REGULAR_FILE")
         contract = json.loads(contract_bytes.decode("utf-8"))
-        try:
-            from louksnapg_integral_gate import EXPECTED_TARGET_IDS
-        except ImportError:
-            EXPECTED_TARGET_IDS = None
-        failures = validate_contract(contract, EXPECTED_TARGET_IDS)
+        expected_target_ids = canonical_target_ids_from_gate()
+        failures = validate_contract(contract, expected_target_ids)
         if failures:
             report = {"schema":"LOUKSNAPG_ARCHITECTURE_CONTRACT_DECISION/1.0","decision":"HOLD_INVALID_CONTRACT","contract_status":"FAIL","release_eligible":False,"global_certification":"NOT_GRANTED","failures":failures}
         else:
