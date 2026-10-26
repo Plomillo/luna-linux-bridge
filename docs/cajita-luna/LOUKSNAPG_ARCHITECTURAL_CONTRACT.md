@@ -1,6 +1,6 @@
 # LOUKSNAPG architectural contract
 
-Contract: `LOUKSNAPG-AC-001`, version `1.0.0`.
+Contract: `LOUKSNAPG-AC-001`, version `1.0.0`. The integrated LOUKSNAPG distribution ceiling is **479,000,000 bytes**; the Cajita runtime archive has its own separate **470,000,000-byte** ceiling.
 
 This contract formalizes six mandatory obligations: (1) CUSTOSZ V9 is the bounded primary worker and Kestra the independent secondary auditor, each with a real execution receipt; (2) official upstream source and model repositories are pinned to exact revisions; (3) all 21 registered targets need real behavior-specific validation and task-level semantic quality; (4) telemetry is persistent, ordered, and bound to the exact source commit, contract digest and candidate digest; (5) G23 is independent validation and G24 is a separate signed authorization, followed by non-regression and rollback verification; (6) fail-closed prohibitions include no heavy model-weight downloads, no Remote Commander, no synthetic evidence as product proof, and no unauthorized canonical or model substitution.
 
