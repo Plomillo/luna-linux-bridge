@@ -74,6 +74,11 @@ class FactorySafetyTests(unittest.TestCase):
    foma_source=foma_module/"foma-master/foma-master/foma"
    foma_source.mkdir(parents=True)
    (foma_source/"Makefile").write_text("all:\n\t@true\ncheck:\n\t@true\n",encoding="utf-8")
+   (foma_source/"tests").mkdir()
+   foma_test_runner=foma_source/"tests"/"run.sh"
+   foma_test_runner.write_text("#!/bin/sh\nexit 0\n",encoding="utf-8")
+   foma_test_runner.chmod(0o644)
+   foma_test_runner_sha=sha_file(foma_test_runner)
    trealla_module=runtime/"4. Traductor Inteligente/Hermenéutica H-G"
    trealla_source=trealla_module/"trealla-2.100.24/trealla-2.100.24"
    (trealla_source/"samples").mkdir(parents=True)
@@ -88,9 +93,15 @@ class FactorySafetyTests(unittest.TestCase):
     out=""
     if command[:2] in (["make","--version"],["cc","--version"]): out="tool version fixture\n"
     elif command and command[0]=="make" and cwd.name=="foma":
-     for name in ("foma","flookup"):
-      binary=cwd/name; binary.write_text("#!/bin/sh\necho fixture\n",encoding="utf-8"); binary.chmod(binary.stat().st_mode|stat.S_IXUSR)
-     out="foma build fixture\n"
+     if command==["make","check"]:
+      runner_script=cwd/"tests"/"run.sh"
+      if not runner_script.is_file() or not (runner_script.stat().st_mode&0o111):
+       return SimpleNamespace(returncode=1,stdout="temporary Foma test runner is not executable\n",stderr="")
+      out="foma regression fixture\n"
+     else:
+      for name in ("foma","flookup"):
+       binary=cwd/name; binary.write_text("#!/bin/sh\necho fixture\n",encoding="utf-8"); binary.chmod(binary.stat().st_mode|stat.S_IXUSR)
+      out="foma build fixture\n"
     elif command and command[0]=="make" and cwd.name=="trealla-2.100.24":
      binary=cwd/"tpl"; binary.write_text("#!/bin/sh\necho true\n",encoding="utf-8"); binary.chmod(binary.stat().st_mode|stat.S_IXUSR)
      out="trealla build fixture\n"
@@ -105,6 +116,16 @@ class FactorySafetyTests(unittest.TestCase):
    self.assertTrue((foma_source/"flookup").is_file())
    self.assertTrue((trealla_source/"tpl").is_file())
    self.assertFalse((trealla_source/"README.md").exists())
+   # The downloaded source archive omitted this executable bit. Only the temporary
+   # build copy may be repaired; source bytes and mode remain untouched.
+   self.assertEqual(sha_file(foma_test_runner),foma_test_runner_sha)
+   self.assertFalse(foma_test_runner.stat().st_mode&0o111)
+   foma_build=next(row for row in receipt["builds"] if row["target_id"]=="D04_TRADUCCION_LENGUAS_ANTIGUAS")
+   repair=foma_build["temporary_test_mode_repairs"][0]
+   self.assertEqual(repair["path"],"tests/run.sh")
+   self.assertEqual(repair["sha256"],foma_test_runner_sha)
+   self.assertEqual(repair["scope"],"TEMPORARY_BUILD_COPY_ONLY")
+   self.assertFalse(repair["source_tree_mutated"])
    saved=json.loads((runtime/"NATIVE_ENGINE_BUILD_RECEIPTS.json").read_text(encoding="utf-8"))
    self.assertEqual(saved["model_weight_downloads"],0)
    self.assertFalse(saved["remote_commander_used"])
