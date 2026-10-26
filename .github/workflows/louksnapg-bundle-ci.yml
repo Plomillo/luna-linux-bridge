@@ -19,6 +19,8 @@ on:
       - "contracts/louksnapg/architecture-contract.v1.json"
       - "docs/cajita-luna/LOUKSNAPG_ARCHITECTURAL_CONTRACT.md"
       - "docs/cajita-luna/LOUKSNAPG_FUNCTIONAL_REPAIR_AUDIT_20261026.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
   pull_request:
     paths:
@@ -36,6 +38,8 @@ on:
       - "contracts/louksnapg/architecture-contract.v1.json"
       - "docs/cajita-luna/LOUKSNAPG_ARCHITECTURAL_CONTRACT.md"
       - "docs/cajita-luna/LOUKSNAPG_FUNCTIONAL_REPAIR_AUDIT_20261026.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
 
 permissions:
@@ -151,6 +155,15 @@ jobs:
               "NOT_GRANTED",
           ):
               assert required_text in aux_text, "auxiliary contract missing: " + required_text
+          blockers = json.loads(Path("docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json").read_text(encoding="utf-8"))
+          assert blockers["final_decision"] == "HOLD_NOT_CERTIFIED"
+          assert blockers["evidence_scope"]["source_commit"] == "d09f79a088781d26fc5b1c3e830db9abfb42c147"
+          assert len(blockers["model_quality_results"]) == 5
+          assert all(row["quality_status"] == "FAIL" for row in blockers["model_quality_results"])
+          assert blockers["worker_and_safety"]["heavy_model_weight_download_count"] == 0
+          assert blockers["worker_and_safety"]["remote_commander_used"] is False
+          assert blockers["worker_and_safety"]["kestra_status"] == "NOT_CONFIGURED"
+          assert all(key in factory for key in ("task_adapter_execution_pass_count","task_adapter_quality_pass_count","task_adapter_quality_fail_count"))
           print("LOUKSNAPG_FACTORY_AND_KESTRA_RUNTIME_CONTRACT=PASS; PRODUCT_CERTIFICATION=NOT_GRANTED_UNLESS_EVIDENCED")
           print("LOUKSNAPG_KESTRA_AND_INTEGRAL_GATE_CONTRACT=PASS; PRODUCT_CERTIFICATION=NOT_GRANTED_UNLESS_EVIDENCED")
           PY
