@@ -640,14 +640,14 @@ jobs:
         if: steps.verify.outcome == 'success'
         shell: bash
         env:
-          SOURCE_COMMIT: \${{ steps.source.outputs.source_sha }}
-          CONTRACT_SHA256: \${{ steps.contract.outputs.sha256 }}
-          CONTRACT_STATUS: \${{ steps.contract.outputs.contract_status }}
-          TELEMETRY_SHA256: \${{ steps.contract.outputs.telemetry_sha256 }}
-          CUSTOSZ_RECEIPT_SHA256: \${{ steps.contract.outputs.worker_sha256 }}
-          FUNCTIONAL_EVIDENCE_SHA256: \${{ steps.contract.outputs.functional_sha256 }}
-          G23_ABSENCE_SHA256: \${{ steps.contract.outputs.g23_sha256 }}
-          G24_ABSENCE_SHA256: \${{ steps.contract.outputs.g24_sha256 }}
+          SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+          CONTRACT_SHA256: ${{ steps.contract.outputs.sha256 }}
+          CONTRACT_STATUS: ${{ steps.contract.outputs.contract_status }}
+          TELEMETRY_SHA256: ${{ steps.contract.outputs.telemetry_sha256 }}
+          CUSTOSZ_RECEIPT_SHA256: ${{ steps.contract.outputs.worker_sha256 }}
+          FUNCTIONAL_EVIDENCE_SHA256: ${{ steps.contract.outputs.functional_sha256 }}
+          G23_ABSENCE_SHA256: ${{ steps.contract.outputs.g23_sha256 }}
+          G24_ABSENCE_SHA256: ${{ steps.contract.outputs.g24_sha256 }}
         run: |
           set -euo pipefail
           python - <<'PY'
