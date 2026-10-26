@@ -1,0 +1,116 @@
+{
+  "schema": "CAJITA_ACTIVE_Q4_PRECISION_RECOVERY/1.0",
+  "recorded_on_utc_date": "2026-10-26",
+  "status": "Q4_HISTORIC_FACTOR_PACKING_REBOUND_PENDING_FACTORY_G23_G24",
+  "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023",
+  "source_main_commit": "a57fc224ebe8f3ec3fba69f6b07716aa9fe8aedf",
+  "precision_source_commit": "fb8e6fcf9a8ec31d151191f0c6e90b51e77505fb",
+  "operation": "Restore historical Q4 block-packed storage for existing factorized models at their exact active runtime paths.",
+  "invariants": {
+    "engine_replacement": false,
+    "canonical_model_identity_mutation": false,
+    "canonical_engine_id_reassignment": false,
+    "canonical_command_mutation": false,
+    "block_mutation": false,
+    "axiom_mutation": false,
+    "preserved": "E01-E15; 21 target IDs; 14 commands; model IDs; B1-B134; AX0001-AX12414",
+    "historical_axiom_gaps": "657 disclosed and unchanged"
+  },
+  "weight_payload_budget": {
+    "previous_declared_weight_bytes": 201565505,
+    "restored_declared_weight_bytes": 243762296,
+    "delta_bytes": 42196791,
+    "cajita_archive_cap_bytes": 470000000,
+    "louksnapg_container_cap_bytes": 490000000,
+    "status": "WEIGHT_SUM_WITHIN_CAPS; FACTORY_MUST_REMEASURE_FINAL_ARCHIVE_AND_BUNDLE"
+  },
+  "weights": [
+    {
+      "id": "W01",
+      "model_id": "OPENAI_GPT_OSS_CEREBRO_MXFP4",
+      "path": "cajita-luna-runtime/1. Cerebro/model.safetensors",
+      "sidecar_path": "cajita-luna-runtime/1. Cerebro/model.safetensors.q4.json",
+      "previous_sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0",
+      "previous_bytes": 40489120,
+      "restored_historical_q4_sha256": "ad52cce29b454bb2d8df39cd062fcc94a7c55aefc4f718f4a41af6d67224ee8f",
+      "restored_historical_q4_bytes": 58391640,
+      "source_ref": "fb8e6fcf9a8ec31d151191f0c6e90b51e77505fb",
+      "q4_sidecar_git_blob_sha1": "9ebe69f0ae6e5fe898cc5f6e9ca84da9755a0e64",
+      "engine_replacement": false
+    },
+    {
+      "id": "W02",
+      "model_id": "CAJITA_TRANSCRIPCION_WHISPER_TURBO",
+      "path": "cajita-luna-runtime/3. Transcripción/model.safetensors",
+      "sidecar_path": "cajita-luna-runtime/3. Transcripción/model.safetensors.q4.json",
+      "previous_sha256": "67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f",
+      "previous_bytes": 10399882,
+      "restored_historical_q4_sha256": "200d88cf86fc85c427eeebb09fe8be489f26ba1627a7954b545ba3d547d7768a",
+      "restored_historical_q4_bytes": 17918086,
+      "source_ref": "fb8e6fcf9a8ec31d151191f0c6e90b51e77505fb",
+      "q4_sidecar_git_blob_sha1": "48bb462d88c7b2a65c05cccf79574d3fc78c848c",
+      "engine_replacement": false
+    },
+    {
+      "id": "W03",
+      "model_id": "CAJITA_TRADUCCION_SEAMLESSM4T_V2_LARGE",
+      "path": "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors",
+      "sidecar_path": "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors.q4.json",
+      "previous_sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f",
+      "previous_bytes": 11720882,
+      "restored_historical_q4_sha256": "2024c96da5476a217296c79046282c1d76b52216e002243e01c0bf89e139973a",
+      "restored_historical_q4_bytes": 14765381,
+      "source_ref": "fb8e6fcf9a8ec31d151191f0c6e90b51e77505fb",
+      "q4_sidecar_git_blob_sha1": "7fec4f861da6a781f670ad1db04cd560690bc452",
+      "engine_replacement": false
+    },
+    {
+      "id": "W05",
+      "model_id": "CAJITA_SISTEMA_INTELIGENTE_ANALISIS_AVANZADO_QWEN3",
+      "path": "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+      "sidecar_path": "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors.q4.json",
+      "previous_sha256": "01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56",
+      "previous_bytes": 14956240,
+      "restored_historical_q4_sha256": "024bfb663ec29dcb45ad4c21f37bf316b8a660e758c332df820122bef1d557f8",
+      "restored_historical_q4_bytes": 28687808,
+      "source_ref": "fb8e6fcf9a8ec31d151191f0c6e90b51e77505fb",
+      "q4_sidecar_git_blob_sha1": "41f2825e201108e1e035626cd5d0b0a23244e7c4",
+      "engine_replacement": false
+    },
+    {
+      "id": "W04",
+      "model_id": "ibm-granite/granite-docling-258M",
+      "path": "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin",
+      "sha256": "4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88",
+      "bytes": 13483380,
+      "unchanged": true
+    },
+    {
+      "id": "W06",
+      "model_id": "EXISTING_ONNX_ANTI_HALLUCINATION_ARTIFACT",
+      "path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
+      "sha256": "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7",
+      "bytes": 110516001,
+      "unchanged": true
+    }
+  ],
+  "manifest": {
+    "path": "cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json",
+    "sha256": "cf55c69d5035716beccb61fdc29df3654387889f0425a606da15b24ff38f57e2",
+    "total_weight_bytes": 243762296,
+    "total_weight_decimal_mb": 243.762,
+    "representation": "Q4-packed storage of existing low-rank factors; same model structures after materialization"
+  },
+  "quality_gate": {
+    "g23": "PENDING",
+    "g24": "PENDING",
+    "semantic_quality_equivalence": "NOT_ESTABLISHED",
+    "global_certification": "NOT_GRANTED",
+    "quality_oracles_unchanged": true
+  },
+  "notes": [
+    "The historical Q4 objects were selected by exact path from commit fb8e6fcf9a8ec31d151191f0c6e90b51e77505fb.",
+    "This is a precision/storage recovery for existing models, not an engine or model substitution.",
+    "G23 and G24 must be run against this exact recovery commit. No global certification is asserted by this record."
+  ]
+}

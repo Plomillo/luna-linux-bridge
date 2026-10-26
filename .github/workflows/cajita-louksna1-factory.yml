@@ -93,12 +93,13 @@ jobs:
           python - <<'PY'
           import hashlib
           from pathlib import Path
+          # Historical Q4 factor objects; same canonical models and original runtime paths.
           expected = {
-            "cajita-luna-runtime/1. Cerebro/model.safetensors": ("e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0", 40489120),
-            "cajita-luna-runtime/3. Transcripción/model.safetensors": ("67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f", 10399882),
-            "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors": ("630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f", 11720882),
+            "cajita-luna-runtime/1. Cerebro/model.safetensors": ("ad52cce29b454bb2d8df39cd062fcc94a7c55aefc4f718f4a41af6d67224ee8f", 58391640),
+            "cajita-luna-runtime/3. Transcripción/model.safetensors": ("200d88cf86fc85c427eeebb09fe8be489f26ba1627a7954b545ba3d547d7768a", 17918086),
+            "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors": ("2024c96da5476a217296c79046282c1d76b52216e002243e01c0bf89e139973a", 14765381),
             "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin": ("4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88", 13483380),
-            "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors": ("01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56", 14956240),
+            "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors": ("024bfb663ec29dcb45ad4c21f37bf316b8a660e758c332df820122bef1d557f8", 28687808),
             "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx": ("c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7", 110516001),
           }
           for name, (digest, size) in expected.items():
