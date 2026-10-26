@@ -199,7 +199,7 @@ class IntegralGateTests(unittest.TestCase):
         self.sign_evidence(self.evidence)
         result = self.evaluate()
         self.assertNotIn("CANDIDATE_MODEL_IDENTITY_NOT_VERIFIED_OR_QWEN_VARIANT_MISMATCH", result["failures"])
-        self.assertEqual(result["candidate_model_identity"]["status"], "PASS_QWEN_CONFIG_VARIANT_MATCH")
+        self.assertEqual(result["candidate_model_identity"]["status"], "PASS_CONFIG_MATCHES_PINNED_VARIANT")
 
 
     def test_model_target_cannot_pass_as_primitive_smoke(self):
