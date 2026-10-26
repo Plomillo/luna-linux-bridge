@@ -324,7 +324,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             binary = module / "sf"
             binary.write_text(
                 "#!/usr/bin/env python3\n"
-                "import pathlib,sys\n"
+                "import pathlib,sys,os\n"
                 "assert pathlib.Path(sys.argv[-1]).is_file()\n"
                 "print('ZIP matches')\n",
                 encoding="utf-8",
@@ -352,6 +352,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             module = root / relative
             source = module / "trealla-2.100.24" / "trealla-2.100.24"
             (source / "samples").mkdir(parents=True)
+            (source / "library").mkdir()
             grammar = source / "samples" / "grammar.pl"
             grammar.write_text(
                 ":- use_module(library(dcgs)).\n"
@@ -362,9 +363,9 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
             binary.write_text(
                 "#!/usr/bin/env python3\n"
                 "import pathlib,sys\n"
-                "assert pathlib.Path('samples/grammar.pl').is_file()\n"
+                "assert pathlib.Path('samples/grammar.pl').is_file()\n"                "assert os.environ.get('TPL_LIBRARY_PATH') == str(pathlib.Path('library').resolve())\n"
                 "assert '-g' in sys.argv and '-l' in sys.argv\n"
-                "assert sys.argv[sys.argv.index('-g')+1] == 'use_module(library(dcgs)),phrase(sentence,[the,man,shoots])'\n"
+                "assert sys.argv[sys.argv.index('-g')+1] == 'use_module(library(dcgs)),phrase(sentence,[the,man,shoots]),write(true),halt'\n"
                 "print('true')\n",
                 encoding="utf-8",
             )
@@ -416,7 +417,7 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 "if '-f' in sys.argv:\n"
                 " script=pathlib.Path(sys.argv[sys.argv.index('-f')+1]).read_text()\n"
                 " assert script.count(chr(10)) >= 2 and chr(92)+'n' not in script\n"
-                " assert 'regex cat:gato;' in script\n"
+                " assert 'regex [c a t]:[g a t o];' in script\n"
                 " p=pathlib.Path('primitive.fst'); p.write_text('fixture'); print('compiled'); raise SystemExit(0)\n",
                 encoding="utf-8",
             )
