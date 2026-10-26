@@ -47,6 +47,19 @@ MODEL_TARGETS = {
     "D05_DOCLING",
     "D06_ANALISIS_AVANZADO",
 }
+OFFICIAL_MODEL_IDS = {
+    "D01_CEREBRO_ROOT": "openai/gpt-oss-120b",
+    "D03_TRANSCRIPCION_ROOT": "turbo",
+    "D04_TRADUCCION_GENERAL": "facebook/seamless-m4t-v2-large",
+    "D05_DOCLING": "ibm-granite/granite-docling-258M",
+}
+OFFICIAL_SOURCE_URLS = {
+    "D01_CEREBRO_ROOT": "https://github.com/openai/gpt-oss",
+    "D03_TRANSCRIPCION_ROOT": "https://github.com/openai/whisper",
+    "D04_TRADUCCION_GENERAL": "https://github.com/facebookresearch/seamless_communication",
+    "D05_DOCLING": "https://huggingface.co/ibm-granite/granite-docling-258M",
+    "D06_ANALISIS_AVANZADO": "https://github.com/QwenLM/Qwen3",
+}
 
 
 def sha256_file(path: Path) -> str:
@@ -202,10 +215,15 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
                 target_failures.append("REAL_MODEL_LOAD_OR_INFERENCE_NOT_ESTABLISHED")
             if not _is_sha(row.get("weight_sha256")):
                 target_failures.append("WEIGHT_SHA256_INVALID")
-            if not isinstance(row.get("upstream_model_id"), str) or not row["upstream_model_id"].strip():
+            model_id = row.get("upstream_model_id")
+            if not isinstance(model_id, str) or not model_id.strip():
                 target_failures.append("UPSTREAM_MODEL_ID_MISSING")
-            if not isinstance(row.get("upstream_source_url"), str) or not row["upstream_source_url"].startswith("https://"):
-                target_failures.append("UPSTREAM_SOURCE_URL_MISSING")
+            elif target_id in OFFICIAL_MODEL_IDS and model_id != OFFICIAL_MODEL_IDS[target_id]:
+                target_failures.append("UPSTREAM_MODEL_ID_NOT_OFFICIAL_EXPECTED_VARIANT")
+            elif target_id == "D06_ANALISIS_AVANZADO" and not re.fullmatch(r"Qwen/Qwen3-(?:0\\.6B|1\\.7B|4B|8B|14B|32B|30B-A3B|235B-A22B)", model_id):
+                target_failures.append("QWEN3_UPSTREAM_VARIANT_NOT_PINNED")
+            if row.get("upstream_source_url") != OFFICIAL_SOURCE_URLS[target_id]:
+                target_failures.append("UPSTREAM_SOURCE_NOT_OFFICIAL_EXPECTED_URL")
             if not COMMIT_RE.fullmatch(str(row.get("upstream_revision_sha256", ""))):
                 target_failures.append("UPSTREAM_REVISION_NOT_PINNED_TO_COMMIT")
         target_checks.append({"target_id": target_id, "status": "PASS" if not target_failures else "HOLD",
