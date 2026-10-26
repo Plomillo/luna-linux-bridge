@@ -32,6 +32,8 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
         row = MODEL_CASES[3]
         self.assertEqual(row["input"]["prompt"], "Convert this page to docling.")
         self.assertEqual(row["limits"]["max_new_tokens"], 512)
+        runtime = Path(__file__).parents[1] / "cajita-luna-runtime" / "5. Inteligencia documental" / "INTELDOC_GLOBAL_30MB_CANDIDATE_V9" / "docling" / "compact_upstream_hf_candidate" / "docling_30mb_runtime_v1.py"
+        self.assertIn("image_side=512", runtime.read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as tmp:
             image_path = Path(tmp) / "invoice.png"
             make_image(image_path)
