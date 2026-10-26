@@ -118,19 +118,19 @@ tasks:
     type: io.kestra.plugin.core.flow.If
     condition: >-
       {{ inputs.source_commit | regexMatch('^[0-9a-f]{40}$')
-         and inputs.architecture_contract_sha256 matches '^[0-9a-f]{64}$'
-         and inputs.custosz_worker_evidence_sha256 matches '^[0-9a-f]{64}$'
-         and inputs.custosz_repair_report_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.architecture_contract_sha256 | regexMatch('^[0-9a-f]{64}$')
+         and inputs.custosz_worker_evidence_sha256 | regexMatch('^[0-9a-f]{64}$')
+         and inputs.custosz_repair_report_sha256 | regexMatch('^[0-9a-f]{64}$')
          and inputs.custosz_repair_source_commit == inputs.source_commit
          and inputs.custosz_repair_bundle_sha256 == inputs.bundle_sha256
          and inputs.custosz_repair_contract_sha256 == inputs.architecture_contract_sha256
-         and inputs.telemetry_evidence_sha256 matches '^[0-9a-f]{64}$'
-         and inputs.bundle_sha256 matches '^[0-9a-f]{64}$'
-         and inputs.document_sha256 matches '^[0-9a-f]{64}$'
-         and inputs.runtime_source_sha256 matches '^[0-9a-f]{64}$'
-         and inputs.functional_evidence_sha256 matches '^[0-9a-f]{64}$'
-         and inputs.g23_attestation_sha256 matches '^[0-9a-f]{64}$'
-         and inputs.g24_decision_sha256 matches '^[0-9a-f]{64}$'
+         and inputs.telemetry_evidence_sha256 | regexMatch('^[0-9a-f]{64}$')
+         and inputs.bundle_sha256 | regexMatch('^[0-9a-f]{64}$')
+         and inputs.document_sha256 | regexMatch('^[0-9a-f]{64}$')
+         and inputs.runtime_source_sha256 | regexMatch('^[0-9a-f]{64}$')
+         and inputs.functional_evidence_sha256 | regexMatch('^[0-9a-f]{64}$')
+         and inputs.g23_attestation_sha256 | regexMatch('^[0-9a-f]{64}$')
+         and inputs.g24_decision_sha256 | regexMatch('^[0-9a-f]{64}$')
          and inputs.functional_evidence_source_commit == inputs.source_commit
          and inputs.bundle_bytes > 0
          and inputs.max_bytes == 479000000
