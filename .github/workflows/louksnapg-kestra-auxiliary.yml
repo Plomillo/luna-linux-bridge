@@ -711,7 +711,7 @@ jobs:
               receipt["local_kestra_container_id"]=start.stdout.strip()[:80]
               last_http="NOT_OBSERVED"
               for attempt in range(120):
-                  req=urllib.request.Request(base+"/api/v1/main/flows",headers={"Accept":"application/json","Authorization":"Basic "+local_auth})
+                  req=urllib.request.Request(base+"/api/v1/main/flows/search?size=1",headers={"Accept":"application/json","Authorization":"Basic "+local_auth})
                   try:
                       with urllib.request.urlopen(req,timeout=5) as response:
                           body=response.read()
