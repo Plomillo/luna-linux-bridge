@@ -52,6 +52,7 @@ OFFICIAL_MODEL_IDS = {
     "D03_TRANSCRIPCION_ROOT": "openai/whisper-large-v3-turbo",
     "D04_TRADUCCION_GENERAL": "facebook/seamless-m4t-v2-large",
     "D05_DOCLING": "ibm-granite/granite-docling-258M",
+    "D06_ANALISIS_AVANZADO": "Qwen/Qwen3-0.6B",
 }
 OFFICIAL_SOURCE_URLS = {
     "D01_CEREBRO_ROOT": "https://github.com/openai/gpt-oss",
@@ -220,12 +221,6 @@ def evaluate_evidence(evidence: object, bundle_sha256: str, expected_source_comm
                 target_failures.append("UPSTREAM_MODEL_ID_MISSING")
             elif target_id in OFFICIAL_MODEL_IDS and model_id != OFFICIAL_MODEL_IDS[target_id]:
                 target_failures.append("UPSTREAM_MODEL_ID_NOT_OFFICIAL_EXPECTED_VARIANT")
-            elif target_id == "D06_ANALISIS_AVANZADO" and model_id not in {
-                "Qwen/Qwen3-0.6B", "Qwen/Qwen3-1.7B", "Qwen/Qwen3-4B",
-                "Qwen/Qwen3-8B", "Qwen/Qwen3-14B", "Qwen/Qwen3-32B",
-                "Qwen/Qwen3-30B-A3B", "Qwen/Qwen3-235B-A22B",
-            }:
-                target_failures.append("QWEN3_UPSTREAM_VARIANT_NOT_PINNED")
             if row.get("upstream_source_url") != OFFICIAL_SOURCE_URLS[target_id]:
                 target_failures.append("UPSTREAM_SOURCE_NOT_OFFICIAL_EXPECTED_URL")
             if not COMMIT_RE.fullmatch(str(row.get("upstream_revision_sha256", ""))):
