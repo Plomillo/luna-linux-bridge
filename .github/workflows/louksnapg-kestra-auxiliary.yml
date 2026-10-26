@@ -260,6 +260,7 @@ jobs:
         shell: bash
         env:
           SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+          G24_JOB_CONCLUSION: ${{ steps.source.outputs.g24_conclusion }}
         run: |
           set -euo pipefail
           python tools/louksnapg_architecture_contract.py \
@@ -280,7 +281,44 @@ jobs:
           worker_sha=hashlib.sha256(worker_path.read_bytes()).hexdigest()
           validation=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
           now=lambda:datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
-          functional_absence={"schema":"LOUKSNAPG_FUNCTIONAL_EVIDENCE/1.0","status":"NOT_ESTABLISHED","execution_mode":"NOT_PERFORMED","synthetic_only":None,"source_commit":os.environ["SOURCE_COMMIT"],"bundle_sha256":bundle_sha,"reason":"No real, non-synthetic execution evidence covering all 21 required targets was found in the factory artifacts.","global_certification":"NOT_GRANTED"}
+          task_path=Path("candidate/LOUKSNAPG_G24_TASK_DIAGNOSTICS.json")
+          gate_path=Path("candidate/LOUKSNAPG_G24_FUNCTIONAL_GATE.json")
+          g24_path=Path("candidate/LOUKSNAPG_G24_DECISION.json")
+          task_report=json.loads(task_path.read_text(encoding="utf-8")) if task_path.is_file() else {}
+          gate_report=json.loads(gate_path.read_text(encoding="utf-8")) if gate_path.is_file() else {}
+          g24_report=json.loads(g24_path.read_text(encoding="utf-8")) if g24_path.is_file() else {}
+          task_rows=task_report.get("task_results",[]) if isinstance(task_report.get("task_results",[]),list) else []
+          quality_pass_count=sum(1 for row in task_rows if isinstance(row,dict) and row.get("status")=="PASS_FUNCTIONAL_EXECUTION" and row.get("exit_code")==0 and (row.get("quality_acceptance") or {}).get("status")=="PASS")
+          quality_fail_count=sum(1 for row in task_rows if isinstance(row,dict) and (row.get("quality_acceptance") or {}).get("status")=="FAIL")
+          observed_target_ids=sorted({row.get("target_id") for row in task_rows if isinstance(row,dict) and isinstance(row.get("target_id"),str)})
+          task_sha=hashlib.sha256(task_path.read_bytes()).hexdigest() if task_path.is_file() else None
+          gate_subject_bound=gate_report.get("source_commit")==os.environ["SOURCE_COMMIT"] and gate_report.get("bundle_sha256")==bundle_sha
+          g24_subject_bound=g24_report.get("source_commit")==os.environ["SOURCE_COMMIT"] and g24_report.get("package_sha256")==bundle_sha
+          synthetic_diagnostics=bool(task_report) and ("synthetic" in str(task_report.get("inputs","")).casefold() or any(isinstance(row,dict) and (row.get("quality_acceptance") or {}).get("reference_kind")=="FIXED_SYNTHETIC_EXPECTATION" for row in task_rows))
+          functional_status="FAIL" if quality_fail_count>0 or gate_report.get("decision")=="HOLD" else "NOT_ESTABLISHED"
+          functional_absence={
+            "schema":"LOUKSNAPG_FUNCTIONAL_EVIDENCE/1.0",
+            "status":functional_status,
+            "execution_mode":"SYNTHETIC_DIAGNOSTIC_ONLY" if synthetic_diagnostics else ("REAL_RUNTIME_EXECUTION_INCOMPLETE" if task_report else "NOT_PERFORMED"),
+            "synthetic_only":True if synthetic_diagnostics else None,
+            "source_commit":os.environ["SOURCE_COMMIT"],
+            "bundle_sha256":bundle_sha,
+            "task_harness_status":task_report.get("status","NOT_COMPLETED"),
+            "task_report_sha256":task_sha,
+            "task_execution_count":len(task_rows),
+            "observed_target_ids":observed_target_ids,
+            "observed_target_count":len(observed_target_ids),
+            "expected_target_count":21,
+            "quality_pass_count":quality_pass_count,
+            "quality_fail_count":quality_fail_count,
+            "functional_gate_decision":gate_report.get("decision","NOT_ESTABLISHED"),
+            "functional_gate_subject_binding":"PASS" if gate_subject_bound else "HOLD",
+            "g24_decision_status":g24_report.get("decision","NOT_GRANTED"),
+            "g24_subject_binding":"PASS" if g24_subject_bound else "HOLD",
+            "diagnostic_only":True,
+            "reason":"Synthetic fixed-fixture diagnostics are not product proof; the last G24 run observed quality failures and did not establish all 21 real target adapters.",
+            "global_certification":"NOT_GRANTED"
+          }
           fp=Path("candidate/LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json")
           fp.write_text(json.dumps(functional_absence,sort_keys=True,indent=2)+"\n",encoding="utf-8")
           functional_sha=hashlib.sha256(fp.read_bytes()).hexdigest()
