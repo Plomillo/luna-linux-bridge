@@ -123,11 +123,22 @@ jobs:
                       selected=candidate
                   else:
                       query=urllib.parse.urlencode({"branch":branch,"per_page":100})
-                      result=get("/actions/workflows/cajita-louksna1-factory.yml/runs?"+query)
+                      # Use the repository-wide Actions endpoint (already permissioned
+                      # by actions:read) and filter the exact producer workflow locally.
+                      # This avoids the workflow-file route returning an incomplete list
+                      # when the same push only changes the auxiliary workflow.
+                      result=get("/actions/runs?"+query)
                       candidates=[row for row in result.get("workflow_runs",[])
                           if row.get("path")==".github/workflows/cajita-louksna1-factory.yml"
                           and row.get("event")=="push"
                           and row.get("head_branch")==branch]
+                      if attempt == 0:
+                          print(json.dumps({
+                              "resolver_branch":branch,
+                              "event_sha":wanted_sha,
+                              "candidate_count":len(candidates),
+                              "candidates":[{"id":row.get("id"),"sha":row.get("head_sha"),"status":row.get("status"),"created_at":row.get("created_at")} for row in candidates[:8]]
+                          },indent=2))
                       exact=[row for row in candidates if row.get("head_sha")==wanted_sha]
                       if exact:
                           exact.sort(key=lambda row:(row.get("run_attempt",0),row.get("created_at","")),reverse=True)
