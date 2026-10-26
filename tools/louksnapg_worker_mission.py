@@ -467,6 +467,9 @@ def main(argv=None) -> int:
         and build_report.get("engine_replacement") == "FORBIDDEN"
         and action_result.get("architecture_contract_sha256") == input_hashes["architecture_contract"]
         and action_result.get("primitive_repair_evidence", {}).get("all_target_outcomes_recorded") is True
+        and action_result.get("primitive_repair_evidence", {}).get("status") == "PASS"
+        and action_result.get("primitive_repair_evidence", {}).get("targeted_repairs_all_pass") is True
+        and action_result.get("repair_status") == "PASS_THREE_TARGETED_PRIMITIVES"
         and action_result.get("repair_preflight", {}).get("status") == "PASS"
     )
     # CUSTOSZ's coordinator uses COMPLETED for a successful bounded mission.
