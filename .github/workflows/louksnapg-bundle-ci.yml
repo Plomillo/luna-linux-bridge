@@ -88,6 +88,10 @@ jobs:
               "functional_evidence_status", "functional_target_pass_count",
               "functional_target_expected_count", "functional_evidence_mode",
               "g23_attestation_sha256", "g23_signature_verification_status",
+              "architecture_contract_sha256", "architecture_contract_status",
+              "primary_worker_id", "secondary_worker_id", "custosz_worker_evidence_sha256",
+              "official_source_review_status", "telemetry_evidence_sha256", "telemetry_status",
+              "heavy_model_download_count", "remote_commander_used",
           }
           assert required <= set(inputs)
           tasks = {row["id"]: row for row in flow["tasks"]}
@@ -100,6 +104,13 @@ jobs:
           assert "functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'" in text
           assert "g23_signature_verification_status == 'PASS_VERIFIED'" in text
           assert "functional_target_pass_count == 21" in text
+          assert "architecture_contract_status == 'PASS_CONTRACT_INTEGRITY'" in text
+          assert "primary_worker_id == 'CUSTOSZ_V9'" in text
+          assert "secondary_worker_id == 'KESTRA'" in text
+          assert "official_source_review_status == 'PASS'" in text
+          assert "telemetry_status == 'PASS'" in text
+          assert "heavy_model_download_count == 0" in text
+          assert "remote_commander_used == 'false'" in text
           gate = Path("tools/louksnapg_integral_gate.py").read_text(encoding="utf-8")
           assert "G23_ED25519_SIGNATURE_INVALID" in gate
           assert "G23_TRUSTED_PUBLIC_KEY_NOT_CONFIGURED" in gate
