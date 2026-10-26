@@ -29,7 +29,9 @@ on:
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
       - "tools/louksnapg_worker_mission.py"
+      - "tools/louksnapg_integral_gate.py"
       - "tests/test_louksnapg_bundle.py"
+      - "tests/test_louksnapg_integral_gate.py"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
       - "cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py"
       - "cajita-luna-runtime/3. Transcripción/lowrank_runtime.py"
@@ -401,6 +403,7 @@ jobs:
         shell: bash
         env:
           LOUKSNA_FACTORY_HEAD_SHA: ${{ needs.manufacture.outputs.source_commit }}
+          LOUKSNAPG_G23_PUBLIC_KEY_PEM: ${{ vars.LOUKSNAPG_G23_PUBLIC_KEY_PEM }}
         run: |
           set -euo pipefail
           test -s candidate/LOUKSNAPG.md
@@ -844,10 +847,18 @@ jobs:
             # This gate rejects synthetic-only evidence and requires an independently
             # signed G23 envelope for the exact candidate and commit.
             set +e
+            G23_KEY_ARGS=()
+            if [ -n "${LOUKSNAPG_G23_PUBLIC_KEY_PEM:-}" ]; then
+              G23_KEY_PATH="$RUNNER_TEMP/louksnapg-g23-public.pem"
+              printf '%s\n' "$LOUKSNAPG_G23_PUBLIC_KEY_PEM" > "$G23_KEY_PATH"
+              chmod 0444 "$G23_KEY_PATH"
+              G23_KEY_ARGS=(--g23-public-key "$G23_KEY_PATH")
+            fi
             python tools/louksnapg_integral_gate.py \
               --evidence "$RUNNER_TEMP/task-adapter-e2e-raw.json" \
               --bundle "evidence/louksna1-candidate/LOUKSNAPG.md" \
               --expected-source-commit "$LOUKSNA_FACTORY_HEAD_SHA" \
+              "${G23_KEY_ARGS[@]}" \
               --report "$RUNNER_TEMP/LOUKSNAPG_FUNCTIONAL_GATE.json" \
               > "$RUNNER_TEMP/LOUKSNAPG_FUNCTIONAL_GATE.log" 2>&1
             FUNCTIONAL_GATE_RC=$?
@@ -976,7 +987,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$G24_GATE_PASS" != "true" ]; then
-            echo "G24=FAIL_CLOSED; candidate publication remains blocked"
+            echo "G24=HOLD; signed integral functional evidence and a separate authorized G24 decision are required"
             exit 1
           fi
           echo "G24=NOT_GRANTED; no cryptographically separate G24 certification is issued by this smoke job"
