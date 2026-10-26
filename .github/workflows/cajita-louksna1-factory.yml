@@ -26,6 +26,8 @@ on:
       - "tests/test_cajita_target_adapters.py"
       - "tests/test_cajita_task_e2e.py"
       - "tests/test_cajita_extended_target_e2e.py"
+      - "tests/test_calibre_slim_integrity.py"
+      - "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py"
       - "tools/cajita_axiom_graph_audit.py"
       - "tests/test_cajita_axiom_graph_audit.py"
       - "tools/louksnapg_bundle.py"
@@ -182,6 +184,8 @@ jobs:
         run: |
           set -euo pipefail
           python -m unittest discover -s tests -p 'test_cajita*.py' -v
+          python -m py_compile tests/test_calibre_slim_integrity.py "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py"
+          python -m unittest discover -s tests -p 'test_calibre_slim_integrity.py' -v
           python - <<'PY'
           import yaml
           from pathlib import Path
