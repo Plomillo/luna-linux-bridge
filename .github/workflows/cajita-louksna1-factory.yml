@@ -491,7 +491,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y p7zip-full
+          sudo apt-get install -y p7zip-full build-essential zlib1g-dev
 
       - name: Independently recompute package, document, modules and six weight identities
         shell: bash

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json, tempfile, unittest, zipfile
 from pathlib import Path
-from cajita_runtime_factory import safe_rel, extract, tree_hash, tree_rows, factory_materialize, sha_file, COMBINED_CAP, externalized_container_contract, validate_packaged_archive_member_set
+from cajita_runtime_factory import safe_rel, extract, tree_hash, tree_rows, factory_materialize, sha_file, COMBINED_CAP, externalized_container_contract, validate_packaged_archive_member_set, build_native_engine_overlays
 from reproduce_macrodown import BINARY_SUFFIXES, add_stream, DEFAULT_COMBINED_CAP_BYTES
 from cajita_runtime import KNOWN_INFRASTRUCTURE_TEST_FIXTURES, classify_model_like_paths, COMBINED_DISTRIBUTION_CAP_BYTES
 
@@ -65,6 +65,49 @@ class FactorySafetyTests(unittest.TestCase):
    self.assertEqual(routing_after["materialization"]["archive_count_this_run"],0)
    self.assertFalse(any(p.suffix.lower() in {".zip",".7z"} for p in runtime.rglob("*")))
 
+ def test_native_engine_builds_are_pinned_hash_bound_and_reproducible(self):
+  import stat
+  from types import SimpleNamespace
+  with tempfile.TemporaryDirectory(prefix="native-engine-factory-test-") as temp:
+   root=Path(temp); runtime=root/"runtime"; runtime.mkdir()
+   foma_module=runtime/"4. Traductor Inteligente/Traducción de lenguas antiguas"
+   foma_source=foma_module/"foma-master/foma-master/foma"
+   foma_source.mkdir(parents=True)
+   (foma_source/"Makefile").write_text("all:\n\t@true\ncheck:\n\t@true\n",encoding="utf-8")
+   trealla_module=runtime/"4. Traductor Inteligente/Hermenéutica H-G"
+   trealla_source=trealla_module/"trealla-2.100.24/trealla-2.100.24"
+   (trealla_source/"samples").mkdir(parents=True)
+   (trealla_source/"Makefile").write_text("all: README.md\n\t@true\n",encoding="utf-8")
+   (trealla_source/"samples/grammar.pl").write_text("sentence --> [fixture].\n",encoding="utf-8")
+   routing={"targets":[
+    {"id":"D04_TRADUCCION_LENGUAS_ANTIGUAS","path":"4. Traductor Inteligente/Traducción de lenguas antiguas"},
+    {"id":"D04_HERMENEUTICA_HG","path":"4. Traductor Inteligente/Hermenéutica H-G"}]}
+   (runtime/"command_subdomain_routing.json").write_text(json.dumps(routing),encoding="utf-8")
+   def fake_run(command,cwd=None,stdout=None,stderr=None,text=None,timeout=None,check=None):
+    cwd=Path(cwd) if cwd else runtime
+    out=""
+    if command[:2] in (["make","--version"],["cc","--version"]): out="tool version fixture\n"
+    elif command and command[0]=="make" and cwd.name=="foma":
+     for name in ("foma","flookup"):
+      binary=cwd/name; binary.write_text("#!/bin/sh\necho fixture\n",encoding="utf-8"); binary.chmod(binary.stat().st_mode|stat.S_IXUSR)
+     out="foma build fixture\n"
+    elif command and command[0]=="make" and cwd.name=="trealla-2.100.24":
+     binary=cwd/"tpl"; binary.write_text("#!/bin/sh\necho true\n",encoding="utf-8"); binary.chmod(binary.stat().st_mode|stat.S_IXUSR)
+     out="trealla build fixture\n"
+    elif command and command[0]=="ldd": out="statically linked\n"
+    else: out="ok\n"
+    return SimpleNamespace(returncode=0,stdout=out,stderr="")
+   receipt=build_native_engine_overlays(runtime,"a"*40,runner=fake_run)
+   self.assertEqual(receipt["schema"],"CAJITA_NATIVE_ENGINE_BUILD_RECEIPTS/1.0")
+   self.assertEqual(receipt["source_commit"],"a"*40)
+   self.assertEqual(len(receipt["builds"]),2)
+   self.assertTrue((foma_source/"foma").is_file())
+   self.assertTrue((foma_source/"flookup").is_file())
+   self.assertTrue((trealla_source/"tpl").is_file())
+   self.assertFalse((trealla_source/"README.md").exists())
+   saved=json.loads((runtime/"NATIVE_ENGINE_BUILD_RECEIPTS.json").read_text(encoding="utf-8"))
+   self.assertEqual(saved["model_weight_downloads"],0)
+   self.assertFalse(saved["remote_commander_used"])
  def test_only_registered_externalized_containers_are_allowed_in_macrodown(self):
   runtime=Path(__file__).resolve().parents[1]/"cajita-luna-runtime"
   contract=externalized_container_contract(runtime)
