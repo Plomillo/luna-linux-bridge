@@ -619,12 +619,8 @@ def probe_cognitive_cicd(root: Path) -> dict[str, Any]:
         dagger = copy_executable(dagger_source, tmp / "dagger")
         version = require_ok(run_process([str(dagger), "version"], cwd=tmp, timeout=30), "DAGGER_VERSION_PROBE_FAILED")
         policy = tmp / "release.rego"
-        policy.write_text(
-            "package louksnapg.release\n"
-            "default allow = false\n"
-            "allow { input.action == \"promote\"; input.tests_passed == true; input.g23 == \"PASS\" }\n",
-            encoding="utf-8",
-        )
+        policy.write_text(rego_release_policy(), encoding="utf-8")
+
         good_input = tmp / "good.json"
         good_input.write_text(json.dumps({"action": "promote", "tests_passed": True, "g23": "PASS"}), encoding="utf-8")
         bad_input = tmp / "bad.json"
@@ -663,9 +659,32 @@ def post_json(url: str, value: Any, timeout: float = 3) -> tuple[int, Any]:
     import urllib.request
     payload = json.dumps(value).encode("utf-8")
     request = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return response.status, json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return response.status, json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read(1200).decode("utf-8", errors="replace")
+        raise ProbeFailure("HTTP_POST_FAILED:status=" + str(exc.code) + ":url=" + url.split("?", 1)[0] + ":body=" + body) from exc
 
+
+def rqlite_statement_batch(*statements: str) -> list[str]:
+    """Return the rqlite HTTP API's JSON array of SQL strings."""
+    if not statements or any(not isinstance(statement, str) or not statement.strip() for statement in statements):
+        raise ValueError("RQLITE_SQL_STATEMENT_BATCH_INVALID")
+    return list(statements)
+
+
+def rego_release_policy() -> str:
+    """Return valid OPA 1.x / Rego v1 syntax."""
+    return (
+        "package louksnapg.release\n"
+        "default allow := false\n"
+        "allow if {\n"
+        "  input.action == \"promote\"\n"
+        "  input.tests_passed == true\n"
+        "  input.g23 == \"PASS\"\n"
+        "}\n"
+    )
 
 def sqlite_migration_probe(source_root: Path, temp_path: Path) -> dict[str, Any]:
     """Build the SQLite CLI from the pinned canonical source tree, not absent amalgamation files.
@@ -776,9 +795,9 @@ def probe_migration_persistence(root: Path) -> dict[str, Any]:
                         time.sleep(0.3)
                 if not ready:
                     raise ProbeBlocked("RQLITE_SERVER_DID_NOT_REACH_READY_STATE")
-                create_status, create = post_json(base + "/db/execute?pretty", {"statements": ["CREATE TABLE records (id INTEGER PRIMARY KEY, value TEXT)"]})
-                insert_status, insert = post_json(base + "/db/execute?pretty", {"statements": ["INSERT INTO records(id,value) VALUES(1,'durable')"]})
-                query_status, query = post_json(base + "/db/query?pretty", {"statements": ["SELECT value FROM records WHERE id=1"]})
+                create_status, create = post_json(base + "/db/execute?pretty", rqlite_statement_batch("CREATE TABLE records (id INTEGER PRIMARY KEY, value TEXT)"))
+                insert_status, insert = post_json(base + "/db/execute?pretty", rqlite_statement_batch("INSERT INTO records(id,value) VALUES(1,'durable')"))
+                query_status, query = post_json(base + "/db/query?pretty", rqlite_statement_batch("SELECT value FROM records WHERE id=1"))
                 response_blob = json.dumps({"create": create, "insert": insert, "query": query}, sort_keys=True)
                 if create_status != 200 or insert_status != 200 or query_status != 200 or "durable" not in response_blob:
                     raise ProbeFailure("RQLITE_WRITE_READ_KNOWN_ANSWER_MISMATCH")
