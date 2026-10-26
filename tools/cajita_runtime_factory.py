@@ -31,6 +31,11 @@ def canon(obj):
 def sha_bytes(data):
  return hashlib.sha256(data).hexdigest()
 
+
+def max_required_glibc_version(symbol_output):
+ versions={(int(major),int(minor)) for major,minor in re.findall(r"GLIBC_(\d+)\.(\d+)",symbol_output)}
+ return max(versions) if versions else None
+
 def sha_file(path):
  h=hashlib.sha256()
  with Path(path).open("rb") as f:
@@ -523,8 +528,7 @@ def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
   symbol_output=symbols.stdout or ""
   if symbols.returncode!=0:
    raise RuntimeError("NATIVE_ENGINE_GLIBC_SYMBOL_AUDIT_FAILED:"+label+":"+str(symbols.returncode)+":"+symbol_output[-1000:])
-  found={(int(major),int(minor)) for major,minor in re.findall(r"GLIBC_(\d+)\.(\d+)",symbol_output)}
-  maximum=max(found) if found else None
+  maximum=max_required_glibc_version(symbol_output)
   target=(2,36)
   if maximum is not None and maximum>target:
    raise RuntimeError("NATIVE_ENGINE_GLIBC_BASELINE_EXCEEDED:"+label+":required="+str(maximum[0])+"."+str(maximum[1])+":maximum=2.36")
