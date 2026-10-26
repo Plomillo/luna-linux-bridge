@@ -213,7 +213,7 @@ def main():
             "target_engine_results":target_engine_report.get("results",[]),
             "target_engine_scope":target_engine_report.get("scope","SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES; NO_FULL_TASK_OR_QUALITY_CLAIM"),
             "orchestration_guard":guard,"inputs":"ESPEAK_NG_KNOWN_SPEECH_AND_SYNTHETIC_INVOICE_FIXTURES_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_FIXTURES",
-            "resource_gate":"EACH_TASK_CHILD_PEAK_RSS_MUST_BE_AT_MOST_1_GIB; TARGET_ENGINE_BUILD_AND_EXECUTION_BOUNDED",
+            "resource_gate":"EACH_TASK_CHILD_PEAK_RSS_MUST_BE_AT_MOST_2_GIB; TARGET_ENGINE_BUILD_AND_EXECUTION_BOUNDED",
             "functional_scope":"FIVE_MODEL_DOMAIN_TASK_EXECUTIONS_WITH_FIXED_EXPECTATION_ACCEPTANCE_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_PLUS_FAIL_CLOSED_ORCHESTRATION_GUARD",
             "synthetic_quality_acceptance":"PASS" if model_pass and guard_ok else "FAIL",
             "full_target_task_coverage":"NOT_ESTABLISHED",
