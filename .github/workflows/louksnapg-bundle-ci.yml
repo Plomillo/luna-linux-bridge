@@ -135,7 +135,9 @@ jobs:
           assert '"D06_PORTABILIDAD_BASE"' in extended_harness
           assert '"D06_RUNTIME_ANDROID_WINDOWS"' in extended_harness
           assert '"D06_TESTING"' in extended_harness
-          assert "test_calibre_is_held_when_only_externalization_metadata_exists" in extended_tests
+          assert "test_calibre_is_held_if_no_external_executable_is_available" in extended_tests
+          assert "test_calibre_runs_the_pinned_wrapper_and_validates_real_epub_contract" in extended_tests
+          assert "test_calibre_runtime_asset_without_exact_hash_receipt_is_blocked" in extended_tests
           assert "test_antihallucination_lfs_pointer_is_not_misreported_as_a_model" in extended_tests
           auxiliary_workflow_text = Path(".github/workflows/louksnapg-kestra-auxiliary.yml").read_text(encoding="utf-8")
           telemetry_writer = next((line for line in auxiliary_workflow_text.splitlines() if "tp.write_text(json.dumps(telem" in line), "")
