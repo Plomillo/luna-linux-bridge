@@ -12,6 +12,7 @@ on:
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
       - "tests/test_louksnapg_bundle.py"
+      - "tests/test_louksnapg_worker_mission.py"
       - "tools/louksnapg_integral_gate.py"
       - "tests/test_louksnapg_integral_gate.py"
       - "tools/louksnapg_architecture_contract.py"
@@ -31,6 +32,7 @@ on:
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
       - "tests/test_louksnapg_bundle.py"
+      - "tests/test_louksnapg_worker_mission.py"
       - "tools/louksnapg_integral_gate.py"
       - "tests/test_louksnapg_integral_gate.py"
       - "tools/louksnapg_architecture_contract.py"
@@ -67,7 +69,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==45.0.7
       - name: Compile LOUKSNAPG packaging, evidence gate and independent validator
         run: |
-          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py tools/louksnapg_integral_gate.py tests/test_louksnapg_bundle.py tests/test_louksnapg_integral_gate.py tools/louksnapg_architecture_contract.py tests/test_louksnapg_architecture_contract.py
+          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py tools/louksnapg_integral_gate.py tests/test_louksnapg_bundle.py tests/test_louksnapg_integral_gate.py tests/test_louksnapg_worker_mission.py tools/louksnapg_architecture_contract.py tests/test_louksnapg_architecture_contract.py
       - name: Exercise ZIP build, cap, tamper and independent source-binding tests
         run: |
           python -m unittest discover -s tests -p 'test_louksnapg*.py' -v
@@ -100,6 +102,10 @@ jobs:
           assert "BUNDLE_OVER_GLOBAL_LUNA_HARD_MAX_BYTES" in integral_gate
           assert "--max-bytes 490000000" not in factory_text
           assert "--max-bytes 490000000" not in auxiliary_workflow_text
+          worker_mission = Path("tools/louksnapg_worker_mission.py").read_text(encoding="utf-8")
+          assert "output_within_479000000_bytes" in worker_mission
+          assert "runtime_archive_within_470000000_bytes" in worker_mission
+          assert "output_within_470000000_bytes" not in worker_mission
           required = {
               "source_commit", "bundle_sha256", "bundle_bytes", "document_sha256",
               "runtime_source_sha256", "worker_status", "independent_integrity_status",
