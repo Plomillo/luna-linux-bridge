@@ -510,12 +510,26 @@ def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
   env=os.environ.copy()
   old_ld=env.get("LD_LIBRARY_PATH","")
   env["LD_LIBRARY_PATH"]=os.pathsep.join([str(x) for x in library_dirs]+([old_ld] if old_ld else []))
+  with Path(binary).open("rb") as stream:
+   magic=stream.read(4)
+  if magic!=b"\x7fELF":
+   raise RuntimeError("NATIVE_ENGINE_OUTPUT_NOT_ELF:"+label)
   proc=runner(["ldd",str(binary)],cwd=str(binary.parent),env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=20,check=False)
   output=proc.stdout or ""
   if "not found" in output: raise RuntimeError("NATIVE_ENGINE_LINKED_LIBRARY_MISSING:"+label+":"+output[-2000:])
   if proc.returncode not in (0,1) or (proc.returncode==1 and "not a dynamic executable" not in output.lower() and "statically linked" not in output.lower()):
    raise RuntimeError("NATIVE_ENGINE_LINKAGE_CHECK_FAILED:"+label+":"+str(proc.returncode)+":"+output[-1000:])
-  return {"return_code":proc.returncode,"output_tail":output[-2000:],"output_sha256":sha_bytes(output.encode("utf-8"))}
+  symbols=runner(["objdump","-T",str(binary)],cwd=str(binary.parent),env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=20,check=False)
+  symbol_output=symbols.stdout or ""
+  if symbols.returncode!=0:
+   raise RuntimeError("NATIVE_ENGINE_GLIBC_SYMBOL_AUDIT_FAILED:"+label+":"+str(symbols.returncode)+":"+symbol_output[-1000:])
+  found={(int(major),int(minor)) for major,minor in re.findall(r"GLIBC_(\d+)\.(\d+)",symbol_output)}
+  maximum=max(found) if found else None
+  target=(2,36)
+  if maximum is not None and maximum>target:
+   raise RuntimeError("NATIVE_ENGINE_GLIBC_BASELINE_EXCEEDED:"+label+":required="+str(maximum[0])+"."+str(maximum[1])+":maximum=2.36")
+  max_text=(str(maximum[0])+"."+str(maximum[1])) if maximum is not None else None
+  return {"return_code":proc.returncode,"output_tail":output[-2000:],"output_sha256":sha_bytes(output.encode("utf-8")),"max_required_glibc":max_text,"runtime_glibc_ceiling":"2.36","glibc_compatibility":"PASS"}
  def build_one(label,target_id,source,command,checks,binary_names,readme_placeholder=False):
   source_tree_sha=tree_hash(source)
   artifact_root=runtime/".native-engine-bin"/label.lower()
@@ -566,7 +580,7 @@ def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
           "binary_artifacts":outputs,"shared_libraries":libraries,
           "build_status":"PASS","runtime_compile_required":False,"certification":"NOT_GRANTED"}
  versions={}
- for name,command in (("make",["make","--version"]),("compiler",["cc","--version"])):
+ for name,command in (("make",["make","--version"]),("compiler",["cc","--version"]),("objdump",["objdump","--version"])):
   proc=runner(command,cwd=str(runtime),stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=20,check=False)
   if proc.returncode!=0: raise RuntimeError("NATIVE_ENGINE_TOOLCHAIN_VERSION_UNAVAILABLE:"+name+":"+str(proc.returncode))
   versions[name]=(proc.stdout or "").splitlines()[0][:240]
