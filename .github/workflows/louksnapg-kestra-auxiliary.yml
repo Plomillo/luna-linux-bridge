@@ -356,9 +356,10 @@ jobs:
             for key,value in fields.items():
               cmd.extend(["-F",key+"="+value])
             proc=subprocess.run(cmd,capture_output=True,text=True,check=False)
-            receipt["status"]="SUBMITTED_FAIL_CLOSED_AUDIT" if proc.returncode==0 else "SUBMISSION_FAILED"
+            receipt["status"]="DISPATCHED_AWAITING_TERMINAL_STATE" if proc.returncode==0 else "SUBMISSION_FAILED"
             receipt["http_response_sha256"]=hashlib.sha256(proc.stdout.encode()).hexdigest()
             receipt["curl_return_code"]=proc.returncode
+            receipt["dispatch_observed_at_utc"]=__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
             try:
               response=json.loads(proc.stdout)
               receipt["execution_id"]=response.get("id")
@@ -367,6 +368,45 @@ jobs:
               receipt["response_tail"]=proc.stdout[-800:]
             if proc.returncode!=0:
               receipt["error_tail"]=proc.stderr[-800:]
+            if proc.returncode==0 and receipt.get("execution_id"):
+              import time,urllib.error,urllib.parse,urllib.request
+              execution_id=urllib.parse.quote(str(receipt["execution_id"]),safe="")
+              terminal={"SUCCESS","FAILED","WARNING","KILLED","CANCELLED","SKIPPED","RESTARTED"}
+              poll_log=[]
+              for attempt in range(45):
+                req=urllib.request.Request(base+"/api/v1/main/executions/"+execution_id,headers={"Accept":"application/json","Authorization":"Bearer "+token})
+                try:
+                  with urllib.request.urlopen(req,timeout=15) as resp:
+                    body=resp.read()
+                  obj=json.loads(body.decode("utf-8"))
+                  state=(obj.get("state") or {}).get("current","UNKNOWN")
+                  poll_log.append({"attempt":attempt+1,"http_status":200,"state":state,"body_sha256":hashlib.sha256(body).hexdigest()})
+                  if state in terminal:
+                    receipt["kestra_terminal_state"]=state
+                    receipt["kestra_execution_evidence_sha256"]=hashlib.sha256(body).hexdigest()
+                    receipt["kestra_state_observed_at_utc"]=__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+                    if state=="SUCCESS":
+                      receipt["status"]="FLOW_EXECUTION_SUCCESS_RELEASE_STILL_HOLD"
+                    elif state=="FAILED":
+                      receipt["status"]="AUDIT_FAILED_OR_FAIL_CLOSED_HOLD"
+                    else:
+                      receipt["status"]="AUDIT_TERMINATED_WITHOUT_SUCCESS"
+                    # Retain only task state/status fields, never request credentials.
+                    task_states=[]
+                    for task in obj.get("taskRunList",[]) or []:
+                      task_states.append({"task_id":task.get("taskId"),"state":((task.get("state") or {}).get("current","UNKNOWN"))})
+                    receipt["task_states"]=task_states
+                    break
+                except urllib.error.HTTPError as err:
+                  poll_log.append({"attempt":attempt+1,"http_status":err.code,"state":"POLL_HTTP_ERROR"})
+                except Exception as err:
+                  poll_log.append({"attempt":attempt+1,"state":"POLL_ERROR","error_type":type(err).__name__})
+                time.sleep(2)
+              else:
+                receipt["status"]="POLL_TIMEOUT_TERMINAL_STATE_UNCONFIRMED"
+              receipt["poll_observations"]=poll_log
+            elif proc.returncode==0:
+              receipt["status"]="DISPATCH_RESPONSE_MISSING_EXECUTION_ID"
             Path("candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json").write_text(json.dumps(receipt,indent=2)+"\n",encoding="utf-8")
             print(json.dumps(receipt,indent=2))
             sys_exit=0
