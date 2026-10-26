@@ -76,7 +76,7 @@ def _write_fixture(tmp: str, *, source_doc: bytes = b"protected architecture\nru
                                "state": "DECLARED_STRUCTURAL_ROUTING_ONLY"},
         "framework_count": 18,
         "target": {"id": "D02_MULTI_INTERDISCIPLINAR", "domain_id": "D02_ORQUESTACION",
-                   "path": MULTI_PATH, "engine_ids": ENGINES},
+                   "path": MULTI_PATH, "engine_ids": ENGINES, "support_assets": ["APACHE_JENA_6_2_0"]},
         "reader": {"relative_path": MULTI_PATH + "/cajita_axiom_source_loader.py",
                    "operation": "VERIFY_DOCUMENT_SHA256_PREFIX_AND_B1_B134_BLOCK_ENGINE_ROUTES"},
         "graph_execution": "STRUCTURAL_BLOCK_ROUTING_DECLARED_RUNTIME_VERIFICATION_REQUIRED",
