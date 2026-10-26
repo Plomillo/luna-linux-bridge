@@ -283,11 +283,13 @@ class SixObligationAuditTests(unittest.TestCase):
             match = audit.inspect_qwen_model_identity(match_candidate, "Qwen/Qwen3-0.6B")
             self.assertEqual(match["status"], "PASS_CONFIG_MATCHES_PINNED_VARIANT")
 
-    def test_worker_authorized_scope_is_read_from_architecture_contract(self):
-        self.assertEqual(
-            audit.CUSTOSZ_AUTHORIZED_SCOPE if hasattr(audit, "CUSTOSZ_AUTHORIZED_SCOPE") else "contract-derived",
-            "contract-derived",
-        )
+    def test_worker_scope_matches_the_governed_contract_not_a_stale_literal(self):
+        contract = {"worker_mission":{"authorized_scope":"VERIFY_REPAIR_PRIMITIVES_AND_BUILD_LOUKSNAPG_CANDIDATE"}}
+        worker = {"authorized_scope":"VERIFY_REPAIR_PRIMITIVES_AND_BUILD_LOUKSNAPG_CANDIDATE"}
+        self.assertTrue(audit.worker_scope_matches_contract(contract, worker))
+        worker["authorized_scope"] = "BUILD_LOUKSNAPG_SINGLE_FILE_CANDIDATE"
+        self.assertFalse(audit.worker_scope_matches_contract(contract, worker))
+        self.assertFalse(audit.worker_scope_matches_contract({}, worker))
 
     def test_global_distribution_cap_is_not_runtime_cap(self):
         self.assertEqual(audit.GLOBAL_LUNA_HARD_MAX_BYTES, 479_000_000)
