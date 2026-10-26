@@ -16,7 +16,7 @@ import sys
 import zipfile
 from pathlib import Path, PurePosixPath
 
-CAP_BYTES = 490_000_000
+CAP_BYTES = 479_000_000
 MAX_RUNTIME_BYTES = 470_000_000
 BUNDLE_MANIFEST = "LOUKSNAPG_MANIFEST.json"
 RUNTIME_MANIFEST = "MACRODOWN_MANIFEST.json"
