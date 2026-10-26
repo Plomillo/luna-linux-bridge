@@ -438,6 +438,22 @@ def main(argv=None) -> int:
                 extended_obj = {}
         targets = extended_obj.get("targets", []) if isinstance(extended_obj, dict) else []
         target_status = {row.get("target_id"): row.get("status") for row in targets if isinstance(row, dict)}
+        target_details = []
+        for row in targets:
+            if not isinstance(row, dict):
+                continue
+            result = row.get("result") if isinstance(row.get("result"), dict) else {}
+            target_details.append({
+                "target_id": row.get("target_id"),
+                "status": row.get("status"),
+                "reason": row.get("reason"),
+                "elapsed_seconds": row.get("elapsed_seconds"),
+                "primitive": result.get("primitive"),
+                "task_coverage": result.get("task_coverage"),
+                "consumer_task_equivalence": result.get("consumer_task_equivalence"),
+                "upstream_regression_status": result.get("upstream_regression_status"),
+                "runtime_output_sha256": result.get("runtime_output_sha256"),
+            })
         repaired_target_ids = [
             "D04_HERMENEUTICA_HG", "D04_TRADUCCION_LENGUAS_ANTIGUAS", "D06_MIGRACION_PERSISTENCIA"
         ]
@@ -468,6 +484,7 @@ def main(argv=None) -> int:
             "contract_sha256": extended_obj.get("contract_sha256"),
             "target_count": len(targets),
             "target_status": target_status,
+            "target_details": target_details,
             "targeted_repairs": repaired_target_ids,
             "targeted_repairs_all_pass": repaired_pass,
             "all_target_outcomes_recorded": exact_report_binding,
@@ -648,6 +665,7 @@ def main(argv=None) -> int:
         "primitive_evidence_status": primitive_summary.get("status", "NOT_ESTABLISHED"),
         "primitive_report_sha256": primitive_summary.get("report_sha256"),
         "target_results": primitive_summary.get("target_status", {}),
+        "target_details": primitive_summary.get("target_details", []),
         "all_target_outcomes_recorded": primitive_summary.get("all_target_outcomes_recorded", False),
         "targeted_repairs_all_pass": primitive_summary.get("targeted_repairs_all_pass", False),
         "global_certification": "NOT_GRANTED",
