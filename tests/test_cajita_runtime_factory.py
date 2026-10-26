@@ -88,7 +88,9 @@ class FactorySafetyTests(unittest.TestCase):
     {"id":"D04_TRADUCCION_LENGUAS_ANTIGUAS","path":"4. Traductor Inteligente/Traducción de lenguas antiguas"},
     {"id":"D04_HERMENEUTICA_HG","path":"4. Traductor Inteligente/Hermenéutica H-G"}]}
    (runtime/"command_subdomain_routing.json").write_text(json.dumps(routing),encoding="utf-8")
+   observed_commands=[]
    def fake_run(command,cwd=None,stdout=None,stderr=None,text=None,timeout=None,check=None):
+    observed_commands.append(list(command))
     cwd=Path(cwd) if cwd else runtime
     out=""
     if command[:2] in (["make","--version"],["cc","--version"]): out="tool version fixture\n"
@@ -112,6 +114,7 @@ class FactorySafetyTests(unittest.TestCase):
    self.assertEqual(receipt["schema"],"CAJITA_NATIVE_ENGINE_BUILD_RECEIPTS/1.0")
    self.assertEqual(receipt["source_commit"],"a"*40)
    self.assertEqual(len(receipt["builds"]),2)
+   self.assertIn(["make","-j1",'GIT_VERSION="2.100.24"',"NOFFI=1","NOSSL=1","NOTHREADS=1","ISOCLINE=1"],observed_commands)
    self.assertTrue((foma_source/"foma").is_file())
    self.assertTrue((foma_source/"flookup").is_file())
    self.assertTrue((trealla_source/"tpl").is_file())
