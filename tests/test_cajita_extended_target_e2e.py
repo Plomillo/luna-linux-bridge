@@ -139,7 +139,9 @@ class ExtendedTargetCoverageTests(unittest.TestCase):
                 "MAKEFILE\n",
                 encoding="utf-8",
             )
-            result = coverage.sqlite_migration_probe(source_root, root / "tmp")
+            build_temp = root / "tmp"
+            build_temp.mkdir()
+            result = coverage.sqlite_migration_probe(source_root, build_temp)
             self.assertEqual(result["migration"]["return_code"], 0)
             self.assertIn("preserve-me|migrated", result["migration"]["stdout_excerpt"])
             self.assertEqual(result["sqlite_version"]["return_code"], 0)
