@@ -25,6 +25,7 @@ REQUIRED_EVENT_TYPES = {
     "INDEPENDENT_VALIDATION_G23", "KESTRA_AUDIT",
     "CERTIFICATION_DECISION_G24", "NON_REGRESSION", "ROLLBACK",
 }
+POST_AUDIT_EVENT_TYPE = "KESTRA_AUDIT_RESULT"
 MODEL_TARGETS = {
     "D01_CEREBRO_ROOT", "D03_TRANSCRIPCION_ROOT",
     "D04_TRADUCCION_GENERAL", "D05_DOCLING", "D06_ANALISIS_AVANZADO",
@@ -284,6 +285,12 @@ def evaluate(
 
     event_rows = telemetry.get("events", []) if isinstance(telemetry.get("events", []), list) else []
     event_names = [row.get("event_type") for row in event_rows if isinstance(row, dict)]
+    required_trace_types_present_once = (
+        all(event_names.count(event_type) == 1 for event_type in REQUIRED_EVENT_TYPES)
+        and len(event_names) == len(REQUIRED_EVENT_TYPES) + 1
+        and event_names[-1:] == [POST_AUDIT_EVENT_TYPE]
+        and set(event_names[:-1]) == REQUIRED_EVENT_TYPES
+    )
     event_fields_valid = all(_event_fields_valid(row) for row in event_rows)
     event_payloads_valid = all(
         isinstance(row, dict)
@@ -304,16 +311,30 @@ def evaluate(
             telemetry_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
         ).encode("utf-8")).hexdigest() == telemetry.get("evidence_sha256")
     )
+    kestra_result_event = event_rows[-1] if event_rows and isinstance(event_rows[-1], dict) else {}
+    kestra_result_details = kestra_result_event.get("details", {}) if isinstance(kestra_result_event.get("details", {}), dict) else {}
+    kestra_receipt_sha = kestra_receipt.get("_evidence_file_sha256")
+    kestra_receipt_bound_in_telemetry = (
+        isinstance(kestra_result_event, dict)
+        and kestra_result_event.get("event_type") == POST_AUDIT_EVENT_TYPE
+        and bool(SHA256_RE.fullmatch(str(kestra_receipt_sha or "")))
+        and kestra_result_details.get("receipt_sha256") == kestra_receipt_sha
+        and kestra_result_details.get("receipt_status") == kestra_receipt.get("status")
+        and kestra_result_details.get("execution_id_present") == bool(kestra_receipt.get("execution_id"))
+        and kestra_result_details.get("terminal_state") == kestra_receipt.get("kestra_terminal_state")
+        and kestra_receipt.get("source_commit") == source_commit
+        and kestra_receipt.get("bundle_sha256") == bundle_sha
+    )
     telemetry_bound = (
         telemetry.get("source_commit") == source_commit
         and telemetry.get("bundle_sha256") == bundle_sha
         and telemetry.get("contract_sha256") == contract_sha256
-        and set(event_names) == REQUIRED_EVENT_TYPES
-        and len(event_names) == len(REQUIRED_EVENT_TYPES)
-        and [row.get("sequence_id") for row in event_rows if isinstance(row, dict)] == list(range(1, len(REQUIRED_EVENT_TYPES) + 1))
+        and required_trace_types_present_once
+        and [row.get("sequence_id") for row in event_rows if isinstance(row, dict)] == list(range(1, len(event_rows) + 1))
         and event_fields_valid
         and event_payloads_valid
         and telemetry_envelope_valid
+        and kestra_receipt_bound_in_telemetry
         and all(
             isinstance(row, dict)
             and row.get("source_commit") == source_commit
@@ -325,13 +346,23 @@ def evaluate(
             for row in event_rows
         )
     )
+    c4_reasons = []
+    if not telemetry_bound:
+        c4_reasons.append("PERSISTENT_TELEMETRY_MISSING_INCOMPLETE_OR_UNBOUND")
+    if not kestra_receipt_bound_in_telemetry:
+        c4_reasons.append("KESTRA_RECEIPT_MISSING_OR_NOT_BOUND_TO_FINAL_TELEMETRY")
     c4 = _result(
         "PASS_TRACEABILITY_WITH_RELEASE_HOLD" if telemetry_bound else "HOLD",
-        [] if telemetry_bound else ["PERSISTENT_TELEMETRY_MISSING_INCOMPLETE_OR_UNBOUND"],
+        c4_reasons,
         {
             "telemetry_file_status": telemetry.get("status", "NOT_ESTABLISHED"),
             "event_count": len(event_names),
-            "expected_event_count": len(REQUIRED_EVENT_TYPES),
+            "required_event_count": len(REQUIRED_EVENT_TYPES),
+            "expected_event_count": len(REQUIRED_EVENT_TYPES) + 1,
+            "post_dispatch_event_type": POST_AUDIT_EVENT_TYPE,
+            "kestra_receipt_event_bound": kestra_receipt_bound_in_telemetry,
+            "kestra_receipt_status": kestra_status or "NOT_ESTABLISHED",
+            "kestra_receipt_sha256": kestra_receipt_sha if SHA256_RE.fullmatch(str(kestra_receipt_sha or "")) else None,
             "candidate_commit_contract_binding": telemetry_bound,
             "telemetry_sha256": telemetry.get("evidence_sha256"),
             "release_eligibility": "NOT_GRANTED_BY_TELEMETRY_ALONE",
@@ -488,7 +519,16 @@ def main(argv: list[str] | None = None) -> int:
             functional_gate=load_json_optional(args.functional_gate),
             g24_evidence=load_json_optional(args.g24_evidence),
             telemetry=load_json_optional(args.telemetry),
-            kestra_receipt=load_json_optional(args.kestra_receipt),
+            kestra_receipt={
+                **load_json_optional(args.kestra_receipt),
+                "_evidence_file_sha256": (
+                    sha256_file(args.kestra_receipt)
+                    if args.kestra_receipt is not None
+                    and not args.kestra_receipt.is_symlink()
+                    and args.kestra_receipt.is_file()
+                    else None
+                ),
+            },
             g23_integrity=load_json_optional(args.g23_integrity),
         )
         for key, path in (
