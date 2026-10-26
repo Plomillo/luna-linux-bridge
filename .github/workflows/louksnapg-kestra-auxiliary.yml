@@ -243,6 +243,8 @@ jobs:
             "bundle_bytes":bundle.stat().st_size,
             "bundle_sha256":hashlib.sha256(bundle.read_bytes()).hexdigest(),
             "integrity_status":"PASS",
+            "functional_evidence_status":"NOT_ESTABLISHED",
+            "g23_signature_verification_status":"NOT_ESTABLISHED",
             "global_certification":"NOT_GRANTED",
           }
           if not base or not token:
@@ -263,6 +265,14 @@ jobs:
               "independent_integrity_status":"PASS",
               "identity_binding_status":validation["identity_preservation_status"],
               "engine_replacement_status":validation["engine_replacement"],
+              "functional_evidence_sha256":"0000000000000000000000000000000000000000000000000000000000000000",
+              "functional_evidence_source_commit":os.environ["SOURCE_COMMIT"],
+              "functional_evidence_status":"NOT_ESTABLISHED",
+              "functional_target_pass_count":"0",
+              "functional_target_expected_count":"21",
+              "functional_evidence_mode":"SYNTHETIC_OR_UNAVAILABLE",
+              "g23_attestation_sha256":"0000000000000000000000000000000000000000000000000000000000000000",
+              "g23_signature_verification_status":"NOT_ESTABLISHED",
               "functional_status":"NOT_ESTABLISHED",
               "semantic_quality_status":"NOT_ESTABLISHED",
               "host_matrix_status":"NOT_ESTABLISHED",
