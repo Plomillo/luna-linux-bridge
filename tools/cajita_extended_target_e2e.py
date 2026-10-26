@@ -346,18 +346,26 @@ def probe_trealla(root: Path) -> dict[str, Any]:
     grammar=source/"samples"/"grammar.pl"
     if grammar.is_symlink() or not grammar.is_file():
         raise ProbeFailure("TREALLA_GRAMMAR_FIXTURE_MISSING")
-    # Trealla documents DCG support via library(dcgs); phrase/2 is not
-    # assumed to be implicitly imported by the runtime. The bundled upstream
-    # grammar accepts "the man shoots" (sentence -> np, vp -> verb).
-    query="use_module(library(dcgs)),phrase(sentence,[the,man,shoots]),write(true),halt"
-    # This is a bundled upstream library. Do not depend on /usr/local/share/trealla
-    # or another host installation: bind the packaged library path explicitly.
+    # DCG term expansion must be loaded before the upstream grammar is parsed.
+    # Use an ephemeral driver that imports the packaged library first and then
+    # includes the exact shipped grammar. This avoids dependence on host paths and
+    # avoids editing the package's source file while testing it.
+    query="phrase(sentence,[the,man,shoots]),write(true),halt"
     trealla_env=native_library_environment(root,build)
     packaged_library=source/"library"
     if packaged_library.is_symlink() or not packaged_library.is_dir():
         raise ProbeFailure("TREALLA_PACKAGED_LIBRARY_DIRECTORY_MISSING")
     trealla_env["TPL_LIBRARY_PATH"]=str(packaged_library)
-    run=require_ok(run_process([str(binary),"-l","samples/grammar.pl","-g",query],cwd=source,timeout=15,env=trealla_env),"TREALLA_PACKAGED_PROLOG_QUERY_FAILED")
+    with tempfile.TemporaryDirectory(prefix="trealla-packaged-grammar-smoke-") as temporary:
+        driver=Path(temporary)/"louksnapg-grammar-smoke.pl"
+        grammar_literal=str(grammar.resolve()).replace("\\","\\\\").replace("'","\\'")
+        driver.write_text(
+            ":- use_module(library(dcgs)).\\n"
+            f":- include('{grammar_literal}').\\n"
+            f":- initialization(({query})).\\n",
+            encoding="utf-8",
+        )
+        run=require_ok(run_process([str(binary),"-l",str(driver)],cwd=source,timeout=15,env=trealla_env),"TREALLA_PACKAGED_PROLOG_QUERY_FAILED")
     if "true" not in str(run.get("stdout_excerpt","")).casefold():
         raise ProbeFailure("TREALLA_PACKAGED_PROLOG_QUERY_NOT_TRUE:"+str(run.get("stdout_excerpt",""))[-500:])
     return {
