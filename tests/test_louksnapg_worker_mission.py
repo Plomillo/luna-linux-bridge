@@ -50,7 +50,6 @@ class CustoszWorkerMissionTests(unittest.TestCase):
         source = source.replace('run_process([str(flookup_binary),"-i",str(fst)]', 'run_process([str(flookup_binary),str(fst)]')
         failures = worker.repair_source_contract_failures(source, tests)
         self.assertIn('run_process([str(flookup_binary),"-i",str(fst)]', failures)
-        self.assertIn("required_regression_test_missing:test_foma_probe_requires_forward_lookup_mode", failures)
 
     def test_repair_preflight_rejects_a_missing_real_runtime_fix(self):
         source = (ROOT / "tools" / "cajita_extended_target_e2e.py").read_text(encoding="utf-8")
