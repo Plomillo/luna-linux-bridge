@@ -61,6 +61,19 @@ class ArchitectureContractTests(unittest.TestCase):
         failures = contract_gate.validate_contract(bad)
         self.assertIn("CAJITA_RUNTIME_CAP_MISMATCH", failures)
 
+    def test_custosz_repair_mission_scope_targets_and_safety_are_contract_invariants(self):
+        bad = deepcopy(self.contract)
+        bad["worker_mission"]["authorized_scope"] = "BUILD_ONLY"
+        self.assertIn("CUSTOSZ_REPAIR_MISSION_SCOPE_MISMATCH", contract_gate.validate_contract(bad))
+
+        bad = deepcopy(self.contract)
+        bad["worker_mission"]["repair_target_ids"].remove("D06_MIGRACION_PERSISTENCIA")
+        self.assertIn("CUSTOSZ_REPAIR_TARGET_REGISTRY_INVALID", contract_gate.validate_contract(bad))
+
+        bad = deepcopy(self.contract)
+        bad["worker_mission"]["remote_commander_used"] = True
+        self.assertIn("CUSTOSZ_REPAIR_SAFETY_POLICY_INVALID", contract_gate.validate_contract(bad))
+
     def test_custosz_must_remain_primary_and_kestra_secondary(self):
         bad = deepcopy(self.contract)
         bad["workers"]["primary"]["id"] = "KESTRA"
