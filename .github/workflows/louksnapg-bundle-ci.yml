@@ -98,6 +98,9 @@ jobs:
       - name: Exercise ZIP build, cap, tamper and independent source-binding tests
         run: |
           python -m unittest discover -s tests -p 'test_louksnapg*.py' -v
+          python -m py_compile cajita-luna-runtime/cajita_task_adapters.py tools/cajita_task_e2e.py tests/test_cajita_task_adapters.py tests/test_cajita_task_e2e.py
+          PYTHONPATH=tools:cajita-luna-runtime python -m unittest discover -s tests -p 'test_cajita_task_adapters.py' -v
+          PYTHONPATH=tools:cajita-luna-runtime python -m unittest discover -s tests -p 'test_cajita_task_e2e.py' -v
           python -m unittest discover -s tests -p 'test_cajita_extended_target_e2e.py' -v
           python -m unittest discover -s tests -p 'test_calibre_slim_integrity.py' -v
           python tools/louksnapg_architecture_contract.py --contract contracts/louksnapg/architecture-contract.v1.json --report "$RUNNER_TEMP/LOUKSNAPG_ARCHITECTURE_CONTRACT.json"
