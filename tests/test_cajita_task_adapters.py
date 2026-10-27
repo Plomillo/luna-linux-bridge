@@ -82,7 +82,10 @@ class AdapterTests(unittest.TestCase):
             "weight_manifest_sha256":"b"*64,"weight_path":"weight","weight_bytes":1,"weight_sha256":"c"*64}
         with patch.object(adapters,"verify_integrity",return_value=integrity),patch.object(adapters.subprocess,"run",return_value=completed) as run:
             result,code=adapters.execute_task(row,RUNTIME,60)
-        self.assertEqual(code,0);self.assertEqual(result["status"],"PASS_FUNCTIONAL_EXECUTION")
+        self.assertEqual(code,0);self.assertEqual(result["status"],"PASS_EXECUTION_QUALITY_UNVERIFIED")
+        self.assertEqual(result["functional_status"],"NOT_ESTABLISHED")
+        self.assertEqual(result["quality_equivalence"],"NOT_ESTABLISHED")
+        self.assertEqual(result["quality_gate"],"REQUIRES_EXTERNAL_REFERENCE_VALIDATION")
         self.assertEqual(result["target_id"],"D01_CEREBRO_ROOT")
         self.assertFalse(run.call_args.kwargs["shell"]);self.assertIn("--task-json-stdin",run.call_args.args[0])
         self.assertEqual(run.call_args.kwargs["env"]["HF_HUB_OFFLINE"],"1")
