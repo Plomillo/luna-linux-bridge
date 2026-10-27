@@ -169,7 +169,7 @@ def main():
     guard["status"]="PASS_FAIL_CLOSED_PLAN_ONLY" if guard_ok else "FAIL_ORCHESTRATION_GUARD"
     guard["execution_authorized"]=False
     model_pass=all(
-        r.get("status")=="PASS_FUNCTIONAL_EXECUTION" and r.get("exit_code")==0
+        r.get("status")=="PASS_EXECUTION_QUALITY_UNVERIFIED" and r.get("exit_code")==0
         and r.get("quality_acceptance",{}).get("status")=="PASS"
         and all(isinstance(r.get(k),str) and len(r[k])==64 for k in ("input_sha256","output_sha256","weight_sha256","module_tree_sha256"))
         and isinstance(r.get("peak_rss_bytes"),int) and 0<r["peak_rss_bytes"]<=2_147_483_648
