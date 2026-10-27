@@ -176,8 +176,11 @@ def execute_task(record,root,timeout_cap=600):
   if status!="PASS" and not status.startswith("PASS_"):out.update({"status":"FAIL_MODEL_RESULT_STATUS","model_runtime_status":status});return out,4
   if not isinstance(text,str) or (row["domain_id"]!="D03_TRANSCRIPCION" and not text.strip()):out.update({"status":"FAIL_MODEL_OUTPUT_EMPTY"});return out,4
   if isinstance(tokens,bool) or not isinstance(tokens,int) or tokens<1:out.update({"status":"FAIL_MODEL_OUTPUT_EMPTY","reason":"GENERATED_TOKEN_COUNT_MISSING"});return out,4
-  out.update({"status":"PASS_FUNCTIONAL_EXECUTION","execution_authorized":True,"model_runtime_status":status,"output_text":text[:8192],
-              "output_sha256":digest_bytes(canonical(answer)),"generated_token_count":tokens,"quality_equivalence":"NOT_ESTABLISHED"})
+  # Runtime completion is not independent proof of semantic quality.
+  out.update({"status":"PASS_EXECUTION_QUALITY_UNVERIFIED","execution_authorized":True,"model_runtime_status":status,"output_text":text[:8192],
+              "output_sha256":digest_bytes(canonical(answer)),"generated_token_count":tokens,
+              "functional_status":"NOT_ESTABLISHED","quality_equivalence":"NOT_ESTABLISHED",
+              "quality_gate":"REQUIRES_EXTERNAL_REFERENCE_VALIDATION"})
   return out,0
  except (AdapterError,OSError,ValueError,TypeError,KeyError,json.JSONDecodeError) as exc:
   base.update({"reason":str(exc)[:240],"elapsed_seconds":round(time.monotonic()-started,3)})
