@@ -38,6 +38,10 @@ on:
   pull_request:
     paths:
       - ".github/workflows/louksnapg-bundle-ci.yml"
+      - "cajita-luna-runtime/cajita_task_adapters.py"
+      - "tests/test_cajita_task_adapters.py"
+      - "tools/cajita_task_e2e.py"
+      - "tests/test_cajita_task_e2e.py"
       - ".github/workflows/louksnapg-kestra-auxiliary.yml"
       - ".github/workflows/cajita-louksna1-factory.yml"
       - "tools/louksnapg_worker_mission.py"
