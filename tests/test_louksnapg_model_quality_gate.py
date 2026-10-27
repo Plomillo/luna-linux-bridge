@@ -1,8 +1,13 @@
 import hashlib
 import unittest
 
+from tools.louksnapg_integral_gate import (
+    OFFICIAL_MODEL_IDS, OFFICIAL_MODEL_REVISIONS, OFFICIAL_SOURCE_REVISIONS,
+    OFFICIAL_SOURCE_URLS,
+)
 from tools.louksnapg_model_quality_gate import (
-    FROZEN_CANDIDATE_SHA256, QualityGateError, SCHEMA, validate_assessment,
+    FROZEN_CANDIDATE_SHA256, MODEL_CONTRACTS, QualityGateError, SCHEMA,
+    validate_assessment,
 )
 
 TARGETS = [
@@ -24,7 +29,7 @@ def assessment():
         output = "grounded test output for " + target
         rows.append({
             "target_id": target,
-            "model_revision": "pinned-revision",
+            **MODEL_CONTRACTS[target],
             "evaluator_id": "independent-test-oracle",
             "evaluator_version": "1.0",
             "weights_sha256": h("weights:" + target),
@@ -55,6 +60,38 @@ class ModelQualityGateTests(unittest.TestCase):
         self.assertEqual(result["product_certification"], "NOT_GRANTED")
         self.assertEqual(result["target_count"], 5)
         self.assertEqual(result["candidate_sha256"], FROZEN_CANDIDATE_SHA256)
+
+    def test_pinned_model_contract_matches_integral_gate_contract(self):
+        for target in TARGETS:
+            with self.subTest(target=target):
+                contract = MODEL_CONTRACTS[target]
+                self.assertEqual(contract["model_id"], OFFICIAL_MODEL_IDS[target])
+                self.assertEqual(contract["official_source_url"], OFFICIAL_SOURCE_URLS[target])
+                self.assertEqual(
+                    contract["upstream_revision_commit"], OFFICIAL_SOURCE_REVISIONS[target]
+                )
+                self.assertEqual(contract["model_revision"], OFFICIAL_MODEL_REVISIONS[target])
+
+    def test_similarly_named_but_wrong_model_variant_fails_closed(self):
+        doc = assessment()
+        row = next(row for row in doc["assessments"] if row["target_id"] == "D06_ANALISIS_AVANZADO")
+        row["model_id"] = "Qwen/Qwen3-0.6B"
+        with self.assertRaisesRegex(QualityGateError, "PINNED_MODEL_CONTRACT_MISMATCH"):
+            validate_assessment(doc)
+
+    def test_wrong_model_repository_revision_fails_closed(self):
+        doc = assessment()
+        row = next(row for row in doc["assessments"] if row["target_id"] == "D03_TRANSCRIPCION_ROOT")
+        row["model_revision"] = "0" * 40
+        with self.assertRaisesRegex(QualityGateError, "PINNED_MODEL_CONTRACT_MISMATCH"):
+            validate_assessment(doc)
+
+    def test_wrong_official_source_url_fails_closed(self):
+        doc = assessment()
+        row = next(row for row in doc["assessments"] if row["target_id"] == "D04_TRADUCCION_GENERAL")
+        row["official_source_url"] = "https://example.invalid/fork"
+        with self.assertRaisesRegex(QualityGateError, "PINNED_MODEL_CONTRACT_MISMATCH"):
+            validate_assessment(doc)
 
     def test_nonempty_output_without_quality_metrics_fails_closed(self):
         doc = assessment()
