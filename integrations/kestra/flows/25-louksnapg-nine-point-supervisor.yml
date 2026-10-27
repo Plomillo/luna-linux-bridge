@@ -1,0 +1,106 @@
+id: louksnapg_nine_point_supervisor
+namespace: louksna.kestra
+description: >-
+  LOUKSNAPG nine-point supervisory contract. Strict chronology; fail closed.
+  Phase 1 establishes the exact repository state and emits real telemetry.
+  It then waits for a newer factory run from GitHub. No motor is declared
+  functional, no repair is declared verified, and no global certification is
+  granted by this supervisor. Heavy model execution remains in the repository
+  runner; local Kestra only performs small metadata/API requests.
+  Required order: (1) candidate/evidence state; (2) GPT-OSS-120B, Qwen,
+  general translation, ancient-language translation, Whisper domain evidence;
+  (3) route and wiring evidence; (4) minimal repairs only for demonstrated
+  defects; (5) direct post-repair verification; (6) integrated route/function
+  verification; (7) separate per-domain and integral decision. Preserve exact
+  candidate identity, hashes, provenance, traceability and rollback evidence.
+  Tests, static checks, and metadata checks must not be misreported as functional
+  motor evidence. Never launch a model inference on this PC. Never change an
+  artifact size limit implicitly; the candidate budget must be set by the
+  governing project contract, not assumed from the Cajita-only limit.
+tasks:
+  - id: phase_1_source_commit
+    type: io.kestra.plugin.core.http.Request
+    uri: https://api.github.com/repos/Plomillo/luna-linux-bridge/commits/main
+    method: GET
+    headers:
+      Accept: application/vnd.github+json
+      User-Agent: Kestra-LOUKSNAPG-supervisor
+    options:
+      connectTimeout: PT5S
+      readTimeout: PT15S
+
+  - id: phase_1_audit_contract
+    type: io.kestra.plugin.core.http.Request
+    uri: https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/integrations/kestra/flows/24-louksnapg-bundle-audit.yml?ref=main
+    method: GET
+    headers:
+      Accept: application/vnd.github+json
+      User-Agent: Kestra-LOUKSNAPG-supervisor
+    options:
+      connectTimeout: PT5S
+      readTimeout: PT15S
+
+  - id: phase_1_factory_snapshot
+    type: io.kestra.plugin.core.http.Request
+    uri: https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/cajita-louksna1-factory.yml/runs?per_page=5
+    method: GET
+    headers:
+      Accept: application/vnd.github+json
+      User-Agent: Kestra-LOUKSNAPG-supervisor
+    options:
+      connectTimeout: PT5S
+      readTimeout: PT15S
+
+  - id: phase_1_telemetry
+    type: io.kestra.plugin.core.log.Log
+    message: |
+      LOUKSNAPG_PHASE_1_TELEMETRY=STARTED
+      repository=Plomillo/luna-linux-bridge
+      source_commit={{ outputs.phase_1_source_commit.body.sha }}
+      audit_flow_blob={{ outputs.phase_1_audit_contract.body.sha }}
+      latest_factory_run_id={{ outputs.phase_1_factory_snapshot.body.workflow_runs[0].id }}
+      latest_factory_run_status={{ outputs.phase_1_factory_snapshot.body.workflow_runs[0].status }}
+      latest_factory_run_conclusion={{ outputs.phase_1_factory_snapshot.body.workflow_runs[0].conclusion }}
+      latest_factory_run_sha={{ outputs.phase_1_factory_snapshot.body.workflow_runs[0].head_sha }}
+      functional_status=NOT_ESTABLISHED
+      global_certification=NOT_GRANTED
+      NEXT_GATE=WAITING_FOR_NEW_FACTORY_RUN
+
+  - id: wait_for_new_factory_run
+    type: io.kestra.plugin.core.flow.LoopUntil
+    condition: "{{ outputs.poll_factory_runs.body.workflow_runs[0].created_at > outputs.phase_1_factory_snapshot.body.workflow_runs[0].created_at }}"
+    checkFrequency:
+      interval: PT10S
+    tasks:
+      - id: wait_five_minutes
+        type: io.kestra.plugin.core.flow.Sleep
+        duration: PT5M
+
+      - id: poll_factory_runs
+        type: io.kestra.plugin.core.http.Request
+        uri: https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/cajita-louksna1-factory.yml/runs?per_page=5
+        method: GET
+        headers:
+          Accept: application/vnd.github+json
+          User-Agent: Kestra-LOUKSNAPG-supervisor
+        options:
+          connectTimeout: PT5S
+          readTimeout: PT15S
+
+  - id: phase_2_worker_start_observed
+    type: io.kestra.plugin.core.log.Log
+    message: |
+      NEW_FACTORY_RUN_OBSERVED
+      latest_factory_run_id={{ outputs.wait_for_new_factory_run.outputs.poll_factory_runs.body.workflow_runs[0].id }}
+      latest_factory_run_status={{ outputs.wait_for_new_factory_run.outputs.poll_factory_runs.body.workflow_runs[0].status }}
+      latest_factory_run_sha={{ outputs.wait_for_new_factory_run.outputs.poll_factory_runs.body.workflow_runs[0].head_sha }}
+      The GitHub runner owns heavy work. Continue only with source-bound evidence.
+      No functional or integral certification is inferred from run creation.
+
+triggers:
+  - id: start_mission_once
+    type: io.kestra.plugin.core.trigger.ScheduleOnDates
+    dates:
+      - "2026-10-27T22:00:00Z"
+    timezone: Etc/UTC
+    recoverMissedSchedules: LAST
