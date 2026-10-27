@@ -1,22 +1,30 @@
 id: louksnapg_nine_point_supervisor
 namespace: louksna.kestra
 description: >-
-  LOUKSNAPG nine-point supervisory contract. Strict chronology; fail closed.
-  Phase 1 establishes the exact repository state and emits real telemetry.
-  It then waits for a newer factory run from GitHub. No motor is declared
-  functional, no repair is declared verified, and no global certification is
-  granted by this supervisor. Heavy model execution remains in the repository
-  runner; local Kestra only performs small metadata/API requests.
-  Required order: (1) candidate/evidence state; (2) GPT-OSS-120B, Qwen,
-  general translation, ancient-language translation, Whisper domain evidence;
-  (3) route and wiring evidence; (4) minimal repairs only for demonstrated
-  defects; (5) direct post-repair verification; (6) integrated route/function
-  verification; (7) separate per-domain and integral decision. Preserve exact
-  candidate identity, hashes, provenance, traceability and rollback evidence.
-  Tests, static checks, and metadata checks must not be misreported as functional
-  motor evidence. Never launch a model inference on this PC. Never change an
-  artifact size limit implicitly; the candidate budget must be set by the
-  governing project contract, not assumed from the Cajita-only limit.
+  LOUKSNAPG.md — nine-point certification order. Follow this sequence strictly;
+  do not reorder, silently replace components, or infer certification from
+  metadata. (1) Establish the exact candidate revision, completed work, open
+  defects and existing evidence. (2) Review GPT-OSS-120B reasoning, Qwen advanced
+  reasoning, general translation, ancient-language translation and Whisper
+  transcription by their assigned domains. (3) Inspect dependencies, routes,
+  input-to-motor wiring and result return paths. (4) Repair only demonstrated
+  functional defects with the smallest justified change. (5) Re-run direct
+  checks of each repaired defect on the exact candidate. (6) Verify actual
+  integrated routes and cooperation without redesigning working configuration.
+  (7) Record independent per-domain decisions and the separate integral
+  decision; leave certification NOT_GRANTED if any required evidence is absent.
+  (8) Preserve chronological order, candidate identity, hashes, provenance,
+  audit logs, rollback pointers and non-regression evidence. Static checks and
+  synthetic tests must never be represented as real motor function. (9) Keep
+  the PC inspection-only: at most 1 GiB RAM and one CPU thread; never run heavy
+  inference locally. Perform heavy tests, repair and certification in the
+  repository runner. Inspect original large weights only by metadata/hash when
+  a proven defect requires it. Download only necessary small dependencies from
+  GitHub with source/version/integrity recorded. No substitution of models,
+  no hidden size-limit changes, no CUSTOSZ V7 launch, and no DigitalOcean.
+  This Kestra supervisor establishes step 1, emits telemetry, then waits for a
+  newer repository factory run. It does not itself claim to execute or certify
+  the five motor domains. The GitHub repository runner owns heavy operations.
 tasks:
   - id: phase_1_source_commit
     type: io.kestra.plugin.core.http.Request
@@ -54,21 +62,37 @@ tasks:
   - id: phase_1_telemetry
     type: io.kestra.plugin.core.log.Log
     message: |
-      LOUKSNAPG_PHASE_1_TELEMETRY=STARTED
-      repository=Plomillo/luna-linux-bridge
-      source_commit={{ outputs.phase_1_source_commit.body.sha }}
-      audit_flow_blob={{ outputs.phase_1_audit_contract.body.sha }}
-      latest_factory_run_id={{ outputs.phase_1_factory_snapshot.body.workflow_runs[0].id }}
-      latest_factory_run_status={{ outputs.phase_1_factory_snapshot.body.workflow_runs[0].status }}
-      latest_factory_run_conclusion={{ outputs.phase_1_factory_snapshot.body.workflow_runs[0].conclusion }}
-      latest_factory_run_sha={{ outputs.phase_1_factory_snapshot.body.workflow_runs[0].head_sha }}
+      LOUKSNAPG_STEP_1_TELEMETRY=STARTED
+      LOUKSNAPG_NINE_POINT_ORDER=1>2>3>4>5>6>7>8>9
+      LOUKSNAPG_POINT_1=IN_PROGRESS
+      candidate_repository=Plomillo/luna-linux-bridge
+      candidate_source_commit={{ outputs.phase_1_source_commit.body | jq('.sha // "MISSING"') | first }}
+      audit_contract_blob_sha={{ outputs.phase_1_audit_contract.body | jq('.sha // "MISSING"') | first }}
+      factory_runs_observed={{ outputs.phase_1_factory_snapshot.body | jq('.total_count // 0') | first }}
+      latest_factory_run_id={{ outputs.phase_1_factory_snapshot.body | jq('.workflow_runs[0].id // "NONE"') | first }}
+      latest_factory_run_status={{ outputs.phase_1_factory_snapshot.body | jq('.workflow_runs[0].status // "NONE"') | first }}
+      latest_factory_run_conclusion={{ outputs.phase_1_factory_snapshot.body | jq('.workflow_runs[0].conclusion // "NONE"') | first }}
+      latest_factory_run_sha={{ outputs.phase_1_factory_snapshot.body | jq('.workflow_runs[0].head_sha // "NONE"') | first }}
+      POINT_2_DOMAIN_REVIEW=WAITING_FOR_REPOSITORY_RUNNER
+      POINT_3_ROUTE_WIRING=WAITING_FOR_REPOSITORY_RUNNER
+      POINT_4_MINIMAL_REPAIR=ONLY_FOR_DEMONSTRATED_DEFECTS
+      POINT_5_POST_REPAIR_VERIFICATION=REQUIRED_ON_EXACT_CANDIDATE
+      POINT_6_INTEGRATION_VERIFICATION=REQUIRED
+      POINT_7_PER_DOMAIN_AND_INTEGRAL_CERTIFICATION=EVIDENCE_GATED
+      POINT_8_TRACEABILITY_PROVENANCE_AUDIT_ROLLBACK=REQUIRED
+      POINT_9_PC_LIMITS_AND_AUTHORIZED_SCOPE=ENFORCED_BY_INSTRUCTION
       functional_status=NOT_ESTABLISHED
       global_certification=NOT_GRANTED
       NEXT_GATE=WAITING_FOR_NEW_FACTORY_RUN
+      PC_HEAVY_INFERENCE=FORBIDDEN
+      CUSTOSZ_V7=NOT_STARTED_NOT_TOUCHED
+      DIGITALOCEAN=PROHIBITED
 
   - id: wait_for_new_factory_run
     type: io.kestra.plugin.core.flow.LoopUntil
-    condition: "{{ outputs.poll_factory_runs.body.workflow_runs[0].created_at > outputs.phase_1_factory_snapshot.body.workflow_runs[0].created_at }}"
+    condition: >-
+      {{ (outputs.poll_factory_runs.body | jq('.workflow_runs[0].created_at // ""') | first) >
+         (outputs.phase_1_factory_snapshot.body | jq('.workflow_runs[0].created_at // ""') | first) }}
     checkFrequency:
       interval: PT10S
     tasks:
@@ -90,11 +114,13 @@ tasks:
   - id: phase_2_worker_start_observed
     type: io.kestra.plugin.core.log.Log
     message: |
-      NEW_FACTORY_RUN_OBSERVED
-      latest_factory_run_id={{ outputs.wait_for_new_factory_run.outputs.poll_factory_runs.body.workflow_runs[0].id }}
-      latest_factory_run_status={{ outputs.wait_for_new_factory_run.outputs.poll_factory_runs.body.workflow_runs[0].status }}
-      latest_factory_run_sha={{ outputs.wait_for_new_factory_run.outputs.poll_factory_runs.body.workflow_runs[0].head_sha }}
-      The GitHub runner owns heavy work. Continue only with source-bound evidence.
+      LOUKSNAPG_POINT_2_REPOSITORY_RUN_OBSERVED=TRUE
+      latest_factory_run_id={{ outputs.wait_for_new_factory_run.outputs.poll_factory_runs.body | jq('.workflow_runs[0].id // "NONE"') | first }}
+      latest_factory_run_status={{ outputs.wait_for_new_factory_run.outputs.poll_factory_runs.body | jq('.workflow_runs[0].status // "NONE"') | first }}
+      latest_factory_run_sha={{ outputs.wait_for_new_factory_run.outputs.poll_factory_runs.body | jq('.workflow_runs[0].head_sha // "NONE"') | first }}
+      The repository runner owns heavy work. Continue only with source-bound evidence.
+      Points 2-7 remain uncertified unless the runner publishes the required domain,
+      route, repair, post-repair and integrated-function evidence for this candidate.
       No functional or integral certification is inferred from run creation.
 
 triggers:
@@ -102,5 +128,7 @@ triggers:
     type: io.kestra.plugin.core.trigger.Schedule
     cron: "*/1 * * * *"
     timezone: Etc/UTC
+    allowConcurrent: false
     stopAfter:
       - RUNNING
+      - FAILED
