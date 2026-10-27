@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 """Fail-closed semantic quality gate for LOUKSNAPG model task receipts.
 
-This gate deliberately does not infer quality from process exit code, non-empty text,
-or token count. It validates a separately produced, hash-bound quality assessment.
-It never grants product certification.
+This gate validates hash-bound quality assessments for the one frozen candidate.
+It does not infer quality from process exit code, non-empty text, or token count,
+and it never grants product certification.
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any
 
 SCHEMA = "LOUKSNAPG_MODEL_QUALITY_ASSESSMENT/1.0"
+# Exact artifact hash recorded by the previously completed G24 evidence.
+# Any different artifact requires a separately authorized candidate registration.
+FROZEN_CANDIDATE_SHA256 = "989277d80a596a8a38564d4234e441896b105b2ba4a5843ed99a0877c88ca663"
 REQUIRED_TARGETS = {
     "D01_CEREBRO_ROOT",
     "D03_TRANSCRIPCION_ROOT",
@@ -48,18 +52,20 @@ def _require_hash(value: Any, field: str) -> str:
 
 
 def validate_assessment(document: Any) -> dict[str, Any]:
-    """Validate five real model assessments without promoting certification.
+    """Validate five model assessments bound to the exact frozen artifact.
 
-    Each assessment must bind the exact model, weight bytes, task output, reference
-    fixture, evaluator and metric thresholds. Every reported metric must pass its
-    explicitly declared threshold. This module does not choose thresholds or trust
-    a process return code as semantic evidence.
+    Each assessment must bind model identity, weight bytes, raw task output,
+    reference fixture, evaluator and metric thresholds. Metric values must be
+    finite and each metric name unique per target. This validates structure and
+    declared results only; it does not independently prove the evaluator's truth.
     """
     if not isinstance(document, dict) or document.get("schema") != SCHEMA:
         raise QualityGateError("ASSESSMENT_SCHEMA_INVALID")
     if document.get("candidate_frozen") is not True:
         raise QualityGateError("CANDIDATE_FREEZE_NOT_CONFIRMED")
     candidate_sha = _require_hash(document.get("candidate_sha256"), "candidate_sha256")
+    if candidate_sha != FROZEN_CANDIDATE_SHA256:
+        raise QualityGateError("CANDIDATE_HASH_NOT_REGISTERED_AS_FROZEN")
     rows = document.get("assessments")
     if not isinstance(rows, list):
         raise QualityGateError("ASSESSMENTS_MISSING")
@@ -86,6 +92,7 @@ def validate_assessment(document: Any) -> dict[str, Any]:
         metrics = row.get("metrics")
         if not isinstance(metrics, list) or not metrics:
             raise QualityGateError("QUALITY_METRICS_MISSING:" + target)
+        seen_metric_names: set[str] = set()
         for metric in metrics:
             if not isinstance(metric, dict):
                 raise QualityGateError("QUALITY_METRIC_INVALID:" + target)
@@ -95,9 +102,14 @@ def validate_assessment(document: Any) -> dict[str, Any]:
             )
             if not isinstance(name, str) or not name.strip():
                 raise QualityGateError("QUALITY_METRIC_NAME_MISSING:" + target)
-            if isinstance(value, bool) or not isinstance(value, (int, float)):
+            if name in seen_metric_names:
+                raise QualityGateError("QUALITY_METRIC_DUPLICATE:" + target + ":" + name)
+            seen_metric_names.add(name)
+            if (isinstance(value, bool) or not isinstance(value, (int, float))
+                    or not math.isfinite(value)):
                 raise QualityGateError("QUALITY_METRIC_VALUE_INVALID:" + target)
-            if isinstance(threshold, bool) or not isinstance(threshold, (int, float)):
+            if (isinstance(threshold, bool) or not isinstance(threshold, (int, float))
+                    or not math.isfinite(threshold)):
                 raise QualityGateError("QUALITY_METRIC_THRESHOLD_INVALID:" + target)
             passed = (
                 value >= threshold if operator == ">=" else
