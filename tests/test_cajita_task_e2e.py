@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
+from PIL import Image
 
-from cajita_task_e2e import MODEL_CASES, quality_acceptance
+from cajita_task_e2e import MODEL_CASES, make_image, quality_acceptance
 
 
 class SyntheticQualityAcceptanceTests(unittest.TestCase):
@@ -24,6 +27,18 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
         row = MODEL_CASES[2]
         self.assertEqual(quality_acceptance(row, "Buenos días. ¿Cómo estás?")["status"], "PASS")
         self.assertEqual(quality_acceptance(row, "Good morning. How are you?")["status"], "FAIL")
+
+    def test_docling_uses_official_page_conversion_and_full_page_fixture(self):
+        row = MODEL_CASES[3]
+        self.assertEqual(row["input"]["prompt"], "Convert this page to docling.")
+        self.assertEqual(row["limits"]["max_new_tokens"], 512)
+        runtime = Path(__file__).parents[1] / "cajita-luna-runtime" / "5. Inteligencia documental" / "INTELDOC_GLOBAL_30MB_CANDIDATE_V9" / "docling" / "compact_upstream_hf_candidate" / "docling_30mb_runtime_v1.py"
+        self.assertIn("image_side=512", runtime.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as tmp:
+            image_path = Path(tmp) / "invoice.png"
+            make_image(image_path)
+            with Image.open(image_path) as image:
+                self.assertEqual(image.size, (1024, 1024))
 
     def test_document_extraction_requires_the_fixture_total(self):
         row = MODEL_CASES[3]

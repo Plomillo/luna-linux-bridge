@@ -1,0 +1,70 @@
+{
+  "schema": "LOUKSNAPG_LOCAL_REFERENCE_MODEL_TEST/1.0",
+  "generated_at_utc": "2026-10-26T21:29:31Z",
+  "authorization": {
+    "remote_desktop_commander": "EXPLICITLY_AUTHORIZED_BY_USER_IN_CURRENT_TASK",
+    "original_model_weights_downloaded": false
+  },
+  "target_id": "D05_DOCLING",
+  "official_reference": {
+    "model_id": "ibm-granite/granite-docling-258M",
+    "model_card": "https://huggingface.co/ibm-granite/granite-docling-258M",
+    "task_prompt": "Convert this page to docling.",
+    "vision_input_side_px": 512
+  },
+  "local_assets": [
+    {
+      "role": "model",
+      "variant": "granite-docling-258M-Q4_K_M.gguf",
+      "bytes": 138559520,
+      "sha256": "4ba41a480d2b6594613a23819df8fcc382d9dab9691e28bf327b3ac799fe0a82",
+      "source": "User's existing local model directory"
+    },
+    {
+      "role": "vision_projector",
+      "variant": "mmproj-granite-docling-258M-f16.gguf",
+      "bytes": 190031712,
+      "sha256": "4b7b2c4ed3162bd9cb323668c188e2324838b8f8ca4f3f9767f16c4c600d43ad",
+      "source": "User's existing local model directory"
+    }
+  ],
+  "fixture": {
+    "path_on_user_device": "/tmp/louksnapg_docling_invoice_v2.png",
+    "bytes": 33211,
+    "sha256": "a2d1593ccbe0e313940ddbb813252a50dd843a8476c1d91f9ba4d42ccf78dbba",
+    "dimensions_px": [1000, 1000],
+    "expected_invoice_total": "133.45",
+    "fixture_uploaded": false
+  },
+  "runtime": {
+    "engine": "llama.cpp llama-cli",
+    "build": "b10819-6a1a922d2",
+    "output_token_limit": 512,
+    "official_prompt_result": {
+      "status": "FAIL_QUALITY",
+      "duration_seconds": 160.18,
+      "generated_output_sha256": "e51333d86e51e3b876401221e0fac101906782f9622893783a1bd53608ddb7c7",
+      "output_log_bytes": 3381,
+      "observed": "Generated 512 tokens, repeatedly emitted 'Description', and did not extract 133.45."
+    },
+    "repeat_penalty_followup": {
+      "status": "FAIL_QUALITY",
+      "settings": {
+        "temperature": 0,
+        "repeat_penalty": 1.12,
+        "repeat_last_n": 128,
+        "output_token_limit": 160
+      },
+      "generated_output_sha256": "85113f0f6b6623b96cfa52273e58620b776065284a29f3d5297d12a4b4089dac",
+      "output_log_bytes": 1491,
+      "observed": "Repeated '<br/>' and did not extract 133.45."
+    }
+  },
+  "interpretation": {
+    "model_load": "PASS",
+    "task_quality": "FAIL",
+    "candidate_repair_status": "NOT_REPAIRED",
+    "product_certification": "NOT_GRANTED",
+    "evidence_scope": "One local Q4 reference run and one decoding-parameter follow-up; not a model equivalence claim."
+  }
+}

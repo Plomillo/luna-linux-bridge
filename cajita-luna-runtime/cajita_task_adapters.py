@@ -9,13 +9,13 @@ REQUEST_SCHEMA = "CAJITA_TASK_REQUEST/1.0"
 RESULT_SCHEMA = "CAJITA_TASK_RESULT/1.0"
 MANIFEST_SHA = "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d"
 CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023"
-MAX_TEXT, MAX_AUDIO, MAX_IMAGE, MAX_TOKENS, MAX_TIMEOUT = 16384, 32*1024*1024, 24*1024*1024, 128, 1800
+MAX_TEXT, MAX_AUDIO, MAX_IMAGE, MAX_TOKENS, MAX_TIMEOUT = 16384, 32*1024*1024, 24*1024*1024, 512, 1800
 
 ADAPTERS = {
  "D01_CEREBRO": {"weight":"1. Cerebro/model.safetensors","sha":"e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0","bytes":40489120,"module":"1. Cerebro","target":"D01_CEREBRO_ROOT","entry":"1. Cerebro/cerebro_180mb_runtime.py","op":"generate_text","id":"CAJITA_CEREBRO_TEXT_GENERATION/1.0","tokens":8},
  "D03_TRANSCRIPCION": {"weight":"3. Transcripción/model.safetensors","sha":"67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f","bytes":10399882,"module":"3. Transcripción","target":"D03_TRANSCRIPCION_ROOT","entry":"3. Transcripción/lowrank_runtime.py","op":"transcribe_audio","id":"CAJITA_WHISPER_TRANSCRIPTION/1.0","tokens":8},
  "D04_TRADUCTOR_INTELIGENTE": {"weight":"4. Traductor Inteligente/Traducción general/model.safetensors","sha":"630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f","bytes":11720882,"module":"4. Traductor Inteligente/Traducción general","target":"D04_TRADUCCION_GENERAL","entry":"4. Traductor Inteligente/Traducción general/lowrank_runtime.py","op":"translate_text","id":"CAJITA_SEAMLESS_TRANSLATION/1.0","tokens":8},
- "D05_INTELIGENCIA_DOCUMENTAL": {"weight":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin","sha":"4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88","bytes":13483380,"module":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate","target":"D05_DOCLING","entry":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py","op":"extract_document_image","id":"CAJITA_DOCLING_IMAGE_EXTRACTION/1.0","tokens":24},
+ "D05_INTELIGENCIA_DOCUMENTAL": {"weight":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin","sha":"4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88","bytes":13483380,"module":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate","target":"D05_DOCLING","entry":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py","op":"extract_document_image","id":"CAJITA_DOCLING_IMAGE_EXTRACTION/1.0","tokens":512},
  "D06_SISTEMA_INTELIGENTE": {"weight":"6. Sistema Inteligente/Análisis Avanzado/model.safetensors","sha":"01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56","bytes":14956240,"module":"6. Sistema Inteligente/Análisis Avanzado","target":"D06_ANALISIS_AVANZADO","entry":"6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py","op":"analyze_reasoning","id":"CAJITA_QWEN3_REASONING/1.0","tokens":8},
 }
 PLAN_ONLY={"domain":"D02_ORQUESTACION","op":"route_plan","id":"CAJITA_CANONICAL_ROUTE_PLANNER/PLAN_ONLY"}
@@ -176,8 +176,11 @@ def execute_task(record,root,timeout_cap=600):
   if status!="PASS" and not status.startswith("PASS_"):out.update({"status":"FAIL_MODEL_RESULT_STATUS","model_runtime_status":status});return out,4
   if not isinstance(text,str) or (row["domain_id"]!="D03_TRANSCRIPCION" and not text.strip()):out.update({"status":"FAIL_MODEL_OUTPUT_EMPTY"});return out,4
   if isinstance(tokens,bool) or not isinstance(tokens,int) or tokens<1:out.update({"status":"FAIL_MODEL_OUTPUT_EMPTY","reason":"GENERATED_TOKEN_COUNT_MISSING"});return out,4
-  out.update({"status":"PASS_FUNCTIONAL_EXECUTION","execution_authorized":True,"model_runtime_status":status,"output_text":text[:8192],
-              "output_sha256":digest_bytes(canonical(answer)),"generated_token_count":tokens,"quality_equivalence":"NOT_ESTABLISHED"})
+  # Runtime completion is not independent proof of semantic quality.
+  out.update({"status":"PASS_EXECUTION_QUALITY_UNVERIFIED","execution_authorized":True,"model_runtime_status":status,"output_text":text[:8192],
+              "output_sha256":digest_bytes(canonical(answer)),"generated_token_count":tokens,
+              "functional_status":"NOT_ESTABLISHED","quality_equivalence":"NOT_ESTABLISHED",
+              "quality_gate":"REQUIRES_EXTERNAL_REFERENCE_VALIDATION"})
   return out,0
  except (AdapterError,OSError,ValueError,TypeError,KeyError,json.JSONDecodeError) as exc:
   base.update({"reason":str(exc)[:240],"elapsed_seconds":round(time.monotonic()-started,3)})
