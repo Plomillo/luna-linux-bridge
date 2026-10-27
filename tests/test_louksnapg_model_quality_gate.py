@@ -2,7 +2,7 @@ import hashlib
 import unittest
 
 from tools.louksnapg_model_quality_gate import (
-    QualityGateError, SCHEMA, validate_assessment,
+    FROZEN_CANDIDATE_SHA256, QualityGateError, SCHEMA, validate_assessment,
 )
 
 TARGETS = [
@@ -43,7 +43,7 @@ def assessment():
     return {
         "schema": SCHEMA,
         "candidate_frozen": True,
-        "candidate_sha256": h("frozen-candidate"),
+        "candidate_sha256": FROZEN_CANDIDATE_SHA256,
         "assessments": rows,
     }
 
@@ -54,6 +54,7 @@ class ModelQualityGateTests(unittest.TestCase):
         self.assertEqual(result["status"], "PASS_MODEL_QUALITY_EVIDENCE_ONLY")
         self.assertEqual(result["product_certification"], "NOT_GRANTED")
         self.assertEqual(result["target_count"], 5)
+        self.assertEqual(result["candidate_sha256"], FROZEN_CANDIDATE_SHA256)
 
     def test_nonempty_output_without_quality_metrics_fails_closed(self):
         doc = assessment()
@@ -84,6 +85,27 @@ class ModelQualityGateTests(unittest.TestCase):
         doc = assessment()
         doc["candidate_frozen"] = False
         with self.assertRaisesRegex(QualityGateError, "CANDIDATE_FREEZE_NOT_CONFIRMED"):
+            validate_assessment(doc)
+
+    def test_unregistered_candidate_hash_is_rejected(self):
+        doc = assessment()
+        doc["candidate_sha256"] = h("different artifact")
+        with self.assertRaisesRegex(
+            QualityGateError, "CANDIDATE_HASH_NOT_REGISTERED_AS_FROZEN"
+        ):
+            validate_assessment(doc)
+
+    def test_nonfinite_metric_value_is_rejected(self):
+        doc = assessment()
+        doc["assessments"][0]["metrics"][0]["value"] = float("nan")
+        with self.assertRaisesRegex(QualityGateError, "QUALITY_METRIC_VALUE_INVALID"):
+            validate_assessment(doc)
+
+    def test_duplicate_metric_names_are_rejected(self):
+        doc = assessment()
+        row = doc["assessments"][0]
+        row["metrics"].append(dict(row["metrics"][0]))
+        with self.assertRaisesRegex(QualityGateError, "QUALITY_METRIC_DUPLICATE"):
             validate_assessment(doc)
 
 
