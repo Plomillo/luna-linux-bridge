@@ -3,7 +3,9 @@
 
 This gate validates hash-bound quality assessments for the one frozen candidate.
 It does not infer quality from process exit code, non-empty text, or token count,
-and it never grants product certification.
+and it never grants product certification. Model identifiers, source URLs, source
+revisions and model revisions are checked against the integral gate's pinned
+contract to prevent a similarly named or differently versioned model passing.
 """
 from __future__ import annotations
 
@@ -14,7 +16,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-SCHEMA = "LOUKSNAPG_MODEL_QUALITY_ASSESSMENT/1.0"
+SCHEMA = "LOUKSNAPG_MODEL_QUALITY_ASSESSMENT/1.1"
 # Exact artifact hash recorded by the previously completed G24 evidence.
 # Any different artifact requires a separately authorized candidate registration.
 FROZEN_CANDIDATE_SHA256 = "989277d80a596a8a38564d4234e441896b105b2ba4a5843ed99a0877c88ca663"
@@ -24,6 +26,41 @@ REQUIRED_TARGETS = {
     "D04_TRADUCCION_GENERAL",
     "D05_DOCLING",
     "D06_ANALISIS_AVANZADO",
+}
+
+# Duplicated here intentionally as a frozen, auditable contract. The regression
+# test compares these values with tools/louksnapg_integral_gate.py to detect drift.
+MODEL_CONTRACTS = {
+    "D01_CEREBRO_ROOT": {
+        "model_id": "openai/gpt-oss-120b",
+        "official_source_url": "https://github.com/openai/gpt-oss",
+        "upstream_revision_commit": "5681a6b6552635e7b29cde94a61ca6a7aee90ebd",
+        "model_revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    },
+    "D03_TRANSCRIPCION_ROOT": {
+        "model_id": "openai/whisper-large-v3-turbo",
+        "official_source_url": "https://github.com/openai/whisper",
+        "upstream_revision_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
+        "model_revision": "41f01f3fe87f28c78e2fbf8b568835947dd65ed9",
+    },
+    "D04_TRADUCCION_GENERAL": {
+        "model_id": "facebook/seamless-m4t-v2-large",
+        "official_source_url": "https://github.com/facebookresearch/seamless_communication",
+        "upstream_revision_commit": "9a081e935c29c6b1e0e05bcbf3fcb623ad306524",
+        "model_revision": "b8d7691bcced0d24b2655f534b6148be78346b72",
+    },
+    "D05_DOCLING": {
+        "model_id": "ibm-granite/granite-docling-258M",
+        "official_source_url": "https://huggingface.co/ibm-granite/granite-docling-258M",
+        "upstream_revision_commit": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+        "model_revision": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+    },
+    "D06_ANALISIS_AVANZADO": {
+        "model_id": "Qwen/Qwen3-14B",
+        "official_source_url": "https://github.com/QwenLM/Qwen3",
+        "upstream_revision_commit": "7a2f61ffc7a20d47efcd2bf97f6f2bf52729042e",
+        "model_revision": "40c069824f4251a91eefaf281ebe4c544efd3e18",
+    },
 }
 
 
@@ -54,10 +91,11 @@ def _require_hash(value: Any, field: str) -> str:
 def validate_assessment(document: Any) -> dict[str, Any]:
     """Validate five model assessments bound to the exact frozen artifact.
 
-    Each assessment must bind model identity, weight bytes, raw task output,
-    reference fixture, evaluator and metric thresholds. Metric values must be
-    finite and each metric name unique per target. This validates structure and
-    declared results only; it does not independently prove the evaluator's truth.
+    Each row must match the pinned model/source contract and bind model identity,
+    weight bytes, raw task output, reference fixture, evaluator and metric
+    thresholds. Metric values must be finite and each metric name unique per
+    target. This validates structure and declared results only; it does not
+    independently prove the evaluator's truth or reproduce model inference.
     """
     if not isinstance(document, dict) or document.get("schema") != SCHEMA:
         raise QualityGateError("ASSESSMENT_SCHEMA_INVALID")
@@ -77,7 +115,16 @@ def validate_assessment(document: Any) -> dict[str, Any]:
         target = row.get("target_id")
         if target not in REQUIRED_TARGETS or target in by_target:
             raise QualityGateError("UNKNOWN_OR_DUPLICATE_TARGET")
-        for key in ("model_revision", "evaluator_id", "evaluator_version"):
+
+        contract = MODEL_CONTRACTS[target]
+        for field, expected in contract.items():
+            observed = row.get(field)
+            if not isinstance(observed, str) or not observed.strip():
+                raise QualityGateError("MISSING_" + field.upper() + ":" + target)
+            if observed != expected:
+                raise QualityGateError("PINNED_MODEL_CONTRACT_MISMATCH:" + target + ":" + field)
+
+        for key in ("evaluator_id", "evaluator_version"):
             if not isinstance(row.get(key), str) or not row[key].strip():
                 raise QualityGateError("MISSING_" + key.upper() + ":" + target)
         _require_hash(row.get("weights_sha256"), "weights_sha256")
@@ -128,7 +175,7 @@ def validate_assessment(document: Any) -> dict[str, Any]:
     if missing:
         raise QualityGateError("MODEL_TARGET_EVIDENCE_INCOMPLETE:" + ",".join(missing))
     return {
-        "schema": "LOUKSNAPG_MODEL_QUALITY_GATE_RESULT/1.0",
+        "schema": "LOUKSNAPG_MODEL_QUALITY_GATE_RESULT/1.1",
         "status": "PASS_MODEL_QUALITY_EVIDENCE_ONLY",
         "candidate_sha256": candidate_sha,
         "assessed_targets": sorted(by_target),
@@ -153,7 +200,7 @@ def main() -> int:
         return 0
     except (OSError, json.JSONDecodeError, QualityGateError) as exc:
         print(json.dumps({
-            "schema": "LOUKSNAPG_MODEL_QUALITY_GATE_RESULT/1.0",
+            "schema": "LOUKSNAPG_MODEL_QUALITY_GATE_RESULT/1.1",
             "status": "HOLD",
             "reason": str(exc)[:300],
             "product_certification": "NOT_GRANTED",
