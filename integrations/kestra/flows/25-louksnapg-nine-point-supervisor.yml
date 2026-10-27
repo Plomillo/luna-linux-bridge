@@ -22,42 +22,21 @@ description: >-
   a proven defect requires it. Download only necessary small dependencies from
   GitHub with source/version/integrity recorded. No substitution of models,
   no hidden size-limit changes, no CUSTOSZ V7 launch, and no DigitalOcean.
-  This Kestra supervisor establishes step 1, emits telemetry, then waits for a
-  newer repository factory run. It does not itself claim to execute or certify
-  the five motor domains. The GitHub repository runner owns heavy operations.
+  This supervisor establishes step 1, emits telemetry for a pinned candidate,
+  then waits for a newer factory run. It does not claim to execute or certify
+  the five motor domains; heavy operations belong to the repository runner.
 tasks:
-  - id: phase_1_source_commit
-    type: io.kestra.plugin.core.http.Request
-    uri: https://api.github.com/repos/Plomillo/luna-linux-bridge/commits/main
-    method: GET
-    headers:
-      Accept: application/vnd.github+json
-      User-Agent: Kestra-LOUKSNAPG-supervisor
-    options:
-      connectTimeout: PT5S
-      readTimeout: PT15S
-
-  - id: phase_1_audit_contract
-    type: io.kestra.plugin.core.http.Request
-    uri: https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/integrations/kestra/flows/24-louksnapg-bundle-audit.yml?ref=main
-    method: GET
-    headers:
-      Accept: application/vnd.github+json
-      User-Agent: Kestra-LOUKSNAPG-supervisor
-    options:
-      connectTimeout: PT5S
-      readTimeout: PT15S
-
-  - id: phase_1_factory_snapshot
-    type: io.kestra.plugin.core.http.Request
-    uri: https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/cajita-louksna1-factory.yml/runs?per_page=5
-    method: GET
-    headers:
-      Accept: application/vnd.github+json
-      User-Agent: Kestra-LOUKSNAPG-supervisor
-    options:
-      connectTimeout: PT5S
-      readTimeout: PT15S
+  - id: phase_1_candidate_snapshot
+    type: io.kestra.plugin.core.output.OutputValues
+    values:
+      candidate_source_commit: a57fc224ebe8f3ec3fba69f6b07716aa9fe8aedf
+      audit_contract_blob_sha: 30570d435b6c30f71e9f121b9fd0475309d83b7c
+      candidate_branch: main
+      candidate_commit_timestamp_utc: "2026-10-25T23:16:39Z"
+      baseline_created_at: "{{ execution.startDate }}"
+      factory_snapshot_state: DEFERRED_UNTIL_GITHUB_RATE_LIMIT_RESET
+      functional_status: NOT_ESTABLISHED
+      global_certification: NOT_GRANTED
 
   - id: phase_1_telemetry
     type: io.kestra.plugin.core.log.Log
@@ -66,14 +45,14 @@ tasks:
       LOUKSNAPG_NINE_POINT_ORDER=1>2>3>4>5>6>7>8>9
       LOUKSNAPG_POINT_1=IN_PROGRESS
       candidate_repository=Plomillo/luna-linux-bridge
-      candidate_source_commit={{ outputs.phase_1_source_commit.body | jq('.sha // "MISSING"') | first }}
-      audit_contract_blob_sha={{ outputs.phase_1_audit_contract.body | jq('.sha // "MISSING"') | first }}
-      factory_runs_observed={{ outputs.phase_1_factory_snapshot.body | jq('.total_count // 0') | first }}
-      latest_factory_run_id={{ outputs.phase_1_factory_snapshot.body | jq('.workflow_runs[0].id // "NONE"') | first }}
-      latest_factory_run_status={{ outputs.phase_1_factory_snapshot.body | jq('.workflow_runs[0].status // "NONE"') | first }}
-      latest_factory_run_conclusion={{ outputs.phase_1_factory_snapshot.body | jq('.workflow_runs[0].conclusion // "NONE"') | first }}
-      latest_factory_run_sha={{ outputs.phase_1_factory_snapshot.body | jq('.workflow_runs[0].head_sha // "NONE"') | first }}
+      candidate_branch={{ outputs.phase_1_candidate_snapshot.values.candidate_branch }}
+      candidate_source_commit={{ outputs.phase_1_candidate_snapshot.values.candidate_source_commit }}
+      candidate_commit_timestamp_utc={{ outputs.phase_1_candidate_snapshot.values.candidate_commit_timestamp_utc }}
+      audit_contract_blob_sha={{ outputs.phase_1_candidate_snapshot.values.audit_contract_blob_sha }}
+      telemetry_baseline_created_at={{ outputs.phase_1_candidate_snapshot.values.baseline_created_at }}
+      factory_snapshot_state={{ outputs.phase_1_candidate_snapshot.values.factory_snapshot_state }}
       POINT_2_DOMAIN_REVIEW=WAITING_FOR_REPOSITORY_RUNNER
+      required_domains=GPT-OSS-120B;QWEN;GENERAL_TRANSLATION;ANCIENT_LANGUAGE_TRANSLATION;WHISPER_TRANSCRIPTION
       POINT_3_ROUTE_WIRING=WAITING_FOR_REPOSITORY_RUNNER
       POINT_4_MINIMAL_REPAIR=ONLY_FOR_DEMONSTRATED_DEFECTS
       POINT_5_POST_REPAIR_VERIFICATION=REQUIRED_ON_EXACT_CANDIDATE
@@ -92,13 +71,13 @@ tasks:
     type: io.kestra.plugin.core.flow.LoopUntil
     condition: >-
       {{ (outputs.poll_factory_runs.body | jq('.workflow_runs[0].created_at // ""') | first) >
-         (outputs.phase_1_factory_snapshot.body | jq('.workflow_runs[0].created_at // ""') | first) }}
+         outputs.phase_1_candidate_snapshot.values.baseline_created_at }}
     checkFrequency:
       interval: PT10S
     tasks:
-      - id: wait_five_minutes
+      - id: wait_thirty_minutes_before_poll
         type: io.kestra.plugin.core.flow.Sleep
-        duration: PT5M
+        duration: PT30M
 
       - id: poll_factory_runs
         type: io.kestra.plugin.core.http.Request
