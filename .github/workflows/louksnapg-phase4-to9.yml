@@ -40,7 +40,6 @@ jobs:
     outputs:
       repair_ready: ${{ steps.gate.outputs.repair_ready }}
       gate_status: ${{ steps.gate.outputs.gate_status }}
-      phase4_run_id: ${{ steps.latest.outputs.run_id }}
     steps:
       - name: Checkout continuation branch without LFS payloads
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -50,27 +49,12 @@ jobs:
           lfs: false
           persist-credentials: false
 
-      - name: Select the most recent successful Phase-4 diagnostic run
-        id: latest
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          run_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs" \
-            -f "branch=$GITHUB_REF_NAME" -F per_page=100 \
-            --jq '[.workflow_runs[] | select(.name == "LOUKSNAPG — resume from checkpoint at phase 4" and .conclusion == "success")] | sort_by(.created_at) | last | .id // 0')"
-          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then run_id=0; fi
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "Selected Phase-4 evidence run: $run_id"
-
-      - name: Download Phase-4 evidence from the selected run
-        if: ${{ steps.latest.outputs.run_id != '0' }}
+      - name: Download the exact pinned Phase-4 checkpoint evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: louksnapg-phase4-evidence-${{ steps.latest.outputs.run_id }}
+          name: louksnapg-phase4-evidence-40684041184
           repository: ${{ github.repository }}
-          run-id: ${{ steps.latest.outputs.run_id }}
+          run-id: 40684041184
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/phase4-evidence
 
@@ -78,7 +62,7 @@ jobs:
         id: gate
         shell: bash
         env:
-          LOUKSNAPG_PHASE4_RUN_ID: ${{ steps.latest.outputs.run_id }}
+          LOUKSNAPG_PHASE4_RUN_ID: "40684041184"
           LOUKSNAPG_PRIVATE_BUNDLE_URL: ${{ secrets.LOUKSNAPG_PRIVATE_BUNDLE_URL }}
           LOUKSNAPG_PRIVATE_BUNDLE_TOKEN: ${{ secrets.LOUKSNAPG_PRIVATE_BUNDLE_TOKEN }}
         run: |
