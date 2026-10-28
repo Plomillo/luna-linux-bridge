@@ -29,7 +29,7 @@ env:
 
 jobs:
   candidate:
-    name: "Rebuild rank-64 INT8 factors and test two transcription tasks"
+    name: "Rebuild rank-96 INT8 factors and test two transcription tasks"
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     outputs:
@@ -190,7 +190,7 @@ jobs:
           python - "$manifest" <<'PY'
           import hashlib, json, pathlib, sys
           d = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
-          if d.get("candidate_id") != "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_R64_EXPERIMENT":
+          if d.get("candidate_id") != "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_R96_EXPERIMENT":
               raise SystemExit("PROMOTION_CANDIDATE_ID_MISMATCH")
           if d.get("global_certification") != "NOT_GRANTED":
               raise SystemExit("UNAUTHORIZED_CERTIFICATION_PROPAGATION")
