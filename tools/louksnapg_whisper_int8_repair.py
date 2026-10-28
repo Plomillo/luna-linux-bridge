@@ -539,7 +539,7 @@ def prepare_metadata(runtime_root: Path, candidate_weight: Path, factor_metrics:
         if artifact.get("path") == WEIGHT_REL:
             artifact["bytes"] = weight_bytes
             artifact["sha256"] = weight_sha
-            artifact["representation"] = "Whisper rank-29 raw signed INT8 low-rank factors; experimental"
+            artifact["representation"] = f"Whisper rank-{RANK} raw signed INT8 low-rank factors; experimental"
             artifact["presence"] = "VERIFIED"
             break
     else:
