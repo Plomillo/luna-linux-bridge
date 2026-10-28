@@ -76,29 +76,38 @@ def git(repo: Path, *args: str) -> str:
 
 
 def inspect_factor_shapes(weight_path: Path) -> dict:
+    """Read only the safetensors JSON header; never map or load tensor payloads."""
+    import struct
     try:
-        from safetensors import safe_open
+        with weight_path.open("rb") as stream:
+            raw_len = stream.read(8)
+            if len(raw_len) != 8:
+                return {"status": "INVALID_SAFETENSORS_HEADER"}
+            header_bytes = struct.unpack("<Q", raw_len)[0]
+            if header_bytes < 2 or header_bytes > 32 * 1024 * 1024:
+                return {"status": "HEADER_SIZE_OUT_OF_RANGE", "header_bytes": header_bytes}
+            header = json.loads(stream.read(header_bytes).decode("utf-8"))
     except Exception as exc:
-        return {"status": "BLOCKED_SAFETENSORS_UNAVAILABLE", "error_type": type(exc).__name__}
+        return {"status": "INVALID_SAFETENSORS_HEADER", "error_type": type(exc).__name__}
+    keys = [key for key in header if key != "__metadata__"]
+    keyset = set(keys)
     pairs = []
-    with safe_open(str(weight_path), framework="pt", device="cpu") as handle:
-        keys = list(handle.keys())
-        keyset = set(keys)
-        for key in keys:
-            if key.endswith("_u") and "_scale_" not in key:
-                partner = key[:-2] + "_v"
-                if partner not in keyset:
-                    continue
-                ushape = list(handle.get_slice(key).get_shape())
-                vshape = list(handle.get_slice(partner).get_shape())
-                if len(ushape) < 2 or len(vshape) < 2:
-                    continue
-                urank = ushape[-1]
-                vrank = vshape[-2] if len(vshape) >= 3 else vshape[0]
-                pairs.append({
-                    "u": key, "u_shape": ushape, "v": partner, "v_shape": vshape,
-                    "rank_u": urank, "rank_v": vrank, "rank_matches": urank == vrank,
-                })
+    for key in keys:
+        if not key.endswith("_u") or "_scale_" in key:
+            continue
+        partner = key[:-2] + "_v"
+        if partner not in keyset:
+            continue
+        ushape = list(header[key].get("shape", []))
+        vshape = list(header[partner].get("shape", []))
+        if len(ushape) < 2 or len(vshape) < 2:
+            continue
+        urank = ushape[-1]
+        vrank = vshape[-2] if len(vshape) >= 3 else vshape[0]
+        pairs.append({
+            "u": key, "u_shape": ushape, "v": partner, "v_shape": vshape,
+            "rank_u": urank, "rank_v": vrank, "rank_matches": urank == vrank,
+        })
     ranks = [int(row["rank_u"]) for row in pairs if row["rank_matches"]]
     return {
         "status": "PASS_METADATA_ONLY",
@@ -110,7 +119,6 @@ def inspect_factor_shapes(weight_path: Path) -> dict:
         "factor_rank_mismatch_count": sum(1 for row in pairs if not row["rank_matches"]),
         "no_tensor_data_loaded": True,
     }
-
 
 def inspect_tokenizers(root: Path) -> dict:
     manifest_path = root / "CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json"
