@@ -656,6 +656,17 @@ def build_promotion_tar(runtime_root: Path, repo_root: Path, report_path: Path, 
         "source_commit": subprocess.run(["git", "-C", str(repo_root), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip(),
         "weight_sha256": digest_file(runtime_root / DOMAIN_PATH / "model.safetensors"),
         "weight_bytes": (runtime_root / DOMAIN_PATH / "model.safetensors").stat().st_size,
+        "projected_release_bytes": (
+            BASELINE_RELEASE_BYTES - BASELINE_WHISPER_WEIGHT_BYTES
+            + (runtime_root / DOMAIN_PATH / "model.safetensors").stat().st_size
+            + PROJECTED_PACKAGE_METADATA_RESERVE_BYTES
+        ),
+        "global_release_hard_max_bytes": GLOBAL_RELEASE_MAX_BYTES,
+        "global_release_projection_pass": (
+            BASELINE_RELEASE_BYTES - BASELINE_WHISPER_WEIGHT_BYTES
+            + (runtime_root / DOMAIN_PATH / "model.safetensors").stat().st_size
+            + PROJECTED_PACKAGE_METADATA_RESERVE_BYTES
+        ) <= GLOBAL_RELEASE_MAX_BYTES,
         "delete_paths": [f"cajita-luna-runtime/{SIDECAR_REL}"],
         "evidence_path": evidence_rel.as_posix(),
         "global_certification": "NOT_GRANTED",
@@ -868,10 +879,19 @@ def run_verify(args) -> int:
     if int(metadata.get("rank", -1)) != RANK or int(metadata.get("target_bytes", -1)) != TARGET_BYTES:
         raise RuntimeError("PROMOTED_WHISPER_RANK_OR_SIZE_POLICY_MISMATCH")
     weight_sha = digest_file(module / "model.safetensors")
+    projected_release_bytes = (
+        BASELINE_RELEASE_BYTES
+        - BASELINE_WHISPER_WEIGHT_BYTES
+        + (module / "model.safetensors").stat().st_size
+        + PROJECTED_PACKAGE_METADATA_RESERVE_BYTES
+    )
+    projected_release_size_pass = projected_release_bytes <= GLOBAL_RELEASE_MAX_BYTES
     if (module / "model.safetensors.q4.json").exists() or metadata.get("actual_secondary_factor_packing") != "NONE_RAW_INT8_FACTORS":
         raise RuntimeError("PROMOTED_WHISPER_CANDIDATE_IS_NOT_RAW_INT8")
     if module_bytes > TARGET_BYTES:
         raise RuntimeError("PROMOTED_WHISPER_CANDIDATE_EXCEEDS_HARD_CAP")
+    if not projected_release_size_pass:
+        raise RuntimeError("PROMOTED_WHISPER_CANDIDATE_EXCEEDS_PROJECTED_GLOBAL_RELEASE_SIZE")
     integrity = assert_temp_runtime_integrity(runtime_root)
     t0 = time.monotonic()
     results, test_context = run_tests(runtime_root, work)
@@ -887,6 +907,15 @@ def run_verify(args) -> int:
         "module_hard_cap_bytes": TARGET_BYTES,
         "rank": RANK,
         "module_cap_pass": module_bytes <= TARGET_BYTES,
+        "global_release_budget": {
+            "baseline_release_bytes": BASELINE_RELEASE_BYTES,
+            "baseline_release_evidence_commit": BASELINE_RELEASE_EVIDENCE_COMMIT,
+            "baseline_whisper_weight_bytes": BASELINE_WHISPER_WEIGHT_BYTES,
+            "projected_release_bytes": projected_release_bytes,
+            "hard_max_bytes": GLOBAL_RELEASE_MAX_BYTES,
+            "projected_size_pass": projected_release_size_pass,
+            "is_projection_not_final_package_measurement": True,
+        },
         "global_release_size": "FINAL_EXACT_PACKAGE_MEASUREMENT_REQUIRED_BEFORE_RELEASE",
         "module_integrity": integrity,
         "task_results": results,
