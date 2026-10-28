@@ -145,6 +145,30 @@ def copy_runtime_skeleton(source: Path, destination: Path, *, include_whisper_we
         return excluded
 
     shutil.copytree(module_source, module_destination, ignore=ignore, symlinks=False)
+
+    # The tokenizer manifest is global and validates all registered gzip payloads,
+    # even when executing only Whisper. Copy those small, hash-pinned assets without
+    # copying or loading any of the other domain models.
+    tokenizer_manifest_path = source / "CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json"
+    tokenizer_manifest = json.loads(tokenizer_manifest_path.read_text(encoding="utf-8"))
+    for row in tokenizer_manifest.get("entries", []):
+        if row.get("packed") is not True:
+            continue
+        rel = row.get("compressed_path")
+        if not isinstance(rel, str) or not rel or rel.startswith("/") or ".." in Path(rel).parts:
+            raise RuntimeError("TOKENIZER_COMPRESSED_PATH_UNSAFE")
+        src = source / rel
+        dst = destination / rel
+        if src.is_symlink() or not src.is_file():
+            raise RuntimeError("TOKENIZER_COMPRESSED_PAYLOAD_MISSING:" + rel)
+        if src.stat().st_size != int(row.get("compressed_bytes", -1)) or digest_file(src) != row.get("compressed_sha256"):
+            raise RuntimeError("TOKENIZER_COMPRESSED_PAYLOAD_IDENTITY_MISMATCH:" + rel)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if not dst.is_file() or digest_file(dst) != row.get("compressed_sha256"):
+            shutil.copy2(src, dst)
+        if digest_file(dst) != row.get("compressed_sha256"):
+            raise RuntimeError("TOKENIZER_COMPRESSED_COPY_HASH_MISMATCH:" + rel)
+
     if include_whisper_weight:
         weight = module_destination / "model.safetensors"
         if not weight.is_file() or weight.is_symlink():
