@@ -29,7 +29,7 @@ REQUIRED_FILES = [
     "4. Traductor Inteligente/Traducción general/CAJITA_MODULE.json",
     "4. Traductor Inteligente/Traducción de lenguas antiguas/CAJITA_MODULE.json",
     "6. Sistema Inteligente/Análisis Avanzado/CAJITA_MODULE.json",
-}
+]
 
 
 def digest_bytes(raw: bytes) -> str:
