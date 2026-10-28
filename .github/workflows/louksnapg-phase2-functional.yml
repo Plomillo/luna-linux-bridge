@@ -58,6 +58,7 @@ jobs:
             /cajita-luna-runtime/cajita_task_adapters.py
             /cajita-luna-runtime/cajita_target_adapters.py
             /cajita-luna-runtime/cajita_router.py
+            /cajita-luna-runtime/2. Orquestación/Orquestador/punto.json
             /cajita-luna-runtime/cajita_antiparalysis.py
             /cajita-luna-runtime/command_subdomain_routing.json
             /cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json
