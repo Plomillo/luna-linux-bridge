@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "cajita-luna-runtime"))
 
 from tools.louksnapg_phase2_functional import (
@@ -36,10 +37,17 @@ class HostedRunnerResourceBudgetTests(unittest.TestCase):
 
     def test_explicit_hosted_runner_override_is_recorded_and_not_silently_capped(self):
         override = 2 * 1024**3
-        decision = calculate_hosted_runner_rss_budget_bytes(0, override_bytes=override)
+        decision = calculate_hosted_runner_rss_budget_bytes(8 * 1024**3, 6 * 1024**3, override_bytes=override)
         self.assertEqual(decision["rss_budget_bytes"], override)
         self.assertEqual(decision["budget_source"], "LOUKSNAPG_HOSTED_RUNNER_RSS_CAP_BYTES")
         self.assertFalse(decision["local_inspection_budget_applied"])
+
+    def test_override_above_physical_budget_is_capped(self):
+        decision = calculate_hosted_runner_rss_budget_bytes(
+            8 * 1024**3, 6 * 1024**3, override_bytes=12 * 1024**3
+        )
+        self.assertEqual(decision["rss_budget_bytes"], int(6 * 1024**3 * 0.75))
+        self.assertIn("CAPPED_TO_RUNNER_MEMORY", decision["budget_source"])
 
     def test_memory_metadata_parsing(self):
         self.assertEqual(parse_mem_total_bytes("MemTotal:       8388608 kB\nMemAvailable:   4000000 kB\n"), 8388608 * 1024)
