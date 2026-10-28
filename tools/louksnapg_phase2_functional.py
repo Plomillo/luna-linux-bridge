@@ -93,29 +93,33 @@ def calculate_hosted_runner_rss_budget_bytes(
     override_bytes: int | None = None,
 ) -> dict:
     """Calculate an independent hosted-runner budget; never reuse the local 1 GiB cap."""
-    if override_bytes is not None:
-        if isinstance(override_bytes, bool) or not isinstance(override_bytes, int) or override_bytes <= 0:
-            raise ValueError("HOSTED_RUNNER_RSS_OVERRIDE_INVALID")
-        return {
-            "rss_budget_bytes": override_bytes,
-            "effective_memory_limit_bytes": None,
-            "budget_source": "LOUKSNAPG_HOSTED_RUNNER_RSS_CAP_BYTES",
-            "budget_fraction": None,
-            "local_inspection_budget_applied": False,
-        }
     limits = [x for x in (mem_total_bytes, cgroup_limit_bytes) if isinstance(x, int) and not isinstance(x, bool) and x > 0]
     if not limits:
         raise ValueError("HOSTED_RUNNER_MEMORY_LIMIT_UNAVAILABLE")
     effective_limit = min(limits)
     # Keep a 25% headroom for the OS, runner agent, and concurrent CI services.
-    budget = int(effective_limit * 0.75)
-    if budget <= 0:
+    safe_budget = int(effective_limit * 0.75)
+    if safe_budget <= 0:
         raise ValueError("HOSTED_RUNNER_RSS_BUDGET_INVALID")
+    if override_bytes is not None:
+        if isinstance(override_bytes, bool) or not isinstance(override_bytes, int) or override_bytes <= 0:
+            raise ValueError("HOSTED_RUNNER_RSS_OVERRIDE_INVALID")
+        budget = min(override_bytes, safe_budget)
+        source = (
+            "LOUKSNAPG_HOSTED_RUNNER_RSS_CAP_BYTES"
+            if override_bytes <= safe_budget
+            else "LOUKSNAPG_HOSTED_RUNNER_RSS_CAP_BYTES_CAPPED_TO_RUNNER_MEMORY"
+        )
+        fraction = round(budget / effective_limit, 6)
+    else:
+        budget = safe_budget
+        source = "75_PERCENT_OF_MIN_MEMTOTAL_AND_CGROUP_LIMIT"
+        fraction = 0.75
     return {
         "rss_budget_bytes": budget,
         "effective_memory_limit_bytes": effective_limit,
-        "budget_source": "75_PERCENT_OF_MIN_MEMTOTAL_AND_CGROUP_LIMIT",
-        "budget_fraction": 0.75,
+        "budget_source": source,
+        "budget_fraction": fraction,
         "local_inspection_budget_applied": False,
     }
 
@@ -136,8 +140,8 @@ def read_hosted_runner_rss_budget(
         if not override_text.isdigit():
             raise ValueError("HOSTED_RUNNER_RSS_OVERRIDE_INVALID")
         override = int(override_text)
-    if override is not None:
-        return calculate_hosted_runner_rss_budget_bytes(0, override_bytes=override)
+    # Read real runner capacity even when an explicit cap is configured; an
+    # override may lower the safe budget but must never exceed available capacity.
     mem_total = parse_mem_total_bytes(meminfo_path.read_text(encoding="ascii"))
     cgroup_limit = None
     for candidate in cgroup_paths:
@@ -148,7 +152,7 @@ def read_hosted_runner_rss_budget(
         if value is not None:
             cgroup_limit = value
             break
-    return calculate_hosted_runner_rss_budget_bytes(mem_total, cgroup_limit)
+    return calculate_hosted_runner_rss_budget_bytes(mem_total, cgroup_limit, override)
 
 
 def main() -> int:
