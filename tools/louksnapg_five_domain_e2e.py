@@ -267,6 +267,15 @@ def main() -> int:
                 "target_id": row.get("target_id"),
                 "quality": row.get("quality_acceptance", {}).get("status"),
                 "rss_bytes": row.get("peak_rss_bytes"),
+                "exit_code": row.get("exit_code"),
+                "failure_reason": row.get("failure_reason"),
+                "stderr_tail": row.get("stderr_tail") or row.get("model_runtime_stderr_tail"),
+                "stdout_tail": row.get("stdout_tail") or row.get("model_runtime_stdout_tail"),
+                "integrity": {
+                    "entrypoint_sha256": row.get("entrypoint_sha256"),
+                    "weight_sha256": row.get("weight_sha256"),
+                    "module_tree_sha256": row.get("module_tree_sha256"),
+                },
             } for row in report.get("required_model_tasks", [])
         },
         "ancient_language_translation": {
