@@ -43,8 +43,8 @@
   "target_kind": "SUBDOMAIN",
   "target_name": "Traducción general",
   "tree_integrity": {
-    "bytes_excluding_module_descriptors": 18037346,
+    "bytes_excluding_module_descriptors": 18037600,
     "file_count_excluding_module_descriptors": 11,
-    "sha256": "22f22eb0efeab980a03be87c6231c2da2db99bfd4df8723850bcf310e53d8f0c"
+    "sha256": "a9240065894656e0fc4dd5b49142c10ebbf7c8acff4a13d728f582887cf11694"
   }
 }

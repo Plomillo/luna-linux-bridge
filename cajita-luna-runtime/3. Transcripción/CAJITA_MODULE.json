@@ -38,8 +38,8 @@
   "target_kind": "DOMAIN_ROOT",
   "target_name": "Transcripción",
   "tree_integrity": {
-    "bytes_excluding_module_descriptors": 15224680,
+    "bytes_excluding_module_descriptors": 15226321,
     "file_count_excluding_module_descriptors": 15,
-    "sha256": "036f46e61162b467e9f2f2f40e1e9afca6b6d4498391805e77ed78c51384ffd9"
+    "sha256": "0f1f9e8235d44e58b166012b6eeebe3456aa8506f57f4e5b493dbc30b7a356cb"
   }
 }
