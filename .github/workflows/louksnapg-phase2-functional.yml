@@ -1,0 +1,238 @@
+name: LOUKSNAPG — phase 2 functional execution and phase 3 routing
+
+on:
+  push:
+    branches:
+      - louksnapg/continuous-functional-validation-20261027
+    paths:
+      - "tools/louksnapg_phase2_functional.py"
+      - ".github/workflows/louksnapg-phase2-functional.yml"
+      - "cajita-luna-runtime/**"
+      - "tests/test_cajita_router.py"
+      - "tests/test_cajita_antiparalysis.py"
+      - "tests/test_cajita_task_adapters.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg-functional-phase2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  phase-2-functional:
+    name: Phase 2 — real candidate runtime tasks (bounded synthetic acceptance)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      PYTHONNOUSERSITE: "1"
+      CAJITA_STATE_DIR: ${{ runner.temp }}/louksnapg-state
+    steps:
+      - name: Check out exact candidate with a focused sparse tree
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: true
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /tools/cajita_task_e2e.py
+            /tools/louksnapg_phase2_functional.py
+            /tests/test_cajita_router.py
+            /tests/test_cajita_antiparalysis.py
+            /tests/test_cajita_task_adapters.py
+            /tests/test_cajita_task_e2e.py
+            /cajita-luna-runtime/cajita_runtime.py
+            /cajita-luna-runtime/cajita_weight_materializer.py
+            /cajita-luna-runtime/cajita_tokenizer_materializer.py
+            /cajita-luna-runtime/cajita_task_adapters.py
+            /cajita-luna-runtime/cajita_target_adapters.py
+            /cajita-luna-runtime/cajita_router.py
+            /cajita-luna-runtime/cajita_antiparalysis.py
+            /cajita-luna-runtime/command_subdomain_routing.json
+            /cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json
+            /cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
+            /cajita-luna-runtime/1. Cerebro/**
+            /cajita-luna-runtime/3. Transcripción/**
+            /cajita-luna-runtime/4. Traductor Inteligente/Traducción general/**
+            /cajita-luna-runtime/4. Traductor Inteligente/Traducción de lenguas antiguas/**
+            /cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/**
+            /cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/**
+            /cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/**
+
+      - name: Phase 1 — bind the candidate and immutable source evidence
+        id: phase1
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse 'HEAD^{tree}')" != ""
+          test -f cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json
+          test -f cajita-luna-runtime/cajita_task_adapters.py
+          test -f "cajita-luna-runtime/4. Traductor Inteligente/Traducción de lenguas antiguas/CAJITA_MODULE.json"
+          mkdir -p "$RUNNER_TEMP/louksnapg-phase2"
+          {
+            echo "PHASE_1=PASS_EXACT_COMMIT_BOUND"
+            echo "CANDIDATE_COMMIT=$GITHUB_SHA"
+            echo "TREE_SHA=$(git rev-parse 'HEAD^{tree}')"
+            echo "WEIGHT_MANIFEST_SHA256=$(sha256sum cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json | cut -d' ' -f1)"
+            echo "GLOBAL_CERTIFICATION=NOT_GRANTED"
+          } | tee "$RUNNER_TEMP/louksnapg-phase2/phase1-identity.txt"
+
+      - name: Prepare hosted runner dependencies (no model execution on the PC)
+        id: dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends espeak-ng git-lfs
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check "transformers>=4.55,<5" safetensors numpy sentencepiece scipy soundfile librosa
+          python -m pip install --disable-pip-version-check PyYAML
+          git lfs install --local
+
+      - name: Materialize and verify only the four required registered model weights
+        id: weights
+        shell: bash
+        run: |
+          set -euo pipefail
+          LFS_INCLUDE='cajita-luna-runtime/1. Cerebro/model.safetensors,cajita-luna-runtime/3. Transcripción/model.safetensors,cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors,cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors'
+          git lfs pull --include="$LFS_INCLUDE" --exclude="" origin "$GITHUB_REF_NAME"
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path("cajita-luna-runtime")
+          expected = {
+              "1. Cerebro/model.safetensors": ("e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0", 40489120),
+              "3. Transcripción/model.safetensors": ("67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f", 10399882),
+              "4. Traductor Inteligente/Traducción general/model.safetensors": ("630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f", 11720882),
+              "6. Sistema Inteligente/Análisis Avanzado/model.safetensors": ("01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56", 14956240),
+          }
+          for rel, (wanted, wanted_bytes) in expected.items():
+              path = root / rel
+              if not path.is_file():
+                  raise SystemExit("MODEL_WEIGHT_MISSING:" + rel)
+              raw = path.read_bytes()
+              if len(raw) != wanted_bytes or raw.startswith(b"version https://git-lfs.github.com/spec/v1"):
+                  raise SystemExit("LFS_PAYLOAD_NOT_MATERIALIZED_OR_SIZE_MISMATCH:" + rel)
+              digest = hashlib.sha256(raw).hexdigest()
+              if digest != wanted:
+                  raise SystemExit("MODEL_WEIGHT_SHA256_MISMATCH:" + rel + ":" + digest)
+              print(json.dumps({"event":"WEIGHT_IDENTITY_PASS","path":rel,"bytes":len(raw),"sha256":digest}))
+          PY
+
+      - name: Phase 1 — fast anti-paralysis and task-contract checks
+        id: static-contracts
+        shell: bash
+        env:
+          PYTHONPATH: cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/cajita_task_e2e.py tools/louksnapg_phase2_functional.py cajita-luna-runtime/cajita_runtime.py cajita-luna-runtime/cajita_task_adapters.py cajita-luna-runtime/cajita_router.py cajita-luna-runtime/cajita_antiparalysis.py
+          python -m unittest discover -s tests -p "test_cajita_antiparalysis.py" -v
+          python -m unittest discover -s tests -p "test_cajita_task_adapters.py" -v
+          echo "STATIC_CONTRACTS=PASS; MODEL_TASK_EXECUTION=NOT_YET_RUN"
+
+      - name: Phase 2 — execute registered model task cases and save a checkpoint after each
+        id: phase2
+        shell: bash
+        env:
+          PYTHONPATH: cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          python tools/louksnapg_phase2_functional.py \
+            --root "$GITHUB_WORKSPACE/cajita-luna-runtime" \
+            --output-dir "$RUNNER_TEMP/louksnapg-phase2" \
+            --report "$RUNNER_TEMP/louksnapg-phase2/LOUKSNAPG_PHASE2_EVIDENCE.json" \
+            --timeout 900 \
+            --candidate-commit "$GITHUB_SHA" | tee "$RUNNER_TEMP/louksnapg-phase2/live-telemetry.jsonl"
+
+      - name: Phase 3 — route regression and ancient-language target binding
+        id: phase3
+        if: ${{ always() && steps.phase1.outcome == 'success' && steps.dependencies.outcome == 'success' && steps.weights.outcome == 'success' && steps.static-contracts.outcome == 'success' }}
+        shell: bash
+        env:
+          PYTHONPATH: cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p "test_cajita_router.py" -v | tee "$RUNNER_TEMP/louksnapg-phase2/phase3-route-regression.txt"
+          set +e
+          python cajita-luna-runtime/cajita_runtime.py plan \
+            --request "/play traductor Traduce del griego koiné al español" \
+            --trace-file "$RUNNER_TEMP/louksnapg-phase2/ancient-translation-route-trace.json" \
+            > "$RUNNER_TEMP/louksnapg-phase2/ancient-translation-route-plan.json" 2>&1
+          route_rc=$?
+          set -e
+          python - "$RUNNER_TEMP/louksnapg-phase2/ancient-translation-route-plan.json" "$route_rc" <<'PY'
+          import json, sys
+          from pathlib import Path
+          raw = Path(sys.argv[1]).read_text(encoding="utf-8")
+          try:
+              result = json.loads(raw)
+          except json.JSONDecodeError as exc:
+              raise SystemExit("ANCIENT_ROUTE_PLAN_NO_JSON:" + str(exc))
+          targets = {str(x.get("id")) for x in result.get("selected_targets", []) if isinstance(x, dict)}
+          if "D04_TRADUCCION_LENGUAS_ANTIGUAS" not in targets:
+              raise SystemExit("ANCIENT_LANGUAGE_ROUTE_TARGET_MISSING")
+          if "D04_TRADUCCION_GENERAL" in targets:
+              raise SystemExit("ANCIENT_LANGUAGE_ROUTE_MISDIRECTED_TO_GENERAL_TRANSLATOR")
+          print(json.dumps({
+              "event":"PHASE_3_ROUTE_PLAN_PASS",
+              "exit_code":int(sys.argv[2]),
+              "ancient_target_selected":True,
+              "general_target_excluded":True,
+              "execution":"PLAN_ONLY_NOT_MODEL_INFERENCE",
+              "actual_route_integration":"NOT_ESTABLISHED",
+              "global_certification":"NOT_GRANTED"
+          }, indent=2))
+          PY
+
+      - name: Summarize phase, blockers and mandatory next action
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          from pathlib import Path
+          base=Path(os.environ["RUNNER_TEMP"])/"louksnapg-phase2"
+          report=base/"LOUKSNAPG_PHASE2_EVIDENCE.json"
+          print("## LOUKSNAPG — execution checkpoint")
+          print()
+          print(f"- Exact source commit: `{os.environ['GITHUB_SHA']}`")
+          print("- Phase 1 identity: see `phase1-identity.txt`")
+          if report.is_file():
+              d=json.loads(report.read_text(encoding="utf-8"))
+              print(f"- Phase 2 status: **{d.get('phase_2_status','UNKNOWN')}**")
+              print(f"- Registered model task cases passed: {d.get('registered_domain_tests_passed',0)}/{d.get('registered_domain_tests_expected',4)}")
+              print(f"- Ancient-language adapter: `{d.get('ancient_translation',{}).get('status','UNKNOWN')}`")
+              print(f"- Global certification: `{d.get('global_certification','NOT_GRANTED')}`")
+              print(f"- Required next action: {d.get('next_action','RECOVER_CHECKPOINT_AND_CONTINUE')}")
+          else:
+              print("- Phase 2 status: `UNABLE_TO_DETERMINE`; no pass inferred because the report is missing.")
+              print("- Required next action: inspect the exact failed setup/test step, register the blocker, then resume from the phase-1 checkpoint.")
+          print()
+          print("Model smoke and fixed synthetic expectations are scoped evidence only; they do not establish reference-model equivalence or integral certification.")
+          PY
+
+      - name: Upload checkpoint and live telemetry evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: louksnapg-phase2-evidence-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/louksnapg-phase2/*.json
+            ${{ runner.temp }}/louksnapg-phase2/*.jsonl
+            ${{ runner.temp }}/louksnapg-phase2/*.txt
+          if-no-files-found: warn
+          retention-days: 90
