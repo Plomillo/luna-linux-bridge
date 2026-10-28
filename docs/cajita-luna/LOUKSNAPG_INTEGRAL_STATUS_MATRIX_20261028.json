@@ -1,0 +1,272 @@
+{
+  "schema": "LOUKSNAPG_INTEGRAL_CERTIFICATION_STATUS_MATRIX/1.0",
+  "observed_at_utc": "2026-10-28T23:58:30Z",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch": "louksnapg/phase4-resume-20261028",
+  "branch_head_at_matrix": "9eb5c2dd46deec9aa9842688ad3ed4bd8d304ce2",
+  "canonical_product_file": "LOUKSNAPG.md",
+  "current_worktree_distribution_candidate": "NOT_BUILT_AS_A_TRACKED_ROOT_FILE_ON_THIS_BRANCH_HEAD",
+  "global_certification": "NOT_GRANTED",
+  "final_decision": "HOLD_NOT_CERTIFIED",
+  "governance": {
+    "source_authority": "Louksna.md",
+    "policy": "EXTEND_DO_NOT_REPLACE;FAIL_CLOSED;NO_SILENT_OPERATIONS",
+    "phase_1_to_3_checkpoint": "66f0f0d22f5e7f7d207b191b39e997d1253a3866",
+    "phase_1_to_3_action": "REUSE_EXISTING_CHECKPOINT;DO_NOT_RERUN",
+    "exact_release_sha256": "NOT_ESTABLISHED_FOR_CURRENT_HEAD",
+    "g23": "NOT_GRANTED",
+    "g24": "NOT_GRANTED",
+    "automatic_certification_propagation": false,
+    "certification_cannot_follow_from_model_presence_or_process_exit_zero": true
+  },
+  "engines": [
+    {
+      "domain": "Cerebro",
+      "assigned_model": "GPT-OSS-120B",
+      "current_runtime_path": "cajita-luna-runtime/1. Cerebro",
+      "candidate_weight_sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0",
+      "candidate_weight_bytes": 40489120,
+      "upstream_reference": {
+        "architecture": "GptOssForCausalLM",
+        "source_config_sha256": "933aeb666a3fd851133ddd7686414f369bc564c4185fb5704416550879f10566",
+        "source_index_sha256": "ede2655fdc05008561983b6e0829c600727c28d591e071077377059f03a6c00e",
+        "source_shards_inventory": "Recorded in cajita-luna-runtime/1. Cerebro/compression_metadata.json; 14 source shards, no source inference locally"
+      },
+      "compression": {
+        "method": "randomized_truncated_svd_rank1_plus_symmetric_int8_factor_quantization",
+        "rank": 1,
+        "aggregate_relative_frobenius_error_after_int8": 0.9983363410727844
+      },
+      "prior_functional_test": {
+        "evidence_run": 40284216661,
+        "evidence_scope": "Historical task-evidence record linked to weight hash; not a full current distribution retest",
+        "execution": "PASS_FUNCTIONAL_EXECUTION",
+        "quality": "FAIL",
+        "output_excerpt": "ron amongronronron among amongron amongssronron"
+      },
+      "defect": {
+        "concrete": "Rank-1 factors discard almost all measured matrix energy; the task returns repetitive degenerate text rather than a usable answer.",
+        "consequence": "Required reasoning/generation is not demonstrated.",
+        "correction": "Do not repack the existing factors. Require a new source-bound candidate with a justified representation and a real task test within measured global release budget.",
+        "post_repair_verification": "Exact candidate commit, full weight/module hashes, task-level reasoning prompts with semantic checks, separate integration and release validation."
+      },
+      "status": "FAIL_FUNCTIONAL_QUALITY_GATE",
+      "certification": "NOT_GRANTED"
+    },
+    {
+      "domain": "Razonamiento y análisis avanzado",
+      "assigned_model": "Qwen3-14B",
+      "current_runtime_path": "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado",
+      "candidate_weight_sha256": "01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56",
+      "candidate_weight_bytes": 14956240,
+      "upstream_reference": {
+        "source_revision": "40c069824f4251a91eefaf281ebe4c544efd3e18",
+        "source_config_sha256": "e73c3664ca09b10a673fef0c22e8a6b456201d49bd4713c9691f775720e8857a",
+        "source_index_sha256": "62d7ad35757bae5e7baa452cb1483178b7daa50e869e923226b8da10871f7ebc",
+        "source_model_shards": "8 shards recorded in compression_metadata.json"
+      },
+      "compression": {
+        "method": "randomized_truncated_svd_low_rank_factorization_plus_symmetric_INT8_factor_quantization",
+        "rank": 12,
+        "aggregate_relative_frobenius_error_after_int8": 0.9964088220513415
+      },
+      "prior_functional_test": {
+        "evidence_run": 40284216661,
+        "evidence_scope": "Historical task-evidence record linked to weight hash; not a full current distribution retest",
+        "execution": "PASS_FUNCTIONAL_EXECUTION",
+        "task": "2 + 2",
+        "quality": "FAIL",
+        "output_excerpt": "irts airways"
+      },
+      "defect": {
+        "concrete": "Rank-12 factorization reconstructs only a very small fraction of weight-matrix energy; known arithmetic reasoning task fails.",
+        "consequence": "Advanced analysis/reasoning is not demonstrated.",
+        "correction": "Do not substitute a smaller Qwen identity or repack current factors. Produce a verified representation preserving the assigned Qwen3-14B identity, or record that the release-size constraint and essential function cannot both be met.",
+        "post_repair_verification": "Real inference on exact candidate, exact SHA-bound task, output equal to 4 after normalization, memory and package-size evidence, independent G23/G24."
+      },
+      "status": "FAIL_FUNCTIONAL_QUALITY_GATE",
+      "certification": "NOT_GRANTED"
+    },
+    {
+      "domain": "Traducción general",
+      "assigned_model": "SeamlessM4T v2 Large",
+      "current_runtime_path": "cajita-luna-runtime/4. Traductor Inteligente/Traducción general",
+      "candidate_weight_sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f",
+      "candidate_weight_bytes": 11720882,
+      "upstream_reference": {
+        "source_config_sha256": "4b2fa9d863cc3033adaf261e6c3e32ad90347ee2f199a349ba1c77d5e26a605f",
+        "source_index_sha256": "79d33aa045308d1a93b11952f2a3e6a647c107b688e5fdf1124c4601626dcdb2",
+        "source_shards_sha256": [
+          "85cab984fbc111f8713827c440499453b9e66f262862866eeed8725c302ba2ac",
+          "9536dc05892a6ca8410bcfea763dde422e2430c3cc1f3acd26c55182c8989017"
+        ]
+      },
+      "compression": {
+        "method": "randomized_truncated_svd_low_rank_factorization_plus_symmetric_INT8_factor_quantization",
+        "rank": 4,
+        "matrix_count_factorized": 864,
+        "quality_equivalence": "NOT_ESTABLISHED"
+      },
+      "prior_functional_test": {
+        "evidence_run": 40284216661,
+        "evidence_scope": "Historical task-evidence record linked to weight hash; not a full current distribution retest",
+        "execution": "PASS_FUNCTIONAL_EXECUTION",
+        "task": "English-to-Spanish greeting",
+        "quality": "FAIL",
+        "output_excerpt": "te te te apres te te te te who te te"
+      },
+      "defect": {
+        "concrete": "The registered translate_text route returns repetitive output rather than a Spanish translation.",
+        "consequence": "The general translation function does not meet the required task.",
+        "correction": "Inspect source-bound tokenizer/config and factorization; do not require unrelated speech translation. A new candidate must use the assigned model identity and pass fixed text-to-text cases.",
+        "post_repair_verification": "Exact source and target language IDs; multiple held-out text cases; target language and semantic content checks; runtime route and package hash tied to the same commit."
+      },
+      "status": "FAIL_FUNCTIONAL_QUALITY_GATE",
+      "certification": "NOT_GRANTED"
+    },
+    {
+      "domain": "Traducción de lenguas antiguas",
+      "assigned_model": "Dedicated ancient-language translator / lexical transducer",
+      "current_runtime_path": "cajita-luna-runtime/4. Traductor Inteligente/Traducción de lenguas antiguas",
+      "module_descriptor_sha256": "60a53a6b8dcf4caa9c19a0c6693cdd1d239432ac",
+      "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+      "consumer_adapter_registration": "NOT_REGISTERED",
+      "native_smoke": "REQUIRED",
+      "available_assets_audit": {
+        "foma_source_tree_present": true,
+        "compiled_fst_or_hfst_transducer_found": false,
+        "operational_ancient_language_lexicon_or_dictionary_found": false,
+        "verified_source_target_language_pair": "NOT_ESTABLISHED"
+      },
+      "defect": {
+        "concrete": "No native task consumer adapter is registered; the module contains Foma compiler source/tests but no compiled translation transducer or operational lexicon.",
+        "consequence": "There is no runnable end-to-end ancient-language translation operation to invoke or certify.",
+        "correction": "Identify the intended source/target language pair from the project mission, locate or build a licensed hash-pinned dictionary/transducer, register a consumer adapter for this module only.",
+        "post_repair_verification": "Execute known ancient text → expected translation through the route in the exact artifact; verify target language and semantics, no use of the general translator as a substitute."
+      },
+      "status": "BLOCKED_MISSING_REQUIRED_TRANSLATION_ASSET_AND_ADAPTER",
+      "certification": "NOT_GRANTED"
+    },
+    {
+      "domain": "Transcripción",
+      "assigned_model": "Whisper large-v3-turbo",
+      "current_runtime_path": "cajita-luna-runtime/3. Transcripción",
+      "current_candidate_weight_sha256": "67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f",
+      "current_candidate_weight_bytes": 10399882,
+      "current_compression": {
+        "method": "randomized_truncated_svd_low_rank_factorization_plus_symmetric_INT8_factor_quantization_with_secondary_unsigned_INT2_packing",
+        "rank": 29,
+        "prior_semantic_test": "FAIL"
+      },
+      "source_reference": {
+        "model": "openai/whisper-large-v3-turbo",
+        "revision": "7e2743d4d1fc5182f43d53b0204b2e151ffb6ef7",
+        "weight_sha256": "542566a422ae4f3fd23f1ba11add198fca01bbf82e66e6a2857b3f608b1eb9d1",
+        "test_run_id": 40789767512,
+        "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40789767512",
+        "synthetic_hello_world": "PASS",
+        "real_speech_wer": 0.058824,
+        "real_speech_wer_limit": 0.25
+      },
+      "experimental_repairs": [
+        {
+          "rank": 29,
+          "run_id": 40783316873,
+          "candidate_weight_sha256": "46145ea45d26f0e0014f595fc221092eca1f4cd997826c909d6bd6892c332807",
+          "candidate_weight_bytes": 34877996,
+          "module_bytes_including_descriptor": 37442965,
+          "aggregate_relative_frobenius_error": 0.7713949353768056,
+          "synthetic_test": "FAIL",
+          "real_speech_wer": 0.941176,
+          "promotion": "NOT_PERFORMED"
+        },
+        {
+          "rank": 64,
+          "run_id": 40790372870,
+          "candidate_weight_sha256": "9c265c26dfd0502eaee24ee59432fbaa971aa115431cdd85d716d5834b137fd4",
+          "candidate_weight_bytes": 69366096,
+          "module_bytes_including_descriptor": 71931049,
+          "aggregate_relative_frobenius_error": 0.7069607088284378,
+          "global_release_projection_bytes": 431913930,
+          "global_release_projection_max_bytes": 479000000,
+          "synthetic_test": "FAIL; output was punctuation only",
+          "real_speech_wer": 1,
+          "promotion": "NOT_PERFORMED"
+        },
+        {
+          "rank": 96,
+          "run_id": 40790908490,
+          "candidate_commit": "9eb5c2dd46deec9aa9842688ad3ed4bd8d304ce2",
+          "status_at_observation": "IN_PROGRESS",
+          "promotion": "NOT_AUTHORIZED_PENDING_TWO_TASKS_AND_SIZE_GATES"
+        }
+      ],
+      "defect": {
+        "concrete": "The registered transcription route executes, but the rank-29 integrated candidate produces unrelated text; raw INT8 rank-29 and rank-64 reconstructions both fail both fixed task checks.",
+        "consequence": "Whisper does not satisfy its transcription task in the integrated candidate.",
+        "correction": "Evaluate rank-96 in an isolated hosted runner; if it fails, stop blind uniform-rank increases and analyze per-tensor reconstruction/critical output head with a strict global size budget.",
+        "post_repair_verification": "Same pinned source, same two exact fixtures, target commit/model hash, synthetic words present and real speech WER <=0.25; exact-commit retest, final bundle size measurement and independent release gates."
+      },
+      "status": "FAIL_FUNCTIONAL_QUALITY_GATE; RANK96_EXPERIMENT_PENDING",
+      "certification": "NOT_GRANTED"
+    }
+  ],
+  "integration": {
+    "task_adapter_registry": "cajita-luna-runtime/cajita_task_adapters.py",
+    "registered_model_task_domains": [
+      "D01_CEREBRO",
+      "D03_TRANSCRIPCION",
+      "D04_TRADUCTOR_INTELIGENTE",
+      "D05_INTELIGENCIA_DOCUMENTAL",
+      "D06_SISTEMA_INTELIGENTE"
+    ],
+    "orchestrator_route_planner": "D02_ORQUESTACION route_plan is PLAN_ONLY and does not execute a model task",
+    "ancient_translation_adapter": "NOT_REGISTERED",
+    "all_21_consumer_task_adapters": "NOT_ESTABLISHED",
+    "module_presence_or_synthetic_smoke_is_not_quality_certification": true,
+    "route_level_functional_evidence": "INCOMPLETE"
+  },
+  "nine_point_phase_state": {
+    "1_current_candidate_and_checkpoint": "PARTIALLY_ESTABLISHED; checkpoint reused but exact packaged LOUKSNAPG.md SHA for this head not finalized",
+    "2_domain_review": "FAILS for Cerebro, Qwen, general translation and integrated Whisper; ancient translation blocked by missing adapter/resource",
+    "3_route_and_cabling": "Partial static registration; native route for ancient translation absent; full route functionality incomplete",
+    "4_repair": "Whisper experiments R29 and R64 rejected; R96 running. Other failed model domains not yet repaired",
+    "5_post_repair_tests": "Only candidate-level Whisper tests run; each tested candidate failed. No successful post-repair test yet",
+    "6_integration": "NOT_PASSED",
+    "7_certification_assessment": "HOLD; no motor or global certification granted",
+    "8_g23_g24_release": "BLOCKED; exact current candidate-bound independent G23 and separate G24 absent",
+    "9_governance_checkpoint": "FAIL_CLOSED; global certification NOT_GRANTED"
+  },
+  "orchestration": {
+    "kestra_service": "ACTIVE",
+    "kestra_louksnapg_phase4_to9_flow": "SPEC_ONLY_NOT_REGISTERED",
+    "kestra_admin_api": "HTTP_401_AUTHENTICATION_BLOCKED",
+    "kestra_live_execution_proven": false,
+    "custosz_v7": "PROHIBITED",
+    "custosz_v9_worker": "NO_ACTIVE_INDEPENDENTLY_VERIFIED_EXECUTION",
+    "heavy_inference_environment": "GITHUB_HOSTED_RUNNERS",
+    "local_pc_inference": false,
+    "local_model_downloads": 0,
+    "local_model_bytes_opened_for_inference": 0,
+    "local_runtime_writes_by_this_audit": 0
+  },
+  "local_resource_snapshot": {
+    "root_used_percent": 99,
+    "root_available_gib_approx": 7.6,
+    "inodes_used_percent": 100,
+    "inodes_free": 3075,
+    "consequence": "Continue read-only inspection only; no cleanup, installation, restart or model inference locally."
+  },
+  "blockers_for_global_certification": [
+    "Cerebro and Qwen low-rank factorization errors are ~0.9983 and ~0.9964 and the associated task-quality checks fail.",
+    "General translation rank-4 candidate returns repetitive non-translation output.",
+    "Whisper rank-29 and rank-64 candidates fail known-answer and real-speech tests; rank-96 experiment pending.",
+    "Ancient-language module has no consumer adapter and no compiled transducer or operational lexicon.",
+    "All 21 target consumer task adapters are not established.",
+    "Current exact packaged LOUKSNAPG.md SHA and final combined size for the candidate revision have not been remeasured.",
+    "Kestra supervisor could not be registered because the local administration API returned HTTP 401.",
+    "No candidate-bound signed G23 evidence or distinct G24 certification exists."
+  ],
+  "no_silent_substitution": true,
+  "no_canonical_model_promotion_without_quality_pass": true
+}
