@@ -194,6 +194,12 @@ jobs:
               raise SystemExit("PROMOTION_CANDIDATE_ID_MISMATCH")
           if d.get("global_certification") != "NOT_GRANTED":
               raise SystemExit("UNAUTHORIZED_CERTIFICATION_PROPAGATION")
+          if d.get("global_release_projection_pass") is not True:
+              raise SystemExit("GLOBAL_RELEASE_SIZE_PROJECTION_NOT_PASSED")
+          projected = d.get("projected_release_bytes")
+          hard_max = d.get("global_release_hard_max_bytes")
+          if isinstance(projected, bool) or not isinstance(projected, int) or isinstance(hard_max, bool) or not isinstance(hard_max, int) or projected > hard_max:
+              raise SystemExit("GLOBAL_RELEASE_SIZE_PROJECTION_INVALID_OR_OVER_LIMIT")
           wanted = {"cajita-luna-runtime/cajita_runtime.py",
                     "cajita-luna-runtime/cajita_task_adapters.py",
                     "cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json",
