@@ -54,6 +54,9 @@ jobs:
             cajita-luna-runtime/command_subdomain_routing.json
             cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
             cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json
+            cajita-luna-runtime/1. Cerebro/tokenizer.json.gz
+            cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/tokenizer.json.gz
+            cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/tokenizer.json.gz
             cajita-luna-runtime/3. Transcripción
 
       - name: Set up isolated Python toolcache
@@ -253,6 +256,9 @@ jobs:
             cajita-luna-runtime/command_subdomain_routing.json
             cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
             cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json
+            cajita-luna-runtime/1. Cerebro/tokenizer.json.gz
+            cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/tokenizer.json.gz
+            cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/tokenizer.json.gz
             cajita-luna-runtime/3. Transcripción
 
       - name: Set up isolated Python toolcache
