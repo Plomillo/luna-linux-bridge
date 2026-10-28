@@ -37,11 +37,11 @@ REAL_WER_MAX = 0.25
 # The 40 MB candidate failed both required speech tasks. This next experiment
 # increases rank while remaining inside the previously measured 479 MB release ceiling.
 # The final release workflow must still measure the complete exact package before G24.
-TARGET_BYTES = 85_000_000
-RANK = 64
+TARGET_BYTES = 110_000_000
+RANK = 96
 OVERSAMPLE = 8
 BLOCK_ROWS = 64
-CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_R64_EXPERIMENT"
+CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_R96_EXPERIMENT"
 GLOBAL_RELEASE_MAX_BYTES = 479_000_000
 BASELINE_RELEASE_BYTES = 371_947_716
 BASELINE_WHISPER_WEIGHT_BYTES = 10_399_882
