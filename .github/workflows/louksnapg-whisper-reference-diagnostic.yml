@@ -28,7 +28,7 @@ env:
 
 jobs:
   whisper-reference:
-    name: "Pinned upstream Whisper / known-speech comparison"
+    name: "Pinned upstream Whisper / synthetic and real-speech comparison"
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -68,9 +68,9 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check "torch==2.7.1" --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install --disable-pip-version-check             "transformers==4.55.4"             "huggingface_hub==0.35.3"             "safetensors==0.6.2"             "soundfile==0.13.1"             "scipy==1.16.2"             "sentencepiece==0.2.1"             "numpy==2.2.6"
+          python -m pip install --disable-pip-version-check             "transformers==4.55.4"             "huggingface_hub==0.35.3"             "safetensors==0.6.2"             "soundfile==0.13.1"             "scipy==1.16.2"             "sentencepiece==0.2.1"             "numpy==2.2.6"             "datasets==3.2.0"             "pyarrow==19.0.1"
 
-      - name: Run pinned upstream Whisper comparison on known speech
+      - name: Run pinned upstream Whisper on both pinned known-answer and real speech
         id: diagnostic
         shell: bash
         env:
@@ -80,7 +80,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/whisper-reference/evidence" "$RUNNER_TEMP/whisper-reference/work"
           python -B tools/louksnapg_reference_whisper_diagnostic.py             --output "$RUNNER_TEMP/whisper-reference/evidence/LOUKSNAPG_WHISPER_REFERENCE_DIAGNOSTIC.json"             --work-dir "$RUNNER_TEMP/whisper-reference/work"
 
-      - name: Preserve reference-only evidence (not a product certification)
+      - name: Preserve reference-only evidence for both tasks (not a product certification)
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
