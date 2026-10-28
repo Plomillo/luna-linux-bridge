@@ -201,8 +201,8 @@ def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
     from safetensors import safe_open
     from safetensors.torch import save_file
 
-    torch.set_num_threads(1)
-    torch.set_num_interop_threads(1)
+    # Thread pools were already initialized by run_build; do not reconfigure
+    # inter-op threading after model metadata or transfer libraries have run.
     if digest_file(source_model) != SOURCE_MODEL_SHA256:
         raise RuntimeError("SOURCE_WHISPER_SHA256_MISMATCH")
     with safe_open(str(source_model), framework="pt", device="cpu") as source:
