@@ -9,6 +9,9 @@ on:
       - tools/louksnapg_prepare_private_candidate.py
       - tools/louksnapg_phase7_independent_validate.py
       - tools/louksnapg_fetch_private_bundle.py
+      - tools/louksnapg_phase2_functional.py
+      - tests/test_louksnapg_phase2_resource_budget.py
+      - docs/cajita-luna/LOUKSNAPG_PHASE4_FORENSIC_PROGRESS_20261028.md
       - .github/workflows/louksnapg-phase4-to9.yml
       - evidence/louksnapg/phase4-repair-candidate.json
       - evidence/louksnapg/G23_INDEPENDENT_VALIDATION.json
@@ -66,6 +69,14 @@ jobs:
               compile(Path(name).read_text(encoding="utf-8"), name, "exec")
           print("CONTINUATION_SCRIPT_SYNTAX=PASS")
           PY
+
+      - name: Verify hosted-runner resource policy without model inference
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          python -B -m unittest discover -s tests -p "test_louksnapg_phase2_resource_budget.py" -v
 
       - name: Download the exact pinned Phase-4 checkpoint evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
