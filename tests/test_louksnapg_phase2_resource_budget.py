@@ -49,10 +49,12 @@ class HostedRunnerResourceBudgetTests(unittest.TestCase):
         self.assertEqual(decision["rss_budget_bytes"], int(6 * 1024**3 * 0.75))
         self.assertIn("CAPPED_TO_RUNNER_MEMORY", decision["budget_source"])
 
-    def test_memory_metadata_parsing(self):
+    def test_memory_metadata_parsing_and_units(self):
         self.assertEqual(parse_mem_total_bytes("MemTotal:       8388608 kB\nMemAvailable:   4000000 kB\n"), 8388608 * 1024)
         self.assertIsNone(parse_cgroup_memory_limit_bytes("max\n"))
         self.assertEqual(parse_cgroup_memory_limit_bytes(str(6 * 1024**3)), 6 * 1024**3)
+        with self.assertRaisesRegex(ValueError, "HOSTED_RUNNER_MEMTOTAL_UNAVAILABLE"):
+            parse_mem_total_bytes("MemAvailable: 4000000 kB\\n")
 
     def test_invalid_override_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "HOSTED_RUNNER_RSS_OVERRIDE_INVALID"):
