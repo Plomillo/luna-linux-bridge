@@ -274,10 +274,15 @@ def main() -> int:
     # Check for full upstream checkpoint shards inside each model module, not just the low-rank payload.
     full_source_rows = []
     model_root = root / "cajita-luna-runtime"
-    for pattern in ("model-00001-of-*.safetensors", "pytorch_model-00001-of-*.bin", "consolidated.00.pth", "model.safetensors.index.json"):
-        for p in model_root.rglob(pattern):
-            if p.is_file() and not p.is_symlink():
-                full_source_rows.append({"path": p.relative_to(model_root).as_posix(), "bytes": p.stat().st_size})
+    for p in model_root.rglob("*"):
+        if not p.is_file() or p.is_symlink():
+            continue
+        rel = p.relative_to(model_root).as_posix()
+        size = p.stat().st_size
+        if p.suffix.lower() in {".safetensors", ".bin", ".gguf", ".pth"} and size >= 1_000_000_000:
+            full_source_rows.append({"path": rel, "bytes": size, "classification": "LARGE_WEIGHT_PAYLOAD_CANDIDATE"})
+        elif re.fullmatch(r"(?:model|pytorch_model)-\d+-of-\d+\.(?:safetensors|bin)", p.name, flags=re.IGNORECASE):
+            full_source_rows.append({"path": rel, "bytes": size, "classification": "SHARDED_WEIGHT_PAYLOAD_CANDIDATE"})
     tokenizer_result = inspect_tokenizers(model_root)
     ancient_result = inspect_ancient_assets(model_root)
     rank1_domains = [
