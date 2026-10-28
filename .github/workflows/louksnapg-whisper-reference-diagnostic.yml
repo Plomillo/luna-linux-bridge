@@ -51,6 +51,11 @@ jobs:
           print("WHISPER_REFERENCE_DIAGNOSTIC_SYNTAX=PASS")
           PY
 
+      - name: Set up isolated Python runtime
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+
       - name: Install a single-threaded known-speech fixture generator
         shell: bash
         run: |
