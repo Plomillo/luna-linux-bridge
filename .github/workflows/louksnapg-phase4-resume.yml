@@ -95,7 +95,7 @@ jobs:
           set -euo pipefail
           git lfs install --local
           LFS_INCLUDE='cajita-luna-runtime/1. Cerebro/model.safetensors,cajita-luna-runtime/3. Transcripción/model.safetensors,cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors,cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors'
-          git lfs pull --include="$LFS_INCLUDE" --exclude="" origin "${{ github.ref }}_NAME"
+          git lfs pull --include="$LFS_INCLUDE" --exclude="" origin "$GITHUB_REF_NAME"
           echo "CANDIDATE_LFS_MATERIALIZATION=COMPLETE"
           echo "MODEL_INFERENCE=NOT_RUN"
 
