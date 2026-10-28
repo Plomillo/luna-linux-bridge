@@ -1,0 +1,173 @@
+name: LOUKSNAPG five-domain functional evidence (diagnostic only)
+
+on:
+  push:
+    branches:
+      - "louksnapg/integral-certification-diagnostics-20261027"
+    paths:
+      - ".github/workflows/louksnapg-integral-functional-certification.yml"
+      - "tools/louksnapg_five_domain_e2e.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg-five-domain-\${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  required-domain-functional-evidence:
+    name: Required-domain functional tests — not certification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact candidate commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: \${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: true
+
+      - name: Pin candidate and create evidence directory
+        shell: bash
+        continue-on-error: true
+        run: |
+          set +e
+          mkdir -p evidence/required-domain
+          actual="$(git rev-parse HEAD)"
+          tree="$(git rev-parse HEAD^{tree})"
+          printf 'github_sha=%s\nactual_head=%s\ntree_sha=%s\n' "$GITHUB_SHA" "$actual" "$tree" | tee evidence/candidate-identity.txt
+          if [ "$actual" = "$GITHUB_SHA" ]; then rc=0; else rc=1; fi
+          echo "CANDIDATE_IDENTITY_EXIT=$rc" >> "$GITHUB_ENV"
+          exit 0
+
+      - name: Install Git LFS and materialize only the four in-scope model weights
+        shell: bash
+        continue-on-error: true
+        run: |
+          set +e
+          sudo apt-get update -y
+          apt_rc=$?
+          sudo apt-get install -y git-lfs espeak-ng libsndfile1
+          packages_rc=$?
+          git lfs install
+          install_rc=$?
+          git lfs pull --include="cajita-luna-runtime/1. Cerebro/model.safetensors,cajita-luna-runtime/3. Transcripción/model.safetensors,cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors,cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors" --exclude="" origin "$GITHUB_REF_NAME"
+          pull_rc=$?
+          printf 'apt_update=%s\npackages=%s\nlfs_install=%s\nlfs_pull=%s\n' "$apt_rc" "$packages_rc" "$install_rc" "$pull_rc" | tee evidence/lfs-materialization.txt
+          echo "LFS_MATERIALIZATION_EXIT=$pull_rc" >> "$GITHUB_ENV"
+          exit 0
+
+      - name: Install CPU-only model runtime dependencies on hosted runner
+        shell: bash
+        continue-on-error: true
+        run: |
+          set +e
+          python -m pip install --disable-pip-version-check --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+          torch_rc=$?
+          python -m pip install --disable-pip-version-check --no-cache-dir "transformers>=4.55,<5" safetensors numpy sentencepiece scipy soundfile librosa
+          runtime_rc=$?
+          printf 'torch_cpu_install=%s\nmodel_runtime_install=%s\n' "$torch_rc" "$runtime_rc" | tee evidence/dependencies.txt
+          echo "TORCH_INSTALL_EXIT=$torch_rc" >> "$GITHUB_ENV"
+          echo "MODEL_DEPENDENCIES_EXIT=$runtime_rc" >> "$GITHUB_ENV"
+          exit 0
+
+      - name: Run route, task-adapter and static regression checks without short-circuiting
+        shell: bash
+        continue-on-error: true
+        run: |
+          set +e
+          python -B -m py_compile tools/louksnapg_five_domain_e2e.py tools/cajita_task_e2e.py cajita-luna-runtime/cajita_runtime.py cajita-luna-runtime/cajita_router.py cajita-luna-runtime/cajita_task_adapters.py cajita-luna-runtime/cajita_target_adapters.py
+          compile_rc=$?
+          PYTHONPATH=cajita-luna-runtime python -B -m unittest discover -s tests -p 'test_cajita_router.py' -v > evidence/router-tests.log 2>&1
+          router_rc=$?
+          PYTHONPATH=cajita-luna-runtime python -B -m unittest discover -s tests -p 'test_cajita_task_adapters.py' -v > evidence/task-adapter-tests.log 2>&1
+          adapters_rc=$?
+          cat evidence/router-tests.log
+          cat evidence/task-adapter-tests.log
+          printf 'compile=%s\nrouter_regression=%s\ntask_adapter_regression=%s\n' "$compile_rc" "$router_rc" "$adapters_rc" | tee evidence/unit-test-exitcodes.txt
+          echo "COMPILE_EXIT=$compile_rc" >> "$GITHUB_ENV"
+          echo "ROUTER_TESTS_EXIT=$router_rc" >> "$GITHUB_ENV"
+          echo "TASK_ADAPTER_TESTS_EXIT=$adapters_rc" >> "$GITHUB_ENV"
+          exit 0
+
+      - name: Execute functional tasks through the exact candidate's registered adapters
+        shell: bash
+        continue-on-error: true
+        run: |
+          set +e
+          python -B tools/louksnapg_five_domain_e2e.py --root cajita-luna-runtime --output-dir evidence/required-domain/cases --output evidence/required-domain/report.json --timeout 300 2>&1 | tee evidence/required-domain/functional-probe.log
+          probe_rc=\${PIPESTATUS[0]}
+          echo "FUNCTIONAL_PROBE_EXIT=$probe_rc" >> "$GITHUB_ENV"
+          exit 0
+
+      - name: Preserve candidate and test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: louksnapg-five-domain-evidence-\${{ github.sha }}
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Evaluate required-domain gates and emit explicit phase state
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          report_path = Path("evidence/required-domain/report.json")
+          report = json.loads(report_path.read_text()) if report_path.is_file() else {}
+          expected = {
+              "D01_CEREBRO": "D01_CEREBRO_ROOT",
+              "D03_TRANSCRIPCION": "D03_TRANSCRIPCION_ROOT",
+              "D04_TRADUCTOR_INTELIGENTE": "D04_TRADUCCION_GENERAL",
+              "D06_SISTEMA_INTELIGENTE": "D06_ANALISIS_AVANZADO",
+          }
+          rows = {row.get("domain_id"): row for row in report.get("required_model_tasks", [])}
+          gate = True
+          summary = []
+          summary.append("## LOUKSNAPG — evidencia funcional por dominio (no es certificación)")
+          summary.append("")
+          summary.append(f"- Candidate commit: \`{report.get('source_commit', os.environ.get('GITHUB_SHA', 'UNKNOWN'))}\`")
+          for domain, target in expected.items():
+              row = rows.get(domain, {})
+              passed = (
+                  row.get("status") == "PASS_FUNCTIONAL_EXECUTION"
+                  and row.get("exit_code") == 0
+                  and row.get("quality_acceptance", {}).get("status") == "PASS"
+                  and row.get("target_id") == target
+                  and row.get("identity_and_resource_gate") == "PASS"
+              )
+              gate = gate and passed
+              status = "PASS_SYNTHETIC_FUNCTIONAL_PROBE" if passed else "FAIL_OR_INSUFFICIENT_EVIDENCE"
+              summary.append(f"- {domain}: {status}; target={row.get('target_id')}; quality={row.get('quality_acceptance', {}).get('status')}; rss_bytes={row.get('peak_rss_bytes')}")
+          ancient = report.get("ancient_language_translation", {})
+          ancient_status = ancient.get("status", "NO_EVIDENCE")
+          summary.append(f"- Ancient-language translation: {ancient_status}; dedicated_adapter={ancient.get('dedicated_task_adapter_registered')}; route_normalization={ancient.get('task_normalization_probe', {}).get('status')}")
+          summary.append(f"- Compile exit: {os.environ.get('COMPILE_EXIT', 'UNKNOWN')}")
+          summary.append(f"- Router tests exit: {os.environ.get('ROUTER_TESTS_EXIT', 'UNKNOWN')}")
+          summary.append(f"- Task-adapter tests exit: {os.environ.get('TASK_ADAPTER_TESTS_EXIT', 'UNKNOWN')}")
+          unit_ok = all(os.environ.get(key) == "0" for key in ("COMPILE_EXIT", "ROUTER_TESTS_EXIT", "TASK_ADAPTER_TESTS_EXIT"))
+          if not unit_ok:
+              gate = False
+          if ancient_status != "PASS":
+              gate = False
+          summary.append("")
+          summary.append(f"- **Functional gate:** {'PASS_FOR_REQUIRED_DOMAINS_ONLY' if gate else 'FAIL_OR_BLOCKED'}")
+          summary.append("- **Integral certification:** NOT_GRANTED")
+          summary.append("- **G23 independent validation:** NOT_PERFORMED")
+          summary.append("- **G24 certification:** NOT_GRANTED")
+          summary.append("- Static, synthetic, or narrow task checks do not establish broad semantic-quality equivalence.")
+          output = "\n".join(summary) + "\n"
+          print(output)
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a", encoding="utf-8") as stream:
+                  stream.write(output)
+          sys.exit(0 if gate else 1)
+          PY
