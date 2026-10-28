@@ -34,7 +34,7 @@ jobs:
       HF_HUB_OFFLINE: "1"
       TRANSFORMERS_OFFLINE: "1"
       PYTHONNOUSERSITE: "1"
-      CAJITA_STATE_DIR: ${{ runner.temp }}/louksnapg-state
+      CAJITA_STATE_DIR: /tmp/louksnapg-state
     steps:
       - name: Check out exact candidate with a focused sparse tree
         id: checkout
