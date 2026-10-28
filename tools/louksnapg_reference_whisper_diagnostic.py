@@ -210,7 +210,16 @@ def main() -> int:
         "reference_model_id": MODEL_ID,
         "reference_model_revision": MODEL_REVISION,
         "expected_model_safetensors_sha256": EXPECTED_MODEL_SHA256,
-        "reference_scope": "KNOWN_SYNTHETIC_AUDIO_TASK_ONLY",
+        "reference_scope": "SYNTHETIC_AND_PINNED_REAL_SPEECH_WITH_INTEGRATED_DECODER_SETTINGS",
+        "decoder_policy": {
+            "matches_integrated_runtime": True,
+            "do_sample": False,
+            "num_beams": 1,
+            "repetition_penalty": 1.08,
+            "no_repeat_ngram_size": 3,
+            "renormalize_logits": True,
+            "minimum_new_tokens": "min(3, max_new_tokens)",
+        },
         "quality_check": {"id": "known-speech-hello-world", "expected_words": list(EXPECTED_WORDS)},
         "global_certification": "NOT_GRANTED",
         "product_candidate_promoted": False,
@@ -285,13 +294,19 @@ def main() -> int:
             features = processor(audio, sampling_rate=TARGET_SAMPLE_RATE, return_tensors="pt")
             inputs = features["input_features"].to(dtype=next(model.parameters()).dtype)
             with torch.inference_mode():
+                # Match the integrated candidate's deterministic decoding controls exactly.
+                # This isolates weight reconstruction from generation-policy effects.
                 generated = model.generate(
                     input_features=inputs,
                     language="en",
                     task="transcribe",
                     max_new_tokens=max_new_tokens,
-                    num_beams=1,
+                    min_new_tokens=min(3, max_new_tokens),
                     do_sample=False,
+                    repetition_penalty=1.08,
+                    no_repeat_ngram_size=3,
+                    renormalize_logits=True,
+                    num_beams=1,
                 )
             if not isinstance(generated, torch.Tensor) or generated.ndim != 2 or generated.shape[0] != 1:
                 raise RuntimeError("REFERENCE_TRANSCRIPTION_OUTPUT_SHAPE_INVALID")
