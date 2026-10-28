@@ -1,0 +1,594 @@
+name: LOUKSNAPG — ordered Phase 4 to 9 continuation
+
+on:
+  push:
+    branches:
+      - louksnapg/phase4-resume-20261028
+    paths:
+      - tools/louksnapg_phase4_to9_controller.py
+      - tools/louksnapg_prepare_private_candidate.py
+      - tools/louksnapg_phase7_independent_validate.py
+      - .github/workflows/louksnapg-phase4-to9.yml
+      - evidence/louksnapg/phase4-repair-candidate.json
+      - evidence/louksnapg/G23_INDEPENDENT_VALIDATION.json
+      - evidence/louksnapg/G24_CERTIFICATION.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: louksnapg-phase4-to9-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  NUMEXPR_NUM_THREADS: "1"
+  TOKENIZERS_PARALLELISM: "false"
+  HF_HUB_OFFLINE: "1"
+  TRANSFORMERS_OFFLINE: "1"
+  PYTHONNOUSERSITE: "1"
+
+jobs:
+  phase4-repair-gate:
+    name: "Phase 4 — repair admission from exact checkpoint"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      repair_ready: ${{ steps.gate.outputs.repair_ready }}
+      gate_status: ${{ steps.gate.outputs.gate_status }}
+      phase4_run_id: ${{ steps.latest.outputs.run_id }}
+    steps:
+      - name: Checkout continuation branch without LFS payloads
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 10
+          lfs: false
+          persist-credentials: false
+
+      - name: Select the most recent successful Phase-4 diagnostic run
+        id: latest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/louksnapg-phase4-resume.yml/runs" \
+            -f "branch=$GITHUB_REF_NAME" -F per_page=20 \
+            --jq '[.workflow_runs[] | select(.conclusion == "success")] | sort_by(.created_at) | last | .id // 0')"
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then run_id=0; fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "Selected Phase-4 evidence run: $run_id"
+
+      - name: Download Phase-4 evidence from the selected run
+        if: ${{ steps.latest.outputs.run_id != '0' }}
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg-phase4-evidence-${{ steps.latest.outputs.run_id }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.latest.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/phase4-evidence
+
+      - name: Evaluate Phase-4 evidence, private repair provenance and persistence guards
+        id: gate
+        shell: bash
+        env:
+          LOUKSNAPG_PHASE4_RUN_ID: ${{ steps.latest.outputs.run_id }}
+          LOUKSNAPG_PRIVATE_BUNDLE_URL: ${{ secrets.LOUKSNAPG_PRIVATE_BUNDLE_URL }}
+          LOUKSNAPG_PRIVATE_BUNDLE_TOKEN: ${{ secrets.LOUKSNAPG_PRIVATE_BUNDLE_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPORT="$(find "$RUNNER_TEMP/phase4-evidence" -type f -name 'LOUKSNAPG_PHASE4_DIAGNOSIS.json' -print -quit 2>/dev/null || true)"
+          if [ -z "$REPORT" ]; then REPORT="$RUNNER_TEMP/phase4-evidence/PHASE4_EVIDENCE_MISSING.json"; fi
+          python tools/louksnapg_phase4_to9_controller.py \
+            --root "$GITHUB_WORKSPACE" \
+            --phase4-report "$REPORT" \
+            --out "$RUNNER_TEMP/LOUKSNAPG_PHASE4_TO9_ADMISSION.json" \
+            | tee "$RUNNER_TEMP/phase4-admission.log"
+          {
+            echo "## Phase 4–9 continuation admission"
+            echo
+            cat "$RUNNER_TEMP/phase4-admission.log"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve admission decision and blocker evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-phase4-to9-admission-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/LOUKSNAPG_PHASE4_TO9_ADMISSION.json
+            ${{ runner.temp }}/phase4-admission.log
+          if-no-files-found: warn
+          retention-days: 90
+
+  phase5-targeted-retest:
+    name: "Phase 5 — targeted post-repair tests for prior failures"
+    needs: phase4-repair-gate
+    if: ${{ needs.phase4-repair-gate.outputs.repair_ready == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    outputs:
+      registered_tests_passed: ${{ steps.wrap.outputs.registered_tests_passed }}
+      candidate_id: ${{ steps.wrap.outputs.candidate_id }}
+    steps:
+      - name: Checkout exact gated controller commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Set up pinned Python runtime
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+
+      - name: Download the private candidate bundle without logging credentials
+        id: bundle
+        shell: bash
+        env:
+          LOUKSNAPG_PRIVATE_BUNDLE_URL: ${{ secrets.LOUKSNAPG_PRIVATE_BUNDLE_URL }}
+          LOUKSNAPG_PRIVATE_BUNDLE_TOKEN: ${{ secrets.LOUKSNAPG_PRIVATE_BUNDLE_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$LOUKSNAPG_PRIVATE_BUNDLE_URL"
+          test -n "$LOUKSNAPG_PRIVATE_BUNDLE_TOKEN"
+          mkdir -p "$RUNNER_TEMP/phase5"
+          curl --fail --silent --show-error --location --retry 2 \
+            --header "Authorization: Bearer $LOUKSNAPG_PRIVATE_BUNDLE_TOKEN" \
+            "$LOUKSNAPG_PRIVATE_BUNDLE_URL" \
+            --output "$RUNNER_TEMP/phase5/private-candidate.tar.gz"
+          echo "bundle=$RUNNER_TEMP/phase5/private-candidate.tar.gz" >> "$GITHUB_OUTPUT"
+
+      - name: Install bounded CPU-only functional-test dependencies on the hosted runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends espeak-ng
+          python -m pip install --disable-pip-version-check --upgrade pip
+          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check \
+            "transformers>=4.55,<5" safetensors numpy sentencepiece scipy soundfile librosa protobuf==4.25.9 PyYAML pillow
+
+      - name: Verify private bundle and materialize the isolated runtime
+        id: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/phase5/results"
+          python tools/louksnapg_prepare_private_candidate.py \
+            --bundle "$RUNNER_TEMP/phase5/private-candidate.tar.gz" \
+            --manifest evidence/louksnapg/phase4-repair-candidate.json \
+            --out-root "$RUNNER_TEMP/phase5/candidate-runtime" \
+            --report "$RUNNER_TEMP/phase5/results/LOUKSNAPG_PRIVATE_CANDIDATE_MATERIALIZATION.json"
+          python - "$RUNNER_TEMP/phase5/results/LOUKSNAPG_PRIVATE_CANDIDATE_MATERIALIZATION.json" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+          from pathlib import Path
+          d=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          print("candidate_tree_sha256="+d["runtime_tree_sha256"])
+          PY
+
+      - name: Retest the four previously failing registered domains only
+        id: wrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          PYTHONPATH="$RUNNER_TEMP/phase5/candidate-runtime" \
+            python -B tools/louksnapg_phase2_functional.py \
+              --root "$RUNNER_TEMP/phase5/candidate-runtime" \
+              --output-dir "$RUNNER_TEMP/phase5/results/tasks" \
+              --report "$RUNNER_TEMP/phase5/results/LOUKSNAPG_PHASE5_RAW_FUNCTIONAL_EVIDENCE.json" \
+              --timeout 900 \
+              --candidate-commit "$GITHUB_SHA"
+          test_code=$?
+          set -e
+          python - "$RUNNER_TEMP/phase5/results" "$GITHUB_SHA" "$GITHUB_OUTPUT" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          root=Path(sys.argv[1]); commit=sys.argv[2]; github_output=Path(sys.argv[3])
+          raw_path=root/"LOUKSNAPG_PHASE5_RAW_FUNCTIONAL_EVIDENCE.json"
+          prep_path=root/"LOUKSNAPG_PRIVATE_CANDIDATE_MATERIALIZATION.json"
+          raw=json.loads(raw_path.read_text(encoding="utf-8")) if raw_path.is_file() else {}
+          prep=json.loads(prep_path.read_text(encoding="utf-8"))
+          domains={"D01_CEREBRO","D03_TRANSCRIPCION","D04_TRADUCTOR_INTELIGENTE","D06_SISTEMA_INTELIGENTE"}
+          rows=[x for x in raw.get("domain_results",[]) if x.get("domain_id") in domains]
+          passed=len(rows)==4 and all(x.get("passed") is True for x in rows) and raw.get("registered_domain_tests_passed")==4
+          ancient=raw.get("ancient_translation",{}).get("status","NOT_TESTED")
+          report={
+            "schema":"LOUKSNAPG_PHASE5_TARGETED_RETEST/1.0",
+            "candidate_commit":commit,
+            "candidate_id":prep.get("candidate_id"),
+            "candidate_runtime_tree_sha256":prep.get("runtime_tree_sha256"),
+            "status":"PASS_REGISTERED_DOMAIN_RETESTS_WITH_ANCIENT_GAP" if passed and ancient!="PASS_NATIVE_KNOWN_ANSWER" else ("PASS_REGISTERED_DOMAIN_RETESTS" if passed else "FAIL_REGISTERED_DOMAIN_RETESTS"),
+            "registered_domain_tests_passed":sum(1 for x in rows if x.get("passed") is True),
+            "registered_domain_tests_expected":4,
+            "registered_domain_results":rows,
+            "ancient_translation_status":ancient,
+            "ancient_translation_native_test":"NOT_ESTABLISHED_BY_REGISTERED_DOMAIN_RUNNER",
+            "phase5_raw_evidence_sha256":hashlib.sha256(raw_path.read_bytes()).hexdigest() if raw_path.is_file() else None,
+            "candidate_materialization_report_sha256":hashlib.sha256(prep_path.read_bytes()).hexdigest(),
+            "phases_1_to_3":"REUSED_NOT_RERUN",
+            "canonical_runtime_mutated":False,
+            "local_model_payload_uploaded_to_public_repository":False,
+            "reference_quality_equivalence":"NOT_ESTABLISHED",
+            "global_certification":"NOT_GRANTED"
+          }
+          out=root/"LOUKSNAPG_PHASE5_TARGETED_RETEST.json"
+          out.write_text(json.dumps(report,sort_keys=True,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          print(json.dumps(report,sort_keys=True,ensure_ascii=False))
+          github_output.write_text(
+            "registered_tests_passed="+("true" if passed else "false")+"\n"+
+            "candidate_id="+str(prep.get("candidate_id",""))+"\n", encoding="utf-8")
+          PY
+          exit "$test_code"
+
+      - name: Preserve Phase-5 evidence even when a retest fails
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-phase5-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/phase5/results/
+          if-no-files-found: warn
+          retention-days: 90
+
+  phase6-integration:
+    name: "Phase 6 — integrated entrypoint, routing and non-regression"
+    needs: [phase4-repair-gate, phase5-targeted-retest]
+    if: ${{ needs.phase4-repair-gate.outputs.repair_ready == 'true' && needs.phase5-targeted-retest.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      integration_status: ${{ steps.report.outputs.integration_status }}
+      candidate_id: ${{ steps.report.outputs.candidate_id }}
+    steps:
+      - name: Checkout the pinned continuation commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Set up Python runtime
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+
+      - name: Download and re-verify the same private candidate bundle
+        shell: bash
+        env:
+          LOUKSNAPG_PRIVATE_BUNDLE_URL: ${{ secrets.LOUKSNAPG_PRIVATE_BUNDLE_URL }}
+          LOUKSNAPG_PRIVATE_BUNDLE_TOKEN: ${{ secrets.LOUKSNAPG_PRIVATE_BUNDLE_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/phase6"
+          curl --fail --silent --show-error --location --retry 2 \
+            --header "Authorization: Bearer $LOUKSNAPG_PRIVATE_BUNDLE_TOKEN" \
+            "$LOUKSNAPG_PRIVATE_BUNDLE_URL" \
+            --output "$RUNNER_TEMP/phase6/private-candidate.tar.gz"
+          python tools/louksnapg_prepare_private_candidate.py \
+            --bundle "$RUNNER_TEMP/phase6/private-candidate.tar.gz" \
+            --manifest evidence/louksnapg/phase4-repair-candidate.json \
+            --out-root "$RUNNER_TEMP/phase6/candidate-runtime" \
+            --report "$RUNNER_TEMP/phase6/LOUKSNAPG_PRIVATE_CANDIDATE_MATERIALIZATION.json"
+
+      - name: Run bounded route, CLI and regression checks
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/phase6/logs"
+          python -B "$RUNNER_TEMP/phase6/candidate-runtime/cajita_runtime.py" routes \
+            > "$RUNNER_TEMP/phase6/logs/candidate-routes.json"
+          python - "$RUNNER_TEMP/phase6/logs/candidate-routes.json" <<'PY'
+          import json, sys
+          from pathlib import Path
+          d=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert len(d.get("routes",[])) == 14, "CANONICAL_ROUTE_COUNT_MISMATCH"
+          assert len(d.get("domains",[])) == 6, "DOMAIN_COUNT_MISMATCH"
+          assert len(d.get("subdomain_routing",{}).get("targets",[])) == 21, "TARGET_COUNT_MISMATCH"
+          assert d.get("subdomain_routing",{}).get("schema") == "CAJITA_COMMAND_SUBDOMAIN_ROUTING/1.0"
+          PY
+          set +e
+          python -B "$RUNNER_TEMP/phase6/candidate-runtime/cajita_runtime.py" plan \
+            --request "Crea un PDF con este informe" \
+            > "$RUNNER_TEMP/phase6/logs/candidate-pdf-fail-closed.json" 2>&1
+          plan_code=$?
+          set -e
+          test "$plan_code" -eq 2
+          python - "$RUNNER_TEMP/phase6/logs/candidate-pdf-fail-closed.json" <<'PY'
+          import json, sys
+          from pathlib import Path
+          d=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert d.get("execution_authorized") is False
+          assert "PDF_GENERATION_ADAPTER_NOT_REGISTERED" in d.get("blockers",[])
+          PY
+          python -m unittest discover -s tests -p "test_cajita_router.py" -v \
+            > "$RUNNER_TEMP/phase6/logs/test_cajita_router.log" 2>&1
+          python -m unittest discover -s tests -p "test_cajita_antiparalysis.py" -v \
+            > "$RUNNER_TEMP/phase6/logs/test_cajita_antiparalysis.log" 2>&1
+          python -m unittest discover -s tests -p "test_cajita_task_adapters.py" -v \
+            > "$RUNNER_TEMP/phase6/logs/test_cajita_task_adapters.log" 2>&1
+
+      - name: Bind Phase-6 evidence to the same runtime tree
+        id: report
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$RUNNER_TEMP/phase6" "$GITHUB_SHA" "$GITHUB_OUTPUT" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          root=Path(sys.argv[1]); commit=sys.argv[2]; github_output=Path(sys.argv[3])
+          prep=json.loads((root/"LOUKSNAPG_PRIVATE_CANDIDATE_MATERIALIZATION.json").read_text(encoding="utf-8"))
+          logs=root/"logs"
+          checks=[]
+          for name in ("candidate-routes.json","candidate-pdf-fail-closed.json","test_cajita_router.log","test_cajita_antiparalysis.log","test_cajita_task_adapters.log"):
+            p=logs/name
+            checks.append({"name":name,"status":"PASS","log_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"bytes":p.stat().st_size})
+          report={
+            "schema":"LOUKSNAPG_PHASE6_INTEGRATION/1.0",
+            "candidate_commit":commit,
+            "candidate_id":prep.get("candidate_id"),
+            "candidate_runtime_tree_sha256":prep.get("runtime_tree_sha256"),
+            "status":"PASS_INTEGRATION_CHECKS",
+            "checks":checks,
+            "candidate_cli_route_execution":"PASS",
+            "canonical_route_count":14,
+            "declared_domain_count":6,
+            "subdomain_target_count":21,
+            "pdf_generation_guard":"PASS_FAIL_CLOSED_UNREGISTERED",
+            "phases_1_to_3":"REUSED_NOT_RERUN",
+            "global_certification":"NOT_GRANTED"
+          }
+          out=root/"LOUKSNAPG_PHASE6_INTEGRATION.json"
+          out.write_text(json.dumps(report,sort_keys=True,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          github_output.write_text("integration_status=PASS_INTEGRATION_CHECKS\ncandidate_id="+str(prep.get("candidate_id",""))+"\n",encoding="utf-8")
+          print(json.dumps(report,sort_keys=True,ensure_ascii=False))
+          PY
+
+      - name: Preserve Phase-6 test logs and integration evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-phase6-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/phase6/
+          if-no-files-found: warn
+          retention-days: 90
+
+  phase7-independent-validation:
+    name: "Phase 7 — independent evidence recheck on a fresh runner"
+    needs: [phase5-targeted-retest, phase6-integration]
+    if: ${{ needs.phase5-targeted-retest.result == 'success' && needs.phase6-integration.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      independent_valid: ${{ steps.validate.outputs.independent_valid }}
+      global_release_ready: ${{ steps.validate.outputs.global_release_ready }}
+    steps:
+      - name: Checkout validator and exact branch revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Download Phase-5 evidence from this run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg-phase5-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/phase7/phase5
+
+      - name: Download Phase-6 evidence from this run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg-phase6-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/phase7/phase6
+
+      - name: Recompute evidence hashes and validate candidate bindings independently
+        id: validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          P5="$(find "$RUNNER_TEMP/phase7/phase5" -type f -name 'LOUKSNAPG_PHASE5_TARGETED_RETEST.json' -print -quit)"
+          P6="$(find "$RUNNER_TEMP/phase7/phase6" -type f -name 'LOUKSNAPG_PHASE6_INTEGRATION.json' -print -quit)"
+          test -n "$P5"
+          test -n "$P6"
+          python tools/louksnapg_phase7_independent_validate.py \
+            --phase5 "$P5" --phase6 "$P6" \
+            --expected-commit "$GITHUB_SHA" \
+            --out "$RUNNER_TEMP/phase7/LOUKSNAPG_PHASE7_INDEPENDENT_VALIDATION.json"
+          python - "$RUNNER_TEMP/phase7/LOUKSNAPG_PHASE7_INDEPENDENT_VALIDATION.json" "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+          from pathlib import Path
+          d=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          with open(sys.argv[2],"a",encoding="utf-8") as f:
+            f.write("independent_valid="+("true" if d.get("status")=="PASS_SCOPED_EVIDENCE_RECHECK" else "false")+"\n")
+            f.write("global_release_ready="+("true" if d.get("global_release_ready") is True else "false")+"\n")
+          PY
+
+      - name: Preserve Phase-7 independent-validation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-phase7-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/phase7/
+          if-no-files-found: warn
+          retention-days: 90
+
+  phase8-release-gate:
+    name: "Phase 8 — release gate; no automatic certification propagation"
+    needs: [phase4-repair-gate, phase5-targeted-retest, phase6-integration, phase7-independent-validation]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      release_ready: ${{ steps.release.outputs.release_ready }}
+      release_status: ${{ steps.release.outputs.release_status }}
+    steps:
+      - name: Checkout exact branch state
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Deny release unless all required gates and the G23/G24 chain pass
+        id: release
+        shell: bash
+        env:
+          PHASE4_REPAIR_READY: ${{ needs.phase4-repair-gate.outputs.repair_ready }}
+          PHASE5_RESULT: ${{ needs.phase5-targeted-retest.result }}
+          PHASE6_RESULT: ${{ needs.phase6-integration.result }}
+          PHASE7_RESULT: ${{ needs.phase7-independent-validation.result }}
+          PHASE7_RELEASE_READY: ${{ needs.phase7-independent-validation.outputs.global_release_ready }}
+        run: |
+          set -euo pipefail
+          python - "$GITHUB_WORKSPACE" "$RUNNER_TEMP/LOUKSNAPG_PHASE8_RELEASE_GATE.json" "$GITHUB_SHA" \
+            "$PHASE4_REPAIR_READY" "$PHASE5_RESULT" "$PHASE6_RESULT" "$PHASE7_RESULT" "$PHASE7_RELEASE_READY" "$GITHUB_OUTPUT" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          root=Path(sys.argv[1]); out=Path(sys.argv[2]); commit=sys.argv[3]
+          phase4, phase5, phase6, phase7, p7_ready=sys.argv[4:9]
+          github_output=Path(sys.argv[9])
+          manifest_path=root/"evidence/louksnapg/phase4-repair-candidate.json"
+          candidate={}
+          if manifest_path.is_file():
+            try: candidate=json.loads(manifest_path.read_text(encoding="utf-8"))
+            except Exception: candidate={}
+          cid=candidate.get("candidate_id")
+          blockers=[]
+          if phase4!="true": blockers.append("PHASE4_REPAIR_GATE_NOT_PASSED")
+          if phase5!="success": blockers.append("PHASE5_TARGETED_RETEST_NOT_PASSED")
+          if phase6!="success": blockers.append("PHASE6_INTEGRATION_NOT_PASSED")
+          if phase7!="success": blockers.append("PHASE7_INDEPENDENT_VALIDATION_NOT_PASSED")
+          if p7_ready!="true": blockers.append("PHASE7_GLOBAL_RELEASE_READINESS_NOT_ESTABLISHED")
+          g23_path=root/"evidence/louksnapg/G23_INDEPENDENT_VALIDATION.json"
+          g24_path=root/"evidence/louksnapg/G24_CERTIFICATION.json"
+          g23={};g24={}
+          for p,var in ((g23_path,"g23"),(g24_path,"g24")):
+            if not p.is_file():
+              blockers.append(var.upper()+"_EVIDENCE_MISSING")
+              continue
+            try:
+              d=json.loads(p.read_text(encoding="utf-8"))
+              if var=="g23": g23=d
+              else: g24=d
+            except Exception:
+              blockers.append(var.upper()+"_EVIDENCE_INVALID_JSON")
+          if g23 and (g23.get("status")!="PASS" or g23.get("candidate_id")!=cid):
+            blockers.append("G23_STATUS_OR_CANDIDATE_BINDING_INVALID")
+          if g24:
+            if g24.get("status")!="CERTIFIED" or g24.get("candidate_id")!=cid:
+              blockers.append("G24_STATUS_OR_CANDIDATE_BINDING_INVALID")
+            if g23_path.is_file() and g24.get("g23_evidence_sha256")!=hashlib.sha256(g23_path.read_bytes()).hexdigest():
+              blockers.append("G24_G23_CHAIN_HASH_MISMATCH")
+          release_ready=not blockers
+          status="PASS_RELEASE_GATES" if release_ready else "BLOCKED_FAIL_CLOSED"
+          result={
+            "schema":"LOUKSNAPG_PHASE8_RELEASE_GATE/1.0","candidate_commit":commit,"candidate_id":cid,
+            "status":status,"release_ready":release_ready,"blockers":sorted(set(blockers)),
+            "phases_1_to_3":"REUSED_NOT_RERUN","automatic_certification_propagation":False,
+            "release_performed":False,"global_certification":"NOT_GRANTED_UNLESS_EXPLICIT_G23_G24_CHAIN_PASSES"
+          }
+          out.write_text(json.dumps(result,sort_keys=True,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          with open(github_output,"a",encoding="utf-8") as f:
+            f.write("release_ready="+("true" if release_ready else "false")+"\n")
+            f.write("release_status="+status+"\n")
+          print(json.dumps(result,sort_keys=True,ensure_ascii=False))
+          PY
+
+      - name: Preserve Phase-8 release decision
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-phase8-release-gate-${{ github.run_id }}
+          path: ${{ runner.temp }}/LOUKSNAPG_PHASE8_RELEASE_GATE.json
+          if-no-files-found: warn
+          retention-days: 90
+
+  phase9-governance:
+    name: "Phase 9 — provenance, rollback and final continuation checkpoint"
+    needs: [phase4-repair-gate, phase5-targeted-retest, phase6-integration, phase7-independent-validation, phase8-release-gate]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact controller revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Record ordered states and fail closed if any required gate is blocked
+        shell: bash
+        env:
+          PHASE4_RESULT: ${{ needs.phase4-repair-gate.result }}
+          PHASE4_GATE: ${{ needs.phase4-repair-gate.outputs.gate_status }}
+          REPAIR_READY: ${{ needs.phase4-repair-gate.outputs.repair_ready }}
+          PHASE5_RESULT: ${{ needs.phase5-targeted-retest.result }}
+          PHASE6_RESULT: ${{ needs.phase6-integration.result }}
+          PHASE7_RESULT: ${{ needs.phase7-independent-validation.result }}
+          PHASE8_RESULT: ${{ needs.phase8-release-gate.result }}
+          RELEASE_READY: ${{ needs.phase8-release-gate.outputs.release_ready }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/phase9"
+          python - "$RUNNER_TEMP/phase9/LOUKSNAPG_PHASE9_GOVERNANCE.json" "$GITHUB_SHA" <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          out=Path(sys.argv[1]); commit=sys.argv[2]
+          state={
+            "schema":"LOUKSNAPG_PHASE9_GOVERNANCE/1.0",
+            "candidate_commit":commit,
+            "phase4_gate":{"job_result":os.environ.get("PHASE4_RESULT"),"gate":os.environ.get("PHASE4_GATE"),"repair_ready":os.environ.get("REPAIR_READY")},
+            "phase5_targeted_retest":{"job_result":os.environ.get("PHASE5_RESULT")},
+            "phase6_integration":{"job_result":os.environ.get("PHASE6_RESULT")},
+            "phase7_independent_validation":{"job_result":os.environ.get("PHASE7_RESULT")},
+            "phase8_release_gate":{"job_result":os.environ.get("PHASE8_RESULT"),"release_ready":os.environ.get("RELEASE_READY")},
+            "phases_1_to_3":"REUSED_NOT_RERUN",
+            "canonical_runtime_mutation":False,
+            "private_local_assets_uploaded_to_public_repository":False,
+            "local_heavy_inference":False,
+            "rollback_anchor":"66f0f0d22f5e7f7d207b191b39e997d1253a3866",
+            "provenance_and_audit_artifacts":"UPLOADED_PER_PHASE_WHEN_AVAILABLE",
+            "global_certification":"NOT_GRANTED",
+            "status":"PASS_RELEASE_GATE" if os.environ.get("RELEASE_READY")=="true" else "BLOCKED_FAIL_CLOSED"
+          }
+          out.write_text(json.dumps(state,sort_keys=True,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          print(json.dumps(state,sort_keys=True,ensure_ascii=False))
+          PY
+          {
+            echo "## LOUKSNAPG — final Phase 4–9 checkpoint"
+            echo
+            cat "$RUNNER_TEMP/phase9/LOUKSNAPG_PHASE9_GOVERNANCE.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve final governance state
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-phase9-governance-${{ github.run_id }}
+          path: ${{ runner.temp }}/phase9/LOUKSNAPG_PHASE9_GOVERNANCE.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Return non-zero while any required gate is incomplete
+        if: ${{ needs.phase8-release-gate.outputs.release_ready != 'true' }}
+        shell: bash
+        run: |
+          echo "::error::LOUKSNAPG continuation is blocked at the first unmet phase gate. Review Phase 4–9 evidence artifacts; certification is not granted."
+          exit 23
