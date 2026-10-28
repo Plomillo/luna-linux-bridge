@@ -85,7 +85,7 @@ def inspect_factor_shapes(weight_path: Path) -> dict:
         keys = list(handle.keys())
         keyset = set(keys)
         for key in keys:
-            if key.endswith("_u"):
+            if key.endswith("_u") and "_scale_" not in key:
                 partner = key[:-2] + "_v"
                 if partner not in keyset:
                     continue
