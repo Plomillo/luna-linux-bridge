@@ -435,11 +435,20 @@ def run_runtime_task(runtime_root: Path, case_dir: Path, *, task_id: str, audio_
 
 def get_librispeech_fixture(work_dir: Path) -> tuple[Path, str, dict]:
     from datasets import Audio, load_dataset
+    from huggingface_hub import hf_hub_download
     import numpy as np
     import soundfile as sf
 
-    revision = DATASET_REVISION
-    dataset = load_dataset(DATASET_REPO, "clean", split="validation", revision=revision)
+    parquet = Path(hf_hub_download(
+        repo_id=DATASET_REPO,
+        filename="clean/validation-00000-of-00001.parquet",
+        repo_type="dataset",
+        revision=DATASET_REVISION,
+    ))
+    observed_parquet_sha = digest_file(parquet)
+    if observed_parquet_sha != DATASET_PARQUET_SHA256:
+        raise RuntimeError("PINNED_LIBRISPEECH_PARQUET_SHA256_MISMATCH:" + observed_parquet_sha)
+    dataset = load_dataset("parquet", data_files={"validation": str(parquet)}, split="validation")
     dataset = dataset.cast_column("audio", Audio(sampling_rate=16000, decode=False))
     row = next((x for x in dataset if x.get("id") == REAL_AUDIO_ID), None)
     if row is None:
@@ -474,6 +483,7 @@ def get_librispeech_fixture(work_dir: Path) -> tuple[Path, str, dict]:
         "repo": DATASET_REPO,
         "revision": DATASET_REVISION,
         "expected_parquet_sha256": DATASET_PARQUET_SHA256,
+        "observed_parquet_sha256": observed_parquet_sha,
         "sample_id": REAL_AUDIO_ID,
         "audio_asset_sha256": audio_sha,
         "audio_wav_sha256": digest_file(output),
