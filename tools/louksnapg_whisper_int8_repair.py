@@ -34,11 +34,19 @@ DATASET_REVISION = "5be91486e11a2d616f4ec5db8d3fd248585ac07a"
 DATASET_PARQUET_SHA256 = "4e69a06fa5edc90921e5e7e39a7084881f8b3ed9c805c574f4f39c6fde27c603"
 REAL_AUDIO_ID = "1272-128104-0000"
 REAL_WER_MAX = 0.25
-TARGET_BYTES = 40_000_000
-RANK = 29
+# The 40 MB candidate failed both required speech tasks. This next experiment
+# increases rank while remaining inside the previously measured 479 MB release ceiling.
+# The final release workflow must still measure the complete exact package before G24.
+TARGET_BYTES = 85_000_000
+RANK = 64
 OVERSAMPLE = 8
 BLOCK_ROWS = 64
-CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_EXPERIMENT"
+CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_R64_EXPERIMENT"
+GLOBAL_RELEASE_MAX_BYTES = 479_000_000
+BASELINE_RELEASE_BYTES = 371_947_716
+BASELINE_WHISPER_WEIGHT_BYTES = 10_399_882
+BASELINE_RELEASE_EVIDENCE_COMMIT = "d09f79a088781d26fc5b1c3e830db9abfb42c147"
+PROJECTED_PACKAGE_METADATA_RESERVE_BYTES = 1_000_000
 DOMAIN_PATH = "3. Transcripción"
 WEIGHT_REL = f"{DOMAIN_PATH}/model.safetensors"
 SIDECAR_REL = f"{WEIGHT_REL}.q4.json"
@@ -395,6 +403,7 @@ def run_runtime_task(runtime_root: Path, case_dir: Path, *, task_id: str, audio_
         "output_text_sha256": digest_bytes(str(text).encode("utf-8", errors="replace")),
         "output_char_count": len(str(text)),
         "output_word_count": len(words),
+        "transcription_text": str(text)[:1200],
         "peak_rss_bytes": response.get("peak_rss_bytes") if isinstance(response, dict) else None,
         "elapsed_seconds": round(time.monotonic() - start, 3),
         "stderr_sha256": digest_bytes(proc.stderr.encode("utf-8", errors="replace")),
@@ -724,6 +733,13 @@ def run_build(args) -> int:
     factor_metrics = make_int8_factors(source_weights, candidate_weight, RANK)
     metadata = prepare_metadata(runtime_root, candidate_weight, factor_metrics)
     actual_module_bytes = metadata["module_directory_bytes_including_descriptor"]
+    projected_release_bytes = (
+        BASELINE_RELEASE_BYTES
+        - BASELINE_WHISPER_WEIGHT_BYTES
+        + metadata["weight_bytes"]
+        + PROJECTED_PACKAGE_METADATA_RESERVE_BYTES
+    )
+    projected_release_size_pass = projected_release_bytes <= GLOBAL_RELEASE_MAX_BYTES
     report = {
         "schema": "LOUKSNAPG_WHISPER_INT8_REPAIR_EXPERIMENT/1.0",
         "status": "IN_PROGRESS",
@@ -747,19 +763,34 @@ def run_build(args) -> int:
         "candidate_weight_bytes": metadata["weight_bytes"],
         "candidate_module_bytes_including_descriptor": actual_module_bytes,
         "candidate_module_cap_pass": actual_module_bytes <= TARGET_BYTES,
+        "global_release_budget": {
+            "baseline_release_bytes": BASELINE_RELEASE_BYTES,
+            "baseline_release_evidence_commit": BASELINE_RELEASE_EVIDENCE_COMMIT,
+            "baseline_whisper_weight_bytes": BASELINE_WHISPER_WEIGHT_BYTES,
+            "projected_whisper_weight_bytes": metadata["weight_bytes"],
+            "reserved_metadata_overhead_bytes": PROJECTED_PACKAGE_METADATA_RESERVE_BYTES,
+            "projected_release_bytes": projected_release_bytes,
+            "hard_max_bytes": GLOBAL_RELEASE_MAX_BYTES,
+            "projected_size_pass": projected_release_size_pass,
+            "is_projection_not_final_package_measurement": True,
+        },
         "module_integrity": assert_temp_runtime_integrity(runtime_root) if actual_module_bytes <= TARGET_BYTES else None,
         "factorization": factor_metrics,
         "metadata": metadata,
         "global_certification": "NOT_GRANTED",
         "promotion_performed": False,
     }
-    if actual_module_bytes > TARGET_BYTES:
+    if actual_module_bytes > TARGET_BYTES or not projected_release_size_pass:
         report.update({
             "status": "FAIL_HARD_SIZE_CAP",
             "finished_at_utc": utc_now(),
             "elapsed_seconds": round(time.monotonic() - t0, 3),
             "peak_rss_bytes": peak_rss_bytes(),
-            "conclusion": "Raw INT8 candidate exceeds the 40,000,000-byte module limit; no task execution or promotion.",
+            "conclusion": (
+                "Candidate exceeds the measured module ceiling; no task execution or promotion."
+                if actual_module_bytes > TARGET_BYTES else
+                "Projected release exceeds the global hard ceiling; projection is conservative and exact package measurement is still required, no promotion."
+            ),
         })
         write_report(Path(args.report), report)
         return 2
@@ -767,9 +798,14 @@ def run_build(args) -> int:
     results, test_context = run_tests(runtime_root, work)
     report["task_results"] = results
     report["test_context"] = test_context
-    all_pass = all(row.get("task_pass") is True for row in results)
+    all_tasks_pass = all(row.get("task_pass") is True for row in results)
+    all_pass = all_tasks_pass and projected_release_size_pass
     report.update({
-        "status": "PASS_CANDIDATE_BUDGET_AND_TWO_TASKS" if all_pass else "FAIL_FUNCTIONAL_OR_QUALITY_GATE",
+        "status": (
+            "PASS_CANDIDATE_BUDGET_AND_TWO_TASKS" if all_pass else
+            "PASS_TWO_TASKS_GLOBAL_SIZE_GATE_FAIL" if all_tasks_pass else
+            "FAIL_FUNCTIONAL_OR_QUALITY_GATE"
+        ),
         "finished_at_utc": utc_now(),
         "elapsed_seconds": round(time.monotonic() - t0, 3),
         "peak_rss_bytes": peak_rss_bytes(),
@@ -829,6 +865,8 @@ def run_verify(args) -> int:
     module = runtime_root / DOMAIN_PATH
     module_bytes = sum(p.stat().st_size for p in module.rglob("*") if p.is_file())
     metadata = json.loads((module / "compression_metadata.json").read_text(encoding="utf-8"))
+    if int(metadata.get("rank", -1)) != RANK or int(metadata.get("target_bytes", -1)) != TARGET_BYTES:
+        raise RuntimeError("PROMOTED_WHISPER_RANK_OR_SIZE_POLICY_MISMATCH")
     weight_sha = digest_file(module / "model.safetensors")
     if (module / "model.safetensors.q4.json").exists() or metadata.get("actual_secondary_factor_packing") != "NONE_RAW_INT8_FACTORS":
         raise RuntimeError("PROMOTED_WHISPER_CANDIDATE_IS_NOT_RAW_INT8")
@@ -847,7 +885,9 @@ def run_verify(args) -> int:
         "weight_bytes": (module / "model.safetensors").stat().st_size,
         "module_bytes_including_descriptor": module_bytes,
         "module_hard_cap_bytes": TARGET_BYTES,
+        "rank": RANK,
         "module_cap_pass": module_bytes <= TARGET_BYTES,
+        "global_release_size": "FINAL_EXACT_PACKAGE_MEASUREMENT_REQUIRED_BEFORE_RELEASE",
         "module_integrity": integrity,
         "task_results": results,
         "test_context": test_context,
