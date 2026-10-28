@@ -1,0 +1,333 @@
+name: LOUKSNAPG — Whisper INT8 repair experiment
+
+on:
+  push:
+    branches:
+      - louksnapg/phase4-resume-20261028
+    paths:
+      - tools/louksnapg_whisper_int8_repair.py
+      - .github/workflows/louksnapg-whisper-int8-repair.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: louksnapg-whisper-int8-repair
+  cancel-in-progress: false
+
+env:
+  OMP_NUM_THREADS: "1"
+  OMP_THREAD_LIMIT: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  NUMEXPR_NUM_THREADS: "1"
+  TOKENIZERS_PARALLELISM: "false"
+  PYTHONNOUSERSITE: "1"
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  HF_HUB_ENABLE_HF_TRANSFER: "0"
+
+jobs:
+  candidate:
+    name: "Rebuild raw INT8 factors and test two transcription tasks"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    outputs:
+      promotion_ready: ${{ steps.run_experiment.outputs.promotion_ready }}
+    steps:
+      - name: Checkout exact source candidate without downloading model LFS objects
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+          sparse-checkout: |
+            tools/louksnapg_whisper_int8_repair.py
+            cajita-luna-runtime/cajita_runtime.py
+            cajita-luna-runtime/cajita_weight_materializer.py
+            cajita-luna-runtime/cajita_tokenizer_materializer.py
+            cajita-luna-runtime/cajita_task_adapters.py
+            cajita-luna-runtime/cajita_router.py
+            cajita-luna-runtime/cajita_target_adapters.py
+            cajita-luna-runtime/cajita_antiparalysis.py
+            cajita-luna-runtime/command_subdomain_routing.json
+            cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
+            cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json
+            cajita-luna-runtime/3. Transcripción
+
+      - name: Set up isolated Python toolcache
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+
+      - name: Enforce runner resource preflight and install audio fixture generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, shutil
+          root = "${{ runner.temp }}"
+          free = shutil.disk_usage(root).free
+          if free < 6 * 1024**3:
+              raise SystemExit("RUNNER_DISK_PREFLIGHT_DENIED:" + str(free))
+          print(json.dumps({"runner_temp_free_bytes": free, "local_pc_used": False}))
+          PY
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends espeak-ng
+
+      - name: Install pinned single-threaded CPU dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check "torch==2.7.1" --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check             "transformers==4.55.4"             "huggingface_hub==0.35.3"             "safetensors==0.6.2"             "soundfile==0.13.1"             "scipy==1.16.2"             "sentencepiece==0.2.1"             "numpy==2.2.6"             "datasets==3.2.0"             "pyarrow==19.0.1"
+
+      - name: Syntax and import preflight without inference
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B - <<'PY'
+          from pathlib import Path
+          name = "tools/louksnapg_whisper_int8_repair.py"
+          compile(Path(name).read_text(encoding="utf-8"), name, "exec")
+          import torch, safetensors, datasets, pyarrow, transformers
+          torch.set_num_threads(1)
+          torch.set_num_interop_threads(1)
+          print("WHISPER_REPAIR_SYNTAX=PASS")
+          print("THREADS=1")
+          PY
+
+      - name: Build temporary raw-INT8 candidate and run synthetic plus real-speech checks
+        id: run_experiment
+        shell: bash
+        env:
+          HF_HOME: ${{ runner.temp }}/whisper-int8/hf-home
+          HF_DATASETS_CACHE: ${{ runner.temp }}/whisper-int8/datasets
+        run: |
+          set +e
+          mkdir -p "$RUNNER_TEMP/whisper-int8/evidence" "$RUNNER_TEMP/whisper-int8/work" "$RUNNER_TEMP/whisper-int8/promotion"
+          python -B tools/louksnapg_whisper_int8_repair.py             --mode build-and-test             --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime"             --work-dir "$RUNNER_TEMP/whisper-int8/work"             --report "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json"             --promotion-tar "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz"             2>&1 | tee "$RUNNER_TEMP/whisper-int8/experiment.log"
+          rc=${PIPESTATUS[0]}
+          python - "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json" "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz" "$GITHUB_OUTPUT" <<'PY'
+          import json, os, sys
+          report_path, payload_path, out = sys.argv[1:]
+          try:
+              report = json.load(open(report_path, encoding="utf-8"))
+              ready = report.get("status") == "PASS_CANDIDATE_BUDGET_AND_TWO_TASKS" and os.path.isfile(payload_path)
+          except Exception:
+              ready = False
+              report = {"status": "REPORT_MISSING_OR_INVALID"}
+          with open(out, "a", encoding="utf-8") as f:
+              f.write("promotion_ready=" + ("true" if ready else "false") + "\n")
+          print(json.dumps({"promotion_ready": ready, "candidate_status": report.get("status"), "candidate_commit": report.get("source_commit")}))
+          PY
+          output_rc=$?
+          set -e
+          if [ "$output_rc" -ne 0 ]; then exit "$output_rc"; fi
+          exit "$rc"
+
+      - name: Upload forensic evidence even when the candidate is rejected
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-whisper-int8-evidence-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/whisper-int8/evidence/
+            ${{ runner.temp }}/whisper-int8/experiment.log
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload candidate payload only when size and both quality gates pass
+        if: steps.run_experiment.outputs.promotion_ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-whisper-int8-promotion-${{ github.run_id }}
+          path: ${{ runner.temp }}/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+  promote:
+    name: "Promote only a candidate passing both task checks"
+    needs: candidate
+    if: always() && needs.candidate.outputs.promotion_ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      promoted_sha: ${{ steps.push_candidate.outputs.promoted_sha }}
+      previous_sha: ${{ steps.push_candidate.outputs.previous_sha }}
+    steps:
+      - name: Checkout active repair branch with write authorization
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+          lfs: false
+          persist-credentials: true
+
+      - name: Download validated promotion payload
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg-whisper-int8-promotion-${{ github.run_id }}
+          path: ${{ runner.temp }}/whisper-promotion
+
+      - name: Verify payload identity, apply only the scoped Whisper repair, and commit
+        id: push_candidate
+        shell: bash
+        env:
+          BRANCH_NAME: louksnapg/phase4-resume-20261028
+        run: |
+          set -euo pipefail
+          payload="$RUNNER_TEMP/whisper-promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz"
+          test -s "$payload"
+          tar -tzf "$payload" | grep -Fxq "cajita-luna-runtime/3. Transcripción/model.safetensors"
+          mkdir -p "$RUNNER_TEMP/whisper-promotion/extracted"
+          tar -xzf "$payload" -C "$RUNNER_TEMP/whisper-promotion/extracted"
+          manifest="$RUNNER_TEMP/whisper-promotion/extracted/LOUKSNAPG_WHISPER_INT8_PROMOTION_MANIFEST.json"
+          python - "$manifest" <<'PY'
+          import hashlib, json, pathlib, sys
+          d = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if d.get("candidate_id") != "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_EXPERIMENT":
+              raise SystemExit("PROMOTION_CANDIDATE_ID_MISMATCH")
+          if d.get("global_certification") != "NOT_GRANTED":
+              raise SystemExit("UNAUTHORIZED_CERTIFICATION_PROPAGATION")
+          wanted = {"cajita-luna-runtime/cajita_runtime.py",
+                    "cajita-luna-runtime/cajita_task_adapters.py",
+                    "cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json",
+                    "cajita-luna-runtime/3. Transcripción/model.safetensors",
+                    "cajita-luna-runtime/3. Transcripción/compression_metadata.json",
+                    "cajita-luna-runtime/3. Transcripción/CAJITA_MODULE.json"}
+          rows = {x["path"]: x for x in d.get("files", [])}
+          if set(rows) != wanted:
+              raise SystemExit("PROMOTION_SCOPE_MISMATCH")
+          root = pathlib.Path(sys.argv[1]).parent
+          for rel, row in rows.items():
+              path = root / rel
+              if not path.is_file() or path.stat().st_size != row["bytes"]:
+                  raise SystemExit("PROMOTION_SIZE_MISMATCH:" + rel)
+              h = hashlib.sha256(path.read_bytes()).hexdigest()
+              if h != row["sha256"]:
+                  raise SystemExit("PROMOTION_HASH_MISMATCH:" + rel)
+          if d.get("delete_paths") != ["cajita-luna-runtime/3. Transcripción/model.safetensors.q4.json"]:
+              raise SystemExit("PROMOTION_DELETE_SCOPE_MISMATCH")
+          print("PROMOTION_PAYLOAD_INTEGRITY=PASS")
+          PY
+          previous_sha="$(git rev-parse HEAD)"
+          cp -a "$RUNNER_TEMP/whisper-promotion/extracted/cajita-luna-runtime/." "$GITHUB_WORKSPACE/cajita-luna-runtime/"
+          mkdir -p "$GITHUB_WORKSPACE/evidence/louksnapg"
+          cp -a "$RUNNER_TEMP/whisper-promotion/extracted/evidence/louksnapg/." "$GITHUB_WORKSPACE/evidence/louksnapg/"
+          rm -f -- "cajita-luna-runtime/3. Transcripción/model.safetensors.q4.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --             "cajita-luna-runtime/cajita_runtime.py"             "cajita-luna-runtime/cajita_task_adapters.py"             "cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json"             "cajita-luna-runtime/3. Transcripción/model.safetensors"             "cajita-luna-runtime/3. Transcripción/compression_metadata.json"             "cajita-luna-runtime/3. Transcripción/CAJITA_MODULE.json"             "cajita-luna-runtime/3. Transcripción/model.safetensors.q4.json"             "evidence/louksnapg/"
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m "LOUKSNAPG: replace Whisper Q2 factors with tested raw INT8 candidate"
+          git push origin "HEAD:$BRANCH_NAME"
+          echo "previous_sha=$previous_sha" >> "$GITHUB_OUTPUT"
+          echo "promoted_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  verify-promoted:
+    name: "Retest the exact promoted commit and persist evidence"
+    needs: promote
+    if: needs.promote.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact promoted commit without unrelated model weights
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.promote.outputs.promoted_sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: true
+          sparse-checkout: |
+            tools/louksnapg_whisper_int8_repair.py
+            cajita-luna-runtime/cajita_runtime.py
+            cajita-luna-runtime/cajita_weight_materializer.py
+            cajita-luna-runtime/cajita_tokenizer_materializer.py
+            cajita-luna-runtime/cajita_task_adapters.py
+            cajita-luna-runtime/cajita_router.py
+            cajita-luna-runtime/cajita_target_adapters.py
+            cajita-luna-runtime/cajita_antiparalysis.py
+            cajita-luna-runtime/command_subdomain_routing.json
+            cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
+            cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json
+            cajita-luna-runtime/3. Transcripción
+
+      - name: Set up isolated Python toolcache
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+
+      - name: Install runtime dependencies and real-audio fixture dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends espeak-ng
+          python -m pip install --disable-pip-version-check "torch==2.7.1" --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check             "transformers==4.55.4"             "huggingface_hub==0.35.3"             "safetensors==0.6.2"             "soundfile==0.13.1"             "scipy==1.16.2"             "sentencepiece==0.2.1"             "numpy==2.2.6"             "datasets==3.2.0"             "pyarrow==19.0.1"
+
+      - name: Retest exact committed runtime on synthetic and real recorded speech
+        id: retest
+        shell: bash
+        env:
+          HF_HOME: ${{ runner.temp }}/whisper-verify/hf-home
+          HF_DATASETS_CACHE: ${{ runner.temp }}/whisper-verify/datasets
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/whisper-verify/evidence" "$RUNNER_TEMP/whisper-verify/work"
+          python -B tools/louksnapg_whisper_int8_repair.py             --mode verify-existing             --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime"             --work-dir "$RUNNER_TEMP/whisper-verify/work"             --report "$RUNNER_TEMP/whisper-verify/evidence/LOUKSNAPG_WHISPER_INT8_EXACT_COMMIT_VERIFICATION.json"
+
+      - name: Upload exact-commit verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-whisper-int8-exact-commit-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/whisper-verify/evidence/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Commit exact-commit test evidence (not certification)
+        if: success()
+        shell: bash
+        env:
+          BRANCH_NAME: louksnapg/phase4-resume-20261028
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/whisper-verify/evidence/LOUKSNAPG_WHISPER_INT8_EXACT_COMMIT_VERIFICATION.json"
+          python - "$report" <<'PY'
+          import json, pathlib, sys
+          d = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if d.get("status") != "PASS_EXACT_COMMIT_TWO_TASK_RETEST":
+              raise SystemExit("EXACT_COMMIT_VERIFICATION_NOT_PASSED")
+          if d.get("global_certification") != "NOT_GRANTED":
+              raise SystemExit("UNAUTHORIZED_CERTIFICATION_PROPAGATION")
+          PY
+          evidence_path="evidence/louksnapg/whisper-int8-exact-commit-${{ github.run_id }}.json"
+          mkdir -p "$(dirname "$evidence_path")"
+          cp "$report" "$evidence_path"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$evidence_path"
+          git diff --cached --check
+          git commit -m "LOUKSNAPG: record exact-commit Whisper INT8 verification"
+          git push origin "HEAD:$BRANCH_NAME"
+
+      - name: Roll back the candidate if exact-commit verification fails
+        if: failure()
+        shell: bash
+        env:
+          BRANCH_NAME: louksnapg/phase4-resume-20261028
+          PROMOTED_SHA: ${{ needs.promote.outputs.promoted_sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$BRANCH_NAME"
+          git checkout -B rollback-verification "origin/$BRANCH_NAME"
+          if ! git merge-base --is-ancestor "$PROMOTED_SHA" HEAD; then
+            echo "ROLLBACK_BLOCKED: promoted candidate is not an ancestor of current branch tip"
+            exit 1
+          fi
+          git revert --no-edit "$PROMOTED_SHA"
+          git push origin "HEAD:$BRANCH_NAME"
