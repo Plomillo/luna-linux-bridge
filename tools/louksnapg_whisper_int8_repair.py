@@ -158,6 +158,20 @@ def copy_runtime_skeleton(source: Path, destination: Path, *, include_whisper_we
     sys.path.insert(0, str(destination))
 
 
+def make_synthetic_audio(path: Path) -> Path:
+    executable = shutil.which("espeak-ng")
+    if not executable:
+        raise RuntimeError("ESPEAK_NG_REQUIRED_FOR_KNOWN_SPEECH_FIXTURE")
+    subprocess.run(
+        [executable, "-v", "en-us", "-s", "135", "-w", str(path), "hello world"],
+        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, timeout=30,
+    )
+    with wave.open(str(path), "rb") as stream:
+        if stream.getnframes() <= 0 or stream.getsampwidth() != 2 or stream.getnchannels() not in (1, 2):
+            raise RuntimeError("ESPEAK_NG_FIXTURE_WAV_INVALID")
+    return path
+
+
 def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
     import torch
     from safetensors import safe_open
@@ -172,6 +186,7 @@ def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
         if len(keys) != 587:
             raise RuntimeError("WHISPER_SOURCE_TENSOR_COUNT_MISMATCH:" + str(len(keys)))
         records = []
+        preserved_vectors = 0
         total_source_norm_sq = 0.0
         total_residual_sq = 0.0
         output = {}
@@ -241,6 +256,8 @@ def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
                     )),
                 })
             elif len(shape) == 1 or key in preserved:
+                if len(shape) == 1:
+                    preserved_vectors += 1
                 output[key] = sl[:].contiguous()
             else:
                 raise RuntimeError("UNSUPPORTED_SOURCE_TENSOR_SHAPE:" + key + ":" + str(shape))
@@ -271,7 +288,7 @@ def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
     return {
         "source_tensor_count": len(keys),
         "source_matrix_count_factorized": len(records),
-        "source_vector_count_preserved": sum(1 for k in keys if len(source.get_slice(k).get_shape()) == 1),
+        "source_vector_count_preserved": preserved_vectors,
         "position_embedding_tensors_preserved": sorted(preserved),
         "rank": rank,
         "oversample": OVERSAMPLE,
@@ -619,12 +636,8 @@ def build_promotion_tar(runtime_root: Path, repo_root: Path, report_path: Path, 
 
 
 def run_tests(runtime_root: Path, work_dir: Path) -> tuple[list[dict], dict]:
-    from espeak_audio import make_fixture
-    import soundfile as sf
-    import numpy as np
-
     synthetic = work_dir / "synthetic-hello-world.wav"
-    make_fixture(synthetic)
+    make_synthetic_audio(synthetic)
     real_audio, real_text, dataset_metadata = get_librispeech_fixture(work_dir)
     cases_dir = work_dir / "task-results"
     hello_result = run_runtime_task(
@@ -717,10 +730,6 @@ def run_build(args) -> int:
         write_report(Path(args.report), report)
         return 2
 
-    # This generator creates the exact WAV fixture used by the existing phase-2 harness.
-    helper = Path(__file__).resolve().parent / "louksnapg_whisper_fixture_helper.py"
-    if not helper.is_file():
-        raise RuntimeError("WHISPER_FIXTURE_HELPER_MISSING")
     results, test_context = run_tests(runtime_root, work)
     report["task_results"] = results
     report["test_context"] = test_context
