@@ -8,6 +8,7 @@ on:
       - tools/louksnapg_phase4_to9_controller.py
       - tools/louksnapg_prepare_private_candidate.py
       - tools/louksnapg_phase7_independent_validate.py
+      - tools/louksnapg_fetch_private_bundle.py
       - .github/workflows/louksnapg-phase4-to9.yml
       - evidence/louksnapg/phase4-repair-candidate.json
       - evidence/louksnapg/G23_INDEPENDENT_VALIDATION.json
@@ -48,6 +49,23 @@ jobs:
           fetch-depth: 10
           lfs: false
           persist-credentials: false
+
+      - name: Compile-check all continuation scripts without generating bytecode
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B - <<'PY'
+          from pathlib import Path
+          paths = (
+              "tools/louksnapg_phase4_to9_controller.py",
+              "tools/louksnapg_prepare_private_candidate.py",
+              "tools/louksnapg_phase7_independent_validate.py",
+              "tools/louksnapg_fetch_private_bundle.py",
+          )
+          for name in paths:
+              compile(Path(name).read_text(encoding="utf-8"), name, "exec")
+          print("CONTINUATION_SCRIPT_SYNTAX=PASS")
+          PY
 
       - name: Download the exact pinned Phase-4 checkpoint evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -122,13 +140,10 @@ jobs:
           LOUKSNAPG_PRIVATE_BUNDLE_TOKEN: ${{ secrets.LOUKSNAPG_PRIVATE_BUNDLE_TOKEN }}
         run: |
           set -euo pipefail
-          test -n "$LOUKSNAPG_PRIVATE_BUNDLE_URL"
-          test -n "$LOUKSNAPG_PRIVATE_BUNDLE_TOKEN"
           mkdir -p "$RUNNER_TEMP/phase5"
-          curl --fail --silent --show-error --location --retry 2 \
-            --header "Authorization: Bearer $LOUKSNAPG_PRIVATE_BUNDLE_TOKEN" \
-            "$LOUKSNAPG_PRIVATE_BUNDLE_URL" \
-            --output "$RUNNER_TEMP/phase5/private-candidate.tar.gz"
+          python tools/louksnapg_fetch_private_bundle.py \
+            --manifest evidence/louksnapg/phase4-repair-candidate.json \
+            --out "$RUNNER_TEMP/phase5/private-candidate.tar.gz"
           echo "bundle=$RUNNER_TEMP/phase5/private-candidate.tar.gz" >> "$GITHUB_OUTPUT"
 
       - name: Install bounded CPU-only functional-test dependencies on the hosted runner
@@ -255,10 +270,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/phase6"
-          curl --fail --silent --show-error --location --retry 2 \
-            --header "Authorization: Bearer $LOUKSNAPG_PRIVATE_BUNDLE_TOKEN" \
-            "$LOUKSNAPG_PRIVATE_BUNDLE_URL" \
-            --output "$RUNNER_TEMP/phase6/private-candidate.tar.gz"
+          python tools/louksnapg_fetch_private_bundle.py \
+            --manifest evidence/louksnapg/phase4-repair-candidate.json \
+            --out "$RUNNER_TEMP/phase6/private-candidate.tar.gz"
           python tools/louksnapg_prepare_private_candidate.py \
             --bundle "$RUNNER_TEMP/phase6/private-candidate.tar.gz" \
             --manifest evidence/louksnapg/phase4-repair-candidate.json \
