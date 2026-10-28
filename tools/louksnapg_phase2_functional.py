@@ -12,6 +12,8 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
+import sys
 import time
 from pathlib import Path
 
@@ -55,7 +57,113 @@ def event(name: str, **fields) -> None:
     print(json.dumps({"event": name, "timestamp_utc": utc_now(), **fields}, ensure_ascii=False), flush=True)
 
 
+def require_hosted_runner(environ: dict[str, str] | None = None) -> None:
+    """Block accidental local model inference; the 1 GiB limit applies only to PC inspection."""
+    env = os.environ if environ is None else environ
+    if env.get("GITHUB_ACTIONS", "").strip().lower() != "true":
+        raise RuntimeError("HEAVY_MODEL_INFERENCE_REQUIRES_GITHUB_HOSTED_RUNNER")
+
+
+def parse_mem_total_bytes(meminfo_text: str) -> int:
+    match = re.search(r"^MemTotal:\\s+(\\d+)\\s+kB\\s*$", meminfo_text, flags=re.MULTILINE)
+    if not match:
+        raise ValueError("HOSTED_RUNNER_MEMTOTAL_UNAVAILABLE")
+    value = int(match.group(1)) * 1024
+    if value <= 0:
+        raise ValueError("HOSTED_RUNNER_MEMTOTAL_INVALID")
+    return value
+
+
+def parse_cgroup_memory_limit_bytes(text: str) -> int | None:
+    value = text.strip()
+    if not value or value.lower() == "max":
+        return None
+    if not value.isdigit():
+        return None
+    limit = int(value)
+    # cgroup v1 and some containers expose a huge sentinel instead of a real cap.
+    if limit <= 0 or limit >= (1 << 60):
+        return None
+    return limit
+
+
+def calculate_hosted_runner_rss_budget_bytes(
+    mem_total_bytes: int,
+    cgroup_limit_bytes: int | None = None,
+    override_bytes: int | None = None,
+) -> dict:
+    """Calculate an independent hosted-runner budget; never reuse the local 1 GiB cap."""
+    if override_bytes is not None:
+        if isinstance(override_bytes, bool) or not isinstance(override_bytes, int) or override_bytes <= 0:
+            raise ValueError("HOSTED_RUNNER_RSS_OVERRIDE_INVALID")
+        return {
+            "rss_budget_bytes": override_bytes,
+            "effective_memory_limit_bytes": None,
+            "budget_source": "LOUKSNAPG_HOSTED_RUNNER_RSS_CAP_BYTES",
+            "budget_fraction": None,
+            "local_inspection_budget_applied": False,
+        }
+    limits = [x for x in (mem_total_bytes, cgroup_limit_bytes) if isinstance(x, int) and not isinstance(x, bool) and x > 0]
+    if not limits:
+        raise ValueError("HOSTED_RUNNER_MEMORY_LIMIT_UNAVAILABLE")
+    effective_limit = min(limits)
+    # Keep a 25% headroom for the OS, runner agent, and concurrent CI services.
+    budget = int(effective_limit * 0.75)
+    if budget <= 0:
+        raise ValueError("HOSTED_RUNNER_RSS_BUDGET_INVALID")
+    return {
+        "rss_budget_bytes": budget,
+        "effective_memory_limit_bytes": effective_limit,
+        "budget_source": "75_PERCENT_OF_MIN_MEMTOTAL_AND_CGROUP_LIMIT",
+        "budget_fraction": 0.75,
+        "local_inspection_budget_applied": False,
+    }
+
+
+def read_hosted_runner_rss_budget(
+    environ: dict[str, str] | None = None,
+    meminfo_path: Path = Path("/proc/meminfo"),
+    cgroup_paths: tuple[Path, ...] = (
+        Path("/sys/fs/cgroup/memory.max"),
+        Path("/sys/fs/cgroup/memory/memory.limit_in_bytes"),
+    ),
+) -> dict:
+    env = os.environ if environ is None else environ
+    require_hosted_runner(env)
+    override_text = env.get("LOUKSNAPG_HOSTED_RUNNER_RSS_CAP_BYTES", "").strip()
+    override = None
+    if override_text:
+        if not override_text.isdigit():
+            raise ValueError("HOSTED_RUNNER_RSS_OVERRIDE_INVALID")
+        override = int(override_text)
+    if override is not None:
+        return calculate_hosted_runner_rss_budget_bytes(0, override_bytes=override)
+    mem_total = parse_mem_total_bytes(meminfo_path.read_text(encoding="ascii"))
+    cgroup_limit = None
+    for candidate in cgroup_paths:
+        try:
+            value = parse_cgroup_memory_limit_bytes(candidate.read_text(encoding="ascii"))
+        except OSError:
+            continue
+        if value is not None:
+            cgroup_limit = value
+            break
+    return calculate_hosted_runner_rss_budget_bytes(mem_total, cgroup_limit)
+
+
 def main() -> int:
+    try:
+        require_hosted_runner()
+        runner_rss_budget = read_hosted_runner_rss_budget()
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(json.dumps({
+            "event": "PHASE_2_ADMISSION_DENIED",
+            "reason": str(exc)[:240],
+            "heavy_model_inference": "NOT_STARTED",
+            "global_certification": "NOT_GRANTED",
+        }, sort_keys=True), file=sys.stderr, flush=True)
+        return 90
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True, type=Path)
     ap.add_argument("--output-dir", required=True, type=Path)
@@ -127,6 +235,8 @@ def main() -> int:
         "completed_domains": [],
         "domain_results": [],
         "known_blockers": [],
+        "execution_environment_resources": runner_rss_budget,
+        "local_pc_inspection_budget_applied": False,
         "global_certification": "NOT_GRANTED",
     }
     write_checkpoint(checkpoint_path, state)
@@ -167,24 +277,30 @@ def main() -> int:
                 request["input"]["audio_path"] = str(audio)
             started = time.monotonic()
             result = run_case(root, out, request, args.timeout)
-            passed = (
-                result.get("status") == "PASS_FUNCTIONAL_EXECUTION"
-                and result.get("exit_code") == 0
-                and result.get("quality_acceptance", {}).get("status") == "PASS"
-                and isinstance(result.get("input_sha256"), str) and len(result["input_sha256"]) == 64
-                and isinstance(result.get("output_sha256"), str) and len(result["output_sha256"]) == 64
-                and isinstance(result.get("weight_sha256"), str) and len(result["weight_sha256"]) == 64
-                and isinstance(result.get("module_tree_sha256"), str) and len(result["module_tree_sha256"]) == 64
-                and isinstance(result.get("peak_rss_bytes"), int)
-                and 0 < result["peak_rss_bytes"] <= 1_073_741_824
+            execution_pass = result.get("status") == "PASS_FUNCTIONAL_EXECUTION" and result.get("exit_code") == 0
+            quality_pass = result.get("quality_acceptance", {}).get("status") == "PASS"
+            required_hashes = ("input_sha256", "output_sha256", "weight_sha256", "module_tree_sha256")
+            hashes_pass = all(isinstance(result.get(key), str) and len(result[key]) == 64 for key in required_hashes)
+            peak_rss = result.get("peak_rss_bytes")
+            resource_pass = (
+                isinstance(peak_rss, int) and not isinstance(peak_rss, bool)
+                and 0 < peak_rss <= runner_rss_budget["rss_budget_bytes"]
             )
+            passed = execution_pass and quality_pass and hashes_pass and resource_pass
             result.update({
                 "domain_id": domain,
                 "label": label,
                 "phase": "PHASE_2",
                 "task_level_functional_test": True,
                 "quality_check_scope": "FIXED_SYNTHETIC_EXPECTATION",
-                "resource_gate": "PEAK_RSS_LE_1_GIB",
+                "execution_pass": execution_pass,
+                "quality_pass": quality_pass,
+                "resource_pass": resource_pass,
+                "resource_gate": "PEAK_RSS_WITHIN_HOSTED_RUNNER_BUDGET",
+                "peak_rss_budget_bytes": runner_rss_budget["rss_budget_bytes"],
+                "peak_rss_budget_source": runner_rss_budget["budget_source"],
+                "local_inspection_budget_applied": False,
+                "required_hashes_pass": hashes_pass,
                 "passed": passed,
                 "elapsed_wall_seconds": round(time.monotonic() - started, 3),
                 "candidate_commit": args.candidate_commit,
@@ -199,7 +315,13 @@ def main() -> int:
                 quality_acceptance=result.get("quality_acceptance", {}).get("status"),
                 passed=passed,
                 elapsed_seconds=result.get("elapsed_seconds"),
+                execution_pass=result.get("execution_pass", result.get("status") == "PASS_FUNCTIONAL_EXECUTION" and result.get("exit_code") == 0),
+                quality_pass=result.get("quality_pass", result.get("quality_acceptance", {}).get("status") == "PASS"),
+                resource_pass=result.get("resource_pass", False),
                 peak_rss_bytes=result.get("peak_rss_bytes"),
+                peak_rss_budget_bytes=runner_rss_budget["rss_budget_bytes"],
+                peak_rss_budget_source=runner_rss_budget["budget_source"],
+                local_inspection_budget_applied=False,
                 output_sha256=result.get("output_sha256"),
                 failure_reason=result.get("failure_reason"),
             )
