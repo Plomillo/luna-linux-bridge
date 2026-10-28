@@ -65,7 +65,7 @@ def require_hosted_runner(environ: dict[str, str] | None = None) -> None:
 
 
 def parse_mem_total_bytes(meminfo_text: str) -> int:
-    match = re.search(r"^MemTotal:\\s+(\\d+)\\s+kB\\s*$", meminfo_text, flags=re.MULTILINE)
+    match = re.search(r"^MemTotal:\s+(\d+)\s+kB\s*$", meminfo_text, flags=re.MULTILINE)
     if not match:
         raise ValueError("HOSTED_RUNNER_MEMTOTAL_UNAVAILABLE")
     value = int(match.group(1)) * 1024
