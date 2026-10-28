@@ -16,6 +16,7 @@ import subprocess
 from pathlib import Path
 
 BASELINE = "66f0f0d22f5e7f7d207b191b39e997d1253a3866"
+PHASE4_CONTINUATION_COMMIT = "3595e5e5ba692d27d8182804a91918d61de25e51"
 LOCAL_INVENTORY_FINGERPRINT = "f33f25eabed2ccbe07e8917a6b69d446de2831ba6a93a7e4eb39fcfbdad1e9a1"
 MANIFEST_PATH = Path("evidence/louksnapg/phase4-repair-candidate.json")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -191,7 +192,11 @@ def main() -> int:
             errors.append("PHASE4_EVIDENCE_SCHEMA_INVALID")
         if phase4.get("candidate_commit_under_test") != BASELINE:
             errors.append("PHASE4_BASELINE_CANDIDATE_MISMATCH")
+        if phase4.get("continuation_commit") != PHASE4_CONTINUATION_COMMIT:
+            errors.append("PHASE4_CONTINUATION_COMMIT_MISMATCH")
         continuation = phase4.get("continuation_identity", {})
+        if continuation.get("baseline_commit_present") is not True:
+            errors.append("PHASE4_BASELINE_COMMIT_PRESENCE_UNVERIFIED")
         if continuation.get("baseline_is_ancestor") is not True:
             errors.append("PHASE4_BASELINE_ANCESTRY_UNVERIFIED")
         if continuation.get("runtime_tree_unchanged_from_baseline") is not True:
@@ -208,15 +213,15 @@ def main() -> int:
         errors.append("PHASE4_EVIDENCE_UNREADABLE:" + type(exc).__name__)
 
     try:
-        subprocess.run(["git", "-C", str(root), "cat-file", "-e", BASELINE + "^{commit}"],
+        subprocess.run(["git", "-C", str(root), "cat-file", "-e", PHASE4_CONTINUATION_COMMIT + "^{commit}"],
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
-        subprocess.run(["git", "-C", str(root), "merge-base", "--is-ancestor", BASELINE, "HEAD"],
+        subprocess.run(["git", "-C", str(root), "merge-base", "--is-ancestor", PHASE4_CONTINUATION_COMMIT, "HEAD"],
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
     except Exception:
-        errors.append("CURRENT_COMMIT_NOT_DESCENDANT_OF_PINNED_BASELINE")
+        errors.append("CURRENT_COMMIT_NOT_DESCENDANT_OF_PHASE4_CONTINUATION_ANCHOR")
 
     try:
-        changed_runtime = git(root, "diff", "--name-only", BASELINE, "HEAD", "--", "cajita-luna-runtime")
+        changed_runtime = git(root, "diff", "--name-only", PHASE4_CONTINUATION_COMMIT, "HEAD", "--", "cajita-luna-runtime")
         if changed_runtime:
             errors.append("PUBLIC_CANONICAL_RUNTIME_DIFF_FORBIDDEN")
     except Exception:
