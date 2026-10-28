@@ -248,7 +248,8 @@ def main() -> int:
         expected_size = spec["bytes"]
         actual_size = weight.stat().st_size
         actual_sha = digest(weight)
-        lfs_pointer = weight.read_bytes()[:64].startswith(b"version https://git-lfs.github.com/spec/v1")
+        with weight.open("rb") as stream:
+            lfs_pointer = stream.read(64).startswith(b"version https://git-lfs.github.com/spec/v1")
         identity_ok = actual_size == expected_size and actual_sha == spec["sha256"] and not lfs_pointer
         all_weights_ok = all_weights_ok and identity_ok
         descriptor = json.loads(module_path.read_text(encoding="utf-8"))
