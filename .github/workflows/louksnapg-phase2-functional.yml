@@ -150,6 +150,73 @@ jobs:
           python -m unittest discover -s tests -p "test_cajita_task_adapters.py" -v
           echo "STATIC_CONTRACTS=PASS; MODEL_TASK_EXECUTION=NOT_YET_RUN"
 
+      - name: Diagnose exact pinned module tree-integrity metadata (read-only)
+        id: tree-integrity-diagnostic
+        shell: bash
+        env:
+          PYTHONPATH: cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          python - <<'PY' | tee "$RUNNER_TEMP/louksnapg-phase2/tree-integrity-diagnostic.json"
+          import hashlib
+          import json
+          from pathlib import Path
+          import cajita_task_adapters as adapters
+          from cajita_tokenizer_materializer import tokenizer_tree_rows
+
+          root = Path("cajita-luna-runtime").resolve()
+          domains = (
+              "D01_CEREBRO",
+              "D03_TRANSCRIPCION",
+              "D04_TRADUCTOR_INTELIGENTE",
+              "D06_SISTEMA_INTELIGENTE",
+          )
+          records = []
+          for domain in domains:
+              spec = adapters.ADAPTERS[domain]
+              module = root / spec["module"]
+              descriptor_path = module / "CAJITA_MODULE.json"
+              descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+              rows = adapters.tree_rows(module)
+              tokenizer_manifest = root / adapters.TOKENIZER_MANIFEST_NAME
+              if tokenizer_manifest.is_file():
+                  rows = tokenizer_tree_rows(module, root, rows)
+              tree_sha256 = hashlib.sha256(
+                  json.dumps(rows, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+              ).hexdigest()
+              actual_bytes = sum(int(row["bytes"]) for row in rows)
+              integrity = descriptor.get("tree_integrity", {})
+              expected_bytes = int(integrity.get("bytes_excluding_module_descriptors", -1))
+              expected_count = int(integrity.get("file_count_excluding_module_descriptors", -1))
+              expected_sha = integrity.get("sha256")
+              records.append({
+                  "domain_id": domain,
+                  "target_id": spec["target"],
+                  "module_path": spec["module"],
+                  "manifest_sha256": hashlib.sha256(descriptor_path.read_bytes()).hexdigest(),
+                  "actual_file_count": len(rows),
+                  "expected_file_count": expected_count,
+                  "actual_bytes": actual_bytes,
+                  "expected_bytes": expected_bytes,
+                  "byte_delta": actual_bytes - expected_bytes,
+                  "actual_tree_sha256": tree_sha256,
+                  "expected_tree_sha256": expected_sha,
+                  "count_matches": len(rows) == expected_count,
+                  "bytes_match": actual_bytes == expected_bytes,
+                  "tree_sha256_matches": tree_sha256 == expected_sha,
+                  "weights_sha256": spec["sha"],
+                  "weights_bytes": spec["bytes"],
+                  "global_certification": "NOT_GRANTED",
+              })
+          print(json.dumps({
+              "schema": "LOUKSNAPG_MODULE_TREE_INTEGRITY_DIAGNOSTIC/1.0",
+              "candidate_commit": __import__("os").environ["GITHUB_SHA"],
+              "method": "REUSE_TASK_ADAPTER_TREE_ROWS_AND_LOSSLESS_TOKENIZER_RECONSTRUCTION",
+              "mutations": False,
+              "records": records,
+          }, ensure_ascii=False, sort_keys=True, indent=2))
+          PY
+
       - name: Phase 2 — execute registered model task cases and save a checkpoint after each
         id: phase2
         shell: bash
