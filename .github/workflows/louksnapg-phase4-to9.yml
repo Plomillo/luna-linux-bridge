@@ -57,9 +57,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          run_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/louksnapg-phase4-resume.yml/runs" \
-            -f "branch=$GITHUB_REF_NAME" -F per_page=20 \
-            --jq '[.workflow_runs[] | select(.conclusion == "success")] | sort_by(.created_at) | last | .id // 0')"
+          run_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs" \
+            -f "branch=$GITHUB_REF_NAME" -F per_page=100 \
+            --jq '[.workflow_runs[] | select(.name == "LOUKSNAPG — resume from checkpoint at phase 4" and .conclusion == "success")] | sort_by(.created_at) | last | .id // 0')"
           if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then run_id=0; fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
           echo "Selected Phase-4 evidence run: $run_id"
