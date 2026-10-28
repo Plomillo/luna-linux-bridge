@@ -89,6 +89,11 @@ jobs:
             echo "GLOBAL_CERTIFICATION=NOT_GRANTED"
           } | tee "$RUNNER_TEMP/louksnapg-phase2/phase1-identity.txt"
 
+      - name: Select isolated hosted Python toolcache before pip operations
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Prepare hosted runner dependencies (no model execution on the PC)
         id: dependencies
         shell: bash
