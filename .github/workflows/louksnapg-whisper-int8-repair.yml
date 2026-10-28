@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: louksnapg-whisper-int8-repair
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   OMP_NUM_THREADS: "1"
