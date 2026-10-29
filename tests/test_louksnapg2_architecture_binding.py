@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from tools.cajita_architecture_binding import _rows
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+from cajita_architecture_binding import _rows
 
 
 class LouksnapG2ArchitectureBindingRegressionTests(unittest.TestCase):
