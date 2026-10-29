@@ -97,9 +97,13 @@ jobs:
                   "source_index_sha256": spec.get("source_index_sha256"),
                   "weight_file_count": len(spec["weight_files"]),
               })
+          gateway_path = Path("tools/louksnapg_remote_model_gateway.py")
+          gateway_code_sha256 = hashlib.sha256(gateway_path.read_bytes()).hexdigest()
           report = {
               "schema": "LOUKSNAPG_REMOTE_PROTOCOL_CI_EVIDENCE/1.0",
               "workflow_commit": "${{ github.sha }}",
+              "gateway_source_commit": "6d034d72f611b80c2ba0270ece7815bbcef17a61",
+              "gateway_code_sha256": gateway_code_sha256,
               "policy_sha256": hashlib.sha256(policy_path.read_bytes()).hexdigest(),
               "source_bound_domains": rows,
               "local_model_downloaded": False,
