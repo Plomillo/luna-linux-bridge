@@ -374,7 +374,8 @@ def main() -> int:
                     "task_id": "remote-quality-general-translation-01",
                     "domain_id": "D04_TRADUCTOR_INTELIGENTE",
                     "operation": "translate_text",
-                    "inputs": {"text": "The book is on the table.", "src_lang": "en", "tgt_lang": "es"},
+                    # SeamlessM4T expects ISO 639-3 codes (e.g. eng, spa), not two-letter ISO 639-1 aliases.
+                "inputs": {"text": "The book is on the table.", "src_lang": "eng", "tgt_lang": "spa"},
                     "expected_translations": {
                         "el libro esta sobre la mesa",
                         "el libro esta en la mesa",
