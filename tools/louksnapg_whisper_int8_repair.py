@@ -546,7 +546,10 @@ def prepare_metadata(runtime_root: Path, candidate_weight: Path, factor_metrics:
         "rank": RANK,
         "base_rank": BASE_RANK,
         "rank_profile": RANK_PROFILE,
-        "tensor_ranks": factor_metrics.get("per_tensor_ranks", {}),
+        "tensor_ranks": (
+            dict(factor_metrics.get("per_tensor_ranks", {}))
+            | {"proj_out.weight": int(factor_metrics.get("per_tensor_ranks", {}).get("model.decoder.embed_tokens.weight", BASE_RANK))}
+        ),
         "oversample": OVERSAMPLE,
         "target_bytes": TARGET_BYTES,
         "candidate_weight_sha256": weight_sha,
