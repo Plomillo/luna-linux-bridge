@@ -180,8 +180,10 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksnapg2-candidate-package
-          path: out/louksnapg2-candidate/
-          if-no-files-found: error
+          path: |
+            out/LOUKSNAPG2_*.json
+            out/louksnapg2-candidate/
+          if-no-files-found: warn
           retention-days: 30
           compression-level: 0
 
