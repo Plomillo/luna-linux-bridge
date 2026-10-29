@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from louksnapg_remote_model_quality_gate import (
+    artifact_execution_scope,
     final_integer,
     integral_domain_gate_status,
     normalize_text,
@@ -78,6 +79,14 @@ class RemoteQualityGateTests(unittest.TestCase):
         record = next(row for row in coverage if row["domain_id"] == "D04_TRADUCCION_LENGUAS_ANTIGUAS")
         self.assertEqual(record["status"], "FAIL_ANCIENT_ROUTE_DIAGNOSTIC")
         self.assertEqual(integral_domain_gate_status(coverage), "BLOCKED_REQUIRED_DOMAIN_NOT_ESTABLISHED")
+
+    def test_runtime_source_tasks_do_not_claim_exact_bundle_execution(self):
+        scope = artifact_execution_scope()
+        self.assertEqual(scope["runtime_under_test"], "CHECKED_OUT_CAJITA_RUNTIME_SOURCE_TREE")
+        self.assertIsNone(scope["exact_louksnapg_distribution_bundle_sha256"])
+        self.assertEqual(scope["exact_candidate_artifact_functional_execution"], "NOT_ESTABLISHED")
+        self.assertIs(scope["artifact_level_execution_required_for_integral_certification"], True)
+        self.assertIs(scope["artifact_integrity_evidence_does_not_imply_functional_execution"], True)
 
     def test_integral_domain_blocker_cannot_return_green_from_live_quality_gate(self):
         self.assertEqual(quality_gate_exit_code("PASS_ROUTE_PREFLIGHT_ONLY"), 0)
