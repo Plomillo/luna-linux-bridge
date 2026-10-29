@@ -131,7 +131,7 @@ def run_case(runtime, case_id, domain, operation, payload, predicate, requiremen
             "status": "FAIL",
             "actual_output": None,
             "quality_criterion_passed": False,
-            "reason": type(exc).__name__ + ":" + str(exc)[:300],
+            "reason": type(exc).__name__ + ":" + str(exc)[:1600],
             "semantic_quality_equivalence_to_full_size_original": "NOT_ESTABLISHED",
         })
     record["elapsed_seconds"] = round(time.monotonic() - started, 3)
