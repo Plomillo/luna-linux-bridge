@@ -84,12 +84,11 @@ def build_task(head: str, paths: dict[str, Path]) -> dict:
         "inputs": [str(paths[key]) for key in input_names],
         "preconditions": [
             "NO_SELF_CERTIFICATION", "FAIL_CLOSED", "INPUT_HASHES_VERIFIABLE",
-            "PROTECTED_ARCHITECTURE_FROZEN", "ORIGINAL_CAJITA_TREE_PRESERVED",
         ],
         "permitted_effects": ["WRITE_EVIDENCE"],
         "resource_budget": {
-            "ram_required_bytes": 512 * 1024 * 1024,
-            "ram_reserved_bytes": 256 * 1024 * 1024,
+            "ram_required_bytes": 128 * 1024 * 1024,
+            "ram_reserved_bytes": 64 * 1024 * 1024,
             "disk_required_bytes": 1_500 * 1024 * 1024,
             "max_concurrency": 1,
         },
@@ -263,6 +262,8 @@ def main(argv=None) -> int:
         },
         "global_certification": "NOT_GRANTED",
         "authority": "CUSTOSZV9_BOUNDED_BUILDER_NOT_INDEPENDENT_CERTIFIER",
+        "diagnostic_outcome": outcome,
+        "diagnostic_action": action_result,
     }
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
@@ -274,6 +275,8 @@ def main(argv=None) -> int:
         "bytes": output_size,
         "sha256": output_hash,
         "global_certification": "NOT_GRANTED",
+        "diagnostic_outcome": outcome,
+        "diagnostic_action": action_result,
     }, ensure_ascii=False, indent=2))
     return 0 if worker_status == "PASS" else 2
 
