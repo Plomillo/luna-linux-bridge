@@ -73,3 +73,24 @@ La terminal confirmó que Kestra está activo, pero el checkpoint local indica `
 - Certificación integral: `NOT_GRANTED`.
 
 No hay evidencia para certificar ningún motor sólo por la carga del modelo o por smoke técnico. La siguiente reparación funcional debe abordar la pérdida de información de la representación comprimida o su consumidor, y verificarse mediante las pruebas conocidas antes de tocar la autoridad de release.
+
+## Auditoría ligera de la PC y estado de la prueba del fix de métrica
+
+Se completó una inspección de sólo lectura de metadatos/rutas del proyecto local y un cálculo SHA-256 en streaming de los seis pesos del manifiesto local `CAJITA_GLOBAL_479M_CANDIDATE_RUNTIME_V4_20261022T233541Z`. La operación de hash utilizó afinidad de CPU a un único núcleo y `RLIMIT_AS=1,073,741,824`; sólo leyó los archivos en bloques de 1 MiB, sin abrir tensores, construir modelos ni inferir.
+
+Los seis hashes/tamaños del manifiesto local V4 coincidieron con sus seis archivos locales:
+- GPT-OSS compacto: 148.477.400 bytes, SHA-256 `935d226a65faca9b59a7742c7c31208ef0ba671509d475c1a4e2f3489cecc19e`.
+- Whisper compacto R29: 34.877.948 bytes, SHA-256 `6f4541536bfca7899d74e962c277b7fbcd1cbc4fb7f8d101c69bcd1ea2560aa3`.
+- SeamlessM4T compacto R4: 20.256.147 bytes, SHA-256 `a2ba25feb33c68b7a5ea27ff8aadeaf96f67d80fc74d169c075e14d1ff363bf5`.
+- Docling: 13.483.380 bytes, SHA-256 `4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88`.
+- Qwen compacto R12: 52.950.152 bytes, SHA-256 `9d5c2ec7d88583c016a7d48f29695915ecfe0619cbca49bdfa8708f6cf6a4604`.
+- ONNX Anti-Alucinaciones: 110.516.001 bytes, SHA-256 `c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7`.
+
+**Alcance de esta evidencia:** estos hashes sólo confirman integridad del candidato local V4 respecto de su propio manifiesto; no confirman equivalencia funcional ni identidad con el candidato V9 producido por GitHub Actions. Por ejemplo, el GPT-OSS local ocupa 148.477.400 bytes mientras que el peso GPT-OSS integrado en el paquete Git V9 es un payload diferente, de 40.489.120 bytes. Los dos candidatos no deben reconciliarse o mezclarse sin autorización/versionado explícitos.
+
+La inspección de los directorios de motores localizó `model.safetensors.index.json` de GPT-OSS, pero los 15 shards que enumera (`model-00000-of-00014.safetensors` a `model-00014-of-00014.safetensors`) no están presentes allí. También faltan los shards de referencia originales listados en los metadatos de SeamlessM4T (2) y Qwen (8). El peso local de Whisper es el artefacto compacto de 34.877.948 bytes, no coincide con el SHA de la referencia fuente fijado en metadata (`542566a422ae4f3fd23f1ba11add198fca01bbf82e66e6a2857b3f608b1eb9d1`). En consecuencia, no se dispone en los directorios de referencia examinados de los pesos originales íntegros para realizar una comparación local equivalente. No se descargaron a la PC ni se cargaron pesos originales.
+
+### Pruebas CI del contrato de calidad y de la corrección del contador
+
+La suite de pruebas tuvo un fallo transitorio por una importación escrita con los caracteres literales `\\n` en lugar de una nueva línea en `tests/test_cajita_task_e2e.py`. La ejecución que contenía ese error (`40796719130`, commit `5b505b90a8c0f1e9d37e0b92756962a64cd1a93c`) terminó con `SyntaxError` al importar el test; no produjo evidencia de runtime de modelo. La importación se corrigió en el commit `6024b73b56e016318158b1ae5777a3c4abc5a4ba`. En el workflow `40797072765`, job de fabricación, las 133 pruebas de runtime/contratos y las 20 pruebas de bundle/presupuesto, incluida la separación ejecución-calidad y la cobertura de lenguas antiguas, terminaron `OK`. G23 para ese commit se encontraba en ejecución al registrar esta actualización; el G24 de ese commit todavía no había terminado. No se considera validada la función de los motores por el mero éxito de esos tests unitarios.
+
