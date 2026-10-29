@@ -553,7 +553,9 @@ def main():
   if source.is_symlink() or not source.is_file():
    raise RuntimeError("EXTERNALIZED_OPTIMIZED_CONTAINER_NOT_REGULAR:" + basename)
   source_bytes=source.read_bytes()
-  source_git_blob=hashlib.sha1(("blob "+str(len(source_bytes))+"\\0").encode()+source_bytes).hexdigest()
+  git_blob=subprocess.run(["git","-C",str(repo),"hash-object",str(source)],capture_output=True,text=True,check=False)
+  if git_blob.returncode: raise RuntimeError("EXTERNALIZED_OPTIMIZED_CONTAINER_GIT_HASH_FAILED:" + basename)
+  source_git_blob=git_blob.stdout.strip()
   if len(source_bytes)!=expected_size or source_git_blob!=expected_git_blob:
    raise RuntimeError("EXTERNALIZED_OPTIMIZED_CONTAINER_SOURCE_IDENTITY_MISMATCH:" + basename)
   destination=optimized_target/basename
