@@ -225,18 +225,13 @@ jobs:
           sudo apt-get install -y espeak-ng
           python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==44.0.3
 
-      - name: Set up Python 3.11 for pinned CPU inference wheels
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install pinned one-thread local inference libraries
+      - name: Install the existing Cajita CPU runtime from its pinned lock
         shell: bash
         run: |
           set -Eeuo pipefail
           python -m pip install --disable-pip-version-check \
-            --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu \
-            -r cajita-luna-runtime/LOUKSNAPG2_RUNTIME/requirements-louksnapg2.lock
+            --extra-index-url https://download.pytorch.org/whl/cpu \
+            -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
 
       - name: Independently verify and extract the exact candidate package for functional tests
         shell: bash
@@ -249,24 +244,26 @@ jobs:
             --expected-source-commit "$GITHUB_SHA" \
             --report out/louksnapg2-candidate/LOUKSNAPG2_FUNCTIONAL_PRECHECK.json
           test -f "$RUNNER_TEMP/louksnapg2-extracted/LOUKSNAPG2_RUNTIME/louksnapg2_engine.py"
-          test -f "$RUNNER_TEMP/louksnapg2-extracted/LOUKSNAPG2_RUNTIME/louksnapg2_model_loader.py"
+          test -f "$RUNNER_TEMP/louksnapg2-extracted/LOUKSNAPG2_RUNTIME/louksnapg2_service.py"
+          test -f "$RUNNER_TEMP/louksnapg2-extracted/cajita_task_adapters.py"
+          test -f "$RUNNER_TEMP/louksnapg2-extracted/CAJITA_RUNTIME_V1/weights_manifest.json"
 
-      - name: Explicitly fetch and hash-verify externalized Qwen and Whisper weights in CI only
+      - name: Verify the original in-artifact model weights; do not download replacement models
         shell: bash
         env:
-          PYTHONPATH: ${{ runner.temp }}/louksnapg2-extracted/LOUKSNAPG2_RUNTIME
+          PYTHONPATH: ${{ runner.temp }}/louksnapg2-extracted
         run: |
           set -Eeuo pipefail
           mkdir -p out/louksnapg2-functional
           set +e
-          python "$RUNNER_TEMP/louksnapg2-extracted/LOUKSNAPG2_RUNTIME/louksnapg2_model_loader.py" \
-            --runtime-root "$RUNNER_TEMP/louksnapg2-extracted/LOUKSNAPG2_RUNTIME" materialize \
-            > out/louksnapg2-functional/LOUKSNAPG2_MODEL_MATERIALIZATION.json
+          python tools/louksnapg2_model_identity_evidence.py \
+            --runtime-root "$RUNNER_TEMP/louksnapg2-extracted" \
+            --output out/louksnapg2-functional/LOUKSNAPG2_MODEL_MATERIALIZATION.json
           rc=$?
           set -e
-          echo "MODEL_MATERIALIZATION_EXIT_CODE=$rc"
+          echo "ORIGINAL_MODEL_IDENTITY_EXIT_CODE=$rc"
           if [ "$rc" -ne 0 ]; then
-            echo "Model payload could not be materialized and verified; functional gate must HOLD."
+            echo "Original Cajita model identity failed; functional gate must HOLD."
             exit 0
           fi
 
@@ -282,7 +279,8 @@ jobs:
       - name: Exercise the five real model domains through the packaged route dispatch
         shell: bash
         env:
-          PYTHONPATH: ${{ runner.temp }}/louksnapg2-extracted/LOUKSNAPG2_RUNTIME
+          PYTHONPATH: ${{ runner.temp }}/louksnapg2-extracted
+          CAJITA_E2E_DIAGNOSTICS: "1"
           OMP_NUM_THREADS: "1"
           OPENBLAS_NUM_THREADS: "1"
           MKL_NUM_THREADS: "1"
@@ -293,7 +291,7 @@ jobs:
           mkdir -p out/louksnapg2-functional
           set +e
           python tools/louksnapg2_functional_eval.py \
-            --runtime-root "$RUNNER_TEMP/louksnapg2-extracted/LOUKSNAPG2_RUNTIME" \
+            --runtime-root "$RUNNER_TEMP/louksnapg2-extracted" \
             --audio-one "$RUNNER_TEMP/louksnapg2-audio-one.wav" \
             --audio-two "$RUNNER_TEMP/louksnapg2-audio-two.wav" \
             --output out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json
