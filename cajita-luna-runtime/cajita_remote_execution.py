@@ -76,6 +76,17 @@ def load_policy(root: Path) -> dict:
         raise RemoteExecutionError("REMOTE_MODEL_POLICY_INVALID_JSON") from exc
     if not isinstance(policy, dict) or policy.get("schema") != POLICY_SCHEMA:
         raise RemoteExecutionError("REMOTE_MODEL_POLICY_SCHEMA_MISMATCH")
+    gateway_trust = policy.get("gateway_trust")
+    if not isinstance(gateway_trust, dict):
+        raise RemoteExecutionError("REMOTE_GATEWAY_TRUST_POLICY_MISSING")
+    if not isinstance(gateway_trust.get("version"), str) or not gateway_trust["version"]:
+        raise RemoteExecutionError("REMOTE_GATEWAY_TRUST_VERSION_MISSING")
+    if not REVISION_RE.fullmatch(str(gateway_trust.get("source_commit", ""))):
+        raise RemoteExecutionError("REMOTE_GATEWAY_TRUST_COMMIT_INVALID")
+    if not HEX_256_RE.fullmatch(str(gateway_trust.get("code_sha256", ""))):
+        raise RemoteExecutionError("REMOTE_GATEWAY_TRUST_HASH_INVALID")
+    if gateway_trust.get("binding_rule") != "EXACT_SOURCE_COMMIT_AND_CODE_SHA256":
+        raise RemoteExecutionError("REMOTE_GATEWAY_TRUST_BINDING_RULE_INVALID")
     domains = policy.get("domains")
     if not isinstance(domains, dict) or not domains:
         raise RemoteExecutionError("REMOTE_MODEL_POLICY_DOMAINS_MISSING")
@@ -204,15 +215,15 @@ def _verify_signature(envelope: dict, key: bytes, *, schema: str, max_age_second
     return unsigned
 
 
-def verify_identity(identity: dict, spec: dict, domain_id: str) -> str:
+def verify_identity(identity: dict, spec: dict, domain_id: str, gateway_trust: dict) -> str:
     if identity.get("schema") != IDENTITY_SCHEMA or identity.get("model_loaded") is not True:
         raise RemoteExecutionError("REMOTE_MODEL_NOT_LOADED_OR_IDENTITY_SCHEMA_INVALID")
-    if not isinstance(identity.get("gateway_version"), str) or not identity["gateway_version"]:
-        raise RemoteExecutionError("REMOTE_GATEWAY_VERSION_MISSING")
-    if not HEX_256_RE.fullmatch(str(identity.get("gateway_code_sha256", ""))):
-        raise RemoteExecutionError("REMOTE_GATEWAY_CODE_HASH_MISSING")
-    if not REVISION_RE.fullmatch(str(identity.get("gateway_source_commit", ""))):
-        raise RemoteExecutionError("REMOTE_GATEWAY_SOURCE_COMMIT_MISSING_OR_INVALID")
+    if identity.get("gateway_version") != gateway_trust.get("version"):
+        raise RemoteExecutionError("REMOTE_GATEWAY_VERSION_MISMATCH")
+    if identity.get("gateway_code_sha256") != gateway_trust.get("code_sha256"):
+        raise RemoteExecutionError("REMOTE_GATEWAY_CODE_SHA256_MISMATCH")
+    if identity.get("gateway_source_commit") != gateway_trust.get("source_commit"):
+        raise RemoteExecutionError("REMOTE_GATEWAY_SOURCE_COMMIT_MISMATCH")
     fields = (
         "domain_id", "model_id", "source_repo", "source_revision",
         "source_config_sha256", "source_index_sha256",
@@ -319,7 +330,7 @@ def execute_remote_task(row: dict, root: Path) -> dict:
         identity = identity_unsigned.get("identity")
         if not isinstance(identity, dict) or identity_envelope.get("key_id") != spec["key_id"]:
             raise RemoteExecutionError("REMOTE_IDENTITY_KEY_OR_PAYLOAD_MISMATCH")
-        identity_sha = verify_identity(identity, spec, domain_id)
+        identity_sha = verify_identity(identity, spec, domain_id, policy["gateway_trust"])
         limits = dict(row.get("limits", {}))
         max_tokens = limits.get("max_new_tokens", 32)
         timeout = limits.get("timeout_seconds", 600)
