@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import unittest
 
-from cajita_task_e2e import (MODEL_CASES, quality_acceptance, required_domain_coverage,\n                             task_execution_and_quality_pass)
+from cajita_task_e2e import (MODEL_CASES, quality_acceptance,
+                             required_domain_coverage, task_execution_and_quality_pass)
 
 
 class SyntheticQualityAcceptanceTests(unittest.TestCase):
