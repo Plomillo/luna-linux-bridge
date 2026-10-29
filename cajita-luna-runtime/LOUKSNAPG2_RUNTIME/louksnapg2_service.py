@@ -2,10 +2,10 @@
 """LOUKSNAPG2 public task entrypoint and strict domain-to-engine bridge.
 
 The original Cajita runtime and router remain byte-for-byte unchanged. This additive
-entrypoint maps canonical target IDs onto the new externalized model runtime with
-a closed target/operation table. Unknown targets, mismatches and undocumented
-operations fail closed; ancient-language tasks can never fall back to general
-translation.
+entrypoint maps canonical target IDs onto the existing compact Cajita model adapters
+through a closed target/operation table. Only the ancient-language consumer route is
+new; it uses a dedicated prompt over the existing GPT-OSS source adapter and never
+falls back to modern general translation. Unknown targets and mismatches fail closed.
 """
 from __future__ import annotations
 
