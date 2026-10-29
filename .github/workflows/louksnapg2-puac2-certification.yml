@@ -23,8 +23,8 @@ permissions:
   actions: read
 
 concurrency:
-  group: louksnapg2-puac2-${{ github.ref }}-${{ github.sha }}
-  cancel-in-progress: false
+  group: louksnapg2-puac2-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build_candidate:
