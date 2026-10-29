@@ -526,7 +526,46 @@ def main():
  out.mkdir(parents=True,exist_ok=True)
  if stage_parent.exists(): shutil.rmtree(stage_parent)
  stage_parent.mkdir(parents=True); rollback.mkdir(parents=True,exist_ok=True)
- report={"schema":SCHEMA,"generated_at_utc":utc(),"status":"RUNNING","certification":"NOT_GRANTED","blockers":[]}
+ # The externalized packaging contract resolves immutable optimized containers
+ # through ancestors of the staged runtime. Keep the user's original tree untouched,
+ # and copy only the ten governed .7z containers into the temporary build tree.
+ # Do not copy the unrelated ~951 MB user-profile backup or the entire staging tree.
+ optimized_source=repo/"externalized-assets-staging"/"optimized-containers"
+ optimized_target=stage_parent/"externalized-assets-staging"/"optimized-containers"
+ if optimized_source.is_symlink() or not optimized_source.is_dir():
+  raise RuntimeError("EXTERNALIZED_OPTIMIZED_CONTAINER_SOURCE_MISSING")
+ expected_containers={
+  "APACHE_JENA_6_2_0.7z":(23103199,"b208b1ccfcb5f7702d46b0bcc5b9d5d707301ad4"),
+  "AVALONIA_12_1_1_NUGET.7z":(3836434,"68368033e2cd813b493057342241c68f7c3a0da4"),
+  "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z":(21310484,"ee472498932126cf0c9787422f78769568646bec"),
+  "DAGGER_0_21_8_LINUX_AMD64.7z":(15377436,"7cdae84185cfb60ab65ad8d2c439420232c16bad"),
+  "ONNX_RUNTIME_1_29_0_CP311.7z":(10219873,"baa48c493b6e44143b5c5b212b62530697da17a2"),
+  "OPA_STATIC_LINUX_AMD64_CANDIDATE.7z":(25273630,"6b3c6bbad8c1a5cae80096fbe38b7a38a19c4226"),
+  "PLAYWRIGHT_1_63_0_SOURCE.7z":(32133546,"9213396bf133cfc8fcf433f0a85f81e245533d66"),
+  "RQLITE_10_2_7_LINUX_AMD64.7z":(12962199,"5075c99664f066982e0a089b456d8550374e77ab"),
+  "SQLITE_SOURCE_3_53_4.7z":(7954439,"73ed8e5bbe0999ca0b4b94f62879c20f013510c7"),
+  "TAURI_2_11_5_SOURCE_ZIP.7z":(13078809,"3be19a44a8966a9628b4fdfed707ae4c5833eecf"),
+ }
+ optimized_target.mkdir(parents=True,exist_ok=False)
+ staged_assets=[]
+ for basename,(expected_size,expected_git_blob) in expected_containers.items():
+  source=optimized_source/basename
+  if source.is_symlink() or not source.is_file():
+   raise RuntimeError("EXTERNALIZED_OPTIMIZED_CONTAINER_NOT_REGULAR:" + basename)
+  source_bytes=source.read_bytes()
+  source_git_blob=hashlib.sha1(("blob "+str(len(source_bytes))+"\\0").encode()+source_bytes).hexdigest()
+  if len(source_bytes)!=expected_size or source_git_blob!=expected_git_blob:
+   raise RuntimeError("EXTERNALIZED_OPTIMIZED_CONTAINER_SOURCE_IDENTITY_MISMATCH:" + basename)
+  destination=optimized_target/basename
+  shutil.copyfile(source,destination)
+  if destination.stat().st_size!=expected_size or destination.read_bytes()!=source_bytes:
+   raise RuntimeError("EXTERNALIZED_OPTIMIZED_CONTAINER_COPY_MISMATCH:" + basename)
+  staged_assets.append({"path":destination.relative_to(stage_parent).as_posix(),"bytes":expected_size,"git_blob_sha1":source_git_blob,"status":"PASS_BYTE_EXACT_COPY"})
+ unexpected=sorted(p.name for p in optimized_source.iterdir() if p.is_file() and p.name not in expected_containers)
+ if unexpected:
+  raise RuntimeError("EXTERNALIZED_OPTIMIZED_CONTAINER_SET_HAS_UNREGISTERED_FILES:"+",".join(unexpected[:10]))
+ externalized_staging_evidence={"status":"PASS_TEN_BYTE_EXACT_OPTIMIZED_CONTAINERS","items":staged_assets,"copied_bytes":sum(row["bytes"] for row in staged_assets),"user_profile_backup_copied":False}
+ report={"schema":SCHEMA,"generated_at_utc":utc(),"status":"RUNNING","certification":"NOT_GRANTED","blockers":[],"externalized_staging":externalized_staging_evidence}
  report_path=out/"factory-report.json"
  try:
   report["source_commit"]=subprocess.check_output(["git","-C",str(repo),"rev-parse","HEAD"],text=True).strip()
