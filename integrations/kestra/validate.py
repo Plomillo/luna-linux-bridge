@@ -160,6 +160,21 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
                 "SUPER1200 GitHub dispatch must use a Kestra secret.")
         require("actions/workflows/super1200-continuation-lrb-live.yml/dispatches" in body,
                 "SUPER1200 flow must dispatch only the pinned candidate workflow.")
+    elif flow_path.name == "25-louksnapg-remote-model-verification.yml":
+        require("id: louksnapg_remote_model_verification" in body,
+                "Remote-model monitoring must use its stable Kestra flow ID.")
+        require('cron: "*/5 * * * *"' in body and "allowConcurrent: false" in body,
+                "Remote-model monitoring must be serialized and scheduled every five minutes.")
+        require("method: GET" in body and "/actions/runs?branch=louksnapg%2Fremote-source-bound-runtime-20261029" in body,
+                "Remote-model monitoring must inspect only the exact branch workflow history.")
+        require("io.kestra.plugin.core.http.Request" in body and "io.kestra.plugin.core.log.Log" in body,
+                "Remote-model monitoring may only read GitHub state and log it.")
+        require("io.kestra.plugin.core.scripts." not in lower and "io.kestra.plugin.core.runner.process" not in lower,
+                "Remote-model monitoring must not execute scripts or local processes.")
+        require("/dispatches" not in body and "method: POST" not in body,
+                "Remote-model monitoring must not dispatch jobs or mutate external state.")
+        require("GLOBAL_CERTIFICATION=NOT_GRANTED_BY_MONITOR" in body,
+                "The Kestra monitor must never grant product certification.")
     else:
         require("schedule:" not in lower and "triggers:" not in lower,
                 f"{flow_path.relative_to(ROOT)} must not schedule or trigger itself during the staged phase.")
