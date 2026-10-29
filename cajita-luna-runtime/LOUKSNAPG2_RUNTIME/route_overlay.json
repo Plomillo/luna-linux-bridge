@@ -1,0 +1,737 @@
+{
+  "schema": "LOUKSNAPG2_ROUTE_OVERLAY/1.0",
+  "overlay_id": "LOUKSNAPG2_GOVERNED_MULTI_DOMAIN_DISPATCH_20261029",
+  "status": "CANDIDATE_NOT_CERTIFIED",
+  "source_binding": {
+    "repository": "Plomillo/luna-linux-bridge",
+    "commit": "17d9dfc3aba4b0f4132f3a0d18d4d078fdb6736d",
+    "routing_path": "cajita-luna-runtime/command_subdomain_routing.json",
+    "routing_git_blob_sha": "1b13748e163ae152420c8b8a126d7f00edec65de",
+    "routing_sha256": "1b13748e163ae152420c8b8a126d7f00edec65de",
+    "source_document": "LOUKSNAMEJORADA.md",
+    "source_document_sha256": "8cdefe026de748bf924f14a9b6efc6308079c2c2",
+    "cajita_document": "cajita-luna-runtime/CajitadeLuna.md",
+    "cajita_document_sha256": "674c97a1d8b2e518ae8d5d9e8980399f292c6194"
+  },
+  "canonical_preservation": {
+    "domain_order": [
+      "D01_CEREBRO",
+      "D02_ORQUESTACION",
+      "D03_TRANSCRIPCION",
+      "D04_TRADUCTOR_INTELIGENTE",
+      "D05_INTELIGENCIA_DOCUMENTAL",
+      "D06_SISTEMA_INTELIGENTE"
+    ],
+    "engine_registry": [
+      {
+        "id": "E01",
+        "name": "LLM",
+        "role": "language-model inference"
+      },
+      {
+        "id": "E02",
+        "name": "NLP",
+        "role": "natural-language processing"
+      },
+      {
+        "id": "E03",
+        "name": "RAG",
+        "role": "retrieval-augmented generation"
+      },
+      {
+        "id": "E04",
+        "name": "EMBEDDINGS",
+        "role": "vector representation"
+      },
+      {
+        "id": "E05",
+        "name": "VECTOR_SEARCH",
+        "role": "nearest-neighbor retrieval"
+      },
+      {
+        "id": "E06",
+        "name": "KNOWLEDGE_GRAPH",
+        "role": "graph operations"
+      },
+      {
+        "id": "E07",
+        "name": "RDF",
+        "role": "RDF representation and queries"
+      },
+      {
+        "id": "E08",
+        "name": "OWL",
+        "role": "ontology representation and reasoning"
+      },
+      {
+        "id": "E09",
+        "name": "SEMANTIC_INFERENCE",
+        "role": "semantic inference"
+      },
+      {
+        "id": "E10",
+        "name": "RULE_ENGINE",
+        "role": "explicit rule evaluation"
+      },
+      {
+        "id": "E11",
+        "name": "HERMENEUTIC",
+        "role": "contextual interpretation"
+      },
+      {
+        "id": "E12",
+        "name": "FORMALIZATION",
+        "role": "structured/formal output"
+      },
+      {
+        "id": "E13",
+        "name": "VALIDATION",
+        "role": "result validation"
+      },
+      {
+        "id": "E14",
+        "name": "PROVENANCE",
+        "role": "source and evidence trace"
+      },
+      {
+        "id": "E15",
+        "name": "CONSENSUS",
+        "role": "consensus/certification support"
+      }
+    ],
+    "route_profiles": [
+      {
+        "id": "HELP",
+        "command": "/help",
+        "default_targets": [
+          "D06_MOTOR_PROTOCOLAR",
+          "D06_TESTING"
+        ],
+        "policy": "governed-help-and-registry",
+        "canonical_rationale": "Governance gate; not a content-expansion path.",
+        "extension_families": [
+          "Validation",
+          "Provenance Trace",
+          "Consensus Certification"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "PT",
+        "command": "/play PT",
+        "default_targets": [
+          "D01_CEREBRO_ROOT",
+          "D06_ANALISIS_AVANZADO",
+          "D06_TESTING"
+        ],
+        "policy": "prompt-template-and-linguistic-structuring",
+        "canonical_rationale": "Prompt/template route; linguistic and pedagogical formalization.",
+        "extension_families": [
+          "Language Reasoning",
+          "Communication",
+          "Educational Structuring",
+          "Formalization",
+          "Validation"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "PA",
+        "command": "/play PA",
+        "default_targets": [
+          "D02_MULTI_INTERDISCIPLINAR",
+          "D06_ANALISIS_AVANZADO",
+          "D06_MOTOR_PROTOCOLAR",
+          "D06_COGNITIVE_CI_CD",
+          "D06_TESTING"
+        ],
+        "policy": "architecture-first-planning",
+        "canonical_rationale": "Architecture-first and structure-heavy route.",
+        "extension_families": [
+          "Knowledge Graph",
+          "Ontology Inference",
+          "Rule Validation",
+          "Formalization",
+          "Provenance",
+          "Engineering/Architecture"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "DCI",
+        "command": "/play DCI",
+        "default_targets": [
+          "D02_MULTI_INTERDISCIPLINAR",
+          "D04_HERMENEUTICA_HG",
+          "D06_ANALISIS_AVANZADO",
+          "D06_ANTI_ALUCINACIONES"
+        ],
+        "policy": "contextual-and-interdisciplinary-integration",
+        "canonical_rationale": "Contextual integration; Josefina's contextual lane.",
+        "extension_families": [
+          "Retrieval Semantic",
+          "Human Behavior",
+          "Social Systems",
+          "Historical Context",
+          "Scientific Method",
+          "Traceability"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "DCIL",
+        "command": "/play DCIL",
+        "default_targets": [
+          "D02_MULTI_INTERDISCIPLINAR",
+          "D04_HERMENEUTICA_HG",
+          "D06_ANALISIS_AVANZADO",
+          "D06_ANTI_ALUCINACIONES"
+        ],
+        "policy": "literal-and-contextual-integration",
+        "canonical_rationale": "Adds literal discipline to context, combining contextual and educational support.",
+        "extension_families": [
+          "Language Reasoning",
+          "Retrieval Semantic",
+          "Literal Analysis",
+          "Contextualization",
+          "Communication",
+          "Education",
+          "Validation"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "TRAD",
+        "command": "/play traductor",
+        "default_targets": [
+          "D04_TRADUCCION_GENERAL"
+        ],
+        "policy": "translation-target-selected-by-language-pair",
+        "canonical_rationale": "Preserve meaning while restructuring form; multilingual terminology and semantic equivalence.",
+        "extension_families": [
+          "Multilingual Processing",
+          "Terminology Extraction",
+          "Semantic Equivalence",
+          "Communication Clarity",
+          "Validation"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "E",
+        "command": "/play e",
+        "default_targets": [
+          "D04_HERMENEUTICA_HG",
+          "D06_ANTI_ALUCINACIONES"
+        ],
+        "policy": "explanation-and-interpretation",
+        "canonical_rationale": "Explanatory and interpretive route.",
+        "extension_families": [
+          "Hermeneutics",
+          "Historical Context",
+          "Worldview Analysis",
+          "Evidence Handling",
+          "Synthesis"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "EMA",
+        "command": "/play ema",
+        "default_targets": [
+          "D04_HERMENEUTICA_HG",
+          "D02_MULTI_INTERDISCIPLINAR",
+          "D06_ANALISIS_AVANZADO",
+          "D06_ANTI_ALUCINACIONES",
+          "D06_TESTING"
+        ],
+        "policy": "meta-hermeneutics-and-reflective-learning",
+        "canonical_rationale": "Second-order interpretation combining reflection and structured teaching.",
+        "extension_families": [
+          "Meta-Hermeneutics",
+          "Reflective Learning",
+          "Metacognition",
+          "Synthesis",
+          "Educational Design"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "P",
+        "command": "/play p",
+        "default_targets": [
+          "D02_ORQUESTADOR",
+          "D06_MOTOR_PROTOCOLAR",
+          "D06_COGNITIVE_CI_CD",
+          "D06_TESTING"
+        ],
+        "policy": "sequencing-planning-and-governed-control",
+        "canonical_rationale": "Planning is a sequencing and control problem.",
+        "extension_families": [
+          "Planning",
+          "Orchestration",
+          "Governance",
+          "Control",
+          "Change Management"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "C",
+        "command": "/play c",
+        "default_targets": [
+          "D02_MULTI_INTERDISCIPLINAR",
+          "D06_ARCHIVADO_DETECCION",
+          "D06_ANALISIS_AVANZADO"
+        ],
+        "policy": "classification-and-taxonomy",
+        "canonical_rationale": "Classification and conceptual structuring.",
+        "extension_families": [
+          "Classification",
+          "Taxonomy",
+          "Conceptual Hierarchy",
+          "Curriculum Organization",
+          "Validation"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "CP",
+        "command": "/play cp",
+        "default_targets": [
+          "D02_MULTI_INTERDISCIPLINAR",
+          "D06_ANALISIS_AVANZADO",
+          "D06_ANTI_ALUCINACIONES"
+        ],
+        "policy": "comparison-crosswalk-and-knowledge-mapping",
+        "canonical_rationale": "Comparison across conceptual spaces.",
+        "extension_families": [
+          "Comparison",
+          "Crosswalk",
+          "Knowledge Mapping",
+          "Contextual Differentiation",
+          "Traceability"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "MA",
+        "command": "/play MA",
+        "default_targets": [
+          "D01_CEREBRO_ROOT",
+          "D02_MULTI_INTERDISCIPLINAR"
+        ],
+        "policy": "highest-synthesis-route-select-targets-on-demand",
+        "canonical_rationale": "Highest-synthesis route; remains under Luna and selects relevant domains on demand.",
+        "extension_families": [
+          "All seed extension families CFE001-CFE074"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "H",
+        "command": "/play H",
+        "default_targets": [
+          "D04_HERMENEUTICA_HG",
+          "D02_CONFESION_ECLESIAL_REFORMADA",
+          "D06_ANTI_ALUCINACIONES"
+        ],
+        "policy": "grammatical-historical-hermeneutics",
+        "canonical_rationale": "Hermeneutic lane.",
+        "extension_families": [
+          "Hermeneutics",
+          "Grammatical-Historical Method",
+          "Doctrinal Synthesis",
+          "Historical Control",
+          "Validation"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      },
+      {
+        "id": "AE",
+        "command": "/play AE",
+        "default_targets": [
+          "D02_ORQUESTADOR",
+          "D06_ANALISIS_AVANZADO",
+          "D06_MOTOR_PROTOCOLAR",
+          "D06_COGNITIVE_CI_CD",
+          "D06_TESTING"
+        ],
+        "policy": "explicit-architecture-and-systems-integration",
+        "canonical_rationale": "Architecture explicitness and systems control.",
+        "extension_families": [
+          "Architectural Explicitness",
+          "Systems Integration",
+          "Modularity",
+          "Traceability",
+          "Validation",
+          "Provenance"
+        ],
+        "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
+      }
+    ],
+    "targets": [
+      {
+        "id": "D01_CEREBRO_ROOT",
+        "name": "Cerebro",
+        "domain_id": "D01_CEREBRO",
+        "engine_ids": [
+          "E01",
+          "E02",
+          "E03",
+          "E13",
+          "E14"
+        ]
+      },
+      {
+        "id": "D02_CONFESION_ECLESIAL_REFORMADA",
+        "name": "Confesión Eclesial Reformada",
+        "domain_id": "D02_ORQUESTACION",
+        "engine_ids": [
+          "E09",
+          "E10",
+          "E11",
+          "E12",
+          "E13",
+          "E14",
+          "E15"
+        ]
+      },
+      {
+        "id": "D02_MULTI_INTERDISCIPLINAR",
+        "name": "Multi + Interdisciplinar",
+        "domain_id": "D02_ORQUESTACION",
+        "engine_ids": [
+          "E03",
+          "E04",
+          "E05",
+          "E06",
+          "E07",
+          "E08",
+          "E09",
+          "E12",
+          "E13",
+          "E14",
+          "E15"
+        ]
+      },
+      {
+        "id": "D02_ORQUESTADOR",
+        "name": "Orquestador",
+        "domain_id": "D02_ORQUESTACION",
+        "engine_ids": [
+          "E10",
+          "E12",
+          "E13",
+          "E14",
+          "E15"
+        ]
+      },
+      {
+        "id": "D03_TRANSCRIPCION_ROOT",
+        "name": "Transcripción",
+        "domain_id": "D03_TRANSCRIPCION",
+        "engine_ids": [
+          "E02",
+          "E03",
+          "E13",
+          "E14"
+        ]
+      },
+      {
+        "id": "D04_HERMENEUTICA_HG",
+        "name": "Hermenéutica H-G",
+        "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+        "engine_ids": [
+          "E09",
+          "E11",
+          "E12",
+          "E13",
+          "E14",
+          "E15"
+        ]
+      },
+      {
+        "id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+        "name": "Traducción de lenguas antiguas",
+        "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+        "engine_ids": [
+          "E02",
+          "E09",
+          "E11",
+          "E12",
+          "E13",
+          "E14",
+          "E15"
+        ]
+      },
+      {
+        "id": "D04_TRADUCCION_GENERAL",
+        "name": "Traducción general",
+        "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+        "engine_ids": [
+          "E01",
+          "E02",
+          "E03",
+          "E04",
+          "E05",
+          "E12",
+          "E13",
+          "E14",
+          "E15"
+        ]
+      },
+      {
+        "id": "D05_CALIBRE",
+        "name": "Calibre",
+        "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+        "engine_ids": [
+          "E02",
+          "E03",
+          "E13",
+          "E14"
+        ]
+      },
+      {
+        "id": "D05_DOCLING",
+        "name": "Docling",
+        "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+        "engine_ids": [
+          "E01",
+          "E02",
+          "E03",
+          "E04",
+          "E05",
+          "E13",
+          "E14"
+        ]
+      },
+      {
+        "id": "D06_ANTI_ALUCINACIONES",
+        "name": "Anti-Alucinaciones",
+        "domain_id": "D06_SISTEMA_INTELIGENTE",
+        "engine_ids": [
+          "E09",
+          "E10",
+          "E13",
+          "E14",
+          "E15"
+        ]
+      },
+      {
+        "id": "D06_ANALISIS_AVANZADO",
+        "name": "Análisis Avanzado",
+        "domain_id": "D06_SISTEMA_INTELIGENTE",
+        "engine_ids": [
+          "E01",
+          "E02",
+          "E03",
+          "E04",
+          "E05",
+          "E09",
+          "E12",
+          "E13",
+          "E14",
+          "E15",
+          "E11"
+        ]
+      },
+      {
+        "id": "D06_ARCHIVADO_DETECCION",
+        "name": "Archivado Deteccion",
+        "domain_id": "D06_SISTEMA_INTELIGENTE",
+        "engine_ids": [
+          "E02",
+          "E10",
+          "E13",
+          "E14"
+        ]
+      },
+      {
+        "id": "D06_COGNITIVE_CI_CD",
+        "name": "Cognitive CI - CD",
+        "domain_id": "D06_SISTEMA_INTELIGENTE",
+        "engine_ids": [
+          "E10",
+          "E12",
+          "E13",
+          "E14",
+          "E15"
+        ]
+      },
+      {
+        "id": "D06_CONSOLA",
+        "name": "Consola",
+        "domain_id": "D06_SISTEMA_INTELIGENTE",
+        "engine_ids": [
+          "E10",
+          "E12",
+          "E13",
+          "E14"
+        ]
+      },
+      {
+        "id": "D06_MEMORIA_GOBERNADA",
+        "name": "Memoria Gobernada",
+        "domain_id": "D06_SISTEMA_INTELIGENTE",
+        "engine_ids": [
+          "E03",
+          "E04",
+          "E05",
+          "E06",
+          "E13",
+          "E14",
+          "E15"
+        ]
+      },
+      {
+        "id": "D06_MIGRACION_PERSISTENCIA",
+        "name": "Migración y Persistencia",
+        "domain_id": "D06_SISTEMA_INTELIGENTE",
+        "engine_ids": [
+          "E06",
+          "E07",
+          "E08",
+          "E10",
+          "E12",
+          "E13",
+          "E14"
+        ]
+      },
+      {
+        "id": "D06_MOTOR_PROTOCOLAR",
+        "name": "Motor - Protocolar",
+        "domain_id": "D06_SISTEMA_INTELIGENTE",
+        "engine_ids": [
+          "E10",
+          "E12",
+          "E13",
+          "E14",
+          "E15"
+        ]
+      },
+      {
+        "id": "D06_PORTABILIDAD_BASE",
+        "name": "Portabilidad base",
+        "domain_id": "D06_SISTEMA_INTELIGENTE",
+        "engine_ids": [
+          "E10",
+          "E12",
+          "E13",
+          "E14"
+        ]
+      },
+      {
+        "id": "D06_RUNTIME_ANDROID_WINDOWS",
+        "name": "Runtime Android Windows",
+        "domain_id": "D06_SISTEMA_INTELIGENTE",
+        "engine_ids": [
+          "E10",
+          "E12",
+          "E13",
+          "E14"
+        ]
+      },
+      {
+        "id": "D06_TESTING",
+        "name": "Testing",
+        "domain_id": "D06_SISTEMA_INTELIGENTE",
+        "engine_ids": [
+          "E10",
+          "E13",
+          "E14",
+          "E15"
+        ]
+      }
+    ],
+    "expected_domain_count": 6,
+    "expected_engine_count": 15,
+    "expected_command_count": 14,
+    "expected_target_count": 21,
+    "canonical_identity_mutation": false,
+    "canonical_id_reassignment": false,
+    "commands_redefined": false,
+    "engines_reassigned": false
+  },
+  "task_route_bindings": [
+    {
+      "target_id": "D01_CEREBRO_ROOT",
+      "domain_id": "D01_CEREBRO",
+      "operation": "generate_text",
+      "adapter": "LOUKSNAPG2_RUNTIME/louksnapg2_engine.py",
+      "model_id": "QWEN3_0_6B_Q2_K",
+      "quality_gate": "cerebro_arithmetic_and_instruction_following",
+      "fallback_policy": "FAIL_CLOSED"
+    },
+    {
+      "target_id": "D03_TRANSCRIPCION_ROOT",
+      "domain_id": "D03_TRANSCRIPCION",
+      "operation": "transcribe_audio",
+      "adapter": "LOUKSNAPG2_RUNTIME/louksnapg2_engine.py",
+      "model_id": "WHISPER_TINY_Q5_1",
+      "quality_gate": "synthetic_known_speech_and_pinned_librispeech_WER",
+      "fallback_policy": "FAIL_CLOSED"
+    },
+    {
+      "target_id": "D04_TRADUCCION_GENERAL",
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "operation": "translate_text",
+      "adapter": "LOUKSNAPG2_RUNTIME/louksnapg2_engine.py",
+      "model_id": "QWEN3_0_6B_Q2_K",
+      "quality_gate": "general_translation_fixed_en_es_suite",
+      "fallback_policy": "FAIL_CLOSED"
+    },
+    {
+      "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+      "domain_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+      "operation": "translate_ancient_text",
+      "adapter": "LOUKSNAPG2_RUNTIME/louksnapg2_engine.py",
+      "model_id": "QWEN3_0_6B_Q2_K",
+      "adapter_identity": "D04_TRADUCCION_LENGUAS_ANTIGUAS_V1",
+      "quality_gate": "dedicated_latin_koine_greek_suite",
+      "allow_general_translation_fallback": false,
+      "fallback_policy": "FAIL_CLOSED"
+    },
+    {
+      "target_id": "D06_ANALISIS_AVANZADO",
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "operation": "analyze_reasoning",
+      "adapter": "LOUKSNAPG2_RUNTIME/louksnapg2_engine.py",
+      "model_id": "QWEN3_0_6B_Q2_K",
+      "quality_gate": "advanced_analysis_and_multi_step_arithmetic",
+      "fallback_policy": "FAIL_CLOSED"
+    }
+  ],
+  "preserved_non_core_assets": [
+    {
+      "asset_id": "DOCLING_COMPACT_V9",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin",
+      "action": "PRESERVE_BYTE_EXACT_NOT_RECERTIFIED_BY_G2_CORE_GATE"
+    },
+    {
+      "asset_id": "ANTI_HALLUCINATION_ONNX",
+      "path": "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
+      "action": "PRESERVE_BYTE_EXACT_NOT_RECERTIFIED_BY_G2_CORE_GATE"
+    }
+  ],
+  "externalized_assets": {
+    "registry_path": "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/externalized_assets.json",
+    "loader_path": "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_asset_loader.py",
+    "count": 10,
+    "distribution_policy": "ON_DEMAND_ONLY_NOT_INCLUDED_IN_490MB_PRODUCT_PAYLOAD"
+  },
+  "claim_scope": {
+    "product_requirement": "Five required task domains plus preserved source identity and route bindings",
+    "qwen_backend_shared_across_domains": true,
+    "ancient_adapter_is_separate_route": false,
+    "ancient_general_fallback_allowed": false,
+    "full_size_original_model_equivalence": "NOT_ESTABLISHED",
+    "non_core_target_functionality": "PRESERVED_SOURCE_BINDINGS; NOT CLAIMED BY THE FIVE-DOMAIN QUALITY GATE",
+    "puac2_status": "SOURCE_SPECIFICATION_VERSION_2_CANDIDATE_NOT_FORMALLY_ADMITTED"
+  },
+  "certification": {
+    "G23": "NOT_PERFORMED",
+    "G24": "NOT_GRANTED",
+    "integral": "NOT_GRANTED"
+  }
+}
