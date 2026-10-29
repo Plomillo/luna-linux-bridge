@@ -182,6 +182,11 @@ def integral_domain_gate_status(domain_rows: list[dict]) -> str:
     return "PASS_KNOWN_ANSWER_SCOPE_ONLY"
 
 
+def quality_gate_exit_code(status: str) -> int:
+    """A route-only preflight may pass, but an integral-domain blocker never exits green."""
+    return 0 if status in {"PASS_ROUTE_PREFLIGHT_ONLY", "PASS_REMOTE_SEMANTIC_TASKS"} else 2
+
+
 def required_domain_statuses(task_rows: list[dict], ancient_route: dict) -> list[dict]:
     """Report all five required domains; route identification is not translation proof."""
     by_domain: dict[str, list[dict]] = {}
@@ -489,7 +494,7 @@ def main() -> int:
     print(serialized, end="")
     if work_temp:
         work_temp.cleanup()
-    return 0 if report.get("status") in {"PASS_ROUTE_PREFLIGHT_ONLY", "PASS_REMOTE_SEMANTIC_TASKS", "PASS_REMOTE_SEMANTIC_TASKS_INTEGRAL_GATE_BLOCKED"} else 2
+    return quality_gate_exit_code(str(report.get("status", "FAIL_CLOSED")))
 
 
 if __name__ == "__main__":
