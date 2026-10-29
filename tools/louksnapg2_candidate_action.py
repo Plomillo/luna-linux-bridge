@@ -206,7 +206,7 @@ def main(argv=None) -> int:
         report["budget"]["status"] = "PASS_EXACT_BYTES_MEASURED_AFTER_ZIP_CLOSE"
         report["candidate_status"] = "PASS_BUILT_AND_INDEPENDENTLY_INTEGRITY_VALIDATED_PENDING_G24"
         report["gates"] = {
-            "G23": "PASS_SOURCE_IDENTITY_AND_CONTAINER_INTEGRITY",
+            "G23": "PRELIMINARY_STRUCTURAL_CHECK_PASS_NOT_SIGNED_PUAC2",
             "G24": "NOT_GRANTED",
             "functional_domain_quality": "PENDING_REAL_MODEL_EVALUATION",
         }
