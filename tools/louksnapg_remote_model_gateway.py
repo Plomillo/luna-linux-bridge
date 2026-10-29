@@ -230,7 +230,7 @@ class ModelWorker:
                 encoded = self.processor(text=text, src_lang=src, return_tensors="pt")
                 encoded = self._move(encoded)
                 generated = self.model.generate(
-                    **encoded, tgt_lang=tgt, generate_speech=False, max_new_tokens=tokens,
+                    **encoded, tgt_lang=tgt, max_new_tokens=tokens,
                 )
                 sequences = getattr(generated, "sequences", generated)
                 decoded = self.processor.batch_decode(sequences, skip_special_tokens=True)
