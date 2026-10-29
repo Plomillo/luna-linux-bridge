@@ -94,6 +94,7 @@ def main(argv=None) -> int:
             })
         evidence.update({
             "status": "PASS",
+            "required_domain_count": 5,
             "manifest_bytes": len(manifest_bytes),
             "manifest_sha256": manifest_digest,
             "models": rows,
