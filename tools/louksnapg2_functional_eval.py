@@ -72,7 +72,17 @@ def run_case(runtime, case_id, domain, operation, payload, predicate, requiremen
         "input_sha256": sha256_bytes(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")),
     }
     try:
-        result = runtime.route(domain, operation, payload)
+        from louksnapg2_service import TARGET_BINDINGS, dispatch_target
+        target_id = next(
+            (target for target, binding in TARGET_BINDINGS.items()
+             if binding["domain_id"] == domain and binding["operation"] == operation),
+            None,
+        )
+        if target_id is None:
+            raise RuntimeError("DOMAIN_OPERATION_HAS_NO_CANONICAL_TARGET_BINDING")
+        result = dispatch_target(runtime, target_id, payload, task_id=case_id)
+        record["target_id"] = target_id
+        record["adapter_id"] = result.get("adapter_id")
         output = str(result.get("output_text", ""))
         passed = (
             result.get("status") == "PASS_EXECUTION"
@@ -120,6 +130,7 @@ def main(argv=None) -> int:
             raise SystemExit("AUDIO_FIXTURE_MISSING_OR_UNSAFE:" + str(audio))
     sys.path.insert(0, str(root))
     from louksnapg2_engine import LouksnapG2Runtime
+    from louksnapg2_service import TARGET_BINDINGS
 
     evidence = {
         "schema": "LOUKSNAPG2_REAL_MODEL_FUNCTIONAL_EVIDENCE/1.0",
