@@ -185,10 +185,13 @@ def integral_domain_gate_status(domain_rows: list[dict]) -> str:
 def artifact_execution_scope() -> dict:
     """Separate execution of source files from proof of running the exact packaged product."""
     return {
-        **artifact_execution_scope(),
+        "runtime_under_test": "CHECKED_OUT_CAJITA_RUNTIME_SOURCE_TREE",
+        "exact_louksnapg_distribution_bundle_sha256": None,
+        "exact_candidate_artifact_functional_execution": "NOT_ESTABLISHED",
+        "artifact_level_execution_required_for_integral_certification": True,
+        "artifact_integrity_evidence_does_not_imply_functional_execution": True,
         "scope_limit": "DOES_NOT_ESTABLISH_EXECUTION_OF_THE_EXACT_PACKAGED_LOUKSNAPG_MD_BUNDLE",
     }
-
 
 def quality_gate_exit_code(status: str) -> int:
     """A route-only preflight may pass, but an integral-domain blocker never exits green."""
@@ -274,11 +277,7 @@ def main() -> int:
         "runtime_root": str(runtime),
         "candidate_source_commit": os.environ.get("GITHUB_SHA"),
         "workflow_ref": os.environ.get("GITHUB_REF"),
-        "runtime_under_test": "CHECKED_OUT_CAJITA_RUNTIME_SOURCE_TREE",
-        "exact_louksnapg_distribution_bundle_sha256": None,
-        "exact_candidate_artifact_functional_execution": "NOT_ESTABLISHED",
-        "artifact_level_execution_required_for_integral_certification": True,
-        "artifact_integrity_evidence_does_not_imply_functional_execution": True,
+        **artifact_execution_scope(),
         "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
         "workflow_run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
         "workflow_event": os.environ.get("GITHUB_EVENT_NAME"),
