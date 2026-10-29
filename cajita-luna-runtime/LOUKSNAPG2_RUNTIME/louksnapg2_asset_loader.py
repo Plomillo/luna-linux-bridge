@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -44,7 +45,14 @@ def sha256_file(path: Path) -> str:
 
 
 def safe_relative_path(value: str) -> PurePosixPath:
-    if not isinstance(value, str) or not value or "\\" in value or value.startswith("/"):
+    if (
+        not isinstance(value, str)
+        or not value
+        or "\\" in value
+        or value.startswith("/")
+        or re.match(r"^[A-Za-z]:", value)
+        or value.startswith("//")
+    ):
         raise AssetLoaderError("ASSET_PATH_ABSOLUTE_OR_INVALID")
     path = PurePosixPath(value)
     if any(part in ("", ".", "..") for part in path.parts) or path.as_posix() != value:
