@@ -1,9 +1,9 @@
 {
   "schema": "LOUKSNAPG_INTEGRAL_CERTIFICATION_STATUS_MATRIX/1.0",
-  "observed_at_utc": "2026-10-29T00:31:00Z",
+  "observed_at_utc": "2026-10-29T00:32:00Z",
   "repository": "Plomillo/luna-linux-bridge",
   "branch": "louksnapg/phase4-resume-20261028",
-  "branch_head_at_matrix": "a8cd5afc641b5e91d5f6ecfda20427d62f411610",
+  "branch_head_at_matrix": "6bf75dc34df237443d4199a3e2167495106b7442",
   "canonical_product_file": "LOUKSNAPG.md",
   "current_worktree_distribution_candidate": "NOT_BUILT_AS_A_TRACKED_ROOT_FILE_ON_THIS_BRANCH_HEAD",
   "global_certification": "NOT_GRANTED",
@@ -276,7 +276,7 @@
     "2_domain_review": "Cerebro, Qwen, general translation and Whisper have integrated quality failures. Ancient translation has no consumer adapter/transducer/operational lexicon and no known-answer functional run. Docling is an extra failing task, not the ancient-translation domain.",
     "3_route_and_cabling": "Static planner selects D04_HERMENEUTICA_HG plus D04_TRADUCCION_LENGUAS_ANTIGUAS for ancient-language intent and removes D04_TRADUCCION_GENERAL; new route-level E2E probe asserts target selection and fail-closed result, exact run pending.",
     "4_repair": "Stopped unsupported Whisper low-rank sweeps after R29/R64/R96 and adaptive R192 V1/V2 all failed exact functional tasks; no promotion. Ancient-language fix awaits exact pair and actual translation asset.",
-    "5_post_repair_tests": "Execution-vs-quality counting fixed and unit-tested. Current factory run 40794248442 includes ancient-route probe and explicit required-domain coverage; task result pending.",
+    "5_post_repair_tests": "Metric fix validated by 4 unit tests in run 40793408840. Ancient-route coverage fixture was initially inconsistent in run 40794236669 (2/131 tests); fixed on code commit c7915f9... and manufacturing tests passed in run 40794248442.",
     "6_integration": "NOT_PASSED; latest earlier candidate G24 showed five task-level quality failures; ancient-language task absent and all 21 target adapters not established.",
     "7_certification_assessment": "HOLD; G23 passed distribution integrity only on earlier exact candidate. G24 failed earlier candidate; current commit revalidation pending.",
     "8_g23_g24_release": "Current candidate run 40794248442 is in manufacture/cap gate; G23/G24 must be rerun on exact candidate before any release.",
@@ -327,7 +327,8 @@
     "The five-model-task G24 harness previously covered Docling instead of ancient-language translation; the updated harness now reports five required-domain rows and a dedicated ancient route diagnostic but cannot certify translation without an actual translator.",
     "The exact G24 route diagnostic and candidate-bound G23/G24 evidence for commit c7915f9bf4fa9bd9db9d0c91baa55042f5f03ce0 remain pending in workflow run 40794248442.",
     "Latest G24 on commit 60a725e32e33c3f38c0b451003699922ac07d87a confirms 5 execution successes and 0 semantic quality passes; package integrity does not release the candidate.",
-    "New required-domain coverage and ancient-language route probe are not present in the G24 evidence from commit 60a; revalidation on commit c7915f9bf4fa9bd9db9d0c91baa55042f5f03ce0 is running."
+    "New required-domain coverage and ancient-language route probe are not present in the G24 evidence from commit 60a; revalidation on commit c7915f9bf4fa9bd9db9d0c91baa55042f5f03ce0 is running.",
+    "An intermediate test run 40794236669 failed 2 route-coverage fixture assertions because they omitted functional_translation_status; this fixture contract mismatch was corrected in c7915f9..., and the latest candidate manufacturing tests passed. The real route probe and G24 quality gate remain pending."
   ],
   "no_silent_substitution": true,
   "no_canonical_model_promotion_without_quality_pass": true,
@@ -473,16 +474,27 @@
     "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40794248442",
     "source_commit": "c7915f9bf4fa9bd9db9d0c91baa55042f5f03ce0",
     "code_candidate_commit": "c7915f9bf4fa9bd9db9d0c91baa55042f5f03ce0",
-    "current_stage": "BUILD_SINGLE_FILE_LOUKSNAPG_PRODUCT",
+    "current_stage": "BUILD_SINGLE_FILE_LOUKSNAPG_PRODUCT_AND_FINAL_ROLLBACK",
     "status": "IN_PROGRESS_AT_LAST_OBSERVATION",
-    "manufacture_tests": "CI_STEP_COMPLETED_SUCCESS",
+    "manufacture_tests": "PASS",
     "g23": "PENDING",
     "g24": "PENDING",
     "product_publication": "BLOCKED_UNTIL_G24",
     "includes_execution_vs_quality_metric_fix": true,
     "includes_ancient_language_route_probe": true,
     "includes_required_domain_coverage_output": true,
-    "includes_no_general_translation_fallback_assertion": true
+    "includes_no_general_translation_fallback_assertion": true,
+    "intermediate_test_regression": {
+      "run_id": 40794236669,
+      "source_commit": "6ab5696e1cfb5cced4fd9e551c54157318c311f8",
+      "conclusion": "FAIL",
+      "failed_tests": 2,
+      "test_count": 131,
+      "root_cause": "synthetic coverage fixtures omitted functional_translation_status after helper contract was updated",
+      "correction_commit": "c7915f9bf4fa9bd9db9d0c91baa55042f5f03ce0",
+      "corrective_verification": "manufacture test step SUCCESS in run 40794248442",
+      "nature": "TEST_FIXTURE_CONTRACT_MISMATCH_NOT_A_FUNCTIONAL_TRANSLATION_PASS_OR_RUNTIME_REPAIR"
+    }
   },
   "ancient_language_forensic_audit": {
     "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
