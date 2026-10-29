@@ -97,6 +97,20 @@ def load_candidate():
         raise RuntimeError("MODEL_IDENTITY_MISMATCH")
     meta = json.loads((ROOT/"compression_metadata.json").read_text(encoding="utf-8"))
     rank = int(meta["rank"])
+    rank_map = meta.get("tensor_ranks", {})
+    if not isinstance(rank_map, dict):
+        raise RuntimeError("WHISPER_TENSOR_RANK_MAP_INVALID")
+    normalized_rank_map = {}
+    for key, value in rank_map.items():
+        if not isinstance(key, str) or not key.endswith(".weight") or isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= rank:
+            raise RuntimeError("WHISPER_TENSOR_RANK_ENTRY_INVALID:" + str(key))
+        normalized_rank_map[key] = value
+    if "proj_out.weight" not in normalized_rank_map and "model.decoder.embed_tokens.weight" in normalized_rank_map:
+        normalized_rank_map["proj_out.weight"] = normalized_rank_map["model.decoder.embed_tokens.weight"]
+
+    def module_rank(name):
+        return int(normalized_rank_map.get(name + ".weight", rank))
+
     with torch.device("meta"):
         model = WhisperForConditionalGeneration(cfg)
     modules = dict(model.named_modules())
@@ -105,11 +119,11 @@ def load_candidate():
         if not name or name in ("model.encoder.embed_positions", "model.decoder.embed_positions"):
             continue
         if isinstance(module, nn.Embedding):
-            replacement=LowRankEmbedding(module,rank)
+            replacement=LowRankEmbedding(module,module_rank(name))
         elif isinstance(module,nn.Linear):
-            replacement=LowRankLinear(module,rank)
+            replacement=LowRankLinear(module,module_rank(name))
         elif isinstance(module,nn.Conv1d):
-            replacement=LowRankConv1d(module,rank)
+            replacement=LowRankConv1d(module,module_rank(name))
         else:
             continue
         parent_name,_,leaf=name.rpartition(".")
