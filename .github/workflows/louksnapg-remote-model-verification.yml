@@ -11,6 +11,7 @@ on:
       - "cajita-luna-runtime/cajita_remote_execution.py"
       - "cajita-luna-runtime/cajita_task_adapters.py"
       - "tools/louksnapg_remote_model_gateway.py"
+      - "tools/louksnapg_remote_source_audit.py"
       - "tests/test_cajita_remote_execution.py"
       - "integrations/kestra/validate.py"
       - "integrations/kestra/flows/25-louksnapg-remote-model-verification.yml"
@@ -64,6 +65,7 @@ jobs:
             cajita-luna-runtime/cajita_remote_execution.py \
             cajita-luna-runtime/cajita_task_adapters.py \
             tools/louksnapg_remote_model_gateway.py \
+            tools/louksnapg_remote_source_audit.py \
             tests/test_cajita_remote_execution.py
           for domain in \
             D01_CEREBRO \
@@ -118,6 +120,14 @@ jobs:
           print(json.dumps(report, ensure_ascii=False, sort_keys=True))
           PY
 
+      - name: Audit pinned Hugging Face source revisions and metadata without downloading weights
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B tools/louksnapg_remote_source_audit.py \
+            --policy cajita-luna-runtime/CAJITA_REMOTE_MODEL_POLICY.json \
+            --report out/LOUKSNAPG_REMOTE_SOURCE_AUDIT.json
+
       - name: Validate the staged Kestra integration and its fail-closed monitor
         shell: bash
         run: |
@@ -144,6 +154,7 @@ jobs:
           name: louksnapg-remote-protocol-evidence-${{ github.run_id }}
           path: |
             out/LOUKSNAPG_REMOTE_PROTOCOL_CI_EVIDENCE.json
+            out/LOUKSNAPG_REMOTE_SOURCE_AUDIT.json
             ${{ runner.temp }}/louksnapg-remote-protocol-tests.log
           if-no-files-found: warn
           retention-days: 90
