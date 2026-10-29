@@ -30,7 +30,6 @@ concurrency:
 jobs:
   remote-semantic-quality:
     name: "Real semantic tasks through source-pinned remote models"
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_remote_quality == true }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -55,7 +54,30 @@ jobs:
       PYTHONDONTWRITEBYTECODE: "1"
 
     steps:
+      - name: Require explicit manual authorization before remote inference
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          enabled="$(python3 - "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" <<'PY'
+          import json, pathlib, sys
+          event_name, path = sys.argv[1:]
+          try:
+              event = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+          except Exception:
+              event = {}
+          enabled = event_name == "workflow_dispatch" and str(event.get("inputs", {}).get("enable_remote_quality", "false")).lower() == "true"
+          print("true" if enabled else "false")
+          PY
+          )"
+          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
+          if [ "$enabled" != "true" ]; then
+            echo "REMOTE_MODEL_SEMANTIC_QUALITY=SKIPPED_EXPLICIT_INPUT_REQUIRED"
+            echo "No model requests, audio uploads, or model downloads were performed."
+          fi
+
       - name: Checkout exact candidate source
+        if: steps.gate.outputs.enabled == 'true'
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.sha }}
@@ -64,11 +86,13 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python
+        if: steps.gate.outputs.enabled == 'true'
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
           python-version: "3.12"
 
       - name: Install pinned known-audio fixture dependencies only
+        if: steps.gate.outputs.enabled == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -79,6 +103,7 @@ jobs:
             "soundfile==0.13.1" "scipy==1.16.2"
 
       - name: Validate remote-only quality harness and required endpoints
+        if: steps.gate.outputs.enabled == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -89,6 +114,7 @@ jobs:
             cajita-luna-runtime/cajita_task_adapters.py
 
       - name: Run real model tasks via required remote-only routing
+        if: steps.gate.outputs.enabled == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -102,7 +128,7 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/louksnapg-remote-quality.log"
 
       - name: Upload semantic evidence without granting certification
-        if: always()
+        if: always() && steps.gate.outputs.enabled == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksnapg-remote-semantic-quality-${{ github.run_id }}
