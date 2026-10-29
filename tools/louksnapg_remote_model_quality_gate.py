@@ -266,6 +266,11 @@ def main() -> int:
         "runtime_root": str(runtime),
         "candidate_source_commit": os.environ.get("GITHUB_SHA"),
         "workflow_ref": os.environ.get("GITHUB_REF"),
+        "runtime_under_test": "CHECKED_OUT_CAJITA_RUNTIME_SOURCE_TREE",
+        "exact_louksnapg_distribution_bundle_sha256": None,
+        "exact_candidate_artifact_functional_execution": "NOT_ESTABLISHED",
+        "artifact_level_execution_required_for_integral_certification": True,
+        "artifact_integrity_evidence_does_not_imply_functional_execution": True,
         "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
         "workflow_run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
         "workflow_event": os.environ.get("GITHUB_EVENT_NAME"),
@@ -277,7 +282,8 @@ def main() -> int:
         "domain_task_results": [],
         "certification": "NOT_GRANTED",
         "global_certification": "NOT_GRANTED",
-        "scope": "SEMANTIC_KNOWN_ANSWER_TASKS_THROUGH_THE_CANDIDATE_ADAPTER_AND_SOURCE_PINNED_REMOTE_GATEWAYS",
+        "scope": "SEMANTIC_KNOWN_ANSWER_TASKS_THROUGH_CHECKED_OUT_CAJITA_RUNTIME_SOURCE_AND_SOURCE_PINNED_REMOTE_GATEWAYS",
+        "scope_limit": "DOES_NOT_ESTABLISH_EXECUTION_OF_THE_EXACT_PACKAGED_LOUKSNAPG_MD_BUNDLE",
     }
     try:
         policy_path = runtime / "CAJITA_REMOTE_MODEL_POLICY.json"
