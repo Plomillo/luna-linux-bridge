@@ -190,7 +190,7 @@ jobs:
           python - "$manifest" <<'PY'
           import hashlib, json, pathlib, sys
           d = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
-          if d.get("candidate_id") != "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_ADAPTIVE_R192_EXPERIMENT":
+          if d.get("candidate_id") != "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_ADAPTIVE_R192_V2_EXPERIMENT":
               raise SystemExit("PROMOTION_CANDIDATE_ID_MISMATCH")
           if d.get("global_certification") != "NOT_GRANTED":
               raise SystemExit("UNAUTHORIZED_CERTIFICATION_PROPAGATION")
