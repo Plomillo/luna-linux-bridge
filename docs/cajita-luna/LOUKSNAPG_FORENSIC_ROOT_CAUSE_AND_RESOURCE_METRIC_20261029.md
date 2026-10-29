@@ -33,6 +33,10 @@ Fecha de evidencias: 2026-10-29 UTC. Rama examinada: `louksnapg/phase4-resume-20
 
 **Verificación posterior.** Ejecutar audio conocido y muestra real con hashes de entrada fijados, calcular WER y probar el peso exacto empaquetado. `D03_TRANSCRIPCION=NOT_GRANTED`.
 
+## Comprobación de evidencia histórica para traducción general
+
+Se revisó también `docs/cajita-luna/LOUKSNA1_TASK_ADAPTER_EVIDENCE.json`, cuya fuente exacta es el commit `4ea9190df2f39581aa391584ab4ae868da82da79`. La fila histórica `e2e-seamless-translation` sólo declara `status=PASS_FUNCTIONAL_EXECUTION`, `exit_code=0` y `semantic_quality_equivalence=NOT_ESTABLISHED`; no contiene un criterio `quality_acceptance`, ni una salida de traducción verificable contra una referencia. Por tanto, esa evidencia anterior acredita que el proceso ejecutó y devolvió salida, pero **no demuestra que traducción general ya tradujera correctamente**. La tarea G24 actual incorpora una expectativa EN→ES explícita y falla; no se ha descartado ninguna prueba semántica anterior válida porque no se encontró tal aprobación en ese artefacto.
+
 ## Hallazgo 3 — traducción general y Qwen tienen ejecución, no calidad útil
 
 | Dominio | Representación declarada en metadata | Peso integrado (bytes) | Resultado observado de G24 | Decisión |
