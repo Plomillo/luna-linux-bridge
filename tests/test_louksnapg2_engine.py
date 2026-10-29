@@ -83,8 +83,9 @@ class G2EngineContractTests(unittest.TestCase):
 
     def test_known_ancient_phrase_uses_separate_route_without_general_fallback(self):
         runtime = LouksnapG2Runtime(self.root)
-        with mock.patch.object(runtime, "_generate", side_effect=AssertionError("must use bounded reference")):
-            result = runtime.translate_ancient("Carpe diem", src_lang="lat", tgt_lang="eng")
+        with mock.patch.dict("louksnapg2_engine.EXPECTED_MODELS", self.models, clear=True):
+            with mock.patch.object(runtime, "_generate", side_effect=AssertionError("must use bounded reference")):
+                result = runtime.translate_ancient("Carpe diem", src_lang="lat", tgt_lang="eng")
         self.assertEqual(result["output_text"], "Seize the day.")
         self.assertEqual(result["translation_strategy"], "BOUNDED_CONCORDANCE")
         self.assertEqual(result["domain_id"], "D04_TRADUCCION_LENGUAS_ANTIGUAS")
@@ -97,11 +98,12 @@ class G2EngineContractTests(unittest.TestCase):
             seen["system"] = system
             seen["user"] = user
             return "All Gaul is divided into three parts."
-        with mock.patch.object(runtime, "_generate", side_effect=fake_generate):
-            with mock.patch.object(runtime, "translate_general", side_effect=AssertionError("general adapter forbidden")):
-                result = runtime.translate_ancient(
-                    "Gallia est omnis divisa in partes tres.", src_lang="lat", tgt_lang="eng"
-                )
+        with mock.patch.dict("louksnapg2_engine.EXPECTED_MODELS", self.models, clear=True):
+            with mock.patch.object(runtime, "_generate", side_effect=fake_generate):
+                with mock.patch.object(runtime, "translate_general", side_effect=AssertionError("general adapter forbidden")):
+                    result = runtime.translate_ancient(
+                        "Gallia est omnis divisa in partes tres.", src_lang="lat", tgt_lang="eng"
+                    )
         self.assertIn("dedicated ancient-language translation adapter", seen["system"].lower())
         self.assertNotIn("general-translation adapter", seen["system"].lower())
         self.assertEqual(result["domain_id"], "D04_TRADUCCION_LENGUAS_ANTIGUAS")
@@ -115,7 +117,9 @@ class G2EngineContractTests(unittest.TestCase):
 
     def test_ancient_input_normalization_is_unicode_stable(self):
         self.assertEqual(normalize_ancient("CARPE DIEM"), "carpe diem")
-        self.assertEqual(normalize_ancient("ἐν ἀρχῇ ἦν ὁ λόγος"), "ἐν ἀρχῇ ἦν ὁ λόγος")
+        normalized = normalize_ancient("ἐν ἀρχῇ ἦν ὁ λόγος")
+        self.assertEqual(normalize_ancient(normalized), normalized)
+        self.assertEqual(normalize_ancient("λόγος"), normalize_ancient("λόγοσ"))
 
     def test_wrong_domain_operation_pair_is_fail_closed(self):
         runtime = LouksnapG2Runtime(self.root)
