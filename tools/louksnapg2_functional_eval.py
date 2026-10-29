@@ -194,7 +194,7 @@ def main(argv=None) -> int:
         ("CEREBRO_ARITHMETIC_01", "D01_CEREBRO", "generate_text",
          {"prompt": "Compute (17 * 3) - 9. Return a single integer and no other text.", "max_new_tokens": 48},
          lambda out: has_final_integer(out, 42),
-         "The actual Qwen-backed reasoning route must return 42 as its final answer."),
+         "The actual GPT-OSS Cerebro route must return 42 as its final answer."),
         ("CEREBRO_WORD_PROBLEM_02", "D01_CEREBRO", "generate_text",
          {"prompt": "An invoice has 5 items at 7 dollars each and a 4 dollar discount. What is the final amount? Return one integer only.", "max_new_tokens": 48},
          lambda out: has_final_integer(out, 31),
@@ -287,11 +287,28 @@ def main(argv=None) -> int:
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(evidence, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    # Keep deterministic case-level diagnostics in the runner log as well as the
+    # JSON artifact. This is essential for distinguishing route/runtime failures from
+    # model-quality failures without opening or publishing model payloads.
+    diagnostic_cases = [{
+        "case_id": row.get("case_id"),
+        "status": row.get("status"),
+        "reason": row.get("reason"),
+        "target_id": row.get("target_id"),
+        "adapter_id": row.get("adapter_id"),
+        "execution_status": row.get("execution_status"),
+        "result_domain_id": row.get("result_domain_id"),
+        "result_operation": row.get("result_operation"),
+        "quality_criterion_passed": row.get("quality_criterion_passed"),
+        "actual_output": (row.get("actual_output") or "")[:240],
+        "elapsed_seconds": row.get("elapsed_seconds"),
+    } for row in evidence["tests"]]
     print(json.dumps({
         "functional_status": evidence["functional_status"],
         "passed_cases": evidence["summary"]["passed_cases"],
         "total_cases": evidence["summary"]["total_cases"],
         "domain_results": evidence["domain_results"],
+        "case_diagnostics": diagnostic_cases,
         "global_certification": evidence["global_certification"],
         "output": str(args.output),
     }, ensure_ascii=False, sort_keys=True, indent=2))
