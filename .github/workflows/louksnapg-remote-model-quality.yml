@@ -12,7 +12,7 @@ on:
       - "cajita-luna-runtime/CAJITA_REMOTE_MODEL_POLICY.json"
       - "cajita-luna-runtime/cajita_remote_execution.py"
       - "cajita-luna-runtime/cajita_task_adapters.py"
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 permissions:
   contents: read
