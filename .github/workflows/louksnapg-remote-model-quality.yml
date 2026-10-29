@@ -9,6 +9,8 @@ on:
       - ".github/workflows/louksnapg-remote-model-quality.yml"
       - "tools/louksnapg_remote_model_quality_gate.py"
       - "tools/louksnapg_reference_whisper_diagnostic.py"
+      - "tools/cajita_task_e2e.py"
+      - "tests/test_louksnapg_remote_model_quality_gate.py"
       - "cajita-luna-runtime/CAJITA_REMOTE_MODEL_POLICY.json"
       - "cajita-luna-runtime/cajita_remote_execution.py"
       - "cajita-luna-runtime/cajita_task_adapters.py"
@@ -45,8 +47,10 @@ jobs:
           python -B -m py_compile \
             tools/louksnapg_remote_model_quality_gate.py \
             tools/louksnapg_reference_whisper_diagnostic.py \
+            tools/cajita_task_e2e.py \
             cajita-luna-runtime/cajita_remote_execution.py \
-            cajita-luna-runtime/cajita_task_adapters.py
+            cajita-luna-runtime/cajita_task_adapters.py \
+            tests/test_louksnapg_remote_model_quality_gate.py
           python - <<'PY'
           import json
           from pathlib import Path
@@ -61,6 +65,44 @@ jobs:
           print("MODEL_INFERENCE_EXECUTED=false")
           print("GLOBAL_CERTIFICATION=NOT_GRANTED")
           PY
+
+      - name: Run route-only preflight with a one-core and 1 GiB budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/louksnapg-remote-quality-preflight
+          ulimit -v 1048576
+          CPU="$(awk '/Cpus_allowed_list/ { split($2, values, /[-,]/); print values[1] }' /proc/self/status)"
+          test -n "$CPU"
+          taskset -c "$CPU" python -B tools/louksnapg_remote_model_quality_gate.py \
+            --runtime-root cajita-luna-runtime \
+            --work-dir "$RUNNER_TEMP/louksnapg-remote-quality-preflight" \
+            --report out/louksnapg-remote-quality-preflight/LOUKSNAPG_REMOTE_QUALITY_PREFLIGHT.json \
+            --preflight-only \
+            2>&1 | tee "$RUNNER_TEMP/louksnapg-remote-quality-preflight.log"
+
+      - name: Run local unit tests for quality and required-domain gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          ulimit -v 1048576
+          CPU="$(awk '/Cpus_allowed_list/ { split($2, values, /[-,]/); print values[1] }' /proc/self/status)"
+          test -n "$CPU"
+          taskset -c "$CPU" python -B -m unittest discover \
+            -s tests -p 'test_louksnapg_remote_model_quality_gate.py' -v \
+            2>&1 | tee "$RUNNER_TEMP/louksnapg-remote-quality-unit-tests.log"
+
+      - name: Upload route preflight evidence without certifying product functionality
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-remote-quality-preflight-${{ github.run_id }}
+          path: |
+            out/louksnapg-remote-quality-preflight/LOUKSNAPG_REMOTE_QUALITY_PREFLIGHT.json
+            ${{ runner.temp }}/louksnapg-remote-quality-preflight.log
+            ${{ runner.temp }}/louksnapg-remote-quality-unit-tests.log
+          if-no-files-found: warn
+          retention-days: 90
 
   remote-semantic-quality:
     name: "Real semantic tasks through source-pinned remote models"
