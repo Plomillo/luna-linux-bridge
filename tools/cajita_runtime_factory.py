@@ -485,7 +485,7 @@ Estado de fabricación: {factory_data["archive_count"]} contenedores ZIP/7Z reti
 def make_louksna1(repo_root,runtime,out_doc):
  source=repo_root/"LOUKSNAMEJORADA.md"
  if not source.is_file() or source.is_symlink(): raise RuntimeError("PROTECTED_ARCHITECTURE_MISSING")
- base=source.read_bytes(); base_hash=sha_bytes(base); cajita=(runtime/"CajitadeLuna.md").read_bytes()
+ base=source.read_bytes(); base_hash=sha_bytes(base); cajita=(repo_root/"cajita-luna-runtime"/"CajitadeLuna.md").read_bytes()
  marker=f"""
 
 ---
