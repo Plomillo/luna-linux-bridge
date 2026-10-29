@@ -166,8 +166,18 @@ class LouksnapG2Runtime:
         except Exception as exc:
             raise EngineRuntimeError("ORIGINAL_CAJITA_RUNTIME_EXCEPTION:" + type(exc).__name__ + ":" + str(exc)[:200]) from exc
         if exit_code != 0 or result.get("status") != "PASS_FUNCTIONAL_EXECUTION" or result.get("execution_authorized") is not True:
-            reason = result.get("reason") or result.get("status") or "UNKNOWN"
-            raise EngineRuntimeError("ORIGINAL_CAJITA_RUNTIME_NOT_PASS:" + str(reason)[:300])
+            reason = str(result.get("reason") or result.get("status") or "UNKNOWN")[:300]
+            diagnostic_suffix = ""
+            # Child output is visible only for explicit CI diagnostics on synthetic tasks.
+            if os.environ.get("CAJITA_E2E_DIAGNOSTICS") == "1":
+                details = []
+                for key in ("diagnostic_stderr_tail", "diagnostic_stdout_tail"):
+                    value = result.get(key)
+                    if isinstance(value, str) and value.strip():
+                        details.append(key + "=" + value[-800:])
+                if details:
+                    diagnostic_suffix = "|DIAGNOSTICS|" + "|".join(details)
+            raise EngineRuntimeError("ORIGINAL_CAJITA_RUNTIME_NOT_PASS:" + reason + diagnostic_suffix)
         output = result.get("output_text")
         if not isinstance(output, str) or not output.strip():
             raise EngineRuntimeError("ORIGINAL_CAJITA_RUNTIME_OUTPUT_EMPTY")
