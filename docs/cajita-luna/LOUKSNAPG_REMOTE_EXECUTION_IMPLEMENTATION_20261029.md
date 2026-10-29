@@ -95,3 +95,19 @@ Se corrigió .github/workflows/cajita-louksna1-factory.yml para que cambios en C
 La PC LOUKSNA no se utilizó para inferencia, descarga de pesos ni modificaciones del runtime. Su checkout local sigue en otra rama y contiene cambios previos ajenos a este trabajo; no se hizo checkout, reset ni limpieza. Kestra está activo como servicio, pero su API local no respondió, por lo que se validó el flujo de monitorización en GitHub Actions; no se afirma que Kestra haya orquestado en vivo la reparación.
 
 **Bloqueadores de certificación actuales:** configuración ausente para los cuatro endpoints remotos; fallo semántico 0/5 del candidato empaquetado anterior; recurso/adaptador de traducción antigua no disponible; nueva fabricación pendiente de G23/G24. No se concedió certificación ni se publicó el candidato fallido.
+
+
+## Actualización incremental — nueva fábrica y evidencia G23 (2026-10-29)
+
+La fábrica ejecutada desde el commit de producto 6db1d02676e78e96195159c822f567821a8e9c85 terminó con éxito. G23 independiente también terminó con éxito; el G24 de ese mismo candidato estaba todavía ejecutando la prueba del artefacto final cuando se registró esta actualización.
+
+- Workflow de fábrica y G23/G24: https://github.com/Plomillo/luna-linux-bridge/actions/runs/40811334086
+- Validación de rama y contratos: https://github.com/Plomillo/luna-linux-bridge/actions/runs/40811334419 (success).
+- Artefacto exacto del candidato empaquetado como ZIP de Actions: ID 12871080206; SHA-256 del contenedor ZIP 07108a8fd0b8a5c38691f03ce212b5f97d523b3122b79ee25b58dc0e272c7850. Ese SHA corresponde al ZIP de descarga de Actions, no al SHA de LOUKSNAPG.md dentro de él.
+- Artefacto Louksna1 separado: ID 12870845916; SHA-256 del ZIP de Actions 15888ccd632e8ad7b7aa81820899a6395772a657ba9e2b1587f8a17a9c3c1555.
+- Copias de rollback de archivos fuente: ID 12870840989; SHA-256 del ZIP de Actions 26a63b0a8905375f54831530e4d41c9417ffdb7bcdc108ebbc9633c68383336b.
+- G23 independiente: artefacto ID 12870627018; SHA-256 del ZIP a4147aa33794d3fee3a18a0cc1ba08f876108245b96f1cbbf486423afb4cc21e.
+- El trabajo G24 de esta versión está pendiente/no concluido en el momento de esta nota. No se deduce G24 PASS a partir del éxito de fábrica/G23; la certificación integral sigue NOT_GRANTED hasta la decisión final G24 y las cinco tareas semánticas obligatorias.
+- Auditoría de fuentes antiguas persistida en [LOUKSNAPG_ANCIENT_TRANSLATION_SOURCE_AUDIT_20261029.md](LOUKSNAPG_ANCIENT_TRANSLATION_SOURCE_AUDIT_20261029.md). Mantiene el dominio bloqueado porque los recursos revisados no prueban traducción de frases con identidad y consumidor compatibles.
+
+En el PC LOUKSNA se repitió solo la consulta de lectura: el checkout sigue en la rama local candidate/document-factory-v1-unit2-20261013, HEAD 47bc5571f89ec8ef3947eb824f0977cb84fd5466, con dos archivos de evidencia modificados antes de esta misión; no se ejecutó checkout/reset/clean. El disco raíz conserva ~7.05 GB libres y los inodos continúan al 100%; no se descargaron modelos ni se modificó el runtime. Kestra sigue activo como servicio, pero sus endpoints locales consultados no responden; no se afirma una orquestación remota real de Kestra.
