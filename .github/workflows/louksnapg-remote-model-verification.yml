@@ -1,0 +1,135 @@
+name: LOUKSNAPG remote source-bound model protocol verification
+
+on:
+  push:
+    branches:
+      - main
+      - "louksnapg/**"
+    paths:
+      - ".github/workflows/louksnapg-remote-model-verification.yml"
+      - "cajita-luna-runtime/CAJITA_REMOTE_MODEL_POLICY.json"
+      - "cajita-luna-runtime/cajita_remote_execution.py"
+      - "cajita-luna-runtime/cajita_task_adapters.py"
+      - "tools/louksnapg_remote_model_gateway.py"
+      - "tests/test_cajita_remote_execution.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg-remote-model-verification-\${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  OMP_NUM_THREADS: "1"
+  OMP_THREAD_LIMIT: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  NUMEXPR_NUM_THREADS: "1"
+  TOKENIZERS_PARALLELISM: "false"
+  PYTHONNOUSERSITE: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  protocol-and-policy:
+    name: "Protocol authentication, source binding and fail-closed adapter tests"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact source revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: \${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+
+      - name: Syntax and policy contract preflight
+        shell: bash
+        env:
+          PYTHONPATH: cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          python -B -m py_compile \
+            cajita-luna-runtime/cajita_remote_execution.py \
+            cajita-luna-runtime/cajita_task_adapters.py \
+            tools/louksnapg_remote_model_gateway.py \
+            tests/test_cajita_remote_execution.py
+          for domain in \
+            D01_CEREBRO \
+            D03_TRANSCRIPCION \
+            D04_TRADUCTOR_INTELIGENTE \
+            D06_SISTEMA_INTELIGENTE; do
+            python -B tools/louksnapg_remote_model_gateway.py \
+              --domain-id "$domain" --self-test
+          done
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          policy_path = Path("cajita-luna-runtime/CAJITA_REMOTE_MODEL_POLICY.json")
+          policy = json.loads(policy_path.read_text(encoding="utf-8"))
+          assert policy["schema"] == "LOUKSNAPG_REMOTE_MODEL_POLICY/1.0"
+          assert policy["certification"] == "NOT_GRANTED"
+          assert set(policy["domains"]) == {
+              "D01_CEREBRO", "D03_TRANSCRIPCION",
+              "D04_TRADUCTOR_INTELIGENTE", "D06_SISTEMA_INTELIGENTE"
+          }
+          ancient = policy["unsupported_domains"]["D04_TRADUCCION_LENGUAS_ANTIGUAS"]
+          assert ancient["allow_general_translation_fallback"] is False
+          assert ancient["status"] == "BLOCKED_NO_SOURCE_BOUND_TRANSLATION_RESOURCE"
+          rows = []
+          for domain, spec in sorted(policy["domains"].items()):
+              rows.append({
+                  "domain_id": domain,
+                  "model_id": spec["model_id"],
+                  "source_revision": spec["source_revision"],
+                  "source_config_sha256": spec["source_config_sha256"],
+                  "source_index_sha256": spec.get("source_index_sha256"),
+                  "weight_file_count": len(spec["weight_files"]),
+              })
+          report = {
+              "schema": "LOUKSNAPG_REMOTE_PROTOCOL_CI_EVIDENCE/1.0",
+              "workflow_commit": "\${{ github.sha }}",
+              "policy_sha256": hashlib.sha256(policy_path.read_bytes()).hexdigest(),
+              "source_bound_domains": rows,
+              "local_model_downloaded": False,
+              "model_inference_executed": False,
+              "tests_scope": "HTTP_HMAC_IDENTITY_REQUEST_RESPONSE_AND_FAIL_CLOSED_ADAPTER_CONTRACT",
+              "quality_equivalence": "NOT_ESTABLISHED",
+              "global_certification": "NOT_GRANTED",
+          }
+          out = Path("out/LOUKSNAPG_REMOTE_PROTOCOL_CI_EVIDENCE.json")
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+          PY
+
+      - name: Run protocol tests under a one-core, 1 GiB process budget
+        shell: bash
+        env:
+          PYTHONPATH: cajita-luna-runtime
+        run: |
+          set -euo pipefail
+          ulimit -v 1048576
+          CPU="$(grep Cpus_allowed_list /proc/self/status | cut -d: -f2 | tr -d ' ' | sed 's/,.*//;s/-.*//')"
+          test -n "$CPU"
+          taskset -c "$CPU" python -B -m unittest discover \
+            -s tests -p 'test_cajita_remote_execution.py' -v \
+            2>&1 | tee "$RUNNER_TEMP/louksnapg-remote-protocol-tests.log"
+
+      - name: Upload protocol evidence without certifying model quality
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-remote-protocol-evidence-\${{ github.run_id }}
+          path: |
+            out/LOUKSNAPG_REMOTE_PROTOCOL_CI_EVIDENCE.json
+            \${{ runner.temp }}/louksnapg-remote-protocol-tests.log
+          if-no-files-found: warn
+          retention-days: 90
