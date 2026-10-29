@@ -45,6 +45,9 @@ class RemoteProtocolFixture(BaseHTTPRequestHandler):
         if state.get("identity_tamper"):
             identity = dict(identity)
             identity["source_revision"] = "0" * 40
+        if state.get("gateway_code_tamper"):
+            identity = dict(identity)
+            identity["gateway_code_sha256"] = "0" * 64
         envelope = {
             "schema": remote.SIGNED_IDENTITY_SCHEMA,
             "key_id": state["key_id"],
@@ -95,6 +98,7 @@ class RemoteExecutionTests(unittest.TestCase):
         )
         self.policy = policy
         self.spec = policy["domains"]["D01_CEREBRO"]
+        self.gateway_trust = policy["gateway_trust"]
         self.key = bytes.fromhex("ab" * 32)
         self.old_env = {
             name: os.environ.get(name)
@@ -117,15 +121,15 @@ class RemoteExecutionTests(unittest.TestCase):
             "weight_files": rows,
             "weight_inventory_sha256": remote.sha256_bytes(remote.canonical_json(rows)),
             "model_loaded": True,
-            "gateway_version": "fixture-only",
-            "gateway_code_sha256": hashlib.sha256(b"fixture gateway code").hexdigest(),
-            "gateway_source_commit": "1" * 40,
+            "gateway_version": self.gateway_trust["version"],
+            "gateway_code_sha256": self.gateway_trust["code_sha256"],
+            "gateway_source_commit": self.gateway_trust["source_commit"],
             "created_at_utc": remote.utc_now(),
         }
         self.server = HTTPServer(("127.0.0.1", 0), RemoteProtocolFixture)
         self.server.state = {
             "key": self.key, "key_id": self.spec["key_id"], "identity": self.identity,
-            "post_count": 0, "identity_tamper": False, "response_tamper": False,
+            "post_count": 0, "identity_tamper": False, "gateway_code_tamper": False, "response_tamper": False,
         }
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -179,6 +183,13 @@ class RemoteExecutionTests(unittest.TestCase):
         self.assertEqual(result["status"], "FAIL_REMOTE_EXECUTION")
         self.assertFalse(result["execution_authorized"])
         self.assertIn("REMOTE_SOURCE_IDENTITY_MISMATCH:source_revision", result["reason"])
+        self.assertEqual(self.server.state["post_count"], 0)
+
+    def test_signed_identity_with_untrusted_gateway_code_is_rejected_before_execution(self):
+        self.server.state["gateway_code_tamper"] = True
+        result = remote.execute_remote_task(self.task(), self.root)
+        self.assertEqual(result["status"], "FAIL_REMOTE_EXECUTION")
+        self.assertIn("REMOTE_GATEWAY_CODE_SHA256_MISMATCH", result["reason"])
         self.assertEqual(self.server.state["post_count"], 0)
 
     def test_response_modified_after_signing_is_rejected(self):
