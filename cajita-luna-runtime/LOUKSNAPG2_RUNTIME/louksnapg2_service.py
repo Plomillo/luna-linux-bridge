@@ -83,6 +83,7 @@ def dispatch_target(runtime: LouksnapG2Runtime, target_id: str, payload: dict[st
     return {
         "schema": SCHEMA_RESULT,
         "status": "PASS_EXECUTION",
+        "execution_authorized": True,
         "task_id": task_id,
         "target_id": target_id,
         "domain_id": domain_id,
