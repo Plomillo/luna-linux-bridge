@@ -1,6 +1,7 @@
 from __future__ import annotations
 import ast
 import hashlib
+import importlib.util
 import json
 import shutil
 from pathlib import Path, PurePosixPath
@@ -44,10 +45,28 @@ def _rows(root: Path, runtime_root: Path) -> list[dict]:
     if tokenizer_manifest.is_symlink():
         raise RuntimeError("TARGET_MODULE_TOKENIZER_MANIFEST_SYMLINK")
     if tokenizer_manifest.is_file():
+        # Load the materializer from this exact runtime tree. The factory often
+        # invokes this binding module by absolute path, so relying on the caller's
+        # sys.path silently makes the import depend on the working directory.
+        materializer_path = runtime / "cajita_tokenizer_materializer.py"
+        if materializer_path.is_symlink() or not materializer_path.is_file():
+            raise RuntimeError("TARGET_MODULE_TOKENIZER_MATERIALIZER_MISSING_OR_UNSAFE")
+        if not materializer_path.resolve().is_relative_to(runtime):
+            raise RuntimeError("TARGET_MODULE_TOKENIZER_MATERIALIZER_OUTSIDE_RUNTIME")
+        spec = importlib.util.spec_from_file_location(
+            "_cajita_tokenizer_materializer_for_architecture_binding",
+            materializer_path,
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeError("TARGET_MODULE_TOKENIZER_MATERIALIZER_SPEC_UNAVAILABLE")
+        module = importlib.util.module_from_spec(spec)
         try:
-            from cajita_tokenizer_materializer import tokenizer_tree_rows, TokenizerMaterializationError
-            rows = tokenizer_tree_rows(root, runtime, rows)
-        except TokenizerMaterializationError as exc:
+            spec.loader.exec_module(module)
+        except (ImportError, OSError, SyntaxError) as exc:
+            raise RuntimeError("TARGET_MODULE_TOKENIZER_MATERIALIZER_IMPORT_FAILED:" + type(exc).__name__) from exc
+        try:
+            rows = module.tokenizer_tree_rows(root, runtime, rows)
+        except module.TokenizerMaterializationError as exc:
             raise RuntimeError("TARGET_MODULE_TOKENIZER_LOGICAL_TREE_INVALID:" + str(exc)) from exc
     return rows
 
