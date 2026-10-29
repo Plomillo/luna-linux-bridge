@@ -68,8 +68,9 @@ def authorize(task: dict) -> dict:
 
 def build_task(head: str, paths: dict[str, Path]) -> dict:
     input_names = (
-        "source_architecture", "cajita_doc", "engine", "model_loader",
-        "route_overlay", "externalized_assets", "candidate_action",
+        "source_architecture", "cajita_doc", "engine", "service",
+        "route_overlay", "externalized_assets", "native_task_adapters",
+        "original_weight_manifest", "candidate_action",
     )
     return {
         "task_id": TASK_ID,
@@ -134,9 +135,11 @@ def main(argv=None) -> int:
         "source_architecture": repo / "LOUKSNAMEJORADA.md",
         "cajita_doc": repo / "cajita-luna-runtime" / "CajitadeLuna.md",
         "engine": runtime / "louksnapg2_engine.py",
-        "model_loader": runtime / "louksnapg2_model_loader.py",
+        "service": runtime / "louksnapg2_service.py",
         "route_overlay": runtime / "route_overlay.json",
         "externalized_assets": runtime / "externalized_assets.json",
+        "native_task_adapters": repo / "cajita-luna-runtime" / "cajita_task_adapters.py",
+        "original_weight_manifest": repo / "cajita-luna-runtime" / "CAJITA_RUNTIME_V1" / "weights_manifest.json",
         "candidate_action": repo / "tools" / "louksnapg2_candidate_action.py",
     }
     for key, path in paths.items():
