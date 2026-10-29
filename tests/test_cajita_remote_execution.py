@@ -98,7 +98,7 @@ class RemoteExecutionTests(unittest.TestCase):
         self.key = bytes.fromhex("ab" * 32)
         self.old_env = {
             name: os.environ.get(name)
-            for name in (self.spec["url_env"], self.spec["key_env"])
+            for name in (self.spec["url_env"], self.spec["key_env"], "LOUKSNAPG_REMOTE_MODE")
         }
         os.environ[self.spec["key_env"]] = self.key.hex()
         rows = []
@@ -205,6 +205,44 @@ class RemoteExecutionTests(unittest.TestCase):
         result = remote.execute_remote_task(self.task(), self.root)
         self.assertEqual(result["status"], "FAIL_REMOTE_EXECUTION")
         self.assertIn("REMOTE_SIGNATURE_VERIFICATION_FAILED", result["reason"])
+        self.assertEqual(self.server.state["post_count"], 0)
+
+    def test_task_adapter_uses_remote_only_when_required_mode_is_explicit(self):
+        import cajita_task_adapters as adapters
+        os.environ["LOUKSNAPG_REMOTE_MODE"] = "required"
+        request = {
+            "schema": "CAJITA_TASK_REQUEST/1.0",
+            "task_id": "adapter-remote-test",
+            "domain_id": "D01_CEREBRO",
+            "operation": "generate_text",
+            "input": {"prompt": "What is two plus two?"},
+            "limits": {"timeout_seconds": 20, "max_new_tokens": 8},
+        }
+        result, code = adapters.execute_task(request, self.root, timeout_cap=30)
+        self.assertEqual(code, 0)
+        self.assertEqual(result["status"], "PASS_REMOTE_EXECUTION")
+        self.assertEqual(result["remote_execution_mode"], "REQUIRED_NO_LOCAL_FALLBACK")
+        self.assertNotIn("integrity", result)
+        self.assertEqual(self.server.state["post_count"], 1)
+
+    def test_task_adapter_required_mode_fails_closed_without_endpoint(self):
+        import cajita_task_adapters as adapters
+        os.environ["LOUKSNAPG_REMOTE_MODE"] = "required"
+        os.environ.pop(self.spec["url_env"], None)
+        request = {
+            "schema": "CAJITA_TASK_REQUEST/1.0",
+            "task_id": "adapter-remote-no-fallback",
+            "domain_id": "D01_CEREBRO",
+            "operation": "generate_text",
+            "input": {"prompt": "What is two plus two?"},
+            "limits": {"timeout_seconds": 20, "max_new_tokens": 8},
+        }
+        result, code = adapters.execute_task(request, self.root, timeout_cap=30)
+        self.assertEqual(code, 4)
+        self.assertEqual(result["status"], "FAIL_REMOTE_EXECUTION")
+        self.assertFalse(result["execution_authorized"])
+        self.assertEqual(result["remote_execution_mode"], "REQUIRED_NO_LOCAL_FALLBACK")
+        self.assertIn("REMOTE_ENDPOINT_NOT_CONFIGURED", result["reason"])
         self.assertEqual(self.server.state["post_count"], 0)
 
 
