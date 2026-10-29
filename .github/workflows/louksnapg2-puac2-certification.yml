@@ -110,6 +110,17 @@ jobs:
           set -e
           echo "LOUKSNAPG2_UNIT_TEST_EXIT_CODE=$rc"
           test -f out/LOUKSNAPG2_UNIT_TESTS_EVIDENCE.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("out/LOUKSNAPG2_UNIT_TESTS_EVIDENCE.json")
+          d=json.loads(p.read_text(encoding="utf-8"))
+          print("UNIT_TEST_EVIDENCE_STATUS="+str(d.get("status")))
+          print("UNIT_TESTS_RUN="+str(d.get("tests_run")))
+          for row in d.get("case_results", []):
+              if row.get("status") not in ("PASS",):
+                  print("UNIT_TEST_FAILURE="+json.dumps(row, ensure_ascii=False, sort_keys=True))
+          PY
 
       - name: Fetch and verify the exact CUSTOSZ V9 worker artifact
         shell: bash
