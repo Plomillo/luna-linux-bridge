@@ -35,6 +35,16 @@ class RecordingResult(unittest.TextTestResult):
     def addSkip(self, test, reason):
         super().addSkip(test, reason)
         self.rows.append({"test_id": test.id(), "status": "SKIP", "detail": reason})
+    
+    def addSubTest(self, test, subtest, err):
+        super().addSubTest(test, subtest, err)
+        if err is not None:
+            self.rows.append({
+                "test_id": test.id(),
+                "subtest": str(subtest),
+                "status": "FAIL",
+                "detail": self._exc_info_to_string(err, test)[-3000:],
+            })
 
 
 class RecordingRunner(unittest.TextTestRunner):
@@ -66,6 +76,8 @@ def main(argv=None):
         "errors": errors,
         "skipped": len(result.skipped),
         "case_results": result.rows,
+        "failure_details": [{"test_id": test.id(), "traceback": detail[-3000:]} for test, detail in result.failures],
+        "error_details": [{"test_id": test.id(), "traceback": detail[-3000:]} for test, detail in result.errors],
         "log_tail": buffer.getvalue()[-10000:],
         "certification": "NOT_GRANTED_BY_UNIT_TESTS",
         "note": "Synthetic/unit coverage is not real-model functional quality evidence.",
