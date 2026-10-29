@@ -22,6 +22,12 @@ La verificación del árbol fue una consulta GET de solo lectura a la API Git de
 
 La ejecución intermedia [#40794236669](https://github.com/Plomillo/luna-linux-bridge/actions/runs/40794236669), commit `6ab5696e1cfb5cced4fd9e551c54157318c311f8`, detuvo fabricación antes de empaquetar: 2 de 131 pruebas fallaron porque los fixtures de `required_domain_coverage` no proporcionaban `functional_translation_status` después de que esa función pasara a distinguir `BLOCKED_...` de `NOT_TESTED_...`. Era una inconsistencia de los fixtures sintéticos, no evidencia de que la ruta hubiera traducido ni de que se hubiera reparado el motor. El fixture se corrigió en commit `c7915f9bf4fa9bd9db9d0c91baa55042f5f03ce0`; el paso de pruebas de la fabricación de ese commit terminó con éxito. El resultado E2E real del probe antiguo queda sujeto al G24 de esa misma revisión.
 
+### Auditoría ampliada del repositorio completo
+
+Se amplió la consulta de árbol Git a toda la rama, no sólo al directorio de lenguas antiguas: 3.772 archivos, respuesta recursiva completa (`truncated=false`). No apareció ningún archivo con extensión de transductor compilado o léxico operacional (`.fst`, `.hfst`, `.hfstol`, `.ol`, `.att`, `.dict`, `.dictionary`, `.lexicon`), ni candidatos de recursos identificados por ruta para griego koiné/antiguo, latín, hebreo, arameo, siríaco, Septuaginta o Vulgata.
+
+Esta comprobación es estática y de nombres/metadatos en la API Git; no descarga ficheros ni prueba que un recurso oculto dentro de un archivo comprimido exista. Sí demuestra que **la rama no declara ni mantiene como archivos separados los artefactos de traducción necesarios**. Antes de incorporar una nueva dependencia pequeña habrá que fijar un par de idiomas y confirmar un recurso fuente apropiado, con licencia y hash; no existe hoy un candidato interno que se pueda conectar con una modificación quirúrgica.
+
 ## 2. Consecuencia funcional
 
 La configuración puede seleccionar correctamente el subdominio, pero no tiene consumidor ejecutable que convierta la entrada lingüística en una traducción. La presencia del compilador Foma, sus tests o la ruta declarada no acredita traducción. Usar `D04_TRADUCCION_GENERAL` como fallback ocultaría el defecto y violaría la separación de dominios.
