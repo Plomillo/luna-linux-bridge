@@ -152,7 +152,7 @@ def smoke_test(generate=False, prompt="Test", max_new_tokens=1):
                 repetition_penalty=1.12,
                 no_repeat_ngram_size=3,
                 renormalize_logits=True,
-                use_cache=False,
+                use_cache=True,
             )
         count = int(generated.shape[-1] - gen_tok["input_ids"].shape[-1])
         if count < 1: raise RuntimeError("MODEL_GENERATED_NO_NEW_TOKENS")
