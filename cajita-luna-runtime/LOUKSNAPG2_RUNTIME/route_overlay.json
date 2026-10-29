@@ -6,14 +6,40 @@
     "path": "LOUKSNAPG2_RUNTIME/louksnapg2_service.py",
     "command_contract": "python LOUKSNAPG2_RUNTIME/louksnapg2_service.py --runtime-root LOUKSNAPG2_RUNTIME execute --request-json REQUEST.json",
     "source_preservation": "ADDITIVE_EXTERNALIZED_OVERLAY; ORIGINAL_CAJITA_ENTRYPOINTS_UNCHANGED",
-    "certification": "NOT_GRANTED_BY_ROUTE_REGISTRY"
+    "certification": "NOT_GRANTED_BY_ROUTE_REGISTRY",
+    "model_strategy": "REUSE_ORIGINAL_CAJITA_COMPACT_WEIGHTS; NO_NEW_GGUF_MODEL_DOWNLOAD"
   },
   "executable_target_bindings": [
-    {"target_id":"D01_CEREBRO_ROOT","domain_id":"D01_CEREBRO","operation":"generate_text","adapter_id":"LOUKSNAPG2_CEREBRO_ADAPTER/1.0"},
-    {"target_id":"D06_ANALISIS_AVANZADO","domain_id":"D06_SISTEMA_INTELIGENTE","operation":"analyze_reasoning","adapter_id":"LOUKSNAPG2_QWEN_ANALYSIS_ADAPTER/1.0"},
-    {"target_id":"D04_TRADUCCION_GENERAL","domain_id":"D04_TRADUCTOR_INTELIGENTE","operation":"translate_text","adapter_id":"LOUKSNAPG2_GENERAL_TRANSLATION_ADAPTER/1.0"},
-    {"target_id":"D04_TRADUCCION_LENGUAS_ANTIGUAS","domain_id":"D04_TRADUCCION_LENGUAS_ANTIGUAS","operation":"translate_ancient_text","adapter_id":"LOUKSNAPG2_ANCIENT_TRANSLATION_ADAPTER/1.0"},
-    {"target_id":"D03_TRANSCRIPCION_ROOT","domain_id":"D03_TRANSCRIPCION","operation":"transcribe_audio","adapter_id":"LOUKSNAPG2_WHISPER_TRANSCRIPTION_ADAPTER/1.0"}
+    {
+      "target_id": "D01_CEREBRO_ROOT",
+      "domain_id": "D01_CEREBRO",
+      "operation": "generate_text",
+      "adapter_id": "LOUKSNAPG2_CEREBRO_ADAPTER/1.0"
+    },
+    {
+      "target_id": "D06_ANALISIS_AVANZADO",
+      "domain_id": "D06_SISTEMA_INTELIGENTE",
+      "operation": "analyze_reasoning",
+      "adapter_id": "LOUKSNAPG2_QWEN_ANALYSIS_ADAPTER/1.0"
+    },
+    {
+      "target_id": "D04_TRADUCCION_GENERAL",
+      "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+      "operation": "translate_text",
+      "adapter_id": "LOUKSNAPG2_GENERAL_TRANSLATION_ADAPTER/1.0"
+    },
+    {
+      "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+      "domain_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+      "operation": "translate_ancient_text",
+      "adapter_id": "LOUKSNAPG2_ANCIENT_TRANSLATION_ADAPTER/1.0"
+    },
+    {
+      "target_id": "D03_TRANSCRIPCION_ROOT",
+      "domain_id": "D03_TRANSCRIPCION",
+      "operation": "transcribe_audio",
+      "adapter_id": "LOUKSNAPG2_WHISPER_TRANSCRIPTION_ADAPTER/1.0"
+    }
   ],
   "source_binding": {
     "repository": "Plomillo/luna-linux-bridge",
@@ -672,47 +698,59 @@
       "domain_id": "D01_CEREBRO",
       "operation": "generate_text",
       "adapter": "LOUKSNAPG2_RUNTIME/louksnapg2_engine.py",
-      "model_id": "QWEN3_0_6B_Q2_K",
+      "model_id": "GPT_OSS_COMPACTED_NATIVE_D01_CEREBRO",
       "quality_gate": "cerebro_arithmetic_and_instruction_following",
-      "fallback_policy": "FAIL_CLOSED"
+      "fallback_policy": "FAIL_CLOSED",
+      "source_domain": "D01_CEREBRO",
+      "source_adapter": "CAJITA_CEREBRO_TEXT_GENERATION/1.0"
     },
     {
       "target_id": "D03_TRANSCRIPCION_ROOT",
       "domain_id": "D03_TRANSCRIPCION",
       "operation": "transcribe_audio",
       "adapter": "LOUKSNAPG2_RUNTIME/louksnapg2_engine.py",
-      "model_id": "WHISPER_TINY_Q5_1",
+      "model_id": "WHISPER_COMPACTED_NATIVE_D03_TRANSCRIPCION",
       "quality_gate": "synthetic_known_speech_and_pinned_librispeech_WER",
-      "fallback_policy": "FAIL_CLOSED"
+      "fallback_policy": "FAIL_CLOSED",
+      "source_domain": "D03_TRANSCRIPCION",
+      "source_adapter": "CAJITA_WHISPER_TRANSCRIPTION/1.0"
     },
     {
       "target_id": "D04_TRADUCCION_GENERAL",
       "domain_id": "D04_TRADUCTOR_INTELIGENTE",
       "operation": "translate_text",
       "adapter": "LOUKSNAPG2_RUNTIME/louksnapg2_engine.py",
-      "model_id": "QWEN3_0_6B_Q2_K",
+      "model_id": "SEAMLESS_M4T_V2_COMPACTED_NATIVE_D04_TRADUCTOR_INTELIGENTE",
       "quality_gate": "general_translation_fixed_en_es_suite",
-      "fallback_policy": "FAIL_CLOSED"
+      "fallback_policy": "FAIL_CLOSED",
+      "source_domain": "D04_TRADUCTOR_INTELIGENTE",
+      "source_adapter": "CAJITA_SEAMLESS_TRANSLATION/1.0"
     },
     {
       "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
       "domain_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
       "operation": "translate_ancient_text",
       "adapter": "LOUKSNAPG2_RUNTIME/louksnapg2_engine.py",
-      "model_id": "QWEN3_0_6B_Q2_K",
-      "adapter_identity": "D04_TRADUCCION_LENGUAS_ANTIGUAS_V1",
-      "quality_gate": "dedicated_latin_koine_greek_suite",
+      "model_id": "GPT_OSS_COMPACTED_NATIVE_D01_CEREBRO",
+      "adapter_identity": "LOUKSNAPG2_ANCIENT_TRANSLATION_SPECIALIST/1.0",
+      "quality_gate": "latin_and_ancient_greek_translation_known_answer_suite",
       "allow_general_translation_fallback": false,
-      "fallback_policy": "FAIL_CLOSED"
+      "fallback_policy": "FAIL_CLOSED",
+      "source_domain": "D01_CEREBRO",
+      "source_adapter": "CAJITA_CEREBRO_TEXT_GENERATION/1.0",
+      "translation_strategy": "DEDICATED_DOMAIN_PROMPT_OVER_EXISTING_GPT_OSS",
+      "ancient_general_fallback_allowed": false
     },
     {
       "target_id": "D06_ANALISIS_AVANZADO",
       "domain_id": "D06_SISTEMA_INTELIGENTE",
       "operation": "analyze_reasoning",
       "adapter": "LOUKSNAPG2_RUNTIME/louksnapg2_engine.py",
-      "model_id": "QWEN3_0_6B_Q2_K",
+      "model_id": "QWEN3_COMPACTED_NATIVE_D06_ANALISIS_AVANZADO",
       "quality_gate": "advanced_analysis_and_multi_step_arithmetic",
-      "fallback_policy": "FAIL_CLOSED"
+      "fallback_policy": "FAIL_CLOSED",
+      "source_domain": "D06_SISTEMA_INTELIGENTE",
+      "source_adapter": "CAJITA_QWEN3_REASONING/1.0"
     }
   ],
   "preserved_non_core_assets": [
@@ -735,12 +773,15 @@
   },
   "claim_scope": {
     "product_requirement": "Five required task domains plus preserved source identity and route bindings",
-    "qwen_backend_shared_across_domains": true,
-    "ancient_adapter_is_separate_route": false,
+    "qwen_backend_shared_across_domains": false,
+    "ancient_adapter_is_separate_route": true,
     "ancient_general_fallback_allowed": false,
     "full_size_original_model_equivalence": "NOT_ESTABLISHED",
     "non_core_target_functionality": "PRESERVED_SOURCE_BINDINGS; NOT CLAIMED BY THE FIVE-DOMAIN QUALITY GATE",
-    "puac2_status": "SOURCE_SPECIFICATION_VERSION_2_CANDIDATE_NOT_FORMALLY_ADMITTED"
+    "puac2_status": "SOURCE_SPECIFICATION_VERSION_2_CANDIDATE_NOT_FORMALLY_ADMITTED",
+    "ancient_source_model_id": "GPT_OSS_COMPACTED_NATIVE_D01_CEREBRO",
+    "native_compact_model_count": 4,
+    "new_external_model_payloads_downloaded": false
   },
   "certification": {
     "G23": "NOT_PERFORMED",
