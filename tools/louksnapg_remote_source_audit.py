@@ -225,7 +225,7 @@ def audit_domain(domain_id: str, spec: dict) -> dict:
                 raise AuditError("UPSTREAM_WEIGHT_SIZE_MISSING:" + name)
             digest = observed_lfs_sha(source_row)
             head_metadata = None
-            if digest is None and expected.get("sha256") is not None:
+            if digest is None:
                 head_metadata = head_weight_metadata(repo, revision, name)
                 digest = head_metadata.get("observed_sha256")
             row_result = {
