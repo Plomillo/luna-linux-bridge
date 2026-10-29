@@ -12,6 +12,7 @@ on:
       - "cajita-luna-runtime/cajita_task_adapters.py"
       - "tools/louksnapg_remote_model_gateway.py"
       - "tools/louksnapg_remote_source_audit.py"
+      - "tools/louksnapg_remote_model_quality_gate.py"
       - "tests/test_cajita_remote_execution.py"
       - "integrations/kestra/validate.py"
       - "integrations/kestra/flows/25-louksnapg-remote-model-verification.yml"
@@ -66,6 +67,7 @@ jobs:
             cajita-luna-runtime/cajita_task_adapters.py \
             tools/louksnapg_remote_model_gateway.py \
             tools/louksnapg_remote_source_audit.py \
+            tools/louksnapg_remote_model_quality_gate.py \
             tests/test_cajita_remote_execution.py
           for domain in \
             D01_CEREBRO \
@@ -146,6 +148,72 @@ jobs:
           taskset -c "$CPU" python -B -m unittest discover \
             -s tests -p 'test_cajita_remote_execution.py' -v \
             2>&1 | tee "$RUNNER_TEMP/louksnapg-remote-protocol-tests.log"
+
+  remote-semantic-quality:
+    name: "Real semantic tasks through source-pinned remote models"
+    if: ${{ vars.LOUKSNAPG_REMOTE_QUALITY_ENABLED == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      LOUKSNAPG_REMOTE_CEREBRO_URL: ${{ secrets.LOUKSNAPG_REMOTE_CEREBRO_URL }}
+      LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX }}
+      LOUKSNAPG_REMOTE_TRANSCRIPTION_URL: ${{ secrets.LOUKSNAPG_REMOTE_TRANSCRIPTION_URL }}
+      LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX }}
+      LOUKSNAPG_REMOTE_TRANSLATION_URL: ${{ secrets.LOUKSNAPG_REMOTE_TRANSLATION_URL }}
+      LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX }}
+      LOUKSNAPG_REMOTE_ANALYSIS_URL: ${{ secrets.LOUKSNAPG_REMOTE_ANALYSIS_URL }}
+      LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX }}
+      HF_HOME: ${{ runner.temp }}/louksnapg-remote-quality/hf-home
+      HF_DATASETS_CACHE: ${{ runner.temp }}/louksnapg-remote-quality/datasets
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      HF_HUB_ENABLE_HF_TRANSFER: "0"
+    steps:
+      - name: Checkout exact candidate source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned known-audio fixture dependencies only
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends espeak-ng
+          python -m pip install --disable-pip-version-check \
+            "datasets==3.2.0" "pyarrow==19.0.1" "numpy==2.2.6" \
+            "soundfile==0.13.1" "scipy==1.16.2"
+
+      - name: Run real model tasks via required remote-only routing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/louksnapg-remote-quality
+          ulimit -v 1048576
+          CPU="$(awk '/Cpus_allowed_list/ { split($2, values, /[-,]/); print values[1] }' /proc/self/status)"
+          taskset -c "$CPU" python -B tools/louksnapg_remote_model_quality_gate.py \
+            --runtime-root cajita-luna-runtime \
+            --work-dir "$RUNNER_TEMP/louksnapg-remote-quality/work" \
+            --report out/louksnapg-remote-quality/LOUKSNAPG_REMOTE_MODEL_QUALITY.json \
+            2>&1 | tee "$RUNNER_TEMP/louksnapg-remote-quality.log"
+
+      - name: Upload semantic evidence without granting certification
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-remote-semantic-quality-${{ github.run_id }}
+          path: |
+            out/louksnapg-remote-quality/LOUKSNAPG_REMOTE_MODEL_QUALITY.json
+            ${{ runner.temp }}/louksnapg-remote-quality.log
+          if-no-files-found: warn
+          retention-days: 90
 
       - name: Upload protocol evidence without certifying model quality
         if: always()
