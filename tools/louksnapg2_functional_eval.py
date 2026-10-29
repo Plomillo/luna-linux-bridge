@@ -178,6 +178,14 @@ def main(argv=None) -> int:
          {"text": "La reunión empieza al mediodía.", "src_lang": "spa", "tgt_lang": "eng", "max_new_tokens": 64},
          lambda out: check_translation_es_en(out),
          "English output must preserve meeting + start + noon meaning."),
+        ("GENERAL_TRANSLATION_EN_FR_03", "D04_TRADUCTOR_INTELIGENTE", "translate_text",
+         {"text": "The book is on the table.", "src_lang": "eng", "tgt_lang": "fra", "max_new_tokens": 64},
+         lambda out: {"livre", "table", "sur"}.issubset(set(normalized(final_answer(out)).split())),
+         "French output must preserve book + spatial relation + table meaning."),
+        ("GENERAL_TRANSLATION_FR_EN_04", "D04_TRADUCTOR_INTELIGENTE", "translate_text",
+         {"text": "Le livre est sur la table.", "src_lang": "fra", "tgt_lang": "eng", "max_new_tokens": 64},
+         lambda out: {"book", "table"}.issubset(set(normalized(final_answer(out)).split())) and any(w in normalized(final_answer(out)).split() for w in ("on", "upon")),
+         "English output must preserve book + spatial relation + table meaning."),
         ("ANCIENT_LATIN_01", "D04_TRADUCCION_LENGUAS_ANTIGUAS", "translate_ancient_text",
          {"text": "Alea iacta est", "src_lang": "lat", "tgt_lang": "eng", "max_new_tokens": 96},
          lambda out: ("die" in normalized(final_answer(out)) and any(w in normalized(final_answer(out)).split() for w in ("cast", "thrown", "tossed"))),
@@ -218,7 +226,7 @@ def main(argv=None) -> int:
     all_domains = {
         "D01_CEREBRO": ["CEREBRO_ARITHMETIC_01", "CEREBRO_WORD_PROBLEM_02"],
         "D06_SISTEMA_INTELIGENTE": ["ANALYSIS_MULTI_STEP_01", "ANALYSIS_LOGIC_02"],
-        "D04_TRADUCTOR_INTELIGENTE": ["GENERAL_TRANSLATION_EN_ES_01", "GENERAL_TRANSLATION_ES_EN_02"],
+        "D04_TRADUCTOR_INTELIGENTE": ["GENERAL_TRANSLATION_EN_ES_01", "GENERAL_TRANSLATION_ES_EN_02", "GENERAL_TRANSLATION_EN_FR_03", "GENERAL_TRANSLATION_FR_EN_04"],
         "D04_TRADUCCION_LENGUAS_ANTIGUAS": ["ANCIENT_LATIN_01", "ANCIENT_GREEK_02"],
         "D03_TRANSCRIPCION": ["WHISPER_AUDIO_01", "WHISPER_AUDIO_02"],
     }
