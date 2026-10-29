@@ -1,0 +1,59 @@
+id: louksnapg_remote_model_verification
+namespace: louksna.kestra
+description: >-
+  Read-only monitor for the source-bound remote-model protocol CI. This flow
+  reports GitHub Actions state only; it does not invoke model inference, dispatch
+  workflows, mutate Git, repair endpoints, or grant certification.
+tasks:
+  - id: latest_remote_protocol_runs
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/runs?branch=louksnapg%2Fremote-source-bound-runtime-20261029&per_page=5"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ secret('GITHUB_TOKEN') }}"
+      Accept: "application/vnd.github+json"
+      X-GitHub-Api-Version: "2022-11-28"
+      Cache-Control: "no-cache, no-store"
+      Pragma: "no-cache"
+    timeout: PT15S
+    options:
+      connectTimeout: PT5S
+      readTimeout: PT10S
+      retry:
+        type: constant
+        maxAttempts: 2
+        interval: PT5S
+        maxDuration: PT15S
+        warningOnRetry: true
+
+  - id: report_remote_protocol_status
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ outputs.latest_remote_protocol_runs.code == 200
+         and fromJson(outputs.latest_remote_protocol_runs.body).total_count > 0 }}
+    then:
+      - id: log_latest_remote_protocol_run
+        type: io.kestra.plugin.core.log.Log
+        message: |
+          LOUKSNAPG_REMOTE_PROTOCOL_MONITOR=READ_ONLY
+          BRANCH=louksnapg/remote-source-bound-runtime-20261029
+          RUN_ID={{ fromJson(outputs.latest_remote_protocol_runs.body).workflow_runs[0].id }}
+          RUN_STATUS={{ fromJson(outputs.latest_remote_protocol_runs.body).workflow_runs[0].status }}
+          RUN_CONCLUSION={{ fromJson(outputs.latest_remote_protocol_runs.body).workflow_runs[0].conclusion }}
+          RUN_SHA={{ fromJson(outputs.latest_remote_protocol_runs.body).workflow_runs[0].head_sha }}
+          RUN_URL={{ fromJson(outputs.latest_remote_protocol_runs.body).workflow_runs[0].html_url }}
+          GLOBAL_CERTIFICATION=NOT_GRANTED_BY_MONITOR
+    else:
+      - id: log_remote_protocol_safe_hold
+        type: io.kestra.plugin.core.log.Log
+        message: |
+          LOUKSNAPG_REMOTE_PROTOCOL_MONITOR=SAFE_HOLD
+          HTTP_CODE={{ outputs.latest_remote_protocol_runs.code }}
+          REASON=NO_RUN_AVAILABLE_OR_GITHUB_API_UNAVAILABLE
+          GLOBAL_CERTIFICATION=NOT_GRANTED_BY_MONITOR
+triggers:
+  - id: monitor_remote_protocol_every_five_minutes
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "*/5 * * * *"
+    timezone: Etc/UTC
+    allowConcurrent: false
