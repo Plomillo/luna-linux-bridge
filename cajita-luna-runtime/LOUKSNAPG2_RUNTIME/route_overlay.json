@@ -2,6 +2,19 @@
   "schema": "LOUKSNAPG2_ROUTE_OVERLAY/1.0",
   "overlay_id": "LOUKSNAPG2_GOVERNED_MULTI_DOMAIN_DISPATCH_20261029",
   "status": "CANDIDATE_NOT_CERTIFIED",
+  "runtime_entrypoint": {
+    "path": "LOUKSNAPG2_RUNTIME/louksnapg2_service.py",
+    "command_contract": "python LOUKSNAPG2_RUNTIME/louksnapg2_service.py --runtime-root LOUKSNAPG2_RUNTIME execute --request-json REQUEST.json",
+    "source_preservation": "ADDITIVE_EXTERNALIZED_OVERLAY; ORIGINAL_CAJITA_ENTRYPOINTS_UNCHANGED",
+    "certification": "NOT_GRANTED_BY_ROUTE_REGISTRY"
+  },
+  "executable_target_bindings": [
+    {"target_id":"D01_CEREBRO_ROOT","domain_id":"D01_CEREBRO","operation":"generate_text","adapter_id":"LOUKSNAPG2_CEREBRO_ADAPTER/1.0"},
+    {"target_id":"D06_ANALISIS_AVANZADO","domain_id":"D06_SISTEMA_INTELIGENTE","operation":"analyze_reasoning","adapter_id":"LOUKSNAPG2_QWEN_ANALYSIS_ADAPTER/1.0"},
+    {"target_id":"D04_TRADUCCION_GENERAL","domain_id":"D04_TRADUCTOR_INTELIGENTE","operation":"translate_text","adapter_id":"LOUKSNAPG2_GENERAL_TRANSLATION_ADAPTER/1.0"},
+    {"target_id":"D04_TRADUCCION_LENGUAS_ANTIGUAS","domain_id":"D04_TRADUCCION_LENGUAS_ANTIGUAS","operation":"translate_ancient_text","adapter_id":"LOUKSNAPG2_ANCIENT_TRANSLATION_ADAPTER/1.0"},
+    {"target_id":"D03_TRANSCRIPCION_ROOT","domain_id":"D03_TRANSCRIPCION","operation":"transcribe_audio","adapter_id":"LOUKSNAPG2_WHISPER_TRANSCRIPTION_ADAPTER/1.0"}
+  ],
   "source_binding": {
     "repository": "Plomillo/luna-linux-bridge",
     "commit": "17d9dfc3aba4b0f4132f3a0d18d4d078fdb6736d",
