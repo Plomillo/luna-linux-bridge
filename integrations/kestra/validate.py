@@ -179,8 +179,9 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
                 "Remote-model monitoring must not execute scripts or local processes.")
         require("/dispatches" not in body and "method: POST" not in body,
                 "Remote-model monitoring must not dispatch jobs or mutate external state.")
-        require("GLOBAL_CERTIFICATION=NOT_GRANTED_BY_MONITOR" in body,
-                "The Kestra monitor must never grant product certification.")
+        require("G23_G24_CERTIFICATION=NOT_GRANTED_BY_MONITOR" in body
+                and "INTEGRAL_CERTIFICATION=NOT_GRANTED_BY_MONITOR" in body,
+                "The Kestra monitor must never grant G23/G24 or integral product certification.")
     else:
         require("schedule:" not in lower and "triggers:" not in lower,
                 f"{flow_path.relative_to(ROOT)} must not schedule or trigger itself during the staged phase.")
