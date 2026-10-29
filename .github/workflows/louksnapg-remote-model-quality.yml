@@ -142,6 +142,49 @@ jobs:
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
           python-version: "3.12"
+      - name: Check remote endpoint and key configuration before installing dependencies
+        id: endpoint_preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/louksnapg-remote-quality
+          python - <<'PY'
+          import datetime, json, os, re, sys
+          from pathlib import Path
+          names = [
+              "LOUKSNAPG_REMOTE_CEREBRO_URL", "LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX",
+              "LOUKSNAPG_REMOTE_TRANSCRIPTION_URL", "LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX",
+              "LOUKSNAPG_REMOTE_TRANSLATION_URL", "LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX",
+              "LOUKSNAPG_REMOTE_ANALYSIS_URL", "LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX",
+          ]
+          missing = []
+          for name in names:
+              value = os.environ.get(name, "")
+              if not value.strip():
+                  missing.append(name)
+              elif name.endswith("_KEY_HEX") and not re.fullmatch(r"[0-9a-fA-F]{64}", value):
+                  missing.append(name)
+          report = {
+              "schema": "LOUKSNAPG_REMOTE_ENDPOINT_PREFLIGHT/1.0",
+              "observed_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+              "candidate_source_commit": os.environ.get("GITHUB_SHA"),
+              "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
+              "workflow_ref": os.environ.get("GITHUB_REF"),
+              "status": "PASS_CONFIGURATION_PRESENT" if not missing else "BLOCKED_CONFIGURATION_MISSING",
+              "missing_environment_variable_names": sorted(set(missing)),
+              "secret_values_recorded": False,
+              "model_weights_downloaded": False,
+              "model_inference_executed": False,
+              "dependencies_installed": False,
+              "global_certification": "NOT_GRANTED",
+          }
+          output = Path("out/louksnapg-remote-quality/REMOTE_ENDPOINT_CONFIGURATION_PREFLIGHT.json")
+          output.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+          if missing:
+              sys.exit(2)
+          PY
+
       - name: Install pinned known-audio fixture dependencies only
         shell: bash
         run: |
@@ -169,6 +212,7 @@ jobs:
         with:
           name: louksnapg-remote-semantic-quality-${{ github.run_id }}
           path: |
+            out/louksnapg-remote-quality/REMOTE_ENDPOINT_CONFIGURATION_PREFLIGHT.json
             out/louksnapg-remote-quality/LOUKSNAPG_REMOTE_MODEL_QUALITY.json
             ${{ runner.temp }}/louksnapg-remote-quality.log
           if-no-files-found: warn
