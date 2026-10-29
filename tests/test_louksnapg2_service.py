@@ -31,7 +31,7 @@ class FakeRuntime:
         }
         self.calls = []
 
-    def route(self, domain_id, operation, payload):
+    def route(self, domain_id, operation, payload, *, task_id="task"):
         self.calls.append((domain_id, operation, payload))
         return dict(self.result)
 
