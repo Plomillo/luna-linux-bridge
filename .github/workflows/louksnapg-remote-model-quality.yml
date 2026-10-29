@@ -106,7 +106,7 @@ jobs:
 
   remote-semantic-quality:
     name: "Real semantic tasks through source-pinned remote models"
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[RUN_REMOTE_SEMANTIC_QUALITY]')
     needs: quality-harness-preflight
     runs-on: ubuntu-24.04
     timeout-minutes: 35
