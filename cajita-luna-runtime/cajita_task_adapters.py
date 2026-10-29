@@ -154,6 +154,24 @@ def execute_task(record,root,timeout_cap=600):
                "execution_authorized":False,"blockers":plan.get("blockers",[]),"output":plan,"output_sha256":digest_bytes(canonical(plan)),
                "elapsed_seconds":round(time.monotonic()-started,3)})
    return out,3
+  remote_mode=os.environ.get("LOUKSNAPG_REMOTE_MODE","off").strip().lower()
+  if remote_mode not in ("off","required"):
+   raise AdapterError("REMOTE_MODE_VALUE_INVALID")
+  if remote_mode=="required":
+   try:
+    from cajita_remote_execution import execute_remote_task
+    remote_result=execute_remote_task(row,root)
+   except Exception as exc:
+    out.update({"status":"FAIL_REMOTE_EXECUTION","reason":"REMOTE_CLIENT_LOAD_FAILED:"+type(exc).__name__,
+                "execution_authorized":False,"quality_equivalence":"NOT_ESTABLISHED",
+                "semantic_quality_equivalence":"NOT_ESTABLISHED","certification":"NOT_GRANTED"})
+    return out,4
+   out.update(remote_result)
+   out["remote_execution_mode"]="REQUIRED_NO_LOCAL_FALLBACK"
+   if remote_result.get("status")!="PASS_REMOTE_EXECUTION":
+    out["execution_authorized"]=False
+    return out,4
+   return out,0
   spec=ADAPTERS[row["domain_id"]];integrity=verify_integrity(root,row["domain_id"]);entry=root/spec["entry"]
   if entry.is_symlink() or not entry.is_file():raise AdapterError("TASK_ADAPTER_ENTRYPOINT_MISSING")
   env={k:os.environ[k] for k in ("PATH","HOME","LANG","LC_ALL","TMPDIR","SYSTEMROOT","WINDIR") if k in os.environ}
