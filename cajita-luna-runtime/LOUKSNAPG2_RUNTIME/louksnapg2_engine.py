@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""LOUKSNAPG2 domain adapters.
+"""LOUKSNAPG2 domain router over the original Cajita low-rank model runtimes.
 
-This runtime is deliberately source-bound and fail-closed. It uses one pinned,
-native GGUF Qwen model behind separate Cerebro, analysis, general-translation and
-ancient-language adapters, and a separate pinned whisper.cpp model/runtime for
-transcription. It never silently routes ancient-language tasks to the general
-translation adapter.
+The existing GPT-OSS, Whisper, SeamlessM4T v2 and Qwen3 source adapters and their
+weight files are preserved and executed unchanged. Only the missing ancient-language
+consumer adapter is added here; it uses a dedicated task contract/prompt over the
+existing GPT-OSS source runtime and never calls the general translation adapter.
+No new model is downloaded and this module performs no network access.
 """
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import os
@@ -19,7 +18,11 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
-SCHEMA = "LOUKSNAPG2_ENGINE_RUNTIME/1.0"
+SCHEMA = "LOUKSNAPG2_ENGINE_RUNTIME/2.0"
+CAJITA_TASK_SCHEMA = "CAJITA_TASK_REQUEST/1.0"
+MAX_INPUT_CHARS = 16_384
+MAX_NEW_TOKENS = 128
+MAX_TIMEOUT_SECONDS = 600
 DOMAIN_IDS = {
     "D01_CEREBRO",
     "D03_TRANSCRIPCION",
@@ -27,423 +30,270 @@ DOMAIN_IDS = {
     "D04_TRADUCCION_LENGUAS_ANTIGUAS",
     "D06_SISTEMA_INTELIGENTE",
 }
-LANGUAGES = {
-    "eng": "English", "en": "English",
-    "spa": "Spanish", "es": "Spanish",
-    "fra": "French", "fr": "French",
-    "deu": "German", "de": "German",
-    "ita": "Italian", "it": "Italian",
-    "por": "Portuguese", "pt": "Portuguese",
-    "grc": "Ancient Greek (Koine/Ancient Greek)", "la": "Latin", "lat": "Latin",
-    "heb": "Biblical Hebrew", "arc": "Biblical Aramaic",
-}
-ANCIENT_LANGUAGES = {"grc", "lat", "la", "heb", "arc"}
-DEFAULT_TARGET_LANG = "eng"
-MAX_INPUT_CHARS = 16_384
-MAX_AUDIO_BYTES = 32 * 1024 * 1024
-MAX_AUDIO_SECONDS = 120
-DEFAULT_TOKEN_LIMIT = 96
-HARD_TOKEN_LIMIT = 192
-
-EXPECTED_MODELS = {
-    "QWEN3_0_6B_Q2_K": {
-        "path": "models/Qwen3-0.6B-Q2_K.gguf",
-        "repo": "unsloth/Qwen3-0.6B-GGUF",
-        "revision": "541d985dbfcdc61a64f8b441419e7c0e126bb6e2",
-        "file": "Qwen3-0.6B-Q2_K.gguf",
-        "bytes": 296_238_784,
-        "sha256": "0e850e08a48e9df1d1e0fc9959157e893215040f673e382c9da4339c74b12d3d",
+NATIVE_ROUTES = {
+    ("D01_CEREBRO", "generate_text"): {
+        "target_id": "D01_CEREBRO_ROOT",
+        "adapter_id": "CAJITA_CEREBRO_TEXT_GENERATION/1.0",
+        "source_domain": "D01_CEREBRO",
+        "source_model": "GPT-OSS compactado — rank-1 INT8 factors",
     },
-    "WHISPER_TINY_Q5_1": {
-        "path": "models/ggml-tiny-q5_1.bin",
-        "repo": "ggerganov/whisper.cpp",
-        "revision": "c521a4b02f422512d734391fdf08bb08c0862f68",
-        "file": "ggml-tiny-q5_1.bin",
-        "bytes": 32_152_673,
-        "sha256": "818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7",
+    ("D06_SISTEMA_INTELIGENTE", "analyze_reasoning"): {
+        "target_id": "D06_ANALISIS_AVANZADO",
+        "adapter_id": "CAJITA_QWEN3_REASONING/1.0",
+        "source_domain": "D06_SISTEMA_INTELIGENTE",
+        "source_model": "Qwen3 compactado — low-rank INT8 factors",
+    },
+    ("D04_TRADUCTOR_INTELIGENTE", "translate_text"): {
+        "target_id": "D04_TRADUCCION_GENERAL",
+        "adapter_id": "CAJITA_SEAMLESS_TRANSLATION/1.0",
+        "source_domain": "D04_TRADUCTOR_INTELIGENTE",
+        "source_model": "SeamlessM4T v2 compactado — low-rank INT8 factors",
+    },
+    ("D03_TRANSCRIPCION", "transcribe_audio"): {
+        "target_id": "D03_TRANSCRIPCION_ROOT",
+        "adapter_id": "CAJITA_WHISPER_TRANSCRIPTION/1.0",
+        "source_domain": "D03_TRANSCRIPCION",
+        "source_model": "Whisper compactado — low-rank INT8 factors",
     },
 }
-
-# Bounded phrase concordance for well-known, high-confidence Ancient Latin/Greek
-# inputs. Unknown phrases proceed only through the dedicated ancient-language
-# adapter and its separate prompt; they never invoke the general-translation route.
-ANCIENT_CONCORDANCE = {
-    ("lat", "eng", "carpe diem"): {
-        "translation": "Seize the day.",
-        "source_note": "Horace, Odes 1.11; short-form lexical reference",
-    },
-    ("la", "eng", "carpe diem"): {
-        "translation": "Seize the day.",
-        "source_note": "Horace, Odes 1.11; short-form lexical reference",
-    },
-    ("lat", "eng", "veni vidi vici"): {
-        "translation": "I came, I saw, I conquered.",
-        "source_note": "Conventional Latin phrase; bounded concordance entry",
-    },
-    ("la", "eng", "veni vidi vici"): {
-        "translation": "I came, I saw, I conquered.",
-        "source_note": "Conventional Latin phrase; bounded concordance entry",
-    },
-    ("grc", "eng", "ἐν ἀρχῇ ἦν ὁ λόγος"): {
-        "translation": "In the beginning was the Word.",
-        "source_note": "John 1:1, first clause; bounded concordance entry",
-    },
+ANCIENT_TARGETS = {
+    "lat": "Latin",
+    "la": "Latin",
+    "grc": "Ancient Greek",
+    "heb": "Biblical Hebrew",
+    "arc": "Biblical Aramaic",
 }
+TARGET_LANGUAGES = {"eng": "English", "en": "English", "spa": "Spanish", "es": "Spanish"}
 
 
 class EngineRuntimeError(RuntimeError):
     pass
 
 
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as stream:
-        for block in iter(lambda: stream.read(4 * 1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
+def sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
 
 
 def canonical_json(value: Any) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
-def normalize_text(value: str) -> str:
-    value = unicodedata.normalize("NFKD", str(value).casefold())
-    value = "".join(char for char in value if not unicodedata.combining(char))
-    return " ".join(re.findall(r"[^\W_]+", value, flags=re.UNICODE))
+def _cajita_root(root: Path) -> Path:
+    root = Path(root).resolve(strict=True)
+    if root.name == "LOUKSNAPG2_RUNTIME":
+        root = root.parent
+    if not (root / "cajita_task_adapters.py").is_file():
+        raise EngineRuntimeError("ORIGINAL_CAJITA_TASK_ADAPTERS_MISSING")
+    return root
 
 
-def normalize_ancient(value: str) -> str:
-    value = unicodedata.normalize("NFC", str(value).casefold())
-    value = "".join(char for char in value if not unicodedata.category(char).startswith("P"))
-    return " ".join(value.split())
-
-
-def _safe_regular_file(root: Path, relative: str) -> Path:
-    rel = Path(relative)
-    if rel.is_absolute() or ".." in rel.parts or rel.as_posix() != relative:
-        raise EngineRuntimeError("MODEL_PATH_INVALID")
-    path = root.joinpath(*rel.parts)
-    if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to(root.resolve()):
-        raise EngineRuntimeError("MODEL_FILE_MISSING_OR_UNSAFE:" + relative)
-    return path
+def _load_native_adapter(root: Path):
+    root = _cajita_root(root)
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    try:
+        import cajita_task_adapters
+    except Exception as exc:
+        raise EngineRuntimeError("ORIGINAL_CAJITA_TASK_ADAPTER_IMPORT_FAILED:" + type(exc).__name__) from exc
+    return cajita_task_adapters
 
 
 def verify_model_files(root: Path) -> dict:
-    root = Path(root).resolve(strict=True)
+    """Verify original in-artifact model weights through the source-bound manifests."""
+    adapter = _load_native_adapter(root)
     evidence = {}
-    for model_id, spec in EXPECTED_MODELS.items():
-        path = _safe_regular_file(root, spec["path"])
-        size = path.stat().st_size
-        if size != spec["bytes"]:
-            raise EngineRuntimeError("MODEL_SIZE_MISMATCH:" + model_id)
-        digest = sha256_file(path)
-        if digest != spec["sha256"]:
-            raise EngineRuntimeError("MODEL_SHA256_MISMATCH:" + model_id)
-        evidence[model_id] = {
-            "path": spec["path"],
-            "bytes": size,
-            "sha256": digest,
-            "source_repo": spec["repo"],
-            "source_revision": spec["revision"],
-            "source_file": spec["file"],
-            "status": "PASS_SOURCE_IDENTITY",
-        }
+    for domain in ("D01_CEREBRO", "D03_TRANSCRIPCION", "D04_TRADUCTOR_INTELIGENTE", "D06_SISTEMA_INTELIGENTE"):
+        try:
+            evidence[domain] = adapter.verify_integrity(_cajita_root(root), domain)
+        except Exception as exc:
+            raise EngineRuntimeError("ORIGINAL_MODEL_SOURCE_IDENTITY_FAILED:" + domain + ":" + str(exc)[:200]) from exc
     return evidence
 
 
 class LouksnapG2Runtime:
-    def __init__(self, runtime_root: Path, *, threads: int = 1):
-        self.root = Path(runtime_root).resolve(strict=True)
-        if threads != 1:
+    """Public router. All model execution is delegated to unchanged Cajita adapters."""
+
+    def __init__(self, root: Path, threads: int = 1):
+        if isinstance(threads, bool) or threads != 1:
             raise EngineRuntimeError("CPU_THREAD_BUDGET_MUST_BE_ONE")
+        self.root = _cajita_root(Path(root))
         self.threads = 1
-        self._llm = None
-        self._whisper = None
+        self._adapter_module = None
         self._model_evidence = None
 
     def preflight(self) -> dict:
-        if os.environ.get("LOUKSNAPG2_ALLOW_NETWORK_MODEL_FETCH") == "1":
-            # Network-fetch authorization belongs to the externalized asset loader,
-            # never to model loading. The model runtime itself is always offline.
-            raise EngineRuntimeError("MODEL_RUNTIME_NETWORK_ACCESS_FORBIDDEN")
-        self._model_evidence = verify_model_files(self.root)
+        evidence = verify_model_files(self.root)
+        manifest = self.root / "CAJITA_RUNTIME_V1" / "weights_manifest.json"
+        if manifest.is_symlink() or not manifest.is_file():
+            raise EngineRuntimeError("ORIGINAL_MODEL_WEIGHT_MANIFEST_MISSING")
+        self._model_evidence = evidence
         return {
-            "schema": "LOUKSNAPG2_RUNTIME_PREFLIGHT/1.0",
+            "schema": "LOUKSNAPG2_RUNTIME_PREFLIGHT/2.0",
             "status": "PASS_MODEL_SOURCE_IDENTITIES",
             "thread_count": self.threads,
-            "models": self._model_evidence,
-            "model_downloaded_at_runtime": False,
+            "source_model_policy": "REUSE_ORIGINAL_CAJITA_LOW_RANK_WEIGHTS",
+            "new_external_model_fetch_performed": False,
+            "models": evidence,
+            "required_domains": {
+                "D01_CEREBRO": "GPT-OSS compacted native adapter",
+                "D06_SISTEMA_INTELIGENTE": "Qwen3 compacted native adapter",
+                "D04_TRADUCTOR_INTELIGENTE": "SeamlessM4T v2 compacted native adapter",
+                "D04_TRADUCCION_LENGUAS_ANTIGUAS": "Dedicated domain prompt over existing GPT-OSS adapter; no general-translation fallback",
+                "D03_TRANSCRIPCION": "Whisper compacted native adapter",
+            },
             "general_translation_fallback_for_ancient": False,
             "certification": "NOT_GRANTED_BY_PREFLIGHT",
         }
 
-    def _load_llm(self):
-        if self._llm is None:
-            evidence = verify_model_files(self.root)
-            model = _safe_regular_file(self.root, EXPECTED_MODELS["QWEN3_0_6B_Q2_K"]["path"])
-            try:
-                from llama_cpp import Llama
-            except ImportError as exc:
-                raise EngineRuntimeError("LLAMA_CPP_PYTHON_DEPENDENCY_MISSING") from exc
-            os.environ.setdefault("OMP_NUM_THREADS", "1")
-            os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
-            os.environ.setdefault("MKL_NUM_THREADS", "1")
-            self._llm = Llama(
-                model_path=str(model),
-                n_ctx=2048,
-                n_threads=1,
-                n_batch=64,
-                use_mmap=True,
-                use_mlock=False,
-                verbose=False,
-                seed=0,
-            )
-            self._model_evidence = evidence
-        return self._llm
-
-    def _generate(self, *, system: str, user: str, max_tokens: int) -> str:
-        if not isinstance(user, str) or not user.strip() or len(user) > MAX_INPUT_CHARS:
-            raise EngineRuntimeError("TEXT_INPUT_EMPTY_OR_OVER_LIMIT")
-        if isinstance(max_tokens, bool) or not isinstance(max_tokens, int) or not 1 <= max_tokens <= HARD_TOKEN_LIMIT:
-            raise EngineRuntimeError("TOKEN_LIMIT_OUT_OF_RANGE")
-        llm = self._load_llm()
-        response = llm.create_chat_completion(
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            max_tokens=max_tokens,
-            temperature=0.0,
-            top_p=1.0,
-            repeat_penalty=1.05,
-            seed=0,
-        )
-        try:
-            text = response["choices"][0]["message"]["content"]
-        except (KeyError, IndexError, TypeError) as exc:
-            raise EngineRuntimeError("LLM_RESPONSE_SCHEMA_INVALID") from exc
-        if not isinstance(text, str) or not text.strip():
-            raise EngineRuntimeError("LLM_OUTPUT_EMPTY")
-        return text.strip()
-
-    def reason(self, prompt: str, *, max_tokens: int = DEFAULT_TOKEN_LIMIT) -> dict:
-        output = self._generate(
-            system=(
-                "You are the reasoning adapter of LOUKSNAPG2. Solve the user task accurately. "
-                "For arithmetic or inventory tasks explicitly requested as a final integer, output only "
-                "the final integer. Do not invent citations, tools, sources, or model abilities."
-            ),
-            user=prompt,
-            max_tokens=max_tokens,
-        )
-        return self._result("D01_CEREBRO", "generate_text", output)
-
-    def analyze(self, prompt: str, *, max_tokens: int = DEFAULT_TOKEN_LIMIT) -> dict:
-        output = self._generate(
-            system=(
-                "You are the advanced-analysis adapter of LOUKSNAPG2. Analyze the stated problem, "
-                "check intermediate arithmetic, and obey the requested output format. For a request "
-                "for a final integer, return only the integer. Do not make up evidence."
-            ),
-            user=prompt,
-            max_tokens=max_tokens,
-        )
-        return self._result("D06_SISTEMA_INTELIGENTE", "analyze_reasoning", output)
-
-    def translate_general(
-        self, text: str, *, src_lang: str = "eng", tgt_lang: str = "spa",
-        max_tokens: int = 96,
-    ) -> dict:
-        src = LANGUAGES.get(src_lang.lower())
-        tgt = LANGUAGES.get(tgt_lang.lower())
-        if not src or not tgt or src_lang.lower() in ANCIENT_LANGUAGES:
-            raise EngineRuntimeError("GENERAL_TRANSLATION_LANGUAGE_NOT_REGISTERED")
-        output = self._generate(
-            system=(
-                "You are the dedicated general-language translation adapter of LOUKSNAPG2. "
-                f"Translate from {src} into {tgt}. Preserve meaning, names, numbers and sentence order. "
-                "Return only the translation; no explanation, transliteration, quotation marks or alternatives."
-            ),
-            user=text,
-            max_tokens=max_tokens,
-        )
-        return self._result(
-            "D04_TRADUCTOR_INTELIGENTE", "translate_text", output,
-            input_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
-            source_language=src_lang.lower(), target_language=tgt_lang.lower(),
-        )
-
-    def translate_ancient(
-        self, text: str, *, src_lang: str, tgt_lang: str = "eng",
-        max_tokens: int = 128,
-    ) -> dict:
-        source_code = src_lang.strip().lower()
-        target_code = tgt_lang.strip().lower()
-        if source_code not in ANCIENT_LANGUAGES:
-            raise EngineRuntimeError("ANCIENT_SOURCE_LANGUAGE_NOT_REGISTERED")
-        if target_code not in ("eng", "en", "spa", "es"):
-            raise EngineRuntimeError("ANCIENT_TARGET_LANGUAGE_NOT_REGISTERED")
-        if not isinstance(text, str) or not text.strip() or len(text) > MAX_INPUT_CHARS:
-            raise EngineRuntimeError("ANCIENT_TRANSLATION_INPUT_EMPTY_OR_OVER_LIMIT")
-        normalized = normalize_ancient(text)
-        concordance = ANCIENT_CONCORDANCE.get((source_code, target_code, normalized))
-        if concordance:
-            output = concordance["translation"]
-            source = "BOUNDED_CONCORDANCE"
-        else:
-            # This is a separate source-language adapter and prompt. There is no
-            # call to translate_general and no implicit modern-translation fallback.
-            source_name = LANGUAGES[source_code]
-            target_name = LANGUAGES[target_code]
-            output = self._generate(
-                system=(
-                    "You are the dedicated ancient-language translation adapter of LOUKSNAPG2. "
-                    f"Translate only from {source_name} into {target_name}. Preserve morphology, "
-                    "case, verbal tense and ambiguity where meaningful. Do not modernize the text. "
-                    "Do not use the general-translation adapter. If the source cannot be interpreted "
-                    "confidently, return exactly UNRESOLVED rather than inventing a translation. "
-                    "Return only the translation or UNRESOLVED."
-                ),
-                user=text,
-                max_tokens=max_tokens,
-            )
-            source = "DEDICATED_ANCIENT_LANGUAGE_ADAPTER"
-            if normalize_text(output) in {"unresolved", "unknown", "cannot translate", "i cannot translate"}:
-                raise EngineRuntimeError("ANCIENT_TRANSLATION_UNRESOLVED")
-        return self._result(
-            "D04_TRADUCCION_LENGUAS_ANTIGUAS", "translate_ancient_text", output,
-            source_language=source_code,
-            target_language=target_code,
-            ancient_adapter="D04_TRADUCCION_LENGUAS_ANTIGUAS_V1",
-            translation_strategy=source,
-            general_translation_fallback_selected=False,
-            concordance_entry_source=concordance.get("source_note") if concordance else None,
-        )
-
-    def transcribe(self, audio_path: Path, *, max_audio_bytes: int = MAX_AUDIO_BYTES) -> dict:
-        path = Path(audio_path)
-        if path.is_symlink() or not path.is_file():
-            raise EngineRuntimeError("AUDIO_FILE_MISSING_OR_UNSAFE")
-        if path.stat().st_size < 1 or path.stat().st_size > min(MAX_AUDIO_BYTES, max_audio_bytes):
-            raise EngineRuntimeError("AUDIO_SIZE_OUT_OF_RANGE")
-        try:
-            import wave
-            with wave.open(str(path), "rb") as audio:
-                channels = audio.getnchannels()
-                sample_width = audio.getsampwidth()
-                rate = audio.getframerate()
-                frames = audio.getnframes()
-                duration = frames / rate if rate else 0
-        except (wave.Error, OSError):
-            raise EngineRuntimeError("AUDIO_WAV_REQUIRED_BY_LOCKED_RUNTIME")
-        if channels not in (1, 2) or sample_width not in (2, 4) or rate < 8000 or duration <= 0 or duration > MAX_AUDIO_SECONDS:
-            raise EngineRuntimeError("AUDIO_FORMAT_OR_DURATION_OUT_OF_RANGE")
-        if self._whisper is None:
-            model_path = _safe_regular_file(self.root, EXPECTED_MODELS["WHISPER_TINY_Q5_1"]["path"])
-            spec = EXPECTED_MODELS["WHISPER_TINY_Q5_1"]
-            if model_path.stat().st_size != spec["bytes"] or sha256_file(model_path) != spec["sha256"]:
-                raise EngineRuntimeError("WHISPER_MODEL_SOURCE_IDENTITY_MISMATCH")
-            try:
-                from pywhispercpp.model import Model
-            except ImportError as exc:
-                raise EngineRuntimeError("PYWHISPERCPP_DEPENDENCY_MISSING") from exc
-            self._whisper = Model(
-                str(model_path),
-                n_threads=1,
-                print_progress=False,
-                print_realtime=False,
-                print_timestamps=False,
-            )
-        segments = self._whisper.transcribe(str(path), language="en", translate=False)
-        pieces = []
-        for segment in segments:
-            value = getattr(segment, "text", "")
-            if isinstance(value, str) and value.strip():
-                pieces.append(value.strip())
-        output = " ".join(pieces).strip()
-        if not output:
-            raise EngineRuntimeError("WHISPER_OUTPUT_EMPTY")
-        return self._result(
-            "D03_TRANSCRIPCION", "transcribe_audio", output,
-            input_sha256=sha256_file(path), audio_bytes=path.stat().st_size,
-            audio_duration_seconds=round(duration, 3), sample_rate_hz=rate,
-        )
-
-    def route(self, domain_id: str, operation: str, payload: dict) -> dict:
-        if domain_id not in DOMAIN_IDS:
-            raise EngineRuntimeError("DOMAIN_NOT_REGISTERED")
+    def _execute_original(self, domain_id: str, operation: str, payload: dict, *, task_id: str, max_tokens: int) -> dict:
+        route = NATIVE_ROUTES.get((domain_id, operation))
+        if route is None:
+            raise EngineRuntimeError("DOMAIN_OPERATION_PAIR_NOT_REGISTERED")
         if not isinstance(payload, dict):
             raise EngineRuntimeError("TASK_INPUT_NOT_OBJECT")
-        if domain_id == "D01_CEREBRO" and operation == "generate_text":
-            return self.reason(payload.get("prompt", ""), max_tokens=payload.get("max_new_tokens", DEFAULT_TOKEN_LIMIT))
-        if domain_id == "D06_SISTEMA_INTELIGENTE" and operation == "analyze_reasoning":
-            return self.analyze(payload.get("prompt", ""), max_tokens=payload.get("max_new_tokens", DEFAULT_TOKEN_LIMIT))
-        if domain_id == "D04_TRADUCTOR_INTELIGENTE" and operation == "translate_text":
-            return self.translate_general(
-                payload.get("text", ""),
-                src_lang=payload.get("src_lang", "eng"),
-                tgt_lang=payload.get("tgt_lang", "spa"),
-                max_tokens=payload.get("max_new_tokens", DEFAULT_TOKEN_LIMIT),
-            )
-        if domain_id == "D04_TRADUCCION_LENGUAS_ANTIGUAS" and operation == "translate_ancient_text":
-            return self.translate_ancient(
-                payload.get("text", ""),
-                src_lang=payload.get("src_lang", ""),
-                tgt_lang=payload.get("tgt_lang", "eng"),
-                max_tokens=payload.get("max_new_tokens", DEFAULT_TOKEN_LIMIT),
-            )
-        if domain_id == "D03_TRANSCRIPCION" and operation == "transcribe_audio":
-            return self.transcribe(Path(payload.get("audio_path", "")))
-        raise EngineRuntimeError("DOMAIN_OPERATION_PAIR_NOT_REGISTERED")
-
-    def _result(self, domain_id: str, operation: str, output_text: str, **extra) -> dict:
+        adapter = self._adapter_module or _load_native_adapter(self.root)
+        self._adapter_module = adapter
+        request = {
+            "schema": CAJITA_TASK_SCHEMA,
+            "task_id": task_id,
+            "domain_id": domain_id,
+            "operation": operation,
+            "input": dict(payload),
+            "limits": {"timeout_seconds": MAX_TIMEOUT_SECONDS, "max_new_tokens": max_tokens},
+        }
+        try:
+            result, exit_code = adapter.execute_task(request, self.root, timeout_cap=MAX_TIMEOUT_SECONDS)
+        except Exception as exc:
+            raise EngineRuntimeError("ORIGINAL_CAJITA_RUNTIME_EXCEPTION:" + type(exc).__name__ + ":" + str(exc)[:200]) from exc
+        if exit_code != 0 or result.get("status") != "PASS_FUNCTIONAL_EXECUTION" or result.get("execution_authorized") is not True:
+            reason = result.get("reason") or result.get("status") or "UNKNOWN"
+            raise EngineRuntimeError("ORIGINAL_CAJITA_RUNTIME_NOT_PASS:" + str(reason)[:300])
+        output = result.get("output_text")
+        if not isinstance(output, str) or not output.strip():
+            raise EngineRuntimeError("ORIGINAL_CAJITA_RUNTIME_OUTPUT_EMPTY")
+        self._model_evidence = self._model_evidence or verify_model_files(self.root)
         return {
-            "schema": "LOUKSNAPG2_TASK_RESULT/1.0",
+            "schema": "LOUKSNAPG2_TASK_RESULT/2.0",
             "status": "PASS_EXECUTION",
             "execution_authorized": True,
             "domain_id": domain_id,
             "operation": operation,
-            "output_text": output_text,
-            "output_sha256": hashlib.sha256(output_text.encode("utf-8")).hexdigest(),
-            "model_source_evidence": self._model_evidence or verify_model_files(self.root),
-            "semantic_quality_equivalence_to_full_size_original": "NOT_ESTABLISHED",
-            "certification": "NOT_GRANTED_BY_RUNTIME_CALL",
-            **extra,
-        }
-
-
-def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--runtime-root", type=Path, default=Path(__file__).resolve().parent)
-    sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("preflight")
-    run = sub.add_parser("task")
-    run.add_argument("--domain", required=True)
-    run.add_argument("--operation", required=True)
-    run.add_argument("--input-json", required=True, type=Path)
-    args = parser.parse_args(argv)
-    try:
-        runtime = LouksnapG2Runtime(args.runtime_root, threads=1)
-        if args.command == "preflight":
-            result = runtime.preflight()
-        else:
-            row = json.loads(args.input_json.read_text(encoding="utf-8"))
-            result = runtime.route(args.domain, args.operation, row)
-        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
-        return 0
-    except Exception as exc:
-        result = {
-            "schema": "LOUKSNAPG2_TASK_RESULT/1.0",
-            "status": "FAIL_CLOSED",
-            "execution_authorized": False,
-            "reason": type(exc).__name__ + ":" + str(exc)[:300],
+            "target_id": route["target_id"],
+            "adapter_id": route["adapter_id"],
+            "output_text": output,
+            "output_sha256": sha256_bytes(output.encode("utf-8")),
+            "model_source_evidence": result.get("integrity", {}),
+            "entrypoint_sha256": result.get("entrypoint_sha256"),
+            "source_model_id": route["source_model"],
+            "source_runtime_status": result.get("model_runtime_status"),
+            "generated_token_count": result.get("generated_token_count"),
             "general_translation_fallback_selected": False,
-            "certification": "NOT_GRANTED",
+            "semantic_quality_equivalence_to_full_size_original": "NOT_ESTABLISHED",
+            "original_adapter_result": result,
+            "certification": "NOT_GRANTED_BY_RUNTIME_CALL",
         }
-        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
-        return 4
 
+    def reason(self, prompt: str, *, max_tokens: int = 64, task_id: str = "brain") -> dict:
+        return self._execute_original(
+            "D01_CEREBRO", "generate_text", {"prompt": prompt},
+            task_id=task_id, max_tokens=max_tokens,
+        )
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+    def analyze(self, prompt: str, *, max_tokens: int = 64, task_id: str = "analysis") -> dict:
+        return self._execute_original(
+            "D06_SISTEMA_INTELIGENTE", "analyze_reasoning", {"prompt": prompt},
+            task_id=task_id, max_tokens=max_tokens,
+        )
+
+    def translate_general(
+        self, text: str, *, src_lang: str = "eng", tgt_lang: str = "spa",
+        max_tokens: int = 64, task_id: str = "translate-general",
+    ) -> dict:
+        if not isinstance(text, str) or not text.strip() or len(text) > MAX_INPUT_CHARS:
+            raise EngineRuntimeError("GENERAL_TRANSLATION_INPUT_EMPTY_OR_OVER_LIMIT")
+        return self._execute_original(
+            "D04_TRADUCTOR_INTELIGENTE", "translate_text",
+            {"text": text, "src_lang": src_lang, "tgt_lang": tgt_lang},
+            task_id=task_id, max_tokens=max_tokens,
+        )
+
+    def translate_ancient(
+        self, text: str, *, src_lang: str, tgt_lang: str = "eng",
+        max_tokens: int = 96, task_id: str = "translate-ancient",
+    ) -> dict:
+        source_code = src_lang.strip().lower() if isinstance(src_lang, str) else ""
+        target_code = tgt_lang.strip().lower() if isinstance(tgt_lang, str) else ""
+        source_name = ANCIENT_TARGETS.get(source_code)
+        target_name = TARGET_LANGUAGES.get(target_code)
+        if not source_name:
+            raise EngineRuntimeError("ANCIENT_SOURCE_LANGUAGE_NOT_REGISTERED")
+        if not target_name:
+            raise EngineRuntimeError("ANCIENT_TARGET_LANGUAGE_NOT_REGISTERED")
+        # The specialist prefix must also fit within Cajita's original 16,384-character
+        # task-normalizer limit; reserve space for the immutable domain prompt.
+        if not isinstance(text, str) or not text.strip() or len(text) > 12_000:
+            raise EngineRuntimeError("ANCIENT_TRANSLATION_INPUT_EMPTY_OR_OVER_LIMIT")
+        # The original Cajita tree has no registered native ancient-translation
+        # consumer. This is an additive specialist adapter over the existing GPT-OSS
+        # runtime, not a call to SeamlessM4T/general translation and not a fake phrase
+        # table. Its quality remains unproven until the independent functional gate.
+        specialist_prompt = (
+            "LOUKSNAPG2 ANCIENT-LANGUAGE TRANSLATION SPECIALIST.\n"
+            f"Translate the source text directly from {source_name} into {target_name}.\n"
+            "This is a source-language translation task, not a request for explanation or analysis. "
+            "Preserve grammatical case, tense, syntax and meaningful ambiguity. "
+            "Do not translate through a modern-language intermediary. "
+            "Do not invoke or imitate the modern general-translation adapter. "
+            "Return only the translation. If the text cannot be translated confidently, return exactly UNRESOLVED.\n"
+            "SOURCE TEXT:\n" + text
+        )
+        result = self._execute_original(
+            "D01_CEREBRO", "generate_text", {"prompt": specialist_prompt},
+            task_id=task_id, max_tokens=max_tokens,
+        )
+        result.update({
+            "domain_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+            "operation": "translate_ancient_text",
+            "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+            "adapter_id": "LOUKSNAPG2_ANCIENT_TRANSLATION_SPECIALIST/1.0",
+            "source_model_id": "GPT-OSS compacted native model through specialist ancient-language adapter",
+            "source_language": source_code,
+            "target_language": target_code,
+            "translation_strategy": "DEDICATED_DOMAIN_PROMPT_OVER_EXISTING_GPT_OSS",
+            "general_translation_fallback_selected": False,
+        })
+        if result["output_text"].strip().upper() == "UNRESOLVED":
+            raise EngineRuntimeError("ANCIENT_TRANSLATION_UNRESOLVED")
+        return result
+
+    def transcribe(self, audio_path: Path, *, max_tokens: int = 64, task_id: str = "transcribe") -> dict:
+        return self._execute_original(
+            "D03_TRANSCRIPCION", "transcribe_audio", {"audio_path": str(audio_path)},
+            task_id=task_id, max_tokens=max_tokens,
+        )
+
+    def route(self, domain_id: str, operation: str, payload: dict, *, task_id: str = "task") -> dict:
+        if domain_id not in DOMAIN_IDS:
+            raise EngineRuntimeError("DOMAIN_NOT_REGISTERED")
+        if not isinstance(payload, dict):
+            raise EngineRuntimeError("TASK_INPUT_NOT_OBJECT")
+        max_tokens = payload.get("max_new_tokens", 64)
+        if isinstance(max_tokens, bool) or not isinstance(max_tokens, int) or not 1 <= max_tokens <= MAX_NEW_TOKENS:
+            raise EngineRuntimeError("TOKEN_LIMIT_OUT_OF_RANGE")
+        if domain_id == "D01_CEREBRO" and operation == "generate_text":
+            return self.reason(payload.get("prompt", ""), max_tokens=max_tokens, task_id=task_id)
+        if domain_id == "D06_SISTEMA_INTELIGENTE" and operation == "analyze_reasoning":
+            return self.analyze(payload.get("prompt", ""), max_tokens=max_tokens, task_id=task_id)
+        if domain_id == "D04_TRADUCTOR_INTELIGENTE" and operation == "translate_text":
+            return self.translate_general(
+                payload.get("text", ""), src_lang=payload.get("src_lang", "eng"),
+                tgt_lang=payload.get("tgt_lang", "spa"), max_tokens=max_tokens, task_id=task_id,
+            )
+        if domain_id == "D04_TRADUCCION_LENGUAS_ANTIGUAS" and operation == "translate_ancient_text":
+            return self.translate_ancient(
+                payload.get("text", ""), src_lang=payload.get("src_lang", ""),
+                tgt_lang=payload.get("tgt_lang", "eng"), max_tokens=max_tokens, task_id=task_id,
+            )
+        if domain_id == "D03_TRANSCRIPCION" and operation == "transcribe_audio":
+            return self.transcribe(Path(payload.get("audio_path", "")), max_tokens=max_tokens, task_id=task_id)
+        raise EngineRuntimeError("DOMAIN_OPERATION_PAIR_NOT_REGISTERED")
