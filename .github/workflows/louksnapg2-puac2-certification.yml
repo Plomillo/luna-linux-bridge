@@ -311,9 +311,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksnapg2-functional-evidence
-          path: |
-            out/louksnapg2-functional/
-            out/louksnapg2-candidate/LOUKSNAPG2_FUNCTIONAL_PRECHECK.json
+          path: out/louksnapg2-functional/
           if-no-files-found: warn
           retention-days: 30
           compression-level: 0
