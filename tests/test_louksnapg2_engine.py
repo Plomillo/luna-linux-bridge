@@ -35,7 +35,7 @@ class G2EngineContractTests(unittest.TestCase):
                 "repo": "example/whisper-fixture",
                 "revision": "b" * 40,
                 "file": "whisper-fixture.bin",
-                "bytes": 14,
+                "bytes": 15,
                 "sha256": hashlib.sha256(b"fixture-whisper").hexdigest(),
             },
         }
