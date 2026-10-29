@@ -225,6 +225,11 @@ jobs:
           sudo apt-get install -y espeak-ng
           python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==44.0.3
 
+      - name: Set up Python 3.13 for the original Cajita runtime lock
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
       - name: Install the existing Cajita CPU runtime from its pinned lock
         shell: bash
         run: |
