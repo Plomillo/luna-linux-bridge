@@ -150,6 +150,10 @@ def main(argv=None) -> int:
     for audio in (args.audio_one, args.audio_two):
         if audio.is_symlink() or not audio.is_file():
             raise SystemExit("AUDIO_FIXTURE_MISSING_OR_UNSAFE:" + str(audio))
+    runtime_dir = root if root.name == "LOUKSNAPG2_RUNTIME" else root / "LOUKSNAPG2_RUNTIME"
+    if runtime_dir.is_symlink() or not (runtime_dir / "louksnapg2_engine.py").is_file():
+        raise SystemExit("LOUKSNAPG2_RUNTIME_OVERLAY_MISSING")
+    sys.path.insert(0, str(runtime_dir))
     sys.path.insert(0, str(root))
     from louksnapg2_engine import LouksnapG2Runtime
     from louksnapg2_service import TARGET_BINDINGS
