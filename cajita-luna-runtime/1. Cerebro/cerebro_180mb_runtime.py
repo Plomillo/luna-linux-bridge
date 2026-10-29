@@ -254,7 +254,7 @@ def smoke_test(generate: bool = False, prompt: str = "Test", max_new_tokens: int
                 repetition_penalty=1.12,
                 no_repeat_ngram_size=3,
                 renormalize_logits=True,
-                use_cache=False,
+                use_cache=True,
             )
         prompt_length = int(generation_enc["input_ids"].shape[-1])
         count = int(generated.shape[-1] - prompt_length)
