@@ -208,8 +208,8 @@
   },
   "gateway_trust": {
     "version": "1.0.0",
-    "source_commit": "6d034d72f611b80c2ba0270ece7815bbcef17a61",
-    "code_sha256": "a674d65fb2c89172f4cd55bf3db0a1629009d09cf5635113eea1b623a0b96351",
+    "source_commit": "77bc2fcdbf4054c9d108f8fcb18d1f097be757a3",
+    "code_sha256": "43888da74ca8efd6110274e57ff7f0d6824775ce27e81533f87adc35752b2d64",
     "binding_rule": "EXACT_SOURCE_COMMIT_AND_CODE_SHA256"
   }
 }
