@@ -44,7 +44,7 @@ RANK = 192
 BASE_RANK = 16
 OVERSAMPLE = 8
 BLOCK_ROWS = 64
-RANK_PROFILE = "WHISPER_ADAPTIVE_R192_DECODER128_ENCODER_FFN192_ATTN64_EMBED96_BASE16_V1"
+RANK_PROFILE = "WHISPER_ADAPTIVE_R192_DECODER128_ENCODER_FFN192_OUTPROJ128_V96_OTHERATTN64_FC1_32_EMBED96_BASE16_V2"
 CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_ADAPTIVE_R192_EXPERIMENT"
 GLOBAL_RELEASE_MAX_BYTES = 479_000_000
 BASELINE_RELEASE_BYTES = 371_947_716
@@ -209,7 +209,7 @@ def make_synthetic_audio(path: Path) -> Path:
 
 
 def rank_for_tensor(key: str, shape: tuple[int, ...]) -> int:
-    """Deterministic sensitivity-informed rank policy; capped by matrix dimensions."""
+    """Deterministic rank profile informed by the previous run's worst residuals."""
     if key == "model.decoder.embed_tokens.weight":
         return 96
     if key.startswith("model.decoder.layers.") and key.endswith(".weight"):
@@ -217,7 +217,11 @@ def rank_for_tensor(key: str, shape: tuple[int, ...]) -> int:
     if key.startswith("model.encoder.layers.") and key.endswith(".fc2.weight"):
         return 192
     if key.startswith("model.encoder.layers.") and key.endswith(".fc1.weight"):
-        return 64
+        return 32
+    if key.startswith("model.encoder.layers.") and key.endswith(".self_attn.out_proj.weight"):
+        return 128
+    if key.startswith("model.encoder.layers.") and key.endswith(".self_attn.v_proj.weight"):
+        return 96
     if key.startswith("model.encoder.layers.") and ".self_attn." in key and key.endswith(".weight"):
         return 64
     return BASE_RANK
