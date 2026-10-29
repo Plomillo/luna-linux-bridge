@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import sys
 import unittest
+from pathlib import Path
 
-from tools.louksnapg2_functional_eval import (
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+from louksnapg2_functional_eval import (
     check_translation_en_es,
     check_translation_es_en,
     check_translation_en_fr,
