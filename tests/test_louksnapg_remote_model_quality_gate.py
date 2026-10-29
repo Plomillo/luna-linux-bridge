@@ -11,6 +11,7 @@ from louksnapg_remote_model_quality_gate import (
     final_integer,
     integral_domain_gate_status,
     normalize_text,
+    quality_gate_exit_code,
     required_domain_statuses,
 )
 
@@ -77,6 +78,12 @@ class RemoteQualityGateTests(unittest.TestCase):
         record = next(row for row in coverage if row["domain_id"] == "D04_TRADUCCION_LENGUAS_ANTIGUAS")
         self.assertEqual(record["status"], "FAIL_ANCIENT_ROUTE_DIAGNOSTIC")
         self.assertEqual(integral_domain_gate_status(coverage), "BLOCKED_REQUIRED_DOMAIN_NOT_ESTABLISHED")
+
+    def test_integral_domain_blocker_cannot_return_green_from_live_quality_gate(self):
+        self.assertEqual(quality_gate_exit_code("PASS_ROUTE_PREFLIGHT_ONLY"), 0)
+        self.assertEqual(quality_gate_exit_code("PASS_REMOTE_SEMANTIC_TASKS"), 0)
+        self.assertEqual(quality_gate_exit_code("PASS_REMOTE_SEMANTIC_TASKS_INTEGRAL_GATE_BLOCKED"), 2)
+        self.assertEqual(quality_gate_exit_code("BLOCKED_REMOTE_ENDPOINT_CONFIGURATION"), 2)
 
     def test_empty_or_incomplete_coverage_fails_closed(self):
         self.assertEqual(integral_domain_gate_status([]), "BLOCKED_REQUIRED_DOMAIN_NOT_ESTABLISHED")
