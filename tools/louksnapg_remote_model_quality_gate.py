@@ -209,9 +209,11 @@ def required_domain_statuses(task_rows: list[dict], ancient_route: dict) -> list
 
     route_status = str(ancient_route.get("status", "NOT_TESTED"))
     ancient_function = str(ancient_route.get("functional_translation_status", "NOT_TESTED"))
-    if route_status.startswith("PASS_ROUTE_IDENTIFIED") and ancient_function.startswith("BLOCKED_"):
+    fallback_selected = ancient_route.get("general_translation_fallback_selected")
+    execution_authorized = ancient_route.get("execution_authorized")
+    if route_status.startswith("PASS_ROUTE_IDENTIFIED") and fallback_selected is False and execution_authorized is False and ancient_function.startswith("BLOCKED_"):
         ancient_status = ancient_function
-    elif route_status.startswith("PASS_ROUTE_IDENTIFIED"):
+    elif route_status.startswith("PASS_ROUTE_IDENTIFIED") and fallback_selected is False and execution_authorized is False:
         ancient_status = "NOT_TESTED_NATIVE_TRANSLATION_TASK_REQUIRED"
     else:
         ancient_status = "FAIL_ANCIENT_ROUTE_DIAGNOSTIC"
