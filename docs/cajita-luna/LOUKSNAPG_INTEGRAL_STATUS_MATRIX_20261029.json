@@ -1,9 +1,9 @@
 {
   "schema": "LOUKSNAPG_INTEGRAL_CERTIFICATION_STATUS_MATRIX/1.0",
-  "observed_at_utc": "2026-10-29T00:13:30Z",
+  "observed_at_utc": "2026-10-29T00:18:00Z",
   "repository": "Plomillo/luna-linux-bridge",
   "branch": "louksnapg/phase4-resume-20261028",
-  "branch_head_at_matrix": "ab311582b6f5902bf42bfed9170908f8ca28060e",
+  "branch_head_at_matrix": "ac3578d5e2246ffd933c2b663b2139e5fa3b8bdd",
   "canonical_product_file": "LOUKSNAPG.md",
   "current_worktree_distribution_candidate": "NOT_BUILT_AS_A_TRACKED_ROOT_FILE_ON_THIS_BRANCH_HEAD",
   "global_certification": "NOT_GRANTED",
@@ -223,15 +223,27 @@
           "synthetic_test": "FAIL_PUNCTUATION_ONLY",
           "real_speech_wer": 1,
           "promotion": "NOT_PERFORMED"
+        },
+        {
+          "rank_profile": "WHISPER_ADAPTIVE_R192_DECODER128_ENCODER_FFN192_OUTPROJ128_V96_OTHERATTN64_FC1_32_EMBED96_BASE16_V2",
+          "run_id": 40792606343,
+          "candidate_weight_sha256": "e4a46344233551f239bbef72ae68554f129c52f96f7e40d1e0823e41aa1e6ff3",
+          "candidate_weight_bytes": 108556864,
+          "module_bytes_including_descriptor": 111149511,
+          "aggregate_relative_frobenius_error": 0.688145008983582,
+          "global_release_projection_bytes": 471104698,
+          "synthetic_test": "FAIL_PUNCTUATION_ONLY",
+          "real_speech_wer": 1,
+          "promotion": "NOT_PERFORMED"
         }
       ],
       "defect": {
         "concrete": "The registered transcription route executes, but the rank-29 integrated candidate produces unrelated text; raw INT8 rank-29 and rank-64 reconstructions both fail both fixed task checks.",
         "consequence": "Whisper does not satisfy its transcription task in the integrated candidate.",
-        "correction": "V1's worst residuals concentrate in encoder self-attention output projections and v projections. V2 reallocates rank budget toward those exact tensors and reduces encoder fc1 rank to remain under global size limit.",
+        "correction": "Stop repeating low-rank factorization sweeps; all five experiments fail the same exact source-bound functional tests. Require a genuinely different, measured representation hypothesis before any additional weight conversion.",
         "post_repair_verification": "Same pinned source, same two exact fixtures, target commit/model hash, synthetic words present and real speech WER <=0.25; exact-commit retest, final bundle size measurement and independent release gates."
       },
-      "status": "FAIL_FUNCTIONAL_QUALITY_GATE; ADAPTIVE_R192_V2_PENDING",
+      "status": "FAIL_FUNCTIONAL_QUALITY_GATE; STOPPED_AFTER_R29_R64_R96_ADAPTIVE_V1_AND_ADAPTIVE_V2_FAILURES",
       "certification": "NOT_GRANTED"
     }
   ],
@@ -254,11 +266,11 @@
     "1_current_candidate_and_checkpoint": "PARTIALLY_ESTABLISHED; checkpoint reused but exact packaged LOUKSNAPG.md SHA for this head not finalized",
     "2_domain_review": "FAILS for Cerebro, Qwen, general translation and integrated Whisper; ancient translation blocked by missing adapter/resource",
     "3_route_and_cabling": "Partial static registration; native route for ancient translation absent; full route functionality incomplete",
-    "4_repair": "Whisper R29/R64/R96 and adaptive R192 V1 rejected; adaptive R192 V2 queued",
-    "5_post_repair_tests": "All tested Whisper candidates failed; V2 has not produced evidence yet",
-    "6_integration": "NOT_PASSED",
+    "4_repair": "Whisper rank-29, rank-64, rank-96, adaptive R192 V1 and V2 rejected; no candidate meets functional gate",
+    "5_post_repair_tests": "All five tested Whisper candidates failed at least the known-answer and real-speech criteria; no repair demonstrated",
+    "6_integration": "NOT_PASSED; package structure passes but functional task routes and all 21 adapters are not established",
     "7_certification_assessment": "HOLD; no motor or global certification granted",
-    "8_g23_g24_release": "BLOCKED; exact current candidate-bound independent G23 and separate G24 absent",
+    "8_g23_g24_release": "G23 PASS_FOR_DISTRIBUTION_INTEGRITY_SCOPE on older factory candidate 4d67ec3...; G24 still running at last observation; neither grants functional certification",
     "9_governance_checkpoint": "FAIL_CLOSED; global certification NOT_GRANTED"
   },
   "orchestration": {
@@ -293,7 +305,10 @@
     "Whisper uniform rank-96 candidate fails both fixed speech tasks despite fitting the projected package size budget.",
     "Latest adaptive rank-192 Whisper candidate has not passed both functional tasks and is not promotable while its run is pending.",
     "Whisper adaptive R192 V1 failed both functional tasks even though its package-size projection passed.",
-    "Whisper adaptive R192 V2 is queued and has no test evidence yet."
+    "Whisper adaptive R192 V2 is queued and has no test evidence yet.",
+    "Whisper adaptive R192 V2 fails synthetic known-answer (punctuation only) and LibriSpeech WER=1.0 although the size projection passes.",
+    "All five tested low-rank Whisper candidates (uniform R29/R64/R96 and adaptive R192 V1/V2) have failed the same source-bound functional criteria; do not continue rank sweeps without a materially different measured hypothesis.",
+    "G23 is a package-integrity-scope pass on older factory commit 4d67ec3..., not proof of engine semantic quality; G24 is still in progress."
   ],
   "no_silent_substitution": true,
   "no_canonical_model_promotion_without_quality_pass": true,
@@ -341,8 +356,40 @@
       "rank_profile": "WHISPER_ADAPTIVE_R192_DECODER128_ENCODER_FFN192_OUTPROJ128_V96_OTHERATTN64_FC1_32_EMBED96_BASE16_V2",
       "run_id": 40792606343,
       "source_commit": "ab311582b6f5902bf42bfed9170908f8ca28060e",
-      "status": "PENDING_AT_LAST_OBSERVATION",
+      "status": "REJECTED_FUNCTIONAL_QUALITY",
+      "weight_sha256": "e4a46344233551f239bbef72ae68554f129c52f96f7e40d1e0823e41aa1e6ff3",
+      "weight_bytes": 108556864,
+      "module_bytes": 111149511,
+      "relative_frobenius_error": 0.688145008983582,
+      "projected_release_bytes": 471104698,
+      "synthetic": "FAIL_PUNCTUATION_ONLY",
+      "real_speech_wer": 1,
       "promotion": false
     }
+  },
+  "latest_distribution_candidate": {
+    "factory_run_id": 40792192212,
+    "factory_source_commit": "4d67ec3d9b1163ee39f1ffbd59de5502cd0c3fa2",
+    "artifact": "LOUKSNAPG.md",
+    "artifact_sha256": "0d61c5867daf85e98bf32f252e1996964f47a1d589c27f9705e7f59979a1e16a",
+    "runtime_archive_bytes": 370889830,
+    "runtime_archive_sha256": "a216fe1dc4ff011f1c87453cafdedc4fb3933fc7a131d8f05bf3ad2c87d40e05",
+    "companion_document_bytes": 11651408,
+    "companion_document_sha256": "f64e6925ff6a22b009fe592da3eda5c373ec788127a5b2dc9b824548bdf1e798",
+    "combined_bytes": 382541238,
+    "combined_cap_bytes": 490000000,
+    "package_integrity": "PASS",
+    "independent_g23": {
+      "run_id": 40792192212,
+      "job_id": 123180962875,
+      "status": "PASS",
+      "scope": "DISTRIBUTION_INTEGRITY_STRUCTURE_WEIGHT_IDENTITY_AND_REGISTERED_SMOKES"
+    },
+    "functional_status": "NOT_ESTABLISHED_BY_CONTAINER_INTEGRITY_CHECK",
+    "g24": {
+      "job_id": 123181522969,
+      "status": "IN_PROGRESS_AT_LAST_OBSERVATION"
+    },
+    "global_certification": "NOT_GRANTED"
   }
 }
