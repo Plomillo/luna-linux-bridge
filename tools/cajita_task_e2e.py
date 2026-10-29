@@ -171,34 +171,54 @@ def probe_ancient_translation_route(root, outdir, timeout):
         general_selected = "D04_TRADUCCION_GENERAL" in by_id
         expected_blocker = "SUBDOMAIN_TASK_ADAPTER_NOT_REGISTERED:D04_TRADUCCION_LENGUAS_ANTIGUAS"
         blockers = plan.get("blockers", []) if isinstance(plan, dict) else []
-        route_ok = (
-            proc.returncode == 2
-            and plan.get("status") == "PLAN_ONLY_BLOCKED"
+        adapter_id = ancient.get("task_adapter", "NOT_REGISTERED")
+        adapter_registered = isinstance(adapter_id, str) and adapter_id not in ("", "NOT_REGISTERED")
+        route_common = (
+            proc.returncode in (0, 2)
             and plan.get("execution_authorized") is False
             and "INTENT_ANCIENT_LANGUAGES" in plan.get("matched_intent_rules", [])
             and "D04_HERMENEUTICA_HG" in by_id
             and "D04_TRADUCCION_LENGUAS_ANTIGUAS" in by_id
-            and ancient.get("task_adapter", "NOT_REGISTERED") == "NOT_REGISTERED"
             and not general_selected
+        )
+        blocked_without_adapter = (
+            not adapter_registered
+            and proc.returncode == 2
+            and plan.get("status") == "PLAN_ONLY_BLOCKED"
             and expected_blocker in blockers
         )
+        route_ok = route_common and (adapter_registered or blocked_without_adapter)
+        if blocked_without_adapter:
+            diagnostic_status = "PASS_ROUTE_IDENTIFIED_FAIL_CLOSED"
+            functional_status = "BLOCKED_MISSING_CONSUMER_ADAPTER_AND_TRANSLATION_RESOURCE"
+            missing_requirements = ["NATIVE_CONSUMER_ADAPTER", "COMPILED_TRANSDUCER_OR_OPERATIONAL_LEXICON",
+                                    "EXACT_SOURCE_TARGET_LANGUAGE_PAIR", "SOURCE_BOUND_KNOWN_ANSWER_TEST"]
+        elif adapter_registered and route_common:
+            diagnostic_status = "PASS_ROUTE_IDENTIFIED_ADAPTER_REGISTERED_TASK_TEST_REQUIRED"
+            functional_status = "NOT_TESTED_NATIVE_TRANSLATION_TASK_REQUIRED"
+            missing_requirements = ["SOURCE_BOUND_KNOWN_ANSWER_TASK", "FUNCTIONAL_QUALITY_RESULT"]
+        else:
+            diagnostic_status = "FAIL_ROUTE_DIAGNOSTIC"
+            functional_status = "NOT_ESTABLISHED"
+            missing_requirements = ["CORRECT_ANCIENT_TARGET_SELECTION", "NO_GENERAL_TRANSLATION_FALLBACK",
+                                    "FAIL_CLOSED_EXECUTION_POLICY"]
         return {
             **result,
-            "status": "PASS_ROUTE_IDENTIFIED_FAIL_CLOSED" if route_ok else "FAIL_ROUTE_DIAGNOSTIC",
+            "status": diagnostic_status if route_ok else "FAIL_ROUTE_DIAGNOSTIC",
             "route_exit_code": proc.returncode,
             "route_status": plan.get("status"),
             "matched_intent_rules": plan.get("matched_intent_rules", []),
             "selected_target_ids": sorted(by_id),
-            "ancient_target_adapter": ancient.get("task_adapter", "NOT_REGISTERED"),
+            "ancient_target_adapter": adapter_id,
+            "ancient_target_adapter_registered": adapter_registered,
             "general_translation_fallback_selected": general_selected,
             "expected_blocker_present": expected_blocker in blockers,
             "execution_authorized": plan.get("execution_authorized", False),
             "elapsed_seconds": round(time.monotonic() - started, 3),
             "route_stdout_sha256": hashlib.sha256(proc.stdout.encode("utf-8", errors="replace")).hexdigest(),
             "route_stderr_sha256": hashlib.sha256(proc.stderr.encode("utf-8", errors="replace")).hexdigest(),
-            "functional_translation_status": "BLOCKED_MISSING_CONSUMER_ADAPTER_AND_TRANSLATION_RESOURCE",
-            "missing_requirements": ["NATIVE_CONSUMER_ADAPTER", "COMPILED_TRANSDUCER_OR_OPERATIONAL_LEXICON",
-                                     "EXACT_SOURCE_TARGET_LANGUAGE_PAIR", "SOURCE_BOUND_KNOWN_ANSWER_TEST"],
+            "functional_translation_status": functional_status,
+            "missing_requirements": missing_requirements,
             "diagnostic_stderr_tail": proc.stderr[-800:] if proc.returncode not in (0, 2) else "",
             "certification": "NOT_GRANTED",
         }
@@ -223,13 +243,19 @@ def required_domain_coverage(task_rows, ancient_route):
         if row.get("status") == "PASS_FUNCTIONAL_EXECUTION" and row.get("exit_code") == 0:
             return "EXECUTED_QUALITY_FAILED"
         return "EXECUTION_FAILED_OR_NOT_COMPLETED"
+    ancient_function = ancient_route.get("functional_translation_status")
+    if ancient_route.get("status") == "PASS_FUNCTIONAL_TRANSLATION" and ancient_function == "PASS_FIXED_SYNTHETIC_EXPECTATION_ONLY":
+        ancient_coverage_status = "PASS_FIXED_SYNTHETIC_EXPECTATION_ONLY"
+    elif isinstance(ancient_function, str) and ancient_function.startswith("BLOCKED_"):
+        ancient_coverage_status = ancient_function
+    else:
+        ancient_coverage_status = "NOT_TESTED_NATIVE_TRANSLATION_TASK_REQUIRED"
     return [
         {"required_domain": "Cerebro", "target_id": "D01_CEREBRO", "status": task_status("D01_CEREBRO")},
         {"required_domain": "Qwen / análisis avanzado", "target_id": "D06_ANALISIS_AVANZADO", "status": task_status("D06_SISTEMA_INTELIGENTE")},
         {"required_domain": "Traducción general", "target_id": "D04_TRADUCCION_GENERAL", "status": task_status("D04_TRADUCTOR_INTELIGENTE")},
         {"required_domain": "Traducción de lenguas antiguas", "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
-         "status": "BLOCKED_MISSING_CONSUMER_ADAPTER_AND_TRANSLATION_RESOURCE",
-         "route_diagnostic": ancient_route.get("status", "NOT_COMPLETED")},
+         "status": ancient_coverage_status, "route_diagnostic": ancient_route.get("status", "NOT_COMPLETED")},
         {"required_domain": "Whisper / transcripción", "target_id": "D03_TRANSCRIPCION", "status": task_status("D03_TRANSCRIPCION")},
     ]
 
@@ -267,7 +293,7 @@ def main():
     guard["execution_authorized"]=False
 
     ancient_route = probe_ancient_translation_route(root, outdir, min(args.timeout, 60))
-    ancient_route_ok = ancient_route.get("status") == "PASS_ROUTE_IDENTIFIED_FAIL_CLOSED"
+    ancient_route_ok = str(ancient_route.get("status", "")).startswith("PASS_ROUTE_IDENTIFIED")
     domain_coverage = required_domain_coverage(rows, ancient_route)
     required_domains_functionally_passed = all(
         row.get("status") == "PASS_FIXED_SYNTHETIC_EXPECTATION_ONLY"
