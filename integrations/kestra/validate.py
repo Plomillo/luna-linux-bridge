@@ -165,10 +165,16 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
                 "Remote-model monitoring must use its stable Kestra flow ID.")
         require('cron: "*/5 * * * *"' in body and "allowConcurrent: false" in body,
                 "Remote-model monitoring must be serialized and scheduled every five minutes.")
-        require("method: GET" in body and "/actions/runs?branch=louksnapg%2Fremote-source-bound-runtime-20261029" in body,
-                "Remote-model monitoring must inspect only the exact branch workflow history.")
+        require(body.count("method: GET") >= 2
+                and "/actions/runs?branch=louksnapg%2Fremote-source-bound-runtime-20261029" in body
+                and "/actions/workflows/louksnapg-remote-model-quality.yml/runs?branch=louksnapg%2Fremote-source-bound-runtime-20261029" in body,
+                "Remote-model monitoring must read both protocol and semantic-quality runs for the exact branch.")
+        require("id: latest_remote_protocol_runs" in body and "id: latest_remote_quality_runs" in body,
+                "Both source-bound protocol and semantic-quality run histories must be present.")
         require("io.kestra.plugin.core.http.Request" in body and "io.kestra.plugin.core.log.Log" in body,
                 "Remote-model monitoring may only read GitHub state and log it.")
+        require("LOUKSNAPG_REMOTE_SEMANTIC_QUALITY_MONITOR=READ_ONLY" in body,
+                "Remote-model monitoring must report the semantic-quality workflow separately.")
         require("io.kestra.plugin.core.scripts." not in lower and "io.kestra.plugin.core.runner.process" not in lower,
                 "Remote-model monitoring must not execute scripts or local processes.")
         require("/dispatches" not in body and "method: POST" not in body,
