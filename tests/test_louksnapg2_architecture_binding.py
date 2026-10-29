@@ -27,10 +27,12 @@ class LouksnapG2ArchitectureBindingRegressionTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (runtime / "cajita_tokenizer_materializer.py").write_text(
-                "class TokenizerMaterializationError(RuntimeError):\\n"
-                "    pass\\n"
-                "def tokenizer_tree_rows(root, runtime, rows):\\n"
-                "    return rows\\n",
+                "\n".join([
+                    "class TokenizerMaterializationError(RuntimeError):",
+                    "    pass",
+                    "def tokenizer_tree_rows(root, runtime, rows):",
+                    "    return rows",
+                ]) + "\n",
                 encoding="utf-8",
             )
             rows = _rows(module, runtime)
