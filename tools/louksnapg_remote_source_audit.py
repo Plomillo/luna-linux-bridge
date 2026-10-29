@@ -80,21 +80,68 @@ def file_url(repo_id: str, revision: str, relative_path: str) -> str:
     return f"https://huggingface.co/{quoted_repo}/resolve/{revision}/{quoted_path}?download=true"
 
 
+def _normalize_digest(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    value = value.strip().strip('"').lower()
+    if value.startswith("sha256:"):
+        value = value[7:]
+    return value if HEX_256.fullmatch(value) else None
+
+
 def observed_lfs_sha(row: dict) -> str | None:
     lfs = row.get("lfs")
     if isinstance(lfs, dict):
-        oid = lfs.get("oid")
-        if isinstance(oid, str):
-            value = oid.lower()
-            if value.startswith("sha256:"):
-                value = value[7:]
-            if HEX_256.fullmatch(value):
-                return value
-    blob = row.get("blobId")
-    if isinstance(blob, str) and HEX_256.fullmatch(blob.lower()):
-        # Non-LFS Git blob IDs may be SHA-1 rather than the model file SHA-256.
-        return None
+        for key in ("oid", "sha256", "sha"):
+            digest = _normalize_digest(lfs.get(key))
+            if digest:
+                return digest
+    for key in ("lfsSha256", "lfs_sha256", "sha256"):
+        digest = _normalize_digest(row.get(key))
+        if digest:
+            return digest
+    # blobId is a Git object ID, not an LFS SHA-256. Never treat it as a weight digest.
     return None
+
+
+def head_weight_metadata(repo_id: str, revision: str, relative_path: str) -> dict:
+    """Read upstream response headers only; never read or materialize the weight body."""
+    url = file_url(repo_id, revision, relative_path)
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/octet-stream",
+            "Cache-Control": "no-cache",
+        },
+        method="HEAD",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=25) as response:
+            headers = response.headers
+            selected = {
+                "status": int(response.status),
+                "final_host": urllib.parse.urlsplit(response.geturl()).hostname,
+                "content_length": headers.get("Content-Length"),
+                "etag": headers.get("ETag"),
+                "x_linked_etag": headers.get("X-Linked-Etag"),
+                "x_linked_size": headers.get("X-Linked-Size"),
+                "x_repo_commit": headers.get("X-Repo-Commit"),
+                "accept_ranges": headers.get("Accept-Ranges"),
+            }
+    except urllib.error.HTTPError as exc:
+        raise AuditError("UPSTREAM_WEIGHT_HEAD_HTTP_STATUS:" + relative_path + ":" + str(exc.code)) from exc
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+        raise AuditError("UPSTREAM_WEIGHT_HEAD_FAILED:" + relative_path + ":" + type(exc).__name__) from exc
+    candidate_digests = {
+        "x_linked_etag": _normalize_digest(selected["x_linked_etag"]),
+        "etag": _normalize_digest(selected["etag"]),
+    }
+    # Prefer the immutable Hub LFS link metadata, not a storage-provider ETag.
+    selected["observed_sha256"] = candidate_digests["x_linked_etag"]
+    selected["sha256_source"] = "X-LINKED-ETAG" if selected["observed_sha256"] else None
+    selected["storage_etag_looks_like_sha256"] = bool(candidate_digests["etag"])
+    return selected
 
 
 def audit_domain(domain_id: str, spec: dict) -> dict:
@@ -177,12 +224,19 @@ def audit_domain(domain_id: str, spec: dict) -> dict:
             if isinstance(actual_size, bool) or not isinstance(actual_size, int) or actual_size <= 0:
                 raise AuditError("UPSTREAM_WEIGHT_SIZE_MISSING:" + name)
             digest = observed_lfs_sha(source_row)
+            head_metadata = None
+            if digest is None and expected.get("sha256") is not None:
+                head_metadata = head_weight_metadata(repo, revision, name)
+                digest = head_metadata.get("observed_sha256")
             row_result = {
                 "path": name,
                 "expected_bytes": expected.get("bytes"),
                 "observed_bytes": actual_size,
                 "expected_sha256": expected.get("sha256"),
                 "observed_sha256": digest,
+                "upstream_metadata_fields": sorted(source_row.keys()),
+                "upstream_lfs_metadata_fields": sorted(source_row.get("lfs", {}).keys()) if isinstance(source_row.get("lfs"), dict) else [],
+                "head_metadata": head_metadata,
             }
             if expected.get("bytes") is not None and expected["bytes"] != actual_size:
                 row_result["status"] = "FAIL_SIZE"
@@ -199,7 +253,14 @@ def audit_domain(domain_id: str, spec: dict) -> dict:
                     raise AuditError("UPSTREAM_WEIGHT_SHA256_MISMATCH:" + name)
             else:
                 all_hashes_pinned = False
-            row_result["status"] = "PASS" if expected.get("sha256") is not None and digest == expected["sha256"] else "PASS_REVISION_BOUND_HASH_DISCOVERED"
+            if expected.get("sha256") is not None and digest == expected["sha256"]:
+                row_result["status"] = "PASS"
+            elif expected.get("sha256") is None and digest is not None:
+                row_result["status"] = "PASS_HASH_DISCOVERED_REQUIRES_POLICY_PIN"
+                all_hashes_pinned = False
+            else:
+                row_result["status"] = "PASS_REVISION_SIZE_ONLY_HASH_NOT_PINNED"
+                all_hashes_pinned = False
             result["weight_files"].append(row_result)
         result["weight_sha256_pin_status"] = "ALL_WEIGHT_SHAS_PINNED" if all_hashes_pinned else "REVISION_PINNED_SOME_WEIGHT_SHAS_NOT_YET_IN_POLICY"
         result["status"] = "PASS_SOURCE_REVISION_CONFIG_INDEX_AND_WEIGHT_INVENTORY"
