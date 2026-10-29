@@ -135,6 +135,105 @@ def run_case(root,outdir,record,timeout):
         return {"task_id":record["task_id"],"domain_id":record["domain_id"],"target_id":record.get("target"),"operation":record["operation"],
                 "status":"FAIL_HARNESS","exit_code":125,"elapsed_seconds":round(time.monotonic()-started,3),
                 "failure_reason":type(exc).__name__,"semantic_quality_equivalence":"NOT_ESTABLISHED"}
+def probe_ancient_translation_route(root, outdir, timeout):
+    """Exercise ancient-language target selection; do not substitute the general translator."""
+    request_text = "/play traductor Traduce del griego koiné al español esta frase: Ἐν ἀρχῇ ἦν ὁ λόγος."
+    request_sha = hashlib.sha256(request_text.encode("utf-8")).hexdigest()
+    result = {
+        "task_id": "e2e-ancient-language-route",
+        "request_sha256": request_sha,
+        "raw_request_recorded": False,
+        "functional_translation_status": "NOT_EXECUTED",
+        "certification": "NOT_GRANTED",
+    }
+    router = root / "cajita_router.py"
+    if router.is_symlink() or not router.is_file():
+        return {**result, "status": "FAIL_ROUTE_DIAGNOSTIC", "reason": "ROUTER_ENTRYPOINT_MISSING"}
+
+    safe_env = {k: os.environ[k] for k in ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR") if k in os.environ}
+    safe_env.update({
+        "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1", "TOKENIZERS_PARALLELISM": "false",
+        "HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1", "PYTHONNOUSERSITE": "1",
+    })
+    started = time.monotonic()
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(router), "plan", "--request", request_text,
+             "--route-command", "/play traductor"],
+            cwd=str(root), env=safe_env, stdin=subprocess.DEVNULL,
+            capture_output=True, text=True, timeout=min(timeout, 60), check=False,
+        )
+        plan = json.loads(proc.stdout) if proc.stdout.strip() else {}
+        targets = plan.get("selected_targets", []) if isinstance(plan, dict) else []
+        by_id = {row.get("id"): row for row in targets if isinstance(row, dict)}
+        ancient = by_id.get("D04_TRADUCCION_LENGUAS_ANTIGUAS", {})
+        general_selected = "D04_TRADUCCION_GENERAL" in by_id
+        expected_blocker = "SUBDOMAIN_TASK_ADAPTER_NOT_REGISTERED:D04_TRADUCCION_LENGUAS_ANTIGUAS"
+        blockers = plan.get("blockers", []) if isinstance(plan, dict) else []
+        route_ok = (
+            proc.returncode == 2
+            and plan.get("status") == "PLAN_ONLY_BLOCKED"
+            and plan.get("execution_authorized") is False
+            and "INTENT_ANCIENT_LANGUAGES" in plan.get("matched_intent_rules", [])
+            and "D04_HERMENEUTICA_HG" in by_id
+            and "D04_TRADUCCION_LENGUAS_ANTIGUAS" in by_id
+            and ancient.get("task_adapter", "NOT_REGISTERED") == "NOT_REGISTERED"
+            and not general_selected
+            and expected_blocker in blockers
+        )
+        return {
+            **result,
+            "status": "PASS_ROUTE_IDENTIFIED_FAIL_CLOSED" if route_ok else "FAIL_ROUTE_DIAGNOSTIC",
+            "route_exit_code": proc.returncode,
+            "route_status": plan.get("status"),
+            "matched_intent_rules": plan.get("matched_intent_rules", []),
+            "selected_target_ids": sorted(by_id),
+            "ancient_target_adapter": ancient.get("task_adapter", "NOT_REGISTERED"),
+            "general_translation_fallback_selected": general_selected,
+            "expected_blocker_present": expected_blocker in blockers,
+            "execution_authorized": plan.get("execution_authorized", False),
+            "elapsed_seconds": round(time.monotonic() - started, 3),
+            "route_stdout_sha256": hashlib.sha256(proc.stdout.encode("utf-8", errors="replace")).hexdigest(),
+            "route_stderr_sha256": hashlib.sha256(proc.stderr.encode("utf-8", errors="replace")).hexdigest(),
+            "functional_translation_status": "BLOCKED_MISSING_CONSUMER_ADAPTER_AND_TRANSLATION_RESOURCE",
+            "missing_requirements": ["NATIVE_CONSUMER_ADAPTER", "COMPILED_TRANSDUCER_OR_OPERATIONAL_LEXICON",
+                                     "EXACT_SOURCE_TARGET_LANGUAGE_PAIR", "SOURCE_BOUND_KNOWN_ANSWER_TEST"],
+            "diagnostic_stderr_tail": proc.stderr[-800:] if proc.returncode not in (0, 2) else "",
+            "certification": "NOT_GRANTED",
+        }
+    except subprocess.TimeoutExpired:
+        return {**result, "status": "FAIL_ROUTE_TIMEOUT", "route_exit_code": 124,
+                "elapsed_seconds": round(time.monotonic() - started, 3)}
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        return {**result, "status": "FAIL_ROUTE_DIAGNOSTIC", "reason": type(exc).__name__,
+                "elapsed_seconds": round(time.monotonic() - started, 3)}
+
+
+def required_domain_coverage(task_rows, ancient_route):
+    """Report the five required domains separately from the extra Docling task."""
+    by_domain = {row.get("domain_id"): row for row in task_rows if isinstance(row, dict)}
+    def task_status(domain):
+        row = by_domain.get(domain)
+        if not row:
+            return "NOT_TESTED"
+        quality = row.get("quality_acceptance", {})
+        if row.get("status") == "PASS_FUNCTIONAL_EXECUTION" and row.get("exit_code") == 0 and quality.get("status") == "PASS":
+            return "PASS_FIXED_SYNTHETIC_EXPECTATION_ONLY"
+        if row.get("status") == "PASS_FUNCTIONAL_EXECUTION" and row.get("exit_code") == 0:
+            return "EXECUTED_QUALITY_FAILED"
+        return "EXECUTION_FAILED_OR_NOT_COMPLETED"
+    return [
+        {"required_domain": "Cerebro", "target_id": "D01_CEREBRO", "status": task_status("D01_CEREBRO")},
+        {"required_domain": "Qwen / análisis avanzado", "target_id": "D06_ANALISIS_AVANZADO", "status": task_status("D06_SISTEMA_INTELIGENTE")},
+        {"required_domain": "Traducción general", "target_id": "D04_TRADUCCION_GENERAL", "status": task_status("D04_TRADUCTOR_INTELIGENTE")},
+        {"required_domain": "Traducción de lenguas antiguas", "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+         "status": "BLOCKED_MISSING_CONSUMER_ADAPTER_AND_TRANSLATION_RESOURCE",
+         "route_diagnostic": ancient_route.get("status", "NOT_COMPLETED")},
+        {"required_domain": "Whisper / transcripción", "target_id": "D03_TRANSCRIPCION", "status": task_status("D03_TRANSCRIPCION")},
+    ]
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root",required=True)
@@ -166,6 +265,14 @@ def main():
     guard_ok=guard.get("status") in {"PLAN_ONLY_BLOCKED","PLAN_READY_NOT_EXECUTED"} and guard.get("exit_code")==3
     guard["status"]="PASS_FAIL_CLOSED_PLAN_ONLY" if guard_ok else "FAIL_ORCHESTRATION_GUARD"
     guard["execution_authorized"]=False
+
+    ancient_route = probe_ancient_translation_route(root, outdir, min(args.timeout, 60))
+    ancient_route_ok = ancient_route.get("status") == "PASS_ROUTE_IDENTIFIED_FAIL_CLOSED"
+    domain_coverage = required_domain_coverage(rows, ancient_route)
+    required_domains_functionally_passed = all(
+        row.get("status") == "PASS_FIXED_SYNTHETIC_EXPECTATION_ONLY"
+        for row in domain_coverage
+    )
     model_pass=all(
         r.get("status")=="PASS_FUNCTIONAL_EXECUTION" and r.get("exit_code")==0
         and r.get("quality_acceptance",{}).get("status")=="PASS"
@@ -197,13 +304,19 @@ def main():
         and target_engine_report.get("failed_count")==0
         and len(target_engine_report.get("results",[]))==6
     )
-    passed=model_pass and guard_ok and target_engine_ok
+    passed=model_pass and guard_ok and target_engine_ok and ancient_route_ok and required_domains_functionally_passed
     report={"schema":SCHEMA,"status":"PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY" if passed else "FAIL",
             "generated_at_utc":utc_now(),"runtime_candidate_id":"CAJITA_LUNA_RUNTIME_V9_20261023",
             "runtime_root":str(root),"adapter_runtime_sha256":digest(root/"cajita_task_adapters.py"),
             "target_engine_adapter_runtime_sha256":digest(root/"cajita_target_adapters.py"),
             "harness_sha256":digest(Path(__file__).resolve()),"weight_manifest_sha256":digest(root/"CAJITA_RUNTIME_V1"/"weights_manifest.json"),
             "tested_model_domain_count":len(rows),"registered_model_domain_count":5,"task_results":rows,
+            "required_domain_count":5,
+            "required_domain_coverage":domain_coverage,
+            "required_domains_functionally_passed":required_domains_functionally_passed,
+            "ancient_translation_route_diagnostic":ancient_route,
+            "ancient_translation_functional_status":ancient_route.get("functional_translation_status", "NOT_COMPLETED"),
+            "extra_model_domain_tasks":["D05_INTELIGENCIA_DOCUMENTAL"],
             "target_engine_smoke_status":target_engine_report.get("status","NOT_COMPLETED"),
             "target_engine_expected_count":target_engine_report.get("expected_count",6),
             "target_engine_pass_count":target_engine_report.get("pass_count",0),
@@ -212,9 +325,10 @@ def main():
             "target_engine_scope":target_engine_report.get("scope","SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES; NO_FULL_TASK_OR_QUALITY_CLAIM"),
             "orchestration_guard":guard,"inputs":"ESPEAK_NG_KNOWN_SPEECH_AND_SYNTHETIC_INVOICE_FIXTURES_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_FIXTURES",
             "resource_gate":"EACH_TASK_CHILD_PEAK_RSS_MUST_BE_AT_MOST_1_GIB; TARGET_ENGINE_BUILD_AND_EXECUTION_BOUNDED",
-            "functional_scope":"FIVE_MODEL_DOMAIN_TASK_EXECUTIONS_WITH_FIXED_EXPECTATION_ACCEPTANCE_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_PLUS_FAIL_CLOSED_ORCHESTRATION_GUARD",
+            "functional_scope":"FIVE_REQUIRED_MODEL_DOMAINS_WITH_FIXED_EXPECTATION_ACCEPTANCE_PLUS_SEPARATE_ANCIENT_ROUTE_BLOCKER_PROBE_PLUS_DOCILING_EXTRA_TASK_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_PLUS_FAIL_CLOSED_ORCHESTRATION_GUARD",
             "synthetic_quality_acceptance":"PASS" if model_pass and guard_ok else "FAIL",
             "full_target_task_coverage":"NOT_ESTABLISHED",
+            "ancient_language_translation_is_functionally_certified":False,
             "semantic_quality_equivalence":"NOT_ESTABLISHED_REFERENCE_MODEL_EQUIVALENCE","all_21_target_adapters":"NOT_ESTABLISHED","global_certification":"NOT_GRANTED"}
     output=Path(args.output);output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(json.dumps(report,sort_keys=True,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
@@ -222,6 +336,8 @@ def main():
        "task_statuses":{r["domain_id"]:r["status"] for r in rows},"orchestration_guard":guard["status"],
        "target_engine_smoke_status":report["target_engine_smoke_status"],
        "target_engine_pass_count":report["target_engine_pass_count"],"target_engine_expected_count":report["target_engine_expected_count"],
+       "required_domain_coverage":{r["required_domain"]:r["status"] for r in domain_coverage},
+       "ancient_translation_route_diagnostic":ancient_route.get("status"),
        "synthetic_quality_acceptance":report["synthetic_quality_acceptance"],
        "semantic_quality_equivalence":"NOT_ESTABLISHED_REFERENCE_MODEL_EQUIVALENCE","global_certification":"NOT_GRANTED"},ensure_ascii=False,indent=2))
     return 0 if passed else 3
