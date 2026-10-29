@@ -12,6 +12,7 @@ on:
       - "LOUKSNAMEJORADA.md"
       - "cajita-luna-runtime/CajitadeLuna.md"
       - "tools/cajita_runtime_factory.py"
+      - "tools/cajita_architecture_binding.py"
       - "cajita-luna-runtime/reproduce_macrodown.py"
       - "tools/louksnapg2_bundle.py"
       - "tools/louksnapg2_independent_validator.py"
