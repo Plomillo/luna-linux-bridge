@@ -28,6 +28,7 @@ from louksnapg_reference_whisper_diagnostic import (
     normalized_words,
     sha256_file,
 )
+from cajita_task_e2e import probe_ancient_translation_route
 
 REPORT_SCHEMA = "LOUKSNAPG_REMOTE_SEMANTIC_QUALITY_GATE/1.0"
 DOMAIN_ENDPOINTS = {
@@ -171,11 +172,65 @@ def run_task(runtime_root: Path, work_dir: Path, *, task_id: str, domain_id: str
     }
 
 
+def required_domain_statuses(task_rows: list[dict], ancient_route: dict) -> list[dict]:
+    """Report all five required domains; route identification is not translation proof."""
+    by_domain: dict[str, list[dict]] = {}
+    for row in task_rows:
+        if isinstance(row, dict):
+            by_domain.setdefault(str(row.get("domain_id", "")), []).append(row)
+
+    def task_status(domain: str, expected_count: int = 1) -> str:
+        rows = by_domain.get(domain, [])
+        if len(rows) < expected_count:
+            return "NOT_TESTED_REQUIRED_TASK_COUNT_INCOMPLETE"
+        all_pass = all(
+            row.get("status") == "PASS_REMOTE_EXECUTION"
+            and row.get("execution_authorized") is True
+            and row.get("quality_status") == "PASS"
+            for row in rows
+        )
+        if all_pass:
+            return "PASS_KNOWN_ANSWER_TASKS_ONLY"
+        if any(row.get("status") == "PASS_REMOTE_EXECUTION" for row in rows):
+            return "EXECUTED_QUALITY_FAILED"
+        if rows:
+            return "REMOTE_EXECUTION_FAILED"
+        return "NOT_TESTED"
+
+    route_status = str(ancient_route.get("status", "NOT_TESTED"))
+    ancient_function = str(ancient_route.get("functional_translation_status", "NOT_TESTED"))
+    if route_status.startswith("PASS_ROUTE_IDENTIFIED") and ancient_function.startswith("BLOCKED_"):
+        ancient_status = ancient_function
+    elif route_status.startswith("PASS_ROUTE_IDENTIFIED"):
+        ancient_status = "NOT_TESTED_NATIVE_TRANSLATION_TASK_REQUIRED"
+    else:
+        ancient_status = "FAIL_ANCIENT_ROUTE_DIAGNOSTIC"
+
+    return [
+        {"required_domain": "Cerebro / GPT-OSS-120B", "domain_id": "D01_CEREBRO",
+         "status": task_status("D01_CEREBRO")},
+        {"required_domain": "Razonamiento avanzado / Qwen", "domain_id": "D06_SISTEMA_INTELIGENTE",
+         "status": task_status("D06_SISTEMA_INTELIGENTE")},
+        {"required_domain": "Traducción general", "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+         "status": task_status("D04_TRADUCTOR_INTELIGENTE")},
+        {"required_domain": "Traducción de lenguas antiguas", "domain_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+         "status": ancient_status, "route_diagnostic": route_status,
+         "general_translation_fallback_selected": ancient_route.get("general_translation_fallback_selected")},
+        {"required_domain": "Transcripción / Whisper", "domain_id": "D03_TRANSCRIPCION",
+         "status": task_status("D03_TRANSCRIPCION", expected_count=2)},
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runtime-root", type=Path, default=Path(__file__).resolve().parents[1] / "cajita-luna-runtime")
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--work-dir", type=Path)
+    parser.add_argument(
+        "--preflight-only",
+        action="store_true",
+        help="Check source policy and the ancient-language fail-closed route only; execute no models or remote endpoints.",
+    )
     args = parser.parse_args()
 
     runtime = args.runtime_root.resolve(strict=True)
@@ -187,173 +242,244 @@ def main() -> int:
     else:
         work_temp = tempfile.TemporaryDirectory(prefix="louksnapg-remote-quality-")
         work = Path(work_temp.name)
+
     report = {
         "schema": REPORT_SCHEMA,
         "started_at_utc": utc_now(),
         "runtime_root": str(runtime),
-        "remote_execution_mode": "required",
+        "candidate_source_commit": os.environ.get("GITHUB_SHA"),
+        "workflow_ref": os.environ.get("GITHUB_REF"),
+        "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
+        "workflow_run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+        "workflow_event": os.environ.get("GITHUB_EVENT_NAME"),
+        "remote_execution_mode": "required" if not args.preflight_only else "NOT_USED_PREFLIGHT_ONLY",
         "local_model_inference": False,
         "local_model_weights_downloaded": False,
+        "remote_endpoint_contacted": False,
+        "model_task_execution_performed": False,
         "domain_task_results": [],
         "certification": "NOT_GRANTED",
         "global_certification": "NOT_GRANTED",
         "scope": "SEMANTIC_KNOWN_ANSWER_TASKS_THROUGH_THE_CANDIDATE_ADAPTER_AND_SOURCE_PINNED_REMOTE_GATEWAYS",
     }
     try:
-        assert_endpoints_configured()
         policy_path = runtime / "CAJITA_REMOTE_MODEL_POLICY.json"
         if policy_path.is_symlink() or not policy_path.is_file():
             raise RuntimeError("REMOTE_MODEL_POLICY_MISSING_OR_UNSAFE")
         policy = json.loads(policy_path.read_text(encoding="utf-8"))
+        if policy.get("schema") != "LOUKSNAPG_REMOTE_MODEL_POLICY/1.0":
+            raise RuntimeError("REMOTE_MODEL_POLICY_SCHEMA_MISMATCH")
+        if policy.get("certification") != "NOT_GRANTED":
+            raise RuntimeError("REMOTE_MODEL_POLICY_CERTIFICATION_MUST_REMAIN_NOT_GRANTED")
         report["policy_sha256"] = sha_bytes(policy_path.read_bytes())
+        report["quality_gate_sha256"] = sha256_file(Path(__file__).resolve())
+        report["remote_client_sha256"] = sha256_file(runtime / "cajita_remote_execution.py")
+        report["task_adapter_sha256"] = sha256_file(runtime / "cajita_task_adapters.py")
+        report["router_sha256"] = sha256_file(runtime / "cajita_router.py")
         report["remote_source_revisions"] = {
             domain: row["source_revision"] for domain, row in policy.get("domains", {}).items()
         }
+        report["remote_gateway_trust"] = policy.get("gateway_trust")
 
-        scenarios = [
-            {
-                "task_id": "remote-quality-cerebro-reasoning-01",
-                "domain_id": "D01_CEREBRO",
-                "operation": "generate_text",
-                "inputs": {
-                    "prompt": (
-                        "Reason through this inventory problem and give only the final integer: "
-                        "A shop has 4 boxes with 6 bottles in each. It sells 7 bottles and later receives 3. "
-                        "How many bottles are left?"
-                    )
-                },
-                "expected_integer": 20,
-                "max_new_tokens": 64,
-            },
-            {
-                "task_id": "remote-quality-qwen-analysis-01",
-                "domain_id": "D06_SISTEMA_INTELIGENTE",
-                "operation": "analyze_reasoning",
-                "inputs": {
-                    "prompt": (
-                        "Compute this sequential calculation carefully and return only the final integer: "
-                        "Start with 15, multiply by 2, subtract 8, then divide by 2."
-                    )
-                },
-                "expected_integer": 11,
-                "max_new_tokens": 64,
-            },
-            {
-                "task_id": "remote-quality-general-translation-01",
-                "domain_id": "D04_TRADUCTOR_INTELIGENTE",
-                "operation": "translate_text",
-                "inputs": {"text": "The book is on the table.", "src_lang": "en", "tgt_lang": "es"},
-                "expected_translations": {
-                    "el libro esta sobre la mesa",
-                    "el libro esta en la mesa",
-                    "el libro esta encima de la mesa",
-                },
-                "max_new_tokens": 48,
-            },
-        ]
-        for scenario in scenarios:
-            result = run_task(
-                runtime, work,
-                task_id=scenario["task_id"],
-                domain_id=scenario["domain_id"],
-                operation=scenario["operation"],
-                inputs=scenario["inputs"],
-                max_new_tokens=scenario["max_new_tokens"],
+        # This diagnostic is independent of remote endpoints and model loading.
+        # It verifies that ancient Greek reaches the ancient target and remains blocked
+        # instead of silently using the general-language translation model.
+        ancient_route = probe_ancient_translation_route(runtime, work, 60)
+        report["ancient_translation_route"] = ancient_route
+        report["required_domain_statuses"] = required_domain_statuses([], ancient_route)
+        report["required_domain_gate_status"] = "BLOCKED_REQUIRED_DOMAIN_NOT_ESTABLISHED"
+        report["integral_certification"] = "NOT_GRANTED"
+
+        if args.preflight_only:
+            route_ok = (
+                str(ancient_route.get("status", "")).startswith("PASS_ROUTE_IDENTIFIED")
+                and ancient_route.get("general_translation_fallback_selected") is False
+                and ancient_route.get("execution_authorized") is False
             )
-            if result["status"] != "PASS_REMOTE_EXECUTION" or not result["execution_authorized"]:
-                result["quality_status"] = "FAIL_REMOTE_EXECUTION"
-                result["quality_reason"] = result.get("reason") or result["status"]
-            elif "expected_integer" in scenario:
-                observed = final_integer(result.get("output_text", ""))
-                result["observed_integer"] = observed
-                result["expected_integer"] = scenario["expected_integer"]
-                result["quality_status"] = "PASS" if observed == scenario["expected_integer"] else "FAIL_SEMANTIC_ANSWER"
-            else:
-                observed = normalize_text(result.get("output_text", ""))
-                result["normalized_translation"] = observed
-                result["expected_translation_variants"] = sorted(scenario["expected_translations"])
-                result["quality_status"] = "PASS" if observed in scenario["expected_translations"] else "FAIL_TRANSLATION_QUALITY"
-            report["domain_task_results"].append(result)
-
-        synthetic_audio = work / "known-speech-hello-world.wav"
-        make_known_audio(synthetic_audio)
-        synthetic_audio_meta = {
-            "path": synthetic_audio.name,
-            "bytes": synthetic_audio.stat().st_size,
-            "sha256": sha256_file(synthetic_audio),
-            "expected_text": "hello world",
-            "fixture_kind": "ESPEAK_SYNTHETIC_KNOWN_ANSWER",
-        }
-        transcription = run_task(
-            runtime, work,
-            task_id="remote-quality-whisper-synthetic-01",
-            domain_id="D03_TRANSCRIPCION",
-            operation="transcribe_audio",
-            inputs={"audio_path": str(synthetic_audio)},
-            max_new_tokens=16,
-        )
-        transcript = " ".join(normalized_words(transcription.get("output_text", "")))
-        transcription["fixture"] = synthetic_audio_meta
-        transcription["normalized_transcript"] = transcript
-        transcription["expected_transcript"] = "hello world"
-        if transcription["status"] != "PASS_REMOTE_EXECUTION" or not transcription["execution_authorized"]:
-            transcription["quality_status"] = "FAIL_REMOTE_EXECUTION"
+            report["mode"] = "PREFLIGHT_ONLY_NO_MODEL_INFERENCE_NO_REMOTE_ENDPOINT"
+            report["status"] = "PASS_ROUTE_PREFLIGHT_ONLY" if route_ok else "FAIL_ROUTE_PREFLIGHT"
+            report["preflight"] = {
+                "ancient_target_identified": route_ok,
+                "general_translation_fallback_selected": ancient_route.get("general_translation_fallback_selected"),
+                "execution_authorized": ancient_route.get("execution_authorized"),
+                "functional_ancient_translation": ancient_route.get("functional_translation_status"),
+                "model_inference_executed": False,
+                "remote_endpoint_contacted": False,
+            }
         else:
-            transcription["quality_status"] = "PASS" if transcript == "hello world" else "FAIL_TRANSCRIPTION_QUALITY"
-        report["domain_task_results"].append(transcription)
+            # Configuration is checked before fixtures are generated or endpoints are contacted.
+            assert_endpoints_configured()
+            report["mode"] = "LIVE_REMOTE_SEMANTIC_TASKS"
+            report["remote_endpoint_contacted"] = True
 
-        real_audio_path, reference_text, real_fixture = load_librispeech_fixture(work)
-        if real_audio_path.stat().st_size > MAX_AUDIO_BYTES:
-            raise RuntimeError("PINNED_REAL_AUDIO_FIXTURE_OVER_ADAPTER_LIMIT")
-        real_result = run_task(
-            runtime, work,
-            task_id="remote-quality-whisper-librispeech-01",
-            domain_id="D03_TRANSCRIPCION",
-            operation="transcribe_audio",
-            inputs={"audio_path": str(real_audio_path)},
-            max_new_tokens=128,
-            timeout_seconds=900,
-        )
-        hypothesis = real_result.get("output_text", "")
-        wer = word_error_rate(reference_text, hypothesis) if hypothesis.strip() else 1.0
-        real_result["fixture"] = {
-            "fixture_kind": "PINNED_LIBRISPEECH_REAL_SPEECH",
-            "dataset_repo": real_fixture.get("dataset_repo"),
-            "dataset_revision": real_fixture.get("dataset_revision"),
-            "audio_id": real_fixture.get("audio_id"),
-            "audio_asset_sha256": real_fixture.get("audio_asset_sha256"),
-            "audio_wav_sha256": real_fixture.get("audio_wav_sha256"),
-            "reference_transcript_sha256": real_fixture.get("transcript_sha256"),
-            "reference_word_count": real_fixture.get("reference_word_count"),
-        }
-        real_result["word_error_rate"] = round(wer, 6)
-        real_result["max_word_error_rate"] = 0.25
-        real_result["quality_status"] = (
-            "PASS" if real_result["status"] == "PASS_REMOTE_EXECUTION"
-            and real_result["execution_authorized"] and wer <= 0.25 else "FAIL_TRANSCRIPTION_WER"
-        )
-        report["domain_task_results"].append(real_result)
+            scenarios = [
+                {
+                    "task_id": "remote-quality-cerebro-reasoning-01",
+                    "domain_id": "D01_CEREBRO",
+                    "operation": "generate_text",
+                    "inputs": {
+                        "prompt": (
+                            "Reason through this inventory problem and give only the final integer: "
+                            "A shop has 4 boxes with 6 bottles in each. It sells 7 bottles and later receives 3. "
+                            "How many bottles are left?"
+                        )
+                    },
+                    "expected_integer": 20,
+                    "max_new_tokens": 64,
+                },
+                {
+                    "task_id": "remote-quality-qwen-analysis-01",
+                    "domain_id": "D06_SISTEMA_INTELIGENTE",
+                    "operation": "analyze_reasoning",
+                    "inputs": {
+                        "prompt": (
+                            "Compute this sequential calculation carefully and return only the final integer: "
+                            "Start with 15, multiply by 2, subtract 8, then divide by 2."
+                        )
+                    },
+                    "expected_integer": 11,
+                    "max_new_tokens": 64,
+                },
+                {
+                    "task_id": "remote-quality-general-translation-01",
+                    "domain_id": "D04_TRADUCTOR_INTELIGENTE",
+                    "operation": "translate_text",
+                    "inputs": {"text": "The book is on the table.", "src_lang": "en", "tgt_lang": "es"},
+                    "expected_translations": {
+                        "el libro esta sobre la mesa",
+                        "el libro esta en la mesa",
+                        "el libro esta encima de la mesa",
+                    },
+                    "max_new_tokens": 48,
+                },
+            ]
+            for scenario in scenarios:
+                result = run_task(
+                    runtime, work,
+                    task_id=scenario["task_id"],
+                    domain_id=scenario["domain_id"],
+                    operation=scenario["operation"],
+                    inputs=scenario["inputs"],
+                    max_new_tokens=scenario["max_new_tokens"],
+                )
+                if result["status"] != "PASS_REMOTE_EXECUTION" or not result["execution_authorized"]:
+                    result["quality_status"] = "FAIL_REMOTE_EXECUTION"
+                    result["quality_reason"] = result.get("reason") or result["status"]
+                elif "expected_integer" in scenario:
+                    observed = final_integer(result.get("output_text", ""))
+                    result["observed_integer"] = observed
+                    result["expected_integer"] = scenario["expected_integer"]
+                    result["quality_status"] = "PASS" if observed == scenario["expected_integer"] else "FAIL_SEMANTIC_ANSWER"
+                else:
+                    observed = normalize_text(result.get("output_text", ""))
+                    result["normalized_translation"] = observed
+                    result["expected_translation_variants"] = sorted(scenario["expected_translations"])
+                    result["quality_status"] = "PASS" if observed in scenario["expected_translations"] else "FAIL_TRANSLATION_QUALITY"
+                report["domain_task_results"].append(result)
 
-        failures = [
-            {"task_id": item["task_id"], "domain_id": item["domain_id"], "status": item["quality_status"]}
-            for item in report["domain_task_results"] if item.get("quality_status") != "PASS"
-        ]
-        report["task_count"] = len(report["domain_task_results"])
-        report["task_quality_pass_count"] = report["task_count"] - len(failures)
-        report["task_quality_failures"] = failures
-        report["status"] = "PASS_REMOTE_SEMANTIC_TASKS" if not failures else "FAIL_REMOTE_SEMANTIC_TASKS"
+            synthetic_audio = work / "known-speech-hello-world.wav"
+            make_known_audio(synthetic_audio)
+            synthetic_audio_meta = {
+                "path": synthetic_audio.name,
+                "bytes": synthetic_audio.stat().st_size,
+                "sha256": sha256_file(synthetic_audio),
+                "expected_text": "hello world",
+                "fixture_kind": "ESPEAK_SYNTHETIC_KNOWN_ANSWER",
+            }
+            transcription = run_task(
+                runtime, work,
+                task_id="remote-quality-whisper-synthetic-01",
+                domain_id="D03_TRANSCRIPCION",
+                operation="transcribe_audio",
+                inputs={"audio_path": str(synthetic_audio)},
+                max_new_tokens=16,
+            )
+            transcript = " ".join(normalized_words(transcription.get("output_text", "")))
+            transcription["fixture"] = synthetic_audio_meta
+            transcription["normalized_transcript"] = transcript
+            transcription["expected_transcript"] = "hello world"
+            if transcription["status"] != "PASS_REMOTE_EXECUTION" or not transcription["execution_authorized"]:
+                transcription["quality_status"] = "FAIL_REMOTE_EXECUTION"
+            else:
+                transcription["quality_status"] = "PASS" if transcript == "hello world" else "FAIL_TRANSCRIPTION_QUALITY"
+            report["domain_task_results"].append(transcription)
+
+            real_audio_path, reference_text, real_fixture = load_librispeech_fixture(work)
+            if real_audio_path.stat().st_size > MAX_AUDIO_BYTES:
+                raise RuntimeError("PINNED_REAL_AUDIO_FIXTURE_OVER_ADAPTER_LIMIT")
+            real_result = run_task(
+                runtime, work,
+                task_id="remote-quality-whisper-librispeech-01",
+                domain_id="D03_TRANSCRIPCION",
+                operation="transcribe_audio",
+                inputs={"audio_path": str(real_audio_path)},
+                max_new_tokens=128,
+                timeout_seconds=900,
+            )
+            hypothesis = real_result.get("output_text", "")
+            wer = word_error_rate(reference_text, hypothesis) if hypothesis.strip() else 1.0
+            real_result["fixture"] = {
+                "fixture_kind": "PINNED_LIBRISPEECH_REAL_SPEECH",
+                "dataset_repo": real_fixture.get("dataset_repo"),
+                "dataset_revision": real_fixture.get("dataset_revision"),
+                "audio_id": real_fixture.get("audio_id"),
+                "audio_asset_sha256": real_fixture.get("audio_asset_sha256"),
+                "audio_wav_sha256": real_fixture.get("audio_wav_sha256"),
+                "reference_transcript_sha256": real_fixture.get("transcript_sha256"),
+                "reference_word_count": real_fixture.get("reference_word_count"),
+            }
+            real_result["word_error_rate"] = round(wer, 6)
+            real_result["max_word_error_rate"] = 0.25
+            real_result["quality_status"] = (
+                "PASS" if real_result["status"] == "PASS_REMOTE_EXECUTION"
+                and real_result["execution_authorized"] and wer <= 0.25 else "FAIL_TRANSCRIPTION_WER"
+            )
+            report["domain_task_results"].append(real_result)
+            report["model_task_execution_performed"] = True
+
+            failures = [
+                {"task_id": item["task_id"], "domain_id": item["domain_id"], "status": item["quality_status"]}
+                for item in report["domain_task_results"] if item.get("quality_status") != "PASS"
+            ]
+            report["task_count"] = len(report["domain_task_results"])
+            report["task_quality_pass_count"] = report["task_count"] - len(failures)
+            report["task_quality_failures"] = failures
+            report["semantic_task_status"] = "PASS_REMOTE_SEMANTIC_TASKS" if not failures else "FAIL_REMOTE_SEMANTIC_TASKS"
+            report["required_domain_statuses"] = required_domain_statuses(report["domain_task_results"], ancient_route)
+            domain_failures = [row for row in report["required_domain_statuses"] if not row["status"].startswith("PASS_")]
+            report["required_domain_gate_status"] = (
+                "PASS_KNOWN_ANSWER_SCOPE_ONLY" if not domain_failures else "BLOCKED_REQUIRED_DOMAIN_NOT_ESTABLISHED"
+            )
+            report["integral_certification"] = "NOT_GRANTED"
+            # The semantic harness may pass its declared five tasks; that never certifies
+            # the integral product while the dedicated ancient-language domain is blocked.
+            report["status"] = (
+                "PASS_REMOTE_SEMANTIC_TASKS_INTEGRAL_GATE_BLOCKED"
+                if not failures and domain_failures
+                else ("PASS_REMOTE_SEMANTIC_TASKS" if not failures else "FAIL_REMOTE_SEMANTIC_TASKS")
+            )
         report["finished_at_utc"] = utc_now()
     except Exception as exc:
-        report["status"] = "FAIL_CLOSED"
-        report["error"] = type(exc).__name__ + ":" + str(exc)[:1000]
+        message = type(exc).__name__ + ":" + str(exc)[:1000]
+        report["status"] = (
+            "BLOCKED_REMOTE_ENDPOINT_CONFIGURATION"
+            if message.startswith("RuntimeError:REMOTE_QUALITY_ENDPOINT_OR_SECRET_MISSING:")
+            else "FAIL_CLOSED"
+        )
+        report["error"] = message
         report["finished_at_utc"] = utc_now()
+        report["required_domain_statuses"] = required_domain_statuses(report.get("domain_task_results", []), report.get("ancient_translation_route", {}))
+        report["required_domain_gate_status"] = "BLOCKED_REQUIRED_DOMAIN_NOT_ESTABLISHED"
+        report["integral_certification"] = "NOT_GRANTED"
     serialized = json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(serialized, encoding="utf-8")
+    temp_report = report_path.with_suffix(report_path.suffix + ".tmp")
+    temp_report.write_text(serialized, encoding="utf-8")
+    os.replace(temp_report, report_path)
     print(serialized, end="")
     if work_temp:
         work_temp.cleanup()
-    return 0 if report.get("status") == "PASS_REMOTE_SEMANTIC_TASKS" else 2
+    return 0 if report.get("status") in {"PASS_ROUTE_PREFLIGHT_ONLY", "PASS_REMOTE_SEMANTIC_TASKS", "PASS_REMOTE_SEMANTIC_TASKS_INTEGRAL_GATE_BLOCKED"} else 2
 
 
 if __name__ == "__main__":
