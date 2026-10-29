@@ -1,9 +1,9 @@
 {
   "schema": "LOUKSNAPG_INTEGRAL_CERTIFICATION_STATUS_MATRIX/1.0",
-  "observed_at_utc": "2026-10-29T00:19:00Z",
+  "observed_at_utc": "2026-10-29T00:22:00Z",
   "repository": "Plomillo/luna-linux-bridge",
   "branch": "louksnapg/phase4-resume-20261028",
-  "branch_head_at_matrix": "5c89aff4b55da9077a3f11ebb088b49b5584cf2c",
+  "branch_head_at_matrix": "0e3207b55388d77ed294327f88b1c21057bf06ee",
   "canonical_product_file": "LOUKSNAPG.md",
   "current_worktree_distribution_candidate": "NOT_BUILT_AS_A_TRACKED_ROOT_FILE_ON_THIS_BRANCH_HEAD",
   "global_certification": "NOT_GRANTED",
@@ -18,7 +18,15 @@
     "g24": "NOT_GRANTED",
     "automatic_certification_propagation": false,
     "certification_cannot_follow_from_model_presence_or_process_exit_zero": true,
-    "final_release_assessment": "HOLD_NOT_CERTIFIED_G23_PACKAGE_INTEGRITY_PASS_G24_FUNCTIONAL_FAIL"
+    "final_release_assessment": "HOLD_NOT_CERTIFIED_G23_PACKAGE_INTEGRITY_PASS_G24_FUNCTIONAL_FAIL",
+    "task_evidence_metric_correction": {
+      "code_commit": "60a725e32e33c3f38c0b451003699922ac07d87a",
+      "helper": "tools/louksnapg_task_evidence_summary.py",
+      "unit_test": "tests/test_louksnapg_task_evidence_summary.py",
+      "unit_test_run_id": 40793408840,
+      "status": "PASS_4_TESTS",
+      "semantics": "execution_success_count distinct from quality_pass_count; pass_count aliases quality_pass_count"
+    }
   },
   "engines": [
     {
@@ -270,8 +278,8 @@
     "4_repair": "Whisper rank-29, rank-64, rank-96, adaptive R192 V1 and V2 rejected; no candidate meets functional gate",
     "5_post_repair_tests": "All five tested Whisper candidates failed at least the known-answer and real-speech criteria; no repair demonstrated",
     "6_integration": "NOT_PASSED; package structure passes but functional task routes and all 21 adapters are not established",
-    "7_certification_assessment": "HOLD: G23 package integrity passed for exact older candidate; G24 failed because all five known-answer quality checks failed",
-    "8_g23_g24_release": "G23 PASS package-integrity scope only; G24 NOT_GRANTED/task_adapter_return_code=3; candidate publication skipped",
+    "7_certification_assessment": "HOLD: prior exact candidate G23 distribution integrity PASS; G24 functional NOT_GRANTED; metric-reporting correction unit-tested and candidate revalidation running",
+    "8_g23_g24_release": "Prior G23 PASS package-integrity scope only; prior G24 NOT_GRANTED; new factory run 40793408906 will re-evaluate exact new commit after reporting-metric correction",
     "9_governance_checkpoint": "FAIL_CLOSED; G24 denied; global certification NOT_GRANTED"
   },
   "orchestration": {
@@ -312,7 +320,9 @@
     "G23 is a package-integrity-scope pass on older factory commit 4d67ec3..., not proof of engine semantic quality; G24 is still in progress.",
     "Latest factory G24 run failed: all five known-answer model-domain quality checks are FAIL although each process returned successfully.",
     "The G24 task_adapter_pass_count field is ambiguously named: it counts successful process executions, not semantic quality passes; G24 correctly records overall task_adapter_evidence_status=FAIL and blocks release.",
-    "Ancient-language translation remains without a native consumer adapter, transducer or operational lexical resource."
+    "Ancient-language translation remains without a native consumer adapter, transducer or operational lexical resource.",
+    "Required ancient-language translation is absent from the five-case functional suite; current cases substitute a Docling task in that count, so ancient-language function is not tested and has no consumer adapter.",
+    "G24 reporting metric correction has passed its unit tests; exact candidate-bound G23/G24 retest from commit 60a725e32e33c3f38c0b451003699922ac07d87a remains pending."
   ],
   "no_silent_substitution": true,
   "no_canonical_model_promotion_without_quality_pass": true,
@@ -394,7 +404,7 @@
       "run_id": 40792192212,
       "job_id": 123181522969,
       "status": "NOT_GRANTED",
-      "reason": "BUNDLE_VALIDATOR_RC_0_OR_SMOKE_TASK_ADAPTER_RESOURCE_GATE_FAILED_SMOKE_RC_0_TASK_RC_3",
+      "reason": "G24 failure on prior candidate commit 4d67ec3d9b1163ee39f1ffbd59de5502cd0c3fa2; updated workflow revalidation pending",
       "task_adapter_return_code": 3,
       "task_adapter_evidence_sha256": "48c87c1a20653e8f0794515b82bfa044d3dc12da7ef3556645b712b84b3efdd8",
       "task_adapter_evidence_status": "FAIL",
@@ -430,5 +440,12 @@
       "target_engine_smokes_pass": 6,
       "all_21_target_adapters": "NOT_ESTABLISHED"
     }
+  },
+  "latest_factory_revalidation": {
+    "run_id": 40793408906,
+    "source_commit": "60a725e32e33c3f38c0b451003699922ac07d87a",
+    "status": "IN_PROGRESS_AT_LAST_OBSERVATION",
+    "phase": "MANUFACTURE",
+    "reason": "Workflow changed to correctly report semantic quality passes; next run should recompute exact G23/G24 evidence on this candidate commit"
   }
 }
