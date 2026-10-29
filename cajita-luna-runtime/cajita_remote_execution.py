@@ -207,6 +207,12 @@ def _verify_signature(envelope: dict, key: bytes, *, schema: str, max_age_second
 def verify_identity(identity: dict, spec: dict, domain_id: str) -> str:
     if identity.get("schema") != IDENTITY_SCHEMA or identity.get("model_loaded") is not True:
         raise RemoteExecutionError("REMOTE_MODEL_NOT_LOADED_OR_IDENTITY_SCHEMA_INVALID")
+    if not isinstance(identity.get("gateway_version"), str) or not identity["gateway_version"]:
+        raise RemoteExecutionError("REMOTE_GATEWAY_VERSION_MISSING")
+    if not HEX_256_RE.fullmatch(str(identity.get("gateway_code_sha256", ""))):
+        raise RemoteExecutionError("REMOTE_GATEWAY_CODE_HASH_MISSING")
+    if not REVISION_RE.fullmatch(str(identity.get("gateway_source_commit", ""))):
+        raise RemoteExecutionError("REMOTE_GATEWAY_SOURCE_COMMIT_MISSING_OR_INVALID")
     fields = (
         "domain_id", "model_id", "source_repo", "source_revision",
         "source_config_sha256", "source_index_sha256",
@@ -395,6 +401,9 @@ def execute_remote_task(row: dict, root: Path) -> dict:
                 "source_revision": spec["source_revision"],
                 "identity_sha256": identity_sha,
                 "weight_inventory_sha256": identity["weight_inventory_sha256"],
+                "gateway_version": identity["gateway_version"],
+                "gateway_code_sha256": identity["gateway_code_sha256"],
+                "gateway_source_commit": identity["gateway_source_commit"],
                 "request_sha256": request_sha,
                 "response_sha256": response_sha,
                 "received_at_utc": utc_now(),
