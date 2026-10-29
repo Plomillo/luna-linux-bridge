@@ -1,0 +1,463 @@
+name: LOUKSNAPG2 PUAC2 candidate, real-model evaluation and signed gates
+
+on:
+  push:
+    branches:
+      - "louksnapg2/puac2-alternative-20261029"
+    paths:
+      - ".github/workflows/louksnapg2-puac2-certification.yml"
+      - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/**"
+      - "tools/louksnapg2*.py"
+      - "tests/test_louksnapg2*.py"
+      - "LOUKSNAMEJORADA.md"
+      - "cajita-luna-runtime/CajitadeLuna.md"
+      - "tools/cajita_runtime_factory.py"
+      - "cajita-luna-runtime/reproduce_macrodown.py"
+      - "tools/louksnapg2_bundle.py"
+      - "tools/louksnapg2_independent_validator.py"
+      - "tools/louksnapg2_worker_mission.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: louksnapg2-puac2-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  build_candidate:
+    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout exact alternative-branch source without blanket LFS hydration
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          lfs: false
+          persist-credentials: true
+
+      - name: Install only build-time archive tools
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full unzip rsync
+
+      - name: Prepare Python for factory, unit checks and the pinned worker
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install pinned factory and cryptographic dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==44.0.3
+
+      - name: Materialize the exact existing Cajita source inputs from Git LFS
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git lfs install
+          git lfs pull --include="cajita-luna-runtime/**/*.safetensors,cajita-luna-runtime/**/*.onnx,cajita-luna-runtime/**/*.bin,cajita-luna-runtime/**/*.zip,cajita-luna-runtime/**/*.7z" --exclude="" origin "$GITHUB_SHA"
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          expected = {
+            "cajita-luna-runtime/1. Cerebro/model.safetensors": ("e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0", 40489120),
+            "cajita-luna-runtime/3. Transcripción/model.safetensors": ("67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f", 10399882),
+            "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors": ("630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f", 11720882),
+            "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin": ("4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88", 13483380),
+            "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors": ("01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56", 14956240),
+            "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx": ("c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7", 110516001),
+          }
+          results = []
+          for name, (sha, size) in expected.items():
+              p = Path(name)
+              if not p.is_file() or p.is_symlink() or p.stat().st_size != size:
+                  raise SystemExit("WEIGHT_SIZE_OR_PATH_MISMATCH:" + name)
+              digest = hashlib.sha256(p.read_bytes()).hexdigest()
+              if digest != sha:
+                  raise SystemExit("WEIGHT_SHA256_MISMATCH:" + name)
+              results.append({"path": name, "bytes": size, "sha256": digest, "status": "PASS"})
+          Path("out").mkdir(exist_ok=True)
+          Path("out/LOUKSNAPG2_SOURCE_WEIGHT_IDENTITY.json").write_text(json.dumps({
+              "schema":"LOUKSNAPG2_SOURCE_WEIGHT_IDENTITY/1.0",
+              "source_commit": __import__("os").environ["GITHUB_SHA"],
+              "status":"PASS",
+              "weights":results,
+              "local_pc_used":False,
+              "certification":"NOT_GRANTED_BY_SOURCE_HASHES_ALONE"
+          }, indent=2)+"\n")
+          print("EXISTING_CAJITA_WEIGHT_IDENTITIES=PASS")
+          PY
+
+      - name: Run LOUKSNAPG2 synthetic/unit tests and preserve their exact result
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/cajita-luna-runtime/LOUKSNAPG2_RUNTIME
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out
+          set +e
+          python tools/louksnapg2_unit_test_report.py --output out/LOUKSNAPG2_UNIT_TESTS_EVIDENCE.json
+          rc=$?
+          set -e
+          echo "LOUKSNAPG2_UNIT_TEST_EXIT_CODE=$rc"
+          test -f out/LOUKSNAPG2_UNIT_TESTS_EVIDENCE.json
+
+      - name: Fetch and verify the exact CUSTOSZ V9 worker artifact
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          REF='refs/heads/artifacts/custoszv9-b09353cbfff4efddfdec0cf853ae9658055fad2d'
+          git fetch origin "+$REF:refs/remotes/origin/louksnapg2-custosz-v9"
+          git show refs/remotes/origin/louksnapg2-custosz-v9:dist/CUSTOSZV9.pyz > "$RUNNER_TEMP/CUSTOSZV9.pyz"
+          ACTUAL="$(sha256sum "$RUNNER_TEMP/CUSTOSZV9.pyz" | awk '{print $1}')"
+          test "$ACTUAL" = "d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817"
+          python "$RUNNER_TEMP/CUSTOSZV9.pyz" --version
+          python "$RUNNER_TEMP/CUSTOSZV9.pyz" crfu selftest
+          python - "$RUNNER_TEMP/CUSTOSZV9.pyz" <<'PY'
+          import hashlib, json, os, sys
+          from pathlib import Path
+          p=Path(sys.argv[1])
+          Path("out/LOUKSNAPG2_CUSTOSZV9_PIN.json").write_text(json.dumps({
+              "schema":"LOUKSNAPG2_CUSTOSZV9_PIN/1.0",
+              "worker":"CUSTOSZV9",
+              "path":p.name,
+              "bytes":p.stat().st_size,
+              "sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+              "expected_sha256":"d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817",
+              "version_and_selftest":"PASS",
+              "v7_used":False,
+              "certification":"NOT_GRANTED"
+          },indent=2)+"\n")
+          PY
+
+      - name: Build LOUKSNAPG2 through the CUSTOSZ V9 bounded worker
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out
+          python tools/louksnapg2_worker_mission.py \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --worker "$RUNNER_TEMP/CUSTOSZV9.pyz" \
+            --output-dir "$RUNNER_TEMP/louksnapg2-worker-output" \
+            --max-bytes 490000000 \
+            --report "$GITHUB_WORKSPACE/out/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json"
+
+      - name: Stage bounded candidate and machine-readable build evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SRC="$RUNNER_TEMP/louksnapg2-worker-output"
+          DEST="out/louksnapg2-candidate"
+          mkdir -p "$DEST"
+          cp "$SRC/LOUKSNAPG2.md" "$DEST/LOUKSNAPG2.md"
+          cp "$SRC/LOUKSNAPG2_BUILD_REPORT.json" "$DEST/LOUKSNAPG2_BUILD_REPORT.json"
+          cp "$SRC/LOUKSNAPG2_INDEPENDENT_VALIDATION.json" "$DEST/LOUKSNAPG2_POSTBUILD_VALIDATION.json"
+          cp out/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json "$DEST/"
+          cp out/LOUKSNAPG2_UNIT_TESTS_EVIDENCE.json "$DEST/"
+          cp out/LOUKSNAPG2_SOURCE_WEIGHT_IDENTITY.json "$DEST/"
+          cp out/LOUKSNAPG2_CUSTOSZV9_PIN.json "$DEST/"
+          python - "$DEST" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          root=Path(sys.argv[1])
+          p=root/"LOUKSNAPG2.md"
+          d={"schema":"LOUKSNAPG2_CANDIDATE_ARTIFACT_INDEX/1.0","candidate":p.name,"bytes":p.stat().st_size,"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"cap_bytes":490000000,"within_cap":p.stat().st_size<=490000000,"global_certification":"NOT_GRANTED"}
+          if not d["within_cap"]: raise SystemExit("LOUKSNAPG2_OVER_CAP")
+          (root/"LOUKSNAPG2_CANDIDATE_ARTIFACT_INDEX.json").write_text(json.dumps(d,indent=2)+"\n")
+          print(json.dumps(d,indent=2))
+          PY
+
+      - name: Upload candidate and build evidence without externalized model weights
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-candidate-package
+          path: out/louksnapg2-candidate/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+  functional_evaluation:
+    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
+    needs: build_candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Checkout evaluator at the same immutable commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Download the exact candidate artifact produced by CUSTOSZ V9
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-candidate-package
+          path: out/louksnapg2-candidate
+
+      - name: Install bounded audio fixture generation and Python runtime dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y espeak-ng
+          python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==44.0.3
+
+      - name: Set up Python 3.11 for pinned CPU inference wheels
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned one-thread local inference libraries
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check \
+            --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu \
+            -r cajita-luna-runtime/LOUKSNAPG2_RUNTIME/requirements-louksnapg2.lock
+
+      - name: Independently verify and extract the exact candidate package for functional tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python tools/louksnapg2_independent_validator.py \
+            --bundle out/louksnapg2-candidate/LOUKSNAPG2.md \
+            --max-bytes 490000000 \
+            --extract-to "$RUNNER_TEMP/louksnapg2-extracted" \
+            --expected-source-commit "$GITHUB_SHA" \
+            --report out/louksnapg2-candidate/LOUKSNAPG2_FUNCTIONAL_PRECHECK.json
+          test -f "$RUNNER_TEMP/louksnapg2-extracted/LOUKSNAPG2_RUNTIME/louksnapg2_engine.py"
+          test -f "$RUNNER_TEMP/louksnapg2-extracted/LOUKSNAPG2_RUNTIME/louksnapg2_model_loader.py"
+
+      - name: Explicitly fetch and hash-verify externalized Qwen and Whisper weights in CI only
+        shell: bash
+        env:
+          PYTHONPATH: ${{ runner.temp }}/louksnapg2-extracted/LOUKSNAPG2_RUNTIME
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/louksnapg2-functional
+          set +e
+          python "$RUNNER_TEMP/louksnapg2-extracted/LOUKSNAPG2_RUNTIME/louksnapg2_model_loader.py" \
+            --runtime-root "$RUNNER_TEMP/louksnapg2-extracted/LOUKSNAPG2_RUNTIME" materialize \
+            > out/louksnapg2-functional/LOUKSNAPG2_MODEL_MATERIALIZATION.json
+          rc=$?
+          set -e
+          echo "MODEL_MATERIALIZATION_EXIT_CODE=$rc"
+          if [ "$rc" -ne 0 ]; then
+            echo "Model payload could not be materialized and verified; functional gate must HOLD."
+            exit 0
+          fi
+
+      - name: Generate deterministic known-text WAV samples
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          espeak-ng -v en-us -s 135 -w "$RUNNER_TEMP/louksnapg2-audio-one.wav" "The meeting starts at noon."
+          espeak-ng -v en-us -s 135 -w "$RUNNER_TEMP/louksnapg2-audio-two.wav" "Please turn left at the next street."
+          test -s "$RUNNER_TEMP/louksnapg2-audio-one.wav"
+          test -s "$RUNNER_TEMP/louksnapg2-audio-two.wav"
+
+      - name: Exercise the five real model domains through the packaged route dispatch
+        shell: bash
+        env:
+          PYTHONPATH: ${{ runner.temp }}/louksnapg2-extracted/LOUKSNAPG2_RUNTIME
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          VECLIB_MAXIMUM_THREADS: "1"
+          NUMEXPR_NUM_THREADS: "1"
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/louksnapg2-functional
+          set +e
+          python tools/louksnapg2_functional_eval.py \
+            --runtime-root "$RUNNER_TEMP/louksnapg2-extracted/LOUKSNAPG2_RUNTIME" \
+            --audio-one "$RUNNER_TEMP/louksnapg2-audio-one.wav" \
+            --audio-two "$RUNNER_TEMP/louksnapg2-audio-two.wav" \
+            --output out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json
+          rc=$?
+          set -e
+          echo "$rc" > out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EXIT_CODE.txt
+          if [ "$rc" -eq 0 ]; then echo "Functional cases passed; G24 signature still required."; else echo "Functional cases failed; preserve evidence and deny certification at G24."; fi
+          test -s out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json
+
+      - name: Upload real-model functional evidence without model weights
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-functional-evidence
+          path: |
+            out/louksnapg2-functional/
+            out/louksnapg2-candidate/LOUKSNAPG2_FUNCTIONAL_PRECHECK.json
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
+
+  g23_independent_validation:
+    if: always() && github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' && needs.build_candidate.result == 'success' && needs.functional_evaluation.result != 'skipped'
+    needs: [build_candidate, functional_evaluation]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout pinned source and independent validation code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Download candidate and build evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-candidate-package
+          path: out/louksnapg2-candidate
+
+      - name: Download functional evidence produced by a separate runner
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-functional-evidence
+          path: out/louksnapg2-functional
+
+      - name: Prepare independent G23 decision from candidate, worker and test evidence
+        id: g23
+        shell: bash
+        env:
+          CAJITA_G23_VALIDATOR_ID: ${{ vars.CAJITA_G23_VALIDATOR_ID }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/louksnapg2-g23
+          python tools/louksnapg2_puac2_gate.py prepare-g23 \
+            --bundle out/louksnapg2-candidate/LOUKSNAPG2.md \
+            --build-report out/louksnapg2-candidate/LOUKSNAPG2_BUILD_REPORT.json \
+            --worker-evidence out/louksnapg2-candidate/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json \
+            --unit-evidence out/louksnapg2-candidate/LOUKSNAPG2_UNIT_TESTS_EVIDENCE.json \
+            --model-materialization out/louksnapg2-functional/LOUKSNAPG2_MODEL_MATERIALIZATION.json \
+            --functional-evidence out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json \
+            --source-architecture LOUKSNAMEJORADA.md \
+            --cajita-doc cajita-luna-runtime/CajitadeLuna.md \
+            --validator-id "$CAJITA_G23_VALIDATOR_ID" \
+            --output out/louksnapg2-g23/LOUKSNAPG2_G23_UNSIGNED.json
+
+      - name: Sign G23 using the separately provisioned validator identity
+        shell: bash
+        env:
+          CAJITA_G23_VALIDATOR_ID: ${{ vars.CAJITA_G23_VALIDATOR_ID }}
+          CAJITA_G23_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.CAJITA_G23_SIGNING_PRIVATE_KEY_PEM }}
+        run: |
+          set -Eeuo pipefail
+          python tools/louksnapg2_puac2_gate.py sign-g23 \
+            --input out/louksnapg2-g23/LOUKSNAPG2_G23_UNSIGNED.json \
+            --output out/louksnapg2-g23/LOUKSNAPG2_G23_SIGNED.json \
+            --signer-id "$CAJITA_G23_VALIDATOR_ID"
+
+      - name: Upload signed G23 evidence (PASS or explicit HOLD)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-g23-evidence
+          path: out/louksnapg2-g23/
+          if-no-files-found: warn
+          retention-days: 90
+
+  g24_terminal_certification:
+    if: always() && github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' && needs.build_candidate.result == 'success'
+    needs: [build_candidate, functional_evaluation, g23_independent_validation]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source-controlled terminal gate implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Download exact candidate build evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-candidate-package
+          path: out/louksnapg2-candidate
+
+      - name: Download functional evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-functional-evidence
+          path: out/louksnapg2-functional
+        continue-on-error: true
+
+      - name: Download signed G23 evidence, if produced
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-g23-evidence
+          path: out/louksnapg2-g23
+        continue-on-error: true
+
+      - name: Prepare cryptographic verifier dependencies
+        shell: bash
+        run: python -m pip install --disable-pip-version-check cryptography==44.0.3
+
+      - name: Verify G23 signature, rebind the exact candidate and issue signed G24 PASS or HOLD
+        id: g24
+        shell: bash
+        env:
+          CAJITA_G23_VALIDATOR_ID: ${{ vars.CAJITA_G23_VALIDATOR_ID }}
+          CAJITA_G23_PUBLIC_KEY_PEM: ${{ vars.CAJITA_G23_PUBLIC_KEY_PEM }}
+          CAJITA_G24_CERTIFIER_ID: ${{ vars.CAJITA_G24_CERTIFIER_ID }}
+          CAJITA_G24_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.CAJITA_G24_SIGNING_PRIVATE_KEY_PEM }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/louksnapg2-g24
+          set +e
+          python tools/louksnapg2_puac2_gate.py issue-g24 \
+            --bundle out/louksnapg2-candidate/LOUKSNAPG2.md \
+            --g23-signed out/louksnapg2-g23/LOUKSNAPG2_G23_SIGNED.json \
+            --functional-evidence out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json \
+            --unit-evidence out/louksnapg2-candidate/LOUKSNAPG2_UNIT_TESTS_EVIDENCE.json \
+            --model-materialization out/louksnapg2-functional/LOUKSNAPG2_MODEL_MATERIALIZATION.json \
+            --build-report out/louksnapg2-candidate/LOUKSNAPG2_BUILD_REPORT.json \
+            --g23-validator-id "$CAJITA_G23_VALIDATOR_ID" \
+            --certifier-id "$CAJITA_G24_CERTIFIER_ID" \
+            --output out/louksnapg2-g24/LOUKSNAPG2_G24_SIGNED.json
+          rc=$?
+          set -e
+          echo "G24_GATE_EXIT_CODE=$rc"
+          echo "$rc" > out/louksnapg2-g24/LOUKSNAPG2_G24_EXIT_CODE.txt
+          test -s out/louksnapg2-g24/LOUKSNAPG2_G24_SIGNED.json || {
+            echo "G24 did not emit a decision. Missing evidence/signature is a fail-closed HOLD."
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          Path("out/louksnapg2-g24/LOUKSNAPG2_G24_SIGNED.json").write_text(json.dumps({
+              "schema":"LOUKSNAPG2_G24_HOLD/1.0",
+              "status":"HOLD",
+              "terminal_decision":"NOT_CERTIFIED",
+              "global_certification":"NOT_GRANTED",
+              "blockers":["G24_DECISION_NOT_EMITTED"],
+          },indent=2)+"\n")
+          PY
+          }
+          if [ "$rc" -ne 0 ]; then
+            echo "G24 is HOLD/NOT_CERTIFIED. Evidence is preserved; no release occurs."
+            exit 1
+          fi
+
+      - name: Upload G24 terminal decision, including signed HOLD if blocked
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-g24-terminal-evidence
+          path: out/louksnapg2-g24/
+          if-no-files-found: error
+          retention-days: 90
