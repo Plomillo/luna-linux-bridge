@@ -12,13 +12,7 @@ on:
       - "cajita-luna-runtime/CAJITA_REMOTE_MODEL_POLICY.json"
       - "cajita-luna-runtime/cajita_remote_execution.py"
       - "cajita-luna-runtime/cajita_task_adapters.py"
-  workflow_dispatch:
-    inputs:
-      enable_remote_quality:
-        description: "Run live remote model inference. Requires four deployed endpoints and eight repository secrets."
-        required: false
-        default: false
-        type: boolean
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -28,8 +22,50 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  quality-harness-preflight:
+    name: "Validate quality harness without model inference"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact candidate source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+      - name: Compile only; do not load models or call endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B -m py_compile \
+            tools/louksnapg_remote_model_quality_gate.py \
+            tools/louksnapg_reference_whisper_diagnostic.py \
+            cajita-luna-runtime/cajita_remote_execution.py \
+            cajita-luna-runtime/cajita_task_adapters.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          policy = json.loads(Path("cajita-luna-runtime/CAJITA_REMOTE_MODEL_POLICY.json").read_text(encoding="utf-8"))
+          assert policy["certification"] == "NOT_GRANTED"
+          assert set(policy["domains"]) == {
+              "D01_CEREBRO", "D03_TRANSCRIPCION",
+              "D04_TRADUCTOR_INTELIGENTE", "D06_SISTEMA_INTELIGENTE"
+          }
+          assert policy["unsupported_domains"]["D04_TRADUCCION_LENGUAS_ANTIGUAS"]["allow_general_translation_fallback"] is False
+          print("REMOTE_QUALITY_HARNESS_SYNTAX=PASS")
+          print("MODEL_INFERENCE_EXECUTED=false")
+          print("GLOBAL_CERTIFICATION=NOT_GRANTED")
+          PY
+
   remote-semantic-quality:
     name: "Real semantic tasks through source-pinned remote models"
+    if: github.event_name == 'workflow_dispatch'
+    needs: quality-harness-preflight
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -52,47 +88,19 @@ jobs:
       TOKENIZERS_PARALLELISM: "false"
       PYTHONNOUSERSITE: "1"
       PYTHONDONTWRITEBYTECODE: "1"
-
     steps:
-      - name: Require explicit manual authorization before remote inference
-        id: gate
-        shell: bash
-        run: |
-          set -euo pipefail
-          enabled="$(python3 - "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH" <<'PY'
-          import json, pathlib, sys
-          event_name, path = sys.argv[1:]
-          try:
-              event = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
-          except Exception:
-              event = {}
-          enabled = event_name == "workflow_dispatch" and str(event.get("inputs", {}).get("enable_remote_quality", "false")).lower() == "true"
-          print("true" if enabled else "false")
-          PY
-          )"
-          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
-          if [ "$enabled" != "true" ]; then
-            echo "REMOTE_MODEL_SEMANTIC_QUALITY=SKIPPED_EXPLICIT_INPUT_REQUIRED"
-            echo "No model requests, audio uploads, or model downloads were performed."
-          fi
-
       - name: Checkout exact candidate source
-        if: steps.gate.outputs.enabled == 'true'
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
           lfs: false
           persist-credentials: false
-
       - name: Set up Python
-        if: steps.gate.outputs.enabled == 'true'
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
           python-version: "3.12"
-
       - name: Install pinned known-audio fixture dependencies only
-        if: steps.gate.outputs.enabled == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -101,20 +109,7 @@ jobs:
           python -m pip install --disable-pip-version-check \
             "datasets==3.2.0" "pyarrow==19.0.1" "numpy==2.2.6" \
             "soundfile==0.13.1" "scipy==1.16.2"
-
-      - name: Validate remote-only quality harness and required endpoints
-        if: steps.gate.outputs.enabled == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -B -m py_compile \
-            tools/louksnapg_remote_model_quality_gate.py \
-            tools/louksnapg_reference_whisper_diagnostic.py \
-            cajita-luna-runtime/cajita_remote_execution.py \
-            cajita-luna-runtime/cajita_task_adapters.py
-
       - name: Run real model tasks via required remote-only routing
-        if: steps.gate.outputs.enabled == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -126,9 +121,8 @@ jobs:
             --work-dir "$RUNNER_TEMP/louksnapg-remote-quality/work" \
             --report out/louksnapg-remote-quality/LOUKSNAPG_REMOTE_MODEL_QUALITY.json \
             2>&1 | tee "$RUNNER_TEMP/louksnapg-remote-quality.log"
-
       - name: Upload semantic evidence without granting certification
-        if: always() && steps.gate.outputs.enabled == 'true'
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksnapg-remote-semantic-quality-${{ github.run_id }}
