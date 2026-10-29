@@ -118,6 +118,8 @@ class RemoteExecutionTests(unittest.TestCase):
             "weight_inventory_sha256": remote.sha256_bytes(remote.canonical_json(rows)),
             "model_loaded": True,
             "gateway_version": "fixture-only",
+            "gateway_code_sha256": hashlib.sha256(b"fixture gateway code").hexdigest(),
+            "gateway_source_commit": "1" * 40,
             "created_at_utc": remote.utc_now(),
         }
         self.server = HTTPServer(("127.0.0.1", 0), RemoteProtocolFixture)
