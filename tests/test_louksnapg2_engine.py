@@ -62,6 +62,9 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         (self.root / "cajita_task_adapters.py").write_text("# patched native adapter module\n", encoding="utf-8")
+        manifest_dir = self.root / "CAJITA_RUNTIME_V1"
+        manifest_dir.mkdir(parents=True, exist_ok=True)
+        (manifest_dir / "weights_manifest.json").write_text("{}", encoding="utf-8")
         self.fake = FakeCajitaAdapter()
         self.loader_patch = mock.patch.object(engine, "_load_native_adapter", return_value=self.fake)
         self.loader_patch.start()
