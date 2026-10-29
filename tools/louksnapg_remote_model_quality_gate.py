@@ -172,6 +172,16 @@ def run_task(runtime_root: Path, work_dir: Path, *, task_id: str, domain_id: str
     }
 
 
+def integral_domain_gate_status(domain_rows: list[dict]) -> str:
+    """Only established domain passes satisfy the required-domain gate."""
+    if not domain_rows or any(
+        not isinstance(row, dict) or not str(row.get("status", "")).startswith("PASS_")
+        for row in domain_rows
+    ):
+        return "BLOCKED_REQUIRED_DOMAIN_NOT_ESTABLISHED"
+    return "PASS_KNOWN_ANSWER_SCOPE_ONLY"
+
+
 def required_domain_statuses(task_rows: list[dict], ancient_route: dict) -> list[dict]:
     """Report all five required domains; route identification is not translation proof."""
     by_domain: dict[str, list[dict]] = {}
@@ -447,9 +457,7 @@ def main() -> int:
             report["semantic_task_status"] = "PASS_REMOTE_SEMANTIC_TASKS" if not failures else "FAIL_REMOTE_SEMANTIC_TASKS"
             report["required_domain_statuses"] = required_domain_statuses(report["domain_task_results"], ancient_route)
             domain_failures = [row for row in report["required_domain_statuses"] if not row["status"].startswith("PASS_")]
-            report["required_domain_gate_status"] = (
-                "PASS_KNOWN_ANSWER_SCOPE_ONLY" if not domain_failures else "BLOCKED_REQUIRED_DOMAIN_NOT_ESTABLISHED"
-            )
+            report["required_domain_gate_status"] = integral_domain_gate_status(report["required_domain_statuses"])
             report["integral_certification"] = "NOT_GRANTED"
             # The semantic harness may pass its declared five tasks; that never certifies
             # the integral product while the dedicated ancient-language domain is blocked.
