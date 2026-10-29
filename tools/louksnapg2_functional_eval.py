@@ -54,12 +54,34 @@ def word_error_rate(reference: str, hypothesis: str) -> float:
     return row[-1] / len(ref)
 
 
+def check_translation_en_es(value: str) -> bool:
+    tokens = set(normalized(final_answer(value)).split())
+    spanish_start = bool(tokens.intersection({"empieza", "comienza", "inicia"}))
+    spanish_time = bool(tokens.intersection({"mediodia", "doce", "12"}))
+    spanish_meeting = "reunion" in tokens
+    # Reject the source sentence remaining in English: language direction is part of
+    # this case's acceptance criterion, not just topic/meaning overlap.
+    english_residue = bool(tokens.intersection({"meeting", "starts", "begins", "noon"}))
+    return spanish_start and spanish_time and spanish_meeting and not english_residue
+
+
 def check_translation_es_en(value: str) -> bool:
-    text = normalized(final_answer(value))
-    start = any(word in text.split() for word in ("empieza", "comienza", "inicia", "start", "starts", "begins", "begin"))
-    time = any(word in text.split() for word in ("mediodia", "noon", "midday", "doce", "12"))
-    meeting = any(word in text.split() for word in ("reunion", "meeting"))
-    return start and time and meeting
+    tokens = set(normalized(final_answer(value)).split())
+    english_start = bool(tokens.intersection({"starts", "begins", "begin", "start"}))
+    english_time = bool(tokens.intersection({"noon", "midday", "12"}))
+    english_meeting = "meeting" in tokens
+    spanish_residue = bool(tokens.intersection({"reunion", "empieza", "comienza", "mediodia"}))
+    return english_start and english_time and english_meeting and not spanish_residue
+
+
+def check_translation_en_fr(value: str) -> bool:
+    tokens = set(normalized(final_answer(value)).split())
+    return {"livre", "table", "sur"}.issubset(tokens) and "book" not in tokens
+
+
+def check_translation_fr_en(value: str) -> bool:
+    tokens = set(normalized(final_answer(value)).split())
+    return {"book", "table"}.issubset(tokens) and bool(tokens.intersection({"on", "upon"})) and "livre" not in tokens
 
 
 def run_case(runtime, case_id, domain, operation, payload, predicate, requirement):
@@ -183,19 +205,19 @@ def main(argv=None) -> int:
          "The advanced-analysis route must reject the invalid existential inference."),
         ("GENERAL_TRANSLATION_EN_ES_01", "D04_TRADUCTOR_INTELIGENTE", "translate_text",
          {"text": "The meeting starts at noon.", "src_lang": "eng", "tgt_lang": "spa", "max_new_tokens": 64},
-         lambda out: check_translation_es_en(out),
-         "Spanish output must preserve meeting + start + noon meaning."),
+         lambda out: check_translation_en_es(out),
+         "Output must be Spanish and preserve meeting + start + noon meaning; unchanged English source must fail."),
         ("GENERAL_TRANSLATION_ES_EN_02", "D04_TRADUCTOR_INTELIGENTE", "translate_text",
          {"text": "La reunión empieza al mediodía.", "src_lang": "spa", "tgt_lang": "eng", "max_new_tokens": 64},
          lambda out: check_translation_es_en(out),
-         "English output must preserve meeting + start + noon meaning."),
+         "Output must be English and preserve meeting + start + noon meaning; unchanged Spanish source must fail."),
         ("GENERAL_TRANSLATION_EN_FR_03", "D04_TRADUCTOR_INTELIGENTE", "translate_text",
          {"text": "The book is on the table.", "src_lang": "eng", "tgt_lang": "fra", "max_new_tokens": 64},
-         lambda out: {"livre", "table", "sur"}.issubset(set(normalized(final_answer(out)).split())),
+         lambda out: check_translation_en_fr(out),
          "French output must preserve book + spatial relation + table meaning."),
         ("GENERAL_TRANSLATION_FR_EN_04", "D04_TRADUCTOR_INTELIGENTE", "translate_text",
          {"text": "Le livre est sur la table.", "src_lang": "fra", "tgt_lang": "eng", "max_new_tokens": 64},
-         lambda out: {"book", "table"}.issubset(set(normalized(final_answer(out)).split())) and any(w in normalized(final_answer(out)).split() for w in ("on", "upon")),
+         lambda out: check_translation_fr_en(out),
          "English output must preserve book + spatial relation + table meaning."),
         ("ANCIENT_LATIN_01", "D04_TRADUCCION_LENGUAS_ANTIGUAS", "translate_ancient_text",
          {"text": "Alea iacta est", "src_lang": "lat", "tgt_lang": "eng", "max_new_tokens": 96},
