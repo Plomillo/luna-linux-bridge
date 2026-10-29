@@ -77,8 +77,8 @@ jobs:
       LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX }}
       LOUKSNAPG_REMOTE_ANALYSIS_URL: ${{ secrets.LOUKSNAPG_REMOTE_ANALYSIS_URL }}
       LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX }}
-      HF_HOME: ${{ runner.temp }}/louksnapg-remote-quality/hf-home
-      HF_DATASETS_CACHE: ${{ runner.temp }}/louksnapg-remote-quality/datasets
+      HF_HOME: /tmp/louksnapg-remote-quality/hf-home
+      HF_DATASETS_CACHE: /tmp/louksnapg-remote-quality/datasets
       HF_HUB_DISABLE_TELEMETRY: "1"
       HF_HUB_ENABLE_HF_TRANSFER: "0"
       OMP_NUM_THREADS: "1"
