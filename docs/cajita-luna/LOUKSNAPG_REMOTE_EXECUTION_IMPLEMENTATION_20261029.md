@@ -111,3 +111,35 @@ La fábrica ejecutada desde el commit de producto 6db1d02676e78e96195159c822f567
 - Auditoría de fuentes antiguas persistida en [LOUKSNAPG_ANCIENT_TRANSLATION_SOURCE_AUDIT_20261029.md](LOUKSNAPG_ANCIENT_TRANSLATION_SOURCE_AUDIT_20261029.md). Mantiene el dominio bloqueado porque los recursos revisados no prueban traducción de frases con identidad y consumidor compatibles.
 
 En el PC LOUKSNA se repitió solo la consulta de lectura: el checkout sigue en la rama local candidate/document-factory-v1-unit2-20261013, HEAD 47bc5571f89ec8ef3947eb824f0977cb84fd5466, con dos archivos de evidencia modificados antes de esta misión; no se ejecutó checkout/reset/clean. El disco raíz conserva ~7.05 GB libres y los inodos continúan al 100%; no se descargaron modelos ni se modificó el runtime. Kestra sigue activo como servicio, pero sus endpoints locales consultados no responden; no se afirma una orquestación remota real de Kestra.
+
+
+## Decisión G24 de la nueva versión empaquetada — 2026-10-29
+
+**Candidato exacto probado:** source commit 6db1d02676e78e96195159c822f567821a8e9c85.  
+**Workflow:** https://github.com/Plomillo/luna-linux-bridge/actions/runs/40811334086  
+**Resultado:** G23 PASS; G24 NOT_GRANTED; publicación omitida por fail-closed.
+
+Identidad del artefacto probado:
+- LOUKSNAPG.md interno: 371957068 bytes; SHA-256 19299eb1c7762b332ebe3bff649b418f0896ee23aa18c043ffde960552eccb23.
+- Runtime macrodown interno: SHA-256 1cc7b4c7bf6a2f305b0f6f3efb2cf5ef84ed15c5c4085b346886f73ac165bf63.
+- Louksna1.md: SHA-256 f64e6925ff6a22b009fe592da3eda5c373ec788127a5b2dc9b824548bdf1e798.
+- ZIP envolvente de descarga de Actions, artefacto 12871080206: 741751750 bytes; SHA-256 07108a8fd0b8a5c38691f03ce212b5f97d523b3122b79ee25b58dc0e272c7850. Este tamaño corresponde al ZIP de Actions, no al LOUKSNAPG.md interno.
+- G23 independiente: artefacto 12870627018; SHA-256 del ZIP a4147aa33794d3fee3a18a0cc1ba08f876108245b96f1cbbf486423afb4cc21e.
+- G24 evidence: artefacto 12870174962; SHA-256 del ZIP f73ca7ebd6cece33953988935b24c6508858cd1cd9fe5fd3169a96e73930c608.
+- G24 telemetry: artefacto 12870274502; SHA-256 del ZIP 97e84e7a8763bb50a9d53d685ea9d1d9e9ef683b9093c04d2cac0739cff17d37.
+
+Resultados verificados de G24:
+- El validador del paquete terminó con código 0.
+- Los seis smokes de dominio y los seis smokes de ejecución de motor fuente vinculados terminaron PASS en sus alcances declarados.
+- Las cinco tareas del adaptador se ejecutaron: task_adapter_execution_success_count=5.
+- Aceptación semántica: task_adapter_quality_pass_count=0 de 5; task_adapter_pass_count=0; task_adapter_return_code=3.
+- Uso máximo cgroup: memory_peak_bytes=995119104 de memory.max=1073741824; CPU quota=100000 100000 (un CPU).
+- Dominios: Cerebro, Qwen/análisis avanzado, traducción general y Whisper ejecutaron pero fallaron sus criterios de calidad; traducción antigua permanece BLOCKED_MISSING_CONSUMER_ADAPTER_AND_TRANSLATION_RESOURCE.
+- La ruta antigua pasó su diagnóstico de enrutamiento y denegación segura: no eligió fallback al traductor general y execution_authorized=false.
+- El workflow concluyó con error en la puerta G24; el trabajo publish-candidate quedó SKIPPED.
+
+Los ejemplos registrados fueron degenerados/incorrectos: GPT-OSS produjo “ron amongronronron among amongron amongssronron”; Whisper, “daughterziest manuscript ele”; Seamless, “te te te apres te te te te who te te”; Qwen, “irts airways”. Estos resultados impiden certificar la función esencial de cada modelo aunque el paquete, las rutas de arranque y los límites de recursos hayan pasado.
+
+La política y el cliente remoto ahora están incluidos por la fabricación desde el árbol runtime, pero el G24 de esta ejecución no usó LOUKSNAPG_REMOTE_MODE=required ni tuvo endpoints remotos configurados; probó los adaptadores locales del paquete. El workflow remoto de calidad sigue bloqueado por los ocho nombres de variables de endpoint/clave ausentes. Por tanto, los pesos originales no se sustituyeron ni se descargaron en el PC; sigue pendiente configurar gateways de referencia desde un entorno remoto autorizado y repetir pruebas semánticas a través del cliente source-bound.
+
+**Decisión formal:** G23=PASS, G24=NOT_GRANTED, integral_certification=HOLD_NOT_CERTIFIED. El resultado no se transforma en certificación por haber pasado integridad, construcción, smokes o límites de recursos.
