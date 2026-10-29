@@ -64,7 +64,8 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
             {"domain_id": "D05_INTELIGENCIA_DOCUMENTAL", "status": "PASS_FUNCTIONAL_EXECUTION", "exit_code": 0,
              "quality_acceptance": {"status": "PASS"}},
         ]
-        route = {"status": "PASS_ROUTE_IDENTIFIED_FAIL_CLOSED"}
+        route = {"status": "PASS_ROUTE_IDENTIFIED_FAIL_CLOSED",
+                 "functional_translation_status": "BLOCKED_MISSING_CONSUMER_ADAPTER_AND_TRANSLATION_RESOURCE"}
         coverage = required_domain_coverage(rows, route)
         by_name = {row["required_domain"]: row for row in coverage}
         self.assertEqual(len(coverage), 5)
@@ -79,7 +80,8 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
         coverage = required_domain_coverage(
             [{"domain_id": "D05_INTELIGENCIA_DOCUMENTAL", "status": "PASS_FUNCTIONAL_EXECUTION",
               "exit_code": 0, "quality_acceptance": {"status": "PASS"}}],
-            {"status": "FAIL_ROUTE_DIAGNOSTIC"},
+            {"status": "PASS_ROUTE_IDENTIFIED_FAIL_CLOSED",
+             "functional_translation_status": "BLOCKED_MISSING_CONSUMER_ADAPTER_AND_TRANSLATION_RESOURCE"},
         )
         by_name = {row["required_domain"]: row for row in coverage}
         self.assertEqual(by_name["Traducción de lenguas antiguas"]["status"],
