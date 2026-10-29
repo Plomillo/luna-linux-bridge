@@ -38,9 +38,9 @@ class ExternalizedModelLoaderTests(unittest.TestCase):
         response.geturl.return_value = "https://cas-bridge.xethub.hf.co/object/pinned"
         response.read.side_effect = [payload, b""]
         context = mock.MagicMock()
-        context.__enter__.return_value = response
-        context.__exit__.return_value = False
-        return context
+        response.__enter__.return_value = response
+        response.__exit__.return_value = False
+        return response
 
     def test_registry_binds_two_expected_model_domains_and_pinned_revisions(self):
         with mock.patch.dict("louksnapg2_model_loader.EXPECTED_MODELS", self.specs, clear=True):
