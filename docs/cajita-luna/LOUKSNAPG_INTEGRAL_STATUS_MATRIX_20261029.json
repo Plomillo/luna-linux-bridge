@@ -1,9 +1,9 @@
 {
   "schema": "LOUKSNAPG_INTEGRAL_CERTIFICATION_STATUS_MATRIX/1.0",
-  "observed_at_utc": "2026-10-29T00:10:00Z",
+  "observed_at_utc": "2026-10-29T00:13:30Z",
   "repository": "Plomillo/luna-linux-bridge",
   "branch": "louksnapg/phase4-resume-20261028",
-  "branch_head_at_matrix": "06d0fd6721ffbfdb50160e796188e05641cddf70",
+  "branch_head_at_matrix": "ab311582b6f5902bf42bfed9170908f8ca28060e",
   "canonical_product_file": "LOUKSNAPG.md",
   "current_worktree_distribution_candidate": "NOT_BUILT_AS_A_TRACKED_ROOT_FILE_ON_THIS_BRANCH_HEAD",
   "global_certification": "NOT_GRANTED",
@@ -211,15 +211,27 @@
           "synthetic_test": "FAIL_PUNCTUATION_ONLY",
           "real_speech_wer": 3.235294,
           "promotion": "NOT_PERFORMED"
+        },
+        {
+          "rank_profile": "WHISPER_ADAPTIVE_R192_DECODER128_ENCODER_FFN192_ATTN64_EMBED96_BASE16_V1",
+          "run_id": 40792213949,
+          "candidate_weight_sha256": "0dbb3b35b36cc67cc0f9206a616db76600550f5279854172ba84ddc88be56a0d",
+          "candidate_weight_bytes": 107229544,
+          "module_bytes_including_descriptor": 109822191,
+          "aggregate_relative_frobenius_error": 0.6826945306114637,
+          "global_release_projection_bytes": 469777378,
+          "synthetic_test": "FAIL_PUNCTUATION_ONLY",
+          "real_speech_wer": 1,
+          "promotion": "NOT_PERFORMED"
         }
       ],
       "defect": {
         "concrete": "The registered transcription route executes, but the rank-29 integrated candidate produces unrelated text; raw INT8 rank-29 and rank-64 reconstructions both fail both fixed task checks.",
         "consequence": "Whisper does not satisfy its transcription task in the integrated candidate.",
-        "correction": "Stop uniform-rank increases after R29/R64/R96 all fail. Test deterministic adaptive per-layer rank allocation under the measured global size budget.",
+        "correction": "V1's worst residuals concentrate in encoder self-attention output projections and v projections. V2 reallocates rank budget toward those exact tensors and reduces encoder fc1 rank to remain under global size limit.",
         "post_repair_verification": "Same pinned source, same two exact fixtures, target commit/model hash, synthetic words present and real speech WER <=0.25; exact-commit retest, final bundle size measurement and independent release gates."
       },
-      "status": "FAIL_FUNCTIONAL_QUALITY_GATE; ADAPTIVE_R192_EXPERIMENT_PENDING",
+      "status": "FAIL_FUNCTIONAL_QUALITY_GATE; ADAPTIVE_R192_V2_PENDING",
       "certification": "NOT_GRANTED"
     }
   ],
@@ -242,8 +254,8 @@
     "1_current_candidate_and_checkpoint": "PARTIALLY_ESTABLISHED; checkpoint reused but exact packaged LOUKSNAPG.md SHA for this head not finalized",
     "2_domain_review": "FAILS for Cerebro, Qwen, general translation and integrated Whisper; ancient translation blocked by missing adapter/resource",
     "3_route_and_cabling": "Partial static registration; native route for ancient translation absent; full route functionality incomplete",
-    "4_repair": "Whisper R29/R64/R96 uniform-rank candidates rejected; adaptive rank-192 experiment running",
-    "5_post_repair_tests": "All uniform-rank Whisper candidates failed; adaptive candidate pending exact two-task result",
+    "4_repair": "Whisper R29/R64/R96 and adaptive R192 V1 rejected; adaptive R192 V2 queued",
+    "5_post_repair_tests": "All tested Whisper candidates failed; V2 has not produced evidence yet",
     "6_integration": "NOT_PASSED",
     "7_certification_assessment": "HOLD; no motor or global certification granted",
     "8_g23_g24_release": "BLOCKED; exact current candidate-bound independent G23 and separate G24 absent",
@@ -279,7 +291,9 @@
     "Kestra supervisor could not be registered because the local administration API returned HTTP 401.",
     "No candidate-bound signed G23 evidence or distinct G24 certification exists.",
     "Whisper uniform rank-96 candidate fails both fixed speech tasks despite fitting the projected package size budget.",
-    "Latest adaptive rank-192 Whisper candidate has not passed both functional tasks and is not promotable while its run is pending."
+    "Latest adaptive rank-192 Whisper candidate has not passed both functional tasks and is not promotable while its run is pending.",
+    "Whisper adaptive R192 V1 failed both functional tasks even though its package-size projection passed.",
+    "Whisper adaptive R192 V2 is queued and has no test evidence yet."
   ],
   "no_silent_substitution": true,
   "no_canonical_model_promotion_without_quality_pass": true,
@@ -312,7 +326,22 @@
       "rank_profile": "WHISPER_ADAPTIVE_R192_DECODER128_ENCODER_FFN192_ATTN64_EMBED96_BASE16_V1",
       "run_id": 40792213949,
       "source_commit": "fed13c2195d0b64af44b1fae85e528ddd642d252",
-      "status": "IN_PROGRESS_AT_LAST_OBSERVATION",
+      "status": "REJECTED_FUNCTIONAL_QUALITY",
+      "promotion": false,
+      "weight_sha256": "0dbb3b35b36cc67cc0f9206a616db76600550f5279854172ba84ddc88be56a0d",
+      "weight_bytes": 107229544,
+      "module_bytes": 109822191,
+      "relative_frobenius_error": 0.6826945306114637,
+      "projected_release_bytes": 469777378,
+      "synthetic": "FAIL_PUNCTUATION_ONLY",
+      "real_speech_wer": 1
+    },
+    "adaptive_rank192_v2": {
+      "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_ADAPTIVE_R192_V2_EXPERIMENT",
+      "rank_profile": "WHISPER_ADAPTIVE_R192_DECODER128_ENCODER_FFN192_OUTPROJ128_V96_OTHERATTN64_FC1_32_EMBED96_BASE16_V2",
+      "run_id": 40792606343,
+      "source_commit": "ab311582b6f5902bf42bfed9170908f8ca28060e",
+      "status": "PENDING_AT_LAST_OBSERVATION",
       "promotion": false
     }
   }
