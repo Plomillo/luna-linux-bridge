@@ -72,7 +72,7 @@ def dispatch_target(runtime: LouksnapG2Runtime, target_id: str, payload: dict[st
         raise ServiceError("TASK_PAYLOAD_NOT_OBJECT")
     domain_id = binding["domain_id"]
     operation = binding["operation"]
-    result = runtime.route(domain_id, operation, payload)
+    result = runtime.route(domain_id, operation, payload, task_id=task_id)
     if result.get("status") != "PASS_EXECUTION" or result.get("execution_authorized") is not True:
         raise ServiceError("ENGINE_RESULT_NOT_EXECUTED")
     if result.get("domain_id") != domain_id or result.get("operation") != operation:
