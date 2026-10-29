@@ -85,8 +85,11 @@ def main(argv=None) -> int:
             "source_architecture": source_architecture,
             "cajita_doc": cajita_doc,
             "g2_engine": g2_runtime / "louksnapg2_engine.py",
+            "g2_service": g2_runtime / "louksnapg2_service.py",
             "g2_route_overlay": g2_runtime / "route_overlay.json",
-            "g2_model_loader": g2_runtime / "louksnapg2_model_loader.py",
+            "externalized_asset_registry": g2_runtime / "externalized_assets.json",
+            "native_task_adapters": root / "cajita-luna-runtime" / "cajita_task_adapters.py",
+            "original_weight_manifest": root / "cajita-luna-runtime" / "CAJITA_RUNTIME_V1" / "weights_manifest.json",
         }.items():
             if path.is_symlink() or not path.is_file():
                 raise RuntimeError("SOURCE_INPUT_NOT_REGULAR_FILE:" + name)
