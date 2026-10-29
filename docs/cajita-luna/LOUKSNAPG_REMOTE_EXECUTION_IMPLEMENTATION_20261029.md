@@ -59,3 +59,39 @@ El test de protocolo usa respuestas ficticias y demuestra el contrato de transpo
 La política incluye cuatro endpoints para modelos de referencia. La traducción de lenguas antiguas sigue bloqueada: no hay un transductor/léxico operacional ni un adaptador consumidor con identidad fuente demostrada. No se dirige esa operación al traductor general.
 
 **No se ha ejecutado todavía inferencia real a través de un endpoint de GPU remoto ni se ha verificado la calidad semántica de la salida remota.** El PC permanece sin inferencia, descarga de modelos ni escrituras de runtime. La certificación de dominio y la certificación integral continúan pendientes hasta que haya un endpoint remoto configurado, el protocolo se pruebe contra los modelos cargados y pasen las tareas semánticas conocidas sobre el artefacto candidato exacto.
+
+
+---
+
+## Addendum de trazabilidad — checkpoint 2026-10-29
+
+**Rama revisada:** louksnapg/remote-source-bound-runtime-20261029.  
+**Estado integral vigente:** HOLD_NOT_CERTIFIED.  
+**No hubo ejecución de inferencia a través de los gateways remotos.**
+
+### Evidencia remota comprobada
+
+- Protocolo, identidad de origen y gobierno Kestra: workflow [40811146272](https://github.com/Plomillo/luna-linux-bridge/actions/runs/40811146272), conclusión success. El log registra 10 pruebas aprobadas, auditoría de fuentes PASS_SOURCE_METADATA, ALL_PINNED y validación estática de Kestra aprobada.
+- Preflight del banco semántico: workflow [40811146709](https://github.com/Plomillo/luna-linux-bridge/actions/runs/40811146709), la fase sin inferencia concluyó con éxito; pasó PASS_ROUTE_PREFLIGHT_ONLY y 8 pruebas unitarias. La tarea viva posterior terminó antes de instalar dependencias.
+- Artefacto de preflight: [12870630672](https://github.com/Plomillo/luna-linux-bridge/actions/runs/40811146709/artifacts/12870630672), SHA-256 del ZIP 223c63e410f40ac8ab54ab990d6260497d37ee56ee3033d4d1777e54dcdace66.
+- Informe de bloqueo de configuración: artefacto [12870392250](https://github.com/Plomillo/luna-linux-bridge/actions/runs/40811146709/artifacts/12870392250), SHA-256 del ZIP 272e8d46b6fe0182dd260b8fcd106cbbc938c9023e7e8e24cd436d7c998f2975. Faltaban los ocho nombres de variables esperados: URL y clave HMAC para Cerebro, Whisper, traducción y análisis. El informe no incluye valores secretos. dependencies_installed=false, model_inference_executed=false y remote_endpoint_contacted=false.
+- La política actual fija las cuatro revisiones, los hashes de configuración/índice y todos los hashes de pesos; el trust binding actualizado del gateway es 77bc2fcdbf4054c9d108f8fcb18d1f097be757a3 / 43888da74ca8efd6110274e57ff7f0d6824775ce27e81533f87adc35752b2d64. La prueba de protocolo valida esta identidad y no ejecuta modelos.
+
+### Decisión G23/G24 del candidato anterior
+
+El candidato de la ejecución de fábrica [40810168715](https://github.com/Plomillo/luna-linux-bridge/actions/runs/40810168715), producido desde el commit anterior 885baff3999833ff2ddb28fa683042b0327776bf, superó fabricación y G23 independiente. La decisión G24 fue NOT_GRANTED: 5 de 5 tareas se ejecutaron, pero 0 de 5 cumplieron la aceptación semántica; las seis pruebas de arranque/forward de motores pasaron solo en el alcance declarado. Los resultados representativos fueron texto degenerado para Cerebro, Whisper y Seamless, y respuesta incorrecta de Qwen. La traducción antigua sigue BLOCKED_MISSING_CONSUMER_ADAPTER_AND_TRANSLATION_RESOURCE, sin fallback al traductor general.
+
+Datos del candidato de esa revisión, no de la nueva fabricación en curso:
+- LOUKSNAPG.md: 371.957.072 bytes; SHA-256 c104a005f4afdf3762ff51799f883ccbbbe9b3159b7cd028f81c97921fe3e9d1.
+- Runtime .macrodown: 370.898.737 bytes.
+- G23 evidence ZIP ID 12869793710, SHA-256 33edb6a386269f31adb75efd6d0f71ea5d5e7626f4c830774ae0143410aa0b00.
+- G24 evidence ZIP ID 12869864752, SHA-256 c637e9e672bd116e77934118e334aa9e74232c8ce24b929ce10ceaf4b1c77818.
+- G24 telemetry ZIP ID 12870073790, SHA-256 14c7aef59656b29b0c88c335b6abb072b78dd8301f09547e6f657ac0f13dd47d.
+
+### Construcción actual, equipo local y límites
+
+Se corrigió .github/workflows/cajita-louksna1-factory.yml para que cambios en CAJITA_REMOTE_MODEL_POLICY.json, cajita_remote_execution.py, el gateway y el auditor de fuentes disparen una nueva fabricación. Workflow [40811334086](https://github.com/Plomillo/luna-linux-bridge/actions/runs/40811334086) está fabricando el candidato desde el HEAD actualizado; hasta su finalización no se declara hash ni G23/G24 para esa nueva versión.
+
+La PC LOUKSNA no se utilizó para inferencia, descarga de pesos ni modificaciones del runtime. Su checkout local sigue en otra rama y contiene cambios previos ajenos a este trabajo; no se hizo checkout, reset ni limpieza. Kestra está activo como servicio, pero su API local no respondió, por lo que se validó el flujo de monitorización en GitHub Actions; no se afirma que Kestra haya orquestado en vivo la reparación.
+
+**Bloqueadores de certificación actuales:** configuración ausente para los cuatro endpoints remotos; fallo semántico 0/5 del candidato empaquetado anterior; recurso/adaptador de traducción antigua no disponible; nueva fabricación pendiente de G23/G24. No se concedió certificación ni se publicó el candidato fallido.
