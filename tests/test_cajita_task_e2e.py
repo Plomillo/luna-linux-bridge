@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from cajita_task_e2e import MODEL_CASES, quality_acceptance
+from cajita_task_e2e import MODEL_CASES, quality_acceptance, required_domain_coverage
 
 
 class SyntheticQualityAcceptanceTests(unittest.TestCase):
@@ -50,6 +50,41 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
         for row in MODEL_CASES:
             evidence = quality_acceptance(row, "synthetic output")
             self.assertIs(evidence.get("does_not_establish_reference_model_equivalence"), True)
+
+    def test_required_ancient_translation_is_not_replaced_by_general_translation(self):
+        rows = [
+            {"domain_id": "D01_CEREBRO", "status": "PASS_FUNCTIONAL_EXECUTION", "exit_code": 0,
+             "quality_acceptance": {"status": "PASS"}},
+            {"domain_id": "D03_TRANSCRIPCION", "status": "PASS_FUNCTIONAL_EXECUTION", "exit_code": 0,
+             "quality_acceptance": {"status": "PASS"}},
+            {"domain_id": "D04_TRADUCTOR_INTELIGENTE", "status": "PASS_FUNCTIONAL_EXECUTION", "exit_code": 0,
+             "quality_acceptance": {"status": "PASS"}, "target_id": "D04_TRADUCCION_GENERAL"},
+            {"domain_id": "D06_SISTEMA_INTELIGENTE", "status": "PASS_FUNCTIONAL_EXECUTION", "exit_code": 0,
+             "quality_acceptance": {"status": "PASS"}},
+            {"domain_id": "D05_INTELIGENCIA_DOCUMENTAL", "status": "PASS_FUNCTIONAL_EXECUTION", "exit_code": 0,
+             "quality_acceptance": {"status": "PASS"}},
+        ]
+        route = {"status": "PASS_ROUTE_IDENTIFIED_FAIL_CLOSED"}
+        coverage = required_domain_coverage(rows, route)
+        by_name = {row["required_domain"]: row for row in coverage}
+        self.assertEqual(len(coverage), 5)
+        self.assertEqual(by_name["Traducción general"]["status"], "PASS_FIXED_SYNTHETIC_EXPECTATION_ONLY")
+        self.assertEqual(by_name["Traducción de lenguas antiguas"]["status"],
+                         "BLOCKED_MISSING_CONSUMER_ADAPTER_AND_TRANSLATION_RESOURCE")
+        self.assertEqual(by_name["Traducción de lenguas antiguas"]["route_diagnostic"],
+                         "PASS_ROUTE_IDENTIFIED_FAIL_CLOSED")
+        self.assertFalse(all(row["status"] == "PASS_FIXED_SYNTHETIC_EXPECTATION_ONLY" for row in coverage))
+
+    def test_required_domain_coverage_does_not_count_docling_as_ancient_translation(self):
+        coverage = required_domain_coverage(
+            [{"domain_id": "D05_INTELIGENCIA_DOCUMENTAL", "status": "PASS_FUNCTIONAL_EXECUTION",
+              "exit_code": 0, "quality_acceptance": {"status": "PASS"}}],
+            {"status": "FAIL_ROUTE_DIAGNOSTIC"},
+        )
+        by_name = {row["required_domain"]: row for row in coverage}
+        self.assertEqual(by_name["Traducción de lenguas antiguas"]["status"],
+                         "BLOCKED_MISSING_CONSUMER_ADAPTER_AND_TRANSLATION_RESOURCE")
+        self.assertEqual(by_name["Cerebro"]["status"], "NOT_TESTED")
 
 
 if __name__ == "__main__":
