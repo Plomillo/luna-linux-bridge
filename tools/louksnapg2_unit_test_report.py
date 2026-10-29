@@ -50,7 +50,6 @@ def main(argv=None):
     suite = unittest.defaultTestLoader.discover(
         start_dir=str(args.tests_root),
         pattern="test_louksnapg2*.py",
-        top_level_dir=".",
     )
     result = RecordingRunner(stream=buffer, verbosity=2).run(suite)
     errors = len(result.errors)
