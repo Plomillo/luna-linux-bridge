@@ -182,6 +182,14 @@ def integral_domain_gate_status(domain_rows: list[dict]) -> str:
     return "PASS_KNOWN_ANSWER_SCOPE_ONLY"
 
 
+def artifact_execution_scope() -> dict:
+    """Separate execution of source files from proof of running the exact packaged product."""
+    return {
+        **artifact_execution_scope(),
+        "scope_limit": "DOES_NOT_ESTABLISH_EXECUTION_OF_THE_EXACT_PACKAGED_LOUKSNAPG_MD_BUNDLE",
+    }
+
+
 def quality_gate_exit_code(status: str) -> int:
     """A route-only preflight may pass, but an integral-domain blocker never exits green."""
     return 0 if status in {"PASS_ROUTE_PREFLIGHT_ONLY", "PASS_REMOTE_SEMANTIC_TASKS"} else 2
@@ -283,7 +291,6 @@ def main() -> int:
         "certification": "NOT_GRANTED",
         "global_certification": "NOT_GRANTED",
         "scope": "SEMANTIC_KNOWN_ANSWER_TASKS_THROUGH_CHECKED_OUT_CAJITA_RUNTIME_SOURCE_AND_SOURCE_PINNED_REMOTE_GATEWAYS",
-        "scope_limit": "DOES_NOT_ESTABLISH_EXECUTION_OF_THE_EXACT_PACKAGED_LOUKSNAPG_MD_BUNDLE",
     }
     try:
         policy_path = runtime / "CAJITA_REMOTE_MODEL_POLICY.json"
