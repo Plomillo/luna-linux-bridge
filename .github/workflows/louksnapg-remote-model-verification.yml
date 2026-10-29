@@ -107,7 +107,7 @@ jobs:
           report = {
               "schema": "LOUKSNAPG_REMOTE_PROTOCOL_CI_EVIDENCE/1.0",
               "workflow_commit": "${{ github.sha }}",
-              "gateway_source_commit": "6d034d72f611b80c2ba0270ece7815bbcef17a61",
+              "gateway_source_commit": "77bc2fcdbf4054c9d108f8fcb18d1f097be757a3",
               "gateway_code_sha256": gateway_code_sha256,
               "policy_sha256": hashlib.sha256(policy_path.read_bytes()).hexdigest(),
               "source_bound_domains": rows,
