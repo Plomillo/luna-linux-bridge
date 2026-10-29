@@ -149,6 +149,18 @@ jobs:
             -s tests -p 'test_cajita_remote_execution.py' -v \
             2>&1 | tee "$RUNNER_TEMP/louksnapg-remote-protocol-tests.log"
 
+      - name: Upload protocol evidence without certifying model quality
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-remote-protocol-evidence-${{ github.run_id }}
+          path: |
+            out/LOUKSNAPG_REMOTE_PROTOCOL_CI_EVIDENCE.json
+            out/LOUKSNAPG_REMOTE_SOURCE_AUDIT.json
+            ${{ runner.temp }}/louksnapg-remote-protocol-tests.log
+          if-no-files-found: warn
+          retention-days: 90
+
   remote-semantic-quality:
     name: "Real semantic tasks through source-pinned remote models"
     if: ${{ vars.LOUKSNAPG_REMOTE_QUALITY_ENABLED == 'true' }}
@@ -215,14 +227,3 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
-      - name: Upload protocol evidence without certifying model quality
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: louksnapg-remote-protocol-evidence-${{ github.run_id }}
-          path: |
-            out/LOUKSNAPG_REMOTE_PROTOCOL_CI_EVIDENCE.json
-            out/LOUKSNAPG_REMOTE_SOURCE_AUDIT.json
-            ${{ runner.temp }}/louksnapg-remote-protocol-tests.log
-          if-no-files-found: warn
-          retention-days: 90
