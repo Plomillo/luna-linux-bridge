@@ -187,15 +187,13 @@ jobs:
           print(json.dumps(d,indent=2))
           PY
 
-      - name: Upload candidate and build evidence without externalized model weights
+      - name: Upload candidate package with a flat download layout
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksnapg2-candidate-package
-          path: |
-            out/LOUKSNAPG2_*.json
-            out/louksnapg2-candidate/
-          if-no-files-found: warn
+          path: out/louksnapg2-candidate/
+          if-no-files-found: error
           retention-days: 30
           compression-level: 0
 
