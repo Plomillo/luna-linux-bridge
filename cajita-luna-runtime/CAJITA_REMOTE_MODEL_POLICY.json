@@ -1,0 +1,105 @@
+{
+  "schema": "LOUKSNAPG_REMOTE_MODEL_POLICY/1.0",
+  "policy_id": "LOUKSNAPG_REMOTE_SOURCE_BOUND_MODELS_20261029",
+  "certification": "NOT_GRANTED",
+  "default_mode": "OFF",
+  "required_transport": "HTTPS_WITH_PER_DOMAIN_HMAC_ATTESTATION",
+  "identity_max_age_seconds": 300,
+  "request_clock_skew_seconds": 120,
+  "max_request_bytes": 50331648,
+  "max_response_bytes": 1048576,
+  "max_text_characters": 16384,
+  "max_audio_bytes": 33554432,
+  "max_new_tokens": 256,
+  "max_timeout_seconds": 1800,
+  "domains": {
+    "D01_CEREBRO": {
+      "purpose": "reasoning_and_text_generation",
+      "operation": "generate_text",
+      "model_id": "openai/gpt-oss-120b",
+      "source_repo": "openai/gpt-oss-120b",
+      "source_revision": "3a173e3b55594eca0759580385b09870b99aa54a",
+      "source_config_sha256": "933aeb666a3fd851133ddd7686414f369bc564c4185fb5704416550879f10566",
+      "source_index_sha256": "ede2655fdc05008561983b6e0829c600727c28d591e071077377059f03a6c00e",
+      "weight_files": [
+        {"path":"model-00000-of-00014.safetensors","bytes":4625017896},
+        {"path":"model-00001-of-00014.safetensors","bytes":4115586736},
+        {"path":"model-00002-of-00014.safetensors","bytes":4625017888},
+        {"path":"model-00003-of-00014.safetensors","bytes":4115586752},
+        {"path":"model-00004-of-00014.safetensors","bytes":4625017896},
+        {"path":"model-00005-of-00014.safetensors","bytes":4115586696},
+        {"path":"model-00006-of-00014.safetensors","bytes":4625017856},
+        {"path":"model-00007-of-00014.safetensors","bytes":4060267176},
+        {"path":"model-00008-of-00014.safetensors","bytes":4625017896},
+        {"path":"model-00009-of-00014.safetensors","bytes":4170906304},
+        {"path":"model-00010-of-00014.safetensors","bytes":4625017896},
+        {"path":"model-00011-of-00014.safetensors","bytes":4115586752},
+        {"path":"model-00012-of-00014.safetensors","bytes":4064660808},
+        {"path":"model-00013-of-00014.safetensors","bytes":4625017896},
+        {"path":"model-00014-of-00014.safetensors","bytes":4115586736}
+      ],
+      "url_env": "LOUKSNAPG_REMOTE_CEREBRO_URL",
+      "key_env": "LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX",
+      "key_id": "louksnapg-v1:D01_CEREBRO"
+    },
+    "D03_TRANSCRIPCION": {
+      "purpose": "audio_transcription",
+      "operation": "transcribe_audio",
+      "model_id": "openai/whisper-large-v3-turbo",
+      "source_repo": "openai/whisper-large-v3-turbo",
+      "source_revision": "7e2743d4d1fc5182f43d53b0204b2e151ffb6ef7",
+      "source_config_sha256": "c5b526b3e3cd64cd8940dabb45e8ba726629e22d8ed389c29b552f9140daf04a",
+      "source_index_sha256": null,
+      "weight_files": [
+        {"path":"model.safetensors","sha256":"542566a422ae4f3fd23f1ba11add198fca01bbf82e66e6a2857b3f608b1eb9d1"}
+      ],
+      "url_env": "LOUKSNAPG_REMOTE_TRANSCRIPTION_URL",
+      "key_env": "LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX",
+      "key_id": "louksnapg-v1:D03_TRANSCRIPCION"
+    },
+    "D04_TRADUCTOR_INTELIGENTE": {
+      "purpose": "general_translation",
+      "operation": "translate_text",
+      "model_id": "facebook/seamless-m4t-v2-large",
+      "source_repo": "facebook/seamless-m4t-v2-large",
+      "source_revision": "dff1eae6b5ed4de138247d6d6c5a37ef6ae20d46",
+      "source_config_sha256": "4b2fa9d863cc3033adaf261e6c3e32ad90347ee2f199a349ba1c77d5e26a605f",
+      "source_index_sha256": "79d33aa045308d1a93b11952f2a3e6a647c107b688e5fdf1124c4601626dcdb2",
+      "weight_files": [
+        {"path":"model-00001-of-00002.safetensors","bytes":4999163080,"sha256":"85cab984fbc111f8713827c440499453b9e66f262862866eeed8725c302ba2ac"},
+        {"path":"model-00002-of-00002.safetensors","bytes":4238114628,"sha256":"9536dc05892a6ca8410bcfea763dde422e2430c3cc1f3acd26c55182c8989017"}
+      ],
+      "url_env": "LOUKSNAPG_REMOTE_TRANSLATION_URL",
+      "key_env": "LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX",
+      "key_id": "louksnapg-v1:D04_TRADUCTOR_INTELIGENTE"
+    },
+    "D06_SISTEMA_INTELIGENTE": {
+      "purpose": "advanced_reasoning_and_analysis",
+      "operation": "analyze_reasoning",
+      "model_id": "Qwen/Qwen3-14B",
+      "source_repo": "Qwen/Qwen3-14B",
+      "source_revision": "40c069824f4251a91eefaf281ebe4c544efd3e18",
+      "source_config_sha256": "e73c3664ca09b10a673fef0c22e8a6b456201d49bd4713c9691f775720e8857a",
+      "source_index_sha256": "62d7ad35757bae5e7baa452cb1483178b7daa50e869e923226b8da10871f7ebc",
+      "weight_files": [
+        {"path":"model-00001-of-00008.safetensors","bytes":3841788544,"sha256":"e942bdbdf08857d16a8fef7d1dae9fceabeb4e84def6043485fe2f6f085dab0e"},
+        {"path":"model-00002-of-00008.safetensors","bytes":3963750816,"sha256":"f7c9c6eee628f5ad831d2d1d292e120505e5fcadeb38f88b4d3c4cb86306ccf9"},
+        {"path":"model-00003-of-00008.safetensors","bytes":3963750880,"sha256":"dfb8c5df9404b41ad6ae74e8b6b367135f017b4467b884cf71b17c71954f18a9"},
+        {"path":"model-00004-of-00008.safetensors","bytes":3963750880,"sha256":"eab286fec759e3e59ab228621aefa0fef14ed56039e06f959e67257d5af7604d"},
+        {"path":"model-00005-of-00008.safetensors","bytes":3963750880,"sha256":"97f0dc2992e59da95c466eff6f4fd0c8335843bbc36ed5c913a6f5150748c0e6"},
+        {"path":"model-00006-of-00008.safetensors","bytes":3963750880,"sha256":"9e8e76a013cd5e253865b792991e0b410f869b136b3c500079b531b09198e99e"},
+        {"path":"model-00007-of-00008.safetensors","bytes":3963750880,"sha256":"0aee70ee6e91dc00d818804fb47f124d13ee4ad5b4a64553e09dbf9391cd5750"},
+        {"path":"model-00008-of-00008.safetensors","bytes":1912371880,"sha256":"0d6b92296e326d39bbbaeb32c3ec454ac606da843d4c8ffa8edf010b62b8c9e0"}
+      ],
+      "url_env": "LOUKSNAPG_REMOTE_ANALYSIS_URL",
+      "key_env": "LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX",
+      "key_id": "louksnapg-v1:D06_SISTEMA_INTELIGENTE"
+    }
+  },
+  "unsupported_domains": {
+    "D04_TRADUCCION_LENGUAS_ANTIGUAS": {
+      "status": "BLOCKED_NO_SOURCE_BOUND_TRANSLATION_RESOURCE",
+      "allow_general_translation_fallback": false
+    }
+  }
+}
