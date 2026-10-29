@@ -37,11 +37,15 @@ REAL_WER_MAX = 0.25
 # The 40 MB candidate failed both required speech tasks. This next experiment
 # increases rank while remaining inside the previously measured 479 MB release ceiling.
 # The final release workflow must still measure the complete exact package before G24.
-TARGET_BYTES = 110_000_000
-RANK = 96
+# Adaptive allocation spends representation on Whisper layers with high functional
+# leverage instead of repeating a uniform-rank sweep that failed at R29/R64/R96.
+TARGET_BYTES = 125_000_000
+RANK = 192
+BASE_RANK = 16
 OVERSAMPLE = 8
 BLOCK_ROWS = 64
-CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_R96_EXPERIMENT"
+RANK_PROFILE = "WHISPER_ADAPTIVE_R192_DECODER128_ENCODER_FFN192_ATTN64_EMBED96_BASE16_V1"
+CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_ADAPTIVE_R192_EXPERIMENT"
 GLOBAL_RELEASE_MAX_BYTES = 479_000_000
 BASELINE_RELEASE_BYTES = 371_947_716
 BASELINE_WHISPER_WEIGHT_BYTES = 10_399_882
@@ -204,6 +208,21 @@ def make_synthetic_audio(path: Path) -> Path:
     return path
 
 
+def rank_for_tensor(key: str, shape: tuple[int, ...]) -> int:
+    """Deterministic sensitivity-informed rank policy; capped by matrix dimensions."""
+    if key == "model.decoder.embed_tokens.weight":
+        return 96
+    if key.startswith("model.decoder.layers.") and key.endswith(".weight"):
+        return 128
+    if key.startswith("model.encoder.layers.") and key.endswith(".fc2.weight"):
+        return 192
+    if key.startswith("model.encoder.layers.") and key.endswith(".fc1.weight"):
+        return 64
+    if key.startswith("model.encoder.layers.") and ".self_attn." in key and key.endswith(".weight"):
+        return 64
+    return BASE_RANK
+
+
 def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
     import torch
     from safetensors import safe_open
@@ -230,8 +249,9 @@ def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
                 raise RuntimeError("UNSUPPORTED_MATRIX_KEY:" + key)
             if len(shape) in (2, 3) and key not in preserved:
                 m, n = shape[0], math.prod(shape[1:])
-                qdim = min(rank + OVERSAMPLE, m, n)
-                r = min(rank, m, n)
+                requested_rank = rank_for_tensor(key, shape)
+                qdim = min(requested_rank + OVERSAMPLE, m, n)
+                r = min(requested_rank, m, n)
                 seed = int.from_bytes(hashlib.sha256(key.encode()).digest()[:8], "little") & ((1 << 63) - 1)
                 generator = torch.Generator(device="cpu")
                 generator.manual_seed(seed)
@@ -309,8 +329,9 @@ def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
         "source_model_id": SOURCE_REPO,
         "source_revision": SOURCE_REVISION,
         "source_model_sha256": SOURCE_MODEL_SHA256,
-        "method": "randomized_truncated_svd_rank29_symmetric_int8_factors",
+        "method": RANK_PROFILE,
         "rank": str(rank),
+        "base_rank": str(BASE_RANK),
         "quantization": "signed_int8_per_factor_with_fp32_scales",
         "promotion_status": "EXPERIMENTAL_NOT_CERTIFIED",
     })
@@ -323,6 +344,9 @@ def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
         "source_vector_count_preserved": preserved_vectors,
         "position_embedding_tensors_preserved": sorted(preserved),
         "rank": rank,
+        "base_rank": BASE_RANK,
+        "rank_profile": RANK_PROFILE,
+        "per_tensor_ranks": {row["tensor"]: row["rank"] for row in records},
         "oversample": OVERSAMPLE,
         "factor_dtype": "INT8",
         "factorization_error_aggregate": math.sqrt(total_residual_sq / max(total_source_norm_sq, 1e-30)),
@@ -518,8 +542,11 @@ def prepare_metadata(runtime_root: Path, candidate_weight: Path, factor_metrics:
     compression_path = module / "compression_metadata.json"
     compression = json.loads(compression_path.read_text(encoding="utf-8"))
     compression.update({
-        "method": "randomized_truncated_svd_low_rank_factorization_plus_symmetric_INT8_factor_quantization",
+        "method": RANK_PROFILE,
         "rank": RANK,
+        "base_rank": BASE_RANK,
+        "rank_profile": RANK_PROFILE,
+        "tensor_ranks": factor_metrics.get("per_tensor_ranks", {}),
         "oversample": OVERSAMPLE,
         "target_bytes": TARGET_BYTES,
         "candidate_weight_sha256": weight_sha,
@@ -539,7 +566,7 @@ def prepare_metadata(runtime_root: Path, candidate_weight: Path, factor_metrics:
         if artifact.get("path") == WEIGHT_REL:
             artifact["bytes"] = weight_bytes
             artifact["sha256"] = weight_sha
-            artifact["representation"] = f"Whisper rank-{RANK} raw signed INT8 low-rank factors; experimental"
+            artifact["representation"] = f"Whisper adaptive INT8 low-rank factors profile {RANK_PROFILE}; experimental"
             artifact["presence"] = "VERIFIED"
             break
     else:
@@ -769,6 +796,8 @@ def run_build(args) -> int:
         "compression_method_before": "INT8_FACTOR_METADATA_WITH_SECONDARY_UNSIGNED_INT2_PACKING",
         "compression_method_experiment": "RAW_SIGNED_INT8_FACTORS_WITH_FP32_SCALES_NO_SECONDARY_Q2_Q4_SIDECAR",
         "rank": RANK,
+        "base_rank": BASE_RANK,
+        "rank_profile": RANK_PROFILE,
         "target_bytes": TARGET_BYTES,
         "candidate_weight_sha256": metadata["weight_sha256"],
         "candidate_weight_bytes": metadata["weight_bytes"],
