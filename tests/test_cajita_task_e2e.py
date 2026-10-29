@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from cajita_task_e2e import MODEL_CASES, quality_acceptance, required_domain_coverage
+from cajita_task_e2e import (MODEL_CASES, quality_acceptance, required_domain_coverage,\n                             task_execution_and_quality_pass)
 
 
 class SyntheticQualityAcceptanceTests(unittest.TestCase):
@@ -87,6 +87,32 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
         self.assertEqual(by_name["Traducción de lenguas antiguas"]["status"],
                          "BLOCKED_MISSING_CONSUMER_ADAPTER_AND_TRANSLATION_RESOURCE")
         self.assertEqual(by_name["Cerebro"]["status"], "NOT_TESTED")
+
+    def test_process_rss_diagnostic_does_not_override_outer_cgroup_gate(self):
+        row = {
+            "status": "PASS_FUNCTIONAL_EXECUTION",
+            "exit_code": 0,
+            "quality_acceptance": {"status": "PASS"},
+            "input_sha256": "a" * 64,
+            "output_sha256": "b" * 64,
+            "weight_sha256": "c" * 64,
+            "module_tree_sha256": "d" * 64,
+            "peak_rss_bytes": 1_146_601_472,
+        }
+        self.assertTrue(task_execution_and_quality_pass(row))
+
+    def test_semantic_quality_failure_stays_failed_even_when_process_rss_is_below_cap(self):
+        row = {
+            "status": "PASS_FUNCTIONAL_EXECUTION",
+            "exit_code": 0,
+            "quality_acceptance": {"status": "FAIL"},
+            "input_sha256": "a" * 64,
+            "output_sha256": "b" * 64,
+            "weight_sha256": "c" * 64,
+            "module_tree_sha256": "d" * 64,
+            "peak_rss_bytes": 500_000_000,
+        }
+        self.assertFalse(task_execution_and_quality_pass(row))
 
 
 if __name__ == "__main__":
