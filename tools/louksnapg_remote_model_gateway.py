@@ -13,6 +13,7 @@ import argparse
 import base64
 import hashlib
 import hmac
+import ipaddress
 import io
 import json
 import os
@@ -149,12 +150,13 @@ class ModelWorker:
                 device_map="auto", torch_dtype="auto", low_cpu_mem_usage=True,
             )
         elif domain_id == "D04_TRADUCTOR_INTELIGENTE":
-            from transformers import AutoProcessor, SeamlessM4Tv2Model
+            # Load the text-to-text task head, not the full speech/audio generation model.
+            from transformers import AutoProcessor, SeamlessM4Tv2ForTextToText
             self.processor = AutoProcessor.from_pretrained(
                 str(self.model_root), local_files_only=True, trust_remote_code=False
             )
             self.tokenizer = None
-            self.model = SeamlessM4Tv2Model.from_pretrained(
+            self.model = SeamlessM4Tv2ForTextToText.from_pretrained(
                 str(self.model_root), local_files_only=True, trust_remote_code=False,
                 device_map="auto", torch_dtype="auto", low_cpu_mem_usage=True,
             )
@@ -260,7 +262,9 @@ class ModelWorker:
                     divisor = math.gcd(int(rate), 16000)
                     audio = resample_poly(audio, 16000 // divisor, int(rate) // divisor).astype(np.float32, copy=False)
                 encoded = self.processor(audio, sampling_rate=16000, return_tensors="pt")
-                encoded["input_features"] = encoded["input_features"].to(dtype=torch.float32, device=self.input_device)
+                encoded["input_features"] = encoded["input_features"].to(
+                    dtype=next(self.model.parameters()).dtype, device=self.input_device
+                )
                 generated = self.model.generate(
                     **encoded, max_new_tokens=tokens, do_sample=False,
                     language="en", task="transcribe", repetition_penalty=1.08,
@@ -394,16 +398,50 @@ class Handler(BaseHTTPRequestHandler):
             self._send(422, {"schema": "LOUKSNAPG_GATEWAY_ERROR/1.0", "status": "FAIL_CLOSED", "error": error[:120]})
 
 
-def _validate_gpu_preflight(allow_cpu: bool):
+def _validate_gpu_preflight(allow_cpu: bool, domain_id: str):
     import torch
     torch.set_num_threads(1)
     try:
         torch.set_num_interop_threads(1)
     except RuntimeError:
         pass
-    if not torch.cuda.is_available() and not allow_cpu:
+    if not torch.cuda.is_available():
+        if allow_cpu:
+            return "CPU_EXPLICITLY_ALLOWED"
         raise RuntimeError("REMOTE_GATEWAY_GPU_REQUIRED; no model download or local inference started")
-    return "CUDA" if torch.cuda.is_available() else "CPU_EXPLICITLY_ALLOWED"
+    required_free_vram = {
+        "D01_CEREBRO": 70 * 1024**3,
+        "D03_TRANSCRIPCION": 4 * 1024**3,
+        "D04_TRADUCTOR_INTELIGENTE": 16 * 1024**3,
+        "D06_SISTEMA_INTELIGENTE": 32 * 1024**3,
+    }.get(domain_id)
+    if required_free_vram is None:
+        raise RuntimeError("REMOTE_GPU_PREFLIGHT_DOMAIN_NOT_REGISTERED")
+    devices = torch.cuda.device_count()
+    free_rows = []
+    for index in range(devices):
+        free_bytes, total_bytes = torch.cuda.mem_get_info(index)
+        capability = torch.cuda.get_device_capability(index)
+        free_rows.append({
+            "device": index,
+            "free_bytes": int(free_bytes),
+            "total_bytes": int(total_bytes),
+            "compute_capability": [int(capability[0]), int(capability[1])],
+        })
+    total_free = sum(item["free_bytes"] for item in free_rows)
+    if total_free < required_free_vram:
+        raise RuntimeError(
+            "REMOTE_GPU_FREE_VRAM_BELOW_DOMAIN_MINIMUM:" + domain_id + ":"
+            + str(total_free) + "<" + str(required_free_vram)
+        )
+    # GPT-OSS uses MXFP4 kernels. Reject known-incompatible GPUs before fetching 65+ GB.
+    if domain_id == "D01_CEREBRO" and any(tuple(item["compute_capability"]) < (7, 5) for item in free_rows):
+        raise RuntimeError("REMOTE_GPU_MXFP4_COMPUTE_CAPABILITY_TOO_LOW")
+    summary = ",".join(
+        f"gpu{item['device']}={item['free_bytes']}/{item['total_bytes']}:{item['compute_capability'][0]}.{item['compute_capability'][1]}"
+        for item in free_rows
+    )
+    return f"CUDA_DEVICES={devices};FREE_VRAM_BYTES={total_free};REQUIRED_FREE_VRAM_BYTES={required_free_vram};{summary}"
 
 
 def _materialize_source(spec: dict, cache_root: Path) -> Path:
@@ -468,6 +506,14 @@ def main(argv=None) -> int:
         }, sort_keys=True))
         return 0
 
+    try:
+        bind_ip = ipaddress.ip_address(args.bind)
+    except ValueError as exc:
+        if args.bind.lower() != "localhost":
+            raise SystemExit("FAIL_CLOSED:GATEWAY_BIND_MUST_BE_LOOPBACK") from exc
+        bind_ip = ipaddress.ip_address("127.0.0.1")
+    if not bind_ip.is_loopback:
+        raise SystemExit("FAIL_CLOSED:GATEWAY_BIND_MUST_BE_LOOPBACK; use a same-host HTTPS reverse proxy")
     key = _key_from_environment()
     key_id = os.environ.get("LOUKSNAPG_GATEWAY_KEY_ID", "")
     if key_id != spec["key_id"]:
@@ -477,7 +523,7 @@ def main(argv=None) -> int:
         raise SystemExit("FAIL_CLOSED:GATEWAY_SOURCE_COMMIT_REQUIRED")
     allow_cpu = args.allow_cpu and os.environ.get("LOUKSNAPG_GATEWAY_ALLOW_CPU") == "1"
     try:
-        accelerator = _validate_gpu_preflight(allow_cpu)
+        accelerator = _validate_gpu_preflight(allow_cpu, args.domain_id)
         model_root = _materialize_source(spec, args.cache_dir)
         script_sha = sha256_file(Path(__file__).resolve())
         identity = source_identity(
