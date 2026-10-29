@@ -12,6 +12,10 @@ on:
       - "cajita-luna-runtime/cajita_task_adapters.py"
       - "tools/louksnapg_remote_model_gateway.py"
       - "tests/test_cajita_remote_execution.py"
+      - "integrations/kestra/validate.py"
+      - "integrations/kestra/flows/25-louksnapg-remote-model-verification.yml"
+      - "tools/requirements-louksnapg-remote-gateway.txt"
+      - "docs/cajita-luna/LOUKSNAPG_REMOTE_EXECUTION_IMPLEMENTATION_20261029.md"
   workflow_dispatch:
 
 permissions:
@@ -110,6 +114,12 @@ jobs:
           print(json.dumps(report, ensure_ascii=False, sort_keys=True))
           PY
 
+      - name: Validate the staged Kestra integration and its fail-closed monitor
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B integrations/kestra/validate.py
+
       - name: Run protocol tests under a one-core, 1 GiB process budget
         shell: bash
         env:
@@ -117,7 +127,7 @@ jobs:
         run: |
           set -euo pipefail
           ulimit -v 1048576
-          CPU="$(grep Cpus_allowed_list /proc/self/status | cut -d: -f2 | tr -d ' ' | sed 's/,.*//;s/-.*//')"
+          CPU="$(awk '/Cpus_allowed_list/ { split($2, values, /[-,]/); print values[1] }' /proc/self/status)"
           test -n "$CPU"
           taskset -c "$CPU" python -B -m unittest discover \
             -s tests -p 'test_cajita_remote_execution.py' -v \
