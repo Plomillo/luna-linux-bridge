@@ -472,12 +472,14 @@ def main(argv=None) -> int:
     key_id = os.environ.get("LOUKSNAPG_GATEWAY_KEY_ID", "")
     if key_id != spec["key_id"]:
         raise SystemExit("FAIL_CLOSED:GATEWAY_KEY_ID_MISMATCH")
+    code_commit = os.environ.get("LOUKSNAPG_GATEWAY_SOURCE_COMMIT", "")
+    if not re.fullmatch(r"[0-9a-f]{40}", code_commit):
+        raise SystemExit("FAIL_CLOSED:GATEWAY_SOURCE_COMMIT_REQUIRED")
     allow_cpu = args.allow_cpu and os.environ.get("LOUKSNAPG_GATEWAY_ALLOW_CPU") == "1"
     try:
         accelerator = _validate_gpu_preflight(allow_cpu)
         model_root = _materialize_source(spec, args.cache_dir)
         script_sha = sha256_file(Path(__file__).resolve())
-        code_commit = os.environ.get("LOUKSNAPG_GATEWAY_SOURCE_COMMIT", "UNRECORDED")
         identity = source_identity(
             args.domain_id, spec, model_root,
             gateway_code_sha256=script_sha, gateway_commit=code_commit,
