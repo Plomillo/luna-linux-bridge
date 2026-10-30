@@ -5,6 +5,7 @@ on:
     branches:
       - repair/louksnapg2-custoszv9-kestra-20261029
       - repair/louksnapg2-functional-remediation-20261030
+      - repair/louksnapg2-local-offline-20261030
     paths:
       - "vendor/CUSTOSZV9.pyz"
       - "vendor/CUSTOSZV9.pyz.sha256"
@@ -195,22 +196,13 @@ jobs:
           retention-days: 90
 
   functional_evaluation:
-    name: "Real model semantic acceptance — source-pinned remote engines"
+    name: "Real model semantic acceptance — local offline engines"
     if: always() && needs.custosz_primary_worker.result == 'success'
     needs: [custosz_primary_worker]
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     permissions:
       contents: read
-    env:
-      LOUKSNAPG_REMOTE_CEREBRO_URL: ${{ secrets.LOUKSNAPG_REMOTE_CEREBRO_URL }}
-      LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX }}
-      LOUKSNAPG_REMOTE_TRANSCRIPTION_URL: ${{ secrets.LOUKSNAPG_REMOTE_TRANSCRIPTION_URL }}
-      LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX }}
-      LOUKSNAPG_REMOTE_TRANSLATION_URL: ${{ secrets.LOUKSNAPG_REMOTE_TRANSLATION_URL }}
-      LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX }}
-      LOUKSNAPG_REMOTE_ANALYSIS_URL: ${{ secrets.LOUKSNAPG_REMOTE_ANALYSIS_URL }}
-      LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX }}
     steps:
       - name: Checkout exact source commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -234,49 +226,42 @@ jobs:
           python -B tools/louksnapg2_independent_validator.py             --bundle out/louksnapg2-worker/candidate/LOUKSNAPG2.md             --max-bytes 490000000             --extract-to "$RUNNER_TEMP/louksnapg2-extracted"             --expected-source-commit "$GITHUB_SHA"             --report out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_PRECHECK.json
           python -B tools/louksnapg2_model_identity_evidence.py             --runtime-root "$RUNNER_TEMP/louksnapg2-extracted"             --output out/louksnapg2-functional/LOUKSNAPG2_MODEL_MATERIALIZATION.json
 
-      - name: Preflight all remote model endpoint secrets without revealing values
-        id: endpoint_preflight
+      - name: Enforce local/offline inference mode; no endpoint credentials required
+        id: execution_mode_preflight
         shell: bash
         run: |
           set -Eeuo pipefail
           python - <<'PY'
-          import datetime, json, os, re, sys
+          import datetime, json, os, sys
           from pathlib import Path
-          names=[
-            "LOUKSNAPG_REMOTE_CEREBRO_URL","LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX",
-            "LOUKSNAPG_REMOTE_TRANSCRIPTION_URL","LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX",
-            "LOUKSNAPG_REMOTE_TRANSLATION_URL","LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX",
-            "LOUKSNAPG_REMOTE_ANALYSIS_URL","LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX",
-          ]
-          missing=[]
-          for name in names:
-            value=os.environ.get(name,"")
-            if not value.strip(): missing.append(name)
-            elif name.endswith("_KEY_HEX") and not re.fullmatch(r"[0-9a-fA-F]{64}",value):
-              missing.append(name)
-          report={
-            "schema":"LOUKSNAPG_REMOTE_ENDPOINT_PREFLIGHT/1.0",
-            "observed_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z"),
-            "source_commit":os.environ["GITHUB_SHA"],
-            "status":"PASS_CONFIGURATION_PRESENT" if not missing else "BLOCKED_CONFIGURATION_MISSING",
-            "missing_environment_variable_names":sorted(set(missing)),
-            "secret_values_recorded":False,
-            "endpoint_contacted":False,
-            "model_inference_performed":False,
-            "full_size_model_downloaded":False,
-            "global_certification":"NOT_GRANTED",
+          remote_mode = os.environ.get("LOUKSNAPG_REMOTE_MODE", "off").strip().lower()
+          forbidden = sorted(
+            key for key, value in os.environ.items()
+            if key.startswith("LOUKSNAPG_REMOTE_")
+            and key not in {"LOUKSNAPG_REMOTE_MODE", "LOUKSNAPG_REMOTE_DOMAINS_REQUIRED"}
+            and value.strip()
+          )
+          valid = remote_mode in {"", "off"} and not forbidden
+          report = {
+            "schema": "LOUKSNAPG2_EXECUTION_MODE_PREFLIGHT/1.0",
+            "observed_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            "source_commit": os.environ["GITHUB_SHA"],
+            "status": "PASS_LOCAL_OFFLINE" if valid else "BLOCKED_NONLOCAL_EXECUTION_CONFIGURATION",
+            "execution_mode": "LOCAL_OFFLINE" if valid else "INVALID",
+            "remote_inference_enabled": False if valid else True,
+            "endpoint_credentials_required": False,
+            "endpoint_credentials_injected": False,
+            "forbidden_remote_environment_names": forbidden,
+            "model_network_fetch_performed": False,
+            "model_inference_performed": False,
+            "global_certification": "NOT_GRANTED"
           }
-          Path("out/louksnapg2-functional/REMOTE_ENDPOINT_CONFIGURATION_PREFLIGHT.json").write_text(json.dumps(report,sort_keys=True,indent=2)+"\n")
-          print(json.dumps(report,sort_keys=True,indent=2))
-          if missing:
-            report["local_domain_tests_continue"] = ["D05_INTELIGENCIA_DOCUMENTAL"]
-            report["blocked_remote_domains"] = [
-              "D01_CEREBRO", "D03_TRANSCRIPCION", "D04_TRADUCTOR_INTELIGENTE",
-              "D04_TRADUCCION_LENGUAS_ANTIGUAS", "D06_SISTEMA_INTELIGENTE"
-            ]
-            report["reason"] = "Remote endpoints are absent from GitHub Actions; continue CPU-only D05 validation."
-            Path("out/louksnapg2-functional/REMOTE_ENDPOINT_CONFIGURATION_PREFLIGHT.json").write_text(json.dumps(report,sort_keys=True,indent=2)+"\n")
-            print("REMOTE_DOMAINS_BLOCKED; D05_DOCLING_CPU_ACCEPTANCE_CONTINUES")
+          Path("out/louksnapg2-functional/LOUKSNAPG2_EXECUTION_MODE_PREFLIGHT.json").write_text(
+            json.dumps(report, sort_keys=True, indent=2) + "\n"
+          )
+          print(json.dumps(report, sort_keys=True, indent=2))
+          if not valid:
+            sys.exit(2)
           PY
 
       - name: Set up the locked CPU runtime interpreter
@@ -284,7 +269,7 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install pinned CPU runtime in an isolated virtual environment for D05
+      - name: Install pinned runtime dependencies for local CPU inference
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -318,11 +303,11 @@ jobs:
           image.save(Path(os.environ["RUNNER_TEMP"])/"louksnapg2-invoice.png")
           PY
 
-      - name: Run semantic tests; four model domains are remote-only and D05 is explicit local-only
+      - name: Run every semantic acceptance case against local/offline engines
         shell: bash
         env:
-          LOUKSNAPG_REMOTE_MODE: selective
-          LOUKSNAPG_REMOTE_DOMAINS_REQUIRED: D01_CEREBRO,D03_TRANSCRIPCION,D04_TRADUCTOR_INTELIGENTE,D06_SISTEMA_INTELIGENTE
+          LOUKSNAPG_REMOTE_MODE: "off"
+          LOUKSNAPG_REMOTE_DOMAINS_REQUIRED: ""
           HF_HUB_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
           CAJITA_E2E_DIAGNOSTICS: "1"
@@ -573,7 +558,7 @@ jobs:
             --worker-evidence out/evidence/worker/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json \
             --model-materialization out/evidence/functional/LOUKSNAPG2_MODEL_MATERIALIZATION.json \
             --repair-readiness out/evidence/worker/LOUKSNAPG2_REPAIR_READINESS.json \
-            --endpoint-preflight out/evidence/functional/REMOTE_ENDPOINT_CONFIGURATION_PREFLIGHT.json \
+            --execution-mode-preflight out/evidence/functional/LOUKSNAPG2_EXECUTION_MODE_PREFLIGHT.json \
             --functional-evidence out/evidence/functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json \
             --g23-report out/evidence/g23/LOUKSNAPG2_G23.json \
             --report out/g24/LOUKSNAPG2_G24_CERTIFICATE.json
