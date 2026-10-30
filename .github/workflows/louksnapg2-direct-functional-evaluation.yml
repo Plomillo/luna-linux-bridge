@@ -1,0 +1,182 @@
+name: LOUKSNAPG2 direct local/offline functional evaluation
+
+on:
+  push:
+    branches:
+      - louksnapg2/puac2-alternative-20261029
+    paths:
+      - ".github/workflows/louksnapg2-direct-functional-evaluation.yml"
+      - "tools/louksnapg2_functional_eval.py"
+      - "tools/louksnapg2_model_identity_evidence.py"
+      - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/**"
+      - "cajita-luna-runtime/**/CAJITA_MODULE.json"
+      - "cajita-luna-runtime/**/compression_metadata.json"
+      - "cajita-luna-runtime/**/model.safetensors"
+      - "cajita-luna-runtime/**/model.safetensors.q4.json"
+      - "cajita-luna-runtime/**/quantized_weights.bin"
+      - "cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json"
+      - "cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json"
+      - "cajita-luna-runtime/REQUIREMENTS.runtime.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg2-direct-functional-evaluation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  evaluate-real-local-models:
+    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - name: Checkout exact repository source without blanket LFS hydration
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Materialize only the existing GPT-OSS LFS object
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git lfs install --local
+          git lfs pull --include="cajita-luna-runtime/1. Cerebro/model.safetensors" --exclude="" origin "$GITHUB_SHA"
+          git lfs checkout "cajita-luna-runtime/1. Cerebro/model.safetensors"
+
+      - name: Set up the repository-pinned Python runtime
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+          cache: false
+
+      - name: Install local audio fixture generator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y espeak-ng
+
+      - name: Install only the committed CPU runtime lock
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check \
+            --extra-index-url https://download.pytorch.org/whl/cpu \
+            -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
+
+      - name: Create deterministic known-answer audio and invoice image fixtures
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/louksnapg2-direct-functional
+          espeak-ng -v en-us -s 135 -w "$RUNNER_TEMP/louksnapg2-audio-one.wav" "The meeting starts at noon."
+          espeak-ng -v en-us -s 135 -w "$RUNNER_TEMP/louksnapg2-audio-two.wav" "Please turn left at the next street."
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageDraw, ImageFont
+          path = Path(__import__("os").environ["RUNNER_TEMP"]) / "louksnapg2-invoice.png"
+          image = Image.new("RGB", (1400, 900), "white")
+          draw = ImageDraw.Draw(image)
+          font = ImageFont.load_default()
+          draw.text((100, 100), "INVOICE", fill="black", font=font)
+          draw.text((100, 240), "Invoice Number: 4821", fill="black", font=font)
+          draw.text((100, 330), "Total: 37.50", fill="black", font=font)
+          image.save(path, format="PNG", optimize=False)
+          assert path.is_file() and path.stat().st_size > 0
+          print("INVOICE_FIXTURE_SHA256_READY")
+          PY
+          test -s "$RUNNER_TEMP/louksnapg2-audio-one.wav"
+          test -s "$RUNNER_TEMP/louksnapg2-audio-two.wav"
+
+      - name: Verify all five source-bound model identities and runtime integrity
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/cajita-luna-runtime
+        run: |
+          set -Eeuo pipefail
+          python -B tools/louksnapg2_model_identity_evidence.py \
+            --runtime-root cajita-luna-runtime \
+            --output out/louksnapg2-direct-functional/LOUKSNAPG2_MODEL_IDENTITY.json
+          python -B cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_service.py \
+            --runtime-root cajita-luna-runtime preflight \
+            > out/louksnapg2-direct-functional/LOUKSNAPG2_RUNTIME_PREFLIGHT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          base = Path("out/louksnapg2-direct-functional")
+          model = json.loads((base / "LOUKSNAPG2_MODEL_IDENTITY.json").read_text())
+          runtime = json.loads((base / "LOUKSNAPG2_RUNTIME_PREFLIGHT.json").read_text())
+          if model.get("status") != "PASS" or len(model.get("models", [])) != 5:
+              raise SystemExit("MODEL_IDENTITY_NOT_PASS")
+          if runtime.get("status") != "PASS_MODEL_SOURCE_IDENTITIES":
+              raise SystemExit("GLOBAL_RUNTIME_PREFLIGHT_NOT_PASS")
+          print("SOURCE_BOUND_MODEL_IDENTITIES=5/5")
+          print("RUNTIME_PREFLIGHT=PASS")
+          PY
+
+      - name: Run all 13 semantic acceptance cases through the exact repository runtime
+        shell: bash
+        env:
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          VECLIB_MAXIMUM_THREADS: "1"
+          NUMEXPR_NUM_THREADS: "1"
+          TOKENIZERS_PARALLELISM: "false"
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          PYTHONNOUSERSITE: "1"
+          LOUKSNAPG_REMOTE_MODE: "off"
+          LOUKSNAPG_REMOTE_DOMAINS_REQUIRED: ""
+        run: |
+          set -Eeuo pipefail
+          set +e
+          python -B tools/louksnapg2_functional_eval.py \
+            --runtime-root cajita-luna-runtime \
+            --audio-one "$RUNNER_TEMP/louksnapg2-audio-one.wav" \
+            --audio-two "$RUNNER_TEMP/louksnapg2-audio-two.wav" \
+            --docling-image "$RUNNER_TEMP/louksnapg2-invoice.png" \
+            --output out/louksnapg2-direct-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json
+          rc=$?
+          set -e
+          echo "$rc" > out/louksnapg2-direct-functional/LOUKSNAPG2_FUNCTIONAL_EXIT_CODE.txt
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("out/louksnapg2-direct-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json")
+          if not p.is_file():
+              raise SystemExit("FUNCTIONAL_EVIDENCE_NOT_EMITTED")
+          data = json.loads(p.read_text(encoding="utf-8"))
+          print("FUNCTIONAL_STATUS=" + str(data.get("functional_status")))
+          print("MODEL_INFERENCE_PERFORMED=" + str(data.get("model_inference_performed")))
+          print("CASE_COUNT=" + str(len(data.get("tests", []))))
+          for row in data.get("tests", []):
+              case_id = str(row.get("case_id", "UNKNOWN"))
+              status = str(row.get("status", "UNKNOWN"))
+              execution = str(row.get("execution_status", "UNKNOWN"))
+              quality = str(row.get("quality_criterion_passed", False))
+              reason = str(row.get("reason", ""))[:240]
+              output = str(row.get("actual_output") or "")[:260]
+              print("CASE=" + case_id + " STATUS=" + status + " EXECUTION=" + execution
+                    + " QUALITY=" + quality + " REASON=" + reason + " OUTPUT=" + output)
+          print("GLOBAL_CERTIFICATION=" + str(data.get("global_certification")))
+          PY
+          echo "FUNCTIONAL_EVALUATOR_EXIT_CODE=$rc"
+          # Preserve failed semantic evidence as a completed diagnostic job. This
+          # workflow is an evaluation lane, not a certification or release gate.
+          exit 0
+
+      - name: Upload direct local/offline functional evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-direct-functional-evidence
+          path: out/louksnapg2-direct-functional/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
