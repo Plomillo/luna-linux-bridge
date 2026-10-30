@@ -76,3 +76,12 @@ La última evaluación de GitHub tampoco encontró los ocho secretos `LOUKSNAPG_
 ### Siguiente gate
 
 El nuevo workflow probará primero la ejecución CPU de Granite Docling y corregirá el enlace de attestations. Los dominios GPT-OSS, Whisper, SeamlessM4T y Qwen3 seguirán FAIL-CLOSED hasta que los endpoints originales sean accesibles desde GitHub Actions y pasen inferencia semántica. G24 no puede certificar mientras esos requisitos o los adaptadores de reparación sigan bloqueados.
+
+
+## Corrección de política de ejecución — 2026-10-30
+
+La ejecución funcional de LOUKSNAPG2 debe probar los motores incluidos en el candidato en modo local/offline. Los endpoints HTTP, gateways externos y secretos `LOUKSNAPG_REMOTE_*_URL` / `*_KEY_HEX` no son requisitos de esta misión y no pueden bloquear la ejecución local.
+
+La canalización establece `LOUKSNAPG_REMOTE_MODE=off`, no inyecta credenciales remotas, mantiene `HF_HUB_OFFLINE=1` y `TRANSFORMERS_OFFLINE=1` durante la inferencia y registra una evidencia `LOUKSNAPG2_EXECUTION_MODE_PREFLIGHT/1.0`. G24 comprueba expresamente `LOCAL_OFFLINE`, ausencia de inferencia remota y ausencia de descarga de pesos durante la evaluación.
+
+Esta corrección elimina una dependencia operativa no solicitada; no equivale a reparar pesos ni a certificar motores. Los adaptadores marcados `NOT_IMPLEMENTED` o `EXPERIMENTAL_FAILED`, la ausencia de un recurso independiente para latín/griego y cualquier caso semántico fallido mantienen G24 en `HOLD`. La obtención de hashes de pesos no sustituye las pruebas de inferencia y calidad.
