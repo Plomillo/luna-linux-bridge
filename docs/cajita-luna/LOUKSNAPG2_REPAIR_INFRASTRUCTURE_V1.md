@@ -46,3 +46,33 @@ La infraestructura de ejecución, reconstrucción, evidencia y gates queda forma
 El registro todavía marca GPT-OSS, SeamlessM4T, Docling y Qwen3 sin adaptadores de reparación implementados; Whisper mantiene experimentos fallidos; traducción antigua carece de recurso fuente independiente. Tampoco hay gateway GPU remoto confirmado.
 
 Por diseño, el worker puede completar auditoría y construir un candidato; G24 permanece en `HOLD` hasta que todos los adaptadores, endpoints, pruebas semánticas y rollback pasen. G23 solo valida estructura/identidad. G24 es la única puerta de certificación; ni G23 ni G24 hacen merge o transfieren autoridad canónica.
+
+
+## Reanudación de reparación funcional — 2026-10-30
+
+### Evidencia real de la última ejecución
+
+La ejecución GitHub Actions `40999883137` sobre `33b011c80d2146c347c2246a9a8e50d35735810c` confirmó:
+- CUSTOSZ V9: worker y construcción de candidato PASS.
+- Unit tests de rutas/gates: PASS.
+- G23: decisión estructural PASS; el attestation falló porque el workflow identificó un predicado JSON custom como SLSA provenance.
+- Evaluación semántica: bloqueada en la instalación global de paquetes Python (`Permission denied: /usr/local/lib/python3.12/dist-packages/mpmath`).
+- G24: HOLD por falta de evidencia funcional y fallo de attestation G23; no hubo certificación.
+
+### Correcciones añadidas en la rama de remediación
+
+- Instalación del runtime Docling en venv aislado CPython 3.13, alineado con el lock; no se escribe en site-packages global.
+- La falta de endpoints remotos ya no suprime la prueba CPU independiente de Docling; los dominios remotos continúan en BLOCKED.
+- Se genera evidencia funcional de bloqueo si el evaluador termina sin escribir su JSON, evitando que G24 falle por ausencia de archivo sin explicación.
+- G23/G24 usan tipos de predicado custom propios y archivos de predicado asociados; no declaran falsamente que esos JSON sean SLSA provenance.
+- G24 descarga cada artefacto en una ruta estable y usa exactamente las mismas rutas para verificar la attestation G23 y leer su evidencia.
+
+### Estado de despliegue GPU verificado
+
+La cuenta Hugging Face conectada se autentica como `Plomazo`, pero no había jobs en ejecución. La prueba mínima de disponibilidad de GPU mediante HF Jobs devolvió `402 Payment Required`; no se creó ningún job, no se descargaron modelos y no se produjo consumo. En el equipo local no hay GPU NVIDIA ni Docker y la raíz del disco estaba al 100%.
+
+La última evaluación de GitHub tampoco encontró los ocho secretos `LOUKSNAPG_REMOTE_*_URL` y `LOUKSNAPG_REMOTE_*_KEY_HEX`. Por tanto, aunque la política de modelos fija repositorios y revisiones originales, todavía no existe evidencia de que los cuatro gateways GPU estén accesibles desde GitHub Actions.
+
+### Siguiente gate
+
+El nuevo workflow probará primero la ejecución CPU de Granite Docling y corregirá el enlace de attestations. Los dominios GPT-OSS, Whisper, SeamlessM4T y Qwen3 seguirán FAIL-CLOSED hasta que los endpoints originales sean accesibles desde GitHub Actions y pasen inferencia semántica. G24 no puede certificar mientras esos requisitos o los adaptadores de reparación sigan bloqueados.
