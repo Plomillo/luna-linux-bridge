@@ -18,6 +18,7 @@ class FakeCajitaAdapter:
             "D01_CEREBRO": {"weight_path": "1. Cerebro/model.safetensors", "weight_sha256": "gpt-oss"},
             "D03_TRANSCRIPCION": {"weight_path": "3. Transcripción/model.safetensors", "weight_sha256": "whisper"},
             "D04_TRADUCTOR_INTELIGENTE": {"weight_path": "4. Traductor Inteligente/Traducción general/model.safetensors", "weight_sha256": "seamless"},
+            "D05_INTELIGENCIA_DOCUMENTAL": {"weight_path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin", "weight_sha256": "docling"},
             "D06_SISTEMA_INTELIGENTE": {"weight_path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors", "weight_sha256": "qwen"},
         }
 
@@ -39,6 +40,8 @@ class FakeCajitaAdapter:
             text = "55" if "books" in text.lower() else "No"
         elif domain == "D04_TRADUCTOR_INTELIGENTE":
             text = "La reunión empieza al mediodía." if payload.get("tgt_lang") == "spa" else "The meeting starts at noon."
+        elif domain == "D05_INTELIGENCIA_DOCUMENTAL":
+            text = "INVOICE 4821 TOTAL 37.50"
         elif domain == "D03_TRANSCRIPCION":
             text = "The meeting starts at noon."
         return ({
@@ -93,6 +96,20 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
         self.assertEqual(self.fake.requests[-1]["domain_id"], "D04_TRADUCTOR_INTELIGENTE")
         self.assertEqual(result["source_model_id"], "SeamlessM4T v2 compactado — low-rank INT8 factors")
         self.assertEqual(result["output_text"], "La reunión empieza al mediodía.")
+
+    def test_docling_uses_existing_native_document_adapter(self):
+        image = self.root / "invoice.png"
+        image.write_bytes(b"fixture image")
+        result = self.runtime.route(
+            "D05_INTELIGENCIA_DOCUMENTAL", "extract_document_image",
+            {"image_path": str(image), "prompt": "Extract invoice fields.", "max_new_tokens": 48},
+            task_id="docling-01",
+        )
+        self.assertEqual(self.fake.requests[-1]["domain_id"], "D05_INTELIGENCIA_DOCUMENTAL")
+        self.assertEqual(self.fake.requests[-1]["operation"], "extract_document_image")
+        self.assertEqual(result["target_id"], "D05_DOCLING")
+        self.assertEqual(result["adapter_id"], "CAJITA_DOCLING_IMAGE_EXTRACTION/1.0")
+        self.assertEqual(result["output_text"], "INVOICE 4821 TOTAL 37.50")
 
     def test_transcription_uses_existing_whisper_source_adapter(self):
         audio = self.root / "sample.wav"

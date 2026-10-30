@@ -3,9 +3,10 @@
 
 The original Cajita runtime and router remain byte-for-byte unchanged. This additive
 entrypoint maps canonical target IDs onto the existing compact Cajita model adapters
-through a closed target/operation table. Only the ancient-language consumer route is
-new; it uses a dedicated prompt over the existing GPT-OSS source adapter and never
-falls back to modern general translation. Unknown targets and mismatches fail closed.
+through a closed target/operation table. Ancient-language translation remains a
+specialist GPT-OSS consumer route with no general-translation fallback. Granite Docling
+is exposed through its already-registered D05 native adapter. Unknown targets and
+mismatches fail closed.
 """
 from __future__ import annotations
 
@@ -38,6 +39,11 @@ TARGET_BINDINGS: dict[str, dict[str, str]] = {
         "domain_id": "D04_TRADUCTOR_INTELIGENTE",
         "operation": "translate_text",
         "adapter_id": "LOUKSNAPG2_GENERAL_TRANSLATION_ADAPTER/1.0",
+    },
+    "D05_DOCLING": {
+        "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+        "operation": "extract_document_image",
+        "adapter_id": "LOUKSNAPG2_DOCLING_DOCUMENT_EXTRACTION_ADAPTER/1.0",
     },
     "D04_TRADUCCION_LENGUAS_ANTIGUAS": {
         "domain_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",

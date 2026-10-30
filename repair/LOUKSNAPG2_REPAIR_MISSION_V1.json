@@ -1,0 +1,116 @@
+{
+  "schema": "LOUKSNAPG2_CUSTOSZV9_REPAIR_MISSION/1.0",
+  "mission_id": "LOUKSNAPG2_REPAIR_V1",
+  "task_id": "louksnapg2-repair-candidate-20261029",
+  "project_id": "louksnapg2",
+  "primary_worker": {
+    "identity": "CUSTOSZ_V9",
+    "artifact": "vendor/CUSTOSZV9.pyz",
+    "sha256": "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3",
+    "required_version": "CUSTOSZV9 9.0.0-candidate",
+    "selftest_required": "12/12",
+    "role": "PRIMARY_BOUNDED_WORKER_AND_MISSION_ORCHESTRATOR",
+    "prohibited_roles": [
+      "INDEPENDENT_G23_VALIDATOR",
+      "G24_CERTIFIER",
+      "CANONICAL_PROMOTER"
+    ]
+  },
+  "coordinator": {
+    "name": "Kestra",
+    "role": "SUPERVISOR_AND_RUN_MONITOR",
+    "dispatch_mode": "READ_ONLY_UNTIL_SEPARATE_GITHUB_DISPATCH_CREDENTIAL_IS_PROVISIONED"
+  },
+  "scope": "REPAIR_LOUKSNAPG2_MODEL_CANDIDATES_WITH_SEPARATE_CANDIDATE_OUTPUTS",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure": "FAIL_CLOSED",
+  "preconditions": [
+    "CUSTOSZ_V9_HASH_MATCH",
+    "CUSTOSZ_V9_SELFTEST_PASS",
+    "SOURCE_INPUTS_HASH_VERIFIED",
+    "RESOURCE_PREFLIGHT_PASS",
+    "NO_SOURCE_WEIGHT_MUTATION",
+    "NO_SELF_CERTIFICATION"
+  ],
+  "allowed_effects": [
+    "READ_SOURCE",
+    "WRITE_EVIDENCE",
+    "WRITE_CANDIDATE"
+  ],
+  "forbidden_effects": [
+    "OVERWRITE_SOURCE",
+    "DELETE_SOURCE",
+    "PROMOTE_CANONICAL",
+    "SELF_CERTIFY",
+    "DOWNLOAD_FULL_WEIGHTS_TO_LOUKSNA",
+    "UNBOUNDED_GPU_EXECUTION"
+  ],
+  "phases": [
+    {
+      "id": "P01_SOURCE_AUDIT",
+      "executor": "CUSTOSZ_V9",
+      "acceptance": "Original manifest, model weights, adapter registry and source hashes recorded."
+    },
+    {
+      "id": "P02_MODEL_SPECIFIC_REPAIR_PLAN",
+      "executor": "CUSTOSZ_V9",
+      "acceptance": "Each target model has a registered architecture-specific repair adapter; otherwise HOLD."
+    },
+    {
+      "id": "P03_ISOLATED_REPAIR_EXECUTION",
+      "executor": "CUSTOSZ_V9",
+      "acceptance": "Remote GPU execution only through source-pinned, domain-isolated endpoints; no user-PC model loading."
+    },
+    {
+      "id": "P04_RUNTIME_RECONSTRUCTION",
+      "executor": "CUSTOSZ_V9",
+      "acceptance": "New model candidates are written separately and their weight/processor/runtime hashes recorded."
+    },
+    {
+      "id": "P05_SEMANTIC_REGRESSION",
+      "executor": "INDEPENDENT_TEST_RUNNER",
+      "acceptance": "All 13 required acceptance cases and all six domain groups pass."
+    },
+    {
+      "id": "P06_CANDIDATE_BUILD",
+      "executor": "CUSTOSZ_V9",
+      "acceptance": "Candidate archive is reproducible, source-bound and independently validated."
+    },
+    {
+      "id": "P07_G23",
+      "executor": "AUTOMATED_INDEPENDENT_JOB",
+      "acceptance": "G23 structural decision and OIDC/Sigstore attestation bind exact commit and artifact digest."
+    },
+    {
+      "id": "P08_G24",
+      "executor": "AUTOMATED_INDEPENDENT_JOB",
+      "acceptance": "G24 verifies G23 attestation and all semantic/repair gates; separate OIDC/Sigstore attestation."
+    },
+    {
+      "id": "P09_ROLLBACK",
+      "executor": "CUSTOSZ_V9_AND_INDEPENDENT_VALIDATOR",
+      "acceptance": "Candidate rollback pointer and source non-mutation evidence pass."
+    },
+    {
+      "id": "P10_RELEASE_DECISION",
+      "executor": "G24_GATE",
+      "acceptance": "CERTIFIED only when every prior gate passes; no automatic merge or canonical authority transfer."
+    }
+  ],
+  "current_known_blockers": [
+    "Model-specific repair adapters are not implemented for GPT-OSS, SeamlessM4T, Granite Docling and Qwen3.",
+    "Whisper's existing repair path has documented failed attempts and is not eligible for promotion.",
+    "Ancient-language translation lacks a source-bound translation resource and native consumer model.",
+    "No remote GPU gateway endpoint/key set has been confirmed available for this repair mission.",
+    "LOUKSNA local host has no NVIDIA GPU, approximately 1.47 GiB MemAvailable and only approximately 3.5 GB free disk at the last read."
+  ],
+  "certification": {
+    "worker_can_certify": false,
+    "g23_automated": true,
+    "g24_automated": true,
+    "g23_and_g24_are_separate_jobs": true,
+    "g24_requires_oidc_verified_g23_attestation": true,
+    "no_manual_private_signing_keys_required": true,
+    "current_expected_terminal_state": "HOLD_UNTIL_REPAIR_ADAPTERS_GPU_ENDPOINTS_AND_SEMANTIC_TESTS_PASS"
+  }
+}

@@ -1,0 +1,528 @@
+name: LOUKSNAPG2 — CUSTOSZ V9 repair, automated G23/G24
+
+on:
+  push:
+    branches:
+      - repair/louksnapg2-custoszv9-kestra-20261029
+    paths:
+      - "vendor/CUSTOSZV9.pyz"
+      - "vendor/CUSTOSZV9.pyz.sha256"
+      - "repair/**"
+      - "docs/cajita-luna/LOUKSNAPG2_REPAIR_INFRASTRUCTURE_V1.md"
+      - "integrations/kestra/flows/louksnapg2_custoszv9_repair_supervisor.yml"
+      - "tools/louksnapg2_custoszv9_repair_worker.py"
+      - "tools/louksnapg2_automated_certifier.py"
+      - "tools/louksnapg2_functional_eval.py"
+      - "tools/louksnapg2_model_identity_evidence.py"
+      - "tools/louksnapg2_candidate_action.py"
+      - "tools/louksnapg2_independent_validator.py"
+      - "cajita-luna-runtime/**"
+      - "tests/test_louksnapg2_engine.py"
+      - "tests/test_louksnapg2_automated_certifier.py"
+      - ".github/workflows/louksnapg2-custoszv9-repair.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg2-custoszv9-repair-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONNOUSERSITE: "1"
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  NUMEXPR_NUM_THREADS: "1"
+  TOKENIZERS_PARALLELISM: "false"
+
+jobs:
+  custosz_primary_worker:
+    name: "CUSTOSZ V9 — primary bounded repair worker"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    outputs:
+      worker_status: ${{ steps.worker.outputs.worker_status }}
+      repair_status: ${{ steps.worker.outputs.repair_status }}
+      candidate_sha256: ${{ steps.worker.outputs.candidate_sha256 }}
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: true
+          persist-credentials: false
+
+      - name: Verify exact local CUSTOSZ V9 package and run CRFU self-test
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sha256sum -c vendor/CUSTOSZV9.pyz.sha256
+          test "$(sha256sum vendor/CUSTOSZV9.pyz | awk '{print $1}')" = "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3"
+          python vendor/CUSTOSZV9.pyz --version | tee "$RUNNER_TEMP/custoszv9-version.txt"
+          grep -Fx "CUSTOSZV9 9.0.0-candidate" "$RUNNER_TEMP/custoszv9-version.txt"
+          python vendor/CUSTOSZV9.pyz crfu selftest | tee "$RUNNER_TEMP/custoszv9-selftest.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          report=json.loads(Path(os.environ["RUNNER_TEMP"]+"/custoszv9-selftest.json").read_text())
+          assert report.get("status")=="PASS" and report.get("check_count")==12 and report.get("failed_checks")==[]
+          assert report.get("authorization_granted") is False
+          assert report.get("external_host_operations") is False
+          print("CUSTOSZ_V9_SELFTEST=PASS_12_OF_12; EXTERNAL_HOST_OPERATIONS=false")
+          PY
+
+      - name: Compile repair worker and model routers
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B -m py_compile             tools/louksnapg2_custoszv9_repair_worker.py             tools/louksnapg2_candidate_action.py             tools/louksnapg2_independent_validator.py             cajita-luna-runtime/cajita_task_adapters.py             cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_engine.py             cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_service.py
+
+      - name: Execute bounded CUSTOSZ V9 source audit and candidate build
+        id: worker
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out
+          set +e
+          python -B tools/louksnapg2_custoszv9_repair_worker.py             --repo-root "$GITHUB_WORKSPACE"             --worker "$GITHUB_WORKSPACE/vendor/CUSTOSZV9.pyz"             --output-dir "$GITHUB_WORKSPACE/out/louksnapg2-worker"             --report "$GITHUB_WORKSPACE/out/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json"             2>&1 | tee "$RUNNER_TEMP/louksnapg2-custoszv9-worker.log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [ -s out/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json ]; then
+            python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          r=json.loads(Path("out/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json").read_text())
+          print("worker_status="+str(r.get("worker_status","FAIL")))
+          print("repair_status="+str(r.get("repair_status","BLOCKED")))
+          print("candidate_sha256="+str(r.get("candidate",{}).get("sha256","")))
+          PY
+          fi
+          mkdir -p out/louksnapg2-worker
+          for f in "$RUNNER_TEMP/custoszv9-version.txt" "$RUNNER_TEMP/custoszv9-selftest.json" "$RUNNER_TEMP/louksnapg2-custoszv9-worker.log"; do
+            if [ -s "$f" ]; then cp "$f" out/louksnapg2-worker/; fi
+          done
+          echo "CUSTOSZV9_WORKER_EXIT_CODE=$rc"
+          exit "$rc"
+
+      - name: Upload CUSTOSZ V9 candidate and evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-custoszv9-candidate-${{ github.run_id }}
+          path: |
+            out/louksnapg2-worker/candidate/LOUKSNAPG2.md
+            out/louksnapg2-worker/candidate/LOUKSNAPG2_BUILD_REPORT.json
+            out/louksnapg2-worker/LOUKSNAPG2_REPAIR_READINESS.json
+            out/louksnapg2-worker/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json
+            out/louksnapg2-worker/custoszv9-version.txt
+            out/louksnapg2-worker/custoszv9-selftest.json
+            out/louksnapg2-worker/louksnapg2-custoszv9-worker.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  source_unit_validation:
+    name: "Source unit and route-contract validation"
+    if: always() && needs.custosz_primary_worker.result == 'success'
+    needs: [custosz_primary_worker]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Run deterministic source-only tests
+        id: tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out
+          set +e
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_engine.py' -v > "$RUNNER_TEMP/engine-tests.log" 2>&1
+          engine_rc=$?
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_automated_certifier.py' -v > "$RUNNER_TEMP/certifier-tests.log" 2>&1
+          certifier_rc=$?
+          set -e
+          echo "engine_rc=$engine_rc" >> "$GITHUB_OUTPUT"
+          echo "certifier_rc=$certifier_rc" >> "$GITHUB_OUTPUT"
+          cat "$RUNNER_TEMP/engine-tests.log"
+          cat "$RUNNER_TEMP/certifier-tests.log"
+          ENGINE_TEST_RC="$engine_rc" CERTIFIER_TEST_RC="$certifier_rc" python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          logs=Path(os.environ["RUNNER_TEMP"])
+          text=(logs/"engine-tests.log").read_text(errors="replace")+"\n"+(logs/"certifier-tests.log").read_text(errors="replace")
+          counts=[int(x) for x in re.findall(r"Ran (\d+) tests?",text)]
+          er=int(os.environ["ENGINE_TEST_RC"]); cr=int(os.environ["CERTIFIER_TEST_RC"])
+          result={
+            "schema":"LOUKSNAPG2_SOURCE_UNIT_TEST_EVIDENCE/1.0",
+            "source_commit":os.environ["GITHUB_SHA"],
+            "status":"PASS" if er==0 and cr==0 else "FAIL",
+            "tests_run":sum(counts),
+            "failures":0 if er==0 and cr==0 else 1,
+            "errors":0 if er==0 and cr==0 else 1,
+            "engine_test_exit_code":er,
+            "certifier_test_exit_code":cr,
+            "coverage_scope":"source-only routing and automated gate logic; no model inference",
+          }
+          Path("out/LOUKSNAPG2_UNIT_TEST_EVIDENCE.json").write_text(json.dumps(result,sort_keys=True,indent=2)+"\n")
+          print(json.dumps(result,sort_keys=True,indent=2))
+          PY
+          mkdir -p out/test-logs
+          cp "$RUNNER_TEMP/engine-tests.log" "$RUNNER_TEMP/certifier-tests.log" out/test-logs/
+          if [ "$engine_rc" -ne 0 ] || [ "$certifier_rc" -ne 0 ]; then exit 2; fi
+
+      - name: Upload source unit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-unit-evidence-${{ github.run_id }}
+          path: out/
+          if-no-files-found: warn
+          retention-days: 90
+
+  functional_evaluation:
+    name: "Real model semantic acceptance — source-pinned remote engines"
+    if: always() && needs.custosz_primary_worker.result == 'success'
+    needs: [custosz_primary_worker]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    env:
+      LOUKSNAPG_REMOTE_CEREBRO_URL: ${{ secrets.LOUKSNAPG_REMOTE_CEREBRO_URL }}
+      LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX }}
+      LOUKSNAPG_REMOTE_TRANSCRIPTION_URL: ${{ secrets.LOUKSNAPG_REMOTE_TRANSCRIPTION_URL }}
+      LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX }}
+      LOUKSNAPG_REMOTE_TRANSLATION_URL: ${{ secrets.LOUKSNAPG_REMOTE_TRANSLATION_URL }}
+      LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX }}
+      LOUKSNAPG_REMOTE_ANALYSIS_URL: ${{ secrets.LOUKSNAPG_REMOTE_ANALYSIS_URL }}
+      LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX }}
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Download candidate built by CUSTOSZ V9
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-custoszv9-candidate-${{ github.run_id }}
+          path: out/louksnapg2-worker
+
+      - name: Independently validate and extract the exact candidate; hash the five compact model domains
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/louksnapg2-functional
+          python -B tools/louksnapg2_independent_validator.py             --bundle out/louksnapg2-worker/candidate/LOUKSNAPG2.md             --max-bytes 490000000             --extract-to "$RUNNER_TEMP/louksnapg2-extracted"             --expected-source-commit "$GITHUB_SHA"             --report out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_PRECHECK.json
+          python -B tools/louksnapg2_model_identity_evidence.py             --runtime-root "$RUNNER_TEMP/louksnapg2-extracted"             --output out/louksnapg2-functional/LOUKSNAPG2_MODEL_MATERIALIZATION.json
+
+      - name: Preflight all remote model endpoint secrets without revealing values
+        id: endpoint_preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import datetime, json, os, re, sys
+          from pathlib import Path
+          names=[
+            "LOUKSNAPG_REMOTE_CEREBRO_URL","LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX",
+            "LOUKSNAPG_REMOTE_TRANSCRIPTION_URL","LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX",
+            "LOUKSNAPG_REMOTE_TRANSLATION_URL","LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX",
+            "LOUKSNAPG_REMOTE_ANALYSIS_URL","LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX",
+          ]
+          missing=[]
+          for name in names:
+            value=os.environ.get(name,"")
+            if not value.strip(): missing.append(name)
+            elif name.endswith("_KEY_HEX") and not re.fullmatch(r"[0-9a-fA-F]{64}",value):
+              missing.append(name)
+          report={
+            "schema":"LOUKSNAPG_REMOTE_ENDPOINT_PREFLIGHT/1.0",
+            "observed_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z"),
+            "source_commit":os.environ["GITHUB_SHA"],
+            "status":"PASS_CONFIGURATION_PRESENT" if not missing else "BLOCKED_CONFIGURATION_MISSING",
+            "missing_environment_variable_names":sorted(set(missing)),
+            "secret_values_recorded":False,
+            "endpoint_contacted":False,
+            "model_inference_performed":False,
+            "full_size_model_downloaded":False,
+            "global_certification":"NOT_GRANTED",
+          }
+          Path("out/louksnapg2-functional/REMOTE_ENDPOINT_CONFIGURATION_PREFLIGHT.json").write_text(json.dumps(report,sort_keys=True,indent=2)+"\n")
+          print(json.dumps(report,sort_keys=True,indent=2))
+          if missing:
+            names_to_domains={
+              "CEREBRO_ARITHMETIC_01":"D01_CEREBRO","CEREBRO_WORD_PROBLEM_02":"D01_CEREBRO",
+              "ANALYSIS_MULTI_STEP_01":"D06_SISTEMA_INTELIGENTE","ANALYSIS_LOGIC_02":"D06_SISTEMA_INTELIGENTE",
+              "GENERAL_TRANSLATION_EN_ES_01":"D04_TRADUCTOR_INTELIGENTE",
+              "GENERAL_TRANSLATION_ES_EN_02":"D04_TRADUCTOR_INTELIGENTE",
+              "GENERAL_TRANSLATION_EN_FR_03":"D04_TRADUCTOR_INTELIGENTE",
+              "GENERAL_TRANSLATION_FR_EN_04":"D04_TRADUCTOR_INTELIGENTE",
+              "ANCIENT_LATIN_01":"D04_TRADUCCION_LENGUAS_ANTIGUAS",
+              "ANCIENT_GREEK_02":"D04_TRADUCCION_LENGUAS_ANTIGUAS",
+              "WHISPER_AUDIO_01":"D03_TRANSCRIPCION","WHISPER_AUDIO_02":"D03_TRANSCRIPCION",
+              "DOCLING_INVOICE_IMAGE_01":"D05_INTELIGENCIA_DOCUMENTAL",
+            }
+            cases=[{"case_id":case,"domain_id":domain,"status":"BLOCKED","reason":"REMOTE_ENDPOINT_CONFIGURATION_MISSING"} for case,domain in names_to_domains.items()]
+            evidence={
+              "schema":"LOUKSNAPG2_REAL_MODEL_FUNCTIONAL_EVIDENCE/1.0",
+              "source_commit":os.environ["GITHUB_SHA"],
+              "functional_status":"BLOCKED_REMOTE_ENDPOINT_CONFIGURATION",
+              "tests":cases,"domain_results":{},
+              "summary":{"passed_cases":0,"total_cases":len(cases),"all_required_domains_pass":False},
+              "model_fetch_performed_by_evaluator":False,
+              "global_certification":"NOT_GRANTED",
+            }
+            Path("out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json").write_text(json.dumps(evidence,sort_keys=True,indent=2)+"\n")
+            sys.exit(2)
+          PY
+
+      - name: Install pinned CPU runtime for local D05 only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends espeak-ng
+          python -m pip install --disable-pip-version-check --extra-index-url https://download.pytorch.org/whl/cpu             -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
+          python -m pip install --disable-pip-version-check "Pillow==11.3.0"
+
+      - name: Create deterministic known-text audio and invoice image fixtures
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          espeak-ng -v en-us -s 135 -w "$RUNNER_TEMP/louksnapg2-audio-one.wav" "The meeting starts at noon."
+          espeak-ng -v en-us -s 135 -w "$RUNNER_TEMP/louksnapg2-audio-two.wav" "Please turn left at the next street."
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from PIL import Image, ImageDraw, ImageFont
+          image=Image.new("RGB",(1600,900),"white")
+          draw=ImageDraw.Draw(image)
+          try:
+            font=ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",72)
+          except OSError:
+            font=ImageFont.load_default()
+          draw.text((120,120),"INVOICE",fill="black",font=font)
+          draw.text((120,300),"Invoice Number: 4821",fill="black",font=font)
+          draw.text((120,500),"TOTAL: $37.50",fill="black",font=font)
+          image.save(Path(os.environ["RUNNER_TEMP"])/"louksnapg2-invoice.png")
+          PY
+
+      - name: Run semantic tests; four model domains are remote-only and D05 is explicit local-only
+        shell: bash
+        env:
+          LOUKSNAPG_REMOTE_MODE: selective
+          LOUKSNAPG_REMOTE_DOMAINS_REQUIRED: D01_CEREBRO,D03_TRANSCRIPCION,D04_TRADUCTOR_INTELIGENTE,D06_SISTEMA_INTELIGENTE
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          CAJITA_E2E_DIAGNOSTICS: "1"
+        run: |
+          set -Eeuo pipefail
+          ulimit -v 6291456
+          CPU="$(awk '/Cpus_allowed_list/ { split($2, values, /[-,]/); print values[1] }' /proc/self/status)"
+          taskset -c "$CPU" python -B tools/louksnapg2_functional_eval.py             --runtime-root "$RUNNER_TEMP/louksnapg2-extracted"             --audio-one "$RUNNER_TEMP/louksnapg2-audio-one.wav"             --audio-two "$RUNNER_TEMP/louksnapg2-audio-two.wav"             --docling-image "$RUNNER_TEMP/louksnapg2-invoice.png"             --output out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json
+
+      - name: Upload semantic and source-identity evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-functional-evidence-${{ github.run_id }}
+          path: out/louksnapg2-functional/
+          if-no-files-found: warn
+          retention-days: 90
+
+  g23_independent_validation:
+    name: "G23 — independent structural validation and OIDC attestation"
+    if: always() && needs.custosz_primary_worker.result == 'success'
+    needs: [custosz_primary_worker, source_unit_validation, functional_evaluation]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Download worker evidence
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-custoszv9-candidate-${{ github.run_id }}
+          path: out/evidence/worker
+
+      - name: Download source unit evidence
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-unit-evidence-${{ github.run_id }}
+          path: out/evidence/unit
+
+      - name: Download functional evidence
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-functional-evidence-${{ github.run_id }}
+          path: out/evidence/functional
+
+      - name: Run independent G23 against exact artifact and evidence
+        id: g23
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/g23
+          set +e
+          python -B tools/louksnapg2_automated_certifier.py g23             --bundle out/evidence/worker/candidate/LOUKSNAPG2.md             --build-report out/evidence/worker/candidate/LOUKSNAPG2_BUILD_REPORT.json             --worker-evidence out/evidence/worker/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json             --unit-evidence out/evidence/unit/LOUKSNAPG2_UNIT_TEST_EVIDENCE.json             --model-materialization out/evidence/functional/LOUKSNAPG2_MODEL_MATERIALIZATION.json             --report out/g23/LOUKSNAPG2_G23.json
+          rc=$?
+          set -e
+          echo "g23_rc=$rc" >> "$GITHUB_OUTPUT"
+          echo "G23_VALIDATION_EXIT_CODE=$rc"
+
+      - name: Attest the exact G23 evidence with GitHub OIDC/Sigstore
+        if: always() && hashFiles('out/g23/LOUKSNAPG2_G23.json') != ''
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: out/g23/LOUKSNAPG2_G23.json
+          predicate-type: https://slsa.dev/provenance/v1
+
+      - name: Preserve G23 report and attestation
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-g23-evidence-${{ github.run_id }}
+          path: out/g23/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Enforce G23 only after preserving its decision
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s out/g23/LOUKSNAPG2_G23.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("out/g23/LOUKSNAPG2_G23.json").read_text())
+          if r.get("status")!="PASS":
+            raise SystemExit("G23_HOLD:"+",".join(r.get("blockers",[])))
+          PY
+
+  g24_terminal_certification:
+    name: "G24 — automated terminal certification and OIDC attestation"
+    if: always() && needs.custosz_primary_worker.result == 'success'
+    needs: [custosz_primary_worker, source_unit_validation, functional_evaluation, g23_independent_validation]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Download all upstream evidence as separate artifact namespaces
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: "louksnapg2-*-${{ github.run_id }}"
+          path: out/evidence
+
+      - name: Verify G23 attestation issued by the separate G23 job
+        id: verify_g23
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/g24
+          G23_FILE="out/evidence/louksnapg2-g23-evidence-${GITHUB_RUN_ID}/LOUKSNAPG2_G23.json"
+          if [ ! -s "$G23_FILE" ]; then
+            echo "G23_ATTESTATION_VERIFIED=false" >> "$GITHUB_ENV"
+            echo "G23_EVIDENCE_MISSING"
+            exit 0
+          fi
+          set +e
+          gh attestation verify "$G23_FILE" --repo "$GITHUB_REPOSITORY" > out/g24/G23_ATTESTATION_VERIFICATION.json 2>&1
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "G23_ATTESTATION_VERIFIED=true" >> "$GITHUB_ENV"
+            echo "G23_ATTESTATION_VERIFIED=true"
+          else
+            echo "G23_ATTESTATION_VERIFIED=false" >> "$GITHUB_ENV"
+            echo "G23_ATTESTATION_VERIFIED=false"
+            cat out/g24/G23_ATTESTATION_VERIFICATION.json
+          fi
+
+      - name: Run terminal G24 decision for exact source SHA and artifact digest
+        id: g24
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/g24
+          set +e
+          python -B tools/louksnapg2_automated_certifier.py g24             --bundle out/evidence/louksnapg2-custoszv9-candidate-${GITHUB_RUN_ID}/candidate/LOUKSNAPG2.md             --build-report out/evidence/louksnapg2-custoszv9-candidate-${GITHUB_RUN_ID}/candidate/LOUKSNAPG2_BUILD_REPORT.json             --worker-evidence out/evidence/louksnapg2-custoszv9-candidate-${GITHUB_RUN_ID}/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json             --model-materialization out/evidence/louksnapg2-functional-evidence-${GITHUB_RUN_ID}/LOUKSNAPG2_MODEL_MATERIALIZATION.json             --repair-readiness out/evidence/louksnapg2-custoszv9-candidate-${GITHUB_RUN_ID}/LOUKSNAPG2_REPAIR_READINESS.json             --endpoint-preflight out/evidence/louksnapg2-functional-evidence-${GITHUB_RUN_ID}/REMOTE_ENDPOINT_CONFIGURATION_PREFLIGHT.json             --functional-evidence out/evidence/louksnapg2-functional-evidence-${GITHUB_RUN_ID}/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json             --g23-report out/evidence/louksnapg2-g23-evidence-${GITHUB_RUN_ID}/LOUKSNAPG2_G23.json             --report out/g24/LOUKSNAPG2_G24_CERTIFICATE.json
+          rc=$?
+          set -e
+          echo "g24_rc=$rc" >> "$GITHUB_OUTPUT"
+          echo "G24_DECISION_EXIT_CODE=$rc"
+
+      - name: Attest the exact G24 decision with GitHub OIDC/Sigstore
+        if: always() && hashFiles('out/g24/LOUKSNAPG2_G24_CERTIFICATE.json') != ''
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: out/g24/LOUKSNAPG2_G24_CERTIFICATE.json
+          predicate-type: https://slsa.dev/provenance/v1
+
+      - name: Preserve G24 decision, G23 verification and attestations
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-g24-terminal-evidence-${{ github.run_id }}
+          path: out/g24/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Enforce G24 only after preserving its signed decision
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s out/g24/LOUKSNAPG2_G24_CERTIFICATE.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("out/g24/LOUKSNAPG2_G24_CERTIFICATE.json").read_text())
+          if r.get("status")!="CERTIFIED":
+            raise SystemExit("G24_HOLD:"+",".join(r.get("blockers",[])))
+          PY

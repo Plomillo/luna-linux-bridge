@@ -155,9 +155,19 @@ def execute_task(record,root,timeout_cap=600):
                "elapsed_seconds":round(time.monotonic()-started,3)})
    return out,3
   remote_mode=os.environ.get("LOUKSNAPG_REMOTE_MODE","off").strip().lower()
-  if remote_mode not in ("off","required"):
+  remote_domains_raw=os.environ.get("LOUKSNAPG_REMOTE_DOMAINS_REQUIRED","")
+  remote_domains={x.strip() for x in remote_domains_raw.split(",") if x.strip()}
+  if remote_mode not in ("off","required","selective"):
    raise AdapterError("REMOTE_MODE_VALUE_INVALID")
-  if remote_mode=="required":
+  if remote_mode=="selective" and not remote_domains:
+   raise AdapterError("SELECTIVE_REMOTE_MODE_REQUIRES_EXPLICIT_DOMAIN_SET")
+  unknown_remote_domains=remote_domains-set(ADAPTERS)
+  if unknown_remote_domains:
+   raise AdapterError("REMOTE_DOMAIN_NOT_REGISTERED:"+",".join(sorted(unknown_remote_domains)))
+  if remote_mode=="off" and remote_domains:
+   raise AdapterError("REMOTE_DOMAINS_SET_WHILE_REMOTE_MODE_OFF")
+  use_remote=(remote_mode=="required" or (remote_mode=="selective" and row["domain_id"] in remote_domains))
+  if use_remote:
    try:
     from cajita_remote_execution import execute_remote_task
     remote_result=execute_remote_task(row,root)
@@ -172,6 +182,8 @@ def execute_task(record,root,timeout_cap=600):
     out["execution_authorized"]=False
     return out,4
    return out,0
+  if remote_mode=="selective":
+   out["remote_execution_mode"]="LOCAL_ONLY_FOR_EXPLICITLY_EXCLUDED_DOMAINS"
   spec=ADAPTERS[row["domain_id"]];integrity=verify_integrity(root,row["domain_id"]);entry=root/spec["entry"]
   if entry.is_symlink() or not entry.is_file():raise AdapterError("TASK_ADAPTER_ENTRYPOINT_MISSING")
   env={k:os.environ[k] for k in ("PATH","HOME","LANG","LC_ALL","TMPDIR","SYSTEMROOT","WINDIR") if k in os.environ}

@@ -1,0 +1,71 @@
+{
+  "schema": "LOUKSNAPG2_LOCAL_PROJECT_EXTERNALIZATION_AUDIT/1.0",
+  "observed_at": "2026-10-29",
+  "local_project_path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA",
+  "local_louksnapg2_md_file_found": false,
+  "local_louksnapg2_distribution": "Generated as a GitHub Actions artifact; not found as a standalone local file in the inspected project path.",
+  "original_model_assets_present_locally": {
+    "GPT-OSS-120B": {
+      "files": "model-00000-of-00014.safetensors ... model-00014-of-00014.safetensors",
+      "shards": 15,
+      "externalized_in_placement_manifest": false
+    },
+    "Qwen3-14B": {
+      "files": "model-00001-of-00008.safetensors ... model-00008-of-00008.safetensors",
+      "shards": 8,
+      "externalized_in_placement_manifest": false
+    },
+    "SeamlessM4T-v2-large": {
+      "files": [
+        "model-00001-of-00002.safetensors",
+        "model-00002-of-00002.safetensors",
+        "seamlessM4T_v2_large.pt",
+        "m4t_v2_multitask_unity2.pt"
+      ],
+      "externalized_in_placement_manifest": false
+    },
+    "Whisper-large-v3-turbo": {
+      "file": "model.safetensors",
+      "bytes": 1617824864,
+      "externalized_in_placement_manifest": false
+    },
+    "Granite-Docling": {
+      "files": [
+        "granite-docling-258M-Q4_K_M.gguf",
+        "mmproj-granite-docling-258M-f16.gguf",
+        "docling_slim-2.124.0-py3-none-any.whl"
+      ],
+      "externalized_in_placement_manifest": false
+    }
+  },
+  "github_placement_manifest": {
+    "path": "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json",
+    "asset_count": 10,
+    "asset_categories": [
+      "Apache Jena",
+      "Playwright",
+      "ONNX Runtime",
+      "Dagger",
+      "OPA",
+      "Rqlite",
+      "SQLite source",
+      "CMake",
+      "Avalonia",
+      "Tauri"
+    ],
+    "original_model_weights_placed": 0
+  },
+  "local_externalization_manifest": {
+    "path": "2. Cajita de Luna/EXTERNALIZATION_MANIFEST.json",
+    "externalized_item_count": 30,
+    "certification": "NOT_GRANTED",
+    "external_binding": "PENDING_VALIDATION",
+    "functional_equivalence": "NOT_ESTABLISHED"
+  },
+  "distributed_compact_weight_manifest": {
+    "path": "cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json",
+    "compact_weight_artifacts": 6,
+    "warning": "Presence and SHA-256 are integrity evidence only; do not infer semantic equivalence or remote deployment."
+  },
+  "conclusion": "Original model weights remain local and are not listed as placed/externalized engines in the LOUKSNAPG2 placement manifest. Four source-bound remote model policies exist, but no functioning remote GPU deployment was evidenced."
+}
