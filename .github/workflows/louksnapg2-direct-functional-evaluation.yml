@@ -88,10 +88,15 @@ jobs:
           path = Path(__import__("os").environ["RUNNER_TEMP"]) / "louksnapg2-invoice.png"
           image = Image.new("RGB", (1400, 900), "white")
           draw = ImageDraw.Draw(image)
-          font = ImageFont.load_default()
-          draw.text((100, 100), "INVOICE", fill="black", font=font)
-          draw.text((100, 240), "Invoice Number: 4821", fill="black", font=font)
-          draw.text((100, 330), "Total: 37.50", fill="black", font=font)
+          # Use large, anti-aliased, high-contrast text. The previous default
+          # bitmap font was too small for a 1400x900 document and could make a
+          # model failure indistinguishable from a fixture legibility failure.
+          title_font = ImageFont.load_default(size=84)
+          body_font = ImageFont.load_default(size=64)
+          draw.text((110, 90), "INVOICE", fill=(0, 0, 0), font=title_font, stroke_width=1)
+          draw.line((100, 215, 1300, 215), fill=(0, 0, 0), width=5)
+          draw.text((110, 300), "Invoice Number: 4821", fill=(0, 0, 0), font=body_font, stroke_width=1)
+          draw.text((110, 470), "Total: 37.50", fill=(0, 0, 0), font=body_font, stroke_width=1)
           image.save(path, format="PNG", optimize=False)
           assert path.is_file() and path.stat().st_size > 0
           print("INVOICE_FIXTURE_SHA256_READY")
