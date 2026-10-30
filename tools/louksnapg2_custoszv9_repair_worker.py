@@ -97,40 +97,86 @@ def readiness_inventory(repo: Path) -> dict:
 
     registry_path = repo / "repair" / "LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY_V1.json"
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    runtime_root = repo / "cajita-luna-runtime"
     rows = []
     blockers = []
     for domain in MODEL_DOMAINS:
         spec = ADAPTERS.get(domain)
         if spec is None:
-            rows.append({"domain_id": domain, "source_integrity": "FAIL", "repair_adapter_status": "MISSING"})
+            rows.append({
+                "domain_id": domain,
+                "source_integrity": "FAIL",
+                "weight_identity_status": "NOT_CHECKED",
+                "module_tree_status": "NOT_REGISTERED",
+                "repair_adapter_status": "MISSING",
+                "integrity_error": "MODEL_TASK_ADAPTER_MISSING",
+            })
             blockers.append("MODEL_TASK_ADAPTER_MISSING:" + domain)
             continue
-        integrity = verify_integrity(repo / "cajita-luna-runtime", domain)
+
         declared = registry["required_domains"].get(domain, {})
-        status = declared.get("repair_adapter_status", "NOT_REGISTERED")
+        repair_status = declared.get("repair_adapter_status", "NOT_REGISTERED")
+        weight_path = runtime_root / str(spec.get("weight", ""))
+        weight_identity = "FAIL"
+        actual_bytes = None
+        actual_sha = None
+        if weight_path.is_file() and not weight_path.is_symlink():
+            actual_bytes = weight_path.stat().st_size
+            actual_sha = sha256_file(weight_path)
+            weight_identity = (
+                "PASS"
+                if actual_bytes == int(spec.get("bytes", -1)) and actual_sha == spec.get("sha")
+                else "FAIL"
+            )
+
+        integrity = {}
+        integrity_error = None
+        try:
+            integrity = verify_integrity(runtime_root, domain)
+            module_tree_status = "PASS"
+        except Exception as exc:
+            module_tree_status = "FAIL"
+            integrity_error = type(exc).__name__ + ":" + str(exc)[:300]
+
+        source_status = "PASS" if weight_identity == "PASS" and module_tree_status == "PASS" else "FAIL"
         rows.append({
             "domain_id": domain,
             "target_id": spec.get("target"),
             "entrypoint": spec.get("entry"),
             "weight_path": spec.get("weight"),
-            "weight_sha256": integrity.get("weight_sha256"),
-            "weight_bytes": integrity.get("weight_bytes"),
+            "weight_sha256": actual_sha,
+            "weight_bytes": actual_bytes,
+            "declared_weight_sha256": spec.get("sha"),
+            "declared_weight_bytes": spec.get("bytes"),
+            "weight_identity_status": weight_identity,
             "module_tree_sha256": integrity.get("module_tree_sha256"),
-            "source_integrity": "PASS",
-            "repair_adapter_status": status,
+            "module_tree_status": module_tree_status,
+            "integrity_error": integrity_error,
+            "source_integrity": source_status,
+            "repair_adapter_status": repair_status,
         })
-        if status != "IMPLEMENTED_AND_TESTED":
-            blockers.append("REPAIR_ADAPTER_NOT_READY:" + domain + ":" + status)
+        if weight_identity != "PASS":
+            blockers.append("MODEL_WEIGHT_IDENTITY_NOT_PASS:" + domain)
+        if module_tree_status != "PASS":
+            blockers.append("MODEL_MODULE_TREE_INTEGRITY_NOT_PASS:" + domain + ":" + str(integrity_error))
+        if repair_status != "IMPLEMENTED_AND_TESTED":
+            blockers.append("REPAIR_ADAPTER_NOT_READY:" + domain + ":" + repair_status)
+
     ancient = registry["required_domains"].get("D04_TRADUCCION_LENGUAS_ANTIGUAS", {})
     if ancient.get("repair_adapter_status") != "IMPLEMENTED_AND_TESTED":
         blockers.append("ANCIENT_TRANSLATION_RESOURCE_NOT_READY")
+    source_status = (
+        "PASS"
+        if len(rows) == len(MODEL_DOMAINS) and all(x.get("source_integrity") == "PASS" for x in rows)
+        else "FAIL"
+    )
     return {
         "schema": "LOUKSNAPG2_REPAIR_READINESS/1.0",
         "generated_at_utc": utc_now(),
         "source_commit": os.environ.get("GITHUB_SHA", "UNKNOWN"),
         "source_bound_model_assets": rows,
         "required_model_domain_count": len(MODEL_DOMAINS),
-        "source_integrity_status": "PASS" if len(rows) == len(MODEL_DOMAINS) and all(x.get("source_integrity") == "PASS" for x in rows) else "FAIL",
+        "source_integrity_status": source_status,
         "repair_adapter_registry_sha256": sha256_file(registry_path),
         "repair_adapter_status": "PASS_ALL_REQUIRED_ADAPTERS" if not blockers else "BLOCKED",
         "repair_execution_performed": False,
