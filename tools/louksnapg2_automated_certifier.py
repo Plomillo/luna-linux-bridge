@@ -155,7 +155,7 @@ def g24(args) -> dict:
     worker = read_json(args.worker_evidence)
     materialization = read_json(args.model_materialization)
     readiness = read_json(args.repair_readiness)
-    endpoint = read_json(args.endpoint_preflight)
+    execution = read_json(args.execution_mode_preflight)
     build = read_json(args.build_report)
     bundle = args.bundle
 
@@ -176,8 +176,13 @@ def g24(args) -> dict:
         blockers.append("BUILD_EVIDENCE_NOT_BOUND_TO_CANDIDATE")
     if materialization.get("status") != "PASS" or int(materialization.get("required_domain_count", 0)) < 5:
         blockers.append("MODEL_SOURCE_MATERIALIZATION_NOT_PASS")
-    if endpoint.get("status") != "PASS_CONFIGURATION_PRESENT":
-        blockers.append("REMOTE_ENDPOINT_CONFIGURATION_NOT_PASS")
+    if (
+        execution.get("status") != "PASS_LOCAL_OFFLINE"
+        or execution.get("execution_mode") != "LOCAL_OFFLINE"
+        or execution.get("remote_inference_enabled") is not False
+        or execution.get("model_network_fetch_performed") is not False
+    ):
+        blockers.append("LOCAL_OFFLINE_EXECUTION_POLICY_NOT_PASS")
     if functional.get("source_commit", commit) != commit:
         blockers.append("FUNCTIONAL_EVIDENCE_COMMIT_MISMATCH")
     if functional.get("functional_status") != "PASS_ALL_DOMAIN_CASES":
@@ -223,6 +228,7 @@ def g24(args) -> dict:
             "evidence_sha256": sha256_file(args.g23_report),
         },
         "functional_status": functional.get("functional_status"),
+        "execution_mode": execution.get("execution_mode"),
         "model_repair_status": worker.get("repair_status"),
         "blockers": unique_blockers,
         "global_certification": "CERTIFIED" if certified else "NOT_GRANTED",
@@ -243,7 +249,7 @@ def main(argv=None) -> int:
     p23.add_argument("--model-materialization", required=True, type=Path)
     p23.add_argument("--report", required=True, type=Path)
     p24 = sub.add_parser("g24")
-    for name in ("bundle", "build-report", "worker-evidence", "model-materialization", "repair-readiness", "endpoint-preflight", "functional-evidence", "g23-report", "report"):
+    for name in ("bundle", "build-report", "worker-evidence", "model-materialization", "repair-readiness", "execution-mode-preflight", "functional-evidence", "g23-report", "report"):
         p24.add_argument("--" + name, required=True, type=Path)
     args = parser.parse_args(argv)
     try:

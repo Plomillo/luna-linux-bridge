@@ -56,6 +56,20 @@ class AutomatedG23G24Tests(unittest.TestCase):
         self.assertEqual(report["status"], "HOLD")
         self.assertIn("G23_OIDC_ATTESTATION_NOT_VERIFIED", report["blockers"])
 
+    def test_g24_holds_when_execution_mode_is_not_local_offline(self):
+        args = self.g24_args()
+        execution = json.loads(args.execution_mode_preflight.read_text())
+        execution.update({
+            "status": "PASS_REMOTE_MODE",
+            "execution_mode": "REMOTE",
+            "remote_inference_enabled": True,
+            "model_network_fetch_performed": False,
+        })
+        args.execution_mode_preflight.write_text(json.dumps(execution))
+        report = certifier.g24(args)
+        self.assertEqual(report["status"], "HOLD")
+        self.assertIn("LOCAL_OFFLINE_EXECUTION_POLICY_NOT_PASS", report["blockers"])
+
     def test_g24_holds_if_any_model_repair_adapter_is_blocked(self):
         args = self.g24_args()
         report = certifier.g24(args)
@@ -71,9 +85,14 @@ class AutomatedG23G24Tests(unittest.TestCase):
         readiness = json.loads(args.repair_readiness.read_text())
         readiness.update({"repair_adapter_status": "PASS_ALL_REQUIRED_ADAPTERS", "adapter_results": [{"status": "PASS"}]})
         args.repair_readiness.write_text(json.dumps(readiness))
-        endpoint = json.loads(args.endpoint_preflight.read_text())
-        endpoint["status"] = "PASS_CONFIGURATION_PRESENT"
-        args.endpoint_preflight.write_text(json.dumps(endpoint))
+        execution = json.loads(args.execution_mode_preflight.read_text())
+        execution.update({
+            "status": "PASS_LOCAL_OFFLINE",
+            "execution_mode": "LOCAL_OFFLINE",
+            "remote_inference_enabled": False,
+            "model_network_fetch_performed": False,
+        })
+        args.execution_mode_preflight.write_text(json.dumps(execution))
         functional = json.loads(args.functional_evidence.read_text())
         functional["functional_status"] = "PASS_ALL_DOMAIN_CASES"
         functional["tests"] = [{"case_id": case_id, "domain_id": domain, "status": "PASS"} for case_id, domain in certifier.REQUIRED_CASES.items()]
@@ -90,12 +109,17 @@ class AutomatedG23G24Tests(unittest.TestCase):
         worker = self.write_json("worker.json", {"worker": "CUSTOSZ_V9", "worker_status": "PASS", "source_commit": self.commit, "repair_status": "BLOCKED", "repair_execution_performed": False, "global_certification": "NOT_GRANTED", "canonical_promotion": "NOT_AUTHORIZED"})
         identity = self.write_json("identity.json", {"status": "PASS", "required_domain_count": 5})
         readiness = self.write_json("readiness.json", {"repair_adapter_status": "BLOCKED", "adapter_results": []})
-        endpoint = self.write_json("endpoint.json", {"status": "BLOCKED_CONFIGURATION_MISSING"})
+        execution = self.write_json("execution.json", {
+            "status": "BLOCKED_REMOTE_MODE",
+            "execution_mode": "REMOTE",
+            "remote_inference_enabled": True,
+            "model_network_fetch_performed": False,
+        })
         functional = self.write_json("functional.json", {"source_commit": self.commit, "functional_status": "FAIL_FUNCTIONAL_QUALITY", "tests": [], "domain_results": {}})
         return type("Args", (), {
             "bundle": self.bundle, "g23_report": g23, "build_report": build,
             "worker_evidence": worker, "model_materialization": identity,
-            "repair_readiness": readiness, "endpoint_preflight": endpoint,
+            "repair_readiness": readiness, "execution_mode_preflight": execution,
             "functional_evidence": functional,
         })()
 

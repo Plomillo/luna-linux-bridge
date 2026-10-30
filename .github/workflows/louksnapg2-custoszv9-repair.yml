@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - repair/louksnapg2-custoszv9-kestra-20261029
+      - repair/louksnapg2-functional-remediation-20261030
+      - repair/louksnapg2-local-offline-20261030
     paths:
       - "vendor/CUSTOSZV9.pyz"
       - "vendor/CUSTOSZV9.pyz.sha256"
@@ -194,22 +196,13 @@ jobs:
           retention-days: 90
 
   functional_evaluation:
-    name: "Real model semantic acceptance — source-pinned remote engines"
+    name: "Real model semantic acceptance — local offline engines"
     if: always() && needs.custosz_primary_worker.result == 'success'
     needs: [custosz_primary_worker]
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     permissions:
       contents: read
-    env:
-      LOUKSNAPG_REMOTE_CEREBRO_URL: ${{ secrets.LOUKSNAPG_REMOTE_CEREBRO_URL }}
-      LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX }}
-      LOUKSNAPG_REMOTE_TRANSCRIPTION_URL: ${{ secrets.LOUKSNAPG_REMOTE_TRANSCRIPTION_URL }}
-      LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX }}
-      LOUKSNAPG_REMOTE_TRANSLATION_URL: ${{ secrets.LOUKSNAPG_REMOTE_TRANSLATION_URL }}
-      LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX }}
-      LOUKSNAPG_REMOTE_ANALYSIS_URL: ${{ secrets.LOUKSNAPG_REMOTE_ANALYSIS_URL }}
-      LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX: ${{ secrets.LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX }}
     steps:
       - name: Checkout exact source commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -233,75 +226,60 @@ jobs:
           python -B tools/louksnapg2_independent_validator.py             --bundle out/louksnapg2-worker/candidate/LOUKSNAPG2.md             --max-bytes 490000000             --extract-to "$RUNNER_TEMP/louksnapg2-extracted"             --expected-source-commit "$GITHUB_SHA"             --report out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_PRECHECK.json
           python -B tools/louksnapg2_model_identity_evidence.py             --runtime-root "$RUNNER_TEMP/louksnapg2-extracted"             --output out/louksnapg2-functional/LOUKSNAPG2_MODEL_MATERIALIZATION.json
 
-      - name: Preflight all remote model endpoint secrets without revealing values
-        id: endpoint_preflight
+      - name: Enforce local/offline inference mode; no endpoint credentials required
+        id: execution_mode_preflight
         shell: bash
         run: |
           set -Eeuo pipefail
           python - <<'PY'
-          import datetime, json, os, re, sys
+          import datetime, json, os, sys
           from pathlib import Path
-          names=[
-            "LOUKSNAPG_REMOTE_CEREBRO_URL","LOUKSNAPG_REMOTE_CEREBRO_KEY_HEX",
-            "LOUKSNAPG_REMOTE_TRANSCRIPTION_URL","LOUKSNAPG_REMOTE_TRANSCRIPTION_KEY_HEX",
-            "LOUKSNAPG_REMOTE_TRANSLATION_URL","LOUKSNAPG_REMOTE_TRANSLATION_KEY_HEX",
-            "LOUKSNAPG_REMOTE_ANALYSIS_URL","LOUKSNAPG_REMOTE_ANALYSIS_KEY_HEX",
-          ]
-          missing=[]
-          for name in names:
-            value=os.environ.get(name,"")
-            if not value.strip(): missing.append(name)
-            elif name.endswith("_KEY_HEX") and not re.fullmatch(r"[0-9a-fA-F]{64}",value):
-              missing.append(name)
-          report={
-            "schema":"LOUKSNAPG_REMOTE_ENDPOINT_PREFLIGHT/1.0",
-            "observed_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z"),
-            "source_commit":os.environ["GITHUB_SHA"],
-            "status":"PASS_CONFIGURATION_PRESENT" if not missing else "BLOCKED_CONFIGURATION_MISSING",
-            "missing_environment_variable_names":sorted(set(missing)),
-            "secret_values_recorded":False,
-            "endpoint_contacted":False,
-            "model_inference_performed":False,
-            "full_size_model_downloaded":False,
-            "global_certification":"NOT_GRANTED",
+          remote_mode = os.environ.get("LOUKSNAPG_REMOTE_MODE", "off").strip().lower()
+          forbidden = sorted(
+            key for key, value in os.environ.items()
+            if key.startswith("LOUKSNAPG_REMOTE_")
+            and key not in {"LOUKSNAPG_REMOTE_MODE", "LOUKSNAPG_REMOTE_DOMAINS_REQUIRED"}
+            and value.strip()
+          )
+          valid = remote_mode in {"", "off"} and not forbidden
+          report = {
+            "schema": "LOUKSNAPG2_EXECUTION_MODE_PREFLIGHT/1.0",
+            "observed_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            "source_commit": os.environ["GITHUB_SHA"],
+            "status": "PASS_LOCAL_OFFLINE" if valid else "BLOCKED_NONLOCAL_EXECUTION_CONFIGURATION",
+            "execution_mode": "LOCAL_OFFLINE" if valid else "INVALID",
+            "remote_inference_enabled": False if valid else True,
+            "endpoint_credentials_required": False,
+            "endpoint_credentials_injected": False,
+            "forbidden_remote_environment_names": forbidden,
+            "model_network_fetch_performed": False,
+            "model_inference_performed": False,
+            "global_certification": "NOT_GRANTED"
           }
-          Path("out/louksnapg2-functional/REMOTE_ENDPOINT_CONFIGURATION_PREFLIGHT.json").write_text(json.dumps(report,sort_keys=True,indent=2)+"\n")
-          print(json.dumps(report,sort_keys=True,indent=2))
-          if missing:
-            names_to_domains={
-              "CEREBRO_ARITHMETIC_01":"D01_CEREBRO","CEREBRO_WORD_PROBLEM_02":"D01_CEREBRO",
-              "ANALYSIS_MULTI_STEP_01":"D06_SISTEMA_INTELIGENTE","ANALYSIS_LOGIC_02":"D06_SISTEMA_INTELIGENTE",
-              "GENERAL_TRANSLATION_EN_ES_01":"D04_TRADUCTOR_INTELIGENTE",
-              "GENERAL_TRANSLATION_ES_EN_02":"D04_TRADUCTOR_INTELIGENTE",
-              "GENERAL_TRANSLATION_EN_FR_03":"D04_TRADUCTOR_INTELIGENTE",
-              "GENERAL_TRANSLATION_FR_EN_04":"D04_TRADUCTOR_INTELIGENTE",
-              "ANCIENT_LATIN_01":"D04_TRADUCCION_LENGUAS_ANTIGUAS",
-              "ANCIENT_GREEK_02":"D04_TRADUCCION_LENGUAS_ANTIGUAS",
-              "WHISPER_AUDIO_01":"D03_TRANSCRIPCION","WHISPER_AUDIO_02":"D03_TRANSCRIPCION",
-              "DOCLING_INVOICE_IMAGE_01":"D05_INTELIGENCIA_DOCUMENTAL",
-            }
-            cases=[{"case_id":case,"domain_id":domain,"status":"BLOCKED","reason":"REMOTE_ENDPOINT_CONFIGURATION_MISSING"} for case,domain in names_to_domains.items()]
-            evidence={
-              "schema":"LOUKSNAPG2_REAL_MODEL_FUNCTIONAL_EVIDENCE/1.0",
-              "source_commit":os.environ["GITHUB_SHA"],
-              "functional_status":"BLOCKED_REMOTE_ENDPOINT_CONFIGURATION",
-              "tests":cases,"domain_results":{},
-              "summary":{"passed_cases":0,"total_cases":len(cases),"all_required_domains_pass":False},
-              "model_fetch_performed_by_evaluator":False,
-              "global_certification":"NOT_GRANTED",
-            }
-            Path("out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json").write_text(json.dumps(evidence,sort_keys=True,indent=2)+"\n")
+          Path("out/louksnapg2-functional/LOUKSNAPG2_EXECUTION_MODE_PREFLIGHT.json").write_text(
+            json.dumps(report, sort_keys=True, indent=2) + "\n"
+          )
+          print(json.dumps(report, sort_keys=True, indent=2))
+          if not valid:
             sys.exit(2)
           PY
 
-      - name: Install pinned CPU runtime for local D05 only
+      - name: Set up the locked CPU runtime interpreter
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+
+      - name: Install pinned runtime dependencies for local CPU inference
         shell: bash
         run: |
           set -Eeuo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends espeak-ng
-          python -m pip install --disable-pip-version-check --extra-index-url https://download.pytorch.org/whl/cpu             -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
-          python -m pip install --disable-pip-version-check "Pillow==11.3.0"
+          python -m venv "$RUNNER_TEMP/louksnapg2-venv"
+          VENV_PY="$RUNNER_TEMP/louksnapg2-venv/bin/python"
+          "$VENV_PY" -m pip install --disable-pip-version-check --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
+          "$VENV_PY" -c "import torch, transformers, PIL; print('D05_CPU_RUNTIME_READY', torch.__version__, transformers.__version__, PIL.__version__)"
+          echo "LOUKSNAPG2_PYTHON=$VENV_PY" >> "$GITHUB_ENV"
 
       - name: Create deterministic known-text audio and invoice image fixtures
         shell: bash
@@ -309,7 +287,7 @@ jobs:
           set -Eeuo pipefail
           espeak-ng -v en-us -s 135 -w "$RUNNER_TEMP/louksnapg2-audio-one.wav" "The meeting starts at noon."
           espeak-ng -v en-us -s 135 -w "$RUNNER_TEMP/louksnapg2-audio-two.wav" "Please turn left at the next street."
-          python - <<'PY'
+          "$LOUKSNAPG2_PYTHON" - <<'PY'
           import os
           from pathlib import Path
           from PIL import Image, ImageDraw, ImageFont
@@ -325,11 +303,11 @@ jobs:
           image.save(Path(os.environ["RUNNER_TEMP"])/"louksnapg2-invoice.png")
           PY
 
-      - name: Run semantic tests; four model domains are remote-only and D05 is explicit local-only
+      - name: Run every semantic acceptance case against local/offline engines
         shell: bash
         env:
-          LOUKSNAPG_REMOTE_MODE: selective
-          LOUKSNAPG_REMOTE_DOMAINS_REQUIRED: D01_CEREBRO,D03_TRANSCRIPCION,D04_TRADUCTOR_INTELIGENTE,D06_SISTEMA_INTELIGENTE
+          LOUKSNAPG_REMOTE_MODE: "off"
+          LOUKSNAPG_REMOTE_DOMAINS_REQUIRED: ""
           HF_HUB_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
           CAJITA_E2E_DIAGNOSTICS: "1"
@@ -337,7 +315,51 @@ jobs:
           set -Eeuo pipefail
           ulimit -v 6291456
           CPU="$(awk '/Cpus_allowed_list/ { split($2, values, /[-,]/); print values[1] }' /proc/self/status)"
-          taskset -c "$CPU" python -B tools/louksnapg2_functional_eval.py             --runtime-root "$RUNNER_TEMP/louksnapg2-extracted"             --audio-one "$RUNNER_TEMP/louksnapg2-audio-one.wav"             --audio-two "$RUNNER_TEMP/louksnapg2-audio-two.wav"             --docling-image "$RUNNER_TEMP/louksnapg2-invoice.png"             --output out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json
+          set +e
+          taskset -c "$CPU" "$LOUKSNAPG2_PYTHON" -B tools/louksnapg2_functional_eval.py \
+            --runtime-root "$RUNNER_TEMP/louksnapg2-extracted" \
+            --audio-one "$RUNNER_TEMP/louksnapg2-audio-one.wav" \
+            --audio-two "$RUNNER_TEMP/louksnapg2-audio-two.wav" \
+            --docling-image "$RUNNER_TEMP/louksnapg2-invoice.png" \
+            --output out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json
+          rc=$?
+          set -e
+          if [ ! -s out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json ]; then
+            python - <<'PY'
+          import json, os
+          from pathlib import Path
+          cases = {
+            "CEREBRO_ARITHMETIC_01":"D01_CEREBRO",
+            "CEREBRO_WORD_PROBLEM_02":"D01_CEREBRO",
+            "ANALYSIS_MULTI_STEP_01":"D06_SISTEMA_INTELIGENTE",
+            "ANALYSIS_LOGIC_02":"D06_SISTEMA_INTELIGENTE",
+            "GENERAL_TRANSLATION_EN_ES_01":"D04_TRADUCTOR_INTELIGENTE",
+            "GENERAL_TRANSLATION_ES_EN_02":"D04_TRADUCTOR_INTELIGENTE",
+            "GENERAL_TRANSLATION_EN_FR_03":"D04_TRADUCTOR_INTELIGENTE",
+            "GENERAL_TRANSLATION_FR_EN_04":"D04_TRADUCTOR_INTELIGENTE",
+            "ANCIENT_LATIN_01":"D04_TRADUCCION_LENGUAS_ANTIGUAS",
+            "ANCIENT_GREEK_02":"D04_TRADUCCION_LENGUAS_ANTIGUAS",
+            "WHISPER_AUDIO_01":"D03_TRANSCRIPCION",
+            "WHISPER_AUDIO_02":"D03_TRANSCRIPCION",
+            "DOCLING_INVOICE_IMAGE_01":"D05_INTELIGENCIA_DOCUMENTAL"
+          }
+          evidence = {
+            "schema":"LOUKSNAPG2_REAL_MODEL_FUNCTIONAL_EVIDENCE/1.0",
+            "source_commit":os.environ.get("GITHUB_SHA","UNKNOWN"),
+            "functional_status":"FAIL_EVALUATOR_RUNTIME",
+            "tests":[{"case_id":k,"domain_id":v,"status":"BLOCKED","quality_criterion_passed":False,"reason":"FUNCTIONAL_EVALUATOR_DID_NOT_PRODUCE_REPORT"} for k,v in cases.items()],
+            "domain_results":{},
+            "failed_cases":list(cases),
+            "summary":{"passed_cases":0,"total_cases":len(cases),"all_required_domains_pass":False},
+            "model_inference_performed":False,
+            "global_certification":"NOT_GRANTED"
+          }
+          out=Path("out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json")
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text(json.dumps(evidence,sort_keys=True,indent=2)+"\n")
+          PY
+          fi
+          exit "$rc"
 
       - name: Upload semantic and source-identity evidence
         if: always()
@@ -400,13 +422,31 @@ jobs:
           set -e
           echo "g23_rc=$rc" >> "$GITHUB_OUTPUT"
           echo "G23_VALIDATION_EXIT_CODE=$rc"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path("out/g23/LOUKSNAPG2_G23.json").read_text())
+          predicate={
+            "schema":"LOUKSNAPG2_G23_ATTESTATION_PREDICATE/1.0",
+            "gate":"G23",
+            "decision":report.get("status"),
+            "source_commit":report.get("source_commit"),
+            "candidate":report.get("candidate"),
+            "evidence":report.get("evidence"),
+            "blockers":report.get("blockers",[]),
+            "worker_self_certification":False,
+            "canonical_promotion":False
+          }
+          Path("out/g23/LOUKSNAPG2_G23_PREDICATE.json").write_text(json.dumps(predicate,sort_keys=True,indent=2)+"\n")
+          PY
 
       - name: Attest the exact G23 evidence with GitHub OIDC/Sigstore
         if: always() && hashFiles('out/g23/LOUKSNAPG2_G23.json') != ''
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-path: out/g23/LOUKSNAPG2_G23.json
-          predicate-type: https://slsa.dev/provenance/v1
+          predicate-type: https://github.com/Plomillo/luna-linux-bridge/attestation-predicate/g23/v1
+          predicate-path: out/g23/LOUKSNAPG2_G23_PREDICATE.json
 
       - name: Preserve G23 report and attestation
         if: always()
@@ -450,12 +490,33 @@ jobs:
           lfs: false
           persist-credentials: false
 
-      - name: Download all upstream evidence as separate artifact namespaces
+      - name: Download CUSTOSZ V9 candidate and worker evidence
         continue-on-error: true
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          pattern: "louksnapg2-*-${{ github.run_id }}"
-          path: out/evidence
+          name: louksnapg2-custoszv9-candidate-${{ github.run_id }}
+          path: out/evidence/worker
+
+      - name: Download source unit evidence
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-unit-evidence-${{ github.run_id }}
+          path: out/evidence/unit
+
+      - name: Download functional and model identity evidence
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-functional-evidence-${{ github.run_id }}
+          path: out/evidence/functional
+
+      - name: Download independent G23 report and OIDC attestation
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-g23-evidence-${{ github.run_id }}
+          path: out/evidence/g23
 
       - name: Verify G23 attestation issued by the separate G23 job
         id: verify_g23
@@ -465,14 +526,14 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p out/g24
-          G23_FILE="out/evidence/louksnapg2-g23-evidence-${GITHUB_RUN_ID}/LOUKSNAPG2_G23.json"
+          G23_FILE="out/evidence/g23/LOUKSNAPG2_G23.json"
           if [ ! -s "$G23_FILE" ]; then
             echo "G23_ATTESTATION_VERIFIED=false" >> "$GITHUB_ENV"
             echo "G23_EVIDENCE_MISSING"
             exit 0
           fi
           set +e
-          gh attestation verify "$G23_FILE" --repo "$GITHUB_REPOSITORY" > out/g24/G23_ATTESTATION_VERIFICATION.json 2>&1
+          gh attestation verify "$G23_FILE" --repo "$GITHUB_REPOSITORY" --predicate-type "https://github.com/Plomillo/luna-linux-bridge/attestation-predicate/g23/v1" > out/g24/G23_ATTESTATION_VERIFICATION.json 2>&1
           rc=$?
           set -e
           if [ "$rc" -eq 0 ]; then
@@ -491,18 +552,46 @@ jobs:
           set -Eeuo pipefail
           mkdir -p out/g24
           set +e
-          python -B tools/louksnapg2_automated_certifier.py g24             --bundle out/evidence/louksnapg2-custoszv9-candidate-${GITHUB_RUN_ID}/candidate/LOUKSNAPG2.md             --build-report out/evidence/louksnapg2-custoszv9-candidate-${GITHUB_RUN_ID}/candidate/LOUKSNAPG2_BUILD_REPORT.json             --worker-evidence out/evidence/louksnapg2-custoszv9-candidate-${GITHUB_RUN_ID}/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json             --model-materialization out/evidence/louksnapg2-functional-evidence-${GITHUB_RUN_ID}/LOUKSNAPG2_MODEL_MATERIALIZATION.json             --repair-readiness out/evidence/louksnapg2-custoszv9-candidate-${GITHUB_RUN_ID}/LOUKSNAPG2_REPAIR_READINESS.json             --endpoint-preflight out/evidence/louksnapg2-functional-evidence-${GITHUB_RUN_ID}/REMOTE_ENDPOINT_CONFIGURATION_PREFLIGHT.json             --functional-evidence out/evidence/louksnapg2-functional-evidence-${GITHUB_RUN_ID}/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json             --g23-report out/evidence/louksnapg2-g23-evidence-${GITHUB_RUN_ID}/LOUKSNAPG2_G23.json             --report out/g24/LOUKSNAPG2_G24_CERTIFICATE.json
+          python -B tools/louksnapg2_automated_certifier.py g24 \
+            --bundle out/evidence/worker/candidate/LOUKSNAPG2.md \
+            --build-report out/evidence/worker/candidate/LOUKSNAPG2_BUILD_REPORT.json \
+            --worker-evidence out/evidence/worker/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json \
+            --model-materialization out/evidence/functional/LOUKSNAPG2_MODEL_MATERIALIZATION.json \
+            --repair-readiness out/evidence/worker/LOUKSNAPG2_REPAIR_READINESS.json \
+            --execution-mode-preflight out/evidence/functional/LOUKSNAPG2_EXECUTION_MODE_PREFLIGHT.json \
+            --functional-evidence out/evidence/functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json \
+            --g23-report out/evidence/g23/LOUKSNAPG2_G23.json \
+            --report out/g24/LOUKSNAPG2_G24_CERTIFICATE.json
           rc=$?
           set -e
           echo "g24_rc=$rc" >> "$GITHUB_OUTPUT"
           echo "G24_DECISION_EXIT_CODE=$rc"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path("out/g24/LOUKSNAPG2_G24_CERTIFICATE.json").read_text())
+          predicate={
+            "schema":"LOUKSNAPG2_G24_ATTESTATION_PREDICATE/1.0",
+            "gate":"G24",
+            "decision":report.get("status"),
+            "source_commit":report.get("source_commit"),
+            "candidate":report.get("candidate"),
+            "g23":report.get("g23"),
+            "functional_status":report.get("functional_status"),
+            "model_repair_status":report.get("model_repair_status"),
+            "blockers":report.get("blockers",[]),
+            "canonical_promotion_authorized":False
+          }
+          Path("out/g24/LOUKSNAPG2_G24_PREDICATE.json").write_text(json.dumps(predicate,sort_keys=True,indent=2)+"\n")
+          PY
 
       - name: Attest the exact G24 decision with GitHub OIDC/Sigstore
         if: always() && hashFiles('out/g24/LOUKSNAPG2_G24_CERTIFICATE.json') != ''
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-path: out/g24/LOUKSNAPG2_G24_CERTIFICATE.json
-          predicate-type: https://slsa.dev/provenance/v1
+          predicate-type: https://github.com/Plomillo/luna-linux-bridge/attestation-predicate/g24/v1
+          predicate-path: out/g24/LOUKSNAPG2_G24_PREDICATE.json
 
       - name: Preserve G24 decision, G23 verification and attestations
         if: always()
