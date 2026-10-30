@@ -40,6 +40,11 @@ jobs:
           lfs: false
           persist-credentials: false
 
+      - name: Initialize persistent evidence directory before setup
+        run: |
+          mkdir -p out/louksnapg2-direct-functional
+          printf '%s\\n' "NOT_RUN" > out/louksnapg2-direct-functional/WORKFLOW_PREFLIGHT_STATUS.txt
+
       - name: Materialize only the existing GPT-OSS LFS object
         shell: bash
         run: |
@@ -52,7 +57,6 @@ jobs:
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
           python-version: "3.13"
-          cache: false
 
       - name: Install local audio fixture generator
         shell: bash
