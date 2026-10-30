@@ -168,17 +168,28 @@ def prepare_historical_runtime(current_root: Path, historical_root: Path, domain
     cajita_task_adapters.ADAPTERS[domain]["sha"] = copied_sha
     cajita_task_adapters.ADAPTERS[domain]["bytes"] = destination.stat().st_size
 
-    descriptor_path = temp_root / spec["module"] / "CAJITA_MODULE.json"
-    descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
-    registration = descriptor.get("consumer_adapter_registration", {})
-    registration.update({
-        "weight_sha256": copied_sha,
-        "weight_bytes": destination.stat().st_size,
-        "weight_manifest_sha256": manifest_sha,
-    })
-    registration["adapter_source_sha256"] = digest(adapter_path)
-    descriptor["consumer_adapter_registration"] = registration
+    adapter_source_sha = digest(adapter_path)
+    descriptor_paths = sorted(temp_root.rglob("CAJITA_MODULE.json"))
+    selected_descriptor = None
+    for descriptor_path in descriptor_paths:
+        descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+        registration = descriptor.get("consumer_adapter_registration")
+        if not isinstance(registration, dict):
+            continue
+        registration["weight_manifest_sha256"] = manifest_sha
+        if descriptor_path.parent == temp_root / spec["module"]:
+            registration.update({
+                "weight_sha256": copied_sha,
+                "weight_bytes": destination.stat().st_size,
+            })
+            registration["adapter_source_sha256"] = adapter_source_sha
+            selected_descriptor = descriptor_path
+        write_json(descriptor_path, descriptor)
+    if selected_descriptor is None:
+        raise RuntimeError("SELECTED_MODULE_DESCRIPTOR_MISSING")
 
+    descriptor_path = selected_descriptor
+    descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
     module_root = temp_root / spec["module"]
     rows = cajita_task_adapters.tree_rows(module_root)
     tokenizer_manifest = temp_root / cajita_task_adapters.TOKENIZER_MANIFEST_NAME
