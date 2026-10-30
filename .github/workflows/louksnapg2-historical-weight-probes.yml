@@ -82,24 +82,29 @@ jobs:
           git lfs pull --include="cajita-luna-runtime/1. Cerebro/model.safetensors" --exclude="" origin "$GITHUB_SHA"
           git lfs checkout "cajita-luna-runtime/1. Cerebro/model.safetensors"
 
-      - name: Create a detached worktree at the repository-retained pre-Q2 source commit
+      - name: Create detached worktrees for pre-Q2 and historical Q4 candidates
         if: env.SKIP_DOMAIN != 'true'
         shell: bash
         env:
           HISTORICAL_COMMIT: b2de57890fa08bc2b639c3e021868b2d91a97716
+          Q4_COMMIT: fa8b64b1319605e050c2064f955f5fbf47951908
         run: |
           set -Eeuo pipefail
           git cat-file -e "$HISTORICAL_COMMIT^{commit}"
           git worktree add --detach "$RUNNER_TEMP/louksnapg2-historical" "$HISTORICAL_COMMIT"
+          git worktree add --detach "$RUNNER_TEMP/louksnapg2-q4" "$Q4_COMMIT"
           if [ "${{ matrix.domain }}" = "D01_CEREBRO" ]; then
-            git -C "$RUNNER_TEMP/louksnapg2-historical" lfs install --local
-            git -C "$RUNNER_TEMP/louksnapg2-historical" lfs pull \
-              --include="cajita-luna-runtime/1. Cerebro/model.safetensors" \
-              --exclude="" origin "$HISTORICAL_COMMIT"
-            git -C "$RUNNER_TEMP/louksnapg2-historical" lfs checkout \
-              "cajita-luna-runtime/1. Cerebro/model.safetensors"
+            for root in "$RUNNER_TEMP/louksnapg2-historical" "$RUNNER_TEMP/louksnapg2-q4"; do
+              git -C "$root" lfs install --local
+              git -C "$root" lfs pull \
+                --include="cajita-luna-runtime/1. Cerebro/model.safetensors" \
+                --exclude="" origin "$([ "$root" = "$RUNNER_TEMP/louksnapg2-historical" ] && echo "$HISTORICAL_COMMIT" || echo "$Q4_COMMIT")"
+              git -C "$root" lfs checkout \
+                "cajita-luna-runtime/1. Cerebro/model.safetensors"
+            done
           fi
           test -d "$RUNNER_TEMP/louksnapg2-historical/cajita-luna-runtime"
+          test -d "$RUNNER_TEMP/louksnapg2-q4/cajita-luna-runtime"
 
       - name: Generate deterministic offline speech samples
         if: env.SKIP_DOMAIN != 'true' && matrix.domain == 'D03_TRANSCRIPCION'
@@ -125,8 +130,9 @@ jobs:
           args=(
             --runtime-root cajita-luna-runtime
             --historical-root "$RUNNER_TEMP/louksnapg2-historical/cajita-luna-runtime"
+            --q4-root "$RUNNER_TEMP/louksnapg2-q4/cajita-luna-runtime"
             --domain "${{ matrix.domain }}"
-            --output "out/${{ matrix.domain }}/HISTORICAL_WEIGHT_PROBE.json"
+            --output "out/${{ matrix.domain }}/PRECISION_WEIGHT_PROBE.json"
           )
           if [ "${{ matrix.domain }}" = "D03_TRANSCRIPCION" ]; then
             args+=(--audio-one "$RUNNER_TEMP/audio-one.wav" --audio-two "$RUNNER_TEMP/audio-two.wav")
