@@ -85,7 +85,7 @@ jobs:
             "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/CAJITA_MODULE.json" \
             "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/CAJITA_MODULE.json" \
             "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/CAJITA_MODULE.json"
-          git diff --cached --name-only > out/louksnapg2-module-integrity/COMMITTED_PATHS.txt
+          git -c core.quotePath=false diff --cached --name-only > out/louksnapg2-module-integrity/COMMITTED_PATHS.txt
           python - <<'PY'
           from pathlib import Path
           allowed = {
