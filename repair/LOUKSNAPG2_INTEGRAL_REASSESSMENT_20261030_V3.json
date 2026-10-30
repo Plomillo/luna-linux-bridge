@@ -1,0 +1,274 @@
+{
+  "schema": "LOUKSNAPG2_INTEGRAL_REASSESSMENT/1.2",
+  "observed_at_utc": "2026-10-30T11:35:00Z",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch": "louksnapg2/puac2-alternative-20261029",
+  "current_branch_commit": "56a608a67a2166bdcac1a99b25902e1057008f3f",
+  "evidence_predecessors": [
+    "repair/LOUKSNAPG2_INTEGRAL_REASSESSMENT_20261030_V1.json",
+    "repair/LOUKSNAPG2_INTEGRAL_REASSESSMENT_20261030_V2.json"
+  ],
+  "assessment": "HOLD_NOT_CERTIFIED",
+  "execution_constraints": {
+    "local_offline_only": true,
+    "external_model_downloads": false,
+    "remote_model_endpoints_used": false,
+    "original_model_weights_mutated": false,
+    "model_weights_mutated": false,
+    "new_branches_created": false,
+    "custosz_v9_invoked_or_modified": false,
+    "canonical_release_or_merge_performed": false
+  },
+  "direct_13_case_evaluation": {
+    "run_id": 41048033312,
+    "source_commit": "97cf82685143732599c291def37d43c49a22ce95",
+    "workflow_result": "success_as_diagnostic",
+    "functional_status": "FAIL_FUNCTIONAL_QUALITY",
+    "model_inference_performed": true,
+    "source_model_identity_status": "PASS_MODEL_SOURCE_IDENTITIES",
+    "global_runtime_preflight": "PASS_MODEL_SOURCE_IDENTITIES",
+    "cases_total": 13,
+    "cases_passed": 0,
+    "cases_failed": 13,
+    "functional_exit_code": 2,
+    "global_certification": "NOT_GRANTED_BY_FUNCTIONAL_EVALUATION",
+    "artifact": {
+      "id": 12973193913,
+      "name": "louksnapg2-direct-functional-evidence",
+      "bytes": 31148,
+      "sha256": "1ddec4eabf7c886610e168b243dc551ecb0c4464135789f0850d10f17c73b893",
+      "expired": false
+    },
+    "cases": [
+      {
+        "case_id": "CEREBRO_ARITHMETIC_01",
+        "domain": "D01_CEREBRO",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      },
+      {
+        "case_id": "CEREBRO_WORD_PROBLEM_02",
+        "domain": "D01_CEREBRO",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      },
+      {
+        "case_id": "ANALYSIS_MULTI_STEP_01",
+        "domain": "D06_SISTEMA_INTELIGENTE",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      },
+      {
+        "case_id": "ANALYSIS_LOGIC_02",
+        "domain": "D06_SISTEMA_INTELIGENTE",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      },
+      {
+        "case_id": "GENERAL_TRANSLATION_EN_ES_01",
+        "domain": "D04_TRADUCTOR_INTELIGENTE",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      },
+      {
+        "case_id": "GENERAL_TRANSLATION_ES_EN_02",
+        "domain": "D04_TRADUCTOR_INTELIGENTE",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      },
+      {
+        "case_id": "GENERAL_TRANSLATION_EN_FR_03",
+        "domain": "D04_TRADUCTOR_INTELIGENTE",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      },
+      {
+        "case_id": "GENERAL_TRANSLATION_FR_EN_04",
+        "domain": "D04_TRADUCTOR_INTELIGENTE",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      },
+      {
+        "case_id": "ANCIENT_LATIN_01",
+        "domain": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      },
+      {
+        "case_id": "ANCIENT_GREEK_02",
+        "domain": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      },
+      {
+        "case_id": "WHISPER_AUDIO_01",
+        "domain": "D03_TRANSCRIPCION",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      },
+      {
+        "case_id": "WHISPER_AUDIO_02",
+        "domain": "D03_TRANSCRIPCION",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      },
+      {
+        "case_id": "DOCLING_INVOICE_IMAGE_01",
+        "domain": "D05_INTELIGENCIA_DOCUMENTAL",
+        "execution": "PASS_EXECUTION",
+        "quality": "FAIL"
+      }
+    ],
+    "docling_fixture": "The full 13-case run used the corrected high-contrast large-type invoice fixture.",
+    "observed_output_pattern": "GPT-OSS/Qwen3 and translation/transcription outputs were degenerate or unrelated token sequences; Docling output was also not a valid invoice extraction."
+  },
+  "historical_factor_comparison": {
+    "run_id": 41048033319,
+    "source_commit": "97cf82685143732599c291def37d43c49a22ce95",
+    "workflow_result": "success_as_diagnostic",
+    "domains": {
+      "D01_CEREBRO": {
+        "current_q2": "0/2",
+        "historical_pre_q2": "0/2",
+        "delta": 0,
+        "source_hash_exact_match": true,
+        "job_id": 124036864133,
+        "artifact_id": 12973840621
+      },
+      "D03_TRANSCRIPCION": {
+        "current_q2": "0/2",
+        "historical_pre_q2": "0/2",
+        "delta": 0,
+        "source_hash_exact_match": true,
+        "job_id": 124036864707,
+        "artifact_id": 12973780822
+      },
+      "D04_TRADUCTOR_INTELIGENTE": {
+        "current_q2": "0/4",
+        "historical_pre_q2": "0/4",
+        "delta": 0,
+        "source_hash_exact_match": true,
+        "job_id": 124036864517,
+        "artifact_id": 12972494792
+      },
+      "D06_SISTEMA_INTELIGENTE": {
+        "current_q2": "0/2",
+        "historical_pre_q2": "0/2",
+        "delta": 0,
+        "source_hash_exact_match": true,
+        "job_id": 124036864502,
+        "artifact_id": 12973985289
+      }
+    },
+    "conclusion": "No historical pre-Q2 factor candidate passed any semantic acceptance case."
+  },
+  "q2_vs_q4_precision_comparison": {
+    "run_id": 41048033403,
+    "source_commit": "97cf82685143732599c291def37d43c49a22ce95",
+    "workflow_result": "success_as_diagnostic",
+    "domains": {
+      "D01_CEREBRO": {
+        "q2": "0/2",
+        "q4": "0/2",
+        "delta": 0,
+        "same_factor_source": true,
+        "job_id": 124036864929,
+        "artifact_id": 12972734202
+      },
+      "D03_TRANSCRIPCION": {
+        "q2": "0/2",
+        "q4": "0/2",
+        "delta": 0,
+        "same_factor_source": true,
+        "job_id": 124036864974,
+        "artifact_id": 12973467188
+      },
+      "D04_TRADUCTOR_INTELIGENTE": {
+        "q2": "0/4",
+        "q4": "0/4",
+        "delta": 0,
+        "same_factor_source": true,
+        "job_id": 124036864620,
+        "artifact_id": 12972494844
+      },
+      "D06_SISTEMA_INTELIGENTE": {
+        "q2": "0/2",
+        "q4": "0/2",
+        "delta": 0,
+        "same_factor_source": true,
+        "job_id": 124036864989,
+        "artifact_id": 12973018506
+      }
+    },
+    "conclusion": "Q4 storage precision did not improve any semantic acceptance count. The source factors are identical by SHA-256 to the Q2 factor source."
+  },
+  "docling_isolated_retest": {
+    "run_id": 41048853883,
+    "source_commit": "56a608a67a2166bdcac1a99b25902e1057008f3f",
+    "status": "IN_PROGRESS",
+    "active_step": "Run the isolated Docling semantic acceptance case offline",
+    "fixture": "High-contrast 1400x900 invoice, 84px heading, 64px fields, separator line; expected invoice number 4821 and total 37.50.",
+    "purpose": "Independent single-model confirmation after the full-suite D05 failure.",
+    "prior_workflow_issue": {
+      "run_id": 41048684522,
+      "status": "FAIL_BEFORE_MODEL_INFERENCE",
+      "reason": "The output directory was created before checkout and removed by checkout.",
+      "corrected_in_commit": "56a608a67a2166bdcac1a99b25902e1057008f3f",
+      "model_inference_performed": false
+    },
+    "certification": "NOT_GRANTED_BY_ISOLATED_PROBE"
+  },
+  "structural_and_contract_gates": {
+    "reconciliation_run_id": 41041139751,
+    "reconciliation_result": "PASS_RECONCILED_MODULE_INTEGRITY",
+    "model_identity": "PASS_5_OF_5",
+    "global_runtime_preflight": "PASS_MODEL_SOURCE_IDENTITIES",
+    "model_weights_mutated": false,
+    "weight_manifest_mutated": false,
+    "module_descriptor_only_changes": 4,
+    "g24_contract_run_id": 41048033347,
+    "g24_contract_result": "success",
+    "certification_effect": "Structural integrity and contract tests do not override the failed semantic acceptance evidence."
+  },
+  "model_repair_blockers": {
+    "D01_CEREBRO": {
+      "repair_adapter": "NOT_IMPLEMENTED",
+      "rank": 1,
+      "aggregate_relative_frobenius_error_after_int8": 0.9983363410727844
+    },
+    "D03_TRANSCRIPCION": {
+      "repair_adapter": "EXPERIMENTAL_FAILED",
+      "rank": 29
+    },
+    "D04_TRADUCTOR_INTELIGENTE": {
+      "repair_adapter": "NOT_IMPLEMENTED",
+      "rank": 4
+    },
+    "D05_INTELIGENCIA_DOCUMENTAL": {
+      "repair_adapter": "NOT_IMPLEMENTED",
+      "note": "The current full direct invoice case failed quality; isolated retest remains active."
+    },
+    "D06_SISTEMA_INTELIGENTE": {
+      "repair_adapter": "NOT_IMPLEMENTED",
+      "rank": 12,
+      "aggregate_relative_frobenius_error_after_int8": 0.9964088220513415
+    },
+    "D04_TRADUCCION_LENGUAS_ANTIGUAS": {
+      "repair_adapter": "BLOCKED_NO_TRANSLATION_RESOURCE"
+    }
+  },
+  "release_gates": {
+    "source_model_identity": "PASS",
+    "module_integrity": "PASS",
+    "runtime_preflight": "PASS",
+    "g24_contract": "PASS",
+    "semantic_13_cases": "FAIL_0_OF_13",
+    "historical_pre_q2_comparison": "FAIL_NO_SEMANTIC_IMPROVEMENT",
+    "q4_precision_comparison": "FAIL_NO_SEMANTIC_IMPROVEMENT",
+    "g23_candidate_validation": "NOT_GRANTED_FOR_REPAIRED_CANDIDATE",
+    "g24_terminal_certification": "HOLD",
+    "global_certification": "NOT_GRANTED",
+    "terminal_decision": "HOLD_NOT_CERTIFIED"
+  },
+  "final_interpretation": "The current repository candidate is source-identifiable and its runtime preflight passes, but all 13 required semantic cases fail despite successful model execution. Pre-Q2 rollback and Q4 repacking do not improve quality. Integral certification is denied until actual model-specific repair candidates pass the semantic suite and independent G23/G24/rollback evidence."
+}
