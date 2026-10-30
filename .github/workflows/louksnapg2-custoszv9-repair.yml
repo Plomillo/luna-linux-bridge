@@ -115,7 +115,14 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksnapg2-custoszv9-candidate-${{ github.run_id }}
-          path: out/louksnapg2-worker/
+          path: |
+            out/louksnapg2-worker/candidate/LOUKSNAPG2.md
+            out/louksnapg2-worker/candidate/LOUKSNAPG2_BUILD_REPORT.json
+            out/louksnapg2-worker/LOUKSNAPG2_REPAIR_READINESS.json
+            out/louksnapg2-worker/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json
+            out/louksnapg2-worker/custoszv9-version.txt
+            out/louksnapg2-worker/custoszv9-selftest.json
+            out/louksnapg2-worker/louksnapg2-custoszv9-worker.log
           if-no-files-found: warn
           retention-days: 30
 
