@@ -228,7 +228,36 @@ def evaluate(root: Path, domain: str, audio_one: Path | None, audio_two: Path | 
     from louksnapg2_engine import LouksnapG2Runtime
 
     runtime = LouksnapG2Runtime(root, threads=1)
-    preflight = runtime.preflight()
+    # This probe compares one model at a time. The standard runtime preflight
+    # traverses every packaged model and can be blocked by an unrelated domain
+    # (for example, the GPT-OSS LFS object while Whisper is under test). Validate
+    # the selected model's complete manifest, weight and module tree only.
+    from cajita_task_adapters import verify_integrity
+    try:
+        selected_integrity = verify_integrity(root, domain)
+    except Exception as exc:
+        preflight = {
+            "status": "FAIL_SELECTED_DOMAIN_SOURCE_IDENTITY",
+            "selected_domain": domain,
+            "reason": type(exc).__name__ + ":" + str(exc)[:500],
+        }
+        result = {
+            "domain_id": domain,
+            "preflight": preflight,
+            "tests": [],
+            "pass_count": 0,
+            "total_cases": 0,
+            "status": "HOLD_PREFLIGHT",
+        }
+        return result
+    runtime._model_evidence = {domain: selected_integrity}
+    preflight = {
+        "status": "PASS_SELECTED_DOMAIN_SOURCE_IDENTITY",
+        "selected_domain": domain,
+        "model_identity": selected_integrity,
+        "global_model_identity": "NOT_CHECKED_BY_SINGLE_DOMAIN_PROBE",
+        "new_external_model_fetch_performed": False,
+    }
     result = {
         "domain_id": domain,
         "preflight": preflight,
@@ -236,9 +265,6 @@ def evaluate(root: Path, domain: str, audio_one: Path | None, audio_two: Path | 
         "pass_count": 0,
         "total_cases": 0,
     }
-    if preflight.get("status") != "PASS_MODEL_SOURCE_IDENTITIES":
-        result["status"] = "HOLD_PREFLIGHT"
-        return result
 
     cases = list(DOMAINS[domain]["cases"])
     if domain == "D03_TRANSCRIPCION":
