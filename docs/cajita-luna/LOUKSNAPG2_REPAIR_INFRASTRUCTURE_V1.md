@@ -37,7 +37,7 @@ La distribución sí contiene pesos compactos de seis artefactos. Eso no equival
 
 En el equipo local, la raíz estaba al 100% (3.5 GB libres), la memoria disponible era aproximadamente 1.47 GiB y no se detectó GPU NVIDIA. No se cargaron modelos, descargaron pesos ni ejecutaron entrenamientos allí.
 
-Kestra local 1.3.45 estaba en ejecución, pero la API no respondió durante la verificación. Se añade el flujo a `/var/lib/kestra/flows`, que es la ruta vigilada configurada. La carga/ejecución efectiva debe confirmarse en Kestra. No se observó GitHub token en el entorno de ese proceso; por ello el flujo nuevo es supervisor de solo lectura y no hace dispatch.
+Kestra local 1.3.45 estaba en ejecución, pero la API no respondió durante la verificación. El flujo supervisor quedó versionado en `integrations/kestra/flows/louksnapg2_custoszv9_repair_supervisor.yml`. La copia a `/var/lib/kestra/flows` falló con `ENOSPC` (sin espacio disponible), así que no está desplegado ni cargado en la instancia local. No se observó GitHub token en el entorno de ese proceso; el flujo es supervisor de solo lectura y no hace dispatch.
 
 ## Resultado y bloqueos
 
