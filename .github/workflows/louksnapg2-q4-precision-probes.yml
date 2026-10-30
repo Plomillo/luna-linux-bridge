@@ -1,0 +1,128 @@
+name: LOUKSNAPG2 repository-retained Q4 precision probes
+
+on:
+  push:
+    branches:
+      - louksnapg2/puac2-alternative-20261029
+    paths:
+      - "tools/louksnapg2_q4_precision_probe.py"
+      - ".github/workflows/louksnapg2-q4-precision-probes.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg2-q4-precision-probes-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compare-q2-to-q4:
+    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        domain:
+          - D01_CEREBRO
+          - D03_TRANSCRIPCION
+          - D04_TRADUCTOR_INTELIGENTE
+          - D06_SISTEMA_INTELIGENTE
+    steps:
+      - name: Checkout active Q2 candidate source without blanket LFS hydration
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          lfs: false
+          persist-credentials: true
+
+      - name: Set up Python runtime
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+
+      - name: Install repository-pinned CPU runtime
+        run: |
+          python -m pip install --disable-pip-version-check \
+            --extra-index-url https://download.pytorch.org/whl/cpu \
+            -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
+
+      - name: Install local speech fixture generator
+        if: matrix.domain == 'D03_TRANSCRIPCION'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y espeak-ng
+
+      - name: Materialize active Q2 GPT-OSS LFS object only for the GPT probe
+        if: matrix.domain == 'D01_CEREBRO'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git lfs install --local
+          git lfs pull --include="cajita-luna-runtime/1. Cerebro/model.safetensors" --exclude="" origin "$GITHUB_SHA"
+          git lfs checkout "cajita-luna-runtime/1. Cerebro/model.safetensors"
+
+      - name: Check out exact in-repository historical Q4 candidate
+        shell: bash
+        env:
+          Q4_COMMIT: fa8b64b1319605e050c2064f955f5fbf47951908
+        run: |
+          set -Eeuo pipefail
+          git cat-file -e "$Q4_COMMIT^{commit}"
+          git worktree add --detach "$RUNNER_TEMP/louksnapg2-q4" "$Q4_COMMIT"
+          if [ "${{ matrix.domain }}" = "D01_CEREBRO" ]; then
+            git -C "$RUNNER_TEMP/louksnapg2-q4" lfs install --local
+            git -C "$RUNNER_TEMP/louksnapg2-q4" lfs pull \
+              --include="cajita-luna-runtime/1. Cerebro/model.safetensors" \
+              --exclude="" origin "$Q4_COMMIT"
+            git -C "$RUNNER_TEMP/louksnapg2-q4" lfs checkout \
+              "cajita-luna-runtime/1. Cerebro/model.safetensors"
+          fi
+          test -d "$RUNNER_TEMP/louksnapg2-q4/cajita-luna-runtime"
+
+      - name: Generate deterministic offline speech fixtures
+        if: matrix.domain == 'D03_TRANSCRIPCION'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          espeak-ng -v en-us -s 135 -w "$RUNNER_TEMP/audio-one.wav" "The meeting starts at noon."
+          espeak-ng -v en-us -s 135 -w "$RUNNER_TEMP/audio-two.wav" "Please turn left at the next street."
+          test -s "$RUNNER_TEMP/audio-one.wav"
+          test -s "$RUNNER_TEMP/audio-two.wav"
+
+      - name: Compare active Q2 and historical Q4 factors with the same semantic cases
+        shell: bash
+        env:
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          NUMEXPR_NUM_THREADS: "1"
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          LOUKSNAPG_REMOTE_MODE: "off"
+          LOUKSNAPG_REMOTE_DOMAINS_REQUIRED: ""
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "out/${{ matrix.domain }}"
+          args=(
+            --runtime-root cajita-luna-runtime
+            --q4-root "$RUNNER_TEMP/louksnapg2-q4/cajita-luna-runtime"
+            --domain "${{ matrix.domain }}"
+            --output "out/${{ matrix.domain }}/Q2_VS_HISTORICAL_Q4_PRECISION_PROBE.json"
+          )
+          if [ "${{ matrix.domain }}" = "D03_TRANSCRIPCION" ]; then
+            args+=(--audio-one "$RUNNER_TEMP/audio-one.wav" --audio-two "$RUNNER_TEMP/audio-two.wav")
+          fi
+          python -B tools/louksnapg2_q4_precision_probe.py "${args[@]}"
+
+      - name: Preserve Q2-to-Q4 model evaluation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-q4-precision-probe-${{ matrix.domain }}
+          path: out/${{ matrix.domain }}/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
