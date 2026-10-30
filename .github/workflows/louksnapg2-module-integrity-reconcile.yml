@@ -1,0 +1,120 @@
+name: LOUKSNAPG2 — reconcile source-derived Cajita module integrity
+
+on:
+  push:
+    branches:
+      - louksnapg2/puac2-alternative-20261029
+    paths:
+      - "tools/cajita_reconcile_module_integrity.py"
+      - "tests/test_cajita_reconcile_module_integrity.py"
+      - ".github/workflows/louksnapg2-module-integrity-reconcile.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: louksnapg2-module-integrity-reconcile-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  reconcile-and-validate:
+    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact branch commit with explicit LFS hydration disabled
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          lfs: false
+          persist-credentials: true
+
+      - name: Materialize the exact manifest-pinned GPT-OSS LFS object
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git lfs install --local
+          git lfs pull --include="cajita-luna-runtime/1. Cerebro/model.safetensors" --exclude="" origin "$GITHUB_SHA"
+          git lfs checkout "cajita-luna-runtime/1. Cerebro/model.safetensors"
+
+      - name: Test deterministic derived-integrity calculations
+        run: python -B -m unittest discover -s tests -p "test_cajita_reconcile_module_integrity.py" -v
+
+      - name: Recompute only module tree descriptors and verify unchanged weight identities
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/louksnapg2-module-integrity
+          python -B tools/cajita_reconcile_module_integrity.py \
+            --runtime-root cajita-luna-runtime \
+            --output out/louksnapg2-module-integrity/CAJITA_MODULE_INTEGRITY_RECONCILIATION.json \
+            --write
+
+      - name: Verify all five original model identities and runtime preflight
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/cajita-luna-runtime:${{ github.workspace }}/cajita-luna-runtime/LOUKSNAPG2_RUNTIME
+        run: |
+          set -Eeuo pipefail
+          python -B tools/louksnapg2_model_identity_evidence.py \
+            --runtime-root cajita-luna-runtime \
+            --output out/louksnapg2-module-integrity/LOUKSNAPG2_MODEL_IDENTITY.json
+          python -B cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_service.py \
+            --runtime-root cajita-luna-runtime preflight \
+            | tee out/louksnapg2-module-integrity/LOUKSNAPG2_RUNTIME_PREFLIGHT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          model = json.loads(Path("out/louksnapg2-module-integrity/LOUKSNAPG2_MODEL_IDENTITY.json").read_text())
+          runtime = json.loads(Path("out/louksnapg2-module-integrity/LOUKSNAPG2_RUNTIME_PREFLIGHT.json").read_text())
+          if model.get("status") != "PASS" or runtime.get("status") != "PASS_MODEL_SOURCE_IDENTITIES":
+              raise SystemExit("MODEL_IDENTITY_OR_RUNTIME_PREFLIGHT_NOT_PASS")
+          print("ALL_FIVE_MODEL_IDENTITIES=PASS")
+          print("LOUKSNAPG2_GLOBAL_RUNTIME_PREFLIGHT=PASS")
+          PY
+
+      - name: Commit only the five regenerated CAJITA_MODULE descriptors
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git add -- \
+            "cajita-luna-runtime/1. Cerebro/CAJITA_MODULE.json" \
+            "cajita-luna-runtime/3. Transcripción/CAJITA_MODULE.json" \
+            "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/CAJITA_MODULE.json" \
+            "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/CAJITA_MODULE.json" \
+            "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/CAJITA_MODULE.json"
+          git diff --cached --name-only > out/louksnapg2-module-integrity/COMMITTED_PATHS.txt
+          python - <<'PY'
+          from pathlib import Path
+          allowed = {
+              "cajita-luna-runtime/1. Cerebro/CAJITA_MODULE.json",
+              "cajita-luna-runtime/3. Transcripción/CAJITA_MODULE.json",
+              "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/CAJITA_MODULE.json",
+              "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/CAJITA_MODULE.json",
+              "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/CAJITA_MODULE.json",
+          }
+          observed = set(Path("out/louksnapg2-module-integrity/COMMITTED_PATHS.txt").read_text().splitlines())
+          if not observed.issubset(allowed):
+              raise SystemExit("UNAUTHORIZED_PATH_STAGED:" + repr(sorted(observed - allowed)))
+          print("DESCRIPTOR_ONLY_CHANGESET=" + str(len(observed)))
+          PY
+          if git diff --cached --quiet; then
+            echo "MODULE_DESCRIPTORS_ALREADY_CURRENT=true"
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "Reconcile source-derived Cajita module integrity descriptors"
+          git push origin "HEAD:refs/heads/louksnapg2/puac2-alternative-20261029"
+
+      - name: Preserve integrity reconciliation and independent preflight evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-module-integrity-reconciliation
+          path: out/louksnapg2-module-integrity/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
