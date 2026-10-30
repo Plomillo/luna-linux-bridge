@@ -29,13 +29,31 @@ G23_SIGNED_SCHEMA = "CAJITA_PUAC2_G23_SIGNED/1.0"
 G24_SIGNED_SCHEMA = "CAJITA_PUAC2_G24_SIGNED/1.0"
 MAX_BYTES = 490_000_000
 PRODUCER_ID = "CUSTOSZ_V9"
-REQUIRED_DOMAINS = (
-    "D01_CEREBRO",
-    "D06_SISTEMA_INTELIGENTE",
-    "D04_TRADUCTOR_INTELIGENTE",
-    "D04_TRADUCCION_LENGUAS_ANTIGUAS",
-    "D03_TRANSCRIPCION",
+REQUIRED_CASES = {
+    "CEREBRO_ARITHMETIC_01": "D01_CEREBRO",
+    "CEREBRO_WORD_PROBLEM_02": "D01_CEREBRO",
+    "ANALYSIS_MULTI_STEP_01": "D06_SISTEMA_INTELIGENTE",
+    "ANALYSIS_LOGIC_02": "D06_SISTEMA_INTELIGENTE",
+    "GENERAL_TRANSLATION_EN_ES_01": "D04_TRADUCTOR_INTELIGENTE",
+    "GENERAL_TRANSLATION_ES_EN_02": "D04_TRADUCTOR_INTELIGENTE",
+    "GENERAL_TRANSLATION_EN_FR_03": "D04_TRADUCTOR_INTELIGENTE",
+    "GENERAL_TRANSLATION_FR_EN_04": "D04_TRADUCTOR_INTELIGENTE",
+    "ANCIENT_LATIN_01": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+    "ANCIENT_GREEK_02": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+    "WHISPER_AUDIO_01": "D03_TRANSCRIPCION",
+    "WHISPER_AUDIO_02": "D03_TRANSCRIPCION",
+    "DOCLING_INVOICE_IMAGE_01": "D05_INTELIGENCIA_DOCUMENTAL",
+}
+REQUIRED_DOMAINS = tuple(sorted(set(REQUIRED_CASES.values())))
+REQUIRED_REPAIR_DOMAINS = REQUIRED_DOMAINS
+REPAIR_DIGEST_FIELDS = (
+    "source_weight_sha256",
+    "adapter_sha256",
+    "calibration_dataset_sha256",
+    "heldout_dataset_sha256",
+    "rollback_checkpoint_sha256",
 )
+SHA256_RE = __import__("re").compile(r"^[0-9a-f]{64}$")
 
 
 def sha256_file(path: Path) -> str:
@@ -241,12 +259,118 @@ def g24_payload(args) -> dict:
     for domain in REQUIRED_DOMAINS:
         if required_results.get(domain, {}).get("status") != "PASS":
             failed_domains.append(domain)
+    if functional.get("source_commit") != head:
+        blockers.append("FUNCTIONAL_EVIDENCE_COMMIT_MISMATCH")
+    if functional.get("model_inference_performed") is not True:
+        blockers.append("REAL_MODEL_INFERENCE_NOT_PROVEN")
+    if functional.get("model_identity_status") != "PASS_MODEL_SOURCE_IDENTITIES":
+        blockers.append("FUNCTIONAL_MODEL_IDENTITY_NOT_PASS")
     if functional.get("functional_status") != "PASS_ALL_DOMAIN_CASES":
         blockers.append("REAL_MODEL_FUNCTIONAL_EVALUATION_NOT_PASS")
-    if failed_domains:
-        blockers.append("REQUIRED_DOMAIN_FUNCTION_FAILURE:" + ",".join(failed_domains))
-    if functional.get("summary", {}).get("total_cases", 0) < 10:
-        blockers.append("INSUFFICIENT_REAL_MODEL_CASE_COUNT")
+    tests = functional.get("tests")
+    if not isinstance(tests, list):
+        tests = []
+        blockers.append("FUNCTIONAL_CASE_INVENTORY_MISSING_OR_INVALID")
+    by_case = {}
+    for row in tests:
+        if not isinstance(row, dict) or not isinstance(row.get("case_id"), str):
+            blockers.append("FUNCTIONAL_CASE_RECORD_INVALID")
+            continue
+        case_id = row["case_id"]
+        if case_id in by_case:
+            blockers.append("FUNCTIONAL_CASE_DUPLICATE:" + case_id)
+        by_case[case_id] = row
+    for case_id, domain in REQUIRED_CASES.items():
+        row = by_case.get(case_id)
+        if row is None:
+            blockers.append("REQUIRED_FUNCTIONAL_CASE_MISSING:" + case_id)
+            continue
+        if row.get("domain_id") != domain or row.get("status") != "PASS":
+            blockers.append("REQUIRED_FUNCTIONAL_CASE_NOT_PASS:" + case_id)
+            continue
+        if row.get("execution_status") != "PASS_EXECUTION":
+            blockers.append("FUNCTIONAL_CASE_EXECUTION_NOT_PASS:" + case_id)
+        if row.get("quality_criterion_passed") is not True:
+            blockers.append("FUNCTIONAL_CASE_QUALITY_NOT_PASS:" + case_id)
+        for field in ("input_sha256", "output_sha256"):
+            value = row.get(field)
+            if not isinstance(value, str) or SHA256_RE.fullmatch(value) is None:
+                blockers.append("FUNCTIONAL_CASE_DIGEST_INVALID:" + case_id + ":" + field)
+    summary = functional.get("summary", {})
+    if summary.get("total_cases") != len(REQUIRED_CASES) or len(tests) != len(REQUIRED_CASES):
+        blockers.append("FUNCTIONAL_CASE_COUNT_MISMATCH")
+    if summary.get("passed_cases") != len(REQUIRED_CASES):
+        blockers.append("FUNCTIONAL_PASSED_CASE_COUNT_MISMATCH")
+    if not isinstance(required_results, dict):
+        required_results = {}
+        blockers.append("FUNCTIONAL_DOMAIN_RESULTS_INVALID")
+    for domain in REQUIRED_DOMAINS:
+        if required_results.get(domain, {}).get("status") != "PASS":
+            blockers.append("REQUIRED_DOMAIN_FUNCTION_FAILURE:" + domain)
+
+    # A semantic smoke test is not a repair. Require six domain-specific adapter
+    # records bound to the exact source commit and candidate, with held-out and
+    # independent post-validation plus a verified rollback checkpoint.
+    repair_adapters = functional.get("repair_adapter_evidence")
+    if functional.get("repair_execution_performed") is not True:
+        blockers.append("MODEL_REPAIR_EXECUTION_NOT_PROVEN")
+    if functional.get("repair_adapter_status") != "PASS_ALL_REQUIRED_ADAPTERS":
+        blockers.append("REPAIR_ADAPTER_SET_NOT_PASS")
+    if not isinstance(repair_adapters, list):
+        repair_adapters = []
+        blockers.append("REPAIR_ADAPTER_EVIDENCE_MISSING_OR_INVALID")
+    adapters_by_domain = {}
+    adapter_ids = []
+    for adapter in repair_adapters:
+        if not isinstance(adapter, dict):
+            blockers.append("REPAIR_ADAPTER_RECORD_INVALID")
+            continue
+        domain = adapter.get("domain_id")
+        if not isinstance(domain, str) or domain in adapters_by_domain:
+            blockers.append("REPAIR_ADAPTER_DOMAIN_DUPLICATE_OR_INVALID")
+            continue
+        adapters_by_domain[domain] = adapter
+        adapter_id = adapter.get("adapter_id")
+        if isinstance(adapter_id, str) and adapter_id.strip():
+            adapter_ids.append(adapter_id)
+        else:
+            blockers.append("REPAIR_ADAPTER_ID_MISSING:" + domain)
+    if set(adapters_by_domain) != set(REQUIRED_REPAIR_DOMAINS) or len(adapters_by_domain) != len(repair_adapters):
+        blockers.append("REPAIR_ADAPTER_DOMAIN_COVERAGE_INCOMPLETE")
+    if len(adapter_ids) != len(set(adapter_ids)):
+        blockers.append("REPAIR_ADAPTER_ID_COLLISION")
+    for domain in REQUIRED_REPAIR_DOMAINS:
+        adapter = adapters_by_domain.get(domain)
+        if adapter is None:
+            continue
+        if adapter.get("status") != "PASS":
+            blockers.append("REPAIR_ADAPTER_NOT_PASS:" + domain)
+        if adapter.get("source_commit") != head:
+            blockers.append("REPAIR_ADAPTER_COMMIT_MISMATCH:" + domain)
+        if adapter.get("candidate_sha256") != bundle_hash:
+            blockers.append("REPAIR_ADAPTER_CANDIDATE_DIGEST_MISMATCH:" + domain)
+        if not isinstance(adapter.get("source_model_id"), str) or not adapter["source_model_id"].strip():
+            blockers.append("REPAIR_ADAPTER_SOURCE_MODEL_MISSING:" + domain)
+        for field in REPAIR_DIGEST_FIELDS:
+            value = adapter.get(field)
+            if not isinstance(value, str) or SHA256_RE.fullmatch(value) is None:
+                blockers.append("REPAIR_ADAPTER_DIGEST_INVALID:" + domain + ":" + field)
+        for field in ("calibration_example_count", "heldout_example_count"):
+            count = adapter.get(field)
+            if isinstance(count, bool) or not isinstance(count, int) or count < 1:
+                blockers.append("REPAIR_ADAPTER_DATASET_COUNT_INVALID:" + domain + ":" + field)
+        if adapter.get("heldout_validation_status") != "PASS":
+            blockers.append("REPAIR_ADAPTER_HELDOUT_VALIDATION_NOT_PASS:" + domain)
+        if adapter.get("independent_validation_status") != "PASS":
+            blockers.append("REPAIR_ADAPTER_INDEPENDENT_VALIDATION_NOT_PASS:" + domain)
+        if adapter.get("semantic_quality_equivalence_status") != "PASS":
+            blockers.append("REPAIR_ADAPTER_QUALITY_EQUIVALENCE_NOT_PASS:" + domain)
+        if adapter.get("rollback_verified") is not True:
+            blockers.append("REPAIR_ADAPTER_ROLLBACK_NOT_VERIFIED:" + domain)
+        if adapter.get("original_weights_mutated") is not False:
+            blockers.append("REPAIR_ADAPTER_ORIGINAL_WEIGHTS_MUTATED:" + domain)
+        if adapter.get("candidate_output_separate") is not True:
+            blockers.append("REPAIR_ADAPTER_CANDIDATE_NOT_SEPARATE:" + domain)
     return {
         "schema": G24_SCHEMA,
         "gate": "G24_INDEPENDENT_TERMINAL_CERTIFICATION",
@@ -268,7 +392,14 @@ def g24_payload(args) -> dict:
             "domain_results": {domain: required_results.get(domain, {}) for domain in REQUIRED_DOMAINS},
             "passed_cases": functional.get("summary", {}).get("passed_cases"),
             "total_cases": functional.get("summary", {}).get("total_cases"),
-            "full_size_original_equivalence": "NOT_ESTABLISHED",
+            "model_inference_performed": functional.get("model_inference_performed"),
+            "repair_adapter_status": functional.get("repair_adapter_status"),
+            "repair_adapter_domains": sorted(adapters_by_domain),
+            "full_size_original_equivalence": (
+                "PASS" if functional.get("repair_adapter_status") == "PASS_ALL_REQUIRED_ADAPTERS"
+                and all(adapters_by_domain.get(domain, {}).get("semantic_quality_equivalence_status") == "PASS" for domain in REQUIRED_REPAIR_DOMAINS)
+                else "NOT_ESTABLISHED"
+            ),
         },
         "externalized_model_integrity": {
             "status": materialization.get("status"),
