@@ -1,0 +1,169 @@
+{
+  "schema": "LOUKSNAPG2_INTEGRAL_REASSESSMENT/1.1",
+  "observed_at_utc": "2026-10-30T11:30:00Z",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch": "louksnapg2/puac2-alternative-20261029",
+  "source_commit": "97cf82685143732599c291def37d43c49a22ce95",
+  "evidence_predecessor": "repair/LOUKSNAPG2_INTEGRAL_REASSESSMENT_20261030_V1.json",
+  "purpose": "Append-only update with the completed pre-Q2 and Q4 diagnostics on one exact source commit. This is not a certificate.",
+  "execution_policy": {
+    "local_offline_evaluation": true,
+    "external_model_downloads": false,
+    "remote_model_endpoints_used": false,
+    "model_weights_mutated": false,
+    "original_model_weights_mutated": false,
+    "canonical_certification_workflow_invoked": false,
+    "custosz_v9_invoked_or_modified": false
+  },
+  "direct_semantic_evaluation": {
+    "run_id": 41048033312,
+    "source_commit": "97cf82685143732599c291def37d43c49a22ce95",
+    "status": "IN_PROGRESS",
+    "job_id": 124036864761,
+    "completed_preconditions": [
+      "Exact source checkout",
+      "GPT-OSS LFS object materialized at exact repository pointer",
+      "Pinned CPU runtime lock installed",
+      "Deterministic audio fixtures generated",
+      "High-contrast large-type invoice image fixture generated",
+      "All five source model identities passed",
+      "Global LouksnapG2 runtime preflight passed"
+    ],
+    "active_step": "Run all 13 semantic acceptance cases through the exact repository runtime",
+    "output_artifact": "NOT_YET_AVAILABLE",
+    "certification": "NOT_GRANTED"
+  },
+  "historical_completed_direct_evaluation": {
+    "run_id": 41041813681,
+    "source_commit": "b22431973e26cd4d948c552fb2fc97c492450515",
+    "status": "FAIL_FUNCTIONAL_QUALITY",
+    "cases_passed": 0,
+    "cases_total": 13,
+    "model_inference_performed": true,
+    "caveat": "That earlier Docling image used tiny default bitmap text; its Docling result is superseded by the corrected fixture retest in the current direct run. The other 12 non-Docling known-answer cases failed."
+  },
+  "pre_q2_comparison": {
+    "run_id": 41048033319,
+    "source_commit": "97cf82685143732599c291def37d43c49a22ce95",
+    "workflow_result": "success",
+    "domains": {
+      "D01_CEREBRO": {
+        "current_q2": "0/2",
+        "pre_q2": "0/2",
+        "delta": 0,
+        "source_hash_exact_match": true,
+        "job_id": 124036864133,
+        "artifact_id": 12973840621,
+        "artifact_sha256": "0d5314abd3e1c833bf335d6075a62d956e75c9ad336d199d8a5b823d134a99e3"
+      },
+      "D03_TRANSCRIPCION": {
+        "current_q2": "0/2",
+        "pre_q2": "0/2",
+        "delta": 0,
+        "source_hash_exact_match": true,
+        "job_id": 124036864707,
+        "artifact_id": 12973780822,
+        "artifact_sha256": "e1cba690198ec941f3bd92be1fc0b0dd289f361b7f97ab86673b3404c4f200b3"
+      },
+      "D04_TRADUCTOR_INTELIGENTE": {
+        "current_q2": "0/4",
+        "pre_q2": "0/4",
+        "delta": 0,
+        "source_hash_exact_match": true,
+        "job_id": 124036864517,
+        "artifact_id": 12972494792,
+        "artifact_sha256": "fc0b92dd24b5683f7a3ac4aa90f4d2b7a5ffb0d293c8f3ac51521cd3b78b18b4"
+      },
+      "D06_SISTEMA_INTELIGENTE": {
+        "current_q2": "0/2",
+        "pre_q2": "0/2",
+        "delta": 0,
+        "source_hash_exact_match": true,
+        "job_id": 124036864502,
+        "artifact_id": 12973985289,
+        "artifact_sha256": "e8a704e7cb14d0278972073882bf4bff6a15e238ec816539ae860ff02fe03b34"
+      }
+    },
+    "interpretation": "Repository-retained pre-Q2 factors do not restore semantic acceptance in any of the four compared models. Hashes match their declared source-factor identities."
+  },
+  "q2_vs_historical_q4": {
+    "run_id": 41048033403,
+    "source_commit": "97cf82685143732599c291def37d43c49a22ce95",
+    "workflow_result": "success",
+    "domains": {
+      "D01_CEREBRO": {
+        "q2": "0/2",
+        "q4": "0/2",
+        "delta": 0,
+        "same_factor_source": true,
+        "job_id": 124036864929,
+        "artifact_id": 12972734202,
+        "artifact_sha256": "8ead42e9ed1de81731b7fda74c71634e6797c87e5ac3db7833abd718b966fa70"
+      },
+      "D03_TRANSCRIPCION": {
+        "q2": "0/2",
+        "q4": "0/2",
+        "delta": 0,
+        "same_factor_source": true,
+        "job_id": 124036864974,
+        "artifact_id": 12973467188,
+        "artifact_sha256": "d53174e843745168db0e4b41eb2aeb70b5b1207598caf92c118256ca143aeb70"
+      },
+      "D04_TRADUCTOR_INTELIGENTE": {
+        "q2": "0/4",
+        "q4": "0/4",
+        "delta": 0,
+        "same_factor_source": true,
+        "job_id": 124036864620,
+        "artifact_id": 12972494844,
+        "artifact_sha256": "9b477a92a8237a42751a0e9292548083362b5c454f498db4a2cffb360e17e253"
+      },
+      "D06_SISTEMA_INTELIGENTE": {
+        "q2": "0/2",
+        "q4": "0/2",
+        "delta": 0,
+        "same_factor_source": true,
+        "job_id": 124036864989,
+        "artifact_id": 12973018506,
+        "artifact_sha256": "9c89c6b6d8bf19492114861c8e3347d04fc810178dc178c02f36e30983ee889b"
+      }
+    },
+    "interpretation": "Q4 changes block-packed storage precision while retaining the same source low-rank factors; it produces no semantic case improvement in the tested domains."
+  },
+  "contract_validation": {
+    "run_id": 41048033347,
+    "source_commit": "97cf82685143732599c291def37d43c49a22ce95",
+    "result": "success",
+    "scope": "G24 evidence contract, semantic predicate tests, historical probe and Q4 probe compilation",
+    "certification_effect": "No model-quality or terminal certification is established by these contract tests."
+  },
+  "repair_and_source_blockers": [
+    "GPT-OSS, Qwen3, Whisper and SeamlessM4T all fail semantic acceptance for both historical-factor and Q4 comparisons.",
+    "GPT-OSS and Qwen3 historical compression reports record aggregate relative Frobenius reconstruction errors of approximately 0.9983 and 0.9964 respectively.",
+    "The GitHub runtime tree contains compact candidates, not the full original source checkpoints needed to reconstruct information lost by the low-rank compression.",
+    "No registered, implemented model-specific repair adapter or in-repository calibration/held-out training corpus is evidenced for GPT-OSS, Qwen3, SeamlessM4T or Granite Docling.",
+    "Ancient-language translation still has no source-bound model, validated transducer/lexicon and registered consumer adapter.",
+    "The direct 13-case run with the corrected Docling invoice fixture is still active; its case-level result has not been observed yet."
+  ],
+  "release_gates": {
+    "model_source_identity": "PASS",
+    "global_runtime_preflight": "PASS",
+    "derived_module_integrity": "PASS",
+    "g24_contract_tests": "PASS",
+    "pre_q2_semantic_comparison": "FAIL_QUALITY_ALL_FOUR_DOMAINS",
+    "q4_semantic_comparison": "FAIL_QUALITY_ALL_FOUR_DOMAINS",
+    "current_direct_13_case_evaluation": "IN_PROGRESS",
+    "g23_candidate_validation": "NOT_GRANTED_FOR_A_REPAIRED_CANDIDATE",
+    "g24_terminal_certification": "HOLD",
+    "rollback_for_repaired_candidate": "NOT_RUN_NO_REPAIRED_CANDIDATE",
+    "global_certification": "NOT_GRANTED",
+    "terminal_decision": "HOLD_NOT_CERTIFIED"
+  },
+  "no_false_promotion": {
+    "q4_promotion_authorized": false,
+    "pre_q2_rollback_as_repair_authorized": false,
+    "model_weight_replacement_authorized": false,
+    "source_weight_mutation_performed": false,
+    "canonical_release_or_merge_performed": false
+  }
+}
