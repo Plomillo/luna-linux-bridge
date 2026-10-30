@@ -1,0 +1,144 @@
+name: LOUKSNAPG2 repository-retained pre-Q2 weight probes
+
+on:
+  push:
+    branches:
+      - louksnapg2/puac2-alternative-20261029
+    paths:
+      - "tools/louksnapg2_historical_weight_probe.py"
+      - ".github/workflows/louksnapg2-historical-weight-probes.yml"
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: "Optional single domain; blank runs all four retained model candidates."
+        required: false
+        type: choice
+        options:
+          - all
+          - D01_CEREBRO
+          - D03_TRANSCRIPCION
+          - D04_TRADUCTOR_INTELIGENTE
+          - D06_SISTEMA_INTELIGENTE
+        default: all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg2-historical-weight-probes-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compare-retained-candidates:
+    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        domain:
+          - D01_CEREBRO
+          - D03_TRANSCRIPCION
+          - D04_TRADUCTOR_INTELIGENTE
+          - D06_SISTEMA_INTELIGENTE
+    steps:
+      - name: Checkout current candidate and full in-repository history
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          lfs: false
+          persist-credentials: true
+
+      - name: Select the requested domain for manual single-domain dispatch
+        if: github.event_name == 'workflow_dispatch' && inputs.domain != 'all' && inputs.domain != matrix.domain
+        run: echo "SKIP_DOMAIN=true" >> "$GITHUB_ENV"
+
+      - name: Set up Python runtime
+        if: env.SKIP_DOMAIN != 'true'
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+
+      - name: Install the repository-pinned CPU runtime
+        if: env.SKIP_DOMAIN != 'true'
+        run: |
+          python -m pip install --disable-pip-version-check \
+            --extra-index-url https://download.pytorch.org/whl/cpu \
+            -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
+
+      - name: Install local speech fixture generator
+        if: env.SKIP_DOMAIN != 'true' && matrix.domain == 'D03_TRANSCRIPCION'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y espeak-ng
+
+      - name: Materialize only the current GPT-OSS LFS object when selected
+        if: env.SKIP_DOMAIN != 'true' && matrix.domain == 'D01_CEREBRO'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git lfs install --local
+          git lfs pull --include="cajita-luna-runtime/1. Cerebro/model.safetensors" --exclude="" origin "$GITHUB_SHA"
+          git lfs checkout "cajita-luna-runtime/1. Cerebro/model.safetensors"
+
+      - name: Create a detached worktree at the repository-retained pre-Q2 source commit
+        if: env.SKIP_DOMAIN != 'true'
+        shell: bash
+        env:
+          HISTORICAL_COMMIT: b2de57890fa08bc2b639c3e021868b2d91a97716
+        run: |
+          set -Eeuo pipefail
+          git cat-file -e "$HISTORICAL_COMMIT^{commit}"
+          git worktree add --detach "$RUNNER_TEMP/louksnapg2-historical" "$HISTORICAL_COMMIT"
+          if [ "${{ matrix.domain }}" = "D01_CEREBRO" ]; then
+            git -C "$RUNNER_TEMP/louksnapg2-historical" lfs install --local
+            git -C "$RUNNER_TEMP/louksnapg2-historical" lfs pull \
+              --include="cajita-luna-runtime/1. Cerebro/model.safetensors" \
+              --exclude="" origin "$HISTORICAL_COMMIT"
+            git -C "$RUNNER_TEMP/louksnapg2-historical" lfs checkout \
+              "cajita-luna-runtime/1. Cerebro/model.safetensors"
+          fi
+          test -d "$RUNNER_TEMP/louksnapg2-historical/cajita-luna-runtime"
+
+      - name: Generate deterministic offline speech samples
+        if: env.SKIP_DOMAIN != 'true' && matrix.domain == 'D03_TRANSCRIPCION'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          espeak-ng -v en-us -s 135 -w "$RUNNER_TEMP/audio-one.wav" "The meeting starts at noon."
+          espeak-ng -v en-us -s 135 -w "$RUNNER_TEMP/audio-two.wav" "Please turn left at the next street."
+          test -s "$RUNNER_TEMP/audio-one.wav"
+          test -s "$RUNNER_TEMP/audio-two.wav"
+
+      - name: Compare current Q2 factors with exact pre-Q2 factors from this repository
+        if: env.SKIP_DOMAIN != 'true'
+        shell: bash
+        env:
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          NUMEXPR_NUM_THREADS: "1"
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "out/${{ matrix.domain }}"
+          args=(
+            --runtime-root cajita-luna-runtime
+            --historical-root "$RUNNER_TEMP/louksnapg2-historical/cajita-luna-runtime"
+            --domain "${{ matrix.domain }}"
+            --output "out/${{ matrix.domain }}/HISTORICAL_WEIGHT_PROBE.json"
+          )
+          if [ "${{ matrix.domain }}" = "D03_TRANSCRIPCION" ]; then
+            args+=(--audio-one "$RUNNER_TEMP/audio-one.wav" --audio-two "$RUNNER_TEMP/audio-two.wav")
+          fi
+          python -B tools/louksnapg2_historical_weight_probe.py "${args[@]}"
+
+      - name: Preserve baseline and historical inference evidence
+        if: always() && env.SKIP_DOMAIN != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-historical-probe-${{ matrix.domain }}
+          path: out/${{ matrix.domain }}/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
