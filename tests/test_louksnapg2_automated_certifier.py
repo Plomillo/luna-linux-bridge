@@ -76,14 +76,47 @@ class AutomatedG23G24Tests(unittest.TestCase):
         self.assertEqual(report["status"], "HOLD")
         self.assertIn("MODEL_REPAIR_ADAPTERS_NOT_ALL_PASS", report["blockers"])
         self.assertIn("FUNCTIONAL_SEMANTIC_SUITE_NOT_PASS", report["blockers"])
+        self.assertIn("REPAIR_ADAPTER_DOMAIN_COVERAGE_INCOMPLETE", report["blockers"])
 
     def test_g24_certifies_only_complete_exact_sha_evidence(self):
         args = self.g24_args()
+        adapters = []
+        for index, domain in enumerate(certifier.REQUIRED_REPAIR_DOMAINS, 1):
+            digest = f"{index:064x}"
+            adapters.append({
+                "adapter_id": "adapter-" + domain,
+                "domain_id": domain,
+                "source_model_id": "source-model-" + domain,
+                "source_commit": self.commit,
+                "status": "PASS",
+                "source_weight_sha256": digest,
+                "adapter_sha256": f"{index + 10:064x}",
+                "calibration_dataset_sha256": f"{index + 20:064x}",
+                "heldout_dataset_sha256": f"{index + 30:064x}",
+                "rollback_checkpoint_sha256": f"{index + 40:064x}",
+                "calibration_example_count": 100,
+                "heldout_example_count": 25,
+                "heldout_validation_status": "PASS",
+                "independent_validation_status": "PASS",
+                "semantic_quality_equivalence_status": "PASS",
+                "rollback_verified": True,
+                "original_weights_mutated": False,
+                "candidate_output_separate": True,
+            })
         worker = json.loads(args.worker_evidence.read_text())
-        worker.update({"repair_status": "PASS_ALL_REQUIRED_ADAPTERS", "repair_execution_performed": True})
+        worker.update({
+            "repair_status": "PASS_ALL_REQUIRED_ADAPTERS",
+            "repair_execution_performed": True,
+            "repair_adapter_domains": sorted(certifier.REQUIRED_REPAIR_DOMAINS),
+        })
         args.worker_evidence.write_text(json.dumps(worker))
         readiness = json.loads(args.repair_readiness.read_text())
-        readiness.update({"repair_adapter_status": "PASS_ALL_REQUIRED_ADAPTERS", "adapter_results": [{"status": "PASS"}]})
+        readiness.update({
+            "source_commit": self.commit,
+            "candidate_sha256": certifier.sha256_file(args.bundle),
+            "repair_adapter_status": "PASS_ALL_REQUIRED_ADAPTERS",
+            "adapter_results": adapters,
+        })
         args.repair_readiness.write_text(json.dumps(readiness))
         execution = json.loads(args.execution_mode_preflight.read_text())
         execution.update({
@@ -94,14 +127,79 @@ class AutomatedG23G24Tests(unittest.TestCase):
         })
         args.execution_mode_preflight.write_text(json.dumps(execution))
         functional = json.loads(args.functional_evidence.read_text())
-        functional["functional_status"] = "PASS_ALL_DOMAIN_CASES"
-        functional["tests"] = [{"case_id": case_id, "domain_id": domain, "status": "PASS"} for case_id, domain in certifier.REQUIRED_CASES.items()]
-        functional["domain_results"] = {domain: {"status": "PASS"} for domain in certifier.REQUIRED_DOMAINS}
+        functional.update({
+            "source_commit": self.commit,
+            "model_inference_performed": True,
+            "functional_status": "PASS_ALL_DOMAIN_CASES",
+            "tests": [
+                {
+                    "case_id": case_id,
+                    "domain_id": domain,
+                    "status": "PASS",
+                    "execution_status": "PASS_EXECUTION",
+                    "quality_criterion_passed": True,
+                    "input_sha256": "a" * 64,
+                    "output_sha256": "b" * 64,
+                }
+                for case_id, domain in certifier.REQUIRED_CASES.items()
+            ],
+            "domain_results": {domain: {"status": "PASS"} for domain in certifier.REQUIRED_DOMAINS},
+        })
         args.functional_evidence.write_text(json.dumps(functional))
         report = certifier.g24(args)
-        self.assertEqual(report["status"], "CERTIFIED")
+        self.assertEqual(report["status"], "CERTIFIED", report["blockers"])
         self.assertFalse(report["release_authorized"])
         self.assertFalse(report["canonical_promotion_authorized"])
+
+    def test_g24_rejects_incomplete_adapter_domain_coverage(self):
+        args = self.g24_args()
+        readiness = json.loads(args.repair_readiness.read_text())
+        readiness.update({
+            "source_commit": self.commit,
+            "candidate_sha256": certifier.sha256_file(args.bundle),
+            "repair_adapter_status": "PASS_ALL_REQUIRED_ADAPTERS",
+            "adapter_results": [{"adapter_id": "single-adapter", "domain_id": "D01_CEREBRO", "status": "PASS"}],
+        })
+        args.repair_readiness.write_text(json.dumps(readiness))
+        report = certifier.g24(args)
+        self.assertEqual(report["status"], "HOLD")
+        self.assertIn("REPAIR_ADAPTER_DOMAIN_COVERAGE_INCOMPLETE", report["blockers"])
+
+    def test_g24_rejects_adapter_that_mutates_original_weights(self):
+        args = self.g24_args()
+        adapters = []
+        for index, domain in enumerate(certifier.REQUIRED_REPAIR_DOMAINS, 1):
+            adapters.append({
+                "adapter_id": "adapter-" + domain,
+                "domain_id": domain,
+                "source_model_id": "source-model-" + domain,
+                "source_commit": self.commit,
+                "status": "PASS",
+                "source_weight_sha256": f"{index:064x}",
+                "adapter_sha256": f"{index + 10:064x}",
+                "calibration_dataset_sha256": f"{index + 20:064x}",
+                "heldout_dataset_sha256": f"{index + 30:064x}",
+                "rollback_checkpoint_sha256": f"{index + 40:064x}",
+                "calibration_example_count": 100,
+                "heldout_example_count": 25,
+                "heldout_validation_status": "PASS",
+                "independent_validation_status": "PASS",
+                "semantic_quality_equivalence_status": "PASS",
+                "rollback_verified": True,
+                "original_weights_mutated": domain == "D01_CEREBRO",
+                "candidate_output_separate": True,
+            })
+        readiness = json.loads(args.repair_readiness.read_text())
+        readiness.update({
+            "source_commit": self.commit,
+            "candidate_sha256": certifier.sha256_file(args.bundle),
+            "repair_adapter_status": "PASS_ALL_REQUIRED_ADAPTERS",
+            "adapter_results": adapters,
+        })
+        args.repair_readiness.write_text(json.dumps(readiness))
+        report = certifier.g24(args)
+        self.assertEqual(report["status"], "HOLD")
+        self.assertIn("REPAIR_ADAPTER_MUTATED_ORIGINAL_WEIGHTS:D01_CEREBRO", report["blockers"])
 
     def g24_args(self):
         g23 = self.write_json("g23.json", {"gate": "G23", "status": "PASS", "source_commit": self.commit, "candidate": {"sha256": certifier.sha256_file(self.bundle)}})
