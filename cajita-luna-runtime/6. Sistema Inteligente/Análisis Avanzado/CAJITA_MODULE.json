@@ -45,8 +45,8 @@
   "target_kind": "SUBDOMAIN",
   "target_name": "Análisis Avanzado",
   "tree_integrity": {
-    "bytes_excluding_module_descriptors": 31092977,
+    "bytes_excluding_module_descriptors": 31092976,
     "file_count_excluding_module_descriptors": 15,
-    "sha256": "c7c8d89f0543d8884b2d24b3b0382455a7c44e0a579ae0e98459b8cf235397b9"
+    "sha256": "87023ba2d34d054f0a7b34e33d83633a00629767ab9686d44e06c6f49b6ccd80"
   }
 }

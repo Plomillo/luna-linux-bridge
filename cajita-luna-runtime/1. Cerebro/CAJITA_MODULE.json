@@ -39,8 +39,8 @@
   "target_kind": "DOMAIN_ROOT",
   "target_name": "Cerebro",
   "tree_integrity": {
-    "bytes_excluding_module_descriptors": 68723047,
+    "bytes_excluding_module_descriptors": 68723046,
     "file_count_excluding_module_descriptors": 14,
-    "sha256": "de8b684b2a49118c8fd32a464d2a03b345988f3d28996e7e266e6e0799d09c52"
+    "sha256": "4289bdcc561dbb519d892e9794d6761902cf6d970ef2a3886abf8a632e546fe7"
   }
 }
