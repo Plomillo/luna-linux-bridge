@@ -63,6 +63,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          mkdir -p out/louksnapg2-docling
           python - <<'PY'
           from pathlib import Path
           from PIL import Image, ImageDraw, ImageFont
