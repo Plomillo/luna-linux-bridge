@@ -7,6 +7,7 @@ on:
     paths:
       - "tools/louksnapg2_automated_certifier.py"
       - "tools/louksnapg2_functional_eval.py"
+      - ".github/workflows/louksnapg2-direct-functional-evaluation.yml"
       - "tools/louksnapg2_historical_weight_probe.py"
       - "tools/louksnapg2_q4_precision_probe.py"
       - "tests/test_louksnapg2_automated_certifier.py"

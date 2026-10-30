@@ -6,6 +6,8 @@ on:
       - louksnapg2/puac2-alternative-20261029
     paths:
       - "tools/louksnapg2_historical_weight_probe.py"
+      - "tools/louksnapg2_q4_precision_probe.py"
+      - ".github/workflows/louksnapg2-direct-functional-evaluation.yml"
       - ".github/workflows/louksnapg2-historical-weight-probes.yml"
   workflow_dispatch:
     inputs:
