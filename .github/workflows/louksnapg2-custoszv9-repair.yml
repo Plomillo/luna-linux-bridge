@@ -8,6 +8,8 @@ on:
       - "vendor/CUSTOSZV9.pyz"
       - "vendor/CUSTOSZV9.pyz.sha256"
       - "repair/**"
+      - "docs/cajita-luna/LOUKSNAPG2_REPAIR_INFRASTRUCTURE_V1.md"
+      - "integrations/kestra/flows/louksnapg2_custoszv9_repair_supervisor.yml"
       - "tools/louksnapg2_custoszv9_repair_worker.py"
       - "tools/louksnapg2_automated_certifier.py"
       - "tools/louksnapg2_functional_eval.py"
