@@ -1,0 +1,111 @@
+name: LOUKSNAPG2 isolated offline Docling invoice probe
+
+on:
+  push:
+    branches:
+      - louksnapg2/puac2-alternative-20261029
+    paths:
+      - "tools/louksnapg2_docling_isolated_probe.py"
+      - ".github/workflows/louksnapg2-docling-isolated-probe.yml"
+      - "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/**"
+      - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/**"
+      - "cajita-luna-runtime/REQUIREMENTS.runtime.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg2-docling-isolated-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  evaluate-docling-image:
+    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Initialize isolated evidence directory
+        run: |
+          mkdir -p out/louksnapg2-docling
+          printf '%s\n' "NOT_RUN" > out/louksnapg2-docling/STATUS.txt
+
+      - name: Checkout exact repository commit without blanket LFS hydration
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Set up pinned Python runtime
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+
+      - name: Materialize only the exact existing GPT-OSS LFS model needed by global preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git lfs install --local
+          git lfs pull --include="cajita-luna-runtime/1. Cerebro/model.safetensors" --exclude="" origin "$GITHUB_SHA"
+          git lfs checkout "cajita-luna-runtime/1. Cerebro/model.safetensors"
+
+      - name: Install the repository-pinned CPU runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check \
+            --extra-index-url https://download.pytorch.org/whl/cpu \
+            -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
+
+      - name: Build the high-contrast invoice fixture
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageDraw, ImageFont
+          image_path = Path("out/louksnapg2-docling/invoice-legible.png")
+          image = Image.new("RGB", (1400, 900), "white")
+          draw = ImageDraw.Draw(image)
+          title = ImageFont.load_default(size=84)
+          body = ImageFont.load_default(size=64)
+          draw.text((110, 90), "INVOICE", fill=(0, 0, 0), font=title, stroke_width=1)
+          draw.line((100, 215, 1300, 215), fill=(0, 0, 0), width=5)
+          draw.text((110, 300), "Invoice Number: 4821", fill=(0, 0, 0), font=body, stroke_width=1)
+          draw.text((110, 470), "Total: 37.50", fill=(0, 0, 0), font=body, stroke_width=1)
+          image.save(image_path, format="PNG", optimize=False)
+          print("FIXTURE_BYTES=" + str(image_path.stat().st_size))
+          PY
+
+      - name: Run the isolated Docling semantic acceptance case offline
+        shell: bash
+        env:
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          NUMEXPR_NUM_THREADS: "1"
+          TOKENIZERS_PARALLELISM: "false"
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          PYTHONNOUSERSITE: "1"
+          LOUKSNAPG_REMOTE_MODE: "off"
+          LOUKSNAPG_REMOTE_DOMAINS_REQUIRED: ""
+        run: |
+          set -Eeuo pipefail
+          python -B tools/louksnapg2_docling_isolated_probe.py \
+            --runtime-root cajita-luna-runtime \
+            --image out/louksnapg2-docling/invoice-legible.png \
+            --output out/louksnapg2-docling/DOCLING_ISOLATED_FUNCTIONAL_EVIDENCE.json \
+            | tee out/louksnapg2-docling/DOCLING_ISOLATED_SUMMARY.json
+
+      - name: Upload Docling isolated evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-docling-isolated-functional-evidence
+          path: out/louksnapg2-docling/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
