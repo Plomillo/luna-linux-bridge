@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   build_candidate:
-    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
+    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' && vars.LOUKSNAPG2_ENABLE_CUSTOSZ_V9_WORKFLOW == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
