@@ -7,6 +7,7 @@ on:
     paths:
       - "tools/louksnapg2_automated_certifier.py"
       - "tools/louksnapg2_functional_eval.py"
+      - "tools/louksnapg2_historical_weight_probe.py"
       - "tests/test_louksnapg2_automated_certifier.py"
       - "tests/test_louksnapg2_functional_eval.py"
       - "tests/test_louksnapg2_puac2_gate.py"
@@ -34,6 +35,8 @@ jobs:
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
           python-version: "3.13"
+      - name: Compile repository-only historical weight probe
+        run: python -B -m py_compile tools/louksnapg2_historical_weight_probe.py
       - name: Test G23/G24 certification evidence contract
         run: python -B -m unittest discover -s tests -p "test_louksnapg2_automated_certifier.py" -v
       - name: Test directional semantic predicates
