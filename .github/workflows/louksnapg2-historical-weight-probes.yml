@@ -73,8 +73,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y espeak-ng
 
-      - name: Materialize only the current GPT-OSS LFS object when selected
-        if: env.SKIP_DOMAIN != 'true' && matrix.domain == 'D01_CEREBRO'
+      - name: Materialize current GPT-OSS LFS object required by every full preflight
+        if: env.SKIP_DOMAIN != 'true'
         shell: bash
         run: |
           set -Eeuo pipefail
