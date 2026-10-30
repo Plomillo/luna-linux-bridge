@@ -86,6 +86,61 @@ def canonical_digest(value) -> str:
 def write_json(path: Path, value: dict) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
 
+def prepare_current_runtime(current_root: Path, temp_root: Path, domain: str) -> dict:
+    """Create an isolated baseline copy and reconcile only its selected module index.
+
+    The Git commit is immutable input. This recalculates the module descriptor's
+    derived tree inventory from those exact bytes in a temporary copy; it does not
+    alter weights, model metadata, tokenizer sources, or the repository checkout.
+    """
+    spec = DOMAINS[domain]
+    shutil.copytree(
+        current_root,
+        temp_root,
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        copy_function=shutil.copy2,
+    )
+    sys.path.insert(0, str(temp_root))
+    import cajita_task_adapters
+    from cajita_tokenizer_materializer import tokenizer_tree_rows
+
+    module_root = temp_root / spec["module"]
+    descriptor_path = module_root / "CAJITA_MODULE.json"
+    if descriptor_path.is_symlink() or not descriptor_path.is_file():
+        raise RuntimeError("CURRENT_MODULE_DESCRIPTOR_MISSING_OR_UNSAFE")
+    descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+    original = dict(descriptor.get("tree_integrity", {}))
+    rows = cajita_task_adapters.tree_rows(module_root)
+    tokenizer_manifest = temp_root / cajita_task_adapters.TOKENIZER_MANIFEST_NAME
+    if tokenizer_manifest.is_file():
+        rows = tokenizer_tree_rows(module_root, temp_root, rows)
+    tree_hash = cajita_task_adapters.digest_bytes(
+        json.dumps(rows, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    )
+    observed = {
+        "sha256": tree_hash,
+        "file_count_excluding_module_descriptors": len(rows),
+        "bytes_excluding_module_descriptors": sum(int(row["bytes"]) for row in rows),
+    }
+    descriptor["tree_integrity"] = observed
+    write_json(descriptor_path, descriptor)
+
+    selected_integrity = cajita_task_adapters.verify_integrity(temp_root, domain)
+    weight = temp_root / spec["weight"]
+    return {
+        "domain_id": domain,
+        "source_representation": "CURRENT_Q2_CANDIDATE_FROM_EXACT_GITHUB_COMMIT",
+        "source_weight_sha256": digest(weight),
+        "source_weight_bytes": weight.stat().st_size,
+        "original_descriptor_tree_integrity": original,
+        "observed_descriptor_tree_integrity": observed,
+        "descriptor_reconciled_in_temporary_copy": original != observed,
+        "selected_model_integrity_status": "PASS",
+        "selected_model_integrity": selected_integrity,
+        "temporary_runtime_root": str(temp_root),
+        "original_runtime_tree_mutated": False,
+    }
+
 def prepare_historical_runtime(current_root: Path, historical_root: Path, domain: str, temp_root: Path) -> dict:
     spec = DOMAINS[domain]
     source = historical_root / spec["weight"]
@@ -362,9 +417,12 @@ def main(argv=None) -> int:
         parser.error("--historical-root and --output are required in compare phase")
     source_root = args.runtime_root.resolve(strict=True)
     historical_root = args.historical_root.resolve(strict=True)
-    baseline = subprocess_evaluate(Path(__file__).resolve(), source_root, args.domain, args.audio_one, args.audio_two)
-    with tempfile.TemporaryDirectory(prefix="louksnapg2-preq2-") as tmp:
-        experimental_root = Path(tmp) / "runtime"
+    with tempfile.TemporaryDirectory(prefix="louksnapg2-current-q2-") as baseline_tmp:
+        baseline_root = Path(baseline_tmp) / "runtime"
+        baseline_provenance = prepare_current_runtime(source_root, baseline_root, args.domain)
+        baseline = subprocess_evaluate(Path(__file__).resolve(), baseline_root, args.domain, args.audio_one, args.audio_two)
+    with tempfile.TemporaryDirectory(prefix="louksnapg2-preq2-") as historical_tmp:
+        experimental_root = Path(historical_tmp) / "runtime"
         provenance = prepare_historical_runtime(source_root, historical_root, args.domain, experimental_root)
         alternative = subprocess_evaluate(Path(__file__).resolve(), experimental_root, args.domain, args.audio_one, args.audio_two)
         report = {
@@ -375,6 +433,7 @@ def main(argv=None) -> int:
             "domain_id": args.domain,
             "baseline": baseline,
             "alternative": alternative,
+            "current_q2_source": baseline_provenance,
             "historical_source": provenance,
             "comparison": {
                 "baseline_passed": baseline.get("pass_count", 0),
@@ -394,6 +453,7 @@ def main(argv=None) -> int:
             "source_hash_exact_match": provenance["source_hash_exact_match"],
             "baseline_status": baseline.get("status"),
             "baseline_preflight": baseline.get("preflight"),
+            "baseline_descriptor_reconciled_in_temporary_copy": baseline_provenance.get("descriptor_reconciled_in_temporary_copy"),
             "baseline_error": baseline.get("stderr_tail") or baseline.get("stdout_tail"),
             "alternative_status": alternative.get("status"),
             "alternative_preflight": alternative.get("preflight"),
