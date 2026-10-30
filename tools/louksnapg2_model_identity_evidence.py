@@ -13,6 +13,7 @@ DOMAIN_BINDINGS = {
     "D01_CEREBRO": "GPT-OSS compactado — rank-1 INT8 factors",
     "D03_TRANSCRIPCION": "Whisper compactado — low-rank INT8 factors",
     "D04_TRADUCTOR_INTELIGENTE": "SeamlessM4T v2 compactado — low-rank INT8 factors",
+    "D05_INTELIGENCIA_DOCUMENTAL": "Granite Docling compactado — packed quantized weights",
     "D06_SISTEMA_INTELIGENTE": "Qwen3 compactado — low-rank INT8 factors",
 }
 
@@ -100,7 +101,7 @@ def main(argv=None) -> int:
             "models": rows,
             "required_domain_count": 5,
             "unique_existing_model_weight_count": len(rows),
-            "note": "Ancient-language translation is a new specialist consumer adapter over existing GPT-OSS weights; no separate ancient-language model payload is declared or downloaded.",
+            "note": "Five model-backed domains bind to the existing compact Cajita weights. Ancient-language translation remains a specialist consumer over GPT-OSS and has no independent source-bound model payload."
         })
     except Exception as exc:
         evidence["blockers"].append(type(exc).__name__ + ":" + str(exc)[:500])

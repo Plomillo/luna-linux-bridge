@@ -1,0 +1,69 @@
+{
+  "schema": "LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY/1.0",
+  "generated_for": "LOUKSNAPG2",
+  "policy": "FAIL_CLOSED",
+  "source_of_truth": "cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json",
+  "rule": "A weight hash or source identity is not functional evidence. Only a domain-specific repair adapter with independent post-repair functional evidence may move a model to PASS.",
+  "required_domains": {
+    "D01_CEREBRO": {
+      "model": "GPT-OSS-120B",
+      "compact_representation": "rank-1 INT8 factors",
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "required_strategy": "Source-bound teacher/student calibration followed by rank selection, quantization-aware fitting and held-out semantic evaluation.",
+      "known_failure": "Rank-1 candidate has near-total reconstruction error and failed arithmetic tests.",
+      "promotion_blocked": true
+    },
+    "D03_TRANSCRIPCION": {
+      "model": "Whisper large-v3-turbo",
+      "compact_representation": "low-rank INT8 factors",
+      "repair_adapter_status": "EXPERIMENTAL_FAILED",
+      "existing_tool": "tools/louksnapg_whisper_int8_repair.py",
+      "required_strategy": "New calibration corpus, feature-compatible encoder/decoder reconstruction and held-out WER evaluation; rejected ranks must not be repeated without new evidence.",
+      "known_failure": "R29/R64/R96/adaptive R192 attempts did not pass WER acceptance.",
+      "promotion_blocked": true
+    },
+    "D04_TRADUCTOR_INTELIGENTE": {
+      "model": "SeamlessM4T v2 large",
+      "compact_representation": "low-rank INT8 factors",
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "required_strategy": "Architecture-aware tied-embedding/shared-head reconstruction, calibration and bilingual held-out translation evaluation.",
+      "known_failure": "Current compact candidate produces repetitive degenerate translations.",
+      "promotion_blocked": true
+    },
+    "D05_INTELIGENCIA_DOCUMENTAL": {
+      "model": "Granite Docling 258M candidate",
+      "compact_representation": "packed quantized weights",
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "required_strategy": "Architecture-bound tensor reconstruction, processor/tokenizer compatibility audit and image/document extraction evaluation.",
+      "known_failure": "Model load evidence is not equivalent to completed generation or extraction quality.",
+      "promotion_blocked": true
+    },
+    "D06_SISTEMA_INTELIGENTE": {
+      "model": "Qwen3-14B",
+      "compact_representation": "low-rank INT8 factors",
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "required_strategy": "Architecture-aware layer reconstruction, calibration-aware fitting and held-out reasoning evaluation.",
+      "known_failure": "Current low-rank candidate fails arithmetic/reasoning acceptance.",
+      "promotion_blocked": true
+    },
+    "D04_TRADUCCION_LENGUAS_ANTIGUAS": {
+      "model": "No source-bound translation model registered",
+      "compact_representation": "none",
+      "repair_adapter_status": "BLOCKED_NO_TRANSLATION_RESOURCE",
+      "required_strategy": "Licensed Latin/Ancient Greek source model or validated lexicon/transducer plus consumer adapter.",
+      "known_failure": "GPT-OSS specialist prompt is not an independently validated ancient-language engine.",
+      "promotion_blocked": true
+    }
+  },
+  "acceptance": {
+    "repair_adapter_must_be_source_pinned": true,
+    "must_not_mutate_original_weights": true,
+    "candidate_output_must_be_separate": true,
+    "independent_semantic_suite_required": true,
+    "rollback_checkpoint_required": true,
+    "worker_may_not_certify": true,
+    "missing_adapter": "HOLD",
+    "missing_gpu": "HOLD",
+    "failed_quality_case": "HOLD"
+  }
+}

@@ -28,6 +28,7 @@ DOMAIN_IDS = {
     "D03_TRANSCRIPCION",
     "D04_TRADUCTOR_INTELIGENTE",
     "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+    "D05_INTELIGENCIA_DOCUMENTAL",
     "D06_SISTEMA_INTELIGENTE",
 }
 NATIVE_ROUTES = {
@@ -48,6 +49,12 @@ NATIVE_ROUTES = {
         "adapter_id": "CAJITA_SEAMLESS_TRANSLATION/1.0",
         "source_domain": "D04_TRADUCTOR_INTELIGENTE",
         "source_model": "SeamlessM4T v2 compactado — low-rank INT8 factors",
+    },
+    ("D05_INTELIGENCIA_DOCUMENTAL", "extract_document_image"): {
+        "target_id": "D05_DOCLING",
+        "adapter_id": "CAJITA_DOCLING_IMAGE_EXTRACTION/1.0",
+        "source_domain": "D05_INTELIGENCIA_DOCUMENTAL",
+        "source_model": "Granite Docling compactado — packed quantized weights",
     },
     ("D03_TRANSCRIPCION", "transcribe_audio"): {
         "target_id": "D03_TRANSCRIPCION_ROOT",
@@ -102,7 +109,7 @@ def verify_model_files(root: Path) -> dict:
     """Verify original in-artifact model weights through the source-bound manifests."""
     adapter = _load_native_adapter(root)
     evidence = {}
-    for domain in ("D01_CEREBRO", "D03_TRANSCRIPCION", "D04_TRADUCTOR_INTELIGENTE", "D06_SISTEMA_INTELIGENTE"):
+    for domain in ("D01_CEREBRO", "D03_TRANSCRIPCION", "D04_TRADUCTOR_INTELIGENTE", "D05_INTELIGENCIA_DOCUMENTAL", "D06_SISTEMA_INTELIGENTE"):
         try:
             evidence[domain] = adapter.verify_integrity(_cajita_root(root), domain)
         except Exception as exc:
@@ -138,6 +145,7 @@ class LouksnapG2Runtime:
                 "D01_CEREBRO": "GPT-OSS compacted native adapter",
                 "D06_SISTEMA_INTELIGENTE": "Qwen3 compacted native adapter",
                 "D04_TRADUCTOR_INTELIGENTE": "SeamlessM4T v2 compacted native adapter",
+                "D05_INTELIGENCIA_DOCUMENTAL": "Granite Docling packed-weight image/document extraction adapter",
                 "D04_TRADUCCION_LENGUAS_ANTIGUAS": "Dedicated domain prompt over existing GPT-OSS adapter; no general-translation fallback",
                 "D03_TRANSCRIPCION": "Whisper compacted native adapter",
             },
@@ -276,6 +284,15 @@ class LouksnapG2Runtime:
             raise EngineRuntimeError("ANCIENT_TRANSLATION_UNRESOLVED")
         return result
 
+    def extract_document(self, image_path: Path, *, prompt: str = "Extract visible text and fields.", max_tokens: int = 48, task_id: str = "document") -> dict:
+        if not isinstance(prompt, str) or not prompt.strip() or len(prompt) > MAX_INPUT_CHARS:
+            raise EngineRuntimeError("DOCLING_PROMPT_EMPTY_OR_OVER_LIMIT")
+        return self._execute_original(
+            "D05_INTELIGENCIA_DOCUMENTAL", "extract_document_image",
+            {"image_path": str(image_path), "prompt": prompt},
+            task_id=task_id, max_tokens=max_tokens,
+        )
+
     def transcribe(self, audio_path: Path, *, max_tokens: int = 64, task_id: str = "transcribe") -> dict:
         return self._execute_original(
             "D03_TRANSCRIPCION", "transcribe_audio", {"audio_path": str(audio_path)},
@@ -303,6 +320,12 @@ class LouksnapG2Runtime:
             return self.translate_ancient(
                 payload.get("text", ""), src_lang=payload.get("src_lang", ""),
                 tgt_lang=payload.get("tgt_lang", "eng"), max_tokens=max_tokens, task_id=task_id,
+            )
+        if domain_id == "D05_INTELIGENCIA_DOCUMENTAL" and operation == "extract_document_image":
+            return self.extract_document(
+                Path(payload.get("image_path", "")),
+                prompt=payload.get("prompt", "Extract visible text and fields."),
+                max_tokens=max_tokens, task_id=task_id,
             )
         if domain_id == "D03_TRANSCRIPCION" and operation == "transcribe_audio":
             return self.transcribe(Path(payload.get("audio_path", "")), max_tokens=max_tokens, task_id=task_id)

@@ -143,6 +143,7 @@ def main(argv=None) -> int:
     parser.add_argument("--runtime-root", required=True, type=Path)
     parser.add_argument("--audio-one", required=True, type=Path)
     parser.add_argument("--audio-two", required=True, type=Path)
+    parser.add_argument("--docling-image", type=Path, help="Deterministic invoice image fixture for the D05 Docling acceptance case.")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
 
@@ -150,6 +151,8 @@ def main(argv=None) -> int:
     for audio in (args.audio_one, args.audio_two):
         if audio.is_symlink() or not audio.is_file():
             raise SystemExit("AUDIO_FIXTURE_MISSING_OR_UNSAFE:" + str(audio))
+    if args.docling_image is not None and (args.docling_image.is_symlink() or not args.docling_image.is_file()):
+        raise SystemExit("DOCLING_IMAGE_FIXTURE_MISSING_OR_UNSAFE:" + str(args.docling_image))
     runtime_dir = root if root.name == "LOUKSNAPG2_RUNTIME" else root / "LOUKSNAPG2_RUNTIME"
     if runtime_dir.is_symlink() or not (runtime_dir / "louksnapg2_engine.py").is_file():
         raise SystemExit("LOUKSNAPG2_RUNTIME_OVERLAY_MISSING")
@@ -260,12 +263,43 @@ def main(argv=None) -> int:
         result["audio_sha256"] = hashlib.sha256(audio.read_bytes()).hexdigest()
         evidence["tests"].append(result)
 
+    if args.docling_image is not None:
+        evidence["tests"].append(run_case(
+            runtime,
+            "DOCLING_INVOICE_IMAGE_01",
+            "D05_INTELIGENCIA_DOCUMENTAL",
+            "extract_document_image",
+            {
+                "image_path": str(args.docling_image),
+                "prompt": "Extract the invoice number and total. Return the visible fields.",
+                "max_new_tokens": 96,
+            },
+            lambda out: (
+                "invoice" in normalized(final_answer(out)).split()
+                and "4821" in normalized(final_answer(out)).split()
+                and "37" in normalized(final_answer(out)).split()
+                and "50" in normalized(final_answer(out)).split()
+            ),
+            "Granite Docling must extract INVOICE 4821 and TOTAL 37.50 from the deterministic invoice image.",
+        ))
+    else:
+        evidence["tests"].append({
+            "case_id": "DOCLING_INVOICE_IMAGE_01",
+            "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+            "operation": "extract_document_image",
+            "status": "FAIL",
+            "quality_criterion_passed": False,
+            "reason": "DOCLING_IMAGE_FIXTURE_NOT_SUPPLIED",
+            "semantic_quality_equivalence_to_full_size_original": "NOT_ESTABLISHED",
+        })
+
     all_domains = {
         "D01_CEREBRO": ["CEREBRO_ARITHMETIC_01", "CEREBRO_WORD_PROBLEM_02"],
         "D06_SISTEMA_INTELIGENTE": ["ANALYSIS_MULTI_STEP_01", "ANALYSIS_LOGIC_02"],
         "D04_TRADUCTOR_INTELIGENTE": ["GENERAL_TRANSLATION_EN_ES_01", "GENERAL_TRANSLATION_ES_EN_02", "GENERAL_TRANSLATION_EN_FR_03", "GENERAL_TRANSLATION_FR_EN_04"],
         "D04_TRADUCCION_LENGUAS_ANTIGUAS": ["ANCIENT_LATIN_01", "ANCIENT_GREEK_02"],
         "D03_TRANSCRIPCION": ["WHISPER_AUDIO_01", "WHISPER_AUDIO_02"],
+        "D05_INTELIGENCIA_DOCUMENTAL": ["DOCLING_INVOICE_IMAGE_01"],
     }
     by_id = {row["case_id"]: row for row in evidence["tests"]}
     for domain, case_ids in all_domains.items():
