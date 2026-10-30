@@ -1,0 +1,223 @@
+{
+  "schema": "LOUKSNAPG2_INTEGRAL_REASSESSMENT/1.0",
+  "observed_at_utc": "2026-10-30T11:27:00Z",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch": "louksnapg2/puac2-alternative-20261029",
+  "source_commit": "97cf82685143732599c291def37d43c49a22ce95",
+  "source_commit_message": "Isolate direct functional reruns by exact source commit",
+  "purpose": "Persist the current GitHub-only functional and precision reassessment. This file records evidence and blockers; it is not a certificate.",
+  "execution_constraints": {
+    "local_offline_only": true,
+    "external_model_downloads": false,
+    "remote_model_endpoints_used": false,
+    "model_weights_modified": false,
+    "original_model_weights_modified": false,
+    "new_branches_created": false,
+    "custosz_v9_invoked_or_modified": false,
+    "canonical_certification_workflow_invoked": false
+  },
+  "structural_integrity": {
+    "latest_completed_reconciliation_run": 41041139751,
+    "workflow_result": "success",
+    "reconciliation_status": "PASS_RECONCILED_MODULE_INTEGRITY",
+    "model_identity_status": "PASS",
+    "source_model_domains_verified": 5,
+    "global_runtime_preflight": "PASS_MODEL_SOURCE_IDENTITIES",
+    "weights_manifest_mutated": false,
+    "model_weights_mutated": false,
+    "tokenizer_source_mutated": false,
+    "descriptor_only_commit": "b615226d89e2795513cb64e93e4c231142fc4ca0",
+    "descriptor_files_updated": 4,
+    "notes": [
+      "Only four derived CAJITA_MODULE.json tree-integrity descriptors were regenerated.",
+      "No model weight, runtime implementation, tokenizer payload or weight manifest was changed."
+    ]
+  },
+  "functional_evaluation": {
+    "historical_completed_run": {
+      "run_id": 41041813681,
+      "commit": "b22431973e26cd4d948c552fb2fc97c492450515",
+      "workflow_result": "success",
+      "model_inference_performed": true,
+      "cases_total": 13,
+      "cases_passed": 0,
+      "cases_failed": 13,
+      "semantic_status": "FAIL_FUNCTIONAL_QUALITY",
+      "global_certification": "NOT_GRANTED_BY_FUNCTIONAL_EVALUATION",
+      "artifact_id": 12969689842,
+      "artifact_name": "louksnapg2-direct-functional-evidence",
+      "caveat": "The Docling invoice fixture used small default bitmap text. Treat its extraction failure as provisional; the other 12 known-answer cases failed their semantic criteria."
+    },
+    "current_direct_runs": [
+      {
+        "run_id": 41047217477,
+        "commit": "e9ddc79f1c5c2a405c1931376ddee47539f4ca11",
+        "status": "in_progress",
+        "active_step": "Run all 13 semantic acceptance cases through the exact repository runtime",
+        "fixture": "Original small-text invoice image; not authoritative for Docling extraction."
+      },
+      {
+        "run_id": 41048033312,
+        "commit": "97cf82685143732599c291def37d43c49a22ce95",
+        "status": "in_progress",
+        "active_step": "Run all 13 semantic acceptance cases through the exact repository runtime",
+        "fixture": "Corrected high-contrast invoice image with large text and separator; this is the authoritative Docling retest."
+      }
+    ],
+    "required_cases": 13,
+    "global_semantic_status": "HOLD_PENDING_CURRENT_DIRECT_EVALUATION"
+  },
+  "historical_pre_q2_comparison": {
+    "run_id": 41047413087,
+    "commit": "f08117a95b21311e5cf93e4028f7380a007e098e",
+    "workflow_result": "success",
+    "domains": {
+      "D01_CEREBRO": {
+        "current_q2": "0/2",
+        "historical_pre_q2": "0/2",
+        "pass_delta": 0,
+        "source_hash_exact_match": true,
+        "job_id": 124035218814,
+        "artifact_id": 12972863269
+      },
+      "D03_TRANSCRIPCION": {
+        "current_q2": "0/2",
+        "historical_pre_q2": "0/2",
+        "pass_delta": 0,
+        "source_hash_exact_match": true,
+        "job_id": 124035218650,
+        "artifact_id": 12972429511
+      },
+      "D04_TRADUCTOR_INTELIGENTE": {
+        "current_q2": "0/4",
+        "historical_pre_q2": "0/4",
+        "pass_delta": 0,
+        "source_hash_exact_match": true,
+        "job_id": 124035218400,
+        "artifact_id": 12973526483
+      },
+      "D06_SISTEMA_INTELIGENTE": {
+        "current_q2": "0/2",
+        "historical_pre_q2": "0/2",
+        "pass_delta": 0,
+        "source_hash_exact_match": true,
+        "job_id": 124035218922,
+        "artifact_id": 12973316862
+      }
+    },
+    "conclusion": "Historical pre-Q2 factors do not recover semantic quality in any of the four tested domains. Exact source weight hashes matched."
+  },
+  "q2_vs_historical_q4_precision": {
+    "run_id": 41047413206,
+    "commit": "f08117a95b21311e5cf93e4028f7380a007e098e",
+    "workflow_result": "success",
+    "domains": {
+      "D01_CEREBRO": {
+        "q2": "0/2",
+        "q4": "0/2",
+        "q4_pass_delta": 0,
+        "same_factor_source": true,
+        "job_id": 124035294571,
+        "artifact_id": 12972604013
+      },
+      "D03_TRANSCRIPCION": {
+        "q2": "0/2",
+        "q4": "0/2",
+        "q4_pass_delta": 0,
+        "same_factor_source": true,
+        "job_id": 124035294144,
+        "artifact_id": 12972334942
+      },
+      "D04_TRADUCTOR_INTELIGENTE": {
+        "q2": "0/4",
+        "q4": "0/4",
+        "q4_pass_delta": 0,
+        "same_factor_source": true,
+        "job_id": 124035294483,
+        "artifact_id": 12973172643
+      },
+      "D06_SISTEMA_INTELIGENTE": {
+        "q2": "0/2",
+        "q4": "0/2",
+        "q4_pass_delta": 0,
+        "same_factor_source": true,
+        "job_id": 124035294550,
+        "artifact_id": 12972683603
+      }
+    },
+    "conclusion": "Q4 changes storage precision of the same low-rank factors, but produces no semantic acceptance improvement. Do not promote Q4 as a functional repair."
+  },
+  "contract_validation": {
+    "latest_run_id": 41048033347,
+    "commit": "97cf82685143732599c291def37d43c49a22ce95",
+    "workflow_result": "success",
+    "test_scope": "Offline G24 evidence contract, historical probe compilation, Q4 probe compilation and semantic predicate tests",
+    "certification_effect": "No functional certification; contract/unit success is not model-quality evidence."
+  },
+  "model_quality_and_repair_blockers": {
+    "D01_CEREBRO": {
+      "model": "GPT-OSS 120B",
+      "active_representation": "rank-1 INT8 factors",
+      "aggregate_relative_frobenius_error_after_int8": 0.9983363410727844,
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "functional_observation": "0/2 in Q2, pre-Q2 and Q4 comparisons"
+    },
+    "D03_TRANSCRIPCION": {
+      "model": "Whisper large-v3-turbo",
+      "active_representation": "rank-29 low-rank INT8 factors",
+      "repair_adapter_status": "EXPERIMENTAL_FAILED",
+      "functional_observation": "0/2 in Q2, pre-Q2 and Q4 comparisons",
+      "prior_repair_attempts": "R29/R64/R96/adaptive R192 documented as failed; no repetition without new evidence"
+    },
+    "D04_TRADUCTOR_INTELIGENTE": {
+      "model": "SeamlessM4T v2 large",
+      "active_representation": "rank-4 low-rank INT8 factors",
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "functional_observation": "0/4 in Q2, pre-Q2 and Q4 comparisons"
+    },
+    "D05_INTELIGENCIA_DOCUMENTAL": {
+      "model": "Granite Docling 258M",
+      "active_representation": "packed quantized weights",
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "functional_observation": "Initial invoice extraction failed with an inadequately small-font fixture; corrected high-contrast fixture is being tested in run 41048033312"
+    },
+    "D06_SISTEMA_INTELIGENTE": {
+      "model": "Qwen3-14B",
+      "active_representation": "rank-12 low-rank INT8 factors",
+      "aggregate_relative_frobenius_error_before_factor_quantization": 0.9964067735222465,
+      "aggregate_relative_frobenius_error_after_int8": 0.9964088220513415,
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "functional_observation": "0/2 in Q2, pre-Q2 and Q4 comparisons"
+    },
+    "D04_TRADUCCION_LENGUAS_ANTIGUAS": {
+      "model": "No source-bound translation model registered",
+      "repair_adapter_status": "BLOCKED_NO_TRANSLATION_RESOURCE",
+      "functional_observation": "The specialist prompt routes to GPT-OSS; it is not an independently validated ancient-language translator."
+    },
+    "common_blockers": [
+      "The current GitHub runtime repository contains compact factors/candidates, not complete original checkpoints for the four affected upstream models.",
+      "No architecture-specific repair adapters or local calibration/held-out training corpus are present for GPT-OSS, SeamlessM4T, Docling or Qwen3.",
+      "The precision and historical-factor experiments changed neither model quality nor acceptance counts.",
+      "Original full-size equivalence remains NOT_ESTABLISHED."
+    ]
+  },
+  "release_gates": {
+    "model_source_identity": "PASS",
+    "global_runtime_preflight": "PASS",
+    "module_tree_integrity": "PASS",
+    "g24_contract_tests": "PASS",
+    "direct_13_case_semantic_evaluation": "PENDING_CURRENT_RUN",
+    "g23_independent_validation": "NOT_GRANTED_FOR_CURRENT_CANDIDATE",
+    "g24_terminal_certification": "HOLD",
+    "rollback_validation": "NOT_RUN_FOR_REPAIRED_MODEL_CANDIDATE",
+    "global_certification": "NOT_GRANTED",
+    "terminal_decision": "HOLD_NOT_CERTIFIED"
+  },
+  "next_evidence_required": [
+    "Complete run 41048033312 and inspect all 13 case-level records, especially the corrected Docling invoice extraction.",
+    "Preserve the exact run commit, case outputs, artifact IDs and digests.",
+    "Do not promote Q4 or historical pre-Q2 factors: neither passed a single semantic case.",
+    "Implement source-bound, architecture-specific repair only when actual model source weights and calibration/held-out data are available inside the user-authorized repository scope.",
+    "Re-run the independent semantic suite, then G23/G24 and rollback against the exact repaired candidate."
+  ]
+}
