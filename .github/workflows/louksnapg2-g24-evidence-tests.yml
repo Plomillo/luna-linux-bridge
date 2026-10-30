@@ -8,6 +8,7 @@ on:
       - "tools/louksnapg2_automated_certifier.py"
       - "tools/louksnapg2_functional_eval.py"
       - "tools/louksnapg2_historical_weight_probe.py"
+      - "tools/louksnapg2_q4_precision_probe.py"
       - "tests/test_louksnapg2_automated_certifier.py"
       - "tests/test_louksnapg2_functional_eval.py"
       - "tests/test_louksnapg2_puac2_gate.py"
@@ -37,6 +38,8 @@ jobs:
           python-version: "3.13"
       - name: Compile repository-only historical weight probe
         run: python -B -m py_compile tools/louksnapg2_historical_weight_probe.py
+      - name: Compile repository-only Q4 precision probe
+        run: python -B -m py_compile tools/louksnapg2_q4_precision_probe.py
       - name: Test G23/G24 certification evidence contract
         run: python -B -m unittest discover -s tests -p "test_louksnapg2_automated_certifier.py" -v
       - name: Test directional semantic predicates
