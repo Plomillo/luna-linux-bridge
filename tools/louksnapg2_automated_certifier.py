@@ -37,6 +37,22 @@ REQUIRED_CASES = {
     "DOCLING_INVOICE_IMAGE_01": "D05_INTELIGENCIA_DOCUMENTAL",
 }
 REQUIRED_DOMAINS = tuple(sorted(set(REQUIRED_CASES.values())))
+REQUIRED_REPAIR_DOMAINS = (
+    "D01_CEREBRO",
+    "D03_TRANSCRIPCION",
+    "D04_TRADUCTOR_INTELIGENTE",
+    "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+    "D05_INTELIGENCIA_DOCUMENTAL",
+    "D06_SISTEMA_INTELIGENTE",
+)
+REPAIR_EVIDENCE_DIGEST_FIELDS = (
+    "source_weight_sha256",
+    "adapter_sha256",
+    "calibration_dataset_sha256",
+    "heldout_dataset_sha256",
+    "rollback_checkpoint_sha256",
+)
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def now() -> str:
@@ -183,8 +199,10 @@ def g24(args) -> dict:
         or execution.get("model_network_fetch_performed") is not False
     ):
         blockers.append("LOCAL_OFFLINE_EXECUTION_POLICY_NOT_PASS")
-    if functional.get("source_commit", commit) != commit:
+    if functional.get("source_commit") != commit:
         blockers.append("FUNCTIONAL_EVIDENCE_COMMIT_MISMATCH")
+    if functional.get("model_inference_performed") is not True:
+        blockers.append("FUNCTIONAL_MODEL_INFERENCE_NOT_PROVEN")
     if functional.get("functional_status") != "PASS_ALL_DOMAIN_CASES":
         blockers.append("FUNCTIONAL_SEMANTIC_SUITE_NOT_PASS")
     tests = functional.get("tests")
@@ -195,6 +213,12 @@ def g24(args) -> dict:
         row = by_id.get(case_id)
         if row is None or row.get("status") != "PASS" or row.get("domain_id") != domain:
             blockers.append("REQUIRED_FUNCTIONAL_CASE_NOT_PASS:" + case_id)
+            continue
+        if row.get("execution_status") != "PASS_EXECUTION" or row.get("quality_criterion_passed") is not True:
+            blockers.append("FUNCTIONAL_EXECUTION_OR_QUALITY_EVIDENCE_NOT_PASS:" + case_id)
+        for field in ("input_sha256", "output_sha256"):
+            if not isinstance(row.get(field), str) or SHA256_RE.fullmatch(row[field]) is None:
+                blockers.append("FUNCTIONAL_CASE_DIGEST_MISSING_OR_INVALID:" + case_id + ":" + field)
     domain_results = functional.get("domain_results", {})
     for domain in REQUIRED_DOMAINS:
         if not isinstance(domain_results, dict) or domain_results.get(domain, {}).get("status") != "PASS":
@@ -203,9 +227,66 @@ def g24(args) -> dict:
         blockers.append("MODEL_REPAIR_ADAPTERS_NOT_ALL_PASS")
     if readiness.get("repair_adapter_status") != "PASS_ALL_REQUIRED_ADAPTERS":
         blockers.append("REPAIR_READINESS_NOT_PASS")
+    if readiness.get("source_commit") != commit:
+        blockers.append("REPAIR_READINESS_COMMIT_MISMATCH")
+    if readiness.get("candidate_sha256") != candidate_sha:
+        blockers.append("REPAIR_READINESS_CANDIDATE_DIGEST_MISMATCH")
     adapters = readiness.get("adapter_results", [])
-    if not isinstance(adapters, list) or not adapters or any(x.get("status") != "PASS" for x in adapters if isinstance(x, dict)):
-        blockers.append("REPAIR_ADAPTER_POSTVALIDATION_NOT_PASS")
+    if not isinstance(adapters, list):
+        adapters = []
+        blockers.append("REPAIR_ADAPTER_INVENTORY_MISSING_OR_INVALID")
+    adapter_by_domain = {}
+    adapter_ids = []
+    for adapter in adapters:
+        if not isinstance(adapter, dict):
+            blockers.append("REPAIR_ADAPTER_RECORD_INVALID")
+            continue
+        domain = adapter.get("domain_id")
+        adapter_id = adapter.get("adapter_id")
+        if not isinstance(domain, str) or domain in adapter_by_domain:
+            blockers.append("REPAIR_ADAPTER_DOMAIN_COLLISION_OR_INVALID")
+            continue
+        adapter_by_domain[domain] = adapter
+        if not isinstance(adapter_id, str) or not adapter_id.strip():
+            blockers.append("REPAIR_ADAPTER_ID_MISSING:" + domain)
+        else:
+            adapter_ids.append(adapter_id)
+    if set(adapter_by_domain) != set(REQUIRED_REPAIR_DOMAINS) or len(adapter_by_domain) != len(adapters):
+        blockers.append("REPAIR_ADAPTER_DOMAIN_COVERAGE_INCOMPLETE")
+    if len(adapter_ids) != len(set(adapter_ids)):
+        blockers.append("REPAIR_ADAPTER_ID_COLLISION")
+    for domain in REQUIRED_REPAIR_DOMAINS:
+        adapter = adapter_by_domain.get(domain)
+        if adapter is None:
+            continue
+        if adapter.get("status") != "PASS":
+            blockers.append("REPAIR_ADAPTER_POSTVALIDATION_NOT_PASS:" + domain)
+        if adapter.get("source_commit") != commit:
+            blockers.append("REPAIR_ADAPTER_COMMIT_MISMATCH:" + domain)
+        if not isinstance(adapter.get("source_model_id"), str) or not adapter["source_model_id"].strip():
+            blockers.append("REPAIR_ADAPTER_SOURCE_MODEL_ID_MISSING:" + domain)
+        for field in REPAIR_EVIDENCE_DIGEST_FIELDS:
+            value = adapter.get(field)
+            if not isinstance(value, str) or SHA256_RE.fullmatch(value) is None:
+                blockers.append("REPAIR_ADAPTER_DIGEST_MISSING_OR_INVALID:" + domain + ":" + field)
+        for field in ("calibration_example_count", "heldout_example_count"):
+            count = adapter.get(field)
+            if isinstance(count, bool) or not isinstance(count, int) or count < 1:
+                blockers.append("REPAIR_ADAPTER_DATASET_EMPTY_OR_UNCOUNTED:" + domain + ":" + field)
+        if adapter.get("heldout_validation_status") != "PASS":
+            blockers.append("REPAIR_ADAPTER_HELDOUT_VALIDATION_NOT_PASS:" + domain)
+        if adapter.get("independent_validation_status") != "PASS":
+            blockers.append("REPAIR_ADAPTER_INDEPENDENT_VALIDATION_NOT_PASS:" + domain)
+        if adapter.get("semantic_quality_equivalence_status") != "PASS":
+            blockers.append("REPAIR_ADAPTER_QUALITY_EQUIVALENCE_NOT_ESTABLISHED:" + domain)
+        if adapter.get("rollback_verified") is not True:
+            blockers.append("REPAIR_ADAPTER_ROLLBACK_NOT_VERIFIED:" + domain)
+        if adapter.get("original_weights_mutated") is not False:
+            blockers.append("REPAIR_ADAPTER_MUTATED_ORIGINAL_WEIGHTS:" + domain)
+        if adapter.get("candidate_output_separate") is not True:
+            blockers.append("REPAIR_ADAPTER_CANDIDATE_NOT_SEPARATE:" + domain)
+    if worker.get("repair_adapter_domains") != sorted(REQUIRED_REPAIR_DOMAINS):
+        blockers.append("WORKER_REPAIR_DOMAIN_COVERAGE_NOT_BOUND")
     if worker.get("repair_execution_performed") is not True:
         blockers.append("MODEL_REPAIR_NOT_EXECUTED")
     if worker.get("global_certification") != "NOT_GRANTED":
