@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib
 import json
 import shutil
 import sys
@@ -127,15 +126,14 @@ def prepare_q4_runtime(current_root: Path, q4_root: Path, domain: str, temp_root
     })
     descriptor["consumer_adapter_registration"] = registration
 
+    # Baseline preparation may have imported these modules from a temporary
+    # directory that has since been removed. Drop those cached modules and load
+    # the adapter/materializer directly from this Q4 runtime copy.
+    sys.modules.pop("cajita_task_adapters", None)
+    sys.modules.pop("cajita_tokenizer_materializer", None)
     sys.path.insert(0, str(temp_root))
-    if "cajita_task_adapters" in sys.modules:
-        adapters = importlib.reload(sys.modules["cajita_task_adapters"])
-    else:
-        import cajita_task_adapters as adapters
-    if "cajita_tokenizer_materializer" in sys.modules:
-        tokenizer = importlib.reload(sys.modules["cajita_tokenizer_materializer"])
-    else:
-        import cajita_tokenizer_materializer as tokenizer
+    import cajita_task_adapters as adapters
+    import cajita_tokenizer_materializer as tokenizer
     adapters.MANIFEST_SHA = manifest_sha
     adapters.ADAPTERS[domain]["sha"] = weight_sha
     adapters.ADAPTERS[domain]["bytes"] = weight_bytes
