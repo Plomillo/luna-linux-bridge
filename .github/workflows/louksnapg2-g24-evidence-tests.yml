@@ -1,0 +1,40 @@
+name: LOUKSNAPG2 G24 evidence contract tests
+
+on:
+  push:
+    branches:
+      - louksnapg2/puac2-alternative-20261029
+    paths:
+      - "tools/louksnapg2_automated_certifier.py"
+      - "tools/louksnapg2_functional_eval.py"
+      - "tests/test_louksnapg2_automated_certifier.py"
+      - "tests/test_louksnapg2_functional_eval.py"
+      - ".github/workflows/louksnapg2-g24-evidence-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg2-g24-evidence-tests-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-unit-tests:
+    name: Offline G24 evidence contract and semantic predicate tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact repository commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+          cache: false
+      - name: Test G23/G24 certification evidence contract
+        run: python -B -m unittest discover -s tests -p "test_louksnapg2_automated_certifier.py" -v
+      - name: Test directional semantic predicates
+        run: python -B -m unittest discover -s tests -p "test_louksnapg2_functional_eval.py" -v
