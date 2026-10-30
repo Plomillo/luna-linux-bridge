@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 import time
@@ -165,8 +166,10 @@ def main(argv=None) -> int:
         "schema": "LOUKSNAPG2_REAL_MODEL_FUNCTIONAL_EVIDENCE/1.0",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "runtime_root": str(root),
+        "source_commit": os.environ.get("GITHUB_SHA", "UNKNOWN"),
         "cpu_thread_budget": 1,
         "model_fetch_performed_by_evaluator": False,
+        "model_inference_performed": False,
         "tests": [],
         "domain_results": {},
         "functional_status": "NOT_RUN",
@@ -301,6 +304,9 @@ def main(argv=None) -> int:
         "D03_TRANSCRIPCION": ["WHISPER_AUDIO_01", "WHISPER_AUDIO_02"],
         "D05_INTELIGENCIA_DOCUMENTAL": ["DOCLING_INVOICE_IMAGE_01"],
     }
+    evidence["model_inference_performed"] = any(
+        row.get("execution_status") == "PASS_EXECUTION" for row in evidence["tests"]
+    )
     by_id = {row["case_id"]: row for row in evidence["tests"]}
     for domain, case_ids in all_domains.items():
         rows = [by_id[case_id] for case_id in case_ids]
