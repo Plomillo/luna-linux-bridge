@@ -6,3 +6,5 @@ El caso debe seguir el Prompt 2: 300–400 palabras, situación realista, dilema
 Rúbrica: 7 puntos por historia/filosofía; 7 por teorías psicológicas; 7 por campos y ética; 4 por fuentes académicas y APA 7.
 Formato: Word/PDF, 3–5 páginas máximo, Arial 12, títulos 16, interlineado 1,5, párrafo justificado, márgenes 2,5 cm. Nombre: ExamenFinal_NombreApellido.
 Integridad: el PDF cargado no incluye el enunciado ni alternativas de las 12 preguntas de selección múltiple. No se pueden inventar respuestas. Región/comuna, composición del hogar y GSE AIM personales tampoco constan en el material; deben declararse como pendientes y no inferirse.
+
+Factory trigger revision: 2026-11-01-b

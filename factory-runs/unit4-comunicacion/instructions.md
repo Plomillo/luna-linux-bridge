@@ -9,3 +9,5 @@ Etapa 4: video autónomo de 5 minutos con voz en off, imágenes/b-roll, tipograf
 Extensión escrita: 2–5 páginas; APA 7, Arial 12, títulos 16, 1,5, justificado, carta, márgenes 2,5 cm. PDF <=3,5 MB. Nombre: TrabajoU4_NombreApellido.
 Rúbrica: delimitación 7; análisis teórico cruzado 7; síntesis 10 secciones 7; video multimodal de cinco minutos 7; fuentes APA 7 + declaración exacta del uso de IA 4.
 Metodología declarada: análisis documental secundario de estudios empíricos publicados y documentación pública de la plataforma. No se afirma haber scrapeado o observado de primera mano una muestra propia.
+
+Factory trigger revision: 2026-11-01-b

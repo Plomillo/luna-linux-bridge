@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: comunicacion-u4-\${{ github.ref }}
+  group: comunicacion-u4-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   build:
@@ -70,7 +70,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: comunicacion-u4-proyecto-integrador-\${{ github.run_id }}
-          path: \${{ runner.temp }}/comunicacion-u4
+          name: comunicacion-u4-proyecto-integrador-${{ github.run_id }}
+          path: ${{ runner.temp }}/comunicacion-u4
           if-no-files-found: error
           retention-days: 30

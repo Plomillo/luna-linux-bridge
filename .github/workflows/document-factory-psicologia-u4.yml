@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: psicologia-u4-\${{ github.ref }}
+  group: psicologia-u4-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   build:
@@ -58,7 +58,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: psicologia-u4-examen-final-\${{ github.run_id }}
-          path: \${{ runner.temp }}/psicologia-u4
+          name: psicologia-u4-examen-final-${{ github.run_id }}
+          path: ${{ runner.temp }}/psicologia-u4
           if-no-files-found: error
           retention-days: 30
