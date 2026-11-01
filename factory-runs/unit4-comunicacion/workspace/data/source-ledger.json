@@ -69,23 +69,6 @@
     {
       "source_id": "COM-S08",
       "verified": true,
-      "author": "Jenkins, H.",
-      "year": 2006,
-      "title": "Convergence culture: Where old and new media collide",
-      "type": "Academic book"
-    },
-    {
-      "source_id": "COM-S09",
-      "verified": true,
-      "author": "Ibrus, I., & Scolari, C. A.",
-      "year": 2014,
-      "title": "Transmedia critical: Empirical investigations into multiplatform and collaborative storytelling",
-      "type": "Peer-reviewed journal article",
-      "url": "https://ijoc.org/index.php/ijoc/article/view/3102"
-    },
-    {
-      "source_id": "COM-S10",
-      "verified": true,
       "author": "Ferrer, E.",
       "year": 1997,
       "title": "Información y comunicación",
@@ -93,7 +76,7 @@
       "publisher": "Fondo de Cultura Económica"
     },
     {
-      "source_id": "COM-S11",
+      "source_id": "COM-S09",
       "verified": true,
       "author": "Knapp, M. L.",
       "year": 1995,
@@ -102,7 +85,7 @@
       "publisher": "Paidós"
     },
     {
-      "source_id": "COM-S12",
+      "source_id": "COM-S10",
       "verified": true,
       "author": "Universidad UNIACC",
       "year": "s. f.",
