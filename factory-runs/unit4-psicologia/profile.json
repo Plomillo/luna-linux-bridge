@@ -1,0 +1,163 @@
+{
+  "schema": "LOUKSNA_ASSIGNMENT_PROFILE/1.0",
+  "profile_id": "PSIC0103_FINAL_U4_EXAMEN_20261101",
+  "profile_version": "1.0",
+  "status": "TASK_PROFILE_CANDIDATE_NOT_CERTIFIED",
+  "raw_instruction_ref": "factory-runs/unit4-psicologia/instructions.md",
+  "title": "Examen final — Fundamentos históricos, teóricos y campos de la Psicología",
+  "language": "es",
+  "required_research": {
+    "minimum_distinct_sources": 9,
+    "source_priority": "Textos académicos primarios y fuentes institucionales chilenas; metadatos bibliográficos explícitos, sin completar referencias por inferencia.",
+    "required_topics": [
+      "Origen histórico de la Psicología científica y laboratorio de Wundt",
+      "Fundamentos filosóficos empiristas, racionalistas y positivistas en la Psicología",
+      "Psicoanálisis, teorías del aprendizaje, humanismo y desarrollo sociocultural",
+      "Psicología clínica, educacional y social-comunitaria",
+      "Ética profesional, confidencialidad, derechos de niños y adolescentes y contexto chileno",
+      "Aplicación argumentada al caso y citas/referencias APA 7"
+    ]
+  },
+  "deliverables": [
+    {
+      "id": "REPORT_DOCX",
+      "kind": "docx",
+      "submission_required": true,
+      "filename": "ExamenFinal_DiegoNorambuena.docx"
+    },
+    {
+      "id": "AUX_PDF",
+      "kind": "pdf",
+      "submission_required": true,
+      "filename": "ExamenFinal_DiegoNorambuena.pdf"
+    },
+    {
+      "id": "AUX_PPTX",
+      "kind": "pptx",
+      "submission_required": false
+    },
+    {
+      "id": "AUX_XLSX",
+      "kind": "xlsx",
+      "submission_required": false
+    }
+  ],
+  "constraints": {
+    "report_word_count": {
+      "min": 1050,
+      "max": 1650,
+      "exclude": [
+        "bibliography"
+      ]
+    },
+    "page_count_total": {
+      "min": 3,
+      "max": 5
+    },
+    "formatting": {
+      "font": "Arial",
+      "body_size_pt": 12,
+      "heading_size_pt": 16,
+      "line_spacing": 1.5,
+      "paragraph_alignment": "justified",
+      "heading_alignment": "center",
+      "margins_cm": {
+        "top": 2.5,
+        "bottom": 2.5,
+        "left": 2.5,
+        "right": 2.5
+      }
+    },
+    "language": "es",
+    "apa_edition": 7,
+    "case_study": {
+      "prompt": 2,
+      "word_count_min": 300,
+      "word_count_max": 400,
+      "ethics_explicitly_named_in_narrative": false
+    },
+    "references": {
+      "required": true,
+      "apa7": true,
+      "citations_mapped": true
+    },
+    "personal_context": {
+      "region_commune": "PENDING_USER_CONFIRMATION",
+      "sector": "NOT_INFERRED",
+      "household_composition": "NOT_INFERRED",
+      "aim_chilean_ses": "NOT_INFERRED"
+    },
+    "first_part": {
+      "required_mcq_count": 12,
+      "weight_percent": 35,
+      "status": "SOURCE_OMITS_QUESTION_STEMS_AND_OPTIONS",
+      "answer_generation": "FORBIDDEN_WITHOUT_SOURCE"
+    },
+    "second_part": {
+      "essay_questions": 6,
+      "weight_percent": 65
+    }
+  },
+  "rubric": {
+    "declared_total_points": 25,
+    "criteria": [
+      {
+        "id": "R01",
+        "points": 7,
+        "text": "Describe conceptos básicos, corrientes filosóficas, figuras y acontecimientos históricos de la Psicología; aplicar historia, filosofía y teorías al caso.",
+        "validation": "AUTOMATED_COVERAGE_PLUS_G23_HUMAN"
+      },
+      {
+        "id": "R02",
+        "points": 7,
+        "text": "Explicar y contrastar teorías psicológicas, fundamentos, objetos y métodos de investigación aplicados al caso.",
+        "validation": "AUTOMATED_COVERAGE_PLUS_G23_HUMAN"
+      },
+      {
+        "id": "R03",
+        "points": 7,
+        "text": "Analizar campos de aplicación, desafíos contemporáneos, ética profesional y toma de decisiones en el caso.",
+        "validation": "AUTOMATED_COVERAGE_PLUS_G23_HUMAN"
+      },
+      {
+        "id": "R04",
+        "points": 4,
+        "text": "Fuentes académicas confiables, citas y referencias APA 7, lenguaje argumentativo.",
+        "validation": "AUTOMATED_CITATION_LEDGER_PLUS_G23_HUMAN"
+      }
+    ]
+  },
+  "runtime_policy": {
+    "heartbeat_interval_seconds": 1,
+    "stages": {
+      "PROFILE_VALIDATE": {
+        "timeout_seconds": 30,
+        "max_attempts": 1
+      },
+      "BUILD_DOCX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PPTX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PDF": {
+        "timeout_seconds": 300,
+        "max_attempts": 1
+      },
+      "VERIFY": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "FREEZE": {
+        "timeout_seconds": 60,
+        "max_attempts": 1
+      }
+    }
+  },
+  "no_subject_matter_inference": false,
+  "certification_authority": false,
+  "g23_authority": false,
+  "g24_authority": false
+}

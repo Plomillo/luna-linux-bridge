@@ -1,0 +1,185 @@
+{
+  "schema": "LOUKSNA_ASSIGNMENT_PROFILE/1.0",
+  "profile_id": "AFGCSL26_COMUNICACION_U4_PROYECTO_INTEGRADOR_20261101",
+  "profile_version": "1.0",
+  "status": "TASK_PROFILE_CANDIDATE_NOT_CERTIFIED",
+  "raw_instruction_ref": "factory-runs/unit4-comunicacion/instructions.md",
+  "title": "Estudiar en compañía a distancia: Study With Me, comunicación multimodal y mediación algorítmica",
+  "language": "es",
+  "required_research": {
+    "minimum_distinct_sources": 8,
+    "source_priority": "Estudios empíricos revisados por pares, publicaciones académicas de comunicación y documentación oficial de plataforma; separar fuentes propias de declaraciones corporativas.",
+    "required_topics": [
+      "Delimitación epistemológica de una práctica comunicativa vigente",
+      "Complejidad comunicativa, negociación de sentido y mediación sociocultural",
+      "Niveles personal, interpersonal, medial y transmedial",
+      "Agencia algorítmica, curaduría y recomendación de contenidos",
+      "Evidencia empírica sobre Study With Me",
+      "Diez secciones escritas, guion a dos columnas y declaración de uso de IA",
+      "Video de cinco minutos con citas visuales autor-año"
+    ]
+  },
+  "deliverables": [
+    {
+      "id": "REPORT_DOCX",
+      "kind": "docx",
+      "submission_required": true,
+      "filename": "TrabajoU4_DiegoNorambuena.docx"
+    },
+    {
+      "id": "AUX_PDF",
+      "kind": "pdf",
+      "submission_required": true,
+      "filename": "TrabajoU4_DiegoNorambuena.pdf"
+    },
+    {
+      "id": "VIDEO_MP4",
+      "kind": "mp4",
+      "submission_required": true,
+      "filename": "TrabajoU4_DiegoNorambuena.mp4"
+    },
+    {
+      "id": "AUX_PPTX",
+      "kind": "pptx",
+      "submission_required": false
+    },
+    {
+      "id": "AUX_XLSX",
+      "kind": "xlsx",
+      "submission_required": false
+    }
+  ],
+  "constraints": {
+    "report_word_count": {
+      "min": 850,
+      "max": 2200,
+      "exclude": [
+        "references"
+      ]
+    },
+    "page_count_total": {
+      "min": 2,
+      "max": 5
+    },
+    "pdf_max_bytes": 3670016,
+    "video": {
+      "duration_seconds": 300,
+      "tolerance_seconds": 1,
+      "orientation": "horizontal",
+      "minimum_width": 1280,
+      "minimum_height": 720,
+      "audio_required": true,
+      "visible_author_year_citations": true
+    },
+    "formatting": {
+      "font": "Arial",
+      "body_size_pt": 12,
+      "heading_size_pt": 16,
+      "line_spacing": 1.5,
+      "paragraph_alignment": "justified",
+      "heading_alignment": "center",
+      "paper": "letter",
+      "margins_cm": {
+        "top": 2.5,
+        "bottom": 2.5,
+        "left": 2.5,
+        "right": 2.5
+      }
+    },
+    "language": "es",
+    "apa_edition": 7,
+    "required_sections": [
+      "I. Introducción",
+      "II. Resumen (abstract)",
+      "III. Situación y tema",
+      "IV. Problema de investigación",
+      "V. Sistema de objetivos",
+      "VI. Análisis del objeto",
+      "VII. Recursos y fundamentos del video",
+      "VIII. Guion del video",
+      "IX. Conclusiones",
+      "X. Referencias"
+    ],
+    "abstract_max_words": 250,
+    "video_script_columns": [
+      "Video/imagen/gráfica",
+      "Audio/locución/sonido"
+    ],
+    "ai_declaration_required": true,
+    "methodology": "DOCUMENTARY_QUALITATIVE_SECONDARY_EVIDENCE",
+    "firsthand_corpus_claim": "FORBIDDEN_UNLESS_COLLECTED",
+    "limitations_must_be_declared": true
+  },
+  "rubric": {
+    "declared_total_points": 32,
+    "criteria": [
+      {
+        "id": "R01",
+        "points": 7,
+        "text": "Delimita epistemológicamente el objeto, con tríada tema-problema-objetivos coherente.",
+        "validation": "AUTOMATED_SECTION_MAP_PLUS_G23_HUMAN"
+      },
+      {
+        "id": "R02",
+        "points": 7,
+        "text": "Analiza la expresión mediante complejidad simbólica, niveles comunicativos y mediación algorítmica; contrasta evidencia con teoría.",
+        "validation": "AUTOMATED_SOURCE_AND_FRAMEWORK_MAP_PLUS_G23_HUMAN"
+      },
+      {
+        "id": "R03",
+        "points": 7,
+        "text": "Presenta las diez secciones solicitadas de forma sistemática y cohesionada.",
+        "validation": "AUTOMATED_SECTION_AND_WORD_LIMIT_CHECK_PLUS_G23_HUMAN"
+      },
+      {
+        "id": "R04",
+        "points": 7,
+        "text": "Presenta video de cinco minutos, con fundamento conceptual, articulación multimodal y citas visuales.",
+        "validation": "FFPROBE_DURATION_AND_AUDIO_PLUS_VISUAL_SCRIPT_CHECK_PLUS_G23_HUMAN"
+      },
+      {
+        "id": "R05",
+        "points": 4,
+        "text": "Fuentes académicas, APA 7 y declaración explícita del uso de IA.",
+        "validation": "CITATION_LEDGER_AND_AI_DISCLOSURE_CHECK_PLUS_G23_HUMAN"
+      }
+    ]
+  },
+  "runtime_policy": {
+    "heartbeat_interval_seconds": 1,
+    "stages": {
+      "PROFILE_VALIDATE": {
+        "timeout_seconds": 30,
+        "max_attempts": 1
+      },
+      "BUILD_DOCX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PPTX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PDF": {
+        "timeout_seconds": 300,
+        "max_attempts": 1
+      },
+      "BUILD_VIDEO": {
+        "timeout_seconds": 300,
+        "max_attempts": 1
+      },
+      "VERIFY": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "FREEZE": {
+        "timeout_seconds": 60,
+        "max_attempts": 1
+      }
+    }
+  },
+  "no_subject_matter_inference": false,
+  "certification_authority": false,
+  "g23_authority": false,
+  "g24_authority": false
+}

@@ -1,0 +1,71 @@
+{
+  "schema": "COMMUNICATION_U4_VIDEO_SCRIPT/1.0",
+  "duration_seconds": 300,
+  "width": 1920,
+  "height": 1080,
+  "aspect_ratio": "16:9",
+  "voice": "Spanish synthetic narration (eSpeak NG)",
+  "sound_design": "Low-level synthesized ambient noise under Spanish voiceover; no copyrighted music.",
+  "scenes": [
+    {
+      "title": "ESTUDIAR EN COMPAÑÍA, AUNQUE SE ESTÉ SOLO",
+      "body": "Study With Me: una práctica cotidiana convertida en experiencia compartida.",
+      "citation": "PROYECTO INTEGRADOR · COMUNICACIÓN U4",
+      "narration": "¿Cómo estudia una persona en compañía si no comparte el mismo espacio con quien aparece en la pantalla? Los videos Study With Me, o estudiar conmigo, convierten una rutina individual en una experiencia mediada. Un escritorio, un reloj y una voz pueden construir una sensación de presencia. El fenómeno merece ser analizado como comunicación, no solo como una técnica de productividad."
+    },
+    {
+      "title": "LOS CÓDIGOS DEL FORMATO",
+      "body": "Plano fijo  ·  temporizador  ·  música  ·  metas  ·  comentarios",
+      "citation": "Lee et al., 2021",
+      "narration": "El formato suele combinar un plano fijo del escritorio o del rostro, un temporizador, metas escritas, música instrumental y comentarios. Estos elementos construyen una atmósfera reconocible. Lee y sus colegas estudiaron treinta videos y entrevistaron a doce espectadores para describir cómo las personas personalizan ese ambiente y experimentan una presencia ilusoria. La cámara no transmite únicamente información: ofrece un espacio simbólico para acompañar el estudio."
+    },
+    {
+      "title": "UN SIGNO, VARIOS SENTIDOS",
+      "body": "El mismo reloj puede ser apoyo, organización o presión.",
+      "citation": "Morin, 2005 · Watzlawick et al., 1967",
+      "narration": "La comunicación es compleja porque la intención del creador no determina la interpretación del espectador. Un reloj puede ayudar a organizar el tiempo, motivar a comenzar o producir presión cuando la persona no logra seguir el ritmo. El significado depende del contexto, de la historia del usuario y de la relación que imagina con quien transmite. Los comentarios y las prácticas posteriores renegocian ese sentido."
+    },
+    {
+      "title": "CUATRO NIVELES DE COMUNICACIÓN",
+      "body": "Personal → Interpersonal → Medial → Transmedial",
+      "citation": "Jenkins, 2006 · Ibrus y Scolari, 2014",
+      "narration": "En el nivel personal, el espectador interpreta la sesión y regula su atención. En el nivel interpersonal, los comentarios permiten reconocimiento y apoyo, aunque la relación sea asimétrica. En el nivel medial, la plataforma organiza formatos, métricas y herramientas. En el nivel transmedial, las rutinas migran entre clips, transmisiones en directo y comunidades, adaptándose a cada soporte y audiencia."
+    },
+    {
+      "title": "LA PLATAFORMA TAMBIÉN PARTICIPA",
+      "body": "Interacciones · datos del video · ajustes de usuario",
+      "citation": "TikTok, s. f. · Centro de ayuda",
+      "narration": "La plataforma no es un canal transparente. TikTok declara que sus recomendaciones consideran interacciones, información del contenido y datos del usuario. Entre las señales que menciona se encuentran los videos vistos por completo u omitidos, los sonidos, los hashtags, el idioma y la ubicación. La empresa afirma que las interacciones suelen tener más peso para la mayoría de usuarios. Es una descripción corporativa, no una auditoría independiente."
+    },
+    {
+      "title": "AGENCIA ALGORÍTMICA",
+      "body": "La recomendación organiza visibilidad; no equivale a intención humana.",
+      "citation": "Gillespie, 2014",
+      "narration": "La agencia algorítmica describe cómo un sistema automatizado participa en la circulación de contenidos. El recomendador no es una persona ni posee intenciones humanas, pero jerarquiza publicaciones y distribuye oportunidades de visibilidad. Puede acercar a un estudiante a una sesión útil y, a la vez, favorecer formatos que retienen atención. No podemos deducir una regla exacta ni conocer el peso interno de cada señal."
+    },
+    {
+      "title": "QUÉ MUESTRA LA EVIDENCIA",
+      "body": "30 videos + 12 entrevistas  |  393 videos + 164.611 comentarios",
+      "citation": "Lee et al., 2021 · Ren et al., 2025 · Liu et al., 2026",
+      "narration": "La evidencia empírica es más matizada que la promesa de motivación universal. Lee y sus colegas analizaron treinta videos y entrevistaron a doce espectadores. Ren y sus colegas compararon el estudio con video, con acompañante físico y en solitario; informaron menor presión percibida con el video que con una persona presente y resultados similares entre video y estudio individual. Liu y sus colegas examinaron trescientos noventa y tres videos y más de ciento sesenta mil comentarios."
+    },
+    {
+      "title": "POSIBILIDADES Y TENSIONES",
+      "body": "Acompañamiento y autorregulación  ↔  comparación y presión",
+      "citation": "Ren et al., 2025 · Liu et al., 2026",
+      "narration": "Estos resultados no permiten afirmar que el formato ayude a todas las personas. Puede aportar estructura, compañía simbólica y apoyo emocional. También puede generar comparación social, expectativas de productividad o presión por exhibir una rutina perfecta. La experiencia depende de la edad, las condiciones de estudio, la accesibilidad, la plataforma y la manera en que cada audiencia incorpora el contenido a su propia vida."
+    },
+    {
+      "title": "RESPUESTA A LA PREGUNTA",
+      "body": "La compañía virtual se construye entre códigos, relaciones y sistemas de visibilidad.",
+      "citation": "Síntesis del análisis",
+      "narration": "La respuesta es que Study With Me construye compañía virtual mediante códigos audiovisuales y rituales compartidos, pero su sentido no queda cerrado por el video. Las audiencias interpretan, comentan, imitan y transforman la práctica. Los niveles comunicativos se cruzan y la recomendación condiciona qué publicaciones alcanzan visibilidad. La tecnología media la experiencia; no sustituye la interpretación humana."
+    },
+    {
+      "title": "CONCLUSIÓN Y REFERENCIAS",
+      "body": "Práctica sociotécnica: acompañamiento posible, efectos situados, visibilidad mediada.",
+      "citation": "Morin, 2005 · Gillespie, 2014 · Lee et al., 2021 · Ren et al., 2025 · Liu et al., 2026",
+      "narration": "En conclusión, Study With Me es una práctica sociotécnica. Su significado se produce entre creador, audiencia, códigos audiovisuales e infraestructura de recomendación. Reconocer sus posibilidades no exige convertirlo en una solución universal. Una lectura crítica permite valorar el acompañamiento que ofrece y, al mismo tiempo, observar las desigualdades, tensiones y límites que acompañan su circulación."
+    }
+  ]
+}

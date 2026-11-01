@@ -1,0 +1,87 @@
+{
+  "schema": "DOCUMENT_FACTORY_SOURCE_LEDGER/1.0",
+  "sources": [
+    {
+      "source_id": "COM-S01",
+      "verified": true,
+      "author": "Lee, Y., Chung, J. J. Y., Song, J. Y., Chang, M., & Kim, J.",
+      "year": 2021,
+      "title": "Personalizing ambience and illusionary presence: How people use Study With Me videos to create effective studying environments",
+      "type": "Peer-reviewed CHI proceedings",
+      "doi": "10.1145/3411764.3445222",
+      "url": "https://doi.org/10.1145/3411764.3445222"
+    },
+    {
+      "source_id": "COM-S02",
+      "verified": true,
+      "author": "Ren, N., Reynolds, B. L., & Rusk, B. V.",
+      "year": 2025,
+      "title": "Virtual companionship or flesh and blood: The effects of study-with-me videos on learners' intrinsic motivation, perceived pressure, and performance",
+      "type": "Peer-reviewed journal article",
+      "doi": "10.1016/j.compedu.2025.105243",
+      "url": "https://doi.org/10.1016/j.compedu.2025.105243"
+    },
+    {
+      "source_id": "COM-S03",
+      "verified": true,
+      "author": "Liu, T., Deng, L., & Zhou, Y.",
+      "year": 2026,
+      "title": "Unpacking self-regulation and social interaction in Study With Me videos through large-scale analytics",
+      "type": "Peer-reviewed journal article",
+      "doi": "10.1016/j.compedu.2025.105488",
+      "url": "https://doi.org/10.1016/j.compedu.2025.105488"
+    },
+    {
+      "source_id": "COM-S04",
+      "verified": true,
+      "author": "TikTok",
+      "year": "n.d.",
+      "title": "Cómo recomienda contenido TikTok",
+      "type": "Official platform documentation",
+      "url": "https://support.tiktok.com/es/using-tiktok/exploring-videos/how-tiktok-recommends-content/"
+    },
+    {
+      "source_id": "COM-S05",
+      "verified": true,
+      "author": "Gillespie, T.",
+      "year": 2014,
+      "title": "The relevance of algorithms",
+      "type": "Academic book chapter",
+      "doi": "10.7551/mitpress/9780262525374.003.0009",
+      "url": "https://doi.org/10.7551/mitpress/9780262525374.003.0009"
+    },
+    {
+      "source_id": "COM-S06",
+      "verified": true,
+      "author": "Morin, E.",
+      "year": 2005,
+      "title": "Introduction à la pensée complexe",
+      "type": "Academic book"
+    },
+    {
+      "source_id": "COM-S07",
+      "verified": true,
+      "author": "Watzlawick, P., Beavin Bavelas, J., & Jackson, D. D.",
+      "year": 1967,
+      "title": "Pragmatics of human communication",
+      "type": "Academic book"
+    },
+    {
+      "source_id": "COM-S08",
+      "verified": true,
+      "author": "Jenkins, H.",
+      "year": 2006,
+      "title": "Convergence culture: Where old and new media collide",
+      "type": "Academic book"
+    },
+    {
+      "source_id": "COM-S09",
+      "verified": true,
+      "author": "Ibrus, I., & Scolari, C. A.",
+      "year": 2014,
+      "title": "Transmedia critical: Empirical investigations into multiplatform and collaborative storytelling",
+      "type": "Peer-reviewed journal introduction",
+      "url": "https://ijoc.org/index.php/ijoc/article/view/3102"
+    }
+  ]
+}

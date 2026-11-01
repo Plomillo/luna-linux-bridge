@@ -1,0 +1,76 @@
+name: "Document Factory — Comunicación U4 con video"
+on:
+  push:
+    branches:
+      - "candidate/document-factory-v1-unit2-*"
+    paths:
+      - "factory-runs/unit4-comunicacion/**"
+permissions:
+  contents: read
+concurrency:
+  group: comunicacion-u4-\${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Install document and audiovisual toolchain
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y pandoc libreoffice-writer python3-docx poppler-utils ffmpeg espeak-ng python3-pil fonts-dejavu-core
+      - name: Validate profile and factory self-test
+        run: |
+          set -Eeuo pipefail
+          python3 -B document-factory/src/selftest.py
+          python3 -B document-factory/src/factory.py validate-profile factory-runs/unit4-comunicacion/profile.json --repo-root .
+      - name: Build and format written synthesis
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          W="$RUNNER_TEMP/comunicacion-u4"
+          mkdir -p "$W"
+          cp -a factory-runs/unit4-comunicacion/workspace/. "$W/"
+          PROFILE=factory-runs/unit4-comunicacion/profile.json
+          python3 -B document-factory/src/factory.py build "$W" "$PROFILE" --repo-root .
+          python3 -B factory-runs/unit4-comunicacion/format_docx.py "$W/build/report.docx" "$W/evidence/formatting.json"
+          rm -f "$W/build/report.pdf"
+          soffice --headless --convert-to pdf --outdir "$W/build" "$W/build/report.docx"
+      - name: Render five-minute Spanish audiovisual object
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B factory-runs/unit4-comunicacion/render_video.py "$RUNNER_TEMP/comunicacion-u4"
+      - name: Verify all deliverables, rubric and technical media
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          W="$RUNNER_TEMP/comunicacion-u4"
+          PROFILE=factory-runs/unit4-comunicacion/profile.json
+          python3 -B factory-runs/unit4-comunicacion/verify_document.py "$W" "$PROFILE"
+          python3 -B document-factory/src/factory.py validate "$W" "$PROFILE" --repo-root .
+          python3 -B document-factory/src/factory.py self-audit "$W" "$PROFILE"
+          cp "$W/build/report.docx" "$W/build/TrabajoU4_DiegoNorambuena.docx"
+          cp "$W/build/report.pdf" "$W/build/TrabajoU4_DiegoNorambuena.pdf"
+          cp "$W/build/communication_u4.mp4" "$W/build/TrabajoU4_DiegoNorambuena.mp4"
+          printf '{"run_id":"%s","commit":"%s","ref":"%s","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED","methodology":"DOCUMENTARY_QUALITATIVE_SECONDARY_EVIDENCE"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
+          python3 -B document-factory/src/factory.py freeze "$W"
+          {
+            echo "## Comunicación U4 — fábrica"
+            echo "- Rúbrica: 32 puntos"
+            echo "- Síntesis: diez secciones; abstract de máximo 250 palabras"
+            echo "- Video: 300 segundos; MP4 1920x1080; audio y citas visuales incluidos"
+            echo "- Método: análisis documental secundario; sin inventar muestra propia"
+            echo "- APA 7 y declaración de uso de IA incorporadas"
+            echo "- G23/G24: NOT_EXECUTED"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: comunicacion-u4-proyecto-integrador-\${{ github.run_id }}
+          path: \${{ runner.temp }}/comunicacion-u4
+          if-no-files-found: error
+          retention-days: 30

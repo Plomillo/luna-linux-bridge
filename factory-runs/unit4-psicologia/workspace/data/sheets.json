@@ -1,0 +1,74 @@
+{
+  "sheets": [
+    {
+      "name": "Rubrica_25",
+      "rows": [
+        [
+          "Criterio",
+          "Puntaje",
+          "Estado de cobertura"
+        ],
+        [
+          "Historia, filosofía y origen científico",
+          7,
+          "Desarrollado; revisión humana pendiente"
+        ],
+        [
+          "Corrientes y teorías psicológicas",
+          7,
+          "Desarrollado; revisión humana pendiente"
+        ],
+        [
+          "Campos y ética profesional",
+          7,
+          "Desarrollado; revisión humana pendiente"
+        ],
+        [
+          "Fuentes académicas y APA 7",
+          4,
+          "Referencias incorporadas; cotejo docente pendiente"
+        ],
+        [
+          "TOTAL",
+          25,
+          "No equivale a calificación otorgada"
+        ]
+      ]
+    },
+    {
+      "name": "Entradas_pendientes",
+      "rows": [
+        [
+          "Entrada",
+          "Estado",
+          "Tratamiento"
+        ],
+        [
+          "12 preguntas y alternativas de selección múltiple",
+          "AUSENTE_EN_PDF",
+          "No inventar respuestas"
+        ],
+        [
+          "Región y comuna reales del estudiante",
+          "PENDIENTE",
+          "No inferir"
+        ],
+        [
+          "Composición real del hogar",
+          "PENDIENTE",
+          "No inferir"
+        ],
+        [
+          "GSE AIM del hogar",
+          "PENDIENTE",
+          "No inferir"
+        ],
+        [
+          "Material privado del curso",
+          "NO_ADJUNTO",
+          "Cotejo docente pendiente"
+        ]
+      ]
+    }
+  ]
+}

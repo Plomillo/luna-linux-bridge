@@ -1,0 +1,79 @@
+{
+  "sheets": [
+    {
+      "name": "Corpus_empirico",
+      "rows": [
+        [
+          "Fuente",
+          "Material",
+          "Dato reportado",
+          "Uso y límite"
+        ],
+        [
+          "Lee et al. (2021)",
+          "30 videos SWM + 12 entrevistas",
+          "Atmósfera y presencia ilusoria",
+          "Estudio situado; no universalizar"
+        ],
+        [
+          "Ren et al. (2025)",
+          "Comparación video, acompañante físico y estudio individual",
+          "Menor presión percibida con video que con acompañante físico; aprendizaje similar a estudio en solitario",
+          "No prueba efecto universal"
+        ],
+        [
+          "Liu et al. (2026)",
+          "393 videos YouTube + 164.611 comentarios",
+          "Patrones de autorregulación e interacción",
+          "Análisis secundario publicado"
+        ],
+        [
+          "TikTok (s. f.)",
+          "Documentación oficial de recomendación",
+          "Interacciones, información del contenido y del usuario",
+          "Declaración corporativa, no auditoría independiente"
+        ]
+      ]
+    },
+    {
+      "name": "Rubrica_32",
+      "rows": [
+        [
+          "Criterio",
+          "Puntaje",
+          "Estado"
+        ],
+        [
+          "Delimitación epistemológica",
+          7,
+          "Estructurada; juicio académico pendiente"
+        ],
+        [
+          "Análisis teórico cruzado",
+          7,
+          "Tres marcos integrados; juicio académico pendiente"
+        ],
+        [
+          "Diez secciones escritas",
+          7,
+          "Incluidas; verificación automática"
+        ],
+        [
+          "Video 5 minutos y multimodalidad",
+          7,
+          "Producción y validación automatizadas"
+        ],
+        [
+          "Fuentes APA 7 y declaración IA",
+          4,
+          "Fuentes enlazadas y declaración incluida"
+        ],
+        [
+          "TOTAL",
+          32,
+          "No representa calificación otorgada"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+name: "Document Factory — Psicología U4 final"
+on:
+  push:
+    branches:
+      - "candidate/document-factory-v1-unit2-*"
+    paths:
+      - "factory-runs/unit4-psicologia/**"
+permissions:
+  contents: read
+concurrency:
+  group: psicologia-u4-\${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Install document toolchain
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y pandoc libreoffice-writer python3-docx poppler-utils
+      - name: Validate profile and factory self-test
+        run: |
+          set -Eeuo pipefail
+          python3 -B document-factory/src/selftest.py
+          python3 -B document-factory/src/factory.py validate-profile factory-runs/unit4-psicologia/profile.json --repo-root .
+      - name: Build, format, verify and freeze
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          W="$RUNNER_TEMP/psicologia-u4"
+          mkdir -p "$W"
+          cp -a factory-runs/unit4-psicologia/workspace/. "$W/"
+          PROFILE=factory-runs/unit4-psicologia/profile.json
+          python3 -B document-factory/src/factory.py build "$W" "$PROFILE" --repo-root .
+          python3 -B factory-runs/unit4-psicologia/format_docx.py "$W/build/report.docx" "$W/evidence/formatting.json"
+          rm -f "$W/build/report.pdf"
+          soffice --headless --convert-to pdf --outdir "$W/build" "$W/build/report.docx"
+          python3 -B factory-runs/unit4-psicologia/verify_document.py "$W" "$PROFILE"
+          python3 -B document-factory/src/factory.py validate "$W" "$PROFILE" --repo-root .
+          python3 -B document-factory/src/factory.py self-audit "$W" "$PROFILE"
+          cp "$W/build/report.docx" "$W/build/ExamenFinal_DiegoNorambuena.docx"
+          cp "$W/build/report.pdf" "$W/build/ExamenFinal_DiegoNorambuena.pdf"
+          printf '{"run_id":"%s","commit":"%s","ref":"%s","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED","source_gaps":"DOCUMENTED"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
+          python3 -B document-factory/src/factory.py freeze "$W"
+          {
+            echo "## Psicología U4 — fábrica"
+            echo "- Rúbrica: 25 puntos"
+            echo "- Ensayo: seis respuestas; caso de 300–400 palabras"
+            echo "- PDF: 3–5 páginas; validación ejecutada"
+            echo "- Parte MCQ: pendiente; no se recibieron enunciados ni alternativas"
+            echo "- Contexto personal: no inferido"
+            echo "- G23/G24: NOT_EXECUTED"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: psicologia-u4-examen-final-\${{ github.run_id }}
+          path: \${{ runner.temp }}/psicologia-u4
+          if-no-files-found: error
+          retention-days: 30

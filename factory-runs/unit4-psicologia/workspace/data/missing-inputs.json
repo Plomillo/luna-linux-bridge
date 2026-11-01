@@ -1,0 +1,26 @@
+{
+  "schema": "DOCUMENT_FACTORY_MISSING_INPUTS/1.0",
+  "status": "PARTIAL_SOURCE_COMPLETENESS",
+  "source_pdf": "PSIC0103_FINAL2_U4.pdf",
+  "blocking_or_material_gaps": [
+    {
+      "id": "MCQ_12_STEMS",
+      "impact": "35% of the maximum grade",
+      "detail": "The uploaded eight-page PDF describes 12 multiple-choice questions but does not provide their stems or answer options. No answers can be selected or generated responsibly."
+    },
+    {
+      "id": "PERSONAL_SOCIOCULTURAL_CONTEXT",
+      "impact": "Prompt 2 contextualisation",
+      "detail": "The student's real region/commune, sector, household composition and AIM socioeconomic segment are not specified. The fictional case is explicitly not presented as a biography."
+    },
+    {
+      "id": "COURSE_LEARNING_RESOURCES",
+      "impact": "Alignment with course materials",
+      "detail": "No videos, class notes or private course readings were attached; bibliography is built from identifiable academic/public sources."
+    }
+  ],
+  "allowed_output": "Essay component based on the six development questions; no invented multiple-choice answers.",
+  "certification": "NOT_GRANTED",
+  "g23": "NOT_EXECUTED",
+  "g24": "NOT_EXECUTED"
+}
