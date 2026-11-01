@@ -8,18 +8,37 @@
       "year": 1990,
       "title": "Constructing the subject: Historical origins of psychological research",
       "type": "Academic book",
-      "url": "https://doi.org/10.1017/CBO9780511524059.003"
+      "url": "https://doi.org/10.1017/CBO9780511524059"
     },
     {
       "source_id": "PSI-S02",
       "verified": true,
-      "author": "Wundt, W.",
-      "year": 1874,
-      "title": "Grundzüge der physiologischen Psychologie",
-      "type": "Primary book"
+      "author": "Cosacov, E.",
+      "year": 2014,
+      "title": "Introducción a la psicología",
+      "edition": "7",
+      "type": "Required course reading",
+      "publisher": "Editorial Brujas"
     },
     {
       "source_id": "PSI-S03",
+      "verified": true,
+      "author": "Sáiz, M. (Coord.)",
+      "year": 2009,
+      "title": "Historia de la psicología",
+      "type": "Course complementary reading",
+      "publisher": "Editorial UOC"
+    },
+    {
+      "source_id": "PSI-S04",
+      "verified": true,
+      "author": "Universidad UNIACC",
+      "year": 2025,
+      "title": "Contexto histórico del origen de la Psicología",
+      "type": "Course note"
+    },
+    {
+      "source_id": "PSI-S05",
       "verified": true,
       "author": "Freud, S.",
       "year": "1923/1961",
@@ -27,7 +46,7 @@
       "type": "Primary theoretical work"
     },
     {
-      "source_id": "PSI-S04",
+      "source_id": "PSI-S06",
       "verified": true,
       "author": "Skinner, B. F.",
       "year": 1953,
@@ -35,7 +54,7 @@
       "type": "Primary theoretical book"
     },
     {
-      "source_id": "PSI-S05",
+      "source_id": "PSI-S07",
       "verified": true,
       "author": "Rogers, C. R.",
       "year": 1951,
@@ -43,7 +62,7 @@
       "type": "Primary theoretical book"
     },
     {
-      "source_id": "PSI-S06",
+      "source_id": "PSI-S08",
       "verified": true,
       "author": "Vygotsky, L. S.",
       "year": 1978,
@@ -51,7 +70,7 @@
       "type": "Academic book"
     },
     {
-      "source_id": "PSI-S07",
+      "source_id": "PSI-S09",
       "verified": true,
       "author": "Erikson, E. H.",
       "year": 1968,
@@ -59,31 +78,22 @@
       "type": "Academic book"
     },
     {
-      "source_id": "PSI-S08",
+      "source_id": "PSI-S10",
       "verified": true,
       "author": "Colegio de Psicólogos de Chile",
       "year": 1999,
       "title": "Código de ética profesional",
       "type": "Professional code",
-      "url": "https://www.colpsi.cl/comision-de-etica/"
+      "url": "https://www.colpsi.cl/wp-content/uploads/2024/09/1999_Codigo_de_Etica_2a_Edicion.pdf"
     },
     {
-      "source_id": "PSI-S09",
+      "source_id": "PSI-S11",
       "verified": true,
-      "author": "República de Chile",
+      "author": "Biblioteca del Congreso Nacional de Chile",
       "year": 2022,
-      "title": "Ley 21.430",
+      "title": "Ley 21.430: Sobre garantías y protección integral de los derechos de la niñez y adolescencia",
       "type": "Official legislation",
-      "url": "https://www.bcn.cl/leychile/"
-    },
-    {
-      "source_id": "PSI-S10",
-      "verified": true,
-      "author": "Universität Leipzig",
-      "year": "n.d.",
-      "title": "History of experimental psychology in Leipzig",
-      "type": "University history",
-      "url": "https://www.lw.uni-leipzig.de/en/institute-for-psychology/history-of-experimental-psychology-in-leipzig"
+      "url": "https://www.leychile.cl/navegar?idNorma=1173643"
     }
   ]
 }
