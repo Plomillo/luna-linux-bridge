@@ -1,5 +1,5 @@
 # Trabajo de Unidad 4 — Proyecto integrador
-## Estudiar en compañía a distancia: Study With Me y mediación algorítmica
+## Study With Me: compañía virtual y mediación algorítmica
 
 **Asignatura:** COMUNICAR CON SENTIDO: LENGUAJE, TECNOLOGÍA Y SOCIEDAD — 271  
 **Docente:** Paloma Ignacia Ibáñez Pastén  
@@ -8,69 +8,68 @@
 <!-- BODY_START -->
 ### I. Introducción
 
-Los videos *Study With Me* (SWM) convierten el estudio individual en una experiencia mediada que puede sentirse compartida. El escritorio, el temporizador, la presencia frente a cámara y los comentarios forman una escena reconocible. Su interés comunicacional no se limita a entregar consejos: produce significados, rituales y relaciones. Este estudio delimita el fenómeno, aplica los marcos del curso y propone una síntesis audiovisual de cinco minutos.
+Los videos *Study With Me* (SWM) muestran sesiones de estudio para que otras personas las acompañen a distancia. Un escritorio, un temporizador, música y comentarios construyen una escena que puede significar compañía, disciplina o presión. El fenómeno permite analizar cómo la comunicación digital produce sentido y cómo las plataformas organizan su circulación.
 
 ### II. Resumen (abstract)
 
-El trabajo analiza cómo los videos SWM construyen compañía virtual y cómo su sentido circula entre audiencias, plataformas y recomendadores. Se aplica análisis documental de lecturas del curso, estudios empíricos publicados y documentación de TikTok; no se declara una muestra propia. Se cruzan complejidad comunicativa, niveles personal, interpersonal, medial y transmedial, y agencia algorítmica. La evidencia describe usos de atmósferas audiovisuales y posibles apoyos a la autorregulación, sin demostrar beneficios universales. Se concluye que SWM es una práctica sociotécnica cuyo significado depende de la interpretación situada y de condiciones de visibilidad mediadas.
+Este trabajo analiza cómo los videos SWM construyen compañía virtual y cómo su significado circula entre audiencias y plataformas. Se aplica análisis documental de lecturas del curso, estudios empíricos publicados y documentación de TikTok; no se afirma haber reunido una muestra propia. Se cruzan complejidad comunicativa, niveles personal, interpersonal, medial y transmedial, y mediación algorítmica. La evidencia describe usos de atmósferas audiovisuales y posibles apoyos a la autorregulación, sin probar beneficios universales. Se concluye que SWM es una práctica sociotécnica cuyo sentido depende de interpretaciones situadas y de condiciones de visibilidad mediadas.
 
 ### III. Situación y tema
 
-El hecho comunicativo es la publicación de videos en que una persona muestra una sesión de estudio, en directo o editada, e invita a otras a acompañarla. La matriz delimita el objeto:
+El hecho observado es la publicación de sesiones de estudio, en directo o editadas, que invitan a estudiar junto al creador.
 
 | Dimensión metodológica | Delimitación |
 |---|---|
-| Hecho observado | Videos SWM y comentarios de sus espectadores; evidencia empírica tomada de estudios publicados. |
-| Nivel principal | Medial, con intercambios interpersonales y circulación transmedial. |
-| Tecnología | Cámara o teléfono, interfaz, temporizador, edición, comentarios y recomendador. |
-| Códigos semióticos | Palabras, plano, postura, gestos, iluminación, reloj, música y emojis. |
-| Sentido sociocultural | Compañía, disciplina y pertenencia; también comparación, presión y brechas de acceso. |
-| Tema | Comunicación digital, copresencia mediada y prácticas de estudio. |
-| Problema | El sentido varía entre audiencias y la visibilidad depende de sistemas de recomendación poco transparentes. |
-| Objetivos | Describir códigos; analizar niveles y negociaciones; interpretar la mediación algorítmica. |
+| Nivel principal | Medial; con respuestas interpersonales y circulación transmedial. |
+| Tecnología | Cámara, plataforma, edición, temporizador, comentarios y recomendador. |
+| Códigos semióticos | Palabras, plano, gestos, iluminación, reloj, música y emojis. |
+| Sentido sociocultural | Compañía y pertenencia; también comparación y presión. |
+| Tema | Comunicación digital y copresencia mediada. |
+| Problema | El sentido varía entre audiencias y la visibilidad depende de recomendaciones poco transparentes. |
+| Objetivos | Describir códigos; analizar niveles; interpretar la mediación algorítmica. |
 
 ### IV. Problema de investigación
 
-Reducir SWM a una técnica de concentración omite su dimensión relacional. Una misma imagen puede ser apoyo, invitación o exigencia; intención y recepción no son equivalentes. Además, la plataforma ordena la exposición a contenidos. **Pregunta rectora:** ¿cómo construyen los videos Study With Me una experiencia de compañía virtual y cómo condicionan su interpretación y circulación los niveles comunicativos y la recomendación algorítmica?
+Reducir SWM a una técnica de concentración omite su dimensión relacional. Un mismo temporizador puede apoyar a una persona y presionar a otra. La plataforma tampoco es un canal neutro: ordena la exposición a contenidos. **Pregunta rectora:** ¿cómo construyen los videos SWM compañía virtual y cómo condicionan su interpretación y circulación los niveles comunicativos y la recomendación algorítmica?
 
 ### V. Sistema de objetivos
 
-**Objetivo general:** Analizar la construcción comunicativa de compañía virtual en videos SWM y su mediación algorítmica.
+**Objetivo general:** Analizar la construcción comunicativa de compañía virtual en SWM y su mediación algorítmica.
 
-**Objetivos específicos:**
-1. Describir sus códigos audiovisuales y convenciones socioculturales.
-2. Examinar los niveles comunicativos y las negociaciones de sentido.
-3. Interpretar cómo la recomendación organiza la visibilidad y sus tensiones.
+**Objetivos específicos:** 
+1. Describir códigos audiovisuales y convenciones socioculturales.
+2. Examinar niveles comunicativos y negociación de sentido.
+3. Interpretar el papel de la recomendación en la visibilidad del fenómeno.
 
 ### VI. Análisis del objeto desde los enfoques comunicacionales
 
-**Complejidad y mediación.** La comunicación no equivale a transferir datos: requiere interpretación y contexto (Ferrer, 1997; Universidad UNIACC, s. f.). En SWM, un temporizador puede ser apoyo o presión. El plano, el silencio y la disposición del espacio también comunican; la comunicación no verbal participa en la construcción de sentido (Knapp, 1995). Watzlawick et al. (1967) permiten reconocer el carácter relacional de la interacción y Morin (2005) evitar una explicación lineal: intervienen persona, cultura, tecnología y condiciones de estudio.
+**Complejidad y mediación sociocultural.** Comunicar no es solo transmitir datos: es producir e interpretar significados en contexto (Ferrer, 1997; Universidad UNIACC, s. f.). El plano, el silencio y la disposición del espacio también comunican (Knapp, 1995). Por ello, el temporizador puede significar apoyo, vigilancia o presión. Watzlawick et al. (1967) permiten reconocer el carácter relacional de la interacción; Morin (2005), evitar explicaciones lineales que ignoren persona, cultura y tecnología.
 
-**Niveles comunicativos.** En el nivel personal, el espectador interpreta y adapta la rutina. En el interpersonal, comentarios y respuestas ofrecen reconocimiento, aunque la relación sea asimétrica. En el medial, la interfaz define formatos y métricas. En el transmedial, el ritual migra entre videos breves, transmisiones y comunidades, ajustándose a cada soporte. Las audiencias son activas: pueden reproducir, discutir o rechazar el significado propuesto.
+**Niveles multidimensionales.** En el nivel personal, el espectador interpreta la escena y adapta la rutina. En el interpersonal, comentarios y respuestas ofrecen reconocimiento, aunque exista asimetría. En el medial, la interfaz dispone formatos y métricas. En el transmedial, la práctica migra entre videos breves, directos y comunidades, ajustándose a cada soporte. La audiencia es activa: puede reproducir, discutir o rechazar el sentido propuesto.
 
-**Agencia algorítmica.** TikTok declara que sus recomendaciones consideran interacciones, información del contenido y datos del usuario, como visualizaciones, omisiones, sonidos y hashtags (TikTok, s. f.). Es una explicación corporativa, no una auditoría independiente. Gillespie (2014) ayuda a entender los algoritmos como mediadores de relevancia: clasifican contenidos y organizan oportunidades de visibilidad, sin tener intención humana ni revelar todas sus reglas.
+**Agencia algorítmica.** TikTok declara que sus recomendaciones consideran interacciones, datos del contenido y del usuario, como visualizaciones, omisiones, sonidos y hashtags (TikTok, s. f.). Es una explicación corporativa, no una auditoría independiente. Gillespie (2014) permite entender el algoritmo como mediador de relevancia: clasifica publicaciones y organiza oportunidades de visibilidad, sin poseer intención humana ni revelar todas sus reglas.
 
-**Evidencia y límites.** Lee et al. (2021) analizaron 30 videos y entrevistaron a 12 espectadores sobre atmósferas y presencia ilusoria. Ren et al. (2025) compararon estudio con video, con acompañante presencial y en solitario; informaron menor presión percibida con el video que con el acompañante y resultados similares al estudio individual. Liu et al. (2026) analizaron 393 videos y 164.611 comentarios. Son estudios distintos: no prueban beneficios universales. Este trabajo es documental y no afirma haber recopilado datos originales.
+**Evidencia y límites.** Lee et al. (2021) analizaron 30 videos y entrevistaron a 12 espectadores sobre atmósfera y presencia ilusoria. Ren et al. (2025) compararon estudio con video, con acompañante presencial y en solitario; informaron menor presión percibida con video que con acompañante y resultados similares al estudio individual. Liu et al. (2026) analizaron 393 videos y 164.611 comentarios. Los diseños son distintos y no prueban beneficios universales. Este trabajo es documental y no presenta datos originales.
 
 ### VII. Recursos y fundamentos del video
 
-El escritorio y el temporizador representan la estética SWM; un diagrama explica los cuatro niveles y una red visual muestra la mediación algorítmica sin fingir conocer su código. La voz desarrolla relaciones y los rótulos sintetizan conceptos. Las citas autor-año aparecen junto a los referentes; las pausas visuales evitan saturación.
+Los planos de escritorio y temporizadores representan la estética SWM; un esquema muestra los cuatro niveles y una red ilustra la mediación algorítmica sin simular acceso a su código. La voz desarrolla relaciones y los rótulos sintetizan conceptos. Las citas autor-año aparecen en pantalla para mantener trazabilidad y las pausas visuales evitan saturación.
 
-**Declaración de uso de IA:** Se utilizó ChatGPT (GPT-6) para delimitar el objeto, organizar el análisis y preparar la síntesis y el guion. Los prompts consistieron en solicitar la delimitación metodológica, el cruce de los tres enfoques y la estructuración de una locución de cinco minutos. Se contrastaron referencias con DOI y registros editoriales, y la explicación del recomendador con la documentación de TikTok. eSpeak NG generó la locución. No se recopilaron datos originales; la revisión y responsabilidad académica final corresponden al estudiante.
+**Declaración de uso de IA:** Se utilizó ChatGPT (GPT-6) para delimitar el objeto, organizar los tres marcos, resumir fuentes y preparar el guion. Los prompts solicitaron la matriz metodológica, el análisis de complejidad/niveles/algoritmos y una locución audiovisual de cinco minutos. Los datos empíricos se contrastaron con los artículos identificados por DOI; la recomendación se contrastó con la documentación pública de TikTok y el marco conceptual con las lecturas UNIACC de Ferrer y Knapp. eSpeak NG generó la locución sintética. No se recopilaron datos originales; la revisión y responsabilidad académica final corresponden al estudiante.
 
 ### VIII. Guion del video
 
 | Video / imagen / gráfica | Audio / locución / sonido |
 |---|---|
-| **0:00–1:00.** Título; escritorio, plano fijo, reloj y #StudyWithMe. Cita: Lee et al. (2021). | “¿Cómo estudiar acompañado sin compartir el mismo espacio? Study With Me transforma una rutina individual en una escena compartida. El escritorio, el temporizador y la presencia frente a cámara construyen una atmósfera reconocible. La imagen no solo entrega información: ofrece signos que la audiencia interpreta como compañía, disciplina o invitación.” |
-| **1:00–2:00.** Un temporizador con dos interpretaciones; esquema de los cuatro niveles. Citas: Knapp (1995); Morin (2005). | “La comunicación es compleja porque un mismo signo puede significar cosas distintas. Un reloj puede organizar el tiempo o generar presión. En el nivel personal se interpreta la escena; en el interpersonal aparecen comentarios y apoyo; en el medial intervienen la interfaz y sus métricas; y en el transmedial la práctica se adapta a distintos soportes. La audiencia no recibe pasivamente: negocia sentido.” |
-| **2:00–3:00.** Interfaz esquemática y flechas desde interacciones, video y usuario. Citas: TikTok (s. f.); Gillespie (2014). | “La plataforma también participa. TikTok declara que sus recomendaciones consideran interacciones, información del video y datos del usuario. Estas señales no revelan todas las reglas internas. La agencia algorítmica no significa que el sistema piense como una persona, sino que clasifica publicaciones y organiza oportunidades de visibilidad. El medio condiciona qué encuentros se vuelven posibles.” |
-| **3:00–4:00.** Tarjetas con 30 videos/12 entrevistas; comparación experimental; 393 videos/164.611 comentarios. Citas: Lee et al. (2021); Ren et al. (2025); Liu et al. (2026). | “Los estudios disponibles muestran resultados situados. Lee y colegas describieron atmósferas y presencia ilusoria. Ren y colegas observaron menor presión percibida con video que con acompañante presencial y resultados similares al estudio individual. Liu y colegas analizaron cientos de videos y comentarios. Estas investigaciones no garantizan que el formato beneficie a todo el mundo: contexto, diseño y experiencia importan.” |
-| **4:00–5:00.** Síntesis: compañía posible, interpretación situada y visibilidad mediada; referencias breves en pantalla. | “Study With Me es una práctica sociotécnica. La compañía virtual se construye mediante códigos audiovisuales, relaciones y rituales; su sentido se negocia con las audiencias y su circulación queda condicionada por sistemas de recomendación. La tecnología media la experiencia, pero no sustituye la interpretación humana. Una lectura crítica reconoce su potencial de acompañamiento y también sus límites.” |
+| **0:00–1:00.** Título; escritorio, plano fijo y temporizador. Cita: Lee et al. (2021). | “Study With Me permite estudiar junto a alguien que está lejos. Un escritorio, un reloj y una presencia frente a cámara crean una atmósfera compartida. No se transmite solo una rutina: se ofrecen signos que pueden interpretarse como compañía, disciplina o invitación.” |
+| **1:00–2:00.** Un reloj con dos lecturas; diagrama de niveles. Citas: Knapp (1995); Morin (2005). | “La comunicación es compleja porque un signo no produce un significado único. El reloj puede organizar o presionar. En el nivel personal se interpreta; en el interpersonal hay comentarios; en el medial opera la plataforma; y en el transmedial la práctica cambia de soporte. La audiencia negocia el sentido.” |
+| **2:00–3:00.** Interfaz y flechas desde usuario, video e interacciones. Citas: TikTok (s. f.); Gillespie (2014). | “La plataforma participa en la circulación. TikTok declara considerar interacciones, información del contenido y datos del usuario. Esa explicación no revela todas sus reglas. La agencia algorítmica significa que el sistema clasifica y ordena visibilidad, no que piense como una persona.” |
+| **3:00–4:00.** Tarjetas con datos de los tres estudios. Citas: Lee et al. (2021); Ren et al. (2025); Liu et al. (2026). | “Lee y colegas describieron atmósferas y presencia ilusoria. Ren y colegas compararon tres condiciones de estudio. Liu y colegas analizaron cientos de videos y comentarios. Son estudios diferentes y situados: no garantizan que el formato funcione igual para todas las personas.” |
+| **4:00–5:00.** Síntesis visual y referencias en pantalla. Citas: Morin (2005); Gillespie (2014). | “Study With Me es una práctica sociotécnica. La compañía se construye con códigos, relaciones y rituales; su sentido se negocia y su circulación depende de sistemas de recomendación. La tecnología media la experiencia, pero no reemplaza la interpretación humana. Reconocer su potencial también exige reconocer sus límites.” |
 
 ### IX. Conclusiones
 
-SWM no es un simple contenedor de información ni una solución universal. La compañía depende de códigos, interpretaciones y relaciones situadas. Los niveles comunicativos se cruzan con sistemas que organizan visibilidad. La respuesta es que la compañía virtual se construye socialmente y se distribuye bajo condiciones algorítmicas que influyen, pero no determinan por completo, la lectura de las audiencias.
+SWM no es un simple contenedor de información ni una solución universal. La compañía depende de códigos audiovisuales, interpretaciones y relaciones situadas. Los niveles comunicativos se cruzan con sistemas que organizan visibilidad. La compañía virtual se construye socialmente y circula bajo condiciones algorítmicas que influyen, pero no determinan por completo, la lectura de las audiencias.
 
 ### X. Referencias
 
