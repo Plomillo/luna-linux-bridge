@@ -24,7 +24,7 @@ El caso admite una lectura pluralista y crítica. El empirismo y el positivismo 
 
 ### 2. Aproximación teórica
 
-Las teorías permiten formular hipótesis, no diagnósticos automáticos. Freud (1923/1961) dirige la atención a conflictos y procesos no conscientes; el silencio de Martina podría expresar malestar, pero no demuestra un conflicto inconsciente. El aprendizaje explica cambios conductuales mediante experiencia: el condicionamiento clásico de Pavlov permite analizar asociaciones entre señales y respuestas emocionales, mientras Skinner (1953) estudia cómo las consecuencias pueden mantener o modificar conductas. Rogers (1951), desde el humanismo, propone escucha empática, aceptación y congruencia para que la adolescente pueda expresarse sin ser reducida a sus notas. Vygotsky (1978) destaca la interacción social y los apoyos culturales; Erikson (1968), la identidad y pertenencia durante la adolescencia. Así, el psicoanálisis explora conflictos, el enfoque del aprendizaje estudia antecedentes y consecuencias, y el humanismo prioriza la experiencia y los recursos de la persona. Una entrevista clínica, la observación conductual y el diálogo empático aportan métodos distintos y complementarios.
+Las teorías permiten formular hipótesis, no diagnósticos automáticos. Freud (1923/1961) dirige la atención a conflictos y procesos no conscientes; el silencio de Martina podría expresar malestar, pero no demuestra un conflicto inconsciente. El aprendizaje estudia asociaciones entre señales y respuestas, además de antecedentes y consecuencias de la conducta (Universidad UNIACC, s. f.); Skinner (1953) permite analizar cómo el alivio inmediato puede mantener la evitación. Rogers (1951) propone escucha empática, aceptación y congruencia. Piaget e Inhelder (1969) describen cómo durante la adolescencia se amplía el razonamiento sobre hipótesis y posibilidades, sin presumir capacidades idénticas en todos los estudiantes. Vygotsky (1978) destaca la interacción social y los apoyos culturales; Erikson (1968), los desafíos de identidad y pertenencia. Así, psicoanálisis, aprendizaje y humanismo iluminan dimensiones distintas y se complementan con perspectivas cognitivas y socioculturales.
 
 ### 3. Dilemas éticos
 
@@ -59,6 +59,10 @@ Freud, S. (1961). *The ego and the id* (J. Riviere, Trans.). W. W. Norton. (Trab
 Rogers, C. R. (1951). *Client-centered therapy: Its current practice, implications, and theory*. Houghton Mifflin.
 
 Sáiz, M. (Coord.). (2009). *Historia de la psicología*. Editorial UOC.
+
+Piaget, J., & Inhelder, B. (1969). *The psychology of the child* (H. Weaver, Trans.). Basic Books.
+
+Universidad UNIACC. (s. f.). *Psicología del aprendizaje* [Apunte de clase].
 
 Skinner, B. F. (1953). *Science and human behavior*. Macmillan.
 

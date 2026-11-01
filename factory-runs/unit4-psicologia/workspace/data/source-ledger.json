@@ -94,6 +94,23 @@
       "title": "Ley 21.430: Sobre garantías y protección integral de los derechos de la niñez y adolescencia",
       "type": "Official legislation",
       "url": "https://www.leychile.cl/navegar?idNorma=1173643"
+    },
+    {
+      "source_id": "PSI-S12",
+      "verified": true,
+      "author": "Piaget, J., & Inhelder, B.",
+      "year": 1969,
+      "title": "The psychology of the child",
+      "type": "Academic book",
+      "publisher": "Basic Books"
+    },
+    {
+      "source_id": "PSI-S13",
+      "verified": true,
+      "author": "Universidad UNIACC",
+      "year": "s. f.",
+      "title": "Psicología del aprendizaje",
+      "type": "Course note"
     }
   ]
 }
