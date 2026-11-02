@@ -295,7 +295,7 @@ jobs:
           body = ImageFont.load_default(size=64)
           draw.text((110, 300), "Invoice Number: 4821", fill=(0, 0, 0), font=body, stroke_width=1)
           draw.text((110, 470), "Total: 37.50", fill=(0, 0, 0), font=body, stroke_width=1)
-          image.save("$RUNNER_TEMP/louksnapg2-invoice.png", format="PNG", optimize=False)
+          image.save("out/louksnapg2-functional/louksnapg2-invoice.png", format="PNG", optimize=False)
           PY
 
       - name: Exercise the five real model domains through the packaged route dispatch
@@ -316,7 +316,7 @@ jobs:
             --runtime-root "$RUNNER_TEMP/louksnapg2-extracted" \
             --audio-one "$RUNNER_TEMP/louksnapg2-audio-one.wav" \
             --audio-two "$RUNNER_TEMP/louksnapg2-audio-two.wav" \
-            --docling-image "$RUNNER_TEMP/louksnapg2-invoice.png" \
+            --docling-image "out/louksnapg2-functional/louksnapg2-invoice.png" \
             --output out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json
           rc=$?
           set -e
