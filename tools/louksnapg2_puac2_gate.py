@@ -129,8 +129,10 @@ def g23_payload(args) -> dict:
         blockers.append("BUILDER_REPORT_CANDIDATE_BINDING_MISMATCH")
     if build_report.get("source_commit") != head:
         blockers.append("CANDIDATE_SOURCE_COMMIT_MISMATCH")
-    if worker.get("worker") != PRODUCER_ID or worker.get("worker_status") != "PASS":
-        blockers.append("CUSTOSZ_V9_WORKER_EVIDENCE_NOT_PASS")
+    if worker.get("worker") != PRODUCER_ID or worker.get("task_status") != "PASS_CANDIDATE_BUILD_ONLY":
+        blockers.append("CUSTOSZ_V9_CANDIDATE_BUILD_NOT_PASS")
+    if worker.get("worker_status") != "BLOCKED_NO_REPAIR_EXECUTED" or worker.get("repair_execution_performed") is not False:
+        blockers.append("CUSTOSZ_V9_WORKER_REPAIR_STATUS_MISREPRESENTED")
     if worker.get("artifact", {}).get("sha256") != bundle_hash or worker.get("artifact", {}).get("bytes") != measured:
         blockers.append("WORKER_OUTPUT_BINDING_MISMATCH")
     if worker.get("source_commit") != head:
@@ -210,6 +212,181 @@ def sign_payload(input_path: Path, output_path: Path, signer_id: str, env_name: 
         "private_key_emitted": False,
         "global_certification": "NOT_GRANTED_BY_SIGNATURE_ALONE",
     }
+
+
+
+def validate_repair_evidence(bundle: Path, functional_path: Path, functional: dict,
+                             materialization: dict, expected_commit: str) -> list[str]:
+    blockers = []
+    execution = functional.get("repair_execution_evidence")
+    if not isinstance(execution, dict):
+        execution = {}
+        blockers.append("ISOLATED_GPU_REPAIR_EVIDENCE_MISSING")
+    required = {
+        "status": "PASS_ISOLATED_GPU_REPAIR",
+        "execution_mode": "ISOLATED_GPU_REPAIR",
+        "execution_backend": "ISOLATED_GPU_RUNNER",
+        "source_commit": expected_commit,
+        "repair_execution_performed": True,
+    }
+    for field, value in required.items():
+        if execution.get(field) != value:
+            blockers.append("GPU_REPAIR_EVIDENCE_MISMATCH:" + field)
+    devices = execution.get("gpu_device_count")
+    if isinstance(devices, bool) or not isinstance(devices, int) or devices < 1:
+        blockers.append("GPU_DEVICE_NOT_PROVEN")
+    for field in ("runner_id", "repair_job_id"):
+        if not isinstance(execution.get(field), str) or not execution[field].strip():
+            blockers.append("GPU_REPAIR_IDENTITY_MISSING:" + field)
+    if not isinstance(execution.get("runner_image_sha256"), str) or SHA256_RE.fullmatch(execution["runner_image_sha256"]) is None:
+        blockers.append("GPU_RUNNER_IMAGE_DIGEST_INVALID")
+    if functional.get("repair_execution_performed") is not True:
+        blockers.append("MODEL_REPAIR_EXECUTION_NOT_PROVEN")
+    if functional.get("repair_adapter_status") != "PASS_ALL_REQUIRED_ADAPTERS":
+        blockers.append("REPAIR_ADAPTER_SET_NOT_PASS")
+
+    rows = functional.get("repair_adapter_evidence")
+    if not isinstance(rows, list):
+        rows = []
+        blockers.append("REPAIR_ADAPTER_EVIDENCE_MISSING_OR_INVALID")
+    by_domain = {}
+    for row in rows:
+        if not isinstance(row, dict) or not isinstance(row.get("domain_id"), str) or row["domain_id"] in by_domain:
+            blockers.append("REPAIR_ADAPTER_RECORD_INVALID_OR_DUPLICATE")
+            continue
+        by_domain[row["domain_id"]] = row
+    if set(by_domain) != set(REQUIRED_REPAIR_DOMAINS) or len(rows) != len(REQUIRED_REPAIR_DOMAINS):
+        blockers.append("REPAIR_ADAPTER_DOMAIN_COVERAGE_INCOMPLETE")
+
+    materialized = {
+        row.get("domain_id"): row for row in materialization.get("models", [])
+        if isinstance(row, dict) and isinstance(row.get("domain_id"), str)
+    } if isinstance(materialization.get("models"), list) else {}
+    evidence_root = functional_path.resolve(strict=True).parent
+    try:
+        with zipfile.ZipFile(bundle, "r") as archive:
+            for domain in REQUIRED_REPAIR_DOMAINS:
+                adapter = by_domain.get(domain)
+                if adapter is None:
+                    continue
+                for field, expected in (
+                    ("status", "PASS"), ("source_commit", expected_commit),
+                    ("execution_backend", "ISOLATED_GPU_RUNNER"),
+                    ("heldout_validation_status", "PASS"),
+                    ("independent_validation_status", "PASS"),
+                    ("semantic_quality_equivalence_status", "PASS"),
+                ):
+                    if adapter.get(field) != expected:
+                        blockers.append("REPAIR_ADAPTER_FIELD_NOT_PASS:" + domain + ":" + field)
+                if not isinstance(adapter.get("repair_operation_id"), str) or not adapter["repair_operation_id"].strip():
+                    blockers.append("REPAIR_OPERATION_ID_MISSING:" + domain)
+                if adapter.get("original_weights_mutated") is not False or adapter.get("candidate_output_separate") is not True:
+                    blockers.append("REPAIR_ORIGINAL_WEIGHT_OR_OUTPUT_ISOLATION_BROKEN:" + domain)
+                if adapter.get("rollback_verified") is not True:
+                    blockers.append("REPAIR_ROLLBACK_NOT_VERIFIED:" + domain)
+                for field in ("calibration_example_count", "heldout_example_count"):
+                    count = adapter.get(field)
+                    if isinstance(count, bool) or not isinstance(count, int) or count < 1:
+                        blockers.append("REPAIR_DATASET_COUNT_INVALID:" + domain + ":" + field)
+                for field in ("source_weight_sha256", "adapter_sha256", "calibration_dataset_sha256", "heldout_dataset_sha256", "rollback_checkpoint_sha256"):
+                    if not isinstance(adapter.get(field), str) or SHA256_RE.fullmatch(adapter[field]) is None:
+                        blockers.append("REPAIR_DIGEST_INVALID:" + domain + ":" + field)
+
+                artifacts = adapter.get("artifacts")
+                if not isinstance(artifacts, dict):
+                    blockers.append("REPAIR_ARTIFACT_BINDINGS_MISSING:" + domain)
+                    continue
+                source_spec = artifacts.get("source_model")
+                repaired_spec = artifacts.get("repaired_output")
+                for key, spec, digest_field in (
+                    ("source_model", source_spec, "source_weight_sha256"),
+                    ("repaired_output", repaired_spec, None),
+                ):
+                    member = spec.get("candidate_member_path") if isinstance(spec, dict) else None
+                    if not isinstance(member, str) or not member or "\\" in member or Path(member).is_absolute() or ".." in Path(member).parts:
+                        blockers.append("REPAIR_CANDIDATE_MEMBER_PATH_INVALID:" + domain + ":" + key)
+                        continue
+                    try:
+                        info = archive.getinfo(member)
+                    except KeyError:
+                        blockers.append("REPAIR_CANDIDATE_MEMBER_MISSING:" + domain + ":" + key)
+                        continue
+                    if info.is_dir() or ((info.external_attr >> 16) & 0o170000) == 0o120000:
+                        blockers.append("REPAIR_CANDIDATE_MEMBER_UNSAFE:" + domain + ":" + key)
+                        continue
+                    digest, size = hashlib.sha256(), 0
+                    with archive.open(info, "r") as stream:
+                        for chunk in iter(lambda: stream.read(4 * 1024 * 1024), b""):
+                            digest.update(chunk)
+                            size += len(chunk)
+                    expected_sha = adapter.get(digest_field) if digest_field else spec.get("sha256")
+                    if digest.hexdigest() != expected_sha or size != spec.get("bytes"):
+                        blockers.append("REPAIR_CANDIDATE_MEMBER_HASH_OR_SIZE_MISMATCH:" + domain + ":" + key)
+                if domain in materialized:
+                    if not isinstance(source_spec, dict) or source_spec.get("candidate_member_path") is None:
+                        blockers.append("SOURCE_WEIGHT_MEMBER_NOT_BOUND:" + domain)
+                    elif adapter.get("source_weight_sha256") != materialized[domain].get("sha256"):
+                        blockers.append("SOURCE_WEIGHT_NOT_BOUND_TO_MATERIALIZATION:" + domain)
+                elif domain == "D04_TRADUCCION_LENGUAS_ANTIGUAS":
+                    if adapter.get("source_resource_type") != "COMPILED_FINITE_STATE_TRANSDUCER":
+                        blockers.append("ANCIENT_TRANSLATION_COMPILED_RESOURCE_NOT_PROVEN")
+                    member = source_spec.get("candidate_member_path", "") if isinstance(source_spec, dict) else ""
+                    if Path(member).suffix.lower() not in {".fst", ".hfst", ".hfstol", ".att"}:
+                        blockers.append("ANCIENT_TRANSLATION_TRANSDUCER_NOT_COMPILED")
+                else:
+                    blockers.append("SOURCE_MODEL_IDENTITY_NOT_MATERIALIZED:" + domain)
+
+                for key, digest_field in (
+                    ("adapter_source", "adapter_sha256"),
+                    ("calibration_dataset", "calibration_dataset_sha256"),
+                    ("heldout_dataset", "heldout_dataset_sha256"),
+                    ("rollback_checkpoint", "rollback_checkpoint_sha256"),
+                    ("heldout_report", None),
+                ):
+                    record = artifacts.get(key)
+                    rel = record.get("path") if isinstance(record, dict) else None
+                    if not isinstance(rel, str) or not rel or "\\" in rel or Path(rel).is_absolute() or ".." in Path(rel).parts:
+                        blockers.append("REPAIR_EVIDENCE_PATH_INVALID:" + domain + ":" + key)
+                        continue
+                    path = evidence_root / rel
+                    current = evidence_root
+                    unsafe = False
+                    for part in Path(rel).parts:
+                        current = current / part
+                        if current.is_symlink():
+                            unsafe = True
+                    try:
+                        root_real, path_real = evidence_root.resolve(strict=True), path.resolve(strict=True)
+                        if unsafe or not path_real.is_relative_to(root_real) or not path_real.is_file():
+                            raise OSError("unsafe")
+                    except OSError:
+                        blockers.append("REPAIR_EVIDENCE_FILE_MISSING_OR_UNSAFE:" + domain + ":" + key)
+                        continue
+                    digest = sha256_file(path_real)
+                    if record.get("bytes") != path_real.stat().st_size:
+                        blockers.append("REPAIR_EVIDENCE_BYTE_COUNT_MISMATCH:" + domain + ":" + key)
+                    if digest_field and digest != adapter.get(digest_field):
+                        blockers.append("REPAIR_EVIDENCE_DIGEST_MISMATCH:" + domain + ":" + key)
+                    if key == "rollback_checkpoint" and digest != adapter.get("rollback_checkpoint_sha256"):
+                        blockers.append("ROLLBACK_CHECKPOINT_HASH_MISMATCH:" + domain)
+                    if key == "heldout_report":
+                        try:
+                            heldout = json.loads(path_real.read_text(encoding="utf-8"))
+                        except (OSError, json.JSONDecodeError):
+                            heldout = {}
+                            blockers.append("HELDOUT_REPORT_INVALID_JSON:" + domain)
+                        if heldout.get("schema") != "LOUKSNAPG2_HELDOUT_VALIDATION/1.0":
+                            blockers.append("HELDOUT_REPORT_SCHEMA_MISMATCH:" + domain)
+                        if heldout.get("status") != "PASS" or heldout.get("source_commit") != expected_commit or heldout.get("domain_id") != domain:
+                            blockers.append("HELDOUT_REPORT_IDENTITY_OR_STATUS_MISMATCH:" + domain)
+                        n = heldout.get("heldout_case_count")
+                        if isinstance(n, bool) or not isinstance(n, int) or n < 1 or heldout.get("model_inference_performed") is not True:
+                            blockers.append("HELDOUT_INFERENCE_OR_CASE_COUNT_NOT_PROVEN:" + domain)
+                        if heldout.get("failed_cases") != [] or heldout.get("semantic_quality_equivalence_status") != "PASS":
+                            blockers.append("HELDOUT_SEMANTIC_QUALITY_NOT_PASS:" + domain)
+    except (OSError, zipfile.BadZipFile):
+        blockers.append("REPAIR_CANDIDATE_ARCHIVE_INVALID")
+    return sorted(set(blockers))
 
 
 def g24_payload(args) -> dict:
@@ -371,6 +548,7 @@ def g24_payload(args) -> dict:
             blockers.append("REPAIR_ADAPTER_ORIGINAL_WEIGHTS_MUTATED:" + domain)
         if adapter.get("candidate_output_separate") is not True:
             blockers.append("REPAIR_ADAPTER_CANDIDATE_NOT_SEPARATE:" + domain)
+    blockers.extend(validate_repair_evidence(bundle, args.functional_evidence, functional, materialization, head))
     return {
         "schema": G24_SCHEMA,
         "gate": "G24_INDEPENDENT_TERMINAL_CERTIFICATION",

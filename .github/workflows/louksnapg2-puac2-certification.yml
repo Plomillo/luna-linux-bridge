@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   build_candidate:
-    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' && vars.LOUKSNAPG2_ENABLE_CUSTOSZ_V9_WORKFLOW == 'true'
+    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -281,6 +281,23 @@ jobs:
           test -s "$RUNNER_TEMP/louksnapg2-audio-one.wav"
           test -s "$RUNNER_TEMP/louksnapg2-audio-two.wav"
 
+      - name: Build deterministic invoice image fixture for Docling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/louksnapg2-functional
+          python - <<'PY'
+          from PIL import Image, ImageDraw, ImageFont
+          image = Image.new("RGB", (1400, 900), "white")
+          draw = ImageDraw.Draw(image)
+          draw.text((110, 90), "INVOICE", fill=(0, 0, 0), font=ImageFont.load_default(size=84), stroke_width=1)
+          draw.line((100, 215, 1300, 215), fill=(0, 0, 0), width=5)
+          body = ImageFont.load_default(size=64)
+          draw.text((110, 300), "Invoice Number: 4821", fill=(0, 0, 0), font=body, stroke_width=1)
+          draw.text((110, 470), "Total: 37.50", fill=(0, 0, 0), font=body, stroke_width=1)
+          image.save("$RUNNER_TEMP/louksnapg2-invoice.png", format="PNG", optimize=False)
+          PY
+
       - name: Exercise the five real model domains through the packaged route dispatch
         shell: bash
         env:
@@ -299,6 +316,7 @@ jobs:
             --runtime-root "$RUNNER_TEMP/louksnapg2-extracted" \
             --audio-one "$RUNNER_TEMP/louksnapg2-audio-one.wav" \
             --audio-two "$RUNNER_TEMP/louksnapg2-audio-two.wav" \
+            --docling-image "$RUNNER_TEMP/louksnapg2-invoice.png" \
             --output out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json
           rc=$?
           set -e

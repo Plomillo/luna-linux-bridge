@@ -232,15 +232,18 @@ def main(argv=None) -> int:
             build_report = json.loads(build_report_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             build_report = {}
-    worker_status = "PASS" if (
+    task_status = "PASS_CANDIDATE_BUILD_ONLY" if (
         coordinator_status in {"PASS", "COMPLETED"}
         and action_result.get("exit_code") == 0
         and output_exists and output_size is not None and output_size <= args.max_bytes
+        and build_report.get("status") == "PASS_CANDIDATE_BUILD_ONLY"
         and build_report.get("candidate", {}).get("bytes") == output_size
         and build_report.get("candidate", {}).get("sha256") == output_hash
         and build_report.get("source_commit") == head
         and build_report.get("global_certification") == "NOT_GRANTED"
-    ) else "FAIL"
+    ) else "FAIL_CANDIDATE_BUILD"
+    # This worker assembles and integrity-checks a package; it does not repair models.
+    worker_status = "BLOCKED_NO_REPAIR_EXECUTED"
     report = {
         "schema": "LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE/1.0",
         "generated_at_utc": utc_now(),
@@ -250,7 +253,12 @@ def main(argv=None) -> int:
         "mission_id": "issue-159",
         "task_id": TASK_ID,
         "authorized_scope": SCOPE,
+        "task_status": task_status,
         "worker_status": worker_status,
+        "worker_role": "BOUNDED_CANDIDATE_BUILDER_NOT_REPAIR_EXECUTOR",
+        "repair_execution_performed": False,
+        "repair_status": "BLOCKED_NO_MODEL_REPAIR_ADAPTERS_EXECUTED",
+        "candidate_role": "REPACKAGED_UNREPAIRED_BASELINE" if task_status == "PASS_CANDIDATE_BUILD_ONLY" else "NOT_RELEASED",
         "coordinator_status": coordinator_status,
         "worker_outcome": outcome,
         "input_sha256": input_hashes,
@@ -271,7 +279,9 @@ def main(argv=None) -> int:
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({
-        "status": worker_status,
+        "task_status": task_status,
+        "worker_status": worker_status,
+        "repair_execution_performed": False,
         "coordinator_status": coordinator_status,
         "worker": WORKER_ID,
         "artifact": candidate_path.name,
@@ -281,7 +291,7 @@ def main(argv=None) -> int:
         "diagnostic_outcome": outcome,
         "diagnostic_action": action_result,
     }, ensure_ascii=False, indent=2))
-    return 0 if worker_status == "PASS" else 2
+    return 0 if task_status == "PASS_CANDIDATE_BUILD_ONLY" else 2
 
 
 if __name__ == "__main__":
