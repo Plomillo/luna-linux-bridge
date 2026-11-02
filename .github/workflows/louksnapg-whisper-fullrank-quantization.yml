@@ -119,12 +119,28 @@ jobs:
           export HF_HUB_OFFLINE=0 TRANSFORMERS_OFFLINE=0
           python -B tools/louksnapg_whisper_fullrank_quantization.py build --whisper-cpp-root "$RUNNER_TEMP/upstream/whisper.cpp" --openai-whisper-root "$RUNNER_TEMP/upstream/openai-whisper" --output-dir "$RUNNER_TEMP/whisper-fullrank/work" --report "$RUNNER_TEMP/whisper-fullrank/evidence/WHISPER_FULLRANK_BUILD.json" 2>&1 | tee "$RUNNER_TEMP/whisper-fullrank/evidence/build.log"
 
-      - name: Upload isolated full-rank model candidates and pinned toolchain
+      - name: Upload isolated Q4_0 candidate and pinned CPU toolchain
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: louksnapg-whisper-fullrank-${{ github.run_id }}
-          path: ${{ runner.temp }}/whisper-fullrank/work/artifact/
+          name: louksnapg-whisper-fullrank-q4_0-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/whisper-fullrank/work/artifact/fullrank_manifest.json
+            ${{ runner.temp }}/whisper-fullrank/work/artifact/quantized/q4_0/ggml-large-v3-turbo-q4_0.bin
+            ${{ runner.temp }}/whisper-fullrank/work/artifact/toolchain/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Upload isolated Q5_0 candidate and pinned CPU toolchain
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg-whisper-fullrank-q5_0-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/whisper-fullrank/work/artifact/fullrank_manifest.json
+            ${{ runner.temp }}/whisper-fullrank/work/artifact/quantized/q5_0/ggml-large-v3-turbo-q5_0.bin
+            ${{ runner.temp }}/whisper-fullrank/work/artifact/toolchain/
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
@@ -243,10 +259,10 @@ jobs:
           set -Eeuo pipefail
           python -m pip install --disable-pip-version-check --no-cache-dir "huggingface_hub==0.35.3" "datasets==3.2.0" "pyarrow==19.0.1" "soundfile==0.13.1" "numpy==2.2.6"
 
-      - name: Download immutable full-rank candidate artifacts
+      - name: Download only the selected immutable full-rank candidate
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: louksnapg-whisper-fullrank-${{ github.run_id }}
+          name: louksnapg-whisper-fullrank-${{ matrix.quantization }}-${{ github.run_id }}
           path: ${{ runner.temp }}/whisper-fullrank/artifact
 
       - name: Evaluate exact candidate on synthetic and pinned real speech

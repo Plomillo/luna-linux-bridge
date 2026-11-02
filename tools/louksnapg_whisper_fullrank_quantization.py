@@ -434,6 +434,10 @@ def evaluate(args) -> int:
     cli = artifact_root / "toolchain" / "bin" / "whisper-cli"
     if not cli.is_file() or cli.is_symlink():
         raise RuntimeError("PINNED_WHISPER_CLI_MISSING_OR_UNSAFE")
+    # GitHub artifact ZIP transport does not preserve POSIX executable bits.
+    os.chmod(cli, cli.stat().st_mode | 0o111)
+    if not os.access(cli, os.X_OK):
+        raise RuntimeError("PINNED_WHISPER_CLI_NOT_EXECUTABLE_AFTER_RESTORE")
 
     helper = load_helper(Path(args.fixture_helper).resolve(strict=True))
     work = Path(args.work_dir).resolve()
