@@ -166,9 +166,26 @@ def readiness_inventory(repo: Path) -> dict:
         if repair_status != "IMPLEMENTED_AND_TESTED":
             blockers.append("REPAIR_ADAPTER_NOT_READY:" + domain + ":" + repair_status)
 
-    ancient = registry["required_domains"].get("D04_TRADUCCION_LENGUAS_ANTIGUAS", {})
-    if ancient.get("repair_adapter_status") != "IMPLEMENTED_AND_TESTED":
-        blockers.append("ANCIENT_TRANSLATION_RESOURCE_NOT_READY")
+    foma_module = runtime_root / "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master"
+    foma_source = foma_module / "foma-master" / "foma"
+    foma_manifest = runtime_root / "LOUKSNAPG2_RUNTIME" / "foma_transducers" / "manifest.json"
+    foma_info = {
+        "engine_source_status": "PRESENT" if (foma_source / "Makefile").is_file() else "MISSING",
+        "module_descriptor_status": "PRESENT" if (foma_module / "CAJITA_MODULE.json").is_file() else "MISSING",
+        "resource_manifest_status": "PRESENT" if foma_manifest.is_file() else "MISSING",
+        "registered_transducer_count": 0,
+        "translation_resource_status": "NOT_PROVISIONED",
+        "certification": "NOT_GRANTED",
+    }
+    if foma_manifest.is_file():
+        foma_values = json.loads(foma_manifest.read_text(encoding="utf-8"))
+        transducers = foma_values.get("transducers", {})
+        foma_info["registered_transducer_count"] = len(transducers) if isinstance(transducers, dict) else 0
+        foma_info["translation_resource_status"] = "READY" if foma_info["registered_transducer_count"] else "NOT_PROVISIONED"
+    if foma_info["engine_source_status"] != "PRESENT":
+        blockers.append("FOMA_ENGINE_SOURCE_MISSING")
+    if foma_info["translation_resource_status"] != "READY":
+        blockers.append("FOMA_LATIN_GREEK_TRANSLATION_TRANSDUCERS_NOT_PROVISIONED")
     source_status = (
         "PASS"
         if len(rows) == len(MODEL_DOMAINS) and all(x.get("source_integrity") == "PASS" for x in rows)
@@ -180,6 +197,7 @@ def readiness_inventory(repo: Path) -> dict:
         "source_commit": os.environ.get("GITHUB_SHA", "UNKNOWN"),
         "source_bound_model_assets": rows,
         "required_model_domain_count": len(MODEL_DOMAINS),
+        "foma_engine": foma_info,
         "source_integrity_status": source_status,
         "repair_adapter_registry_sha256": sha256_file(registry_path),
         "repair_adapter_status": "PASS_ALL_REQUIRED_ADAPTERS" if not blockers else "BLOCKED",
@@ -229,12 +247,13 @@ def main(argv=None) -> int:
         "source_state_hash": sha256_bytes(head.encode("ascii")),
         "dependency_set": [],
         "authorized_scope": SCOPE,
-        "required_capabilities": ["source_inventory", "candidate_build"],
+        "required_capabilities": ["source_inventory", "foma_engine_build", "candidate_build"],
         "inputs": [
             str(repo / "LOUKSNAMEJORADA.md"),
             str(repo / "cajita-luna-runtime" / "CajitadeLuna.md"),
             str(repo / "cajita-luna-runtime" / "CAJITA_RUNTIME_V1" / "weights_manifest.json"),
             str(repo / "repair" / "LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY_V1.json"),
+            str(repo / "repair" / "LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY_V2.json"),
         ],
         "preconditions": [
             "NO_SELF_CERTIFICATION", "FAIL_CLOSED", "SOURCE_INPUTS_HASH_VERIFIED",
@@ -242,9 +261,9 @@ def main(argv=None) -> int:
         ],
         "permitted_effects": ["WRITE_EVIDENCE", "WRITE_CANDIDATE"],
         "resource_budget": {
-            "ram_required_bytes": 256 * 1024 * 1024,
-            "ram_reserved_bytes": 128 * 1024 * 1024,
-            "disk_required_bytes": 1_500 * 1024 * 1024,
+            "ram_required_bytes": 768 * 1024 * 1024,
+            "ram_reserved_bytes": 256 * 1024 * 1024,
+            "disk_required_bytes": 2_000 * 1024 * 1024,
             "max_concurrency": 1,
         },
         "execution_deadline": "2099-12-31T23:59:59Z",
@@ -261,6 +280,7 @@ def main(argv=None) -> int:
             "candidate/LOUKSNAPG2.md",
             "candidate/LOUKSNAPG2_BUILD_REPORT.json",
             "LOUKSNAPG2_REPAIR_READINESS.json",
+            "repair-adapters/foma/FOMA_BUILD_EVIDENCE.json",
             "LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json",
         ],
         "validation_strategy": "SEPARATE_INDEPENDENT_CONTAINER_G23_AND_SEMANTIC_G24",
@@ -279,7 +299,8 @@ def main(argv=None) -> int:
 
     actions = [
         ActionSpec("inventory_source_bound_assets", required_capabilities=("source_inventory",), permitted_effects=("WRITE_EVIDENCE",), idempotency="READ_ONLY"),
-        ActionSpec("build_candidate", dependencies=("inventory_source_bound_assets",), required_capabilities=("candidate_build",), permitted_effects=("WRITE_EVIDENCE", "WRITE_CANDIDATE"), idempotency="IDEMPOTENT"),
+        ActionSpec("build_foma_engine", dependencies=("inventory_source_bound_assets",), required_capabilities=("foma_engine_build",), permitted_effects=("WRITE_EVIDENCE",), idempotency="IDEMPOTENT"),
+        ActionSpec("build_candidate", dependencies=("inventory_source_bound_assets", "build_foma_engine"), required_capabilities=("candidate_build",), permitted_effects=("WRITE_EVIDENCE", "WRITE_CANDIDATE"), idempotency="IDEMPOTENT"),
     ]
     snapshot = probe_host_resources(repo)
     action_results = {}
@@ -291,6 +312,31 @@ def main(argv=None) -> int:
             digest = sha256_file(readiness_path)
             action_results[action_id] = {"status": "PASS", "sha256": digest, "repair_adapter_status": readiness["repair_adapter_status"]}
             return {"status": "PASS", "result_state_hash": digest, "source_inventory": readiness}
+        if action_id == "build_foma_engine":
+            foma_output = output_dir / "repair-adapters" / "foma"
+            command = [
+                sys.executable, str(repo / "tools" / "louksnapg2_foma_build.py"),
+                "--repo-root", str(repo),
+                "--output-dir", str(foma_output),
+                "--timeout-seconds", "1200",
+            ]
+            proc = subprocess.run(command, cwd=repo, capture_output=True, text=True, timeout=1500, check=False)
+            foma_report = foma_output / "FOMA_BUILD_EVIDENCE.json"
+            action_results[action_id] = {
+                "exit_code": proc.returncode,
+                "stdout_tail": proc.stdout[-6000:],
+                "stderr_tail": proc.stderr[-4000:],
+                "command_sha256": sha256_bytes(canonical(command)),
+            }
+            if proc.returncode or not foma_report.is_file():
+                return {"status": "FAIL", "reason": "FOMA_ENGINE_BUILD_FAILED", "result_state_hash": sha256_bytes(canonical(action_results[action_id]))}
+            foma_evidence = json.loads(foma_report.read_text(encoding="utf-8"))
+            foma_digest = sha256_file(foma_report)
+            action_results[action_id]["evidence_sha256"] = foma_digest
+            action_results[action_id]["evidence_status"] = foma_evidence.get("status")
+            if foma_evidence.get("status") != "PASS_FOMA_ENGINE_LOOKUP_SMOKE":
+                return {"status": "FAIL", "reason": "FOMA_ENGINE_BUILD_NOT_PASS", "result_state_hash": foma_digest}
+            return {"status": "PASS", "result_state_hash": foma_digest}
         if action_id == "build_candidate":
             command = [
                 sys.executable, str(repo / "tools" / "louksnapg2_candidate_action.py"),
@@ -329,12 +375,12 @@ def main(argv=None) -> int:
         task,
         actions,
         snapshot,
-        available_capabilities={"source_inventory", "candidate_build"},
+        available_capabilities={"source_inventory", "foma_engine_build", "candidate_build"},
         admissible_effects={"WRITE_EVIDENCE", "WRITE_CANDIDATE"},
         authorization_verifier=verify_authorization,
         action_runner=runner,
-        maximum_steps=2,
-        planning_budget=2,
+        maximum_steps=3,
+        planning_budget=3,
     )
     candidate_exists = candidate_path.is_file()
     candidate_bytes = candidate_path.stat().st_size if candidate_exists else None
@@ -369,10 +415,13 @@ def main(argv=None) -> int:
         "authorized_scope": SCOPE,
         "coordinator_status": outcome.get("status"),
         "completed_actions": outcome.get("completed_actions", []),
+        "foma_engine_status": action_results.get("build_foma_engine", {}).get("evidence_status", "BLOCKED"),
+        "foma_engine_evidence_sha256": action_results.get("build_foma_engine", {}).get("evidence_sha256"),
         "task_status": "PASS_AUDIT_AND_BUILD" if audit_and_build_ok else "FAIL_AUDIT_OR_BUILD",
         "worker_status": "PASS_REPAIR_EXECUTED" if audit_and_build_ok and repair_ok else "BLOCKED_NO_REPAIR_EXECUTED",
         "candidate_role": "REPAIRED_CANDIDATE" if audit_and_build_ok and repair_ok else "REPACKAGED_UNREPAIRED_BASELINE",
         "repair_status": readiness.get("repair_adapter_status", "BLOCKED"),
+        "foma_engine": readiness.get("foma_engine", {}),
         "repair_execution_performed": readiness.get("repair_execution_performed") is True,
         "repair_adapter_domains": readiness.get("repair_adapter_domains", []),
         "repair_blockers": readiness.get("blockers", []),

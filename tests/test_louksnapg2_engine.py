@@ -68,6 +68,9 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
         manifest_dir = self.root / "CAJITA_RUNTIME_V1"
         manifest_dir.mkdir(parents=True, exist_ok=True)
         (manifest_dir / "weights_manifest.json").write_text("{}", encoding="utf-8")
+        foma_source = self.root / "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master/foma-master/foma"
+        foma_source.mkdir(parents=True, exist_ok=True)
+        (foma_source / "Makefile").write_text("all:\n\t@true\n", encoding="utf-8")
         self.fake = FakeCajitaAdapter()
         self.loader_patch = mock.patch.object(engine, "_load_native_adapter", return_value=self.fake)
         self.loader_patch.start()
@@ -119,16 +122,45 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
         self.assertEqual(result["source_model_id"], "Whisper compactado — low-rank INT8 factors")
         self.assertEqual(result["operation"], "transcribe_audio")
 
-    def test_ancient_translation_uses_dedicated_gpt_oss_prompt_and_never_general_route(self):
-        result = self.runtime.route("D04_TRADUCCION_LENGUAS_ANTIGUAS", "translate_ancient_text", {"text": "Alea iacta est", "src_lang": "lat", "tgt_lang": "eng", "max_new_tokens": 48}, task_id="ancient-01")
-        request = self.fake.requests[-1]
-        self.assertEqual(request["domain_id"], "D01_CEREBRO")
-        self.assertIn("ANCIENT-LANGUAGE TRANSLATION SPECIALIST", request["input"]["prompt"])
-        self.assertIn("Alea iacta est", request["input"]["prompt"])
+    def test_ancient_translation_uses_foma_without_gpt_oss_or_general_route(self):
+        expected = {
+            "schema": "LOUKSNAPG2_TASK_RESULT/2.0",
+            "status": "PASS_EXECUTION",
+            "execution_authorized": True,
+            "domain_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+            "operation": "translate_ancient_text",
+            "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+            "adapter_id": "LOUKSNAPG2_FOMA_ANCIENT_TRANSLATION_ADAPTER/1.0",
+            "output_text": "The die is cast.",
+            "output_sha256": hashlib.sha256(b"The die is cast.").hexdigest(),
+            "translation_strategy": "FOMA_FINITE_STATE_TRANSDUCER_LOOKUP",
+            "general_translation_fallback_selected": False,
+        }
+        with mock.patch.object(engine.FomaEngine, "translate", return_value=expected) as foma:
+            result = self.runtime.route(
+                "D04_TRADUCCION_LENGUAS_ANTIGUAS", "translate_ancient_text",
+                {"text": "Alea iacta est", "src_lang": "lat", "tgt_lang": "eng", "max_new_tokens": 48},
+                task_id="ancient-01",
+            )
+        foma.assert_called_once_with("Alea iacta est", src_lang="lat", tgt_lang="eng")
+        self.assertEqual(self.fake.requests, [])
         self.assertEqual(result["domain_id"], "D04_TRADUCCION_LENGUAS_ANTIGUAS")
-        self.assertEqual(result["translation_strategy"], "DEDICATED_DOMAIN_PROMPT_OVER_EXISTING_GPT_OSS")
+        self.assertEqual(result["translation_strategy"], "FOMA_FINITE_STATE_TRANSDUCER_LOOKUP")
         self.assertFalse(result["general_translation_fallback_selected"])
         self.assertEqual(result["output_text"], "The die is cast.")
+
+    def test_ancient_translation_fails_closed_without_registered_foma_resources(self):
+        with mock.patch.object(
+            engine.FomaEngine, "translate",
+            side_effect=engine.FomaRuntimeError("FOMA_TRANSLATION_RESOURCES_NOT_PROVISIONED:lat->eng"),
+        ):
+            with self.assertRaisesRegex(engine.EngineRuntimeError, "FOMA_TRANSLATION_RESOURCES_NOT_PROVISIONED"):
+                self.runtime.route(
+                    "D04_TRADUCCION_LENGUAS_ANTIGUAS", "translate_ancient_text",
+                    {"text": "Alea iacta est", "src_lang": "lat", "tgt_lang": "eng"},
+                    task_id="ancient-no-resources",
+                )
+        self.assertEqual(self.fake.requests, [])
 
     def test_unknown_ancient_language_fails_closed(self):
         with self.assertRaisesRegex(engine.EngineRuntimeError, "FOMA_SOURCE_LANGUAGE_NOT_REGISTERED"):
