@@ -67,8 +67,7 @@ ANCIENT_TARGETS = {
     "lat": "Latin",
     "la": "Latin",
     "grc": "Ancient Greek",
-    "heb": "Biblical Hebrew",
-    "arc": "Biblical Aramaic",
+    "gr": "Ancient Greek",
 }
 TARGET_LANGUAGES = {"eng": "English", "en": "English", "spa": "Spanish", "es": "Spanish"}
 

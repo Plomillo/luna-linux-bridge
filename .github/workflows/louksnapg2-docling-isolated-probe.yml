@@ -117,14 +117,14 @@ jobs:
           from pathlib import Path
           from PIL import Image, ImageDraw, ImageFont
           image_path = Path("out/louksnapg2-docling/invoice-legible.png")
-          image = Image.new("RGB", (1400, 900), "white")
+          image = Image.new("RGB", (512, 512), "white")
           draw = ImageDraw.Draw(image)
-          title = ImageFont.load_default(size=84)
-          body = ImageFont.load_default(size=64)
-          draw.text((110, 90), "INVOICE", fill=(0, 0, 0), font=title, stroke_width=1)
-          draw.line((100, 215, 1300, 215), fill=(0, 0, 0), width=5)
-          draw.text((110, 300), "Invoice Number: 4821", fill=(0, 0, 0), font=body, stroke_width=1)
-          draw.text((110, 470), "Total: 37.50", fill=(0, 0, 0), font=body, stroke_width=1)
+          title = ImageFont.load_default(size=48)
+          body = ImageFont.load_default(size=36)
+          draw.text((40, 64), "INVOICE", fill=(0, 0, 0), font=title, stroke_width=1)
+          draw.line((38, 150, 474, 150), fill=(0, 0, 0), width=4)
+          draw.text((40, 205), "Invoice Number: 4821", fill=(0, 0, 0), font=body, stroke_width=1)
+          draw.text((40, 315), "Total: 37.50", fill=(0, 0, 0), font=body, stroke_width=1)
           image.save(image_path, format="PNG", optimize=False)
           print("FIXTURE_BYTES=" + str(image_path.stat().st_size))
           PY

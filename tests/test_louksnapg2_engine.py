@@ -166,6 +166,17 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
         with self.assertRaisesRegex(engine.EngineRuntimeError, "FOMA_SOURCE_LANGUAGE_NOT_REGISTERED"):
             self.runtime.route("D04_TRADUCCION_LENGUAS_ANTIGUAS", "translate_ancient_text", {"text": "bonjour", "src_lang": "fra"}, task_id="ancient-invalid")
 
+    def test_hebrew_and_aramaic_are_not_misreported_as_foma_supported(self):
+        for code in ("heb", "arc"):
+            with self.subTest(source_language=code):
+                with self.assertRaisesRegex(engine.EngineRuntimeError, "FOMA_SOURCE_LANGUAGE_NOT_REGISTERED"):
+                    self.runtime.route(
+                        "D04_TRADUCCION_LENGUAS_ANTIGUAS", "translate_ancient_text",
+                        {"text": "sample", "src_lang": code, "tgt_lang": "eng"},
+                        task_id="unsupported-ancient-" + code,
+                    )
+        self.assertEqual(self.fake.requests, [])
+
     def test_wrong_domain_operation_pair_fails_closed(self):
         with self.assertRaisesRegex(engine.EngineRuntimeError, "DOMAIN_OPERATION_PAIR_NOT_REGISTERED"):
             self.runtime.route("D04_TRADUCCION_LENGUAS_ANTIGUAS", "translate_text", {"text": "Alea iacta est", "src_lang": "lat"}, task_id="ancient-misroute")
