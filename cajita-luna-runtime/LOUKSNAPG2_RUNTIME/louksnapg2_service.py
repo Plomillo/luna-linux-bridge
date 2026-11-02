@@ -99,6 +99,8 @@ def dispatch_target(runtime: LouksnapG2Runtime, target_id: str, payload: dict[st
         "output_text": result.get("output_text"),
         "output_sha256": result.get("output_sha256"),
         "source_model_evidence": result.get("model_source_evidence", {}),
+        "resource_policy": (result.get("original_adapter_result") or {}).get("resource_policy"),
+        "peak_rss_bytes": (result.get("original_adapter_result") or {}).get("peak_rss_bytes"),
         "translation_strategy": result.get("translation_strategy"),
         "source_language": result.get("source_language"),
         "target_language": result.get("target_language"),
