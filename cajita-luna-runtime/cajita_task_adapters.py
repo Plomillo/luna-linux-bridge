@@ -119,9 +119,12 @@ def verify_integrity(root,domain):
   except TokenizerMaterializationError as exc: raise AdapterError("TOKENIZER_TREE_INTEGRITY_INVALID:"+str(exc)[:180]) from exc
  integ=meta.get("tree_integrity",{})
  treehash=digest_bytes(json.dumps(rows,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8"))
- if len(rows)!=int(integ.get("file_count_excluding_module_descriptors",-1)):raise AdapterError("TARGET_MODULE_FILE_COUNT_MISMATCH")
- if sum(x["bytes"] for x in rows)!=int(integ.get("bytes_excluding_module_descriptors",-1)):raise AdapterError("TARGET_MODULE_BYTE_COUNT_MISMATCH")
- if treehash!=integ.get("sha256"):raise AdapterError("TARGET_MODULE_TREE_SHA256_MISMATCH")
+ expected_files=int(integ.get("file_count_excluding_module_descriptors",-1))
+ expected_bytes=int(integ.get("bytes_excluding_module_descriptors",-1))
+ observed_bytes=sum(x["bytes"] for x in rows)
+ if len(rows)!=expected_files:raise AdapterError("TARGET_MODULE_FILE_COUNT_MISMATCH:"+domain+":observed="+str(len(rows))+":expected="+str(expected_files))
+ if observed_bytes!=expected_bytes:raise AdapterError("TARGET_MODULE_BYTE_COUNT_MISMATCH:"+domain+":observed="+str(observed_bytes)+":expected="+str(expected_bytes))
+ if treehash!=integ.get("sha256"):raise AdapterError("TARGET_MODULE_TREE_SHA256_MISMATCH:"+domain+":observed="+treehash+":expected="+str(integ.get("sha256")))
  return {"target_id":spec["target"],"module_tree_sha256":treehash,"module_file_count":len(rows),"module_bytes":sum(x["bytes"] for x in rows),
          "weight_manifest_sha256":MANIFEST_SHA,"weight_path":spec["weight"],"weight_bytes":spec["bytes"],"weight_sha256":spec["sha"]}
 def peak_child_rss():
