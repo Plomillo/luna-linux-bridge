@@ -262,6 +262,17 @@ class Puac2TerminalGateTests(unittest.TestCase):
         self.assertEqual(report["status"], "HOLD")
         self.assertTrue(any("REPAIR_EVIDENCE_FILE_MISSING_OR_UNSAFE:" in x for x in report["blockers"]))
 
+    def test_g24_rejects_empty_g23_attestation_count(self):
+        functional = self.valid_functional_evidence()
+        args = self.args(functional)
+        receipt = json.loads(args.g23_attestation_verification.read_text())
+        receipt["verified_attestation_count"] = 0
+        args.g23_attestation_verification.write_text(json.dumps(receipt))
+        report = gate.g24_payload(args)
+        self.assertEqual(report["status"], "HOLD")
+        self.assertIn("G23_OIDC_ATTESTATION_NOT_FOUND", report["blockers"])
+        self.assertEqual(report["signature_status"], "FAIL")
+
     def test_g24_rejects_unverified_g23_oidc_receipt(self):
         functional = self.valid_functional_evidence()
         args = self.args(functional)
