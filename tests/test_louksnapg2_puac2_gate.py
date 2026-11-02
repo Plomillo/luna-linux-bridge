@@ -27,7 +27,8 @@ class Puac2TerminalGateTests(unittest.TestCase):
         self.materialized_models = []
         self.env = mock.patch.dict(os.environ, {
             "GITHUB_SHA": self.commit,
-            "CAJITA_G23_PUBLIC_KEY_PEM": "test-public-key",
+            "GITHUB_REF": "refs/heads/louksnapg2/puac2-alternative-20261029",
+            "GITHUB_REPOSITORY": "Plomillo/luna-linux-bridge",
         })
         self.env.start()
 
@@ -44,12 +45,28 @@ class Puac2TerminalGateTests(unittest.TestCase):
         candidate_sha = gate.sha256_file(self.bundle)
         g23_payload = {
             "status": "PASS",
+            "validator_id": "GITHUB_OIDC_G23_VALIDATOR",
             "source_commit": self.commit,
             "candidate": {"sha256": candidate_sha, "bytes": self.bundle.stat().st_size},
         }
+        g23_path = self.write_json("g23.json", g23_payload)
+        receipt = {
+            "schema": "LOUKSNAPG2_G23_OIDC_ATTESTATION_VERIFICATION/1.0",
+            "status": "PASS_VERIFIED",
+            "repository": "Plomillo/luna-linux-bridge",
+            "signer_workflow": "Plomillo/luna-linux-bridge/.github/workflows/louksnapg2-puac2-certification.yml",
+            "source_ref": "refs/heads/louksnapg2/puac2-alternative-20261029",
+            "source_commit": self.commit,
+            "subject_sha256": gate.sha256_file(g23_path),
+            "predicate_type": "https://slsa.dev/provenance/v1",
+            "verification_command": "gh attestation verify",
+            "signer_id": "GITHUB_OIDC_G23_VALIDATOR",
+            "verified_attestation_count": 1,
+        }
         return type("Args", (), {
             "bundle": self.bundle,
-            "g23_signed": self.write_json("g23.json", {"payload_sha256": "c" * 64}),
+            "g23_payload": g23_path,
+            "g23_attestation_verification": self.write_json("g23-attestation-verification.json", receipt),
             "functional_evidence": self.write_json("functional.json", functional),
             "unit_evidence": self.write_json("unit.json", {"status": "PASS", "failures": 0, "errors": 0}),
             "model_materialization": self.write_json("materialization.json", {"status": "PASS", "models": self.materialized_models}),
@@ -57,10 +74,10 @@ class Puac2TerminalGateTests(unittest.TestCase):
                 "source_commit": self.commit,
                 "candidate": {"sha256": candidate_sha, "bytes": self.bundle.stat().st_size},
             }),
-            "g23_validator_id": "INDEPENDENT_G23",
-            "g23_public_key_env": "CAJITA_G23_PUBLIC_KEY_PEM",
-            "certifier_id": "INDEPENDENT_G24",
-        })(), g23_payload
+            "g23_validator_id": "GITHUB_OIDC_G23_VALIDATOR",
+            "certifier_id": "GITHUB_OIDC_G24_CERTIFIER",
+        })()
+
 
     def valid_functional_evidence(self):
         domains = gate.REQUIRED_DOMAINS
@@ -226,9 +243,8 @@ class Puac2TerminalGateTests(unittest.TestCase):
         }
 
     def call_g24(self, functional):
-        args, g23_payload = self.args(functional)
-        with mock.patch.object(gate, "verify_envelope", return_value=(g23_payload, [])):
-            return gate.g24_payload(args)
+        args = self.args(functional)
+        return gate.g24_payload(args)
 
     def test_g24_passes_only_exact_all_domain_and_repair_evidence(self):
         report = self.call_g24(self.valid_functional_evidence())
@@ -244,6 +260,16 @@ class Puac2TerminalGateTests(unittest.TestCase):
         report = self.call_g24(functional)
         self.assertEqual(report["status"], "HOLD")
         self.assertTrue(any("REPAIR_EVIDENCE_FILE_MISSING_OR_UNSAFE:" in x for x in report["blockers"]))
+
+    def test_g24_rejects_unverified_g23_oidc_receipt(self):
+        functional = self.valid_functional_evidence()
+        args = self.args(functional)
+        receipt = json.loads(args.g23_attestation_verification.read_text())
+        receipt["source_commit"] = "b" * 40
+        args.g23_attestation_verification.write_text(json.dumps(receipt))
+        report = gate.g24_payload(args)
+        self.assertEqual(report["status"], "HOLD")
+        self.assertIn("G23_OIDC_ATTESTATION_RECEIPT_MISMATCH:source_commit", report["blockers"])
 
     def test_g24_rejects_heldout_report_record_hash_mismatch(self):
         functional = self.valid_functional_evidence()
