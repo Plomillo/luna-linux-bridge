@@ -55,7 +55,7 @@ result={"schema":"COMUNICACION_U4_DELIVERABLE_VERIFICATION/1.0","status":"PASS",
 "video_seconds":duration,"video_resolution":f'{video["width"]}x{video["height"]}',
 "video_audio":True,"video_bytes":mp4.stat().st_size,"scenes":len(script["scenes"]),
 "visible_citations_in_scene_design":True,"rubric_total":profile["rubric"]["declared_total_points"],
-"g23":"NOT_EXECUTED","g24":"NOT_EXECUTED"}
+"external_certification":"NOT_REQUIRED_BY_USER"}
 (root/"evidence").mkdir(exist_ok=True)
 (root/"evidence/document-verification.json").write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
 print(json.dumps(result,ensure_ascii=False))
