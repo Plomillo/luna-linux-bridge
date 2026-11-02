@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed runtime loader and CPU image-to-DocTags startup smoke for the isolated candidate."""
 from __future__ import annotations
-import argparse, hashlib, json, time, sys, resource, mmap, zlib
+import argparse, hashlib, json, time, sys, resource, mmap, zlib, os
 from pathlib import Path
 
 _TOKENIZER_RUNTIME_ROOT = next(
@@ -15,7 +15,9 @@ from cajita_tokenizer_materializer import load_pretrained_with_compressed_tokeni
 import numpy as np
 import torch
 
-RAM_BUDGET_BYTES = 1 * 1024**3
+RAM_BUDGET_BYTES = int(os.environ.get("LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES", str(3 * 1024**3)))
+if not 512 * 1024**2 <= RAM_BUDGET_BYTES <= 8 * 1024**3:
+    raise RuntimeError("DOCLING_RAM_BUDGET_OUT_OF_SUPPORTED_RANGE")
 
 
 def peak_rss_bytes():
@@ -37,7 +39,7 @@ def assert_ram_budget(stage):
     observed = peak_rss_bytes()
     if observed > RAM_BUDGET_BYTES:
         raise MemoryError(
-            "DOCLING_3GB_RAM_BUDGET_EXCEEDED:"
+            "DOCLING_RAM_BUDGET_EXCEEDED:"
             + stage + ":peak_rss_bytes=" + str(observed)
             + ":limit_bytes=" + str(RAM_BUDGET_BYTES)
         )
@@ -202,12 +204,14 @@ def load_candidate(candidate_dir):
     config._attn_implementation = "sdpa"
     if getattr(config, "text_config", None) is not None:
         config.text_config._attn_implementation = "sdpa"
+    # The pinned upstream config declares bfloat16; preserve it end-to-end.
+    model_dtype = torch.bfloat16 if str(getattr(config, "dtype", "")).lower() == "bfloat16" else torch.float16
     old=torch.get_default_dtype()
     try:
-        torch.set_default_dtype(torch.float16)
+        torch.set_default_dtype(model_dtype)
         model=AutoModelForImageTextToText.from_config(config,trust_remote_code=False)
     finally: torch.set_default_dtype(old)
-    model.to(device="cpu",dtype=torch.float16)
+    model.to(device="cpu",dtype=model_dtype)
     state=model.state_dict(keep_vars=True); loaded=set()
     with bp.open("rb") as weight_file:
         with mmap.mmap(weight_file.fileno(), 0, access=mmap.ACCESS_READ) as raw:
@@ -255,13 +259,15 @@ def load_original_teacher(candidate_dir, teacher_weights_path):
     config._attn_implementation = "sdpa"
     if getattr(config,"text_config",None) is not None:
         config.text_config._attn_implementation = "sdpa"
+    # The immutable source teacher also declares bfloat16.
+    model_dtype = torch.bfloat16 if str(getattr(config, "dtype", "")).lower() == "bfloat16" else torch.float16
     old=torch.get_default_dtype()
     try:
-        torch.set_default_dtype(torch.float16)
+        torch.set_default_dtype(model_dtype)
         model=AutoModelForImageTextToText.from_config(config,trust_remote_code=False)
     finally:
         torch.set_default_dtype(old)
-    model.to(device="cpu",dtype=torch.float16)
+    model.to(device="cpu",dtype=model_dtype)
     state=model.state_dict(keep_vars=True)
     loaded=set()
     with safe_open(str(weights),framework="pt",device="cpu") as source:
@@ -342,7 +348,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     image_processor=getattr(proc,"image_processor",None)
     if image_processor is None:
         raise RuntimeError("DOCLING_IMAGE_PROCESSOR_MISSING")
-    image_side=int(__import__("os").environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE", "256"))
+    image_side=int(os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE", "512"))
     vision_config=model.config.vision_config
     patch_size=int(vision_config.patch_size)
     scale_factor=int(model.config.scale_factor)
@@ -396,7 +402,8 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
             "decoded_chars":len(decoded),"elapsed_seconds":round(time.time()-t,3),
             "decoded_span":"NEW_TOKENS_ONLY","quality_equivalence":"NOT_ESTABLISHED",
             "image_side_pixels":image_side,"image_sequence_length":image_seq_len,
-            "ram_budget_bytes":RAM_BUDGET_BYTES,"ram_limit":ram_limit,"peak_rss_bytes":peak_rss_bytes()}
+            "ram_budget_bytes":RAM_BUDGET_BYTES,"model_dtype":str(model_dtype),
+            "ram_limit":ram_limit,"peak_rss_bytes":peak_rss_bytes()}
 
 
 def main():

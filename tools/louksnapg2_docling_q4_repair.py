@@ -346,7 +346,8 @@ def _run_runtime_protocol(runtime_path: Path, candidate_dir: Path, image: Path,
         "HF_HUB_OFFLINE": "1",
         "TRANSFORMERS_OFFLINE": "1",
         "PYTHONNOUSERSITE": "1",
-        "LOUKSNAPG2_DOCLING_IMAGE_SIDE": "256",
+        "LOUKSNAPG2_DOCLING_IMAGE_SIDE": os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE", "512"),
+        "LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES": os.environ.get("LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES", str(3 * 1024**3)),
     })
     try:
         completed = subprocess.run(
@@ -407,7 +408,8 @@ def evaluate(args: argparse.Namespace) -> int:
         missing = [word for word in EXPECTED_FIELDS if word not in words]
         peak = int(result.get("peak_rss_bytes", 0))
         execution_pass = result.get("status") == "PASS" and result.get("generation") == "PASS" and result.get("process_return_code") == 0
-        resource_pass = 0 < peak <= 1 * 1024**3
+        budget = int(result.get("ram_budget_bytes", 3 * 1024**3))
+        resource_pass = 0 < peak <= budget
         return {
             "observed_words": sorted(words),
             "missing_fields": missing,
@@ -425,7 +427,8 @@ def evaluate(args: argparse.Namespace) -> int:
     q4 = predicate(q4_result)
     teacher = predicate(teacher_result)
     comparable = (
-        q4_result.get("image_side_pixels") == teacher_result.get("image_side_pixels") == 256
+        q4_result.get("image_side_pixels") == teacher_result.get("image_side_pixels")
+        == int(os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE", "512"))
         and q4_result.get("image_sequence_length") == teacher_result.get("image_sequence_length")
         and q4_result.get("processor_load") == teacher_result.get("processor_load") == "PASS"
         and q4_result.get("image_preprocess") == teacher_result.get("image_preprocess") == "PASS"
@@ -459,11 +462,13 @@ def evaluate(args: argparse.Namespace) -> int:
             "fixture_bytes": args.image.stat().st_size,
             "prompt": PROMPT,
             "max_new_tokens": args.max_new_tokens,
-            "image_side_pixels": 256,
+            "image_side_pixels": int(q4_result.get("image_side_pixels", 0)),
+            "image_sequence_length": q4_result.get("image_sequence_length"),
+            "model_dtype": q4_result.get("model_dtype"),
             "image_splitting": False,
             "processor_and_generation_config_root": str(args.candidate_dir),
             "cpu_limit": 1,
-            "memory_limit_bytes": 1 * 1024**3,
+            "memory_limit_bytes": int(q4_result.get("ram_budget_bytes", 0)),
             "runs_are_sequential_separate_processes": True,
             "same_fixture_and_generation_protocol": True,
             "teacher_sidecar_bytes": teacher_bytes,

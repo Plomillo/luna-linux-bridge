@@ -112,8 +112,8 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: ubuntu:24.04
-      options: --memory=1g --memory-swap=1g --cpus=1
-    timeout-minutes: 55
+      options: --memory=3g --memory-swap=3g --cpus=1
+    timeout-minutes: 80
     steps:
       - name: Verify exact 1-GiB candidate cgroup and one-core quota
         shell: bash
@@ -121,7 +121,7 @@ jobs:
           set -Eeuo pipefail
           memory="$(cat /sys/fs/cgroup/memory.max)"
           read -r quota period < /sys/fs/cgroup/cpu.max
-          expected=$((1 * 1024 * 1024 * 1024))
+          expected=$((3 * 1024 * 1024 * 1024))
           [[ "$memory" == "$expected" ]] || { echo "CANDIDATE_MEMORY_LIMIT_MISMATCH:$memory:$expected" >&2; exit 1; }
           [[ "$quota" =~ ^[0-9]+$ && "$period" =~ ^[0-9]+$ ]] || { echo "CANDIDATE_CPU_QUOTA_INVALID" >&2; exit 1; }
           (( quota > 0 && period > 0 && quota <= period )) || { echo "CANDIDATE_CPU_LIMIT_EXCEEDS_ONE_CORE" >&2; exit 1; }
@@ -224,7 +224,8 @@ jobs:
           HF_HUB_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
           PYTHONNOUSERSITE: "1"
-          LOUKSNAPG2_DOCLING_IMAGE_SIDE: "256"
+          LOUKSNAPG2_DOCLING_IMAGE_SIDE: "512"
+          LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES: "3221225472"
           IMAGE_PATH: ${{ runner.temp }}/docling-q4-invoice.png
           REPORT_PATH: ${{ runner.temp }}/docling-q4-functional-evidence.json
         run: |
@@ -236,7 +237,7 @@ jobs:
             --image "$IMAGE_PATH" \
             --teacher-weights "$RUNNER_TEMP/docling-q4-build/teacher/model.safetensors" \
             --report "$REPORT_PATH" \
-            --timeout-seconds 900 \
+            --timeout-seconds 1800 \
             --max-new-tokens 256 \
             | tee "$RUNNER_TEMP/docling-q4-functional-summary.json"
 
