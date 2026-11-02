@@ -635,8 +635,8 @@ def g24_payload(args) -> dict:
         "g23_verification": {
             "signature_status": "PASS" if verified_g23 is not None and receipt_valid else "FAIL",
             "g23_payload_status": verified_g23.get("status") if verified_g23 else "INVALID",
-            "payload_sha256": g23_envelope.get("payload_sha256"),
-            "verification_errors": verify_errors,
+            "payload_sha256": attestation_receipt.get("subject_sha256"),
+            "verification_errors": [] if receipt_valid else ["OIDC_ATTESTATION_RECEIPT_INVALID"],
         },
         "functional_quality": {
             "status": functional.get("functional_status"),
