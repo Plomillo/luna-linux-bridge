@@ -99,7 +99,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           apt-get update
-          apt-get install -y p7zip-full unzip rsync
+          apt-get install -y p7zip-full unzip rsync libsqlite3-0
 
       - name: Prepare Python for factory, unit checks and the pinned worker
         uses: actions/setup-python@v5
