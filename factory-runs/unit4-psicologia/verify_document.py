@@ -17,16 +17,33 @@ assert case,"CASE_BLOCK_MISSING"
 words=re.findall(r"\b[\wÀ-ÿ'-]+\b",case.group(1),re.UNICODE)
 assert 300<=len(words)<=400,f"CASE_LENGTH:{len(words)}"
 for q in range(1,7): assert f"### {q}." in raw,f"QUESTION_{q}_MISSING"
+for marker in ["positivismo","Wundt","1879","funcionalismo","psicoanálisis","condicionamiento","Rogers","Piaget","Vygotsky","Erikson","confidencialidad","autonomía progresiva","social-comunitaria","adaptación cultural"]:
+    assert marker.casefold() in raw.casefold(),"RUBRIC_CONTENT_MISSING:"+marker
+order=["Biblioteca del Congreso Nacional de Chile.","Colegio de Psicólogos de Chile.","Cosacov,","Danziger,","Erikson,","Freud,","Piaget,","Rogers,","Sáiz,","Skinner,","Universidad UNIACC. (s. f.)","Universidad UNIACC. (2025)","Vygotsky,"]
+positions=[raw.index(x,raw.index("## Referencias")) for x in order]
+assert positions==sorted(positions),"APA_REFERENCE_ORDER_FAIL"
+assert "[completar]" in raw and "Caso deliberadamente ficticio" in raw
 d=Document(str(docx)); sec=d.sections[0]
 for value in [sec.top_margin,sec.bottom_margin,sec.left_margin,sec.right_margin]:
     assert abs(value.inches*2.54-2.5)<0.03,"MARGIN_FAIL"
 assert d.styles["Normal"].font.name=="Arial" and abs(d.styles["Normal"].font.size.pt-12)<0.01
+for name in ("Title","Heading 1","Heading 2","Heading 3"):
+    if name in d.styles:
+        st=d.styles[name]
+        assert st.font.name=="Arial" and st.font.size is not None and abs(st.font.size.pt-16)<0.01,f"HEADING_STYLE_FAIL:{name}"
+for p in d.paragraphs:
+    if p.style.name.startswith("Heading"):
+        for run in p.runs:
+            if run.text.strip():
+                assert run.font.size is not None and abs(run.font.size.pt-16)<0.01,"HEADING_RUN_NOT_16PT"
 missing=json.loads((root/"data/missing-inputs.json").read_text(encoding="utf-8"))
 assert missing["status"]=="PARTIAL_SOURCE_COMPLETENESS"
+assert missing["blocking_or_material_gaps"],"INPUT_GAPS_NOT_DOCUMENTED"
 result={"schema":"PSICOLOGIA_U4_DELIVERABLE_VERIFICATION/1.0","status":"PASS_WITH_DOCUMENTED_INPUT_GAPS",
 "pdf_pages":pages,"pdf_bytes":pdf.stat().st_size,"case_words":len(words),"six_development_answers_present":True,
+"heading_size_pt":16,"body_size_pt":12,"references_alphabetical":True,
 "rubric_total":profile["rubric"]["declared_total_points"],"multiple_choice_12":"NOT_ANSWERED_SOURCE_MISSING",
-"personal_context":"NOT_INFERRED","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED"}
+"personal_context":"PLACEHOLDER_PENDING_USER_DATA","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED"}
 (root/"evidence").mkdir(exist_ok=True)
 (root/"evidence/document-verification.json").write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
 print(json.dumps(result,ensure_ascii=False))
