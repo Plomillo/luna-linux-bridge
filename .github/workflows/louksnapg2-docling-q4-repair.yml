@@ -136,6 +136,7 @@ jobs:
           filter: blob:none
           sparse-checkout-cone-mode: false
           sparse-checkout: |
+            /tools/louksnapg2_docling_q4_repair.py
             /cajita-luna-runtime/REQUIREMENTS.runtime.lock
             /cajita-luna-runtime/cajita_tokenizer_materializer.py
             /cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
