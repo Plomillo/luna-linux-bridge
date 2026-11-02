@@ -198,6 +198,10 @@ def load_candidate(candidate_dir):
     if sha256_file(bp)!=meta.get("weights_sha256"): raise RuntimeError("WEIGHTS_HASH_MISMATCH")
     from transformers import AutoConfig, AutoModelForImageTextToText, GenerationConfig
     config=AutoConfig.from_pretrained(str(p),local_files_only=True,trust_remote_code=False)
+    # Match the documented CPU inference path; keep the candidate single-threaded.
+    config._attn_implementation = "sdpa"
+    if getattr(config, "text_config", None) is not None:
+        config.text_config._attn_implementation = "sdpa"
     old=torch.get_default_dtype()
     try:
         torch.set_default_dtype(torch.float16)
@@ -295,11 +299,11 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     else:
         image=make_test_image()
     image=prepare_bounded_square_image(image, image_side)
-    try:
-        msgs=[{"role":"user","content":[{"type":"image","image":image},{"type":"text","text":prompt}]}]
-        inputs=proc.apply_chat_template(msgs,add_generation_prompt=True,tokenize=True,return_dict=True,return_tensors="pt")
-    except Exception:
-        inputs=proc(images=image,text=prompt,return_tensors="pt")
+    # Follow IBM's documented Transformers path: render the chat prompt first,
+    # then pass the image separately to the processor.
+    msgs=[{"role":"user","content":[{"type":"image"},{"type":"text","text":prompt}]}]
+    prompt_text=proc.apply_chat_template(msgs,add_generation_prompt=True)
+    inputs=proc(text=prompt_text,images=[image],return_tensors="pt")
     inputs={k:(v.to("cpu") if isinstance(v,torch.Tensor) else v) for k,v in inputs.items()}
     assert_ram_budget("after-image-preprocess")
     image_token_count=int((inputs["input_ids"] == int(model.config.image_token_id)).sum().item())
@@ -309,11 +313,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
         out=model.generate(
             **inputs,
             max_new_tokens=int(max_new_tokens),
-            min_new_tokens=min(3, int(max_new_tokens)),
             do_sample=False,
-            repetition_penalty=1.12,
-            no_repeat_ngram_size=3,
-            renormalize_logits=True,
         )
     prompt_ids=inputs["input_ids"]
     if out.shape[-1] >= prompt_ids.shape[-1] and torch.equal(out[:, :prompt_ids.shape[-1]], prompt_ids):
@@ -322,7 +322,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
         new_ids=out
     if int(new_ids.shape[-1]) < 1:
         raise RuntimeError("DOCLING_GENERATED_NO_NEW_TOKENS")
-    decoded=proc.batch_decode(new_ids, skip_special_tokens=True)[0]
+    decoded=proc.batch_decode(new_ids, skip_special_tokens=False)[0].lstrip()
     assert_ram_budget("after-generation")
     if len(decoded.strip())<1: raise RuntimeError("RUNTIME_SMOKE_EMPTY_OUTPUT")
     return {"status":"PASS","candidate_id":meta["candidate_id"],"model_load":"PASS","processor_load":"PASS",

@@ -37,7 +37,7 @@ CANDIDATE_ID = "GRANITE_DOCLING_258M_SOURCE_Q4_GROUP256_ZLIB_20261102"
 DOMAIN_REL = Path("5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate")
 RUNTIME_REL = Path("cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py")
 EXPECTED_FIELDS = ("invoice", "4821", "37", "50")
-PROMPT = "Read this document carefully. Extract the invoice number and total amount. Preserve the exact digits and punctuation."
+PROMPT = "Convert this page to docling."
 
 
 def sha256_file(path: Path) -> str:
@@ -371,7 +371,7 @@ def main() -> int:
     eval_parser.add_argument("--candidate-dir", required=True, type=Path)
     eval_parser.add_argument("--image", required=True, type=Path)
     eval_parser.add_argument("--report", required=True, type=Path)
-    eval_parser.add_argument("--max-new-tokens", type=int, default=64)
+    eval_parser.add_argument("--max-new-tokens", type=int, default=256)
     args = parser.parse_args()
     if args.self_test:
         self_test()
