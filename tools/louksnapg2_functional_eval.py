@@ -122,6 +122,8 @@ def run_case(runtime, case_id, domain, operation, payload, predicate, requiremen
             "result_domain_id": result.get("domain_id"),
             "result_operation": result.get("operation"),
             "execution_status": result.get("status"),
+            "resource_policy": result.get("resource_policy"),
+            "peak_rss_bytes": result.get("peak_rss_bytes"),
             "general_translation_fallback_selected": result.get("general_translation_fallback_selected"),
             "quality_criterion_passed": bool(predicate(output)),
             "semantic_quality_equivalence_to_full_size_original": "NOT_ESTABLISHED",
