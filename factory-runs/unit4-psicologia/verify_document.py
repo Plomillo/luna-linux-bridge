@@ -43,7 +43,7 @@ result={"schema":"PSICOLOGIA_U4_DELIVERABLE_VERIFICATION/1.0","status":"PASS_WIT
 "pdf_pages":pages,"pdf_bytes":pdf.stat().st_size,"case_words":len(words),"six_development_answers_present":True,
 "heading_size_pt":16,"body_size_pt":12,"references_alphabetical":True,
 "rubric_total":profile["rubric"]["declared_total_points"],"multiple_choice_12":"NOT_ANSWERED_SOURCE_MISSING",
-"personal_context":"PLACEHOLDER_PENDING_USER_DATA","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED"}
+"personal_context":"PLACEHOLDER_PENDING_USER_DATA","external_certification":"NOT_REQUIRED_BY_USER"}
 (root/"evidence").mkdir(exist_ok=True)
 (root/"evidence/document-verification.json").write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
 print(json.dumps(result,ensure_ascii=False))
