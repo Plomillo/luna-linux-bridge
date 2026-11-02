@@ -319,9 +319,14 @@ def validate_repair_evidence(bundle: Path, functional_path: Path, functional: di
                         for chunk in iter(lambda: stream.read(4 * 1024 * 1024), b""):
                             digest.update(chunk)
                             size += len(chunk)
-                    expected_sha = adapter.get(digest_field) if digest_field else spec.get("sha256")
-                    if digest.hexdigest() != expected_sha or size != spec.get("bytes"):
-                        blockers.append("REPAIR_CANDIDATE_MEMBER_HASH_OR_SIZE_MISMATCH:" + domain + ":" + key)
+                    actual_sha = digest.hexdigest()
+                    expected_sha = spec.get("sha256")
+                    if not isinstance(expected_sha, str) or not SHA256_RE.fullmatch(expected_sha) or actual_sha != expected_sha:
+                        blockers.append("REPAIR_CANDIDATE_MEMBER_DIGEST_MISMATCH:" + domain + ":" + key)
+                    if digest_field and actual_sha != adapter.get(digest_field):
+                        blockers.append("REPAIR_CANDIDATE_ADAPTER_DIGEST_MISMATCH:" + domain + ":" + key)
+                    if size != spec.get("bytes"):
+                        blockers.append("REPAIR_CANDIDATE_MEMBER_BYTE_COUNT_MISMATCH:" + domain + ":" + key)
                 if domain in materialized:
                     if not isinstance(source_spec, dict) or source_spec.get("candidate_member_path") is None:
                         blockers.append("SOURCE_WEIGHT_MEMBER_NOT_BOUND:" + domain)
@@ -342,6 +347,8 @@ def validate_repair_evidence(bundle: Path, functional_path: Path, functional: di
                     ("heldout_dataset", "heldout_dataset_sha256"),
                     ("rollback_checkpoint", "rollback_checkpoint_sha256"),
                     ("heldout_report", None),
+                    ("independent_report", None),
+                    ("rollback_report", None),
                 ):
                     record = artifacts.get(key)
                     rel = record.get("path") if isinstance(record, dict) else None
@@ -365,6 +372,9 @@ def validate_repair_evidence(bundle: Path, functional_path: Path, functional: di
                     digest = sha256_file(path_real)
                     if record.get("bytes") != path_real.stat().st_size:
                         blockers.append("REPAIR_EVIDENCE_BYTE_COUNT_MISMATCH:" + domain + ":" + key)
+                    record_sha = record.get("sha256")
+                    if not isinstance(record_sha, str) or not SHA256_RE.fullmatch(record_sha) or digest != record_sha:
+                        blockers.append("REPAIR_EVIDENCE_RECORD_DIGEST_MISMATCH:" + domain + ":" + key)
                     if digest_field and digest != adapter.get(digest_field):
                         blockers.append("REPAIR_EVIDENCE_DIGEST_MISMATCH:" + domain + ":" + key)
                     if key == "rollback_checkpoint" and digest != adapter.get("rollback_checkpoint_sha256"):
@@ -384,6 +394,47 @@ def validate_repair_evidence(bundle: Path, functional_path: Path, functional: di
                             blockers.append("HELDOUT_INFERENCE_OR_CASE_COUNT_NOT_PROVEN:" + domain)
                         if heldout.get("failed_cases") != [] or heldout.get("semantic_quality_equivalence_status") != "PASS":
                             blockers.append("HELDOUT_SEMANTIC_QUALITY_NOT_PASS:" + domain)
+                    if key == "independent_report":
+                        try:
+                            independent = json.loads(path_real.read_text(encoding="utf-8"))
+                        except (OSError, json.JSONDecodeError):
+                            independent = {}
+                            blockers.append("INDEPENDENT_REPORT_INVALID_JSON:" + domain)
+                        if independent.get("schema") != "LOUKSNAPG2_INDEPENDENT_REPAIR_VALIDATION/1.0":
+                            blockers.append("INDEPENDENT_REPORT_SCHEMA_MISMATCH:" + domain)
+                        if independent.get("status") != "PASS" or independent.get("source_commit") != expected_commit or independent.get("domain_id") != domain:
+                            blockers.append("INDEPENDENT_REPORT_IDENTITY_OR_STATUS_MISMATCH:" + domain)
+                        validator_id = independent.get("validator_id")
+                        if not isinstance(validator_id, str) or not validator_id.strip() or validator_id == adapter.get("adapter_id"):
+                            blockers.append("INDEPENDENT_VALIDATOR_NOT_DISTINCT:" + domain)
+                        if independent.get("candidate_sha256") != sha256_file(bundle):
+                            blockers.append("INDEPENDENT_REPORT_CANDIDATE_MISMATCH:" + domain)
+                        repaired_spec = artifacts.get("repaired_output", {})
+                        if independent.get("repaired_output_sha256") != repaired_spec.get("sha256"):
+                            blockers.append("INDEPENDENT_REPORT_OUTPUT_MISMATCH:" + domain)
+                        if independent.get("source_weight_sha256") != adapter.get("source_weight_sha256"):
+                            blockers.append("INDEPENDENT_REPORT_SOURCE_MISMATCH:" + domain)
+                        independent_cases = independent.get("heldout_case_count")
+                        if isinstance(independent_cases, bool) or not isinstance(independent_cases, int) or independent_cases < 1:
+                            blockers.append("INDEPENDENT_REPORT_CASE_COUNT_INVALID:" + domain)
+                        if independent.get("independent_inference_performed") is not True:
+                            blockers.append("INDEPENDENT_INFERENCE_NOT_PROVEN:" + domain)
+                        if independent.get("failed_cases") != [] or independent.get("semantic_quality_equivalence_status") != "PASS":
+                            blockers.append("INDEPENDENT_SEMANTIC_VALIDATION_NOT_PASS:" + domain)
+                    if key == "rollback_report":
+                        try:
+                            rollback_report = json.loads(path_real.read_text(encoding="utf-8"))
+                        except (OSError, json.JSONDecodeError):
+                            rollback_report = {}
+                            blockers.append("ROLLBACK_REPORT_INVALID_JSON:" + domain)
+                        if rollback_report.get("schema") != "LOUKSNAPG2_REPAIR_ROLLBACK/1.0":
+                            blockers.append("ROLLBACK_REPORT_SCHEMA_MISMATCH:" + domain)
+                        if rollback_report.get("status") != "PASS" or rollback_report.get("source_commit") != expected_commit or rollback_report.get("domain_id") != domain:
+                            blockers.append("ROLLBACK_REPORT_IDENTITY_OR_STATUS_MISMATCH:" + domain)
+                        if rollback_report.get("source_weight_sha256") != adapter.get("source_weight_sha256") or rollback_report.get("rollback_checkpoint_sha256") != adapter.get("rollback_checkpoint_sha256"):
+                            blockers.append("ROLLBACK_REPORT_HASH_BINDING_MISMATCH:" + domain)
+                        if rollback_report.get("restore_test") != "PASS" or rollback_report.get("original_weights_unchanged") is not True or rollback_report.get("candidate_output_separate") is not True:
+                            blockers.append("ROLLBACK_RESTORE_TEST_NOT_PASS:" + domain)
     except (OSError, zipfile.BadZipFile):
         blockers.append("REPAIR_CANDIDATE_ARCHIVE_INVALID")
     return sorted(set(blockers))
