@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed runtime loader and CPU image-to-DocTags startup smoke for the isolated candidate."""
 from __future__ import annotations
-import argparse, hashlib, json, time, sys, resource
+import argparse, hashlib, json, time, sys, resource, mmap, zlib
 from pathlib import Path
 
 _TOKENIZER_RUNTIME_ROOT = next(
@@ -15,7 +15,7 @@ from cajita_tokenizer_materializer import load_pretrained_with_compressed_tokeni
 import numpy as np
 import torch
 
-RAM_BUDGET_BYTES = 3 * 1024**3
+RAM_BUDGET_BYTES = 1 * 1024**3
 
 
 def peak_rss_bytes():
@@ -82,6 +82,50 @@ def decode_tensor(blob, r):
 
 def decode_tensor_chunked_into(blob, r, target, chunk_rows=256):
     """Decode one quantized tensor directly into its destination, bounding temporary RAM."""
+    if r.get("kind") == "signed_int4_groupwise_zlib":
+        shape = tuple(int(x) for x in r["shape"])
+        group_size = int(r["group_size"])
+        numel = int(r["numel"])
+        group_count = int(r["group_count"])
+        padded_numel = int(r["padded_numel"])
+        if group_size != 256 or padded_numel != group_count * group_size or numel > padded_numel:
+            raise RuntimeError("Q4_GROUP_GEOMETRY_INVALID:" + r["name"])
+        if tuple(target.shape) != shape or int(np.prod(shape)) != numel:
+            raise RuntimeError("Q4_TARGET_SHAPE_MISMATCH:" + r["name"])
+        offset = int(r["offset"])
+        compressed_nbytes = int(r["compressed_nbytes"])
+        packed_nbytes = int(r["packed_nbytes"])
+        scales_nbytes = int(r["scales_nbytes"])
+        if packed_nbytes != padded_numel // 2 or scales_nbytes != group_count * 2:
+            raise RuntimeError("Q4_MANIFEST_LENGTH_MISMATCH:" + r["name"])
+        payload = zlib.decompress(blob[offset:offset + compressed_nbytes])
+        if len(payload) != packed_nbytes + scales_nbytes:
+            raise RuntimeError("Q4_DECOMPRESSED_LENGTH_MISMATCH:" + r["name"])
+        packed = payload[:packed_nbytes]
+        scales = np.frombuffer(payload, dtype="<f2", count=group_count, offset=packed_nbytes).astype(np.float32)
+        flat_target = target.reshape(-1)
+        groups_per_chunk = 1024
+        bytes_per_group = group_size // 2
+        for group_start in range(0, group_count, groups_per_chunk):
+            group_end = min(group_count, group_start + groups_per_chunk)
+            count = group_end - group_start
+            byte_offset = group_start * bytes_per_group
+            byte_count = count * bytes_per_group
+            codes = np.frombuffer(packed, dtype=np.uint8, count=byte_count, offset=byte_offset).reshape(count, bytes_per_group)
+            low = codes & 0x0F
+            high = codes >> 4
+            q = np.empty((count, group_size), dtype=np.int8)
+            q[:, 0::2] = np.where(low >= 8, low.astype(np.int16) - 16, low).astype(np.int8)
+            q[:, 1::2] = np.where(high >= 8, high.astype(np.int16) - 16, high).astype(np.int8)
+            decoded = (q.astype(np.float32) * scales[group_start:group_end, None]).reshape(-1)
+            start = group_start * group_size
+            valid = min(decoded.size, max(0, numel - start))
+            if valid:
+                values = decoded[:valid].astype(np.float16)
+                flat_target[start:start + valid].copy_(torch.from_numpy(values))
+            del codes, low, high, q, decoded
+        del payload, packed, scales
+        return
     if r.get("kind") != "nanoquant_style_binary_lowrank":
         arr = decode_tensor(blob, r)
         if tuple(arr.shape) != tuple(target.shape):
@@ -141,8 +185,16 @@ def load_candidate(candidate_dir):
     p=Path(candidate_dir).resolve(); mp=p/"quantized_manifest.json"; bp=p/"quantized_weights.bin"
     if not mp.is_file() or not bp.is_file(): raise FileNotFoundError("CANDIDATE_MANIFEST_OR_WEIGHTS_MISSING")
     meta=json.loads(mp.read_text(encoding="utf-8"))
-    if meta.get("schema")!="DOCLING_BINARY_QUANTIZED_MANIFEST/1.0" or meta.get("hard_cap_bytes")!=30_000_000:
+    schema = meta.get("schema")
+    allowed = (
+        schema == "DOCLING_BINARY_QUANTIZED_MANIFEST/1.0" and meta.get("hard_cap_bytes") == 30_000_000
+    ) or (
+        schema == "DOCLING_Q4_GROUPWISE_ZLIB_MANIFEST/1.0" and meta.get("hard_cap_bytes") == 114_000_000
+    )
+    if not allowed:
         raise RuntimeError("CANDIDATE_MANIFEST_OR_CAP_MISMATCH")
+    if bp.stat().st_size > int(meta["hard_cap_bytes"]):
+        raise RuntimeError("CANDIDATE_WEIGHT_HARD_CAP_EXCEEDED")
     if sha256_file(bp)!=meta.get("weights_sha256"): raise RuntimeError("WEIGHTS_HASH_MISMATCH")
     from transformers import AutoConfig, AutoModelForImageTextToText, GenerationConfig
     config=AutoConfig.from_pretrained(str(p),local_files_only=True,trust_remote_code=False)
@@ -152,14 +204,16 @@ def load_candidate(candidate_dir):
         model=AutoModelForImageTextToText.from_config(config,trust_remote_code=False)
     finally: torch.set_default_dtype(old)
     model.to(device="cpu",dtype=torch.float16)
-    state=model.state_dict(keep_vars=True); raw=bp.read_bytes(); view=memoryview(raw); loaded=set()
-    with torch.no_grad():
-        for name,r in meta["tensors"].items():
-            if r["kind"]=="alias": continue
-            if name not in state: raise RuntimeError("TENSOR_NOT_IN_ARCHITECTURE:"+name)
-            target=state[name]
-            decode_tensor_chunked_into(view,r,target)
-            loaded.add(name)
+    state=model.state_dict(keep_vars=True); loaded=set()
+    with bp.open("rb") as weight_file:
+        with mmap.mmap(weight_file.fileno(), 0, access=mmap.ACCESS_READ) as raw:
+            with torch.no_grad():
+                for name,r in meta["tensors"].items():
+                    if r["kind"]=="alias": continue
+                    if name not in state: raise RuntimeError("TENSOR_NOT_IN_ARCHITECTURE:"+name)
+                    target=state[name]
+                    decode_tensor_chunked_into(raw,r,target)
+                    loaded.add(name)
     if hasattr(model,"tie_weights"): model.tie_weights()
     params=set(dict(model.named_parameters()))
     missing=sorted(params-loaded)
@@ -219,7 +273,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     image_processor=getattr(proc,"image_processor",None)
     if image_processor is None:
         raise RuntimeError("DOCLING_IMAGE_PROCESSOR_MISSING")
-    image_side=256
+    image_side=int(__import__("os").environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE", "256"))
     vision_config=model.config.vision_config
     patch_size=int(vision_config.patch_size)
     scale_factor=int(model.config.scale_factor)
