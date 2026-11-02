@@ -63,6 +63,14 @@ def compile_foma_source(source_root,build_root,timeout_seconds=1200):
     build_root.mkdir(parents=True,exist_ok=False); source_sha=sha256_tree(source_root)
     copied=build_root/"source"; shutil.copytree(source_root,copied,symlinks=False)
     if sha256_tree(copied)!=source_sha: raise FomaRuntimeError("FOMA_SOURCE_COPY_HASH_MISMATCH")
+    # The ZIP materializes tests/run.sh without its executable bit although the
+    # upstream Makefile invokes it as ./run.sh. Normalize permissions only in
+    # this disposable copy; never chmod or otherwise mutate the Cajita source.
+    test_runner=copied/"tests"/"run.sh"
+    if test_runner.is_file() and not test_runner.is_symlink():
+        test_runner.chmod(test_runner.stat().st_mode | 0o111)
+    elif test_runner.exists() or test_runner.is_symlink():
+        raise FomaRuntimeError("FOMA_UPSTREAM_TEST_RUNNER_UNSAFE")
     make=_run(["make","-j1","check"],copied,timeout_seconds)
     foma=copied/"foma"; flookup=copied/"flookup"
     for label,p in (("foma",foma),("flookup",flookup)):
