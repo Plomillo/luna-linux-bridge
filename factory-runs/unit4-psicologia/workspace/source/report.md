@@ -8,82 +8,84 @@
 <!-- BODY_START -->
 ## Caso de estudio: Entre el rendimiento escolar y la pertenencia digital
 
-Martina, de 15 años, cursa primero medio en un establecimiento de enseñanza media de Peñalolén, en la Región Metropolitana. Vive en un sector urbano con su madre, la pareja actual de ella, dos hermanos y una hermana; son seis personas en el hogar. Durante el último semestre comenzó a entregar tareas fuera de plazo, llega algunos días cansada y participa menos en clases. Antes disfrutaba las actividades artísticas y mantenía buenas calificaciones. Sus docentes observan que ahora evita hablar frente al curso y que revisa el teléfono con frecuencia durante los recreos.
+Martina, de 15 años, cursa primero medio en un establecimiento de Peñalolén, comuna urbana de la Región Metropolitana. Vive con su madre, la pareja actual de ella, dos hermanos y una hermana: seis integrantes. Durante el semestre comenzó a entregar tareas tarde, llega cansada y participa menos. Antes disfrutaba actividades artísticas y mantenía buenas calificaciones; ahora evita hablar en clases y revisa el teléfono en los recreos.
 
-En casa, las responsabilidades y los horarios se organizan entre varias personas. La madre trabaja fuera del hogar y, cuando vuelve, procura revisar las tareas y las comunicaciones del establecimiento. Martina señala que le cuesta encontrar momentos tranquilos para estudiar y que a veces acompaña a sus hermanos menores en sus actividades. También cuenta a una orientadora que en un grupo de mensajería circulan comentarios y capturas de conversaciones entre estudiantes. No quiere que sus compañeros conozcan lo que ha contado, aunque acepta conversar con una adulta de confianza. En ocasiones dice que no le sucede nada; en otras, reconoce que duerme menos porque permanece conectada para saber qué se comenta sobre ella.
+En casa los horarios y responsabilidades se distribuyen entre varias personas. Su madre trabaja y procura revisar tareas al regresar. Martina dice que le cuesta encontrar momentos tranquilos para estudiar y a veces acompaña a sus hermanos menores. Cuenta a una orientadora que en un grupo de mensajería circulan comentarios y capturas entre estudiantes. No quiere que sus compañeros sepan lo que contó, aunque acepta conversar con una adulta de confianza. Reconoce que duerme menos porque sigue conectada para saber qué se comenta sobre ella.
 
-El establecimiento participa en un programa que solicita indicadores de asistencia, rendimiento y convivencia antes de finalizar el mes. La coordinación propone aplicar el mismo cuestionario breve a todos los estudiantes y enviar una síntesis a una entidad colaboradora. Una docente comparte en un chat de apoderados una captura parcial de una planilla de seguimiento, con iniciales y observaciones escolares. Después de esa publicación, la familia recibe preguntas de otras personas sobre la situación de Martina. Ella no sabe quién tuvo acceso a esos datos y pregunta si lo que converse con la orientadora podría llegar al grupo de apoderados. Mientras tanto, el equipo educativo discute si debe concentrarse en recuperar las calificaciones o dedicar tiempo a comprender qué está afectando la participación y el bienestar de la adolescente.
+El establecimiento participa en un programa que solicita indicadores de asistencia, rendimiento y convivencia antes de fin de mes. La coordinación propone aplicar un cuestionario breve a todos y enviar una síntesis a una entidad colaboradora. Una docente comparte en un chat de apoderados una captura parcial de una planilla con iniciales y observaciones. Después, la familia recibe preguntas sobre Martina. Ella desconoce quién vio sus datos y pregunta si lo que converse con la orientadora llegará al chat. El equipo debate si debe concentrarse en recuperar calificaciones o comprender qué afecta su bienestar y participación.
 
-**Datos clave del contexto sociocultural:** Caso ficticio para análisis; no describe un episodio biográfico del estudiante. Contexto adaptado a los datos proporcionados: Peñalolén, Región Metropolitana; sector urbano; hogar de seis integrantes (estudiante, dos hermanos, una hermana, madre y pareja actual de la madre); grupo socioeconómico AIM C2. Población de interés: adolescentes en contextos educativos urbanos.
+Una amiga le propone abandonar el grupo, pero Martina teme perder contacto con su curso. La orientadora necesita explicarle los límites de la confidencialidad antes de acordar próximos pasos. Martina pide participar en cualquier decisión que pueda afectar su vida escolar, aunque todavía no sabe qué apoyo necesita. Busca apoyo sin exponerse.
+
+**Datos clave del contexto sociocultural:** Caso ficticio, no biográfico. Contexto aportado: Peñalolén, Región Metropolitana; sector urbano; hogar de seis integrantes (estudiante, dos hermanos, una hermana, madre y pareja actual de la madre); grupo AIM C2. Población de interés: adolescentes en contextos educativos urbanos.
+
 
 ## Primera parte: selección múltiple (35 %)
 
-Doce preguntas originales de respuesta única, elaboradas con autorización del estudiante a partir de los contenidos y resultados de aprendizaje de la pauta. No son una transcripción del cuestionario del aula virtual.
+Doce preguntas originales de respuesta única, autorizadas por el estudiante y elaboradas desde los contenidos indicados en la pauta. No son una transcripción del cuestionario oficial de la plataforma.
 
 **01.** ¿Qué hito institucionaliza la Psicología experimental?
-A) Darwin, 1859; B) Laboratorio de Wundt en Leipzig, 1879; C) Freud, 1900; D) Watson, 1913.
+A) Darwin, 1859; B) Laboratorio de Wundt, Leipzig, 1879; C) Freud; D) Watson.
 
-**02.** Para Locke, el conocimiento se origina principalmente en:
+**02.** Para Locke, el conocimiento proviene principalmente de:
 A) Ideas innatas; B) Experiencia; C) Sueños; D) Refuerzos.
 
 **03.** El racionalismo de Descartes destaca:
-A) La razón; B) La imitación; C) El refuerzo; D) La conducta observable.
+A) Razón; B) Imitación; C) Refuerzo; D) Conducta observable.
 
-**04.** El funcionalismo de William James pregunta:
-A) Qué función cumplen los procesos mentales; B) Qué contiene el inconsciente; C) Cómo se condiciona un reflejo; D) Cómo se mide un estímulo.
+**04.** El funcionalismo de James estudia:
+A) Función de los procesos mentales; B) Sueños; C) Reflejos; D) Estímulos físicos.
 
-**05.** Un concepto central de Freud es:
-A) Zona de desarrollo próximo; B) Condicionamiento operante; C) Procesos inconscientes; D) Aceptación incondicional.
+**05.** Concepto central de Freud:
+A) Zona próxima; B) Refuerzo; C) Inconsciente; D) Empatía.
 
 **06.** El condicionamiento clásico de Pavlov asocia:
-A) Conducta y consecuencia; B) Dos estímulos; C) Identidad y rol; D) Pensamiento y lenguaje.
+A) Conducta y consecuencia; B) Estímulos; C) Identidad y rol; D) Pensamiento y lenguaje.
 
-**07.** Watson se asocia con el estudio de:
+**07.** Watson prioriza estudiar:
 A) Conducta observable; B) Sueños; C) Autorrealización; D) Etapas cognitivas.
 
-**08.** Para Skinner, el condicionamiento operante analiza:
-A) Asociaciones entre estímulos; B) Efectos de las consecuencias sobre la conducta; C) Etapas psicosexuales; D) Ideas innatas.
+**08.** Skinner estudia:
+A) Estímulos emparejados; B) Consecuencias y conducta; C) Etapas psicosexuales; D) Ideas innatas.
 
-**09.** Asimilación y acomodación en Piaget explican:
-A) Cambios de esquemas cognitivos; B) Reflejos condicionados; C) Conflictos inconscientes; D) Refuerzos.
+**09.** Asimilación y acomodación en Piaget describen:
+A) Cambios de esquemas cognitivos; B) Reflejos; C) Conflictos inconscientes; D) Castigos.
 
-**10.** La zona de desarrollo próximo de Vygotsky refiere a lo que se logra:
-A) Sin interacción; B) Con ayuda y todavía no en solitario; C) Solo por maduración; D) Mediante castigo.
+**10.** La zona de desarrollo próximo de Vygotsky es aquello que se logra:
+A) Sin interacción; B) Con ayuda; C) Solo por maduración; D) Mediante castigo.
 
-**11.** En la adolescencia, Erikson destaca:
+**11.** Erikson sitúa en la adolescencia el conflicto:
 A) Confianza/desconfianza; B) Identidad/confusión de roles; C) Iniciativa/culpa; D) Integridad/desesperación.
 
-**12.** Rogers destaca en su enfoque:
-A) Empatía y aceptación positiva incondicional; B) Interpretación exclusiva de sueños; C) Castigo; D) Medición conductual exclusiva.
+**12.** Rogers destaca:
+A) Empatía y aceptación incondicional; B) Sueños; C) Castigo; D) Medición exclusiva.
 
-**Clave:** 01-B, 02-B, 03-A, 04-A, 05-C, 06-B, 07-A, 08-B, 09-A, 10-B, 11-B, 12-A. Los ítems cubren origen experimental, corrientes filosóficas, funcionalismo, psicoanálisis, aprendizaje, conductismo, desarrollo cognitivo y sociocultural, identidad adolescente y humanismo.
+**Clave:** 01-B, 02-B, 03-A, 04-A, 05-C, 06-B, 07-A, 08-B, 09-A, 10-B, 11-B, 12-A. Se evalúan historia científica, corrientes filosóficas y teorías contemporáneas.
 
 ## Segunda parte: ensayo a partir del caso (65 %)
 
-### 1. Aproximación filosófica e historia de la Psicología
+### 1. Aproximación filosófica e historia
 
-El empirismo y el positivismo valoran observar asistencia y rendimiento; el racionalismo recuerda que los datos necesitan interpretación y el humanismo incorpora la experiencia de Martina. Locke destacó la experiencia y Descartes la razón. Weber y Fechner investigaron la relación entre estímulos y sensaciones. En 1879, Wundt organizó el laboratorio de Leipzig, hito de la Psicología experimental. James desarrolló el funcionalismo y el conductismo priorizó la conducta observable. Así, las notas describen el desempeño, pero no explican por sí solas el malestar ni el contexto (Cosacov, 2014; Danziger, 1990).
+El empirismo y el positivismo valoran observar asistencia y rendimiento; el racionalismo recuerda que los datos requieren interpretación, y el humanismo incorpora la experiencia de Martina. Locke destacó la experiencia y Descartes la razón. Weber y Fechner estudiaron sensación; Wundt fundó en 1879 el laboratorio de Leipzig. James desarrolló el funcionalismo y el conductismo priorizó conducta observable. Las notas no explican por sí solas su situación (Cosacov, 2014; Danziger, 1990).
 
-### 2. Aproximación teórica: objetos de estudio y métodos
+### 2. Aproximación teórica, objetos y métodos
 
-Freud estudia procesos inconscientes y conflictos mediante entrevista e interpretación; el silencio de Martina no prueba un conflicto inconsciente (Freud, 1923/1961). Pavlov explica asociaciones entre estímulos y Skinner analiza cómo las consecuencias modifican conductas (Skinner, 1953). Rogers prioriza empatía y aceptación de la experiencia (Rogers, 1951). Piaget estudia el desarrollo cognitivo; Vygotsky, la mediación social y cultural; Erikson, la identidad adolescente (Erikson, 1968; Piaget & Inhelder, 1969; Vygotsky, 1978). Entrevistas, observación y revisión de apoyos permiten contrastar hipótesis, no diagnosticar por un solo indicador.
+Freud analiza procesos inconscientes, pero el silencio no demuestra conflicto psíquico (Freud, 1923/1961). Pavlov estudia asociaciones entre estímulos; Skinner, consecuencias de la conducta (Skinner, 1953). Rogers prioriza empatía y aceptación (Rogers, 1951). Piaget aborda desarrollo cognitivo; Vygotsky, mediación sociocultural; Erikson, identidad adolescente (Erikson, 1968; Piaget & Inhelder, 1969; Vygotsky, 1978). Entrevista y observación permiten contrastar hipótesis, no diagnosticar por un solo indicador.
 
-### 3. Dilemas éticos en la intervención
+### 3. Dilemas éticos
 
-La presión por resultados puede desplazar las necesidades de Martina. Compartir registros en un chat amenaza la confidencialidad, incluso con iniciales. El Código de Ética exige resguardar la información (Colegio de Psicólogos de Chile, 1999). La Ley 21.430 protege la vida privada y el derecho de niños y adolescentes a ser oídos (Biblioteca del Congreso Nacional de Chile, 2022). Deben explicarse los usos de los datos, limitar su circulación y escuchar a la adolescente. La adaptación cultural evita estereotipos y prioriza bienestar y derechos frente a metas administrativas.
+La presión por resultados puede desplazar necesidades. Compartir registros amenaza la confidencialidad, incluso con iniciales. El Código de Ética exige proteger información (Colegio de Psicólogos de Chile, 1999); la Ley 21.430 protege vida privada y derecho a ser oído (Biblioteca del Congreso Nacional de Chile, 2022). Se deben explicar usos de datos, limitar su circulación y escuchar a Martina sin estereotipar su contexto.
 
-### 4. Interacción de los campos de la Psicología
+### 4. Campos de aplicación
 
-La Psicología educacional aborda aprendizaje y convivencia; la clínica evalúa malestar y necesidad de atención; la social-comunitaria incorpora familia y redes territoriales. La coordinación debe delimitar funciones y compartir solo información pertinente. El colegio necesita acordar apoyos y prevenir exposición digital, no acceder indiscriminadamente a antecedentes clínicos. Ciberacoso, privacidad y desigualdad de acceso son desafíos actuales.
+La Psicología educacional aborda aprendizaje y convivencia; la clínica evalúa malestar y necesidad de atención; la social-comunitaria integra familia y redes. La coordinación delimita funciones y comparte solo información pertinente. La escuela requiere apoyos y prevención de exposición digital, no acceso indiscriminado a antecedentes clínicos. Ciberacoso y privacidad son desafíos actuales.
 
-### 5. Métodos y estrategias de intervención
+### 5. Métodos e intervención
 
-Conviene comenzar con entrevista a Martina, conversación acordada con su cuidadora, observación en aula y revisión contextual de asistencia. Los instrumentos deben ser adecuados a edad y población y nunca reemplazar la evaluación integral. Los apoyos posibles incluyen una adulta referente, acuerdos escolares flexibles, orientación sobre convivencia digital y coordinación de redes locales. La derivación clínica dependerá de necesidades identificadas. El seguimiento debe considerar bienestar y participación, además de calificaciones.
+Conviene entrevistar a Martina, conversar con su cuidadora con acuerdo previo, observar aula y contextualizar la asistencia. Los instrumentos deben ser pertinentes a edad y población. Los apoyos pueden incluir adulta referente, acuerdos escolares flexibles y redes locales. La derivación clínica dependerá de necesidades identificadas; el seguimiento considerará bienestar y participación, además de notas.
 
-### 6. Reflexión sobre la práctica profesional
+### 6. Reflexión profesional
 
-Una práctica responsable integra teoría, evidencia, contexto y derechos. Los indicadores describen, pero comprender exige escuchar y contrastar hipótesis. La intervención debe acordar metas con la adolescente, proteger sus datos y coordinar los campos pertinentes. La adaptación cultural reconoce barreras y recursos sin reducir a la persona a su entorno; el rendimiento no debe invisibilizar las condiciones que permiten aprender.
-
+La práctica responsable integra teoría, evidencia, contexto y derechos. Comprender exige escuchar y contrastar hipótesis. La intervención acuerda metas con la adolescente, protege datos y coordina los campos necesarios. Adaptar culturalmente es reconocer recursos y barreras sin reducir a la persona a su entorno.
 ## Referencias
 
 Biblioteca del Congreso Nacional de Chile. (2022). *Ley 21.430: Sobre garantías y protección integral de los derechos de la niñez y adolescencia*. https://www.leychile.cl/navegar?idNorma=1173643
