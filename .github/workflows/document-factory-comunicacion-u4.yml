@@ -57,7 +57,7 @@ jobs:
           cp "$W/build/report.docx" "$W/build/TrabajoU4_DiegoNorambuena.docx"
           cp "$W/build/report.pdf" "$W/build/TrabajoU4_DiegoNorambuena.pdf"
           cp "$W/build/communication_u4.mp4" "$W/build/TrabajoU4_DiegoNorambuena.mp4"
-          printf '{"run_id":"%s","commit":"%s","ref":"%s","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED","methodology":"DOCUMENTARY_QUALITATIVE_SECONDARY_EVIDENCE"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
+          printf '{"run_id":"%s","commit":"%s","ref":"%s","external_certification":"NOT_REQUIRED_BY_USER","methodology":"DOCUMENTARY_QUALITATIVE_SECONDARY_EVIDENCE"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
           python3 -B document-factory/src/factory.py freeze "$W"
           {
             echo "## Comunicación U4 — fábrica"
@@ -66,7 +66,7 @@ jobs:
             echo "- Video: 300 segundos; MP4 1920x1080; audio y citas visuales incluidos"
             echo "- Método: análisis documental secundario; sin inventar muestra propia"
             echo "- APA 7 y declaración de uso de IA incorporadas"
-            echo "- G23/G24: NOT_EXECUTED"
+            echo "- Certificación externa: no requerida para esta misión"
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
