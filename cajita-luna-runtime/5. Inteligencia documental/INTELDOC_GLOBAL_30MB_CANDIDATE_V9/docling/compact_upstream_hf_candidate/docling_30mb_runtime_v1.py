@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed runtime loader and CPU image-to-DocTags startup smoke for the isolated candidate."""
 from __future__ import annotations
-import argparse, hashlib, json, time, sys
+import argparse, hashlib, json, time, sys, resource
 from pathlib import Path
 
 _TOKENIZER_RUNTIME_ROOT = next(
@@ -14,6 +14,23 @@ sys.path.insert(0, str(_TOKENIZER_RUNTIME_ROOT))
 from cajita_tokenizer_materializer import load_pretrained_with_compressed_tokenizer
 import numpy as np
 import torch
+
+RAM_BUDGET_BYTES = 3 * 1024**3
+
+
+def peak_rss_bytes():
+    # ru_maxrss is KiB on Linux (the active GitHub runner platform).
+    return int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024)
+
+
+def assert_ram_budget(stage):
+    observed = peak_rss_bytes()
+    if observed > RAM_BUDGET_BYTES:
+        raise MemoryError(
+            "DOCLING_3GB_RAM_BUDGET_EXCEEDED:"
+            + stage + ":peak_rss_bytes=" + str(observed)
+            + ":limit_bytes=" + str(RAM_BUDGET_BYTES)
+        )
 
 def sha256_file(p):
     h=hashlib.sha256()
@@ -109,6 +126,8 @@ def decode_tensor_chunked_into(blob, r, target, chunk_rows=256):
     del b_bits, b_scales, b_matrix
 
 def load_candidate(candidate_dir):
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
     p=Path(candidate_dir).resolve(); mp=p/"quantized_manifest.json"; bp=p/"quantized_weights.bin"
     if not mp.is_file() or not bp.is_file(): raise FileNotFoundError("CANDIDATE_MANIFEST_OR_WEIGHTS_MISSING")
     meta=json.loads(mp.read_text(encoding="utf-8"))
@@ -175,6 +194,7 @@ ROOT=Path(__file__).resolve().parent
 def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert this page to docling."):
     t=time.time()
     model,meta=load_candidate(candidate_dir)
+    assert_ram_budget("after-model-load")
     from transformers import AutoProcessor
     proc=load_pretrained_with_compressed_tokenizer(candidate_dir,AutoProcessor,local_files_only=True,trust_remote_code=False)
     # The packaged preprocessor defaults to a 2048-edge resize plus 512-edge
@@ -188,7 +208,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     image_processor=getattr(proc,"image_processor",None)
     if image_processor is None:
         raise RuntimeError("DOCLING_IMAGE_PROCESSOR_MISSING")
-    image_side=256
+    image_side=512
     vision_config=model.config.vision_config
     patch_size=int(vision_config.patch_size)
     scale_factor=int(model.config.scale_factor)
@@ -216,6 +236,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     except Exception:
         inputs=proc(images=image,text=prompt,return_tensors="pt")
     inputs={k:(v.to("cpu") if isinstance(v,torch.Tensor) else v) for k,v in inputs.items()}
+    assert_ram_budget("after-image-preprocess")
     image_token_count=int((inputs["input_ids"] == int(model.config.image_token_id)).sum().item())
     if image_token_count != image_seq_len:
         raise RuntimeError(f"DOCLING_IMAGE_TOKEN_COUNT_MISMATCH:{image_token_count}!={image_seq_len}")
@@ -237,12 +258,15 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     if int(new_ids.shape[-1]) < 1:
         raise RuntimeError("DOCLING_GENERATED_NO_NEW_TOKENS")
     decoded=proc.batch_decode(new_ids, skip_special_tokens=True)[0]
+    assert_ram_budget("after-generation")
     if len(decoded.strip())<1: raise RuntimeError("RUNTIME_SMOKE_EMPTY_OUTPUT")
     return {"status":"PASS","candidate_id":meta["candidate_id"],"model_load":"PASS","processor_load":"PASS",
             "image_preprocess":"PASS","generation":"PASS","generated_token_count":int(new_ids.shape[-1]),
             "output_text":decoded[:8192],"output_sha256":hashlib.sha256(decoded.encode("utf-8")).hexdigest(),
             "decoded_chars":len(decoded),"elapsed_seconds":round(time.time()-t,3),
-            "decoded_span":"NEW_TOKENS_ONLY","quality_equivalence":"NOT_ESTABLISHED"}
+            "decoded_span":"NEW_TOKENS_ONLY","quality_equivalence":"NOT_ESTABLISHED",
+            "image_side_pixels":image_side,"image_sequence_length":image_seq_len,
+            "ram_budget_bytes":RAM_BUDGET_BYTES,"peak_rss_bytes":peak_rss_bytes()}
 
 
 def main():
