@@ -59,7 +59,7 @@ A) Confianza/desconfianza; B) Identidad/confusión de roles; C) Iniciativa/culpa
 **12.** Rogers destaca:
 A) Empatía y aceptación incondicional; B) Sueños; C) Castigo; D) Medición exclusiva.
 
-**Clave:** 01-B, 02-B, 03-A, 04-A, 05-C, 06-B, 07-A, 08-B, 09-A, 10-B, 11-B, 12-A. Se evalúan historia científica, corrientes filosóficas y teorías contemporáneas.
+**Clave de respuestas:** 01-B, 02-B, 03-A, 04-A, 05-C, 06-B, 07-A, 08-B, 09-A, 10-B, 11-B, 12-A. Se evalúan historia científica, corrientes filosóficas y teorías contemporáneas.
 
 ## Segunda parte: ensayo a partir del caso (65 %)
 
