@@ -4,23 +4,30 @@
   "source_pdf": "PSIC0103_FINAL2_U4.pdf",
   "blocking_or_material_gaps": [
     {
-      "id": "MCQ_12_STEMS",
-      "impact": "35% of the maximum grade",
-      "detail": "The uploaded eight-page PDF describes 12 multiple-choice questions but does not provide their stems or answer options. No answers can be selected or generated responsibly."
+      "id": "MCQ_12_STEMS_AND_OPTIONS",
+      "severity": "BLOCKING",
+      "impact": "35% of maximum exam grade",
+      "detail": "The supplied eight-page PDF states that the first part contains 12 multiple-choice questions but includes no question stems or answer alternatives. It is not possible to answer them without the missing pages or separate question set."
     },
     {
       "id": "PERSONAL_SOCIOCULTURAL_CONTEXT",
-      "impact": "Prompt 2 contextualisation",
-      "detail": "The student's real region/commune, sector, household composition and AIM socioeconomic segment are not specified. The fictional case is explicitly not presented as a biography."
+      "severity": "BLOCKING_FOR_PROMPT_2_PERSONALISATION",
+      "impact": "Case contextualisation",
+      "detail": "The real region and commune, urban/rural/semi-rural sector, household composition and AIM socioeconomic group were not provided. The report therefore labels its 329-word case as fictional and leaves explicit replacement fields; no personal facts have been inferred."
     },
     {
       "id": "COURSE_LEARNING_RESOURCES",
+      "severity": "MATERIAL",
       "impact": "Alignment with course materials",
-      "detail": "No videos, class notes or private course readings were attached; bibliography is built from identifiable academic/public sources."
+      "detail": "The submission PDF does not include full course videos, class notes or private reading excerpts. References are limited to identifiable academic texts and institutional sources already represented in the draft/source ledger; course-specific claims should be checked against the learning platform before submission."
     }
   ],
-  "allowed_output": "Essay component based on the six development questions; no invented multiple-choice answers.",
+  "allowed_output": "Revised six-question development essay and a clearly marked case template only. No multiple-choice selections, personal details or academic contribution by the student are fabricated.",
   "certification": "NOT_GRANTED",
   "g23": "NOT_EXECUTED",
-  "g24": "NOT_EXECUTED"
+  "g24": "NOT_EXECUTED",
+  "next_required_evidence": [
+    "The missing stems and answer alternatives for all 12 multiple-choice questions.",
+    "The student's actual region/commune, sector, household composition and AIM segment, or explicit authorisation to leave those fields blank."
+  ]
 }
