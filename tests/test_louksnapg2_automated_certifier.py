@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
+import zipfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -81,8 +83,26 @@ class AutomatedG23G24Tests(unittest.TestCase):
     def test_g24_certifies_only_complete_exact_sha_evidence(self):
         args = self.g24_args()
         adapters = []
+        archive_members = {}
+        evidence_root = args.repair_readiness.parent
         for index, domain in enumerate(certifier.REQUIRED_REPAIR_DOMAINS, 1):
             digest = f"{index:064x}"
+            repaired_bytes = ("repaired-output:" + domain).encode("utf-8")
+            rollback_bytes = ("rollback-checkpoint:" + domain).encode("utf-8")
+            heldout_payload = {
+                "schema": "LOUKSNAPG2_HELDOUT_VALIDATION/1.0",
+                "status": "PASS", "source_commit": self.commit, "domain_id": domain,
+                "model_inference_performed": True, "heldout_case_count": 2,
+                "failed_cases": [], "semantic_quality_equivalence_status": "PASS"
+            }
+            heldout_bytes = (json.dumps(heldout_payload, sort_keys=True) + "\\n").encode("utf-8")
+            folder = Path("repair-adapters") / domain
+            for name, payload in (("repaired.bin", repaired_bytes), ("rollback.bin", rollback_bytes), ("heldout.json", heldout_bytes)):
+                target = evidence_root / folder / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(payload)
+            member_path = "LOUKSNAPG2_REPAIRED_OUTPUTS/" + domain + "/repaired.bin"
+            archive_members[member_path] = repaired_bytes
             adapters.append({
                 "adapter_id": "adapter-" + domain,
                 "domain_id": domain,
@@ -102,9 +122,28 @@ class AutomatedG23G24Tests(unittest.TestCase):
                 "rollback_verified": True,
                 "original_weights_mutated": False,
                 "candidate_output_separate": True,
+                "execution_backend": "ISOLATED_GPU_RUNNER",
+                "repair_operation_id": "repair-op-" + domain,
+                "artifacts": {
+                    "repaired_output": {"path": (folder / "repaired.bin").as_posix(), "bytes": len(repaired_bytes), "sha256": hashlib.sha256(repaired_bytes).hexdigest()},
+                    "heldout_report": {"path": (folder / "heldout.json").as_posix(), "bytes": len(heldout_bytes), "sha256": hashlib.sha256(heldout_bytes).hexdigest()},
+                    "rollback_checkpoint": {"path": (folder / "rollback.bin").as_posix(), "bytes": len(rollback_bytes), "sha256": hashlib.sha256(rollback_bytes).hexdigest()},
+                    "candidate_member_path": member_path,
+                },
             })
+        with zipfile.ZipFile(args.bundle, "w", compression=zipfile.ZIP_STORED) as archive:
+            for name, payload in archive_members.items():
+                archive.writestr(name, payload)
+        candidate_sha = certifier.sha256_file(args.bundle)
+        g23 = json.loads(args.g23_report.read_text())
+        g23["candidate"]["sha256"] = candidate_sha
+        args.g23_report.write_text(json.dumps(g23))
+        build_evidence = json.loads(args.build_report.read_text())
+        build_evidence["candidate"]["sha256"] = candidate_sha
+        args.build_report.write_text(json.dumps(build_evidence))
         worker = json.loads(args.worker_evidence.read_text())
         worker.update({
+            "worker_status": "PASS_REPAIR_EXECUTED",
             "repair_status": "PASS_ALL_REQUIRED_ADAPTERS",
             "repair_execution_performed": True,
             "repair_adapter_domains": sorted(certifier.REQUIRED_REPAIR_DOMAINS),
@@ -113,17 +152,22 @@ class AutomatedG23G24Tests(unittest.TestCase):
         readiness = json.loads(args.repair_readiness.read_text())
         readiness.update({
             "source_commit": self.commit,
-            "candidate_sha256": certifier.sha256_file(args.bundle),
+            "candidate_sha256": candidate_sha,
             "repair_adapter_status": "PASS_ALL_REQUIRED_ADAPTERS",
             "adapter_results": adapters,
         })
         args.repair_readiness.write_text(json.dumps(readiness))
         execution = json.loads(args.execution_mode_preflight.read_text())
         execution.update({
-            "status": "PASS_LOCAL_OFFLINE",
-            "execution_mode": "LOCAL_OFFLINE",
-            "remote_inference_enabled": False,
-            "model_network_fetch_performed": False,
+            "status": "PASS_ISOLATED_GPU_REPAIR",
+            "execution_mode": "ISOLATED_GPU_REPAIR",
+            "execution_backend": "ISOLATED_GPU_RUNNER",
+            "source_commit": self.commit,
+            "gpu_device_count": 1,
+            "runner_id": "test-gpu-runner",
+            "repair_job_id": "test-repair-job",
+            "runner_image_sha256": "f" * 64,
+            "repair_execution_performed": True,
         })
         args.execution_mode_preflight.write_text(json.dumps(execution))
         functional = json.loads(args.functional_evidence.read_text())
