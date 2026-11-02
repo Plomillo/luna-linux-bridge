@@ -98,7 +98,8 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           import json, shutil
-          root = "${{ runner.temp }}"
+          import os
+          root = os.environ.get("RUNNER_TEMP", "/tmp")
           free = shutil.disk_usage(root).free
           if free < 6 * 1024**3:
               raise SystemExit("RUNNER_DISK_PREFLIGHT_DENIED:" + str(free))
