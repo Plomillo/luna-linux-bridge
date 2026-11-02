@@ -39,26 +39,11 @@ jobs:
           (( quota > 0 && period > 0 && quota <= period )) || { echo "REPAIR_CPU_LIMIT_EXCEEDS_ONE_CORE" >&2; exit 1; }
           printf '{"status":"PASS","memory_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$quota" "$period"
 
-      - name: Install Git and CA certificates for memory-bounded sparse checkout
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          apt-get update -qq
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git ca-certificates
-          update-ca-certificates
-
-      - name: Sparse-checkout only the Docling inference closure
+      - name: Checkout exact feature-branch commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
-          filter: blob:none
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            /cajita-luna-runtime/REQUIREMENTS.runtime.lock
-            /cajita-luna-runtime/cajita_tokenizer_materializer.py
-            /cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
-            /cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/
           lfs: false
           persist-credentials: false
 
@@ -135,11 +120,26 @@ jobs:
           (( quota > 0 && period > 0 && quota <= period )) || { echo "CANDIDATE_CPU_LIMIT_EXCEEDS_ONE_CORE" >&2; exit 1; }
           printf '{"status":"PASS","memory_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$quota" "$period"
 
-      - name: Checkout exact feature-branch commit
+      - name: Install Git and CA certificates for memory-bounded sparse checkout
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git ca-certificates
+          update-ca-certificates
+
+      - name: Sparse-checkout only the Docling inference closure
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /cajita-luna-runtime/REQUIREMENTS.runtime.lock
+            /cajita-luna-runtime/cajita_tokenizer_materializer.py
+            /cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
+            /cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/
           lfs: false
           persist-credentials: false
 
