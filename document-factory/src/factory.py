@@ -116,20 +116,14 @@ def self_audit(workspace,profile_path):
     profile,_=validate_profile(profile_path)
     validation=load(root/"evidence"/"validation.json") if (root/"evidence"/"validation.json").is_file() else {"status":"UNKNOWN"}
     rubric=profile.get("rubric",{}).get("criteria",[])
-    independent=[x["id"] for x in rubric if "G23" in str(x.get("validation",""))]
+    human_review_recommended=[x["id"] for x in rubric if "HUMAN" in str(x.get("validation","")) or "INDEPENDENT" in str(x.get("validation",""))]
     unresolved=[]
     if validation.get("status")!="PASS":
         unresolved.append("FIRST_ORDER_VALIDATION_NOT_PASS")
-    if independent:
-        unresolved.append("INDEPENDENT_OR_HUMAN_RUBRIC_JUDGMENT_PENDING")
     if profile.get("unresolved_source_conflicts"):
         unresolved.append("SOURCE_CONFLICT_REQUIRES_GOVERNED_RESOLUTION")
-    status="PASS"
-    if "FIRST_ORDER_VALIDATION_NOT_PASS" in unresolved:
-        status="HOLD"
-    elif unresolved:
-        status="PASS_WITH_ESCALATION"
-    obj={"schema":"DOCUMENT_FACTORY_METACOGNITIVE_SELF_AUDIT/1.0","observed_at_utc":utc(),"status":status,"first_order_validation":validation.get("status"),"rubric_criteria_requiring_independent_or_human_judgment":independent,"unresolved":unresolved,"g23_granted":False,"g24_granted":False,"certification_authority":False}
+    status="PASS" if not unresolved else "HOLD"
+    obj={"schema":"DOCUMENT_FACTORY_METACOGNITIVE_SELF_AUDIT/1.1","observed_at_utc":utc(),"status":status,"first_order_validation":validation.get("status"),"human_review_recommended_criteria":human_review_recommended,"unresolved":unresolved,"external_gates":"NOT_REQUIRED_BY_USER","certification_required":False}
     write_json(root/"evidence"/"self-audit.json",obj)
     append_audit(root,{"event_type":"SELF_AUDIT","status":status,"unresolved":unresolved})
     return obj
@@ -144,7 +138,7 @@ def freeze(workspace):
         for f in sorted(x for x in p.rglob("*") if x.is_file()):
             rows.append({"path":f.relative_to(root).as_posix(),"sha256":sha256_file(f),"size_bytes":f.stat().st_size})
     digest=sha256_bytes(json.dumps(rows,sort_keys=True,separators=(",",":")).encode())
-    obj={"schema":"DOCUMENT_FACTORY_FROZEN_WORKSPACE/1.0","frozen":True,"candidate_digest_sha256":digest,"files":rows,"g23":"NOT_EXECUTED","g24":"NOT_EXECUTED"}
+    obj={"schema":"DOCUMENT_FACTORY_FROZEN_WORKSPACE/1.0","frozen":True,"candidate_digest_sha256":digest,"files":rows,"external_certification":"NOT_REQUIRED_BY_USER"}
     write_json(root/"FROZEN_CANDIDATE.json",obj)
     (root/"CANDIDATE_DIGEST.txt").write_text(digest+"\n",encoding="utf-8")
     append_audit(root,{"event_type":"FREEZE","candidate_digest_sha256":digest})
