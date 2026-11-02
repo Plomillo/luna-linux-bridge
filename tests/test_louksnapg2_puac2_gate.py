@@ -183,7 +183,7 @@ class Puac2TerminalGateTests(unittest.TestCase):
         for adapter in adapters:
             adapter["candidate_sha256"] = candidate_sha
             independent_record = adapter["artifacts"]["independent_report"]
-            independent_path = evidence_root / independent_record["path"]
+            independent_path = self.root / independent_record["path"]
             independent = json.loads(independent_path.read_text(encoding="utf-8"))
             independent["candidate_sha256"] = candidate_sha
             independent_path.write_text(json.dumps(independent, sort_keys=True) + "\n", encoding="utf-8")
