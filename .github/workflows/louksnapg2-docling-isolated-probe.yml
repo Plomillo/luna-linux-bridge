@@ -70,6 +70,22 @@ jobs:
           lfs: false
           persist-credentials: false
 
+      - name: Rehydrate exact shallow Git worktree for scoped LFS downloads
+        shell: bash
+        env:
+          GIT_LFS_SKIP_SMUDGE: "1"
+        run: |
+          set -Eeuo pipefail
+          cd "$GITHUB_WORKSPACE"
+          if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+            git init
+            git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          fi
+          git lfs install --local
+          GIT_LFS_SKIP_SMUDGE=1 git fetch --depth=1 origin "$GITHUB_SHA"
+          GIT_LFS_SKIP_SMUDGE=1 git checkout --force --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
       - name: Set up pinned Python runtime
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
