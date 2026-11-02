@@ -140,6 +140,9 @@ jobs:
             /cajita-luna-runtime/REQUIREMENTS.runtime.lock
             /cajita-luna-runtime/cajita_tokenizer_materializer.py
             /cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
+            /cajita-luna-runtime/1. Cerebro/tokenizer.json.gz
+            /cajita-luna-runtime/3. Transcripción/tokenizer.json.gz
+            /cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/tokenizer.json.gz
             /cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/
           lfs: false
           persist-credentials: false
