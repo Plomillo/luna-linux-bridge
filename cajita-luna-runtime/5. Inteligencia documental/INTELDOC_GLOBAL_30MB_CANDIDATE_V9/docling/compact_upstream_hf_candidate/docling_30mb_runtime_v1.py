@@ -23,6 +23,16 @@ def peak_rss_bytes():
     return int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024)
 
 
+def apply_ram_limit():
+    # RLIMIT_DATA is enforced by Linux for heap/data allocations and is safer
+    # here than RLIMIT_AS, which would count shared libraries and mmap'd files.
+    soft, hard = resource.getrlimit(resource.RLIMIT_DATA)
+    hard_cap = RAM_BUDGET_BYTES if hard == resource.RLIM_INFINITY else min(int(hard), RAM_BUDGET_BYTES)
+    soft_cap = hard_cap if soft == resource.RLIM_INFINITY else min(max(int(soft), hard_cap), hard_cap)
+    resource.setrlimit(resource.RLIMIT_DATA, (soft_cap, hard_cap))
+    return {"resource": "RLIMIT_DATA", "soft_bytes": soft_cap, "hard_bytes": hard_cap}
+
+
 def assert_ram_budget(stage):
     observed = peak_rss_bytes()
     if observed > RAM_BUDGET_BYTES:
@@ -192,6 +202,7 @@ def prepare_bounded_square_image(image, side):
 ROOT=Path(__file__).resolve().parent
 
 def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert this page to docling."):
+    ram_limit = apply_ram_limit()
     t=time.time()
     model,meta=load_candidate(candidate_dir)
     assert_ram_budget("after-model-load")
@@ -266,7 +277,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
             "decoded_chars":len(decoded),"elapsed_seconds":round(time.time()-t,3),
             "decoded_span":"NEW_TOKENS_ONLY","quality_equivalence":"NOT_ESTABLISHED",
             "image_side_pixels":image_side,"image_sequence_length":image_seq_len,
-            "ram_budget_bytes":RAM_BUDGET_BYTES,"peak_rss_bytes":peak_rss_bytes()}
+            "ram_budget_bytes":RAM_BUDGET_BYTES,"ram_limit":ram_limit,"peak_rss_bytes":peak_rss_bytes()}
 
 
 def main():

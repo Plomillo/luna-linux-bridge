@@ -6,6 +6,7 @@ on:
       - louksnapg2/puac2-alternative-20261029
     paths:
       - "tools/louksnapg2_docling_isolated_probe.py"
+      - "tools/louksnapg2_refresh_module_integrity.py"
       - ".github/workflows/louksnapg2-docling-isolated-probe.yml"
       - "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/**"
       - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/**"
