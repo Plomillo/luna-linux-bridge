@@ -35,6 +35,7 @@ DATASET_PARQUET_SHA256 = "4e69a06fa5edc90921e5e7e39a7084881f8b3ed9c805c574f4f39c
 REAL_AUDIO_ID = "1272-128104-0000"
 REAL_WER_MAX = 0.25
 RAM_BUDGET_BYTES = 3 * 1024**3
+CANDIDATE_RAM_BUDGET_BYTES = 1 * 1024**3
 QAT_ALS_ITERATIONS = 2
 # The 40 MB candidate failed both required speech tasks. This next experiment
 # increases rank while remaining inside the previously measured 479 MB release ceiling.
@@ -107,29 +108,38 @@ def atomic_json(path: Path, value: dict) -> None:
     os.replace(temp, path)
 
 
-def ensure_hosted_runner() -> None:
+def ensure_hosted_runner(expected_memory_bytes: int = RAM_BUDGET_BYTES) -> None:
     if os.environ.get("GITHUB_ACTIONS", "").strip().lower() != "true":
-        raise RuntimeError("WHISPER_FACTORISATION_REQUIRES_GITHUB_HOSTED_RUNNER")
+        raise RuntimeError("WHISPER_REPAIR_REQUIRES_GITHUB_HOSTED_RUNNER")
     for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
         if os.environ.get(name) != "1":
             raise RuntimeError("SINGLE_THREAD_BUDGET_NOT_ENFORCED:" + name)
-    if os.environ.get("LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE") != "DOCKER_CGROUP_V2_MEMORY_MAX_3G_CPU_MAX_1":
-        raise RuntimeError("AGGREGATE_3GB_ONE_CORE_CGROUP_NOT_PROVEN")
+    if expected_memory_bytes not in (CANDIDATE_RAM_BUDGET_BYTES, RAM_BUDGET_BYTES):
+        raise RuntimeError("WHISPER_RESOURCE_BUDGET_UNSUPPORTED")
+    expected_gib = expected_memory_bytes // 1024**3
+    expected_envelope = f"DOCKER_CGROUP_V2_MEMORY_MAX_{expected_gib}G_CPU_MAX_1"
+    if os.environ.get("LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE") != expected_envelope:
+        raise RuntimeError("AGGREGATE_RAM_ONE_CORE_CGROUP_NOT_PROVEN:" + expected_envelope)
 
 
 def peak_rss_bytes() -> int:
     return int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024)
 
 
-def assert_ram_budget(stage: str, workspace_estimate_bytes: int = 0) -> None:
+def assert_ram_budget(
+    stage: str,
+    workspace_estimate_bytes: int = 0,
+    *,
+    budget_bytes: int = RAM_BUDGET_BYTES,
+) -> None:
     observed_peak = peak_rss_bytes()
     projected_peak = observed_peak + max(0, int(workspace_estimate_bytes))
-    if observed_peak > RAM_BUDGET_BYTES or projected_peak > RAM_BUDGET_BYTES:
+    if observed_peak > budget_bytes or projected_peak > budget_bytes:
         raise MemoryError(
-            "LOUKSNAPG2_REPAIR_3GB_RAM_BUDGET_EXCEEDED:"
+            "LOUKSNAPG_RAM_BUDGET_EXCEEDED:"
             + stage + ":observed_peak=" + str(observed_peak)
             + ":projected_peak=" + str(projected_peak)
-            + ":limit=" + str(RAM_BUDGET_BYTES)
+            + ":limit=" + str(budget_bytes)
         )
 
 
@@ -623,6 +633,7 @@ def prepare_metadata(runtime_root: Path, candidate_weight: Path, factor_metrics:
     compression_path = module / "compression_metadata.json"
     compression = json.loads(compression_path.read_text(encoding="utf-8"))
     compression.update({
+        "candidate_id": CANDIDATE_ID,
         "method": RANK_PROFILE,
         "rank": RANK,
         "base_rank": BASE_RANK,
@@ -929,6 +940,21 @@ def run_build(args) -> int:
         write_report(Path(args.report), report)
         return 2
 
+    if args.mode == "build-only":
+        report.update({
+            "status": "PASS_REPAIR_BUILD_AWAITING_1G_EVALUATION",
+            "finished_at_utc": utc_now(),
+            "elapsed_seconds": round(time.monotonic() - t0, 3),
+            "peak_rss_bytes": peak_rss_bytes(),
+            "candidate_runtime_artifact": "experimental-runtime/",
+            "candidate_evaluation": "PENDING_SEPARATE_1GIB_CGROUP",
+            "global_certification": "NOT_GRANTED",
+            "promotion_performed": False,
+            "conclusion": "Pinned-source INT8 factors and runtime overlay built under the 3-GiB repair budget. No inference, promotion, or certification occurred in this job.",
+        })
+        write_report(Path(args.report), report)
+        return 0
+
     results, test_context = run_tests(runtime_root, work)
     assert_ram_budget("post-functional-evaluation")
     report["task_results"] = results
@@ -988,12 +1014,129 @@ def run_build(args) -> int:
     return 0
 
 
+
+def run_candidate_evaluation(args) -> int:
+    """Evaluate a prebuilt repair artifact inside its separate exact 1-GiB cgroup."""
+    ensure_hosted_runner(CANDIDATE_RAM_BUDGET_BYTES)
+    repo_runtime = Path(args.repo_runtime_root).resolve(strict=True)
+    sys.path.insert(0, str(repo_runtime))
+    from cajita_resource_limits import apply_process_limits
+    resource_enforcement = apply_process_limits(CANDIDATE_RAM_BUDGET_BYTES, 1)
+
+    runtime_root = Path(args.candidate_runtime_root).resolve(strict=True)
+    if runtime_root == repo_runtime or repo_runtime in runtime_root.parents:
+        raise RuntimeError("CANDIDATE_RUNTIME_MUST_BE_A_SEPARATE_EXPERIMENTAL_OVERLAY")
+    work = Path(args.work_dir).resolve()
+    work.mkdir(parents=True, exist_ok=True)
+    t0 = time.monotonic()
+
+    module = runtime_root / DOMAIN_PATH
+    weight = module / "model.safetensors"
+    metadata = json.loads((module / "compression_metadata.json").read_text(encoding="utf-8"))
+    if metadata.get("candidate_id") != CANDIDATE_ID:
+        raise RuntimeError("CANDIDATE_ID_MISMATCH")
+    if int(metadata.get("rank", -1)) != RANK or int(metadata.get("target_bytes", -1)) != TARGET_BYTES:
+        raise RuntimeError("CANDIDATE_RANK_OR_SIZE_POLICY_MISMATCH")
+    if metadata.get("certification") != "NOT_GRANTED":
+        raise RuntimeError("UNAUTHORIZED_CANDIDATE_CERTIFICATION_PROPAGATION")
+    if (module / "model.safetensors.q4.json").exists():
+        raise RuntimeError("CANDIDATE_Q4_SIDECAR_MUST_NOT_BE_PRESENT")
+    if weight.is_symlink() or not weight.is_file():
+        raise RuntimeError("CANDIDATE_WEIGHT_MISSING_OR_UNSAFE")
+    module_files = [p for p in module.rglob("*") if p.is_file()]
+    if any(p.is_symlink() for p in module.rglob("*")):
+        raise RuntimeError("CANDIDATE_MODULE_SYMLINK_FORBIDDEN")
+    module_bytes = sum(p.stat().st_size for p in module_files)
+    if module_bytes > TARGET_BYTES:
+        raise RuntimeError("CANDIDATE_MODULE_EXCEEDS_HARD_CAP")
+    projected_release_bytes = (
+        BASELINE_RELEASE_BYTES - BASELINE_WHISPER_WEIGHT_BYTES
+        + weight.stat().st_size + PROJECTED_PACKAGE_METADATA_RESERVE_BYTES
+    )
+    if projected_release_bytes > GLOBAL_RELEASE_MAX_BYTES:
+        raise RuntimeError("CANDIDATE_EXCEEDS_PROJECTED_GLOBAL_RELEASE_SIZE")
+    integrity = assert_temp_runtime_integrity(runtime_root)
+    if integrity["weight_sha256"] != metadata.get("candidate_weight_sha256"):
+        raise RuntimeError("CANDIDATE_WEIGHT_SHA_BINDING_MISMATCH")
+    if integrity["weight_bytes"] != metadata.get("candidate_weight_bytes"):
+        raise RuntimeError("CANDIDATE_WEIGHT_BYTE_BINDING_MISMATCH")
+
+    results, test_context = run_tests(runtime_root, work)
+    assert_ram_budget("post-candidate-functional-evaluation", budget_bytes=CANDIDATE_RAM_BUDGET_BYTES)
+    passed = all(row.get("task_pass") is True for row in results)
+    report = {
+        "schema": "LOUKSNAPG_WHISPER_INT8_CANDIDATE_EVALUATION/1.0",
+        "status": "PASS_CANDIDATE_BUDGET_AND_TWO_TASKS" if passed else "FAIL_FUNCTIONAL_OR_QUALITY_GATE",
+        "source_commit": subprocess.run(
+            ["git", "-C", str(repo_runtime.parent), "rev-parse", "HEAD"],
+            check=False, capture_output=True, text=True,
+        ).stdout.strip() or "UNKNOWN",
+        "candidate_id": CANDIDATE_ID,
+        "candidate_weight_sha256": integrity["weight_sha256"],
+        "candidate_weight_bytes": integrity["weight_bytes"],
+        "candidate_module_bytes_including_descriptor": module_bytes,
+        "candidate_module_cap_bytes": TARGET_BYTES,
+        "candidate_module_cap_pass": module_bytes <= TARGET_BYTES,
+        "global_release_budget": {
+            "baseline_release_bytes": BASELINE_RELEASE_BYTES,
+            "baseline_release_evidence_commit": BASELINE_RELEASE_EVIDENCE_COMMIT,
+            "baseline_whisper_weight_bytes": BASELINE_WHISPER_WEIGHT_BYTES,
+            "projected_release_bytes": projected_release_bytes,
+            "hard_max_bytes": GLOBAL_RELEASE_MAX_BYTES,
+            "projected_size_pass": projected_release_bytes <= GLOBAL_RELEASE_MAX_BYTES,
+            "is_projection_not_final_package_measurement": True,
+        },
+        "resource_enforcement": resource_enforcement,
+        "execution_envelope": os.environ.get("LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE"),
+        "model_inference_performed": True,
+        "repair_performed_in_this_job": False,
+        "repair_job_budget_bytes": RAM_BUDGET_BYTES,
+        "candidate_evaluation_budget_bytes": CANDIDATE_RAM_BUDGET_BYTES,
+        "module_integrity": integrity,
+        "task_results": results,
+        "test_context": test_context,
+        "elapsed_seconds": round(time.monotonic() - t0, 3),
+        "peak_rss_bytes": peak_rss_bytes(),
+        "canonical_runtime_mutated": False,
+        "global_certification": "NOT_GRANTED",
+        "promotion_performed": False,
+    }
+    write_report(Path(args.report), report)
+    if not passed:
+        return 2
+
+    descriptor_path = module / "CAJITA_MODULE.json"
+    descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+    registration = descriptor["consumer_adapter_registration"]
+    registration.update({
+        "native_smoke": "PASS_HELLO_WORLD_AND_LIBRISPEECH_SAMPLE",
+        "reference_quality_equivalence": "PARTIAL_KNOWN_ANSWER_TESTS_ONLY_NOT_FULL_EQUIVALENCE",
+        "status": "PASS_TWO_TASK_EXPERIMENT_ONLY",
+    })
+    descriptor["consumer_adapter_registration"] = registration
+    descriptor["functional_state"] = "EXPERIMENTAL_INT8_CANDIDATE_PASSES_TWO_TASKS_NOT_CERTIFIED"
+    atomic_json(descriptor_path, descriptor)
+    tree_rows_after = __import__("cajita_task_adapters").tokenizer_tree_rows(
+        module, runtime_root, __import__("cajita_task_adapters").tree_rows(module)
+    )
+    tree_sha_after = digest_bytes(json.dumps(
+        tree_rows_after, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8"))
+    if tree_sha_after != descriptor["tree_integrity"]["sha256"]:
+        raise RuntimeError("MODULE_TREE_HASH_CHANGED_AFTER_EXPERIMENT_STATUS_UPDATE")
+
+    report["promotion_payload_status"] = "READY_FOR_SCOPED_BRANCH_PROMOTION"
+    write_report(Path(args.report), report)
+    build_promotion_tar(runtime_root, repo_runtime.parent, Path(args.report), Path(args.promotion_tar))
+    return 0
+
+
 def run_verify(args) -> int:
-    ensure_hosted_runner()
+    ensure_hosted_runner(CANDIDATE_RAM_BUDGET_BYTES)
     repo_root = Path(args.repo_runtime_root).resolve(strict=True)
     sys.path.insert(0, str(repo_root))
     from cajita_resource_limits import apply_process_limits
-    resource_enforcement = apply_process_limits(RAM_BUDGET_BYTES, 1)
+    resource_enforcement = apply_process_limits(CANDIDATE_RAM_BUDGET_BYTES, 1)
     work = Path(args.work_dir).resolve()
     work.mkdir(parents=True, exist_ok=True)
     runtime_root = work / "verify-runtime"
@@ -1065,17 +1208,22 @@ def run_verify(args) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", required=True, choices=("build-and-test", "verify-existing"))
+    parser.add_argument("--mode", required=True, choices=("build-only", "build-and-test", "test-candidate", "verify-existing"))
     parser.add_argument("--repo-runtime-root", required=True, type=Path)
     parser.add_argument("--work-dir", required=True, type=Path)
     parser.add_argument("--report", required=True, type=Path)
     parser.add_argument("--promotion-tar", type=Path)
+    parser.add_argument("--candidate-runtime-root", type=Path)
     args = parser.parse_args()
     try:
-        if args.mode == "build-and-test":
-            if args.promotion_tar is None:
+        if args.mode in {"build-only", "build-and-test"}:
+            if args.mode == "build-and-test" and args.promotion_tar is None:
                 parser.error("--promotion-tar required in build-and-test mode")
             return run_build(args)
+        if args.mode == "test-candidate":
+            if args.candidate_runtime_root is None or args.promotion_tar is None:
+                parser.error("--candidate-runtime-root and --promotion-tar required in test-candidate mode")
+            return run_candidate_evaluation(args)
         return run_verify(args)
     except Exception as exc:
         report = {
