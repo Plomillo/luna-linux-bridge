@@ -62,6 +62,7 @@ ESSENTIAL_ROOT_FILES = (
     "cajita_weight_materializer.py",
     "cajita_tokenizer_materializer.py",
     "cajita_task_adapters.py",
+    "cajita_resource_limits.py",
     "cajita_router.py",
     "cajita_target_adapters.py",
     "cajita_antiparalysis.py",
@@ -506,6 +507,7 @@ def run_runtime_task(runtime_root: Path, case_dir: Path, *, task_id: str, audio_
         "output_word_count": len(words),
         "transcription_text": str(text)[:1200],
         "peak_rss_bytes": response.get("peak_rss_bytes") if isinstance(response, dict) else None,
+        "candidate_resource_policy": response.get("resource_policy") if isinstance(response, dict) else None,
         "elapsed_seconds": round(time.monotonic() - start, 3),
         "stderr_sha256": digest_bytes(proc.stderr.encode("utf-8", errors="replace")),
         "semantic_equivalence": "NOT_ESTABLISHED",
@@ -819,13 +821,16 @@ def run_tests(runtime_root: Path, work_dir: Path) -> tuple[list[dict], dict]:
 
 
 def run_build(args) -> int:
+    ensure_hosted_runner()
+    source_checkout = Path(args.repo_runtime_root).resolve(strict=True)
+    sys.path.insert(0, str(source_checkout))
+    from cajita_resource_limits import apply_process_limits
+    resource_enforcement = apply_process_limits(RAM_BUDGET_BYTES, 1)
     import torch
     from huggingface_hub import snapshot_download
 
-    ensure_hosted_runner()
     torch.set_num_threads(1)
     torch.set_num_interop_threads(1)
-    source_checkout = Path(args.repo_runtime_root).resolve(strict=True)
     source_model_dir = Path(args.work_dir).resolve() / "upstream-whisper"
     source_model_dir.mkdir(parents=True, exist_ok=True)
     work = Path(args.work_dir).resolve()
@@ -869,6 +874,7 @@ def run_build(args) -> int:
         "execution_environment": "GITHUB_HOSTED_UBUNTU_CPU",
         "threads": 1,
         "ram_budget_bytes": RAM_BUDGET_BYTES,
+        "resource_enforcement": resource_enforcement,
         "peak_rss_bytes_before_evaluation": peak_rss_bytes(),
         "repair_method": "STREAMED_RANDOMIZED_SVD_PLUS_INT8_QUANTIZATION_AWARE_ALTERNATING_LEAST_SQUARES",
         "local_pc_inference": False,
@@ -982,6 +988,9 @@ def run_build(args) -> int:
 def run_verify(args) -> int:
     ensure_hosted_runner()
     repo_root = Path(args.repo_runtime_root).resolve(strict=True)
+    sys.path.insert(0, str(repo_root))
+    from cajita_resource_limits import apply_process_limits
+    resource_enforcement = apply_process_limits(RAM_BUDGET_BYTES, 1)
     work = Path(args.work_dir).resolve()
     work.mkdir(parents=True, exist_ok=True)
     runtime_root = work / "verify-runtime"
