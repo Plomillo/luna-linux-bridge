@@ -55,6 +55,7 @@ jobs:
           sparse-checkout: |
             tools/louksnapg_whisper_fullrank_quantization.py
             tools/louksnapg_whisper_int8_repair.py
+            tests/test_louksnapg2_whisper_fullrank_memory_split.py
 
       - name: Set up pinned Python toolchain
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
@@ -281,7 +282,7 @@ jobs:
           name: louksnapg-whisper-fullrank-${{ matrix.quantization }}-${{ github.run_id }}
           path: ${{ runner.temp }}/whisper-fullrank/artifact
 
-      - name: Evaluate exact candidate on synthetic and pinned real speech
+      - name: Prepare pinned audio fixtures in a separate short-lived process
         shell: bash
         env:
           HF_HOME: ${{ runner.temp }}/whisper-fullrank-evaluation/hf-home
@@ -289,7 +290,13 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence" "$RUNNER_TEMP/whisper-fullrank-evaluation/work"
-          python -B tools/louksnapg_whisper_fullrank_quantization.py evaluate --artifact-root "$RUNNER_TEMP/whisper-fullrank/artifact" --quantization "${{ matrix.quantization }}" --fixture-helper "$GITHUB_WORKSPACE/tools/louksnapg_whisper_int8_repair.py" --work-dir "$RUNNER_TEMP/whisper-fullrank-evaluation/work" --report "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence/${{ matrix.quantization }}-evaluation.json" 2>&1 | tee "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence/${{ matrix.quantization }}-evaluation.log"
+          python -B tools/louksnapg_whisper_fullrank_quantization.py prepare-fixtures --fixture-helper "$GITHUB_WORKSPACE/tools/louksnapg_whisper_int8_repair.py" --work-dir "$RUNNER_TEMP/whisper-fullrank-evaluation/work" --report "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence/prepared-fixtures.json"
+
+      - name: Evaluate exact candidate in a clean low-memory process
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B tools/louksnapg_whisper_fullrank_quantization.py evaluate --artifact-root "$RUNNER_TEMP/whisper-fullrank/artifact" --quantization "${{ matrix.quantization }}" --prepared-fixtures "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence/prepared-fixtures.json" --work-dir "$RUNNER_TEMP/whisper-fullrank-evaluation/work" --report "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence/${{ matrix.quantization }}-evaluation.json" 2>&1 | tee "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence/${{ matrix.quantization }}-evaluation.log"
 
       - name: Upload evaluation evidence even when quality fails
         if: always()

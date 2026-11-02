@@ -437,6 +437,48 @@ def resolve_artifact_root(path: Path) -> Path:
     return matches[0]
 
 
+def prepare_fixtures(args) -> int:
+    """Prepare fixed speech fixtures in a short-lived process, then exit before inference."""
+    helper = load_helper(Path(args.fixture_helper).resolve(strict=True))
+    work = Path(args.work_dir).resolve()
+    work.mkdir(parents=True, exist_ok=True)
+    fixtures = work / "fixtures"
+    fixtures.mkdir(parents=True, exist_ok=True)
+    synthetic = helper.make_synthetic_audio(fixtures / "synthetic-hello-world.wav")
+    real_audio, real_transcript, dataset_info = helper.get_librispeech_fixture(fixtures)
+    bundle = {
+        "schema": "LOUKSNAPG_WHISPER_FULLRANK_PREPARED_FIXTURES/1.0",
+        "synthetic_audio": {"path": str(Path(synthetic).resolve()), "bytes": Path(synthetic).stat().st_size, "sha256": sha256_file(Path(synthetic))},
+        "real_audio": {"path": str(Path(real_audio).resolve()), "bytes": Path(real_audio).stat().st_size, "sha256": sha256_file(Path(real_audio))},
+        "real_transcript": real_transcript,
+        "real_transcript_sha256": hashlib.sha256(real_transcript.encode("utf-8")).hexdigest(),
+        "dataset_fixture": dataset_info,
+    }
+    json_write(Path(args.report), bundle)
+    print(json.dumps({"status": "PASS_FIXTURES_PREPARED", "synthetic_audio_sha256": bundle["synthetic_audio"]["sha256"],
+        "real_audio_sha256": bundle["real_audio"]["sha256"], "real_transcript_sha256": bundle["real_transcript_sha256"],
+        "report": str(Path(args.report).resolve())}, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
+def normalized_words(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", str(text).casefold())
+
+
+def word_error_rate(reference: str, hypothesis: str) -> float:
+    ref, hyp = normalized_words(reference), normalized_words(hypothesis)
+    if not ref:
+        raise ValueError("WER_REFERENCE_EMPTY")
+    previous = list(range(len(hyp) + 1))
+    for i, reference_word in enumerate(ref, 1):
+        current = [i]
+        for j, hypothesis_word in enumerate(hyp, 1):
+            current.append(min(current[-1] + 1, previous[j] + 1,
+                previous[j - 1] + (reference_word != hypothesis_word)))
+        previous = current
+    return previous[-1] / len(ref)
+
+
 def evaluate(args) -> int:
     budget = cgroup_budget(CANDIDATE_RAM_BYTES)
     if args.quantization not in QUANTIZATIONS:
@@ -459,86 +501,76 @@ def evaluate(args) -> int:
     cli = artifact_root / "toolchain" / "bin" / "whisper-cli"
     if not cli.is_file() or cli.is_symlink():
         raise RuntimeError("PINNED_WHISPER_CLI_MISSING_OR_UNSAFE")
-    # GitHub artifact ZIP transport does not preserve POSIX executable bits.
     os.chmod(cli, cli.stat().st_mode | 0o111)
     if not os.access(cli, os.X_OK):
         raise RuntimeError("PINNED_WHISPER_CLI_NOT_EXECUTABLE_AFTER_RESTORE")
 
-    helper = load_helper(Path(args.fixture_helper).resolve(strict=True))
+    fixtures_path = Path(args.prepared_fixtures).resolve(strict=True)
+    if fixtures_path.is_symlink() or not fixtures_path.is_file():
+        raise RuntimeError("PREPARED_SPEECH_FIXTURE_MANIFEST_UNSAFE")
+    fixtures = json.loads(fixtures_path.read_text(encoding="utf-8"))
+    if fixtures.get("schema") != "LOUKSNAPG_WHISPER_FULLRANK_PREPARED_FIXTURES/1.0":
+        raise RuntimeError("PREPARED_SPEECH_FIXTURE_SCHEMA_MISMATCH")
+
+    def verified_audio(name: str) -> Path:
+        record = fixtures.get(name, {})
+        path = Path(str(record.get("path", "")))
+        if path.is_symlink() or not path.is_file():
+            raise RuntimeError("PREPARED_AUDIO_MISSING_OR_UNSAFE:" + name)
+        path = path.resolve(strict=True)
+        if path.stat().st_size != int(record.get("bytes", -1)) or sha256_file(path) != record.get("sha256"):
+            raise RuntimeError("PREPARED_AUDIO_IDENTITY_MISMATCH:" + name)
+        return path
+
+    synthetic = verified_audio("synthetic_audio")
+    real_audio = verified_audio("real_audio")
+    real_transcript = str(fixtures.get("real_transcript", ""))
+    if hashlib.sha256(real_transcript.encode("utf-8")).hexdigest() != fixtures.get("real_transcript_sha256"):
+        raise RuntimeError("PREPARED_TRANSCRIPT_IDENTITY_MISMATCH")
+
     work = Path(args.work_dir).resolve()
     work.mkdir(parents=True, exist_ok=True)
-    fixtures = work / "fixtures"
-    fixtures.mkdir(parents=True, exist_ok=True)
-    synthetic = helper.make_synthetic_audio(fixtures / "synthetic-hello-world.wav")
-    real_audio, real_transcript, dataset_info = helper.get_librispeech_fixture(fixtures)
     env = os.environ.copy()
     env.update({
-        "OMP_NUM_THREADS": "1",
-        "OMP_THREAD_LIMIT": "1",
-        "OPENBLAS_NUM_THREADS": "1",
-        "MKL_NUM_THREADS": "1",
-        "NUMEXPR_NUM_THREADS": "1",
-        "TOKENIZERS_PARALLELISM": "false",
-        "PYTHONNOUSERSITE": "1",
+        "OMP_NUM_THREADS": "1", "OMP_THREAD_LIMIT": "1", "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1",
+        "TOKENIZERS_PARALLELISM": "false", "PYTHONNOUSERSITE": "1",
         "LD_LIBRARY_PATH": str(cli.parent) + (":" + os.environ["LD_LIBRARY_PATH"] if os.environ.get("LD_LIBRARY_PATH") else ""),
     })
     tests = []
     max_elapsed = 0.0
-    for task_id, audio_path in (
-        ("synthetic-hello-world", synthetic),
-        ("librispeech-" + REAL_AUDIO_ID, real_audio),
-    ):
+    for task_id, audio_path in (("synthetic-hello-world", synthetic), ("librispeech-" + REAL_AUDIO_ID, real_audio)):
         out_dir = work / task_id
         out_dir.mkdir(parents=True, exist_ok=True)
         prefix = out_dir / "transcript"
         text_path = Path(str(prefix) + ".txt")
         text_path.unlink(missing_ok=True)
-        command = [
-            str(cli), "-m", str(model_path), "-f", str(audio_path),
-            "-l", "en", "-t", "1", "-ng", "-nt", "-otxt", "-of", str(prefix),
-            "-np", "-nf", "-bo", "1",
-        ]
+        command = [str(cli), "-m", str(model_path), "-f", str(audio_path),
+            "-l", "en", "-t", "1", "-ng", "-nt", "-otxt", "-of", str(prefix), "-np", "-nf", "-bo", "1"]
         started = time.monotonic()
-        completed = subprocess.run(
-            command, cwd=str(artifact_root), env=env,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, errors="replace", timeout=900, check=False,
-        )
+        completed = subprocess.run(command, cwd=str(artifact_root), env=env,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace", timeout=900, check=False)
         elapsed = round(time.monotonic() - started, 3)
         max_elapsed = max(max_elapsed, elapsed)
         output_text = text_path.read_text(encoding="utf-8", errors="replace").strip() if text_path.is_file() else ""
-        result = {
-            "task_id": task_id,
-            "command": command,
-            "exit_code": completed.returncode,
+        result = {"task_id": task_id, "command": command, "exit_code": completed.returncode,
             "elapsed_seconds": elapsed,
             "execution_status": "PASS_EXECUTION" if completed.returncode == 0 and text_path.is_file() and output_text else "FAIL_EXECUTION",
             "transcription_text": output_text[:1600],
             "output_sha256": hashlib.sha256(output_text.encode("utf-8")).hexdigest(),
             "output_file_bytes": text_path.stat().st_size if text_path.is_file() else 0,
-            "diagnostic_output_tail": completed.stdout[-2500:],
-        }
-        words = helper.normalized_words(output_text)
+            "diagnostic_output_tail": completed.stdout[-2500:]}
+        words = normalized_words(output_text)
         if task_id == "synthetic-hello-world":
             missing = [word for word in ("hello", "world") if word not in words]
-            result["quality_check"] = {
-                "kind": "SYNTHETIC_KNOWN_ANSWER",
-                "expected_words": ["hello", "world"],
-                "missing_words": missing,
-                "status": "PASS" if not missing else "FAIL",
-            }
+            result["quality_check"] = {"kind": "SYNTHETIC_KNOWN_ANSWER", "expected_words": ["hello", "world"],
+                "missing_words": missing, "status": "PASS" if not missing else "FAIL"}
         else:
-            wer = helper.word_error_rate(real_transcript, output_text) if output_text else 1.0
-            result["quality_check"] = {
-                "kind": "REAL_PUBLIC_RECORDED_SPEECH",
-                "dataset_repo": DATASET_REPO,
-                "dataset_revision": DATASET_REVISION,
-                "audio_id": REAL_AUDIO_ID,
-                "reference_word_count": len(helper.normalized_words(real_transcript)),
-                "wer": round(wer, 6),
-                "wer_limit": REAL_WER_MAX,
-                "status": "PASS" if wer <= REAL_WER_MAX else "FAIL",
-            }
+            wer = word_error_rate(real_transcript, output_text) if output_text else 1.0
+            result["quality_check"] = {"kind": "REAL_PUBLIC_RECORDED_SPEECH", "dataset_repo": DATASET_REPO,
+                "dataset_revision": DATASET_REVISION, "audio_id": REAL_AUDIO_ID,
+                "reference_word_count": len(normalized_words(real_transcript)), "wer": round(wer, 6),
+                "wer_limit": REAL_WER_MAX, "status": "PASS" if wer <= REAL_WER_MAX else "FAIL"}
         result["task_pass"] = result["execution_status"] == "PASS_EXECUTION" and result["quality_check"]["status"] == "PASS"
         tests.append(result)
 
@@ -552,46 +584,28 @@ def evaluate(args) -> int:
     passed = all(item.get("task_pass") is True for item in tests)
     projection = release_projection(model_path.stat().st_size)
     report = {
-        "schema": "LOUKSNAPG_WHISPER_FULLRANK_CANDIDATE_EVALUATION/1.0",
-        "status": (
-            "PASS_FULLRANK_CANDIDATE_TWO_TASKS_EXTERNAL_ASSET_REQUIRED"
+        "schema": "LOUKSNAPG_WHISPER_FULLRANK_CANDIDATE_EVALUATION/2.0",
+        "status": ("PASS_FULLRANK_CANDIDATE_TWO_TASKS_EXTERNAL_ASSET_REQUIRED"
             if passed and projection["external_asset_required"] else
-            "PASS_FULLRANK_CANDIDATE_TWO_TASKS"
-            if passed else
-            "FAIL_FUNCTIONAL_OR_QUALITY_GATE"
-        ),
+            "PASS_FULLRANK_CANDIDATE_TWO_TASKS" if passed else "FAIL_FUNCTIONAL_OR_QUALITY_GATE"),
         "candidate_id": "WHISPER_LARGE_V3_TURBO_FULLRANK_" + args.quantization.upper(),
-        "quantization": args.quantization,
-        "representation": "FULL_RANK_GGML_BLOCKWISE_INTEGER_QUANTIZATION",
+        "quantization": args.quantization, "representation": "FULL_RANK_GGML_BLOCKWISE_INTEGER_QUANTIZATION",
         "teacher_source": manifest["source_model"],
-        "candidate_weight": {
-            "path": str(row["path"]),
-            "bytes": model_path.stat().st_size,
-            "sha256": sha256_file(model_path),
-        },
-        "candidate_resource_policy": budget,
-        "candidate_memory_measurement": snapshot,
-        "child_peak_rss_bytes": child_peak_rss_bytes(),
-        "elapsed_seconds_total": max_elapsed,
-        "dataset_fixture": dataset_info,
-        "task_results": tests,
-        "global_release_projection": projection,
-        "source_teacher_mutated": False,
-        "active_runtime_mutated": False,
-        "candidate_integrated": False,
+        "candidate_weight": {"path": str(row["path"]), "bytes": model_path.stat().st_size, "sha256": sha256_file(model_path)},
+        "candidate_resource_policy": budget, "candidate_memory_measurement": snapshot,
+        "child_peak_rss_bytes": child_peak_rss_bytes(), "elapsed_seconds_total": max_elapsed,
+        "dataset_fixture": fixtures["dataset_fixture"],
+        "prepared_fixture_manifest_sha256": sha256_file(fixtures_path),
+        "task_results": tests, "global_release_projection": projection,
+        "source_teacher_mutated": False, "active_runtime_mutated": False, "candidate_integrated": False,
         "promotion_performed": False,
         "externalization": "REQUIRED_BUT_NOT_IMPLEMENTED" if projection["external_asset_required"] else "NOT_REQUIRED_BY_PROJECTION",
-        "domain_certification": "NOT_GRANTED",
-        "global_certification": "NOT_GRANTED",
-        "conclusion": (
-            "The full-rank representation passed these two speech checks under the exact 1-GiB/1-core candidate envelope. This is experimental evidence only; the model is not integrated or certified."
-            if passed else
-            "The full-rank representation did not pass both speech checks. Do not integrate or promote it."
-        ),
+        "domain_certification": "NOT_GRANTED", "global_certification": "NOT_GRANTED",
+        "conclusion": ("The full-rank representation passed these two speech checks under the exact 1-GiB/1-core candidate envelope. This is experimental evidence only; the model is not integrated or certified."
+            if passed else "The full-rank representation did not pass both speech checks. Do not integrate or promote it."),
     }
     json_write(Path(args.report), report)
     return 0 if passed else 3
-
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -601,16 +615,22 @@ def main() -> int:
     b.add_argument("--openai-whisper-root", type=Path, required=True)
     b.add_argument("--output-dir", type=Path, required=True)
     b.add_argument("--report", type=Path, required=True)
+    p = sub.add_parser("prepare-fixtures")
+    p.add_argument("--fixture-helper", type=Path, required=True)
+    p.add_argument("--work-dir", type=Path, required=True)
+    p.add_argument("--report", type=Path, required=True)
     e = sub.add_parser("evaluate")
     e.add_argument("--artifact-root", type=Path, required=True)
     e.add_argument("--quantization", required=True, choices=QUANTIZATIONS)
-    e.add_argument("--fixture-helper", type=Path, required=True)
+    e.add_argument("--prepared-fixtures", type=Path, required=True)
     e.add_argument("--work-dir", type=Path, required=True)
     e.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.mode == "build":
             return build(args)
+        if args.mode == "prepare-fixtures":
+            return prepare_fixtures(args)
         return evaluate(args)
     except Exception as exc:
         report = {
