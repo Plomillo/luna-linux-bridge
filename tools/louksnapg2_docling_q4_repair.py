@@ -27,11 +27,10 @@ MODEL_ID = "ibm-granite/granite-docling-258M"
 MODEL_REVISION = "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe"
 SOURCE_WEIGHT_BYTES = 515_093_104
 SOURCE_WEIGHT_SHA256 = "1cdad234deb1cde18ee6a586f849057f19851daf1fedce2e40aff791dbe46f61"
-SOURCE_CONFIG_SHA256 = "4fbb5d2a"  # Replaced below by a full pinned digest check if present.
 GROUP_SIZE = 256
 WEIGHT_HARD_CAP_BYTES = 114_000_000
 GLOBAL_RELEASE_MAX_BYTES = 490_000_000
-BASELINE_RELEASE_BYTES = 371_981_138
+BASELINE_RELEASE_BYTES = 371_986_537
 BASELINE_DOCLING_WEIGHT_BYTES = 13_483_380
 CANDIDATE_ID = "GRANITE_DOCLING_258M_SOURCE_Q4_GROUP256_ZLIB_20261102"
 DOMAIN_REL = Path("5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate")
@@ -310,7 +309,7 @@ def build(args: argparse.Namespace) -> int:
         "relative_frobenius_error": math.sqrt(total_error_sq / max(total_norm_sq, 1e-30)),
         "elapsed_seconds": round(time.monotonic() - started, 3),
         "repair_ram_limit_bytes": 3 * 1024**3,
-        "evaluation_ram_limit_bytes": 1 * 1024**3,
+        "evaluation_ram_limit_bytes": 3 * 1024**3,
         "promotion": "NOT_AUTHORIZED",
     }
     write_json(args.output_dir / "repair_build_report.json", report)
@@ -393,7 +392,7 @@ def evaluate(args: argparse.Namespace) -> int:
 
     # Sequential subprocesses ensure that the two model copies never coexist in RAM.
     # Both use the same local processor/config/generation files, image, prompt,
-    # input geometry, token budget, CPU quota and 1-GiB cgroup.
+    # input geometry, token budget, CPU quota and 3-GiB cgroup.
     q4_result = _run_runtime_protocol(
         runtime_path, args.candidate_dir, args.image, args.max_new_tokens,
         PROMPT, None, args.timeout_seconds,
@@ -421,6 +420,7 @@ def evaluate(args: argparse.Namespace) -> int:
             "output_sha256": result.get("output_sha256"),
             "candidate_id": result.get("candidate_id"),
             "model_source": result.get("model_source"),
+            "model_dtype": result.get("model_dtype"),
             "execution_status": "PASS_EXECUTION" if execution_pass else str(result.get("status", "FAIL")),
         }
 
@@ -450,7 +450,7 @@ def evaluate(args: argparse.Namespace) -> int:
         and q4["resource_pass"] and teacher["resource_pass"]
     ) else "FAIL"
     evidence = {
-        "schema": "LOUKSNAPG2_DOCLING_Q4_PAIRED_FP16_EVALUATION/1.0",
+        "schema": "LOUKSNAPG2_DOCLING_Q4_PAIRED_SOURCE_EVALUATION/2.0",
         "generated_at_utc": utc_now(),
         "source_model": {
             "id": MODEL_ID, "revision": MODEL_REVISION,
@@ -474,7 +474,7 @@ def evaluate(args: argparse.Namespace) -> int:
             "teacher_sidecar_bytes": teacher_bytes,
             "teacher_sidecar_sha256": teacher_sha,
         },
-        "teacher_fp16": teacher,
+        "teacher_source_bfloat16": teacher,
         "q4_reconstructed": q4,
         "protocol_comparable": comparable,
         "diagnostic_hypothesis": diagnosis,

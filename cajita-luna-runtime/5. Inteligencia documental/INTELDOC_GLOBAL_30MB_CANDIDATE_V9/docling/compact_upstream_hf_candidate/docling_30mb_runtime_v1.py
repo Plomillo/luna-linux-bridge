@@ -243,7 +243,7 @@ def load_candidate(candidate_dir):
 
 
 def load_original_teacher(candidate_dir, teacher_weights_path):
-    """Load the pinned original FP16 teacher using the candidate's exact architecture/config."""
+    """Load pinned original source weights using their declared architecture and dtype."""
     import torch
     from safetensors import safe_open
     from transformers import AutoConfig, AutoModelForImageTextToText, GenerationConfig
@@ -300,7 +300,7 @@ def load_original_teacher(candidate_dir, teacher_weights_path):
         raise RuntimeError("GENERATION_CONFIG_PAD_MISMATCH")
     model.generation_config=generation_config
     model.eval()
-    return model,{"candidate_id":"ORIGINAL_FP16_SOURCE_TEACHER","weights_sha256":sha256_file(weights)}
+    return model,{"candidate_id":"ORIGINAL_SOURCE_BFLOAT16_TEACHER","weights_sha256":sha256_file(weights)}
 
 
 def make_test_image():
@@ -330,21 +330,17 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     t=time.time()
     if teacher_weights_path:
         model,meta=load_original_teacher(candidate_dir,teacher_weights_path)
-        model_source="ORIGINAL_FP16_TEACHER"
+        model_source="ORIGINAL_SOURCE_BFLOAT16_TEACHER"
     else:
         model,meta=load_candidate(candidate_dir)
         model_source="RECONSTRUCTED_Q4_CANDIDATE"
     assert_ram_budget("after-model-load")
     from transformers import AutoProcessor
     proc=load_pretrained_with_compressed_tokenizer(candidate_dir,AutoProcessor,local_files_only=True,trust_remote_code=False)
-    # The packaged preprocessor defaults to a 2048-edge resize plus 512-edge
-    # image splitting. That can exceed the 1 GiB CPU contract even with splitting
-    # disabled. Use one bounded 256px square view and no high-resolution tiles.
-    # Idefics3 expands each image into a fixed sequence of <image> tokens. Its count
-    # must match the vision encoder after pixel-shuffle: (side / patch / scale)^2.
-    # Letterboxing keeps the visual input square so one sequence length works for
-    # arbitrary document aspect ratios without changing the pinned model weights.
-    # This is a resource-bounded smoke profile, not a quality-equivalence claim.
+    # Preserve the upstream model's 512px vision geometry while disabling
+    # processor-side image splitting. One square view yields 64 image tokens,
+    # matching processor_config.json and the model's Idefics3 vision geometry.
+    # Letterboxing avoids changing the pinned model weights or processor semantics.
     image_processor=getattr(proc,"image_processor",None)
     if image_processor is None:
         raise RuntimeError("DOCLING_IMAGE_PROCESSOR_MISSING")

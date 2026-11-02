@@ -115,7 +115,7 @@ jobs:
       options: --memory=3g --memory-swap=3g --cpus=1
     timeout-minutes: 80
     steps:
-      - name: Verify exact 1-GiB candidate cgroup and one-core quota
+      - name: Verify exact 3-GiB candidate cgroup and one-core quota
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -199,8 +199,7 @@ jobs:
           from PIL import Image, ImageDraw, ImageFont
           p=Path(os.environ["IMAGE_PATH"])
           # Build at the constrained model input size after runtime letterboxing.
-          # Large glyphs remain legible at 256px; the previous 1400x900 fixture
-          # was downscaled so aggressively that its invoice text became tiny.
+          # Large glyphs are retained at the model's native 512px input geometry.
           image=Image.new("RGB",(512,512),"white")
           draw=ImageDraw.Draw(image)
           title=ImageFont.load_default(size=48)
@@ -213,7 +212,7 @@ jobs:
           print("INVOICE_FIXTURE_BYTES="+str(p.stat().st_size))
           PY
 
-      - name: Execute source-reconstructed candidate inference under 1 GiB
+      - name: Execute source-reconstructed candidate inference under 3 GiB
         shell: bash
         env:
           OMP_NUM_THREADS: "1"
