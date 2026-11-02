@@ -49,7 +49,7 @@ class AutomatedG23G24Tests(unittest.TestCase):
         }):
             report = certifier.g23(args)
         self.assertEqual(report["status"], "HOLD")
-        self.assertIn("PRIMARY_CUSTOSZ_WORKER_NOT_PASS", report["blockers"])
+        self.assertIn("PRIMARY_CUSTOSZ_AUDIT_OR_BUILD_NOT_PASS", report["blockers"])
 
     def test_g24_holds_without_g23_attestation(self):
         os.environ["G23_ATTESTATION_VERIFIED"] = "false"
@@ -70,7 +70,7 @@ class AutomatedG23G24Tests(unittest.TestCase):
         args.execution_mode_preflight.write_text(json.dumps(execution))
         report = certifier.g24(args)
         self.assertEqual(report["status"], "HOLD")
-        self.assertIn("LOCAL_OFFLINE_EXECUTION_POLICY_NOT_PASS", report["blockers"])
+        self.assertIn("ISOLATED_GPU_REPAIR_PREFLIGHT_NOT_PASS", report["blockers"])
 
     def test_g24_holds_if_any_model_repair_adapter_is_blocked(self):
         args = self.g24_args()
@@ -95,7 +95,7 @@ class AutomatedG23G24Tests(unittest.TestCase):
                 "model_inference_performed": True, "heldout_case_count": 2,
                 "failed_cases": [], "semantic_quality_equivalence_status": "PASS"
             }
-            heldout_bytes = (json.dumps(heldout_payload, sort_keys=True) + "\\n").encode("utf-8")
+            heldout_bytes = (json.dumps(heldout_payload, sort_keys=True) + "\n").encode("utf-8")
             folder = Path("repair-adapters") / domain
             for name, payload in (("repaired.bin", repaired_bytes), ("rollback.bin", rollback_bytes), ("heldout.json", heldout_bytes)):
                 target = evidence_root / folder / name
@@ -113,7 +113,7 @@ class AutomatedG23G24Tests(unittest.TestCase):
                 "adapter_sha256": f"{index + 10:064x}",
                 "calibration_dataset_sha256": f"{index + 20:064x}",
                 "heldout_dataset_sha256": f"{index + 30:064x}",
-                "rollback_checkpoint_sha256": f"{index + 40:064x}",
+                "rollback_checkpoint_sha256": hashlib.sha256(rollback_bytes).hexdigest(),
                 "calibration_example_count": 100,
                 "heldout_example_count": 25,
                 "heldout_validation_status": "PASS",
