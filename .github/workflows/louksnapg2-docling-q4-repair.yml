@@ -78,6 +78,9 @@ jobs:
           TOKENIZERS_PARALLELISM: "false"
           HF_HOME: ${{ runner.temp }}/docling-q4-hf-home
           HF_HUB_DISABLE_TELEMETRY: "1"
+          HF_HUB_DISABLE_XET: "1"
+          HF_HUB_ETAG_TIMEOUT: "60"
+          HF_HUB_DOWNLOAD_TIMEOUT: "300"
         run: |
           set -Eeuo pipefail
           BASE="cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate"
