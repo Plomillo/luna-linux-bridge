@@ -443,7 +443,8 @@ def validate_repair_evidence(bundle: Path, functional_path: Path, functional: di
 def g24_payload(args) -> dict:
     blockers = []
     bundle = args.bundle.resolve(strict=True)
-    g23_envelope = read_json(args.g23_signed)
+    g23_payload = read_json(args.g23_payload)
+    attestation_receipt = read_json(args.g23_attestation_verification)
     functional = read_json(args.functional_evidence)
     unit = read_json(args.unit_evidence)
     materialization = read_json(args.model_materialization)
@@ -451,17 +452,38 @@ def g24_payload(args) -> dict:
     head = os.environ.get("GITHUB_SHA", "")
     validator_id = args.g23_validator_id.strip()
     certifier_id = args.certifier_id.strip()
-    public_key = os.environ.get(args.g23_public_key_env, "")
+    expected_repository = os.environ.get("GITHUB_REPOSITORY", "")
+    expected_ref = os.environ.get("GITHUB_REF", "")
+    expected_signer_workflow = expected_repository + "/.github/workflows/louksnapg2-puac2-certification.yml"
     if not certifier_id or certifier_id == PRODUCER_ID or certifier_id == validator_id:
         blockers.append("G24_CERTIFIER_ID_MISSING_OR_ROLE_COLLISION")
-    if not public_key.strip():
-        blockers.append("G23_PUBLIC_KEY_ENV_MISSING")
-        verified_g23 = None
-        verify_errors = ["PUBLIC_KEY_MISSING"]
-    else:
-        verified_g23, verify_errors = verify_envelope(g23_envelope, public_key, G23_SIGNED_SCHEMA, validator_id)
-    if verify_errors or verified_g23 is None:
-        blockers.extend("G23_SIGNATURE_VERIFICATION_FAILED:" + error for error in verify_errors)
+    if g23_payload.get("validator_id") != validator_id or validator_id != "GITHUB_OIDC_G23_VALIDATOR":
+        blockers.append("G23_VALIDATOR_IDENTITY_NOT_CANONICAL")
+    receipt_checks = {
+        "schema": "LOUKSNAPG2_G23_OIDC_ATTESTATION_VERIFICATION/1.0",
+        "status": "PASS_VERIFIED",
+        "repository": expected_repository,
+        "signer_workflow": expected_signer_workflow,
+        "source_ref": expected_ref,
+        "source_commit": head,
+        "subject_sha256": sha256_file(args.g23_payload),
+        "predicate_type": "https://slsa.dev/provenance/v1",
+        "verification_command": "gh attestation verify",
+        "signer_id": validator_id,
+    }
+    for field, expected in receipt_checks.items():
+        if attestation_receipt.get(field) != expected:
+            blockers.append("G23_OIDC_ATTESTATION_RECEIPT_MISMATCH:" + field)
+    verified_count = attestation_receipt.get("verified_attestation_count", 0)
+    if isinstance(verified_count, bool) or not isinstance(verified_count, int) or verified_count < 1:
+        blockers.append("G23_OIDC_ATTESTATION_NOT_FOUND")
+    receipt_valid = not any(
+        item.startswith("G23_OIDC_ATTESTATION_RECEIPT_MISMATCH:")
+        or item == "G23_OIDC_ATTESTATION_NOT_FOUND"
+        or item == "G23_VALIDATOR_IDENTITY_NOT_CANONICAL"
+        for item in blockers
+    )
+    verified_g23 = g23_payload if receipt_valid else None
     if not verified_g23 or verified_g23.get("status") != "PASS":
         blockers.append("G23_NOT_PASS")
     bundle_hash = sha256_file(bundle)
@@ -636,7 +658,7 @@ def g24_payload(args) -> dict:
         },
         "evidence_sha256": {
             "build_report": sha256_file(args.build_report),
-            "g23_signed": sha256_file(args.g23_signed),
+            "g23_signed": sha256_file(args.g23_payload),
             "unit_tests": sha256_file(args.unit_evidence),
             "model_materialization": sha256_file(args.model_materialization),
             "functional_evidence": sha256_file(args.functional_evidence),
@@ -666,11 +688,11 @@ def main(argv=None) -> int:
     sign23.add_argument("--private-key-env", default="CAJITA_G23_SIGNING_PRIVATE_KEY_PEM")
 
     g24 = sub.add_parser("issue-g24")
-    for option in ("bundle", "g23-signed", "functional-evidence", "unit-evidence", "model-materialization", "build-report", "output"):
+    for option in ("bundle", "g23-payload", "g23-attestation-verification", "functional-evidence", "unit-evidence", "model-materialization", "build-report", "output"):
         g24.add_argument("--" + option, required=True, type=Path)
     g24.add_argument("--g23-validator-id", required=True)
-    g24.add_argument("--g23-public-key-env", default="CAJITA_G23_PUBLIC_KEY_PEM")
     g24.add_argument("--certifier-id", required=True)
+    g24.add_argument("--attestation-mode", choices=("ed25519", "oidc"), default="ed25519")
     g24.add_argument("--private-key-env", default="CAJITA_G24_SIGNING_PRIVATE_KEY_PEM")
     args = parser.parse_args(argv)
     try:
@@ -684,6 +706,16 @@ def main(argv=None) -> int:
             print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
             return 0
         result = g24_payload(args)
+        if args.attestation_mode == "oidc":
+            atomic_write(args.output, result)
+            print(json.dumps({
+                "status": result["status"],
+                "terminal_decision": result["terminal_decision"],
+                "blockers": result["blockers"],
+                "attestation_mode": "OIDC_SIGSTORE_PENDING_WORKFLOW_ATTESTATION",
+                "global_certification": result["global_certification"],
+            }, ensure_ascii=False, sort_keys=True, indent=2))
+            return 0 if result["status"] == "PASS" else 2
         signed = sign_envelope(
             result,
             os.environ.get(args.private_key_env, ""),
