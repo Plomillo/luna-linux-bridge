@@ -398,8 +398,6 @@ def evaluate(args) -> int:
         "MKL_NUM_THREADS": "1",
         "NUMEXPR_NUM_THREADS": "1",
         "TOKENIZERS_PARALLELISM": "false",
-        "HF_HUB_OFFLINE": "1",
-        "TRANSFORMERS_OFFLINE": "1",
         "PYTHONNOUSERSITE": "1",
         "LD_LIBRARY_PATH": str(cli.parent) + (":" + os.environ["LD_LIBRARY_PATH"] if os.environ.get("LD_LIBRARY_PATH") else ""),
     })
