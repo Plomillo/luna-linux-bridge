@@ -190,7 +190,7 @@ def execute_task(record,root,timeout_cap=600):
    out["remote_execution_mode"]="LOCAL_ONLY_FOR_EXPLICITLY_EXCLUDED_DOMAINS"
   spec=ADAPTERS[row["domain_id"]];integrity=verify_integrity(root,row["domain_id"]);entry=root/spec["entry"]
   if entry.is_symlink() or not entry.is_file():raise AdapterError("TASK_ADAPTER_ENTRYPOINT_MISSING")
-  env={k:os.environ[k] for k in ("PATH","HOME","LANG","LC_ALL","TMPDIR","SYSTEMROOT","WINDIR") if k in os.environ}
+  env={k:os.environ[k] for k in ("PATH","HOME","LANG","LC_ALL","TMPDIR","SYSTEMROOT","WINDIR","LD_LIBRARY_PATH") if k in os.environ}
   env.update({"OMP_NUM_THREADS":"1","OPENBLAS_NUM_THREADS":"1","MKL_NUM_THREADS":"1","NUMEXPR_NUM_THREADS":"1","TOKENIZERS_PARALLELISM":"false","HF_HUB_OFFLINE":"1","TRANSFORMERS_OFFLINE":"1","PYTHONNOUSERSITE":"1"})
   child=dict(row["input"]);child.update({"operation":row["operation"],"max_new_tokens":row["limits"]["max_new_tokens"]})
   runtime_resource_policy=candidate_policy()
