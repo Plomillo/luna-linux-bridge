@@ -218,7 +218,7 @@ def copy_runtime_skeleton(source: Path, destination: Path, *, include_whisper_we
         # GitHub artifact transport omits empty directories. Keep a tiny,
         # explicit marker so the six-domain router can validate the scoped
         # Whisper overlay without copying or loading unrelated model weights.
-        marker = placeholder_root / ".louksnapg2-domain-placeholder.json"
+        marker = placeholder_root / "LOUKSNAPG2_DOMAIN_PLACEHOLDER.json"
         marker.write_text(
             json.dumps({
                 "schema": "LOUKSNAPG2_SCOPED_RUNTIME_PLACEHOLDER/1.0",
