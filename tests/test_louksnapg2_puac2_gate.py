@@ -102,6 +102,26 @@ class Puac2TerminalGateTests(unittest.TestCase):
                 "semantic_quality_equivalence_status": "PASS",
             }
             payloads["heldout-report.json"] = (json.dumps(heldout_report, sort_keys=True) + "\n").encode("utf-8")
+            independent_report = {
+                "schema": "LOUKSNAPG2_INDEPENDENT_REPAIR_VALIDATION/1.0",
+                "status": "PASS", "source_commit": self.commit, "domain_id": domain,
+                "validator_id": "independent-validator-" + domain,
+                "candidate_sha256": None,
+                "source_weight_sha256": source_sha,
+                "repaired_output_sha256": hashlib.sha256(repaired_bytes).hexdigest(),
+                "independent_inference_performed": True, "heldout_case_count": 32,
+                "failed_cases": [], "semantic_quality_equivalence_status": "PASS",
+            }
+            payloads["independent-report.json"] = (json.dumps(independent_report, sort_keys=True) + "\n").encode("utf-8")
+            rollback_report = {
+                "schema": "LOUKSNAPG2_REPAIR_ROLLBACK/1.0",
+                "status": "PASS", "source_commit": self.commit, "domain_id": domain,
+                "source_weight_sha256": source_sha,
+                "rollback_checkpoint_sha256": hashlib.sha256(payloads["rollback.ckpt"]).hexdigest(),
+                "restore_test": "PASS", "original_weights_unchanged": True,
+                "candidate_output_separate": True,
+            }
+            payloads["rollback-report.json"] = (json.dumps(rollback_report, sort_keys=True) + "\n").encode("utf-8")
             records = {}
             for name, data in payloads.items():
                 target = folder / name
@@ -151,6 +171,8 @@ class Puac2TerminalGateTests(unittest.TestCase):
                     "heldout_dataset": records["heldout.jsonl"],
                     "rollback_checkpoint": records["rollback.ckpt"],
                     "heldout_report": records["heldout-report.json"],
+                    "independent_report": records["independent-report.json"],
+                    "rollback_report": records["rollback-report.json"],
                 },
             })
 
@@ -160,6 +182,13 @@ class Puac2TerminalGateTests(unittest.TestCase):
         candidate_sha = gate.sha256_file(self.bundle)
         for adapter in adapters:
             adapter["candidate_sha256"] = candidate_sha
+            independent_record = adapter["artifacts"]["independent_report"]
+            independent_path = evidence_root / independent_record["path"]
+            independent = json.loads(independent_path.read_text(encoding="utf-8"))
+            independent["candidate_sha256"] = candidate_sha
+            independent_path.write_text(json.dumps(independent, sort_keys=True) + "\n", encoding="utf-8")
+            independent_record["bytes"] = independent_path.stat().st_size
+            independent_record["sha256"] = hashlib.sha256(independent_path.read_bytes()).hexdigest()
 
         return {
             "source_commit": self.commit,
@@ -215,6 +244,41 @@ class Puac2TerminalGateTests(unittest.TestCase):
         report = self.call_g24(functional)
         self.assertEqual(report["status"], "HOLD")
         self.assertTrue(any("REPAIR_EVIDENCE_FILE_MISSING_OR_UNSAFE:" in x for x in report["blockers"]))
+
+    def test_g24_rejects_heldout_report_record_hash_mismatch(self):
+        functional = self.valid_functional_evidence()
+        functional["repair_adapter_evidence"][0]["artifacts"]["heldout_report"]["sha256"] = "0" * 64
+        report = self.call_g24(functional)
+        self.assertEqual(report["status"], "HOLD")
+        self.assertTrue(any("REPAIR_EVIDENCE_RECORD_DIGEST_MISMATCH:" in x for x in report["blockers"]))
+
+    def test_g24_rejects_independent_validator_collision(self):
+        functional = self.valid_functional_evidence()
+        row = functional["repair_adapter_evidence"][0]
+        record = row["artifacts"]["independent_report"]
+        path = self.root / record["path"]
+        independent = json.loads(path.read_text())
+        independent["validator_id"] = row["adapter_id"]
+        path.write_text(json.dumps(independent, sort_keys=True) + "\n")
+        record["bytes"] = path.stat().st_size
+        record["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+        report = self.call_g24(functional)
+        self.assertEqual(report["status"], "HOLD")
+        self.assertTrue(any("INDEPENDENT_VALIDATOR_NOT_DISTINCT:" in x for x in report["blockers"]))
+
+    def test_g24_rejects_unverified_rollback_restore(self):
+        functional = self.valid_functional_evidence()
+        row = functional["repair_adapter_evidence"][0]
+        record = row["artifacts"]["rollback_report"]
+        path = self.root / record["path"]
+        rollback = json.loads(path.read_text())
+        rollback["restore_test"] = "FAIL"
+        path.write_text(json.dumps(rollback, sort_keys=True) + "\n")
+        record["bytes"] = path.stat().st_size
+        record["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+        report = self.call_g24(functional)
+        self.assertEqual(report["status"], "HOLD")
+        self.assertTrue(any("ROLLBACK_RESTORE_TEST_NOT_PASS:" in x for x in report["blockers"]))
 
     def test_g24_rejects_missing_gpu_execution_proof(self):
         functional = self.valid_functional_evidence()
