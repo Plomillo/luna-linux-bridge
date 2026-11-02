@@ -113,6 +113,8 @@ def ensure_hosted_runner() -> None:
     for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
         if os.environ.get(name) != "1":
             raise RuntimeError("SINGLE_THREAD_BUDGET_NOT_ENFORCED:" + name)
+    if os.environ.get("LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE") != "SYSTEMD_CGROUP_MEMORYMAX_3G_CPUQUOTA_100":
+        raise RuntimeError("AGGREGATE_3GB_ONE_CORE_CGROUP_NOT_PROVEN")
 
 
 def peak_rss_bytes() -> int:
@@ -875,6 +877,7 @@ def run_build(args) -> int:
         "threads": 1,
         "ram_budget_bytes": RAM_BUDGET_BYTES,
         "resource_enforcement": resource_enforcement,
+        "execution_envelope": os.environ.get("LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE"),
         "peak_rss_bytes_before_evaluation": peak_rss_bytes(),
         "repair_method": "STREAMED_RANDOMIZED_SVD_PLUS_INT8_QUANTIZATION_AWARE_ALTERNATING_LEAST_SQUARES",
         "local_pc_inference": False,
@@ -1040,6 +1043,8 @@ def run_verify(args) -> int:
             "projected_size_pass": projected_release_size_pass,
             "is_projection_not_final_package_measurement": True,
         },
+        "resource_enforcement": resource_enforcement,
+        "execution_envelope": os.environ.get("LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE"),
         "global_release_size": "FINAL_EXACT_PACKAGE_MEASUREMENT_REQUIRED_BEFORE_RELEASE",
         "module_integrity": integrity,
         "task_results": results,
