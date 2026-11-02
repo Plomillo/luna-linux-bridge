@@ -10,6 +10,7 @@ on:
       - "tools/louksnapg2_historical_weight_probe.py"
       - "tools/louksnapg2_q4_precision_probe.py"
       - "tools/louksnapg2_model_identity_evidence.py"
+      - "tools/louksnapg2_refresh_module_integrity.py"
       - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/**"
       - "cajita-luna-runtime/cajita_task_adapters.py"
       - "cajita-luna-runtime/cajita_resource_limits.py"
@@ -34,8 +35,24 @@ jobs:
   evaluate-real-local-models:
     if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
     runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:24.04
+      options: --memory=1g --memory-swap=1g --cpus=1
     timeout-minutes: 100
     steps:
+      - name: Verify candidate cgroup is 1 GiB RAM and at most one CPU
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          memory=int(Path('/sys/fs/cgroup/memory.max').read_text().strip())
+          quota,period=map(int,Path('/sys/fs/cgroup/cpu.max').read_text().split())
+          if memory != 1024**3 or quota <= 0 or period <= 0 or quota > period:
+              raise SystemExit(f'CANDIDATE_RESOURCE_ENVELOPE_INVALID:{memory}:{quota}:{period}')
+          print({'status':'PASS','ram_bytes':memory,'cpu_cores':quota/period})
+          PY
+
       - name: Checkout exact repository source without blanket LFS hydration
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -66,8 +83,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          sudo apt-get update
-          sudo apt-get install -y espeak-ng
+          apt-get update
+          apt-get install -y espeak-ng
 
       - name: Install only the committed CPU runtime lock
         shell: bash
@@ -105,6 +122,12 @@ jobs:
           PY
           test -s "$RUNNER_TEMP/louksnapg2-audio-one.wav"
           test -s "$RUNNER_TEMP/louksnapg2-audio-two.wav"
+
+      - name: Refresh Docling derived module-tree metadata without modifying its source weights
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B tools/louksnapg2_refresh_module_integrity.py --runtime-root cajita-luna-runtime | tee out/louksnapg2-direct-functional/DOCLING_TREE_REFRESH.json
 
       - name: Verify all five source-bound model identities and runtime integrity
         shell: bash

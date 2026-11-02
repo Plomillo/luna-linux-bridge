@@ -22,6 +22,7 @@ on:
       - "cajita-luna-runtime/**"
       - "tests/test_louksnapg2_engine.py"
       - "tests/test_louksnapg2_automated_certifier.py"
+      - "tests/test_cajita_resource_limits.py"
       - ".github/workflows/louksnapg2-custoszv9-repair.yml"
   workflow_dispatch:
 
@@ -158,35 +159,40 @@ jobs:
           engine_rc=$?
           python -B -m unittest discover -s tests -p 'test_louksnapg2_automated_certifier.py' -v > "$RUNNER_TEMP/certifier-tests.log" 2>&1
           certifier_rc=$?
+          python -B -m unittest discover -s tests -p 'test_cajita_resource_limits.py' -v > "$RUNNER_TEMP/resource-tests.log" 2>&1
+          resource_rc=$?
           set -e
           echo "engine_rc=$engine_rc" >> "$GITHUB_OUTPUT"
           echo "certifier_rc=$certifier_rc" >> "$GITHUB_OUTPUT"
+          echo "resource_rc=$resource_rc" >> "$GITHUB_OUTPUT"
           cat "$RUNNER_TEMP/engine-tests.log"
           cat "$RUNNER_TEMP/certifier-tests.log"
-          ENGINE_TEST_RC="$engine_rc" CERTIFIER_TEST_RC="$certifier_rc" python - <<'PY'
+          cat "$RUNNER_TEMP/resource-tests.log"
+          ENGINE_TEST_RC="$engine_rc" CERTIFIER_TEST_RC="$certifier_rc" RESOURCE_TEST_RC="$resource_rc" python - <<'PY'
           import json, os, re
           from pathlib import Path
           logs=Path(os.environ["RUNNER_TEMP"])
-          text=(logs/"engine-tests.log").read_text(errors="replace")+"\n"+(logs/"certifier-tests.log").read_text(errors="replace")
+          text=(logs/"engine-tests.log").read_text(errors="replace")+"\n"+(logs/"certifier-tests.log").read_text(errors="replace")+"\n"+(logs/"resource-tests.log").read_text(errors="replace")
           counts=[int(x) for x in re.findall(r"Ran (\d+) tests?",text)]
-          er=int(os.environ["ENGINE_TEST_RC"]); cr=int(os.environ["CERTIFIER_TEST_RC"])
+          er=int(os.environ["ENGINE_TEST_RC"]); cr=int(os.environ["CERTIFIER_TEST_RC"]); rr=int(os.environ["RESOURCE_TEST_RC"])
           result={
             "schema":"LOUKSNAPG2_SOURCE_UNIT_TEST_EVIDENCE/1.0",
             "source_commit":os.environ["GITHUB_SHA"],
-            "status":"PASS" if er==0 and cr==0 else "FAIL",
+            "status":"PASS" if er==0 and cr==0 and rr==0 else "FAIL",
             "tests_run":sum(counts),
             "failures":0 if er==0 and cr==0 else 1,
             "errors":0 if er==0 and cr==0 else 1,
             "engine_test_exit_code":er,
             "certifier_test_exit_code":cr,
+            "resource_test_exit_code":rr,
             "coverage_scope":"source-only routing and automated gate logic; no model inference",
           }
           Path("out/LOUKSNAPG2_UNIT_TEST_EVIDENCE.json").write_text(json.dumps(result,sort_keys=True,indent=2)+"\n")
           print(json.dumps(result,sort_keys=True,indent=2))
           PY
           mkdir -p out/test-logs
-          cp "$RUNNER_TEMP/engine-tests.log" "$RUNNER_TEMP/certifier-tests.log" out/test-logs/
-          if [ "$engine_rc" -ne 0 ] || [ "$certifier_rc" -ne 0 ]; then exit 2; fi
+          cp "$RUNNER_TEMP/engine-tests.log" "$RUNNER_TEMP/certifier-tests.log" "$RUNNER_TEMP/resource-tests.log" out/test-logs/
+          if [ "$engine_rc" -ne 0 ] || [ "$certifier_rc" -ne 0 ] || [ "$resource_rc" -ne 0 ]; then exit 2; fi
 
       - name: Upload source unit evidence
         if: always()

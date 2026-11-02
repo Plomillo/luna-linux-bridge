@@ -4,6 +4,10 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+import sys
+
+RUNTIME = Path(__file__).resolve().parents[1] / "cajita-luna-runtime"
+sys.path.insert(0, str(RUNTIME))
 
 import cajita_resource_limits as limits
 

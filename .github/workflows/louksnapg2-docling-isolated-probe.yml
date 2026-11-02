@@ -24,8 +24,24 @@ jobs:
   evaluate-docling-image:
     if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
     runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:24.04
+      options: --memory=1g --memory-swap=1g --cpus=1
     timeout-minutes: 35
     steps:
+      - name: Verify Docling candidate cgroup is 1 GiB RAM and at most one CPU
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          memory=int(Path('/sys/fs/cgroup/memory.max').read_text().strip())
+          quota,period=map(int,Path('/sys/fs/cgroup/cpu.max').read_text().split())
+          if memory != 1024**3 or quota <= 0 or period <= 0 or quota > period:
+              raise SystemExit(f'DOCLING_RESOURCE_ENVELOPE_INVALID:{memory}:{quota}:{period}')
+          print({'status':'PASS','ram_bytes':memory,'cpu_cores':quota/period})
+          PY
+
       - name: Initialize isolated evidence directory
         run: |
           mkdir -p out/louksnapg2-docling
