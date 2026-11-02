@@ -32,9 +32,19 @@ jobs:
     name: "Build adaptive per-layer INT8 factors and test two transcription tasks"
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    container:
+      image: ubuntu:24.04
+      options: --memory=3g --memory-swap=3g --cpus=1
     outputs:
       promotion_ready: ${{ steps.run_experiment.outputs.promotion_ready }}
     steps:
+      - name: Install Git in the constrained job container before checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update -qq
+          apt-get install -y --no-install-recommends git
+
       - name: Checkout exact source candidate without downloading model LFS objects
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -65,16 +75,21 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Prove aggregate 3 GiB and one-core cgroup scope is available
+      - name: Verify actual Docker cgroup memory and CPU ceilings
         shell: bash
         run: |
           set -euo pipefail
-          command -v systemd-run
-          sudo systemd-run --scope --wait \
-            --property=MemoryMax=3G \
-            --property=CPUQuota=100% \
-            /usr/bin/true
-          echo "REPAIR_CGROUP_PREFLIGHT=PASS_MEMORYMAX_3G_CPUQUOTA_100"
+          python - <<'PY'
+          from pathlib import Path
+          memory = int(Path('/sys/fs/cgroup/memory.max').read_text().strip())
+          quota, period = map(int, Path('/sys/fs/cgroup/cpu.max').read_text().split())
+          expected_memory = 3 * 1024**3
+          if memory != expected_memory:
+              raise SystemExit(f'REPAIR_MEMORY_CGROUP_MISMATCH:{memory}:{expected_memory}')
+          if quota <= 0 or period <= 0 or quota > period:
+              raise SystemExit(f'REPAIR_CPU_CGROUP_MISMATCH:{quota}:{period}')
+          print({'status':'PASS','memory_max_bytes':memory,'cpu_quota':quota,'cpu_period':period,'max_cores':quota/period})
+          PY
 
       - name: Enforce runner resource preflight and install audio fixture generator
         shell: bash
@@ -88,8 +103,8 @@ jobs:
               raise SystemExit("RUNNER_DISK_PREFLIGHT_DENIED:" + str(free))
           print(json.dumps({"runner_temp_free_bytes": free, "local_pc_used": False}))
           PY
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends espeak-ng
+          apt-get update -qq
+          apt-get install -y --no-install-recommends espeak-ng
 
       - name: Install pinned single-threaded CPU dependencies
         shell: bash
@@ -122,17 +137,14 @@ jobs:
         run: |
           set +e
           mkdir -p "$RUNNER_TEMP/whisper-int8/evidence" "$RUNNER_TEMP/whisper-int8/work" "$RUNNER_TEMP/whisper-int8/promotion"
-          sudo systemd-run --scope --wait \
-            --property=MemoryMax=3G \
-            --property=CPUQuota=100% \
-            env LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE="SYSTEMD_CGROUP_MEMORYMAX_3G_CPUQUOTA_100" \
-            python -B tools/louksnapg_whisper_int8_repair.py \
-              --mode build-and-test \
-              --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime" \
-              --work-dir "$RUNNER_TEMP/whisper-int8/work" \
-              --report "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json" \
-              --promotion-tar "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz" \
-              2>&1 | tee "$RUNNER_TEMP/whisper-int8/experiment.log"
+          export LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE="DOCKER_CGROUP_V2_MEMORY_MAX_3G_CPU_MAX_1"
+          python -B tools/louksnapg_whisper_int8_repair.py \
+            --mode build-and-test \
+            --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime" \
+            --work-dir "$RUNNER_TEMP/whisper-int8/work" \
+            --report "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json" \
+            --promotion-tar "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz" \
+            2>&1 | tee "$RUNNER_TEMP/whisper-int8/experiment.log"
           rc=${PIPESTATUS[0]}
           python - "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json" "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz" "$GITHUB_OUTPUT" <<'PY'
           import json, os, sys
@@ -264,7 +276,17 @@ jobs:
     if: needs.promote.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    container:
+      image: ubuntu:24.04
+      options: --memory=3g --memory-swap=3g --cpus=1
     steps:
+      - name: Install Git in the constrained job container before checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update -qq
+          apt-get install -y --no-install-recommends git
+
       - name: Checkout exact promoted commit without unrelated model weights
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -295,12 +317,26 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Verify exact-commit retest cgroup limits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          memory = int(Path('/sys/fs/cgroup/memory.max').read_text().strip())
+          quota, period = map(int, Path('/sys/fs/cgroup/cpu.max').read_text().split())
+          expected = 3 * 1024**3
+          if memory != expected or quota <= 0 or period <= 0 or quota > period:
+              raise SystemExit(f'REPAIR_CGROUP_NOT_ENFORCED:{memory}:{quota}:{period}')
+          print({'status':'PASS','memory_max_bytes':memory,'cpu_quota':quota,'cpu_period':period})
+          PY
+
       - name: Install runtime dependencies and real-audio fixture dependencies
         shell: bash
         run: |
           set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends espeak-ng
+          apt-get update -qq
+          apt-get install -y --no-install-recommends espeak-ng
           python -m pip install --disable-pip-version-check "torch==2.7.1" --index-url https://download.pytorch.org/whl/cpu
           python -m pip install --disable-pip-version-check             "transformers==4.55.4"             "huggingface_hub==0.35.3"             "safetensors==0.6.2"             "soundfile==0.13.1"             "scipy==1.16.2"             "sentencepiece==0.2.1"             "numpy==2.2.6"             "datasets==3.2.0"             "pyarrow==19.0.1"
 
@@ -313,20 +349,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/whisper-verify/evidence" "$RUNNER_TEMP/whisper-verify/work"
-          command -v systemd-run
-          sudo systemd-run --scope --wait \
-            --property=MemoryMax=3G \
-            --property=CPUQuota=100% \
-            /usr/bin/true
-          sudo systemd-run --scope --wait \
-            --property=MemoryMax=3G \
-            --property=CPUQuota=100% \
-            env LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE="SYSTEMD_CGROUP_MEMORYMAX_3G_CPUQUOTA_100" \
-            python -B tools/louksnapg_whisper_int8_repair.py \
-              --mode verify-existing \
-              --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime" \
-              --work-dir "$RUNNER_TEMP/whisper-verify/work" \
-              --report "$RUNNER_TEMP/whisper-verify/evidence/LOUKSNAPG_WHISPER_INT8_EXACT_COMMIT_VERIFICATION.json"
+          export LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE="DOCKER_CGROUP_V2_MEMORY_MAX_3G_CPU_MAX_1"
+          python -B tools/louksnapg_whisper_int8_repair.py \
+            --mode verify-existing \
+            --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime" \
+            --work-dir "$RUNNER_TEMP/whisper-verify/work" \
+            --report "$RUNNER_TEMP/whisper-verify/evidence/LOUKSNAPG_WHISPER_INT8_EXACT_COMMIT_VERIFICATION.json"
 
       - name: Upload exact-commit verification evidence
         if: always()
