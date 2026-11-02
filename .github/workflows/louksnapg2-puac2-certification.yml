@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/louksnapg2-puac2-certification.yml"
       - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/**"
+      - "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/**"
       - "tools/louksnapg2*.py"
       - "tests/test_louksnapg2*.py"
       - "LOUKSNAMEJORADA.md"
