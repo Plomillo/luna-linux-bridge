@@ -462,7 +462,6 @@ jobs:
           set -Eeuo pipefail
           mkdir -p out/louksnapg2-g24
           set +e
-          set +e
           gh attestation verify out/louksnapg2-g23/LOUKSNAPG2_G23_UNSIGNED.json \
             --repo "$GITHUB_REPOSITORY" \
             --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/louksnapg2-puac2-certification.yml" \

@@ -633,7 +633,7 @@ def g24_payload(args) -> dict:
         "source_commit": head,
         "candidate": {"path": bundle.name, "bytes": measured, "sha256": bundle_hash, "cap_bytes": MAX_BYTES},
         "g23_verification": {
-            "signature_status": "PASS" if verified_g23 is not None and not verify_errors else "FAIL",
+            "signature_status": "PASS" if verified_g23 is not None and receipt_valid else "FAIL",
             "g23_payload_status": verified_g23.get("status") if verified_g23 else "INVALID",
             "payload_sha256": g23_envelope.get("payload_sha256"),
             "verification_errors": verify_errors,
