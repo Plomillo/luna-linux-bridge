@@ -69,7 +69,7 @@ El empirismo y el positivismo valoran observar asistencia y rendimiento; el raci
 
 ### 2. Aproximación teórica, objetos y métodos
 
-Freud analiza procesos inconscientes, pero el silencio no demuestra conflicto psíquico (Freud, 1923/1961). Pavlov estudia asociaciones entre estímulos; Skinner, consecuencias de la conducta (Skinner, 1953). Rogers prioriza empatía y aceptación (Rogers, 1951). Piaget aborda desarrollo cognitivo; Vygotsky, mediación sociocultural; Erikson, identidad adolescente (Erikson, 1968; Piaget & Inhelder, 1969; Vygotsky, 1978). Entrevista y observación permiten contrastar hipótesis, no diagnosticar por un solo indicador.
+El psicoanálisis freudiano aborda procesos inconscientes, pero el silencio no demuestra conflicto psíquico (Freud, 1923/1961). Pavlov estudia asociaciones entre estímulos; Skinner, consecuencias de la conducta (Skinner, 1953). Rogers prioriza empatía y aceptación (Rogers, 1951). Piaget aborda desarrollo cognitivo; Vygotsky, mediación sociocultural; Erikson, identidad adolescente (Erikson, 1968; Piaget & Inhelder, 1969; Vygotsky, 1978). Entrevista y observación permiten contrastar hipótesis, no diagnosticar por un solo indicador.
 
 ### 3. Dilemas éticos
 
