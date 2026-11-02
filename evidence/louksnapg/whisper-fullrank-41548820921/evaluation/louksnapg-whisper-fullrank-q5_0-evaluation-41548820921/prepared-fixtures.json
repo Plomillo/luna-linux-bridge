@@ -1,0 +1,29 @@
+{
+  "dataset_fixture": {
+    "audio_asset_sha256": "4e25e22555cd16e90edb0a3b49fdcf1fe652b2a1250ab643634db33895c75b41",
+    "audio_duration_seconds": 5.855,
+    "audio_wav_bytes": 187404,
+    "audio_wav_sha256": "799f78ed4beb4de7ceae3a809262d4ce242394342ccd1d58cef7d49dbc2def46",
+    "expected_parquet_sha256": "4e69a06fa5edc90921e5e7e39a7084881f8b3ed9c805c574f4f39c6fde27c603",
+    "observed_parquet_sha256": "4e69a06fa5edc90921e5e7e39a7084881f8b3ed9c805c574f4f39c6fde27c603",
+    "repo": "hf-internal-testing/librispeech_asr_dummy",
+    "revision": "5be91486e11a2d616f4ec5db8d3fd248585ac07a",
+    "sample_id": "1272-128104-0000",
+    "sample_rate_hz": 16000,
+    "transcript_sha256": "9ed9a726f8b973252de284bf878668198435473d4af80795424178eff5e7fb48",
+    "transcript_word_count": 17
+  },
+  "real_audio": {
+    "bytes": 187404,
+    "path": "/__w/_temp/whisper-fullrank-evaluation/work/fixtures/librispeech-known-transcript.wav",
+    "sha256": "799f78ed4beb4de7ceae3a809262d4ce242394342ccd1d58cef7d49dbc2def46"
+  },
+  "real_transcript": "MISTER QUILTER IS THE APOSTLE OF THE MIDDLE CLASSES AND WE ARE GLAD TO WELCOME HIS GOSPEL",
+  "real_transcript_sha256": "9ed9a726f8b973252de284bf878668198435473d4af80795424178eff5e7fb48",
+  "schema": "LOUKSNAPG_WHISPER_FULLRANK_PREPARED_FIXTURES/1.0",
+  "synthetic_audio": {
+    "bytes": 62728,
+    "path": "/__w/_temp/whisper-fullrank-evaluation/work/fixtures/synthetic-hello-world.wav",
+    "sha256": "88ebeb4aba0b257c2b9669356aaa5dfc7e974638ee3a76fdbcc510cb41de8eb6"
+  }
+}
