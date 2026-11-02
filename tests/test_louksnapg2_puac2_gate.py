@@ -262,6 +262,14 @@ class Puac2TerminalGateTests(unittest.TestCase):
         self.assertEqual(report["status"], "HOLD")
         self.assertTrue(any("REPAIR_EVIDENCE_FILE_MISSING_OR_UNSAFE:" in x for x in report["blockers"]))
 
+    def test_g24_binds_reported_g23_hash_to_verified_subject(self):
+        functional = self.valid_functional_evidence()
+        args = self.args(functional)
+        receipt = json.loads(args.g23_attestation_verification.read_text())
+        report = gate.g24_payload(args)
+        self.assertEqual(report["status"], "PASS", report["blockers"])
+        self.assertEqual(report["g23_verification"]["payload_sha256"], receipt["subject_sha256"])
+
     def test_g24_rejects_empty_g23_attestation_count(self):
         functional = self.valid_functional_evidence()
         args = self.args(functional)
