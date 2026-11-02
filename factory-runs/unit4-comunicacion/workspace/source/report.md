@@ -55,7 +55,7 @@ La transposición semiótica aprovecha las affordances de cada modo: escritorio 
 | Herramientas y tareas | ChatGPT GPT-6: delimitación, matriz, marcos, síntesis y guion. eSpeak NG: voz sintética. |
 | Prompts | Se solicitó delimitar SWM, cruzar complejidad/niveles/algoritmos, contrastar estudios y redactar un video de cinco minutos. |
 | Contraste y adaptación | Se cotejaron DOI, documentación de TikTok y lecturas UNIACC; se separó evidencia publicada de datos propios y declaración corporativa de auditoría. |
-| Aporte crítico | Se limitaron generalizaciones y no se atribuyó intención al algoritmo. El estudiante debe revisar, aceptar o corregir el contenido y añadir su aporte personal real antes de entregar. |
+| Aporte crítico y responsabilidad | Se limitaron generalizaciones y no se atribuyó intención al algoritmo. El estudiante debe revisar, aceptar o corregir el contenido y añadir su aporte personal real antes de entregar. |
 
 ### VIII. Guion del video
 
