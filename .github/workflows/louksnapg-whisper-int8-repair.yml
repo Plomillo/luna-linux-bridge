@@ -278,6 +278,7 @@ jobs:
             cajita-luna-runtime/cajita_weight_materializer.py
             cajita-luna-runtime/cajita_tokenizer_materializer.py
             cajita-luna-runtime/cajita_task_adapters.py
+            cajita-luna-runtime/cajita_resource_limits.py
             cajita-luna-runtime/cajita_router.py
             cajita-luna-runtime/cajita_target_adapters.py
             cajita-luna-runtime/cajita_antiparalysis.py
@@ -312,7 +313,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/whisper-verify/evidence" "$RUNNER_TEMP/whisper-verify/work"
-          python -B tools/louksnapg_whisper_int8_repair.py             --mode verify-existing             --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime"             --work-dir "$RUNNER_TEMP/whisper-verify/work"             --report "$RUNNER_TEMP/whisper-verify/evidence/LOUKSNAPG_WHISPER_INT8_EXACT_COMMIT_VERIFICATION.json"
+          command -v systemd-run
+          sudo systemd-run --scope --wait --pipe \
+            --property=MemoryMax=3G \
+            --property=CPUQuota=100% \
+            /usr/bin/true
+          sudo systemd-run --scope --wait --pipe \
+            --property=MemoryMax=3G \
+            --property=CPUQuota=100% \
+            env LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE="SYSTEMD_CGROUP_MEMORYMAX_3G_CPUQUOTA_100" \
+            python -B tools/louksnapg_whisper_int8_repair.py \
+              --mode verify-existing \
+              --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime" \
+              --work-dir "$RUNNER_TEMP/whisper-verify/work" \
+              --report "$RUNNER_TEMP/whisper-verify/evidence/LOUKSNAPG_WHISPER_INT8_EXACT_COMMIT_VERIFICATION.json"
 
       - name: Upload exact-commit verification evidence
         if: always()
