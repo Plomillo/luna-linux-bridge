@@ -114,6 +114,32 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
         self.assertEqual(result["adapter_id"], "CAJITA_DOCLING_IMAGE_EXTRACTION/1.0")
         self.assertEqual(result["output_text"], "INVOICE 4821 TOTAL 37.50")
 
+    def test_docling_accepts_protocol_budget_256_but_rejects_257(self):
+        image = self.root / "invoice.png"
+        image.write_bytes(b"fixture image")
+        with mock.patch.object(self.runtime, "_execute_original", return_value={"status": "PASS_EXECUTION", "output_text": "fixture"}) as execute:
+            result = self.runtime.route(
+                "D05_INTELIGENCIA_DOCUMENTAL", "extract_document_image",
+                {"image_path": str(image), "prompt": "Convert this page to docling.", "max_new_tokens": 256},
+                task_id="docling-256",
+            )
+        self.assertEqual(execute.call_args.kwargs["max_tokens"], 256)
+        self.assertEqual(result["output_text"], "fixture")
+        with self.assertRaisesRegex(engine.EngineRuntimeError, "TOKEN_LIMIT_OUT_OF_RANGE"):
+            self.runtime.route(
+                "D05_INTELIGENCIA_DOCUMENTAL", "extract_document_image",
+                {"image_path": str(image), "prompt": "Convert this page to docling.", "max_new_tokens": 257},
+                task_id="docling-257",
+            )
+
+    def test_non_docling_models_keep_the_128_token_ceiling(self):
+        with self.assertRaisesRegex(engine.EngineRuntimeError, "TOKEN_LIMIT_OUT_OF_RANGE"):
+            self.runtime.route(
+                "D01_CEREBRO", "generate_text",
+                {"prompt": "hello", "max_new_tokens": 129},
+                task_id="cerebro-129",
+            )
+
     def test_transcription_uses_existing_whisper_source_adapter(self):
         audio = self.root / "sample.wav"
         audio.write_bytes(b"fixture audio")

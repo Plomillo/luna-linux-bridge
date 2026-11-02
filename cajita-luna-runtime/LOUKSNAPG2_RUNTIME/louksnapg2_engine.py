@@ -22,6 +22,7 @@ SCHEMA = "LOUKSNAPG2_ENGINE_RUNTIME/2.0"
 CAJITA_TASK_SCHEMA = "CAJITA_TASK_REQUEST/1.0"
 MAX_INPUT_CHARS = 16_384
 MAX_NEW_TOKENS = 128
+MAX_DOCLING_NEW_TOKENS = 256
 MAX_TIMEOUT_SECONDS = 600
 DOMAIN_IDS = {
     "D01_CEREBRO",
@@ -278,7 +279,8 @@ class LouksnapG2Runtime:
         if not isinstance(payload, dict):
             raise EngineRuntimeError("TASK_INPUT_NOT_OBJECT")
         max_tokens = payload.get("max_new_tokens", 64)
-        if isinstance(max_tokens, bool) or not isinstance(max_tokens, int) or not 1 <= max_tokens <= MAX_NEW_TOKENS:
+        token_ceiling = MAX_DOCLING_NEW_TOKENS if domain_id == "D05_INTELIGENCIA_DOCUMENTAL" else MAX_NEW_TOKENS
+        if isinstance(max_tokens, bool) or not isinstance(max_tokens, int) or not 1 <= max_tokens <= token_ceiling:
             raise EngineRuntimeError("TOKEN_LIMIT_OUT_OF_RANGE")
         if domain_id == "D01_CEREBRO" and operation == "generate_text":
             return self.reason(payload.get("prompt", ""), max_tokens=max_tokens, task_id=task_id)

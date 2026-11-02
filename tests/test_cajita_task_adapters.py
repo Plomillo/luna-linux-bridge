@@ -54,10 +54,19 @@ class AdapterTests(unittest.TestCase):
         for row,pattern in rows:
             with self.subTest(pattern=pattern):
                 with self.assertRaisesRegex(adapters.AdapterError,pattern):adapters.normalize(row,RUNTIME)
-    def test_input_and_token_limits(self):
+    def test_input_and_domain_specific_token_limits(self):
         with self.assertRaisesRegex(adapters.AdapterError,"INPUT_TEXT_REQUIRED"):adapters.normalize(req(prompt=" "),RUNTIME)
         row=req(prompt="Hello");row["limits"]["max_new_tokens"]=129
         with self.assertRaisesRegex(adapters.AdapterError,"MAX_NEW_TOKENS_OUT_OF_RANGE"):adapters.normalize(row,RUNTIME)
+        with tempfile.TemporaryDirectory() as td:
+            image=Path(td)/"invoice.png";image.write_bytes(b"fixture image")
+            docling=req("D05_INTELIGENCIA_DOCUMENTAL","extract_document_image",image_path=str(image),prompt="Convert this page to docling.")
+            docling["limits"]["max_new_tokens"]=256
+            normalized=adapters.normalize(docling,RUNTIME)
+            self.assertEqual(normalized["limits"]["max_new_tokens"],256)
+            docling["limits"]["max_new_tokens"]=257
+            with self.assertRaisesRegex(adapters.AdapterError,"MAX_NEW_TOKENS_OUT_OF_RANGE"):
+                adapters.normalize(docling,RUNTIME)
     def test_translation_language_normalization_and_same_language_guard(self):
         row=adapters.normalize(req("D04_TRADUCTOR_INTELIGENTE","translate_text",text="Hi",src_lang="en",tgt_lang="es"),RUNTIME)
         self.assertEqual(row["input"]["src_lang"],"eng");self.assertEqual(row["input"]["tgt_lang"],"spa")

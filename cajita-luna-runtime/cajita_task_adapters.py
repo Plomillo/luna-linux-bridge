@@ -10,7 +10,7 @@ REQUEST_SCHEMA = "CAJITA_TASK_REQUEST/1.0"
 RESULT_SCHEMA = "CAJITA_TASK_RESULT/1.0"
 MANIFEST_SHA = "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d"
 CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023"
-MAX_TEXT, MAX_AUDIO, MAX_IMAGE, MAX_TOKENS, MAX_TIMEOUT = 16384, 32*1024*1024, 24*1024*1024, 128, 1800
+MAX_TEXT, MAX_AUDIO, MAX_IMAGE, MAX_TOKENS, MAX_DOCLING_TOKENS, MAX_TIMEOUT = 16384, 32*1024*1024, 24*1024*1024, 128, 256, 1800
 
 ADAPTERS = {
  "D01_CEREBRO": {"weight":"1. Cerebro/model.safetensors","sha":"e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0","bytes":40489120,"module":"1. Cerebro","target":"D01_CEREBRO_ROOT","entry":"1. Cerebro/cerebro_180mb_runtime.py","op":"generate_text","id":"CAJITA_CEREBRO_TEXT_GENERATION/1.0","tokens":8},
@@ -84,7 +84,8 @@ def normalize(record,root,timeout_cap=600):
   files.append({"field":"image_path","bytes":p.stat().st_size,"sha256":digest_file(p)})
  else:data["prompt"]=required_text(payload.get("prompt"),"prompt")
  tokens=limits.get("max_new_tokens",spec["tokens"])
- if isinstance(tokens,bool) or not isinstance(tokens,int) or not 1<=tokens<=MAX_TOKENS: raise AdapterError("MAX_NEW_TOKENS_OUT_OF_RANGE")
+ token_ceiling=MAX_DOCLING_TOKENS if domain=="D05_INTELIGENCIA_DOCUMENTAL" else MAX_TOKENS
+ if isinstance(tokens,bool) or not isinstance(tokens,int) or not 1<=tokens<=token_ceiling: raise AdapterError("MAX_NEW_TOKENS_OUT_OF_RANGE")
  return {"task_id":tid,"domain_id":domain,"target_id":spec["target"],"operation":op,"adapter_id":spec["id"],"input":data,"limits":{"timeout_seconds":timeout,"max_new_tokens":tokens},"input_files":files}
 def tree_rows(directory):
  rows=[]
