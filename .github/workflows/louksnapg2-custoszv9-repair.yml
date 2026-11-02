@@ -6,6 +6,7 @@ on:
       - repair/louksnapg2-custoszv9-kestra-20261029
       - repair/louksnapg2-functional-remediation-20261030
       - repair/louksnapg2-local-offline-20261030
+      - louksnapg2/puac2-alternative-20261029
     paths:
       - "vendor/CUSTOSZV9.pyz"
       - "vendor/CUSTOSZV9.pyz.sha256"
@@ -122,6 +123,7 @@ jobs:
             out/louksnapg2-worker/candidate/LOUKSNAPG2_BUILD_REPORT.json
             out/louksnapg2-worker/LOUKSNAPG2_REPAIR_READINESS.json
             out/louksnapg2-worker/LOUKSNAPG2_CUSTOSZV9_WORKER_EVIDENCE.json
+            out/louksnapg2-worker/repair-adapters/**
             out/louksnapg2-worker/custoszv9-version.txt
             out/louksnapg2-worker/custoszv9-selftest.json
             out/louksnapg2-worker/louksnapg2-custoszv9-worker.log
@@ -246,8 +248,8 @@ jobs:
             "schema": "LOUKSNAPG2_EXECUTION_MODE_PREFLIGHT/1.0",
             "observed_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
             "source_commit": os.environ["GITHUB_SHA"],
-            "status": "PASS_LOCAL_OFFLINE" if valid else "BLOCKED_NONLOCAL_EXECUTION_CONFIGURATION",
-            "execution_mode": "LOCAL_OFFLINE" if valid else "INVALID",
+            "status": "PASS_CPU_DIAGNOSTIC_ONLY" if valid else "BLOCKED_INVALID_EXECUTION_CONFIGURATION",
+            "execution_mode": "CPU_DIAGNOSTIC_ONLY" if valid else "INVALID",
             "remote_inference_enabled": False if valid else True,
             "endpoint_credentials_required": False,
             "endpoint_credentials_injected": False,

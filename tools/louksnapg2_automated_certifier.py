@@ -14,6 +14,8 @@ import json
 import os
 import re
 import sys
+import zipfile
+from pathlib import PurePosixPath
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -90,6 +92,136 @@ def current_commit() -> str:
     return value
 
 
+
+def _safe_evidence_file(root: Path, record: dict, label: str) -> tuple[Path | None, list[str]]:
+    blockers: list[str] = []
+    if not isinstance(record, dict):
+        return None, [label + "_RECORD_MISSING_OR_INVALID"]
+    rel = record.get("path")
+    if not isinstance(rel, str) or not rel or "\\" in rel or Path(rel).is_absolute():
+        return None, [label + "_PATH_INVALID"]
+    parsed = PurePosixPath(rel)
+    if any(part in {"", ".", ".."} for part in parsed.parts):
+        return None, [label + "_PATH_TRAVERSAL_REJECTED"]
+    candidate = root.joinpath(*parsed.parts)
+    current = root
+    for part in parsed.parts:
+        current = current / part
+        if current.is_symlink():
+            return None, [label + "_SYMLINK_REJECTED"]
+    try:
+        resolved_root = root.resolve(strict=True)
+        resolved = candidate.resolve(strict=True)
+        if not resolved.is_relative_to(resolved_root) or not resolved.is_file():
+            return None, [label + "_FILE_MISSING_OR_OUTSIDE_EVIDENCE_ROOT"]
+    except (OSError, RuntimeError):
+        return None, [label + "_FILE_MISSING_OR_UNSAFE"]
+    expected_bytes = record.get("bytes")
+    expected_sha = record.get("sha256")
+    if isinstance(expected_bytes, bool) or not isinstance(expected_bytes, int) or expected_bytes < 1:
+        blockers.append(label + "_BYTE_COUNT_INVALID")
+    if not isinstance(expected_sha, str) or SHA256_RE.fullmatch(expected_sha) is None:
+        blockers.append(label + "_SHA256_INVALID")
+    if not blockers:
+        if resolved.stat().st_size != expected_bytes:
+            blockers.append(label + "_BYTE_COUNT_MISMATCH")
+        if sha256_file(resolved) != expected_sha:
+            blockers.append(label + "_SHA256_MISMATCH")
+    return resolved, blockers
+
+
+def validate_isolated_gpu_repair(execution: dict, expected_commit: str) -> list[str]:
+    blockers: list[str] = []
+    if execution.get("status") != "PASS_ISOLATED_GPU_REPAIR":
+        blockers.append("ISOLATED_GPU_REPAIR_PREFLIGHT_NOT_PASS")
+    if execution.get("execution_mode") != "ISOLATED_GPU_REPAIR":
+        blockers.append("ISOLATED_GPU_REPAIR_MODE_MISMATCH")
+    if execution.get("execution_backend") != "ISOLATED_GPU_RUNNER":
+        blockers.append("ISOLATED_GPU_BACKEND_NOT_PROVEN")
+    if execution.get("source_commit") != expected_commit:
+        blockers.append("GPU_REPAIR_SOURCE_COMMIT_MISMATCH")
+    count = execution.get("gpu_device_count")
+    if isinstance(count, bool) or not isinstance(count, int) or count < 1:
+        blockers.append("GPU_DEVICE_NOT_PROVEN")
+    if not isinstance(execution.get("runner_id"), str) or not execution["runner_id"].strip():
+        blockers.append("GPU_RUNNER_ID_MISSING")
+    if not isinstance(execution.get("repair_job_id"), str) or not execution["repair_job_id"].strip():
+        blockers.append("GPU_REPAIR_JOB_ID_MISSING")
+    if not isinstance(execution.get("runner_image_sha256"), str) or SHA256_RE.fullmatch(execution["runner_image_sha256"]) is None:
+        blockers.append("GPU_RUNNER_IMAGE_DIGEST_MISSING_OR_INVALID")
+    if execution.get("repair_execution_performed") is not True:
+        blockers.append("GPU_REPAIR_EXECUTION_NOT_PROVEN")
+    return blockers
+
+
+def validate_repair_output_artifacts(
+    readiness_path: Path, bundle: Path, adapters: list, expected_commit: str
+) -> list[str]:
+    blockers: list[str] = []
+    evidence_root = readiness_path.resolve(strict=True).parent
+    try:
+        with zipfile.ZipFile(bundle, "r") as archive:
+            names = set(archive.namelist())
+            for adapter in adapters:
+                if not isinstance(adapter, dict):
+                    continue
+                domain = str(adapter.get("domain_id", "UNKNOWN"))
+                artifacts = adapter.get("artifacts")
+                if not isinstance(artifacts, dict):
+                    blockers.append("REPAIR_OUTPUT_ARTIFACTS_MISSING:" + domain)
+                    continue
+                repaired, found = _safe_evidence_file(evidence_root, artifacts.get("repaired_output"), "REPAIRED_OUTPUT:" + domain)
+                blockers.extend(found)
+                heldout, found = _safe_evidence_file(evidence_root, artifacts.get("heldout_report"), "HELDOUT_REPORT:" + domain)
+                blockers.extend(found)
+                rollback, found = _safe_evidence_file(evidence_root, artifacts.get("rollback_checkpoint"), "ROLLBACK_CHECKPOINT:" + domain)
+                blockers.extend(found)
+                member = artifacts.get("candidate_member_path")
+                parsed_member = PurePosixPath(member) if isinstance(member, str) else PurePosixPath(".")
+                if (not isinstance(member, str) or not member or "\\" in member
+                    or parsed_member.is_absolute() or any(p in {"", ".", ".."} for p in parsed_member.parts)):
+                    blockers.append("REPAIRED_OUTPUT_CANDIDATE_MEMBER_PATH_INVALID:" + domain)
+                elif member not in names:
+                    blockers.append("REPAIRED_OUTPUT_NOT_INCLUDED_IN_CANDIDATE:" + domain)
+                elif repaired is not None:
+                    info = archive.getinfo(member)
+                    digest = hashlib.sha256()
+                    size = 0
+                    with archive.open(info, "r") as stream:
+                        for chunk in iter(lambda: stream.read(4 * 1024 * 1024), b""):
+                            digest.update(chunk)
+                            size += len(chunk)
+                    repaired_record = artifacts.get("repaired_output", {})
+                    if size != repaired_record.get("bytes") or digest.hexdigest() != repaired_record.get("sha256"):
+                        blockers.append("REPAIRED_OUTPUT_CANDIDATE_MEMBER_MISMATCH:" + domain)
+                if rollback is not None and adapter.get("rollback_checkpoint_sha256") != sha256_file(rollback):
+                    blockers.append("ROLLBACK_CHECKPOINT_BINDING_MISMATCH:" + domain)
+                if heldout is not None:
+                    try:
+                        report = json.loads(heldout.read_text(encoding="utf-8"))
+                    except (OSError, json.JSONDecodeError):
+                        blockers.append("HELDOUT_REPORT_INVALID_JSON:" + domain)
+                        continue
+                    if report.get("schema") != "LOUKSNAPG2_HELDOUT_VALIDATION/1.0":
+                        blockers.append("HELDOUT_REPORT_SCHEMA_MISMATCH:" + domain)
+                    if report.get("status") != "PASS" or report.get("source_commit") != expected_commit:
+                        blockers.append("HELDOUT_REPORT_STATUS_OR_COMMIT_NOT_PASS:" + domain)
+                    if report.get("domain_id") != domain or report.get("model_inference_performed") is not True:
+                        blockers.append("HELDOUT_REPORT_DOMAIN_OR_INFERENCE_NOT_PROVEN:" + domain)
+                    heldout_count = report.get("heldout_case_count")
+                    if isinstance(heldout_count, bool) or not isinstance(heldout_count, int) or heldout_count < 1:
+                        blockers.append("HELDOUT_REPORT_HAS_NO_HELDOUT_CASES:" + domain)
+                    if report.get("failed_cases") != [] or report.get("semantic_quality_equivalence_status") != "PASS":
+                        blockers.append("HELDOUT_SEMANTIC_VALIDATION_NOT_PASS:" + domain)
+                if adapter.get("execution_backend") != "ISOLATED_GPU_RUNNER":
+                    blockers.append("REPAIR_ADAPTER_EXECUTION_BACKEND_NOT_GPU:" + domain)
+                if not isinstance(adapter.get("repair_operation_id"), str) or not adapter["repair_operation_id"].strip():
+                    blockers.append("REPAIR_OPERATION_ID_MISSING:" + domain)
+    except (OSError, zipfile.BadZipFile):
+        blockers.append("CANDIDATE_OR_REPAIR_EVIDENCE_ARCHIVE_INVALID")
+    return sorted(set(blockers))
+
+
 def g23(args) -> dict:
     commit = current_commit()
     blockers: list[str] = []
@@ -128,8 +260,8 @@ def g23(args) -> dict:
         blockers.append("BUILD_CANDIDATE_SIZE_MISMATCH")
     if build.get("global_certification") != "NOT_GRANTED":
         blockers.append("BUILDER_ATTEMPTED_CERTIFICATION")
-    if worker.get("worker") != "CUSTOSZ_V9" or worker.get("worker_status") != "PASS":
-        blockers.append("PRIMARY_CUSTOSZ_WORKER_NOT_PASS")
+    if worker.get("worker") != "CUSTOSZ_V9" or worker.get("task_status") != "PASS_AUDIT_AND_BUILD":
+        blockers.append("PRIMARY_CUSTOSZ_AUDIT_OR_BUILD_NOT_PASS")
     if worker.get("worker_sha256") != "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3":
         blockers.append("CUSTOSZ_V9_IDENTITY_MISMATCH")
     if worker.get("global_certification") != "NOT_GRANTED":
@@ -192,13 +324,7 @@ def g24(args) -> dict:
         blockers.append("BUILD_EVIDENCE_NOT_BOUND_TO_CANDIDATE")
     if materialization.get("status") != "PASS" or int(materialization.get("required_domain_count", 0)) < 5:
         blockers.append("MODEL_SOURCE_MATERIALIZATION_NOT_PASS")
-    if (
-        execution.get("status") != "PASS_LOCAL_OFFLINE"
-        or execution.get("execution_mode") != "LOCAL_OFFLINE"
-        or execution.get("remote_inference_enabled") is not False
-        or execution.get("model_network_fetch_performed") is not False
-    ):
-        blockers.append("LOCAL_OFFLINE_EXECUTION_POLICY_NOT_PASS")
+    blockers.extend(validate_isolated_gpu_repair(execution, commit))
     if functional.get("source_commit") != commit:
         blockers.append("FUNCTIONAL_EVIDENCE_COMMIT_MISMATCH")
     if functional.get("model_inference_performed") is not True:
@@ -223,6 +349,8 @@ def g24(args) -> dict:
     for domain in REQUIRED_DOMAINS:
         if not isinstance(domain_results, dict) or domain_results.get(domain, {}).get("status") != "PASS":
             blockers.append("REQUIRED_DOMAIN_NOT_PASS:" + domain)
+    if worker.get("worker_status") != "PASS_REPAIR_EXECUTED":
+        blockers.append("WORKER_REPAIR_NOT_PASS")
     if worker.get("repair_status") != "PASS_ALL_REQUIRED_ADAPTERS":
         blockers.append("MODEL_REPAIR_ADAPTERS_NOT_ALL_PASS")
     if readiness.get("repair_adapter_status") != "PASS_ALL_REQUIRED_ADAPTERS":
@@ -293,6 +421,7 @@ def g24(args) -> dict:
         blockers.append("WORKER_CERTIFICATION_BOUNDARY_BROKEN")
     if worker.get("canonical_promotion") != "NOT_AUTHORIZED":
         blockers.append("WORKER_CANONICAL_PROMOTION_BOUNDARY_BROKEN")
+    blockers.extend(validate_repair_output_artifacts(args.repair_readiness, bundle, adapters, commit))
 
     unique_blockers = sorted(set(blockers))
     certified = not unique_blockers
