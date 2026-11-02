@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 import unittest
+from pathlib import Path
 from unittest import mock
+
+RUNTIME_ROOT = Path(__file__).resolve().parents[1] / "cajita-luna-runtime" / "LOUKSNAPG2_RUNTIME"
+sys.path.insert(0, str(RUNTIME_ROOT))
 
 from louksnapg2_service import (
     SCHEMA_REQUEST,
