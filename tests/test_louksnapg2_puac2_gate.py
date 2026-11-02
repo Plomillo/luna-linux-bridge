@@ -249,7 +249,7 @@ class Puac2TerminalGateTests(unittest.TestCase):
     def test_g24_passes_only_exact_all_domain_and_repair_evidence(self):
         report = self.call_g24(self.valid_functional_evidence())
         self.assertEqual(report["status"], "PASS", report["blockers"])
-        self.assertEqual(report["signature_status"], "PASS")
+        self.assertEqual(report["g23_verification"]["signature_status"], "PASS")
         self.assertEqual(report["terminal_decision"], "CERTIFIED_INTEGRAL_WITHIN_TESTED_SCOPE")
         self.assertEqual(report["functional_quality"]["total_cases"], 13)
         self.assertEqual(len(report["functional_quality"]["repair_adapter_domains"]), 6)
@@ -279,7 +279,7 @@ class Puac2TerminalGateTests(unittest.TestCase):
         report = gate.g24_payload(args)
         self.assertEqual(report["status"], "HOLD")
         self.assertIn("G23_OIDC_ATTESTATION_NOT_FOUND", report["blockers"])
-        self.assertEqual(report["signature_status"], "FAIL")
+        self.assertEqual(report["g23_verification"]["signature_status"], "FAIL")
 
     def test_g24_rejects_unverified_g23_oidc_receipt(self):
         functional = self.valid_functional_evidence()
@@ -290,7 +290,7 @@ class Puac2TerminalGateTests(unittest.TestCase):
         report = gate.g24_payload(args)
         self.assertEqual(report["status"], "HOLD")
         self.assertIn("G23_OIDC_ATTESTATION_RECEIPT_MISMATCH:source_commit", report["blockers"])
-        self.assertEqual(report["signature_status"], "FAIL")
+        self.assertEqual(report["g23_verification"]["signature_status"], "FAIL")
 
     def test_g24_rejects_heldout_report_record_hash_mismatch(self):
         functional = self.valid_functional_evidence()
