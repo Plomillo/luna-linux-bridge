@@ -169,7 +169,7 @@ def create_streaming_converter(upstream_converter: Path, output_dir: Path) -> Pa
         ),
         (
             "list_vars = model.state_dict()\n",
-            "list_vars = safe_weights.keys()\n",
+            "list_vars = safe_weights\n",
         ),
         (
             "data = list_vars[src].squeeze().numpy()\n",
