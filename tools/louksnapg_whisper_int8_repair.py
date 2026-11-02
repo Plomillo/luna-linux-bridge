@@ -487,7 +487,7 @@ def run_runtime_task(runtime_root: Path, case_dir: Path, *, task_id: str, audio_
     }
     request_path = case_dir / (task_id + ".request.json")
     request_path.write_text(json.dumps(request, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
-    env = {k: os.environ[k] for k in ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "SYSTEMROOT", "WINDIR") if k in os.environ}
+    env = {k: os.environ[k] for k in ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "SYSTEMROOT", "WINDIR", "LD_LIBRARY_PATH") if k in os.environ}
     env.update({
         "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1",
         "NUMEXPR_NUM_THREADS": "1", "TOKENIZERS_PARALLELISM": "false",
