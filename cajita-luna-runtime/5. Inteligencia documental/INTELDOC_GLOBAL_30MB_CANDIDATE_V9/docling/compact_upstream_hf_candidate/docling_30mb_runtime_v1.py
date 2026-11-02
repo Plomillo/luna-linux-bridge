@@ -237,6 +237,66 @@ def load_candidate(candidate_dir):
     model.eval()
     return model,meta
 
+
+def load_original_teacher(candidate_dir, teacher_weights_path):
+    """Load the pinned original FP16 teacher using the candidate's exact architecture/config."""
+    import torch
+    from safetensors import safe_open
+    from transformers import AutoConfig, AutoModelForImageTextToText, GenerationConfig
+
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
+    p=Path(candidate_dir).resolve()
+    weights=Path(teacher_weights_path)
+    if weights.is_symlink() or not weights.is_file():
+        raise RuntimeError("ORIGINAL_TEACHER_WEIGHTS_MISSING_OR_SYMLINK")
+    weights=weights.resolve(strict=True)
+    config=AutoConfig.from_pretrained(str(p),local_files_only=True,trust_remote_code=False)
+    config._attn_implementation = "sdpa"
+    if getattr(config,"text_config",None) is not None:
+        config.text_config._attn_implementation = "sdpa"
+    old=torch.get_default_dtype()
+    try:
+        torch.set_default_dtype(torch.float16)
+        model=AutoModelForImageTextToText.from_config(config,trust_remote_code=False)
+    finally:
+        torch.set_default_dtype(old)
+    model.to(device="cpu",dtype=torch.float16)
+    state=model.state_dict(keep_vars=True)
+    loaded=set()
+    with safe_open(str(weights),framework="pt",device="cpu") as source:
+        for name in source.keys():
+            if name not in state:
+                raise RuntimeError("TEACHER_TENSOR_NOT_IN_ARCHITECTURE:"+name)
+            target=state[name]
+            value=source.get_tensor(name)
+            if tuple(value.shape) != tuple(target.shape):
+                raise RuntimeError("TEACHER_TENSOR_SHAPE_MISMATCH:"+name)
+            with torch.no_grad():
+                target.copy_(value.to(device="cpu",dtype=target.dtype))
+            loaded.add(name)
+    if hasattr(model,"tie_weights"):
+        model.tie_weights()
+    params=set(dict(model.named_parameters()))
+    missing=sorted(params-loaded)
+    if getattr(config,"tie_word_embeddings",False) and "lm_head.weight" in missing:
+        missing.remove("lm_head.weight")
+    if missing:
+        raise RuntimeError("UNINITIALIZED_TEACHER_PARAMETERS:"+",".join(missing[:10]))
+    generation_config=GenerationConfig.from_pretrained(p,local_files_only=True)
+    expected_eos=config.eos_token_id
+    expected_eos_ids=set(expected_eos if isinstance(expected_eos,(list,tuple,set)) else ([expected_eos] if expected_eos is not None else []))
+    observed_eos=generation_config.eos_token_id
+    observed_eos_ids=set(observed_eos if isinstance(observed_eos,(list,tuple,set)) else ([observed_eos] if observed_eos is not None else []))
+    if expected_eos_ids and not expected_eos_ids.issubset(observed_eos_ids):
+        raise RuntimeError("GENERATION_CONFIG_EOS_MISMATCH")
+    if config.pad_token_id is not None and generation_config.pad_token_id != config.pad_token_id:
+        raise RuntimeError("GENERATION_CONFIG_PAD_MISMATCH")
+    model.generation_config=generation_config
+    model.eval()
+    return model,{"candidate_id":"ORIGINAL_FP16_SOURCE_TEACHER","weights_sha256":sha256_file(weights)}
+
+
 def make_test_image():
     from PIL import Image,ImageDraw
     im=Image.new("RGB",(640,480),"white"); d=ImageDraw.Draw(im)
@@ -259,10 +319,15 @@ def prepare_bounded_square_image(image, side):
 
 ROOT=Path(__file__).resolve().parent
 
-def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert this page to docling."):
+def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert this page to docling.", teacher_weights_path=None):
     ram_limit = apply_ram_limit()
     t=time.time()
-    model,meta=load_candidate(candidate_dir)
+    if teacher_weights_path:
+        model,meta=load_original_teacher(candidate_dir,teacher_weights_path)
+        model_source="ORIGINAL_FP16_TEACHER"
+    else:
+        model,meta=load_candidate(candidate_dir)
+        model_source="RECONSTRUCTED_Q4_CANDIDATE"
     assert_ram_budget("after-model-load")
     from transformers import AutoProcessor
     proc=load_pretrained_with_compressed_tokenizer(candidate_dir,AutoProcessor,local_files_only=True,trust_remote_code=False)
@@ -325,7 +390,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     decoded=proc.batch_decode(new_ids, skip_special_tokens=False)[0].lstrip()
     assert_ram_budget("after-generation")
     if len(decoded.strip())<1: raise RuntimeError("RUNTIME_SMOKE_EMPTY_OUTPUT")
-    return {"status":"PASS","candidate_id":meta["candidate_id"],"model_load":"PASS","processor_load":"PASS",
+    return {"status":"PASS","candidate_id":meta["candidate_id"],"model_source":model_source,"model_load":"PASS","processor_load":"PASS",
             "image_preprocess":"PASS","generation":"PASS","generated_token_count":int(new_ids.shape[-1]),
             "output_text":decoded[:8192],"output_sha256":hashlib.sha256(decoded.encode("utf-8")).hexdigest(),
             "decoded_chars":len(decoded),"elapsed_seconds":round(time.time()-t,3),
@@ -336,13 +401,14 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument("--candidate-dir",default=str(ROOT));ap.add_argument("--smoke-test",action="store_true")
+    ap.add_argument("--teacher-weights",default=None)
     ap.add_argument("--verify-only",action="store_true");ap.add_argument("--max-new-tokens",type=int,default=48);ap.add_argument("--task-json-stdin",action="store_true")
     a=ap.parse_args()
     if a.task_json_stdin:
         task=json.load(sys.stdin)
         if task.get("operation")!="extract_document_image": ap.error("Unsupported task operation")
-        print(json.dumps(smoke(a.candidate_dir,int(task.get("max_new_tokens",24)),task.get("image_path"),task.get("prompt","Extract visible text and fields.")),indent=2,ensure_ascii=False));return 0
-    if a.smoke_test: print(json.dumps(smoke(a.candidate_dir,a.max_new_tokens),indent=2,ensure_ascii=False));return 0
+        print(json.dumps(smoke(a.candidate_dir,int(task.get("max_new_tokens",24)),task.get("image_path"),task.get("prompt","Extract visible text and fields."),a.teacher_weights),indent=2,ensure_ascii=False));return 0
+    if a.smoke_test: print(json.dumps(smoke(a.candidate_dir,a.max_new_tokens,teacher_weights_path=a.teacher_weights),indent=2,ensure_ascii=False));return 0
     if a.verify_only:
         model,meta=load_candidate(a.candidate_dir);print(json.dumps({"status":"PASS","candidate_id":meta["candidate_id"]}));return 0
     ap.error("use --smoke-test, --verify-only, or --task-json-stdin")

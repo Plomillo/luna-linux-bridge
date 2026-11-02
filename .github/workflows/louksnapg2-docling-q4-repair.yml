@@ -113,7 +113,7 @@ jobs:
     container:
       image: ubuntu:24.04
       options: --memory=1g --memory-swap=1g --cpus=1
-    timeout-minutes: 35
+    timeout-minutes: 55
     steps:
       - name: Verify exact 1-GiB candidate cgroup and one-core quota
         shell: bash
@@ -234,7 +234,9 @@ jobs:
             --repo-root "$GITHUB_WORKSPACE" \
             --candidate-dir "$BASE" \
             --image "$IMAGE_PATH" \
+            --teacher-weights "$RUNNER_TEMP/docling-q4-build/teacher/model.safetensors" \
             --report "$REPORT_PATH" \
+            --timeout-seconds 900 \
             --max-new-tokens 256 \
             | tee "$RUNNER_TEMP/docling-q4-functional-summary.json"
 

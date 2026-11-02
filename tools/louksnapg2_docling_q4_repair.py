@@ -207,6 +207,12 @@ def build(args: argparse.Namespace) -> int:
 
     weights_bytes = out_weights.stat().st_size
     weights_sha = sha256_file(out_weights)
+    teacher_dir = args.output_dir / "teacher"
+    teacher_dir.mkdir(parents=True, exist_ok=True)
+    teacher_sidecar = teacher_dir / "model.safetensors"
+    shutil.copy2(source_weight, teacher_sidecar)
+    if teacher_sidecar.stat().st_size != SOURCE_WEIGHT_BYTES or sha256_file(teacher_sidecar) != SOURCE_WEIGHT_SHA256:
+        raise RuntimeError("ORIGINAL_TEACHER_SIDECAR_IDENTITY_MISMATCH")
     if weights_bytes > WEIGHT_HARD_CAP_BYTES:
         raise RuntimeError(f"DOCLING_Q4_WEIGHT_HARD_CAP_EXCEEDED:{weights_bytes}:{WEIGHT_HARD_CAP_BYTES}")
     original_bytes = int((args.base_candidate / "quantized_weights.bin").stat().st_size)
@@ -283,6 +289,12 @@ def build(args: argparse.Namespace) -> int:
             "config_sha256": observed_config_sha,
             "source_mutated": False,
         },
+        "paired_evaluation_teacher_sidecar": {
+            "path": "teacher/model.safetensors",
+            "bytes": SOURCE_WEIGHT_BYTES,
+            "sha256": SOURCE_WEIGHT_SHA256,
+            "role": "EVALUATION_ONLY_NOT_PART_OF_CANDIDATE_PACKAGE",
+        },
         "candidate": {
             "weights_bytes": weights_bytes,
             "weights_sha256": weights_sha,
@@ -306,50 +318,161 @@ def build(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_runtime_protocol(runtime_path: Path, candidate_dir: Path, image: Path,
+                           max_new_tokens: int, prompt: str, teacher_weights: Path | None,
+                           timeout_seconds: int) -> dict:
+    import subprocess
+
+    payload = json.dumps({
+        "operation": "extract_document_image",
+        "max_new_tokens": max_new_tokens,
+        "image_path": str(image),
+        "prompt": prompt,
+    })
+    command = [
+        sys.executable, "-B", str(runtime_path),
+        "--candidate-dir", str(candidate_dir),
+        "--task-json-stdin",
+    ]
+    if teacher_weights is not None:
+        command.extend(["--teacher-weights", str(teacher_weights)])
+    env = os.environ.copy()
+    env.update({
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "TOKENIZERS_PARALLELISM": "false",
+        "HF_HUB_OFFLINE": "1",
+        "TRANSFORMERS_OFFLINE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "LOUKSNAPG2_DOCLING_IMAGE_SIDE": "256",
+    })
+    try:
+        completed = subprocess.run(
+            command, input=payload, text=True, capture_output=True,
+            timeout=timeout_seconds, check=False, env=env,
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "status": "FAIL_TIMEOUT",
+            "process_return_code": None,
+            "stderr_sha256": hashlib.sha256(b"PROCESS_TIMEOUT").hexdigest(),
+            "output_text": "",
+        }
+    try:
+        result = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        result = {
+            "status": "FAIL_RUNTIME",
+            "return_code": completed.returncode,
+            "stdout_tail": completed.stdout[-2000:],
+            "stderr_tail": completed.stderr[-2000:],
+            "stderr_sha256": hashlib.sha256(completed.stderr.encode("utf-8", errors="replace")).hexdigest(),
+            "output_text": "",
+        }
+    result["process_return_code"] = completed.returncode
+    if completed.returncode != 0 and result.get("status") == "PASS":
+        result["status"] = "FAIL_RUNTIME_EXIT"
+    return result
+
+
 def evaluate(args: argparse.Namespace) -> int:
     runtime_path = args.repo_root / RUNTIME_REL
     if not runtime_path.is_file():
         raise RuntimeError("DOCILING_RUNTIME_NOT_FOUND:" + str(runtime_path))
-    spec = importlib.util.spec_from_file_location("docling_q4_runtime", runtime_path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError("DOCLING_RUNTIME_IMPORT_SPEC_FAILED")
-    runtime = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(runtime)
-    result = runtime.smoke(
-        args.candidate_dir,
-        max_new_tokens=args.max_new_tokens,
-        image_path=str(args.image),
-        prompt=PROMPT,
+    teacher_raw = Path(args.teacher_weights)
+    if teacher_raw.is_symlink() or not teacher_raw.is_file():
+        raise RuntimeError("ORIGINAL_TEACHER_SIDECAR_MISSING_OR_SYMLINK")
+    teacher_weights = teacher_raw.resolve(strict=True)
+    teacher_bytes = teacher_weights.stat().st_size
+    teacher_sha = sha256_file(teacher_weights)
+    if teacher_bytes != SOURCE_WEIGHT_BYTES or teacher_sha != SOURCE_WEIGHT_SHA256:
+        raise RuntimeError("ORIGINAL_TEACHER_SIDECAR_IDENTITY_MISMATCH:" + teacher_sha)
+
+    # Sequential subprocesses ensure that the two model copies never coexist in RAM.
+    # Both use the same local processor/config/generation files, image, prompt,
+    # input geometry, token budget, CPU quota and 1-GiB cgroup.
+    q4_result = _run_runtime_protocol(
+        runtime_path, args.candidate_dir, args.image, args.max_new_tokens,
+        PROMPT, None, args.timeout_seconds,
     )
-    words = set(re.findall(r"[a-z0-9]+", str(result.get("output_text", "")).casefold()))
-    missing = [word for word in EXPECTED_FIELDS if word not in words]
-    peak = int(result.get("peak_rss_bytes", 0))
-    quality_pass = not missing
-    resource_pass = 0 < peak <= 1 * 1024**3
-    execution_pass = result.get("status") == "PASS" and result.get("generation") == "PASS"
-    status = "PASS" if execution_pass and resource_pass and quality_pass else "FAIL"
-    evidence = {
-        "schema": "LOUKSNAPG2_DOCLING_Q4_FUNCTIONAL_EVIDENCE/1.0",
-        "generated_at_utc": utc_now(),
-        "source_model": {"id": MODEL_ID, "revision": MODEL_REVISION, "sha256": SOURCE_WEIGHT_SHA256},
-        "candidate_id": result.get("candidate_id", CANDIDATE_ID),
-        "test": {
-            "fixture_sha256": sha256_file(args.image),
-            "fixture_bytes": args.image.stat().st_size,
-            "expected_fields": list(EXPECTED_FIELDS),
+    teacher_result = _run_runtime_protocol(
+        runtime_path, args.candidate_dir, args.image, args.max_new_tokens,
+        PROMPT, teacher_weights, args.timeout_seconds,
+    )
+
+    def predicate(result: dict) -> dict:
+        words = set(re.findall(r"[a-z0-9]+", str(result.get("output_text", "")).casefold()))
+        missing = [word for word in EXPECTED_FIELDS if word not in words]
+        peak = int(result.get("peak_rss_bytes", 0))
+        execution_pass = result.get("status") == "PASS" and result.get("generation") == "PASS" and result.get("process_return_code") == 0
+        resource_pass = 0 < peak <= 1 * 1024**3
+        return {
             "observed_words": sorted(words),
             "missing_fields": missing,
+            "semantic_quality_pass": not missing,
+            "execution_pass": execution_pass,
+            "resource_pass": resource_pass,
+            "peak_rss_bytes": peak,
             "output_text": result.get("output_text", ""),
             "output_sha256": result.get("output_sha256"),
-            "semantic_quality_pass": quality_pass,
+            "candidate_id": result.get("candidate_id"),
+            "model_source": result.get("model_source"),
+            "execution_status": "PASS_EXECUTION" if execution_pass else str(result.get("status", "FAIL")),
+        }
+
+    q4 = predicate(q4_result)
+    teacher = predicate(teacher_result)
+    comparable = (
+        q4_result.get("image_side_pixels") == teacher_result.get("image_side_pixels") == 256
+        and q4_result.get("image_sequence_length") == teacher_result.get("image_sequence_length")
+        and q4_result.get("processor_load") == teacher_result.get("processor_load") == "PASS"
+        and q4_result.get("image_preprocess") == teacher_result.get("image_preprocess") == "PASS"
+        and q4_result.get("generation") == teacher_result.get("generation") == "PASS"
+    )
+    if teacher["semantic_quality_pass"] and not q4["semantic_quality_pass"]:
+        diagnosis = "Q4_WEIGHT_RECONSTRUCTION_OR_QUANTIZATION_FAILURE_SUPPORTED"
+    elif not teacher["semantic_quality_pass"] and not q4["semantic_quality_pass"] and comparable:
+        diagnosis = "SHARED_RUNTIME_PROCESSOR_IMAGE_OR_PROMPT_PATH_REMAINS_SUSPECT"
+    elif teacher["semantic_quality_pass"] and q4["semantic_quality_pass"]:
+        diagnosis = "BOTH_SEMANTICALLY_PASS; Q4_QUALITY_REQUIRES_BROADER_HELD_OUT_VALIDATION"
+    else:
+        diagnosis = "INCONCLUSIVE_OR_PROTOCOL_MISMATCH"
+
+    fixture_sha = sha256_file(args.image)
+    status = "PASS" if (
+        comparable and q4["semantic_quality_pass"] and teacher["semantic_quality_pass"]
+        and q4["execution_pass"] and teacher["execution_pass"]
+        and q4["resource_pass"] and teacher["resource_pass"]
+    ) else "FAIL"
+    evidence = {
+        "schema": "LOUKSNAPG2_DOCLING_Q4_PAIRED_FP16_EVALUATION/1.0",
+        "generated_at_utc": utc_now(),
+        "source_model": {
+            "id": MODEL_ID, "revision": MODEL_REVISION,
+            "weights_bytes": SOURCE_WEIGHT_BYTES, "weights_sha256": SOURCE_WEIGHT_SHA256,
         },
-        "execution": result,
-        "resource_budget": {
-            "candidate_memory_limit_bytes": 1 * 1024**3,
-            "candidate_cpu_limit": 1,
-            "peak_rss_bytes": peak,
-            "measured_process_peak_within_budget": resource_pass,
+        "candidate_id": CANDIDATE_ID,
+        "paired_protocol": {
+            "fixture_sha256": fixture_sha,
+            "fixture_bytes": args.image.stat().st_size,
+            "prompt": PROMPT,
+            "max_new_tokens": args.max_new_tokens,
+            "image_side_pixels": 256,
+            "image_splitting": False,
+            "processor_and_generation_config_root": str(args.candidate_dir),
+            "cpu_limit": 1,
+            "memory_limit_bytes": 1 * 1024**3,
+            "runs_are_sequential_separate_processes": True,
+            "same_fixture_and_generation_protocol": True,
+            "teacher_sidecar_bytes": teacher_bytes,
+            "teacher_sidecar_sha256": teacher_sha,
         },
+        "teacher_fp16": teacher,
+        "q4_reconstructed": q4,
+        "protocol_comparable": comparable,
+        "diagnostic_hypothesis": diagnosis,
         "status": status,
         "promotion": "NOT_AUTHORIZED",
         "global_certification": "NOT_GRANTED",
@@ -371,6 +494,8 @@ def main() -> int:
     eval_parser.add_argument("--candidate-dir", required=True, type=Path)
     eval_parser.add_argument("--image", required=True, type=Path)
     eval_parser.add_argument("--report", required=True, type=Path)
+    eval_parser.add_argument("--teacher-weights", required=True, type=Path)
+    eval_parser.add_argument("--timeout-seconds", type=int, default=900)
     eval_parser.add_argument("--max-new-tokens", type=int, default=256)
     args = parser.parse_args()
     if args.self_test:
