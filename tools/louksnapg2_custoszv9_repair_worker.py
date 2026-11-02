@@ -93,7 +93,10 @@ def verify_authorization(task: dict) -> dict:
 
 def readiness_inventory(repo: Path) -> dict:
     sys.path.insert(0, str(repo / "cajita-luna-runtime"))
+    sys.path.insert(0, str(repo / "tools"))
     from cajita_task_adapters import ADAPTERS, verify_integrity
+    from louksnapg2_refresh_module_integrity import refresh as refresh_docling_integrity
+    refresh_docling_integrity(repo / "cajita-luna-runtime")
 
     registry_path = repo / "repair" / "LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY_V1.json"
     registry = json.loads(registry_path.read_text(encoding="utf-8"))

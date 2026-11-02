@@ -80,6 +80,12 @@ jobs:
           print("FIXTURE_BYTES=" + str(image_path.stat().st_size))
           PY
 
+      - name: Refresh Docling derived module-tree metadata and revalidate source hashes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B tools/louksnapg2_refresh_module_integrity.py --runtime-root cajita-luna-runtime
+
       - name: Run the isolated Docling semantic acceptance case offline
         shell: bash
         env:

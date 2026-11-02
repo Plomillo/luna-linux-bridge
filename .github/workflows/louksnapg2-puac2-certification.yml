@@ -98,6 +98,12 @@ jobs:
           print("EXISTING_CAJITA_WEIGHT_IDENTITIES=PASS")
           PY
 
+      - name: Recompute and verify the Docling derived module-tree descriptor
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python tools/louksnapg2_refresh_module_integrity.py --runtime-root cajita-luna-runtime
+
       - name: Run LOUKSNAPG2 synthetic/unit tests and preserve their exact result
         shell: bash
         env:
