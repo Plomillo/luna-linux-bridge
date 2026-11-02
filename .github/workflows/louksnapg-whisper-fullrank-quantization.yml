@@ -97,7 +97,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           python -m pip install --disable-pip-version-check --no-cache-dir "torch==2.7.1" --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install --disable-pip-version-check --no-cache-dir "transformers==4.55.4" "huggingface_hub==0.35.3" "safetensors==0.6.2" "accelerate==1.10.1" "sentencepiece==0.2.1" "numpy==2.2.6"
+          python -m pip install --disable-pip-version-check --no-cache-dir "huggingface_hub==0.35.3" "safetensors==0.6.2" "numpy==2.2.6"
 
       - name: Build pinned CPU inference and full-rank quantizer binaries
         shell: bash

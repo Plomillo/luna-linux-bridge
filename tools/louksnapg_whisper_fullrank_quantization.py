@@ -149,6 +149,53 @@ def git_head(path: Path) -> str:
     return result.stdout.strip()
 
 
+
+
+def create_streaming_converter(upstream_converter: Path, output_dir: Path) -> Path:
+    """Read the pinned Whisper safetensors checkpoint one tensor at a time."""
+    source = upstream_converter.read_text(encoding="utf-8")
+    replacements = [
+        (
+            "from transformers import WhisperForConditionalGeneration\n",
+            "from safetensors import safe_open\n",
+        ),
+        (
+            "model = WhisperForConditionalGeneration.from_pretrained(dir_model)\n",
+            'weight_path = dir_model / "model.safetensors"\n'
+            'if not weight_path.is_file():\n'
+            '    raise FileNotFoundError("PINNED_WHISPER_SAFETENSORS_MISSING")\n'
+            'safe_weights = safe_open(str(weight_path), framework="pt", device="cpu")\n'
+            "safe_weights.__enter__()\n",
+        ),
+        (
+            "list_vars = model.state_dict()\n",
+            "list_vars = safe_weights.keys()\n",
+        ),
+        (
+            "data = list_vars[src].squeeze().numpy()\n",
+            "data = safe_weights.get_tensor(src).squeeze().numpy()\n",
+        ),
+        (
+            "fout.close()\n",
+            "fout.close()\nsafe_weights.__exit__(None, None, None)\n",
+        ),
+    ]
+    for original, replacement in replacements:
+        if source.count(original) != 1:
+            raise RuntimeError(
+                "UPSTREAM_CONVERTER_PATCH_ANCHOR_MISMATCH:"
+                + original.splitlines()[0]
+            )
+        source = source.replace(original, replacement)
+    if "WhisperForConditionalGeneration.from_pretrained" in source:
+        raise RuntimeError("FULL_TRANSFORMERS_MODEL_LOADING_NOT_REMOVED")
+    if "safe_weights.get_tensor(src)" not in source:
+        raise RuntimeError("SAFE_TENSOR_LAZY_READ_NOT_INSTALLED")
+    patched = output_dir / "convert-h5-to-ggml-streaming.py"
+    compile(source, str(patched), "exec")
+    patched.write_text(source, encoding="utf-8")
+    return patched
+
 def release_projection(candidate_bytes: int) -> dict:
     projected = (
         BASELINE_RELEASE_BYTES
@@ -192,6 +239,8 @@ def build(args) -> int:
     converter_sha = sha256_file(converter)
     if converter_sha != CONVERTER_SHA256:
         raise RuntimeError("WHISPER_CPP_CONVERTER_SHA256_MISMATCH:" + converter_sha)
+    streaming_converter = create_streaming_converter(converter, out)
+    streaming_converter_sha = sha256_file(streaming_converter)
     if git_head(cpp_root) != WHISPER_CPP_REVISION:
         raise RuntimeError("WHISPER_CPP_REVISION_MISMATCH")
     if git_head(openai_root) != OPENAI_WHISPER_REVISION:
@@ -236,7 +285,7 @@ def build(args) -> int:
     })
     fp16_model = out / "ggml-model-f16.bin"
     conversion = run_checked(
-        [sys.executable, str(converter), str(model_dir), str(openai_root), str(out)],
+        [sys.executable, str(streaming_converter), str(model_dir), str(openai_root), str(out)],
         cwd=cpp_root, timeout=3600, env=env,
     )
     if not fp16_model.is_file():
@@ -304,6 +353,9 @@ def build(args) -> int:
             "openai_whisper_assets_revision": OPENAI_WHISPER_REVISION,
             "converter_path": "models/convert-h5-to-ggml.py",
             "converter_sha256": converter_sha,
+"streaming_converter_sha256": streaming_converter_sha,
+"converter_execution_mode": "PINNED_UPSTREAM_TENSOR_MAPPING_WITH_LAZY_SAFETENSORS_PER_TENSOR_STREAMING",
+"full_transformers_model_materialization": false,
             "fp16_intermediate_bytes": fp16_model.stat().st_size,
             "fp16_intermediate_sha256": sha256_file(fp16_model),
             "conversion_execution": conversion,
