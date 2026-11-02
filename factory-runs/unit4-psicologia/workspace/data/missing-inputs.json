@@ -2,32 +2,32 @@
   "schema": "DOCUMENT_FACTORY_MISSING_INPUTS/1.0",
   "status": "PARTIAL_SOURCE_COMPLETENESS",
   "source_pdf": "PSIC0103_FINAL2_U4.pdf",
+  "user_context_applied": {
+    "region_commune": "Región Metropolitana de Santiago — Peñalolén",
+    "sector": "Urbano",
+    "household_composition": "Seis integrantes: estudiante, dos hermanos, una hermana, madre y pareja actual de la madre",
+    "aim_chilean_ses": "C2",
+    "community_focus": "Adolescentes"
+  },
+  "first_part": {
+    "required_items": 12,
+    "weight_percent": 35,
+    "stems_in_supplied_pdf": false,
+    "handling": "Doce preguntas originales y una clave de respuesta se incorporaron con autorización expresa del estudiante. No se presentan como transcripción ni como preguntas oficiales de la plataforma."
+  },
   "blocking_or_material_gaps": [
-    {
-      "id": "MCQ_12_STEMS_AND_OPTIONS",
-      "severity": "BLOCKING",
-      "impact": "35% of maximum exam grade",
-      "detail": "The supplied eight-page PDF states that the first part contains 12 multiple-choice questions but includes no question stems or answer alternatives. It is not possible to answer them without the missing pages or separate question set."
-    },
-    {
-      "id": "PERSONAL_SOCIOCULTURAL_CONTEXT",
-      "severity": "BLOCKING_FOR_PROMPT_2_PERSONALISATION",
-      "impact": "Case contextualisation",
-      "detail": "The real region and commune, urban/rural/semi-rural sector, household composition and AIM socioeconomic group were not provided. The report therefore labels its 329-word case as fictional and leaves explicit replacement fields; no personal facts have been inferred."
-    },
     {
       "id": "COURSE_LEARNING_RESOURCES",
       "severity": "MATERIAL",
-      "impact": "Alignment with course materials",
-      "detail": "The submission PDF does not include full course videos, class notes or private reading excerpts. References are limited to identifiable academic texts and institutional sources already represented in the draft/source ledger; course-specific claims should be checked against the learning platform before submission."
+      "impact": "Afinidad máxima con los materiales específicos de las unidades",
+      "detail": "El PDF de instrucciones no incluye los videos, apuntes completos ni lecturas privadas del curso. El trabajo usa los contenidos y resultados de aprendizaje visibles en la pauta y las fuentes académicas e institucionales identificables; conviene cotejar el vocabulario específico con el aula virtual."
     }
   ],
-  "allowed_output": "Revised six-question development essay and a clearly marked case template only. No multiple-choice selections, personal details or academic contribution by the student are fabricated.",
+  "allowed_output": "Caso de 300–400 palabras contextualizado con datos aportados por el estudiante, 12 ítems originales de selección única con clave y ensayo de seis respuestas.",
   "certification": "NOT_GRANTED",
   "g23": "NOT_EXECUTED",
   "g24": "NOT_EXECUTED",
   "next_required_evidence": [
-    "The missing stems and answer alternatives for all 12 multiple-choice questions.",
-    "The student's actual region/commune, sector, household composition and AIM segment, or explicit authorisation to leave those fields blank."
+    "Materiales de aprendizaje específicos de las unidades, solo si se desea una última alineación terminológica más fina."
   ]
 }

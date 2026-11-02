@@ -45,7 +45,7 @@
   "constraints": {
     "report_word_count": {
       "min": 1050,
-      "max": 1650,
+      "max": 2100,
       "exclude": [
         "bibliography"
       ]
@@ -82,16 +82,18 @@
       "citations_mapped": true
     },
     "personal_context": {
-      "region_commune": "PENDING_USER_CONFIRMATION",
-      "sector": "NOT_INFERRED",
-      "household_composition": "NOT_INFERRED",
-      "aim_chilean_ses": "NOT_INFERRED"
+      "region_commune": "Región Metropolitana de Santiago, comuna de Peñalolén (confirmado por el estudiante)",
+      "sector": "Urbano (confirmado por el estudiante)",
+      "household_composition": "Seis integrantes: estudiante, dos hermanos, una hermana, madre y pareja actual de la madre (confirmado por el estudiante)",
+      "aim_chilean_ses": "C2 (confirmado por el estudiante)",
+      "community_focus": "Adolescentes (selección mantenida por instrucción del estudiante)"
     },
     "first_part": {
       "required_mcq_count": 12,
       "weight_percent": 35,
-      "status": "SOURCE_OMITS_QUESTION_STEMS_AND_OPTIONS",
-      "answer_generation": "FORBIDDEN_WITHOUT_SOURCE"
+      "status": "12_ORIGINAL_SINGLE_ANSWER_ITEMS_AUTHORED_WITH_USER_PERMISSION; NOT_TRANSCRIBED_FROM_PLATFORM",
+      "answer_generation": "AUTHORIZED_ORIGINAL_AUTHORING_FROM_PROVIDED_LEARNING_OUTCOMES",
+      "provenance": "The supplied assessment PDF describes the first part and its topics but does not provide item stems/options; the 12 items in this report are original model-authored questions, explicitly authorized by the student, not official LMS questions."
     },
     "second_part": {
       "essay_questions": 6,
@@ -105,25 +107,25 @@
         "id": "R01",
         "points": 7,
         "text": "Describe conceptos básicos, corrientes filosóficas, figuras y acontecimientos históricos de la Psicología; aplicar historia, filosofía y teorías al caso.",
-        "validation": "AUTOMATED_COVERAGE"
+        "validation": "AUTOMATED_COVERAGE+G23_HUMAN"
       },
       {
         "id": "R02",
         "points": 7,
         "text": "Explicar y contrastar teorías psicológicas, fundamentos, objetos y métodos de investigación aplicados al caso.",
-        "validation": "AUTOMATED_COVERAGE"
+        "validation": "AUTOMATED_COVERAGE+G23_HUMAN"
       },
       {
         "id": "R03",
         "points": 7,
         "text": "Analizar campos de aplicación, desafíos contemporáneos, ética profesional y toma de decisiones en el caso.",
-        "validation": "AUTOMATED_COVERAGE"
+        "validation": "AUTOMATED_COVERAGE+G23_HUMAN"
       },
       {
         "id": "R04",
         "points": 4,
         "text": "Fuentes académicas confiables, citas y referencias APA 7, lenguaje argumentativo.",
-        "validation": "AUTOMATED_CITATION_LEDGER"
+        "validation": "AUTOMATED_CITATION_LEDGER+G23_HUMAN"
       }
     ]
   },

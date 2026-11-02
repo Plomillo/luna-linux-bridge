@@ -45,16 +45,16 @@ jobs:
           python3 -B document-factory/src/factory.py self-audit "$W" "$PROFILE"
           cp "$W/build/report.docx" "$W/build/ExamenFinal_DiegoNorambuena.docx"
           cp "$W/build/report.pdf" "$W/build/ExamenFinal_DiegoNorambuena.pdf"
-          printf '{"run_id":"%s","commit":"%s","ref":"%s","external_certification":"NOT_REQUIRED_BY_USER","source_gaps":"DOCUMENTED"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
+          printf '{"run_id":"%s","commit":"%s","ref":"%s","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED","source_gaps":"COURSE_RESOURCES_DISCLOSED"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
           python3 -B document-factory/src/factory.py freeze "$W"
           {
             echo "## Psicología U4 — fábrica"
             echo "- Rúbrica: 25 puntos"
             echo "- Ensayo: seis respuestas; caso de 300–400 palabras"
             echo "- PDF: 3–5 páginas; validación ejecutada"
-            echo "- Parte MCQ: pendiente; no se recibieron enunciados ni alternativas"
-            echo "- Contexto personal: no inferido"
-            echo "- Certificación externa: no requerida para esta misión"
+            echo "- Parte MCQ: 12 preguntas originales de selección única y clave incorporadas con autorización del estudiante"
+            echo "- Contexto aplicado: Peñalolén urbano; hogar de seis integrantes; AIM C2; foco adolescente"
+            echo "- G23/G24: NOT_EXECUTED; escalamiento independiente pendiente"
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

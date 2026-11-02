@@ -22,7 +22,10 @@ for marker in ["positivismo","Wundt","1879","funcionalismo","psicoanálisis","co
 order=["Biblioteca del Congreso Nacional de Chile.","Colegio de Psicólogos de Chile.","Cosacov,","Danziger,","Erikson,","Freud,","Piaget,","Rogers,","Sáiz,","Skinner,","Universidad UNIACC. (s. f.)","Universidad UNIACC. (2025)","Vygotsky,"]
 positions=[raw.index(x,raw.index("## Referencias")) for x in order]
 assert positions==sorted(positions),"APA_REFERENCE_ORDER_FAIL"
-assert "[completar]" in raw and "Caso deliberadamente ficticio" in raw
+assert "Peñalolén" in raw and "C2" in raw and "sector urbano" in raw.casefold() and "Caso ficticio" in raw
+mcq_count=len(re.findall(r"(?m)^\\*\\*\\d{2}\\.\\*\\*",raw))
+assert mcq_count==12,f"MCQ_COUNT:{mcq_count}"
+assert "Clave de respuestas" in raw
 d=Document(str(docx)); sec=d.sections[0]
 for value in [sec.top_margin,sec.bottom_margin,sec.left_margin,sec.right_margin]:
     assert abs(value.inches*2.54-2.5)<0.03,"MARGIN_FAIL"

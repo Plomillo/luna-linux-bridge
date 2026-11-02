@@ -2,19 +2,19 @@
 % Diego Ignacio Norambuena Miranda
 
 # Caso
-Adolescente rural de 14 años; asistencia y bienestar no se explican por un solo indicador.
+Adolescente urbana de Peñalolén; asistencia y bienestar no se explican por un solo indicador.
 
-# Filosofía
-Pluralismo epistemológico: datos observables + experiencia subjetiva + contexto.
+# Historia y filosofía
+Empirismo, racionalismo, positivismo y origen de la Psicología experimental.
 
 # Teorías
-Psicoanálisis; aprendizaje; humanismo; enfoque histórico-cultural y desarrollo.
+Psicoanálisis; aprendizaje; humanismo; desarrollo cognitivo y perspectiva sociocultural.
 
 # Ética
-Confidencialidad, participación adolescente, pertinencia cultural y derechos.
+Confidencialidad, participación adolescente, privacidad y derechos.
 
 # Campos
-Clínica + educación + social-comunitaria.
+Psicología clínica, educacional y social-comunitaria.
 
 # Intervención
-Evaluación multimétodo, apoyo escolar, red comunitaria y seguimiento.
+Entrevista, observación, apoyos escolares y coordinación de redes.
