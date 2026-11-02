@@ -316,7 +316,7 @@ jobs:
             --runtime-root "$RUNNER_TEMP/louksnapg2-extracted" \
             --audio-one "$RUNNER_TEMP/louksnapg2-audio-one.wav" \
             --audio-two "$RUNNER_TEMP/louksnapg2-audio-two.wav" \
-            --docling-image "out/louksnapg2-functional/louksnapg2-invoice.png" \
+            --docling-image "$GITHUB_WORKSPACE/out/louksnapg2-functional/louksnapg2-invoice.png" \
             --output out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json
           rc=$?
           set -e

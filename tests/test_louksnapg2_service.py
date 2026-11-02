@@ -37,21 +37,45 @@ class FakeRuntime:
 
 
 class LouksnapG2ServiceTests(unittest.TestCase):
-    def test_all_five_required_target_ids_have_distinct_registered_bindings(self):
+    def test_all_five_model_targets_and_ancient_consumer_have_distinct_bindings(self):
         self.assertEqual(
             set(TARGET_BINDINGS),
             {
                 "D01_CEREBRO_ROOT",
                 "D06_ANALISIS_AVANZADO",
                 "D04_TRADUCCION_GENERAL",
+                "D05_DOCLING",
                 "D04_TRADUCCION_LENGUAS_ANTIGUAS",
                 "D03_TRANSCRIPCION_ROOT",
             },
         )
         self.assertEqual(
             len({(row["domain_id"], row["operation"]) for row in TARGET_BINDINGS.values()}),
-            5,
+            6,
         )
+
+    def test_docling_target_reaches_registered_document_extraction_adapter(self):
+        runtime = FakeRuntime({
+            "status": "PASS_EXECUTION",
+            "execution_authorized": True,
+            "domain_id": "D05_INTELIGENCIA_DOCUMENTAL",
+            "operation": "extract_document_image",
+            "output_text": "INVOICE 4821 TOTAL 37.50",
+            "output_sha256": hashlib.sha256(b"INVOICE 4821 TOTAL 37.50").hexdigest(),
+            "model_source_evidence": {"fixture": "unit-only"},
+        })
+        response = dispatch_target(
+            runtime,
+            "D05_DOCLING",
+            {"image_path": "/tmp/invoice.png", "prompt": "Extract invoice number and total."},
+            task_id="docling-route-01",
+        )
+        self.assertEqual(runtime.calls[0][0], "D05_INTELIGENCIA_DOCUMENTAL")
+        self.assertEqual(runtime.calls[0][1], "extract_document_image")
+        self.assertEqual(response["target_id"], "D05_DOCLING")
+        self.assertEqual(response["adapter_id"], "LOUKSNAPG2_DOCLING_DOCUMENT_EXTRACTION_ADAPTER/1.0")
+        self.assertEqual(response["output_sha256"], hashlib.sha256(b"INVOICE 4821 TOTAL 37.50").hexdigest())
+        self.assertEqual(response["certification"], "NOT_GRANTED_BY_DISPATCH")
 
     def test_ancient_translation_target_reaches_only_the_dedicated_domain_and_operation(self):
         runtime = FakeRuntime()
