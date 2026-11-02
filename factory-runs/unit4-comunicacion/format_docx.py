@@ -73,7 +73,7 @@ for index, paragraph in enumerate(cover_paragraphs[:2]):
     paragraph.paragraph_format.space_after = Pt(2 if index == 0 else 4)
     for run in paragraph.runs:
         run.font.name = "Arial"
-        run.font.size = Pt(16 if index == 0 else 12)
+        run.font.size = Pt(16 if paragraph.style.name.startswith("Heading") or paragraph.style.name == "Title" else 12)
         run.font.bold = True
 cover_metadata = [p for p in doc.paragraphs if p.text.strip().startswith(("Asignatura:", "Docente:", "Estudiante:"))]
 for paragraph in cover_metadata:
