@@ -213,23 +213,29 @@ jobs:
           foma_rc=${PIPESTATUS[0]}
           python -B -m unittest discover -s tests -p 'test_louksnapg_whisper_fullrank_paths.py' -v 2>&1 | tee out/test-logs/whisper-artifact-path-tests.log
           whisper_rc=${PIPESTATUS[0]}
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_registry_selection.py' -v 2>&1 | tee out/test-logs/registry-selection-tests.log
+          registry_rc=${PIPESTATUS[0]}
           set -e
-          python - <<'PY'
-          import json
+          SERVICE_RC="$service_rc" FOMA_RC="$foma_rc" WHISPER_RC="$whisper_rc" REGISTRY_RC="$registry_rc" python - <<'PY'
+          import json, os
           from pathlib import Path
           logs=Path("out/test-logs")
+          codes={
+            "service_route_exit_code":int(os.environ["SERVICE_RC"]),
+            "foma_exit_code":int(os.environ["FOMA_RC"]),
+            "whisper_artifact_paths_exit_code":int(os.environ["WHISPER_RC"]),
+            "registry_selection_exit_code":int(os.environ["REGISTRY_RC"]),
+          }
           result={
-            "schema":"LOUKSNAPG2_ENGINE_EXTENSION_TESTS/1.0",
-            "service_route_exit_code":int("${service_rc}"),
-            "foma_exit_code":int("${foma_rc}"),
-            "whisper_artifact_paths_exit_code":int("${whisper_rc}"),
-            "status":"PASS" if all(int(v)==0 for v in ("${service_rc}","${foma_rc}","${whisper_rc}")) else "FAIL",
+            "schema":"LOUKSNAPG2_ENGINE_EXTENSION_TESTS/2.0",
+            **codes,
+            "status":"PASS" if all(v==0 for v in codes.values()) else "FAIL",
             "logs":[p.name for p in sorted(logs.glob("*-tests.log"))]
           }
           Path("out/LOUKSNAPG2_ENGINE_EXTENSION_TESTS.json").write_text(json.dumps(result,sort_keys=True,indent=2)+"\n",encoding="utf-8")
           print(json.dumps(result,sort_keys=True,indent=2))
           PY
-          if [ "$service_rc" -ne 0 ] || [ "$foma_rc" -ne 0 ] || [ "$whisper_rc" -ne 0 ]; then exit 2; fi
+          if [ "$service_rc" -ne 0 ] || [ "$foma_rc" -ne 0 ] || [ "$whisper_rc" -ne 0 ] || [ "$registry_rc" -ne 0 ]; then exit 2; fi
 
       - name: Upload source unit evidence
         if: always()

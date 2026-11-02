@@ -91,6 +91,18 @@ def verify_authorization(task: dict) -> dict:
     }
 
 
+def select_repair_registry_path(repair_dir: Path) -> Path:
+    """Select the newest versioned registry and reject symlink substitution."""
+    repair_dir = Path(repair_dir)
+    for version in (3, 2, 1):
+        candidate = repair_dir / f"LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY_V{version}.json"
+        if candidate.is_symlink():
+            raise RuntimeError("REPAIR_REGISTRY_SYMLINK_REJECTED:" + candidate.name)
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError("LOUKSNAPG2_MODEL_REPAIR_REGISTRY_MISSING")
+
+
 def readiness_inventory(repo: Path) -> dict:
     sys.path.insert(0, str(repo / "cajita-luna-runtime"))
     sys.path.insert(0, str(repo / "tools"))
@@ -98,8 +110,7 @@ def readiness_inventory(repo: Path) -> dict:
     from louksnapg2_refresh_module_integrity import refresh as refresh_docling_integrity
     refresh_docling_integrity(repo / "cajita-luna-runtime")
 
-    registry_v2 = repo / "repair" / "LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY_V2.json"
-    registry_path = registry_v2 if registry_v2.is_file() else repo / "repair" / "LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY_V1.json"
+    registry_path = select_repair_registry_path(repo / "repair")
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
     runtime_root = repo / "cajita-luna-runtime"
     rows = []

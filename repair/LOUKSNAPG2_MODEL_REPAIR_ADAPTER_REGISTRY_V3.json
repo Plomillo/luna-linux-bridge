@@ -1,0 +1,205 @@
+{
+  "schema": "LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY/3.0",
+  "generated_at_utc": "2026-11-02",
+  "source_branch": "louksnapg2/puac2-alternative-20261029",
+  "source_parent_commit": "a546d7e10713c991cc3850c7bf198ce94fa69d0d",
+  "policy": "FAIL_CLOSED_APPEND_ONLY_NO_AUTOMATIC_PROMOTION",
+  "predecessor": "repair/LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY_V2.json",
+  "rule": "Build, hash identity, routing, and execution are not semantic quality. Each domain remains HOLD until its own independent held-out suite passes against the exact candidate package.",
+  "global_distribution_limit_bytes": 490000000,
+  "required_domains": {
+    "D01_CEREBRO": {
+      "model": "GPT-OSS-120B",
+      "compact_representation": "rank-1 INT8 factors",
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "known_failure": {
+        "relative_reconstruction_error": 0.998336,
+        "rank": 1,
+        "quality": "ARITHMETIC_AND_REASONING_FAILURE"
+      },
+      "required_next": "Source-bound teacher/student calibration, architecture-aware reconstruction, rank selection and held-out semantic evaluation.",
+      "promotion": "HOLD"
+    },
+    "D03_TRANSCRIPCION": {
+      "model": "Whisper large-v3-turbo",
+      "repair_adapter_status": "EXPERIMENTAL_FAILED_PRIOR_RANKS; Q4_Q5_EVALUATION_INFRASTRUCTURE_FIX_APPLIED",
+      "prior_rejected_attempts": [
+        "R29",
+        "R64",
+        "R96",
+        "adaptive-R192"
+      ],
+      "prior_r192_wer": 1,
+      "recent_q4_q5_run": 41539943984,
+      "recent_q4_q5_result": "ERROR_FAIL_CLOSED_ARTIFACT_MANIFEST_NOT_FOUND_BEFORE_INFERENCE; WER_NOT_MEASURED",
+      "recent_fix": "Initial direct/single-nested resolver still failed on the actual GitHub artifact extraction layout. Follow-up stages each candidate as a single-root artifact and resolves exactly one fullrank_manifest.json within a bounded, no-symlink directory walk. Rerun required.",
+      "required_next": "Rerun Q4/Q5 with the single-root staged artifact. Only after manifest identity and model hashes pass, run pinned synthetic and real speech tests and record WER. Q4/Q5 distribution projections exceed 490000000 bytes and cannot be promoted under the current package cap.",
+      "promotion": "HOLD",
+      "recent_q4_q5_candidates": {
+        "q4_0": {
+          "bytes": 473992235,
+          "sha256": "6e670d7569d1ed261cb8a4e554138f0ba6a17be7c64f079145061f93bac54e80",
+          "projected_release_bytes": 836570159,
+          "projected_size_pass": false
+        },
+        "q5_0": {
+          "bytes": 574041195,
+          "sha256": "",
+          "projected_release_bytes": 936619119,
+          "projected_size_pass": false
+        }
+      },
+      "latest_int8_experiment": {
+        "run_id": 41542917732,
+        "source_commit": "a546d7e10713c991cc3850c7bf198ce94fa69d0d",
+        "candidate_type": "RAW_INT8_REPAIR_OVERLAY",
+        "result": "FAIL",
+        "wer": 3.235294,
+        "wer_limit": 0.25,
+        "task_pass": false,
+        "semantic_equivalence": "NOT_ESTABLISHED",
+        "promotion": "HOLD",
+        "note": "A new INT8 experiment was evaluated. It failed; this does not authorize repeating historical R29/R64/R96/R192 experiments."
+      }
+    },
+    "D04_TRADUCTOR_INTELIGENTE": {
+      "model": "SeamlessM4T v2 large",
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "known_failure": {
+        "rank": 4,
+        "quality": "REPETITIVE_DEGENERATE_TRANSLATION"
+      },
+      "required_next": "Architecture-aware tied-embedding/shared-head reconstruction, calibration and bilingual held-out evaluation.",
+      "promotion": "HOLD"
+    },
+    "D04_TRADUCCION_LENGUAS_ANTIGUAS": {
+      "engine": "Foma",
+      "engine_source_archive": {
+        "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master.zip",
+        "bytes": 225343,
+        "sha256": "93d2a4eeb811f4bc3fbe584a35385f1aae07908ef42d2893693eabd354db1e74"
+      },
+      "materialized_source": {
+        "bytes": 797405,
+        "file_count": 72,
+        "tree_sha256": "7dd3672d272d90dba980ac3b002df46ae546cf8534e1fbb66f7690f74e833199"
+      },
+      "consumer_route": "LOUKSNAPG2_FOMA_ANCIENT_TRANSLATION_ADAPTER/1.0",
+      "consumer_route_status": "IMPLEMENTED_FAIL_CLOSED",
+      "translation_transducer_count": 0,
+      "translation_resource_status": "NOT_PROVISIONED",
+      "semantic_validation": "NOT_EXECUTED_NO_LATIN_OR_GREEK_FST_RESOURCES",
+      "required_next": "CUSTOSZ V9 compiles and runs Foma upstream checks plus a synthetic cat→dog lookup; register real source-pinned Latin/Ancient Greek FST resources and run independent known-answer semantic tests.",
+      "promotion": "HOLD",
+      "latest_engine_build": {
+        "run_id": 41542917882,
+        "source_commit": "a546d7e10713c991cc3850c7bf198ce94fa69d0d",
+        "worker": "CUSTOSZ_V9",
+        "source_tree_sha256": "6a026ee03fef685431dc9c352314640c799d61ad9a032840d93e96ab63d3e9e2",
+        "source_file_count": 65,
+        "upstream_regression_tests": "PASS",
+        "synthetic_lookup": {
+          "input": "cat",
+          "output": "dog",
+          "status": "PASS"
+        },
+        "engine_build_status": "PASS_FOMA_ENGINE_LOOKUP_SMOKE",
+        "linguistic_transducers_included": false,
+        "translation_transducer_count": 0,
+        "latin_greek_semantic_validation": "NOT_EXECUTED",
+        "promotion": "HOLD"
+      }
+    },
+    "D05_INTELIGENCIA_DOCUMENTAL": {
+      "model": "IBM Granite Docling 258M",
+      "repair_adapter_status": "EXPERIMENTAL_BUILD_SEMANTIC_FAIL",
+      "q4_candidate": {
+        "branch": "louksnapg2/docling-q3-reconstruction-20261102",
+        "run_id": 41505447857,
+        "candidate_id": "GRANITE_DOCLING_258M_SOURCE_Q4_GROUP256_ZLIB_20261102",
+        "source_revision": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+        "tensors": 470,
+        "weight_bytes": 103540310,
+        "relative_frobenius_error": 0.16973126025845653,
+        "output": "256_EXCLAMATION_MARKS",
+        "semantic_quality": "FAIL",
+        "source_weights_sha256": "1cdad234deb1cde18ee6a586f849057f19851daf1fedce2e40aff791dbe46f61",
+        "candidate_weight_sha256": "7761c78a5384b598fad8d73237dccee678d28ffe6f3134a3362af2a053b1adc0",
+        "evaluation": {
+          "cgroup_memory_bytes": 1073741824,
+          "peak_rss_bytes": 969199616,
+          "output": "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+          "output_sha256": "6bcedd0e1e34dfb98a5df2d2541dcff46f7c4c11d826e5f5b4c6369c2f7ef3bf",
+          "fixture_sha256": "4d27da81310640ccd5a72653596af1cd07765f9f5f7df9c05d9ba52edb94a279",
+          "missing_fields": [
+            "invoice",
+            "4821",
+            "37",
+            "50"
+          ],
+          "semantic_quality": "FAIL"
+        },
+        "promotion": "HOLD"
+      },
+      "original_model_probe": {
+        "run_id": 41473624438,
+        "result": "LOAD_PASS_GENERATION_SEMANTIC_FAIL"
+      },
+      "required_next": "Run a paired original FP16 versus Q4 inference with identical processor, image, prompt, resolution, generation settings and resource limits; isolate tensor reconstruction, image preprocessing and loading before a new repair hypothesis.",
+      "promotion": "HOLD",
+      "latest_integrated_runtime_probe": {
+        "run_id": 41542917950,
+        "source_commit": "a546d7e10713c991cc3850c7bf198ce94fa69d0d",
+        "status": "FAIL",
+        "reason": "EngineRuntimeError:ORIGINAL_CAJITA_RUNTIME_NOT_PASS:TASK_EXECUTION_TIMEOUT",
+        "semantic_quality": "FAIL",
+        "q4_candidate_integrated": false,
+        "promotion": "HOLD"
+      }
+    },
+    "D06_SISTEMA_INTELIGENTE": {
+      "model": "Qwen3-14B",
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "known_failure": {
+        "rank": 12,
+        "relative_reconstruction_error": 0.996409,
+        "quality": "ARITHMETIC_AND_REASONING_FAILURE"
+      },
+      "required_next": "Architecture-aware layer reconstruction, source-bound calibration and held-out reasoning evaluation.",
+      "promotion": "HOLD"
+    }
+  },
+  "acceptance": {
+    "source_pinned": true,
+    "original_weights_immutable": true,
+    "candidate_output_separate": true,
+    "exact_package_inference_required": true,
+    "independent_semantic_suite_required": true,
+    "rollback_checkpoint_required": true,
+    "worker_may_not_certify": true,
+    "missing_translation_transducer": "HOLD",
+    "missing_gpu_repair_evidence": "HOLD",
+    "failed_or_missing_quality_case": "HOLD",
+    "global_certification": "NOT_GRANTED",
+    "canonical_promotion": "NOT_AUTHORIZED",
+    "worker_build_success_is_not_repair": true,
+    "worker_selftest_does_not_establish_model_quality": true,
+    "global_distribution_limit_bytes": 490000000
+  },
+  "latest_observed_execution": {
+    "source_commit": "a546d7e10713c991cc3850c7bf198ce94fa69d0d",
+    "worker_run_id": 41542917882,
+    "worker_version": "CUSTOSZ_V9",
+    "worker_package_sha256": "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3",
+    "worker_selftest": "PASS_12_OF_12",
+    "task_status": "PASS_AUDIT_AND_BUILD",
+    "worker_status": "BLOCKED_NO_REPAIR_EXECUTED",
+    "repair_execution_performed": false,
+    "model_inference_performed": false,
+    "candidate_role": "REPACKAGED_UNREPAIRED_BASELINE",
+    "candidate_bytes": 371986546,
+    "candidate_sha256": "976edcf4f7cf8913ecabe87133973ec604fffab2d418ecfc03d10c0a73c48dca",
+    "candidate_within_490000000_byte_cap": true,
+    "global_certification": "NOT_GRANTED"
+  }
+}
