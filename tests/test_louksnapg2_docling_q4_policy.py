@@ -35,7 +35,8 @@ class DoclingGlobalDistributionCapTests(unittest.TestCase):
         self.assertIn('"same_fixture_and_generation_protocol": True', source)
         self.assertIn('"runs_are_sequential_separate_processes": True', source)
         self.assertIn('"teacher_source_bfloat16": teacher', source)
-        self.assertIn('LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES', source)
+        protocol_source = inspect.getsource(repair._run_runtime_protocol)
+        self.assertIn('LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES', protocol_source)
 
 
 if __name__ == "__main__":
