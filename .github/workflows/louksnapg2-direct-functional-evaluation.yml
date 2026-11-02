@@ -11,6 +11,8 @@ on:
       - "tools/louksnapg2_q4_precision_probe.py"
       - "tools/louksnapg2_model_identity_evidence.py"
       - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/**"
+      - "cajita-luna-runtime/cajita_task_adapters.py"
+      - "cajita-luna-runtime/cajita_resource_limits.py"
       - "cajita-luna-runtime/**/CAJITA_MODULE.json"
       - "cajita-luna-runtime/**/compression_metadata.json"
       - "cajita-luna-runtime/**/model.safetensors"
