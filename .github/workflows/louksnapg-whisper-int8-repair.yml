@@ -70,7 +70,17 @@ jobs:
         run: |
           set -euo pipefail
           command -v systemd-run
-          sudo systemd-run --scope --wait --pipe \\
+          sudo systemd-run --scope --wait --pipe \
+            --property=MemoryMax=3G \
+            --property=CPUQuota=100% \
+            env LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE="SYSTEMD_CGROUP_MEMORYMAX_3G_CPUQUOTA_100" \
+            python -B tools/louksnapg_whisper_int8_repair.py \
+              --mode build-and-test \
+              --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime" \
+              --work-dir "$RUNNER_TEMP/whisper-int8/work" \
+              --report "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json" \
+              --promotion-tar "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz" \
+              2>&1 | tee "$RUNNER_TEMP/whisper-int8/experiment.log"
             --property=MemoryMax=3G \\
             --property=CPUQuota=100% \\
             /usr/bin/true
