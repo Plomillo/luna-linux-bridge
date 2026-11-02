@@ -179,10 +179,11 @@ class LouksnapG2Runtime:
             # Child output is visible only for explicit CI diagnostics on synthetic tasks.
             if os.environ.get("CAJITA_E2E_DIAGNOSTICS") == "1":
                 details = []
-                for key in ("diagnostic_stderr_tail", "diagnostic_stdout_tail"):
+                for key in ("return_code", "peak_rss_bytes", "resource_policy", "diagnostic_stderr_tail", "diagnostic_stdout_tail"):
                     value = result.get(key)
-                    if isinstance(value, str) and value.strip():
-                        details.append(key + "=" + value[-800:])
+                    if value is not None and (not isinstance(value, str) or value.strip()):
+                        rendered = json.dumps(value, ensure_ascii=False, sort_keys=True) if isinstance(value, (dict, list)) else str(value)
+                        details.append(key + "=" + rendered[-800:])
                 if details:
                     diagnostic_suffix = "|DIAGNOSTICS|" + "|".join(details)
             raise EngineRuntimeError("ORIGINAL_CAJITA_RUNTIME_NOT_PASS:" + reason + diagnostic_suffix)
