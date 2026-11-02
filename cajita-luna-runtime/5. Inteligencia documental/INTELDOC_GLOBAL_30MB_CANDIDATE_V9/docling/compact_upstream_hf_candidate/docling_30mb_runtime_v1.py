@@ -402,7 +402,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
             "decoded_chars":len(decoded),"elapsed_seconds":round(time.time()-t,3),
             "decoded_span":"NEW_TOKENS_ONLY","quality_equivalence":"NOT_ESTABLISHED",
             "image_side_pixels":image_side,"image_sequence_length":image_seq_len,
-            "ram_budget_bytes":RAM_BUDGET_BYTES,"model_dtype":str(model_dtype),
+            "ram_budget_bytes":RAM_BUDGET_BYTES,"model_dtype":str(next(model.parameters()).dtype),
             "ram_limit":ram_limit,"peak_rss_bytes":peak_rss_bytes()}
 
 
