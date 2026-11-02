@@ -73,19 +73,19 @@ Freud analiza procesos inconscientes, pero el silencio no demuestra conflicto ps
 
 ### 3. Dilemas éticos
 
-La presión por resultados puede desplazar necesidades. Compartir registros amenaza la confidencialidad, incluso con iniciales. El Código de Ética exige proteger información (Colegio de Psicólogos de Chile, 1999); la Ley 21.430 protege vida privada y derecho a ser oído (Biblioteca del Congreso Nacional de Chile, 2022). Se deben explicar usos de datos, limitar su circulación y escuchar a Martina sin estereotipar su contexto.
+La presión por resultados puede desplazar necesidades. Compartir registros amenaza la confidencialidad, incluso con iniciales. El Código de Ética exige proteger información (Colegio de Psicólogos de Chile, 1999); la Ley 21.430 protege vida privada y reconoce la autonomía progresiva y el derecho a ser oído (Biblioteca del Congreso Nacional de Chile, 2022). Se deben explicar usos de datos, limitar su circulación y escuchar a Martina sin estereotipar su contexto.
 
-### 4. Campos de aplicación
+### 4. Interacción de los campos de la Psicología
 
 La Psicología educacional aborda aprendizaje y convivencia; la clínica evalúa malestar y necesidad de atención; la social-comunitaria integra familia y redes. La coordinación delimita funciones y comparte solo información pertinente. La escuela requiere apoyos y prevención de exposición digital, no acceso indiscriminado a antecedentes clínicos. Ciberacoso y privacidad son desafíos actuales.
 
-### 5. Métodos e intervención
+### 5. Métodos y estrategias de intervención
 
 Conviene entrevistar a Martina, conversar con su cuidadora con acuerdo previo, observar aula y contextualizar la asistencia. Los instrumentos deben ser pertinentes a edad y población. Los apoyos pueden incluir adulta referente, acuerdos escolares flexibles y redes locales. La derivación clínica dependerá de necesidades identificadas; el seguimiento considerará bienestar y participación, además de notas.
 
-### 6. Reflexión profesional
+### 6. Reflexión sobre la práctica profesional
 
-La práctica responsable integra teoría, evidencia, contexto y derechos. Comprender exige escuchar y contrastar hipótesis. La intervención acuerda metas con la adolescente, protege datos y coordina los campos necesarios. Adaptar culturalmente es reconocer recursos y barreras sin reducir a la persona a su entorno.
+La práctica responsable integra teoría, evidencia, contexto y derechos. Comprender exige escuchar y contrastar hipótesis. La intervención acuerda metas con la adolescente, protege datos y coordina los campos necesarios. La adaptación cultural reconoce recursos y barreras sin reducir a la persona a su entorno.
 ## Referencias
 
 Biblioteca del Congreso Nacional de Chile. (2022). *Ley 21.430: Sobre garantías y protección integral de los derechos de la niñez y adolescencia*. https://www.leychile.cl/navegar?idNorma=1173643

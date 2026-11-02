@@ -23,7 +23,7 @@ order=["Biblioteca del Congreso Nacional de Chile.","Colegio de Psicólogos de C
 positions=[raw.index(x,raw.index("## Referencias")) for x in order]
 assert positions==sorted(positions),"APA_REFERENCE_ORDER_FAIL"
 assert "Peñalolén" in raw and "C2" in raw and "sector urbano" in raw.casefold() and "Caso ficticio" in raw
-mcq_count=len(re.findall(r"(?m)^\\*\\*\\d{2}\\.\\*\\*",raw))
+mcq_count=len(re.findall(r"(?m)^\*\*\d{2}\.\*\*",raw))
 assert mcq_count==12,f"MCQ_COUNT:{mcq_count}"
 assert "Clave de respuestas" in raw
 d=Document(str(docx)); sec=d.sections[0]
@@ -45,8 +45,8 @@ assert missing["blocking_or_material_gaps"],"INPUT_GAPS_NOT_DOCUMENTED"
 result={"schema":"PSICOLOGIA_U4_DELIVERABLE_VERIFICATION/1.0","status":"PASS_WITH_DOCUMENTED_INPUT_GAPS",
 "pdf_pages":pages,"pdf_bytes":pdf.stat().st_size,"case_words":len(words),"six_development_answers_present":True,
 "heading_size_pt":16,"body_size_pt":12,"references_alphabetical":True,
-"rubric_total":profile["rubric"]["declared_total_points"],"multiple_choice_12":"NOT_ANSWERED_SOURCE_MISSING",
-"personal_context":"PLACEHOLDER_PENDING_USER_DATA","external_certification":"NOT_REQUIRED_BY_USER"}
+"rubric_total":profile["rubric"]["declared_total_points"],"multiple_choice_12":"12_ORIGINAL_ITEMS_AND_ANSWER_KEY_INCLUDED",
+"personal_context":"USER_PROVIDED_CONTEXT_APPLIED","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED"}
 (root/"evidence").mkdir(exist_ok=True)
 (root/"evidence/document-verification.json").write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
 print(json.dumps(result,ensure_ascii=False))
