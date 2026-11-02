@@ -1,0 +1,65 @@
+name: LOUKSNAPG — persist failed full-rank repair evidence
+
+on:
+  push:
+    branches:
+      - louksnapg2/puac2-alternative-20261029
+    paths:
+      - .github/workflows/louksnapg-whisper-evidence-export.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  persist:
+    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout the active repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Download the original failed build-evidence artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg-whisper-fullrank-build-evidence-41493222058
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 41493222058
+          path: ${{ runner.temp }}/whisper-fullrank-evidence
+
+      - name: Preserve raw report and build log as append-only Git evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source_dir="$RUNNER_TEMP/whisper-fullrank-evidence"
+          test -d "$source_dir"
+          find "$source_dir" -type f -maxdepth 4 -printf '%P %s bytes\n'
+          dest="evidence/louksnapg/whisper-fullrank-build-41493222058"
+          mkdir -p "$dest"
+          cp -a "$source_dir/." "$dest/"
+          test "$(find "$dest" -type f | wc -l)" -gt 0
+          for report in "$dest"/*.json; do
+            if [ -f "$report" ]; then
+              echo "===== $(basename "$report") ====="
+              cat "$report"
+            fi
+          done
+          echo "===== BUILD LOG TAIL ====="
+          for log in "$dest"/*.log; do
+            if [ -f "$log" ]; then tail -n 160 "$log"; fi
+          done
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$dest"
+          if git diff --cached --quiet; then
+            echo "No new evidence bytes to persist"
+            exit 0
+          fi
+          git diff --cached --check
+          git commit -m "evidence: preserve failed full-rank Whisper build 41493222058"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
