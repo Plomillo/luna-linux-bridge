@@ -18,71 +18,71 @@ El establecimiento participa en un programa que solicita indicadores de asistenc
 
 ## Primera parte: selección múltiple (35 %)
 
-Las siguientes son doce preguntas originales de selección única, elaboradas para esta entrega a partir de los contenidos y resultados de aprendizaje indicados en la pauta. No se presentan como transcripción de un cuestionario oficial de la plataforma.
+Doce preguntas originales de respuesta única, elaboradas con autorización del estudiante a partir de los contenidos y resultados de aprendizaje de la pauta. No son una transcripción del cuestionario del aula virtual.
 
-**01.** ¿Qué hito suele señalarse como inicio institucional de la Psicología experimental?
-A) La publicación de *El origen de las especies*; B) La fundación del laboratorio de Wundt en Leipzig en 1879; C) La creación del psicoanálisis; D) La publicación de *El contrato social*.
+**01.** ¿Qué hito institucionaliza la Psicología experimental?
+A) Darwin, 1859; B) Laboratorio de Wundt en Leipzig, 1879; C) Freud, 1900; D) Watson, 1913.
 
-**02.** ¿Qué idea representa mejor el empirismo de John Locke?
-A) El conocimiento procede principalmente de ideas innatas; B) La experiencia contribuye a formar el conocimiento; C) La conducta es independiente del ambiente; D) El inconsciente determina todo aprendizaje.
+**02.** Para Locke, el conocimiento se origina principalmente en:
+A) Ideas innatas; B) Experiencia; C) Sueños; D) Refuerzos.
 
-**03.** ¿Qué postura se asocia al racionalismo de René Descartes?
-A) La razón tiene un papel central en el conocimiento; B) Solo la observación de la conducta es válida; C) La mente se explica por refuerzos; D) El conocimiento surge únicamente de la imitación.
+**03.** El racionalismo de Descartes destaca:
+A) La razón; B) La imitación; C) El refuerzo; D) La conducta observable.
 
-**04.** ¿Qué pregunta caracteriza al funcionalismo asociado a William James?
-A) ¿Qué función cumplen los procesos mentales para la adaptación?; B) ¿Cómo se estructura la materia?; C) ¿Cómo se elimina toda experiencia subjetiva?; D) ¿Qué contenidos aparecen exclusivamente en los sueños?
+**04.** El funcionalismo de William James pregunta:
+A) Qué función cumplen los procesos mentales; B) Qué contiene el inconsciente; C) Cómo se condiciona un reflejo; D) Cómo se mide un estímulo.
 
-**05.** ¿Cuál es un concepto central del psicoanálisis freudiano?
-A) Zona de desarrollo próximo; B) Refuerzo positivo; C) Procesos inconscientes y conflicto psíquico; D) Condicionamiento clásico.
+**05.** Un concepto central de Freud es:
+A) Zona de desarrollo próximo; B) Condicionamiento operante; C) Procesos inconscientes; D) Aceptación incondicional.
 
-**06.** En el condicionamiento clásico de Pavlov, el aprendizaje ocurre principalmente cuando:
-A) Una respuesta se modifica por sus consecuencias; B) Un estímulo inicialmente neutro se asocia con uno que provoca una respuesta; C) La persona recibe una explicación racional; D) El sujeto atraviesa una etapa psicosocial.
+**06.** El condicionamiento clásico de Pavlov asocia:
+A) Conducta y consecuencia; B) Dos estímulos; C) Identidad y rol; D) Pensamiento y lenguaje.
 
-**07.** ¿Qué rasgo distingue al conductismo de John B. Watson?
-A) Prioriza el estudio científico de la conducta observable; B) Interpreta los sueños como vía principal; C) Se centra en arquetipos colectivos; D) Explica el desarrollo mediante etapas cognitivas.
+**07.** Watson se asocia con el estudio de:
+A) Conducta observable; B) Sueños; C) Autorrealización; D) Etapas cognitivas.
 
-**08.** Según Skinner, el condicionamiento operante estudia:
-A) La relación entre estímulos emparejados; B) La influencia de las consecuencias sobre la probabilidad de una conducta; C) La formación de esquemas mediante asimilación; D) La búsqueda de sentido existencial.
+**08.** Para Skinner, el condicionamiento operante analiza:
+A) Asociaciones entre estímulos; B) Efectos de las consecuencias sobre la conducta; C) Etapas psicosexuales; D) Ideas innatas.
 
-**09.** ¿Qué proceso describe Piaget con los conceptos de asimilación y acomodación?
-A) La modificación de esquemas cognitivos al interactuar con el entorno; B) La asociación automática entre dos estímulos; C) La interpretación de contenidos inconscientes; D) La respuesta a premios y castigos exclusivamente.
+**09.** Asimilación y acomodación en Piaget explican:
+A) Cambios de esquemas cognitivos; B) Reflejos condicionados; C) Conflictos inconscientes; D) Refuerzos.
 
-**10.** ¿Qué significa la zona de desarrollo próximo en Vygotsky?
-A) La diferencia entre conducta voluntaria e involuntaria; B) Lo que una persona puede lograr con ayuda y aún no realiza sola; C) Una etapa fija del desarrollo psicosexual; D) La ausencia de influencia cultural en el aprendizaje.
+**10.** La zona de desarrollo próximo de Vygotsky refiere a lo que se logra:
+A) Sin interacción; B) Con ayuda y todavía no en solitario; C) Solo por maduración; D) Mediante castigo.
 
-**11.** ¿Qué conflicto psicosocial propone Erikson como central en la adolescencia?
-A) Confianza frente a desconfianza; B) Autonomía frente a vergüenza; C) Identidad frente a confusión de roles; D) Integridad frente a desesperación.
+**11.** En la adolescencia, Erikson destaca:
+A) Confianza/desconfianza; B) Identidad/confusión de roles; C) Iniciativa/culpa; D) Integridad/desesperación.
 
-**12.** ¿Qué principio se vincula con el enfoque centrado en la persona de Carl Rogers?
-A) Interpretación exclusiva de los sueños; B) Empatía, aceptación positiva incondicional y autenticidad; C) Refuerzo de toda conducta por igual; D) Medición de la inteligencia como único criterio.
+**12.** Rogers destaca en su enfoque:
+A) Empatía y aceptación positiva incondicional; B) Interpretación exclusiva de sueños; C) Castigo; D) Medición conductual exclusiva.
 
-**Clave de respuestas:** 01-B, 02-B, 03-A, 04-A, 05-C, 06-B, 07-A, 08-B, 09-A, 10-B, 11-C, 12-B. Los ítems evalúan, respectivamente, institucionalización experimental, empirismo, racionalismo, funcionalismo, psicoanálisis, condicionamiento clásico, conductismo, condicionamiento operante, desarrollo cognitivo, mediación sociocultural, desarrollo psicosocial y humanismo.
+**Clave:** 01-B, 02-B, 03-A, 04-A, 05-C, 06-B, 07-A, 08-B, 09-A, 10-B, 11-B, 12-A. Los ítems cubren origen experimental, corrientes filosóficas, funcionalismo, psicoanálisis, aprendizaje, conductismo, desarrollo cognitivo y sociocultural, identidad adolescente y humanismo.
 
 ## Segunda parte: ensayo a partir del caso (65 %)
 
 ### 1. Aproximación filosófica e historia de la Psicología
 
-El caso exige combinar perspectivas. El empirismo y el positivismo valoran la observación de asistencia, rendimiento y conducta; el racionalismo recuerda que esos datos requieren interpretación; el humanismo incorpora la experiencia subjetiva de Martina. Locke destacó la experiencia y Descartes el papel de la razón. En el siglo XIX, Weber y Fechner estudiaron relaciones entre estímulos y sensaciones. En 1879, Wundt organizó en Leipzig un laboratorio experimental, hito de la institucionalización científica de la Psicología. James desarrolló el funcionalismo y, posteriormente, el conductismo privilegió la conducta observable. En el caso, las calificaciones describen una parte de la situación, pero no explican por sí solas el sueño, la convivencia digital ni las condiciones familiares (Cosacov, 2014; Danziger, 1990).
+El empirismo y el positivismo valoran observar asistencia y rendimiento; el racionalismo recuerda que los datos necesitan interpretación y el humanismo incorpora la experiencia de Martina. Locke destacó la experiencia y Descartes la razón. Weber y Fechner investigaron la relación entre estímulos y sensaciones. En 1879, Wundt organizó el laboratorio de Leipzig, hito de la Psicología experimental. James desarrolló el funcionalismo y el conductismo priorizó la conducta observable. Así, las notas describen el desempeño, pero no explican por sí solas el malestar ni el contexto (Cosacov, 2014; Danziger, 1990).
 
 ### 2. Aproximación teórica: objetos de estudio y métodos
 
-Las teorías producen hipótesis, no diagnósticos automáticos. El psicoanálisis de Freud estudia procesos inconscientes y conflictos mediante entrevista e interpretación; el silencio de Martina no demuestra por sí mismo un conflicto inconsciente (Freud, 1923/1961). El aprendizaje clásico analiza asociaciones entre estímulos; Skinner estudia cómo las consecuencias aumentan o reducen conductas. Estos enfoques permiten explorar hábitos de conexión y consecuencias escolares, sin reducir a la adolescente a un patrón conductual (Skinner, 1953). Rogers propone escucha empática y aceptación de la experiencia personal (Rogers, 1951). Piaget e Inhelder estudian la construcción del razonamiento; Vygotsky, la mediación social y cultural; Erikson, la identidad y pertenencia en la adolescencia (Erikson, 1968; Piaget & Inhelder, 1969; Vygotsky, 1978). Entrevista, observación y análisis de redes de apoyo responden a preguntas distintas y deben integrarse con cautela.
+Freud estudia procesos inconscientes y conflictos mediante entrevista e interpretación; el silencio de Martina no prueba un conflicto inconsciente (Freud, 1923/1961). Pavlov explica asociaciones entre estímulos y Skinner analiza cómo las consecuencias modifican conductas (Skinner, 1953). Rogers prioriza empatía y aceptación de la experiencia (Rogers, 1951). Piaget estudia el desarrollo cognitivo; Vygotsky, la mediación social y cultural; Erikson, la identidad adolescente (Erikson, 1968; Piaget & Inhelder, 1969; Vygotsky, 1978). Entrevistas, observación y revisión de apoyos permiten contrastar hipótesis, no diagnosticar por un solo indicador.
 
 ### 3. Dilemas éticos en la intervención
 
-La presión por informar resultados puede desplazar las necesidades de Martina. Compartir registros en un chat amenaza la confidencialidad, aunque se usen iniciales. El Código de Ética profesional orienta el resguardo de información (Colegio de Psicólogos de Chile, 1999). La Ley 21.430 protege la vida privada y reconoce el derecho de niños y adolescentes a ser oídos según su autonomía progresiva (Biblioteca del Congreso Nacional de Chile, 2022). Corresponde explicar qué datos se recogen, limitar su difusión y escuchar a la adolescente. La adaptación cultural exige explorar las condiciones del hogar y del barrio sin estereotipar a Peñalolén ni atribuir dificultades a su grupo socioeconómico. El bienestar y los derechos deben orientar las decisiones, no solo las metas administrativas.
+La presión por resultados puede desplazar las necesidades de Martina. Compartir registros en un chat amenaza la confidencialidad, incluso con iniciales. El Código de Ética exige resguardar la información (Colegio de Psicólogos de Chile, 1999). La Ley 21.430 protege la vida privada y el derecho de niños y adolescentes a ser oídos (Biblioteca del Congreso Nacional de Chile, 2022). Deben explicarse los usos de los datos, limitar su circulación y escuchar a la adolescente. La adaptación cultural evita estereotipos y prioriza bienestar y derechos frente a metas administrativas.
 
 ### 4. Interacción de los campos de la Psicología
 
-La Psicología educacional aborda aprendizaje, asistencia y convivencia; la clínica evalúa el malestar y la necesidad de atención especializada; la social-comunitaria incorpora familia, redes y recursos territoriales. La coordinación debe delimitar funciones y compartir únicamente información pertinente. El establecimiento necesita acordar apoyos y prevenir la exposición digital; no requiere acceso indiscriminado a antecedentes clínicos. Entre los desafíos contemporáneos destacan el ciberacoso, la privacidad de datos, las desigualdades de acceso a atención y la presión por indicadores estandarizados.
+La Psicología educacional aborda aprendizaje y convivencia; la clínica evalúa malestar y necesidad de atención; la social-comunitaria incorpora familia y redes territoriales. La coordinación debe delimitar funciones y compartir solo información pertinente. El colegio necesita acordar apoyos y prevenir exposición digital, no acceder indiscriminadamente a antecedentes clínicos. Ciberacoso, privacidad y desigualdad de acceso son desafíos actuales.
 
 ### 5. Métodos y estrategias de intervención
 
-La evaluación puede comenzar con una entrevista confidencial y comprensible con Martina, seguida de conversaciones acordadas con su cuidadora, observación en aula y revisión contextualizada de asistencia y tareas. Se deben escuchar sus prioridades y establecer objetivos verificables. Cualquier instrumento requiere pertinencia para la edad y población; no sustituye una evaluación integral. Los apoyos pueden incluir una adulta referente, acuerdos escolares flexibles, orientación sobre convivencia digital y coordinación con redes locales. La derivación clínica dependerá de necesidades identificadas, no de una etiqueta anticipada. El seguimiento debe valorar bienestar y participación, además de calificaciones.
+Conviene comenzar con entrevista a Martina, conversación acordada con su cuidadora, observación en aula y revisión contextual de asistencia. Los instrumentos deben ser adecuados a edad y población y nunca reemplazar la evaluación integral. Los apoyos posibles incluyen una adulta referente, acuerdos escolares flexibles, orientación sobre convivencia digital y coordinación de redes locales. La derivación clínica dependerá de necesidades identificadas. El seguimiento debe considerar bienestar y participación, además de calificaciones.
 
 ### 6. Reflexión sobre la práctica profesional
 
-Una práctica responsable integra historia, teoría, evidencia, contexto y derechos. Los indicadores describen, pero comprender exige escuchar y contrastar hipótesis. La adaptación cultural reconoce barreras y recursos sin reducir a la persona a su entorno. Una intervención integral acuerda metas con la adolescente, protege sus datos, coordina los campos pertinentes y revisa resultados. El rendimiento escolar es importante, pero no debe perseguirse invisibilizando las condiciones emocionales, familiares y relacionales que permiten aprender.
+Una práctica responsable integra teoría, evidencia, contexto y derechos. Los indicadores describen, pero comprender exige escuchar y contrastar hipótesis. La intervención debe acordar metas con la adolescente, proteger sus datos y coordinar los campos pertinentes. La adaptación cultural reconoce barreras y recursos sin reducir a la persona a su entorno; el rendimiento no debe invisibilizar las condiciones que permiten aprender.
 
 ## Referencias
 

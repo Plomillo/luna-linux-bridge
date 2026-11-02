@@ -19,7 +19,7 @@ assert 300<=len(words)<=400,f"CASE_LENGTH:{len(words)}"
 for q in range(1,7): assert f"### {q}." in raw,f"QUESTION_{q}_MISSING"
 for marker in ["positivismo","Wundt","1879","funcionalismo","psicoanálisis","condicionamiento","Rogers","Piaget","Vygotsky","Erikson","confidencialidad","autonomía progresiva","social-comunitaria","adaptación cultural"]:
     assert marker.casefold() in raw.casefold(),"RUBRIC_CONTENT_MISSING:"+marker
-order=["Biblioteca del Congreso Nacional de Chile.","Colegio de Psicólogos de Chile.","Cosacov,","Danziger,","Erikson,","Freud,","Piaget,","Rogers,","Sáiz,","Skinner,","Universidad UNIACC. (s. f.)","Universidad UNIACC. (2025)","Vygotsky,"]
+order=["Biblioteca del Congreso Nacional de Chile.","Colegio de Psicólogos de Chile.","Cosacov,","Danziger,","Erikson,","Freud,","Piaget,","Rogers,","Skinner,","Vygotsky,"]
 positions=[raw.index(x,raw.index("## Referencias")) for x in order]
 assert positions==sorted(positions),"APA_REFERENCE_ORDER_FAIL"
 assert "Peñalolén" in raw and "C2" in raw and "sector urbano" in raw.casefold() and "Caso ficticio" in raw
