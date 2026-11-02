@@ -23,6 +23,7 @@ on:
       - "tests/test_louksnapg2_engine.py"
       - "tests/test_louksnapg2_automated_certifier.py"
       - "tests/test_cajita_resource_limits.py"
+      - "tests/test_louksnapg2_registry_selection.py"
       - ".github/workflows/louksnapg2-custoszv9-repair.yml"
   workflow_dispatch:
 
@@ -30,7 +31,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: louksnapg2-custoszv9-repair-${{ github.ref }}
+  group: louksnapg2-custoszv9-repair-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: false
 
 env:
