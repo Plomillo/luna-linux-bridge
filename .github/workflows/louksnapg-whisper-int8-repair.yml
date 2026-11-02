@@ -48,6 +48,7 @@ jobs:
             cajita-luna-runtime/cajita_weight_materializer.py
             cajita-luna-runtime/cajita_tokenizer_materializer.py
             cajita-luna-runtime/cajita_task_adapters.py
+            cajita-luna-runtime/cajita_resource_limits.py
             cajita-luna-runtime/cajita_router.py
             cajita-luna-runtime/cajita_target_adapters.py
             cajita-luna-runtime/cajita_antiparalysis.py
@@ -63,6 +64,17 @@ jobs:
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
           python-version: "3.12"
+
+      - name: Prove aggregate 3 GiB and one-core cgroup scope is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v systemd-run
+          sudo systemd-run --scope --wait --pipe \\
+            --property=MemoryMax=3G \\
+            --property=CPUQuota=100% \\
+            /usr/bin/true
+          echo "REPAIR_CGROUP_PREFLIGHT=PASS_MEMORYMAX_3G_CPUQUOTA_100"
 
       - name: Enforce runner resource preflight and install audio fixture generator
         shell: bash
@@ -110,7 +122,7 @@ jobs:
         run: |
           set +e
           mkdir -p "$RUNNER_TEMP/whisper-int8/evidence" "$RUNNER_TEMP/whisper-int8/work" "$RUNNER_TEMP/whisper-int8/promotion"
-          python -B tools/louksnapg_whisper_int8_repair.py             --mode build-and-test             --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime"             --work-dir "$RUNNER_TEMP/whisper-int8/work"             --report "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json"             --promotion-tar "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz"             2>&1 | tee "$RUNNER_TEMP/whisper-int8/experiment.log"
+          sudo systemd-run --scope --wait --pipe \\\n            --property=MemoryMax=3G \\\n            --property=CPUQuota=100% \\\n            env LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE="SYSTEMD_CGROUP_MEMORYMAX_3G_CPUQUOTA_100" \\\n            python -B tools/louksnapg_whisper_int8_repair.py             --mode build-and-test             --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime"             --work-dir "$RUNNER_TEMP/whisper-int8/work"             --report "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json"             --promotion-tar "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz"             2>&1 | tee "$RUNNER_TEMP/whisper-int8/experiment.log"
           rc=${PIPESTATUS[0]}
           python - "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json" "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz" "$GITHUB_OUTPUT" <<'PY'
           import json, os, sys
