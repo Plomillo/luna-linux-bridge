@@ -226,7 +226,7 @@ def copy_runtime_skeleton(source: Path, destination: Path, *, include_whisper_we
                 "purpose": "Preserve required six-domain directory topology for isolated D03 evaluation.",
                 "model_assets_copied": False,
                 "model_inference_authorized": False,
-            }, sort_keys=True, indent=2) + "\\n",
+            }, sort_keys=True, indent=2) + "\n",
             encoding="utf-8",
         )
     # Refuse any leftover Q2/Q4 sidecar in a build candidate.
