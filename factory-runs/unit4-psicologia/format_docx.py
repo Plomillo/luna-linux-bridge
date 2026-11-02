@@ -87,6 +87,7 @@ for line in required_cover_metadata:
         anchor.insert_paragraph_before(line)
 cover_metadata = [p for p in doc.paragraphs if p.text.strip().startswith(("Asignatura:", "Docente:", "Estudiante:"))]
 for paragraph in cover_metadata:
+    paragraph.style = doc.styles["Normal"]
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     paragraph.paragraph_format.line_spacing = 1.0
     paragraph.paragraph_format.space_before = Pt(0)
