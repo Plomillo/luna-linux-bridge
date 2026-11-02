@@ -30,11 +30,25 @@
         "adaptive-R192"
       ],
       "prior_r192_wer": 1,
-      "recent_q4_q5_run": 41499840413,
-      "recent_q4_q5_result": "INVALID_EVALUATION_ARTIFACT_LAYOUT_MISSING_FULLRANK_MANIFEST",
-      "recent_fix": "resolve_artifact_root accepts direct and GitHub least-common-ancestor nested artifact/ layout; ambiguous layouts fail closed.",
-      "required_next": "Rerun Q4/Q5 with corrected artifact resolver, then evaluate WER against pinned held-out real speech. Do not reinterpret the prior missing-file failure as model-quality evidence.",
-      "promotion": "HOLD"
+      "recent_q4_q5_run": 41539943984,
+      "recent_q4_q5_result": "ERROR_FAIL_CLOSED_ARTIFACT_MANIFEST_NOT_FOUND_BEFORE_INFERENCE; WER_NOT_MEASURED",
+      "recent_fix": "Initial direct/single-nested resolver still failed on the actual GitHub artifact extraction layout. Follow-up stages each candidate as a single-root artifact and resolves exactly one fullrank_manifest.json within a bounded, no-symlink directory walk. Rerun required.",
+      "required_next": "Rerun Q4/Q5 with the single-root staged artifact. Only after manifest identity and model hashes pass, run pinned synthetic and real speech tests and record WER. Q4/Q5 distribution projections exceed 490000000 bytes and cannot be promoted under the current package cap.",
+      "promotion": "HOLD",
+      "recent_q4_q5_candidates": {
+        "q4_0": {
+          "bytes": 473992235,
+          "sha256": "6e670d7569d1ed261cb8a4e554138f0ba6a17be7c64f079145061f93bac54e80",
+          "projected_release_bytes": 836570159,
+          "projected_size_pass": false
+        },
+        "q5_0": {
+          "bytes": 574041195,
+          "sha256": "",
+          "projected_release_bytes": 936619119,
+          "projected_size_pass": false
+        }
+      }
     },
     "D04_TRADUCTOR_INTELIGENTE": {
       "model": "SeamlessM4T v2 large",

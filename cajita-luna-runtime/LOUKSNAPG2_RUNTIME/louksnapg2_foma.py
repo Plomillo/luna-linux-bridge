@@ -102,17 +102,46 @@ class FomaEngine:
             "translation_quality":"NOT_ESTABLISHED","certification":"NOT_GRANTED"}
 
     def _binaries(self):
-        foma_env=os.environ.get("FOMA_BIN","").strip(); lookup_env=os.environ.get("FLOOKUP_BIN","").strip()
-        foma=Path(foma_env).resolve() if foma_env else (Path(shutil.which("foma")).resolve() if shutil.which("foma") else None)
-        lookup=Path(lookup_env).resolve() if lookup_env else (Path(shutil.which("flookup")).resolve() if shutil.which("flookup") else None)
-        if foma and lookup and foma.is_file() and lookup.is_file(): return foma,lookup
-        digest=sha256_tree(self.source_root); cache=Path(tempfile.gettempdir())/("louksnapg2-foma-"+digest[:20])
-        copied=cache/"source"; foma=copied/"foma"; lookup=copied/"flookup"
-        if not (foma.is_file() and lookup.is_file()):
-            if cache.exists(): shutil.rmtree(cache)
+        # Never trust an unpinned host Foma binary or environment override.
+        digest=sha256_tree(self.source_root)
+        cache=Path(tempfile.gettempdir())/("louksnapg2-foma-"+digest[:20])
+        if cache.is_symlink():
+            raise FomaRuntimeError("FOMA_BUILD_CACHE_SYMLINK_REJECTED")
+        copied=cache/"source"
+        foma=copied/"foma"
+        lookup=copied/"flookup"
+        integrity=cache/"FOMA_BINARIES.json"
+        cache_valid=False
+        if foma.is_file() and not foma.is_symlink() and lookup.is_file() and not lookup.is_symlink() and integrity.is_file() and not integrity.is_symlink():
+            try:
+                record=json.loads(integrity.read_text(encoding="utf-8"))
+                cache_valid=(
+                    record.get("schema")=="LOUKSNAPG2_FOMA_BINARY_CACHE/1.0"
+                    and record.get("source_tree_sha256")==digest
+                    and record.get("foma_sha256")==sha256_file(foma)
+                    and record.get("flookup_sha256")==sha256_file(lookup)
+                )
+            except (OSError,json.JSONDecodeError):
+                cache_valid=False
+        if not cache_valid:
+            if cache.exists():
+                if cache.is_symlink():
+                    raise FomaRuntimeError("FOMA_BUILD_CACHE_SYMLINK_REJECTED")
+                shutil.rmtree(cache)
             report=compile_foma_source(self.source_root,cache,1200)
-            if report.get("status")!="PASS_FOMA_ENGINE_LOOKUP_SMOKE": raise FomaRuntimeError("FOMA_RUNTIME_BUILD_NOT_PASS")
-        else: _lookup_smoke(foma,lookup,cache)
+            if report.get("status")!="PASS_FOMA_ENGINE_LOOKUP_SMOKE":
+                raise FomaRuntimeError("FOMA_RUNTIME_BUILD_NOT_PASS")
+            record={
+                "schema":"LOUKSNAPG2_FOMA_BINARY_CACHE/1.0",
+                "source_tree_sha256":digest,
+                "foma_sha256":sha256_file(foma),
+                "flookup_sha256":sha256_file(lookup),
+                "source_tree_mutated":False,
+            }
+            temp=integrity.with_suffix(".tmp")
+            temp.write_text(json.dumps(record,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+            os.replace(temp,integrity)
+        _lookup_smoke(foma,lookup,cache)
         return foma,lookup
 
     def translate(self,text,*,src_lang,tgt_lang):

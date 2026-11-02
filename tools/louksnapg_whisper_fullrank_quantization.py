@@ -413,15 +413,28 @@ def load_helper(path: Path):
 
 
 def resolve_artifact_root(path: Path) -> Path:
-    """Resolve direct and GitHub Actions least-common-ancestor artifact ZIP layouts."""
+    """Locate the single manifest in a bounded GitHub Actions artifact extraction tree."""
     root = Path(path).resolve(strict=True)
-    candidates = [root, root / "artifact"]
-    matches = [candidate for candidate in candidates if (candidate / "fullrank_manifest.json").is_file()]
-    if len(matches) > 1:
-        raise RuntimeError("WHISPER_ARTIFACT_ROOT_AMBIGUOUS")
+    if root.is_symlink() or not root.is_dir():
+        raise RuntimeError("WHISPER_ARTIFACT_ROOT_INVALID")
+    matches = []
+    for base, dirs, files in os.walk(root, topdown=True, followlinks=False):
+        directory = Path(base)
+        depth = len(directory.relative_to(root).parts)
+        dirs[:] = sorted(
+            name for name in dirs
+            if depth < 6 and not (directory / name).is_symlink()
+        )
+        if "fullrank_manifest.json" in files:
+            candidate = directory / "fullrank_manifest.json"
+            if candidate.is_symlink() or not candidate.is_file():
+                raise RuntimeError("WHISPER_FULLRANK_MANIFEST_UNSAFE")
+            matches.append(directory.resolve(strict=True))
+            if len(matches) > 1:
+                raise RuntimeError("WHISPER_ARTIFACT_ROOT_AMBIGUOUS")
     if not matches:
         raise FileNotFoundError("WHISPER_FULLRANK_MANIFEST_NOT_FOUND:" + str(root))
-    return matches[0].resolve(strict=True)
+    return matches[0]
 
 
 def evaluate(args) -> int:

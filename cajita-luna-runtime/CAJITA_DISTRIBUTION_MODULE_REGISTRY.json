@@ -46,13 +46,13 @@
       "canonical_asset_id": null,
       "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master",
       "manifest": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master/CAJITA_MODULE.json",
-      "manifest_sha256": "bef4f21ecd2039b9152da7db3b0a90bcba7694097a2458419cf2231708fcf153",
+      "manifest_sha256": "2a6cb8130132e8931dc24fc34fa4758510b5599f6d183facad01df4d347435ef",
       "tree_sha256": "7dd3672d272d90dba980ac3b002df46ae546cf8534e1fbb66f7690f74e833199",
       "bytes": 797405,
       "file_count": 72,
       "state": "MATERIALIZED_HASH_VERIFIED",
-      "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
-      "execution": "NOT_GRANTED_WITHOUT_ADAPTER_AND_SMOKE",
+      "consumer_adapter": "LOUKSNAPG2_FOMA_ANCIENT_TRANSLATION_ADAPTER/1.0",
+      "execution": "FOMA_ENGINE_BUILD_AND_LOOKUP_REQUIRED;TRANSDUCER_RESOURCES_REQUIRED",
       "certification": "NOT_GRANTED"
     },
     {

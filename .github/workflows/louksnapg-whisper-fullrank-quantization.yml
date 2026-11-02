@@ -119,28 +119,44 @@ jobs:
           export HF_HUB_OFFLINE=0 TRANSFORMERS_OFFLINE=0
           python -B tools/louksnapg_whisper_fullrank_quantization.py build --whisper-cpp-root "$RUNNER_TEMP/upstream/whisper.cpp" --openai-whisper-root "$RUNNER_TEMP/upstream/openai-whisper" --output-dir "$RUNNER_TEMP/whisper-fullrank/work" --report "$RUNNER_TEMP/whisper-fullrank/evidence/WHISPER_FULLRANK_BUILD.json" 2>&1 | tee "$RUNNER_TEMP/whisper-fullrank/evidence/build.log"
 
+      - name: Stage isolated Q4_0 candidate with stable artifact root
+        if: success()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          stage="$RUNNER_TEMP/whisper-fullrank/stage-q4_0"
+          mkdir -p "$stage/quantized/q4_0"
+          cp "$RUNNER_TEMP/whisper-fullrank/work/artifact/fullrank_manifest.json" "$stage/"
+          cp "$RUNNER_TEMP/whisper-fullrank/work/artifact/quantized/q4_0/ggml-large-v3-turbo-q4_0.bin" "$stage/quantized/q4_0/"
+          cp -a "$RUNNER_TEMP/whisper-fullrank/work/artifact/toolchain" "$stage/"
+
       - name: Upload isolated Q4_0 candidate and pinned CPU toolchain
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksnapg-whisper-fullrank-q4_0-${{ github.run_id }}
-          path: |
-            ${{ runner.temp }}/whisper-fullrank/work/artifact/fullrank_manifest.json
-            ${{ runner.temp }}/whisper-fullrank/work/artifact/quantized/q4_0/ggml-large-v3-turbo-q4_0.bin
-            ${{ runner.temp }}/whisper-fullrank/work/artifact/toolchain/
+          path: ${{ runner.temp }}/whisper-fullrank/stage-q4_0/
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
+
+      - name: Stage isolated Q5_0 candidate with stable artifact root
+        if: success()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          stage="$RUNNER_TEMP/whisper-fullrank/stage-q5_0"
+          mkdir -p "$stage/quantized/q5_0"
+          cp "$RUNNER_TEMP/whisper-fullrank/work/artifact/fullrank_manifest.json" "$stage/"
+          cp "$RUNNER_TEMP/whisper-fullrank/work/artifact/quantized/q5_0/ggml-large-v3-turbo-q5_0.bin" "$stage/quantized/q5_0/"
+          cp -a "$RUNNER_TEMP/whisper-fullrank/work/artifact/toolchain" "$stage/"
 
       - name: Upload isolated Q5_0 candidate and pinned CPU toolchain
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksnapg-whisper-fullrank-q5_0-${{ github.run_id }}
-          path: |
-            ${{ runner.temp }}/whisper-fullrank/work/artifact/fullrank_manifest.json
-            ${{ runner.temp }}/whisper-fullrank/work/artifact/quantized/q5_0/ggml-large-v3-turbo-q5_0.bin
-            ${{ runner.temp }}/whisper-fullrank/work/artifact/toolchain/
+          path: ${{ runner.temp }}/whisper-fullrank/stage-q5_0/
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
