@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse, datetime as dt, hashlib, json, os, platform, re, resource, subprocess, sys, time
 from pathlib import Path
 from cajita_tokenizer_materializer import MANIFEST_NAME as TOKENIZER_MANIFEST_NAME, TokenizerMaterializationError, tokenizer_tree_rows
+from cajita_resource_limits import candidate_policy, child_preexec_fn
 
 REQUEST_SCHEMA = "CAJITA_TASK_REQUEST/1.0"
 RESULT_SCHEMA = "CAJITA_TASK_RESULT/1.0"
@@ -189,10 +190,12 @@ def execute_task(record,root,timeout_cap=600):
   env={k:os.environ[k] for k in ("PATH","HOME","LANG","LC_ALL","TMPDIR","SYSTEMROOT","WINDIR") if k in os.environ}
   env.update({"OMP_NUM_THREADS":"1","OPENBLAS_NUM_THREADS":"1","MKL_NUM_THREADS":"1","NUMEXPR_NUM_THREADS":"1","TOKENIZERS_PARALLELISM":"false","HF_HUB_OFFLINE":"1","TRANSFORMERS_OFFLINE":"1","PYTHONNOUSERSITE":"1"})
   child=dict(row["input"]);child.update({"operation":row["operation"],"max_new_tokens":row["limits"]["max_new_tokens"]})
+  runtime_resource_policy=candidate_policy()
   try:p=subprocess.run([sys.executable,str(entry),"--task-json-stdin"],input=json.dumps(child,ensure_ascii=False,sort_keys=True),text=True,
-       stdout=subprocess.PIPE,stderr=subprocess.PIPE,cwd=str(root),env=env,timeout=row["limits"]["timeout_seconds"],check=False,shell=False)
+       stdout=subprocess.PIPE,stderr=subprocess.PIPE,cwd=str(root),env=env,timeout=row["limits"]["timeout_seconds"],check=False,shell=False,
+       preexec_fn=child_preexec_fn(),start_new_session=True)
   except subprocess.TimeoutExpired as exc:
-   out.update({"status":"FAIL_TIMEOUT","reason":"TASK_EXECUTION_TIMEOUT","integrity":integrity,"peak_rss_bytes":peak_child_rss(),"elapsed_seconds":round(time.monotonic()-started,3)})
+   out.update({"status":"FAIL_TIMEOUT","reason":"TASK_EXECUTION_TIMEOUT","integrity":integrity,"peak_rss_bytes":peak_child_rss(),"resource_policy":runtime_resource_policy,"elapsed_seconds":round(time.monotonic()-started,3)})
    # Bound partial child output and expose it only for synthetic CI diagnostics.
    if os.environ.get("CAJITA_E2E_DIAGNOSTICS") == "1":
     for field, value, limit in (("diagnostic_stderr_tail",exc.stderr,3000),("diagnostic_stdout_tail",exc.stdout,1200)):
@@ -200,7 +203,7 @@ def execute_task(record,root,timeout_cap=600):
       if isinstance(value,bytes): value=value.decode("utf-8",errors="replace")
       out[field]=str(value)[-limit:]
    return out,4
-  out.update({"entrypoint_sha256":digest_file(entry),"integrity":integrity,"return_code":p.returncode,"peak_rss_bytes":peak_child_rss(),"elapsed_seconds":round(time.monotonic()-started,3)})
+  out.update({"entrypoint_sha256":digest_file(entry),"integrity":integrity,"return_code":p.returncode,"peak_rss_bytes":peak_child_rss(),"resource_policy":runtime_resource_policy,"elapsed_seconds":round(time.monotonic()-started,3)})
   if p.returncode:
    out.update({"status":"FAIL_MODEL_RUNTIME","reason":"TASK_RUNTIME_NONZERO_EXIT","stderr_sha256":digest_bytes(p.stderr.encode("utf-8",errors="replace"))})
    # CI enables bounded diagnostics only for synthetic fixtures; production requests
