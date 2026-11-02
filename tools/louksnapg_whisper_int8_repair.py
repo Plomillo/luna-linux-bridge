@@ -213,7 +213,22 @@ def copy_runtime_skeleton(source: Path, destination: Path, *, include_whisper_we
         if not weight.is_file() or weight.is_symlink():
             raise RuntimeError("COMMITTED_WHISPER_WEIGHT_MISSING")
     for relative in PLACEHOLDER_DOMAINS:
-        (destination / relative).mkdir(parents=True, exist_ok=True)
+        placeholder_root = destination / relative
+        placeholder_root.mkdir(parents=True, exist_ok=True)
+        # GitHub artifact transport omits empty directories. Keep a tiny,
+        # explicit marker so the six-domain router can validate the scoped
+        # Whisper overlay without copying or loading unrelated model weights.
+        marker = placeholder_root / ".louksnapg2-domain-placeholder.json"
+        marker.write_text(
+            json.dumps({
+                "schema": "LOUKSNAPG2_SCOPED_RUNTIME_PLACEHOLDER/1.0",
+                "domain_directory": relative,
+                "purpose": "Preserve required six-domain directory topology for isolated D03 evaluation.",
+                "model_assets_copied": False,
+                "model_inference_authorized": False,
+            }, sort_keys=True, indent=2) + "\\n",
+            encoding="utf-8",
+        )
     # Refuse any leftover Q2/Q4 sidecar in a build candidate.
     if not include_whisper_weight:
         (module_destination / "model.safetensors").unlink(missing_ok=True)
