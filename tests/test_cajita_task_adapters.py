@@ -86,6 +86,10 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(result["target_id"],"D01_CEREBRO_ROOT")
         self.assertFalse(run.call_args.kwargs["shell"]);self.assertIn("--task-json-stdin",run.call_args.args[0])
         self.assertEqual(run.call_args.kwargs["env"]["HF_HUB_OFFLINE"],"1")
+        self.assertEqual(run.call_args.kwargs["start_new_session"], True)
+        self.assertTrue(callable(run.call_args.kwargs["preexec_fn"]))
+        self.assertEqual(result["resource_policy"]["memory_limit_bytes"], 1024**3)
+        self.assertEqual(result["resource_policy"]["cpu_count"], 1)
         self.assertNotIn("PRIVATE_PROMPT_MUST_NOT_APPEAR",json.dumps(result))
         self.assertEqual(result["certification"],"NOT_GRANTED")
     def test_orchestration_never_executes_plan(self):
