@@ -73,16 +73,6 @@ jobs:
           sudo systemd-run --scope --wait --pipe \
             --property=MemoryMax=3G \
             --property=CPUQuota=100% \
-            env LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE="SYSTEMD_CGROUP_MEMORYMAX_3G_CPUQUOTA_100" \
-            python -B tools/louksnapg_whisper_int8_repair.py \
-              --mode build-and-test \
-              --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime" \
-              --work-dir "$RUNNER_TEMP/whisper-int8/work" \
-              --report "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json" \
-              --promotion-tar "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz" \
-              2>&1 | tee "$RUNNER_TEMP/whisper-int8/experiment.log"
-            --property=MemoryMax=3G \\
-            --property=CPUQuota=100% \\
             /usr/bin/true
           echo "REPAIR_CGROUP_PREFLIGHT=PASS_MEMORYMAX_3G_CPUQUOTA_100"
 
@@ -132,7 +122,17 @@ jobs:
         run: |
           set +e
           mkdir -p "$RUNNER_TEMP/whisper-int8/evidence" "$RUNNER_TEMP/whisper-int8/work" "$RUNNER_TEMP/whisper-int8/promotion"
-          sudo systemd-run --scope --wait --pipe \\\n            --property=MemoryMax=3G \\\n            --property=CPUQuota=100% \\\n            env LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE="SYSTEMD_CGROUP_MEMORYMAX_3G_CPUQUOTA_100" \\\n            python -B tools/louksnapg_whisper_int8_repair.py             --mode build-and-test             --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime"             --work-dir "$RUNNER_TEMP/whisper-int8/work"             --report "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json"             --promotion-tar "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz"             2>&1 | tee "$RUNNER_TEMP/whisper-int8/experiment.log"
+          sudo systemd-run --scope --wait --pipe \
+            --property=MemoryMax=3G \
+            --property=CPUQuota=100% \
+            env LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE="SYSTEMD_CGROUP_MEMORYMAX_3G_CPUQUOTA_100" \
+            python -B tools/louksnapg_whisper_int8_repair.py \
+              --mode build-and-test \
+              --repo-runtime-root "$GITHUB_WORKSPACE/cajita-luna-runtime" \
+              --work-dir "$RUNNER_TEMP/whisper-int8/work" \
+              --report "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json" \
+              --promotion-tar "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz" \
+              2>&1 | tee "$RUNNER_TEMP/whisper-int8/experiment.log"
           rc=${PIPESTATUS[0]}
           python - "$RUNNER_TEMP/whisper-int8/evidence/LOUKSNAPG_WHISPER_INT8_REPAIR.json" "$RUNNER_TEMP/whisper-int8/promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz" "$GITHUB_OUTPUT" <<'PY'
           import json, os, sys
