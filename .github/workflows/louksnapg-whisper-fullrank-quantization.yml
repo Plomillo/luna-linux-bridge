@@ -10,7 +10,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
 
 concurrency:
   group: louksnapg-whisper-fullrank-${{ github.ref }}-${{ github.sha }}
@@ -137,6 +138,53 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
           compression-level: 0
+
+  persist-evidence:
+    name: Persist build and candidate evidence without model promotion
+    needs: [repair, evaluate]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout active repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Download immutable 3-GiB build evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg-whisper-fullrank-build-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/whisper-fullrank-persist/build
+
+      - name: Download evaluation evidence when candidate evaluation ran
+        if: always()
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: louksnapg-whisper-fullrank-*-evaluation-${{ github.run_id }}
+          path: ${{ runner.temp }}/whisper-fullrank-persist/evaluation
+          merge-multiple: false
+
+      - name: Append evidence to Git without modifying model assets
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          dest="evidence/louksnapg/whisper-fullrank-${GITHUB_RUN_ID}"
+          mkdir -p "$dest"
+          cp -a "$RUNNER_TEMP/whisper-fullrank-persist/." "$dest/"
+          test "$(find "$dest" -type f | wc -l)" -gt 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$dest"
+          if git diff --cached --quiet; then
+            echo "No new evidence bytes to persist"
+            exit 0
+          fi
+          git diff --cached --check
+          git commit -m "evidence: persist full-rank Whisper experiment ${GITHUB_RUN_ID}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
   evaluate:
     name: Evaluate ${{ matrix.quantization }} under 1 GiB and one CPU
