@@ -117,31 +117,31 @@
         "id": "R01",
         "points": 7,
         "text": "Delimita epistemológicamente el objeto, con tríada tema-problema-objetivos coherente.",
-        "validation": "AUTOMATED_SECTION_MAP_PLUS_G23_HUMAN"
+        "validation": "AUTOMATED_SECTION_MAP"
       },
       {
         "id": "R02",
         "points": 7,
         "text": "Analiza la expresión mediante complejidad simbólica, niveles comunicativos y mediación algorítmica; contrasta evidencia con teoría.",
-        "validation": "AUTOMATED_SOURCE_AND_FRAMEWORK_MAP_PLUS_G23_HUMAN"
+        "validation": "AUTOMATED_SOURCE_AND_FRAMEWORK_MAP"
       },
       {
         "id": "R03",
         "points": 7,
         "text": "Presenta las diez secciones solicitadas de forma sistemática y cohesionada.",
-        "validation": "AUTOMATED_SECTION_AND_WORD_LIMIT_CHECK_PLUS_G23_HUMAN"
+        "validation": "AUTOMATED_SECTION_AND_WORD_LIMIT_CHECK"
       },
       {
         "id": "R04",
         "points": 7,
         "text": "Presenta video de cinco minutos, con fundamento conceptual, articulación multimodal y citas visuales.",
-        "validation": "FFPROBE_DURATION_AND_AUDIO_PLUS_VISUAL_SCRIPT_CHECK_PLUS_G23_HUMAN"
+        "validation": "FFPROBE_DURATION_AUDIO_AND_VISUAL_SCRIPT_CHECK"
       },
       {
         "id": "R05",
         "points": 4,
         "text": "Fuentes académicas, APA 7 y declaración explícita del uso de IA.",
-        "validation": "CITATION_LEDGER_AND_AI_DISCLOSURE_CHECK_PLUS_G23_HUMAN"
+        "validation": "CITATION_LEDGER_AND_AI_DISCLOSURE_CHECK"
       }
     ]
   },
