@@ -3,7 +3,7 @@ name: LOUKSNAPG — Whisper INT8 repair experiment
 on:
   push:
     branches:
-      - louksnapg/phase4-resume-20261028
+      - louksnapg2/puac2-alternative-20261029
     paths:
       - tools/louksnapg_whisper_int8_repair.py
       - .github/workflows/louksnapg-whisper-int8-repair.yml
@@ -178,7 +178,7 @@ jobs:
         id: push_candidate
         shell: bash
         env:
-          BRANCH_NAME: louksnapg/phase4-resume-20261028
+          BRANCH_NAME: louksnapg2/puac2-alternative-20261029
         run: |
           set -euo pipefail
           payload="$RUNNER_TEMP/whisper-promotion/LOUKSNAPG_WHISPER_INT8_PROMOTION.tar.gz"
@@ -305,7 +305,7 @@ jobs:
         if: success()
         shell: bash
         env:
-          BRANCH_NAME: louksnapg/phase4-resume-20261028
+          BRANCH_NAME: louksnapg2/puac2-alternative-20261029
         run: |
           set -euo pipefail
           report="$RUNNER_TEMP/whisper-verify/evidence/LOUKSNAPG_WHISPER_INT8_EXACT_COMMIT_VERIFICATION.json"
@@ -331,7 +331,7 @@ jobs:
         if: failure()
         shell: bash
         env:
-          BRANCH_NAME: louksnapg/phase4-resume-20261028
+          BRANCH_NAME: louksnapg2/puac2-alternative-20261029
           PROMOTED_SHA: ${{ needs.promote.outputs.promoted_sha }}
         run: |
           set -euo pipefail

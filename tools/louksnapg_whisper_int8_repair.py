@@ -34,6 +34,8 @@ DATASET_REVISION = "5be91486e11a2d616f4ec5db8d3fd248585ac07a"
 DATASET_PARQUET_SHA256 = "4e69a06fa5edc90921e5e7e39a7084881f8b3ed9c805c574f4f39c6fde27c603"
 REAL_AUDIO_ID = "1272-128104-0000"
 REAL_WER_MAX = 0.25
+RAM_BUDGET_BYTES = 3 * 1024**3
+QAT_ALS_ITERATIONS = 2
 # The 40 MB candidate failed both required speech tasks. This next experiment
 # increases rank while remaining inside the previously measured 479 MB release ceiling.
 # The final release workflow must still measure the complete exact package before G24.
@@ -47,9 +49,9 @@ BLOCK_ROWS = 64
 RANK_PROFILE = "WHISPER_ADAPTIVE_R192_DECODER128_ENCODER_FFN192_OUTPROJ128_V96_OTHERATTN64_FC1_32_EMBED96_BASE16_V2"
 CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023_WHISPER_INT8_ADAPTIVE_R192_V2_EXPERIMENT"
 GLOBAL_RELEASE_MAX_BYTES = 479_000_000
-BASELINE_RELEASE_BYTES = 371_947_716
+BASELINE_RELEASE_BYTES = 371_977_806
 BASELINE_WHISPER_WEIGHT_BYTES = 10_399_882
-BASELINE_RELEASE_EVIDENCE_COMMIT = "d09f79a088781d26fc5b1c3e830db9abfb42c147"
+BASELINE_RELEASE_EVIDENCE_COMMIT = "7a73c524ecaef709fd9e6fdacb8edefb74482e0a"
 PROJECTED_PACKAGE_METADATA_RESERVE_BYTES = 1_000_000
 DOMAIN_PATH = "3. Transcripción"
 WEIGHT_REL = f"{DOMAIN_PATH}/model.safetensors"
@@ -114,6 +116,18 @@ def ensure_hosted_runner() -> None:
 
 def peak_rss_bytes() -> int:
     return int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024)
+
+
+def assert_ram_budget(stage: str, workspace_estimate_bytes: int = 0) -> None:
+    observed_peak = peak_rss_bytes()
+    projected_peak = observed_peak + max(0, int(workspace_estimate_bytes))
+    if observed_peak > RAM_BUDGET_BYTES or projected_peak > RAM_BUDGET_BYTES:
+        raise MemoryError(
+            "LOUKSNAPG2_REPAIR_3GB_RAM_BUDGET_EXCEEDED:"
+            + stage + ":observed_peak=" + str(observed_peak)
+            + ":projected_peak=" + str(projected_peak)
+            + ":limit=" + str(RAM_BUDGET_BYTES)
+        )
 
 
 def write_report(path: Path, report: dict) -> None:
@@ -278,20 +292,72 @@ def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
                 root_sigma = torch.sqrt(sigma)
                 a = (qmat @ ub[:, :r]) * root_sigma.unsqueeze(0)
                 b = root_sigma.unsqueeze(1) * vh[:r, :]
-                scale_u = (a.abs().amax(dim=0) / 127.0).clamp_min(1e-12)
-                scale_v = (b.abs().amax(dim=1) / 127.0).clamp_min(1e-12)
-                uq = torch.round(a / scale_u.unsqueeze(0)).clamp(-127, 127).to(torch.int8).contiguous()
-                vq = torch.round(b / scale_v.unsqueeze(1)).clamp(-127, 127).to(torch.int8).contiguous()
-                uqf = uq.to(torch.float32) * scale_u.unsqueeze(0)
-                vqf = vq.to(torch.float32) * scale_v.unsqueeze(1)
-                residual_sq = 0.0
-                for start in range(0, m, BLOCK_ROWS):
-                    end = min(m, start + BLOCK_ROWS)
-                    block = sl[start:end].to(torch.float32).reshape(end - start, n)
-                    approx = uqf[start:end] @ vqf
-                    residual = block - approx
-                    residual_sq += float(torch.sum(residual * residual).item())
-                relative_error = math.sqrt(max(residual_sq, 0.0) / max(norm_sq, 1e-30))
+
+                def quantize_u(value):
+                    scale = (value.abs().amax(dim=0) / 127.0).clamp_min(1e-12)
+                    quantized = torch.round(value / scale.unsqueeze(0)).clamp(-127, 127).to(torch.int8).contiguous()
+                    return quantized, scale.to(torch.float32), quantized.to(torch.float32) * scale.unsqueeze(0)
+
+                def quantize_v(value):
+                    scale = (value.abs().amax(dim=1) / 127.0).clamp_min(1e-12)
+                    quantized = torch.round(value / scale.unsqueeze(1)).clamp(-127, 127).to(torch.int8).contiguous()
+                    return quantized, scale.to(torch.float32), quantized.to(torch.float32) * scale.unsqueeze(1)
+
+                def measure_error(left, right):
+                    residual_sq_local = 0.0
+                    for row_start in range(0, m, BLOCK_ROWS):
+                        row_end = min(m, row_start + BLOCK_ROWS)
+                        source_block = sl[row_start:row_end].to(torch.float32).reshape(row_end - row_start, n)
+                        residual = source_block - (left[row_start:row_end] @ right)
+                        residual_sq_local += float(torch.sum(residual * residual).item())
+                        assert_ram_budget("tensor-error-pass")
+                    return math.sqrt(max(residual_sq_local, 0.0) / max(norm_sq, 1e-30))
+
+                uq_initial, scale_u_initial, uqf_initial = quantize_u(a)
+                vq_initial, scale_v_initial, vqf_initial = quantize_v(b)
+                initial_error = measure_error(uqf_initial, vqf_initial)
+                uq, scale_u, uqf = uq_initial, scale_u_initial, uqf_initial
+                vq, scale_v, vqf = vq_initial, scale_v_initial, vqf_initial
+
+                # Quantization-aware alternating least squares. Each read of the
+                # dense teacher is sliced by BLOCK_ROWS; only compact factors and
+                # rank-by-rank normal equations stay resident in memory.
+                for _iteration in range(QAT_ALS_ITERATIONS):
+                    gram_v = vqf @ vqf.T
+                    ridge_v = max(float(torch.diagonal(gram_v).mean().item()) * 1e-6, 1e-10)
+                    inverse_v = torch.linalg.inv(
+                        gram_v + torch.eye(r, dtype=torch.float32) * ridge_v
+                    )
+                    a_refit = torch.empty((m, r), dtype=torch.float32)
+                    for row_start in range(0, m, BLOCK_ROWS):
+                        row_end = min(m, row_start + BLOCK_ROWS)
+                        source_block = sl[row_start:row_end].to(torch.float32).reshape(row_end - row_start, n)
+                        a_refit[row_start:row_end] = (source_block @ vqf.T) @ inverse_v
+                        assert_ram_budget("qat-u-refit")
+
+                    uq, scale_u, uqf = quantize_u(a_refit)
+                    gram_u = uqf.T @ uqf
+                    ridge_u = max(float(torch.diagonal(gram_u).mean().item()) * 1e-6, 1e-10)
+                    gram_u = gram_u + torch.eye(r, dtype=torch.float32) * ridge_u
+                    rhs_v = torch.zeros((r, n), dtype=torch.float32)
+                    for row_start in range(0, m, BLOCK_ROWS):
+                        row_end = min(m, row_start + BLOCK_ROWS)
+                        source_block = sl[row_start:row_end].to(torch.float32).reshape(row_end - row_start, n)
+                        rhs_v.add_(uqf[row_start:row_end].T @ source_block)
+                        assert_ram_budget("qat-v-refit")
+                    b_refit = torch.linalg.solve(gram_u, rhs_v)
+                    vq, scale_v, vqf = quantize_v(b_refit)
+                    a, b = a_refit, b_refit
+
+                final_error = measure_error(uqf, vqf)
+                if final_error > initial_error + 1e-7:
+                    # Never exchange a lower-error source reconstruction for a
+                    # numerically worse ALS result.
+                    uq, scale_u, uqf = uq_initial, scale_u_initial, uqf_initial
+                    vq, scale_v, vqf = vq_initial, scale_v_initial, vqf_initial
+                    final_error = initial_error
+                residual_sq = final_error * final_error * norm_sq
+                relative_error = final_error
                 lowrank_residual = math.sqrt(max(norm_sq - float(torch.sum(sigma * sigma).item()), 0.0) / max(norm_sq, 1e-30))
                 base = key[:-len(".weight")]
                 output[base + ".weight_u"] = uq.cpu().contiguous()
@@ -305,6 +371,9 @@ def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
                     "shape": list(shape),
                     "rank": r,
                     "relative_frobenius_error_after_int8": relative_error,
+                    "relative_frobenius_error_before_qat_als": initial_error,
+                    "qat_als_improvement": initial_error - relative_error,
+                    "qat_als_iterations": QAT_ALS_ITERATIONS,
                     "relative_residual_before_factor_quantization": lowrank_residual,
                     "factor_bytes": sum(x.numel() * x.element_size() for x in (
                         output[base + ".weight_u"], output[base + ".weight_v"],
@@ -336,6 +405,8 @@ def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
         "method": RANK_PROFILE,
         "rank": str(rank),
         "base_rank": str(BASE_RANK),
+        "ram_budget_bytes": str(RAM_BUDGET_BYTES),
+        "qat_als_iterations": str(QAT_ALS_ITERATIONS),
         "quantization": "signed_int8_per_factor_with_fp32_scales",
         "promotion_status": "EXPERIMENTAL_NOT_CERTIFIED",
     })
@@ -350,6 +421,8 @@ def make_int8_factors(source_model: Path, output_path: Path, rank: int) -> dict:
         "rank": rank,
         "base_rank": BASE_RANK,
         "rank_profile": RANK_PROFILE,
+        "ram_budget_bytes": RAM_BUDGET_BYTES,
+        "qat_als_iterations": QAT_ALS_ITERATIONS,
         "per_tensor_ranks": {row["tensor"]: row["rank"] for row in records},
         "oversample": OVERSAMPLE,
         "factor_dtype": "INT8",
@@ -775,7 +848,9 @@ def run_build(args) -> int:
     copy_runtime_skeleton(source_checkout, runtime_root, include_whisper_weight=False)
     t0 = time.monotonic()
     candidate_weight = runtime_root / DOMAIN_PATH / "model.safetensors"
+    assert_ram_budget("before-factorization")
     factor_metrics = make_int8_factors(source_weights, candidate_weight, RANK)
+    assert_ram_budget("post-factorization")
     metadata = prepare_metadata(runtime_root, candidate_weight, factor_metrics)
     actual_module_bytes = metadata["module_directory_bytes_including_descriptor"]
     projected_release_bytes = (
@@ -793,6 +868,9 @@ def run_build(args) -> int:
                                         check=False, capture_output=True, text=True).stdout.strip() or "UNKNOWN",
         "execution_environment": "GITHUB_HOSTED_UBUNTU_CPU",
         "threads": 1,
+        "ram_budget_bytes": RAM_BUDGET_BYTES,
+        "peak_rss_bytes_before_evaluation": peak_rss_bytes(),
+        "repair_method": "STREAMED_RANDOMIZED_SVD_PLUS_INT8_QUANTIZATION_AWARE_ALTERNATING_LEAST_SQUARES",
         "local_pc_inference": False,
         "canonical_runtime_mutated": False,
         "source_model": {
@@ -843,6 +921,7 @@ def run_build(args) -> int:
         return 2
 
     results, test_context = run_tests(runtime_root, work)
+    assert_ram_budget("post-functional-evaluation")
     report["task_results"] = results
     report["test_context"] = test_context
     all_tasks_pass = all(row.get("task_pass") is True for row in results)
