@@ -95,12 +95,14 @@ def draw_diagram(d,n):
             d.rounded_rectangle((x,670,x+280,765),radius=16,fill=(31,68,92),outline=teal,width=3)
             d.text((x+35,705),label,font=ImageFont.truetype(font_bold,25),fill=ink)
         d.text((1650,710),"APA 7",font=ImageFont.truetype(font_bold,28),fill=accent)
+background_base=Image.new("RGB",(W,H)); bgpx=background_base.load()
+top=(11,19,39); bottom=(28,42,68)
+for y in range(H):
+    t=y/(H-1); c=tuple(int(top[k]*(1-t)+bottom[k]*t) for k in range(3))
+    for x in range(W): bgpx[x,y]=c
+
 def make_slide(i,scene):
-    im=Image.new("RGB",(W,H)); px=im.load()
-    top=(11,19,39); bottom=(28,42,68)
-    for y in range(H):
-        t=y/(H-1); c=tuple(int(top[k]*(1-t)+bottom[k]*t) for k in range(3))
-        for x in range(W): px[x,y]=c
+    im=background_base.copy()
     d=ImageDraw.Draw(im)
     d.ellipse((1470,-260,2130,400),fill=(24,65,83))
     d.ellipse((1570,-160,2040,310),outline=(91,192,190),width=4)
