@@ -1,0 +1,24 @@
+{
+  "certification": "NOT_GRANTED",
+  "cgroup_snapshot": {
+    "memory_current_bytes": 2031403008,
+    "memory_events": {
+      "high": 0,
+      "low": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0,
+      "sock_throttled": 0
+    },
+    "memory_peak_bytes": 2480545792
+  },
+  "child_peak_rss_bytes": 0,
+  "error": "WHISPER_CPP_CONVERTER_SHA256_MISMATCH:9cc282dfcd9a24da03ffa1b4123b5508ee935e19e369c33520b1a73f89440094",
+  "error_type": "RuntimeError",
+  "mode": "build",
+  "promotion_performed": false,
+  "schema": "LOUKSNAPG_WHISPER_FULLRANK_EXPERIMENT_ERROR/1.0",
+  "status": "ERROR_FAIL_CLOSED",
+  "timestamp_utc": "2026-11-02T17:42:18Z"
+}
