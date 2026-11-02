@@ -91,7 +91,7 @@ def main(argv=None) -> int:
         "global_certification": evidence["global_certification"],
         "output": str(args.output),
     }, ensure_ascii=False, sort_keys=True, indent=2))
-    return 0
+    return 0 if case.get("status") == "PASS" and case.get("quality_criterion_passed") is True and case.get("execution_status") == "PASS_EXECUTION" else 2
 
 if __name__ == "__main__":
     raise SystemExit(main())
