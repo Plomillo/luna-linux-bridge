@@ -208,10 +208,38 @@ jobs:
     if: always() && needs.custosz_primary_worker.result == 'success'
     needs: [custosz_primary_worker]
     runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:24.04
+      options: --memory=1g --memory-swap=1g --cpus=1
     timeout-minutes: 75
     permissions:
       contents: read
     steps:
+      - name: Install Git in the 1-GiB candidate container
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          apt-get update -qq
+          apt-get install -y --no-install-recommends ca-certificates git
+          update-ca-certificates
+
+      - name: Verify the candidate cgroup is exactly 1 GiB RAM and at most one CPU
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          memory="$(cat /sys/fs/cgroup/memory.max)"
+          read -r quota period < /sys/fs/cgroup/cpu.max
+          expected=$(( 1 * 1024 * 1024 * 1024 ))
+          if [[ "$memory" != "$expected" ]]; then
+            echo "CANDIDATE_MEMORY_CGROUP_MISMATCH:$memory:$expected" >&2
+            exit 1
+          fi
+          if [[ ! "$quota" =~ ^[0-9]+$ || ! "$period" =~ ^[0-9]+$ ]] || (( quota <= 0 || period <= 0 || quota > period )); then
+            echo "CANDIDATE_CPU_CGROUP_MISMATCH:$quota:$period" >&2
+            exit 1
+          fi
+          printf '{"status":"PASS","memory_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$quota" "$period"
+
       - name: Checkout exact source commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -281,8 +309,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends espeak-ng
+          apt-get update -qq
+          apt-get install -y --no-install-recommends espeak-ng
           python -m venv "$RUNNER_TEMP/louksnapg2-venv"
           VENV_PY="$RUNNER_TEMP/louksnapg2-venv/bin/python"
           "$VENV_PY" -m pip install --disable-pip-version-check --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r cajita-luna-runtime/REQUIREMENTS.runtime.lock

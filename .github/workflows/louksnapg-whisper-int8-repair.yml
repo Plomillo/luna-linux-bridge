@@ -81,18 +81,20 @@ jobs:
       - name: Verify actual Docker cgroup memory and CPU ceilings
         shell: bash
         run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          memory = int(Path('/sys/fs/cgroup/memory.max').read_text().strip())
-          quota, period = map(int, Path('/sys/fs/cgroup/cpu.max').read_text().split())
-          expected_memory = 3 * 1024**3
-          if memory != expected_memory:
-              raise SystemExit(f'REPAIR_MEMORY_CGROUP_MISMATCH:{memory}:{expected_memory}')
-          if quota <= 0 or period <= 0 or quota > period:
-              raise SystemExit(f'REPAIR_CPU_CGROUP_MISMATCH:{quota}:{period}')
-          print({'status':'PASS','memory_max_bytes':memory,'cpu_quota':quota,'cpu_period':period,'max_cores':quota/period})
-          PY
+          set -Eeuo pipefail
+          memory="$(cat /sys/fs/cgroup/memory.max)"
+          read -r quota period < /sys/fs/cgroup/cpu.max
+          expected=$(( 3 * 1024 * 1024 * 1024 ))
+          if [[ "$memory" != "$expected" ]]; then
+            echo "REPAIR_MEMORY_CGROUP_MISMATCH:$memory:$expected" >&2
+            exit 1
+          fi
+          if [[ ! "$quota" =~ ^[0-9]+$ || ! "$period" =~ ^[0-9]+$ ]] || (( quota <= 0 || period <= 0 || quota > period )); then
+            echo "REPAIR_CPU_CGROUP_MISMATCH:$quota:$period" >&2
+            exit 1
+          fi
+          printf '{"status":"PASS","memory_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$quota" "$period"
+
 
       - name: Enforce runner resource preflight and install audio fixture generator
         shell: bash
@@ -233,14 +235,19 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          memory = int(Path('/sys/fs/cgroup/memory.max').read_text().strip())
-          quota, period = map(int, Path('/sys/fs/cgroup/cpu.max').read_text().split())
-          if memory != 1024**3 or quota <= 0 or period <= 0 or quota > period:
-              raise SystemExit(f'CANDIDATE_CGROUP_MISMATCH:{memory}:{quota}:{period}')
-          print({'status':'PASS','memory_max_bytes':memory,'cpu_limit_cores':quota/period})
-          PY
+          memory="$(cat /sys/fs/cgroup/memory.max)"
+          read -r quota period < /sys/fs/cgroup/cpu.max
+          expected=$(( 1 * 1024 * 1024 * 1024 ))
+          if [[ "$memory" != "$expected" ]]; then
+            echo "CANDIDATE_MEMORY_CGROUP_MISMATCH:$memory:$expected" >&2
+            exit 1
+          fi
+          if [[ ! "$quota" =~ ^[0-9]+$ || ! "$period" =~ ^[0-9]+$ ]] || (( quota <= 0 || period <= 0 || quota > period )); then
+            echo "CANDIDATE_CPU_CGROUP_MISMATCH:$quota:$period" >&2
+            exit 1
+          fi
+          printf '{"status":"PASS","memory_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$quota" "$period"
+
 
       - name: Install pinned single-threaded CPU inference dependencies
         shell: bash
@@ -457,16 +464,20 @@ jobs:
       - name: Verify exact-commit retest cgroup limits
         shell: bash
         run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          memory = int(Path('/sys/fs/cgroup/memory.max').read_text().strip())
-          quota, period = map(int, Path('/sys/fs/cgroup/cpu.max').read_text().split())
-          expected = 1 * 1024**3
-          if memory != expected or quota <= 0 or period <= 0 or quota > period:
-              raise SystemExit(f'REPAIR_CGROUP_NOT_ENFORCED:{memory}:{quota}:{period}')
-          print({'status':'PASS','memory_max_bytes':memory,'cpu_quota':quota,'cpu_period':period})
-          PY
+          set -Eeuo pipefail
+          memory="$(cat /sys/fs/cgroup/memory.max)"
+          read -r quota period < /sys/fs/cgroup/cpu.max
+          expected=$(( 1 * 1024 * 1024 * 1024 ))
+          if [[ "$memory" != "$expected" ]]; then
+            echo "CANDIDATE_MEMORY_CGROUP_MISMATCH:$memory:$expected" >&2
+            exit 1
+          fi
+          if [[ ! "$quota" =~ ^[0-9]+$ || ! "$period" =~ ^[0-9]+$ ]] || (( quota <= 0 || period <= 0 || quota > period )); then
+            echo "CANDIDATE_CPU_CGROUP_MISMATCH:$quota:$period" >&2
+            exit 1
+          fi
+          printf '{"status":"PASS","memory_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$quota" "$period"
+
 
       - name: Install runtime dependencies and real-audio fixture dependencies
         shell: bash

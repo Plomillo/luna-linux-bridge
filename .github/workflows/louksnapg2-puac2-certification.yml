@@ -45,14 +45,19 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          memory=int(Path('/sys/fs/cgroup/memory.max').read_text().strip())
-          quota,period=map(int,Path('/sys/fs/cgroup/cpu.max').read_text().split())
-          if memory != 3*1024**3 or quota <= 0 or period <= 0 or quota > period:
-              raise SystemExit(f'REPAIR_RESOURCE_ENVELOPE_INVALID:{memory}:{quota}:{period}')
-          print({'status':'PASS','ram_bytes':memory,'cpu_cores':quota/period})
-          PY
+          memory="$(cat /sys/fs/cgroup/memory.max)"
+          read -r quota period < /sys/fs/cgroup/cpu.max
+          expected=$(( 3 * 1024 * 1024 * 1024 ))
+          if [[ "$memory" != "$expected" ]]; then
+            echo "REPAIR_MEMORY_CGROUP_MISMATCH:$memory:$expected" >&2
+            exit 1
+          fi
+          if [[ ! "$quota" =~ ^[0-9]+$ || ! "$period" =~ ^[0-9]+$ ]] || (( quota <= 0 || period <= 0 || quota > period )); then
+            echo "REPAIR_CPU_CGROUP_MISMATCH:$quota:$period" >&2
+            exit 1
+          fi
+          printf '{"status":"PASS","memory_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$quota" "$period"
+
 
       - name: Checkout exact alternative-branch source without blanket LFS hydration
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -237,14 +242,19 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          memory=int(Path('/sys/fs/cgroup/memory.max').read_text().strip())
-          quota,period=map(int,Path('/sys/fs/cgroup/cpu.max').read_text().split())
-          if memory != 1*1024**3 or quota <= 0 or period <= 0 or quota > period:
-              raise SystemExit(f'CANDIDATE_RESOURCE_ENVELOPE_INVALID:{memory}:{quota}:{period}')
-          print({'status':'PASS','ram_bytes':memory,'cpu_cores':quota/period})
-          PY
+          memory="$(cat /sys/fs/cgroup/memory.max)"
+          read -r quota period < /sys/fs/cgroup/cpu.max
+          expected=$(( 1 * 1024 * 1024 * 1024 ))
+          if [[ "$memory" != "$expected" ]]; then
+            echo "CANDIDATE_MEMORY_CGROUP_MISMATCH:$memory:$expected" >&2
+            exit 1
+          fi
+          if [[ ! "$quota" =~ ^[0-9]+$ || ! "$period" =~ ^[0-9]+$ ]] || (( quota <= 0 || period <= 0 || quota > period )); then
+            echo "CANDIDATE_CPU_CGROUP_MISMATCH:$quota:$period" >&2
+            exit 1
+          fi
+          printf '{"status":"PASS","memory_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$quota" "$period"
+
 
       - name: Checkout evaluator at the same immutable commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
