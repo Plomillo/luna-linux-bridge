@@ -105,25 +105,25 @@
         "id": "R01",
         "points": 7,
         "text": "Describe conceptos básicos, corrientes filosóficas, figuras y acontecimientos históricos de la Psicología; aplicar historia, filosofía y teorías al caso.",
-        "validation": "AUTOMATED_COVERAGE_PLUS_G23_HUMAN"
+        "validation": "AUTOMATED_COVERAGE"
       },
       {
         "id": "R02",
         "points": 7,
         "text": "Explicar y contrastar teorías psicológicas, fundamentos, objetos y métodos de investigación aplicados al caso.",
-        "validation": "AUTOMATED_COVERAGE_PLUS_G23_HUMAN"
+        "validation": "AUTOMATED_COVERAGE"
       },
       {
         "id": "R03",
         "points": 7,
         "text": "Analizar campos de aplicación, desafíos contemporáneos, ética profesional y toma de decisiones en el caso.",
-        "validation": "AUTOMATED_COVERAGE_PLUS_G23_HUMAN"
+        "validation": "AUTOMATED_COVERAGE"
       },
       {
         "id": "R04",
         "points": 4,
         "text": "Fuentes académicas confiables, citas y referencias APA 7, lenguaje argumentativo.",
-        "validation": "AUTOMATED_CITATION_LEDGER_PLUS_G23_HUMAN"
+        "validation": "AUTOMATED_CITATION_LEDGER"
       }
     ]
   },
