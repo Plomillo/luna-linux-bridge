@@ -131,7 +131,7 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
         self.assertEqual(result["output_text"], "The die is cast.")
 
     def test_unknown_ancient_language_fails_closed(self):
-        with self.assertRaisesRegex(engine.EngineRuntimeError, "ANCIENT_SOURCE_LANGUAGE_NOT_REGISTERED"):
+        with self.assertRaisesRegex(engine.EngineRuntimeError, "FOMA_SOURCE_LANGUAGE_NOT_REGISTERED"):
             self.runtime.route("D04_TRADUCCION_LENGUAS_ANTIGUAS", "translate_ancient_text", {"text": "bonjour", "src_lang": "fra"}, task_id="ancient-invalid")
 
     def test_wrong_domain_operation_pair_fails_closed(self):

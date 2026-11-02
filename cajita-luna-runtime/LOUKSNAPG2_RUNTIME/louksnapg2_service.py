@@ -3,8 +3,7 @@
 
 The original Cajita runtime and router remain byte-for-byte unchanged. This additive
 entrypoint maps canonical target IDs onto the existing compact Cajita model adapters
-through a closed target/operation table. Ancient-language translation remains a
-specialist GPT-OSS consumer route with no general-translation fallback. Granite Docling
+through a closed target/operation table. Ancient-language translation uses Foma and hash-pinned linguistic transducers; missing resources fail closed. Granite Docling
 is exposed through its already-registered D05 native adapter. Unknown targets and
 mismatches fail closed.
 """
@@ -48,7 +47,7 @@ TARGET_BINDINGS: dict[str, dict[str, str]] = {
     "D04_TRADUCCION_LENGUAS_ANTIGUAS": {
         "domain_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
         "operation": "translate_ancient_text",
-        "adapter_id": "LOUKSNAPG2_ANCIENT_TRANSLATION_ADAPTER/1.0",
+        "adapter_id": "LOUKSNAPG2_FOMA_ANCIENT_TRANSLATION_ADAPTER/1.0",
     },
     "D03_TRANSCRIPCION_ROOT": {
         "domain_id": "D03_TRANSCRIPCION",

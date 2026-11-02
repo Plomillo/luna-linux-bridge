@@ -26,7 +26,7 @@ class FakeRuntime:
             "model_source_evidence": {"fixture": "unit-only"},
             "source_language": "lat",
             "target_language": "eng",
-            "translation_strategy": "DEDICATED_ANCIENT_LANGUAGE_ADAPTER",
+            "translation_strategy": "FOMA_FINITE_STATE_TRANSDUCER_LOOKUP",
             "general_translation_fallback_selected": False,
         }
         self.calls = []
@@ -88,7 +88,7 @@ class LouksnapG2ServiceTests(unittest.TestCase):
         self.assertEqual(runtime.calls[0][0], "D04_TRADUCCION_LENGUAS_ANTIGUAS")
         self.assertEqual(runtime.calls[0][1], "translate_ancient_text")
         self.assertEqual(response["target_id"], "D04_TRADUCCION_LENGUAS_ANTIGUAS")
-        self.assertEqual(response["adapter_id"], "LOUKSNAPG2_ANCIENT_TRANSLATION_ADAPTER/1.0")
+        self.assertEqual(response["adapter_id"], "LOUKSNAPG2_FOMA_ANCIENT_TRANSLATION_ADAPTER/1.0")
         self.assertFalse(response["general_translation_fallback_selected"])
         self.assertEqual(response["output_sha256"], hashlib.sha256(b"The die is cast.").hexdigest())
         self.assertEqual(response["certification"], "NOT_GRANTED_BY_DISPATCH")

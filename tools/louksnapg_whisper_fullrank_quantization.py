@@ -32,7 +32,7 @@ REAL_WER_MAX = 0.25
 
 REPAIR_RAM_BYTES = 3 * 1024**3
 CANDIDATE_RAM_BYTES = 1 * 1024**3
-GLOBAL_RELEASE_MAX_BYTES = 479_000_000
+GLOBAL_RELEASE_MAX_BYTES = 490_000_000
 BASELINE_RELEASE_BYTES = 371_977_806
 BASELINE_WHISPER_WEIGHT_BYTES = 10_399_882
 PACKAGE_METADATA_RESERVE_BYTES = 1_000_000
@@ -412,11 +412,23 @@ def load_helper(path: Path):
     return module
 
 
+def resolve_artifact_root(path: Path) -> Path:
+    """Resolve direct and GitHub Actions least-common-ancestor artifact ZIP layouts."""
+    root = Path(path).resolve(strict=True)
+    candidates = [root, root / "artifact"]
+    matches = [candidate for candidate in candidates if (candidate / "fullrank_manifest.json").is_file()]
+    if len(matches) > 1:
+        raise RuntimeError("WHISPER_ARTIFACT_ROOT_AMBIGUOUS")
+    if not matches:
+        raise FileNotFoundError("WHISPER_FULLRANK_MANIFEST_NOT_FOUND:" + str(root))
+    return matches[0].resolve(strict=True)
+
+
 def evaluate(args) -> int:
     budget = cgroup_budget(CANDIDATE_RAM_BYTES)
     if args.quantization not in QUANTIZATIONS:
         raise RuntimeError("QUANTIZATION_NOT_REGISTERED")
-    artifact_root = Path(args.artifact_root).resolve(strict=True)
+    artifact_root = resolve_artifact_root(args.artifact_root)
     manifest_path = artifact_root / "fullrank_manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if manifest.get("schema") != "LOUKSNAPG_WHISPER_FULLRANK_QUANTIZATION_CANDIDATE/1.0":

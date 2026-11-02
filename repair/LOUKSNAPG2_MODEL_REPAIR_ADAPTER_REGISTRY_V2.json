@@ -1,0 +1,116 @@
+{
+  "schema": "LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY/2.0",
+  "generated_at_utc": "2026-11-02",
+  "source_branch": "louksnapg2/puac2-alternative-20261029",
+  "source_parent_commit": "4630ad44544dd39adf5686129e4f0d015c8328bf",
+  "policy": "FAIL_CLOSED_APPEND_ONLY_NO_AUTOMATIC_PROMOTION",
+  "predecessor": "repair/LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY_V1.json",
+  "rule": "Build, hash identity, routing, and execution are not semantic quality. Each domain remains HOLD until its own independent held-out suite passes against the exact candidate package.",
+  "global_distribution_limit_bytes": 490000000,
+  "required_domains": {
+    "D01_CEREBRO": {
+      "model": "GPT-OSS-120B",
+      "compact_representation": "rank-1 INT8 factors",
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "known_failure": {
+        "relative_reconstruction_error": 0.998336,
+        "rank": 1,
+        "quality": "ARITHMETIC_AND_REASONING_FAILURE"
+      },
+      "required_next": "Source-bound teacher/student calibration, architecture-aware reconstruction, rank selection and held-out semantic evaluation.",
+      "promotion": "HOLD"
+    },
+    "D03_TRANSCRIPCION": {
+      "model": "Whisper large-v3-turbo",
+      "repair_adapter_status": "EXPERIMENTAL_FAILED_PRIOR_RANKS; Q4_Q5_EVALUATION_INFRASTRUCTURE_FIX_APPLIED",
+      "prior_rejected_attempts": [
+        "R29",
+        "R64",
+        "R96",
+        "adaptive-R192"
+      ],
+      "prior_r192_wer": 1,
+      "recent_q4_q5_run": 41499840413,
+      "recent_q4_q5_result": "INVALID_EVALUATION_ARTIFACT_LAYOUT_MISSING_FULLRANK_MANIFEST",
+      "recent_fix": "resolve_artifact_root accepts direct and GitHub least-common-ancestor nested artifact/ layout; ambiguous layouts fail closed.",
+      "required_next": "Rerun Q4/Q5 with corrected artifact resolver, then evaluate WER against pinned held-out real speech. Do not reinterpret the prior missing-file failure as model-quality evidence.",
+      "promotion": "HOLD"
+    },
+    "D04_TRADUCTOR_INTELIGENTE": {
+      "model": "SeamlessM4T v2 large",
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "known_failure": {
+        "rank": 4,
+        "quality": "REPETITIVE_DEGENERATE_TRANSLATION"
+      },
+      "required_next": "Architecture-aware tied-embedding/shared-head reconstruction, calibration and bilingual held-out evaluation.",
+      "promotion": "HOLD"
+    },
+    "D04_TRADUCCION_LENGUAS_ANTIGUAS": {
+      "engine": "Foma",
+      "engine_source_archive": {
+        "path": "4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master.zip",
+        "bytes": 225343,
+        "sha256": "93d2a4eeb811f4bc3fbe584a35385f1aae07908ef42d2893693eabd354db1e74"
+      },
+      "materialized_source": {
+        "bytes": 797405,
+        "file_count": 72,
+        "tree_sha256": "7dd3672d272d90dba980ac3b002df46ae546cf8534e1fbb66f7690f74e833199"
+      },
+      "consumer_route": "LOUKSNAPG2_FOMA_ANCIENT_TRANSLATION_ADAPTER/1.0",
+      "consumer_route_status": "IMPLEMENTED_FAIL_CLOSED",
+      "translation_transducer_count": 0,
+      "translation_resource_status": "NOT_PROVISIONED",
+      "semantic_validation": "NOT_EXECUTED_NO_LATIN_OR_GREEK_FST_RESOURCES",
+      "required_next": "CUSTOSZ V9 compiles and runs Foma upstream checks plus a synthetic cat→dog lookup; register real source-pinned Latin/Ancient Greek FST resources and run independent known-answer semantic tests.",
+      "promotion": "HOLD"
+    },
+    "D05_INTELIGENCIA_DOCUMENTAL": {
+      "model": "IBM Granite Docling 258M",
+      "repair_adapter_status": "EXPERIMENTAL_BUILD_SEMANTIC_FAIL",
+      "q4_candidate": {
+        "branch": "louksnapg2/docling-q3-reconstruction-20261102",
+        "run_id": 41505447857,
+        "candidate_id": "GRANITE_DOCLING_258M_SOURCE_Q4_GROUP256_ZLIB_20261102",
+        "source_revision": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+        "tensors": 470,
+        "weight_bytes": 103540310,
+        "relative_frobenius_error": 0.1697312603,
+        "output": "256_EXCLAMATION_MARKS",
+        "semantic_quality": "FAIL"
+      },
+      "original_model_probe": {
+        "run_id": 41473624438,
+        "result": "LOAD_PASS_GENERATION_SEMANTIC_FAIL"
+      },
+      "required_next": "Run a paired original FP16 versus Q4 inference with identical processor, image, prompt, resolution, generation settings and resource limits; isolate tensor reconstruction, image preprocessing and loading before a new repair hypothesis.",
+      "promotion": "HOLD"
+    },
+    "D06_SISTEMA_INTELIGENTE": {
+      "model": "Qwen3-14B",
+      "repair_adapter_status": "NOT_IMPLEMENTED",
+      "known_failure": {
+        "rank": 12,
+        "relative_reconstruction_error": 0.996409,
+        "quality": "ARITHMETIC_AND_REASONING_FAILURE"
+      },
+      "required_next": "Architecture-aware layer reconstruction, source-bound calibration and held-out reasoning evaluation.",
+      "promotion": "HOLD"
+    }
+  },
+  "acceptance": {
+    "source_pinned": true,
+    "original_weights_immutable": true,
+    "candidate_output_separate": true,
+    "exact_package_inference_required": true,
+    "independent_semantic_suite_required": true,
+    "rollback_checkpoint_required": true,
+    "worker_may_not_certify": true,
+    "missing_translation_transducer": "HOLD",
+    "missing_gpu_repair_evidence": "HOLD",
+    "failed_or_missing_quality_case": "HOLD",
+    "global_certification": "NOT_GRANTED",
+    "canonical_promotion": "NOT_AUTHORIZED"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "schema": "LOUKSNAPG2_FOMA_TRANSLATION_RESOURCES/1.0",
+  "status": "ENGINE_SOURCE_PRESENT_RESOURCES_NOT_PROVISIONED",
+  "policy": "FAIL_CLOSED_NO_GPT_OSS_OR_SEAMLESS_FALLBACK",
+  "supported_source_languages": {
+    "lat": "Latin",
+    "grc": "Ancient Greek"
+  },
+  "supported_target_languages": {
+    "eng": "English",
+    "spa": "Spanish"
+  },
+  "transducers": {},
+  "resource_contract": {
+    "path_scope": "foma_transducers/",
+    "required_fields": [
+      "path",
+      "bytes",
+      "sha256"
+    ],
+    "formats": [
+      "Foma binary transducer"
+    ],
+    "provenance_required": true,
+    "independent_known_answer_suite_required": true
+  },
+  "translation_quality": "NOT_ESTABLISHED",
+  "certification": "NOT_GRANTED"
+}

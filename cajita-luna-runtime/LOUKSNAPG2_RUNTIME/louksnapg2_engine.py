@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""LOUKSNAPG2 domain router over the original Cajita low-rank model runtimes.
+"""LOUKSNAPG2 domain router over the original Cajita model runtimes.
 
-The existing GPT-OSS, Whisper, SeamlessM4T v2 and Qwen3 source adapters and their
-weight files are preserved and executed unchanged. Only the missing ancient-language
-consumer adapter is added here; it uses a dedicated task contract/prompt over the
-existing GPT-OSS source runtime and never calls the general translation adapter.
-No new model is downloaded and this module performs no network access.
+The existing GPT-OSS, Whisper, SeamlessM4T v2, Docling and Qwen3 adapters remain
+source-bound. Ancient-language tasks use Foma and hash-pinned linguistic
+transducers; they never fall back to GPT-OSS or SeamlessM4T.
 """
 from __future__ import annotations
 
@@ -17,6 +15,8 @@ import sys
 import unicodedata
 from pathlib import Path
 from typing import Any
+
+from louksnapg2_foma import FomaEngine, FomaRuntimeError
 
 SCHEMA = "LOUKSNAPG2_ENGINE_RUNTIME/2.0"
 CAJITA_TASK_SCHEMA = "CAJITA_TASK_REQUEST/1.0"
@@ -127,6 +127,7 @@ class LouksnapG2Runtime:
         self.threads = 1
         self._adapter_module = None
         self._model_evidence = None
+        self._foma = FomaEngine(self.root)
 
     def preflight(self) -> dict:
         evidence = verify_model_files(self.root)
@@ -134,6 +135,7 @@ class LouksnapG2Runtime:
         if manifest.is_symlink() or not manifest.is_file():
             raise EngineRuntimeError("ORIGINAL_MODEL_WEIGHT_MANIFEST_MISSING")
         self._model_evidence = evidence
+        ancient = self._foma.preflight()
         return {
             "schema": "LOUKSNAPG2_RUNTIME_PREFLIGHT/2.0",
             "status": "PASS_MODEL_SOURCE_IDENTITIES",
@@ -146,9 +148,10 @@ class LouksnapG2Runtime:
                 "D06_SISTEMA_INTELIGENTE": "Qwen3 compacted native adapter",
                 "D04_TRADUCTOR_INTELIGENTE": "SeamlessM4T v2 compacted native adapter",
                 "D05_INTELIGENCIA_DOCUMENTAL": "Granite Docling packed-weight image/document extraction adapter",
-                "D04_TRADUCCION_LENGUAS_ANTIGUAS": "Dedicated domain prompt over existing GPT-OSS adapter; no general-translation fallback",
+                "D04_TRADUCCION_LENGUAS_ANTIGUAS": "Foma finite-state transducer; hash-pinned linguistic resources required",
                 "D03_TRANSCRIPCION": "Whisper compacted native adapter",
             },
+            "ancient_translation": ancient,
             "general_translation_fallback_for_ancient": False,
             "certification": "NOT_GRANTED_BY_PREFLIGHT",
         }
@@ -242,47 +245,17 @@ class LouksnapG2Runtime:
     ) -> dict:
         source_code = src_lang.strip().lower() if isinstance(src_lang, str) else ""
         target_code = tgt_lang.strip().lower() if isinstance(tgt_lang, str) else ""
-        source_name = ANCIENT_TARGETS.get(source_code)
-        target_name = TARGET_LANGUAGES.get(target_code)
-        if not source_name:
-            raise EngineRuntimeError("ANCIENT_SOURCE_LANGUAGE_NOT_REGISTERED")
-        if not target_name:
-            raise EngineRuntimeError("ANCIENT_TARGET_LANGUAGE_NOT_REGISTERED")
-        # The specialist prefix must also fit within Cajita's original 16,384-character
-        # task-normalizer limit; reserve space for the immutable domain prompt.
-        if not isinstance(text, str) or not text.strip() or len(text) > 12_000:
+        if not isinstance(text, str) or not text.strip() or len(text) > MAX_INPUT_CHARS:
             raise EngineRuntimeError("ANCIENT_TRANSLATION_INPUT_EMPTY_OR_OVER_LIMIT")
-        # The original Cajita tree has no registered native ancient-translation
-        # consumer. This is an additive specialist adapter over the existing GPT-OSS
-        # runtime, not a call to SeamlessM4T/general translation and not a fake phrase
-        # table. Its quality remains unproven until the independent functional gate.
-        specialist_prompt = (
-            "LOUKSNAPG2 ANCIENT-LANGUAGE TRANSLATION SPECIALIST.\n"
-            f"Translate the source text directly from {source_name} into {target_name}.\n"
-            "This is a source-language translation task, not a request for explanation or analysis. "
-            "Preserve grammatical case, tense, syntax and meaningful ambiguity. "
-            "Do not translate through a modern-language intermediary. "
-            "Do not invoke or imitate the modern general-translation adapter. "
-            "Return only the translation. If the text cannot be translated confidently, return exactly UNRESOLVED.\n"
-            "SOURCE TEXT:\n" + text
-        )
-        result = self._execute_original(
-            "D01_CEREBRO", "generate_text", {"prompt": specialist_prompt},
-            task_id=task_id, max_tokens=max_tokens,
-        )
+        try:
+            result = self._foma.translate(text, src_lang=source_code, tgt_lang=target_code)
+        except FomaRuntimeError as exc:
+            raise EngineRuntimeError(str(exc)) from exc
         result.update({
-            "domain_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
-            "operation": "translate_ancient_text",
-            "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
-            "adapter_id": "LOUKSNAPG2_ANCIENT_TRANSLATION_SPECIALIST/1.0",
-            "source_model_id": "GPT-OSS compacted native model through specialist ancient-language adapter",
-            "source_language": source_code,
-            "target_language": target_code,
-            "translation_strategy": "DEDICATED_DOMAIN_PROMPT_OVER_EXISTING_GPT_OSS",
-            "general_translation_fallback_selected": False,
+            "task_id": task_id,
+            "source_model_id": "Foma finite-state engine with source-pinned linguistic transducer",
+            "semantic_quality_equivalence_to_full_size_original": "NOT_ESTABLISHED",
         })
-        if result["output_text"].strip().upper() == "UNRESOLVED":
-            raise EngineRuntimeError("ANCIENT_TRANSLATION_UNRESOLVED")
         return result
 
     def extract_document(self, image_path: Path, *, prompt: str = "Extract visible text and fields.", max_tokens: int = 48, task_id: str = "document") -> dict:

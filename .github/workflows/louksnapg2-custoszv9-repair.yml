@@ -62,6 +62,13 @@ jobs:
           lfs: true
           persist-credentials: false
 
+      - name: Install Foma source-build prerequisites
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends build-essential flex bison libreadline-dev zlib1g-dev
+
       - name: Verify exact local CUSTOSZ V9 package and run CRFU self-test
         shell: bash
         run: |
@@ -85,7 +92,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          python -B -m py_compile             tools/louksnapg2_custoszv9_repair_worker.py             tools/louksnapg2_candidate_action.py             tools/louksnapg2_independent_validator.py             cajita-luna-runtime/cajita_task_adapters.py             cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_engine.py             cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_service.py
+          python -B -m py_compile             tools/louksnapg2_custoszv9_repair_worker.py             tools/louksnapg2_foma_build.py             cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_foma.py             tools/louksnapg2_candidate_action.py             tools/louksnapg2_independent_validator.py             cajita-luna-runtime/cajita_task_adapters.py             cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_engine.py             cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_service.py
 
       - name: Execute bounded CUSTOSZ V9 source audit and candidate build
         id: worker
@@ -194,6 +201,15 @@ jobs:
           cp "$RUNNER_TEMP/engine-tests.log" "$RUNNER_TEMP/certifier-tests.log" "$RUNNER_TEMP/resource-tests.log" out/test-logs/
           if [ "$engine_rc" -ne 0 ] || [ "$certifier_rc" -ne 0 ] || [ "$resource_rc" -ne 0 ]; then exit 2; fi
 
+      - name: Run Foma, service-route and Whisper artifact-layout regression tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/test-logs
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_service.py' -v 2>&1 | tee out/test-logs/service-route-tests.log
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_foma.py' -v 2>&1 | tee out/test-logs/foma-tests.log
+          python -B -m unittest discover -s tests -p 'test_louksnapg_whisper_fullrank_paths.py' -v 2>&1 | tee out/test-logs/whisper-artifact-path-tests.log
+
       - name: Upload source unit evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -220,7 +236,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           apt-get update -qq
-          apt-get install -y --no-install-recommends ca-certificates git
+          apt-get install -y --no-install-recommends ca-certificates git build-essential flex bison libreadline-dev zlib1g-dev espeak-ng
           update-ca-certificates
 
       - name: Verify the candidate cgroup is exactly 1 GiB RAM and at most one CPU
@@ -310,7 +326,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           apt-get update -qq
-          apt-get install -y --no-install-recommends espeak-ng
+          apt-get install -y --no-install-recommends espeak-ng build-essential flex bison libreadline-dev zlib1g-dev
           python -m venv "$RUNNER_TEMP/louksnapg2-venv"
           VENV_PY="$RUNNER_TEMP/louksnapg2-venv/bin/python"
           "$VENV_PY" -m pip install --disable-pip-version-check --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r cajita-luna-runtime/REQUIREMENTS.runtime.lock

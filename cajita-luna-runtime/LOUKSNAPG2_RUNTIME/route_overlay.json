@@ -32,7 +32,7 @@
       "target_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
       "domain_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
       "operation": "translate_ancient_text",
-      "adapter_id": "LOUKSNAPG2_ANCIENT_TRANSLATION_ADAPTER/1.0"
+      "adapter_id": "LOUKSNAPG2_FOMA_ANCIENT_TRANSLATION_ADAPTER/1.0"
     },
     {
       "target_id": "D03_TRANSCRIPCION_ROOT",
@@ -731,15 +731,16 @@
       "domain_id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
       "operation": "translate_ancient_text",
       "adapter": "LOUKSNAPG2_RUNTIME/louksnapg2_engine.py",
-      "model_id": "GPT_OSS_COMPACTED_NATIVE_D01_CEREBRO",
-      "adapter_identity": "LOUKSNAPG2_ANCIENT_TRANSLATION_SPECIALIST/1.0",
+      "model_id": "FOMA_SOURCE_ENGINE_WITH_HASH_PINNED_TRANSLATION_TRANSDUCERS",
+      "adapter_identity": "LOUKSNAPG2_FOMA_ANCIENT_TRANSLATION_ADAPTER/1.0",
       "quality_gate": "latin_and_ancient_greek_translation_known_answer_suite",
       "allow_general_translation_fallback": false,
       "fallback_policy": "FAIL_CLOSED",
-      "source_domain": "D01_CEREBRO",
-      "source_adapter": "CAJITA_CEREBRO_TEXT_GENERATION/1.0",
-      "translation_strategy": "DEDICATED_DOMAIN_PROMPT_OVER_EXISTING_GPT_OSS",
-      "ancient_general_fallback_allowed": false
+      "source_domain": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+      "source_adapter": "FOMA_FINITE_STATE_TRANSDUCER_ENGINE/1.0",
+      "translation_strategy": "FOMA_FINITE_STATE_TRANSDUCER_LOOKUP",
+      "ancient_general_fallback_allowed": false,
+      "translation_resource_manifest": "LOUKSNAPG2_RUNTIME/foma_transducers/manifest.json"
     },
     {
       "target_id": "D06_ANALISIS_AVANZADO",

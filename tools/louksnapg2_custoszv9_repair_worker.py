@@ -98,7 +98,8 @@ def readiness_inventory(repo: Path) -> dict:
     from louksnapg2_refresh_module_integrity import refresh as refresh_docling_integrity
     refresh_docling_integrity(repo / "cajita-luna-runtime")
 
-    registry_path = repo / "repair" / "LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY_V1.json"
+    registry_v2 = repo / "repair" / "LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY_V2.json"
+    registry_path = registry_v2 if registry_v2.is_file() else repo / "repair" / "LOUKSNAPG2_MODEL_REPAIR_ADAPTER_REGISTRY_V1.json"
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
     runtime_root = repo / "cajita-luna-runtime"
     rows = []

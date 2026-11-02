@@ -1,8 +1,8 @@
 {
   "canonical_asset_id": null,
   "certification": "NOT_GRANTED",
-  "consumer_adapter": "NOT_PROVEN_BY_EXTRACTION",
-  "functional_smoke": "REQUIRED",
+  "consumer_adapter": "LOUKSNAPG2_FOMA_ANCIENT_TRANSLATION_ADAPTER/1.0",
+  "functional_smoke": "FOMA_ENGINE_BUILD_AND_LOOKUP_SMOKE; LINGUISTIC_RESOURCES_STILL_REQUIRED",
   "identity_type": "PATH_SCOPED_NO_CANONICAL_ID_REASSIGNMENT",
   "materialization": {
     "bytes": 797405,
