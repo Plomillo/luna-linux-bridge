@@ -113,7 +113,7 @@ def ensure_hosted_runner() -> None:
     for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
         if os.environ.get(name) != "1":
             raise RuntimeError("SINGLE_THREAD_BUDGET_NOT_ENFORCED:" + name)
-    if os.environ.get("LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE") != "SYSTEMD_CGROUP_MEMORYMAX_3G_CPUQUOTA_100":
+    if os.environ.get("LOUKSNAPG_REPAIR_EXECUTION_ENVELOPE") != "DOCKER_CGROUP_V2_MEMORY_MAX_3G_CPU_MAX_1":
         raise RuntimeError("AGGREGATE_3GB_ONE_CORE_CGROUP_NOT_PROVEN")
 
 
