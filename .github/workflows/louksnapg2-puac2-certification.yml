@@ -500,6 +500,7 @@ jobs:
           else
             echo "G23_OIDC_VERIFICATION_FAILED exit=$verify_rc"
           fi
+          set +e
           python tools/louksnapg2_puac2_gate.py issue-g24 \
             --bundle out/louksnapg2-candidate/LOUKSNAPG2.md \
             --g23-payload out/louksnapg2-g23/LOUKSNAPG2_G23_UNSIGNED.json \
