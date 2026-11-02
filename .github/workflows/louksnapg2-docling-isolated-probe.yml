@@ -52,6 +52,16 @@ jobs:
           mkdir -p out/louksnapg2-docling
           printf '%s\n' "NOT_RUN" > out/louksnapg2-docling/STATUS.txt
 
+      - name: Install Git and Git LFS before checkout inside the 1-GiB candidate container
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          apt-get update -qq
+          apt-get install -y --no-install-recommends ca-certificates git git-lfs
+          update-ca-certificates
+          git --version
+          git lfs version
+
       - name: Checkout exact repository commit without blanket LFS hydration
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:

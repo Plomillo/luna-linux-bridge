@@ -59,6 +59,16 @@ jobs:
           printf '{"status":"PASS","memory_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$quota" "$period"
 
 
+      - name: Install Git and Git LFS before checkout inside the 3-GiB repair container
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          apt-get update -qq
+          apt-get install -y --no-install-recommends ca-certificates git git-lfs
+          update-ca-certificates
+          git --version
+          git lfs version
+
       - name: Checkout exact alternative-branch source without blanket LFS hydration
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -256,6 +266,15 @@ jobs:
           printf '{"status":"PASS","memory_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$quota" "$period"
 
 
+      - name: Install Git before checkout inside the 1-GiB candidate container
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          apt-get update -qq
+          apt-get install -y --no-install-recommends ca-certificates git
+          update-ca-certificates
+          git --version
+
       - name: Checkout evaluator at the same immutable commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -270,6 +289,11 @@ jobs:
           name: louksnapg2-candidate-package
           path: out/louksnapg2-candidate
 
+      - name: Set up Python 3.13 for the original Cajita runtime lock
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
       - name: Install bounded audio fixture generation and Python runtime dependencies
         shell: bash
         run: |
@@ -277,11 +301,6 @@ jobs:
           apt-get update
           apt-get install -y espeak-ng
           python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==44.0.3
-
-      - name: Set up Python 3.13 for the original Cajita runtime lock
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
 
       - name: Install the existing Cajita CPU runtime from its pinned lock
         shell: bash

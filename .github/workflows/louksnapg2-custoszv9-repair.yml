@@ -248,6 +248,11 @@ jobs:
           lfs: false
           persist-credentials: false
 
+      - name: Set up the locked CPU runtime interpreter before Python preflight
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+
       - name: Download candidate built by CUSTOSZ V9
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
@@ -299,11 +304,6 @@ jobs:
           if not valid:
             sys.exit(2)
           PY
-
-      - name: Set up the locked CPU runtime interpreter
-        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
-        with:
-          python-version: "3.13"
 
       - name: Install pinned runtime dependencies for local CPU inference
         shell: bash
