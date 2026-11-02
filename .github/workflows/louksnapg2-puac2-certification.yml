@@ -335,6 +335,11 @@ jobs:
           compression-level: 0
 
   g23_independent_validation:
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     if: always() && github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' && needs.build_candidate.result == 'success' && needs.functional_evaluation.result != 'skipped'
     needs: [build_candidate, functional_evaluation]
     runs-on: ubuntu-24.04
@@ -364,7 +369,7 @@ jobs:
         id: g23
         shell: bash
         env:
-          CAJITA_G23_VALIDATOR_ID: ${{ vars.CAJITA_G23_VALIDATOR_ID }}
+          CAJITA_G23_VALIDATOR_ID: GITHUB_OIDC_G23_VALIDATOR
         run: |
           set -Eeuo pipefail
           mkdir -p out/louksnapg2-g23
@@ -380,17 +385,10 @@ jobs:
             --validator-id "$CAJITA_G23_VALIDATOR_ID" \
             --output out/louksnapg2-g23/LOUKSNAPG2_G23_UNSIGNED.json
 
-      - name: Sign G23 using the separately provisioned validator identity
-        shell: bash
-        env:
-          CAJITA_G23_VALIDATOR_ID: ${{ vars.CAJITA_G23_VALIDATOR_ID }}
-          CAJITA_G23_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.CAJITA_G23_SIGNING_PRIVATE_KEY_PEM }}
-        run: |
-          set -Eeuo pipefail
-          python tools/louksnapg2_puac2_gate.py sign-g23 \
-            --input out/louksnapg2-g23/LOUKSNAPG2_G23_UNSIGNED.json \
-            --output out/louksnapg2-g23/LOUKSNAPG2_G23_SIGNED.json \
-            --signer-id "$CAJITA_G23_VALIDATOR_ID"
+      - name: Attest G23 decision with GitHub OIDC and Sigstore
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: out/louksnapg2-g23/LOUKSNAPG2_G23_UNSIGNED.json
 
       - name: Upload signed G23 evidence (PASS or explicit HOLD)
         if: always()
@@ -402,6 +400,12 @@ jobs:
           retention-days: 90
 
   g24_terminal_certification:
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     if: always() && github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' && needs.build_candidate.result == 'success'
     needs: [build_candidate, functional_evaluation, g23_independent_validation]
     runs-on: ubuntu-24.04
@@ -435,42 +439,90 @@ jobs:
           path: out/louksnapg2-g23
         continue-on-error: true
 
-      - name: Prepare cryptographic verifier dependencies
+      - name: Install pinned, patched GitHub CLI for attestation verification
         shell: bash
-        run: python -m pip install --disable-pip-version-check cryptography==44.0.3
+        run: |
+          set -Eeuo pipefail
+          version=2.103.3
+          package="/tmp/gh_${version}_linux_amd64.deb"
+          curl --fail --location --silent --show-error "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.deb" --output "$package"
+          echo "e3bafef96328d1a67de3a968bdfe1cc2ffd58cf6aba8b5e201356897ed06bb3d  $package" | sha256sum --check --status
+          sudo dpkg -i "$package"
+          gh --version | head -n 1 | grep -F "gh version ${version}"
 
-      - name: Verify G23 signature, rebind the exact candidate and issue signed G24 PASS or HOLD
+      - name: Verify G23 OIDC attestation and issue terminal G24 decision
         id: g24
+        if: always()
         shell: bash
         env:
-          CAJITA_G23_VALIDATOR_ID: ${{ vars.CAJITA_G23_VALIDATOR_ID }}
-          CAJITA_G23_PUBLIC_KEY_PEM: ${{ vars.CAJITA_G23_PUBLIC_KEY_PEM }}
-          CAJITA_G24_CERTIFIER_ID: ${{ vars.CAJITA_G24_CERTIFIER_ID }}
-          CAJITA_G24_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.CAJITA_G24_SIGNING_PRIVATE_KEY_PEM }}
+          CAJITA_G23_VALIDATOR_ID: GITHUB_OIDC_G23_VALIDATOR
+          CAJITA_G24_CERTIFIER_ID: GITHUB_OIDC_G24_CERTIFIER
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
           mkdir -p out/louksnapg2-g24
           set +e
+          set +e
+          gh attestation verify out/louksnapg2-g23/LOUKSNAPG2_G23_UNSIGNED.json \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/louksnapg2-puac2-certification.yml" \
+            --cert-oidc-issuer "https://token.actions.githubusercontent.com" \
+            --source-ref "$GITHUB_REF" \
+            --source-digest "$GITHUB_SHA" \
+            --predicate-type "https://slsa.dev/provenance/v1" \
+            --format json > out/louksnapg2-g24/G23_OIDC_VERIFICATION_OUTPUT.json
+          verify_rc=$?
+          set -e
+          if [ "$verify_rc" -eq 0 ]; then
+            python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          subject = Path("out/louksnapg2-g23/LOUKSNAPG2_G23_UNSIGNED.json")
+          output = Path("out/louksnapg2-g24/G23_OIDC_VERIFICATION_OUTPUT.json")
+          verified = json.loads(output.read_text(encoding="utf-8"))
+          if not isinstance(verified, list) or not verified:
+              raise SystemExit("G23_OIDC_VERIFICATION_EMPTY")
+          payload = json.loads(subject.read_text(encoding="utf-8"))
+          receipt = {
+              "schema": "LOUKSNAPG2_G23_OIDC_ATTESTATION_VERIFICATION/1.0",
+              "status": "PASS_VERIFIED",
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "signer_workflow": os.environ["GITHUB_REPOSITORY"] + "/.github/workflows/louksnapg2-puac2-certification.yml",
+              "source_ref": os.environ["GITHUB_REF"],
+              "source_commit": os.environ["GITHUB_SHA"],
+              "subject_sha256": hashlib.sha256(subject.read_bytes()).hexdigest(),
+              "predicate_type": "https://slsa.dev/provenance/v1",
+              "verification_command": "gh attestation verify",
+              "signer_id": payload.get("validator_id"),
+              "verified_attestation_count": len(verified),
+          }
+          Path("out/louksnapg2-g24/G23_OIDC_VERIFICATION_RECEIPT.json").write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          PY
+          else
+            echo "G23_OIDC_VERIFICATION_FAILED exit=$verify_rc"
+          fi
           python tools/louksnapg2_puac2_gate.py issue-g24 \
             --bundle out/louksnapg2-candidate/LOUKSNAPG2.md \
-            --g23-signed out/louksnapg2-g23/LOUKSNAPG2_G23_SIGNED.json \
+            --g23-payload out/louksnapg2-g23/LOUKSNAPG2_G23_UNSIGNED.json \
+            --g23-attestation-verification out/louksnapg2-g24/G23_OIDC_VERIFICATION_RECEIPT.json \
             --functional-evidence out/louksnapg2-functional/LOUKSNAPG2_FUNCTIONAL_EVIDENCE.json \
             --unit-evidence out/louksnapg2-candidate/LOUKSNAPG2_UNIT_TESTS_EVIDENCE.json \
             --model-materialization out/louksnapg2-functional/LOUKSNAPG2_MODEL_MATERIALIZATION.json \
             --build-report out/louksnapg2-candidate/LOUKSNAPG2_BUILD_REPORT.json \
             --g23-validator-id "$CAJITA_G23_VALIDATOR_ID" \
             --certifier-id "$CAJITA_G24_CERTIFIER_ID" \
-            --output out/louksnapg2-g24/LOUKSNAPG2_G24_SIGNED.json
+            --attestation-mode oidc \
+            --output out/louksnapg2-g24/LOUKSNAPG2_G24_DECISION.json
           rc=$?
           set -e
           echo "G24_GATE_EXIT_CODE=$rc"
           echo "$rc" > out/louksnapg2-g24/LOUKSNAPG2_G24_EXIT_CODE.txt
-          test -s out/louksnapg2-g24/LOUKSNAPG2_G24_SIGNED.json || {
+          test -s out/louksnapg2-g24/LOUKSNAPG2_G24_DECISION.json || {
             echo "G24 did not emit a decision. Missing evidence/signature is a fail-closed HOLD."
             python - <<'PY'
           import json
           from pathlib import Path
-          Path("out/louksnapg2-g24/LOUKSNAPG2_G24_SIGNED.json").write_text(json.dumps({
+          Path("out/louksnapg2-g24/LOUKSNAPG2_G24_DECISION.json").write_text(json.dumps({
               "schema":"LOUKSNAPG2_G24_HOLD/1.0",
               "status":"HOLD",
               "terminal_decision":"NOT_CERTIFIED",
@@ -479,12 +531,25 @@ jobs:
           },indent=2)+"\n")
           PY
           }
-          if [ "$rc" -ne 0 ]; then
-            echo "G24 is HOLD/NOT_CERTIFIED. Evidence is preserved; no release occurs."
-            exit 1
-          fi
+          echo "G24 decision preserved. The workflow will attest both PASS and HOLD outcomes."
 
-      - name: Upload G24 terminal decision, including signed HOLD if blocked
+      - name: Attest terminal G24 decision with GitHub OIDC and Sigstore
+        if: always() && hashFiles('out/louksnapg2-g24/LOUKSNAPG2_G24_DECISION.json') != ''
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: out/louksnapg2-g24/LOUKSNAPG2_G24_DECISION.json
+
+      - name: Fail terminal job unless G24 certified the exact candidate
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat out/louksnapg2-g24/LOUKSNAPG2_G24_EXIT_CODE.txt 2>/dev/null || echo 2)" = "0" || {
+            echo "G24 HOLD/NOT_CERTIFIED. Evidence and OIDC attestation are retained; no release occurs."
+            exit 1
+          }
+
+      - name: Upload G24 terminal decision, including OIDC-attested HOLD if blocked
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
