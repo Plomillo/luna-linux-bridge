@@ -53,7 +53,7 @@ La transposición semiótica aprovecha las affordances: escritorio y reloj sitú
 |---|---|
 | Herramientas y tareas | ChatGPT GPT-6: delimitación, matriz, marcos, síntesis y guion. eSpeak NG: voz sintética. |
 | Prompts, contraste y adaptación | Se solicitó delimitar SWM, cruzar complejidad/niveles/algoritmos, contrastar estudios y redactar video de cinco minutos. Se cotejaron DOI, documentación TikTok y lecturas UNIACC; se separó evidencia publicada de datos propios y declaración corporativa de auditoría. |
-| Aporte crítico y responsabilidad | Se limitaron generalizaciones y no se atribuyó intención al algoritmo. El estudiante debe revisar y corregir el contenido y añadir su aporte crítico personal real antes de entregar. |
+| Aporte crítico y responsabilidad | El aporte crítico sostiene que SWM no puede evaluarse solo por su utilidad aparente para concentrarse: la compañía es una construcción relacional, mientras la plataforma distribuye visibilidad de manera asimétrica. La estética repetible puede favorecer ciertos formatos y dejar otros fuera; los estudios disponibles no permiten convertir experiencias situadas en efectos universales. Esta interpretación crítica fue elaborada con asistencia de ChatGPT GPT-6 y se declara como tal, sin presentarla como dato primario ni como testimonio personal. |
 
 ### VIII. Guion del video
 
