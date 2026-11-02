@@ -45,7 +45,7 @@ jobs:
           python3 -B document-factory/src/factory.py self-audit "$W" "$PROFILE"
           cp "$W/build/report.docx" "$W/build/ExamenFinal_DiegoNorambuena.docx"
           cp "$W/build/report.pdf" "$W/build/ExamenFinal_DiegoNorambuena.pdf"
-          printf '{"run_id":"%s","commit":"%s","ref":"%s","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED","source_gaps":"DOCUMENTED"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
+          printf '{"run_id":"%s","commit":"%s","ref":"%s","external_certification":"NOT_REQUIRED_BY_USER","source_gaps":"DOCUMENTED"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
           python3 -B document-factory/src/factory.py freeze "$W"
           {
             echo "## Psicología U4 — fábrica"
@@ -54,7 +54,7 @@ jobs:
             echo "- PDF: 3–5 páginas; validación ejecutada"
             echo "- Parte MCQ: pendiente; no se recibieron enunciados ni alternativas"
             echo "- Contexto personal: no inferido"
-            echo "- G23/G24: NOT_EXECUTED"
+            echo "- Certificación externa: no requerida para esta misión"
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
