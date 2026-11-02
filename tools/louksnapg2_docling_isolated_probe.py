@@ -10,6 +10,16 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+def acceptance_exit_code(case: dict) -> int:
+    """A workflow is successful only when execution and the semantic predicate pass."""
+    return 0 if (
+        isinstance(case, dict)
+        and case.get("status") == "PASS"
+        and case.get("execution_status") == "PASS_EXECUTION"
+        and case.get("quality_criterion_passed") is True
+    ) else 2
+
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as stream:
@@ -91,7 +101,7 @@ def main(argv=None) -> int:
         "global_certification": evidence["global_certification"],
         "output": str(args.output),
     }, ensure_ascii=False, sort_keys=True, indent=2))
-    return 0 if case.get("status") == "PASS" and case.get("quality_criterion_passed") is True and case.get("execution_status") == "PASS_EXECUTION" else 2
+    return acceptance_exit_code(case)
 
 if __name__ == "__main__":
     raise SystemExit(main())
