@@ -49,20 +49,20 @@ jobs:
           tar -xzf "$RUNNER_TEMP/pandoc.tgz" --strip-components=1 -C "$RUNNER_TEMP/pandoc"
           echo "$RUNNER_TEMP/pandoc/bin" >> "$GITHUB_PATH"
 
-      - name: Acquire pinned LibreOffice 26.8.0
+      - name: Acquire verified LibreOffice 26.2.6
         shell: bash
         run: |
           set -Eeuo pipefail
-          URL="https://download.documentfoundation.org/libreoffice/stable/26.8.0/deb/x86_64/LibreOffice_26.8.0_Linux_x86-64_deb.tar.gz"
-          SHA="d0a6031a3837e48f9854e6d2da6489b9fadbd814afa4741fa32a197741663a22"
+          URL="https://ftp.osuosl.org/pub/tdf/libreoffice/stable/26.2.6/deb/x86_64/LibreOffice_26.2.6_Linux_x86-64_deb.tar.gz"
+          SHA="fd0e8f8f2408dd2e5b90286e60f3f97cf566ba441cd48cfc5bcc68067303e0bc"
           curl -fsSL "$URL" -o "$RUNNER_TEMP/libreoffice.tgz"
           echo "$SHA  $RUNNER_TEMP/libreoffice.tgz" | sha256sum -c -
           mkdir -p "$RUNNER_TEMP/lo"
           tar -xzf "$RUNNER_TEMP/libreoffice.tgz" -C "$RUNNER_TEMP/lo"
           sudo dpkg -i "$RUNNER_TEMP"/lo/*/DEBS/*.deb
-          test -x /opt/libreoffice26.8/program/soffice
-          echo "/opt/libreoffice26.8/program" >> "$GITHUB_PATH"
-          /opt/libreoffice26.8/program/soffice --version
+          test -x /opt/libreoffice26.2/program/soffice
+          echo "/opt/libreoffice26.2/program" >> "$GITHUB_PATH"
+          /opt/libreoffice26.2/program/soffice --version
 
       - name: Build synthetic governed demonstration
         shell: bash
@@ -117,7 +117,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: Plomillo/luna-linux-bridge/.github/workflows/document-factory-cert-reusable.yml@302fccda264c381ef44c6153da79ea7b24d421b6
+    uses: Plomillo/luna-linux-bridge/.github/workflows/document-factory-cert-reusable.yml@e9efca38d7c6aba3b945b61bc9b3fde5359e6c10
 
   continuation:
     needs:
