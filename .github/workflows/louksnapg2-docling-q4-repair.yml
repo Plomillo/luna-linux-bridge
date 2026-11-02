@@ -9,6 +9,7 @@ on:
       - "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py"
       - ".github/workflows/louksnapg2-docling-q4-repair.yml"
       - "cajita-luna-runtime/REQUIREMENTS.runtime.lock"
+      - "tests/test_louksnapg2_docling_q4_policy.py"
   workflow_dispatch:
 
 permissions:
@@ -61,6 +62,12 @@ jobs:
           python -m pip install --disable-pip-version-check \
             --extra-index-url https://download.pytorch.org/whl/cpu \
             -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
+
+      - name: Enforce the LOUKSNAPG2 global distribution cap
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_docling_q4_policy.py' -v
 
       - name: Test INT4 nibble codec and independent zlib frames
         shell: bash
