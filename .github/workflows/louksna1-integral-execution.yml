@@ -259,7 +259,7 @@ jobs:
           cmake --build "$RUNNER_TEMP/whisper.cpp/build" -j"$(nproc)" --target whisper-cli
           fetch_commit https://github.com/marian-nmt/marian.git 3c7a88f4e974d90a91c11a0ff804f7a494b81937 "$RUNNER_TEMP/marian"
           cmake -S "$RUNNER_TEMP/marian" -B "$RUNNER_TEMP/marian/build" -DCOMPILE_CUDA=OFF -DCOMPILE_CPU=ON -DCOMPILE_SERVER=OFF -DCOMPILE_TESTS=OFF -DUSE_MPI=OFF -DUSE_NCCL=OFF -DUSE_FBGEMM=OFF -DUSE_MKL=OFF -DUSE_SENTENCEPIECE=ON -DCMAKE_BUILD_TYPE=Release
-          cmake --build "$RUNNER_TEMP/marian/build" -j2 --target marian-decoder
+          cmake --build "$RUNNER_TEMP/marian/build" -j2 --target marian_decoder
           curl -fsSL -o "$RUNNER_TEMP/stories260K.gguf" https://huggingface.co/ggml-org/models/resolve/main/tinyllamas/stories260K.gguf
           echo "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d  $RUNNER_TEMP/stories260K.gguf" | sha256sum -c -
           curl -fsSL -o "$RUNNER_TEMP/ggml-tiny.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
