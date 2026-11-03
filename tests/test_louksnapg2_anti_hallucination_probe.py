@@ -19,6 +19,10 @@ class AntiHallucinationProbeContractTests(unittest.TestCase):
         with self.assertRaisesRegex(probe.ProbeError, "OUT_OF_RANGE"):
             probe._fixed_shape([1, 4096])
 
+    def test_total_input_tensor_elements_are_bounded(self):
+        with self.assertRaisesRegex(probe.ProbeError, "ELEMENT_LIMIT"):
+            probe._fixed_shape([1024, 2048])
+
     def test_vector_is_padded_and_reshaped(self):
         import numpy as np
         value = probe._fit_vector([4, 7], (1, 4), np.int64, np)
