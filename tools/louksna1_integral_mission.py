@@ -296,10 +296,8 @@ def run_matrix(repo: Path) -> list[dict]:
         "D01_CEREBRO_ROOT": ("generate_text", "REFERENCE_MODEL_EQUIVALENCE_NOT_EXECUTED"),
         "D03_TRANSCRIPCION_ROOT": ("transcribe_audio", "REFERENCE_TRANSCRIPT_EQUIVALENCE_NOT_EXECUTED"),
         "D04_TRADUCCION_GENERAL": ("translate_text", "REFERENCE_TRANSLATION_EQUIVALENCE_NOT_EXECUTED"),
-        "D05_CALIBRE": ("convert_document", "CALIBRE_BINARY_NOT_EXECUTED"),
         "D05_DOCLING": ("extract_document_image", "REFERENCE_EXTRACTION_EQUIVALENCE_NOT_EXECUTED"),
         "D06_ANALISIS_AVANZADO": ("analyze_reasoning", "REFERENCE_REASONING_EQUIVALENCE_NOT_EXECUTED"),
-        "D06_PORTABILIDAD_BASE": ("host_matrix", "WINDOWS_CMAKE_HOST_NOT_EXECUTED"),
         "D06_RUNTIME_ANDROID_WINDOWS": ("native_host_matrix", "ANDROID_WINDOWS_NATIVE_HOSTS_NOT_EXECUTED"),
     }
     rows = []
@@ -330,6 +328,10 @@ def run_matrix(repo: Path) -> list[dict]:
             rows.append(op_foma(runtime))
         elif target_id == "D06_ANTI_ALUCINACIONES":
             rows.append(op_onnx(runtime))
+        elif target_id == "D05_CALIBRE":
+            rows.append(op_calibre(runtime))
+        elif target_id == "D06_PORTABILIDAD_BASE":
+            rows.append(op_cmake(runtime))
         else:
             operation, reason = blocked[target_id]
             rows.append(op_not_executable(target_id, operation, reason))
@@ -551,6 +553,15 @@ ONNX_BYTES = 110516001
 NUMPY_SHA256 = "ba10f8411898fc418a521833e014a77d3ca01c15b0c6cdcce6a0d2897e6dbbdf"
 GROUNDING_TEXT = "En un principio creó Elohim los cielos y la tierra."
 GROUNDING_ARGMAX = [0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+CALIBRE_URL = "https://github.com/kovidgoyal/calibre/releases/download/v9.17.0/calibre-9.17.0-x86_64.txz"
+CALIBRE_SHA256 = "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53"
+CALIBRE_BYTES = 201590724
+CALIBRE_VERSION = "9.17.0"
+CALIBRE_FIXTURE = "Louksna1 calibre conversion fixture LOUKSNA1_CALIBRE_FIXTURE_V1.\n"
+CMAKE_ARCHIVE_SHA256 = "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37"
+CMAKE_ARCHIVE_BYTES = 21310484
+CMAKE_EXE_MEMBER = "cmake-4.4.3-windows-x86_64/bin/cmake.exe"
+CMAKE_VERSION_LINE = "cmake version 4.4.3"
 
 
 def materialize_onnx(pointer: Path, dest: Path) -> str:
@@ -667,6 +678,163 @@ def op_onnx(runtime: Path) -> dict:
             "stderr_tail": proc.stderr[-240:],
         },
         reason="" if ok else "ONNX_GROUNDING_MISMATCH",
+    )
+
+
+def download_verified(url: str, dest: Path, size: int, digest: str) -> None:
+    request = Request(url, headers={"User-Agent": "louksna1-integral-mission"})
+    with urlopen(request, timeout=300) as response, dest.open("wb") as handle:
+        shutil.copyfileobj(response, handle)
+    if dest.stat().st_size != size or sha256_file(dest) != digest:
+        dest.unlink(missing_ok=True)
+        raise RuntimeError("DOWNLOAD_HASH_MISMATCH")
+
+
+def calibre_pin(runtime: Path) -> tuple[dict | None, str]:
+    path = runtime / "5. Inteligencia documental" / "Conversión documental" / "Calibre Slim" / "source-lock.json"
+    if path.is_symlink() or not path.is_file():
+        return None, "CALIBRE_LOCK_MISSING"
+    lock = json.loads(path.read_text(encoding="utf-8"))
+    artifacts = lock.get("artifacts")
+    if not isinstance(artifacts, list):
+        return None, "CALIBRE_LOCK_ARTIFACT_MISSING"
+    row = next((item for item in artifacts if isinstance(item, dict) and item.get("id") == "CALIBRE_V9_17_0_LINUX_X86_64_BINARY"), None)
+    if row is None:
+        return None, "CALIBRE_LOCK_ARTIFACT_MISSING"
+    if row.get("url") != CALIBRE_URL or row.get("sha256") != CALIBRE_SHA256 or row.get("size_bytes") != CALIBRE_BYTES:
+        return None, "CALIBRE_LOCK_PIN_MISMATCH"
+    return row, ""
+
+
+def op_calibre(runtime: Path) -> dict:
+    target = "D05_CALIBRE"
+    _pin, problem = calibre_pin(runtime)
+    if problem:
+        return record(target, "convert_document", "FAIL", exit_code=2, detail={}, reason=problem)
+    slim = runtime / "5. Inteligencia documental" / "Conversión documental" / "Calibre Slim" / "calibre-slim-convert.py"
+    if slim.is_symlink() or not slim.is_file():
+        return record(target, "convert_document", "FAIL", exit_code=2, detail={}, reason="CALIBRE_ENTRYPOINT_MISSING")
+    with tempfile.TemporaryDirectory(prefix="louksna1-calibre-") as temp_name:
+        temp = Path(temp_name)
+        cached = os.environ.get("LOUKSNA1_CALIBRE_TXZ", "")
+        txz = Path(cached) if cached else temp / "calibre-9.17.0-x86_64.txz"
+        if cached:
+            if txz.is_symlink() or not txz.is_file() or txz.stat().st_size != CALIBRE_BYTES or sha256_file(txz) != CALIBRE_SHA256:
+                return record(target, "convert_document", "FAIL", exit_code=4, detail={}, reason="CALIBRE_CACHE_HASH_MISMATCH")
+        else:
+            try:
+                download_verified(CALIBRE_URL, txz, CALIBRE_BYTES, CALIBRE_SHA256)
+            except (OSError, RuntimeError, TimeoutError) as exc:
+                return record(target, "convert_document", "FAIL", exit_code=4, detail={"error": type(exc).__name__}, reason="CALIBRE_DOWNLOAD_FAILED")
+        extract = temp / "extract"
+        extract.mkdir()
+        unpacked = subprocess.run(["tar", "-xJf", str(txz), "-C", str(extract)], capture_output=True, text=True, timeout=240, check=False)
+        converter = extract / "ebook-convert"
+        if unpacked.returncode != 0 or converter.is_symlink() or not converter.is_file():
+            return record(target, "convert_document", "FAIL", exit_code=4, detail={"return_code": unpacked.returncode, "stderr_tail": (unpacked.stderr or "")[-240:]}, reason="CALIBRE_CONVERTER_MISSING")
+        os.chmod(converter, 0o755)
+        version = subprocess.run([str(converter), "--version"], capture_output=True, text=True, timeout=60, check=False)
+        version_text = (version.stdout or "") + (version.stderr or "")
+        if version.returncode != 0 or f"calibre {CALIBRE_VERSION}" not in version_text:
+            return record(target, "convert_document", "FAIL", exit_code=4, detail={"return_code": version.returncode, "version_text": version_text[-240:]}, reason="CALIBRE_VERSION_MISMATCH")
+        fixture = temp / "fixture.txt"
+        fixture.write_text(CALIBRE_FIXTURE, encoding="utf-8")
+        epub = temp / "fixture.epub"
+        env = os.environ.copy()
+        env["CALIBRE_EBOOK_CONVERT"] = str(converter)
+        env["QT_QPA_PLATFORM"] = "offscreen"
+        proc = subprocess.run([sys.executable, str(slim), str(fixture), str(epub)], env=env, capture_output=True, text=True, timeout=180, check=False)
+        mimetype = b""
+        found = False
+        if proc.returncode == 0 and epub.is_file():
+            with zipfile.ZipFile(epub) as bundle:
+                mimetype = bundle.read("mimetype")
+                marker = CALIBRE_FIXTURE.strip().encode("utf-8")
+                for name in bundle.namelist():
+                    if name.endswith((".html", ".xhtml", ".htm")) and marker in bundle.read(name):
+                        found = True
+                        break
+    ok = proc.returncode == 0 and mimetype == b"application/epub+zip" and found
+    return record(
+        target,
+        "convert_document",
+        "PASS" if ok else "FAIL",
+        exit_code=0 if ok else 4,
+        detail={
+            "return_code": proc.returncode,
+            "calibre_version": CALIBRE_VERSION,
+            "binary_sha256": CALIBRE_SHA256,
+            "binary_bytes": CALIBRE_BYTES,
+            "mimetype": mimetype.decode("ascii", errors="replace"),
+            "fixture_found": found,
+            "fixture_sha256": sha256_bytes(CALIBRE_FIXTURE.encode("utf-8")),
+            "stderr_tail": (proc.stderr or "")[-240:],
+        },
+        reason="" if ok else "CALIBRE_CONVERSION_MISMATCH",
+    )
+
+
+def extract_cmake_exe(archive: Path, dest: Path) -> Path:
+    dest.mkdir(parents=True, exist_ok=True)
+    seven = shutil.which("7zz") or shutil.which("7z")
+    if not seven:
+        raise RuntimeError("SEVENZIP_MISSING")
+    proc = subprocess.run(
+        [seven, "x", "-y", f"-o{dest}", str(archive), CMAKE_EXE_MEMBER],
+        capture_output=True, text=True, timeout=120, check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError((proc.stderr or proc.stdout or "")[-400:])
+    exe = dest / CMAKE_EXE_MEMBER
+    if exe.is_symlink() or not exe.is_file():
+        raise RuntimeError("CMAKE_EXE_NOT_IN_ARCHIVE")
+    return exe
+
+
+def op_cmake(runtime: Path) -> dict:
+    """Re-hash the packaged exe. A witness status field is never accepted."""
+    target = "D06_PORTABILIDAD_BASE"
+    archive = runtime / "6. Sistema Inteligente" / "Portabilidad base" / "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z"
+    if archive.is_symlink() or not archive.is_file():
+        return record(target, "host_matrix", "FAIL", exit_code=2, detail={}, reason="CMAKE_ARCHIVE_MISSING")
+    if archive.stat().st_size != CMAKE_ARCHIVE_BYTES or sha256_file(archive) != CMAKE_ARCHIVE_SHA256:
+        return record(target, "host_matrix", "FAIL", exit_code=4, detail={"bytes": archive.stat().st_size}, reason="CMAKE_ARCHIVE_HASH_MISMATCH")
+    witness_env = os.environ.get("LOUKSNA1_CMAKE_WITNESS", "")
+    witness_path = Path(witness_env) if witness_env else None
+    if witness_path is None or witness_path.is_symlink() or not witness_path.is_file():
+        return record(target, "host_matrix", "FAIL", exit_code=2, detail={"archive_sha256": CMAKE_ARCHIVE_SHA256}, reason="WINDOWS_CMAKE_HOST_NOT_EXECUTED")
+    try:
+        witness = json.loads(witness_path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return record(target, "host_matrix", "FAIL", exit_code=4, detail={}, reason="CMAKE_WITNESS_INVALID")
+    if not isinstance(witness, dict) or witness.get("archive_sha256") != CMAKE_ARCHIVE_SHA256:
+        return record(target, "host_matrix", "FAIL", exit_code=4, detail={}, reason="CMAKE_WITNESS_ARCHIVE_MISMATCH")
+    try:
+        with tempfile.TemporaryDirectory(prefix="louksna1-cmake-") as temp_name:
+            exe = extract_cmake_exe(archive, Path(temp_name))
+            exe_hash = sha256_file(exe)
+    except (OSError, RuntimeError, ImportError, subprocess.TimeoutExpired) as exc:
+        return record(target, "host_matrix", "FAIL", exit_code=4, detail={"error": str(exc)[:240]}, reason="CMAKE_EXE_EXTRACT_FAILED")
+    reported = str(witness.get("cmake_exe_sha256", "")).lower()
+    if reported != exe_hash:
+        return record(target, "host_matrix", "FAIL", exit_code=4, detail={"exe_sha256": exe_hash}, reason="CMAKE_EXE_HASH_MISMATCH")
+    stdout = witness.get("stdout") if isinstance(witness.get("stdout"), str) else ""
+    host = str(witness.get("platform", "")) + " " + str(witness.get("runner_os", ""))
+    ok = witness.get("exit_code") == 0 and CMAKE_VERSION_LINE in stdout and "windows" in host.casefold()
+    return record(
+        target,
+        "host_matrix",
+        "PASS" if ok else "FAIL",
+        exit_code=0 if ok else 4,
+        detail={
+            "archive_sha256": CMAKE_ARCHIVE_SHA256,
+            "cmake_exe_sha256": exe_hash,
+            "exit_code": witness.get("exit_code"),
+            "stdout_head": stdout.strip().splitlines()[:2],
+            "host": host.strip(),
+            "independent_exe_hash_checked": True,
+        },
+        reason="" if ok else "CMAKE_WINDOWS_OUTPUT_MISMATCH",
     )
 
 

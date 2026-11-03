@@ -7,9 +7,60 @@ permissions:
   contents: write
 
 jobs:
+  windows-cmake-host:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+
+      - name: Execute the packaged CMake binary
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $false
+          $archive = Join-Path (Get-Location) "cajita-luna-runtime\6. Sistema Inteligente\Portabilidad base\CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z"
+          if (-not (Test-Path -LiteralPath $archive)) { throw "CMAKE_ARCHIVE_MISSING" }
+          $seven = (Get-Command 7z -ErrorAction SilentlyContinue).Source
+          if (-not $seven) { $seven = "C:\Program Files\7-Zip\7z.exe" }
+          if (-not (Test-Path -LiteralPath $seven)) { throw "SEVENZIP_MISSING" }
+          $dest = Join-Path $env:RUNNER_TEMP "cmake-extract"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          & $seven x -y "-o$dest" $archive "cmake-4.4.3-windows-x86_64/bin/cmake.exe"
+          if ($LASTEXITCODE -ne 0) { throw "CMAKE_EXTRACT_FAILED" }
+          $exe = Join-Path $dest "cmake-4.4.3-windows-x86_64\bin\cmake.exe"
+          if (-not (Test-Path -LiteralPath $exe)) { throw "CMAKE_EXE_MISSING" }
+          $stdout = & $exe --version 2>&1 | Out-String
+          $exit = $LASTEXITCODE
+          $witness = [ordered]@{
+            archive_sha256 = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLower()
+            cmake_exe_sha256 = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLower()
+            exit_code = $exit
+            stdout = $stdout
+            platform = [System.Environment]::OSVersion.VersionString
+            runner_os = $env:RUNNER_OS
+          }
+          $path = Join-Path $env:RUNNER_TEMP "cmake-witness.json"
+          $witness | ConvertTo-Json | Set-Content -LiteralPath $path -Encoding utf8
+          Write-Output "CMAKE_STDOUT_BEGIN"
+          Write-Output $stdout
+          Write-Output "CMAKE_STDOUT_END"
+
+      - name: Upload the CMake execution witness
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmake-windows-witness
+          path: ${{ runner.temp }}/cmake-witness.json
+          if-no-files-found: error
+          retention-days: 14
+
   worker-and-independent-validator:
+    needs: windows-cmake-host
+    if: always() && needs.windows-cmake-host.result != 'cancelled'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -28,6 +79,16 @@ jobs:
           sudo apt-get install -y --no-install-recommends flex bison libreadline-dev zlib1g-dev python3.11
           python3.11 --version
 
+      - name: Install pinned 7zz for the Windows CMake archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o "$RUNNER_TEMP/7z2501-linux-x64.tar.xz" https://github.com/ip7z/7zip/releases/download/25.01/7z2501-linux-x64.tar.xz
+          echo "4ca3b7c6f2f67866b92622818b58233dc70367be2f36b498eb0bdeaaa44b53f4  $RUNNER_TEMP/7z2501-linux-x64.tar.xz" | sha256sum -c -
+          tar -xJf "$RUNNER_TEMP/7z2501-linux-x64.tar.xz" -C "$RUNNER_TEMP" 7zz
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/7zz" | head -n 2 || true
+
       - name: Fetch pinned CUSTOSZ V9 worker
         shell: bash
         run: |
@@ -37,6 +98,13 @@ jobs:
           git show refs/remotes/origin/custoszv9-v9:dist/CUSTOSZV9.pyz > "$RUNNER_TEMP/CUSTOSZV9.pyz"
           echo "d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817  $RUNNER_TEMP/CUSTOSZV9.pyz" | sha256sum -c -
 
+      - name: Download the Windows CMake witness
+        if: needs.windows-cmake-host.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: cmake-windows-witness
+          path: ${{ runner.temp }}/cmake-witness
+
       - name: Re-execute the mission under the independent validator
         id: validate
         env:
@@ -45,6 +113,10 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m unittest tests/test_louksna1_integral_mission.py -v
+          witness="${RUNNER_TEMP}/cmake-witness/cmake-witness.json"
+          if [ -f "$witness" ]; then
+            export LOUKSNA1_CMAKE_WITNESS="$witness"
+          fi
           set +e
           python3 tools/louksna1_integral_mission.py \
             --repo . \
