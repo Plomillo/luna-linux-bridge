@@ -20,7 +20,22 @@
     "self_certification": false,
     "global_distribution_limit_bytes": 490000000,
     "full_checkpoints_in_git": false,
-    "full_checkpoints_in_runtime_package": false
+    "full_checkpoints_in_runtime_package": false,
+    "provider_policy": {
+      "model_artifact_source": "LOCAL_OR_ORGANIZATION_CONTROLLED_MIRROR_ONLY",
+      "dataset_source": "LOCAL_OR_ORGANIZATION_CONTROLLED_MIRROR_ONLY",
+      "source_identity": "UPSTREAM_MODEL_ID_AND_IMMUTABLE_REVISION_ARE_IDENTIFIERS_ONLY",
+      "network_model_download_during_repair": false,
+      "hugging_face_jobs": false,
+      "hugging_face_inference_endpoints": false,
+      "hugging_face_hub_api": false,
+      "hugging_face_tokens": false,
+      "forbidden_credential_environment_names": [
+        "HF_TOKEN",
+        "HUGGING_FACE_HUB_TOKEN",
+        "HUGGINGFACEHUB_API_TOKEN"
+      ]
+    }
   },
   "targets": {
     "D01_CEREBRO": {
@@ -33,26 +48,26 @@
       "minimum_vram_gib_per_gpu": 75,
       "hardware_profile": "8x H100 80GB class; official NVIDIA verified PEFT configuration",
       "license": "apache-2.0",
-      "required_source_revision": "40-character Hugging Face commit SHA",
-      "required_dataset_revision": "40-character Hugging Face dataset commit SHA"
+      "required_source_revision": "40-character immutable upstream source commit/object ID; identity only, checkpoint pre-staged locally",
+      "required_dataset_revision": "40-character immutable dataset commit/object ID; identity only, dataset pre-staged locally"
     },
     "D03_TRANSCRIPCION": {
       "model_id": "openai/whisper-large-v3-turbo",
       "architecture": "whisper",
-      "framework": "Hugging Face Transformers + PyTorch",
+      "framework": "Transformers offline/local + PyTorch",
       "adapter_status": "EXPERIMENTAL_FAILED",
       "training_method": "Model-specific ASR adapter and WER-held-out validation required",
       "minimum_gpus": 1,
       "minimum_vram_gib_per_gpu": null,
       "hardware_profile": "GPU required; exact capacity profile not yet validated",
       "license": "mit",
-      "required_source_revision": "40-character Hugging Face commit SHA",
-      "required_dataset_revision": "40-character Hugging Face dataset commit SHA"
+      "required_source_revision": "40-character immutable upstream source commit/object ID; identity only, checkpoint pre-staged locally",
+      "required_dataset_revision": "40-character immutable dataset commit/object ID; identity only, dataset pre-staged locally"
     },
     "D04_TRADUCTOR_INTELIGENTE": {
       "model_id": "facebook/seamless-m4t-v2-large",
       "architecture": "seamless_m4t_v2",
-      "framework": "Hugging Face Transformers + PyTorch",
+      "framework": "Transformers offline/local + PyTorch",
       "adapter_status": "NOT_IMPLEMENTED",
       "training_method": "Architecture-specific shared-embedding/shared-head adapter and bilingual held-out validation required",
       "minimum_gpus": 1,
@@ -60,21 +75,21 @@
       "hardware_profile": "GPU required; exact capacity profile not yet validated",
       "license": "cc-by-nc-4.0",
       "license_restriction": "NON_COMMERCIAL_USE_ONLY",
-      "required_source_revision": "40-character Hugging Face commit SHA",
-      "required_dataset_revision": "40-character Hugging Face dataset commit SHA"
+      "required_source_revision": "40-character immutable upstream source commit/object ID; identity only, checkpoint pre-staged locally",
+      "required_dataset_revision": "40-character immutable dataset commit/object ID; identity only, dataset pre-staged locally"
     },
     "D05_INTELIGENCIA_DOCUMENTAL": {
       "model_id": "ibm-granite/granite-docling-258M",
       "architecture": "idefics3",
-      "framework": "Hugging Face Transformers + Docling evaluation stack",
+      "framework": "Transformers offline/local + Docling evaluation stack",
       "adapter_status": "EXPERIMENTAL_FAILED",
       "training_method": "Paired FP16 baseline, processor parity, tensor reconstruction isolation and document-field held-out validation required",
       "minimum_gpus": 1,
       "minimum_vram_gib_per_gpu": null,
       "hardware_profile": "GPU required; exact capacity profile not yet validated",
       "license": "apache-2.0",
-      "required_source_revision": "40-character Hugging Face commit SHA",
-      "required_dataset_revision": "40-character Hugging Face dataset commit SHA"
+      "required_source_revision": "40-character immutable upstream source commit/object ID; identity only, checkpoint pre-staged locally",
+      "required_dataset_revision": "40-character immutable dataset commit/object ID; identity only, dataset pre-staged locally"
     },
     "D06_SISTEMA_INTELIGENTE": {
       "model_id": "Qwen/Qwen3-14B",
@@ -86,8 +101,8 @@
       "minimum_vram_gib_per_gpu": null,
       "hardware_profile": "8-GPU LoRA recipe family documented for Qwen3 8B-14B; exact card memory profile must be verified",
       "license": "apache-2.0",
-      "required_source_revision": "40-character Hugging Face commit SHA",
-      "required_dataset_revision": "40-character Hugging Face dataset commit SHA"
+      "required_source_revision": "40-character immutable upstream source commit/object ID; identity only, checkpoint pre-staged locally",
+      "required_dataset_revision": "40-character immutable dataset commit/object ID; identity only, dataset pre-staged locally"
     }
   },
   "repair_gate": {

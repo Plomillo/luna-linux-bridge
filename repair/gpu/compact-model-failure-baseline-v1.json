@@ -1,0 +1,84 @@
+{
+  "schema": "LOUKSNAPG2_COMPACT_MODEL_FAILURE_BASELINE/1.0",
+  "observed_run_id": 41542917882,
+  "observed_at_utc": "2026-11-02",
+  "source_commit": "a546d7e10713c991cc3850c7bf198ce94fa69d0d",
+  "evaluation": {
+    "mode": "LOCAL_OFFLINE_CPU",
+    "ram_limit_bytes": 1073741824,
+    "cpu_limit": 1,
+    "semantic_cases": 13,
+    "passed_cases": 0,
+    "result": "FAIL_FUNCTIONAL_QUALITY",
+    "note": "All five compact model domains failed the recorded semantic suite. Structural checks did not establish model quality."
+  },
+  "models": {
+    "D01_CEREBRO": {
+      "model": "GPT-OSS 120B",
+      "compact_method": "randomized_truncated_svd_rank1_plus_symmetric_int8_factor_quantization",
+      "rank": 1,
+      "relative_frobenius_reconstruction_error": 0.9983363410727844,
+      "failed_cases": [
+        "CEREBRO_ARITHMETIC_01",
+        "CEREBRO_WORD_PROBLEM_02"
+      ],
+      "failure": "GARBLED_GENERATION",
+      "repair_state": "HOLD"
+    },
+    "D03_TRANSCRIPCION": {
+      "model": "Whisper large-v3-turbo",
+      "compact_rank": 29,
+      "failed_cases": [
+        "WHISPER_AUDIO_01",
+        "WHISPER_AUDIO_02"
+      ],
+      "failure": "GARBLED_TRANSCRIPT",
+      "prior_int8_wer": 3.235294,
+      "required_wer_max": 0.25,
+      "repair_state": "HOLD"
+    },
+    "D04_TRADUCTOR_INTELIGENTE": {
+      "model": "SeamlessM4T v2 Large",
+      "compact_rank": 4,
+      "failed_cases": [
+        "GENERAL_TRANSLATION_EN_ES_01",
+        "GENERAL_TRANSLATION_ES_EN_02",
+        "GENERAL_TRANSLATION_EN_FR_03",
+        "GENERAL_TRANSLATION_FR_EN_04"
+      ],
+      "failure": "REPETITIVE_DEGENERATE_TRANSLATION",
+      "repair_state": "HOLD"
+    },
+    "D05_INTELIGENCIA_DOCUMENTAL": {
+      "model": "Granite Docling 258M",
+      "q4_relative_frobenius_reconstruction_error": 0.16973126025845653,
+      "failed_cases": [
+        "DOCLING_INVOICE_IMAGE_01"
+      ],
+      "failure": "REPEATED_TOKENS_OR_EXCLAMATION_MARKS_INSTEAD_OF_FIELD_EXTRACTION",
+      "repair_state": "HOLD"
+    },
+    "D06_SISTEMA_INTELIGENTE": {
+      "model": "Qwen3-14B",
+      "compact_rank": 12,
+      "relative_frobenius_reconstruction_error": 0.996409,
+      "failed_cases": [
+        "ANALYSIS_MULTI_STEP_01",
+        "ANALYSIS_LOGIC_02"
+      ],
+      "failure": "GARBLED_GENERATION",
+      "repair_state": "HOLD"
+    }
+  },
+  "additional_route_blocker": {
+    "component": "Foma ancient-language translation",
+    "status": "ENGINE_COMPILED_BUT_ZERO_LATIN_OR_GREEK_TRANSLATION_TRANSDUCERS",
+    "consequence": "Latin and Ancient Greek cases remain blocked; this is a separate resource gap, not a sixth neural model."
+  },
+  "immutability": {
+    "source_weights_mutated": false,
+    "original_source_checkpoints_promoted": false,
+    "global_certification": "NOT_GRANTED",
+    "canonical_promotion": "NOT_AUTHORIZED"
+  }
+}

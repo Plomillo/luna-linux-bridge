@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from tools.louksnapg2_gpu_preflight import load_matrix, repair_gate, SHA_RE
+from tools.louksnapg2_gpu_preflight import load_matrix, repair_gate, SHA_RE, FORBIDDEN_HUB_CREDENTIALS
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,6 +19,15 @@ class GpuRepairInfrastructureTests(unittest.TestCase):
         matrix = load_matrix(ROOT)
         statuses = {row["adapter_status"] for row in matrix["targets"].values()}
         self.assertTrue(statuses.issubset({"NOT_IMPLEMENTED", "EXPERIMENTAL_FAILED"}))
+
+    def test_no_hugging_face_managed_service_or_credentials_are_required(self):
+        matrix = load_matrix(ROOT)
+        policy = matrix["governance"]["provider_policy"]
+        for key in ("hugging_face_jobs", "hugging_face_inference_endpoints", "hugging_face_hub_api", "hugging_face_tokens", "network_model_download_during_repair"):
+            self.assertIs(policy[key], False)
+        self.assertEqual(FORBIDDEN_HUB_CREDENTIALS, tuple(policy["forbidden_credential_environment_names"]))
+        self.assertEqual(policy["model_artifact_source"], "LOCAL_OR_ORGANIZATION_CONTROLLED_MIRROR_ONLY")
+        self.assertEqual(policy["dataset_source"], "LOCAL_OR_ORGANIZATION_CONTROLLED_MIRROR_ONLY")
 
     def test_source_and_dataset_revisions_require_full_commit_hashes(self):
         good = "a" * 40

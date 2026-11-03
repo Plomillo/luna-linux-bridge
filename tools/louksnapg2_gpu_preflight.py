@@ -20,8 +20,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA = "LOUKSNAPG2_GPU_PREFLIGHT_EVIDENCE/1.0"
+SCHEMA = "LOUKSNAPG2_GPU_PREFLIGHT_EVIDENCE/1.1"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+FORBIDDEN_HUB_CREDENTIALS = ("HF_TOKEN", "HUGGING_FACE_HUB_TOKEN", "HUGGINGFACEHUB_API_TOKEN")
 
 
 def load_matrix(repo_root: Path) -> dict[str, Any]:
@@ -115,11 +116,16 @@ def probe_runtime() -> dict[str, Any]:
     ])
     report["nvidia_smi_exit_code"] = nvidia_rc
     report["nvidia_smi"] = nvidia_text
+    report["forbidden_hub_credential_names_present"] = sorted(
+        name for name in FORBIDDEN_HUB_CREDENTIALS if os.environ.get(name, "").strip()
+    )
     return report
 
 
 def evaluate_hardware(spec: dict[str, Any], runtime: dict[str, Any]) -> list[str]:
     blockers: list[str] = []
+    if runtime.get("forbidden_hub_credential_names_present"):
+        blockers.append("HUGGING_FACE_CREDENTIALS_FORBIDDEN_BY_PROVIDER_POLICY")
     imports = runtime.get("imports", {})
     if imports.get("torch") != "PASS":
         blockers.append("PYTORCH_IMPORT_FAILED")
@@ -175,6 +181,11 @@ def main(argv: list[str] | None = None) -> int:
         "target": args.target,
         "model_id": spec["model_id"],
         "framework": spec["framework"],
+        "provider_policy": matrix["governance"]["provider_policy"],
+        "model_artifact_source_policy": matrix["governance"]["provider_policy"]["model_artifact_source"],
+        "dataset_source_policy": matrix["governance"]["provider_policy"]["dataset_source"],
+        "hugging_face_platform_used": False,
+        "network_model_download_performed": False,
         "container_image": os.environ.get(
             "LOUKSNAPG2_CONTAINER_IMAGE", "nvcr.io/nvidia/nemo:26.06"
         ),

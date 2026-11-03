@@ -47,7 +47,7 @@ The manual workflow expects a dedicated self-hosted Linux x86-64 runner with:
 
 For GPT-OSS 120B, the documented PEFT profile is 8 × H100 80 GB. For Qwen3-14B, the published LoRA recipe family uses 8 GPUs; exact per-card VRAM suitability remains to be measured. The other three models are assigned a GPU requirement but their per-model capacity profiles are explicitly unverified.
 
-No remote GPU host was found/confirmed by the current repository inspection. The workflow does not provision paid infrastructure and does not launch paid Hugging Face jobs. It will wait for an appropriately labelled self-hosted runner only when manually dispatched.
+No remote GPU host was found/confirmed by the current repository inspection. The workflow does not provision paid infrastructure. It does not use Hugging Face Jobs, Inference Endpoints, Hub APIs or credentials. Full model checkpoints and datasets must be pre-staged in a local or organization-controlled mirror with pinned revisions and hashes. The NVIDIA NGC credential is used only to pull the pinned NVIDIA container.
 
 ## 4. Workflow behavior
 
@@ -86,3 +86,7 @@ A simple lower bound illustrates why all five original models cannot be embedded
 - Candidate weights written: no.
 - Original weights mutated: no.
 - Canonical promotion/global certification: not authorized.
+
+## 8. Removal of the Hugging Face service dependency
+
+The repair path is provider-neutral and offline for model/data acquisition. `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1` are propagated into the NVIDIA container. Non-empty `HF_TOKEN`, `HUGGING_FACE_HUB_TOKEN` or `HUGGINGFACEHUB_API_TOKEN` environment variables fail preflight. No Hugging Face Jobs, Inference Endpoints, Hub API or account credentials are part of this workflow. The open-source Transformers library may remain in the local runtime dependency graph because the model adapters use local architecture/tokenizer loaders; that does not authorize or require any Hub connection. Model IDs are retained only as upstream identity labels. Checkpoint and dataset bytes must be available before repair through an authenticated local/organization-controlled mirror and must match the pinned manifests.

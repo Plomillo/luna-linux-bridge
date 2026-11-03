@@ -30,15 +30,15 @@ on:
           - preflight
           - repair
       source_revision:
-        description: "Exact 40-hex upstream model commit SHA"
+        description: "Exact 40-hex immutable upstream source revision; checkpoint must be staged in a local/organization mirror"
         type: string
         required: false
       dataset_id:
-        description: "Training dataset repo ID (owner/name)"
+        description: "Logical dataset ID from the local/organization mirror manifest"
         type: string
         required: false
       dataset_revision:
-        description: "Exact 40-hex dataset commit SHA"
+        description: "Exact 40-hex immutable dataset revision; no managed model-hub API is used"
         type: string
         required: false
 
@@ -109,6 +109,8 @@ jobs:
       - name: Run read-only GPU and framework preflight
         shell: bash
         env:
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
           TARGET: ${{ inputs.target }}
           MODE: ${{ inputs.mode }}
           SOURCE_REVISION: ${{ inputs.source_revision }}
