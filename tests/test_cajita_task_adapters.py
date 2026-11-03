@@ -13,7 +13,7 @@ class AdapterTests(unittest.TestCase):
         source=RUNTIME/"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py"
         text=source.read_text(encoding="utf-8")
         self.assertIn("image_processor.do_image_splitting=False",text)
-        self.assertIn("image_side=256",text)
+        self.assertIn('image_side=int(__import__("os").environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE", "256"))',text)
         self.assertIn('image_processor.size={"longest_edge":image_side}',text)
         self.assertIn('image_processor.max_image_size={"longest_edge":image_side}',text)
         self.assertIn("not a quality-equivalence claim",text)
@@ -25,7 +25,8 @@ class AdapterTests(unittest.TestCase):
         harness=Path(__file__).resolve().parents[1]/"tools"/"cajita_task_e2e.py"
         e2e=harness.read_text(encoding="utf-8")
         self.assertIn('"task_id":"e2e-docling-image-extraction"',e2e)
-        self.assertIn('"max_new_tokens":8',e2e)
+        self.assertIn('"max_new_tokens":256',e2e)
+        self.assertIn('"prompt":"Convert this page to docling.'',e2e)
 
     def test_five_model_contracts_and_plan_only_orchestration(self):
         report=adapters.registry_report()
