@@ -170,7 +170,11 @@ jobs:
         run: |
           set -Eeuo pipefail
           tesseract --version | head -n 1
-          apertium --version | head -n 1
+          apertium -V
+          printf 'The meeting starts at noon.\\n' | apertium eng-spa | tee "$RUNNER_TEMP/apertium-eng-spa.txt"
+          grep -qi 'reunión\|reunion' "$RUNNER_TEMP/apertium-eng-spa.txt"
+          printf 'Le livre est sur la table.\\n' | apertium fra-spa | apertium spa-eng | tee "$RUNNER_TEMP/apertium-fra-eng.txt"
+          grep -qi 'book' "$RUNNER_TEMP/apertium-fra-eng.txt"
           test -s cajita-luna-runtime/LOUKSNAPG2_RUNTIME/auxiliary_models/ggml-tiny.bin
           test -x cajita-luna-runtime/LOUKSNAPG2_RUNTIME/auxiliary_bin/linux-x86_64/whisper-cli
 
