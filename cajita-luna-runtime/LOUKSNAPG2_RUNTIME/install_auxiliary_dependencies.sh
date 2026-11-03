@@ -27,7 +27,7 @@ apt-get install -y --no-install-recommends \
 
 command -v apertium
 command -v tesseract
-apertium --version | head -n 1
+apertium -V
 tesseract --version | head -n 1
 
 echo "LOUKSNAPG2_AUXILIARY_HOST_DEPENDENCIES=PASS"
