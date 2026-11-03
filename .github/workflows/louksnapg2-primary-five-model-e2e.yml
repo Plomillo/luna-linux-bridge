@@ -142,6 +142,31 @@ jobs:
           python -B -m unittest discover -s tests -p 'test_cajita_task_e2e.py' -v
           python -B -m unittest discover -s tests -p 'test_louksnapg2_primary_five_e2e.py' -v
 
+      - name: Measure Docling module tree against its pinned tokenizer projection
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B - <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+          root = Path("cajita-luna-runtime").resolve()
+          sys.path.insert(0, str(root))
+          from cajita_task_adapters import tree_rows
+          from cajita_tokenizer_materializer import tokenizer_tree_rows
+          module = root / "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate"
+          rows = tokenizer_tree_rows(module, root, tree_rows(module))
+          payload = json.dumps(rows, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+          print(json.dumps({
+              "schema": "LOUKSNAPG2_DOCLING_TREE_DIAGNOSTIC/1.0",
+              "file_count": len(rows),
+              "logical_bytes": sum(row["bytes"] for row in rows),
+              "logical_tree_sha256": hashlib.sha256(payload).hexdigest(),
+              "rows": rows,
+          }, ensure_ascii=False, sort_keys=True, indent=2))
+          PY
+
       - name: Execute the five registered compact model adapters directly
         shell: bash
         run: |
@@ -183,7 +208,8 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git lfs install --local
           echo "GPT_OSS_WORKTREE_BYTES_BEFORE=$(stat -c %s "$file")"
-          timeout 600s git lfs fetch --verbose --include="$file" --exclude="" origin "$GITHUB_SHA"
+          git lfs env
+          timeout 600s git lfs fetch --include="$file" --exclude="" origin "$GITHUB_SHA"
           git lfs checkout "$file"
           actual_bytes="$(stat -c %s "$file")"
           echo "GPT_OSS_WORKTREE_BYTES_AFTER=$actual_bytes"
