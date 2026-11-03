@@ -42,13 +42,13 @@
       "measurement": {
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 90637926400,
+        "disk_available_bytes": 90395992064,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 12838772736
+        "ram_available_bytes": 12964012032
       },
       "reason": "LINUX_RESOURCE_MEASUREMENT_IS_NOT_THE_DECLARED_ANDROID_WINDOWS_MATRIX",
       "status": "FAIL"
@@ -84,7 +84,7 @@
       "status": "FAIL"
     }
   },
-  "generated_at_utc": "2026-11-03T18:45:05Z",
+  "generated_at_utc": "2026-11-03T19:04:36Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -344,11 +344,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "6c1e9eadef16db48b26c642cbb8fa0b455c9c2f7ae8a48fd2e7d2a165315218e"
+        "stdout_sha256": "e30ff02227c0d1c29fa45e39a1d868e236ca2edb284f7f9d60755413093c8308"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "c260fac8437607cf1c0472b5088e971f29c7899990d9a835ad026de28e73f94d",
+      "output_sha256": "b4d10a273c1f3ddb74a8829cd28f60585091a54aeac907b45aecbace0b4de1b6",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -405,12 +405,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "e1df18d08b55ae25eb5632bb1a97436beef3003a37492aab9c9ab9903260cde5",
+        "query_sha256": "5b8df5774968cfa6632bb9b69ea95baeabce259e4eef0e250e8235e77cb929b5",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "4255362f802ffddd273dfe37d77ba8af836fa98584a927cf75e9c876a580a0f1",
+      "output_sha256": "3730d86b28d97ffc46c035dad3f32e37049c5bcc6841ebf4d2a3cd6725a7c38c",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -433,17 +433,19 @@
       "detail": {
         "archive_sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
         "cmake_exe_sha256": "ab8247ca4554871e5d75c0ee118ee8663727bd6fdf37ad76b17e9cc8d5f286a8",
+        "echo_exit_code": 0,
+        "echo_stdout": "LOUKSNA1_CMAKE_FIXTURE_V1",
         "exit_code": 0,
         "host": "Microsoft Windows NT 10.0.26100.0 Windows",
         "independent_exe_hash_checked": true,
         "stdout_head": [
-          "CMake Error: Could not find CMAKE_ROOT !!!",
-          "CMake has most likely not been installed correctly."
+          "cmake version 4.4.3",
+          ""
         ]
       },
       "exit_code": 0,
       "operation": "host_matrix",
-      "output_sha256": "9d9e94067ea9bee8b57dc335a7be9bcadd5fa96962daf9572be8ffdf103b8a86",
+      "output_sha256": "ea6dbf74c38d92527229840aeeba4555afe48e4c4064760b09b78b86efa95882",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_PORTABILIDAD_BASE",
@@ -486,7 +488,7 @@
       "worker_certification": "NOT_GRANTED"
     }
   ],
-  "producer_commit": "aadca406372c947edca6bae5353c9d61f9185b42",
+  "producer_commit": "a069f8f81c586f2f7e29e09075235aed82f20ddd",
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
     "axiom_proposition_validity": "NOT_ESTABLISHED",
@@ -513,7 +515,7 @@
         "D06_ANALISIS_AVANZADO",
         "D06_RUNTIME_ANDROID_WINDOWS"
       ],
-      "result_state_hash": "572e4b694bc957525ea97de935e00d61f00ddd9d748a2b4ec08744fc871386f9",
+      "result_state_hash": "d495476f23d8526c5f721575fa0aad22e12344767119ff600d6e05128f6ac9e4",
       "status": "FAIL"
     },
     "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
