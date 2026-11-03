@@ -108,11 +108,86 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  worker-and-independent-validator:
-    needs: [windows-cmake-host, windows-avalonia-host]
-    if: always() && needs.windows-cmake-host.result != 'cancelled' && needs.windows-avalonia-host.result != 'cancelled'
+  android-emulator-host:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 40
+    steps:
+      - name: Boot the AOSP emulator and read its build properties
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends unzip openjdk-17-jre-headless
+          SDK="$RUNNER_TEMP/android-sdk"
+          mkdir -p "$SDK/cmdline-tools"
+          curl -fsSL -o "$RUNNER_TEMP/commandlinetools.zip" https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          echo "2d2d50857e4eb553af5a6dc3ad507a17adf43d115264b1afc116f95c92e5e258  $RUNNER_TEMP/commandlinetools.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/commandlinetools.zip" -d "$RUNNER_TEMP/cmdtools"
+          mv "$RUNNER_TEMP/cmdtools/cmdline-tools" "$SDK/cmdline-tools/latest"
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" --licenses >/tmp/android-licenses.txt || true
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" "platform-tools" "emulator" "system-images;android-34;aosp_atd;x86_64"
+          echo no | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd -n louksna1 -k "system-images;android-34;aosp_atd;x86_64" --force
+          ACCEL=off
+          if [ -e /dev/kvm ]; then ACCEL=on; fi
+          "$SDK/emulator/emulator" -avd louksna1 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel "$ACCEL" -port 5554 >"$RUNNER_TEMP/emulator.log" 2>&1 &
+          echo $! >"$RUNNER_TEMP/emulator.pid"
+          booted=0
+          for _ in $(seq 1 90); do
+            if "$SDK/platform-tools/adb" -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' | grep -q '^1$'; then
+              booted=1
+              break
+            fi
+            if ! kill -0 "$(cat "$RUNNER_TEMP/emulator.pid")" 2>/dev/null; then
+              echo "EMULATOR_DIED"
+              tail -n 100 "$RUNNER_TEMP/emulator.log" || true
+              exit 1
+            fi
+            sleep 5
+          done
+          if [ "$booted" != 1 ]; then
+            echo "EMULATOR_BOOT_TIMEOUT"
+            tail -n 100 "$RUNNER_TEMP/emulator.log" || true
+            exit 1
+          fi
+          prop() { "$SDK/platform-tools/adb" -s emulator-5554 shell getprop "$1" | tr -d '\r'; }
+          qemu="$(prop ro.kernel.qemu)"
+          if [ -z "$qemu" ]; then qemu="$(prop ro.boot.qemu)"; fi
+          LOUKSNA1_QEMU="$qemu" \
+          LOUKSNA1_SDK="$(prop ro.build.version.sdk)" \
+          LOUKSNA1_RELEASE="$(prop ro.build.version.release)" \
+          LOUKSNA1_ABI="$(prop ro.product.cpu.abi)" \
+          LOUKSNA1_PRODUCT="$(prop ro.product.name)" \
+          LOUKSNA1_ACCEL="$ACCEL" \
+          python3 - << 'PY'
+          import json, os
+          data = {
+              "qemu": os.environ.get("LOUKSNA1_QEMU", ""),
+              "sdk": os.environ.get("LOUKSNA1_SDK", ""),
+              "release": os.environ.get("LOUKSNA1_RELEASE", ""),
+              "abi": os.environ.get("LOUKSNA1_ABI", ""),
+              "boot_completed": "1",
+              "accel": os.environ.get("LOUKSNA1_ACCEL", ""),
+              "product": os.environ.get("LOUKSNA1_PRODUCT", ""),
+          }
+          path = os.environ["RUNNER_TEMP"] + "/android-witness.json"
+          with open(path, "w", encoding="utf-8") as handle:
+              json.dump(data, handle)
+          print(data)
+          PY
+
+      - name: Upload the Android emulator witness
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-emulator-witness
+          path: ${{ runner.temp }}/android-witness.json
+          if-no-files-found: error
+          retention-days: 14
+
+  worker-and-independent-validator:
+    needs: [windows-cmake-host, windows-avalonia-host, android-emulator-host]
+    if: always() && needs.windows-cmake-host.result != 'cancelled' && needs.windows-avalonia-host.result != 'cancelled' && needs.android-emulator-host.result != 'cancelled'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -128,7 +203,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends software-properties-common
           sudo add-apt-repository -y ppa:deadsnakes/ppa
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends flex bison libreadline-dev zlib1g-dev python3.11
+          sudo apt-get install -y --no-install-recommends flex bison libreadline-dev zlib1g-dev python3.11 cmake g++ tesseract-ocr tesseract-ocr-eng z3 imagemagick fonts-dejavu-core libprotobuf-dev protobuf-compiler libsentencepiece-dev libboost-all-dev libopenblas-dev ninja-build
           python3.11 --version
 
       - name: Install pinned 7zz for the Windows CMake archive
@@ -140,6 +215,49 @@ jobs:
           tar -xJf "$RUNNER_TEMP/7z2501-linux-x64.tar.xz" -C "$RUNNER_TEMP" 7zz
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/7zz" | head -n 2 || true
+
+      - name: Build llama.cpp, whisper.cpp and Marian
+        shell: bash
+        run: |
+          set -euo pipefail
+          fetch_commit() {
+            local url="$1" commit="$2" dest="$3"
+            rm -rf "$dest"
+            git init "$dest"
+            git -C "$dest" remote add origin "$url"
+            git -C "$dest" fetch --depth 1 origin "$commit"
+            git -C "$dest" checkout --detach FETCH_HEAD
+          }
+          fetch_commit https://github.com/ggml-org/llama.cpp.git 47c786924ad1ab7e91da2cdc72fcdb563780c2bd "$RUNNER_TEMP/llama.cpp"
+          cmake -S "$RUNNER_TEMP/llama.cpp" -B "$RUNNER_TEMP/llama.cpp/build" -DGGML_CUDA=OFF -DLLAMA_CURL=OFF -DLLAMA_BUILD_TESTS=OFF
+          cmake --build "$RUNNER_TEMP/llama.cpp/build" -j"$(nproc)" --target llama-cli
+          fetch_commit https://github.com/ggml-org/whisper.cpp.git d1be6fde11ac6e0407606b4e42fe72d34add8037 "$RUNNER_TEMP/whisper.cpp"
+          cmake -S "$RUNNER_TEMP/whisper.cpp" -B "$RUNNER_TEMP/whisper.cpp/build" -DGGML_CUDA=OFF
+          cmake --build "$RUNNER_TEMP/whisper.cpp/build" -j"$(nproc)" --target whisper-cli
+          fetch_commit https://github.com/marian-nmt/marian.git 3c7a88f4e974d90a91c11a0ff804f7a494b81937 "$RUNNER_TEMP/marian"
+          cmake -S "$RUNNER_TEMP/marian" -B "$RUNNER_TEMP/marian/build" -DCOMPILE_CPU=ON -DCOMPILE_SERVER=OFF -DCOMPILE_TESTS=OFF -DUSE_MPI=OFF -DUSE_SENTENCEPIECE=ON
+          cmake --build "$RUNNER_TEMP/marian/build" -j"$(nproc)" --target marian-decoder
+          curl -fsSL -o "$RUNNER_TEMP/stories260K.gguf" https://huggingface.co/ggml-org/models/resolve/main/tinyllamas/stories260K.gguf
+          echo "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d  $RUNNER_TEMP/stories260K.gguf" | sha256sum -c -
+          curl -fsSL -o "$RUNNER_TEMP/ggml-tiny.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+          echo "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21  $RUNNER_TEMP/ggml-tiny.bin" | sha256sum -c -
+          test -f "$RUNNER_TEMP/whisper.cpp/samples/jfk.wav"
+          llama="$(find "$RUNNER_TEMP/llama.cpp/build" -type f -name llama-cli -perm -111 | head -n 1)"
+          whisper="$(find "$RUNNER_TEMP/whisper.cpp/build" -type f -name whisper-cli -perm -111 | head -n 1)"
+          marian="$(find "$RUNNER_TEMP/marian/build" -type f -name marian-decoder -perm -111 | head -n 1)"
+          test -n "$llama" && test -n "$whisper" && test -n "$marian"
+          renderer="$(command -v convert || command -v magick)"
+          {
+            echo "LOUKSNA1_LLAMA_CLI=$llama"
+            echo "LOUKSNA1_LLAMA_MODEL=$RUNNER_TEMP/stories260K.gguf"
+            echo "LOUKSNA1_WHISPER_CLI=$whisper"
+            echo "LOUKSNA1_WHISPER_MODEL=$RUNNER_TEMP/ggml-tiny.bin"
+            echo "LOUKSNA1_WHISPER_AUDIO=$RUNNER_TEMP/whisper.cpp/samples/jfk.wav"
+            echo "LOUKSNA1_MARIAN_DECODER=$marian"
+            echo "LOUKSNA1_TESSERACT=$(command -v tesseract)"
+            echo "LOUKSNA1_Z3=$(command -v z3)"
+            echo "LOUKSNA1_IMAGE_RENDERER=$renderer"
+          } >> "$GITHUB_ENV"
 
       - name: Fetch pinned CUSTOSZ V9 worker
         shell: bash
@@ -164,6 +282,13 @@ jobs:
           name: avalonia-windows-witness
           path: ${{ runner.temp }}/avalonia-witness
 
+      - name: Download the Android emulator witness
+        if: needs.android-emulator-host.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: android-emulator-witness
+          path: ${{ runner.temp }}/android-witness
+
       - name: Re-execute the mission under the independent validator
         id: validate
         env:
@@ -179,6 +304,10 @@ jobs:
           avalonia="${RUNNER_TEMP}/avalonia-witness/avalonia-witness.json"
           if [ -f "$avalonia" ]; then
             export LOUKSNA1_AVALONIA_WITNESS="$avalonia"
+          fi
+          android="${RUNNER_TEMP}/android-witness/android-witness.json"
+          if [ -f "$android" ]; then
+            export LOUKSNA1_ANDROID_WITNESS="$android"
           fi
           set +e
           python3 tools/louksna1_integral_mission.py \

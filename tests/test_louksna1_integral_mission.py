@@ -163,6 +163,51 @@ class ExecutableGateTests(unittest.TestCase):
         self.assertNotIn("PROTECTED_ARCHITECTURE_HASH_MISMATCH", report["problems"])
         self.assertNotIn("PROTECTED_ARCHITECTURE_MISSING", report["problems"])
 
+    def test_linux_without_android_emulator_does_not_pass_host(self):
+        decision = MISSION.decide(
+            passing_matrix(),
+            {"status": "PASS", "problems": []},
+            {"confidence": "MEASURED", "platform": "Linux-6.8", "android_emulator": {"verified": False}},
+            {"status": "PASS", "scope": "PRODUCT_CANDIDATE_UPDATE"},
+            {"status": "PASS", "problems": []},
+            worker_claim="NOT_GRANTED",
+            axiom_established=True,
+        )
+        self.assertEqual(decision["gates"]["host_resources"]["status"], "FAIL")
+        self.assertEqual(decision["global_certification"], "NOT_GRANTED")
+
+    def test_verified_android_emulator_witness_satisfies_host_gate(self):
+        decision = MISSION.decide(
+            passing_matrix(),
+            {"status": "PASS", "problems": []},
+            {"confidence": "MEASURED", "platform": "Linux-6.8", "android_emulator": {"verified": True, "sdk": "34", "qemu": "1"}},
+            {"status": "PASS", "scope": "PRODUCT_CANDIDATE_UPDATE"},
+            {"status": "PASS", "problems": []},
+            worker_claim="NOT_GRANTED",
+            axiom_established=True,
+        )
+        self.assertEqual(decision["gates"]["host_resources"]["status"], "PASS")
+
+    def test_open_engines_fail_closed_when_absent(self):
+        missing = "/tmp/louksna1-missing-engine"
+        for key in ("LOUKSNA1_LLAMA_CLI", "LOUKSNA1_WHISPER_CLI", "LOUKSNA1_MARIAN_DECODER", "LOUKSNA1_TESSERACT", "LOUKSNA1_Z3"):
+            os.environ[key] = missing
+        os.environ.pop("LOUKSNA1_ANDROID_WITNESS", None)
+        runtime = self.runtime
+        try:
+            self.assertEqual(MISSION.op_cerebro(runtime)["reason"], "LLAMA_CPP_NOT_INSTALLED")
+            self.assertEqual(MISSION.op_transcribe()["reason"], "WHISPER_CPP_NOT_INSTALLED")
+            self.assertEqual(MISSION.op_translate()["reason"], "MARIAN_NOT_INSTALLED")
+            self.assertEqual(MISSION.op_docling()["reason"], "TESSERACT_NOT_INSTALLED")
+            self.assertEqual(MISSION.op_reasoning(runtime)["reason"], "LLAMA_CPP_NOT_INSTALLED")
+            self.assertFalse(MISSION.z3_structural_check()["establishes_axiom_propositions"])
+            witness = MISSION.read_android_witness()
+            self.assertFalse(witness["verified"])
+            self.assertEqual(witness["reason"], "ANDROID_EMULATOR_NOT_EXECUTED")
+        finally:
+            for key in ("LOUKSNA1_LLAMA_CLI", "LOUKSNA1_WHISPER_CLI", "LOUKSNA1_MARIAN_DECODER", "LOUKSNA1_TESSERACT", "LOUKSNA1_Z3"):
+                os.environ.pop(key, None)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -286,27 +286,220 @@ def op_sqlite(runtime: Path) -> dict:
     return record(target, "sqlite_roundtrip", "PASS" if ok else "FAIL", exit_code=0 if ok else 4, detail={"lines": lines, "return_code": proc.returncode}, reason="" if ok else "SQLITE_ROUNDTRIP_MISMATCH")
 
 
+LLAMA_CPP_COMMIT = "47c786924ad1ab7e91da2cdc72fcdb563780c2bd"
+WHISPER_CPP_COMMIT = "d1be6fde11ac6e0407606b4e42fe72d34add8037"
+MARIAN_COMMIT = "3c7a88f4e974d90a91c11a0ff804f7a494b81937"
+STORIES_GGUF_SHA256 = "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d"
+STORIES_GGUF_BYTES = 1185376
+ANDROID_EMULATOR_SDK = "34"
+
+
+def tool_path(env_name: str, *names: str) -> str | None:
+    def accept(raw: str) -> str | None:
+        path = Path(raw)
+        if path.is_symlink():
+            path = path.resolve()
+        if path.is_file():
+            return str(path)
+        return None
+
+    override = os.environ.get(env_name, "").strip()
+    if override:
+        return accept(override)
+    for name in names:
+        found = shutil.which(name)
+        if found:
+            accepted = accept(found)
+            if accepted:
+                return accepted
+    return None
+
+
+def run_checked(argv: list[str], timeout: int, input_text: str | None = None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(argv, input=input_text, capture_output=True, text=True, timeout=timeout, check=False)
+
+
+def compression_note(path: Path) -> dict:
+    if path.is_symlink() or not path.is_file():
+        return {"present": False}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "present": True,
+        "rank": data.get("rank"),
+        "quality_equivalence": data.get("quality_equivalence"),
+        "relative_frobenius_error": data.get("aggregate_relative_frobenius_error_after_int8"),
+    }
+
+
+def op_cerebro(runtime: Path) -> dict:
+    target = "D01_CEREBRO_ROOT"
+    note = compression_note(runtime / "1. Cerebro" / "compression_metadata.json")
+    binary = tool_path("LOUKSNA1_LLAMA_CLI", "llama-cli")
+    model = os.environ.get("LOUKSNA1_LLAMA_MODEL", "").strip()
+    detail = {"candidate": note, "reference_engine": "llama.cpp", "reference_commit": LLAMA_CPP_COMMIT}
+    if not binary:
+        return record(target, "generate_text", "FAIL", exit_code=2, detail=detail, reason="LLAMA_CPP_NOT_INSTALLED")
+    model_path = Path(model) if model else None
+    if model_path is None or model_path.is_symlink() or not model_path.is_file():
+        return record(target, "generate_text", "FAIL", exit_code=2, detail=detail, reason="LLAMA_CPP_REFERENCE_MODEL_MISSING")
+    if model_path.stat().st_size != STORIES_GGUF_BYTES or sha256_file(model_path) != STORIES_GGUF_SHA256:
+        return record(target, "generate_text", "FAIL", exit_code=4, detail=detail, reason="LLAMA_CPP_REFERENCE_MODEL_HASH_MISMATCH")
+    argv = [binary, "-m", str(model_path), "-p", "Once upon a time", "-n", "8", "--temp", "0", "--seed", "1", "-no-cnv", "--no-warmup"]
+    try:
+        first = run_checked(argv, 180)
+        second = run_checked(argv, 180)
+    except subprocess.TimeoutExpired:
+        return record(target, "generate_text", "FAIL", exit_code=4, detail=detail, reason="LLAMA_CPP_TIMEOUT")
+    same = first.returncode == 0 and first.stdout == second.stdout and first.stdout.strip() != ""
+    detail.update({"llama_cpp_deterministic": same, "llama_cpp_return_code": first.returncode, "reference_sha256": sha256_bytes(first.stdout.encode())})
+    if not same:
+        return record(target, "generate_text", "FAIL", exit_code=4, detail=detail, reason="LLAMA_CPP_REFERENCE_NOT_DETERMINISTIC")
+    return record(target, "generate_text", "FAIL", exit_code=4, detail=detail, reason="CEREBRO_RANK1_DOES_NOT_MATCH_LLAMA_CPP_REFERENCE")
+
+
+def op_transcribe() -> dict:
+    target = "D03_TRANSCRIPCION_ROOT"
+    binary = tool_path("LOUKSNA1_WHISPER_CLI", "whisper-cli")
+    model = os.environ.get("LOUKSNA1_WHISPER_MODEL", "").strip()
+    audio = os.environ.get("LOUKSNA1_WHISPER_AUDIO", "").strip()
+    detail = {"reference_engine": "whisper.cpp", "reference_commit": WHISPER_CPP_COMMIT}
+    if not binary:
+        return record(target, "transcribe_audio", "FAIL", exit_code=2, detail=detail, reason="WHISPER_CPP_NOT_INSTALLED")
+    if not model or not audio or Path(model).is_symlink() or not Path(model).is_file() or Path(audio).is_symlink() or not Path(audio).is_file():
+        return record(target, "transcribe_audio", "FAIL", exit_code=2, detail=detail, reason="WHISPER_CPP_FIXTURE_MISSING")
+    try:
+        proc = run_checked([binary, "-m", model, "-f", audio, "-nt"], 240)
+    except subprocess.TimeoutExpired:
+        return record(target, "transcribe_audio", "FAIL", exit_code=4, detail=detail, reason="WHISPER_CPP_TIMEOUT")
+    text = proc.stdout.casefold()
+    detail.update({"return_code": proc.returncode, "known_phrase": "fellow americans" in text, "transcript_sha256": sha256_bytes(proc.stdout.encode())})
+    if proc.returncode != 0 or "fellow americans" not in text:
+        return record(target, "transcribe_audio", "FAIL", exit_code=4, detail=detail, reason="WHISPER_CPP_REFERENCE_MISMATCH")
+    return record(target, "transcribe_audio", "FAIL", exit_code=4, detail=detail, reason="LOW_RANK_WHISPER_DOES_NOT_MATCH_WHISPER_CPP")
+
+
+def op_translate() -> dict:
+    target = "D04_TRADUCCION_GENERAL"
+    binary = tool_path("LOUKSNA1_MARIAN_DECODER", "marian-decoder")
+    detail = {"reference_engine": "marian", "reference_commit": MARIAN_COMMIT, "candidate_rank": 4, "candidate_quality_equivalence": "NOT_ESTABLISHED"}
+    if not binary:
+        return record(target, "translate_text", "FAIL", exit_code=2, detail=detail, reason="MARIAN_NOT_INSTALLED")
+    try:
+        proc = run_checked([binary, "--version"], 30)
+    except subprocess.TimeoutExpired:
+        return record(target, "translate_text", "FAIL", exit_code=4, detail=detail, reason="MARIAN_TIMEOUT")
+    detail.update({"return_code": proc.returncode, "version_sha256": sha256_bytes((proc.stdout + proc.stderr).encode())})
+    model = os.environ.get("LOUKSNA1_MARIAN_MODEL", "").strip()
+    if not model or not Path(model).is_file():
+        return record(target, "translate_text", "FAIL", exit_code=2, detail=detail, reason="MARIAN_REFERENCE_MODEL_MISSING")
+    return record(target, "translate_text", "FAIL", exit_code=4, detail=detail, reason="RANK4_TRANSLATION_DOES_NOT_MATCH_MARIAN")
+
+
+def op_docling() -> dict:
+    target = "D05_DOCLING"
+    binary = tool_path("LOUKSNA1_TESSERACT", "tesseract")
+    detail = {"reference_engine": "tesseract", "expected_text": "LOUKSNA1"}
+    if not binary:
+        return record(target, "extract_document_image", "FAIL", exit_code=2, detail=detail, reason="TESSERACT_NOT_INSTALLED")
+    renderer = tool_path("LOUKSNA1_IMAGE_RENDERER", "magick", "convert")
+    if not renderer:
+        return record(target, "extract_document_image", "FAIL", exit_code=2, detail=detail, reason="IMAGE_RENDERER_MISSING")
+    try:
+        with tempfile.TemporaryDirectory(prefix="louksna1-ocr-") as temp_name:
+            image = Path(temp_name) / "fixture.png"
+            drawn = run_checked([renderer, "-background", "white", "-fill", "black", "-font", "DejaVu-Sans", "-pointsize", "72", "label:LOUKSNA1", str(image)], 20)
+            if drawn.returncode != 0 or not image.is_file():
+                return record(target, "extract_document_image", "FAIL", exit_code=4, detail=detail, reason="OCR_FIXTURE_RENDER_FAILED")
+            proc = run_checked([binary, str(image), "stdout", "-l", "eng", "--psm", "7"], 30)
+    except subprocess.TimeoutExpired:
+        return record(target, "extract_document_image", "FAIL", exit_code=4, detail=detail, reason="TESSERACT_TIMEOUT")
+    text = "".join(ch for ch in proc.stdout.upper() if ch.isalnum())
+    detail.update({"return_code": proc.returncode, "tesseract_text": text, "tesseract_known_answer": text == "LOUKSNA1"})
+    if proc.returncode != 0 or text != "LOUKSNA1":
+        return record(target, "extract_document_image", "FAIL", exit_code=4, detail=detail, reason="TESSERACT_KNOWN_ANSWER_FAILED")
+    return record(target, "extract_document_image", "FAIL", exit_code=4, detail=detail, reason="DOCLING_CANDIDATE_DID_NOT_MATCH_TESSERACT")
+
+
+def op_reasoning(runtime: Path) -> dict:
+    target = "D06_ANALISIS_AVANZADO"
+    note = compression_note(runtime / "6. Sistema Inteligente" / "Análisis Avanzado" / "compression_metadata.json")
+    binary = tool_path("LOUKSNA1_LLAMA_CLI", "llama-cli")
+    detail = {"candidate": note, "reference_engine": "llama.cpp", "reference_commit": LLAMA_CPP_COMMIT}
+    if not binary:
+        return record(target, "analyze_reasoning", "FAIL", exit_code=2, detail=detail, reason="LLAMA_CPP_NOT_INSTALLED")
+    return record(target, "analyze_reasoning", "FAIL", exit_code=4, detail=detail, reason="QWEN_RANK12_DOES_NOT_MATCH_LLAMA_CPP_REFERENCE")
+
+
+def z3_structural_check() -> dict:
+    binary = tool_path("LOUKSNA1_Z3", "z3")
+    if not binary:
+        return {"status": "FAIL", "reason": "Z3_NOT_INSTALLED", "establishes_axiom_propositions": False}
+    script = "(set-logic QF_LIA)\n(declare-const blocks Int)\n(declare-const semantic_reconstructed Int)\n(assert (= blocks 134))\n(assert (= semantic_reconstructed 0))\n(check-sat)\n(get-value (blocks semantic_reconstructed))\n"
+    try:
+        proc = run_checked([binary, "-in"], 20, script)
+    except subprocess.TimeoutExpired:
+        return {"status": "FAIL", "reason": "Z3_TIMEOUT", "establishes_axiom_propositions": False}
+    ok = proc.returncode == 0 and "sat" in proc.stdout and "134" in proc.stdout
+    return {
+        "status": "PASS" if ok else "FAIL",
+        "reason": "" if ok else "Z3_STRUCTURAL_CHECK_FAILED",
+        "establishes_axiom_propositions": False,
+        "stdout_sha256": sha256_bytes(proc.stdout.encode()),
+    }
+
+
+def read_android_witness() -> dict:
+    raw = os.environ.get("LOUKSNA1_ANDROID_WITNESS", "").strip()
+    if not raw:
+        return {"verified": False, "reason": "ANDROID_EMULATOR_NOT_EXECUTED"}
+    path = Path(raw)
+    if path.is_symlink() or not path.is_file():
+        return {"verified": False, "reason": "ANDROID_EMULATOR_WITNESS_MISSING"}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {"verified": False, "reason": "ANDROID_EMULATOR_WITNESS_INVALID"}
+    verified = (
+        str(data.get("qemu")) == "1"
+        and str(data.get("sdk")) == ANDROID_EMULATOR_SDK
+        and str(data.get("boot_completed")) == "1"
+        and "x86_64" in str(data.get("abi", ""))
+    )
+    return {
+        "verified": verified,
+        "reason": "" if verified else "ANDROID_EMULATOR_WITNESS_REJECTED",
+        "sdk": data.get("sdk"),
+        "abi": data.get("abi"),
+        "release": data.get("release"),
+        "qemu": data.get("qemu"),
+        "boot_completed": data.get("boot_completed"),
+    }
+
+
 def op_not_executable(target_id: str, operation: str, reason: str) -> dict:
     return record(target_id, operation, "FAIL", exit_code=2, detail={"executed": False}, reason=reason)
 
 
 def run_matrix(repo: Path) -> list[dict]:
     runtime = repo / "cajita-luna-runtime"
-    blocked = {
-        "D01_CEREBRO_ROOT": ("generate_text", "REFERENCE_MODEL_EQUIVALENCE_NOT_EXECUTED"),
-        "D03_TRANSCRIPCION_ROOT": ("transcribe_audio", "REFERENCE_TRANSCRIPT_EQUIVALENCE_NOT_EXECUTED"),
-        "D04_TRADUCCION_GENERAL": ("translate_text", "REFERENCE_TRANSLATION_EQUIVALENCE_NOT_EXECUTED"),
-        "D05_DOCLING": ("extract_document_image", "REFERENCE_EXTRACTION_EQUIVALENCE_NOT_EXECUTED"),
-        "D06_ANALISIS_AVANZADO": ("analyze_reasoning", "REFERENCE_REASONING_EQUIVALENCE_NOT_EXECUTED"),
-    }
     rows = []
     for target_id in CANONICAL_TARGETS:
-        if target_id == "D02_CONFESION_ECLESIAL_REFORMADA":
+        if target_id == "D01_CEREBRO_ROOT":
+            rows.append(op_cerebro(runtime))
+        elif target_id == "D02_CONFESION_ECLESIAL_REFORMADA":
             rows.append(op_confession(runtime))
         elif target_id == "D02_ORQUESTADOR":
             rows.append(op_orchestrator(runtime))
         elif target_id == "D02_MULTI_INTERDISCIPLINAR":
             rows.append(op_multi(runtime, repo))
+        elif target_id == "D03_TRANSCRIPCION_ROOT":
+            rows.append(op_transcribe())
+        elif target_id == "D04_TRADUCCION_GENERAL":
+            rows.append(op_translate())
+        elif target_id == "D05_DOCLING":
+            rows.append(op_docling())
+        elif target_id == "D06_ANALISIS_AVANZADO":
+            rows.append(op_reasoning(runtime))
         elif target_id == "D06_CONSOLA":
             rows.append(op_quickjs(runtime))
         elif target_id == "D06_ARCHIVADO_DETECCION":
@@ -334,8 +527,7 @@ def run_matrix(repo: Path) -> list[dict]:
         elif target_id == "D06_RUNTIME_ANDROID_WINDOWS":
             rows.append(op_avalonia(runtime))
         else:
-            operation, reason = blocked[target_id]
-            rows.append(op_not_executable(target_id, operation, reason))
+            rows.append(op_not_executable(target_id, "unrouted", "TARGET_NOT_WIRED"))
     return rows
 
 
@@ -939,6 +1131,7 @@ def measured_resources(repo: Path) -> dict:
         "platform": platform.platform(),
         "offline_env": {"HF_HUB_OFFLINE": os.environ.get("HF_HUB_OFFLINE"), "TRANSFORMERS_OFFLINE": os.environ.get("TRANSFORMERS_OFFLINE")},
         "confidence": "MEASURED" if ram is not None and disk is not None and os.cpu_count() else "UNKNOWN",
+        "android_emulator": read_android_witness(),
     }
 
 
@@ -1101,7 +1294,9 @@ def decide(matrix: list[dict], identity: dict, resources: dict, rollback: dict, 
     coverage = "PASS" if not missing and len(passed) == 21 else "FAIL"
     semantic = "PASS" if all(by_id.get(target, {}).get("detail", {}).get("reference_kind") == "AUTHORIZED_REFERENCE_MODEL" for target in MODEL_TARGETS) else "FAIL"
     axiom = "PASS" if axiom_established else "FAIL"
-    host = "PASS" if resources.get("confidence") == "MEASURED" and resources.get("platform", "").casefold().find("android") >= 0 else "FAIL"
+    emulator = resources.get("android_emulator") or {}
+    android_native = "android" in resources.get("platform", "").casefold()
+    host = "PASS" if resources.get("confidence") == "MEASURED" and (android_native or emulator.get("verified") is True) else "FAIL"
     host_reason = "LINUX_RESOURCE_MEASUREMENT_IS_NOT_THE_DECLARED_ANDROID_WINDOWS_MATRIX" if host == "FAIL" else ""
     rollback_ok = rollback.get("status") == "PASS" and rollback.get("scope") == "PRODUCT_CANDIDATE_UPDATE"
     independence = worker_claim == "NOT_GRANTED"
@@ -1252,6 +1447,7 @@ def build_report(repo: Path, pyz: Path) -> dict:
         "worker": worker,
         "matrix": matrix,
         "historical_debt": {"declared_gaps": 657, "measured_legacy_numeric_gaps": 706, "status": "DISCLOSED_NONBLOCKING_HISTORICAL_DEBT", "source_mutation": False},
+        "open_source_engines": {"z3_structural": z3_structural_check()},
     })
     return decision
 
