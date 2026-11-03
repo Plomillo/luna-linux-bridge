@@ -166,8 +166,14 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
         with mock.patch.object(self.runtime._auxiliary, "transcribe", return_value={
             "output_text": "The meeting starts at noon.",
             "engine_id": "WHISPER_CPP_TINY_MULTILINGUAL/1.9.5",
-        }):
-            result = self.runtime.route("D03_TRANSCRIPCION", "transcribe_audio", {"audio_path": str(audio), "max_new_tokens": 32}, task_id="transcribe-01")
+            "language": "en",
+        }) as transcribe:
+            result = self.runtime.route(
+                "D03_TRANSCRIPCION", "transcribe_audio",
+                {"audio_path": str(audio), "language": "en", "max_new_tokens": 32},
+                task_id="transcribe-01",
+            )
+        transcribe.assert_called_once_with(audio, language="en")
         self.assertEqual(self.fake.requests, [])
         self.assertEqual(result["source_model_id"], "WHISPER_CPP_TINY_MULTILINGUAL/1.9.5")
         self.assertEqual(result["adapter_id"], "LOUKSNAPG2_WHISPER_CPP_AUXILIARY/1.0")
