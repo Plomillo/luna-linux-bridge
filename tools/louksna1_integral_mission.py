@@ -325,6 +325,11 @@ def run_checked(argv: list[str], timeout: int, input_text: str | None = None, cw
     return subprocess.run(argv, input=input_text, capture_output=True, text=True, timeout=timeout, check=False, cwd=cwd)
 
 
+def llama_completion(binary: str, model_path: Path, prompt: str, n_predict: int) -> subprocess.CompletedProcess[str]:
+    argv = [binary, "-m", str(model_path), "-p", prompt, "-n", str(n_predict), "-c", "256", "--temp", "0", "--seed", "1", "-no-cnv", "-st", "--simple-io", "--no-warmup"]
+    return subprocess.run(argv, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=90, check=False)
+
+
 def compression_note(path: Path) -> dict:
     if path.is_symlink() or not path.is_file():
         return {"present": False}
@@ -350,14 +355,16 @@ def op_cerebro(runtime: Path) -> dict:
         return record(target, "generate_text", "FAIL", exit_code=2, detail=detail, reason="LLAMA_CPP_REFERENCE_MODEL_MISSING")
     if model_path.stat().st_size != STORIES_GGUF_BYTES or sha256_file(model_path) != STORIES_GGUF_SHA256:
         return record(target, "generate_text", "FAIL", exit_code=4, detail=detail, reason="LLAMA_CPP_REFERENCE_MODEL_HASH_MISMATCH")
-    argv = [binary, "-m", str(model_path), "-p", "Once upon a time", "-n", "8", "--temp", "0", "--seed", "1", "-no-cnv", "--no-warmup"]
+    argv_note = "stdin-closed single-turn"
+    detail["llama_cpp_mode"] = argv_note
     try:
-        first = run_checked(argv, 180)
-        second = run_checked(argv, 180)
-    except subprocess.TimeoutExpired:
+        first = llama_completion(binary, model_path, "Once upon a time", 8)
+        second = llama_completion(binary, model_path, "Once upon a time", 8)
+    except subprocess.TimeoutExpired as exc:
+        detail["stderr_tail"] = ((exc.stderr or "") if isinstance(exc.stderr, str) else "")[-300:]
         return record(target, "generate_text", "FAIL", exit_code=4, detail=detail, reason="LLAMA_CPP_TIMEOUT")
     same = first.returncode == 0 and first.stdout == second.stdout and first.stdout.strip() != ""
-    detail.update({"llama_cpp_deterministic": same, "llama_cpp_return_code": first.returncode, "reference_sha256": sha256_bytes(first.stdout.encode())})
+    detail.update({"llama_cpp_deterministic": same, "llama_cpp_return_code": first.returncode, "reference_sha256": sha256_bytes(first.stdout.encode()), "stderr_tail": first.stderr[-300:]})
     if not same:
         return record(target, "generate_text", "FAIL", exit_code=4, detail=detail, reason="LLAMA_CPP_REFERENCE_NOT_DETERMINISTIC")
     return record(target, "generate_text", "FAIL", exit_code=4, detail=detail, reason="CEREBRO_RANK1_DOES_NOT_MATCH_LLAMA_CPP_REFERENCE")
@@ -436,10 +443,10 @@ def op_docling() -> dict:
     try:
         with tempfile.TemporaryDirectory(prefix="louksna1-ocr-") as temp_name:
             image = Path(temp_name) / "fixture.png"
-            drawn = run_checked([renderer, "-background", "white", "-fill", "black", "-font", "DejaVu-Sans", "-pointsize", "72", "label:LOUKSNA1", str(image)], 20)
+            drawn = run_checked([renderer, "-background", "white", "-fill", "black", "-font", "DejaVu-Sans-Mono", "-pointsize", "120", "-bordercolor", "white", "-border", "40", "label:LOUKSNA1", str(image)], 20)
             if drawn.returncode != 0 or not image.is_file():
                 return record(target, "extract_document_image", "FAIL", exit_code=4, detail=detail, reason="OCR_FIXTURE_RENDER_FAILED")
-            proc = run_checked([binary, str(image), "stdout", "-l", "eng", "--psm", "7"], 30)
+            proc = run_checked([binary, str(image), "stdout", "-l", "eng", "--psm", "8", "-c", "tessedit_char_whitelist=LOUKSNA1"], 30)
     except subprocess.TimeoutExpired:
         return record(target, "extract_document_image", "FAIL", exit_code=4, detail=detail, reason="TESSERACT_TIMEOUT")
     text = "".join(ch for ch in proc.stdout.upper() if ch.isalnum())
@@ -453,9 +460,22 @@ def op_reasoning(runtime: Path) -> dict:
     target = "D06_ANALISIS_AVANZADO"
     note = compression_note(runtime / "6. Sistema Inteligente" / "Análisis Avanzado" / "compression_metadata.json")
     binary = tool_path("LOUKSNA1_LLAMA_CLI", "llama-cli")
+    model = os.environ.get("LOUKSNA1_LLAMA_MODEL", "").strip()
     detail = {"candidate": note, "reference_engine": "llama.cpp", "reference_commit": LLAMA_CPP_COMMIT}
     if not binary:
         return record(target, "analyze_reasoning", "FAIL", exit_code=2, detail=detail, reason="LLAMA_CPP_NOT_INSTALLED")
+    model_path = Path(model) if model else None
+    if model_path is None or model_path.is_symlink() or not model_path.is_file():
+        return record(target, "analyze_reasoning", "FAIL", exit_code=2, detail=detail, reason="LLAMA_CPP_REFERENCE_MODEL_MISSING")
+    if model_path.stat().st_size != STORIES_GGUF_BYTES or sha256_file(model_path) != STORIES_GGUF_SHA256:
+        return record(target, "analyze_reasoning", "FAIL", exit_code=4, detail=detail, reason="LLAMA_CPP_REFERENCE_MODEL_HASH_MISMATCH")
+    try:
+        proc = llama_completion(binary, model_path, "The capital of France is", 4)
+    except subprocess.TimeoutExpired:
+        return record(target, "analyze_reasoning", "FAIL", exit_code=4, detail=detail, reason="LLAMA_CPP_TIMEOUT")
+    detail.update({"llama_cpp_return_code": proc.returncode, "reference_sha256": sha256_bytes(proc.stdout.encode()), "stderr_tail": proc.stderr[-300:]})
+    if proc.returncode != 0 or proc.stdout.strip() == "":
+        return record(target, "analyze_reasoning", "FAIL", exit_code=4, detail=detail, reason="LLAMA_CPP_REFERENCE_NOT_DETERMINISTIC")
     return record(target, "analyze_reasoning", "FAIL", exit_code=4, detail=detail, reason="QWEN_RANK12_DOES_NOT_MATCH_LLAMA_CPP_REFERENCE")
 
 
