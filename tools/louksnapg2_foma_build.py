@@ -15,6 +15,13 @@ def main():
     evidence=compile_foma_source(source,out/"build",a.timeout_seconds)
     from louksnapg2_foma import FomaEngine
     engine=FomaEngine(root/"cajita-luna-runtime")
+    preflight=engine.preflight()
+    if preflight.get("resource_status")!="PARTIAL_CURATED_COVERAGE":
+        raise RuntimeError("FOMA_PREFLIGHT_PARTIAL_COVERAGE_MISMATCH:"+json.dumps(preflight,sort_keys=True))
+    if set(preflight.get("registered_transducer_pairs",[]))!={"lat->eng","grc->eng"}:
+        raise RuntimeError("FOMA_PREFLIGHT_REGISTERED_PAIR_MISMATCH:"+json.dumps(preflight,sort_keys=True))
+    if set(preflight.get("missing_transducer_pairs",[]))!={"lat->spa","grc->spa"}:
+        raise RuntimeError("FOMA_PREFLIGHT_MISSING_PAIR_MISMATCH:"+json.dumps(preflight,sort_keys=True))
     latin=engine.translate("Alea iacta est",src_lang="lat",tgt_lang="eng")
     latin_lexemes=[engine.translate(word,src_lang="lat",tgt_lang="eng") for word in ("aqua","alea","agricultura","amica")]
     greek=engine.translate("πάντα ῥεῖ",src_lang="grc",tgt_lang="eng")
@@ -29,6 +36,7 @@ def main():
     evidence.update({"source_commit":os.environ.get("GITHUB_SHA","LOCAL_UNPINNED"),
         "worker":"CUSTOSZ_V9","action":"BUILD_AND_TEST_FOMA_ENGINE_AND_DICTIONARY_DERIVED_RESOURCES",
         "output_contains_linguistic_transducers":True,
+        "foma_preflight":preflight,
         "latin_resource_evidence":{"curated_phrase":latin,"dictionary_lexemes":latin_lexemes,
             "dictionary_source":"APERTIUM_LAT_ENG_DIX","dictionary_pairs_compiled":154},
         "ancient_greek_resource_evidence":{"curated_phrase":greek},
