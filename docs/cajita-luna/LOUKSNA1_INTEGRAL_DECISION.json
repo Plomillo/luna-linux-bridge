@@ -51,13 +51,13 @@
         },
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 85595176960,
+        "disk_available_bytes": 85597839360,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 6131666944
+        "ram_available_bytes": 7531905024
       },
       "reason": "",
       "status": "PASS"
@@ -100,7 +100,7 @@
       "status": "FAIL"
     }
   },
-  "generated_at_utc": "2026-11-03T21:28:50Z",
+  "generated_at_utc": "2026-11-03T22:00:51Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -117,13 +117,18 @@
           "rank": 1,
           "relative_frobenius_error": 0.9983363410727844
         },
+        "llama_cpp_deterministic": false,
+        "llama_cpp_mode": "stdin-closed single-turn",
+        "llama_cpp_return_code": 0,
         "reference_commit": "47c786924ad1ab7e91da2cdc72fcdb563780c2bd",
-        "reference_engine": "llama.cpp"
+        "reference_engine": "llama.cpp",
+        "reference_sha256": "eb8af1a3e12a5ba01800d387e1ad9f945162db7141af3fddfcd1b8d6424d7af4",
+        "stderr_tail": ""
       },
       "exit_code": 4,
       "operation": "generate_text",
-      "output_sha256": "596116194507c2964543f7abe48f8b1627eece676dd5a2c4971b220295b4ebfe",
-      "reason": "LLAMA_CPP_TIMEOUT",
+      "output_sha256": "7a2ebe0b9670337013fc8bff2b8c0b994cb8b4a42d4cc46098e354943409b66b",
+      "reason": "LLAMA_CPP_REFERENCE_NOT_DETERMINISTIC",
       "status": "FAIL",
       "target_id": "D01_CEREBRO_ROOT",
       "worker_certification": "NOT_GRANTED"
@@ -287,11 +292,11 @@
         "reference_engine": "tesseract",
         "return_code": 0,
         "tesseract_known_answer": false,
-        "tesseract_text": "LOUKSNAI1"
+        "tesseract_text": "LOUKSNAL"
       },
       "exit_code": 4,
       "operation": "extract_document_image",
-      "output_sha256": "7ffd207d9bc6476a0dd18aed6c94bd00d4cac6f918ec87ebbb56cd2207f88c88",
+      "output_sha256": "953b4196ca374b58a8cc65380b545417e26fbe2aeae8fa1785c97dc03c7cf82f",
       "reason": "TESSERACT_KNOWN_ANSWER_FAILED",
       "status": "FAIL",
       "target_id": "D05_DOCLING",
@@ -373,12 +378,15 @@
           "rank": 12,
           "relative_frobenius_error": null
         },
+        "llama_cpp_return_code": 0,
         "reference_commit": "47c786924ad1ab7e91da2cdc72fcdb563780c2bd",
-        "reference_engine": "llama.cpp"
+        "reference_engine": "llama.cpp",
+        "reference_sha256": "46c11087a262381754816a44c881b8ac0d279495a0673812b95a9e2e09fd6b26",
+        "stderr_tail": ""
       },
       "exit_code": 4,
       "operation": "analyze_reasoning",
-      "output_sha256": "b829e1683cad3e176630c388b565694355a38d95da9a27d0850ace916580c349",
+      "output_sha256": "3f710b626a751c74717e95ee14a88e0c53330b6e7dbdb8e03f79a26630340c4e",
       "reason": "QWEN_RANK12_DOES_NOT_MATCH_LLAMA_CPP_REFERENCE",
       "status": "FAIL",
       "target_id": "D06_ANALISIS_AVANZADO",
@@ -390,11 +398,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "3a70be5fbdc3dde36f1dc94873f838d473d26c41724eb88e6ee584915db46065"
+        "stdout_sha256": "4482203a50f83c65d6f236453900ada00e2e7ef0c7f62a0de1d823424c0acba0"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "2e28d678e933395e30a62329f34de137d05da6475ab67e11e59bf42749b37014",
+      "output_sha256": "ea8828a5fafcb2c0ea508889110e8c7cb20af2ed06feb69c3bf95342d2172a83",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -451,12 +459,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "d89074cb897fc73ac1d2ea6ec033e4e6bd9268ad4d457767ad6d47c4bcd36e7f",
+        "query_sha256": "26d8040b726373fa8cb342c1f5420162ec1c9e9c113fc2ce1b11c583adda65d0",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "382429af582c01b08cafdb5c50b29ae38543a8ed1dde4b000160941248f2405d",
+      "output_sha256": "250edb95c9cbc597919843ac3dd765af9aa22815cc7347a7e6dbdac34f6fc6a3",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -548,7 +556,7 @@
       "stdout_sha256": "44d47c9675abf277caf0d7a5fc60e0aa76c8adc0c9a75c675c0951b9b8dac761"
     }
   },
-  "producer_commit": "5d99de78a145d10a67c870dfb4f5e708761562f1",
+  "producer_commit": "b108827b531256ddd667024ab47f53f2a515b51d",
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
     "axiom_proposition_validity": "NOT_ESTABLISHED",
@@ -574,7 +582,7 @@
         "D05_DOCLING",
         "D06_ANALISIS_AVANZADO"
       ],
-      "result_state_hash": "0993d6f8b8fbde690f81a31b70048b712e31aeb3c6028bcc8e605f9b0032d8b5",
+      "result_state_hash": "abeaf4647df45419c3e5aa384532127095465d6ae4f7c7e20dcb6f648fd9a8ca",
       "status": "FAIL"
     },
     "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
