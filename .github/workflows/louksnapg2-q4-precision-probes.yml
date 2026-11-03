@@ -8,13 +8,17 @@ on:
       - "tools/louksnapg2_q4_precision_probe.py"
       - "tools/louksnapg2_historical_weight_probe.py"
       - ".github/workflows/louksnapg2-q4-precision-probes.yml"
+      - "cajita-luna-runtime/1. Cerebro/model.safetensors*"
+      - "cajita-luna-runtime/3. Transcripción/model.safetensors*"
+      - "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors*"
+      - "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors*"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: louksnapg2-q4-precision-probes-${{ github.ref }}
+  group: louksnapg2-q4-precision-probes-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -56,14 +60,27 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y espeak-ng
 
-      - name: Materialize active Q2 GPT-OSS LFS object only for the GPT probe
-        if: matrix.domain == 'D01_CEREBRO'
+      - name: Materialize the exact active Q2 LFS weights for the selected domain
         shell: bash
+        env:
+          MODEL_DOMAIN: ${{ matrix.domain }}
         run: |
           set -Eeuo pipefail
+          case "$MODEL_DOMAIN" in
+            D01_CEREBRO) WEIGHT_PATH="cajita-luna-runtime/1. Cerebro/model.safetensors" ;;
+            D03_TRANSCRIPCION) WEIGHT_PATH="cajita-luna-runtime/3. Transcripción/model.safetensors" ;;
+            D04_TRADUCTOR_INTELIGENTE) WEIGHT_PATH="cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors" ;;
+            D06_SISTEMA_INTELIGENTE) WEIGHT_PATH="cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors" ;;
+            *) echo "UNREGISTERED_MODEL_DOMAIN:$MODEL_DOMAIN" >&2; exit 2 ;;
+          esac
           git lfs install --local
-          git lfs pull --include="cajita-luna-runtime/1. Cerebro/model.safetensors" --exclude="" origin "$GITHUB_SHA"
-          git lfs checkout "cajita-luna-runtime/1. Cerebro/model.safetensors"
+          git lfs pull --include="$WEIGHT_PATH" --exclude="" origin "$GITHUB_SHA"
+          git lfs checkout "$WEIGHT_PATH"
+          test -s "$WEIGHT_PATH"
+          if head -n 1 "$WEIGHT_PATH" | grep -q "git-lfs.github.com/spec"; then
+            echo "ACTIVE_Q2_WEIGHT_REMAINS_LFS_POINTER:$WEIGHT_PATH" >&2
+            exit 2
+          fi
 
       - name: Check out exact in-repository historical Q4 candidate
         shell: bash
@@ -73,13 +90,20 @@ jobs:
           set -Eeuo pipefail
           git cat-file -e "$Q4_COMMIT^{commit}"
           git worktree add --detach "$RUNNER_TEMP/louksnapg2-q4" "$Q4_COMMIT"
-          if [ "${{ matrix.domain }}" = "D01_CEREBRO" ]; then
-            git -C "$RUNNER_TEMP/louksnapg2-q4" lfs install --local
-            git -C "$RUNNER_TEMP/louksnapg2-q4" lfs pull \
-              --include="cajita-luna-runtime/1. Cerebro/model.safetensors" \
-              --exclude="" origin "$Q4_COMMIT"
-            git -C "$RUNNER_TEMP/louksnapg2-q4" lfs checkout \
-              "cajita-luna-runtime/1. Cerebro/model.safetensors"
+          case "${{ matrix.domain }}" in
+            D01_CEREBRO) WEIGHT_PATH="cajita-luna-runtime/1. Cerebro/model.safetensors" ;;
+            D03_TRANSCRIPCION) WEIGHT_PATH="cajita-luna-runtime/3. Transcripción/model.safetensors" ;;
+            D04_TRADUCTOR_INTELIGENTE) WEIGHT_PATH="cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors" ;;
+            D06_SISTEMA_INTELIGENTE) WEIGHT_PATH="cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors" ;;
+            *) echo "UNREGISTERED_MODEL_DOMAIN:${{ matrix.domain }}" >&2; exit 2 ;;
+          esac
+          git -C "$RUNNER_TEMP/louksnapg2-q4" lfs install --local
+          git -C "$RUNNER_TEMP/louksnapg2-q4" lfs pull --include="$WEIGHT_PATH" --exclude="" origin "$Q4_COMMIT"
+          git -C "$RUNNER_TEMP/louksnapg2-q4" lfs checkout "$WEIGHT_PATH"
+          test -s "$RUNNER_TEMP/louksnapg2-q4/$WEIGHT_PATH"
+          if head -n 1 "$RUNNER_TEMP/louksnapg2-q4/$WEIGHT_PATH" | grep -q "git-lfs.github.com/spec"; then
+            echo "HISTORICAL_Q4_WEIGHT_REMAINS_LFS_POINTER:$WEIGHT_PATH" >&2
+            exit 2
           fi
           test -d "$RUNNER_TEMP/louksnapg2-q4/cajita-luna-runtime"
 
