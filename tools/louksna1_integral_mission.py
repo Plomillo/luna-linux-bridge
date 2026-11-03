@@ -298,7 +298,6 @@ def run_matrix(repo: Path) -> list[dict]:
         "D04_TRADUCCION_GENERAL": ("translate_text", "REFERENCE_TRANSLATION_EQUIVALENCE_NOT_EXECUTED"),
         "D05_DOCLING": ("extract_document_image", "REFERENCE_EXTRACTION_EQUIVALENCE_NOT_EXECUTED"),
         "D06_ANALISIS_AVANZADO": ("analyze_reasoning", "REFERENCE_REASONING_EQUIVALENCE_NOT_EXECUTED"),
-        "D06_RUNTIME_ANDROID_WINDOWS": ("native_host_matrix", "ANDROID_WINDOWS_NATIVE_HOSTS_NOT_EXECUTED"),
     }
     rows = []
     for target_id in CANONICAL_TARGETS:
@@ -332,6 +331,8 @@ def run_matrix(repo: Path) -> list[dict]:
             rows.append(op_calibre(runtime))
         elif target_id == "D06_PORTABILIDAD_BASE":
             rows.append(op_cmake(runtime))
+        elif target_id == "D06_RUNTIME_ANDROID_WINDOWS":
+            rows.append(op_avalonia(runtime))
         else:
             operation, reason = blocked[target_id]
             rows.append(op_not_executable(target_id, operation, reason))
@@ -563,6 +564,12 @@ CMAKE_ARCHIVE_BYTES = 21310484
 CMAKE_EXE_MEMBER = "cmake-4.4.3-windows-x86_64/bin/cmake.exe"
 CMAKE_VERSION_LINE = "cmake version 4.4.3"
 CMAKE_ECHO = "LOUKSNA1_CMAKE_FIXTURE_V1"
+AVALONIA_ARCHIVE_SHA256 = "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f"
+AVALONIA_ARCHIVE_BYTES = 3836434
+AVALONIA_DLL_MEMBER = "lib/net8.0/Avalonia.Base.dll"
+AVALONIA_DLL_SHA256 = "e9d36101c0cbf2756c0cb7a3794bfdf3c747cb41730ae2be4bb4b40604a11649"
+AVALONIA_ASSEMBLY = "Avalonia.Base"
+AVALONIA_VERSION = "12.1.1.0"
 
 
 def materialize_onnx(pointer: Path, dest: Path) -> str:
@@ -847,6 +854,73 @@ def op_cmake(runtime: Path) -> dict:
             "independent_exe_hash_checked": True,
         },
         reason="" if ok else "CMAKE_WINDOWS_OUTPUT_MISMATCH",
+    )
+
+
+def extract_archive_member(archive: Path, dest: Path, member: str) -> Path:
+    dest.mkdir(parents=True, exist_ok=True)
+    seven = shutil.which("7zz") or shutil.which("7z")
+    if not seven:
+        raise RuntimeError("SEVENZIP_MISSING")
+    proc = subprocess.run(
+        [seven, "x", "-y", f"-o{dest}", str(archive), member],
+        capture_output=True, text=True, timeout=120, check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError((proc.stderr or proc.stdout or "")[-400:])
+    extracted = dest / member
+    if extracted.is_symlink() or not extracted.is_file():
+        raise RuntimeError("ARCHIVE_MEMBER_MISSING")
+    return extracted
+
+
+def op_avalonia(runtime: Path) -> dict:
+    """Load the pinned Avalonia.Base assembly on Windows. This is not an Android device."""
+    target = "D06_RUNTIME_ANDROID_WINDOWS"
+    archive = runtime / "6. Sistema Inteligente" / "Runtime Android Windows" / "AVALONIA_12_1_1_NUGET.7z"
+    if archive.is_symlink() or not archive.is_file():
+        return record(target, "load_avalonia_base_on_windows", "FAIL", exit_code=2, detail={"android_os_executed": False}, reason="AVALONIA_ARCHIVE_MISSING")
+    if archive.stat().st_size != AVALONIA_ARCHIVE_BYTES or sha256_file(archive) != AVALONIA_ARCHIVE_SHA256:
+        return record(target, "load_avalonia_base_on_windows", "FAIL", exit_code=4, detail={"bytes": archive.stat().st_size, "android_os_executed": False}, reason="AVALONIA_ARCHIVE_HASH_MISMATCH")
+    witness_env = os.environ.get("LOUKSNA1_AVALONIA_WITNESS", "")
+    witness_path = Path(witness_env) if witness_env else None
+    if witness_path is None or witness_path.is_symlink() or not witness_path.is_file():
+        return record(target, "load_avalonia_base_on_windows", "FAIL", exit_code=2, detail={"archive_sha256": AVALONIA_ARCHIVE_SHA256, "android_os_executed": False}, reason="WINDOWS_AVALONIA_HOST_NOT_EXECUTED")
+    try:
+        witness = json.loads(witness_path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return record(target, "load_avalonia_base_on_windows", "FAIL", exit_code=4, detail={"android_os_executed": False}, reason="AVALONIA_WITNESS_INVALID")
+    if not isinstance(witness, dict) or witness.get("archive_sha256") != AVALONIA_ARCHIVE_SHA256:
+        return record(target, "load_avalonia_base_on_windows", "FAIL", exit_code=4, detail={"android_os_executed": False}, reason="AVALONIA_WITNESS_ARCHIVE_MISMATCH")
+    try:
+        with tempfile.TemporaryDirectory(prefix="louksna1-avalonia-") as temp_name:
+            dll = extract_archive_member(archive, Path(temp_name), AVALONIA_DLL_MEMBER)
+            dll_hash = sha256_file(dll)
+    except (OSError, RuntimeError, subprocess.TimeoutExpired) as exc:
+        return record(target, "load_avalonia_base_on_windows", "FAIL", exit_code=4, detail={"error": str(exc)[:240], "android_os_executed": False}, reason="AVALONIA_DLL_EXTRACT_FAILED")
+    reported = str(witness.get("dll_sha256", "")).lower()
+    host = str(witness.get("platform", "")) + " " + str(witness.get("runner_os", ""))
+    ok = (
+        reported == dll_hash == AVALONIA_DLL_SHA256
+        and witness.get("assembly_name") == AVALONIA_ASSEMBLY
+        and witness.get("assembly_version") == AVALONIA_VERSION
+        and "windows" in host.casefold()
+    )
+    return record(
+        target,
+        "load_avalonia_base_on_windows",
+        "PASS" if ok else "FAIL",
+        exit_code=0 if ok else 4,
+        detail={
+            "archive_sha256": AVALONIA_ARCHIVE_SHA256,
+            "dll_sha256": dll_hash,
+            "assembly_name": witness.get("assembly_name"),
+            "assembly_version": witness.get("assembly_version"),
+            "host": host.strip(),
+            "android_os_executed": False,
+            "independent_dll_hash_checked": True,
+        },
+        reason="" if ok else "AVALONIA_WINDOWS_ASSEMBLY_MISMATCH",
     )
 
 

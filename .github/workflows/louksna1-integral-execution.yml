@@ -62,9 +62,55 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  windows-avalonia-host:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+
+      - name: Load the pinned Avalonia.Base assembly
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $false
+          $archive = Join-Path (Get-Location) "cajita-luna-runtime\6. Sistema Inteligente\Runtime Android Windows\AVALONIA_12_1_1_NUGET.7z"
+          if (-not (Test-Path -LiteralPath $archive)) { throw "AVALONIA_ARCHIVE_MISSING" }
+          $seven = (Get-Command 7z -ErrorAction SilentlyContinue).Source
+          if (-not $seven) { $seven = "C:\Program Files\7-Zip\7z.exe" }
+          if (-not (Test-Path -LiteralPath $seven)) { throw "SEVENZIP_MISSING" }
+          $dest = Join-Path $env:RUNNER_TEMP "avalonia-extract"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          & $seven x -y "-o$dest" $archive
+          if ($LASTEXITCODE -ne 0) { throw "AVALONIA_EXTRACT_FAILED" }
+          $dll = Join-Path $dest "lib\net8.0\Avalonia.Base.dll"
+          if (-not (Test-Path -LiteralPath $dll)) { throw "AVALONIA_DLL_MISSING" }
+          $loaded = [System.Reflection.AssemblyName]::GetAssemblyName($dll)
+          $witness = [ordered]@{
+            archive_sha256 = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLower()
+            dll_sha256 = (Get-FileHash -LiteralPath $dll -Algorithm SHA256).Hash.ToLower()
+            assembly_name = [string]$loaded.Name
+            assembly_version = [string]$loaded.Version.ToString()
+            platform = [System.Environment]::OSVersion.VersionString
+            runner_os = $env:RUNNER_OS
+          }
+          $path = Join-Path $env:RUNNER_TEMP "avalonia-witness.json"
+          $witness | ConvertTo-Json | Set-Content -LiteralPath $path -Encoding utf8
+          Write-Output ("AVALONIA " + $loaded.Name + " " + $loaded.Version.ToString())
+
+      - name: Upload the Avalonia execution witness
+        uses: actions/upload-artifact@v4
+        with:
+          name: avalonia-windows-witness
+          path: ${{ runner.temp }}/avalonia-witness.json
+          if-no-files-found: error
+          retention-days: 14
+
   worker-and-independent-validator:
-    needs: windows-cmake-host
-    if: always() && needs.windows-cmake-host.result != 'cancelled'
+    needs: [windows-cmake-host, windows-avalonia-host]
+    if: always() && needs.windows-cmake-host.result != 'cancelled' && needs.windows-avalonia-host.result != 'cancelled'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -111,6 +157,13 @@ jobs:
           name: cmake-windows-witness
           path: ${{ runner.temp }}/cmake-witness
 
+      - name: Download the Windows Avalonia witness
+        if: needs.windows-avalonia-host.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: avalonia-windows-witness
+          path: ${{ runner.temp }}/avalonia-witness
+
       - name: Re-execute the mission under the independent validator
         id: validate
         env:
@@ -122,6 +175,10 @@ jobs:
           witness="${RUNNER_TEMP}/cmake-witness/cmake-witness.json"
           if [ -f "$witness" ]; then
             export LOUKSNA1_CMAKE_WITNESS="$witness"
+          fi
+          avalonia="${RUNNER_TEMP}/avalonia-witness/avalonia-witness.json"
+          if [ -f "$avalonia" ]; then
+            export LOUKSNA1_AVALONIA_WITNESS="$avalonia"
           fi
           set +e
           python3 tools/louksna1_integral_mission.py \
