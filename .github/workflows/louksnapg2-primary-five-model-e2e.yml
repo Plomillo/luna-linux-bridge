@@ -99,7 +99,7 @@ jobs:
           expected_sha256="e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git lfs install --local
-          timeout 120s git lfs fetch --include="$file" --exclude="" origin "$GITHUB_SHA"
+          timeout 120s git lfs pull --include="$file" --exclude="" origin
           git lfs checkout "$file"
           test -s "$file"
           actual_bytes="$(stat -c %s "$file")"
@@ -155,10 +155,9 @@ jobs:
 
       - name: Run source and task-contract tests
         shell: bash
-        env:
-          PYTHONPATH: ${{ github.workspace }}/cajita-luna-runtime:${{ github.workspace }}/tools
         run: |
           set -Eeuo pipefail
+          export PYTHONPATH="$PWD/cajita-luna-runtime:$PWD/tools${PYTHONPATH:+:$PYTHONPATH}"
           python -B -m unittest discover -s tests -p 'test_cajita_task_adapters.py' -v
           python -B -m unittest discover -s tests -p 'test_cajita_task_e2e.py' -v
           python -B -m unittest discover -s tests -p 'test_louksnapg2_primary_five_e2e.py' -v
