@@ -87,30 +87,6 @@ jobs:
           lfs: false
           persist-credentials: true
 
-      - name: Fetch and verify only the compact GPT-OSS LFS object
-        shell: bash
-        continue-on-error: true
-        env:
-          GIT_ATTR_SOURCE: HEAD
-        run: |
-          set -Eeuo pipefail
-          file="cajita-luna-runtime/1. Cerebro/model.safetensors"
-          expected_bytes=40489120
-          expected_sha256="e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git lfs install --local
-          echo "GIT_LFS_TRACKED_OBJECTS_BEGIN"
-          git lfs ls-files --long
-          echo "GIT_LFS_TRACKED_OBJECTS_END"
-          echo "GPT_OSS_WORKTREE_BYTES_BEFORE=$(stat -c %s "$file")"
-          timeout 600s git lfs fetch --verbose --include="$file" --exclude="" origin "$GITHUB_SHA"
-          git lfs checkout "$file"
-          actual_bytes="$(stat -c %s "$file")"
-          echo "GPT_OSS_WORKTREE_BYTES_AFTER=$actual_bytes"
-          test "$actual_bytes" -eq "$expected_bytes"
-          printf '%s  %s\n' "$expected_sha256" "$file" | sha256sum --check -
-          echo "GPT_OSS_LFS_OBJECT_VERIFIED bytes=$actual_bytes sha256=$expected_sha256"
-
       - name: Set up pinned Python 3.13 runtime
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
@@ -193,3 +169,28 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
           compression-level: 0
+      - name: Fetch and verify only the compact GPT-OSS LFS object (post-E2E diagnostic)
+        if: always()
+        shell: bash
+        continue-on-error: true
+        env:
+          GIT_ATTR_SOURCE: HEAD
+        run: |
+          set -Eeuo pipefail
+          file="cajita-luna-runtime/1. Cerebro/model.safetensors"
+          expected_bytes=40489120
+          expected_sha256="e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git lfs install --local
+          echo "GIT_LFS_TRACKED_OBJECTS_BEGIN"
+          git lfs ls-files --long
+          echo "GIT_LFS_TRACKED_OBJECTS_END"
+          echo "GPT_OSS_WORKTREE_BYTES_BEFORE=$(stat -c %s "$file")"
+          timeout 600s git lfs fetch --verbose --include="$file" --exclude="" origin "$GITHUB_SHA"
+          git lfs checkout "$file"
+          actual_bytes="$(stat -c %s "$file")"
+          echo "GPT_OSS_WORKTREE_BYTES_AFTER=$actual_bytes"
+          test "$actual_bytes" -eq "$expected_bytes"
+          printf '%s  %s\n' "$expected_sha256" "$file" | sha256sum --check -
+          echo "GPT_OSS_LFS_OBJECT_VERIFIED bytes=$actual_bytes sha256=$expected_sha256"
+
