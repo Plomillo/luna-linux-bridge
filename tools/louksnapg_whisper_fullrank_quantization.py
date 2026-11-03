@@ -524,7 +524,7 @@ def evaluate(args) -> int:
     work = Path(args.work_dir).resolve()
     work.mkdir(parents=True, exist_ok=True)
     import shlex
-    q = shlex.quote
+    q = lambda value: shlex.quote(str(value))
     runner = work / "whisper-native-inference.sh"
     lines = [
         "#!/usr/bin/env bash", "set -uo pipefail",
