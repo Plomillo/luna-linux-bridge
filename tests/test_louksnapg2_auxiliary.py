@@ -111,9 +111,11 @@ class ImageAndAudioBackendTests(unittest.TestCase):
             model = Path(tmp) / "ggml-tiny.bin"
             manifest = Path(tmp) / "assets.json"
             completed = mock.Mock(returncode=0, stdout="The meeting starts at noon.", stderr="")
-            with mock.patch.object(auxiliary, "verify_whisper_auxiliary_assets", return_value={"status": "PASS_HASH_VERIFIED_AUXILIARY_ASSETS"}), \\
-                 mock.patch.object(auxiliary, "_whisper_paths", return_value=(binary, model, manifest)), \\
-                 mock.patch.object(auxiliary, "_run_checked", return_value=completed) as run:
+            with (
+                mock.patch.object(auxiliary, "verify_whisper_auxiliary_assets", return_value={"status": "PASS_HASH_VERIFIED_AUXILIARY_ASSETS"}),
+                mock.patch.object(auxiliary, "_whisper_paths", return_value=(binary, model, manifest)),
+                mock.patch.object(auxiliary, "_run_checked", return_value=completed) as run,
+            ):
                 result = auxiliary.transcribe_whisper_cpp(Path(tmp), audio, language="en")
             command = run.call_args.args[0]
             self.assertEqual(command[command.index("-l") + 1], "en")
