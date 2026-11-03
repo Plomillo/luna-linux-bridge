@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from louksnapg2_foma import FomaEngine, FomaRuntimeError
-from louksnapg2_auxiliary import AuxiliaryEngineError, LouksnapG2AuxiliaryEngines
+from louksnapg2_auxiliary import AuxiliaryEngineError, LouksnapG2AuxiliaryEngines, verify_whisper_auxiliary_assets
 
 SCHEMA = "LOUKSNAPG2_ENGINE_RUNTIME/2.1"
 CAJITA_TASK_SCHEMA = "CAJITA_TASK_REQUEST/1.0"
@@ -128,30 +128,33 @@ class LouksnapG2Runtime:
 
     def _auxiliary_preflight(self) -> dict:
         runtime = self.root / "LOUKSNAPG2_RUNTIME"
-        model = runtime / "auxiliary_models" / "ggml-tiny.bin"
-        binary_candidates = (
-            runtime / "auxiliary_bin" / "linux-x86_64" / "whisper-cli",
-            runtime / "auxiliary_bin" / "whisper-cli",
-            runtime / "bin" / "whisper-cli",
-        )
-        whisper_binary = next((p for p in binary_candidates if p.is_file() and not p.is_symlink()), None)
-        return {
-            "formal_reasoning": {"status": "AVAILABLE", "engine_id": "LOUKSNAPG2_FORMAL_REASONING/1.0",
-                                 "scope": "SAFE_ARITHMETIC_AND_SUPPORTED_SYLLOGISTIC_PATTERNS"},
-            "translation": {"status": "AVAILABLE" if shutil.which("apertium") else "NOT_PROVISIONED",
-                            "engine_id": "APERTIUM_LOCAL_BILINGUAL_PIPELINE/1.0",
-                            "required_pairs": ["eng-spa", "spa-eng", "fra-spa", "spa-fra"]},
-            "document_ocr": {"status": "AVAILABLE" if shutil.which("tesseract") else "NOT_PROVISIONED",
-                             "engine_id": "TESSERACT_OCR/5.x"},
-            "transcription": {
-                "status": "AVAILABLE" if whisper_binary and model.is_file() and not model.is_symlink() else "NOT_PROVISIONED",
+        formal = {"status": "AVAILABLE", "engine_id": "LOUKSNAPG2_FORMAL_REASONING/1.0",
+                  "scope": "SAFE_ARITHMETIC_AND_SUPPORTED_SYLLOGISTIC_PATTERNS"}
+        translation = {"status": "AVAILABLE" if shutil.which("apertium") else "NOT_PROVISIONED",
+                       "engine_id": "APERTIUM_LOCAL_BILINGUAL_PIPELINE/1.0",
+                       "required_pairs": ["eng-spa", "spa-eng", "fra-spa", "spa-fra"]}
+        document = {"status": "AVAILABLE" if shutil.which("tesseract") else "NOT_PROVISIONED",
+                    "engine_id": "TESSERACT_OCR/5.x"}
+        try:
+            whisper = verify_whisper_auxiliary_assets(runtime)
+            whisper = {
+                **whisper,
                 "engine_id": "WHISPER_CPP_TINY_MULTILINGUAL/1.9.5",
-                "binary_path": str(whisper_binary.relative_to(runtime)) if whisper_binary else None,
-                "model_path": str(model.relative_to(runtime)) if model.is_file() and not model.is_symlink() else None,
-                "model_bytes": model.stat().st_size if model.is_file() and not model.is_symlink() else None,
-                "expected_model_sha256": "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21",
                 "host": "linux-x86_64",
-            },
+            }
+        except AuxiliaryEngineError as exc:
+            message = str(exc)
+            whisper = {
+                "status": "NOT_PROVISIONED" if "ASSET_MISSING" in message else "FAIL_IDENTITY",
+                "engine_id": "WHISPER_CPP_TINY_MULTILINGUAL/1.9.5",
+                "reason": message[:300],
+                "host": "linux-x86_64",
+            }
+        return {
+            "formal_reasoning": formal,
+            "translation": translation,
+            "document_ocr": document,
+            "transcription": whisper,
         }
 
     def preflight(self) -> dict:
