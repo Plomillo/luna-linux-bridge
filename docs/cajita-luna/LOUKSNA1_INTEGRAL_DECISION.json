@@ -13,21 +13,21 @@
     "coverage_21": {
       "failed": [
         "D01_CEREBRO_ROOT",
+        "D02_MULTI_INTERDISCIPLINAR",
         "D03_TRANSCRIPCION_ROOT",
         "D04_TRADUCCION_GENERAL",
         "D05_CALIBRE",
         "D05_DOCLING",
-        "D06_ANTI_ALUCINACIONES",
         "D06_ANALISIS_AVANZADO",
         "D06_PORTABILIDAD_BASE",
         "D06_RUNTIME_ANDROID_WINDOWS"
       ],
       "passed": [
         "D02_CONFESION_ECLESIAL_REFORMADA",
-        "D02_MULTI_INTERDISCIPLINAR",
         "D02_ORQUESTADOR",
         "D04_HERMENEUTICA_HG",
         "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+        "D06_ANTI_ALUCINACIONES",
         "D06_ARCHIVADO_DETECCION",
         "D06_COGNITIVE_CI_CD",
         "D06_CONSOLA",
@@ -42,13 +42,13 @@
       "measurement": {
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 90404024320,
+        "disk_available_bytes": 90407559168,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
-        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 11281469440
+        "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+        "ram_available_bytes": 12988710912
       },
       "reason": "LINUX_RESOURCE_MEASUREMENT_IS_NOT_THE_DECLARED_ANDROID_WINDOWS_MATRIX",
       "status": "FAIL"
@@ -84,7 +84,7 @@
       "status": "FAIL"
     }
   },
-  "generated_at_utc": "2026-10-25T13:40:53Z",
+  "generated_at_utc": "2026-11-03T18:20:51Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -125,19 +125,13 @@
     },
     {
       "detail": {
-        "certification": "NOT_GRANTED",
-        "companion_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
-        "framework_count": 18,
-        "protected_prefix_bytes": 11542631,
-        "protected_prefix_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
-        "semantic_graph_execution": "NOT_PERFORMED_BY_SOURCE_LOADER",
-        "status": "PASS_SOURCE_PREFIX_VERIFIED"
+        "error": "RuntimeError"
       },
-      "exit_code": 0,
+      "exit_code": 4,
       "operation": "verify_axiom_source_binding",
-      "output_sha256": "ae0573db263cf06063fb37bfe0fabf20b941946b7f54334295944b77c3fe5636",
-      "reason": "",
-      "status": "PASS",
+      "output_sha256": "ba76a51c7c1830ff07c48ba25c5aefabf45190dcadf0bf437d21d53389036cd2",
+      "reason": "BLOCK_ENGINE_GRAPH_PATH_BINDING_MISMATCH",
+      "status": "FAIL",
       "target_id": "D02_MULTI_INTERDISCIPLINAR",
       "worker_certification": "NOT_GRANTED"
     },
@@ -253,13 +247,69 @@
     },
     {
       "detail": {
-        "executed": false
+        "argmax": [
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "expected_argmax": [
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fixture_sha256": "ef62a25954915b4867406efca8bb35e0f7d0d3af7fc0402b71b803e996237f61",
+        "model_sha256": "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7",
+        "ort": "1.29.0",
+        "return_code": 0,
+        "stderr_tail": "h at \"/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171\" because filename \"5620e0c7-8062-4dce-aeb7-520c7ef76171\" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+\u001b[m\n"
       },
-      "exit_code": 2,
+      "exit_code": 0,
       "operation": "score_grounding",
-      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "ONNX_GROUNDING_OPERATION_NOT_EXECUTED",
-      "status": "FAIL",
+      "output_sha256": "57310d6f3212d1e4c39945712e7b9077faba65fe1b87c399e3d215c3f5d1029f",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D06_ANTI_ALUCINACIONES",
       "worker_certification": "NOT_GRANTED"
     },
@@ -281,11 +331,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "ef2837facecba18da6dc10fcd03eb7a5139a3c8a8370afc3e9a4e64af3936050"
+        "stdout_sha256": "e47b1ab436c69ede49db37cf6dcaae2e3bc18bf405365c68488e5e3ae70573b2"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "8083ad4db3a2e4255ad1298418e2059d5756543bbd724b04dbfdd30639d9d2ff",
+      "output_sha256": "96c83e6ca037048f2fd0f1e41d580b504cab90aa65d51fcfe5ecd9cc6855516c",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -342,12 +392,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "aeff55518342af2d3591cdc27bb2ed5e46d9e9fa9bcd2be7ba4c0fb0afcb2064",
+        "query_sha256": "1420e29ed41fa00f462cda4c84de264a0f439397436931245236df7e445fe755",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "46368a1aea39ffc301e8452b264b7f94964c8365c3cee676cc488704f083cb9a",
+      "output_sha256": "2eb2530771ecc7fcdd0941cb038b340ecb2b71ddfa0467cd063457d98b754af7",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -415,7 +465,7 @@
       "worker_certification": "NOT_GRANTED"
     }
   ],
-  "producer_commit": "c03b2cb27ecdc207c95a00afe8fae3cd46400aba",
+  "producer_commit": "5bcdf651947aad209aa4ed78efd18ef2c6a7321a",
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
     "axiom_proposition_validity": "NOT_ESTABLISHED",
@@ -436,16 +486,16 @@
       "certification": "NOT_GRANTED",
       "failed_targets": [
         "D01_CEREBRO_ROOT",
+        "D02_MULTI_INTERDISCIPLINAR",
         "D03_TRANSCRIPCION_ROOT",
         "D04_TRADUCCION_GENERAL",
         "D05_CALIBRE",
         "D05_DOCLING",
-        "D06_ANTI_ALUCINACIONES",
         "D06_ANALISIS_AVANZADO",
         "D06_PORTABILIDAD_BASE",
         "D06_RUNTIME_ANDROID_WINDOWS"
       ],
-      "result_state_hash": "ec9f6f75ecbd414ed9754b422bf8f5db2342114a26a66d9067b414b6369c5850",
+      "result_state_hash": "3acb0454a3ecf285e0360f67faf707470e80b32f310df7e83936e4614e73bafd",
       "status": "FAIL"
     },
     "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
