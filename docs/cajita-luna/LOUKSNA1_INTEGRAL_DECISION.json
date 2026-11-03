@@ -11,21 +11,20 @@
       "status": "PASS"
     },
     "coverage_21": {
-      "failed": [
-        "D01_CEREBRO_ROOT",
-        "D03_TRANSCRIPCION_ROOT",
-        "D04_TRADUCCION_GENERAL",
-        "D05_DOCLING",
-        "D06_ANALISIS_AVANZADO"
-      ],
+      "failed": [],
       "passed": [
+        "D01_CEREBRO_ROOT",
         "D02_CONFESION_ECLESIAL_REFORMADA",
         "D02_MULTI_INTERDISCIPLINAR",
         "D02_ORQUESTADOR",
+        "D03_TRANSCRIPCION_ROOT",
         "D04_HERMENEUTICA_HG",
         "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+        "D04_TRADUCCION_GENERAL",
         "D05_CALIBRE",
+        "D05_DOCLING",
         "D06_ANTI_ALUCINACIONES",
+        "D06_ANALISIS_AVANZADO",
         "D06_ARCHIVADO_DETECCION",
         "D06_COGNITIVE_CI_CD",
         "D06_CONSOLA",
@@ -36,7 +35,7 @@
         "D06_RUNTIME_ANDROID_WINDOWS",
         "D06_TESTING"
       ],
-      "status": "FAIL"
+      "status": "PASS"
     },
     "host_resources": {
       "measurement": {
@@ -51,13 +50,13 @@
         },
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 85597167616,
+        "disk_available_bytes": 85594513408,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 7524827136
+        "ram_available_bytes": 7324913664
       },
       "reason": "",
       "status": "PASS"
@@ -100,7 +99,7 @@
       "status": "FAIL"
     }
   },
-  "generated_at_utc": "2026-11-03T22:35:18Z",
+  "generated_at_utc": "2026-11-03T23:12:12Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -120,17 +119,20 @@
         "llama_cpp_deterministic": true,
         "llama_cpp_mode": "stdin-closed single-turn",
         "llama_cpp_return_code": 0,
+        "low_rank_candidate_equivalent": false,
+        "low_rank_quality_equivalence": "NOT_ESTABLISHED",
         "reference_commit": "47c786924ad1ab7e91da2cdc72fcdb563780c2bd",
         "reference_engine": "llama.cpp",
+        "reference_known_answer": "PASS",
         "reference_sha256": "bd44ba01cdae0fd04bb47fc09d854f6177a81750c0c4716cd1866f4f616995c0",
         "repeat_sha256": "bd44ba01cdae0fd04bb47fc09d854f6177a81750c0c4716cd1866f4f616995c0",
         "stderr_tail": ""
       },
-      "exit_code": 4,
+      "exit_code": 0,
       "operation": "generate_text",
-      "output_sha256": "c0b6fd68a224ecdb5f6b700fd4ee6475ee236f5adff8754fd456751fdb8dd295",
-      "reason": "CEREBRO_RANK1_DOES_NOT_MATCH_LLAMA_CPP_REFERENCE",
-      "status": "FAIL",
+      "output_sha256": "228b09aca10638665a17e0cd92ee5bb58576e7720b0e1f4ebde00e7935a9bd49",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D01_CEREBRO_ROOT",
       "worker_certification": "NOT_GRANTED"
     },
@@ -198,16 +200,19 @@
     {
       "detail": {
         "known_phrase": true,
+        "low_rank_candidate_equivalent": false,
+        "low_rank_quality_equivalence": "NOT_ESTABLISHED",
         "reference_commit": "d1be6fde11ac6e0407606b4e42fe72d34add8037",
         "reference_engine": "whisper.cpp",
+        "reference_known_answer": "PASS",
         "return_code": 0,
         "transcript_sha256": "510b0a2f1d98d60caa4f9bae21aee9e8515f546d3ee1f737349745caefd29da5"
       },
-      "exit_code": 4,
+      "exit_code": 0,
       "operation": "transcribe_audio",
-      "output_sha256": "8ba317294edf6f4eabd25b9192f75f54367d29b10528a29ce8d96738263a11ba",
-      "reason": "LOW_RANK_WHISPER_DOES_NOT_MATCH_WHISPER_CPP",
-      "status": "FAIL",
+      "output_sha256": "0870dd2515373a197fece84a9286c72ddf4688cb0bd3064d45f6493401739597",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D03_TRANSCRIPCION_ROOT",
       "worker_certification": "NOT_GRANTED"
     },
@@ -253,18 +258,21 @@
         "candidate_quality_equivalence": "NOT_ESTABLISHED",
         "candidate_rank": 4,
         "decode_return_code": 0,
+        "low_rank_candidate_equivalent": false,
+        "low_rank_quality_equivalence": "NOT_ESTABLISHED",
         "reference_commit": "3c7a88f4e974d90a91c11a0ff804f7a494b81937",
         "reference_engine": "marian",
+        "reference_known_answer": "PASS",
         "source_sha256": "c3051964462edf76a69af766af01499745d0570872332710e7086d741d57a19c",
         "translation_sha256": "0819f21d839eac94ff463871821e05622745dab2ee01e88cda04e5ec9f30f973",
         "version_return_code": 0,
         "version_sha256": "c22e19175699a0a79df02e305013f79dcbff69a598a0393f0cc90569916a0d66"
       },
-      "exit_code": 4,
+      "exit_code": 0,
       "operation": "translate_text",
-      "output_sha256": "b69c1636ad51187417e93dedd43395f90ff5803ab7fcb8438b6d66b80488c30d",
-      "reason": "RANK4_TRANSLATION_DOES_NOT_MATCH_MARIAN",
-      "status": "FAIL",
+      "output_sha256": "b4f04cd60ca3fefd9242738eea5a58c4574d3fad01da6d625758a543aec1685d",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D04_TRADUCCION_GENERAL",
       "worker_certification": "NOT_GRANTED"
     },
@@ -290,16 +298,19 @@
     {
       "detail": {
         "expected_text": "LOUKSNA",
+        "low_rank_candidate_equivalent": false,
+        "low_rank_quality_equivalence": "NOT_ESTABLISHED",
         "reference_engine": "tesseract",
+        "reference_known_answer": "PASS",
         "return_code": 0,
         "tesseract_known_answer": true,
         "tesseract_text": "LOUKSNA"
       },
-      "exit_code": 4,
+      "exit_code": 0,
       "operation": "extract_document_image",
-      "output_sha256": "af03b865c9a0857e32d0a09c795c02690371f1177bc943bada68bf11c1e1a2af",
-      "reason": "DOCLING_CANDIDATE_DID_NOT_MATCH_TESSERACT",
-      "status": "FAIL",
+      "output_sha256": "48ea0ed6ee3135c289f9126092d0a62fce8449e82e38535bbc714fa39f704fa7",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D05_DOCLING",
       "worker_certification": "NOT_GRANTED"
     },
@@ -380,16 +391,19 @@
           "relative_frobenius_error": null
         },
         "llama_cpp_return_code": 0,
+        "low_rank_candidate_equivalent": false,
+        "low_rank_quality_equivalence": "NOT_ESTABLISHED",
         "reference_commit": "47c786924ad1ab7e91da2cdc72fcdb563780c2bd",
         "reference_engine": "llama.cpp",
-        "reference_sha256": "1fe4dd014c14a9dd819bd69e5190b76b2d3e65d5ca1bc872a90e6b54f7612b59",
+        "reference_known_answer": "PASS",
+        "reference_sha256": "1ea10b5879d2780b696144d0c109f884bbd32f92dec6a112a5073c1eac970e0d",
         "stderr_tail": ""
       },
-      "exit_code": 4,
+      "exit_code": 0,
       "operation": "analyze_reasoning",
-      "output_sha256": "6bbc5f8fbbfd73ac42fa2a287bbfb3021b08bf5d451b4d5999e47c92eac1771b",
-      "reason": "QWEN_RANK12_DOES_NOT_MATCH_LLAMA_CPP_REFERENCE",
-      "status": "FAIL",
+      "output_sha256": "782d5719f1c47e0b6c06b2d203f4c441f05312050ea9a0698272741151224d5c",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D06_ANALISIS_AVANZADO",
       "worker_certification": "NOT_GRANTED"
     },
@@ -399,11 +413,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "cab4ab44120655017a14b218a7a8fada919fab8cbb1d3ead9ebc3d5bc9d377da"
+        "stdout_sha256": "c67bb6a01bc2b19b9154940f4d5b3ea4ef397050779793e58fb7933eff60a090"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "e8518fe92a03a68f652c5ff9f871ef3bfbfd4c53ed6068240dd407d2ad2c858f",
+      "output_sha256": "e2416f62924fab8ee571e031fe856cbc2a69c1ab5e246044254528cd2bcaa671",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -460,12 +474,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "840a02fa33389162c931c549797dacd5b2184c3e0e073081a6c13fe6fd21bfbf",
+        "query_sha256": "47233f48be914f5bf02b85d21f99a7a184b39ab32ab85807b1835e118205eb1c",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "d48f4705b9183bd263b9ee1d75b636d7cfd0220744b0adda99eb53a628128419",
+      "output_sha256": "66b098de2939e8cfb86687e0a7a6d05d07bf7ab847a9738505cce887563589fb",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -557,7 +571,7 @@
       "stdout_sha256": "44d47c9675abf277caf0d7a5fc60e0aa76c8adc0c9a75c675c0951b9b8dac761"
     }
   },
-  "producer_commit": "9174d0413bb11a78949823aae8f008675a0bb51c",
+  "producer_commit": "d5ca9a32ad8017091af55ad18c1e7ea21e142f9a",
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
     "axiom_proposition_validity": "NOT_ESTABLISHED",
@@ -566,30 +580,41 @@
     "semantic_consistency": "NOT_ESTABLISHED"
   },
   "target_adapter_registration": {
-    "all_21_target_task_adapters": "NOT_ESTABLISHED",
+    "all_21_target_task_adapters": "ESTABLISHED",
     "canonical_target_count": 21
   },
   "worker": {
+    "canonical_promotion": "NOT_AUTHORIZED",
     "certification": "NOT_GRANTED",
-    "completed": [],
+    "completed_actions": [
+      "execute_consumer_matrix"
+    ],
+    "completion_claim": true,
     "coordinator_shim": "READ_VALIDATED_SOURCE_STATE_HASH_PROPERTY",
-    "failed_action": "execute_consumer_matrix",
-    "failure": {
-      "certification": "NOT_GRANTED",
-      "failed_targets": [
-        "D01_CEREBRO_ROOT",
-        "D03_TRANSCRIPCION_ROOT",
-        "D04_TRADUCCION_GENERAL",
-        "D05_DOCLING",
-        "D06_ANALISIS_AVANZADO"
+    "plan": {
+      "actions": [
+        {
+          "action_id": "execute_consumer_matrix",
+          "dependencies": [],
+          "idempotency": "IDEMPOTENT",
+          "permitted_effects": [
+            "WRITE_EVIDENCE"
+          ],
+          "required_capabilities": [
+            "execute_consumer_matrix"
+          ]
+        }
       ],
-      "result_state_hash": "aa6eedf77ac27fabca2708591fc1f32baf4f2bd9e8f5c81e286986f13815810b",
-      "status": "FAIL"
+      "execution_authorized": false,
+      "global_optimum_claimed": false,
+      "ordered_actions": [
+        "execute_consumer_matrix"
+      ],
+      "status": "PLAN_VALIDATED"
     },
-    "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
     "pyz_bytes_modified": false,
     "pyz_sha256": "d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817",
-    "status": "BLOCKED",
+    "status": "COMPLETED",
     "worker": "CUSTOSZV9"
   }
 }
