@@ -96,6 +96,7 @@ def run_case(root,outdir,record,timeout):
     safe_env={k:os.environ[k] for k in ("PATH","HOME","LANG","LC_ALL","TMPDIR","SYSTEMROOT","WINDIR") if k in os.environ}
     safe_env.update({"OMP_NUM_THREADS":"1","OPENBLAS_NUM_THREADS":"1","MKL_NUM_THREADS":"1","NUMEXPR_NUM_THREADS":"1",
                      "TOKENIZERS_PARALLELISM":"false","HF_HUB_OFFLINE":"1","TRANSFORMERS_OFFLINE":"1","PYTHONNOUSERSITE":"1",
+                     "PYTHONDONTWRITEBYTECODE":"1",
                      "CAJITA_E2E_DIAGNOSTICS":"1",
                      "LOUKSNAPG2_DOCLING_IMAGE_SIDE":os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE","256")})
     started=time.monotonic()

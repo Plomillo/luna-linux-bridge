@@ -36,6 +36,7 @@ jobs:
       HF_HUB_OFFLINE: "1"
       TRANSFORMERS_OFFLINE: "1"
       PYTHONNOUSERSITE: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
       OMP_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
@@ -111,28 +112,36 @@ jobs:
             --extra-index-url https://download.pytorch.org/whl/cpu \
             -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
 
-      - name: Compile every Python entrypoint and test before execution
+      - name: Compile Python sources in memory without changing model trees
         shell: bash
         run: |
           set -Eeuo pipefail
-          python -B -m py_compile \
-            tests/test_cajita_task_adapters.py \
-            tests/test_cajita_task_e2e.py \
-            tests/test_louksnapg2_primary_five_e2e.py \
-            tools/cajita_task_e2e.py \
-            tools/louksnapg2_primary_five_e2e.py \
-            cajita-luna-runtime/cajita_runtime.py \
-            cajita-luna-runtime/cajita_task_adapters.py \
-            cajita-luna-runtime/cajita_resource_limits.py \
-            cajita-luna-runtime/cajita_tokenizer_materializer.py \
-            cajita-luna-runtime/cajita_weight_materializer.py \
-            cajita-luna-runtime/cajita_router.py \
-            cajita-luna-runtime/cajita_antiparalysis.py \
-            'cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py' \
-            'cajita-luna-runtime/3. Transcripción/lowrank_runtime.py' \
-            'cajita-luna-runtime/4. Traductor Inteligente/Traducción general/lowrank_runtime.py' \
-            'cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py' \
-            'cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py'
+          python -B - <<'PY'
+          from pathlib import Path
+          sources = (
+              'tests/test_cajita_task_adapters.py',
+              'tests/test_cajita_task_e2e.py',
+              'tests/test_louksnapg2_primary_five_e2e.py',
+              'tools/cajita_task_e2e.py',
+              'tools/louksnapg2_primary_five_e2e.py',
+              'cajita-luna-runtime/cajita_runtime.py',
+              'cajita-luna-runtime/cajita_task_adapters.py',
+              'cajita-luna-runtime/cajita_resource_limits.py',
+              'cajita-luna-runtime/cajita_tokenizer_materializer.py',
+              'cajita-luna-runtime/cajita_weight_materializer.py',
+              'cajita-luna-runtime/cajita_router.py',
+              'cajita-luna-runtime/cajita_antiparalysis.py',
+              'cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py',
+              'cajita-luna-runtime/3. Transcripción/lowrank_runtime.py',
+              'cajita-luna-runtime/4. Traductor Inteligente/Traducción general/lowrank_runtime.py',
+              'cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py',
+              'cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py',
+          )
+          for name in sources:
+              path = Path(name)
+              compile(path.read_text(encoding='utf-8'), name, 'exec', dont_inherit=True)
+          print(f'SOURCE_COMPILE_PASS:{len(sources)}; NO_BYTECODE_WRITTEN')
+          PY
 
       - name: Run source and task-contract tests
         shell: bash
