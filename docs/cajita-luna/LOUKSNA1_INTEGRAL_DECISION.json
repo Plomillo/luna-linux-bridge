@@ -16,8 +16,7 @@
         "D03_TRANSCRIPCION_ROOT",
         "D04_TRADUCCION_GENERAL",
         "D05_DOCLING",
-        "D06_ANALISIS_AVANZADO",
-        "D06_RUNTIME_ANDROID_WINDOWS"
+        "D06_ANALISIS_AVANZADO"
       ],
       "passed": [
         "D02_CONFESION_ECLESIAL_REFORMADA",
@@ -34,6 +33,7 @@
         "D06_MIGRACION_PERSISTENCIA",
         "D06_MOTOR_PROTOCOLAR",
         "D06_PORTABILIDAD_BASE",
+        "D06_RUNTIME_ANDROID_WINDOWS",
         "D06_TESTING"
       ],
       "status": "FAIL"
@@ -42,13 +42,13 @@
       "measurement": {
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 90395992064,
+        "disk_available_bytes": 90395828224,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 12964012032
+        "ram_available_bytes": 12914683904
       },
       "reason": "LINUX_RESOURCE_MEASUREMENT_IS_NOT_THE_DECLARED_ANDROID_WINDOWS_MATRIX",
       "status": "FAIL"
@@ -84,7 +84,7 @@
       "status": "FAIL"
     }
   },
-  "generated_at_utc": "2026-11-03T19:04:36Z",
+  "generated_at_utc": "2026-11-03T19:30:23Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -344,11 +344,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "e30ff02227c0d1c29fa45e39a1d868e236ca2edb284f7f9d60755413093c8308"
+        "stdout_sha256": "64214fc0b43bc7804254b3d59ad54cc3d58fe0cfc2a98cf10c68d8865af74ceb"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "b4d10a273c1f3ddb74a8829cd28f60585091a54aeac907b45aecbace0b4de1b6",
+      "output_sha256": "6ea24d5c081d18e892a421009af07a43332cc155cab9162fdc8fe6d1d6cb8817",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -405,12 +405,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "5b8df5774968cfa6632bb9b69ea95baeabce259e4eef0e250e8235e77cb929b5",
+        "query_sha256": "77a2b1704f8d3654735d13566f6d3927f4e90ec0ec2a947bd5e2b3db9b2b1935",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "3730d86b28d97ffc46c035dad3f32e37049c5bcc6841ebf4d2a3cd6725a7c38c",
+      "output_sha256": "d6baafe07d8f9acf84481af745576787ba5246fa5d978a60caf19920c5220dc9",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -453,13 +453,19 @@
     },
     {
       "detail": {
-        "executed": false
+        "android_os_executed": false,
+        "archive_sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f",
+        "assembly_name": "Avalonia.Base",
+        "assembly_version": "12.1.1.0",
+        "dll_sha256": "e9d36101c0cbf2756c0cb7a3794bfdf3c747cb41730ae2be4bb4b40604a11649",
+        "host": "Microsoft Windows NT 10.0.26100.0 Windows",
+        "independent_dll_hash_checked": true
       },
-      "exit_code": 2,
-      "operation": "native_host_matrix",
-      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "ANDROID_WINDOWS_NATIVE_HOSTS_NOT_EXECUTED",
-      "status": "FAIL",
+      "exit_code": 0,
+      "operation": "load_avalonia_base_on_windows",
+      "output_sha256": "b76f85f30dd28538f620fc741a260398dc609d316dc550dc010600e8e24c69f3",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D06_RUNTIME_ANDROID_WINDOWS",
       "worker_certification": "NOT_GRANTED"
     },
@@ -488,7 +494,7 @@
       "worker_certification": "NOT_GRANTED"
     }
   ],
-  "producer_commit": "a069f8f81c586f2f7e29e09075235aed82f20ddd",
+  "producer_commit": "6a54953b89204613a6114bc39bb736a0dfed1879",
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
     "axiom_proposition_validity": "NOT_ESTABLISHED",
@@ -512,10 +518,9 @@
         "D03_TRANSCRIPCION_ROOT",
         "D04_TRADUCCION_GENERAL",
         "D05_DOCLING",
-        "D06_ANALISIS_AVANZADO",
-        "D06_RUNTIME_ANDROID_WINDOWS"
+        "D06_ANALISIS_AVANZADO"
       ],
-      "result_state_hash": "d495476f23d8526c5f721575fa0aad22e12344767119ff600d6e05128f6ac9e4",
+      "result_state_hash": "b732b5840062f9ff2c824e2e5c0ef61597c42e02f503f94e187fc783ca356100",
       "status": "FAIL"
     },
     "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
