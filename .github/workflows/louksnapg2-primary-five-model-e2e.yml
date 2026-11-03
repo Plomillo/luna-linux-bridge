@@ -28,6 +28,9 @@ jobs:
   primary-five-models:
     name: "Five registered compact model adapters; no auxiliary fallback"
     runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:24.04
+      options: --memory=1g --memory-swap=1g --cpus=1
     timeout-minutes: 120
     env:
       HF_HUB_OFFLINE: "1"
@@ -44,8 +47,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends ca-certificates git-lfs espeak-ng fonts-dejavu-core
+          apt-get update -qq
+          apt-get install -y --no-install-recommends ca-certificates git-lfs espeak-ng fonts-dejavu-core
           git lfs version
           espeak-ng --version | head -n 1
 
@@ -54,8 +57,26 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
+          filter: blob:none
           sparse-checkout: |
-            /cajita-luna-runtime/**
+            /.gitattributes
+            /cajita-luna-runtime/cajita_runtime.py
+            /cajita-luna-runtime/cajita_task_adapters.py
+            /cajita-luna-runtime/cajita_tokenizer_materializer.py
+            /cajita-luna-runtime/cajita_resource_limits.py
+            /cajita-luna-runtime/cajita_weight_materializer.py
+            /cajita-luna-runtime/cajita_router.py
+            /cajita-luna-runtime/cajita_antiparalysis.py
+            /cajita-luna-runtime/command_subdomain_routing.json
+            /cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json
+            /cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
+            /cajita-luna-runtime/REQUIREMENTS.runtime.lock
+            /cajita-luna-runtime/1. Cerebro/**
+            /cajita-luna-runtime/2. Orquestación/Orquestador/punto.json
+            /cajita-luna-runtime/3. Transcripción/**
+            /cajita-luna-runtime/4. Traductor Inteligente/Traducción general/**
+            /cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/**
+            /cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/**
             /tools/cajita_task_e2e.py
             /tools/louksnapg2_primary_five_e2e.py
             /tests/test_cajita_task_adapters.py
@@ -94,13 +115,24 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          python -B -m py_compile \\
-            tests/test_cajita_task_adapters.py \\
-            tests/test_cajita_task_e2e.py \\
-            tests/test_louksnapg2_primary_five_e2e.py \\
-            tools/cajita_task_e2e.py \\
-            tools/louksnapg2_primary_five_e2e.py \\
-            cajita-luna-runtime/cajita_task_adapters.py
+          python -B -m py_compile \
+            tests/test_cajita_task_adapters.py \
+            tests/test_cajita_task_e2e.py \
+            tests/test_louksnapg2_primary_five_e2e.py \
+            tools/cajita_task_e2e.py \
+            tools/louksnapg2_primary_five_e2e.py \
+            cajita-luna-runtime/cajita_runtime.py \
+            cajita-luna-runtime/cajita_task_adapters.py \
+            cajita-luna-runtime/cajita_resource_limits.py \
+            cajita-luna-runtime/cajita_tokenizer_materializer.py \
+            cajita-luna-runtime/cajita_weight_materializer.py \
+            cajita-luna-runtime/cajita_router.py \
+            cajita-luna-runtime/cajita_antiparalysis.py \
+            'cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py' \
+            'cajita-luna-runtime/3. Transcripción/lowrank_runtime.py' \
+            'cajita-luna-runtime/4. Traductor Inteligente/Traducción general/lowrank_runtime.py' \
+            'cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py' \
+            'cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py'
 
       - name: Run source and task-contract tests
         shell: bash
