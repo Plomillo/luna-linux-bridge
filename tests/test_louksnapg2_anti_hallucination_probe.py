@@ -10,7 +10,7 @@ import louksnapg2_anti_hallucination_probe as probe
 
 class AntiHallucinationProbeContractTests(unittest.TestCase):
     def test_symbolic_dimensions_are_bounded_to_one(self):
-        self.assertEqual(probe._fixed_shape([1, "sequence", None]), (1, 1, 1))
+        self.assertEqual(probe._fixed_shape([1, "sequence", None], sequence_length=32), (1, 32, 1))
 
     def test_static_dimensions_are_preserved(self):
         self.assertEqual(probe._fixed_shape([1, 128]), (1, 128))

@@ -32,19 +32,19 @@ def git_blob_sha1(path: Path) -> str:
     return hashlib.sha1(header + payload).hexdigest()
 
 
-def _fixed_shape(shape: object, *, max_dim: int = 2048) -> tuple[int, ...]:
+def _fixed_shape(shape: object, *, max_dim: int = 2048, sequence_length: int = 1) -> tuple[int, ...]:
     if not isinstance(shape, (list, tuple)):
         raise ProbeError("ONNX_INPUT_SHAPE_NOT_SEQUENCE")
     result = []
-    for value in shape:
+    for index, value in enumerate(shape):
         if isinstance(value, bool):
             raise ProbeError("ONNX_INPUT_SHAPE_BOOLEAN_DIMENSION")
         if isinstance(value, int):
             if value < 0 or value > max_dim:
                 raise ProbeError("ONNX_INPUT_DIMENSION_OUT_OF_RANGE")
-            result.append(value if value > 0 else 1)
+            result.append(value if value > 0 else (sequence_length if index == 1 and len(shape) > 1 else 1))
         else:
-            result.append(1)
+            result.append(sequence_length if index == 1 and len(shape) > 1 else 1)
     if math.prod(result or (1,)) > 2_000_000:
         raise ProbeError("ONNX_INPUT_TENSOR_ELEMENT_LIMIT")
     return tuple(result)
@@ -105,18 +105,19 @@ def _summarize_output(value, np) -> dict:
     return row
 
 
-def _make_feed(input_specs, encoding, np) -> tuple[dict, list[str]]:
+def _make_feed(input_specs, encoding, np, *, max_sequence_length: int = 128) -> tuple[dict, list[str]]:
     feed = {}
     unknown = []
-    ids = list(encoding.ids)
-    type_ids = list(encoding.type_ids)
+    ids = list(encoding.ids[:max_sequence_length])
+    type_ids = list(encoding.type_ids[:max_sequence_length])
+    sequence_length = max(1, len(ids))
     if not ids:
         raise ProbeError("TOKENIZER_RETURNED_NO_IDS")
 
     for spec in input_specs:
         name = str(spec.name)
         key = name.casefold()
-        shape = _fixed_shape(spec.shape)
+        shape = _fixed_shape(spec.shape, sequence_length=sequence_length)
         dtype = _dtype_for_onnx(spec.type, np)
 
         if key in {"input_ids", "inputid", "tokens"}:
@@ -207,7 +208,7 @@ def probe_model(model_path: Path, tokenizer_path: Path, *, max_sequence_length: 
     has_unknown_inputs = False
     for example in examples:
         encoding = tokenizer.encode(example["claim"], example["evidence"] or None)
-        feed, unknown = _make_feed(input_specs, encoding, np)
+        feed, unknown = _make_feed(input_specs, encoding, np, max_sequence_length=max_sequence_length)
         has_unknown_inputs = has_unknown_inputs or bool(unknown)
         outputs = session.run(None, feed)
         if len(outputs) != len(output_specs):
