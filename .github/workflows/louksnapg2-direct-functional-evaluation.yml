@@ -76,11 +76,28 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
+          # Non-cone sparse paths keep the functional lane bounded to the
+          # five exact source-bound model trees, the Foma source/runtime,
+          # and the runtime support files used by preflight and dispatch.
           sparse-checkout: |
-            cajita-luna-runtime
-            tools
-            tests
-          sparse-checkout-cone-mode: true
+            /cajita-luna-runtime/LOUKSNAPG2_RUNTIME/**
+            /cajita-luna-runtime/1. Cerebro/**
+            /cajita-luna-runtime/3. Transcripción/**
+            /cajita-luna-runtime/4. Traductor Inteligente/Traducción general/**
+            /cajita-luna-runtime/4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master/foma-master/foma/**
+            /cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/**
+            /cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/**
+            /cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json
+            /cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
+            /cajita-luna-runtime/REQUIREMENTS.runtime.lock
+            /cajita-luna-runtime/cajita_task_adapters.py
+            /cajita-luna-runtime/cajita_tokenizer_materializer.py
+            /cajita-luna-runtime/cajita_resource_limits.py
+            /cajita-luna-runtime/cajita_weight_materializer.py
+            /cajita-luna-runtime/command_subdomain_routing.json
+            /tools/**
+            /tests/**
+          sparse-checkout-cone-mode: false
           lfs: false
           persist-credentials: false
 
