@@ -26,10 +26,12 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
         self.assertEqual(quality_acceptance(row, "Buenos días. ¿Cómo estás?")["status"], "PASS")
         self.assertEqual(quality_acceptance(row, "Good morning. How are you?")["status"], "FAIL")
 
-    def test_document_extraction_requires_the_fixture_total(self):
+    def test_docling_extraction_requires_invoice_fields(self):
         row = MODEL_CASES[3]
-        self.assertEqual(quality_acceptance(row, "TOTAL 133.45")["status"], "PASS")
-        self.assertEqual(quality_acceptance(row, "TOTAL 123.45")["status"], "FAIL")
+        self.assertEqual(row["input"]["prompt"], "Convert this page to docling.")
+        self.assertEqual(row["limits"]["max_new_tokens"], 256)
+        self.assertEqual(quality_acceptance(row, "<doctag> INVOICE 4821 TOTAL 37.50 </doctag>")["status"], "PASS")
+        self.assertEqual(quality_acceptance(row, "<doctag> INVOICE 4821 TOTAL 37.00 </doctag>")["status"], "FAIL")
 
     def test_arithmetic_answer_requires_the_correct_number(self):
         row = MODEL_CASES[4]

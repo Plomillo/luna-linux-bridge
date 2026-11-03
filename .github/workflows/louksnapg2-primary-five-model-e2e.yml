@@ -1,0 +1,131 @@
+name: LOUKSNAPG2 primary five-model E2E (local/offline adapters only)
+
+on:
+  push:
+    branches:
+      - repair/louksnapg2-gpu-foundation-20261103
+    paths:
+      - ".github/workflows/louksnapg2-primary-five-model-e2e.yml"
+      - "tools/louksnapg2_primary_five_e2e.py"
+      - "tools/cajita_task_e2e.py"
+      - "tests/test_louksnapg2_primary_five_e2e.py"
+      - "tests/test_cajita_task_adapters.py"
+      - "tests/test_cajita_task_e2e.py"
+      - "cajita-luna-runtime/cajita_task_adapters.py"
+      - "cajita-luna-runtime/REQUIREMENTS.runtime.lock"
+      - "cajita-luna-runtime/**/model.safetensors"
+      - "cajita-luna-runtime/**/quantized_weights.bin"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg2-primary-five-model-e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  primary-five-models:
+    name: "Five registered compact model adapters; no auxiliary fallback"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      PYTHONNOUSERSITE: "1"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      LOUKSNAPG2_DOCLING_IMAGE_SIDE: "256"
+    steps:
+      - name: Install Git LFS and known-speech fixture tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ca-certificates git-lfs espeak-ng fonts-dejavu-core
+          git lfs version
+          espeak-ng --version | head -n 1
+
+      - name: Checkout exact source branch without hydrating every LFS object
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          sparse-checkout: |
+            /cajita-luna-runtime/**
+            /tools/cajita_task_e2e.py
+            /tools/louksnapg2_primary_five_e2e.py
+            /tests/test_cajita_task_adapters.py
+            /tests/test_cajita_task_e2e.py
+            /tests/test_louksnapg2_primary_five_e2e.py
+          sparse-checkout-cone-mode: false
+          lfs: false
+          persist-credentials: true
+
+      - name: Hydrate only the compact GPT-OSS weight file
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git lfs install --local
+          git lfs pull --include="cajita-luna-runtime/1. Cerebro/model.safetensors" --exclude="" origin "$GITHUB_SHA"
+          git lfs checkout "cajita-luna-runtime/1. Cerebro/model.safetensors"
+          test -s "cajita-luna-runtime/1. Cerebro/model.safetensors"
+
+      - name: Set up pinned Python 3.13 runtime
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+
+      - name: Install the committed CPU runtime lock
+        shell: bash
+        env:
+          PIP_NO_CACHE_DIR: "1"
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check \
+            --extra-index-url https://download.pytorch.org/whl/cpu \
+            -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
+
+      - name: Run source and task-contract tests
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/cajita-luna-runtime:${{ github.workspace }}/tools
+        run: |
+          set -Eeuo pipefail
+          python -B -m unittest discover -s tests -p 'test_cajita_task_adapters.py' -v
+          python -B -m unittest discover -s tests -p 'test_cajita_task_e2e.py' -v
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_primary_five_e2e.py' -v
+
+      - name: Execute the five registered compact model adapters directly
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/cajita-luna-runtime:${{ github.workspace }}/tools
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/primary-five-models
+          set +e
+          python -B tools/louksnapg2_primary_five_e2e.py \
+            --runtime-root cajita-luna-runtime \
+            --output-dir out/primary-five-models/work \
+            --output out/primary-five-models/LOUKSNAPG2_PRIMARY_FIVE_MODEL_E2E.json \
+            --timeout 1800
+          rc=$?
+          set -e
+          echo "$rc" > out/primary-five-models/EXIT_CODE.txt
+          test -s out/primary-five-models/LOUKSNAPG2_PRIMARY_FIVE_MODEL_E2E.json
+          cat out/primary-five-models/LOUKSNAPG2_PRIMARY_FIVE_MODEL_E2E.json
+          exit "$rc"
+
+      - name: Upload exact model evaluation evidence on success or failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-primary-five-model-e2e-${{ github.run_id }}
+          path: out/primary-five-models/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0

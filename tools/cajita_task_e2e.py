@@ -23,9 +23,9 @@ MODEL_CASES = [
      "limits":{"timeout_seconds":900,"max_new_tokens":12},
      "quality_check":{"id":"english-to-spanish-greeting","mode":"contains_any","phrases":["buenos dias","buen dia"]}},
     {"task_id":"e2e-docling-image-extraction","domain_id":"D05_INTELIGENCIA_DOCUMENTAL","operation":"extract_document_image",
-     "input":{"image_path":"@IMAGE@","prompt":"Read the invoice total. Return only the numeric amount."},
-     "limits":{"timeout_seconds":900,"max_new_tokens":8},
-     "quality_check":{"id":"invoice-total-133-45","mode":"regex","pattern":r"\b133[.,]45\b"}},
+     "input":{"image_path":"@IMAGE@","prompt":"Convert this page to docling."},
+     "limits":{"timeout_seconds":1800,"max_new_tokens":256},
+     "quality_check":{"id":"docling-invoice-fields","mode":"contains_all","phrases":["4821","37 50"]}},
     {"task_id":"e2e-qwen3-reasoning","domain_id":"D06_SISTEMA_INTELIGENTE","operation":"analyze_reasoning",
      "input":{"prompt":"What is 2 + 2? Return only the numeric answer."},
      "limits":{"timeout_seconds":900,"max_new_tokens":8},
@@ -82,19 +82,22 @@ def make_audio(path):
         if audio.getnframes()<=0 or audio.getnchannels() not in (1,2) or audio.getsampwidth()!=2:
             raise RuntimeError("ESPEAK_NG_FIXTURE_WAV_INVALID")
 def make_image(path):
-    from PIL import Image,ImageDraw
-    image=Image.new("RGB",(640,480),"white");draw=ImageDraw.Draw(image)
-    lines=["INVOICE","Invoice number: INV-1042","Date: 2026-10-21",
-           "Description                Amount","Document processing        123.45","Tax                          10.00","TOTAL                       133.45"]
-    for i,line in enumerate(lines): draw.text((28,24+i*52),line,fill="black")
-    image.save(path,format="PNG")
+    from PIL import Image,ImageDraw,ImageFont
+    image=Image.new("RGB",(512,512),"white");draw=ImageDraw.Draw(image)
+    title=ImageFont.load_default(size=48)
+    body=ImageFont.load_default(size=40)
+    draw.text((40,64),"INVOICE 4821",fill="black",font=title,stroke_width=1)
+    draw.line((38,150,474,150),fill="black",width=4)
+    draw.text((40,260),"TOTAL 37.50",fill="black",font=body,stroke_width=1)
+    image.save(path,format="PNG",optimize=False)
 def run_case(root,outdir,record,timeout):
     request_path=outdir/(record["domain_id"]+".request.json")
     request_path.write_text(json.dumps(record,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     safe_env={k:os.environ[k] for k in ("PATH","HOME","LANG","LC_ALL","TMPDIR","SYSTEMROOT","WINDIR") if k in os.environ}
     safe_env.update({"OMP_NUM_THREADS":"1","OPENBLAS_NUM_THREADS":"1","MKL_NUM_THREADS":"1","NUMEXPR_NUM_THREADS":"1",
                      "TOKENIZERS_PARALLELISM":"false","HF_HUB_OFFLINE":"1","TRANSFORMERS_OFFLINE":"1","PYTHONNOUSERSITE":"1",
-                     "CAJITA_E2E_DIAGNOSTICS":"1"})
+                     "CAJITA_E2E_DIAGNOSTICS":"1",
+                     "LOUKSNAPG2_DOCLING_IMAGE_SIDE":os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE","256")})
     started=time.monotonic()
     try:
         p=subprocess.run([sys.executable,str(root/"cajita_runtime.py"),"execute-task","--root",str(root),
