@@ -1,0 +1,48 @@
+name: LOUKSNAPG2 Dynamic Lexicon alignment candidates
+on:
+  workflow_dispatch:
+  push:
+    branches: ["louksnapg2/puac2-alternative-20261029"]
+    paths:
+      - "research/LOUKSNAPG2_DYNAMIC_LEXICON_SOURCE/**"
+      - "tools/louksnapg2_dynamic_lexicon_align.py"
+      - "tests/test_louksnapg2_dynamic_lexicon_align.py"
+      - ".github/workflows/louksnapg2-dynamic-lexicon-align.yml"
+permissions:
+  contents: read
+concurrency:
+  group: louksnapg2-dynamic-lexicon-align-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  extract-candidates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          lfs: false
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+      - name: Install pinned safe XML parser
+        run: python -m pip install --disable-pip-version-check --no-input defusedxml==0.7.1
+      - name: Generate provenance-bound candidate correspondences
+        run: |
+          set -Eeuo pipefail
+          python -B tools/louksnapg2_dynamic_lexicon_align.py \
+            --greek research/LOUKSNAPG2_DYNAMIC_LEXICON_SOURCE/greeklexicon.tar.gz \
+            --latin research/LOUKSNAPG2_DYNAMIC_LEXICON_SOURCE/latinlexicon.tar.gz \
+            --output out/dynamic_lexicon_alignment_candidates.json
+      - name: Run candidate alignment unit tests
+        env:
+          PYTHONPATH: tools
+        run: python -B -m unittest discover -s tests -p "test_louksnapg2_dynamic_lexicon_align.py" -v
+      - name: Upload candidate correspondences and evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-dynamic-lexicon-alignment-${{ github.sha }}
+          path: out/dynamic_lexicon_alignment_candidates.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
