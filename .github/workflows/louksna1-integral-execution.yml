@@ -126,7 +126,13 @@ jobs:
           mv "$RUNNER_TEMP/cmdtools/cmdline-tools" "$SDK/cmdline-tools/latest"
           yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" --licenses >/tmp/android-licenses.txt || true
           "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" "platform-tools" "emulator" "system-images;android-34;aosp_atd;x86_64"
-          echo no | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd -n louksna1 -k "system-images;android-34;aosp_atd;x86_64" --force
+          export ANDROID_SDK_ROOT="$SDK"
+          export ANDROID_HOME="$SDK"
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd -n louksna1 -k "system-images;android-34;aosp_atd;x86_64" --abi x86_64 --force
+          test -f "$ANDROID_AVD_HOME/louksna1.ini"
+          "$SDK/emulator/emulator" -list-avds
           ACCEL=off
           if [ -e /dev/kvm ]; then ACCEL=on; fi
           "$SDK/emulator/emulator" -avd louksna1 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel "$ACCEL" -port 5554 >"$RUNNER_TEMP/emulator.log" 2>&1 &
