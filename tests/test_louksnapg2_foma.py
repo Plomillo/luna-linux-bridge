@@ -44,4 +44,19 @@ class FomaRuntimeTests(unittest.TestCase):
         self.write_manifest({})
         with self.assertRaisesRegex(FomaRuntimeError,"FOMA_SOURCE_LANGUAGE_NOT_REGISTERED"):
             self.engine.translate("bonjour",src_lang="fra",tgt_lang="eng")
+    def test_preflight_reports_missing_compiler_tools(self):
+        self.write_manifest({})
+        def locate(name):
+            return None if name=="make" else "/usr/bin/"+name
+        with mock.patch("louksnapg2_foma.shutil.which",side_effect=locate):
+            report=self.engine.preflight()
+        self.assertFalse(report["compiler_available"])
+        self.assertEqual(report["missing_compiler_tools"],["make"])
+        self.assertIsNone(report["compiler_tools"]["make"])
+    def test_runtime_rejects_missing_compiler_before_build(self):
+        def locate(name):
+            return None if name=="make" else "/usr/bin/"+name
+        with mock.patch("louksnapg2_foma.shutil.which",side_effect=locate):
+            with self.assertRaisesRegex(FomaRuntimeError,"FOMA_COMPILER_TOOLCHAIN_INCOMPLETE:make"):
+                self.engine._binaries()
 if __name__=="__main__": unittest.main()

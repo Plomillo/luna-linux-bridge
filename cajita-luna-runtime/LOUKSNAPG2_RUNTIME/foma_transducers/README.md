@@ -45,3 +45,30 @@ Dynamic Lexicon source data is not currently embedded in this repository or regi
 as a runtime transducer. Promotion requires archive materialization, XML schema
 inspection, cryptographic hashing, a reproducible Greek-Latin extraction pipeline,
 held-out philological evaluation and resource-specific provenance.
+
+
+## Addendum — 2026-11-02 repository-state correction
+
+The pinned Greek and Latin source archives are now materialized in
+\`research/LOUKSNAPG2_DYNAMIC_LEXICON_SOURCE/\` at the repository's current
+\`louksnapg2/puac2-alternative-20261029\` candidate state. The measured archive
+SHA-256 values are:
+
+- Greek: \`e9b4f2ff9ab62c5b4b838b74fab78dff3b28fa8381889931f1885792683dd3b8\`
+- Latin: \`f7d0b0ce41c5b7ec75c4d83e5018371b4a366b27f2f8f169abfdbe8af21e42ac\`
+
+The inspected source schema uses
+\`lexicalentry/form/poscontainer/senses/sensecontainer/sense\`, with sense-level
+\`count\`, \`prob\` and \`loglikelihood\` fields. The previous alignment extractor
+looked for \`syntaxcontainer/collocation\` and consequently produced zero records
+from these archives. The replacement research extractor reads the observed sense
+schema and binds itself to the archive SHA-256 values above.
+
+A shared normalized English sense plus the same part of speech is only a
+correspondence hypothesis. These automatically induced lexicons may contain noise,
+homonymy, polysemy, corpus imbalance and incorrect glosses. The output preserves
+source-member and sense-level provenance, bounds many-to-many groups, and requires
+held-out philological validation. It does not assert translation equivalence and
+does not write any FST, modify the runtime manifest, or authorize automatic
+promotion. Existing Latin-English and Greek-English resource coverage remains
+partial and unchanged.

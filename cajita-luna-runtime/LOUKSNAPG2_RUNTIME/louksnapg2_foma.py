@@ -7,8 +7,15 @@ from pathlib import Path
 FOMA_SOURCE_REL=Path("4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master/foma-master/foma")
 TRANSDUCER_MANIFEST=Path(__file__).resolve().parent/"foma_transducers"/"manifest.json"
 MAX_INPUT_CHARS=16384
+COMPILER_TOOLS=("make","cc","flex","bison")
+
 
 class FomaRuntimeError(RuntimeError): pass
+
+def compiler_tool_status():
+    tools={name:shutil.which(name) for name in COMPILER_TOOLS}
+    missing=[name for name,path in tools.items() if not path]
+    return {"compiler_available":not missing,"compiler_tools":tools,"missing_compiler_tools":missing}
 
 def sha256_file(path):
     h=hashlib.sha256()
@@ -112,11 +119,14 @@ class FomaEngine:
             "resource_status":resource_status,
             "registered_transducer_count":len(rows),"registered_transducer_pairs":present_pairs,
             "missing_transducer_pairs":missing_pairs,
-            "compiler_available":bool(shutil.which("make") and shutil.which("cc") and shutil.which("flex") and shutil.which("bison")),
+            **compiler_tool_status(),
             "translation_quality":m.get("translation_quality","NOT_ESTABLISHED"),"certification":"NOT_GRANTED"}
 
     def _binaries(self):
         # Never trust an unpinned host Foma binary or environment override.
+        compiler=compiler_tool_status()
+        if not compiler["compiler_available"]:
+            raise FomaRuntimeError("FOMA_COMPILER_TOOLCHAIN_INCOMPLETE:"+",".join(compiler["missing_compiler_tools"]))
         digest=sha256_tree(self.source_root)
         cache=Path(tempfile.gettempdir())/("louksnapg2-foma-"+digest[:20])
         if cache.is_symlink():
