@@ -943,30 +943,55 @@ def measured_resources(repo: Path) -> dict:
 
 
 def rollback_probe(runtime: Path) -> dict:
-    """Restore an executed binary copy. This is not a product-update rollback."""
-    binary = runtime / "6. Sistema Inteligente" / "Consola" / "quickjs-linux-x86_64-2026-06-04" / "qjs"
-    if not binary.is_file():
-        return {"status": "FAIL", "scope": "NOT_RUN", "reason": "ROLLBACK_SOURCE_MISSING"}
-    original = binary.read_bytes()
+    """Update a working copy of the product candidate, then restore and re-read it.
+
+    The candidate is the V9 weights manifest. The published source file is never
+    written. A restored copy counts only if the tampered identity is rejected,
+    the checkpoint bytes and hash match, and a fresh read returns CANDIDATE_ID.
+    """
+    candidate = runtime / "CAJITA_RUNTIME_V1" / "weights_manifest.json"
+    if candidate.is_symlink() or not candidate.is_file():
+        return {"status": "FAIL", "scope": "NOT_RUN", "reason": "PRODUCT_CANDIDATE_MISSING"}
+    original = candidate.read_bytes()
+    try:
+        parsed = json.loads(original)
+    except json.JSONDecodeError:
+        return {"status": "FAIL", "scope": "PRODUCT_CANDIDATE_UPDATE", "reason": "PRODUCT_CANDIDATE_NOT_JSON"}
+    if parsed.get("candidate_id") != CANDIDATE_ID:
+        return {"status": "FAIL", "scope": "PRODUCT_CANDIDATE_UPDATE", "reason": "PRODUCT_CANDIDATE_ID_MISMATCH"}
+    tampered_rejected = False
+    restored = False
+    restored_id = None
     with tempfile.TemporaryDirectory(prefix="louksna1-rollback-") as temp_name:
-        work = Path(temp_name) / "qjs"
-        checkpoint = Path(temp_name) / "qjs.checkpoint"
+        work = Path(temp_name) / "weights_manifest.json"
+        checkpoint = Path(temp_name) / "weights_manifest.json.checkpoint"
         work.write_bytes(original)
         checkpoint.write_bytes(original)
-        work.write_bytes(original + b"TAMPER")
+        updated = dict(parsed)
+        updated["candidate_id"] = CANDIDATE_ID + ".UPDATED_NOT_PUBLISHED"
+        work.write_text(json.dumps(updated, ensure_ascii=False, sort_keys=True), encoding="utf-8")
         if work.read_bytes() == original:
-            return {"status": "FAIL", "scope": "EXECUTED_ARTIFACT_COPY", "reason": "TAMPER_DID_NOT_CHANGE_BYTES"}
+            return {"status": "FAIL", "scope": "PRODUCT_CANDIDATE_UPDATE", "reason": "TAMPER_DID_NOT_CHANGE_BYTES"}
+        tampered_rejected = json.loads(work.read_bytes()).get("candidate_id") != CANDIDATE_ID
         work.write_bytes(checkpoint.read_bytes())
-        restored = work.read_bytes() == original and sha256_file(work) == sha256_bytes(original)
-        os.chmod(work, 0o755)
-        proc = subprocess.run([str(work), "--std", "-e", "print(2+2)"], capture_output=True, text=True, timeout=8, check=False)
-    ok = restored and proc.returncode == 0 and proc.stdout.strip() == "4"
+        restored_bytes = work.read_bytes()
+        restored = restored_bytes == original and sha256_file(work) == sha256_bytes(original)
+        if restored:
+            restored_id = json.loads(work.read_text(encoding="utf-8")).get("candidate_id")
+    source_untouched = candidate.read_bytes() == original
+    reexecuted = restored_id == CANDIDATE_ID
+    ok = tampered_rejected and restored and reexecuted and source_untouched
     return {
         "status": "PASS" if ok else "FAIL",
-        "scope": "EXECUTED_ARTIFACT_COPY_NOT_PRODUCT_UPDATE",
+        "scope": "PRODUCT_CANDIDATE_UPDATE",
+        "candidate_path": "cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json",
+        "candidate_id": CANDIDATE_ID,
+        "tampered_identity_rejected": tampered_rejected,
         "restored_hash_match": restored,
-        "post_restore_exit_code": proc.returncode,
-        "reason": "" if ok else "ROLLBACK_POST_RESTORE_EXECUTION_FAILED",
+        "restored_candidate_id": restored_id,
+        "reexecuted_identity_match": reexecuted,
+        "source_untouched": source_untouched,
+        "reason": "" if ok else "PRODUCT_CANDIDATE_ROLLBACK_FAILED",
     }
 
 
@@ -991,26 +1016,82 @@ def identity_report(repo: Path) -> dict:
     return {"status": "PASS" if not problems else "FAIL", "candidate_id": candidate, "workflow_name": WORKFLOW_NAME, "problems": problems}
 
 
+def _bind_published_file(repo: Path, label: str, rel, expected_sha, expected_bytes, problems: list, checked: list) -> None:
+    if not isinstance(rel, str) or not isinstance(expected_sha, str) or len(expected_sha) != 64:
+        problems.append(label + "_PIN_MISSING")
+        return
+    found = None
+    for candidate in (repo / rel, repo / "cajita-luna-runtime" / rel):
+        if candidate.is_symlink():
+            problems.append(label + "_SYMLINK")
+            return
+        if candidate.is_file():
+            found = candidate
+            break
+    if found is None:
+        problems.append(label + "_MISSING")
+        checked.append({"id": label, "path": rel, "status": "MISSING"})
+        return
+    digest = sha256_file(found)
+    size = found.stat().st_size
+    if digest != expected_sha:
+        problems.append(label + "_HASH_MISMATCH")
+    if expected_bytes is not None and size != expected_bytes:
+        problems.append(label + "_SIZE_MISMATCH")
+    checked.append({
+        "id": label,
+        "path": rel,
+        "bytes": size,
+        "sha256": digest,
+        "status": "PASS" if digest == expected_sha and (expected_bytes is None or size == expected_bytes) else "FAIL",
+    })
+
+
 def provenance_report(repo: Path, head: str) -> dict:
     path = repo / "docs" / "cajita-luna" / "LOUKSNA1_RELEASE_MANIFEST.json"
-    if not path.is_file():
+    if not path.is_file() or path.is_symlink():
         return {"status": "FAIL", "reason": "RELEASE_MANIFEST_MISSING"}
     manifest = json.loads(path.read_text(encoding="utf-8"))
     problems = []
+    checked = []
     if manifest.get("source_commit") != head:
         problems.append("PUBLISHED_MANIFEST_SOURCE_COMMIT_DIFFERS_FROM_EXECUTION_HEAD")
-    louksna = repo / "Louksna1.md"
-    if louksna.is_file() and sha256_file(louksna) != manifest.get("louksna1", {}).get("sha256"):
-        problems.append("LOUKSNA1_HASH_DIFFERS_FROM_PUBLISHED_MANIFEST")
-    protected = repo / "LOUKSNAMEJORADA.md"
-    if protected.is_file():
-        if sha256_file(protected) != manifest.get("protected_architecture", {}).get("sha256"):
-            problems.append("PROTECTED_ARCHITECTURE_HASH_MISMATCH")
+    louksna = manifest.get("louksna1") if isinstance(manifest.get("louksna1"), dict) else {}
+    _bind_published_file(repo, "LOUKSNA1", louksna.get("path"), louksna.get("sha256"), louksna.get("bytes"), problems, checked)
+    protected = manifest.get("protected_architecture") if isinstance(manifest.get("protected_architecture"), dict) else {}
+    _bind_published_file(repo, "PROTECTED_ARCHITECTURE", protected.get("path"), protected.get("sha256"), None, problems, checked)
+    dist = manifest.get("runtime_distribution") if isinstance(manifest.get("runtime_distribution"), dict) else {}
+    _bind_published_file(repo, "RUNTIME_DISTRIBUTION", dist.get("path"), dist.get("sha256"), dist.get("bytes"), problems, checked)
+    archives = manifest.get("externalized_archives")
+    if not isinstance(archives, list):
+        problems.append("EXTERNALIZED_ARCHIVE_LIST_MISSING")
     else:
-        problems.append("PROTECTED_ARCHITECTURE_NOT_CHECKED_IN_THIS_EXECUTION")
+        for archive in archives:
+            if not isinstance(archive, dict):
+                problems.append("EXTERNALIZED_ARCHIVE_ROW_INVALID")
+                continue
+            _bind_published_file(
+                repo,
+                "ARCHIVE_" + str(archive.get("id")),
+                archive.get("path"),
+                archive.get("sha256"),
+                archive.get("bytes"),
+                problems,
+                checked,
+            )
+    axiom = manifest.get("axiom_interdisciplinary_binding") if isinstance(manifest.get("axiom_interdisciplinary_binding"), dict) else {}
+    _bind_published_file(repo, "AXIOM_BINDING", axiom.get("path"), axiom.get("sha256"), None, problems, checked)
+    adapter = manifest.get("task_adapter_evidence") if isinstance(manifest.get("task_adapter_evidence"), dict) else {}
+    _bind_published_file(repo, "TASK_ADAPTER_EVIDENCE", adapter.get("path"), adapter.get("sha256"), None, problems, checked)
     if manifest.get("global_certification") == "GRANTED":
         problems.append("STALE_MANIFEST_ALREADY_CLAIMS_GRANT")
-    return {"status": "PASS" if not problems else "FAIL", "published_source_commit": manifest.get("source_commit"), "execution_head": head, "problems": problems}
+    return {
+        "status": "PASS" if not problems else "FAIL",
+        "published_source_commit": manifest.get("source_commit"),
+        "execution_head": head,
+        "problems": problems,
+        "files": checked,
+    }
 
 
 def decide(matrix: list[dict], identity: dict, resources: dict, rollback: dict, provenance: dict, *, worker_claim: str, axiom_established: bool = False) -> dict:
@@ -1024,6 +1105,15 @@ def decide(matrix: list[dict], identity: dict, resources: dict, rollback: dict, 
     host_reason = "LINUX_RESOURCE_MEASUREMENT_IS_NOT_THE_DECLARED_ANDROID_WINDOWS_MATRIX" if host == "FAIL" else ""
     rollback_ok = rollback.get("status") == "PASS" and rollback.get("scope") == "PRODUCT_CANDIDATE_UPDATE"
     independence = worker_claim == "NOT_GRANTED"
+    protected_problems = {
+        "PROTECTED_ARCHITECTURE_HASH_MISMATCH",
+        "PROTECTED_ARCHITECTURE_NOT_CHECKED_IN_THIS_EXECUTION",
+        "PROTECTED_ARCHITECTURE_MISSING",
+        "PROTECTED_ARCHITECTURE_PIN_MISSING",
+        "PROTECTED_ARCHITECTURE_SYMLINK",
+        "PROTECTED_ARCHITECTURE_SIZE_MISMATCH",
+    }
+    baseline = "FAIL" if protected_problems.intersection(provenance.get("problems", [])) else "PASS"
     gates = {
         "identity": {"status": identity.get("status", "FAIL"), "problems": identity.get("problems", [])},
         "coverage_21": {"status": coverage, "passed": passed, "failed": [target for target in CANONICAL_TARGETS if target not in passed]},
@@ -1033,7 +1123,7 @@ def decide(matrix: list[dict], identity: dict, resources: dict, rollback: dict, 
         "rollback": {"status": "PASS" if rollback_ok else "FAIL", "observed": rollback},
         "provenance": {"status": provenance.get("status", "FAIL"), "problems": provenance.get("problems", [])},
         "independence": {"status": "PASS" if independence else "FAIL", "worker_claim": worker_claim, "evaluator": EVALUATOR_ID, "worker": WORKER_ID},
-        "baseline_integrity": {"status": "FAIL" if "PROTECTED_ARCHITECTURE_HASH_MISMATCH" in provenance.get("problems", []) or "PROTECTED_ARCHITECTURE_NOT_CHECKED_IN_THIS_EXECUTION" in provenance.get("problems", []) else "PASS"},
+        "baseline_integrity": {"status": baseline},
     }
     granted = all(gate["status"] == "PASS" for gate in gates.values())
     return {

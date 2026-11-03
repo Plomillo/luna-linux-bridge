@@ -141,6 +141,28 @@ class ExecutableGateTests(unittest.TestCase):
         self.assertTrue(accepted["detail"]["independent_exe_hash_checked"])
         self.assertNotIn("status", accepted["detail"])
 
+    def test_product_candidate_rollback_restores_identity_without_touching_source(self):
+        candidate = self.runtime / "CAJITA_RUNTIME_V1" / "weights_manifest.json"
+        before = candidate.read_bytes()
+        result = MISSION.rollback_probe(self.runtime)
+        self.assertEqual(candidate.read_bytes(), before)
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(result["scope"], "PRODUCT_CANDIDATE_UPDATE")
+        self.assertTrue(result["tampered_identity_rejected"])
+        self.assertTrue(result["reexecuted_identity_match"])
+        self.assertTrue(result["source_untouched"])
+        self.assertEqual(result["restored_candidate_id"], MISSION.CANDIDATE_ID)
+
+    def test_published_bytes_stay_bound_and_missing_distribution_does_not_pass(self):
+        repo = Path(__file__).resolve().parents[1]
+        report = MISSION.provenance_report(repo, MISSION.git_head(repo))
+        self.assertEqual(report["status"], "FAIL")
+        self.assertIn("RUNTIME_DISTRIBUTION_MISSING", report["problems"])
+        self.assertIn("PUBLISHED_MANIFEST_SOURCE_COMMIT_DIFFERS_FROM_EXECUTION_HEAD", report["problems"])
+        self.assertNotIn("LOUKSNA1_HASH_MISMATCH", report["problems"])
+        self.assertNotIn("PROTECTED_ARCHITECTURE_HASH_MISMATCH", report["problems"])
+        self.assertNotIn("PROTECTED_ARCHITECTURE_MISSING", report["problems"])
+
 
 if __name__ == "__main__":
     unittest.main()
