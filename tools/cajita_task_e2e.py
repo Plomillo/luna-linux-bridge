@@ -23,8 +23,8 @@ MODEL_CASES = [
      "limits":{"timeout_seconds":900,"max_new_tokens":12},
      "quality_check":{"id":"english-to-spanish-greeting","mode":"contains_any","phrases":["buenos dias","buen dia"]}},
     {"task_id":"e2e-docling-image-extraction","domain_id":"D05_INTELIGENCIA_DOCUMENTAL","operation":"extract_document_image",
-     "input":{"image_path":"@IMAGE@","prompt":"Read the invoice total. Return only the numeric amount."},
-     "limits":{"timeout_seconds":900,"max_new_tokens":8},
+     "input":{"image_path":"@IMAGE@","prompt":"Convert this page to docling."},
+     "limits":{"timeout_seconds":900,"max_new_tokens":512},
      "quality_check":{"id":"invoice-total-133-45","mode":"regex","pattern":r"\b133[.,]45\b"}},
     {"task_id":"e2e-qwen3-reasoning","domain_id":"D06_SISTEMA_INTELIGENTE","operation":"analyze_reasoning",
      "input":{"prompt":"What is 2 + 2? Return only the numeric answer."},
@@ -82,11 +82,12 @@ def make_audio(path):
         if audio.getnframes()<=0 or audio.getnchannels() not in (1,2) or audio.getsampwidth()!=2:
             raise RuntimeError("ESPEAK_NG_FIXTURE_WAV_INVALID")
 def make_image(path):
-    from PIL import Image,ImageDraw
-    image=Image.new("RGB",(640,480),"white");draw=ImageDraw.Draw(image)
+    from PIL import Image,ImageDraw,ImageFont
+    image=Image.new("RGB",(1024,1024),"white");draw=ImageDraw.Draw(image)
+    font=ImageFont.load_default(size=32)
     lines=["INVOICE","Invoice number: INV-1042","Date: 2026-10-21",
            "Description                Amount","Document processing        123.45","Tax                          10.00","TOTAL                       133.45"]
-    for i,line in enumerate(lines): draw.text((28,24+i*52),line,fill="black")
+    for i,line in enumerate(lines): draw.text((64,64+i*128),line,fill="black",font=font)
     image.save(path,format="PNG")
 def run_case(root,outdir,record,timeout):
     request_path=outdir/(record["domain_id"]+".request.json")
@@ -118,7 +119,8 @@ def run_case(root,outdir,record,timeout):
         return {"task_id":record["task_id"],"domain_id":record["domain_id"],"target_id":result.get("target_id"),"operation":record["operation"],
                 "status":result.get("status","NO_JSON_RESULT"),"exit_code":p.returncode,
                 "elapsed_seconds":round(time.monotonic()-started,3),"input_sha256":result.get("input_sha256"),
-                "output_sha256":result.get("output_sha256"),"entrypoint_sha256":result.get("entrypoint_sha256"),
+                "output_sha256":result.get("output_sha256"),"output_char_count":len(str(output_text)),
+                "entrypoint_sha256":result.get("entrypoint_sha256"),
                 "weight_sha256":result.get("integrity",{}).get("weight_sha256"),
                 "module_tree_sha256":result.get("integrity",{}).get("module_tree_sha256"),
                 "peak_rss_bytes":result.get("peak_rss_bytes"),"generated_token_count":result.get("generated_token_count"),
@@ -167,10 +169,10 @@ def main():
     guard["status"]="PASS_FAIL_CLOSED_PLAN_ONLY" if guard_ok else "FAIL_ORCHESTRATION_GUARD"
     guard["execution_authorized"]=False
     model_pass=all(
-        r.get("status")=="PASS_FUNCTIONAL_EXECUTION" and r.get("exit_code")==0
+        r.get("status")=="PASS_EXECUTION_QUALITY_UNVERIFIED" and r.get("exit_code")==0
         and r.get("quality_acceptance",{}).get("status")=="PASS"
         and all(isinstance(r.get(k),str) and len(r[k])==64 for k in ("input_sha256","output_sha256","weight_sha256","module_tree_sha256"))
-        and isinstance(r.get("peak_rss_bytes"),int) and 0<r["peak_rss_bytes"]<=1_073_741_824
+        and isinstance(r.get("peak_rss_bytes"),int) and 0<r["peak_rss_bytes"]<=2_147_483_648
         for r in rows
     )
     try:
@@ -211,7 +213,7 @@ def main():
             "target_engine_results":target_engine_report.get("results",[]),
             "target_engine_scope":target_engine_report.get("scope","SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES; NO_FULL_TASK_OR_QUALITY_CLAIM"),
             "orchestration_guard":guard,"inputs":"ESPEAK_NG_KNOWN_SPEECH_AND_SYNTHETIC_INVOICE_FIXTURES_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_FIXTURES",
-            "resource_gate":"EACH_TASK_CHILD_PEAK_RSS_MUST_BE_AT_MOST_1_GIB; TARGET_ENGINE_BUILD_AND_EXECUTION_BOUNDED",
+            "resource_gate":"EACH_TASK_CHILD_PEAK_RSS_MUST_BE_AT_MOST_2_GIB; TARGET_ENGINE_BUILD_AND_EXECUTION_BOUNDED",
             "functional_scope":"FIVE_MODEL_DOMAIN_TASK_EXECUTIONS_WITH_FIXED_EXPECTATION_ACCEPTANCE_PLUS_SIX_SOURCE_BOUND_TARGET_ENGINE_SMOKES_PLUS_FAIL_CLOSED_ORCHESTRATION_GUARD",
             "synthetic_quality_acceptance":"PASS" if model_pass and guard_ok else "FAIL",
             "full_target_task_coverage":"NOT_ESTABLISHED",

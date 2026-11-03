@@ -177,9 +177,9 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     model,meta=load_candidate(candidate_dir)
     from transformers import AutoProcessor
     proc=load_pretrained_with_compressed_tokenizer(candidate_dir,AutoProcessor,local_files_only=True,trust_remote_code=False)
-    # The packaged preprocessor defaults to a 2048-edge resize plus 512-edge
-    # image splitting. That can exceed the 1 GiB CPU contract even with splitting
-    # disabled. Use one bounded 256px square view and no high-resolution tiles.
+    # The official Granite Docling processor uses a 512px vision input.
+    # Keep one square view and disable high-resolution tiling to bound memory while
+    # preserving the model's trained image resolution.
     # Idefics3 expands each image into a fixed sequence of <image> tokens. Its count
     # must match the vision encoder after pixel-shuffle: (side / patch / scale)^2.
     # Letterboxing keeps the visual input square so one sequence length works for
@@ -188,7 +188,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     image_processor=getattr(proc,"image_processor",None)
     if image_processor is None:
         raise RuntimeError("DOCLING_IMAGE_PROCESSOR_MISSING")
-    image_side=256
+    image_side=512
     vision_config=model.config.vision_config
     patch_size=int(vision_config.patch_size)
     scale_factor=int(model.config.scale_factor)

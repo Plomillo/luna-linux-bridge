@@ -10,7 +10,7 @@ from cajita_architecture_binding import register_architecture_binding
 SCHEMA = "CAJITA_LOUKSNA1_FACTORY/1.0"
 RAW_CAP = 1_500_000_000
 RUNTIME_ARCHIVE_CAP = 470_000_000
-COMBINED_CAP = 490_000_000
+COMBINED_CAP = 479_000_000
 MATERIALIZATION_SOURCE_COMMIT = "f2771dd76c2c99967bbf1f7b032f8e6d15b0e387"
 ARCHIVE_SUFFIXES = {".zip", ".7z"}
 WEIGHT_PATHS = (
@@ -30,6 +30,11 @@ def canon(obj):
 
 def sha_bytes(data):
  return hashlib.sha256(data).hexdigest()
+
+
+def max_required_glibc_version(symbol_output):
+ versions={(int(major),int(minor)) for major,minor in re.findall(r"GLIBC_(\d+)\.(\d+)",symbol_output)}
+ return max(versions) if versions else None
 
 def sha_file(path):
  h=hashlib.sha256()
@@ -459,6 +464,146 @@ def factory_materialize(runtime,rollback,raw_cap,repo_root=None):
  if raw>raw_cap: raise RuntimeError(f"RAW_STAGING_CEILING_EXCEEDED:{raw}>{raw_cap}")
  return {"archive_count":len(archive_history),"archive_count_this_run":len(records),"archive_bytes_removed":total_removed_bytes,"archives":archive_history,"readme_count":len(readme_history),"readme_count_this_run":len(readmes),"readmes_removed":readme_history,"module_count":len(module_records),"modules":module_records,"materialized_module_revalidation":"PASS","source_tree_recovery":source_tree_recovery,"raw_tree_bytes_after_materialization":raw}
 
+
+def build_native_engine_overlays(runtime,source_commit,runner=subprocess.run):
+ """Build pinned Foma/Trealla executables into the product runtime and emit hash-bound receipts."""
+ runtime=Path(runtime).resolve()
+ if not re.fullmatch(r"[0-9a-f]{40}",str(source_commit)): raise RuntimeError("NATIVE_ENGINE_SOURCE_COMMIT_INVALID")
+ routing_path=runtime/"command_subdomain_routing.json"
+ if routing_path.is_symlink() or not routing_path.is_file(): raise RuntimeError("NATIVE_ENGINE_ROUTING_MISSING")
+ routing=json.loads(routing_path.read_text(encoding="utf-8"))
+ route_paths={row.get("id"):safe_rel(row.get("path","")) for row in routing.get("targets",[]) if isinstance(row,dict)}
+ required={"D04_TRADUCCION_LENGUAS_ANTIGUAS","D04_HERMENEUTICA_HG"}
+ if not required.issubset(route_paths): raise RuntimeError("NATIVE_ENGINE_TARGET_ROUTE_MISSING")
+ foma_module=runtime.joinpath(*route_paths["D04_TRADUCCION_LENGUAS_ANTIGUAS"].parts)
+ trealla_module=runtime.joinpath(*route_paths["D04_HERMENEUTICA_HG"].parts)
+ foma_source=foma_module/"foma-master"/"foma-master"/"foma"
+ trealla_source=trealla_module/"trealla-2.100.24"/"trealla-2.100.24"
+ for label,path in (("FOMA",foma_source),("TREALLA",trealla_source)):
+  if path.is_symlink() or not path.is_dir() or not (path/"Makefile").is_file():
+   raise RuntimeError("NATIVE_ENGINE_SOURCE_TREE_MISSING:"+label+":"+str(path))
+  tree_rows(path,False)
+ receipt_path=runtime/"NATIVE_ENGINE_BUILD_RECEIPTS.json"
+ if receipt_path.exists() or receipt_path.is_symlink(): raise RuntimeError("NATIVE_ENGINE_BUILD_RECEIPT_COLLISION")
+ def run(command,cwd,timeout,label):
+  proc=runner(command,cwd=str(cwd),stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=timeout,check=False)
+  output=proc.stdout or ""
+  if proc.returncode!=0: raise RuntimeError("NATIVE_ENGINE_BUILD_COMMAND_FAILED:"+label+":"+str(proc.returncode)+":"+output[-2500:])
+  return {"command":list(command),"return_code":proc.returncode,"output_tail":output[-2500:]}
+ def executable(root,name):
+  candidates=[p for p in root.rglob(name) if p.is_file() and not p.is_symlink() and (p.stat().st_mode&0o111)]
+  if not candidates: raise RuntimeError("NATIVE_ENGINE_EXECUTABLE_MISSING:"+name+":"+str(root))
+  return min(candidates,key=lambda p:(len(p.relative_to(root).parts),p.relative_to(root).as_posix().encode("utf-8")))
+ def copy_shared_libraries(build_root,artifact_root):
+  copied=[]
+  for path in sorted(build_root.rglob("*"),key=lambda p:p.relative_to(build_root).as_posix().encode("utf-8")):
+   if not (path.name.endswith(".so") or ".so." in path.name): continue
+   if path.is_symlink():
+    resolved=path.resolve()
+    if not resolved.is_file() or not resolved.is_relative_to(build_root): raise RuntimeError("NATIVE_ENGINE_SHARED_LIBRARY_LINK_ESCAPE:"+str(path))
+    data=resolved.read_bytes()
+   elif path.is_file(): data=path.read_bytes()
+   else: continue
+   rel=path.relative_to(build_root); dest=artifact_root/"lib"/rel; dest.parent.mkdir(parents=True,exist_ok=True)
+   if dest.exists() or dest.is_symlink():
+    if dest.is_symlink() or not dest.is_file() or sha_file(dest)!=sha_bytes(data): raise RuntimeError("NATIVE_ENGINE_SHARED_LIBRARY_COLLISION:"+str(dest))
+   else:
+    dest.write_bytes(data); os.chmod(dest,0o644)
+   copied.append({"path":dest.relative_to(runtime).as_posix(),"bytes":len(data),"sha256":sha_bytes(data)})
+  return copied
+ def verify_linkage(binary,label,library_dirs):
+  env=os.environ.copy()
+  old_ld=env.get("LD_LIBRARY_PATH","")
+  env["LD_LIBRARY_PATH"]=os.pathsep.join([str(x) for x in library_dirs]+([old_ld] if old_ld else []))
+  with Path(binary).open("rb") as stream:
+   magic=stream.read(4)
+  if magic!=b"\x7fELF":
+   raise RuntimeError("NATIVE_ENGINE_OUTPUT_NOT_ELF:"+label)
+  proc=runner(["ldd",str(binary)],cwd=str(binary.parent),env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=20,check=False)
+  output=proc.stdout or ""
+  if "not found" in output: raise RuntimeError("NATIVE_ENGINE_LINKED_LIBRARY_MISSING:"+label+":"+output[-2000:])
+  if proc.returncode not in (0,1) or (proc.returncode==1 and "not a dynamic executable" not in output.lower() and "statically linked" not in output.lower()):
+   raise RuntimeError("NATIVE_ENGINE_LINKAGE_CHECK_FAILED:"+label+":"+str(proc.returncode)+":"+output[-1000:])
+  symbols=runner(["objdump","-T",str(binary)],cwd=str(binary.parent),env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=20,check=False)
+  symbol_output=symbols.stdout or ""
+  if symbols.returncode!=0:
+   raise RuntimeError("NATIVE_ENGINE_GLIBC_SYMBOL_AUDIT_FAILED:"+label+":"+str(symbols.returncode)+":"+symbol_output[-1000:])
+  maximum=max_required_glibc_version(symbol_output)
+  target=(2,36)
+  if maximum is not None and maximum>target:
+   raise RuntimeError("NATIVE_ENGINE_GLIBC_BASELINE_EXCEEDED:"+label+":required="+str(maximum[0])+"."+str(maximum[1])+":maximum=2.36")
+  max_text=(str(maximum[0])+"."+str(maximum[1])) if maximum is not None else None
+  return {"return_code":proc.returncode,"output_tail":output[-2000:],"output_sha256":sha_bytes(output.encode("utf-8")),"max_required_glibc":max_text,"runtime_glibc_ceiling":"2.36","glibc_compatibility":"PASS"}
+ def build_one(label,target_id,source,command,checks,binary_names,readme_placeholder=False):
+  source_tree_sha=tree_hash(source)
+  artifact_root=runtime/".native-engine-bin"/label.lower()
+  if artifact_root.exists() or artifact_root.is_symlink(): raise RuntimeError("NATIVE_ENGINE_OUTPUT_COLLISION:"+label)
+  artifact_root.mkdir(parents=True)
+  with tempfile.TemporaryDirectory(prefix="cajita-native-"+label.lower()+"-") as tmp:
+   build_root=Path(tmp)/source.name; shutil.copytree(source,build_root,symlinks=False)
+   placeholder=False
+   temporary_test_mode_repairs=[]
+   # Some source ZIPs record shell test harnesses as mode 0644 even though the
+   # upstream Makefile invokes them as ./run.sh. Repair only the temporary build
+   # copy, bind it to the original file hash, and leave the source tree untouched.
+   if label=="FOMA" and checks:
+    test_runner=build_root/"tests"/"run.sh"
+    if test_runner.is_symlink() or not test_runner.is_file():
+     raise RuntimeError("NATIVE_ENGINE_TEST_RUNNER_MISSING_OR_UNSAFE:FOMA:tests/run.sh")
+    before_mode=stat.S_IMODE(test_runner.stat().st_mode)
+    before_sha=sha_file(test_runner)
+    os.chmod(test_runner,before_mode|0o111)
+    if sha_file(test_runner)!=before_sha or not (test_runner.stat().st_mode&0o111):
+     raise RuntimeError("NATIVE_ENGINE_TEST_RUNNER_MODE_REPAIR_FAILED:FOMA:tests/run.sh")
+    temporary_test_mode_repairs.append({
+     "path":"tests/run.sh","original_mode":oct(before_mode),
+     "temporary_build_mode":oct(stat.S_IMODE(test_runner.stat().st_mode)),
+     "sha256":before_sha,"scope":"TEMPORARY_BUILD_COPY_ONLY",
+     "source_tree_mutated":False
+    })
+   if readme_placeholder and not (build_root/"README.md").is_file():
+    (build_root/"README.md").write_text("Build-only prerequisite for pinned Trealla source; not shipped in runtime.\n",encoding="utf-8")
+    placeholder=True
+   commands=[run(command,build_root,900,label+"_BUILD")]
+   for check_command in checks: commands.append(run(check_command,build_root,900,label+"_REGRESSION"))
+   libraries=copy_shared_libraries(build_root,artifact_root)
+   library_dirs=sorted({(runtime/row["path"]).parent for row in libraries},key=lambda p:p.as_posix())
+   outputs=[]
+   for name in binary_names:
+    built=executable(build_root,name); dest=artifact_root/name
+    if dest.exists() or dest.is_symlink(): raise RuntimeError("NATIVE_ENGINE_BINARY_DESTINATION_COLLISION:"+label+":"+str(dest))
+    dest.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(built,dest); os.chmod(dest,dest.stat().st_mode|0o111)
+    outputs.append({"name":name,"path":dest.relative_to(runtime).as_posix(),"bytes":dest.stat().st_size,"sha256":sha_file(dest),"linkage":verify_linkage(dest,label+"_"+name,library_dirs)})
+   if tree_hash(source)!=source_tree_sha:
+    raise RuntimeError("NATIVE_ENGINE_PROTECTED_SOURCE_TREE_MUTATED:"+label)
+  return {"target_id":target_id,"source_path":source.relative_to(runtime).as_posix(),"source_commit":source_commit,
+          "source_tree_sha256_before_build":source_tree_sha,"source_tree_sha256_after_build":tree_hash(source),
+          "source_tree_preserved":True,"build_commands":commands,
+          "native_artifact_root":artifact_root.relative_to(runtime).as_posix(),
+          "temporary_readme_prerequisite_created":placeholder,"temporary_test_mode_repairs":temporary_test_mode_repairs,
+          "binary_artifacts":outputs,"shared_libraries":libraries,
+          "build_status":"PASS","runtime_compile_required":False,"certification":"NOT_GRANTED"}
+ versions={}
+ for name,command in (("make",["make","--version"]),("compiler",["cc","--version"]),("objdump",["objdump","--version"])):
+  proc=runner(command,cwd=str(runtime),stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=20,check=False)
+  if proc.returncode!=0: raise RuntimeError("NATIVE_ENGINE_TOOLCHAIN_VERSION_UNAVAILABLE:"+name+":"+str(proc.returncode))
+  versions[name]=(proc.stdout or "").splitlines()[0][:240]
+ foma=build_one("FOMA","D04_TRADUCCION_LENGUAS_ANTIGUAS",foma_source,["make","-j1"],[["make","check"]],["foma","flookup"])
+ trealla=build_one("TREALLA","D04_HERMENEUTICA_HG",trealla_source,["make","-j1",'GIT_VERSION="2.100.24"',"NOFFI=1","NOSSL=1","NOTHREADS=1","ISOCLINE=1"],[],["tpl"],True)
+ receipt={"schema":"CAJITA_NATIVE_ENGINE_BUILD_RECEIPTS/1.0","source_commit":source_commit,"build_environment":versions,
+          "builds":[foma,trealla],"runtime_compile_required":False,"model_weight_downloads":0,
+          "remote_commander_used":False,"certification":"NOT_GRANTED"}
+ receipt_path.write_text(json.dumps(receipt,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+ routing.setdefault("materialization",{})["native_engine_build_receipt"]="NATIVE_ENGINE_BUILD_RECEIPTS.json"
+ routing["materialization"]["native_engine_build_receipt_sha256"]=sha_file(receipt_path)
+ routing["materialization"]["native_engine_artifact_root"]=".native-engine-bin"
+ routing["materialization"]["native_engine_source_tree_mutation"]=False
+ routing["materialization"]["native_engine_build_status"]="PASS_TWO_PINNED_SOURCE_BUILDS"
+ routing["materialization"]["native_engine_runtime_compile_required"]=False
+ routing_path.write_text(json.dumps(routing,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+ return receipt
+
+
 def append_runtime_policy(runtime,factory_data):
  p=runtime/"CajitadeLuna.md"; original=p.read_bytes()
  text=f"""
@@ -477,8 +622,9 @@ Esta sección es aditiva; se preserva el documento histórico y se aplica a esta
 - La ejecución sigue siendo secuencial y bajo demanda. La autorización de una tarea no equivale a autorización de efectos ajenos a ella.
 - El sistema antiparálisis mantiene un diario persistente encadenado por SHA-256, limita a tres las observaciones idénticas sin progreso y pasa a HOLD_CONSCIOUS al agotarlas. No realiza reintentos automáticos con efectos desconocidos ni sin idempotencia y checkpoint verificado.
 - Ningún estado de certificación se hereda automáticamente. La certificación integral exige evidencia independiente G23 y una decisión G24 separada.
+- Foma y Trealla se compilan durante la fabricación desde sus árboles fuente fijados; los ejecutables incluidos, hashes, toolchain y resultados de enlace quedan en NATIVE_ENGINE_BUILD_RECEIPTS.json. El runtime final no necesita compilar esos dos motores al ejecutarlos.
 
-Estado de fabricación: {factory_data["archive_count"]} contenedores ZIP/7Z retirados tras extracción; {factory_data["readme_count"]} README retirados; {factory_data["module_count"]} módulos de ruta registrados. La validación funcional completa y la certificación global permanecen pendientes de sus gates independientes.
+Estado de fabricación: {factory_data["archive_count"]} contenedores ZIP/7Z retirados tras extracción; {factory_data["readme_count"]} README retirados; {factory_data["module_count"]} módulos de ruta registrados; {len(factory_data.get("native_engine_builds", []))} motores nativos compilados y hash-vinculados. La validación funcional completa y la certificación global permanecen pendientes de sus gates independientes.
 """
  p.write_bytes(original+text.encode("utf-8"))
 
@@ -533,7 +679,15 @@ def main():
   shutil.copytree(runtime_source,runtime,symlinks=True)
   weights=json.loads((runtime/"CAJITA_RUNTIME_V1/weights_manifest.json").read_text(encoding="utf-8"))
   report["weights_before"]=verify_weights(runtime,weights)
-  data=factory_materialize(runtime,rollback,a.raw_cap_bytes,repo_root=repo); report["materialization"]=data
+  data=factory_materialize(runtime,rollback,a.raw_cap_bytes,repo_root=repo)
+  native_receipt=build_native_engine_overlays(runtime,report["source_commit"])
+  data["native_engine_builds"]=native_receipt["builds"]
+  data["native_engine_build_receipt_sha256"]=sha_file(runtime/"NATIVE_ENGINE_BUILD_RECEIPTS.json")
+  raw_after_native_build=measure(runtime,False)[1]
+  if raw_after_native_build>a.raw_cap_bytes: raise RuntimeError(f"RAW_STAGING_CEILING_EXCEEDED_AFTER_NATIVE_BUILD:{raw_after_native_build}>{a.raw_cap_bytes}")
+  data["raw_tree_bytes_after_native_build"]=raw_after_native_build
+  report["materialization"]=data
+  report["native_engine_build_receipts"]=native_receipt
   append_runtime_policy(runtime,data)
   routing=json.loads((runtime/"command_subdomain_routing.json").read_text(encoding="utf-8"))
   expected=["D01_CEREBRO","D02_ORQUESTACION","D03_TRANSCRIPCION","D04_TRADUCTOR_INTELIGENTE","D05_INTELIGENCIA_DOCUMENTAL","D06_SISTEMA_INTELIGENTE"]

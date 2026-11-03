@@ -1,0 +1,160 @@
+{
+  "schema": "LOUKSNAPG_INTEGRAL_REPAIR_BLOCKER_AUDIT/1.0",
+  "audit_id": "LOUKSNAPG-REPAIR-HOLD-20261026-RUN40284216661",
+  "observed_at_utc": "2026-10-26T07:21:12Z",
+  "evidence_scope": {
+    "workflow_run_id": 40284216661,
+    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40284216661",
+    "source_commit": "d09f79a088781d26fc5b1c3e830db9abfb42c147",
+    "source_commit_is_current_branch_head": false,
+    "candidate_path": "LOUKSNAPG.md",
+    "candidate_bytes": 371947716,
+    "candidate_sha256": "febfd2ca07f5238b3ab69e526158532a116c429a608397df86b0136f468f5f84"
+  },
+  "decisions": {
+    "package_integrity": "PASS",
+    "g23_package_integrity_job": "PASS",
+    "g23_integral_functional_attestation": "NOT_ESTABLISHED",
+    "functional_harness_status": "FAIL",
+    "functional_harness_exit_code": 3,
+    "integral_functional_gate_return_code": 2,
+    "g24_status": "HOLD_INTEGRAL_FUNCTIONAL_EVIDENCE_INCOMPLETE",
+    "g24_decision": "NOT_GRANTED",
+    "global_certification": "NOT_GRANTED",
+    "six_source_bound_target_engine_smokes": "PASS_LIMITED_SCOPE_ONLY",
+    "six_source_bound_target_engine_count": 6,
+    "all_21_consumer_task_adapters": "NOT_ESTABLISHED"
+  },
+  "model_quality_results": [
+    {
+      "target_id": "D01_CEREBRO_ROOT",
+      "task_id": "e2e-cerebro-text-generation",
+      "weight_sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "execution_exit_code": 0,
+      "quality_check_id": "repository-storage",
+      "quality_status": "FAIL",
+      "output_excerpt": "ron amongronronron among amongron amongssronron",
+      "quality_output_sha256": "9308bc822ed96f27b929493bd15837d4c54852d27ee851e6e004e57533ebfa7d",
+      "model_output_sha256": "d39c9f72ae5a191968351f9fc02f616a67ed822a98e670ee90bdcbabe05efd2c",
+      "observed_matches": []
+    },
+    {
+      "target_id": "D03_TRANSCRIPCION_ROOT",
+      "task_id": "e2e-whisper-audio-pipeline",
+      "weight_sha256": "67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "execution_exit_code": 0,
+      "quality_check_id": "known-speech-hello-world",
+      "quality_status": "FAIL",
+      "output_excerpt": "daughterziest manuscript ele",
+      "quality_output_sha256": "c2dcf834728a60f2b53b3f8668969b7b98c926d2b77a97905e5f8e3031720a6d",
+      "model_output_sha256": "adb15dbee8d8b7368465dc6738db20777139abe68cc625bf2db4aea74eb4ac87",
+      "observed_matches": []
+    },
+    {
+      "target_id": "D04_TRADUCCION_GENERAL",
+      "task_id": "e2e-seamless-translation",
+      "weight_sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "execution_exit_code": 0,
+      "quality_check_id": "english-to-spanish-greeting",
+      "quality_status": "FAIL",
+      "output_excerpt": "te te te apres te te te te who te te",
+      "quality_output_sha256": "10e494e1adfd2b16103009d2d5fe97aba97e7fb88f7447d3405e519d3159836a",
+      "model_output_sha256": "8972d40fe6c90ebfe805d85fad070d9234a0e8d892f86ef06f6a5f01769e6bd2",
+      "observed_matches": []
+    },
+    {
+      "target_id": "D05_DOCLING",
+      "task_id": "e2e-docling-image-extraction",
+      "weight_sha256": "4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "execution_exit_code": 0,
+      "quality_check_id": "invoice-total-133-45",
+      "quality_status": "FAIL",
+      "output_excerpt": "onationonationonation underrated underrated underrated shitty underrated",
+      "quality_output_sha256": "acee8e9dded82726b2f0cf977b4980e042c050a5d1adcc8ef40d4dd453dcd25d",
+      "model_output_sha256": "4f8dca65d3666850b73163008438636c7761a0c1b094c00300177da01fb92a01",
+      "observed_matches": []
+    },
+    {
+      "target_id": "D06_ANALISIS_AVANZADO",
+      "task_id": "e2e-qwen3-reasoning",
+      "weight_sha256": "01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "execution_exit_code": 0,
+      "quality_check_id": "arithmetic-2-plus-2",
+      "quality_status": "FAIL",
+      "output_excerpt": "irts airways",
+      "quality_output_sha256": "b1a75ce6640d3d5f39e985ad1e0d4d54e76861b8294f6d997fba2f5e66743a67",
+      "model_output_sha256": "7f11c254e2d7c03d9bde3976b2b26123c3a68c7ab8536545948f8f9d0e3a60c8",
+      "observed_matches": []
+    }
+  ],
+  "compression_evidence": [
+    {
+      "target_id": "D01_CEREBRO_ROOT",
+      "method": "randomized_truncated_SVD_rank1_plus_symmetric_INT8_factor_quantization",
+      "rank": 1,
+      "aggregate_relative_frobenius_error_after_int8": 0.9983363410727844,
+      "metadata": "cajita-luna-runtime/1. Cerebro/compression_metadata.json"
+    },
+    {
+      "target_id": "D06_ANALISIS_AVANZADO",
+      "method": "randomized_truncated_SVD_low_rank_factorization_plus_symmetric_INT8_factor_quantization",
+      "rank": 12,
+      "aggregate_relative_residual_before_factor_int8": 0.9964067735222465,
+      "aggregate_relative_frobenius_error_after_int8": 0.9964088220513415,
+      "metadata": "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/compression_metadata.json"
+    },
+    {
+      "target_id": "D03_TRANSCRIPCION_ROOT",
+      "method": "randomized_truncated_SVD_low_rank_factorization_plus_symmetric_INT8_factor_quantization",
+      "rank": 29,
+      "source_weights_sha256_recorded": "542566a422ae4f3fd23f1ba11add198fca01bbf82e66e6a2857b3f608b1eb9d1",
+      "quality_gate": "FAIL"
+    },
+    {
+      "target_id": "D04_TRADUCCION_GENERAL",
+      "method": "randomized_truncated_SVD_low_rank_factorization_plus_symmetric_INT8_factor_quantization",
+      "rank": 4,
+      "quality_gate": "FAIL"
+    },
+    {
+      "target_id": "D05_DOCLING",
+      "method": "custom NanoQuant-family low-rank binary factorization with retained residual outliers",
+      "embedding_rank_fraction": 0.025,
+      "text_rank_fraction": 0.02,
+      "vision_outlier_fraction": 0.000005,
+      "source_model_weights_sha256_recorded": "1cdad234deb1cde18ee6a586f849057f19851daf1fedce2e40aff791dbe46f61",
+      "quality_gate": "FAIL"
+    }
+  ],
+  "worker_and_safety": {
+    "custosz_v9_packaging_candidate": "PASS_BOUNDED_PACKAGE_BUILD_ONLY",
+    "actual_custosz_model_repair_mission": "NOT_ESTABLISHED",
+    "kestra_workflow_run_id": 40284216700,
+    "kestra_status": "NOT_CONFIGURED",
+    "kestra_missing_configuration": [
+      "KESTRA_URL",
+      "KESTRA_API_TOKEN"
+    ],
+    "kestra_execution_id": null,
+    "kestra_receipt_status": "NOT_CONFIGURED",
+    "heavy_model_weight_download_count": 0,
+    "remote_commander_used": false,
+    "canonical_identity_mutation": false,
+    "product_claimed_certified": false
+  },
+  "blocking_conditions": [
+    "All five model-backed runtime quality assertions fail.",
+    "The 21-target consumer-task evidence set is not established.",
+    "Cerebro rank-1 and Qwen3 rank-12 compression report relative reconstruction errors around 0.9983 and 0.9964.",
+    "The compact factors do not contain the discarded high-rank components required to restore the source checkpoints; original heavy checkpoints were not downloaded.",
+    "Kestra was not dispatched because KESTRA_URL and KESTRA_API_TOKEN were absent.",
+    "No signed product-functional G23 attestation or separate signed G24 grant exists."
+  ],
+  "final_decision": "HOLD_NOT_CERTIFIED",
+  "note": "Audit applies only to source commit d09f79a088781d26fc5b1c3e830db9abfb42c147 and its candidate. It is not evidence for newer commits or candidates. The fixed synthetic known-answer fixtures diagnose failure but do not establish model equivalence."
+}

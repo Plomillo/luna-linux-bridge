@@ -1,0 +1,207 @@
+{
+  "schema": "LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT/1.0",
+  "audit_id": "LOUKSNAPG-EXEC-40302483781-20261026",
+  "audited_at_utc": "2026-10-26T10:11:24Z",
+  "evidence_sources": {
+    "factory_workflow_run_id": 40302483781,
+    "factory_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40302483781",
+    "auxiliary_workflow_run_id": 40305342081,
+    "auxiliary_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40305342081",
+    "branch": "louksnapg/official-model-functional-repair-20261026",
+    "source_commit": "59bedb1c47739e577068eeb31576ddea21b21467",
+    "current_auditor_source_commit": "3fb5a02520a773d41c726aeef46a8bb0a0c699bb",
+    "contract_id": "LOUKSNAPG-AC-001",
+    "contract_sha256": "45ca9f13edda4df26755e8cc91db9784f2652fdcc1e82a7722e6381351579064"
+  },
+  "candidate": {
+    "filename": "LOUKSNAPG.md",
+    "bytes": 371947709,
+    "sha256": "515b6e9c164c0e5add32ea7968c2ef00aab3a849eb756f76448c4e47f97e40a8",
+    "distribution_hard_cap_bytes": 479000000,
+    "size_cap_status": "PASS",
+    "package_integrity_g23": "PASS",
+    "integrity_scope": "SINGLE_FILE_CONTAINER_HASH_STRUCTURE_MEMBER_INTEGRITY_AND_MODEL_IDENTITY",
+    "functional_certification": "NOT_GRANTED"
+  },
+  "worker_receipts": {
+    "primary": {
+      "id": "CUSTOSZ_V9",
+      "run_id": 40302483781,
+      "status": "PASS",
+      "scope": "BUILD_LOUKSNAPG_SINGLE_FILE_CANDIDATE",
+      "repair_scope": "NOT_AUTHORIZED_OR_EVIDENCED",
+      "artifact_sha256": "515b6e9c164c0e5add32ea7968c2ef00aab3a849eb756f76448c4e47f97e40a8"
+    },
+    "secondary": {
+      "id": "KESTRA",
+      "status": "NOT_CONFIGURED",
+      "execution_id": null,
+      "terminal_state": null,
+      "missing_configuration": [
+        "KESTRA_URL",
+        "KESTRA_API_TOKEN"
+      ],
+      "consequence": "C1_HOLD_AND_C5_HOLD"
+    }
+  },
+  "model_tasks": {
+    "expected_consumer_targets": 21,
+    "observed_model_backed_tasks": 5,
+    "quality_pass_count": 0,
+    "quality_fail_count": 5,
+    "all_21_target_adapters": "NOT_ESTABLISHED",
+    "six_source_bound_runtime_engine_smokes": {
+      "status": "PASS_TARGET_ENGINE_E2E_SCOPE_ONLY",
+      "pass_count": 6,
+      "expected_count": 6,
+      "interpretation": "These are scoped startup/engine checks; they do not replace consumer-task quality tests."
+    },
+    "functional_gate": {
+      "decision": "HOLD",
+      "eligible_for_g24": false,
+      "failure_count": 34,
+      "expected_target_count": 21,
+      "observed_target_count": 21,
+      "interpretation": "The gate has 21 target evidence rows but rejects them on functional/quality and other required evidence failures."
+    },
+    "task_results": [
+      {
+        "target_id": "D01_CEREBRO_ROOT",
+        "task_id": "e2e-cerebro-text-generation",
+        "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+        "exit_code": 0,
+        "quality_check": "repository-storage",
+        "quality_status": "FAIL",
+        "output_excerpt": "ron amongronronron among amongron amongssronron",
+        "model_output_sha256": "195cfcb80640ddeeedd9a52e98f914e5a0ae63ac7609bdf622405616e4532d75",
+        "normalized_quality_output_sha256": "9308bc822ed96f27b929493bd15837d4c54852d27ee851e6e004e57533ebfa7d",
+        "candidate_weight_sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0",
+        "peak_rss_bytes": 858587136
+      },
+      {
+        "target_id": "D03_TRANSCRIPCION_ROOT",
+        "task_id": "e2e-whisper-audio-pipeline",
+        "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+        "exit_code": 0,
+        "quality_check": "known-speech-hello-world",
+        "quality_status": "FAIL",
+        "output_excerpt": "daughterziest manuscript ele",
+        "model_output_sha256": "79659711862eb93304c91daf029a1af74036a16141f7d12240da9f21db9e431a",
+        "normalized_quality_output_sha256": "c2dcf834728a60f2b53b3f8668969b7b98c926d2b77a97905e5f8e3031720a6d",
+        "candidate_weight_sha256": "67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f",
+        "peak_rss_bytes": 696975360
+      },
+      {
+        "target_id": "D04_TRADUCCION_GENERAL",
+        "task_id": "e2e-seamless-translation",
+        "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+        "exit_code": 0,
+        "quality_check": "english-to-spanish-greeting",
+        "quality_status": "FAIL",
+        "output_excerpt": "te te te apres te te te te who te te",
+        "model_output_sha256": "953f28e5c9151902ffad4daa826e6acca59898564744c826168197c7140de00a",
+        "normalized_quality_output_sha256": "10e494e1adfd2b16103009d2d5fe97aba97e7fb88f7447d3405e519d3159836a",
+        "candidate_weight_sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f",
+        "peak_rss_bytes": 794107904
+      },
+      {
+        "target_id": "D05_DOCLING",
+        "task_id": "e2e-docling-image-extraction",
+        "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+        "exit_code": 0,
+        "quality_check": "invoice-total-133-45",
+        "quality_status": "FAIL",
+        "output_excerpt": "onationonationonation underrated underrated underrated shitty underrated",
+        "model_output_sha256": "b81e5c98043e3961093f200e401af62276399d24c31a60b80727390afc8dcf1f",
+        "normalized_quality_output_sha256": "acee8e9dded82726b2f0cf977b4980e042c050a5d1adcc8ef40d4dd453dcd25d",
+        "candidate_weight_sha256": "4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88",
+        "peak_rss_bytes": 996663296
+      },
+      {
+        "target_id": "D06_ANALISIS_AVANZADO",
+        "task_id": "e2e-qwen3-reasoning",
+        "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+        "exit_code": 0,
+        "quality_check": "arithmetic-2-plus-2",
+        "quality_status": "FAIL",
+        "output_excerpt": "irts airways",
+        "model_output_sha256": "ac0400015117e46683ec914ce94bfe910840f84291565a36aa6da2ccb4ea6483",
+        "normalized_quality_output_sha256": "b1a75ce6640d3d5f39e985ad1e0d4d54e76861b8294f6d997fba2f5e66743a67",
+        "candidate_weight_sha256": "01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56",
+        "peak_rss_bytes": 655179776
+      }
+    ],
+    "quality_evidence_type": "FIXED_SYNTHETIC_EXPECTATION_DIAGNOSTIC_ONLY",
+    "product_quality_claim": "NOT_ESTABLISHED"
+  },
+  "telemetry": {
+    "status": "INCOMPLETE_HOLD",
+    "event_count": 11,
+    "required_event_count": 11,
+    "contract_status": "PASS",
+    "contract_decision": "CONTRACT_VALID_EXECUTION_HOLD",
+    "telemetry_file_sha256": "f18153a4b54852725b859b4fd05b19d50e124c72b94f195ad63bf7f231d86a34",
+    "telemetry_internal_evidence_sha256": "3edf39b784ea6dcce89cb8b2d4d24193931b0abc36c6a2a526c4b0ed91849b15",
+    "audit_status": "PASS_TRACEABILITY_WITH_RELEASE_HOLD",
+    "meaning": "Hashes and sequence/source/contract/candidate bindings recomputed and validated; the telemetry records an incomplete release state rather than authorizing release."
+  },
+  "six_obligations": {
+    "C1_COORDINATED_WORKERS": {
+      "status": "HOLD",
+      "reasons": [
+        "CUSTOSZ_V9 is evidenced as bounded builder only; Kestra has no real execution receipt."
+      ]
+    },
+    "C2_OFFICIAL_SOURCE_REPAIR": {
+      "status": "HOLD",
+      "official_source_revision_catalog": "PASS_METADATA_PIN_CHECK",
+      "model_repair_records_observed": 0,
+      "quality_fail_count": 5,
+      "reasons": [
+        "No material candidate-weight repair with changed before/after hashes and semantic-quality passes is evidenced."
+      ]
+    },
+    "C3_PRIMITIVE_FUNCTIONS": {
+      "status": "HOLD",
+      "expected_target_count": 21,
+      "observed_consumer_task_count": 5,
+      "quality_pass_count": 0,
+      "quality_fail_count": 5,
+      "synthetic_diagnostics": true
+    },
+    "C4_TELEMETRY_AND_AUDIT": {
+      "status": "PASS_TRACEABILITY_WITH_RELEASE_HOLD",
+      "event_count": 11,
+      "expected_event_count": 11
+    },
+    "C5_GOVERNED_RELEASE_CHAIN": {
+      "status": "HOLD",
+      "package_integrity_g23": "PASS",
+      "functional_g23": "NOT_ESTABLISHED",
+      "kestra_audit": "NOT_CONFIGURED",
+      "g24_decision": "NOT_GRANTED",
+      "host_non_regression_rollback": "NOT_ESTABLISHED"
+    },
+    "C6_PROHIBITIONS_AND_RECOVERY": {
+      "status": "PASS_PROHIBITIONS_OBSERVED",
+      "heavy_model_download_count": 0,
+      "remote_commander_used": false,
+      "canonical_mutation": false,
+      "synthetic_evidence_used_as_product_proof": false
+    }
+  },
+  "summary": {
+    "obligations_expected": 6,
+    "obligations_passed": 2,
+    "obligations_held": 4,
+    "release_eligible": false,
+    "decision": "HOLD_NOT_CERTIFIED",
+    "global_certification": "NOT_GRANTED"
+  },
+  "limitations": [
+    "This is a run-bound audit of the exact source commit and candidate hash above; it does not automatically apply to future commits or artifacts.",
+    "The known-answer prompts/audio/image are fixed synthetic diagnostics. They prove the candidate fails those expected behaviors; they do not prove reference-model equivalence.",
+    "Package integrity G23 is not functional G23 and does not grant G24.",
+    "Heavy model checkpoint payloads were not downloaded. No evidence establishes reconstruction of discarded high-rank model information from the existing compact factors."
+  ]
+}

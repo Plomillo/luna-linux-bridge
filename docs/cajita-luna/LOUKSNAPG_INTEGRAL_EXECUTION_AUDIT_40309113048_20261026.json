@@ -1,0 +1,254 @@
+{
+  "schema": "LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT/1.0",
+  "audit_id": "LOUKSNAPG-INTEGRAL-AUDIT-40309113048",
+  "captured_at_utc": "2026-10-26T10:48:30Z",
+  "disposition": "HOLD_NOT_CERTIFIED",
+  "release_eligible": false,
+  "global_certification": "NOT_GRANTED",
+  "evidence_scope": {
+    "repository": "Plomillo/luna-linux-bridge",
+    "pull_request": 157,
+    "branch": "louksnapg/official-model-functional-repair-20261026",
+    "audited_source_commit": "5fab498b6faae08f59962861503b1a1202fcc83c",
+    "main_modified": false,
+    "source_commit_binding_required": true,
+    "factory_run_id": 40309113060,
+    "factory_run_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40309113060",
+    "auxiliary_audit_run_id": 40309113048,
+    "auxiliary_audit_run_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40309113048"
+  },
+  "package": {
+    "artifact_name": "LOUKSNAPG.md",
+    "bytes": 371947713,
+    "hard_cap_bytes": 479000000,
+    "cap_status": "PASS",
+    "sha256": "3337c635d77d509e061768d573330345ff6673bafa8de828ad8b0bd3b1d52f7c",
+    "standalone_runtime_archive_max_bytes": 470000000,
+    "candidate_container_validation": "PASS",
+    "source_identity_and_hash_recomputation": "PASS",
+    "distribution_container_count": 1,
+    "canonical_domain_count": 6,
+    "canonical_engine_count": 15,
+    "canonical_target_count": 21,
+    "canonical_command_count": 14,
+    "functional_quality": "NOT_ESTABLISHED"
+  },
+  "source_bound_validation": {
+    "manufacture": {
+      "status": "success",
+      "run_id": 40309113060
+    },
+    "package_integrity_g23": {
+      "status": "success",
+      "run_id": 40309113060,
+      "scope": "PACKAGE_INTEGRITY_IDENTITY_REGISTERED_SMOKES_ONLY"
+    },
+    "resource_limited_g24": {
+      "status": "HOLD_INTEGRAL_FUNCTIONAL_EVIDENCE_INCOMPLETE",
+      "workflow_job_conclusion": "failure",
+      "smoke_return_code": 0,
+      "bundle_validation_return_code": 0,
+      "task_adapter_return_code": 3,
+      "integral_functional_gate_return_code": 2,
+      "memory_limit_bytes": 1073741824,
+      "cpu_quota": "100000 100000",
+      "peak_memory_bytes": 979845120,
+      "model_task_execution_pass_count": 5,
+      "model_task_quality_pass_count": 0,
+      "model_task_quality_fail_count": 5,
+      "target_engine_smoke_pass_count": 6,
+      "target_engine_smoke_expected_count": 6,
+      "target_engine_scope": "SOURCE_BOUND_RUNTIME_ENGINE_SMOKES_ONLY",
+      "task_coverage_all_21_targets": "NOT_ESTABLISHED",
+      "g24_decision": "NOT_GRANTED",
+      "global_certification": "NOT_GRANTED",
+      "task_evidence_sha256": "ec86e8dbda271e87d0cad654a95ce9a755ecc80a6144a3638ab97e7960244ad4",
+      "functional_gate_report_sha256": "2fd7433cc5ac13149462e4565e0db43eaf96e730862b1fa552493c26df5ff1ad",
+      "g24_evidence_artifact_id": 12644791261,
+      "g24_telemetry_artifact_id": 12643663783
+    }
+  },
+  "model_task_results": [
+    {
+      "target_id": "D01_CEREBRO_ROOT",
+      "task": "repository-storage",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "exit_code": 0,
+      "quality_status": "FAIL",
+      "normalized_output_excerpt": "ron amongronronron among amongron amongssronron",
+      "quality_output_sha256": "9308bc822ed96f27b929493bd15837d4c54852d27ee851e6e004e57533ebfa7d",
+      "model_output_sha256": "56df824232581ebf231c6c5e6ad343aef47132fe4d60f04ae971c128cebbf921",
+      "weight_sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0"
+    },
+    {
+      "target_id": "D03_TRANSCRIPCION_ROOT",
+      "task": "known-speech-hello-world",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "exit_code": 0,
+      "quality_status": "FAIL",
+      "normalized_output_excerpt": "daughterziest manuscript ele",
+      "quality_output_sha256": "c2dcf834728a60f2b53b3f8668969b7b98c926d2b77a97905e5f8e3031720a6d",
+      "model_output_sha256": "831a578c2cd8d64da8ee25bb99a1e60805266b6c7b06d5b6f5bf4fe2bcd97800",
+      "weight_sha256": "67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f"
+    },
+    {
+      "target_id": "D04_TRADUCCION_GENERAL",
+      "task": "english-to-spanish-greeting",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "exit_code": 0,
+      "quality_status": "FAIL",
+      "normalized_output_excerpt": "te te te apres te te te te who te te",
+      "quality_output_sha256": "10e494e1adfd2b16103009d2d5fe97aba97e7fb88f7447d3405e519d3159836a",
+      "model_output_sha256": "590817799eabb583b9dd516bdccf81ab6537da830e0718919ef562986f5a8950",
+      "weight_sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f"
+    },
+    {
+      "target_id": "D05_DOCLING",
+      "task": "invoice-total-133-45",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "exit_code": 0,
+      "quality_status": "FAIL",
+      "normalized_output_excerpt": "onationonationonation underrated underrated underrated shitty underrated",
+      "quality_output_sha256": "acee8e9dded82726b2f0cf977b4980e042c050a5d1adcc8ef40d4dd453dcd25d",
+      "model_output_sha256": "be91edec527287bccf957383d76d18571675f8caf50a503c58325f00008e571d",
+      "weight_sha256": "4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88"
+    },
+    {
+      "target_id": "D06_ANALISIS_AVANZADO",
+      "task": "arithmetic-2-plus-2",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "exit_code": 0,
+      "quality_status": "FAIL",
+      "normalized_output_excerpt": "irts airways",
+      "quality_output_sha256": "b1a75ce6640d3d5f39e985ad1e0d4d54e76861b8294f6d997fba2f5e66743a67",
+      "model_output_sha256": "0132139c76c5c0f0e00ec5015f11d4ca81cb622bb395ec94ed47c31bdc7a127a",
+      "weight_sha256": "01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56"
+    }
+  ],
+  "telemetry": {
+    "c4_status": "PASS_TRACEABILITY_WITH_RELEASE_HOLD",
+    "c4_reason_codes": [],
+    "preaudit_event_count": 11,
+    "final_event_count": 12,
+    "required_event_count": 11,
+    "post_dispatch_event_type": "KESTRA_AUDIT_RESULT",
+    "source_commit_bound": true,
+    "contract_sha256": "45ca9f13edda4df26755e8cc91db9784f2652fdcc1e82a7722e6381351579064",
+    "bundle_sha256": "3337c635d77d509e061768d573330345ff6673bafa8de828ad8b0bd3b1d52f7c",
+    "receipt_status": "NOT_CONFIGURED",
+    "receipt_reason": "KESTRA_URL_OR_KESTRA_API_TOKEN_MISSING",
+    "execution_id_present": false,
+    "terminal_state": null,
+    "receipt_file_sha256": "f917cd0bd146050f189e4e3ec5b40f765c3dece94b5199579138b3fc2179b06c",
+    "final_telemetry_physical_file_sha256": "f3cd8927fba91fb45de10ff4cfca89b7fe2f79a0eb74c9f68f8acd607f289906",
+    "preaudit_snapshot_immutability": "PRESERVED",
+    "final_telemetry_status": "INCOMPLETE_HOLD",
+    "certification": "NOT_GRANTED"
+  },
+  "obligations": {
+    "C1_COORDINATED_WORKERS": {
+      "status": "HOLD",
+      "primary_worker": "CUSTOSZ_V9",
+      "primary_worker_status": "PASS",
+      "primary_scope": "BUILD_LOUKSNAPG_SINGLE_FILE_CANDIDATE",
+      "primary_run_id": 40309113060,
+      "secondary_worker": "KESTRA",
+      "secondary_status": "NOT_CONFIGURED",
+      "execution_id_present": false,
+      "reason_codes": [
+        "KESTRA_REAL_EXECUTION_RECEIPT_MISSING_OR_UNBOUND"
+      ]
+    },
+    "C2_OFFICIAL_SOURCE_REPAIR": {
+      "status": "HOLD",
+      "official_source_revision_catalog": "PASS_METADATA_PIN_CHECK",
+      "model_repair_records_observed": 0,
+      "model_repairs_verified": false,
+      "model_targets_expected": 5,
+      "diagnostic_quality_fail_count": 5,
+      "reason_codes": [
+        "MATERIAL_WEIGHT_REPAIR_OR_SEMANTIC_QUALITY_NOT_EVIDENCED"
+      ]
+    },
+    "C3_PRIMITIVE_FUNCTIONS": {
+      "status": "HOLD",
+      "expected_target_count": 21,
+      "observed_target_count": 5,
+      "task_execution_count": 5,
+      "quality_pass_count": 0,
+      "quality_fail_count": 5,
+      "synthetic_diagnostics": true,
+      "reason_codes": [
+        "ALL_21_TARGETS_NOT_OBSERVED",
+        "INTEGRAL_FUNCTIONAL_GATE_NOT_PASS",
+        "ONE_OR_MORE_TASK_QUALITY_ASSERTIONS_FAILED",
+        "SYNTHETIC_DIAGNOSTICS_ARE_NOT_PRODUCT_PROOF"
+      ]
+    },
+    "C4_TELEMETRY_AND_AUDIT": {
+      "status": "PASS_TRACEABILITY_WITH_RELEASE_HOLD",
+      "event_count": 12,
+      "expected_event_count": 12,
+      "required_event_count": 11,
+      "kestra_receipt_event_bound": true,
+      "kestra_receipt_status": "NOT_CONFIGURED",
+      "receipt_sha256": "f917cd0bd146050f189e4e3ec5b40f765c3dece94b5199579138b3fc2179b06c",
+      "telemetry_status": "INCOMPLETE_HOLD",
+      "telemetry_audit_envelope_sha256": "9a645804b2a05dbcb5caed9387bc262897af02a095ddace7613c5631476b8f92",
+      "final_telemetry_physical_file_sha256": "f3cd8927fba91fb45de10ff4cfca89b7fe2f79a0eb74c9f68f8acd607f289906",
+      "release_eligibility": "NOT_GRANTED_BY_TELEMETRY_ALONE"
+    },
+    "C5_GOVERNED_RELEASE_CHAIN": {
+      "status": "HOLD",
+      "package_integrity_g23_job": "PASS",
+      "functional_g23": "NOT_ESTABLISHED",
+      "kestra_audit": "NOT_CONFIGURED",
+      "g24_decision": "NOT_GRANTED",
+      "reasons": [
+        "FUNCTIONAL_G23_NOT_VERIFIED",
+        "HOST_NON_REGRESSION_OR_ROLLBACK_EVIDENCE_MISSING",
+        "KESTRA_AUDIT_NOT_EXECUTED_OR_NOT_TERMINAL",
+        "SEPARATE_G24_NOT_GRANTED_AND_VERIFIED"
+      ]
+    },
+    "C6_PROHIBITIONS_AND_RECOVERY": {
+      "status": "PASS_PROHIBITIONS_OBSERVED",
+      "heavy_model_download_count": 0,
+      "remote_commander_used": false,
+      "canonical_mutation": false,
+      "synthetic_evidence_used_as_product_proof": false,
+      "fail_closed_release_state": "HOLD_NOT_CERTIFIED"
+    }
+  },
+  "summary": {
+    "obligations_expected": 6,
+    "obligations_passed": 2,
+    "obligations_held": 4,
+    "decision": "HOLD_NOT_CERTIFIED",
+    "release_eligible": false,
+    "global_certification": "NOT_GRANTED",
+    "main_modified": false,
+    "no_heavy_model_weights_downloaded": true,
+    "remote_commander_used": false
+  },
+  "artifact_references": {
+    "factory_run": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40309113060",
+    "auxiliary_run": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40309113048",
+    "product_candidate_artifact_id": 12643823593,
+    "product_candidate_artifact_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40309113048/artifacts/12643823593",
+    "g23_integrity_artifact_id": 12644645898,
+    "g23_integrity_artifact_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40309113060/artifacts/12644645898",
+    "g24_evidence_artifact_id": 12644791261,
+    "g24_evidence_artifact_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40309113060/artifacts/12644791261",
+    "g24_telemetry_artifact_id": 12643663783,
+    "g24_telemetry_artifact_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40309113060/artifacts/12643663783",
+    "auxiliary_evidence_artifact_id": 12644851027,
+    "auxiliary_evidence_artifact_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40309113048/artifacts/12644851027"
+  },
+  "blocking_next_actions": [
+    "Configure GitHub Actions variable KESTRA_URL and secret KESTRA_API_TOKEN, then rerun the auxiliary audit and verify the real Kestra execution ID and terminal state.",
+    "Produce material, candidate-weight-hash-bound repairs for all five model targets; current compact factors fail every observed task quality check and the permitted run downloaded no heavy model weights.",
+    "Establish real, non-synthetic task evidence for all 21 registered targets.",
+    "Obtain separate verified functional G23 and authorized G24 signatures, then host, rollback and non-regression evidence before considering release eligibility."
+  ]
+}
