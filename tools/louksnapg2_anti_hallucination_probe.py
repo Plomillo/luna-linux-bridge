@@ -39,6 +39,8 @@ def _fixed_shape(shape: object, *, max_dim: int = 2048) -> tuple[int, ...]:
             result.append(value if value > 0 else 1)
         else:
             result.append(1)
+    if math.prod(result or (1,)) > 2_000_000:
+        raise ProbeError("ONNX_INPUT_TENSOR_ELEMENT_LIMIT")
     return tuple(result)
 
 
