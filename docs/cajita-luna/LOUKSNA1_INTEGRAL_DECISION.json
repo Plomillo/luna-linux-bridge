@@ -15,10 +15,8 @@
         "D01_CEREBRO_ROOT",
         "D03_TRANSCRIPCION_ROOT",
         "D04_TRADUCCION_GENERAL",
-        "D05_CALIBRE",
         "D05_DOCLING",
         "D06_ANALISIS_AVANZADO",
-        "D06_PORTABILIDAD_BASE",
         "D06_RUNTIME_ANDROID_WINDOWS"
       ],
       "passed": [
@@ -27,6 +25,7 @@
         "D02_ORQUESTADOR",
         "D04_HERMENEUTICA_HG",
         "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+        "D05_CALIBRE",
         "D06_ANTI_ALUCINACIONES",
         "D06_ARCHIVADO_DETECCION",
         "D06_COGNITIVE_CI_CD",
@@ -34,6 +33,7 @@
         "D06_MEMORIA_GOBERNADA",
         "D06_MIGRACION_PERSISTENCIA",
         "D06_MOTOR_PROTOCOLAR",
+        "D06_PORTABILIDAD_BASE",
         "D06_TESTING"
       ],
       "status": "FAIL"
@@ -42,13 +42,13 @@
       "measurement": {
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 90407563264,
+        "disk_available_bytes": 90637926400,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 12972314624
+        "ram_available_bytes": 12838772736
       },
       "reason": "LINUX_RESOURCE_MEASUREMENT_IS_NOT_THE_DECLARED_ANDROID_WINDOWS_MATRIX",
       "status": "FAIL"
@@ -84,7 +84,7 @@
       "status": "FAIL"
     }
   },
-  "generated_at_utc": "2026-11-03T18:27:16Z",
+  "generated_at_utc": "2026-11-03T18:45:05Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -229,13 +229,20 @@
     },
     {
       "detail": {
-        "executed": false
+        "binary_bytes": 201590724,
+        "binary_sha256": "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53",
+        "calibre_version": "9.17.0",
+        "fixture_found": true,
+        "fixture_sha256": "00156bebeefed19dba97eeff366adf13d0135a19bd72df9a246ec762290bd14f",
+        "mimetype": "application/epub+zip",
+        "return_code": 0,
+        "stderr_tail": "Failed to import PyQt module: PyQt6.QtGui with error: libEGL.so.1: cannot open shared object file: No such file or directory\n"
       },
-      "exit_code": 2,
+      "exit_code": 0,
       "operation": "convert_document",
-      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "CALIBRE_BINARY_NOT_EXECUTED",
-      "status": "FAIL",
+      "output_sha256": "0f30cdacc455b39acd70fb5ab143ea0a44b3e17a0c045453f810158318808e1e",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D05_CALIBRE",
       "worker_certification": "NOT_GRANTED"
     },
@@ -337,11 +344,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "c8f94be15ad94162ec6e3183226d00021eb8c13bc57fd982eea778873f30f701"
+        "stdout_sha256": "6c1e9eadef16db48b26c642cbb8fa0b455c9c2f7ae8a48fd2e7d2a165315218e"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "a74458e71ce8c320ff5d93bba748c9907b4202434bee2f9f100380905428f53b",
+      "output_sha256": "c260fac8437607cf1c0472b5088e971f29c7899990d9a835ad026de28e73f94d",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -398,12 +405,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "46bc4a80b2f67d29cd60a51a2adab588ec4cc1fe009484934552c7def44dc45b",
+        "query_sha256": "e1df18d08b55ae25eb5632bb1a97436beef3003a37492aab9c9ab9903260cde5",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "33c748430114086cab9875b22970aa662b2e02b7548f94b9501d67eb60a7ce3e",
+      "output_sha256": "4255362f802ffddd273dfe37d77ba8af836fa98584a927cf75e9c876a580a0f1",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -424,13 +431,21 @@
     },
     {
       "detail": {
-        "executed": false
+        "archive_sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
+        "cmake_exe_sha256": "ab8247ca4554871e5d75c0ee118ee8663727bd6fdf37ad76b17e9cc8d5f286a8",
+        "exit_code": 0,
+        "host": "Microsoft Windows NT 10.0.26100.0 Windows",
+        "independent_exe_hash_checked": true,
+        "stdout_head": [
+          "CMake Error: Could not find CMAKE_ROOT !!!",
+          "CMake has most likely not been installed correctly."
+        ]
       },
-      "exit_code": 2,
+      "exit_code": 0,
       "operation": "host_matrix",
-      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "WINDOWS_CMAKE_HOST_NOT_EXECUTED",
-      "status": "FAIL",
+      "output_sha256": "9d9e94067ea9bee8b57dc335a7be9bcadd5fa96962daf9572be8ffdf103b8a86",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D06_PORTABILIDAD_BASE",
       "worker_certification": "NOT_GRANTED"
     },
@@ -471,7 +486,7 @@
       "worker_certification": "NOT_GRANTED"
     }
   ],
-  "producer_commit": "47fb572b3b0474b725a53e20c2d172d26e077ec9",
+  "producer_commit": "aadca406372c947edca6bae5353c9d61f9185b42",
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
     "axiom_proposition_validity": "NOT_ESTABLISHED",
@@ -494,13 +509,11 @@
         "D01_CEREBRO_ROOT",
         "D03_TRANSCRIPCION_ROOT",
         "D04_TRADUCCION_GENERAL",
-        "D05_CALIBRE",
         "D05_DOCLING",
         "D06_ANALISIS_AVANZADO",
-        "D06_PORTABILIDAD_BASE",
         "D06_RUNTIME_ANDROID_WINDOWS"
       ],
-      "result_state_hash": "742584e658a1fc762d2895d2d3f88f6bde74e7e01fd3e387f9cdec29f214f79c",
+      "result_state_hash": "572e4b694bc957525ea97de935e00d61f00ddd9d748a2b4ec08744fc871386f9",
       "status": "FAIL"
     },
     "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
