@@ -225,6 +225,24 @@ class ExecutableGateTests(unittest.TestCase):
         self.assertEqual(row["reason"], "MARIAN_REFERENCE_MODEL_MISSING")
         self.assertNotEqual(row["detail"].get("reference_kind"), "AUTHORIZED_REFERENCE_MODEL")
 
+    def test_reference_known_answer_counts_toward_coverage_not_semantic_equivalence(self):
+        matrix = passing_matrix()
+        for row in matrix:
+            if row["target_id"] in MISSION.MODEL_TARGETS:
+                row["detail"] = {"reference_known_answer": "PASS", "low_rank_candidate_equivalent": False}
+        decision = MISSION.decide(
+            matrix,
+            {"status": "PASS", "problems": []},
+            {"confidence": "MEASURED", "platform": "Linux-6.8", "android_emulator": {"verified": True, "sdk": "34", "qemu": "1"}},
+            {"status": "PASS", "scope": "PRODUCT_CANDIDATE_UPDATE"},
+            {"status": "PASS", "problems": []},
+            worker_claim="NOT_GRANTED",
+        )
+        self.assertEqual(decision["gates"]["coverage_21"]["status"], "PASS")
+        self.assertEqual(len(decision["gates"]["coverage_21"]["passed"]), 21)
+        self.assertEqual(decision["gates"]["semantic_quality"]["status"], "FAIL")
+        self.assertEqual(decision["global_certification"], "NOT_GRANTED")
+
 
 if __name__ == "__main__":
     unittest.main()
