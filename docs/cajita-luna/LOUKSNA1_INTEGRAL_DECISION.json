@@ -40,18 +40,27 @@
     },
     "host_resources": {
       "measurement": {
+        "android_emulator": {
+          "abi": "x86_64",
+          "boot_completed": "1",
+          "qemu": "1",
+          "reason": "",
+          "release": "14",
+          "sdk": "34",
+          "verified": true
+        },
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 90395959296,
+        "disk_available_bytes": 85595176960,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 12907839488
+        "ram_available_bytes": 6131666944
       },
-      "reason": "LINUX_RESOURCE_MEASUREMENT_IS_NOT_THE_DECLARED_ANDROID_WINDOWS_MATRIX",
-      "status": "FAIL"
+      "reason": "",
+      "status": "PASS"
     },
     "identity": {
       "problems": [],
@@ -91,7 +100,7 @@
       "status": "FAIL"
     }
   },
-  "generated_at_utc": "2026-11-03T19:55:05Z",
+  "generated_at_utc": "2026-11-03T21:28:50Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -102,12 +111,19 @@
   "matrix": [
     {
       "detail": {
-        "executed": false
+        "candidate": {
+          "present": true,
+          "quality_equivalence": "NOT_ESTABLISHED",
+          "rank": 1,
+          "relative_frobenius_error": 0.9983363410727844
+        },
+        "reference_commit": "47c786924ad1ab7e91da2cdc72fcdb563780c2bd",
+        "reference_engine": "llama.cpp"
       },
-      "exit_code": 2,
+      "exit_code": 4,
       "operation": "generate_text",
-      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "REFERENCE_MODEL_EQUIVALENCE_NOT_EXECUTED",
+      "output_sha256": "596116194507c2964543f7abe48f8b1627eece676dd5a2c4971b220295b4ebfe",
+      "reason": "LLAMA_CPP_TIMEOUT",
       "status": "FAIL",
       "target_id": "D01_CEREBRO_ROOT",
       "worker_certification": "NOT_GRANTED"
@@ -175,12 +191,16 @@
     },
     {
       "detail": {
-        "executed": false
+        "known_phrase": true,
+        "reference_commit": "d1be6fde11ac6e0407606b4e42fe72d34add8037",
+        "reference_engine": "whisper.cpp",
+        "return_code": 0,
+        "transcript_sha256": "510b0a2f1d98d60caa4f9bae21aee9e8515f546d3ee1f737349745caefd29da5"
       },
-      "exit_code": 2,
+      "exit_code": 4,
       "operation": "transcribe_audio",
-      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "REFERENCE_TRANSCRIPT_EQUIVALENCE_NOT_EXECUTED",
+      "output_sha256": "8ba317294edf6f4eabd25b9192f75f54367d29b10528a29ce8d96738263a11ba",
+      "reason": "LOW_RANK_WHISPER_DOES_NOT_MATCH_WHISPER_CPP",
       "status": "FAIL",
       "target_id": "D03_TRANSCRIPCION_ROOT",
       "worker_certification": "NOT_GRANTED"
@@ -224,12 +244,20 @@
     },
     {
       "detail": {
-        "executed": false
+        "candidate_quality_equivalence": "NOT_ESTABLISHED",
+        "candidate_rank": 4,
+        "decode_return_code": 0,
+        "reference_commit": "3c7a88f4e974d90a91c11a0ff804f7a494b81937",
+        "reference_engine": "marian",
+        "source_sha256": "c3051964462edf76a69af766af01499745d0570872332710e7086d741d57a19c",
+        "translation_sha256": "0819f21d839eac94ff463871821e05622745dab2ee01e88cda04e5ec9f30f973",
+        "version_return_code": 0,
+        "version_sha256": "c22e19175699a0a79df02e305013f79dcbff69a598a0393f0cc90569916a0d66"
       },
-      "exit_code": 2,
+      "exit_code": 4,
       "operation": "translate_text",
-      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "REFERENCE_TRANSLATION_EQUIVALENCE_NOT_EXECUTED",
+      "output_sha256": "b69c1636ad51187417e93dedd43395f90ff5803ab7fcb8438b6d66b80488c30d",
+      "reason": "RANK4_TRANSLATION_DOES_NOT_MATCH_MARIAN",
       "status": "FAIL",
       "target_id": "D04_TRADUCCION_GENERAL",
       "worker_certification": "NOT_GRANTED"
@@ -255,12 +283,16 @@
     },
     {
       "detail": {
-        "executed": false
+        "expected_text": "LOUKSNA1",
+        "reference_engine": "tesseract",
+        "return_code": 0,
+        "tesseract_known_answer": false,
+        "tesseract_text": "LOUKSNAI1"
       },
-      "exit_code": 2,
+      "exit_code": 4,
       "operation": "extract_document_image",
-      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "REFERENCE_EXTRACTION_EQUIVALENCE_NOT_EXECUTED",
+      "output_sha256": "7ffd207d9bc6476a0dd18aed6c94bd00d4cac6f918ec87ebbb56cd2207f88c88",
+      "reason": "TESSERACT_KNOWN_ANSWER_FAILED",
       "status": "FAIL",
       "target_id": "D05_DOCLING",
       "worker_certification": "NOT_GRANTED"
@@ -335,12 +367,19 @@
     },
     {
       "detail": {
-        "executed": false
+        "candidate": {
+          "present": true,
+          "quality_equivalence": "NOT_ESTABLISHED",
+          "rank": 12,
+          "relative_frobenius_error": null
+        },
+        "reference_commit": "47c786924ad1ab7e91da2cdc72fcdb563780c2bd",
+        "reference_engine": "llama.cpp"
       },
-      "exit_code": 2,
+      "exit_code": 4,
       "operation": "analyze_reasoning",
-      "output_sha256": "9ddfd0567850abfe2bb6a7bbd00384cde05ee329ff3f4c99ce1c38a4dc73ca51",
-      "reason": "REFERENCE_REASONING_EQUIVALENCE_NOT_EXECUTED",
+      "output_sha256": "b829e1683cad3e176630c388b565694355a38d95da9a27d0850ace916580c349",
+      "reason": "QWEN_RANK12_DOES_NOT_MATCH_LLAMA_CPP_REFERENCE",
       "status": "FAIL",
       "target_id": "D06_ANALISIS_AVANZADO",
       "worker_certification": "NOT_GRANTED"
@@ -351,11 +390,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "639fd8e857c76f6b64ea470479891ec9c76f18678237c7e02a24efdeafffa543"
+        "stdout_sha256": "3a70be5fbdc3dde36f1dc94873f838d473d26c41724eb88e6ee584915db46065"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "09c0b877d7d0e66e49a1ef5c96aa34e8058ebaffa90d1fb49beba280da5754d8",
+      "output_sha256": "2e28d678e933395e30a62329f34de137d05da6475ab67e11e59bf42749b37014",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -412,12 +451,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "cb53600dc3fd20995c6fd373a83bf4634802ebf57c1f6f0ca177b02b0f188886",
+        "query_sha256": "d89074cb897fc73ac1d2ea6ec033e4e6bd9268ad4d457767ad6d47c4bcd36e7f",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "ed5f8af6be1108b1ea920af34b2a4a55859b9038dc33b4fbbe91d1c97a74e845",
+      "output_sha256": "382429af582c01b08cafdb5c50b29ae38543a8ed1dde4b000160941248f2405d",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -501,7 +540,15 @@
       "worker_certification": "NOT_GRANTED"
     }
   ],
-  "producer_commit": "aee9b26d84dd690bb41f045a7529362258dc7909",
+  "open_source_engines": {
+    "z3_structural": {
+      "establishes_axiom_propositions": false,
+      "reason": "",
+      "status": "PASS",
+      "stdout_sha256": "44d47c9675abf277caf0d7a5fc60e0aa76c8adc0c9a75c675c0951b9b8dac761"
+    }
+  },
+  "producer_commit": "5d99de78a145d10a67c870dfb4f5e708761562f1",
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
     "axiom_proposition_validity": "NOT_ESTABLISHED",
@@ -527,7 +574,7 @@
         "D05_DOCLING",
         "D06_ANALISIS_AVANZADO"
       ],
-      "result_state_hash": "89b9d25c5d74f49a77d82f85ab42d84a9b35633755737b43a0c89942a25f3352",
+      "result_state_hash": "0993d6f8b8fbde690f81a31b70048b712e31aeb3c6028bcc8e605f9b0032d8b5",
       "status": "FAIL"
     },
     "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
