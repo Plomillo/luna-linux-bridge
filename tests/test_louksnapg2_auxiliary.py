@@ -103,6 +103,32 @@ class ImageAndAudioBackendTests(unittest.TestCase):
                 with self.assertRaisesRegex(auxiliary.AuxiliaryEngineError, "WHISPER_AUXILIARY_ASSET_MISSING_OR_UNSAFE:binary"):
                     auxiliary.transcribe_whisper_cpp(runtime, audio)
 
+    def test_whisper_passes_explicit_language_to_hash_verified_binary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            audio = Path(tmp) / "sample.wav"
+            audio.write_bytes(b"RIFF" + b"0" * 128)
+            binary = Path(tmp) / "whisper-cli"
+            model = Path(tmp) / "ggml-tiny.bin"
+            manifest = Path(tmp) / "assets.json"
+            completed = mock.Mock(returncode=0, stdout="The meeting starts at noon.", stderr="")
+            with mock.patch.object(auxiliary, "verify_whisper_auxiliary_assets", return_value={"status": "PASS_HASH_VERIFIED_AUXILIARY_ASSETS"}), \\
+                 mock.patch.object(auxiliary, "_whisper_paths", return_value=(binary, model, manifest)), \\
+                 mock.patch.object(auxiliary, "_run_checked", return_value=completed) as run:
+                result = auxiliary.transcribe_whisper_cpp(Path(tmp), audio, language="en")
+            command = run.call_args.args[0]
+            self.assertEqual(command[command.index("-l") + 1], "en")
+            self.assertEqual(result["language"], "en")
+            self.assertEqual(result["engine_id"], "WHISPER_CPP_TINY_MULTILINGUAL/1.9.5")
+
+    def test_whisper_rejects_unsafe_language_values_before_asset_access(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            audio = Path(tmp) / "sample.wav"
+            audio.write_bytes(b"RIFF" + b"0" * 128)
+            with mock.patch.object(auxiliary, "verify_whisper_auxiliary_assets") as verify:
+                with self.assertRaisesRegex(auxiliary.AuxiliaryEngineError, "WHISPER_LANGUAGE_INVALID"):
+                    auxiliary.transcribe_whisper_cpp(Path(tmp), audio, language="en;rm -rf /")
+                verify.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
