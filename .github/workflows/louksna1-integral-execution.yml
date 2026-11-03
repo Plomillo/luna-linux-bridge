@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends flex bison libreadline-dev zlib1g-dev
+          sudo apt-get install -y --no-install-recommends flex bison libreadline-dev zlib1g-dev python3.11
 
       - name: Fetch pinned CUSTOSZ V9 worker
         shell: bash
@@ -35,6 +35,8 @@ jobs:
 
       - name: Re-execute the mission under the independent validator
         id: validate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail

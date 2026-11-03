@@ -25,8 +25,9 @@ import sys
 import tarfile
 import tempfile
 import time
+import zipfile
 from pathlib import Path
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 from urllib.parse import quote
 
 SCHEMA = "LOUKSNA1_INTEGRAL_DECISION/1.0"
@@ -297,7 +298,6 @@ def run_matrix(repo: Path) -> list[dict]:
         "D04_TRADUCCION_GENERAL": ("translate_text", "REFERENCE_TRANSLATION_EQUIVALENCE_NOT_EXECUTED"),
         "D05_CALIBRE": ("convert_document", "CALIBRE_BINARY_NOT_EXECUTED"),
         "D05_DOCLING": ("extract_document_image", "REFERENCE_EXTRACTION_EQUIVALENCE_NOT_EXECUTED"),
-        "D06_ANTI_ALUCINACIONES": ("score_grounding", "ONNX_GROUNDING_OPERATION_NOT_EXECUTED"),
         "D06_ANALISIS_AVANZADO": ("analyze_reasoning", "REFERENCE_REASONING_EQUIVALENCE_NOT_EXECUTED"),
         "D06_PORTABILIDAD_BASE": ("host_matrix", "WINDOWS_CMAKE_HOST_NOT_EXECUTED"),
         "D06_RUNTIME_ANDROID_WINDOWS": ("native_host_matrix", "ANDROID_WINDOWS_NATIVE_HOSTS_NOT_EXECUTED"),
@@ -328,6 +328,8 @@ def run_matrix(repo: Path) -> list[dict]:
             rows.append(op_trealla(runtime))
         elif target_id == "D04_TRADUCCION_LENGUAS_ANTIGUAS":
             rows.append(op_foma(runtime))
+        elif target_id == "D06_ANTI_ALUCINACIONES":
+            rows.append(op_onnx(runtime))
         else:
             operation, reason = blocked[target_id]
             rows.append(op_not_executable(target_id, operation, reason))
@@ -541,6 +543,130 @@ def op_foma(runtime: Path) -> dict:
             "source_makefile_sha256": sha256_file(source / "Makefile"),
         },
         reason="" if ok else "FOMA_REWRITE_MISMATCH",
+    )
+
+
+ONNX_OID = "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7"
+ONNX_BYTES = 110516001
+NUMPY_SHA256 = "ba10f8411898fc418a521833e014a77d3ca01c15b0c6cdcce6a0d2897e6dbbdf"
+GROUNDING_TEXT = "En un principio creó Elohim los cielos y la tierra."
+GROUNDING_ARGMAX = [0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+def materialize_onnx(pointer: Path, dest: Path) -> str:
+    raw = pointer.read_bytes()
+    if not raw.startswith(b"version https://git-lfs.github.com/spec/v1"):
+        dest.write_bytes(raw)
+    else:
+        fields = {}
+        for line in raw.decode("utf-8").splitlines():
+            if line.startswith("oid sha256:"):
+                fields["oid"] = line.split(":", 1)[1].strip()
+            elif line.startswith("size "):
+                fields["size"] = int(line.split()[1])
+        if fields.get("oid") != ONNX_OID or fields.get("size") != ONNX_BYTES:
+            return "ONNX_LFS_POINTER_MISMATCH"
+        token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN") or ""
+        if not token:
+            probe = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=15, check=False)
+            token = probe.stdout.strip() if probe.returncode == 0 else ""
+        if not token:
+            return "ONNX_LFS_TOKEN_MISSING"
+        body = json.dumps({"operation": "download", "transfers": ["basic"], "objects": [{"oid": ONNX_OID, "size": ONNX_BYTES}]}).encode()
+        request = Request(
+            "https://github.com/Plomillo/luna-linux-bridge.git/info/lfs/objects/batch",
+            data=body,
+            headers={"Authorization": "Bearer " + token, "Accept": "application/vnd.git-lfs+json", "Content-Type": "application/vnd.git-lfs+json"},
+            method="POST",
+        )
+        with urlopen(request, timeout=60) as response:
+            payload = json.loads(response.read().decode())
+        href = payload["objects"][0]["actions"]["download"]["href"]
+        with urlopen(href, timeout=180) as response, dest.open("wb") as handle:
+            shutil.copyfileobj(response, handle)
+    if dest.stat().st_size != ONNX_BYTES or sha256_file(dest) != ONNX_OID:
+        return "ONNX_HASH_MISMATCH"
+    return ""
+
+
+def op_onnx(runtime: Path) -> dict:
+    target = "D06_ANTI_ALUCINACIONES"
+    domain = runtime / "6. Sistema Inteligente" / "Anti-Alucinaciones"
+    pointer = domain / "model.onnx"
+    tokenizer = domain / "tokenizer.json"
+    tokenizers_wheel = domain / "tokenizers-0.23.1-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    runtime_wheel = runtime.parent / "externalized-assets-staging" / "6-Sistema-Inteligente" / "Anti-Alucinaciones" / "onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl"
+    interpreter = shutil.which("python3.11")
+    if pointer.is_symlink() or not pointer.is_file() or tokenizer.is_symlink() or not tokenizer.is_file():
+        return record(target, "score_grounding", "FAIL", exit_code=2, detail={}, reason="ONNX_MODEL_OR_TOKENIZER_MISSING")
+    if tokenizers_wheel.is_symlink() or not tokenizers_wheel.is_file() or runtime_wheel.is_symlink() or not runtime_wheel.is_file():
+        return record(target, "score_grounding", "FAIL", exit_code=2, detail={}, reason="ONNX_PINNED_WHEEL_MISSING")
+    if not interpreter:
+        return record(target, "score_grounding", "FAIL", exit_code=2, detail={}, reason="ONNX_CP311_INTERPRETER_MISSING")
+    with tempfile.TemporaryDirectory(prefix="louksna1-onnx-") as temp_name:
+        temp = Path(temp_name)
+        model = temp / "model.onnx"
+        problem = materialize_onnx(pointer, model)
+        if problem:
+            return record(target, "score_grounding", "FAIL", exit_code=4, detail={}, reason=problem)
+        wheels = temp / "wheels"
+        wheels.mkdir()
+        download = subprocess.run(
+            [sys.executable, "-m", "pip", "download", "--disable-pip-version-check", "--no-cache-dir", "--only-binary=:all:",
+             "--python-version", "311", "--implementation", "cp", "--abi", "cp311", "--platform", "manylinux_2_17_x86_64",
+             "-d", str(wheels), "numpy==2.2.6"],
+            capture_output=True, text=True, timeout=180, check=False,
+        )
+        numpy_wheel = next(wheels.glob("numpy-*.whl"), None)
+        if download.returncode != 0 or numpy_wheel is None or sha256_file(numpy_wheel) != NUMPY_SHA256:
+            return record(target, "score_grounding", "FAIL", exit_code=4, detail={"return_code": download.returncode, "stderr_tail": download.stderr[-240:]}, reason="NUMPY_WHEEL_HASH_MISMATCH")
+        deps = temp / "deps"
+        deps.mkdir()
+        for bundle in (runtime_wheel, tokenizers_wheel, numpy_wheel):
+            with zipfile.ZipFile(bundle) as archive:
+                archive.extractall(deps)
+        script = temp / "score_grounding.py"
+        script.write_text(
+            "import json, sys\nimport numpy as np\nimport onnxruntime as ort\nfrom tokenizers import Tokenizer\n"
+            "text, model, tokenizer = sys.argv[1:]\n"
+            "enc = Tokenizer.from_file(tokenizer).encode(text)\n"
+            "ids = np.array([enc.ids], dtype=np.int64)\nmask = np.array([enc.attention_mask], dtype=np.int64)\n"
+            "session = ort.InferenceSession(model, providers=['CPUExecutionProvider'])\n"
+            "logits = session.run(None, {'input_ids': ids, 'attention_mask': mask})[0]\n"
+            "if logits.shape != (1, len(enc.ids), 2) or not np.isfinite(logits).all():\n    raise SystemExit(3)\n"
+            "print(json.dumps({'argmax': logits.argmax(axis=-1)[0].astype(int).tolist(), 'ort': ort.__version__}))\n",
+            encoding="utf-8",
+        )
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(deps)
+        env["PYTHONNOUSERSITE"] = "1"
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        proc = subprocess.run([interpreter, str(script), GROUNDING_TEXT, str(model), str(tokenizer)], env=env, capture_output=True, text=True, timeout=120, check=False)
+    argmax = None
+    ort_version = None
+    if proc.returncode == 0 and proc.stdout.strip():
+        try:
+            parsed = json.loads(proc.stdout.strip().splitlines()[-1])
+            argmax = parsed.get("argmax")
+            ort_version = parsed.get("ort")
+        except json.JSONDecodeError:
+            argmax = None
+    ok = proc.returncode == 0 and argmax == GROUNDING_ARGMAX and ort_version == "1.29.0"
+    return record(
+        target,
+        "score_grounding",
+        "PASS" if ok else "FAIL",
+        exit_code=0 if ok else 4,
+        detail={
+            "return_code": proc.returncode,
+            "argmax": argmax,
+            "expected_argmax": GROUNDING_ARGMAX,
+            "ort": ort_version,
+            "fixture_sha256": sha256_bytes(GROUNDING_TEXT.encode()),
+            "model_sha256": ONNX_OID,
+            "stderr_tail": proc.stderr[-240:],
+        },
+        reason="" if ok else "ONNX_GROUNDING_MISMATCH",
     )
 
 
