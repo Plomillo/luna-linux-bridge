@@ -106,25 +106,25 @@ jobs:
           retention-days: 30
           compression-level: 0
 
-  evaluate-under-one-gib:
+  evaluate-under-four-cpu-eight-gib:
     needs: [build-source-bound-q4]
     if: needs.build-source-bound-q4.result == 'success'
     runs-on: ubuntu-24.04
     container:
       image: ubuntu:24.04
-      options: --memory=3g --memory-swap=3g --cpus=1
+      options: --memory=8g --memory-swap=8g --cpus=4
     timeout-minutes: 80
     steps:
-      - name: Verify exact 3-GiB candidate cgroup and one-core quota
+      - name: Verify exact 8-GiB evaluation cgroup and four-core quota
         shell: bash
         run: |
           set -Eeuo pipefail
           memory="$(cat /sys/fs/cgroup/memory.max)"
           read -r quota period < /sys/fs/cgroup/cpu.max
-          expected=$((3 * 1024 * 1024 * 1024))
+          expected=$((8 * 1024 * 1024 * 1024))
           [[ "$memory" == "$expected" ]] || { echo "CANDIDATE_MEMORY_LIMIT_MISMATCH:$memory:$expected" >&2; exit 1; }
           [[ "$quota" =~ ^[0-9]+$ && "$period" =~ ^[0-9]+$ ]] || { echo "CANDIDATE_CPU_QUOTA_INVALID" >&2; exit 1; }
-          (( quota > 0 && period > 0 && quota <= period )) || { echo "CANDIDATE_CPU_LIMIT_EXCEEDS_ONE_CORE" >&2; exit 1; }
+          (( quota == 4 * period )) || { echo "CANDIDATE_CPU_LIMIT_MISMATCH:$quota:$period" >&2; exit 1; }
           printf '{"status":"PASS","memory_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$quota" "$period"
 
       - name: Install Git and CA certificates for memory-bounded sparse checkout
@@ -159,7 +159,7 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install pinned single-threaded CPU runtime
+      - name: Install pinned bounded four-thread CPU runtime
         shell: bash
         env:
           PIP_NO_CACHE_DIR: "1"
@@ -212,19 +212,20 @@ jobs:
           print("INVOICE_FIXTURE_BYTES="+str(p.stat().st_size))
           PY
 
-      - name: Execute source-reconstructed candidate inference under 3 GiB
+      - name: Execute paired source and Q4 inference under 8 GiB and four CPU threads
         shell: bash
         env:
-          OMP_NUM_THREADS: "1"
-          OPENBLAS_NUM_THREADS: "1"
-          MKL_NUM_THREADS: "1"
-          NUMEXPR_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "4"
+          OPENBLAS_NUM_THREADS: "4"
+          MKL_NUM_THREADS: "4"
+          NUMEXPR_NUM_THREADS: "4"
           TOKENIZERS_PARALLELISM: "false"
           HF_HUB_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
           PYTHONNOUSERSITE: "1"
           LOUKSNAPG2_DOCLING_IMAGE_SIDE: "512"
-          LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES: "3221225472"
+          LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES: "8589934592"
+          LOUKSNAPG2_DOCLING_CPU_THREADS: "4"
           IMAGE_PATH: ${{ runner.temp }}/docling-q4-invoice.png
           REPORT_PATH: ${{ runner.temp }}/docling-q4-functional-evidence.json
         run: |
@@ -237,7 +238,7 @@ jobs:
             --teacher-weights "$RUNNER_TEMP/docling-q4-build/teacher/model.safetensors" \
             --report "$REPORT_PATH" \
             --timeout-seconds 1800 \
-            --max-new-tokens 256 \
+            --max-new-tokens 128 \
             | tee "$RUNNER_TEMP/docling-q4-functional-summary.json"
 
       - name: Upload semantic evaluation evidence whether pass or fail

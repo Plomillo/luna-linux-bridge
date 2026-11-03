@@ -19,6 +19,40 @@ RAM_BUDGET_BYTES = int(os.environ.get("LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES", str
 if not 512 * 1024**2 <= RAM_BUDGET_BYTES <= 8 * 1024**3:
     raise RuntimeError("DOCLING_RAM_BUDGET_OUT_OF_SUPPORTED_RANGE")
 
+MAX_CPU_THREADS = 4
+
+
+def requested_cpu_threads():
+    raw = os.environ.get("LOUKSNAPG2_DOCLING_CPU_THREADS", "1")
+    try:
+        threads = int(raw)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("DOCLING_CPU_THREAD_BUDGET_INVALID") from exc
+    if not 1 <= threads <= MAX_CPU_THREADS:
+        raise RuntimeError("DOCLING_CPU_THREAD_BUDGET_OUT_OF_RANGE")
+    return threads
+
+
+def configure_cpu_runtime(torch):
+    threads = requested_cpu_threads()
+    torch.set_num_threads(threads)
+    torch.set_num_interop_threads(1)
+    return threads
+
+
+def emit_stage(stage, started, **details):
+    event = {
+        "stage": stage,
+        "elapsed_seconds": round(time.time() - started, 3),
+        "peak_rss_bytes": peak_rss_bytes(),
+        **details,
+    }
+    print(
+        "LOUKSNAPG2_DOCLING_STAGE=" + json.dumps(event, sort_keys=True),
+        file=sys.stderr,
+        flush=True,
+    )
+
 
 def peak_rss_bytes():
     # ru_maxrss is KiB on Linux (the active GitHub runner platform).
@@ -182,8 +216,7 @@ def decode_tensor_chunked_into(blob, r, target, chunk_rows=256):
     del b_bits, b_scales, b_matrix
 
 def load_candidate(candidate_dir):
-    torch.set_num_threads(1)
-    torch.set_num_interop_threads(1)
+    configure_cpu_runtime(torch)
     p=Path(candidate_dir).resolve(); mp=p/"quantized_manifest.json"; bp=p/"quantized_weights.bin"
     if not mp.is_file() or not bp.is_file(): raise FileNotFoundError("CANDIDATE_MANIFEST_OR_WEIGHTS_MISSING")
     meta=json.loads(mp.read_text(encoding="utf-8"))
@@ -248,8 +281,7 @@ def load_original_teacher(candidate_dir, teacher_weights_path):
     from safetensors import safe_open
     from transformers import AutoConfig, AutoModelForImageTextToText, GenerationConfig
 
-    torch.set_num_threads(1)
-    torch.set_num_interop_threads(1)
+    configure_cpu_runtime(torch)
     p=Path(candidate_dir).resolve()
     weights=Path(teacher_weights_path)
     if weights.is_symlink() or not weights.is_file():
@@ -328,6 +360,8 @@ ROOT=Path(__file__).resolve().parent
 def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert this page to docling.", teacher_weights_path=None):
     ram_limit = apply_ram_limit()
     t=time.time()
+    cpu_threads = requested_cpu_threads()
+    emit_stage("MODEL_LOAD_START", t, cpu_threads=cpu_threads, ram_budget_bytes=RAM_BUDGET_BYTES)
     if teacher_weights_path:
         model,meta=load_original_teacher(candidate_dir,teacher_weights_path)
         model_source="ORIGINAL_SOURCE_BFLOAT16_TEACHER"
@@ -335,8 +369,11 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
         model,meta=load_candidate(candidate_dir)
         model_source="RECONSTRUCTED_Q4_CANDIDATE"
     assert_ram_budget("after-model-load")
+    emit_stage("MODEL_LOAD_COMPLETE", t, model_source=model_source, candidate_id=meta.get("candidate_id"))
     from transformers import AutoProcessor
     proc=load_pretrained_with_compressed_tokenizer(candidate_dir,AutoProcessor,local_files_only=True,trust_remote_code=False)
+    emit_stage("PROCESSOR_LOAD_COMPLETE", t)
+
     # Preserve the upstream model's 512px vision geometry while disabling
     # processor-side image splitting. One square view yields 64 image tokens,
     # matching processor_config.json and the model's Idefics3 vision geometry.
@@ -376,12 +413,16 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     image_token_count=int((inputs["input_ids"] == int(model.config.image_token_id)).sum().item())
     if image_token_count != image_seq_len:
         raise RuntimeError(f"DOCLING_IMAGE_TOKEN_COUNT_MISMATCH:{image_token_count}!={image_seq_len}")
+    emit_stage("IMAGE_PREPROCESS_COMPLETE", t, image_side_pixels=image_side, image_sequence_length=image_seq_len)
+    emit_stage("GENERATION_START", t, max_new_tokens=int(max_new_tokens))
     with torch.inference_mode():
         out=model.generate(
             **inputs,
             max_new_tokens=int(max_new_tokens),
             do_sample=False,
         )
+    emit_stage("GENERATION_COMPLETE", t, generated_token_count=int(out.shape[-1]))
+
     prompt_ids=inputs["input_ids"]
     if out.shape[-1] >= prompt_ids.shape[-1] and torch.equal(out[:, :prompt_ids.shape[-1]], prompt_ids):
         new_ids=out[:, prompt_ids.shape[-1]:]
@@ -399,7 +440,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
             "decoded_span":"NEW_TOKENS_ONLY","quality_equivalence":"NOT_ESTABLISHED",
             "image_side_pixels":image_side,"image_sequence_length":image_seq_len,
             "ram_budget_bytes":RAM_BUDGET_BYTES,"model_dtype":str(next(model.parameters()).dtype),
-            "ram_limit":ram_limit,"peak_rss_bytes":peak_rss_bytes()}
+            "ram_limit":ram_limit,"peak_rss_bytes":peak_rss_bytes(),"cpu_threads":cpu_threads}
 
 
 def main():

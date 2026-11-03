@@ -353,25 +353,47 @@ def _run_runtime_protocol(runtime_path: Path, candidate_dir: Path, image: Path,
             command, input=payload, text=True, capture_output=True,
             timeout=timeout_seconds, check=False, env=env,
         )
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        def partial_text(value) -> str:
+            if value is None:
+                return ""
+            if isinstance(value, bytes):
+                return value.decode("utf-8", errors="replace")
+            return str(value)
+
+        partial_stdout = partial_text(getattr(exc, "stdout", None) or getattr(exc, "output", None))
+        partial_stderr = partial_text(getattr(exc, "stderr", None))
+        stage_markers = [
+            line for line in partial_stderr.splitlines()
+            if line.startswith("LOUKSNAPG2_DOCLING_STAGE=")
+        ]
         return {
             "status": "FAIL_TIMEOUT",
             "process_return_code": None,
-            "stderr_sha256": hashlib.sha256(b"PROCESS_TIMEOUT").hexdigest(),
+            "timeout_seconds": timeout_seconds,
+            "partial_stdout_tail": partial_stdout[-4000:],
+            "partial_stderr_tail": partial_stderr[-12000:],
+            "partial_stdout_sha256": hashlib.sha256(partial_stdout.encode("utf-8")).hexdigest(),
+            "partial_stderr_sha256": hashlib.sha256(partial_stderr.encode("utf-8")).hexdigest(),
+            "runtime_stage_markers": stage_markers[-20:],
+            "stderr_sha256": hashlib.sha256(partial_stderr.encode("utf-8")).hexdigest(),
             "output_text": "",
         }
+    stderr_text = completed.stderr or ""
     try:
         result = json.loads(completed.stdout)
     except json.JSONDecodeError:
         result = {
             "status": "FAIL_RUNTIME",
             "return_code": completed.returncode,
-            "stdout_tail": completed.stdout[-2000:],
-            "stderr_tail": completed.stderr[-2000:],
-            "stderr_sha256": hashlib.sha256(completed.stderr.encode("utf-8", errors="replace")).hexdigest(),
+            "stdout_tail": completed.stdout[-4000:],
+            "stderr_tail": stderr_text[-12000:],
+            "stderr_sha256": hashlib.sha256(stderr_text.encode("utf-8", errors="replace")).hexdigest(),
             "output_text": "",
         }
     result["process_return_code"] = completed.returncode
+    result["runtime_stderr_tail"] = stderr_text[-12000:]
+    result["runtime_stderr_sha256"] = hashlib.sha256(stderr_text.encode("utf-8", errors="replace")).hexdigest()
     if completed.returncode != 0 and result.get("status") == "PASS":
         result["status"] = "FAIL_RUNTIME_EXIT"
     return result
@@ -422,6 +444,10 @@ def evaluate(args: argparse.Namespace) -> int:
             "model_source": result.get("model_source"),
             "model_dtype": result.get("model_dtype"),
             "execution_status": "PASS_EXECUTION" if execution_pass else str(result.get("status", "FAIL")),
+            "timeout_seconds": result.get("timeout_seconds"),
+            "runtime_stage_markers": result.get("runtime_stage_markers", []),
+            "runtime_stderr_tail": result.get("runtime_stderr_tail", result.get("partial_stderr_tail", "")),
+            "runtime_stderr_sha256": result.get("runtime_stderr_sha256", result.get("partial_stderr_sha256")),
         }
 
     q4 = predicate(q4_result)
