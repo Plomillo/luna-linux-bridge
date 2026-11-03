@@ -90,6 +90,18 @@ jobs:
             --extra-index-url https://download.pytorch.org/whl/cpu \
             -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
 
+      - name: Compile every Python entrypoint and test before execution
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B -m py_compile \\
+            tests/test_cajita_task_adapters.py \\
+            tests/test_cajita_task_e2e.py \\
+            tests/test_louksnapg2_primary_five_e2e.py \\
+            tools/cajita_task_e2e.py \\
+            tools/louksnapg2_primary_five_e2e.py \\
+            cajita-luna-runtime/cajita_task_adapters.py
+
       - name: Run source and task-contract tests
         shell: bash
         env:

@@ -26,7 +26,7 @@ class AdapterTests(unittest.TestCase):
         e2e=harness.read_text(encoding="utf-8")
         self.assertIn('"task_id":"e2e-docling-image-extraction"',e2e)
         self.assertIn('"max_new_tokens":256',e2e)
-        self.assertIn('"prompt":"Convert this page to docling.'',e2e)
+        self.assertIn('"prompt":"Convert this page to docling."',e2e)
 
     def test_five_model_contracts_and_plan_only_orchestration(self):
         report=adapters.registry_report()
