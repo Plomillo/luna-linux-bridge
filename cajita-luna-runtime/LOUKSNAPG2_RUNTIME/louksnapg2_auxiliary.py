@@ -264,7 +264,7 @@ def extract_document_tesseract(image_path: Path, *, language: str = "eng") -> di
     if image.stat().st_size <= 0 or image.stat().st_size > 20_000_000:
         raise AuxiliaryEngineError("OCR_INPUT_IMAGE_SIZE_OUT_OF_RANGE")
     proc = _run_checked(
-        ["tesseract", str(image), "stdout", "--oem", "1", "--psm", "6", "-l", language],
+        ["tesseract", str(image), "stdout", "--oem", "1", "--psm", "6", "--dpi", "300", "-l", language],
         timeout=60,
     )
     if proc.returncode != 0:
@@ -356,16 +356,21 @@ def verify_whisper_auxiliary_assets(runtime_root: Path) -> dict:
     }
 
 
-def transcribe_whisper_cpp(runtime_root: Path, audio_path: Path) -> dict:
+def transcribe_whisper_cpp(runtime_root: Path, audio_path: Path, *, language: str = "auto") -> dict:
     audio = Path(audio_path)
     if audio.is_symlink() or not audio.is_file():
         raise AuxiliaryEngineError("WHISPER_INPUT_AUDIO_MISSING_OR_UNSAFE")
     if audio.stat().st_size <= 44 or audio.stat().st_size > 50_000_000:
         raise AuxiliaryEngineError("WHISPER_INPUT_AUDIO_SIZE_OUT_OF_RANGE")
+    if not isinstance(language, str):
+        raise AuxiliaryEngineError("WHISPER_LANGUAGE_INVALID")
+    language = language.strip().lower()
+    if not re.fullmatch(r"(?:auto|[a-z]{2,3})", language):
+        raise AuxiliaryEngineError("WHISPER_LANGUAGE_INVALID")
     assets = verify_whisper_auxiliary_assets(runtime_root)
     binary, model, _ = _whisper_paths(runtime_root)
     proc = _run_checked(
-        [str(binary), "-m", str(model), "-f", str(audio), "-nt", "-np", "-l", "auto", "-t", "1"],
+        [str(binary), "-m", str(model), "-f", str(audio), "-nt", "-np", "-l", language, "-t", "1"],
         timeout=240,
     )
     if proc.returncode != 0:
@@ -378,6 +383,7 @@ def transcribe_whisper_cpp(runtime_root: Path, audio_path: Path) -> dict:
         "engine_id": "WHISPER_CPP_TINY_MULTILINGUAL/1.9.5",
         **assets,
         "audio_sha256": _digest(audio.read_bytes()),
+        "language": language,
         "threads": 1,
     }
 
@@ -395,5 +401,5 @@ class LouksnapG2AuxiliaryEngines:
     def extract_document(self, image_path: Path) -> dict:
         return extract_document_tesseract(image_path)
 
-    def transcribe(self, audio_path: Path) -> dict:
-        return transcribe_whisper_cpp(self.root, audio_path)
+    def transcribe(self, audio_path: Path, *, language: str = "auto") -> dict:
+        return transcribe_whisper_cpp(self.root, audio_path, language=language)
