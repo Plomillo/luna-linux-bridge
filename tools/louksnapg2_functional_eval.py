@@ -126,6 +126,9 @@ def run_case(runtime, case_id, domain, operation, payload, predicate, requiremen
             "peak_rss_bytes": result.get("peak_rss_bytes"),
             "general_translation_fallback_selected": result.get("general_translation_fallback_selected"),
             "quality_criterion_passed": bool(predicate(output)),
+            "source_model_id": result.get("source_model_id"),
+            "source_runtime_status": result.get("source_runtime_status"),
+            "auxiliary_engine_evidence": result.get("auxiliary_engine_evidence"),
             "semantic_quality_equivalence_to_full_size_original": "NOT_ESTABLISHED",
             "reason": "" if passed else "DOMAIN_OR_OPERATION_OR_QUALITY_CRITERION_FAILED",
         })
@@ -172,10 +175,16 @@ def main(argv=None) -> int:
         "cpu_thread_budget": 1,
         "model_fetch_performed_by_evaluator": False,
         "model_inference_performed": False,
+        "auxiliary_engine_execution_performed": False,
+        "auxiliary_engine_domains": [],
+        "auxiliary_engine_evidence": [],
         "repair_execution_performed": False,
-        "repair_adapter_status": "BLOCKED_NO_MODEL_REPAIR_ADAPTERS_EXECUTED",
+        "repair_adapter_status": "ORIGINAL_NEURAL_WEIGHT_REPAIR_NOT_EXECUTED",
         "repair_adapter_evidence": [],
-        "repair_execution_evidence": {"status": "NOT_EXECUTED", "reason": "NO_SOURCE_BOUND_GPU_REPAIR_ADAPTERS"},
+        "repair_execution_evidence": {
+            "status": "NOT_EXECUTED",
+            "reason": "THIS_LANE_EXECUTES_RUNTIME_ADAPTERS_NOT_WEIGHT_RECONSTRUCTION",
+        },
         "tests": [],
         "domain_results": {},
         "functional_status": "NOT_RUN",
@@ -310,8 +319,25 @@ def main(argv=None) -> int:
         "D03_TRANSCRIPCION": ["WHISPER_AUDIO_01", "WHISPER_AUDIO_02"],
         "D05_INTELIGENCIA_DOCUMENTAL": ["DOCLING_INVOICE_IMAGE_01"],
     }
+    evidence["auxiliary_engine_execution_performed"] = any(
+        row.get("execution_status") == "PASS_EXECUTION"
+        and row.get("source_runtime_status") == "PASS_AUXILIARY_ENGINE_EXECUTION"
+        for row in evidence["tests"]
+    )
+    evidence["auxiliary_engine_domains"] = sorted({
+        row.get("domain_id") for row in evidence["tests"]
+        if row.get("source_runtime_status") == "PASS_AUXILIARY_ENGINE_EXECUTION"
+    })
+    evidence["auxiliary_engine_evidence"] = [{
+        "case_id": row.get("case_id"),
+        "domain_id": row.get("domain_id"),
+        "engine_id": row.get("source_model_id"),
+        "evidence": row.get("auxiliary_engine_evidence"),
+    } for row in evidence["tests"] if row.get("source_runtime_status") == "PASS_AUXILIARY_ENGINE_EXECUTION"]
     evidence["model_inference_performed"] = any(
-        row.get("execution_status") == "PASS_EXECUTION" for row in evidence["tests"]
+        row.get("execution_status") == "PASS_EXECUTION"
+        and row.get("source_runtime_status") != "PASS_AUXILIARY_ENGINE_EXECUTION"
+        for row in evidence["tests"]
     )
     by_id = {row["case_id"]: row for row in evidence["tests"]}
     for domain, case_ids in all_domains.items():
@@ -346,6 +372,8 @@ def main(argv=None) -> int:
         "result_domain_id": row.get("result_domain_id"),
         "result_operation": row.get("result_operation"),
         "quality_criterion_passed": row.get("quality_criterion_passed"),
+        "source_model_id": row.get("source_model_id"),
+        "source_runtime_status": row.get("source_runtime_status"),
         "actual_output": (row.get("actual_output") or "")[:240],
         "elapsed_seconds": row.get("elapsed_seconds"),
     } for row in evidence["tests"]]
