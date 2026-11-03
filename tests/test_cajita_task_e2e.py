@@ -1,12 +1,34 @@
 from __future__ import annotations
 
+import os
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
-from cajita_task_e2e import (MODEL_CASES, quality_acceptance,
+from cajita_task_e2e import (MODEL_CASES, quality_acceptance, run_case,
                              required_domain_coverage, task_execution_and_quality_pass)
 
 
 class SyntheticQualityAcceptanceTests(unittest.TestCase):
+    def test_child_process_inherits_python_runtime_library_path(self):
+        record = {
+            "task_id": "e2e-child-runtime-env",
+            "domain_id": "D01_CEREBRO",
+            "operation": "generate_text",
+            "input": {"prompt": "test"},
+            "quality_check": {"id": "runtime-env", "mode": "contains_any", "phrases": ["ok"]},
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.dict(os.environ, {"LD_LIBRARY_PATH": "/opt/python/lib"}):
+                with patch("cajita_task_e2e.subprocess.run",
+                           return_value=subprocess.CompletedProcess([], 1, "", "mock child failure")) as mocked:
+                    run_case(root, root, record, 5)
+            child_env = mocked.call_args.kwargs["env"]
+        self.assertEqual(child_env.get("LD_LIBRARY_PATH"), "/opt/python/lib")
+
     def test_all_five_model_tasks_have_declared_acceptance_checks(self):
         self.assertEqual(len(MODEL_CASES), 5)
         self.assertTrue(all(row.get("quality_check", {}).get("id") for row in MODEL_CASES))

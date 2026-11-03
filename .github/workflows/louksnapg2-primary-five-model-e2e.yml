@@ -182,9 +182,6 @@ jobs:
           expected_sha256="e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git lfs install --local
-          echo "GIT_LFS_TRACKED_OBJECTS_BEGIN"
-          git lfs ls-files --long
-          echo "GIT_LFS_TRACKED_OBJECTS_END"
           echo "GPT_OSS_WORKTREE_BYTES_BEFORE=$(stat -c %s "$file")"
           timeout 600s git lfs fetch --verbose --include="$file" --exclude="" origin "$GITHUB_SHA"
           git lfs checkout "$file"

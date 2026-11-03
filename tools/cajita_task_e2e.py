@@ -93,7 +93,7 @@ def make_image(path):
 def run_case(root,outdir,record,timeout):
     request_path=outdir/(record["domain_id"]+".request.json")
     request_path.write_text(json.dumps(record,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
-    safe_env={k:os.environ[k] for k in ("PATH","HOME","LANG","LC_ALL","TMPDIR","SYSTEMROOT","WINDIR") if k in os.environ}
+    safe_env={k:os.environ[k] for k in ("PATH","HOME","LANG","LC_ALL","TMPDIR","SYSTEMROOT","WINDIR","LD_LIBRARY_PATH") if k in os.environ}
     safe_env.update({"OMP_NUM_THREADS":"1","OPENBLAS_NUM_THREADS":"1","MKL_NUM_THREADS":"1","NUMEXPR_NUM_THREADS":"1",
                      "TOKENIZERS_PARALLELISM":"false","HF_HUB_OFFLINE":"1","TRANSFORMERS_OFFLINE":"1","PYTHONNOUSERSITE":"1",
                      "PYTHONDONTWRITEBYTECODE":"1",
@@ -154,7 +154,7 @@ def probe_ancient_translation_route(root, outdir, timeout):
     if router.is_symlink() or not router.is_file():
         return {**result, "status": "FAIL_ROUTE_DIAGNOSTIC", "reason": "ROUTER_ENTRYPOINT_MISSING"}
 
-    safe_env = {k: os.environ[k] for k in ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR") if k in os.environ}
+    safe_env = {k: os.environ[k] for k in ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "LD_LIBRARY_PATH") if k in os.environ}
     safe_env.update({
         "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1",
         "NUMEXPR_NUM_THREADS": "1", "TOKENIZERS_PARALLELISM": "false",
