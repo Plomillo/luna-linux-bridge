@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - louksnapg2/puac2-alternative-20261029
+      - repair/louksnapg2-foma-sense-xml-20261102
     paths:
       - ".github/workflows/louksnapg2-direct-functional-evaluation.yml"
       - "tools/louksnapg2_functional_eval.py"
@@ -33,7 +34,7 @@ concurrency:
 
 jobs:
   evaluate-real-local-models:
-    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
+    if: (github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' || github.ref == 'refs/heads/repair/louksnapg2-foma-sense-xml-20261102')
     runs-on: ubuntu-24.04
     container:
       image: ubuntu:24.04
@@ -116,7 +117,8 @@ jobs:
         run: |
           set -Eeuo pipefail
           apt-get update
-          apt-get install -y espeak-ng
+          apt-get install -y --no-install-recommends espeak-ng build-essential flex bison libreadline-dev zlib1g-dev
+          for tool in make cc flex bison; do command -v "$tool"; done
 
       - name: Install only the committed CPU runtime lock
         shell: bash
