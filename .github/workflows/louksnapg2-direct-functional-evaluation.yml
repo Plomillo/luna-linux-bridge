@@ -13,6 +13,7 @@ on:
       - "tools/louksnapg2_q4_precision_probe.py"
       - "tools/louksnapg2_model_identity_evidence.py"
       - "tools/louksnapg2_refresh_module_integrity.py"
+      - "tools/louksnapg2_whisper_build.py"
       - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/**"
       - "cajita-luna-runtime/cajita_task_adapters.py"
       - "cajita-luna-runtime/cajita_resource_limits.py"
