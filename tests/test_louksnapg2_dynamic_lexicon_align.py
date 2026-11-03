@@ -37,12 +37,12 @@ class DynamicLexiconAlignmentTests(unittest.TestCase):
 
     def test_candidates_require_exact_english_sense_and_pos(self):
         greek = [
-            {"entry_form":"λόγος","entry_key":"λόγος","sense":"word","sense_key":"word","pos":"noun","count":12,"source_member":"g1.xml"},
-            {"entry_form":"λέγω","entry_key":"λέγω","sense":"word","sense_key":"word","pos":"verb","count":9,"source_member":"g2.xml"},
+            {"entry_form":"λόγος","entry_key":"λόγος","sense":"word","sense_key":"word","pos":"noun","entry_count":12,"count":12,"probability":0.8,"loglikelihood":8.4,"source_member":"g1.xml"},
+            {"entry_form":"λέγω","entry_key":"λέγω","sense":"word","sense_key":"word","pos":"verb","entry_count":9,"count":9,"probability":0.7,"loglikelihood":6.2,"source_member":"g2.xml"},
         ]
         latin = [
-            {"entry_form":"verbum","entry_key":"verbum","sense":"word","sense_key":"word","pos":"noun","count":10,"source_member":"l1.xml"},
-            {"entry_form":"dictum","entry_key":"dictum","sense":"word","sense_key":"word","pos":"noun","count":4,"source_member":"l2.xml"},
+            {"entry_form":"verbum","entry_key":"verbum","sense":"word","sense_key":"word","pos":"noun","entry_count":10,"count":10,"probability":0.75,"loglikelihood":7.1,"source_member":"l1.xml"},
+            {"entry_form":"dictum","entry_key":"dictum","sense":"word","sense_key":"word","pos":"noun","entry_count":4,"count":4,"probability":0.4,"loglikelihood":3.0,"source_member":"l2.xml"},
         ]
         result = build_candidates(greek, latin)
         self.assertEqual(result["candidate_count"], 2)
