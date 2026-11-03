@@ -44,6 +44,93 @@ CONVERTER_SHA256 = "9cc282dfcd9a24da03ffa1b4123b5508ee935e19e369c33520b1a73f8944
 QUANTIZATIONS = ("q4_0", "q5_0")
 
 
+
+
+def stage_shared_libraries(build_root: Path, destination: Path) -> list[dict]:
+    """Stage the complete pinned whisper.cpp shared-library closure as regular files."""
+    build_root = Path(build_root).resolve(strict=True)
+    destination = Path(destination).resolve()
+    destination.mkdir(parents=True, exist_ok=True)
+    staged: dict[str, dict] = {}
+    for source in sorted(build_root.rglob("*")):
+        if not source.is_file() or ".so" not in source.name:
+            continue
+        resolved = source.resolve(strict=True)
+        if not resolved.is_relative_to(build_root) or not resolved.is_file():
+            raise RuntimeError("WHISPER_SHARED_LIBRARY_SOURCE_ESCAPES_BUILD_TREE:" + str(source))
+        name = source.name
+        target = destination / name
+        digest = sha256_file(resolved)
+        if target.exists():
+            if not target.is_file() or sha256_file(target) != digest:
+                raise RuntimeError("WHISPER_SHARED_LIBRARY_NAME_COLLISION:" + name)
+        else:
+            shutil.copy2(resolved, target)
+        staged[name] = {
+            "name": name,
+            "path": "toolchain/lib/" + name,
+            "bytes": target.stat().st_size,
+            "sha256": sha256_file(target),
+        }
+    if "libwhisper.so.1" not in staged:
+        raise RuntimeError("WHISPER_SHARED_LIBRARY_SONAME_MISSING:libwhisper.so.1")
+    return [staged[name] for name in sorted(staged)]
+
+
+def whisper_runtime_env(base_env: dict, library_dir: Path) -> dict:
+    env = dict(base_env)
+    current = env.get("LD_LIBRARY_PATH", "")
+    env["LD_LIBRARY_PATH"] = str(Path(library_dir).resolve(strict=True)) + (os.pathsep + current if current else "")
+    return env
+
+
+def verify_whisper_runtime_dependencies(cli: Path, library_dir: Path) -> dict:
+    cli = Path(cli).resolve(strict=True)
+    library_dir = Path(library_dir).resolve(strict=True)
+    env = whisper_runtime_env(os.environ, library_dir)
+    checked = subprocess.run(
+        ["ldd", str(cli)], capture_output=True, text=True, errors="replace",
+        timeout=30, check=False, env=env,
+    )
+    output = checked.stdout + checked.stderr
+    missing = [line.strip() for line in output.splitlines() if "not found" in line]
+    if checked.returncode != 0 or missing:
+        raise RuntimeError("WHISPER_NATIVE_DEPENDENCY_RESOLUTION_FAILED:" + json.dumps({
+            "exit_code": checked.returncode, "missing": missing, "output_tail": output[-5000:]
+        }, ensure_ascii=False))
+    if "libwhisper.so.1" not in output or str(library_dir) not in output:
+        raise RuntimeError("WHISPER_NATIVE_DEPENDENCY_NOT_RESOLVED_FROM_PINNED_BUNDLE:" + output[-3000:])
+    return {
+        "status": "PASS_ALL_NATIVE_SHARED_LIBRARIES_RESOLVED",
+        "cli_sha256": sha256_file(cli),
+        "library_dir": str(library_dir),
+        "ldd_output": output[-8000:],
+        "missing_dependencies": [],
+    }
+
+
+def verify_staged_shared_libraries(artifact_root: Path, manifest: dict) -> list[dict]:
+    artifact_root = Path(artifact_root).resolve(strict=True)
+    rows = manifest.get("conversion", {}).get("runtime_libraries")
+    if not isinstance(rows, list) or not rows:
+        raise RuntimeError("WHISPER_RUNTIME_LIBRARY_MANIFEST_MISSING")
+    verified = []
+    for row in rows:
+        if not isinstance(row, dict):
+            raise RuntimeError("WHISPER_RUNTIME_LIBRARY_ROW_INVALID")
+        rel = row.get("path")
+        if not isinstance(rel, str) or not rel or Path(rel).is_absolute() or ".." in Path(rel).parts:
+            raise RuntimeError("WHISPER_RUNTIME_LIBRARY_PATH_INVALID")
+        path = (artifact_root / rel).resolve(strict=True)
+        if not path.is_relative_to(artifact_root) or path.is_symlink() or not path.is_file():
+            raise RuntimeError("WHISPER_RUNTIME_LIBRARY_PATH_UNSAFE:" + rel)
+        if path.stat().st_size != int(row.get("bytes", -1)) or sha256_file(path) != row.get("sha256"):
+            raise RuntimeError("WHISPER_RUNTIME_LIBRARY_IDENTITY_MISMATCH:" + rel)
+        verified.append({"path": rel, "bytes": path.stat().st_size, "sha256": sha256_file(path)})
+    if not any(Path(row["path"]).name == "libwhisper.so.1" for row in verified):
+        raise RuntimeError("WHISPER_RUNTIME_LIBRARY_SONAME_NOT_BUNDLED")
+    return verified
+
 def utc_now() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
@@ -329,12 +416,19 @@ def build(args) -> int:
         })
         quantization_commands.append(row)
 
-    # Preserve the exact executable and shared libraries built from the pinned source.
+    # Preserve the exact executable and the full shared-library closure. CMake
+    # emits libwhisper.so.1 under build/src (not necessarily build/bin); omitting
+    # that file makes whisper-cli exit 127 before any model-quality measurement.
     for path in (cpp_root / "build" / "bin").iterdir():
-        if path.is_file() and (path.name == "whisper-cli" or path.name.startswith("lib")):
+        if path.is_file() and path.name == "whisper-cli":
             shutil.copy2(path, toolchain_root / path.name)
+    toolchain_library_root = artifact_root / "toolchain" / "lib"
+    runtime_libraries = stage_shared_libraries(cpp_root / "build", toolchain_library_root)
     if not (toolchain_root / "whisper-cli").is_file():
         raise RuntimeError("WHISPER_CLI_TOOLCHAIN_COPY_MISSING")
+    runtime_dependency_check = verify_whisper_runtime_dependencies(
+        toolchain_root / "whisper-cli", toolchain_library_root
+    )
     manifest = {
         "schema": "LOUKSNAPG_WHISPER_FULLRANK_QUANTIZATION_CANDIDATE/1.0",
         "created_at_utc": utc_now(),
@@ -361,6 +455,8 @@ def build(args) -> int:
             "conversion_execution": conversion,
             "quantizer_sha256": quantizer_sha,
             "whisper_cli_sha256": cli_sha,
+            "runtime_libraries": runtime_libraries,
+            "runtime_dependency_check": runtime_dependency_check,
             "quantization_commands": quantization_commands,
         },
         "resource_policy": budget,
@@ -503,6 +599,10 @@ def evaluate(args) -> int:
     os.chmod(cli, cli.stat().st_mode | 0o111)
     if not os.access(cli, os.X_OK):
         raise RuntimeError("PINNED_WHISPER_CLI_NOT_EXECUTABLE_AFTER_RESTORE")
+    library_dir = artifact_root / "toolchain" / "lib"
+    verified_libraries = verify_staged_shared_libraries(artifact_root, manifest)
+    runtime_dependency_check = verify_whisper_runtime_dependencies(cli, library_dir)
+    native_env = whisper_runtime_env(os.environ, library_dir)
     fixtures_path = Path(args.prepared_fixtures).resolve(strict=True)
     fixtures = json.loads(fixtures_path.read_text(encoding="utf-8"))
     if fixtures.get("schema") != "LOUKSNAPG_WHISPER_FULLRANK_PREPARED_FIXTURES/1.0":
@@ -529,6 +629,7 @@ def evaluate(args) -> int:
     lines = [
         "#!/usr/bin/env bash", "set -uo pipefail",
         "CLI=" + q(cli), "MODEL=" + q(model_path), "WORK=" + q(work),
+        "export LD_LIBRARY_PATH=" + q(library_dir) + ':"${LD_LIBRARY_PATH:-}"',
         "SYNTH=" + q(synthetic), "REAL=" + q(real_audio),
         "run_one() {", " local audio=\"$1\" outdir=\"$2\"",
         " local prefix=\"$outdir/transcript\"",
@@ -548,7 +649,7 @@ def evaluate(args) -> int:
         + " --work-dir " + q(work) + " --report " + q(Path(args.report).resolve()),
     ]
     runner.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    os.execvpe("/bin/bash", ["/bin/bash", str(runner)], os.environ.copy())
+    os.execvpe("/bin/bash", ["/bin/bash", str(runner)], native_env)
     raise RuntimeError("WHISPER_NATIVE_EXEC_REPLACEMENT_FAILED")
 
 
