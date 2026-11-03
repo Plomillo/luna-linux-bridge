@@ -47,6 +47,11 @@ jobs:
             cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/tokenizer.json
             tools/louksnapg2_anti_hallucination_probe.py
             tests/test_louksnapg2_anti_hallucination_probe.py
+            cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_engine.py
+            cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_foma.py
+            cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_auxiliary.py
+            cajita-luna-runtime/LOUKSNAPG2_RUNTIME/foma_transducers/manifest.json
+            tests/test_louksnapg2_engine.py
 
       - name: Materialize and verify the one source ONNX object
         shell: bash
@@ -96,6 +101,13 @@ jobs:
         run: |
           set -Eeuo pipefail
           python -B -m unittest discover -s tests -p 'test_louksnapg2_anti_hallucination_probe.py' -v
+
+      - name: Run governed source-router and auxiliary engine regression tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/cajita-luna-runtime/LOUKSNAPG2_RUNTIME"
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_engine.py' -v
 
       - name: Inspect real source graph and execute bounded CPU inference probes
         shell: bash
