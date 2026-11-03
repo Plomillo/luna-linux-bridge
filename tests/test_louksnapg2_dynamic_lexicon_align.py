@@ -46,11 +46,19 @@ class DynamicLexiconAlignmentTests(unittest.TestCase):
         ]
         result = build_candidates(greek, latin)
         self.assertEqual(result["candidate_count"], 2)
-        by_greek = {tuple(row["greek_lemmas"]): row for row in result["candidates"]}
-        self.assertIn(("λόγος",), by_greek)
-        self.assertNotIn(("λέγω",), by_greek)
-        self.assertEqual(by_greek[("λόγος",)]["latin_lemmas"], ["dictum", "verbum"])
-        self.assertFalse(by_greek[("λόγος",)]["epistemic_status"].startswith("CERTIFIED"))
+        candidate_pairs = {
+            (tuple(row["greek_lemmas"]), tuple(row["latin_lemmas"]))
+            for row in result["candidates"]
+        }
+        self.assertEqual(candidate_pairs, {
+            (("λόγος",), ("dictum",)),
+            (("λόγος",), ("verbum",)),
+        })
+        self.assertFalse(any(greek == ("λέγω",) for greek, _latin in candidate_pairs))
+        self.assertTrue(all(
+            row["epistemic_status"] == "HYPOTHESIS_ONLY_REQUIRES_HELD_OUT_PHILOLOGICAL_VALIDATION"
+            for row in result["candidates"]
+        ))
 
     def test_no_shared_sense_is_a_non_pass_result(self):
         greek = [{"sense_key":"river","pos":"noun"}]
