@@ -268,7 +268,7 @@ def main(argv=None) -> int:
             f"WHISPER_AUDIO_{index:02d}",
             "D03_TRANSCRIPCION",
             "transcribe_audio",
-            {"audio_path": str(audio)},
+            {"audio_path": str(audio), "language": "en"},
             lambda out, expected=expected: word_error_rate(expected, out) <= 0.35,
             f"Whisper transcription must have word-error-rate <= 0.35 against the supplied known audio; reference={expected!r}.",
         )
