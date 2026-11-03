@@ -16,6 +16,20 @@ class DynamicLexiconInspectorTests(unittest.TestCase):
         self.assertEqual(result["candidate_lexical_tags"]["entry"],1)
         self.assertEqual(result["candidate_lexical_tags"]["sense"],1)
         self.assertEqual(result["candidate_lexical_tags"]["gloss"],1)
+    def test_ignores_archive_directory_entries(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/"x.tar.gz"
+            with tarfile.open(path,"w:gz") as archive:
+                directory=tarfile.TarInfo("entries/")
+                directory.type=tarfile.DIRTYPE
+                archive.addfile(directory)
+                xml=tarfile.TarInfo("entries/x.xml")
+                payload=b"<root><entry/></root>"
+                xml.size=len(payload)
+                archive.addfile(xml,io.BytesIO(payload))
+            result=inspect_archive(path,"lat")
+        self.assertEqual(result["xml_members"],1)
+
     def test_rejects_path_traversal(self):
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/"x.tar.gz"; make_tar(path,"../escape.xml",b"<root/>")

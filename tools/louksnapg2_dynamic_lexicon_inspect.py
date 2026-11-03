@@ -24,7 +24,6 @@ def local_name(tag: str) -> str:
     return tag.rsplit("}", 1)[-1].split(":")[-1].casefold()
 
 def inspect_archive(path: Path, language: str) -> dict:
-    path = path.resolve(strict=True)
     if path.is_symlink() or not path.is_file(): raise RuntimeError("DYNAMIC_LEXICON_ARCHIVE_MISSING_OR_UNSAFE:"+language)
     if path.stat().st_size > ARCHIVE_LIMIT_BYTES: raise RuntimeError("DYNAMIC_LEXICON_ARCHIVE_SIZE_LIMIT:"+language)
     tags, attrs, candidates, roots, root_children = Counter(), Counter(), Counter(), Counter(), Counter()
@@ -34,8 +33,12 @@ def inspect_archive(path: Path, language: str) -> dict:
             member_count += 1
             if member_count > MEMBER_LIMIT: raise RuntimeError("DYNAMIC_LEXICON_MEMBER_LIMIT:"+language)
             name = PurePosixPath(member.name)
-            if name.is_absolute() or ".." in name.parts or not member.isfile():
+            if name.is_absolute() or ".." in name.parts:
                 raise RuntimeError("DYNAMIC_LEXICON_UNSAFE_MEMBER:"+member.name[:200])
+            if member.isdir():
+                continue
+            if not member.isfile():
+                raise RuntimeError("DYNAMIC_LEXICON_UNSAFE_MEMBER_TYPE:"+member.name[:200])
             if not name.name.casefold().endswith(".xml") or member.size < 1: continue
             total_xml_bytes += int(member.size)
             if total_xml_bytes > TOTAL_XML_LIMIT_BYTES: raise RuntimeError("DYNAMIC_LEXICON_XML_TOTAL_LIMIT:"+language)
