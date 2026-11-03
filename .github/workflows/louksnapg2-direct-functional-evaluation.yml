@@ -31,8 +31,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: louksnapg2-direct-functional-evaluation-${{ github.ref }}-${{ github.sha }}
-  cancel-in-progress: false
+  group: louksnapg2-direct-functional-evaluation-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   evaluate-real-local-models:
