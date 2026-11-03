@@ -35,7 +35,7 @@ concurrency:
 
 jobs:
   build_candidate:
-    if: (github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' || github.ref == 'refs/heads/repair/louksnapg2-foma-sense-xml-20261102')
+    if: (github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' || github.ref == 'refs/heads/repair/louksnapg2-foma-sense-xml-20261102' || github.ref == 'refs/heads/repair/louksnapg2-operational-engines-20261103')
     runs-on: ubuntu-24.04
     container:
       image: ubuntu:24.04
@@ -100,7 +100,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           apt-get update
-          apt-get install -y p7zip-full unzip rsync libsqlite3-0
+          apt-get install -y p7zip-full unzip rsync libsqlite3-0 cmake build-essential
 
       - name: Prepare Python for factory, unit checks and the pinned worker
         uses: actions/setup-python@v5
@@ -258,7 +258,7 @@ jobs:
           compression-level: 0
 
   functional_evaluation:
-    if: (github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' || github.ref == 'refs/heads/repair/louksnapg2-foma-sense-xml-20261102')
+    if: (github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' || github.ref == 'refs/heads/repair/louksnapg2-foma-sense-xml-20261102' || github.ref == 'refs/heads/repair/louksnapg2-operational-engines-20261103')
     needs: build_candidate
     runs-on: ubuntu-24.04
     container:
@@ -431,7 +431,7 @@ jobs:
       id-token: write
       attestations: write
       artifact-metadata: write
-    if: always() && (github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' || github.ref == 'refs/heads/repair/louksnapg2-foma-sense-xml-20261102') && needs.build_candidate.result == 'success' && needs.functional_evaluation.result != 'skipped'
+    if: always() && (github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' || github.ref == 'refs/heads/repair/louksnapg2-foma-sense-xml-20261102' || github.ref == 'refs/heads/repair/louksnapg2-operational-engines-20261103') && needs.build_candidate.result == 'success' && needs.functional_evaluation.result != 'skipped'
     needs: [build_candidate, functional_evaluation]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -497,7 +497,7 @@ jobs:
       id-token: write
       attestations: write
       artifact-metadata: write
-    if: always() && (github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' || github.ref == 'refs/heads/repair/louksnapg2-foma-sense-xml-20261102') && needs.build_candidate.result == 'success'
+    if: always() && (github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' || github.ref == 'refs/heads/repair/louksnapg2-foma-sense-xml-20261102' || github.ref == 'refs/heads/repair/louksnapg2-operational-engines-20261103') && needs.build_candidate.result == 'success'
     needs: [build_candidate, functional_evaluation, g23_independent_validation]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
