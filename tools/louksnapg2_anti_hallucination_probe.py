@@ -11,7 +11,7 @@ from pathlib import Path
 
 MODEL_BYTES = 110_516_001
 MODEL_SHA256 = "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7"
-TOKENIZER_SHA256 = "a8d04251ca21a1682833a5891947a563880fd93d"
+TOKENIZER_GIT_BLOB_SHA1 = "a8d04251ca21a1682833a5891947a563880fd93d"
 
 
 class ProbeError(RuntimeError):
@@ -24,6 +24,12 @@ def sha256_file(path: Path) -> str:
         for block in iter(lambda: stream.read(4 * 1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def git_blob_sha1(path: Path) -> str:
+    payload = Path(path).read_bytes()
+    header = b"blob " + str(len(payload)).encode("ascii") + b"\\0"
+    return hashlib.sha1(header + payload).hexdigest()
 
 
 def _fixed_shape(shape: object, *, max_dim: int = 2048) -> tuple[int, ...]:
@@ -152,8 +158,9 @@ def probe_model(model_path: Path, tokenizer_path: Path, *, max_sequence_length: 
     if model_sha != MODEL_SHA256:
         raise ProbeError("ANTI_HALLUCINATION_MODEL_SHA256_MISMATCH")
     tokenizer_sha = sha256_file(tokenizer_path)
-    if tokenizer_sha != TOKENIZER_SHA256:
-        raise ProbeError("ANTI_HALLUCINATION_TOKENIZER_SHA256_MISMATCH")
+    tokenizer_blob_sha1 = git_blob_sha1(tokenizer_path)
+    if tokenizer_blob_sha1 != TOKENIZER_GIT_BLOB_SHA1:
+        raise ProbeError("ANTI_HALLUCINATION_TOKENIZER_GIT_BLOB_SHA1_MISMATCH")
     if not 8 <= max_sequence_length <= 512:
         raise ProbeError("MAX_SEQUENCE_LENGTH_OUT_OF_RANGE")
 
@@ -226,6 +233,7 @@ def probe_model(model_path: Path, tokenizer_path: Path, *, max_sequence_length: 
             "bytes": model_path.stat().st_size,
             "sha256": model_sha,
             "tokenizer_sha256": tokenizer_sha,
+            "tokenizer_git_blob_sha1": tokenizer_blob_sha1,
         },
         "runtime": {
             "onnxruntime": ort.__version__,
