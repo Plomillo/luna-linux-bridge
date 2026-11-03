@@ -49,20 +49,23 @@ class FormalReasoningTests(unittest.TestCase):
 
 class ApertiumRoutingTests(unittest.TestCase):
     def test_english_to_spanish_uses_one_registered_pair(self):
-        with mock.patch.object(auxiliary, "_apertium_pair", return_value="La reunión empieza al mediodía.") as run:
+        with mock.patch.object(auxiliary, "_apertium_pair", return_value="La reunión empieza al mediodía.") as run, \
+             mock.patch.object(auxiliary, "_apertium_runtime_evidence", return_value={"version": "fixture", "packages": {}}):
             result = auxiliary.translate_apertium("The meeting starts at noon.", "eng", "spa")
         run.assert_called_once_with("eng", "spa", "The meeting starts at noon.")
         self.assertEqual(result["translation_route"], ["eng-spa"])
 
     def test_english_to_french_uses_spanish_pivot(self):
-        with mock.patch.object(auxiliary, "_apertium_pair", side_effect=["El libro está sobre la mesa.", "Le livre est sur la table."]) as run:
+        with mock.patch.object(auxiliary, "_apertium_pair", side_effect=["El libro está sobre la mesa.", "Le livre est sur la table."]) as run, \
+             mock.patch.object(auxiliary, "_apertium_runtime_evidence", return_value={"version": "fixture", "packages": {}}):
             result = auxiliary.translate_apertium("The book is on the table.", "eng", "fra")
         self.assertEqual(run.call_args_list[0].args, ("eng", "spa", "The book is on the table."))
         self.assertEqual(run.call_args_list[1].args, ("spa", "fra", "El libro está sobre la mesa."))
         self.assertEqual(result["translation_route"], ["eng-spa", "spa-fra"])
 
     def test_french_to_english_uses_spanish_pivot(self):
-        with mock.patch.object(auxiliary, "_apertium_pair", side_effect=["El libro está sobre la mesa.", "The book is on the table."]) as run:
+        with mock.patch.object(auxiliary, "_apertium_pair", side_effect=["El libro está sobre la mesa.", "The book is on the table."]) as run, \
+             mock.patch.object(auxiliary, "_apertium_runtime_evidence", return_value={"version": "fixture", "packages": {}}):
             result = auxiliary.translate_apertium("Le livre est sur la table.", "fra", "eng")
         self.assertEqual(run.call_count, 2)
         self.assertEqual(result["translation_route"], ["fra-spa", "spa-eng"])
