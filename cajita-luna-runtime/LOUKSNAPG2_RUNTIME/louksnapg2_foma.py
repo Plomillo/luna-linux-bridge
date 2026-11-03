@@ -102,12 +102,18 @@ class FomaEngine:
 
     def preflight(self):
         m=self._manifest(); rows=m["transducers"]
+        required_pairs={"lat->eng","lat->spa","grc->eng","grc->spa"}
+        present_pairs=sorted(rows)
+        missing_pairs=sorted(required_pairs-set(rows))
+        resource_status=("COMPLETE" if not missing_pairs else
+            "PARTIAL_CURATED_COVERAGE" if rows else "RESOURCES_NOT_PROVISIONED")
         return {"engine":"Foma","engine_source_status":"PRESENT","source_tree_sha256":sha256_tree(self.source_root),
             "manifest_sha256":sha256_file(self.manifest_path),
-            "resource_status":"READY" if rows else "RESOURCES_NOT_PROVISIONED",
-            "registered_transducer_count":len(rows),
+            "resource_status":resource_status,
+            "registered_transducer_count":len(rows),"registered_transducer_pairs":present_pairs,
+            "missing_transducer_pairs":missing_pairs,
             "compiler_available":bool(shutil.which("make") and shutil.which("cc") and shutil.which("flex") and shutil.which("bison")),
-            "translation_quality":"NOT_ESTABLISHED","certification":"NOT_GRANTED"}
+            "translation_quality":m.get("translation_quality","NOT_ESTABLISHED"),"certification":"NOT_GRANTED"}
 
     def _binaries(self):
         # Never trust an unpinned host Foma binary or environment override.
