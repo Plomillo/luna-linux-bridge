@@ -11,7 +11,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: louksnapg2-dynamic-lexicon-\${{ github.sha }}
+  group: louksnapg2-dynamic-lexicon-${{ github.sha }}
   cancel-in-progress: false
 jobs:
   inspect-xml:
@@ -21,7 +21,7 @@ jobs:
       - name: Checkout exact Louksnapg2 commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: \${{ github.sha }}
+          ref: ${{ github.sha }}
           lfs: false
       - name: Set up pinned Python
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
@@ -61,7 +61,7 @@ jobs:
       - name: Upload XML schema inventory and hash evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: louksnapg2-dynamic-lexicon-inventory-\${{ github.sha }}
+          name: louksnapg2-dynamic-lexicon-inventory-${{ github.sha }}
           path: out/dynamic_lexicon_inventory.json
           if-no-files-found: error
           retention-days: 90
