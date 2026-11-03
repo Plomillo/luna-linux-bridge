@@ -63,7 +63,8 @@ jobs:
           echo "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7  $MODEL" | sha256sum --check
           TOKENIZER='cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/tokenizer.json'
           test "$(stat -c %s "$TOKENIZER")" = "1387522"
-          echo "a8d04251ca21a1682833a5891947a563880fd93d  $TOKENIZER" | sha256sum --check
+          test "$(git hash-object "$TOKENIZER")" = "a8d04251ca21a1682833a5891947a563880fd93d"
+          sha256sum "$TOKENIZER"
 
       - name: Set up pinned CPython runtime
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
