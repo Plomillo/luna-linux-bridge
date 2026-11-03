@@ -10,6 +10,12 @@ on:
       - "tests/test_louksnapg2_anti_hallucination_probe.py"
       - "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx"
       - "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/tokenizer.json"
+      - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_engine.py"
+      - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_foma.py"
+      - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_auxiliary.py"
+      - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/foma_transducers/manifest.json"
+      - "tests/test_louksnapg2_engine.py"
+      - "tests/test_louksnapg2_auxiliary.py"
   workflow_dispatch:
 
 permissions:
