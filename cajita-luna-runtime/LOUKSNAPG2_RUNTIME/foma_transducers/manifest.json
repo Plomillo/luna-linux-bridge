@@ -1,6 +1,6 @@
 {
-  "schema": "LOUKSNAPG2_FOMA_TRANSLATION_RESOURCES/1.0",
-  "status": "ENGINE_SOURCE_PRESENT_RESOURCES_NOT_PROVISIONED",
+  "schema": "LOUKSNAPG2_FOMA_TRANSLATION_RESOURCES/2.0",
+  "status": "PARTIAL_CURATED_RESOURCES_AVAILABLE",
   "policy": "FAIL_CLOSED_NO_GPT_OSS_OR_SEAMLESS_FALLBACK",
   "supported_source_languages": {
     "lat": "Latin",
@@ -10,20 +10,86 @@
     "eng": "English",
     "spa": "Spanish"
   },
-  "transducers": {},
+  "transducers": {
+    "lat->eng": {
+      "path": "lat-eng.foma",
+      "bytes": 112,
+      "sha256": "71fdf2c71327e203de6813436bdde855cc7c5fecd79015639098a0efc583bdcb",
+      "source_format": "FOMA_REGEX_SOURCE",
+      "scope": "CURATED_EXACT_PHRASES_AND_SELECTED_LEXEMES_ONLY",
+      "entry_count": 5,
+      "provenance": [
+        {
+          "kind": "BILINGUAL_DICTIONARY",
+          "source_url": "https://github.com/apertium/apertium-lat-eng/blob/c6c13390766ce7eda75aa8835866e4a2c0a62406/apertium-lat-eng.lat-eng.dix",
+          "upstream_commit": "c6c13390766ce7eda75aa8835866e4a2c0a62406",
+          "license": "GPL-3.0",
+          "note": "Selected lemma correspondences aqua→water, alea→die, amicus→friend and amor→love; upstream dictionary and license retained in the sources directory."
+        },
+        {
+          "kind": "PHRASE_TRANSLATION",
+          "source_url": "https://sineza.ff.unibl.org/sineza/article/view/16",
+          "note": "Conventional English rendering of Alea iacta est."
+        },
+        {
+          "kind": "PHRASE_TRANSLATION",
+          "source_url": "https://digital.pitts.emory.edu/s/digital-collections/item/6684",
+          "note": "Historical source metadata records IACTA EST ALEA as 'the die is cast'."
+        }
+      ],
+      "known_answers": [
+        {
+          "input": "alea iacta est",
+          "output": "the die is cast"
+        },
+        {
+          "input": "aqua",
+          "output": "water"
+        }
+      ]
+    },
+    "grc->eng": {
+      "path": "grc-eng.foma",
+      "bytes": 48,
+      "sha256": "66ba1c4efedd5497b3c291db02d6c1ccf0f8ce00484de8e0811a0526d3b83576",
+      "source_format": "FOMA_REGEX_SOURCE",
+      "scope": "CURATED_EXACT_PHRASE_ONLY",
+      "entry_count": 1,
+      "provenance": [
+        {
+          "kind": "PHRASE_TRANSLATION",
+          "source_url": "https://knowledge.uchicago.edu/record/1961/files/Murphy_uchicago_0330D_14904.pdf",
+          "note": "Academic thesis uses panta rhei with the English rendering 'everything flows'."
+        },
+        {
+          "kind": "PHILOLOGICAL_QUALIFICATION",
+          "source_url": "https://ejournals.epublishing.ekt.gr/index.php/ethiki/article/view/39658",
+          "note": "Philological study questions whether the slogan is a preserved Heraclitus aphorism; the resource treats it as a conventional phrase, not a verified verbatim quotation."
+        }
+      ],
+      "known_answers": [
+        {
+          "input": "πάντα ῥεῖ",
+          "output": "everything flows"
+        }
+      ]
+    }
+  },
   "resource_contract": {
     "path_scope": "foma_transducers/",
     "required_fields": [
       "path",
       "bytes",
-      "sha256"
+      "sha256",
+      "source_format"
     ],
     "formats": [
-      "Foma binary transducer"
+      "FOMA_REGEX_SOURCE",
+      "FOMA_BINARY"
     ],
     "provenance_required": true,
     "independent_known_answer_suite_required": true
   },
-  "translation_quality": "NOT_ESTABLISHED",
+  "translation_quality": "CURATED_KNOWN_ANSWERS_ONLY; GENERAL_TRANSLATION_NOT_ESTABLISHED",
   "certification": "NOT_GRANTED"
 }

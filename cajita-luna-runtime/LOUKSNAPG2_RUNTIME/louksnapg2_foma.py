@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Source-bound Foma finite-state runtime; linguistic resources are separately pinned."""
 from __future__ import annotations
-import hashlib, json, os, shutil, subprocess, tempfile
+import hashlib, json, os, shutil, subprocess, tempfile, unicodedata
 from pathlib import Path
 
 FOMA_SOURCE_REL=Path("4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master/foma-master/foma")
@@ -96,7 +96,7 @@ class FomaEngine:
         if p.is_symlink() or not p.is_file(): raise FomaRuntimeError("FOMA_TRANSLATION_MANIFEST_MISSING")
         try: m=json.loads(p.read_text(encoding="utf-8"))
         except (OSError,json.JSONDecodeError) as e: raise FomaRuntimeError("FOMA_TRANSLATION_MANIFEST_INVALID") from e
-        if m.get("schema")!="LOUKSNAPG2_FOMA_TRANSLATION_RESOURCES/1.0": raise FomaRuntimeError("FOMA_TRANSLATION_MANIFEST_SCHEMA_MISMATCH")
+        if m.get("schema") not in {"LOUKSNAPG2_FOMA_TRANSLATION_RESOURCES/1.0","LOUKSNAPG2_FOMA_TRANSLATION_RESOURCES/2.0"}: raise FomaRuntimeError("FOMA_TRANSLATION_MANIFEST_SCHEMA_MISMATCH")
         if not isinstance(m.get("transducers"),dict): raise FomaRuntimeError("FOMA_TRANSLATION_TRANSDUCER_TABLE_INVALID")
         return m
 
@@ -152,6 +152,34 @@ class FomaEngine:
         _lookup_smoke(foma,lookup,cache)
         return foma,lookup
 
+    def _compile_resource_source(self,source_path,source_sha,foma_bin):
+        cache=Path(tempfile.gettempdir())/("louksnapg2-foma-resource-"+source_sha)
+        if cache.is_symlink():
+            raise FomaRuntimeError("FOMA_RESOURCE_CACHE_SYMLINK_REJECTED")
+        cache.mkdir(parents=True,exist_ok=True)
+        fst=cache/"resource.fst"
+        marker=cache/"RESOURCE_BUILD.json"
+        valid=False
+        if fst.is_file() and not fst.is_symlink() and marker.is_file() and not marker.is_symlink():
+            try:
+                record=json.loads(marker.read_text(encoding="utf-8"))
+                valid=(record.get("source_sha256")==source_sha and record.get("compiled_sha256")==sha256_file(fst))
+            except (OSError,json.JSONDecodeError):
+                valid=False
+        if not valid:
+            fst.unlink(missing_ok=True)
+            script=cache/"compile.foma"
+            script.write_text(source_path.read_text(encoding="utf-8").rstrip()+"\nsave stack "+str(fst)+"\n",encoding="utf-8")
+            _run([str(foma_bin),"-q","-l",str(script)],cache,120)
+            if not fst.is_file() or fst.is_symlink() or fst.stat().st_size<=0:
+                raise FomaRuntimeError("FOMA_RESOURCE_TRANSDUCER_NOT_WRITTEN")
+            record={"schema":"LOUKSNAPG2_FOMA_RESOURCE_CACHE/1.0","source_sha256":source_sha,
+                "compiled_sha256":sha256_file(fst),"compiled_bytes":fst.stat().st_size}
+            tmp=marker.with_suffix(".tmp")
+            tmp.write_text(json.dumps(record,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+            os.replace(tmp,marker)
+        return fst,sha256_file(fst),fst.stat().st_size
+
     def translate(self,text,*,src_lang,tgt_lang):
         src=src_lang.strip().lower() if isinstance(src_lang,str) else ""
         tgt=tgt_lang.strip().lower() if isinstance(tgt_lang,str) else ""
@@ -167,8 +195,16 @@ class FomaEngine:
         if not p.is_relative_to(self.transducer_root) or p.is_symlink() or not p.is_file(): raise FomaRuntimeError("FOMA_TRANSDUCER_PATH_UNSAFE")
         size=p.stat().st_size; digest=sha256_file(p)
         if size!=int(row.get("bytes",-1)) or digest!=row.get("sha256"): raise FomaRuntimeError("FOMA_TRANSDUCER_IDENTITY_MISMATCH")
-        _foma,lookup=self._binaries()
-        result=_run([str(lookup),"-i","-x",str(p)],self.transducer_root,60,text.strip()+"\n")
+        foma_bin,lookup=self._binaries()
+        source_format=row.get("source_format","FOMA_BINARY")
+        if source_format=="FOMA_REGEX_SOURCE":
+            transducer,compiled_sha,compiled_bytes=self._compile_resource_source(p,digest,foma_bin)
+        elif source_format=="FOMA_BINARY":
+            transducer,compiled_sha,compiled_bytes=p,digest,size
+        else:
+            raise FomaRuntimeError("FOMA_TRANSLATION_SOURCE_FORMAT_UNSUPPORTED:"+str(source_format))
+        normalized_text=" ".join(unicodedata.normalize("NFC",text.casefold()).split())
+        result=_run([str(lookup),"-i","-x",str(transducer)],self.transducer_root,60,normalized_text+"\n")
         outputs=[x.strip() for x in result["stdout_tail"].splitlines() if x.strip() and x.strip() not in {"+?","???"}]
         if not outputs: raise FomaRuntimeError("FOMA_TRANSLATION_NO_ANALYSIS")
         output="\n".join(outputs)
@@ -177,8 +213,10 @@ class FomaEngine:
             "target_id":"D04_TRADUCCION_LENGUAS_ANTIGUAS","adapter_id":"LOUKSNAPG2_FOMA_ANCIENT_TRANSLATION_ADAPTER/1.0",
             "output_text":output,"output_sha256":hashlib.sha256(output.encode()).hexdigest(),
             "source_language":src,"target_language":tgt,"translation_strategy":"FOMA_FINITE_STATE_TRANSDUCER_LOOKUP",
-            "general_translation_fallback_selected":False,
+            "resource_scope":row.get("scope","UNSPECIFIED"),"general_translation_fallback_selected":False,
             "model_source_evidence":{"engine_source_tree_sha256":sha256_tree(self.source_root),
-                "transducer_path":rel,"transducer_bytes":size,"transducer_sha256":digest,
-                "manifest_sha256":sha256_file(self.manifest_path)},
+                "resource_source_path":rel,"resource_source_bytes":size,"resource_source_sha256":digest,
+                "compiled_transducer_bytes":compiled_bytes,"compiled_transducer_sha256":compiled_sha,
+                "manifest_sha256":sha256_file(self.manifest_path),"resource_provenance":row.get("provenance",[])},
             "semantic_quality_equivalence":"NOT_ESTABLISHED","certification":"NOT_GRANTED_BY_RUNTIME_CALL"}
+

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dictionary>
+  <alphabet/>
+  <sdefs>
+     <sdef n="n"/>
+     <sdef n="pr"/>
+     <sdef n="np"/>
+     <sdef n="adj"/>
+     <sdef n="num"/>
+     <sdef n="adv"/>
+     <sdef n="prn"/>
+     <sdef n="det"/>
+     <sdef n="cnjcoo"/>
+     <sdef n="cnjsub"/>
+
+     <sdef n="vblex"/>
+     <sdef n="vbser"/>
+     <sdef n="vaux"/>
+     <sdef n="vbmod"/>
+
+     <sdef n="top"/>
+     <sdef n="al"/>
+     <sdef n="ant"/>
+
+     <sdef n="f"/>
+     <sdef n="nt"/>
+     <sdef n="m"/>
+  </sdefs>
+
+  <section id="main" type="standard">
+      
+    <!-- SECTION: Nouns -->
+
+    <e><p><l>aqua<s n="n"/><s n="f"/></l><r>water<s n="n"/></r></p></e>
+    <e><p><l>abbatia<s n="n"/><s n="f"/></l><r>abbey<s n="n"/></r></p></e>
+    <e><p><l>absentia<s n="n"/><s n="f"/></l><r>absense<s n="n"/></r></p></e>
+    <e><p><l>acta<s n="n"/><s n="f"/></l><r>holiday<s n="n"/></r></p></e>
+    <e><p><l>agricultura<s n="n"/><s n="f"/></l><r>agriculture<s n="n"/></r></p></e>
+    <e><p><l>ala<s n="n"/><s n="f"/></l><r>wing<s n="n"/></r></p></e>
+    <e><p><l>alea<s n="n"/><s n="f"/></l><r>die<s n="n"/></r></p></e>
+    <e><p><l>amica<s n="n"/><s n="f"/></l><r>friend<s n="n"/></r></p></e>
+    <e><p><l>amicitia<s n="n"/><s n="f"/></l><r>friendship<s n="n"/></r></p></e>
+    <e c="Paternal"><p><l>amita<s n="n"/><s n="f"/></l><r>aunt<s n="n"/></r></p></e>
+    <e c="Paternal"><p><l>amitina<s n="n"/><s n="f"/></l><r>cousin<s n="n"/></r></p></e>
+    <e><p><l>anima<s n="n"/><s n="f"/></l><r>spirit<s n="n"/></r></p></e>
+    <e><p><l>ansa<s n="n"/><s n="f"/></l><r>handle<s n="n"/></r></p></e>
+    <e><p><l>antenna<s n="n"/><s n="f"/></l><r>flagpole<s n="n"/></r></p></e>
+    <e><p><l>aquila<s n="n"/><s n="f"/></l><r>eagle<s n="n"/></r></p></e>
+    <e><p><l>ara<s n="n"/><s n="f"/></l><r>altar<s n="n"/></r></p></e>
+    <e><p><l>area<s n="n"/><s n="f"/></l><r>area<s n="n"/></r></p></e>
+    <e slr="arena D"><p><l>arena<s n="n"/><s n="f"/></l><r>arena<s n="n"/></r></p></e>
+    <e slr="sand"><p><l>arena<s n="n"/><s n="f"/></l><r>sand<s n="n"/></r></p></e>
+    <e><p><l>arca<s n="n"/><s n="f"/></l><r>chest<s n="n"/></r></p></e>
+    <e><p><l>ardea<s n="n"/><s n="f"/></l><r>heron<s n="n"/></r></p></e>
+    <e r="LR"><p><l>arula<s n="n"/><s n="f"/></l><r>altar<s n="n"/></r></p></e>
+    <e><p><l>aristocratia<s n="n"/><s n="f"/></l><r>aristocracy<s n="n"/></r></p></e>
+    <e><p><l>filia<s n="n"/><s n="f"/></l><r>daughter<s n="n"/></r></p></e>
+    <e><p><l>aspilogia<s n="n"/><s n="f"/></l><r>coat<g><b/>of<b/>arms</g><s n="n"/></r></p></e>
+    <e><p><l>barba<s n="n"/><s n="f"/></l><r>beard<s n="n"/></r></p></e>
+    <e slr="berry D"><p><l>baca<s n="n"/><s n="f"/></l><r>berry<s n="n"/></r></p></e>
+    <e slr="pearl"><p><l>baca<s n="n"/><s n="f"/></l><r>pearl<s n="n"/></r></p></e>
+
+    <e><p><l>agricola<s n="n"/><s n="m"/></l><r>farmer<s n="n"/></r></p></e>
+    <e><p><l>pirata<s n="n"/><s n="m"/></l><r>pirate<s n="n"/></r></p></e>
+    <e><p><l>nauta<s n="n"/><s n="m"/></l><r>sailor<s n="n"/></r></p></e>
+    <e><p><l>scriba<s n="n"/><s n="m"/></l><r>scribe<s n="n"/></r></p></e>
+    <e><p><l>propheta<s n="n"/><s n="m"/></l><r>prophet<s n="n"/></r></p></e>
+    <e><p><l>auriga<s n="n"/><s n="m"/></l><r>charioteer<s n="n"/></r></p></e>
+    <e><p><l>poeta<s n="n"/><s n="m"/></l><r>poet<s n="n"/></r></p></e>
+    <e><p><l>acerbitas<s n="n"/><s n="f"/></l><r>acerbity<s n="n"/></r></p></e>
+    <e><p><l>acuitas<s n="n"/><s n="f"/></l><r>acuity<s n="n"/></r></p></e>
+    <e><p><l>affabilitas<s n="n"/><s n="f"/></l><r>affability<s n="n"/></r></p></e>
+    <e><p><l>agilitas<s n="n"/><s n="f"/></l><r>agility<s n="n"/></r></p></e>
+    <e><p><l>alacritas<s n="n"/><s n="f"/></l><r>alacrity<s n="n"/></r></p></e>
+    <e><p><l>amoenitas<s n="n"/><s n="f"/></l><r>amenity<s n="n"/></r></p></e>
+    <e><p><l>animalitas<s n="n"/><s n="f"/></l><r>animality<s n="n"/></r></p></e>
+    <e><p><l>artificiositas<s n="n"/><s n="f"/></l><r>artificiality<s n="n"/></r></p></e>
+    <e><p><l>austeritas<s n="n"/><s n="f"/></l><r>austerity<s n="n"/></r></p></e>
+    <e><p><l>authenticitas<s n="n"/><s n="f"/></l><r>authenticity<s n="n"/></r></p></e>
+    <e><p><l>benignitas<s n="n"/><s n="f"/></l><r>benignity<s n="n"/></r></p></e>
+    <e><p><l>bestialitas<s n="n"/><s n="f"/></l><r>bestiality<s n="n"/></r></p></e>
+    <e><p><l>carnalitas<s n="n"/><s n="f"/></l><r>carnality<s n="n"/></r></p></e>
+    <e><p><l>castitas<s n="n"/><s n="f"/></l><r>chastity<s n="n"/></r></p></e>
+    <e><p><l>catholicitas<s n="n"/><s n="f"/></l><r>catholicity<s n="n"/></r></p></e>
+    <e><p><l>celeritas<s n="n"/><s n="f"/></l><r>celerity<s n="n"/></r></p></e>
+    <e><p><l>civilitas<s n="n"/><s n="f"/></l><r>political<b/>science<s n="n"/></r></p></e>
+    <e><p><l>combustibilitas<s n="n"/><s n="f"/></l><r>combustibility<s n="n"/></r></p></e>
+    <e><p><l>commensurabilitas<s n="n"/><s n="f"/></l><r>commensurability<s n="n"/></r></p></e>
+    <e><p><l>communicabilitas<s n="n"/><s n="f"/></l><r>communicability<s n="n"/></r></p></e>
+    <e><p><l>concavitas<s n="n"/><s n="f"/></l><r>concavity<s n="n"/></r></p></e>
+    <e><p><l>confraternitas<s n="n"/><s n="f"/></l><r>confraternity<s n="n"/></r></p></e>
+    <e><p><l>conmunicabilitas<s n="n"/><s n="f"/></l><r>communicability<s n="n"/></r></p></e>
+    <e><p><l>conruptibilitas<s n="n"/><s n="f"/></l><r>corruptibility<s n="n"/></r></p></e>
+    <e><p><l>convexitas<s n="n"/><s n="f"/></l><r>convexity<s n="n"/></r></p></e>
+    <e><p><l>corporalitas<s n="n"/><s n="f"/></l><r>corporeality<s n="n"/></r></p></e>
+    <e><p><l>corruptibilitas<s n="n"/><s n="f"/></l><r>corruptibility<s n="n"/></r></p></e>
+    <e><p><l>credulitas<s n="n"/><s n="f"/></l><r>credulity<s n="n"/></r></p></e>
+    <e><p><l>declivitas<s n="n"/><s n="f"/></l><r>declivity<s n="n"/></r></p></e>
+    <e><p><l>deitas<s n="n"/><s n="f"/></l><r>deity<s n="n"/></r></p></e>
+    <e><p><l>docilitas<s n="n"/><s n="f"/></l><r>docility<s n="n"/></r></p></e>
+    <e><p><l>duplicitas<s n="n"/><s n="f"/></l><r>duplicity<s n="n"/></r></p></e>
+    <e><p><l>elasticitas<s n="n"/><s n="f"/></l><r>elasticity<s n="n"/></r></p></e>
+    <e><p><l>familiaritas<s n="n"/><s n="f"/></l><r>familiarity<s n="n"/></r></p></e>
+    <e><p><l>fatuitas<s n="n"/><s n="f"/></l><r>fatuity<s n="n"/></r></p></e>
+    <e><p><l>ferocitas<s n="n"/><s n="f"/></l><r>ferocity<s n="n"/></r></p></e>
+    <e><p><l>festivitas<s n="n"/><s n="f"/></l><r>festivity<s n="n"/></r></p></e>
+    <e><p><l>fragilitas<s n="n"/><s n="f"/></l><r>fragility<s n="n"/></r></p></e>
+    <e><p><l>frugalitas<s n="n"/><s n="f"/></l><r>frugality<s n="n"/></r></p></e>
+    <e><p><l>garrulitas<s n="n"/><s n="f"/></l><r>garrulity<s n="n"/></r></p></e>
+    <e><p><l>hilaritas<s n="n"/><s n="f"/></l><r>hilarity<s n="n"/></r></p></e>
+    <e><p><l>immobilitas<s n="n"/><s n="f"/></l><r>immobility<s n="n"/></r></p></e>
+    <e><p><l>importunitas<s n="n"/><s n="f"/></l><r>importunity<s n="n"/></r></p></e>
+    <e><p><l>imputabilitas<s n="n"/><s n="f"/></l><r>accountability<s n="n"/></r></p></e>
+    <e><p><l>inconruptibilitas<s n="n"/><s n="f"/></l><r>incorruptibility<s n="n"/></r></p></e>
+    <e><p><l>incorruptibilitas<s n="n"/><s n="f"/></l><r>incorruptibility<s n="n"/></r></p></e>
+    <e><p><l>incredulitas<s n="n"/><s n="f"/></l><r>incredulity<s n="n"/></r></p></e>
+    <e><p><l>indignitas<s n="n"/><s n="f"/></l><r>indignity<s n="n"/></r></p></e>
+    <e><p><l>indivisibilitas<s n="n"/><s n="f"/></l><r>indivisibility<s n="n"/></r></p></e>
+    <e><p><l>infecunditas<s n="n"/><s n="f"/></l><r>infecundity<s n="n"/></r></p></e>
+    <e><p><l>inhospitalitas<s n="n"/><s n="f"/></l><r>inhospitality<s n="n"/></r></p></e>
+    <e><p><l>inhumanitas<s n="n"/><s n="f"/></l><r>inhumanity<s n="n"/></r></p></e>
+    <e><p><l>jocunditas<s n="n"/><s n="f"/></l><r>jocundity<s n="n"/></r></p></e>
+    <e><p><l>laxitas<s n="n"/><s n="f"/></l><r>laxity<s n="n"/></r></p></e>
+    <e><p><l>lenitas<s n="n"/><s n="f"/></l><r>leniency<s n="n"/></r></p></e>
+    <e><p><l>magnanimitas<s n="n"/><s n="f"/></l><r>magnanimity<s n="n"/></r></p></e>
+    <e><p><l>malignitas<s n="n"/><s n="f"/></l><r>malignancy<s n="n"/></r></p></e>
+    <e><p><l>mediocritas<s n="n"/><s n="f"/></l><r>mediocrity<s n="n"/></r></p></e>
+    <e><p><l>modalitas<s n="n"/><s n="f"/></l><r>modality<s n="n"/></r></p></e>
+    <e><p><l>modernitas<s n="n"/><s n="f"/></l><r>modernity<s n="n"/></r></p></e>
+    <e><p><l>mutabilitas<s n="n"/><s n="f"/></l><r>mutability<s n="n"/></r></p></e>
+    <e><p><l>nativitas<s n="n"/><s n="f"/></l><r>nativity<s n="n"/></r></p></e>
+    <e><p><l>obscenitas<s n="n"/><s n="f"/></l><r>obscenity<s n="n"/></r></p></e>
+    <e><p><l>obscuritas<s n="n"/><s n="f"/></l><r>obscurity<s n="n"/></r></p></e>
+    <e><p><l>paternitas<s n="n"/><s n="f"/></l><r>paternity<s n="n"/></r></p></e>
+    <e><p><l>perpetuitas<s n="n"/><s n="f"/></l><r>perpetuity<s n="n"/></r></p></e>
+    <e><p><l>principalitas<s n="n"/><s n="f"/></l><r>principality<s n="n"/></r></p></e>
+    <e><p><l>probitas<s n="n"/><s n="f"/></l><r>probity<s n="n"/></r></p></e>
+    <e><p><l>proclivitas<s n="n"/><s n="f"/></l><r>proclivity<s n="n"/></r></p></e>
+    <e><p><l>pugnacitas<s n="n"/><s n="f"/></l><r>pugnacity<s n="n"/></r></p></e>
+    <e><p><l>rapacitas<s n="n"/><s n="f"/></l><r>rapacity<s n="n"/></r></p></e>
+    <e><p><l>refrangibilitas<s n="n"/><s n="f"/></l><r>refrangibility<s n="n"/></r></p></e>
+    <e><p><l>rotunditas<s n="n"/><s n="f"/></l><r>rotundity<s n="n"/></r></p></e>
+    <e><p><l>rusticitas<s n="n"/><s n="f"/></l><r>rusticity<s n="n"/></r></p></e>
+    <e><p><l>solemnitas<s n="n"/><s n="f"/></l><r>solemnity<s n="n"/></r></p></e>
+    <e><p><l>sollemnitas<s n="n"/><s n="f"/></l><r>solemnity<s n="n"/></r></p></e>
+    <e><p><l>sublimitas<s n="n"/><s n="f"/></l><r>sublimity<s n="n"/></r></p></e>
+    <e><p><l>taciturnitas<s n="n"/><s n="f"/></l><r>taciturnity<s n="n"/></r></p></e>
+    <e><p><l>temeritas<s n="n"/><s n="f"/></l><r>temerity<s n="n"/></r></p></e>
+    <e><p><l>tenacitas<s n="n"/><s n="f"/></l><r>tenacity<s n="n"/></r></p></e>
+    <e><p><l>transmutabilitas<s n="n"/><s n="f"/></l><r>transmutability<s n="n"/></r></p></e>
+    <e><p><l>triplicitas<s n="n"/><s n="f"/></l><r>triplicity<s n="n"/></r></p></e>
+    <e><p><l>urbanitas<s n="n"/><s n="f"/></l><r>urbanity<s n="n"/></r></p></e>
+    <e><p><l>virginitas<s n="n"/><s n="f"/></l><r>virginity<s n="n"/></r></p></e>
+    <e><p><l>volubilitas<s n="n"/><s n="f"/></l><r>volubility<s n="n"/></r></p></e>
+    <e><p><l>voracitas<s n="n"/><s n="f"/></l><r>voracity<s n="n"/></r></p></e>
+
+    <e><p><l>murus<s n="n"/><s n="m"/></l><r>wall<s n="n"/></r></p></e>
+    <e><p><l>vinum<s n="n"/><s n="nt"/></l><r>wine<s n="n"/></r></p></e>
+    <e><p><l>bellum<s n="n"/><s n="nt"/></l><r>war<s n="n"/></r></p></e>
+    <e><p><l>antidotum<s n="n"/><s n="nt"/></l><r>antidote<s n="n"/></r></p></e>
+    <e><p><l>argentum<s n="n"/><s n="nt"/></l><r>silver<s n="n"/></r></p></e>
+    <e><p><l>reliquum<s n="n"/><s n="nt"/></l><r>remainder<s n="n"/></r></p></e>
+    <e><p><l>cerebellum<s n="n"/><s n="nt"/></l><r>cerebellum<s n="n"/></r></p></e>
+    <e><p><l>theatrum<s n="n"/><s n="nt"/></l><r>theatre<s n="n"/></r></p></e>
+    <e><p><l>amphitheatrum<s n="n"/><s n="nt"/></l><r>amphitheatre<s n="n"/></r></p></e>
+      
+    <!-- SECTION: Proper Nouns -->
+
+    <e><p><l>Iulius<s n="np"/><s n="ant"/></l><r>Julius<s n="np"/><s n="ant"/></r></p></e>
+    <e><p><l>Brutus<s n="np"/><s n="ant"/></l><r>Brutus<s n="np"/><s n="ant"/></r></p></e>
+    <e><p><l>Roma<s n="np"/><s n="top"/><s n="f"/></l><r>Rome<s n="np"/><s n="top"/></r></p></e>
+      
+    <!-- SECTION: Adjectives -->
+      
+    <e><p><l>altus<s n="adj"/></l><r>tall<s n="adj"/></r></p></e>
+
+    <!-- SECTION: Numerals -->
+
+    <e><p><l>unus<s n="num"/></l><r>one<s n="num"/></r></p></e>
+
+    <!-- SECTION: Adverbs -->
+
+    <e><p><l>clare<s n="adv"/></l><r>clearly<s n="adv"/></r></p></e>
+    <e><p><l>abhinc<s n="adv"/></l><r>since<s n="adv"/></r></p></e>
+
+    <!-- SECTION: Verbs -->
+
+    <e><p><l>ire<s n="vblex"/></l><r>go<s n="vblex"/></r></p></e>
+    <e><p><l>amare<s n="vblex"/></l><r>love<s n="vblex"/></r></p></e>
+    <e><p><l>portare<s n="vblex"/></l><r>bring<s n="vblex"/></r></p></e>
+    <e><p><l>esse<s n="vbser"/></l><r>be<s n="vbser"/></r></p></e>
+
+    <!-- SECTION: Prepositions -->
+      
+    <e><p><l>adversus<s n="pr"/></l><r>against<s n="pr"/></r></p></e>
+    <e><p><l>in<s n="pr"/></l><r>to<s n="pr"/></r></p></e>
+    <e><p><l>in<s n="pr"/></l><r>in<s n="pr"/></r></p></e>
+    <e><p><l>pro<s n="pr"/></l><r>for<s n="pr"/></r></p></e>
+    <e><p><l>per<s n="pr"/></l><r>by<s n="pr"/></r></p></e>
+    <e><p><l>a<s n="pr"/></l><r>from<s n="pr"/></r></p></e>
+    <e><p><l>cum<s n="pr"/></l><r>with<s n="pr"/></r></p></e>
+
+    <!-- SECTION: Pronouns -->
+
+    <e><p><l>ego<s n="prn"/></l><r>I<s n="prn"/></r></p></e>
+    <e><p><l>ille<s n="prn"/></l><r>he<s n="prn"/></r></p></e>
+      
+    <!-- SECTION: Determiners -->
+
+    <e><p><l>magis<s n="det"/></l><r>more<s n="det"/></r></p></e>
+    <e><p><l>maxime<s n="det"/></l><r>most<s n="det"/></r></p></e>
+    <e><p><l>hic<s n="det"/></l><r>this<s n="det"/></r></p></e>
+      
+    <!-- SECTION: Conjunctions -->
+
+    <e><p><l>antequam<s n="cnjcoo"/></l><r>before<s n="cnjsub"/></r></p></e>
+
+
+  </section>
+</dictionary>
