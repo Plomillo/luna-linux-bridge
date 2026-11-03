@@ -76,16 +76,51 @@ class ApertiumRoutingTests(unittest.TestCase):
 
 
 class ImageAndAudioBackendTests(unittest.TestCase):
-    def test_tesseract_backend_returns_text_and_input_provenance(self):
+    def test_tesseract_tsv_parser_returns_layout_lines_and_pixel_boxes(self):
+        tsv = (
+            "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n"
+            "5\t1\t1\t1\t1\t1\t10\t20\t40\t12\t92.5\tINVOICE\n"
+            "5\t1\t1\t1\t1\t2\t55\t20\t30\t12\t88.5\t4821\n"
+            "5\t1\t1\t1\t2\t1\t10\t50\t60\t12\t95.0\tTOTAL\n"
+        )
+        result = auxiliary._parse_tesseract_tsv(tsv)
+        self.assertEqual(result["text"], "INVOICE 4821\nTOTAL")
+        self.assertEqual(result["word_count"], 3)
+        self.assertEqual(result["line_count"], 2)
+        self.assertEqual(result["layout"][0]["bbox"], [10, 20, 75, 12])
+        self.assertEqual(result["layout"][0]["words"][1]["text"], "4821")
+
+    def test_tesseract_tsv_rejects_invalid_geometry(self):
+        tsv = (
+            "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n"
+            "5\t1\t1\t1\t1\t1\t10\t20\t0\t12\t92.5\tINVOICE\n"
+        )
+        with self.assertRaisesRegex(auxiliary.AuxiliaryEngineError, "TESSERACT_TSV_GEOMETRY_INVALID"):
+            auxiliary._parse_tesseract_tsv(tsv)
+
+    def test_tesseract_backend_returns_text_layout_and_input_provenance(self):
         with tempfile.TemporaryDirectory() as tmp:
             image = Path(tmp) / "invoice.png"
             image.write_bytes(b"image-bytes")
-            completed = mock.Mock(returncode=0, stdout="INVOICE 4821\nTOTAL 37.50\n\x0c", stderr="")
-            with mock.patch.object(auxiliary, "_run_checked", return_value=completed) as run:
+            tsv = (
+                "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n"
+                "5\t1\t1\t1\t1\t1\t10\t20\t40\t12\t92.5\tINVOICE\n"
+                "5\t1\t1\t1\t1\t2\t55\t20\t30\t12\t88.5\t4821\n"
+            )
+            calls = [
+                mock.Mock(returncode=0, stdout=tsv, stderr=""),
+                mock.Mock(returncode=0, stdout="tesseract 5.3.0", stderr=""),
+            ]
+            with (
+                mock.patch.object(auxiliary, "_run_checked", side_effect=calls) as run,
+                mock.patch.object(auxiliary, "_package_versions", return_value={"tesseract-ocr": "5.3.0"}),
+            ):
                 result = auxiliary.extract_document_tesseract(image)
-        self.assertEqual(result["output_text"], "INVOICE 4821\nTOTAL 37.50")
+        self.assertEqual(result["output_text"], "INVOICE 4821")
         self.assertEqual(result["engine_id"], "TESSERACT_OCR/5.x")
-        self.assertEqual(run.call_args.args[0][0], "tesseract")
+        self.assertEqual(result["document_layout"][0]["bbox"], [10, 20, 75, 12])
+        self.assertEqual(result["layout_metadata"]["word_count"], 2)
+        self.assertEqual(run.call_args_list[0].args[0][0], "tesseract")
 
     def test_tesseract_rejects_missing_or_symlink_image(self):
         with tempfile.TemporaryDirectory() as tmp:

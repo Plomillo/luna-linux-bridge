@@ -128,8 +128,12 @@ class LouksnapG2Runtime:
 
     def _auxiliary_preflight(self) -> dict:
         runtime = self.root / "LOUKSNAPG2_RUNTIME"
-        formal = {"status": "AVAILABLE", "engine_id": "LOUKSNAPG2_FORMAL_REASONING/1.0",
-                  "scope": "SAFE_ARITHMETIC_AND_SUPPORTED_SYLLOGISTIC_PATTERNS"}
+        formal = {
+            "status": "LIMITED_SCOPE",
+            "engine_id": "LOUKSNAPG2_FORMAL_REASONING/1.0",
+            "scope": "SAFE_ARITHMETIC_AND_SUPPORTED_SYLLOGISTIC_PATTERNS",
+            "unsupported_prompt_policy": "FAIL_CLOSED_NO_DEGRADED_NEURAL_FALLBACK",
+        }
         translation = {"status": "AVAILABLE" if shutil.which("apertium") else "NOT_PROVISIONED",
                        "engine_id": "APERTIUM_LOCAL_BILINGUAL_PIPELINE/1.0",
                        "required_pairs": ["eng-spa", "spa-eng", "fra-spa", "spa-fra"]}
@@ -283,24 +287,18 @@ class LouksnapG2Runtime:
             result = self._auxiliary.reasoning(prompt)
         except AuxiliaryEngineError as exc:
             raise EngineRuntimeError("FORMAL_REASONING_AUXILIARY_FAILED:" + str(exc)[:300]) from exc
-        if result is not None:
-            return self._auxiliary_result("D01_CEREBRO", "generate_text", result, task_id=task_id)
-        return self._execute_original(
-            "D01_CEREBRO", "generate_text", {"prompt": prompt},
-            task_id=task_id, max_tokens=max_tokens,
-        )
+        if result is None:
+            raise EngineRuntimeError("FORMAL_REASONING_SCOPE_UNSUPPORTED_NO_NEURAL_FALLBACK")
+        return self._auxiliary_result("D01_CEREBRO", "generate_text", result, task_id=task_id)
 
     def analyze(self, prompt: str, *, max_tokens: int = 64, task_id: str = "analysis") -> dict:
         try:
             result = self._auxiliary.reasoning(prompt)
         except AuxiliaryEngineError as exc:
             raise EngineRuntimeError("FORMAL_REASONING_AUXILIARY_FAILED:" + str(exc)[:300]) from exc
-        if result is not None:
-            return self._auxiliary_result("D06_SISTEMA_INTELIGENTE", "analyze_reasoning", result, task_id=task_id)
-        return self._execute_original(
-            "D06_SISTEMA_INTELIGENTE", "analyze_reasoning", {"prompt": prompt},
-            task_id=task_id, max_tokens=max_tokens,
-        )
+        if result is None:
+            raise EngineRuntimeError("FORMAL_REASONING_SCOPE_UNSUPPORTED_NO_NEURAL_FALLBACK")
+        return self._auxiliary_result("D06_SISTEMA_INTELIGENTE", "analyze_reasoning", result, task_id=task_id)
 
     def translate_general(
         self, text: str, *, src_lang: str = "eng", tgt_lang: str = "spa",

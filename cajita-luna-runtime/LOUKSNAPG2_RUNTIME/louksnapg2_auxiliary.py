@@ -9,7 +9,9 @@ Unsupported requests fail closed instead of being labelled as neural-model outpu
 from __future__ import annotations
 
 import ast
+import csv
 import hashlib
+import io
 import json
 import operator
 import os
@@ -257,6 +259,79 @@ def translate_apertium(text: str, src_lang: str, tgt_lang: str) -> dict:
     }
 
 
+def _parse_tesseract_tsv(tsv: str, *, max_words: int = 2048) -> dict:
+    required = {
+        "level", "page_num", "block_num", "par_num", "line_num",
+        "left", "top", "width", "height", "conf", "text",
+    }
+    reader = csv.DictReader(io.StringIO(tsv), delimiter="\t")
+    if not reader.fieldnames or not required.issubset(set(reader.fieldnames)):
+        raise AuxiliaryEngineError("TESSERACT_TSV_SCHEMA_INVALID")
+
+    lines: dict[tuple[int, int, int, int], list[dict]] = {}
+    word_count = 0
+    for row in reader:
+        try:
+            level = int(row["level"])
+        except (TypeError, ValueError):
+            raise AuxiliaryEngineError("TESSERACT_TSV_LEVEL_INVALID")
+        if level != 5:
+            continue
+        text = " ".join((row.get("text") or "").split())
+        if not text:
+            continue
+        try:
+            page = int(row["page_num"])
+            block = int(row["block_num"])
+            paragraph = int(row["par_num"])
+            line = int(row["line_num"])
+            left = int(row["left"])
+            top = int(row["top"])
+            width = int(row["width"])
+            height = int(row["height"])
+            confidence = float(row["conf"])
+        except (TypeError, ValueError, OverflowError):
+            raise AuxiliaryEngineError("TESSERACT_TSV_WORD_ROW_INVALID")
+        if min(page, block, paragraph, line, left, top) < 0 or width <= 0 or height <= 0:
+            raise AuxiliaryEngineError("TESSERACT_TSV_GEOMETRY_INVALID")
+        if not (-1.0 <= confidence <= 100.0):
+            raise AuxiliaryEngineError("TESSERACT_TSV_CONFIDENCE_OUT_OF_RANGE")
+        word_count += 1
+        if word_count > max_words:
+            raise AuxiliaryEngineError("TESSERACT_TSV_WORD_LIMIT_EXCEEDED")
+        key = (page, block, paragraph, line)
+        lines.setdefault(key, []).append({
+            "text": text,
+            "bbox": [left, top, width, height],
+            "confidence": round(max(0.0, confidence), 2),
+        })
+
+    layout = []
+    for key, words in sorted(lines.items()):
+        left = min(word["bbox"][0] for word in words)
+        top = min(word["bbox"][1] for word in words)
+        right = max(word["bbox"][0] + word["bbox"][2] for word in words)
+        bottom = max(word["bbox"][1] + word["bbox"][3] for word in words)
+        layout.append({
+            "page": key[0],
+            "block": key[1],
+            "paragraph": key[2],
+            "line": key[3],
+            "text": " ".join(word["text"] for word in words),
+            "bbox": [left, top, right - left, bottom - top],
+            "mean_word_confidence": round(sum(word["confidence"] for word in words) / len(words), 2),
+            "words": words,
+        })
+    if not layout:
+        raise AuxiliaryEngineError("TESSERACT_OUTPUT_EMPTY")
+    return {
+        "text": "\n".join(line["text"] for line in layout),
+        "layout": layout,
+        "word_count": word_count,
+        "line_count": len(layout),
+    }
+
+
 def extract_document_tesseract(image_path: Path, *, language: str = "eng") -> dict:
     image = Path(image_path)
     if image.is_symlink() or not image.is_file():
@@ -264,19 +339,28 @@ def extract_document_tesseract(image_path: Path, *, language: str = "eng") -> di
     if image.stat().st_size <= 0 or image.stat().st_size > 20_000_000:
         raise AuxiliaryEngineError("OCR_INPUT_IMAGE_SIZE_OUT_OF_RANGE")
     proc = _run_checked(
-        ["tesseract", str(image), "stdout", "--oem", "1", "--psm", "6", "-l", language],
+        ["tesseract", str(image), "stdout", "--oem", "1", "--psm", "6", "-l", language, "tsv"],
         timeout=60,
     )
     if proc.returncode != 0:
         raise AuxiliaryEngineError("TESSERACT_EXECUTION_FAILED:" + (proc.stderr or "")[-300:])
-    output = "\n".join(line.strip() for line in proc.stdout.replace("\x0c", "").splitlines() if line.strip())
-    if len(output) < 3:
+    parsed = _parse_tesseract_tsv(proc.stdout)
+    output = parsed["text"]
+    if len(output.strip()) < 3:
         raise AuxiliaryEngineError("TESSERACT_OUTPUT_EMPTY")
     version = _run_checked(["tesseract", "--version"], timeout=15)
     if version.returncode != 0:
         raise AuxiliaryEngineError("TESSERACT_VERSION_PROBE_FAILED:" + (version.stderr or version.stdout)[-200:])
     return {
         "output_text": output[:8192],
+        "document_layout": parsed["layout"][:512],
+        "layout_metadata": {
+            "word_count": parsed["word_count"],
+            "line_count": parsed["line_count"],
+            "layout_truncated": parsed["line_count"] > 512,
+            "coordinates": "PIXELS_RELATIVE_TO_SOURCE_IMAGE",
+            "confidence": "TESSERACT_WORD_CONFIDENCE_0_TO_100",
+        },
         "engine_id": "TESSERACT_OCR/5.x",
         "ocr_language": language,
         "input_sha256": _digest(image.read_bytes()),
@@ -285,7 +369,6 @@ def extract_document_tesseract(image_path: Path, *, language: str = "eng") -> di
             "packages": _package_versions(("tesseract-ocr", "tesseract-ocr-eng")),
         },
     }
-
 
 def _whisper_paths(runtime_root: Path) -> tuple[Path, Path, Path]:
     root = Path(runtime_root).resolve()

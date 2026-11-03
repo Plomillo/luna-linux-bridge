@@ -80,13 +80,14 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
         self.loader_patch.stop()
         self.temp.cleanup()
 
-    def test_cerebro_uses_existing_gpt_oss_source_adapter(self):
-        result = self.runtime.route("D01_CEREBRO", "generate_text", {"prompt": "hello", "max_new_tokens": 16}, task_id="brain-01")
-        self.assertEqual(self.fake.requests[-1]["domain_id"], "D01_CEREBRO")
-        self.assertEqual(self.fake.requests[-1]["operation"], "generate_text")
-        self.assertEqual(result["source_model_id"], "GPT-OSS compactado — rank-1 INT8 factors")
-        self.assertEqual(result["output_text"], "42")
-        self.assertTrue(result["execution_authorized"])
+    def test_unsupported_cerebro_prompt_fails_closed_without_degraded_gpt_oss_fallback(self):
+        with self.assertRaisesRegex(engine.EngineRuntimeError, "FORMAL_REASONING_SCOPE_UNSUPPORTED_NO_NEURAL_FALLBACK"):
+            self.runtime.route(
+                "D01_CEREBRO", "generate_text",
+                {"prompt": "Explain the causes of the French Revolution.", "max_new_tokens": 16},
+                task_id="brain-out-of-scope",
+            )
+        self.assertEqual(self.fake.requests, [])
 
     def test_cerebro_uses_bounded_formal_arithmetic_without_claiming_gpt_oss_output(self):
         result = self.runtime.route("D01_CEREBRO", "generate_text", {"prompt": "Compute (17 * 3) - 9."}, task_id="formal-42")
@@ -95,11 +96,25 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
         self.assertEqual(result["adapter_id"], "LOUKSNAPG2_FORMAL_REASONING_AUXILIARY/1.0")
         self.assertEqual(self.fake.requests, [])
 
-    def test_advanced_analysis_uses_existing_qwen3_source_adapter(self):
-        result = self.runtime.route("D06_SISTEMA_INTELIGENTE", "analyze_reasoning", {"prompt": "How many books remain?", "max_new_tokens": 16}, task_id="analysis-01")
-        self.assertEqual(self.fake.requests[-1]["domain_id"], "D06_SISTEMA_INTELIGENTE")
-        self.assertEqual(result["source_model_id"], "Qwen3 compactado — low-rank INT8 factors")
-        self.assertEqual(result["adapter_id"], "CAJITA_QWEN3_REASONING/1.0")
+    def test_advanced_analysis_uses_bounded_formal_arithmetic_for_shelf_word_problem(self):
+        result = self.runtime.route(
+            "D06_SISTEMA_INTELIGENTE", "analyze_reasoning",
+            {"prompt": "A library has 9 shelves with 8 books per shelf. 17 books are borrowed. How many remain?"},
+            task_id="analysis-55",
+        )
+        self.assertEqual(result["output_text"], "55")
+        self.assertEqual(result["source_model_id"], "LOUKSNAPG2_FORMAL_ARITHMETIC/1.0")
+        self.assertEqual(result["adapter_id"], "LOUKSNAPG2_FORMAL_REASONING_AUXILIARY/1.0")
+        self.assertEqual(self.fake.requests, [])
+
+    def test_unsupported_advanced_analysis_fails_closed_without_degraded_qwen_fallback(self):
+        with self.assertRaisesRegex(engine.EngineRuntimeError, "FORMAL_REASONING_SCOPE_UNSUPPORTED_NO_NEURAL_FALLBACK"):
+            self.runtime.route(
+                "D06_SISTEMA_INTELIGENTE", "analyze_reasoning",
+                {"prompt": "Compare two political philosophies and evaluate their historical effects."},
+                task_id="analysis-out-of-scope",
+            )
+        self.assertEqual(self.fake.requests, [])
 
     def test_general_translation_uses_existing_seamless_adapter(self):
         with mock.patch.object(self.runtime._auxiliary, "translate", return_value={

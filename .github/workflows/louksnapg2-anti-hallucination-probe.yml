@@ -1,0 +1,170 @@
+name: LOUKSNAPG2 anti-hallucination ONNX native probe
+
+on:
+  push:
+    branches:
+      - "repair/louksnapg2-anti-hallucination-probe-20261103"
+    paths:
+      - ".github/workflows/louksnapg2-anti-hallucination-probe.yml"
+      - "tools/louksnapg2_anti_hallucination_probe.py"
+      - "tests/test_louksnapg2_anti_hallucination_probe.py"
+      - "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx"
+      - "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/tokenizer.json"
+      - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_engine.py"
+      - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_foma.py"
+      - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_auxiliary.py"
+      - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/foma_transducers/manifest.json"
+      - "tests/test_louksnapg2_engine.py"
+      - "tests/test_louksnapg2_auxiliary.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg2-anti-hallucination-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inspect-source-model:
+    runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:24.04
+      options: --memory=2g --memory-swap=2g --cpus=1
+    timeout-minutes: 25
+    steps:
+      - name: Install Git LFS
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          apt-get update -qq
+          apt-get install -y --no-install-recommends ca-certificates git git-lfs tesseract-ocr tesseract-ocr-eng
+          git lfs version
+
+      - name: Checkout only the anti-hallucination model and its probe
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: true
+          sparse-checkout: |
+            cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx
+            cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/tokenizer.json
+            tools/louksnapg2_anti_hallucination_probe.py
+            tests/test_louksnapg2_anti_hallucination_probe.py
+            cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_engine.py
+            cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_foma.py
+            cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_auxiliary.py
+            cajita-luna-runtime/LOUKSNAPG2_RUNTIME/foma_transducers/manifest.json
+            tests/test_louksnapg2_engine.py
+            tests/test_louksnapg2_auxiliary.py
+
+      - name: Materialize and verify the one source ONNX object
+        shell: bash
+        env:
+          GIT_LFS_SKIP_SMUDGE: "1"
+        run: |
+          set -Eeuo pipefail
+          cd "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git rev-parse --show-toplevel
+          git lfs install --local
+          MODEL='cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx'
+          git lfs fetch --include="$MODEL" --exclude="" origin "$GITHUB_SHA"
+          git lfs checkout "$MODEL"
+          test "$(stat -c %s "$MODEL")" = "110516001"
+          echo "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7  $MODEL" | sha256sum --check
+          TOKENIZER='cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/tokenizer.json'
+          test "$(stat -c %s "$TOKENIZER")" = "1387522"
+          test "$(git hash-object "$TOKENIZER")" = "a8d04251ca21a1682833a5891947a563880fd93d"
+          sha256sum "$TOKENIZER"
+
+      - name: Set up pinned CPython runtime
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+
+      - name: Install minimal pinned ONNX CPU runtime and tokenizer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check \
+            numpy==2.2.6 tokenizers==0.22.2 packaging==26.3 protobuf==4.25.9 pillow==13.0.0 \
+            sympy==1.14.0 flatbuffers==25.2.10 coloredlogs==15.0.1 humanfriendly==10.0
+          printf '%s\n' \
+            'onnxruntime==1.31.1 --hash=sha256:74a6a52994616c4d18b33db1e13c226333a70a6ba07480a5cab9c2a50dff1430' \
+            > "$RUNNER_TEMP/onnxruntime-requirements.txt"
+          python -m pip install --disable-pip-version-check --no-deps --require-hashes \
+            -r "$RUNNER_TEMP/onnxruntime-requirements.txt"
+          python - <<'PY'
+          import onnxruntime, tokenizers
+          assert onnxruntime.__version__ == "1.31.1"
+          assert tokenizers.__version__ == "0.22.2"
+          print("ONNXRUNTIME=1.31.1")
+          print("TOKENIZERS=0.22.2")
+          PY
+
+      - name: Run probe unit tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_anti_hallucination_probe.py' -v
+
+      - name: Run governed source-router and auxiliary engine regression tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/cajita-luna-runtime/LOUKSNAPG2_RUNTIME"
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_engine.py' -v
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_auxiliary.py' -v
+
+      - name: Run real Tesseract OCR layout smoke with source-image provenance
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import json, sys, tempfile
+          from pathlib import Path
+          from PIL import Image, ImageDraw, ImageFont
+          sys.path.insert(0, str(Path('cajita-luna-runtime/LOUKSNAPG2_RUNTIME').resolve()))
+          from louksnapg2_auxiliary import extract_document_tesseract
+          image = Image.new('RGB', (1200, 360), 'white')
+          draw = ImageDraw.Draw(image)
+          font = ImageFont.load_default(size=72)
+          draw.text((50, 45), 'INVOICE 4821', fill='black', font=font, stroke_width=1)
+          draw.text((50, 170), 'TOTAL 37.50', fill='black', font=font, stroke_width=1)
+          with tempfile.TemporaryDirectory() as directory:
+              path = Path(directory) / 'invoice.png'
+              image.save(path, format='PNG')
+              result = extract_document_tesseract(path)
+          text = result['output_text'].casefold()
+          assert 'invoice' in text and '4821' in text and '37.50' in text, result
+          assert result['document_layout'] and result['layout_metadata']['word_count'] >= 4, result
+          print(json.dumps({
+              'status': 'PASS_TESSERACT_OCR_WITH_LAYOUT',
+              'engine_id': result['engine_id'],
+              'input_sha256': result['input_sha256'],
+              'layout_metadata': result['layout_metadata'],
+              'first_line': result['document_layout'][0],
+          }, ensure_ascii=False, sort_keys=True))
+          PY
+
+      - name: Inspect real source graph and execute bounded CPU inference probes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B tools/louksnapg2_anti_hallucination_probe.py \
+            --model 'cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx' \
+            --tokenizer 'cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/tokenizer.json' \
+            --output out/ANTI_HALLUCINATION_ONNX_PROBE.json \
+            --max-sequence-length 128
+
+      - name: Upload source-bound graph and runtime evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-anti-hallucination-onnx-probe
+          path: out/ANTI_HALLUCINATION_ONNX_PROBE.json
+          if-no-files-found: warn
+          retention-days: 90
