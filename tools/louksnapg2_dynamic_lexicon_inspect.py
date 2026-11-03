@@ -27,7 +27,7 @@ def inspect_archive(path: Path, language: str) -> dict:
     if path.is_symlink() or not path.is_file(): raise RuntimeError("DYNAMIC_LEXICON_ARCHIVE_MISSING_OR_UNSAFE:"+language)
     if path.stat().st_size > ARCHIVE_LIMIT_BYTES: raise RuntimeError("DYNAMIC_LEXICON_ARCHIVE_SIZE_LIMIT:"+language)
     tags, attrs, candidates, roots, root_children = Counter(), Counter(), Counter(), Counter(), Counter()
-    samples, entry_examples, xml_members, member_count, total_xml_bytes = [], [], 0, 0, 0
+    samples, entry_examples, trans_examples, xml_members, member_count, total_xml_bytes = [], [], [], 0, 0, 0
     with tarfile.open(path, mode="r:gz") as archive:
         for member in archive:
             member_count += 1
@@ -47,13 +47,13 @@ def inspect_archive(path: Path, language: str) -> dict:
             xml_members += 1
             depth, local_samples = 0, 0
             entry_example = None
+            path_stack = []
             for event, element in DET.iterparse(handle, events=("start","end")):
                 tag = local_name(str(element.tag))
                 if event == "start":
                     if depth == 0:
                         roots[tag] += 1
-                        if len(entry_examples) < 4:
-                            entry_example = {"member":member.name[:240],"nodes":[]}
+                        entry_example = {"member":member.name[:240],"nodes":[]}
                     elif depth == 1:
                         root_children[tag] += 1
                     tags[tag] += 1
@@ -65,19 +65,25 @@ def inspect_archive(path: Path, language: str) -> dict:
                         samples.append({"member":member.name[:240],"tag":tag,"depth":depth,
                           "attributes":{str(k).rsplit("}",1)[-1]:str(v)[:180] for k,v in list(element.attrib.items())[:12]}})
                         local_samples += 1
+                    path_stack.append(tag)
                     depth += 1
                 else:
-                    if entry_example is not None and len(entry_example["nodes"]) < 160 and depth <= 10:
+                    if entry_example is not None and len(entry_example["nodes"]) < 220 and depth <= 12:
                         entry_example["nodes"].append({
-                            "tag":tag,"depth":depth-1,
+                            "tag":tag,"path":"/"+"/".join(path_stack),"depth":depth-1,
                             "text":" ".join((element.text or "").split())[:500],
                             "tail":" ".join((element.tail or "").split())[:250],
                             "attributes":{str(k).rsplit("}",1)[-1]:str(v)[:180] for k,v in list(element.attrib.items())[:12]},
                         })
                     depth -= 1
                     if depth == 0 and entry_example is not None:
-                        entry_examples.append(entry_example)
+                        entry_tags = {node["tag"] for node in entry_example["nodes"]}
+                        if "trans" in entry_tags and len(trans_examples) < 4:
+                            trans_examples.append(entry_example)
+                        elif len(entry_examples) < 2:
+                            entry_examples.append(entry_example)
                         entry_example = None
+                    if path_stack: path_stack.pop()
                     element.clear()
             handle.close()
     if not xml_members: raise RuntimeError("DYNAMIC_LEXICON_NO_XML_MEMBERS:"+language)
@@ -85,7 +91,7 @@ def inspect_archive(path: Path, language: str) -> dict:
       "tar_members":member_count,"xml_members":xml_members,"xml_uncompressed_bytes":total_xml_bytes,
       "root_tags":dict(roots.most_common(40)),"root_child_tags":dict(root_children.most_common(80)),
       "element_tags":dict(tags.most_common(120)),"attribute_names":dict(attrs.most_common(80)),
-      "candidate_lexical_tags":dict(candidates.most_common(40)),"samples":samples,"entry_examples":entry_examples}
+      "candidate_lexical_tags":dict(candidates.most_common(40)),"samples":samples,"entry_examples":entry_examples,"trans_examples":trans_examples}
 
 def main() -> int:
     p=argparse.ArgumentParser()
