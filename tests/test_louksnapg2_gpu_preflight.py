@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from tools.louksnapg2_gpu_preflight import load_matrix, repair_gate, SHA_RE, FORBIDDEN_HUB_CREDENTIALS
+from tools.louksnapg2_gpu_preflight import load_matrix, repair_gate, evaluate_hardware, SHA_RE, FORBIDDEN_HUB_CREDENTIALS
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -28,6 +28,10 @@ class GpuRepairInfrastructureTests(unittest.TestCase):
         self.assertEqual(FORBIDDEN_HUB_CREDENTIALS, tuple(policy["forbidden_credential_environment_names"]))
         self.assertEqual(policy["model_artifact_source"], "LOCAL_OR_ORGANIZATION_CONTROLLED_MIRROR_ONLY")
         self.assertEqual(policy["dataset_source"], "LOCAL_OR_ORGANIZATION_CONTROLLED_MIRROR_ONLY")
+
+    def test_provider_credentials_fail_closed(self):
+        blockers = evaluate_hardware({}, {"forbidden_hub_credential_names_present": ["HF_TOKEN"]})
+        self.assertIn("HUGGING_FACE_CREDENTIALS_FORBIDDEN_BY_PROVIDER_POLICY", blockers)
 
     def test_source_and_dataset_revisions_require_full_commit_hashes(self):
         good = "a" * 40

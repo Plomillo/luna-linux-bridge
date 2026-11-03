@@ -38,6 +38,16 @@ def load_matrix(repo_root: Path) -> dict[str, Any]:
         raise ValueError("ORIGINAL_WEIGHT_MUTATION_POLICY_INVALID")
     if governance.get("global_distribution_limit_bytes") != 490000000:
         raise ValueError("GLOBAL_DISTRIBUTION_CAP_DRIFT")
+    policy = governance.get("provider_policy")
+    if not isinstance(policy, dict):
+        raise ValueError("PROVIDER_POLICY_MISSING")
+    for key in ("hugging_face_jobs", "hugging_face_inference_endpoints", "hugging_face_hub_api", "hugging_face_tokens", "network_model_download_during_repair"):
+        if policy.get(key) is not False:
+            raise ValueError("HUB_OR_NETWORK_MODEL_SOURCE_NOT_DISABLED:" + key)
+    if policy.get("model_artifact_source") != "LOCAL_OR_ORGANIZATION_CONTROLLED_MIRROR_ONLY":
+        raise ValueError("MODEL_ARTIFACT_SOURCE_POLICY_INVALID")
+    if policy.get("dataset_source") != "LOCAL_OR_ORGANIZATION_CONTROLLED_MIRROR_ONLY":
+        raise ValueError("DATASET_SOURCE_POLICY_INVALID")
     return data
 
 
