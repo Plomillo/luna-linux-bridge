@@ -1,0 +1,104 @@
+{
+  "schema": "LOUKSNAPG2_GPU_REPAIR_TARGET_MATRIX/1.0",
+  "stack": {
+    "container": "nvcr.io/nvidia/nemo:26.06",
+    "nemo_framework": "26.06",
+    "pytorch": "2.12.0a0+0291f960b6",
+    "megatron_core": "0.18.0",
+    "megatron_bridge": "0.5.0",
+    "transformer_engine": "2.16",
+    "modelopt": "0.44.0",
+    "cuda": "13.2.1.009",
+    "transformers": "5.8.1"
+  },
+  "governance": {
+    "doctrine": "EXTEND_DO_NOT_REPLACE",
+    "construction": "APPEND_ONLY",
+    "failure": "FAIL_CLOSED",
+    "original_weights_mutable": false,
+    "canonical_promotion": false,
+    "self_certification": false,
+    "global_distribution_limit_bytes": 490000000,
+    "full_checkpoints_in_git": false,
+    "full_checkpoints_in_runtime_package": false
+  },
+  "targets": {
+    "D01_CEREBRO": {
+      "model_id": "openai/gpt-oss-120b",
+      "architecture": "gpt_oss",
+      "framework": "NVIDIA NeMo Megatron Bridge",
+      "adapter_status": "NOT_IMPLEMENTED",
+      "training_method": "LoRA/PEFT candidate only; no full fine-tune authorization",
+      "minimum_gpus": 8,
+      "minimum_vram_gib_per_gpu": 75,
+      "hardware_profile": "8x H100 80GB class; official NVIDIA verified PEFT configuration",
+      "license": "apache-2.0",
+      "required_source_revision": "40-character Hugging Face commit SHA",
+      "required_dataset_revision": "40-character Hugging Face dataset commit SHA"
+    },
+    "D03_TRANSCRIPCION": {
+      "model_id": "openai/whisper-large-v3-turbo",
+      "architecture": "whisper",
+      "framework": "Hugging Face Transformers + PyTorch",
+      "adapter_status": "EXPERIMENTAL_FAILED",
+      "training_method": "Model-specific ASR adapter and WER-held-out validation required",
+      "minimum_gpus": 1,
+      "minimum_vram_gib_per_gpu": null,
+      "hardware_profile": "GPU required; exact capacity profile not yet validated",
+      "license": "mit",
+      "required_source_revision": "40-character Hugging Face commit SHA",
+      "required_dataset_revision": "40-character Hugging Face dataset commit SHA"
+    },
+    "D04_TRADUCTOR_INTELIGENTE": {
+      "model_id": "facebook/seamless-m4t-v2-large",
+      "architecture": "seamless_m4t_v2",
+      "framework": "Hugging Face Transformers + PyTorch",
+      "adapter_status": "NOT_IMPLEMENTED",
+      "training_method": "Architecture-specific shared-embedding/shared-head adapter and bilingual held-out validation required",
+      "minimum_gpus": 1,
+      "minimum_vram_gib_per_gpu": null,
+      "hardware_profile": "GPU required; exact capacity profile not yet validated",
+      "license": "cc-by-nc-4.0",
+      "license_restriction": "NON_COMMERCIAL_USE_ONLY",
+      "required_source_revision": "40-character Hugging Face commit SHA",
+      "required_dataset_revision": "40-character Hugging Face dataset commit SHA"
+    },
+    "D05_INTELIGENCIA_DOCUMENTAL": {
+      "model_id": "ibm-granite/granite-docling-258M",
+      "architecture": "idefics3",
+      "framework": "Hugging Face Transformers + Docling evaluation stack",
+      "adapter_status": "EXPERIMENTAL_FAILED",
+      "training_method": "Paired FP16 baseline, processor parity, tensor reconstruction isolation and document-field held-out validation required",
+      "minimum_gpus": 1,
+      "minimum_vram_gib_per_gpu": null,
+      "hardware_profile": "GPU required; exact capacity profile not yet validated",
+      "license": "apache-2.0",
+      "required_source_revision": "40-character Hugging Face commit SHA",
+      "required_dataset_revision": "40-character Hugging Face dataset commit SHA"
+    },
+    "D06_SISTEMA_INTELIGENTE": {
+      "model_id": "Qwen/Qwen3-14B",
+      "architecture": "qwen3",
+      "framework": "NVIDIA NeMo Megatron Bridge",
+      "adapter_status": "NOT_IMPLEMENTED",
+      "training_method": "LoRA/PEFT candidate; architecture-aware import/export and held-out reasoning suite required",
+      "minimum_gpus": 8,
+      "minimum_vram_gib_per_gpu": null,
+      "hardware_profile": "8-GPU LoRA recipe family documented for Qwen3 8B-14B; exact card memory profile must be verified",
+      "license": "apache-2.0",
+      "required_source_revision": "40-character Hugging Face commit SHA",
+      "required_dataset_revision": "40-character Hugging Face dataset commit SHA"
+    }
+  },
+  "repair_gate": {
+    "required_adapter_status": "IMPLEMENTED_AND_TESTED",
+    "required_source_revision": true,
+    "required_training_dataset_id": true,
+    "required_training_dataset_revision": true,
+    "required_held_out_semantic_suite": true,
+    "required_candidate_separate_from_source": true,
+    "required_original_weight_immutability": true,
+    "required_rollback_checkpoint": true,
+    "promotion_requires_independent_g23_and_g24": true
+  }
+}
