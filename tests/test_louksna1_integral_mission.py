@@ -111,7 +111,9 @@ class ExecutableGateTests(unittest.TestCase):
                 "archive_sha256": MISSION.CMAKE_ARCHIVE_SHA256,
                 "cmake_exe_sha256": digest,
                 "exit_code": 0,
-                "stdout": "not the version line\n",
+                "echo_exit_code": 0,
+                "version_stdout": "CMake Error: Could not find CMAKE_ROOT !!!\ncmake version 4.4.3\n",
+                "echo_stdout": MISSION.CMAKE_ECHO + "\n",
                 "platform": "Microsoft Windows NT 10.0.26100.0",
                 "runner_os": "Windows",
             }), encoding="utf-8")
@@ -123,7 +125,9 @@ class ExecutableGateTests(unittest.TestCase):
                     "archive_sha256": MISSION.CMAKE_ARCHIVE_SHA256,
                     "cmake_exe_sha256": digest,
                     "exit_code": 0,
-                    "stdout": "cmake version 4.4.3\nCMake suite maintained and supported by Kitware (kitware.com/cmake).\n",
+                    "echo_exit_code": 0,
+                    "version_stdout": "cmake version 4.4.3\nCMake suite maintained and supported by Kitware (kitware.com/cmake).\n",
+                    "echo_stdout": MISSION.CMAKE_ECHO + "\n",
                     "platform": "Microsoft Windows NT 10.0.26100.0",
                     "runner_os": "Windows",
                 }), encoding="utf-8")

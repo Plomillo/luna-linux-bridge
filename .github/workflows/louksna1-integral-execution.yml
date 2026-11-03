@@ -28,24 +28,30 @@ jobs:
           if (-not (Test-Path -LiteralPath $seven)) { throw "SEVENZIP_MISSING" }
           $dest = Join-Path $env:RUNNER_TEMP "cmake-extract"
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          & $seven x -y "-o$dest" $archive "cmake-4.4.3-windows-x86_64/bin/cmake.exe"
+          & $seven x -y "-o$dest" $archive
           if ($LASTEXITCODE -ne 0) { throw "CMAKE_EXTRACT_FAILED" }
           $exe = Join-Path $dest "cmake-4.4.3-windows-x86_64\bin\cmake.exe"
           if (-not (Test-Path -LiteralPath $exe)) { throw "CMAKE_EXE_MISSING" }
-          $stdout = & $exe --version 2>&1 | Out-String
-          $exit = $LASTEXITCODE
+          $version = & $exe --version 2>&1 | Out-String
+          $versionExit = $LASTEXITCODE
+          $echo = & $exe -E echo LOUKSNA1_CMAKE_FIXTURE_V1 2>&1 | Out-String
+          $echoExit = $LASTEXITCODE
           $witness = [ordered]@{
             archive_sha256 = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLower()
             cmake_exe_sha256 = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLower()
-            exit_code = $exit
-            stdout = $stdout
+            exit_code = $versionExit
+            echo_exit_code = $echoExit
+            version_stdout = $version
+            echo_stdout = $echo
             platform = [System.Environment]::OSVersion.VersionString
             runner_os = $env:RUNNER_OS
           }
           $path = Join-Path $env:RUNNER_TEMP "cmake-witness.json"
           $witness | ConvertTo-Json | Set-Content -LiteralPath $path -Encoding utf8
           Write-Output "CMAKE_STDOUT_BEGIN"
-          Write-Output $stdout
+          Write-Output $version
+          Write-Output "CMAKE_ECHO_BEGIN"
+          Write-Output $echo
           Write-Output "CMAKE_STDOUT_END"
 
       - name: Upload the CMake execution witness

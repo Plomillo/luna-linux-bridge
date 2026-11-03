@@ -562,6 +562,7 @@ CMAKE_ARCHIVE_SHA256 = "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9
 CMAKE_ARCHIVE_BYTES = 21310484
 CMAKE_EXE_MEMBER = "cmake-4.4.3-windows-x86_64/bin/cmake.exe"
 CMAKE_VERSION_LINE = "cmake version 4.4.3"
+CMAKE_ECHO = "LOUKSNA1_CMAKE_FIXTURE_V1"
 
 
 def materialize_onnx(pointer: Path, dest: Path) -> str:
@@ -818,9 +819,18 @@ def op_cmake(runtime: Path) -> dict:
     reported = str(witness.get("cmake_exe_sha256", "")).lower()
     if reported != exe_hash:
         return record(target, "host_matrix", "FAIL", exit_code=4, detail={"exe_sha256": exe_hash}, reason="CMAKE_EXE_HASH_MISMATCH")
-    stdout = witness.get("stdout") if isinstance(witness.get("stdout"), str) else ""
+    stdout = witness.get("version_stdout") if isinstance(witness.get("version_stdout"), str) else ""
+    echo = witness.get("echo_stdout") if isinstance(witness.get("echo_stdout"), str) else ""
     host = str(witness.get("platform", "")) + " " + str(witness.get("runner_os", ""))
-    ok = witness.get("exit_code") == 0 and CMAKE_VERSION_LINE in stdout and "windows" in host.casefold()
+    broken_install = "Could not find CMAKE_ROOT" in stdout or "not been installed correctly" in stdout
+    ok = (
+        witness.get("exit_code") == 0
+        and witness.get("echo_exit_code") == 0
+        and stdout.lstrip().startswith(CMAKE_VERSION_LINE)
+        and not broken_install
+        and echo.strip() == CMAKE_ECHO
+        and "windows" in host.casefold()
+    )
     return record(
         target,
         "host_matrix",
@@ -830,7 +840,9 @@ def op_cmake(runtime: Path) -> dict:
             "archive_sha256": CMAKE_ARCHIVE_SHA256,
             "cmake_exe_sha256": exe_hash,
             "exit_code": witness.get("exit_code"),
+            "echo_exit_code": witness.get("echo_exit_code"),
             "stdout_head": stdout.strip().splitlines()[:2],
+            "echo_stdout": echo.strip()[:80],
             "host": host.strip(),
             "independent_exe_hash_checked": True,
         },
