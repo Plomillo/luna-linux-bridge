@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   inspect-xml:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout exact Louksnapg2 commit
@@ -26,7 +26,7 @@ jobs:
       - name: Set up pinned Python
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
-          python-version: "3.13.7"
+          python-version: "3.13"
       - name: Install pinned safe XML parser
         run: python -m pip install --disable-pip-version-check --no-input defusedxml==0.7.1
       - name: Verify pinned upstream archive identities

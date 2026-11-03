@@ -31,6 +31,11 @@ class WhisperFullRankMemorySplitTests(unittest.TestCase):
     def test_candidate_memory_gate_remains_one_gib(self):
         self.assertEqual(MODULE.CANDIDATE_RAM_BYTES, 1 * 1024**3)
 
+    def test_native_decoder_uses_single_beam_within_one_gib(self):
+        import inspect
+        source = inspect.getsource(MODULE.evaluate)
+        self.assertIn("-bs 1 -bo 1", source)
+
     def test_shared_library_staging_includes_nested_whisper_soname(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

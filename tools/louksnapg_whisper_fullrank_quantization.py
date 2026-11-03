@@ -635,7 +635,7 @@ def evaluate(args) -> int:
         " local prefix=\"$outdir/transcript\"",
         " mkdir -p \"$outdir\"", " rm -f \"$prefix.txt\" \"$outdir/exit_code\"",
         " set +e",
-        " \"$CLI\" -m \"$MODEL\" -f \"$audio\" -l en -t 1 -ng -nt -otxt -of \"$prefix\" -np -nf -bo 1 >\"$outdir/whisper-cli.log\" 2>&1",
+        " \"$CLI\" -m \"$MODEL\" -f \"$audio\" -l en -t 1 -ng -nt -otxt -of \"$prefix\" -np -nf -bs 1 -bo 1 >\"$outdir/whisper-cli.log\" 2>&1",
         " local rc=$?", " set -e", " printf '%s\\n' \"$rc\" > \"$outdir/exit_code\"", "}",
         "set -e",
         "run_one \"$SYNTH\" \"$WORK/synthetic-hello-world\"",
