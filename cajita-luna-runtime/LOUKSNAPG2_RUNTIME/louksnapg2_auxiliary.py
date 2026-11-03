@@ -296,12 +296,7 @@ def _whisper_paths(runtime_root: Path) -> tuple[Path, Path, Path]:
     return binary, model, manifest
 
 
-def transcribe_whisper_cpp(runtime_root: Path, audio_path: Path) -> dict:
-    audio = Path(audio_path)
-    if audio.is_symlink() or not audio.is_file():
-        raise AuxiliaryEngineError("WHISPER_INPUT_AUDIO_MISSING_OR_UNSAFE")
-    if audio.stat().st_size <= 44 or audio.stat().st_size > 50_000_000:
-        raise AuxiliaryEngineError("WHISPER_INPUT_AUDIO_SIZE_OUT_OF_RANGE")
+def verify_whisper_auxiliary_assets(runtime_root: Path) -> dict:
     binary, model, manifest_path = _whisper_paths(runtime_root)
     for label, asset in (("binary", binary), ("model", model), ("manifest", manifest_path)):
         if asset.is_symlink() or not asset.is_file():
@@ -350,6 +345,25 @@ def transcribe_whisper_cpp(runtime_root: Path, audio_path: Path) -> dict:
     model_sha = _digest(model.read_bytes())
     if model.stat().st_size != expected_model_bytes or model_sha != expected_model_sha:
         raise AuxiliaryEngineError("WHISPER_TINY_MODEL_IDENTITY_MISMATCH")
+    return {
+        "status": "PASS_HASH_VERIFIED_AUXILIARY_ASSETS",
+        "binary_path": expected_binary_path,
+        "binary_sha256": binary_sha,
+        "model_path": expected_model_path,
+        "model_sha256": expected_model_sha,
+        "assets_manifest_sha256": _digest(manifest_path.read_bytes()),
+        "runtime_commit": expected_source_commit,
+    }
+
+
+def transcribe_whisper_cpp(runtime_root: Path, audio_path: Path) -> dict:
+    audio = Path(audio_path)
+    if audio.is_symlink() or not audio.is_file():
+        raise AuxiliaryEngineError("WHISPER_INPUT_AUDIO_MISSING_OR_UNSAFE")
+    if audio.stat().st_size <= 44 or audio.stat().st_size > 50_000_000:
+        raise AuxiliaryEngineError("WHISPER_INPUT_AUDIO_SIZE_OUT_OF_RANGE")
+    assets = verify_whisper_auxiliary_assets(runtime_root)
+    binary, model, _ = _whisper_paths(runtime_root)
     proc = _run_checked(
         [str(binary), "-m", str(model), "-f", str(audio), "-nt", "-np", "-l", "auto", "-t", "1"],
         timeout=240,
@@ -362,13 +376,8 @@ def transcribe_whisper_cpp(runtime_root: Path, audio_path: Path) -> dict:
     return {
         "output_text": output[:8192],
         "engine_id": "WHISPER_CPP_TINY_MULTILINGUAL/1.9.5",
-        "binary_path": expected_binary_path,
-        "binary_sha256": binary_sha,
-        "model_path": expected_model_path,
-        "model_sha256": expected_model_sha,
-        "assets_manifest_sha256": _digest(manifest_path.read_bytes()),
+        **assets,
         "audio_sha256": _digest(audio.read_bytes()),
-        "runtime_commit": expected_source_commit,
         "threads": 1,
     }
 
