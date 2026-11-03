@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import json
 import operator
 import os
 import re
@@ -182,6 +183,19 @@ def _run_checked(command: list[str], *, input_text: str | None = None, timeout: 
         raise AuxiliaryEngineError("AUXILIARY_EXECUTION_TIMEOUT:" + command[0]) from exc
 
 
+def _package_versions(names: tuple[str, ...]) -> dict[str, str]:
+    if not shutil.which("dpkg-query"):
+        return {name: "UNAVAILABLE" for name in names}
+    versions = {}
+    for name in names:
+        proc = _run_checked(
+            ["dpkg-query", "-W", "-f=${Version}", name],
+            timeout=15,
+        )
+        versions[name] = proc.stdout.strip() if proc.returncode == 0 and proc.stdout.strip() else "NOT_INSTALLED"
+    return versions
+
+
 def _apertium_pair(source: str, target: str, text: str) -> str:
     pair = f"{source}-{target}"
     proc = _run_checked(["apertium", pair], input_text=text, timeout=45)
@@ -192,6 +206,16 @@ def _apertium_pair(source: str, target: str, text: str) -> str:
     if not output:
         raise AuxiliaryEngineError("APERTIUM_OUTPUT_EMPTY:" + pair)
     return output
+
+
+def _apertium_runtime_evidence() -> dict:
+    version = _run_checked(["apertium", "-V"], timeout=15)
+    if version.returncode != 0:
+        raise AuxiliaryEngineError("APERTIUM_VERSION_PROBE_FAILED:" + (version.stderr or version.stdout)[-200:])
+    return {
+        "version": " ".join((version.stdout or version.stderr).split())[:200],
+        "packages": _package_versions(("apertium", "apertium-eng-spa", "apertium-fr-es")),
+    }
 
 
 def translate_apertium(text: str, src_lang: str, tgt_lang: str) -> dict:
@@ -229,6 +253,7 @@ def translate_apertium(text: str, src_lang: str, tgt_lang: str) -> dict:
         "source_language": source,
         "target_language": target,
         "dictionary_scope": "UBUNTU_24_04_APERTIUM_ENG_SPA_AND_FRA_SPA_PACKAGES",
+        "runtime_evidence": _apertium_runtime_evidence(),
     }
 
 
@@ -247,28 +272,28 @@ def extract_document_tesseract(image_path: Path, *, language: str = "eng") -> di
     output = "\n".join(line.strip() for line in proc.stdout.replace("\x0c", "").splitlines() if line.strip())
     if len(output) < 3:
         raise AuxiliaryEngineError("TESSERACT_OUTPUT_EMPTY")
+    version = _run_checked(["tesseract", "--version"], timeout=15)
+    if version.returncode != 0:
+        raise AuxiliaryEngineError("TESSERACT_VERSION_PROBE_FAILED:" + (version.stderr or version.stdout)[-200:])
     return {
         "output_text": output[:8192],
         "engine_id": "TESSERACT_OCR/5.x",
         "ocr_language": language,
         "input_sha256": _digest(image.read_bytes()),
+        "runtime_evidence": {
+            "version": (version.stdout or version.stderr).splitlines()[0][:200],
+            "packages": _package_versions(("tesseract-ocr", "tesseract-ocr-eng")),
+        },
     }
 
 
-def _whisper_paths(runtime_root: Path) -> tuple[Path, Path]:
+def _whisper_paths(runtime_root: Path) -> tuple[Path, Path, Path]:
     root = Path(runtime_root).resolve()
     runtime = root if root.name == "LOUKSNAPG2_RUNTIME" else root / "LOUKSNAPG2_RUNTIME"
+    binary = runtime / "auxiliary_bin" / "linux-x86_64" / "whisper-cli"
     model = runtime / "auxiliary_models" / "ggml-tiny.bin"
-    candidates = (
-        runtime / "auxiliary_bin" / "linux-x86_64" / "whisper-cli",
-        runtime / "auxiliary_bin" / "whisper-cli",
-        runtime / "bin" / "whisper-cli",
-    )
-    binary = next((p for p in candidates if p.is_file() and not p.is_symlink()), None)
-    if binary is None:
-        system = shutil.which("whisper-cli")
-        binary = Path(system) if system else candidates[0]
-    return binary, model
+    manifest = runtime / "WHISPER_AUXILIARY_ASSETS.json"
+    return binary, model, manifest
 
 
 def transcribe_whisper_cpp(runtime_root: Path, audio_path: Path) -> dict:
@@ -277,12 +302,53 @@ def transcribe_whisper_cpp(runtime_root: Path, audio_path: Path) -> dict:
         raise AuxiliaryEngineError("WHISPER_INPUT_AUDIO_MISSING_OR_UNSAFE")
     if audio.stat().st_size <= 44 or audio.stat().st_size > 50_000_000:
         raise AuxiliaryEngineError("WHISPER_INPUT_AUDIO_SIZE_OUT_OF_RANGE")
-    binary, model = _whisper_paths(runtime_root)
-    if binary.is_symlink() or not binary.is_file() or not os.access(binary, os.X_OK):
-        raise AuxiliaryEngineError("WHISPER_CPP_BINARY_NOT_PROVISIONED")
-    if model.is_symlink() or not model.is_file():
-        raise AuxiliaryEngineError("WHISPER_TINY_MODEL_NOT_PROVISIONED")
-    if model.stat().st_size != 77_691_713 or _digest(model.read_bytes()) != "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21":
+    binary, model, manifest_path = _whisper_paths(runtime_root)
+    for label, asset in (("binary", binary), ("model", model), ("manifest", manifest_path)):
+        if asset.is_symlink() or not asset.is_file():
+            raise AuxiliaryEngineError("WHISPER_AUXILIARY_ASSET_MISSING_OR_UNSAFE:" + label)
+    runtime = binary.parents[2]
+    for asset in (binary, model, manifest_path):
+        for parent in asset.parents:
+            if parent == runtime.parent:
+                break
+            if parent.is_symlink():
+                raise AuxiliaryEngineError("WHISPER_AUXILIARY_PARENT_SYMLINK_REJECTED:" + str(parent))
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise AuxiliaryEngineError("WHISPER_AUXILIARY_MANIFEST_INVALID:" + type(exc).__name__) from exc
+    if not isinstance(manifest, dict) or manifest.get("schema") != "LOUKSNAPG2_WHISPER_AUXILIARY_ASSETS/1.0":
+        raise AuxiliaryEngineError("WHISPER_AUXILIARY_MANIFEST_SCHEMA_MISMATCH")
+    source = manifest.get("source")
+    model_record = manifest.get("model")
+    binary_record = manifest.get("binary")
+    if not isinstance(source, dict) or not isinstance(model_record, dict) or not isinstance(binary_record, dict):
+        raise AuxiliaryEngineError("WHISPER_AUXILIARY_MANIFEST_BINDING_MISSING")
+    expected_model_sha = "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21"
+    expected_model_bytes = 77_691_713
+    expected_source_commit = "d1be6fde11ac6e0407606b4e42fe72d34add8037"
+    expected_binary_path = "auxiliary_bin/linux-x86_64/whisper-cli"
+    expected_model_path = "auxiliary_models/ggml-tiny.bin"
+    if (
+        source.get("model_repository") != "ggerganov/whisper.cpp"
+        or source.get("model_revision") != "80da2d8bfee42b0e836fc3a9890373e5defc00a6"
+        or source.get("model_sha256") != expected_model_sha
+        or source.get("model_bytes") != expected_model_bytes
+        or source.get("runtime_commit") != expected_source_commit
+        or binary_record.get("source_commit") != expected_source_commit
+        or binary_record.get("path") != expected_binary_path
+        or binary_record.get("status") != "PASS_BUILT_FROM_PINNED_SOURCE"
+        or model_record.get("sha256") != expected_model_sha
+        or model_record.get("bytes") != expected_model_bytes
+    ):
+        raise AuxiliaryEngineError("WHISPER_AUXILIARY_MANIFEST_IDENTITY_MISMATCH")
+    if not os.access(binary, os.X_OK):
+        raise AuxiliaryEngineError("WHISPER_CPP_BINARY_NOT_EXECUTABLE")
+    binary_sha = _digest(binary.read_bytes())
+    if binary.stat().st_size != binary_record.get("bytes") or binary_sha != binary_record.get("sha256"):
+        raise AuxiliaryEngineError("WHISPER_CPP_BINARY_IDENTITY_MISMATCH")
+    model_sha = _digest(model.read_bytes())
+    if model.stat().st_size != expected_model_bytes or model_sha != expected_model_sha:
         raise AuxiliaryEngineError("WHISPER_TINY_MODEL_IDENTITY_MISMATCH")
     proc = _run_checked(
         [str(binary), "-m", str(model), "-f", str(audio), "-nt", "-np", "-l", "auto", "-t", "1"],
@@ -296,9 +362,13 @@ def transcribe_whisper_cpp(runtime_root: Path, audio_path: Path) -> dict:
     return {
         "output_text": output[:8192],
         "engine_id": "WHISPER_CPP_TINY_MULTILINGUAL/1.9.5",
-        "model_path": str(model.relative_to(model.parents[1])),
-        "model_sha256": "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21",
+        "binary_path": expected_binary_path,
+        "binary_sha256": binary_sha,
+        "model_path": expected_model_path,
+        "model_sha256": expected_model_sha,
+        "assets_manifest_sha256": _digest(manifest_path.read_bytes()),
         "audio_sha256": _digest(audio.read_bytes()),
+        "runtime_commit": expected_source_commit,
         "threads": 1,
     }
 
