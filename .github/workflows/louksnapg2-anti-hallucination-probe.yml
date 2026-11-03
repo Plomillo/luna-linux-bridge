@@ -60,6 +60,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           cd "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git rev-parse --show-toplevel
           git lfs install --local
           MODEL='cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx'
