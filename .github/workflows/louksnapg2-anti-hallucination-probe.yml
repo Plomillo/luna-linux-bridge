@@ -17,7 +17,7 @@ permissions:
 
 concurrency:
   group: louksnapg2-anti-hallucination-probe-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   inspect-source-model:
@@ -65,7 +65,7 @@ jobs:
           git rev-parse --show-toplevel
           git lfs install --local
           MODEL='cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx'
-          git lfs pull --include="$MODEL" --exclude="" origin
+          git lfs fetch --include="$MODEL" --exclude="" origin "$GITHUB_SHA"
           git lfs checkout "$MODEL"
           test "$(stat -c %s "$MODEL")" = "110516001"
           echo "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7  $MODEL" | sha256sum --check
