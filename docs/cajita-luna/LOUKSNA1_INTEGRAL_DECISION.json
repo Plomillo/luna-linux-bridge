@@ -13,7 +13,6 @@
     "coverage_21": {
       "failed": [
         "D01_CEREBRO_ROOT",
-        "D02_MULTI_INTERDISCIPLINAR",
         "D03_TRANSCRIPCION_ROOT",
         "D04_TRADUCCION_GENERAL",
         "D05_CALIBRE",
@@ -24,6 +23,7 @@
       ],
       "passed": [
         "D02_CONFESION_ECLESIAL_REFORMADA",
+        "D02_MULTI_INTERDISCIPLINAR",
         "D02_ORQUESTADOR",
         "D04_HERMENEUTICA_HG",
         "D04_TRADUCCION_LENGUAS_ANTIGUAS",
@@ -42,13 +42,13 @@
       "measurement": {
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 90407559168,
+        "disk_available_bytes": 90407563264,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 12988710912
+        "ram_available_bytes": 12972314624
       },
       "reason": "LINUX_RESOURCE_MEASUREMENT_IS_NOT_THE_DECLARED_ANDROID_WINDOWS_MATRIX",
       "status": "FAIL"
@@ -84,7 +84,7 @@
       "status": "FAIL"
     }
   },
-  "generated_at_utc": "2026-11-03T18:20:51Z",
+  "generated_at_utc": "2026-11-03T18:27:16Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -125,13 +125,19 @@
     },
     {
       "detail": {
-        "error": "RuntimeError"
+        "certification": "NOT_GRANTED",
+        "companion_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+        "framework_count": 18,
+        "protected_prefix_bytes": 11542631,
+        "protected_prefix_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+        "semantic_graph_execution": "PASS_STRUCTURAL_BLOCK_ROUTING_ONLY",
+        "status": "PASS_SOURCE_PREFIX_VERIFIED"
       },
-      "exit_code": 4,
+      "exit_code": 0,
       "operation": "verify_axiom_source_binding",
-      "output_sha256": "ba76a51c7c1830ff07c48ba25c5aefabf45190dcadf0bf437d21d53389036cd2",
-      "reason": "BLOCK_ENGINE_GRAPH_PATH_BINDING_MISMATCH",
-      "status": "FAIL",
+      "output_sha256": "b96b9419d8221ee0ad32ecc8bfaf4e393c98885399263560dbe9108fea6fbe5f",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D02_MULTI_INTERDISCIPLINAR",
       "worker_certification": "NOT_GRANTED"
     },
@@ -331,11 +337,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "e47b1ab436c69ede49db37cf6dcaae2e3bc18bf405365c68488e5e3ae70573b2"
+        "stdout_sha256": "c8f94be15ad94162ec6e3183226d00021eb8c13bc57fd982eea778873f30f701"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "96c83e6ca037048f2fd0f1e41d580b504cab90aa65d51fcfe5ecd9cc6855516c",
+      "output_sha256": "a74458e71ce8c320ff5d93bba748c9907b4202434bee2f9f100380905428f53b",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -392,12 +398,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "1420e29ed41fa00f462cda4c84de264a0f439397436931245236df7e445fe755",
+        "query_sha256": "46bc4a80b2f67d29cd60a51a2adab588ec4cc1fe009484934552c7def44dc45b",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "2eb2530771ecc7fcdd0941cb038b340ecb2b71ddfa0467cd063457d98b754af7",
+      "output_sha256": "33c748430114086cab9875b22970aa662b2e02b7548f94b9501d67eb60a7ce3e",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -465,7 +471,7 @@
       "worker_certification": "NOT_GRANTED"
     }
   ],
-  "producer_commit": "5bcdf651947aad209aa4ed78efd18ef2c6a7321a",
+  "producer_commit": "47fb572b3b0474b725a53e20c2d172d26e077ec9",
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
     "axiom_proposition_validity": "NOT_ESTABLISHED",
@@ -486,7 +492,6 @@
       "certification": "NOT_GRANTED",
       "failed_targets": [
         "D01_CEREBRO_ROOT",
-        "D02_MULTI_INTERDISCIPLINAR",
         "D03_TRANSCRIPCION_ROOT",
         "D04_TRADUCCION_GENERAL",
         "D05_CALIBRE",
@@ -495,7 +500,7 @@
         "D06_PORTABILIDAD_BASE",
         "D06_RUNTIME_ANDROID_WINDOWS"
       ],
-      "result_state_hash": "3acb0454a3ecf285e0360f67faf707470e80b32f310df7e83936e4614e73bafd",
+      "result_state_hash": "742584e658a1fc762d2895d2d3f88f6bde74e7e01fd3e387f9cdec29f214f79c",
       "status": "FAIL"
     },
     "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
