@@ -342,9 +342,9 @@ class LouksnapG2Runtime:
             raise EngineRuntimeError("TESSERACT_OCR_AUXILIARY_FAILED:" + str(exc)[:400]) from exc
         return self._auxiliary_result("D05_INTELIGENCIA_DOCUMENTAL", "extract_document_image", result, task_id=task_id)
 
-    def transcribe(self, audio_path: Path, *, max_tokens: int = 64, task_id: str = "transcribe") -> dict:
+    def transcribe(self, audio_path: Path, *, language: str = "auto", max_tokens: int = 64, task_id: str = "transcribe") -> dict:
         try:
-            result = self._auxiliary.transcribe(audio_path)
+            result = self._auxiliary.transcribe(audio_path, language=language)
         except AuxiliaryEngineError as exc:
             raise EngineRuntimeError("WHISPER_CPP_AUXILIARY_FAILED:" + str(exc)[:400]) from exc
         return self._auxiliary_result("D03_TRANSCRIPCION", "transcribe_audio", result, task_id=task_id)
@@ -379,5 +379,10 @@ class LouksnapG2Runtime:
                 max_tokens=max_tokens, task_id=task_id,
             )
         if domain_id == "D03_TRANSCRIPCION" and operation == "transcribe_audio":
-            return self.transcribe(Path(payload.get("audio_path", "")), max_tokens=max_tokens, task_id=task_id)
+            return self.transcribe(
+                Path(payload.get("audio_path", "")),
+                language=payload.get("language", "auto"),
+                max_tokens=max_tokens,
+                task_id=task_id,
+            )
         raise EngineRuntimeError("DOMAIN_OPERATION_PAIR_NOT_REGISTERED")
