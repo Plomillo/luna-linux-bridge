@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Build and evaluate a source-bound, groupwise INT4 Granite Docling candidate.
 
-Build is constrained by the caller to 3 GiB RAM / 1 CPU. Evaluation is constrained
-by the caller to 1 GiB RAM / 1 CPU. Source weights are immutable; no candidate is
-promoted unless invoice extraction passes the exact semantic predicate.
+Build is constrained by the caller to 3 GiB RAM / 1 CPU. Evaluation uses an explicit
+8-GiB / four-thread budget on the remote runner. Source weights are immutable; no
+candidate is promoted unless invoice extraction passes the exact semantic predicate.
 """
 from __future__ import annotations
 
@@ -347,6 +347,7 @@ def _run_runtime_protocol(runtime_path: Path, candidate_dir: Path, image: Path,
         "PYTHONNOUSERSITE": "1",
         "LOUKSNAPG2_DOCLING_IMAGE_SIDE": os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE", "512"),
         "LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES": os.environ.get("LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES", str(3 * 1024**3)),
+        "LOUKSNAPG2_DOCLING_CPU_THREADS": os.environ.get("LOUKSNAPG2_DOCLING_CPU_THREADS", "1"),
     })
     try:
         completed = subprocess.run(
@@ -394,6 +395,10 @@ def _run_runtime_protocol(runtime_path: Path, candidate_dir: Path, image: Path,
     result["process_return_code"] = completed.returncode
     result["runtime_stderr_tail"] = stderr_text[-12000:]
     result["runtime_stderr_sha256"] = hashlib.sha256(stderr_text.encode("utf-8", errors="replace")).hexdigest()
+    result["runtime_stage_markers"] = [
+        line for line in stderr_text.splitlines()
+        if line.startswith("LOUKSNAPG2_DOCLING_STAGE=")
+    ][-20:]
     if completed.returncode != 0 and result.get("status") == "PASS":
         result["status"] = "FAIL_RUNTIME_EXIT"
     return result
@@ -414,7 +419,7 @@ def evaluate(args: argparse.Namespace) -> int:
 
     # Sequential subprocesses ensure that the two model copies never coexist in RAM.
     # Both use the same local processor/config/generation files, image, prompt,
-    # input geometry, token budget, CPU quota and 3-GiB cgroup.
+    # input geometry, token budget, CPU quota and 8-GiB cgroup.
     q4_result = _run_runtime_protocol(
         runtime_path, args.candidate_dir, args.image, args.max_new_tokens,
         PROMPT, None, args.timeout_seconds,
@@ -493,8 +498,8 @@ def evaluate(args: argparse.Namespace) -> int:
             "model_dtype": q4_result.get("model_dtype"),
             "image_splitting": False,
             "processor_and_generation_config_root": str(args.candidate_dir),
-            "cpu_limit": 1,
-            "memory_limit_bytes": int(q4_result.get("ram_budget_bytes", 0)),
+            "cpu_limit": int(os.environ.get("LOUKSNAPG2_DOCLING_CPU_THREADS", "1")),
+            "memory_limit_bytes": int(os.environ.get("LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES", str(3 * 1024**3))),
             "runs_are_sequential_separate_processes": True,
             "same_fixture_and_generation_protocol": True,
             "teacher_sidecar_bytes": teacher_bytes,

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - louksnapg2/docling-q3-reconstruction-20261102
+      - repair/louksnapg2-docling-q4-budget-observability-20261102
     paths:
       - "tools/louksnapg2_docling_q4_repair.py"
       - "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py"
@@ -21,7 +22,7 @@ concurrency:
 
 jobs:
   build-source-bound-q4:
-    if: github.ref == 'refs/heads/louksnapg2/docling-q3-reconstruction-20261102'
+    if: github.ref == 'refs/heads/louksnapg2/docling-q3-reconstruction-20261102' || github.ref == 'refs/heads/repair/louksnapg2-docling-q4-budget-observability-20261102'
     runs-on: ubuntu-24.04
     container:
       image: ubuntu:24.04

@@ -73,7 +73,10 @@ class DoclingGlobalDistributionCapTests(unittest.TestCase):
         protocol_source = inspect.getsource(repair._run_runtime_protocol)
         self.assertIn('LOUKSNAPG2_DOCLING_RAM_BUDGET_BYTES', protocol_source)
         self.assertIn('LOUKSNAPG2_DOCLING_CPU_THREADS', protocol_source)
-        self.assertIn('LOUKSNAPG2_DOCLING_STAGE=', runtime.read_text(encoding="utf-8"))
+        runtime = Path(__file__).resolve().parents[1] / "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py"
+        runtime_source = runtime.read_text(encoding="utf-8")
+        self.assertIn('LOUKSNAPG2_DOCLING_STAGE=', runtime_source)
+        self.assertIn('MAX_CPU_THREADS = 4', runtime_source)
 
 
 if __name__ == "__main__":
