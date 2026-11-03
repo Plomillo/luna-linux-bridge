@@ -124,9 +124,6 @@ class FomaEngine:
 
     def _binaries(self):
         # Never trust an unpinned host Foma binary or environment override.
-        compiler=compiler_tool_status()
-        if not compiler["compiler_available"]:
-            raise FomaRuntimeError("FOMA_COMPILER_TOOLCHAIN_INCOMPLETE:"+",".join(compiler["missing_compiler_tools"]))
         digest=sha256_tree(self.source_root)
         cache=Path(tempfile.gettempdir())/("louksnapg2-foma-"+digest[:20])
         if cache.is_symlink():
@@ -152,6 +149,11 @@ class FomaEngine:
                 if cache.is_symlink():
                     raise FomaRuntimeError("FOMA_BUILD_CACHE_SYMLINK_REJECTED")
                 shutil.rmtree(cache)
+            # A previously verified cache needs no host compiler. Require the
+            # native toolchain only when a fresh disposable build is necessary.
+            compiler=compiler_tool_status()
+            if not compiler["compiler_available"]:
+                raise FomaRuntimeError("FOMA_COMPILER_TOOLCHAIN_INCOMPLETE:"+",".join(compiler["missing_compiler_tools"]))
             report=compile_foma_source(self.source_root,cache,1200)
             if report.get("status")!="PASS_FOMA_ENGINE_LOOKUP_SMOKE":
                 raise FomaRuntimeError("FOMA_RUNTIME_BUILD_NOT_PASS")

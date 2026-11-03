@@ -50,17 +50,17 @@ held-out philological evaluation and resource-specific provenance.
 ## Addendum — 2026-11-02 repository-state correction
 
 The pinned Greek and Latin source archives are now materialized in
-\`research/LOUKSNAPG2_DYNAMIC_LEXICON_SOURCE/\` at the repository's current
-\`louksnapg2/puac2-alternative-20261029\` candidate state. The measured archive
+`research/LOUKSNAPG2_DYNAMIC_LEXICON_SOURCE/` at the repository's current
+`louksnapg2/puac2-alternative-20261029` candidate state. The measured archive
 SHA-256 values are:
 
-- Greek: \`e9b4f2ff9ab62c5b4b838b74fab78dff3b28fa8381889931f1885792683dd3b8\`
-- Latin: \`f7d0b0ce41c5b7ec75c4d83e5018371b4a366b27f2f8f169abfdbe8af21e42ac\`
+- Greek: `e9b4f2ff9ab62c5b4b838b74fab78dff3b28fa8381889931f1885792683dd3b8`
+- Latin: `f7d0b0ce41c5b7ec75c4d83e5018371b4a366b27f2f8f169abfdbe8af21e42ac`
 
 The inspected source schema uses
-\`lexicalentry/form/poscontainer/senses/sensecontainer/sense\`, with sense-level
-\`count\`, \`prob\` and \`loglikelihood\` fields. The previous alignment extractor
-looked for \`syntaxcontainer/collocation\` and consequently produced zero records
+`lexicalentry/form/poscontainer/senses/sensecontainer/sense`, with sense-level
+`count`, `prob` and `loglikelihood` fields. The previous alignment extractor
+looked for `syntaxcontainer/collocation` and consequently produced zero records
 from these archives. The replacement research extractor reads the observed sense
 schema and binds itself to the archive SHA-256 values above.
 

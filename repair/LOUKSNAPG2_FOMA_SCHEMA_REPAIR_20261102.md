@@ -2,22 +2,22 @@
 
 ## Change envelope
 
-- Repository: \`Plomillo/luna-linux-bridge\`
-- Source branch: \`louksnapg2/puac2-alternative-20261029\`
-- Source commit: \`e89d5cee0ab4b2e519253d50ca37f12de2c8ccd3\`
-- Repair branch: \`repair/louksnapg2-foma-sense-xml-20261102\`
+- Repository: `Plomillo/luna-linux-bridge`
+- Source branch: `louksnapg2/puac2-alternative-20261029`
+- Source commit: `e89d5cee0ab4b2e519253d50ca37f12de2c8ccd3`
+- Repair branch: `repair/louksnapg2-foma-sense-xml-20261102`
 - Change doctrine: additive, source-pinned, fail-closed.
 - No model weights, Foma source files, canonical IDs, runtime manifest, or canonical release files are modified by this patch.
 
 ## Evidence-based defects
 
-1. The current functional-evaluation containers did not install \`make\`, \`cc\`,
-   \`flex\`, \`bison\`, \`libreadline-dev\` and \`zlib1g-dev\`. The Foma runtime
+1. The current functional-evaluation containers did not install `make`, `cc`,
+   `flex`, `bison`, `libreadline-dev` and `zlib1g-dev`. The Foma runtime
    correctly builds a disposable copy of its source at first use, but therefore
    failed before the two ancient-language cases could execute:
-   \`FOMA_COMMAND_LAUNCH_FAILED:make\`.
-2. The research extractor expected \`syntaxcontainer/collocation\`; the pinned
-   Perseus XML inspected in GitHub Actions uses \`poscontainer/senses/sensecontainer/sense\`.
+   `FOMA_COMMAND_LAUNCH_FAILED:make`.
+2. The research extractor expected `syntaxcontainer/collocation`; the pinned
+   Perseus XML inspected in GitHub Actions uses `poscontainer/senses/sensecontainer/sense`.
    The previous extractor returned zero source records and zero candidate pairs
    while exiting as a candidate-extraction success.
 3. The XML inventory confirmed 10,279 Greek XML members (6,945,634 uncompressed
