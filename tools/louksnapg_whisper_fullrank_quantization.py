@@ -589,10 +589,16 @@ def report_evaluation(args) -> int:
         outdir = work / task_id
         text_path = outdir / "transcript.txt"
         rc_path = outdir / "exit_code"
-        if not text_path.is_file() or not rc_path.is_file():
-            raise RuntimeError("WHISPER_NATIVE_INFERENCE_OUTPUT_MISSING:" + task_id)
-        text = text_path.read_text(encoding="utf-8", errors="replace").strip()
         log = outdir / "whisper-cli.log"
+        if not text_path.is_file() or not rc_path.is_file():
+            diagnostic = log.read_text(encoding="utf-8", errors="replace")[-2400:] if log.is_file() else "WHISPER_CLI_LOG_MISSING"
+            exit_code = rc_path.read_text(encoding="ascii", errors="replace").strip() if rc_path.is_file() else "EXIT_CODE_MISSING"
+            observed_files = sorted(p.name for p in outdir.iterdir()) if outdir.is_dir() else []
+            print("WHISPER_NATIVE_DIAGNOSTIC:" + json.dumps({"task_id": task_id,
+                "exit_code": exit_code, "files": observed_files, "cli_log_tail": diagnostic},
+                ensure_ascii=False, sort_keys=True), flush=True)
+            raise RuntimeError("WHISPER_NATIVE_INFERENCE_OUTPUT_MISSING:" + task_id + ":exit=" + exit_code)
+        text = text_path.read_text(encoding="utf-8", errors="replace").strip()
         result = {"task_id": task_id, "exit_code": int(rc_path.read_text(encoding="ascii").strip()),
             "execution_status": "PASS_EXECUTION" if int(rc_path.read_text(encoding="ascii").strip()) == 0 and text else "FAIL_EXECUTION",
             "transcription_text": text[:1600], "output_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
