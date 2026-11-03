@@ -264,7 +264,7 @@ def _parse_tesseract_tsv(tsv: str, *, max_words: int = 2048) -> dict:
         "level", "page_num", "block_num", "par_num", "line_num",
         "left", "top", "width", "height", "conf", "text",
     }
-    reader = csv.DictReader(io.StringIO(tsv), delimiter="\\t")
+    reader = csv.DictReader(io.StringIO(tsv), delimiter="\t")
     if not reader.fieldnames or not required.issubset(set(reader.fieldnames)):
         raise AuxiliaryEngineError("TESSERACT_TSV_SCHEMA_INVALID")
 
@@ -325,7 +325,7 @@ def _parse_tesseract_tsv(tsv: str, *, max_words: int = 2048) -> dict:
     if not layout:
         raise AuxiliaryEngineError("TESSERACT_OUTPUT_EMPTY")
     return {
-        "text": "\\n".join(line["text"] for line in layout),
+        "text": "\n".join(line["text"] for line in layout),
         "layout": layout,
         "word_count": word_count,
         "line_count": len(layout),

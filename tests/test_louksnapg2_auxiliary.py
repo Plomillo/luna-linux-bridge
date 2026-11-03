@@ -78,13 +78,13 @@ class ApertiumRoutingTests(unittest.TestCase):
 class ImageAndAudioBackendTests(unittest.TestCase):
     def test_tesseract_tsv_parser_returns_layout_lines_and_pixel_boxes(self):
         tsv = (
-            "level\\tpage_num\\tblock_num\\tpar_num\\tline_num\\tword_num\\tleft\\ttop\\twidth\\theight\\tconf\\ttext\\n"
-            "5\\t1\\t1\\t1\\t1\\t1\\t10\\t20\\t40\\t12\\t92.5\\tINVOICE\\n"
-            "5\\t1\\t1\\t1\\t1\\t2\\t55\\t20\\t30\\t12\\t88.5\\t4821\\n"
-            "5\\t1\\t1\\t1\\t2\\t1\\t10\\t50\\t60\\t12\\t95.0\\tTOTAL\\n"
+            "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n"
+            "5\t1\t1\t1\t1\t1\t10\t20\t40\t12\t92.5\tINVOICE\n"
+            "5\t1\t1\t1\t1\t2\t55\t20\t30\t12\t88.5\t4821\n"
+            "5\t1\t1\t1\t2\t1\t10\t50\t60\t12\t95.0\tTOTAL\n"
         )
         result = auxiliary._parse_tesseract_tsv(tsv)
-        self.assertEqual(result["text"], "INVOICE 4821\\nTOTAL")
+        self.assertEqual(result["text"], "INVOICE 4821\nTOTAL")
         self.assertEqual(result["word_count"], 3)
         self.assertEqual(result["line_count"], 2)
         self.assertEqual(result["layout"][0]["bbox"], [10, 20, 75, 12])
@@ -92,8 +92,8 @@ class ImageAndAudioBackendTests(unittest.TestCase):
 
     def test_tesseract_tsv_rejects_invalid_geometry(self):
         tsv = (
-            "level\\tpage_num\\tblock_num\\tpar_num\\tline_num\\tword_num\\tleft\\ttop\\twidth\\theight\\tconf\\ttext\\n"
-            "5\\t1\\t1\\t1\\t1\\t1\\t10\\t20\\t0\\t12\\t92.5\\tINVOICE\\n"
+            "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n"
+            "5\t1\t1\t1\t1\t1\t10\t20\t0\t12\t92.5\tINVOICE\n"
         )
         with self.assertRaisesRegex(auxiliary.AuxiliaryEngineError, "TESSERACT_TSV_GEOMETRY_INVALID"):
             auxiliary._parse_tesseract_tsv(tsv)
@@ -103,9 +103,9 @@ class ImageAndAudioBackendTests(unittest.TestCase):
             image = Path(tmp) / "invoice.png"
             image.write_bytes(b"image-bytes")
             tsv = (
-                "level\\tpage_num\\tblock_num\\tpar_num\\tline_num\\tword_num\\tleft\\ttop\\twidth\\theight\\tconf\\ttext\\n"
-                "5\\t1\\t1\\t1\\t1\\t1\\t10\\t20\\t40\\t12\\t92.5\\tINVOICE\\n"
-                "5\\t1\\t1\\t1\\t1\\t2\\t55\\t20\\t30\\t12\\t88.5\\t4821\\n"
+                "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n"
+                "5\t1\t1\t1\t1\t1\t10\t20\t40\t12\t92.5\tINVOICE\n"
+                "5\t1\t1\t1\t1\t2\t55\t20\t30\t12\t88.5\t4821\n"
             )
             calls = [
                 mock.Mock(returncode=0, stdout=tsv, stderr=""),
