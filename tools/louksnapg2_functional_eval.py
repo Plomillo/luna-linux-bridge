@@ -334,11 +334,30 @@ def main(argv=None) -> int:
         "engine_id": row.get("source_model_id"),
         "evidence": row.get("auxiliary_engine_evidence"),
     } for row in evidence["tests"] if row.get("source_runtime_status") == "PASS_AUXILIARY_ENGINE_EXECUTION"]
+    neural_source_ids = {
+        "GPT-OSS compactado — rank-1 INT8 factors",
+        "Qwen3 compactado — low-rank INT8 factors",
+        "SeamlessM4T v2 compactado — low-rank INT8 factors",
+        "Granite Docling compactado — packed quantized weights",
+        "Whisper compactado — low-rank INT8 factors",
+    }
     evidence["model_inference_performed"] = any(
         row.get("execution_status") == "PASS_EXECUTION"
-        and row.get("source_runtime_status") != "PASS_AUXILIARY_ENGINE_EXECUTION"
+        and row.get("source_model_id") in neural_source_ids
         for row in evidence["tests"]
     )
+    evidence["non_neural_engine_execution_performed"] = any(
+        row.get("execution_status") == "PASS_EXECUTION"
+        and bool(row.get("source_model_id"))
+        and row.get("source_model_id") not in neural_source_ids
+        for row in evidence["tests"]
+    )
+    evidence["non_neural_engine_ids"] = sorted({
+        row.get("source_model_id") for row in evidence["tests"]
+        if row.get("execution_status") == "PASS_EXECUTION"
+        and row.get("source_model_id")
+        and row.get("source_model_id") not in neural_source_ids
+    })
     by_id = {row["case_id"]: row for row in evidence["tests"]}
     for domain, case_ids in all_domains.items():
         rows = [by_id[case_id] for case_id in case_ids]
