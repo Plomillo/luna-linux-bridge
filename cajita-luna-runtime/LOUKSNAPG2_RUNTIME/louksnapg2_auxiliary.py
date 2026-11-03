@@ -337,7 +337,7 @@ def transcribe_whisper_cpp(runtime_root: Path, audio_path: Path) -> dict:
         or source.get("runtime_commit") != expected_source_commit
         or binary_record.get("source_commit") != expected_source_commit
         or binary_record.get("path") != expected_binary_path
-        or binary_record.get("status") != "PASS_BUILT_FROM_PINNED_SOURCE"
+        or binary_record.get("status") not in {"PASS_BUILT_FROM_PINNED_SOURCE", "PASS_REUSED_BUILT_BINARY"}
         or model_record.get("sha256") != expected_model_sha
         or model_record.get("bytes") != expected_model_bytes
     ):
