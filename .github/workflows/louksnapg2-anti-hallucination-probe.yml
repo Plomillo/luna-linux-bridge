@@ -54,6 +54,8 @@ jobs:
           GIT_LFS_SKIP_SMUDGE: "1"
         run: |
           set -Eeuo pipefail
+          cd "$GITHUB_WORKSPACE"
+          git rev-parse --show-toplevel
           git lfs install --local
           MODEL='cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx'
           git lfs pull --include="$MODEL" --exclude="" origin "$GITHUB_SHA"
