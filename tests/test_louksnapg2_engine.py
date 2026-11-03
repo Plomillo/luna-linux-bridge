@@ -81,12 +81,19 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
         self.temp.cleanup()
 
     def test_cerebro_uses_existing_gpt_oss_source_adapter(self):
-        result = self.runtime.route("D01_CEREBRO", "generate_text", {"prompt": "Compute 6*7.", "max_new_tokens": 16}, task_id="brain-01")
+        result = self.runtime.route("D01_CEREBRO", "generate_text", {"prompt": "hello", "max_new_tokens": 16}, task_id="brain-01")
         self.assertEqual(self.fake.requests[-1]["domain_id"], "D01_CEREBRO")
         self.assertEqual(self.fake.requests[-1]["operation"], "generate_text")
         self.assertEqual(result["source_model_id"], "GPT-OSS compactado — rank-1 INT8 factors")
         self.assertEqual(result["output_text"], "42")
         self.assertTrue(result["execution_authorized"])
+
+    def test_cerebro_uses_bounded_formal_arithmetic_without_claiming_gpt_oss_output(self):
+        result = self.runtime.route("D01_CEREBRO", "generate_text", {"prompt": "Compute (17 * 3) - 9."}, task_id="formal-42")
+        self.assertEqual(result["output_text"], "42")
+        self.assertEqual(result["source_model_id"], "LOUKSNAPG2_FORMAL_ARITHMETIC/1.0")
+        self.assertEqual(result["adapter_id"], "LOUKSNAPG2_FORMAL_REASONING_AUXILIARY/1.0")
+        self.assertEqual(self.fake.requests, [])
 
     def test_advanced_analysis_uses_existing_qwen3_source_adapter(self):
         result = self.runtime.route("D06_SISTEMA_INTELIGENTE", "analyze_reasoning", {"prompt": "How many books remain?", "max_new_tokens": 16}, task_id="analysis-01")
@@ -95,35 +102,48 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
         self.assertEqual(result["adapter_id"], "CAJITA_QWEN3_REASONING/1.0")
 
     def test_general_translation_uses_existing_seamless_adapter(self):
-        result = self.runtime.route("D04_TRADUCTOR_INTELIGENTE", "translate_text", {"text": "The meeting starts at noon.", "src_lang": "eng", "tgt_lang": "spa", "max_new_tokens": 32}, task_id="translation-01")
-        self.assertEqual(self.fake.requests[-1]["domain_id"], "D04_TRADUCTOR_INTELIGENTE")
-        self.assertEqual(result["source_model_id"], "SeamlessM4T v2 compactado — low-rank INT8 factors")
+        with mock.patch.object(self.runtime._auxiliary, "translate", return_value={
+            "output_text": "La reunión empieza al mediodía.",
+            "engine_id": "APERTIUM_LOCAL_BILINGUAL_PIPELINE/1.0",
+            "translation_route": ["eng-spa"],
+            "source_language": "eng",
+            "target_language": "spa",
+        }):
+            result = self.runtime.route("D04_TRADUCTOR_INTELIGENTE", "translate_text", {"text": "The meeting starts at noon.", "src_lang": "eng", "tgt_lang": "spa", "max_new_tokens": 32}, task_id="translation-01")
+        self.assertEqual(self.fake.requests, [])
+        self.assertEqual(result["source_model_id"], "APERTIUM_LOCAL_BILINGUAL_PIPELINE/1.0")
+        self.assertEqual(result["adapter_id"], "LOUKSNAPG2_APERTIUM_TRANSLATION_AUXILIARY/1.0")
         self.assertEqual(result["output_text"], "La reunión empieza al mediodía.")
 
     def test_docling_uses_existing_native_document_adapter(self):
         image = self.root / "invoice.png"
         image.write_bytes(b"fixture image")
-        result = self.runtime.route(
-            "D05_INTELIGENCIA_DOCUMENTAL", "extract_document_image",
-            {"image_path": str(image), "prompt": "Extract invoice fields.", "max_new_tokens": 48},
-            task_id="docling-01",
-        )
-        self.assertEqual(self.fake.requests[-1]["domain_id"], "D05_INTELIGENCIA_DOCUMENTAL")
-        self.assertEqual(self.fake.requests[-1]["operation"], "extract_document_image")
+        with mock.patch.object(self.runtime._auxiliary, "extract_document", return_value={
+            "output_text": "INVOICE 4821 TOTAL 37.50",
+            "engine_id": "TESSERACT_OCR/5.x",
+            "ocr_language": "eng",
+        }):
+            result = self.runtime.route(
+                "D05_INTELIGENCIA_DOCUMENTAL", "extract_document_image",
+                {"image_path": str(image), "prompt": "Extract invoice fields.", "max_new_tokens": 48},
+                task_id="docling-01",
+            )
+        self.assertEqual(self.fake.requests, [])
         self.assertEqual(result["target_id"], "D05_DOCLING")
-        self.assertEqual(result["adapter_id"], "CAJITA_DOCLING_IMAGE_EXTRACTION/1.0")
+        self.assertEqual(result["adapter_id"], "LOUKSNAPG2_TESSERACT_OCR_AUXILIARY/1.0")
         self.assertEqual(result["output_text"], "INVOICE 4821 TOTAL 37.50")
 
     def test_docling_accepts_protocol_budget_256_but_rejects_257(self):
         image = self.root / "invoice.png"
         image.write_bytes(b"fixture image")
-        with mock.patch.object(self.runtime, "_execute_original", return_value={"status": "PASS_EXECUTION", "output_text": "fixture"}) as execute:
+        with mock.patch.object(self.runtime._auxiliary, "extract_document", return_value={
+            "output_text": "fixture", "engine_id": "TESSERACT_OCR/5.x"
+        }):
             result = self.runtime.route(
                 "D05_INTELIGENCIA_DOCUMENTAL", "extract_document_image",
                 {"image_path": str(image), "prompt": "Convert this page to docling.", "max_new_tokens": 256},
                 task_id="docling-256",
             )
-        self.assertEqual(execute.call_args.kwargs["max_tokens"], 256)
         self.assertEqual(result["output_text"], "fixture")
         with self.assertRaisesRegex(engine.EngineRuntimeError, "TOKEN_LIMIT_OUT_OF_RANGE"):
             self.runtime.route(
@@ -143,9 +163,20 @@ class LouksnapG2NativeRoutingTests(unittest.TestCase):
     def test_transcription_uses_existing_whisper_source_adapter(self):
         audio = self.root / "sample.wav"
         audio.write_bytes(b"fixture audio")
-        result = self.runtime.route("D03_TRANSCRIPCION", "transcribe_audio", {"audio_path": str(audio), "max_new_tokens": 32}, task_id="transcribe-01")
-        self.assertEqual(self.fake.requests[-1]["domain_id"], "D03_TRANSCRIPCION")
-        self.assertEqual(result["source_model_id"], "Whisper compactado — low-rank INT8 factors")
+        with mock.patch.object(self.runtime._auxiliary, "transcribe", return_value={
+            "output_text": "The meeting starts at noon.",
+            "engine_id": "WHISPER_CPP_TINY_MULTILINGUAL/1.9.5",
+            "language": "en",
+        }) as transcribe:
+            result = self.runtime.route(
+                "D03_TRANSCRIPCION", "transcribe_audio",
+                {"audio_path": str(audio), "language": "en", "max_new_tokens": 32},
+                task_id="transcribe-01",
+            )
+        transcribe.assert_called_once_with(audio, language="en")
+        self.assertEqual(self.fake.requests, [])
+        self.assertEqual(result["source_model_id"], "WHISPER_CPP_TINY_MULTILINGUAL/1.9.5")
+        self.assertEqual(result["adapter_id"], "LOUKSNAPG2_WHISPER_CPP_AUXILIARY/1.0")
         self.assertEqual(result["operation"], "transcribe_audio")
 
     def test_ancient_translation_uses_foma_without_gpt_oss_or_general_route(self):

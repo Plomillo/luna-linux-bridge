@@ -126,6 +126,9 @@ def run_case(runtime, case_id, domain, operation, payload, predicate, requiremen
             "peak_rss_bytes": result.get("peak_rss_bytes"),
             "general_translation_fallback_selected": result.get("general_translation_fallback_selected"),
             "quality_criterion_passed": bool(predicate(output)),
+            "source_model_id": result.get("source_model_id"),
+            "source_runtime_status": result.get("source_runtime_status"),
+            "auxiliary_engine_evidence": result.get("auxiliary_engine_evidence"),
             "semantic_quality_equivalence_to_full_size_original": "NOT_ESTABLISHED",
             "reason": "" if passed else "DOMAIN_OR_OPERATION_OR_QUALITY_CRITERION_FAILED",
         })
@@ -172,10 +175,16 @@ def main(argv=None) -> int:
         "cpu_thread_budget": 1,
         "model_fetch_performed_by_evaluator": False,
         "model_inference_performed": False,
+        "auxiliary_engine_execution_performed": False,
+        "auxiliary_engine_domains": [],
+        "auxiliary_engine_evidence": [],
         "repair_execution_performed": False,
-        "repair_adapter_status": "BLOCKED_NO_MODEL_REPAIR_ADAPTERS_EXECUTED",
+        "repair_adapter_status": "ORIGINAL_NEURAL_WEIGHT_REPAIR_NOT_EXECUTED",
         "repair_adapter_evidence": [],
-        "repair_execution_evidence": {"status": "NOT_EXECUTED", "reason": "NO_SOURCE_BOUND_GPU_REPAIR_ADAPTERS"},
+        "repair_execution_evidence": {
+            "status": "NOT_EXECUTED",
+            "reason": "THIS_LANE_EXECUTES_RUNTIME_ADAPTERS_NOT_WEIGHT_RECONSTRUCTION",
+        },
         "tests": [],
         "domain_results": {},
         "functional_status": "NOT_RUN",
@@ -259,7 +268,7 @@ def main(argv=None) -> int:
             f"WHISPER_AUDIO_{index:02d}",
             "D03_TRANSCRIPCION",
             "transcribe_audio",
-            {"audio_path": str(audio)},
+            {"audio_path": str(audio), "language": "en"},
             lambda out, expected=expected: word_error_rate(expected, out) <= 0.35,
             f"Whisper transcription must have word-error-rate <= 0.35 against the supplied known audio; reference={expected!r}.",
         )
@@ -310,9 +319,45 @@ def main(argv=None) -> int:
         "D03_TRANSCRIPCION": ["WHISPER_AUDIO_01", "WHISPER_AUDIO_02"],
         "D05_INTELIGENCIA_DOCUMENTAL": ["DOCLING_INVOICE_IMAGE_01"],
     }
-    evidence["model_inference_performed"] = any(
-        row.get("execution_status") == "PASS_EXECUTION" for row in evidence["tests"]
+    evidence["auxiliary_engine_execution_performed"] = any(
+        row.get("execution_status") == "PASS_EXECUTION"
+        and row.get("source_runtime_status") == "PASS_AUXILIARY_ENGINE_EXECUTION"
+        for row in evidence["tests"]
     )
+    evidence["auxiliary_engine_domains"] = sorted({
+        row.get("domain_id") for row in evidence["tests"]
+        if row.get("source_runtime_status") == "PASS_AUXILIARY_ENGINE_EXECUTION"
+    })
+    evidence["auxiliary_engine_evidence"] = [{
+        "case_id": row.get("case_id"),
+        "domain_id": row.get("domain_id"),
+        "engine_id": row.get("source_model_id"),
+        "evidence": row.get("auxiliary_engine_evidence"),
+    } for row in evidence["tests"] if row.get("source_runtime_status") == "PASS_AUXILIARY_ENGINE_EXECUTION"]
+    neural_source_ids = {
+        "GPT-OSS compactado — rank-1 INT8 factors",
+        "Qwen3 compactado — low-rank INT8 factors",
+        "SeamlessM4T v2 compactado — low-rank INT8 factors",
+        "Granite Docling compactado — packed quantized weights",
+        "Whisper compactado — low-rank INT8 factors",
+    }
+    evidence["model_inference_performed"] = any(
+        row.get("execution_status") == "PASS_EXECUTION"
+        and row.get("source_model_id") in neural_source_ids
+        for row in evidence["tests"]
+    )
+    evidence["non_neural_engine_execution_performed"] = any(
+        row.get("execution_status") == "PASS_EXECUTION"
+        and bool(row.get("source_model_id"))
+        and row.get("source_model_id") not in neural_source_ids
+        for row in evidence["tests"]
+    )
+    evidence["non_neural_engine_ids"] = sorted({
+        row.get("source_model_id") for row in evidence["tests"]
+        if row.get("execution_status") == "PASS_EXECUTION"
+        and row.get("source_model_id")
+        and row.get("source_model_id") not in neural_source_ids
+    })
     by_id = {row["case_id"]: row for row in evidence["tests"]}
     for domain, case_ids in all_domains.items():
         rows = [by_id[case_id] for case_id in case_ids]
@@ -346,6 +391,8 @@ def main(argv=None) -> int:
         "result_domain_id": row.get("result_domain_id"),
         "result_operation": row.get("result_operation"),
         "quality_criterion_passed": row.get("quality_criterion_passed"),
+        "source_model_id": row.get("source_model_id"),
+        "source_runtime_status": row.get("source_runtime_status"),
         "actual_output": (row.get("actual_output") or "")[:240],
         "elapsed_seconds": row.get("elapsed_seconds"),
     } for row in evidence["tests"]]

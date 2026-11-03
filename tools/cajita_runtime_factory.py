@@ -575,6 +575,15 @@ def main():
   weights=json.loads((runtime/"CAJITA_RUNTIME_V1/weights_manifest.json").read_text(encoding="utf-8"))
   report["weights_before"]=verify_weights(runtime,weights)
   data=factory_materialize(runtime,rollback,a.raw_cap_bytes,repo_root=repo); report["materialization"]=data
+  whisper_build=subprocess.run([sys.executable,str(repo/"tools"/"louksnapg2_whisper_build.py"),"--runtime-root",str(runtime),"--work-dir",str(out/"whisper-build")],text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=3600,check=False)
+  report["whisper_auxiliary_build"]={"exit_code":whisper_build.returncode,"stdout_tail":whisper_build.stdout[-8000:]}
+  if whisper_build.returncode!=0: raise RuntimeError("WHISPER_AUXILIARY_ASSET_BUILD_FAILED:"+whisper_build.stdout[-2000:])
+  whisper_manifest=runtime/"WHISPER_AUXILIARY_ASSETS.json"
+  whisper_model=runtime/"auxiliary_models"/"ggml-tiny.bin"
+  whisper_binary=runtime/"auxiliary_bin"/"linux-x86_64"/"whisper-cli"
+  for label,asset in (("manifest",whisper_manifest),("model",whisper_model),("binary",whisper_binary)):
+   if asset.is_symlink() or not asset.is_file(): raise RuntimeError("WHISPER_AUXILIARY_ASSET_MISSING:"+label)
+  report["whisper_auxiliary_assets"]={"manifest_sha256":sha_file(whisper_manifest),"model_bytes":whisper_model.stat().st_size,"model_sha256":sha_file(whisper_model),"binary_bytes":whisper_binary.stat().st_size,"binary_sha256":sha_file(whisper_binary),"status":"PASS_HASH_PINNED_MODEL_AND_BUILD_PINNED_BINARY"}
   append_runtime_policy(runtime,data)
   routing=json.loads((runtime/"command_subdomain_routing.json").read_text(encoding="utf-8"))
   expected=["D01_CEREBRO","D02_ORQUESTACION","D03_TRANSCRIPCION","D04_TRADUCTOR_INTELIGENTE","D05_INTELIGENCIA_DOCUMENTAL","D06_SISTEMA_INTELIGENTE"]
