@@ -76,6 +76,11 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
+          sparse-checkout: |
+            cajita-luna-runtime
+            tools
+            tests
+          sparse-checkout-cone-mode: true
           lfs: false
           persist-credentials: false
 
