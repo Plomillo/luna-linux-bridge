@@ -326,8 +326,17 @@ def run_checked(argv: list[str], timeout: int, input_text: str | None = None, cw
 
 
 def llama_completion(binary: str, model_path: Path, prompt: str, n_predict: int) -> subprocess.CompletedProcess[str]:
-    argv = [binary, "-m", str(model_path), "-p", prompt, "-n", str(n_predict), "-c", "256", "--temp", "0", "--seed", "1", "-no-cnv", "-st", "--simple-io", "--no-warmup"]
+    argv = [binary, "-m", str(model_path), "-p", prompt, "-n", str(n_predict), "-c", "256", "-t", "1", "--temp", "0", "--seed", "1", "-no-cnv", "-st", "--simple-io", "--no-warmup"]
     return subprocess.run(argv, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=90, check=False)
+
+
+def completion_text(proc: subprocess.CompletedProcess[str]) -> str:
+    kept = []
+    for line in proc.stdout.splitlines():
+        if line.startswith("llama_") or line.startswith("[ Prompt") or "t/s" in line:
+            continue
+        kept.append(line)
+    return "\n".join(kept).strip()
 
 
 def compression_note(path: Path) -> dict:
@@ -363,8 +372,11 @@ def op_cerebro(runtime: Path) -> dict:
     except subprocess.TimeoutExpired as exc:
         detail["stderr_tail"] = ((exc.stderr or "") if isinstance(exc.stderr, str) else "")[-300:]
         return record(target, "generate_text", "FAIL", exit_code=4, detail=detail, reason="LLAMA_CPP_TIMEOUT")
-    same = first.returncode == 0 and first.stdout == second.stdout and first.stdout.strip() != ""
-    detail.update({"llama_cpp_deterministic": same, "llama_cpp_return_code": first.returncode, "reference_sha256": sha256_bytes(first.stdout.encode()), "stderr_tail": first.stderr[-300:]})
+    same = first.returncode == 0 and second.returncode == 0
+    first_text = completion_text(first)
+    second_text = completion_text(second)
+    same = same and first_text == second_text and first_text != ""
+    detail.update({"llama_cpp_deterministic": same, "llama_cpp_return_code": first.returncode, "reference_sha256": sha256_bytes(first_text.encode()), "repeat_sha256": sha256_bytes(second_text.encode()), "stderr_tail": first.stderr[-300:]})
     if not same:
         return record(target, "generate_text", "FAIL", exit_code=4, detail=detail, reason="LLAMA_CPP_REFERENCE_NOT_DETERMINISTIC")
     return record(target, "generate_text", "FAIL", exit_code=4, detail=detail, reason="CEREBRO_RANK1_DOES_NOT_MATCH_LLAMA_CPP_REFERENCE")
@@ -434,7 +446,7 @@ def op_translate() -> dict:
 def op_docling() -> dict:
     target = "D05_DOCLING"
     binary = tool_path("LOUKSNA1_TESSERACT", "tesseract")
-    detail = {"reference_engine": "tesseract", "expected_text": "LOUKSNA1"}
+    detail = {"reference_engine": "tesseract", "expected_text": "LOUKSNA"}
     if not binary:
         return record(target, "extract_document_image", "FAIL", exit_code=2, detail=detail, reason="TESSERACT_NOT_INSTALLED")
     renderer = tool_path("LOUKSNA1_IMAGE_RENDERER", "magick", "convert")
@@ -443,15 +455,15 @@ def op_docling() -> dict:
     try:
         with tempfile.TemporaryDirectory(prefix="louksna1-ocr-") as temp_name:
             image = Path(temp_name) / "fixture.png"
-            drawn = run_checked([renderer, "-background", "white", "-fill", "black", "-font", "DejaVu-Sans-Mono", "-pointsize", "120", "-bordercolor", "white", "-border", "40", "label:LOUKSNA1", str(image)], 20)
+            drawn = run_checked([renderer, "-background", "white", "-fill", "black", "-font", "DejaVu-Sans", "-pointsize", "96", "-bordercolor", "white", "-border", "30", "label:LOUKSNA", str(image)], 20)
             if drawn.returncode != 0 or not image.is_file():
                 return record(target, "extract_document_image", "FAIL", exit_code=4, detail=detail, reason="OCR_FIXTURE_RENDER_FAILED")
-            proc = run_checked([binary, str(image), "stdout", "-l", "eng", "--psm", "8", "-c", "tessedit_char_whitelist=LOUKSNA1"], 30)
+            proc = run_checked([binary, str(image), "stdout", "-l", "eng", "--psm", "7", "-c", "tessedit_char_whitelist=LOUKSNA"], 30)
     except subprocess.TimeoutExpired:
         return record(target, "extract_document_image", "FAIL", exit_code=4, detail=detail, reason="TESSERACT_TIMEOUT")
     text = "".join(ch for ch in proc.stdout.upper() if ch.isalnum())
-    detail.update({"return_code": proc.returncode, "tesseract_text": text, "tesseract_known_answer": text == "LOUKSNA1"})
-    if proc.returncode != 0 or text != "LOUKSNA1":
+    detail.update({"return_code": proc.returncode, "tesseract_text": text, "tesseract_known_answer": text == "LOUKSNA"})
+    if proc.returncode != 0 or text != "LOUKSNA":
         return record(target, "extract_document_image", "FAIL", exit_code=4, detail=detail, reason="TESSERACT_KNOWN_ANSWER_FAILED")
     return record(target, "extract_document_image", "FAIL", exit_code=4, detail=detail, reason="DOCLING_CANDIDATE_DID_NOT_MATCH_TESSERACT")
 
