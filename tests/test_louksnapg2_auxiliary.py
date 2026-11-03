@@ -111,9 +111,10 @@ class ImageAndAudioBackendTests(unittest.TestCase):
                 mock.Mock(returncode=0, stdout=tsv, stderr=""),
                 mock.Mock(returncode=0, stdout="tesseract 5.3.0", stderr=""),
             ]
-            with mock.patch.object(auxiliary, "_run_checked", side_effect=calls) as run, \\
-                 mock.patch.object(auxiliary, "_package_versions", return_value={"tesseract-ocr": "5.3.0"}):
-                result = auxiliary.extract_document_tesseract(image)
+            with (
+                mock.patch.object(auxiliary, "_run_checked", side_effect=calls) as run,
+                mock.patch.object(auxiliary, "_package_versions", return_value={"tesseract-ocr": "5.3.0"}),
+            ):
         self.assertEqual(result["output_text"], "INVOICE 4821")
         self.assertEqual(result["engine_id"], "TESSERACT_OCR/5.x")
         self.assertEqual(result["document_layout"][0]["bbox"], [10, 20, 75, 12])
