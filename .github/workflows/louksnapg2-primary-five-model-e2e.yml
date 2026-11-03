@@ -99,10 +99,14 @@ jobs:
           expected_sha256="e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git lfs install --local
-          timeout 120s git lfs pull --include="$file" --exclude="" origin
+          echo "GIT_LFS_TRACKED_OBJECTS_BEGIN"
+          git lfs ls-files --long
+          echo "GIT_LFS_TRACKED_OBJECTS_END"
+          echo "GPT_OSS_WORKTREE_BYTES_BEFORE=$(stat -c %s "$file")"
+          timeout 600s git lfs fetch --verbose --include="$file" --exclude="" origin "$GITHUB_SHA"
           git lfs checkout "$file"
-          test -s "$file"
           actual_bytes="$(stat -c %s "$file")"
+          echo "GPT_OSS_WORKTREE_BYTES_AFTER=$actual_bytes"
           test "$actual_bytes" -eq "$expected_bytes"
           printf '%s  %s\n' "$expected_sha256" "$file" | sha256sum --check -
           echo "GPT_OSS_LFS_OBJECT_VERIFIED bytes=$actual_bytes sha256=$expected_sha256"
@@ -164,8 +168,6 @@ jobs:
 
       - name: Execute the five registered compact model adapters directly
         shell: bash
-        env:
-          PYTHONPATH: ${{ github.workspace }}/cajita-luna-runtime:${{ github.workspace }}/tools
         run: |
           set -Eeuo pipefail
           mkdir -p out/primary-five-models
