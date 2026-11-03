@@ -1,0 +1,1176 @@
+{
+  "block_inventory": {
+    "count": 134,
+    "ids": [
+      "B1",
+      "B2",
+      "B3",
+      "B4",
+      "B5",
+      "B6",
+      "B7",
+      "B8",
+      "B9",
+      "B10",
+      "B11",
+      "B12",
+      "B13",
+      "B14",
+      "B15",
+      "B16",
+      "B17",
+      "B18",
+      "B19",
+      "B20",
+      "B21",
+      "B22",
+      "B23",
+      "B24",
+      "B25",
+      "B26",
+      "B27",
+      "B28",
+      "B29",
+      "B30",
+      "B31",
+      "B32",
+      "B33",
+      "B34",
+      "B35",
+      "B36",
+      "B37",
+      "B38",
+      "B39",
+      "B40",
+      "B41",
+      "B42",
+      "B43",
+      "B44",
+      "B45",
+      "B46",
+      "B47",
+      "B48",
+      "B49",
+      "B50",
+      "B51",
+      "B52",
+      "B53",
+      "B54",
+      "B55",
+      "B56",
+      "B57",
+      "B58",
+      "B59",
+      "B60",
+      "B61",
+      "B62",
+      "B63",
+      "B64",
+      "B65",
+      "B66",
+      "B67",
+      "B68",
+      "B69",
+      "B70",
+      "B71",
+      "B72",
+      "B73",
+      "B74",
+      "B75",
+      "B76",
+      "B77",
+      "B78",
+      "B79",
+      "B80",
+      "B81",
+      "B82",
+      "B83",
+      "B84",
+      "B85",
+      "B86",
+      "B87",
+      "B88",
+      "B89",
+      "B90",
+      "B91",
+      "B92",
+      "B93",
+      "B94",
+      "B95",
+      "B96",
+      "B97",
+      "B98",
+      "B99",
+      "B100",
+      "B101",
+      "B102",
+      "B103",
+      "B104",
+      "B105",
+      "B106",
+      "B107",
+      "B108",
+      "B109",
+      "B110",
+      "B111",
+      "B112",
+      "B113",
+      "B114",
+      "B115",
+      "B116",
+      "B117",
+      "B118",
+      "B119",
+      "B120",
+      "B121",
+      "B122",
+      "B123",
+      "B124",
+      "B125",
+      "B126",
+      "B127",
+      "B128",
+      "B129",
+      "B130",
+      "B131",
+      "B132",
+      "B133",
+      "B134"
+    ],
+    "mutation_allowed": false,
+    "range": "B1-B134"
+  },
+  "block_routes": [
+    {
+      "from_block_id": "B1",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B2",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B3",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B4",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B5",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B6",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B7",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B8",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B9",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B10",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B11",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B12",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B13",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B14",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B15",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B16",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B17",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B18",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B19",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B20",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B21",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B22",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B23",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B24",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B25",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B26",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B27",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B28",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B29",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B30",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B31",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B32",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B33",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B34",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B35",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B36",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B37",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B38",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B39",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B40",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B41",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B42",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B43",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B44",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B45",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B46",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B47",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B48",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B49",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B50",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B51",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B52",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B53",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B54",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B55",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B56",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B57",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B58",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B59",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B60",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B61",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B62",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B63",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B64",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B65",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B66",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B67",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B68",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B69",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B70",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B71",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B72",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B73",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B74",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B75",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B76",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B77",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B78",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B79",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B80",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B81",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B82",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B83",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B84",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B85",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B86",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B87",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B88",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B89",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B90",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B91",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B92",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B93",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B94",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B95",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B96",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B97",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B98",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B99",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B100",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B101",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B102",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B103",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B104",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B105",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B106",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B107",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B108",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B109",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B110",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B111",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B112",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B113",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B114",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B115",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B116",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B117",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B118",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B119",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B120",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B121",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B122",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B123",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B124",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B125",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B126",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B127",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B128",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B129",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B130",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B131",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B132",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B133",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    },
+    {
+      "from_block_id": "B134",
+      "provenance_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+      "relation": "routes_to_interdisciplinary_target",
+      "source_scope": "CANONICAL_BLOCK_RANGE_DECLARATION_ONLY",
+      "to_target_id": "D02_MULTI_INTERDISCIPLINAR"
+    }
+  ],
+  "certification": "NOT_GRANTED",
+  "engine_routes": [
+    {
+      "from_target_id": "D02_MULTI_INTERDISCIPLINAR",
+      "relation": "uses_canonical_engine",
+      "to_engine_id": "E03"
+    },
+    {
+      "from_target_id": "D02_MULTI_INTERDISCIPLINAR",
+      "relation": "uses_canonical_engine",
+      "to_engine_id": "E04"
+    },
+    {
+      "from_target_id": "D02_MULTI_INTERDISCIPLINAR",
+      "relation": "uses_canonical_engine",
+      "to_engine_id": "E05"
+    },
+    {
+      "from_target_id": "D02_MULTI_INTERDISCIPLINAR",
+      "relation": "uses_canonical_engine",
+      "to_engine_id": "E06"
+    },
+    {
+      "from_target_id": "D02_MULTI_INTERDISCIPLINAR",
+      "relation": "uses_canonical_engine",
+      "to_engine_id": "E07"
+    },
+    {
+      "from_target_id": "D02_MULTI_INTERDISCIPLINAR",
+      "relation": "uses_canonical_engine",
+      "to_engine_id": "E08"
+    },
+    {
+      "from_target_id": "D02_MULTI_INTERDISCIPLINAR",
+      "relation": "uses_canonical_engine",
+      "to_engine_id": "E09"
+    },
+    {
+      "from_target_id": "D02_MULTI_INTERDISCIPLINAR",
+      "relation": "uses_canonical_engine",
+      "to_engine_id": "E12"
+    },
+    {
+      "from_target_id": "D02_MULTI_INTERDISCIPLINAR",
+      "relation": "uses_canonical_engine",
+      "to_engine_id": "E13"
+    },
+    {
+      "from_target_id": "D02_MULTI_INTERDISCIPLINAR",
+      "relation": "uses_canonical_engine",
+      "to_engine_id": "E14"
+    },
+    {
+      "from_target_id": "D02_MULTI_INTERDISCIPLINAR",
+      "relation": "uses_canonical_engine",
+      "to_engine_id": "E15"
+    }
+  ],
+  "invariants": {
+    "canonical_block_identity_mutation": false,
+    "canonical_engine_reassignment": false,
+    "semantic_content_reconstructed": false,
+    "synthetic_block_ids": false
+  },
+  "schema": "LOUKSNA_BLOCK_ENGINE_BINDING/1.0",
+  "scope": "CANONICAL_IDENTIFIER_ROUTING_NOT_SEMANTIC_PROOF",
+  "source": {
+    "document_path": "Louksna1.md",
+    "document_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
+    "protected_architecture_bytes": 11542631,
+    "protected_architecture_path": "LOUKSNAMEJORADA.md",
+    "protected_architecture_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+    "provenance_mode": "EXACT_DOCUMENT_AND_PROTECTED_PREFIX_HASHES"
+  },
+  "status": "DECLARED_STRUCTURAL_ROUTING_ONLY",
+  "target": {
+    "domain_id": "D02_ORQUESTACION",
+    "engine_ids": [
+      "E03",
+      "E04",
+      "E05",
+      "E06",
+      "E07",
+      "E08",
+      "E09",
+      "E12",
+      "E13",
+      "E14",
+      "E15"
+    ],
+    "id": "D02_MULTI_INTERDISCIPLINAR",
+    "path": "2. Orquestación/Multi + Interdisciplinar"
+  }
+}
