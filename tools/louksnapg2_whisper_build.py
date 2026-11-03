@@ -87,9 +87,28 @@ def build_binary(runtime: Path, work: Path) -> dict:
     if target.is_symlink():
         raise RuntimeError("WHISPER_BINARY_SYMLINK_REJECTED")
     if target.is_file():
+        previous_manifest = runtime / "WHISPER_AUXILIARY_ASSETS.json"
+        if previous_manifest.is_symlink() or not previous_manifest.is_file():
+            raise RuntimeError("WHISPER_EXISTING_BINARY_WITHOUT_PROVENANCE_MANIFEST")
+        try:
+            previous = json.loads(previous_manifest.read_text(encoding="utf-8"))
+            previous_binary = previous.get("binary", {})
+        except Exception as exc:
+            raise RuntimeError("WHISPER_EXISTING_BINARY_PROVENANCE_INVALID:" + type(exc).__name__) from exc
+        observed_bytes = target.stat().st_size
+        observed_sha = sha256_file(target)
+        if (
+            previous.get("schema") != SCHEMA
+            or previous.get("source", {}).get("runtime_commit") != SOURCE_COMMIT
+            or previous_binary.get("source_commit") != SOURCE_COMMIT
+            or previous_binary.get("path") != target.relative_to(runtime).as_posix()
+            or previous_binary.get("bytes") != observed_bytes
+            or previous_binary.get("sha256") != observed_sha
+        ):
+            raise RuntimeError("WHISPER_EXISTING_BINARY_PROVENANCE_MISMATCH")
         run([str(target), "--help"], timeout=30)
         return {"status": "PASS_REUSED_BUILT_BINARY", "path": target.relative_to(runtime).as_posix(),
-                "bytes": target.stat().st_size, "sha256": sha256_file(target)}
+                "source_commit": SOURCE_COMMIT, "bytes": observed_bytes, "sha256": observed_sha}
     if work.exists() or work.is_symlink():
         if work.is_symlink() or not work.is_dir():
             raise RuntimeError("WHISPER_BUILD_WORKDIR_UNSAFE")
