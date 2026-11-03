@@ -36,7 +36,7 @@ class AntiHallucinationProbeContractTests(unittest.TestCase):
     def test_probe_constants_match_current_source_registry(self):
         self.assertEqual(probe.MODEL_BYTES, 110_516_001)
         self.assertEqual(len(probe.MODEL_SHA256), 64)
-        self.assertEqual(len(probe.TOKENIZER_SHA256), 64)
+        self.assertEqual(len(probe.TOKENIZER_GIT_BLOB_SHA1), 40)
 
 
 if __name__ == "__main__":
