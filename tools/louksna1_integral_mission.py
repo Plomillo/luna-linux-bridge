@@ -292,6 +292,12 @@ MARIAN_COMMIT = "3c7a88f4e974d90a91c11a0ff804f7a494b81937"
 STORIES_GGUF_SHA256 = "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d"
 STORIES_GGUF_BYTES = 1185376
 ANDROID_EMULATOR_SDK = "34"
+MARIAN_MODEL_SHA256 = "d33fec5c4d851c4a57fa622562740326d079d8e4246807e76e7a2f5d207ae504"
+MARIAN_MODEL_BYTES = 73844511
+MARIAN_VOCAB_SHA256 = "a43ea41eee4ca945c302e18e4536c86f9af1034853023d08e5994b5eaed25deb"
+MARIAN_VOCAB_BYTES = 542822
+MARIAN_CONFIG_SHA256 = "12da1905193cf1f08e0b0fd4130ad789ca8464b21053937d38f6a655dc320d98"
+MARIAN_CONFIG_BYTES = 117
 
 
 def tool_path(env_name: str, *names: str) -> str | None:
@@ -315,8 +321,8 @@ def tool_path(env_name: str, *names: str) -> str | None:
     return None
 
 
-def run_checked(argv: list[str], timeout: int, input_text: str | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(argv, input=input_text, capture_output=True, text=True, timeout=timeout, check=False)
+def run_checked(argv: list[str], timeout: int, input_text: str | None = None, cwd: str | None = None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(argv, input=input_text, capture_output=True, text=True, timeout=timeout, check=False, cwd=cwd)
 
 
 def compression_note(path: Path) -> dict:
@@ -385,13 +391,36 @@ def op_translate() -> dict:
     if not binary:
         return record(target, "translate_text", "FAIL", exit_code=2, detail=detail, reason="MARIAN_NOT_INSTALLED")
     try:
-        proc = run_checked([binary, "--version"], 30)
+        version = run_checked([binary, "--version"], 30)
     except subprocess.TimeoutExpired:
         return record(target, "translate_text", "FAIL", exit_code=4, detail=detail, reason="MARIAN_TIMEOUT")
-    detail.update({"return_code": proc.returncode, "version_sha256": sha256_bytes((proc.stdout + proc.stderr).encode())})
-    model = os.environ.get("LOUKSNA1_MARIAN_MODEL", "").strip()
-    if not model or not Path(model).is_file():
-        return record(target, "translate_text", "FAIL", exit_code=2, detail=detail, reason="MARIAN_REFERENCE_MODEL_MISSING")
+    detail.update({"version_return_code": version.returncode, "version_sha256": sha256_bytes((version.stdout + version.stderr).encode())})
+    pinned = {
+        "LOUKSNA1_MARIAN_MODEL": (MARIAN_MODEL_SHA256, MARIAN_MODEL_BYTES),
+        "LOUKSNA1_MARIAN_VOCAB": (MARIAN_VOCAB_SHA256, MARIAN_VOCAB_BYTES),
+        "LOUKSNA1_MARIAN_CONFIG": (MARIAN_CONFIG_SHA256, MARIAN_CONFIG_BYTES),
+    }
+    paths: dict[str, Path] = {}
+    for env_name, (digest, size) in pinned.items():
+        raw = os.environ.get(env_name, "").strip()
+        path = Path(raw) if raw else None
+        if path is None or path.is_symlink() or not path.is_file():
+            return record(target, "translate_text", "FAIL", exit_code=2, detail=detail, reason="MARIAN_REFERENCE_MODEL_MISSING")
+        if path.stat().st_size != size or sha256_file(path) != digest:
+            return record(target, "translate_text", "FAIL", exit_code=4, detail=detail, reason="MARIAN_REFERENCE_MODEL_HASH_MISMATCH")
+        paths[env_name] = path
+    config = paths["LOUKSNA1_MARIAN_CONFIG"]
+    if len({path.parent for path in paths.values()}) != 1:
+        return record(target, "translate_text", "FAIL", exit_code=4, detail=detail, reason="MARIAN_REFERENCE_MODEL_HASH_MISMATCH")
+    source = "Guten Tag."
+    try:
+        decoded = run_checked([binary, "-c", config.name, "--cpu-threads", "1"], 180, source + "\n", cwd=str(config.parent))
+    except subprocess.TimeoutExpired:
+        return record(target, "translate_text", "FAIL", exit_code=4, detail=detail, reason="MARIAN_TIMEOUT")
+    translation = decoded.stdout.strip()
+    detail.update({"decode_return_code": decoded.returncode, "translation_sha256": sha256_bytes(decoded.stdout.encode()), "source_sha256": sha256_bytes(source.encode())})
+    if decoded.returncode != 0 or translation == "":
+        return record(target, "translate_text", "FAIL", exit_code=4, detail=detail, reason="MARIAN_DECODE_FAILED")
     return record(target, "translate_text", "FAIL", exit_code=4, detail=detail, reason="RANK4_TRANSLATION_DOES_NOT_MATCH_MARIAN")
 
 

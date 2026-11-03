@@ -208,6 +208,23 @@ class ExecutableGateTests(unittest.TestCase):
             for key in ("LOUKSNA1_LLAMA_CLI", "LOUKSNA1_WHISPER_CLI", "LOUKSNA1_MARIAN_DECODER", "LOUKSNA1_TESSERACT", "LOUKSNA1_Z3"):
                 os.environ.pop(key, None)
 
+    def test_marian_without_pinned_model_does_not_authorize_the_rank4_candidate(self):
+        with tempfile.TemporaryDirectory() as temp_name:
+            binary = Path(temp_name) / "marian-decoder"
+            binary.write_text("#!/bin/sh\nprintf 'marian 1.9.0\\n'\n", encoding="utf-8")
+            binary.chmod(0o755)
+            os.environ["LOUKSNA1_MARIAN_DECODER"] = str(binary)
+            os.environ.pop("LOUKSNA1_MARIAN_MODEL", None)
+            os.environ.pop("LOUKSNA1_MARIAN_VOCAB", None)
+            os.environ.pop("LOUKSNA1_MARIAN_CONFIG", None)
+            try:
+                row = MISSION.op_translate()
+            finally:
+                os.environ.pop("LOUKSNA1_MARIAN_DECODER", None)
+        self.assertEqual(row["status"], "FAIL")
+        self.assertEqual(row["reason"], "MARIAN_REFERENCE_MODEL_MISSING")
+        self.assertNotEqual(row["detail"].get("reference_kind"), "AUTHORIZED_REFERENCE_MODEL")
+
 
 if __name__ == "__main__":
     unittest.main()

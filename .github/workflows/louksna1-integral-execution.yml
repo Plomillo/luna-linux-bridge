@@ -133,9 +133,26 @@ jobs:
           echo no | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd -n louksna1 -k "system-images;android-34;aosp_atd;x86_64" --abi x86_64 --force
           test -f "$ANDROID_AVD_HOME/louksna1.ini"
           "$SDK/emulator/emulator" -list-avds
-          ACCEL=off
-          if [ -e /dev/kvm ]; then ACCEL=on; fi
-          "$SDK/emulator/emulator" -avd louksna1 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel "$ACCEL" -port 5554 >"$RUNNER_TEMP/emulator.log" 2>&1 &
+          if [ ! -e /dev/kvm ]; then
+            echo "KVM_NODE_MISSING"
+            exit 1
+          fi
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules >/dev/null
+          sudo udevadm control --reload-rules || true
+          sudo udevadm trigger --name-match=kvm || true
+          sudo chmod 666 /dev/kvm
+          if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
+            echo "KVM_NODE_NOT_USABLE"
+            ls -l /dev/kvm || true
+            id || true
+            exit 1
+          fi
+          if ! "$SDK/emulator/emulator" -accel-check; then
+            echo "KVM_ACCEL_CHECK_FAILED"
+            exit 1
+          fi
+          ACCEL=on
+          "$SDK/emulator/emulator" -avd louksna1 -no-window -no-audio -no-boot-anim -no-snapshot -no-metrics -gpu swiftshader_indirect -accel on -port 5554 >"$RUNNER_TEMP/emulator.log" 2>&1 &
           echo $! >"$RUNNER_TEMP/emulator.pid"
           booted=0
           for _ in $(seq 1 90); do
@@ -241,12 +258,19 @@ jobs:
           cmake -S "$RUNNER_TEMP/whisper.cpp" -B "$RUNNER_TEMP/whisper.cpp/build" -DGGML_CUDA=OFF
           cmake --build "$RUNNER_TEMP/whisper.cpp/build" -j"$(nproc)" --target whisper-cli
           fetch_commit https://github.com/marian-nmt/marian.git 3c7a88f4e974d90a91c11a0ff804f7a494b81937 "$RUNNER_TEMP/marian"
-          cmake -S "$RUNNER_TEMP/marian" -B "$RUNNER_TEMP/marian/build" -DCOMPILE_CPU=ON -DCOMPILE_SERVER=OFF -DCOMPILE_TESTS=OFF -DUSE_MPI=OFF -DUSE_SENTENCEPIECE=ON
-          cmake --build "$RUNNER_TEMP/marian/build" -j"$(nproc)" --target marian-decoder
+          cmake -S "$RUNNER_TEMP/marian" -B "$RUNNER_TEMP/marian/build" -DCOMPILE_CUDA=OFF -DCOMPILE_CPU=ON -DCOMPILE_SERVER=OFF -DCOMPILE_TESTS=OFF -DUSE_MPI=OFF -DUSE_NCCL=OFF -DUSE_FBGEMM=OFF -DUSE_MKL=OFF -DUSE_SENTENCEPIECE=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/marian/build" -j2 --target marian-decoder
           curl -fsSL -o "$RUNNER_TEMP/stories260K.gguf" https://huggingface.co/ggml-org/models/resolve/main/tinyllamas/stories260K.gguf
           echo "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d  $RUNNER_TEMP/stories260K.gguf" | sha256sum -c -
           curl -fsSL -o "$RUNNER_TEMP/ggml-tiny.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
           echo "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21  $RUNNER_TEMP/ggml-tiny.bin" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/marian-rnn-spm"
+          curl -fsSL -o "$RUNNER_TEMP/marian-rnn-spm/model.npz" https://data.statmt.org/romang/marian-regression-tests/models/rnn-spm/model.npz
+          echo "d33fec5c4d851c4a57fa622562740326d079d8e4246807e76e7a2f5d207ae504  $RUNNER_TEMP/marian-rnn-spm/model.npz" | sha256sum -c -
+          curl -fsSL -o "$RUNNER_TEMP/marian-rnn-spm/vocab.deen.spm" https://data.statmt.org/romang/marian-regression-tests/models/rnn-spm/vocab.deen.spm
+          echo "a43ea41eee4ca945c302e18e4536c86f9af1034853023d08e5994b5eaed25deb  $RUNNER_TEMP/marian-rnn-spm/vocab.deen.spm" | sha256sum -c -
+          curl -fsSL -o "$RUNNER_TEMP/marian-rnn-spm/decode.yml" https://data.statmt.org/romang/marian-regression-tests/models/rnn-spm/decode.yml
+          echo "12da1905193cf1f08e0b0fd4130ad789ca8464b21053937d38f6a655dc320d98  $RUNNER_TEMP/marian-rnn-spm/decode.yml" | sha256sum -c -
           test -f "$RUNNER_TEMP/whisper.cpp/samples/jfk.wav"
           llama="$(find "$RUNNER_TEMP/llama.cpp/build" -type f -name llama-cli -perm -111 | head -n 1)"
           whisper="$(find "$RUNNER_TEMP/whisper.cpp/build" -type f -name whisper-cli -perm -111 | head -n 1)"
@@ -260,6 +284,9 @@ jobs:
             echo "LOUKSNA1_WHISPER_MODEL=$RUNNER_TEMP/ggml-tiny.bin"
             echo "LOUKSNA1_WHISPER_AUDIO=$RUNNER_TEMP/whisper.cpp/samples/jfk.wav"
             echo "LOUKSNA1_MARIAN_DECODER=$marian"
+            echo "LOUKSNA1_MARIAN_MODEL=$RUNNER_TEMP/marian-rnn-spm/model.npz"
+            echo "LOUKSNA1_MARIAN_VOCAB=$RUNNER_TEMP/marian-rnn-spm/vocab.deen.spm"
+            echo "LOUKSNA1_MARIAN_CONFIG=$RUNNER_TEMP/marian-rnn-spm/decode.yml"
             echo "LOUKSNA1_TESSERACT=$(command -v tesseract)"
             echo "LOUKSNA1_Z3=$(command -v z3)"
             echo "LOUKSNA1_IMAGE_RENDERER=$renderer"
