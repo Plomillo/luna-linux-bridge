@@ -93,6 +93,16 @@ class ImageAndAudioBackendTests(unittest.TestCase):
             with self.assertRaisesRegex(auxiliary.AuxiliaryEngineError, "OCR_INPUT_IMAGE_MISSING_OR_UNSAFE"):
                 auxiliary.extract_document_tesseract(missing)
 
+    def test_whisper_requires_hash_bound_bundled_binary_and_never_uses_path_fallback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp) / "LOUKSNAPG2_RUNTIME"
+            runtime.mkdir()
+            audio = Path(tmp) / "sample.wav"
+            audio.write_bytes(b"RIFF" + b"0" * 128)
+            with mock.patch.object(auxiliary.shutil, "which", return_value="/usr/bin/whisper-cli"):
+                with self.assertRaisesRegex(auxiliary.AuxiliaryEngineError, "WHISPER_AUXILIARY_ASSET_MISSING_OR_UNSAFE:binary"):
+                    auxiliary.transcribe_whisper_cpp(runtime, audio)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
