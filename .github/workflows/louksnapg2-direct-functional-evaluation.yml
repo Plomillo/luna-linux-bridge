@@ -124,7 +124,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           apt-get update
-          apt-get install -y --no-install-recommends espeak-ng build-essential cmake flex bison libreadline-dev zlib1g-dev apertium apertium-eng-spa apertium-fr-es tesseract-ocr tesseract-ocr-eng
+          apt-get install -y --no-install-recommends espeak-ng fonts-dejavu-core build-essential cmake flex bison libreadline-dev zlib1g-dev apertium apertium-eng-spa apertium-fr-es tesseract-ocr tesseract-ocr-eng
           for tool in make cc flex bison cmake apertium tesseract; do command -v "$tool"; done
 
       - name: Install only the committed CPU runtime lock
@@ -146,18 +146,17 @@ jobs:
           from pathlib import Path
           from PIL import Image, ImageDraw, ImageFont
           path = Path(__import__("os").environ["RUNNER_TEMP"]) / "louksnapg2-invoice.png"
-          image = Image.new("RGB", (1400, 900), "white")
+          image = Image.new("RGB", (1800, 1200), "white")
           draw = ImageDraw.Draw(image)
-          # Use large, anti-aliased, high-contrast text. The previous default
-          # bitmap font was too small for a 1400x900 document and could make a
-          # model failure indistinguishable from a fixture legibility failure.
-          title_font = ImageFont.load_default(size=84)
-          body_font = ImageFont.load_default(size=64)
-          draw.text((110, 90), "INVOICE", fill=(0, 0, 0), font=title_font, stroke_width=1)
-          draw.line((100, 215, 1300, 215), fill=(0, 0, 0), width=5)
-          draw.text((110, 300), "Invoice Number: 4821", fill=(0, 0, 0), font=body_font, stroke_width=1)
-          draw.text((110, 470), "Total: 37.50", fill=(0, 0, 0), font=body_font, stroke_width=1)
-          image.save(path, format="PNG", optimize=False)
+          font_path = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
+          if not font_path.is_file():
+              raise SystemExit("DEJAVU_SANS_BOLD_FONT_MISSING")
+          title_font = ImageFont.truetype(str(font_path), size=112)
+          body_font = ImageFont.truetype(str(font_path), size=88)
+          draw.text((150, 140), "INVOICE 4821", fill=(0, 0, 0), font=title_font)
+          draw.line((140, 360, 1660, 360), fill=(0, 0, 0), width=6)
+          draw.text((150, 520), "TOTAL 37.50", fill=(0, 0, 0), font=body_font)
+          image.save(path, format="PNG", optimize=False, dpi=(300, 300))
           assert path.is_file() and path.stat().st_size > 0
           print("INVOICE_FIXTURE_SHA256_READY")
           PY
