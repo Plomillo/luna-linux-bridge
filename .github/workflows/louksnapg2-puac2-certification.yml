@@ -81,6 +81,7 @@ jobs:
             tools
             tests
             repair
+            externalized-assets-staging
           sparse-checkout-cone-mode: true
           lfs: false
           persist-credentials: true
