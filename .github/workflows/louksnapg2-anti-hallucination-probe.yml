@@ -32,7 +32,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           apt-get update -qq
-          apt-get install -y --no-install-recommends ca-certificates git git-lfs
+          apt-get install -y --no-install-recommends ca-certificates git git-lfs tesseract-ocr tesseract-ocr-eng
           git lfs version
 
       - name: Checkout only the anti-hallucination model and its probe
@@ -52,6 +52,7 @@ jobs:
             cajita-luna-runtime/LOUKSNAPG2_RUNTIME/louksnapg2_auxiliary.py
             cajita-luna-runtime/LOUKSNAPG2_RUNTIME/foma_transducers/manifest.json
             tests/test_louksnapg2_engine.py
+            tests/test_louksnapg2_auxiliary.py
 
       - name: Materialize and verify the one source ONNX object
         shell: bash
@@ -83,7 +84,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           python -m pip install --disable-pip-version-check \
-            numpy==2.2.6 tokenizers==0.22.2 packaging==26.3 protobuf==4.25.9 \
+            numpy==2.2.6 tokenizers==0.22.2 packaging==26.3 protobuf==4.25.9 pillow==13.0.0 \
             sympy==1.14.0 flatbuffers==25.2.10 coloredlogs==15.0.1 humanfriendly==10.0
           printf '%s\n' \
             'onnxruntime==1.31.1 --hash=sha256:74a6a52994616c4d18b33db1e13c226333a70a6ba07480a5cab9c2a50dff1430' \
@@ -110,6 +111,38 @@ jobs:
           set -Eeuo pipefail
           export PYTHONPATH="$GITHUB_WORKSPACE/cajita-luna-runtime/LOUKSNAPG2_RUNTIME"
           python -B -m unittest discover -s tests -p 'test_louksnapg2_engine.py' -v
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_auxiliary.py' -v
+
+      - name: Run real Tesseract OCR layout smoke with source-image provenance
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import json, sys, tempfile
+          from pathlib import Path
+          from PIL import Image, ImageDraw, ImageFont
+          sys.path.insert(0, str(Path('cajita-luna-runtime/LOUKSNAPG2_RUNTIME').resolve()))
+          from louksnapg2_auxiliary import extract_document_tesseract
+          image = Image.new('RGB', (1200, 360), 'white')
+          draw = ImageDraw.Draw(image)
+          font = ImageFont.load_default(size=72)
+          draw.text((50, 45), 'INVOICE 4821', fill='black', font=font, stroke_width=1)
+          draw.text((50, 170), 'TOTAL 37.50', fill='black', font=font, stroke_width=1)
+          with tempfile.TemporaryDirectory() as directory:
+              path = Path(directory) / 'invoice.png'
+              image.save(path, format='PNG')
+              result = extract_document_tesseract(path)
+          text = result['output_text'].casefold()
+          assert 'invoice' in text and '4821' in text and '37.50' in text, result
+          assert result['document_layout'] and result['layout_metadata']['word_count'] >= 4, result
+          print(json.dumps({
+              'status': 'PASS_TESSERACT_OCR_WITH_LAYOUT',
+              'engine_id': result['engine_id'],
+              'input_sha256': result['input_sha256'],
+              'layout_metadata': result['layout_metadata'],
+              'first_line': result['document_layout'][0],
+          }, ensure_ascii=False, sort_keys=True))
+          PY
 
       - name: Inspect real source graph and execute bounded CPU inference probes
         shell: bash
