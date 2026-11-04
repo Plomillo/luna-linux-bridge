@@ -3,7 +3,7 @@ name: LOUKSNAPG2 repository-retained pre-Q2 weight probes
 on:
   push:
     branches:
-      - louksnapg2/puac2-alternative-20261029
+      - repair/louksnapg2-gpu-foundation-20261103
     paths:
       - "tools/louksnapg2_historical_weight_probe.py"
       - "tools/louksnapg2_q4_precision_probe.py"
@@ -16,10 +16,8 @@ on:
         type: choice
         options:
           - all
-          - D01_CEREBRO
           - D03_TRANSCRIPCION
           - D04_TRADUCTOR_INTELIGENTE
-          - D06_SISTEMA_INTELIGENTE
         default: all
 
 permissions:
@@ -31,7 +29,7 @@ concurrency:
 
 jobs:
   compare-retained-candidates:
-    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
+    if: github.ref == 'refs/heads/repair/louksnapg2-gpu-foundation-20261103'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
@@ -47,7 +45,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 0
+          fetch-depth: 1
           lfs: false
           persist-credentials: true
 
@@ -74,15 +72,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y espeak-ng
 
-      - name: Materialize current GPT-OSS LFS object required by every full preflight
-        if: env.SKIP_DOMAIN != 'true'
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          git lfs install --local
-          git lfs pull --include="cajita-luna-runtime/1. Cerebro/model.safetensors" --exclude="" origin "$GITHUB_SHA"
-          git lfs checkout "cajita-luna-runtime/1. Cerebro/model.safetensors"
-
       - name: Create a detached worktree at the repository-retained pre-Q2 source commit
         if: env.SKIP_DOMAIN != 'true'
         shell: bash
@@ -90,16 +79,9 @@ jobs:
           HISTORICAL_COMMIT: b2de57890fa08bc2b639c3e021868b2d91a97716
         run: |
           set -Eeuo pipefail
+          git fetch --no-tags --depth=1 origin "$HISTORICAL_COMMIT"
           git cat-file -e "$HISTORICAL_COMMIT^{commit}"
           git worktree add --detach "$RUNNER_TEMP/louksnapg2-historical" "$HISTORICAL_COMMIT"
-          if [ "${{ matrix.domain }}" = "D01_CEREBRO" ]; then
-            git -C "$RUNNER_TEMP/louksnapg2-historical" lfs install --local
-            git -C "$RUNNER_TEMP/louksnapg2-historical" lfs pull \
-              --include="cajita-luna-runtime/1. Cerebro/model.safetensors" \
-              --exclude="" origin "$HISTORICAL_COMMIT"
-            git -C "$RUNNER_TEMP/louksnapg2-historical" lfs checkout \
-              "cajita-luna-runtime/1. Cerebro/model.safetensors"
-          fi
           test -d "$RUNNER_TEMP/louksnapg2-historical/cajita-luna-runtime"
 
       - name: Generate deterministic offline speech samples
@@ -133,6 +115,8 @@ jobs:
             args+=(--audio-one "$RUNNER_TEMP/audio-one.wav" --audio-two "$RUNNER_TEMP/audio-two.wav")
           fi
           python -B tools/louksnapg2_historical_weight_probe.py "${args[@]}"
+          echo "=== FULL DIRECT NATIVE Q2 VS PRE-Q2 FACTOR EVIDENCE ==="
+          python -m json.tool "out/${{ matrix.domain }}/HISTORICAL_WEIGHT_PROBE.json"
 
       - name: Preserve baseline and historical inference evidence
         if: always() && env.SKIP_DOMAIN != 'true'

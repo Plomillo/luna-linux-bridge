@@ -44,5 +44,16 @@ class HistoricalQ4PrecisionWorkflowTests(unittest.TestCase):
         self.assertIn('"fallback_engine_execution_performed":False', evaluate)
 
 
+    def test_pre_q2_probe_workflow_runs_on_repair_branch_without_gptoss_lfs_dependency(self):
+        root = Path(__file__).resolve().parents[1]
+        workflow = (root / ".github" / "workflows" / "louksnapg2-historical-weight-probes.yml").read_text(encoding="utf-8")
+        self.assertIn("repair/louksnapg2-gpu-foundation-20261103", workflow)
+        self.assertIn("fetch-depth: 1", workflow)
+        self.assertIn('git fetch --no-tags --depth=1 origin "$HISTORICAL_COMMIT"', workflow)
+        self.assertNotIn("git lfs pull", workflow)
+        self.assertIn("D03_TRANSCRIPCION", workflow)
+        self.assertIn("D04_TRADUCTOR_INTELIGENTE", workflow)
+        self.assertIn("FULL DIRECT NATIVE Q2 VS PRE-Q2 FACTOR EVIDENCE", workflow)
+
 if __name__ == "__main__":
     unittest.main()
