@@ -81,6 +81,7 @@ jobs:
             /cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/**
             /tools/cajita_task_e2e.py
             /tools/louksnapg2_primary_five_e2e.py
+            /tools/louksnapg2_refresh_module_integrity.py
             /tests/test_cajita_task_adapters.py
             /tests/test_cajita_task_e2e.py
             /tests/test_louksnapg2_primary_five_e2e.py

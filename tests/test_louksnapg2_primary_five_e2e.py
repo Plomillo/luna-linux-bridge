@@ -27,6 +27,7 @@ class PrimaryFiveModelRunnerTests(unittest.TestCase):
         self.assertLess(verified, reported)
         self.assertIn('test "$actual_bytes" -eq "$expected_bytes"', workflow)
         self.assertIn('test "$actual_sha256" = "$expected_sha256"', workflow)
+        self.assertIn("/tools/louksnapg2_refresh_module_integrity.py", workflow)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
