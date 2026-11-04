@@ -86,13 +86,13 @@
         },
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 85318520832,
+        "disk_available_bytes": 85256548352,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 7186874368
+        "ram_available_bytes": 6880014336
       },
       "reason": "",
       "status": "PASS"
@@ -108,8 +108,10 @@
       "worker_claim": "NOT_GRANTED"
     },
     "provenance": {
-      "problems": [],
-      "status": "PASS"
+      "problems": [
+        "RUNTIME_DISTRIBUTION_MISSING"
+      ],
+      "status": "FAIL"
     },
     "rollback": {
       "observed": {
@@ -131,7 +133,7 @@
       "status": "FAIL"
     }
   },
-  "generated_at_utc": "2026-11-04T05:46:12Z",
+  "generated_at_utc": "2026-11-04T06:21:06Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -433,12 +435,12 @@
         "reference_engine": "llama.cpp",
         "reference_kind": "AUTHORIZED_REFERENCE_MODEL",
         "reference_known_answer": "PASS",
-        "reference_sha256": "87c027d6f91d7ccd4bfd4e8227b8a5ba7dfed149feab217f04bae468e0205e22",
+        "reference_sha256": "ec5e9bdde76a53fcdf6c77a15e618205d8338a04e3862e082d05c51addfd04b1",
         "stderr_tail": ""
       },
       "exit_code": 0,
       "operation": "analyze_reasoning",
-      "output_sha256": "795c7d64b0732eda04462b007fd5f5b77af6f6680a6f09c76a74a116023f8cf5",
+      "output_sha256": "7ed55a4a1b4bb233236e7713b76de18911efeac61ffefe62a8d61458fdf04ac0",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ANALISIS_AVANZADO",
@@ -450,11 +452,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "9071bcf5a665677ec3f2ebcce3f87f2c58271088573d3d6523bb124a8b70fb6a"
+        "stdout_sha256": "0846bac50ccf7c695d0370fe6fa2f1cd460c92822a4b48ea22208d1f718163f4"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "0d68cc6f9f33abd6b8e53ed8498f49361a833b052dac45f5bebf85ff8ba0fe8e",
+      "output_sha256": "885413154e674c37855428a2108a5a123307b99ee4f0e671295e72cd64eb9ec9",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -511,12 +513,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "eb4f77001ee4fd9dc2de00a298d86cf931ab980d9b4f9fd5f4be256c342bbedd",
+        "query_sha256": "b57a5ab46dcef101373a9c7806a8008ff6b1c5d6b9e2fc2ecceb3f2f99628bce",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "372265dc4f14414f1534d96b7ce56cc6171a260789e61228130770790a4819a7",
+      "output_sha256": "3dc0429d7a5ae38b2cac48eaad592d156565176732e6818e5ba3232dd35a3c62",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -608,12 +610,12 @@
       "stdout_sha256": "44d47c9675abf277caf0d7a5fc60e0aa76c8adc0c9a75c675c0951b9b8dac761"
     }
   },
-  "producer_commit": "7410e8f2f5ac144b8422a444b2d26bd89a4ae17a",
+  "producer_commit": "6fc8889320672ee544d7a910558760efd598e3fb",
   "release_manifest_refresh": {
-    "build_error": "",
+    "build_error": "imeError(\"EXTERNALIZED_EXISTING_TREE_IDENTITY_MISMATCH:\" + asset_id + \":\" + json.dumps({\"expected\": expected_tree, \"actual\": measured}, sort_keys=True))\nRuntimeError: EXTERNALIZED_EXISTING_TREE_IDENTITY_MISMATCH:ONNX_RUNTIME_1_29_0_CP311:{\"actual\": {\"bytes\": 903, \"file_count\": 3, \"tree_sha256\": \"89e83f64a9cc435a6832f2deb79cb0c79ec502102e76e24c5811a3e531a1defe\"}, \"expected\": {\"bytes\": 62736574, \"file_count\": 322, \"tree_sha256\": \"799c445e18ce0c2f10ff782b745cbf7d02ec824f5d5dea6d5d020fa3deca77ab\"}}\n",
     "global_certification": "NOT_GRANTED",
-    "source_commit": "7410e8f2f5ac144b8422a444b2d26bd89a4ae17a",
-    "status": "PASS"
+    "source_commit": "6fc8889320672ee544d7a910558760efd598e3fb",
+    "status": "FAIL"
   },
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
