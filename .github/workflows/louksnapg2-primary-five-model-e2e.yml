@@ -167,27 +167,26 @@ jobs:
           }, ensure_ascii=False, sort_keys=True, indent=2))
           PY
 
-      - name: Hydrate and verify the compact GPT-OSS LFS object before model E2E
+      - name: Download the exact GPT-OSS LFS object from GitHub media and verify identity
         shell: bash
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           file="cajita-luna-runtime/1. Cerebro/model.safetensors"
           expected_bytes=40489120
           expected_sha256="e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0"
-          git -C "$GITHUB_WORKSPACE" rev-parse --show-toplevel
-          git -C "$GITHUB_WORKSPACE" lfs install --local
-          auth="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
-          git -C "$GITHUB_WORKSPACE" config --local --replace-all http.https://github.com/.extraheader "AUTHORIZATION: basic $auth"
-          git -C "$GITHUB_WORKSPACE" config --local --replace-all http.https://github.com/Plomillo/luna-linux-bridge.git/info/lfs/.extraheader "AUTHORIZATION: basic $auth"
-          echo "GPT_OSS_LFS_BYTES_BEFORE=$(stat -c %s "$GITHUB_WORKSPACE/$file")"
-          timeout 300s git -C "$GITHUB_WORKSPACE" lfs fetch --include="$file" --exclude="" origin "$GITHUB_SHA"
-          git -C "$GITHUB_WORKSPACE" lfs checkout "$file"
-          actual_bytes="$(stat -c %s "$GITHUB_WORKSPACE/$file")"
+          safe_path="$(python -c 'from urllib.parse import quote; print(quote("cajita-luna-runtime/1. Cerebro/model.safetensors", safe="/"))')"
+          media_url="https://media.githubusercontent.com/media/$GITHUB_REPOSITORY/$GITHUB_SHA/$safe_path"
+          temporary="$GITHUB_WORKSPACE/$file.download"
+          trap 'rm -f "$temporary"' EXIT
+          echo "GPT_OSS_MEDIA_SOURCE=$media_url"
+          curl --fail --silent --show-error --location \
+            --retry 2 --retry-all-errors --retry-delay 2 \
+            --connect-timeout 20 --max-time 240 \
+            "$media_url" --output "$temporary"
+          actual_bytes="$(stat -c %s "$temporary")"
           test "$actual_bytes" -eq "$expected_bytes"
-          printf '%s  %s\n' "$expected_sha256" "$GITHUB_WORKSPACE/$file" | sha256sum --check -
+          printf '%s  %s\n' "$expected_sha256" "$temporary" | sha256sum --check -
+          mv "$temporary" "$GITHUB_WORKSPACE/$file"
           echo "GPT_OSS_LFS_VERIFIED=true" >> "$GITHUB_ENV"
           echo "GPT_OSS_LFS_OBJECT_VERIFIED bytes=$actual_bytes sha256=$expected_sha256"
 
