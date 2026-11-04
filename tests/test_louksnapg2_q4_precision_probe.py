@@ -28,10 +28,10 @@ class HistoricalQ4PrecisionWorkflowTests(unittest.TestCase):
 
     def test_probe_covers_all_four_factorized_neural_models(self):
         workflow = (ROOT / ".github" / "workflows" / "louksnapg2-q4-precision-probes.yml").read_text(encoding="utf-8")
-        for domain in ("D03_TRANSCRIPCION", "D04_TRADUCTOR_INTELIGENTE"):
+        for domain in ("D01_CEREBRO", "D03_TRANSCRIPCION", "D04_TRADUCTOR_INTELIGENTE", "D06_SISTEMA_INTELIGENTE"):
             self.assertIn("- " + domain, workflow)
-        self.assertNotIn("- D01_CEREBRO", workflow)
-        self.assertNotIn("- D06_SISTEMA_INTELIGENTE", workflow)
+        self.assertEqual(workflow.count("          - D01_CEREBRO"), 1)
+        self.assertEqual(workflow.count("          - D06_SISTEMA_INTELIGENTE"), 1)
 
 
 

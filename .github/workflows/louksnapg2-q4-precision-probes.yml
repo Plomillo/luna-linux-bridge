@@ -36,8 +36,10 @@ jobs:
       fail-fast: false
       matrix:
         domain:
+          - D01_CEREBRO
           - D03_TRANSCRIPCION
           - D04_TRADUCTOR_INTELIGENTE
+          - D06_SISTEMA_INTELIGENTE
     steps:
       - name: Install Git and LFS before checkout in the bounded container
         shell: bash
