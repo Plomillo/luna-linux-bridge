@@ -105,7 +105,7 @@ class WhisperFullRankMemorySplitTests(unittest.TestCase):
         self.assertIsNotNone(executable)
         result = subprocess.run([executable, "--version"], capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertRegex(result.stdout, r"^git version [0-9]+\\.")
+        self.assertTrue(result.stdout.startswith("git version "), result.stdout)
 
     def test_runtime_env_prepends_bundled_libraries(self):
         with tempfile.TemporaryDirectory() as temporary:
