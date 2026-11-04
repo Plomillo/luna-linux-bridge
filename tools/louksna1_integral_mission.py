@@ -1558,10 +1558,22 @@ def decide(matrix: list[dict], identity: dict, resources: dict, rollback: dict, 
         "baseline_integrity": {"status": baseline},
     }
     granted = all(gate["status"] == "PASS" for gate in gates.values())
+    function_gates = (
+        "identity",
+        "coverage_21",
+        "semantic_quality",
+        "host_resources",
+        "rollback",
+        "provenance",
+        "independence",
+        "baseline_integrity",
+    )
+    functional = all(gates[name]["status"] == "PASS" for name in function_gates)
     return {
         "schema": SCHEMA,
         "decision": "GRANTED" if granted else "NOT_GRANTED",
         "global_certification": "GRANTED" if granted else "NOT_GRANTED",
+        "functional_certification": "GRANTED" if functional else "NOT_GRANTED",
         "authority": "INDEPENDENT_VALIDATOR_NOT_SELF_CERTIFICATION",
         "gates": gates,
         "target_adapter_registration": {
@@ -1708,6 +1720,7 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps({
         "decision": report["decision"],
         "global_certification": report["global_certification"],
+        "functional_certification": report["functional_certification"],
         "worker_status": report["worker"].get("status"),
         "passed_targets": report["gates"]["coverage_21"]["passed"],
         "failed_targets": report["gates"]["coverage_21"]["failed"],

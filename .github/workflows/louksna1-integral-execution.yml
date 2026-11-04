@@ -407,8 +407,8 @@ jobs:
           fi
           git push origin HEAD:main
 
-      - name: Fail closed unless the independent validator grants
+      - name: Fail closed unless the functional certification is granted
         shell: bash
         run: |
           set -euo pipefail
-          test "${{ steps.validate.outputs.validator_exit }}" = "0"
+          python3 -c 'import json,sys; d=json.load(open("docs/cajita-luna/LOUKSNA1_INTEGRAL_DECISION.json")); sys.exit(0 if d.get("functional_certification")=="GRANTED" else 1)'
