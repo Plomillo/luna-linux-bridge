@@ -44,6 +44,11 @@ class HistoricalQ4PrecisionWorkflowTests(unittest.TestCase):
         self.assertIn('"fallback_engine_execution_performed":False', evaluate)
 
 
+    def test_historical_native_probe_imports_time_for_elapsed_measurement(self):
+        source = (ROOT / "tools" / "louksnapg2_historical_weight_probe.py").read_text(encoding="utf-8")
+        self.assertIn("import time", source)
+        self.assertIn("time.monotonic()", source)
+
     def test_pre_q2_probe_workflow_runs_on_repair_branch_without_gptoss_lfs_dependency(self):
         root = Path(__file__).resolve().parents[1]
         workflow = (root / ".github" / "workflows" / "louksnapg2-historical-weight-probes.yml").read_text(encoding="utf-8")
