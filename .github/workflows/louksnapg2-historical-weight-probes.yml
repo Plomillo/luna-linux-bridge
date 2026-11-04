@@ -8,6 +8,9 @@ on:
       - "tools/louksnapg2_historical_weight_probe.py"
       - "tools/louksnapg2_q4_precision_probe.py"
       - ".github/workflows/louksnapg2-historical-weight-probes.yml"
+      - "cajita-luna-runtime/cajita_task_adapters.py"
+      - "cajita-luna-runtime/cajita_resource_limits.py"
+      - "tests/test_cajita_task_adapters.py"
   workflow_dispatch:
     inputs:
       domain:
