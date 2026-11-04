@@ -277,17 +277,26 @@ def download_official_whisper_checkpoint(destination: Path) -> dict:
 
 
 def create_mmap_pt_converter(upstream_converter: Path, output_dir: Path) -> Path:
-    """Patch pinned convert-pt-to-ggml.py to mmap the .pt checkpoint instead of reading it into RAM."""
+    """Patch the pinned .pt converter to mmap the checkpoint rather than copy it into RAM."""
     source = Path(upstream_converter).read_text(encoding="utf-8")
-    original = (
-        '    model_bytes = open(fname_inp, "rb").read()\n'
-        '    with io.BytesIO(model_bytes) as fp:\n'
-        '        checkpoint = torch.load(fp, map_location="cpu")'
-    )
-    replacement = '    checkpoint = torch.load(fname_inp, map_location="cpu", mmap=True, weights_only=True)'
-    if source.count(original) != 1:
-        raise RuntimeError("PINNED_PT_CONVERTER_MMAP_PATCH_ANCHOR_MISMATCH")
-    source = source.replace(original, replacement)
+    lines = source.splitlines()
+    matches = [
+        index for index, line in enumerate(lines)
+        if line.strip() == 'model_bytes = open(fname_inp, "rb").read()'
+    ]
+    if len(matches) != 1:
+        raise RuntimeError("PINNED_PT_CONVERTER_MMAP_PATCH_ANCHOR_COUNT:" + str(len(matches)))
+    index = matches[0]
+    if index + 2 >= len(lines):
+        raise RuntimeError("PINNED_PT_CONVERTER_MMAP_PATCH_BLOCK_TRUNCATED")
+    if lines[index + 1].strip() != "with io.BytesIO(model_bytes) as fp:":
+        raise RuntimeError("PINNED_PT_CONVERTER_MMAP_BYTESIO_BLOCK_MISMATCH")
+    if lines[index + 2].strip() != 'checkpoint = torch.load(fp, map_location="cpu")':
+        raise RuntimeError("PINNED_PT_CONVERTER_MMAP_TORCH_LOAD_BLOCK_MISMATCH")
+    lines[index:index + 3] = [
+        '    checkpoint = torch.load(fname_inp, map_location="cpu", mmap=True, weights_only=True)'
+    ]
+    source = "\n".join(lines) + ("\n" if Path(upstream_converter).read_text(encoding="utf-8").endswith("\n") else "")
     if "model_bytes = open(fname_inp" in source or "mmap=True, weights_only=True" not in source:
         raise RuntimeError("PT_CONVERTER_SAFE_MMAP_MODE_MISSING")
     patched = Path(output_dir) / "convert-pt-to-ggml-mmap.py"
