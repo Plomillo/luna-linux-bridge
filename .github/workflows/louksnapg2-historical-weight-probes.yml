@@ -87,9 +87,11 @@ jobs:
         run: |
           set -Eeuo pipefail
           test -d "$GITHUB_WORKSPACE/.git" || { echo "CURRENT_CHECKOUT_NOT_GIT_REPOSITORY" >&2; exit 2; }
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git -C "$GITHUB_WORKSPACE" fetch --no-tags --depth=1 origin "$HISTORICAL_COMMIT"
           git -C "$GITHUB_WORKSPACE" cat-file -e "$HISTORICAL_COMMIT^{commit}"
           git -C "$GITHUB_WORKSPACE" worktree add --detach "$RUNNER_TEMP/louksnapg2-historical" "$HISTORICAL_COMMIT"
+          git config --global --add safe.directory "$RUNNER_TEMP/louksnapg2-historical"
           test -d "$RUNNER_TEMP/louksnapg2-historical/cajita-luna-runtime"
 
       - name: Generate deterministic offline speech samples
