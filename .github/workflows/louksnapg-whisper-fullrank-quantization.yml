@@ -32,6 +32,9 @@ env:
 jobs:
   repair:
     name: Build full-rank Q4_0 and Q5_0 candidates
+    defaults:
+      run:
+        shell: bash
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     container:
