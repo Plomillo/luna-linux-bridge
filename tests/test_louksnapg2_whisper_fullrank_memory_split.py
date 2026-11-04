@@ -98,6 +98,14 @@ class WhisperFullRankMemorySplitTests(unittest.TestCase):
             self.assertFalse((destination / "libwhisper.so.1").is_symlink())
             self.assertEqual((destination / "libwhisper.so.1").read_bytes(), b"pinned-whisper-library")
 
+    def test_checkout_has_git_available_inside_container(self):
+        workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "louksnapg-whisper-fullrank-quantization.yml").read_text(encoding="utf-8")
+        evaluate = workflow.split("  evaluate:", 1)[1]
+        install = evaluate.split("      - name: Install fixture generator and time utility", 1)[1].split("      - name: Checkout offline evaluator", 1)[0]
+        self.assertIn("defaults:\n      run:\n        shell: bash", evaluate)
+        self.assertIn("shell: bash", install)
+        self.assertIn("apt-get install -y --no-install-recommends ca-certificates git espeak-ng libgomp1 time", install)
+
     def test_runtime_env_prepends_bundled_libraries(self):
         with tempfile.TemporaryDirectory() as temporary:
             library_dir = Path(temporary)

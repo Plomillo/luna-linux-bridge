@@ -15,6 +15,20 @@ on:
       - "cajita-luna-runtime/REQUIREMENTS.runtime.lock"
       - "cajita-luna-runtime/**/model.safetensors"
       - "cajita-luna-runtime/**/quantized_weights.bin"
+  pull_request:
+    branches:
+      - repair/louksnapg2-operational-engines-20261103
+    paths:
+      - ".github/workflows/louksnapg2-primary-five-model-e2e.yml"
+      - "tools/louksnapg2_primary_five_e2e.py"
+      - "tools/cajita_task_e2e.py"
+      - "tests/test_louksnapg2_primary_five_e2e.py"
+      - "tests/test_cajita_task_adapters.py"
+      - "tests/test_cajita_task_e2e.py"
+      - "cajita-luna-runtime/cajita_task_adapters.py"
+      - "cajita-luna-runtime/REQUIREMENTS.runtime.lock"
+      - "cajita-luna-runtime/**/model.safetensors"
+      - "cajita-luna-runtime/**/quantized_weights.bin"
   workflow_dispatch:
 
 permissions:
