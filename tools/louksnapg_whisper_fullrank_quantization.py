@@ -318,6 +318,19 @@ def memory_event_delta(before: dict, after: dict) -> dict:
             for key in set(before) | set(after)}
 
 
+def unreclaimable_memory_baseline_bytes(memory_current_bytes: int, memory_stat: dict) -> int:
+    """Exclude clean file cache when cgroup memory.reclaim is unavailable.
+
+    Shared memory remains charged. Process RSS and cgroup OOM deltas remain
+    independent hard gates, so this is a baseline diagnostic, not an exemption
+    from the 1-GiB cgroup limit.
+    """
+    current = max(0, int(memory_current_bytes))
+    file_bytes = max(0, int(memory_stat.get("file", 0)))
+    shmem_bytes = max(0, int(memory_stat.get("shmem", 0)))
+    return max(0, current - max(0, file_bytes - shmem_bytes))
+
+
 def make_synthetic_audio(path: Path) -> Path:
     executable = shutil.which("espeak-ng")
     if not executable:
@@ -719,15 +732,23 @@ def evaluate(args) -> int:
         "export LD_LIBRARY_PATH=" + q(library_dir) + ':"${LD_LIBRARY_PATH:-}"',
         "SYNTH=" + q(synthetic), "REAL=" + q(real_audio),
         "CGROUP=/sys/fs/cgroup",
-        "test -w \"$CGROUP/memory.reclaim\" || { echo CGROUP_MEMORY_RECLAIM_UNAVAILABLE >&2; exit 90; }",
+        "if [ -w \"$CGROUP/memory.reclaim\" ] && printf '1073741824\\n' > \"$CGROUP/memory.reclaim\" 2>/dev/null; then echo SUPPORTED_BEST_EFFORT > \"$WORK/candidate-memory-reclaim-status.txt\"; else echo UNAVAILABLE_BEST_EFFORT > \"$WORK/candidate-memory-reclaim-status.txt\"; fi",
         "cat \"$CGROUP/memory.events\" > \"$WORK/candidate-memory-events-before.txt\"",
         "run_one() {", " local audio=\"$1\" outdir=\"$2\"",
         " local prefix=\"$outdir/transcript\"",
         " mkdir -p \"$outdir\"", " rm -f \"$prefix.txt\" \"$outdir/exit_code\" \"$outdir/peak-rss-kib.txt\"",
-        " printf '1073741824\\n' > \"$CGROUP/memory.reclaim\"",
-        " local baseline=$(cat \"$CGROUP/memory.current\")",
+        " if [ -w \"$CGROUP/memory.reclaim\" ]; then printf '1073741824\\n' > \"$CGROUP/memory.reclaim\" 2>/dev/null || true; fi",
+        " local current=$(cat \"$CGROUP/memory.current\")",
+        " local file_bytes=$(awk '$1==\"file\" {print $2}' \"$CGROUP/memory.stat\")",
+        " local shmem_bytes=$(awk '$1==\"shmem\" {print $2}' \"$CGROUP/memory.stat\")",
+        " if [ -z \"$file_bytes\" ] || [ -z \"$shmem_bytes\" ]; then echo CGROUP_MEMORY_STAT_FIELDS_MISSING >&2; return 92; fi",
+        " local reclaimable_file_bytes=$((file_bytes - shmem_bytes))",
+        " if [ \"$reclaimable_file_bytes\" -lt 0 ]; then reclaimable_file_bytes=0; fi",
+        " local baseline=$((current - reclaimable_file_bytes))",
         " printf '%s\\n' \"$baseline\" > \"$outdir/resident-baseline-bytes.txt\"",
-        " if [ \"$baseline\" -gt 268435456 ]; then echo CANDIDATE_RESIDENT_BASELINE_OVER_256MIB:$baseline >&2; return 91; fi",
+        " printf '%s\\n' \"$current\" > \"$outdir/resident-current-bytes.txt\"",
+        " printf '%s\\n' \"$reclaimable_file_bytes\" > \"$outdir/reclaimable-file-cache-bytes.txt\"",
+        " if [ \"$baseline\" -gt 268435456 ]; then echo CANDIDATE_UNRECLAIMABLE_BASELINE_OVER_256MIB:$baseline >&2; return 91; fi",
         " set +e",
         " /usr/bin/time -f '%M' -o \"$outdir/peak-rss-kib.txt\" \"$CLI\" -m \"$MODEL\" -f \"$audio\" -l en -t 1 -ng -nt -otxt -of \"$prefix\" -np -nf -bs 1 -bo 1 >\"$outdir/whisper-cli.log\" 2>&1",
         " local rc=$?", " set -e", " printf '%s\\n' \"$rc\" > \"$outdir/exit_code\"", "}",
@@ -839,22 +860,30 @@ def report_evaluation(args) -> int:
         task_dir = work / task_id
         peak_path = task_dir / "peak-rss-kib.txt"
         baseline_path = task_dir / "resident-baseline-bytes.txt"
-        if not peak_path.is_file() or not baseline_path.is_file():
-            raise RuntimeError("WHISPER_PROCESS_RSS_EVIDENCE_MISSING:" + task_id)
+        current_before_path = task_dir / "resident-current-bytes.txt"
+        file_cache_path = task_dir / "reclaimable-file-cache-bytes.txt"
+        if not peak_path.is_file() or not baseline_path.is_file() or not current_before_path.is_file() or not file_cache_path.is_file():
+            raise RuntimeError("WHISPER_PROCESS_RSS_OR_BASELINE_EVIDENCE_MISSING:" + task_id)
         peak_kib = int(peak_path.read_text(encoding="ascii").strip())
         peak_bytes = peak_kib * 1024
         baseline_bytes = int(baseline_path.read_text(encoding="ascii").strip())
+        current_before_bytes = int(current_before_path.read_text(encoding="ascii").strip())
+        reclaimable_file_cache_bytes = int(file_cache_path.read_text(encoding="ascii").strip())
         if peak_bytes <= 0 or peak_bytes > CANDIDATE_RAM_BYTES:
             raise RuntimeError("CANDIDATE_NATIVE_PROCESS_PEAK_OVER_1GIB:" + task_id + ":" + str(peak_bytes))
         if baseline_bytes > 268435456:
-            raise RuntimeError("CANDIDATE_RESIDENT_BASELINE_OVER_256MIB:" + task_id + ":" + str(baseline_bytes))
+            raise RuntimeError("CANDIDATE_UNRECLAIMABLE_BASELINE_OVER_256MIB:" + task_id + ":" + str(baseline_bytes))
         task["native_process_peak_rss_bytes"] = peak_bytes
         task["resident_baseline_bytes"] = baseline_bytes
         memory_rows[task_id] = {
             "native_process_peak_rss_bytes": peak_bytes,
-            "resident_baseline_bytes": baseline_bytes,
+            "unreclaimable_baseline_bytes": baseline_bytes,
+            "memory_current_before_bytes": current_before_bytes,
+            "reclaimable_file_cache_bytes": reclaimable_file_cache_bytes,
         }
     snapshot = {
+        "memory_reclaim_status": (work / "candidate-memory-reclaim-status.txt").read_text(encoding="ascii").strip() if (work / "candidate-memory-reclaim-status.txt").is_file() else "UNKNOWN",
+        "baseline_method": "MEMORY_CURRENT_MINUS_RECLAIMABLE_FILE_CACHE_FROM_CGROUP_MEMORY_STAT",
         "measurement_method": "GNU_TIME_PER_NATIVE_WHISPER_CLI_PROCESS_PLUS_CGROUP_OOM_DELTA",
         "memory_limit_bytes": CANDIDATE_RAM_BYTES,
         "swap_limit_bytes": 0,

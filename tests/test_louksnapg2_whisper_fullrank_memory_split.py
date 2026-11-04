@@ -55,6 +55,22 @@ class WhisperFullRankMemorySplitTests(unittest.TestCase):
         self.assertEqual(delta["oom_kill"], 0)
         self.assertEqual(delta["high"], 2)
 
+    def test_memory_reclaim_is_best_effort_when_docker_cgroup_does_not_expose_it(self):
+        source = inspect.getsource(MODULE.evaluate)
+        self.assertIn("UNAVAILABLE_BEST_EFFORT", source)
+        self.assertIn("memory.stat", source)
+        self.assertNotIn("CGROUP_MEMORY_RECLAIM_UNAVAILABLE >&2; exit 90", source)
+
+    def test_unreclaimable_baseline_excludes_clean_file_cache_but_retains_shmem(self):
+        self.assertEqual(
+            MODULE.unreclaimable_memory_baseline_bytes(700, {"file": 300, "shmem": 100}),
+            500,
+        )
+        self.assertEqual(
+            MODULE.unreclaimable_memory_baseline_bytes(700, {"file": 100, "shmem": 100}),
+            700,
+        )
+
     def test_report_uses_per_process_rss_not_cumulative_cgroup_peak(self):
         source = inspect.getsource(MODULE.report_evaluation)
         self.assertIn("CANDIDATE_NATIVE_PROCESS_PEAK_OVER_1GIB", source)
