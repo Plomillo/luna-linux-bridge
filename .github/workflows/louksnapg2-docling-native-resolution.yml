@@ -1,0 +1,171 @@
+name: LOUKSNAPG2 Docling native-resolution 512px diagnostic
+
+on:
+  push:
+    branches:
+      - repair/louksnapg2-docling-native-resolution-20261104
+    paths:
+      - ".github/workflows/louksnapg2-docling-native-resolution.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: louksnapg2-docling-native-resolution-512
+  cancel-in-progress: false
+
+jobs:
+  native-512-diagnostic:
+    name: "Test Docling Q4 at model-native 512px resolution; keep 1-GiB limit"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: ubuntu:24.04
+      options: --memory=1073741824 --memory-swap=1073741824 --cpus=1
+    steps:
+      - name: Install Git before container checkout
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          apt-get update -qq
+          apt-get install -y --no-install-recommends git ca-certificates
+          git --version
+          update-ca-certificates
+
+      - name: Checkout exact diagnostic commit and Docling inference closure
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: \${{ github.sha }}
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /tools/louksnapg2_docling_q4_repair.py
+            /cajita-luna-runtime/REQUIREMENTS.runtime.lock
+            /cajita-luna-runtime/cajita_tokenizer_materializer.py
+            /cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
+            /cajita-luna-runtime/1. Cerebro/tokenizer.json.gz
+            /cajita-luna-runtime/3. Transcripción/tokenizer.json.gz
+            /cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/tokenizer.json.gz
+            /cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/
+          lfs: false
+          persist-credentials: false
+
+      - name: Verify exact active 1-GiB resource ceiling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          memory="$(cat /sys/fs/cgroup/memory.max)"
+          swap="$(cat /sys/fs/cgroup/memory.swap.max)"
+          read -r quota period < /sys/fs/cgroup/cpu.max
+          [[ "$memory" == "1073741824" ]] || { echo "MEMORY_LIMIT_MISMATCH:$memory" >&2; exit 2; }
+          [[ "$swap" == "0" ]] || { echo "SWAP_NOT_DISABLED:$swap" >&2; exit 2; }
+          [[ "$quota" == "$period" ]] || { echo "CPU_LIMIT_NOT_ONE_CORE:$quota:$period" >&2; exit 2; }
+          printf '{"status":"PASS","memory_limit_bytes":%s,"swap_limit_bytes":%s,"cpu_cores":1}\n' "$memory" "$swap"
+
+      - name: Set up pinned Python 3.13
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+
+      - name: Install pinned single-threaded CPU runtime
+        shell: bash
+        env:
+          PIP_NO_CACHE_DIR: "1"
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check \
+            --extra-index-url https://download.pytorch.org/whl/cpu \
+            -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
+
+      - name: Download the exact source-bound Q4 candidate from prior GitHub Actions build
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg2-docling-q4-source-candidate
+          path: \${{ runner.temp }}/docling-q4-build
+          repository: \${{ github.repository }}
+          run-id: 41505447857
+          github-token: \${{ github.token }}
+
+      - name: Verify candidate hashes and apply the temporary overlay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE="cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate"
+          for name in quantized_weights.bin quantized_manifest.json compression_metadata.json; do
+            test -s "$RUNNER_TEMP/docling-q4-build/candidate/$name"
+            cp "$RUNNER_TEMP/docling-q4-build/candidate/$name" "$BASE/$name"
+          done
+          sha256sum "$BASE/quantized_weights.bin" "$BASE/quantized_manifest.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_manifest.json")
+          m=json.loads(p.read_text())
+          assert m.get("schema") == "DOCLING_Q4_GROUPWISE_ZLIB_MANIFEST/1.0"
+          print(json.dumps({"schema":m["schema"],"candidate_id":m.get("candidate_id"),"source_revision":m.get("model_revision"),"hard_cap_bytes":m.get("hard_cap_bytes")},sort_keys=True))
+          PY
+
+      - name: Build the exact 512px invoice fixture
+        shell: bash
+        env:
+          IMAGE_PATH: \${{ runner.temp }}/docling-q4-invoice-512.png
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from PIL import Image, ImageDraw, ImageFont
+          path=Path(os.environ["IMAGE_PATH"])
+          image=Image.new("RGB",(512,512),"white")
+          draw=ImageDraw.Draw(image)
+          title=ImageFont.load_default(size=48)
+          body=ImageFont.load_default(size=36)
+          draw.text((40,64),"INVOICE",fill=(0,0,0),font=title,stroke_width=1)
+          draw.line((38,150,474,150),fill=(0,0,0),width=4)
+          draw.text((40,205),"Invoice Number: 4821",fill=(0,0,0),font=body,stroke_width=1)
+          draw.text((40,315),"Total: 37.50",fill=(0,0,0),font=body,stroke_width=1)
+          image.save(path,format="PNG",optimize=False)
+          print("fixture_bytes="+str(path.stat().st_size))
+          PY
+          sha256sum "$IMAGE_PATH"
+
+      - name: Execute the same model at native 512px processor resolution
+        shell: bash
+        env:
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          NUMEXPR_NUM_THREADS: "1"
+          TOKENIZERS_PARALLELISM: "false"
+          LOUKSNAPG2_DOCLING_IMAGE_SIDE: "512"
+          IMAGE_PATH: \${{ runner.temp }}/docling-q4-invoice-512.png
+          REPORT_PATH: \${{ runner.temp }}/docling-q4-native-512-evidence.json
+        run: |
+          set -Eeuo pipefail
+          BASE="cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate"
+          python -B tools/louksnapg2_docling_q4_repair.py evaluate \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --candidate-dir "$BASE" \
+            --image "$IMAGE_PATH" \
+            --report "$REPORT_PATH" \
+            --max-new-tokens 256 \
+            | tee "$RUNNER_TEMP/docling-q4-native-512-summary.json"
+
+      - name: Upload native-resolution evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-docling-native-512-diagnostic
+          path: |
+            \${{ runner.temp }}/docling-q4-native-512-evidence.json
+            \${{ runner.temp }}/docling-q4-native-512-summary.json
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
