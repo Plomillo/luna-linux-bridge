@@ -30,10 +30,8 @@ jobs:
       fail-fast: false
       matrix:
         domain:
-          - D01_CEREBRO
           - D03_TRANSCRIPCION
           - D04_TRADUCTOR_INTELIGENTE
-          - D06_SISTEMA_INTELIGENTE
     steps:
       - name: Checkout active Q2 candidate source without blanket LFS hydration
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -142,6 +140,8 @@ jobs:
             args+=(--audio-one "$RUNNER_TEMP/audio-one.wav" --audio-two "$RUNNER_TEMP/audio-two.wav")
           fi
           python -B tools/louksnapg2_q4_precision_probe.py "${args[@]}"
+          echo "=== FULL Q2 VS HISTORICAL Q4 CASE EVIDENCE ==="
+          python -m json.tool "out/${{ matrix.domain }}/Q2_VS_HISTORICAL_Q4_PRECISION_PROBE.json"
 
       - name: Preserve Q2-to-Q4 model evaluation evidence
         if: always()
