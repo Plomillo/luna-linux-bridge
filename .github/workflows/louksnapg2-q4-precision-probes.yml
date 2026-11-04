@@ -82,6 +82,7 @@ jobs:
             *) echo "UNREGISTERED_MODEL_DOMAIN:$MODEL_DOMAIN" >&2; exit 2 ;;
           esac
           test -d "$GITHUB_WORKSPACE/.git" || { echo "Q2_CHECKOUT_NOT_GIT_REPOSITORY" >&2; exit 2; }
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git -C "$GITHUB_WORKSPACE" lfs install --local
           git -C "$GITHUB_WORKSPACE" lfs pull --include="$WEIGHT_PATH" --exclude="" origin "$GITHUB_SHA"
           git -C "$GITHUB_WORKSPACE" lfs checkout "$WEIGHT_PATH"
@@ -98,9 +99,11 @@ jobs:
         run: |
           set -Eeuo pipefail
           test -d "$GITHUB_WORKSPACE/.git" || { echo "Q4_ACTIVE_CHECKOUT_NOT_GIT_REPOSITORY" >&2; exit 2; }
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git -C "$GITHUB_WORKSPACE" fetch --no-tags --depth=1 origin "$Q4_COMMIT"
           git -C "$GITHUB_WORKSPACE" cat-file -e "$Q4_COMMIT^{commit}"
           git -C "$GITHUB_WORKSPACE" worktree add --detach "$RUNNER_TEMP/louksnapg2-q4" "$Q4_COMMIT"
+          git config --global --add safe.directory "$RUNNER_TEMP/louksnapg2-q4"
           case "${{ matrix.domain }}" in
             D01_CEREBRO) WEIGHT_PATH="cajita-luna-runtime/1. Cerebro/model.safetensors" ;;
             D03_TRANSCRIPCION) WEIGHT_PATH="cajita-luna-runtime/3. Transcripción/model.safetensors" ;;
