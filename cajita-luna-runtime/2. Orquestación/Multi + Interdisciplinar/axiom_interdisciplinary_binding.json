@@ -11,7 +11,7 @@
   "block_engine_graph": {
     "block_count": 134,
     "path_from_runtime_root": "2. Orquestación/Multi + Interdisciplinar/block_engine_binding.json",
-    "sha256": "38e9d06feb481ffb690dba7bdc9efb8ba51837e987a36c594d0e5f9b587c251f",
+    "sha256": "871b3856ee0b9dfa629b8a55ff4700ddfebd7e1b613d04b6d13cc7741b3b152f",
     "state": "DECLARED_STRUCTURAL_ROUTING_ONLY"
   },
   "block_inventory": {
@@ -24,7 +24,7 @@
   "companion_artifact": {
     "bytes": 11649200,
     "path_from_runtime_root": "../Louksna1.md",
-    "sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b"
+    "sha256": "6caeb5d382516ed9d961d7d33675b7f0af30005639e387b91f818c26ad6c9764"
   },
   "framework_count": 18,
   "graph_execution": "STRUCTURAL_BLOCK_ROUTING_DECLARED_RUNTIME_VERIFICATION_REQUIRED",
