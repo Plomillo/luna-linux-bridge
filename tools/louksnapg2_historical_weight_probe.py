@@ -274,94 +274,169 @@ def prepare_historical_runtime(current_root: Path, historical_root: Path, domain
     }
 
 def evaluate(root: Path, domain: str, audio_one: Path | None, audio_two: Path | None) -> dict:
-    root = root.resolve(strict=True)
-    runtime_dir = root / "LOUKSNAPG2_RUNTIME"
-    sys.path.insert(0, str(root))
-    sys.path.insert(0, str(runtime_dir))
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    import louksnapg2_functional_eval as evaluator
-    from louksnapg2_engine import LouksnapG2Runtime
+    """Evaluate the registered neural adapter directly, never the auxiliary router.
 
-    runtime = LouksnapG2Runtime(root, threads=1)
-    # This probe compares one model at a time. The standard runtime preflight
-    # traverses every packaged model and can be blocked by an unrelated domain
-    # (for example, the GPT-OSS LFS object while Whisper is under test). Validate
-    # the selected model's complete manifest, weight and module tree only.
-    from cajita_task_adapters import verify_integrity
+    The service/router layer may intentionally select Whisper.cpp or Apertium.
+    A precision experiment must instead execute the exact selected model's
+    cajita_task_adapters entrypoint or it does not measure Q2/Q4 model quality.
+    """
+    root = root.resolve(strict=True)
+    sys.path.insert(0, str(root))
+    import cajita_task_adapters as adapters
+    import louksnapg2_functional_eval as evaluator
+
     try:
-        selected_integrity = verify_integrity(root, domain)
+        selected_integrity = adapters.verify_integrity(root, domain)
     except Exception as exc:
-        preflight = {
-            "status": "FAIL_SELECTED_DOMAIN_SOURCE_IDENTITY",
-            "selected_domain": domain,
-            "reason": type(exc).__name__ + ":" + str(exc)[:500],
-        }
-        result = {
+        return {
             "domain_id": domain,
-            "preflight": preflight,
+            "preflight": {
+                "status": "FAIL_SELECTED_DOMAIN_SOURCE_IDENTITY",
+                "selected_domain": domain,
+                "reason": type(exc).__name__ + ":" + str(exc)[:500],
+            },
             "tests": [],
             "pass_count": 0,
             "total_cases": 0,
             "status": "HOLD_PREFLIGHT",
         }
-        return result
-    runtime._model_evidence = {domain: selected_integrity}
+
     preflight = {
         "status": "PASS_SELECTED_DOMAIN_SOURCE_IDENTITY",
         "selected_domain": domain,
         "model_identity": selected_integrity,
-        "global_model_identity": "NOT_CHECKED_BY_SINGLE_DOMAIN_PROBE",
+        "evaluation_route": "DIRECT_CAJITA_TASK_ADAPTER_EXECUTE_TASK",
+        "auxiliary_router_imported": False,
+        "service_dispatch_used": False,
         "new_external_model_fetch_performed": False,
     }
-    result = {
-        "domain_id": domain,
-        "preflight": preflight,
-        "tests": [],
-        "pass_count": 0,
-        "total_cases": 0,
-    }
-
-    cases = list(DOMAINS[domain]["cases"])
+    cases = []
     if domain == "D03_TRANSCRIPCION":
         if audio_one is None or audio_two is None:
             raise RuntimeError("WHISPER_AUDIO_FIXTURES_REQUIRED")
-        from pathlib import Path as P
-        expected = ("The meeting starts at noon.", "Please turn left at the next street.")
+        references = ("The meeting starts at noon.", "Please turn left at the next street.")
         for index, audio in enumerate((audio_one, audio_two), 1):
-            reference = expected[index - 1]
-            def predicate(out, reference=reference):
-                return evaluator.word_error_rate(reference, out) <= 0.35
-            row = evaluator.run_case(
-                runtime, f"WHISPER_AUDIO_{index:02d}", domain, "transcribe_audio",
-                {"audio_path": str(audio.resolve(strict=True))}, predicate,
-                "Whisper word-error-rate <= 0.35; reference=" + reference,
-            )
-            row["reference_text"] = reference
-            row["word_error_rate"] = evaluator.word_error_rate(reference, row.get("actual_output") or "")
-            row["audio_bytes"] = audio.stat().st_size
-            row["audio_sha256"] = evaluator.sha256_bytes(audio.read_bytes())
-            result["tests"].append(row)
+            cases.append((
+                f"WHISPER_AUDIO_{index:02d}",
+                "transcribe_audio",
+                {"audio_path": str(audio.resolve(strict=True))},
+                {"timeout_seconds": 900, "max_new_tokens": 32},
+                lambda output, reference=references[index - 1]: evaluator.word_error_rate(reference, output) <= 0.35,
+                references[index - 1],
+            ))
+    elif domain == "D04_TRADUCTOR_INTELIGENTE":
+        cases = [
+            ("GENERAL_TRANSLATION_EN_ES_01", "translate_text",
+             {"text":"The meeting starts at noon.","src_lang":"eng","tgt_lang":"spa"},
+             {"timeout_seconds":900,"max_new_tokens":64}, evaluator.check_translation_en_es, None),
+            ("GENERAL_TRANSLATION_ES_EN_02", "translate_text",
+             {"text":"La reunión empieza al mediodía.","src_lang":"spa","tgt_lang":"eng"},
+             {"timeout_seconds":900,"max_new_tokens":64}, evaluator.check_translation_es_en, None),
+            ("GENERAL_TRANSLATION_EN_FR_03", "translate_text",
+             {"text":"The book is on the table.","src_lang":"eng","tgt_lang":"fra"},
+             {"timeout_seconds":900,"max_new_tokens":64}, evaluator.check_translation_en_fr, None),
+            ("GENERAL_TRANSLATION_FR_EN_04", "translate_text",
+             {"text":"Le livre est sur la table.","src_lang":"fra","tgt_lang":"eng"},
+             {"timeout_seconds":900,"max_new_tokens":64}, evaluator.check_translation_fr_en, None),
+        ]
     else:
         predicates = {
-            "INTEGER_42": lambda out: evaluator.has_final_integer(out, 42),
-            "INTEGER_31": lambda out: evaluator.has_final_integer(out, 31),
-            "INTEGER_55": lambda out: evaluator.has_final_integer(out, 55),
-            "LOGIC_NO": lambda out: evaluator.normalized(evaluator.final_answer(out)).split()[:1] == ["no"],
+            "INTEGER_42": lambda output: evaluator.has_final_integer(output, 42),
+            "INTEGER_31": lambda output: evaluator.has_final_integer(output, 31),
+            "INTEGER_55": lambda output: evaluator.has_final_integer(output, 55),
+            "LOGIC_NO": lambda output: evaluator.normalized(evaluator.final_answer(output)).split()[:1] == ["no"],
             "EN_ES": evaluator.check_translation_en_es,
             "ES_EN": evaluator.check_translation_es_en,
             "EN_FR": evaluator.check_translation_en_fr,
             "FR_EN": evaluator.check_translation_fr_en,
         }
-        for case_id, operation, payload, predicate_name in cases:
-            row = evaluator.run_case(
-                runtime, case_id, domain, operation, payload, predicates[predicate_name],
-                "Existing LOUKSNAPG2 acceptance predicate: " + predicate_name,
+        for case_id, operation, payload, predicate_name in DOMAINS[domain]["cases"]:
+            limits = {"timeout_seconds":900,"max_new_tokens":int(payload.get("max_new_tokens",64))}
+            model_input = {key:value for key,value in payload.items() if key!="max_new_tokens"}
+            cases.append((case_id,operation,model_input,limits,predicates[predicate_name],None))
+
+    rows = []
+    for case_id, operation, payload, limits, predicate, reference in cases:
+        request = {
+            "schema": adapters.REQUEST_SCHEMA,
+            "task_id": "q2-q4-direct-" + case_id.lower().replace("_","-"),
+            "domain_id": domain,
+            "operation": operation,
+            "input": payload,
+            "limits": limits,
+        }
+        started = time.monotonic()
+        try:
+            result, exit_code = adapters.execute_task(request, root, timeout_cap=1800)
+            output = result.get("output_text", "") if isinstance(result, dict) else ""
+            execution_ok = (
+                exit_code == 0
+                and result.get("status") == "PASS_FUNCTIONAL_EXECUTION"
+                and result.get("execution_authorized") is True
+                and isinstance(output, str)
+                and bool(output.strip())
             )
-            result["tests"].append(row)
-    result["pass_count"] = sum(1 for row in result["tests"] if row.get("status") == "PASS")
-    result["total_cases"] = len(result["tests"])
-    result["status"] = "PASS_SELECTED_ACCEPTANCE_CASES" if result["pass_count"] == result["total_cases"] else "FAIL_SELECTED_ACCEPTANCE_CASES"
-    return result
+            quality_ok = bool(predicate(output)) if execution_ok else False
+            row = {
+                "case_id": case_id,
+                "domain_id": domain,
+                "operation": operation,
+                "status": "PASS" if execution_ok and quality_ok else "FAIL",
+                "execution_status": result.get("status"),
+                "execution_authorized": result.get("execution_authorized"),
+                "exit_code": exit_code,
+                "elapsed_seconds": round(time.monotonic()-started,3),
+                "input_sha256": result.get("input_sha256"),
+                "output_sha256": result.get("output_sha256"),
+                "output_text_sha256": adapters.digest_bytes(output.encode("utf-8",errors="replace")) if isinstance(output,str) else None,
+                "actual_output": output[:1200] if isinstance(output,str) else None,
+                "output_char_count": len(output) if isinstance(output,str) else 0,
+                "quality_criterion_passed": quality_ok,
+                "quality_reason": "" if quality_ok else ("EXECUTION_FAILED" if not execution_ok else "DIRECT_NEURAL_OUTPUT_FAILED_ACCEPTANCE"),
+                "entrypoint_sha256": result.get("entrypoint_sha256"),
+                "weight_sha256": result.get("integrity",{}).get("weight_sha256"),
+                "module_tree_sha256": result.get("integrity",{}).get("module_tree_sha256"),
+                "peak_rss_bytes": result.get("peak_rss_bytes"),
+                "reference_text": reference,
+                "word_error_rate": evaluator.word_error_rate(reference,output) if reference and isinstance(output,str) else None,
+                "execution_route": "DIRECT_CAJITA_TASK_ADAPTER_NO_AUXILIARY",
+                "auxiliary_engine_execution_performed": False,
+                "fallback_engine_execution_performed": False,
+                "semantic_quality_equivalence_to_full_size_original": "NOT_ESTABLISHED",
+            }
+            if not execution_ok:
+                row["reason"] = result.get("reason") or result.get("status") or "DIRECT_MODEL_EXECUTION_FAILED"
+        except Exception as exc:
+            row = {
+                "case_id": case_id,
+                "domain_id": domain,
+                "operation": operation,
+                "status": "FAIL",
+                "execution_status": "EXCEPTION",
+                "exit_code": None,
+                "elapsed_seconds": round(time.monotonic()-started,3),
+                "actual_output": None,
+                "quality_criterion_passed": False,
+                "reason": type(exc).__name__ + ":" + str(exc)[:1200],
+                "execution_route": "DIRECT_CAJITA_TASK_ADAPTER_NO_AUXILIARY",
+                "auxiliary_engine_execution_performed": False,
+                "fallback_engine_execution_performed": False,
+                "semantic_quality_equivalence_to_full_size_original": "NOT_ESTABLISHED",
+            }
+        rows.append(row)
+
+    passed = sum(1 for row in rows if row.get("status") == "PASS")
+    return {
+        "domain_id":domain,
+        "preflight":preflight,
+        "evaluation_route":"DIRECT_CAJITA_TASK_ADAPTER_EXECUTE_TASK",
+        "auxiliary_router_imported":False,
+        "service_dispatch_used":False,
+        "tests":rows,
+        "pass_count":passed,
+        "total_cases":len(rows),
+        "status":"PASS_SELECTED_ACCEPTANCE_CASES" if rows and passed==len(rows) else "FAIL_SELECTED_ACCEPTANCE_CASES",
+    }
 
 def subprocess_evaluate(script: Path, root: Path, domain: str, audio_one: Path | None, audio_two: Path | None):
     command = [

@@ -30,5 +30,19 @@ class HistoricalQ4PrecisionWorkflowTests(unittest.TestCase):
             self.assertIn("- " + domain, workflow)
 
 
+
+    def test_precision_probe_calls_native_cajita_adapters_without_auxiliary_router(self):
+        source = (ROOT / "tools" / "louksnapg2_historical_weight_probe.py").read_text(encoding="utf-8")
+        evaluate = source.split("def evaluate(",1)[1].split("def subprocess_evaluate(",1)[0]
+        self.assertIn("adapters.execute_task(request, root, timeout_cap=1800)", evaluate)
+        self.assertIn('"DIRECT_CAJITA_TASK_ADAPTER_EXECUTE_TASK"', evaluate)
+        self.assertIn('"auxiliary_router_imported":False', evaluate)
+        self.assertIn('"service_dispatch_used":False', evaluate)
+        self.assertNotIn("LouksnapG2Runtime", evaluate)
+        self.assertNotIn("evaluator.run_case(", evaluate)
+        self.assertIn('"auxiliary_engine_execution_performed":False', evaluate)
+        self.assertIn('"fallback_engine_execution_performed":False', evaluate)
+
+
 if __name__ == "__main__":
     unittest.main()
