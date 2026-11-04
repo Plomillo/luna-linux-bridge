@@ -1,0 +1,128 @@
+name: Preserve Whisper Q5 as a draft external candidate asset
+
+on:
+  push:
+    branches:
+      - repair/louksnapg2-whisper-q5-external-asset-20261104
+    paths:
+      - ".github/workflows/louksnapg2-whisper-q5-external-asset.yml"
+      - "tools/louksnapg2_whisper_q5_release_candidate.py"
+      - "tests/test_louksnapg2_whisper_q5_release_candidate.py"
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: louksnapg2-whisper-q5-external-asset
+  cancel-in-progress: false
+
+jobs:
+  preserve-draft-candidate:
+    name: "Validate and preserve Q5 full-rank candidate outside 490-MB runtime"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact candidate asset branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: \${{ github.sha }}
+          persist-credentials: false
+          lfs: false
+
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+
+      - name: Run package validation unit tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_whisper_q5_release_candidate.py' -v
+
+      - name: Download the exact Q5 model candidate artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg-whisper-fullrank-q5_0-41788008012
+          path: q5-candidate
+          repository: \${{ github.repository }}
+          run-id: 41788008012
+          github-token: \${{ github.token }}
+
+      - name: Download the exact Q5 evaluation report
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg-whisper-fullrank-q5_0-evaluation-41788008012
+          path: q5-evaluation
+          repository: \${{ github.repository }}
+          run-id: 41788008012
+          github-token: \${{ github.token }}
+
+      - name: Verify model, source, runtime, evaluation, and build an uncompressed archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          evaluation="$(find q5-evaluation -type f -name 'q5_0-evaluation.json' -print -quit)"
+          test -n "$evaluation" && test -s "$evaluation"
+          python -B tools/louksnapg2_whisper_q5_release_candidate.py \
+            --artifact-root q5-candidate \
+            --evaluation "$evaluation" \
+            --output-manifest out/WHISPER_Q5_EXTERNAL_CANDIDATE.json \
+            --archive out/louksnapg2-whisper-fullrank-q5_0-candidate.tar
+
+      - name: Create or update a DRAFT, non-promoting GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: \${{ github.token }}
+          TAG: louksnapg2-whisper-fullrank-q5_0-candidate-20261104
+        run: |
+          set -Eeuo pipefail
+          cat > "$RUNNER_TEMP/release-notes.md" <<'EOF'
+          # Whisper large-v3-turbo full-rank Q5_0 — external candidate only
+
+          **Status: DRAFT / NOT PROMOTED / NOT CERTIFIED.**
+
+          This asset preserves a full-rank GGML Q5_0 candidate built from the verified official OpenAI Whisper large-v3-turbo checkpoint. It is separate from the active compact rank-29 INT8 model.
+
+          The exact Q5 candidate passed two fixed tasks in a one-GiB, zero-swap, one-CPU evaluation: a local synthetic "Hello world." utterance and the pinned JFK recorded-speech fixture (WER 0.00). The native Whisper process peak was 759,226,368 bytes. This is a diagnostic smoke result, not a held-out corpus WER benchmark.
+
+          The Q5 weight is 574,041,195 bytes. The projected complete release is 936,619,119 bytes, above the 490,000,000-byte runtime cap. Therefore this candidate MUST remain an external asset and MUST NOT be embedded into the runtime package.
+
+          The active Whisper adapter has not been replaced. No source weights were mutated, no model was integrated, and neither domain nor global certification is granted. G23/G24 have not run for this candidate. Hugging Face Jobs, Hub APIs, tokens and remote inference were not used.
+          EOF
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" \
+              out/louksnapg2-whisper-fullrank-q5_0-candidate.tar \
+              out/WHISPER_Q5_EXTERNAL_CANDIDATE.json \
+              --clobber
+          else
+            gh release create "$TAG" \
+              out/louksnapg2-whisper-fullrank-q5_0-candidate.tar \
+              out/WHISPER_Q5_EXTERNAL_CANDIDATE.json \
+              --draft --prerelease \
+              --title "Whisper Q5_0 external candidate — draft only" \
+              --notes-file "$RUNNER_TEMP/release-notes.md" \
+              --target "$GITHUB_SHA"
+          fi
+          gh release view "$TAG" --json tagName,isDraft,isPrerelease,assets \
+            | tee out/WHISPER_Q5_DRAFT_RELEASE.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("out/WHISPER_Q5_DRAFT_RELEASE.json").read_text())
+          assert r.get("isDraft") is True, "RELEASE_NOT_DRAFT"
+          names={a["name"] for a in r.get("assets",[])}
+          assert "louksnapg2-whisper-fullrank-q5_0-candidate.tar" in names
+          assert "WHISPER_Q5_EXTERNAL_CANDIDATE.json" in names
+          print("DRAFT_RELEASE_VERIFIED_NON_PROMOTING")
+          PY
+
+      - name: Preserve validation and release metadata
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-whisper-q5-draft-release-evidence
+          path: out/
+          if-no-files-found: warn
+          retention-days: 90
