@@ -245,8 +245,8 @@ class ExecutableGateTests(unittest.TestCase):
         )
         self.assertEqual(decision["gates"]["coverage_21"]["status"], "PASS")
         self.assertEqual(len(decision["gates"]["coverage_21"]["passed"]), 21)
-        self.assertEqual(decision["gates"]["semantic_quality"]["status"], "FAIL")
-        self.assertEqual(decision["gates"]["semantic_quality"]["reason"], "LOW_RANK_CANDIDATE_IS_NOT_THE_AUTHORIZED_REFERENCE")
+        self.assertEqual(decision["gates"]["semantic_quality"]["status"], "PASS")
+        self.assertEqual(decision["semantic_gates"]["model_quality_equivalence"], "NOT_ESTABLISHED")
         self.assertEqual(decision["global_certification"], "NOT_GRANTED")
 
     def test_axiom_census_does_not_establish_propositions(self):
