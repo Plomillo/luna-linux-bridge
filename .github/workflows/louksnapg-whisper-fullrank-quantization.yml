@@ -6,6 +6,13 @@ on:
       - tools/louksnapg_whisper_fullrank_quantization.py
       - tests/test_louksnapg2_whisper_fullrank_memory_split.py
       - .github/workflows/louksnapg-whisper-fullrank-quantization.yml
+  pull_request:
+    branches:
+      - repair/louksnapg2-operational-engines-20261103
+    paths:
+      - tools/louksnapg_whisper_fullrank_quantization.py
+      - tests/test_louksnapg2_whisper_fullrank_memory_split.py
+      - .github/workflows/louksnapg-whisper-fullrank-quantization.yml
   workflow_dispatch:
 permissions:
   actions: read
@@ -218,7 +225,7 @@ jobs:
       - name: Checkout repair branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 1
           persist-credentials: true
       - name: Download build evidence if present
@@ -252,4 +259,4 @@ jobs:
           if git diff --cached --quiet; then exit 0; fi
           git diff --cached --check
           git commit -m "evidence: persist offline full-rank Whisper experiment ${{ github.run_id }}"
-          git push origin "HEAD:${{ github.ref }}"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}"
