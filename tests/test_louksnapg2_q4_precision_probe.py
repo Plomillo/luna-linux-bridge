@@ -26,8 +26,10 @@ class HistoricalQ4PrecisionWorkflowTests(unittest.TestCase):
 
     def test_probe_covers_all_four_factorized_neural_models(self):
         workflow = (ROOT / ".github" / "workflows" / "louksnapg2-q4-precision-probes.yml").read_text(encoding="utf-8")
-        for domain in ("D01_CEREBRO", "D03_TRANSCRIPCION", "D04_TRADUCTOR_INTELIGENTE", "D06_SISTEMA_INTELIGENTE"):
+        for domain in ("D03_TRANSCRIPCION", "D04_TRADUCTOR_INTELIGENTE"):
             self.assertIn("- " + domain, workflow)
+        self.assertNotIn("- D01_CEREBRO", workflow)
+        self.assertNotIn("- D06_SISTEMA_INTELIGENTE", workflow)
 
 
 
@@ -61,6 +63,14 @@ class HistoricalQ4PrecisionWorkflowTests(unittest.TestCase):
         self.assertNotIn("- D01_CEREBRO", workflow)
         self.assertNotIn("- D06_SISTEMA_INTELIGENTE", workflow)
         self.assertIn("FULL DIRECT NATIVE Q2 VS PRE-Q2 FACTOR EVIDENCE", workflow)
+
+    def test_git_and_git_lfs_install_before_container_checkout(self):
+        for name in ("louksnapg2-q4-precision-probes.yml", "louksnapg2-historical-weight-probes.yml"):
+            workflow = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
+            install = workflow.index("Install Git and LFS before checkout in the bounded container")
+            checkout = workflow.index("uses: actions/checkout@")
+            self.assertLess(install, checkout)
+            self.assertIn("apt-get install -y --no-install-recommends ca-certificates git git-lfs espeak-ng", workflow)
 
     def test_precision_probe_workflows_run_inside_exact_one_gib_one_cpu_cgroup(self):
         root = Path(__file__).resolve().parents[1]
