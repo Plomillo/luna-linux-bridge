@@ -40,8 +40,11 @@ jobs:
           Set-Content -LiteralPath (Join-Path $src "CMakeLists.txt") -Encoding ascii -Value "cmake_minimum_required(VERSION 3.20)`nproject(LouksnaFunction LANGUAGES NONE)`n"
           $configure = & $exe -S $src -B $build 2>&1 | Out-String
           $configureExit = $LASTEXITCODE
-          if ($configureExit -ne 0) { throw "CMAKE_CONFIGURE_FAILED" }
-          if ($configure -notmatch "LouksnaFunction") { throw "CMAKE_PROJECT_NAME_MISSING" }
+          if ($configureExit -ne 0) { throw "CMAKE_CONFIGURE_FAILED: $configure" }
+          $cache = Join-Path $build "CMakeCache.txt"
+          if (-not (Test-Path -LiteralPath $cache)) { throw "CMAKE_CACHE_MISSING: $configure" }
+          $cacheText = Get-Content -LiteralPath $cache -Raw
+          if ($cacheText -notmatch "CMAKE_PROJECT_NAME:STATIC=LouksnaFunction") { throw "CMAKE_PROJECT_NAME_MISSING: $configure" }
           $witness = [ordered]@{
             engine = "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE"
             archive_sha256 = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLower()
