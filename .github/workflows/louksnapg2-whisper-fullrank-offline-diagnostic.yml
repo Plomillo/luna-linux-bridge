@@ -1,0 +1,126 @@
+name: LOUKSNAPG2 offline Whisper full-rank Q4 diagnostic
+
+on:
+  push:
+    branches:
+      - repair/louksnapg2-whisper-fullrank-offline-diagnostic-20261104
+    paths:
+      - "tools/louksnapg2_whisper_fullrank_offline_diagnostic.py"
+      - "tests/test_louksnapg2_whisper_fullrank_offline_diagnostic.py"
+      - ".github/workflows/louksnapg2-whisper-fullrank-offline-diagnostic.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: louksnapg2-whisper-fullrank-offline-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  offline-fullrank-q4:
+    name: "Evaluate repository-retained full-rank Q4 without Hugging Face"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    container:
+      image: ubuntu:24.04
+      options: --memory=1342177280 --memory-swap=1342177280 --cpus=1
+    steps:
+      - name: Checkout exact repair commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: \${{ github.sha }}
+          persist-credentials: false
+          lfs: false
+
+      - name: Install local audio fixture and native runtime prerequisites
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          apt-get update -qq
+          apt-get install -y --no-install-recommends ca-certificates espeak-ng libgomp1
+          update-ca-certificates
+
+      - name: Set up pinned Python runtime
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+
+      - name: Run offline diagnostic contract tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_whisper_fullrank_offline_diagnostic.py' -v
+
+      - name: Verify exact 1.25-GiB diagnostic memory, zero swap and one CPU
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          memory="$(cat /sys/fs/cgroup/memory.max)"
+          swap="$(cat /sys/fs/cgroup/memory.swap.max)"
+          read -r quota period < /sys/fs/cgroup/cpu.max
+          expected=1342177280
+          [[ "$memory" == "$expected" ]] || { echo "DIAGNOSTIC_MEMORY_LIMIT_MISMATCH:$memory:$expected" >&2; exit 2; }
+          [[ "$swap" == "0" ]] || { echo "DIAGNOSTIC_SWAP_NOT_DISABLED:$swap" >&2; exit 2; }
+          [[ "$quota" =~ ^[0-9]+$ && "$period" =~ ^[0-9]+$ && "$quota" -eq "$period" ]] || { echo "DIAGNOSTIC_CPU_LIMIT_NOT_ONE_CORE:$quota:$period" >&2; exit 2; }
+          printf '{"status":"PASS","memory_limit_bytes":%s,"swap_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$swap" "$quota" "$period"
+
+      - name: Download exact Q4 candidate from prior GitHub Actions build
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg-whisper-fullrank-q4_0-41554376806
+          path: whisper-q4-artifact
+          repository: \${{ github.repository }}
+          run-id: 41554376806
+          github-token: \${{ github.token }}
+
+      - name: Check out immutable upstream JFK speech fixture
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: openai/whisper
+          ref: 86098128c0b4f24f0e2aa2994de830614b474227
+          path: whisper-source
+          sparse-checkout: tests/jfk.flac
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+          lfs: false
+
+      - name: Confirm pinned audio fixture identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git -C whisper-source rev-parse HEAD)" = "86098128c0b4f24f0e2aa2994de830614b474227"
+          test -s whisper-source/tests/jfk.flac
+          test "$(sha256sum whisper-source/tests/jfk.flac | cut -d' ' -f1)" = "e44b7c13897eae7f78beb220c61fe77429a3961d"
+
+      - name: Run local synthetic and JFK audio inference against exact Q4 artifact
+        shell: bash
+        env:
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          OMP_NUM_THREADS: "1"
+          OMP_THREAD_LIMIT: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          NUMEXPR_NUM_THREADS: "1"
+          TOKENIZERS_PARALLELISM: "false"
+        run: |
+          set -Eeuo pipefail
+          python -B tools/louksnapg2_whisper_fullrank_offline_diagnostic.py \
+            --artifact-root whisper-q4-artifact \
+            --jfk-audio whisper-source/tests/jfk.flac \
+            --work-dir .whisper-q4-work \
+            --report out/WHISPER_FULLRANK_OFFLINE_DIAGNOSTIC.json
+
+      - name: Preserve diagnostic output even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-whisper-fullrank-offline-diagnostic
+          path: |
+            out/
+            .whisper-q4-work/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
