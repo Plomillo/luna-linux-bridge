@@ -494,14 +494,75 @@ def op_reasoning(runtime: Path) -> dict:
 def reference_known_answer(target: str, operation: str, detail: dict) -> dict:
     """The pinned reference engine met its known answer.
 
-    That passes this target. It does not authorize the low-rank candidate:
-    reference_kind stays unset, so the semantic-equivalence gate remains closed.
+    That passes this target and records the engine as the authorized reference.
+    The low-rank weight file stays not equivalent, so the semantic gate stays closed.
     """
     published = dict(detail)
     published["reference_known_answer"] = "PASS"
+    published["reference_kind"] = "AUTHORIZED_REFERENCE_MODEL"
     published["low_rank_candidate_equivalent"] = False
     published["low_rank_quality_equivalence"] = "NOT_ESTABLISHED"
     return record(target, operation, "PASS", exit_code=0, detail=published, reason="")
+
+
+def execute_axiom_graph(repo: Path) -> dict:
+    """Run the packaged axiom census and, when Jena is present, the SPARQL counts.
+
+    The census proves record structure. It does not prove the natural-language propositions.
+    """
+    import importlib.util
+    source = repo / "LOUKSNAMEJORADA.md"
+    if source.is_symlink() or not source.is_file():
+        return {"status": "FAIL", "reason": "PROTECTED_ARCHITECTURE_MISSING", "establishes_axiom_propositions": False}
+    audit_path = Path(__file__).resolve().parent / "cajita_axiom_graph_audit.py"
+    spec = importlib.util.spec_from_file_location("cajita_axiom_graph_audit", audit_path)
+    if spec is None or spec.loader is None:
+        return {"status": "FAIL", "reason": "AXIOM_AUDIT_MISSING", "establishes_axiom_propositions": False}
+    audit = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(audit)
+    text = source.read_text(encoding="utf-8")
+    try:
+        rows = audit.parse_materialized(text)
+        census = audit.validate_materialized(rows)
+        legacy = audit.legacy_census(audit.parse_legacy(text))
+    except (OSError, UnicodeError, ValueError) as exc:
+        return {"status": "FAIL", "reason": str(exc)[:240], "establishes_axiom_propositions": False}
+    report = {
+        "status": "PASS",
+        "record_count": census["record_count"],
+        "trace_alignment": census["trace_alignment"],
+        "block_allocation": census["block_allocation"],
+        "exact_duplicate_text_extra_occurrences": census["exact_duplicate_text_extra_occurrences"],
+        "semantic_validity": census["semantic_validity"],
+        "legacy_definition_records": legacy["definition_records"],
+        "legacy_distinct_numeric_ids": legacy["distinct_numeric_ids"],
+        "measured_legacy_numeric_gaps": legacy["numeric_gaps_1_2414"],
+        "establishes_axiom_propositions": False,
+    }
+    jena_home = os.environ.get("LOUKSNA1_JENA_HOME", "").strip()
+    if not jena_home:
+        report["jena"] = {"status": "NOT_EXECUTED", "reason": "JENA_HOME_MISSING"}
+        return report
+    jena = Path(jena_home)
+    with tempfile.TemporaryDirectory(prefix="louksna1-axiom-graph-") as temp_name:
+        output = Path(temp_name)
+        graph = output / "louksna1-axiom-provenance.nt"
+        triple_count, graph_sha, graph_bytes = audit.build_graph(rows, audit.parse_legacy(text), graph)
+        try:
+            executed = audit.execute_jena_graph(jena, graph, output)
+        except (OSError, RuntimeError, ValueError, subprocess.TimeoutExpired) as exc:
+            report["status"] = "FAIL"
+            report["jena"] = {"status": "FAIL", "reason": str(exc)[:240]}
+            return report
+    report["jena"] = {
+        "status": "PASS",
+        "riot_parse": executed["riot_parse"],
+        "sparql_counts": executed["sparql_counts"],
+        "triples": triple_count,
+        "graph_bytes": graph_bytes,
+        "graph_sha256": graph_sha,
+    }
+    return report
 
 
 def z3_structural_check() -> dict:
@@ -1458,7 +1519,20 @@ def decide(matrix: list[dict], identity: dict, resources: dict, rollback: dict, 
     missing = [target for target in CANONICAL_TARGETS if target not in by_id]
     passed = [target for target in CANONICAL_TARGETS if by_id.get(target, {}).get("status") == "PASS" and by_id.get(target, {}).get("exit_code") == 0]
     coverage = "PASS" if not missing and len(passed) == 21 else "FAIL"
-    semantic = "PASS" if all(by_id.get(target, {}).get("detail", {}).get("reference_kind") == "AUTHORIZED_REFERENCE_MODEL" for target in MODEL_TARGETS) else "FAIL"
+    reference_compared = all(
+        by_id.get(target, {}).get("detail", {}).get("reference_kind") == "AUTHORIZED_REFERENCE_MODEL"
+        for target in MODEL_TARGETS
+    )
+    low_rank_equivalent = all(
+        by_id.get(target, {}).get("detail", {}).get("low_rank_candidate_equivalent") is True
+        for target in MODEL_TARGETS
+    )
+    if not reference_compared:
+        semantic, semantic_reason = "FAIL", "NO_AUTHORIZED_REFERENCE_MODEL_COMPARISON"
+    elif not low_rank_equivalent:
+        semantic, semantic_reason = "FAIL", "LOW_RANK_CANDIDATE_IS_NOT_THE_AUTHORIZED_REFERENCE"
+    else:
+        semantic, semantic_reason = "PASS", ""
     axiom = "PASS" if axiom_established else "FAIL"
     emulator = resources.get("android_emulator") or {}
     android_native = "android" in resources.get("platform", "").casefold()
@@ -1478,7 +1552,7 @@ def decide(matrix: list[dict], identity: dict, resources: dict, rollback: dict, 
     gates = {
         "identity": {"status": identity.get("status", "FAIL"), "problems": identity.get("problems", [])},
         "coverage_21": {"status": coverage, "passed": passed, "failed": [target for target in CANONICAL_TARGETS if target not in passed]},
-        "semantic_quality": {"status": semantic, "reason": "NO_AUTHORIZED_REFERENCE_MODEL_COMPARISON"},
+        "semantic_quality": {"status": semantic, "reason": semantic_reason},
         "axiom_semantics": {"status": axiom, "reason": "PROPOSITION_VALIDITY_AND_LOGICAL_CONSISTENCY_NOT_ESTABLISHED"},
         "host_resources": {"status": host, "reason": host_reason, "measurement": resources},
         "rollback": {"status": "PASS" if rollback_ok else "FAIL", "observed": rollback},
@@ -1606,7 +1680,9 @@ def build_report(repo: Path, pyz: Path) -> dict:
     rollback = rollback_probe(repo / "cajita-luna-runtime")
     release_manifest = refresh_release_manifest(repo, head)
     provenance = provenance_report(repo, head)
-    decision = decide(matrix, identity, resources, rollback, provenance, worker_claim=worker.get("certification", "MISSING"))
+    axiom_graph = execute_axiom_graph(repo)
+    axiom_established = axiom_graph.get("establishes_axiom_propositions") is True and axiom_graph.get("jena", {}).get("status") == "PASS"
+    decision = decide(matrix, identity, resources, rollback, provenance, worker_claim=worker.get("certification", "MISSING"), axiom_established=axiom_established)
     decision.update({
         "generated_at_utc": utc_now(),
         "producer_commit": head,
@@ -1615,6 +1691,7 @@ def build_report(repo: Path, pyz: Path) -> dict:
         "matrix": matrix,
         "historical_debt": {"declared_gaps": 657, "measured_legacy_numeric_gaps": 706, "status": "DISCLOSED_NONBLOCKING_HISTORICAL_DEBT", "source_mutation": False},
         "open_source_engines": {"z3_structural": z3_structural_check()},
+        "axiom_graph_execution": axiom_graph,
         "release_manifest_refresh": release_manifest,
     })
     return decision

@@ -18,6 +18,7 @@ def passing_matrix():
         detail = {}
         if target in MISSION.MODEL_TARGETS:
             detail["reference_kind"] = "AUTHORIZED_REFERENCE_MODEL"
+            detail["low_rank_candidate_equivalent"] = True
         rows.append({
             "target_id": target,
             "status": "PASS",
@@ -229,7 +230,11 @@ class ExecutableGateTests(unittest.TestCase):
         matrix = passing_matrix()
         for row in matrix:
             if row["target_id"] in MISSION.MODEL_TARGETS:
-                row["detail"] = {"reference_known_answer": "PASS", "low_rank_candidate_equivalent": False}
+                row["detail"] = {
+                    "reference_known_answer": "PASS",
+                    "reference_kind": "AUTHORIZED_REFERENCE_MODEL",
+                    "low_rank_candidate_equivalent": False,
+                }
         decision = MISSION.decide(
             matrix,
             {"status": "PASS", "problems": []},
@@ -241,7 +246,14 @@ class ExecutableGateTests(unittest.TestCase):
         self.assertEqual(decision["gates"]["coverage_21"]["status"], "PASS")
         self.assertEqual(len(decision["gates"]["coverage_21"]["passed"]), 21)
         self.assertEqual(decision["gates"]["semantic_quality"]["status"], "FAIL")
+        self.assertEqual(decision["gates"]["semantic_quality"]["reason"], "LOW_RANK_CANDIDATE_IS_NOT_THE_AUTHORIZED_REFERENCE")
         self.assertEqual(decision["global_certification"], "NOT_GRANTED")
+
+    def test_axiom_census_does_not_establish_propositions(self):
+        report = MISSION.execute_axiom_graph(Path(__file__).resolve().parents[1])
+        self.assertEqual(report["record_count"], 10000)
+        self.assertEqual(report["semantic_validity"], "NOT_ESTABLISHED_BY_STRUCTURAL_AUDIT")
+        self.assertIs(report["establishes_axiom_propositions"], False)
 
     def test_manifest_refresh_binds_head_and_does_not_grant(self):
         with tempfile.TemporaryDirectory() as temp_name:
