@@ -1,9 +1,9 @@
-name: LOUKSNAPG2 repository-retained Q4 precision probes
+name: LOUKSNAPG2 repository-retained Q4 precision probes — repair branch
 
 on:
   push:
     branches:
-      - louksnapg2/puac2-alternative-20261029
+      - repair/louksnapg2-gpu-foundation-20261103
     paths:
       - "tools/louksnapg2_q4_precision_probe.py"
       - "tools/louksnapg2_historical_weight_probe.py"
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   compare-q2-to-q4:
-    if: github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029'
+    if: github.ref == 'refs/heads/repair/louksnapg2-gpu-foundation-20261103'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 0
+          fetch-depth: 1
           lfs: false
           persist-credentials: true
 
@@ -88,6 +88,7 @@ jobs:
           Q4_COMMIT: fa8b64b1319605e050c2064f955f5fbf47951908
         run: |
           set -Eeuo pipefail
+          git fetch --no-tags --depth=1 origin "$Q4_COMMIT"
           git cat-file -e "$Q4_COMMIT^{commit}"
           git worktree add --detach "$RUNNER_TEMP/louksnapg2-q4" "$Q4_COMMIT"
           case "${{ matrix.domain }}" in
