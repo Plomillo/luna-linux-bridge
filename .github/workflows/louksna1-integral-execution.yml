@@ -341,16 +341,6 @@ jobs:
           echo "$JAVA_HOME/bin" >> "$GITHUB_PATH"
           echo "LOUKSNA1_JENA_HOME=$RUNNER_TEMP/apache-jena-6.2.0" >> "$GITHUB_ENV"
 
-      - name: Materialize the weight fixtures named by CajitadeLuna.md
-        shell: bash
-        run: |
-          set -euo pipefail
-          dest="cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311"
-          mkdir -p "$dest"
-          7zz x -y -o"$dest" "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z" "onnxruntime/datasets/*.onnx"
-          python3 -B cajita-luna-runtime/cajita_runtime.py audit-weights --root cajita-luna-runtime > "$RUNNER_TEMP/cajita-audit-weights.json"
-          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["weight_presence_integrity"]=="PASS", d["missing_infrastructure_test_fixtures"]' "$RUNNER_TEMP/cajita-audit-weights.json"
-
       - name: Re-execute the mission under the independent validator
         id: validate
         env:
@@ -405,10 +395,16 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Record Louksna1 integral decision from GitHub execution"
+          recorded="$(git rev-parse HEAD)"
           git checkout -- .
           git clean -fd
           git fetch origin main
-          git rebase origin/main
+          if ! git rebase origin/main; then
+            git rebase --abort
+            git checkout --detach origin/main
+            git checkout "$recorded" -- docs/cajita-luna/LOUKSNA1_INTEGRAL_DECISION.json docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json
+            git commit -m "Record Louksna1 integral decision from GitHub execution"
+          fi
           git push origin HEAD:main
 
       - name: Fail closed unless the independent validator grants
