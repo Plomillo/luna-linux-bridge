@@ -26,7 +26,7 @@ class AdapterTests(unittest.TestCase):
         harness=Path(__file__).resolve().parents[1]/"tools"/"cajita_task_e2e.py"
         e2e=harness.read_text(encoding="utf-8")
         self.assertIn('"task_id":"e2e-docling-image-extraction"',e2e)
-        self.assertIn('"max_new_tokens":256',e2e)
+        self.assertIn('"max_new_tokens":128',e2e)
         self.assertIn('"prompt":"Convert this page to docling."',e2e)
 
     def test_docling_module_tree_integrity_descriptor_has_required_shape(self):
