@@ -16,6 +16,7 @@ class AdapterTests(unittest.TestCase):
         self.assertIn('image_side=int(__import__("os").environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE", "192"))',text)
         self.assertIn('image_processor.size={"longest_edge":image_side}',text)
         self.assertIn('image_processor.max_image_size={"longest_edge":image_side}',text)
+        self.assertIn('DOCLING_PROCESSOR_EXCEEDED_BOUNDED_IMAGE_SIDE',text)
         self.assertIn("not a quality-equivalence claim",text)
         self.assertIn("def prepare_bounded_square_image(image, side):",text)
         self.assertIn("image=prepare_bounded_square_image(image, image_side)",text)
