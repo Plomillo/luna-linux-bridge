@@ -173,6 +173,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           file="cajita-luna-runtime/1. Cerebro/model.safetensors"
           expected_bytes=40489120
           expected_sha256="e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0"
