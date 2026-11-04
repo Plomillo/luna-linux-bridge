@@ -243,6 +243,32 @@ class ExecutableGateTests(unittest.TestCase):
         self.assertEqual(decision["gates"]["semantic_quality"]["status"], "FAIL")
         self.assertEqual(decision["global_certification"], "NOT_GRANTED")
 
+    def test_manifest_refresh_binds_head_and_does_not_grant(self):
+        with tempfile.TemporaryDirectory() as temp_name:
+            repo = Path(temp_name)
+            docs = repo / "docs" / "cajita-luna"
+            docs.mkdir(parents=True)
+            (repo / "Louksna1.md").write_bytes(b"louksna-bytes")
+            manifest = {
+                "source_commit": "old",
+                "global_certification": "GRANTED",
+                "louksna1": {"path": "Louksna1.md", "sha256": "0" * 64, "bytes": 1},
+                "protected_architecture": {"path": "LOUKSNAMEJORADA.md", "sha256": "0" * 64},
+                "runtime_distribution": {"path": "CAJITA_LUNA_RUNTIME_V10.macrodown", "sha256": "0" * 64, "bytes": 1},
+                "externalized_archives": [],
+                "axiom_interdisciplinary_binding": {"path": "missing.json", "sha256": "0" * 64},
+                "task_adapter_evidence": {"path": "missing.json", "sha256": "0" * 64},
+            }
+            path = docs / "LOUKSNA1_RELEASE_MANIFEST.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            refreshed = MISSION.refresh_release_manifest(repo, "abc123", build_distribution=False)
+            written = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(refreshed["global_certification"], "NOT_GRANTED")
+        self.assertEqual(written["source_commit"], "abc123")
+        self.assertEqual(written["global_certification"], "NOT_GRANTED")
+        self.assertEqual(written["louksna1"]["sha256"], MISSION.sha256_bytes(b"louksna-bytes"))
+        self.assertNotEqual(written["louksna1"]["sha256"], "0" * 64)
+
 
 if __name__ == "__main__":
     unittest.main()

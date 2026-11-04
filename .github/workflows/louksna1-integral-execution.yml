@@ -368,7 +368,7 @@ jobs:
         run: |
           set -euo pipefail
           git diff --check
-          git add docs/cajita-luna/LOUKSNA1_INTEGRAL_DECISION.json
+          git add docs/cajita-luna/LOUKSNA1_INTEGRAL_DECISION.json docs/cajita-luna/LOUKSNA1_RELEASE_MANIFEST.json
           if git diff --cached --quiet; then
             echo "DECISION_UNCHANGED"
             exit 0

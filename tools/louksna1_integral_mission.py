@@ -1314,6 +1314,98 @@ def _bind_published_file(repo: Path, label: str, rel, expected_sha, expected_byt
     })
 
 
+def _locate_manifest_file(repo: Path, rel) -> Path | None:
+    if not isinstance(rel, str) or rel.strip() == "":
+        return None
+    for candidate in (repo / rel, repo / "cajita-luna-runtime" / rel):
+        if candidate.is_symlink():
+            return None
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _set_measured_hash(repo: Path, record: dict) -> None:
+    found = _locate_manifest_file(repo, record.get("path"))
+    if found is None:
+        return
+    record["sha256"] = sha256_file(found)
+    record["bytes"] = found.stat().st_size
+
+
+def build_runtime_distribution(repo: Path) -> tuple[Path | None, str]:
+    runtime = repo / "cajita-luna-runtime"
+    script = runtime / "reproduce_macrodown.py"
+    louksna = repo / "Louksna1.md"
+    output = repo / "CAJITA_LUNA_RUNTIME_V10.macrodown"
+    if script.is_symlink() or not script.is_file() or louksna.is_symlink() or not louksna.is_file():
+        return None, "RUNTIME_DISTRIBUTION_INPUT_MISSING"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--root",
+            str(runtime),
+            "--output",
+            str(output),
+            "--companion-bytes",
+            str(louksna.stat().st_size),
+            "--companion-sha256",
+            sha256_file(louksna),
+        ],
+        cwd=str(runtime),
+        capture_output=True,
+        text=True,
+        timeout=900,
+        check=False,
+    )
+    if proc.returncode != 0 or output.is_symlink() or not output.is_file():
+        tail = (proc.stderr or proc.stdout or "")[-500:]
+        return None, tail or "RUNTIME_DISTRIBUTION_BUILD_FAILED"
+    return output, ""
+
+
+def refresh_release_manifest(repo: Path, head: str, *, build_distribution: bool = True) -> dict:
+    """Re-measure the release manifest at this execution head.
+
+    The manifest records the bytes just hashed. It never grants certification.
+    """
+    path = repo / "docs" / "cajita-luna" / "LOUKSNA1_RELEASE_MANIFEST.json"
+    if not path.is_file() or path.is_symlink():
+        return {"status": "FAIL", "reason": "RELEASE_MANIFEST_MISSING"}
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest["source_commit"] = head
+    manifest["generated_at_utc"] = utc_now()
+    manifest["global_certification"] = "NOT_GRANTED"
+    for key in ("louksna1", "protected_architecture", "axiom_interdisciplinary_binding", "task_adapter_evidence"):
+        record = manifest.get(key)
+        if isinstance(record, dict):
+            _set_measured_hash(repo, record)
+    archives = manifest.get("externalized_archives")
+    if isinstance(archives, list):
+        for archive in archives:
+            if isinstance(archive, dict):
+                _set_measured_hash(repo, archive)
+    build_error = ""
+    if build_distribution:
+        dist, build_error = build_runtime_distribution(repo)
+        record = manifest.get("runtime_distribution")
+        if not isinstance(record, dict):
+            record = {"path": "CAJITA_LUNA_RUNTIME_V10.macrodown"}
+            manifest["runtime_distribution"] = record
+        if dist is not None:
+            record["path"] = "CAJITA_LUNA_RUNTIME_V10.macrodown"
+            record["bytes"] = dist.stat().st_size
+            record["sha256"] = sha256_file(dist)
+    path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {
+        "status": "PASS" if not build_error else "FAIL",
+        "source_commit": head,
+        "global_certification": "NOT_GRANTED",
+        "build_error": build_error,
+    }
+
+
 def provenance_report(repo: Path, head: str) -> dict:
     path = repo / "docs" / "cajita-luna" / "LOUKSNA1_RELEASE_MANIFEST.json"
     if not path.is_file() or path.is_symlink():
@@ -1512,6 +1604,7 @@ def build_report(repo: Path, pyz: Path) -> dict:
     identity = identity_report(repo)
     resources = measured_resources(repo)
     rollback = rollback_probe(repo / "cajita-luna-runtime")
+    release_manifest = refresh_release_manifest(repo, head)
     provenance = provenance_report(repo, head)
     decision = decide(matrix, identity, resources, rollback, provenance, worker_claim=worker.get("certification", "MISSING"))
     decision.update({
@@ -1522,6 +1615,7 @@ def build_report(repo: Path, pyz: Path) -> dict:
         "matrix": matrix,
         "historical_debt": {"declared_gaps": 657, "measured_legacy_numeric_gaps": 706, "status": "DISCLOSED_NONBLOCKING_HISTORICAL_DEBT", "source_mutation": False},
         "open_source_engines": {"z3_structural": z3_structural_check()},
+        "release_manifest_refresh": release_manifest,
     })
     return decision
 
