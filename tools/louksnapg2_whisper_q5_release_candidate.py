@@ -198,7 +198,7 @@ def validate_candidate(artifact_root: Path, evaluation_path: Path) -> dict[str, 
 def build_archive(artifact_root: Path, archive_path: Path) -> None:
     root = artifact_root.resolve(strict=True)
     archive_path.parent.mkdir(parents=True, exist_ok=True)
-    with tarfile.open(archive_path, mode="w", format=tarfile.USTAR_FORMAT) as archive:
+    with tarfile.open(archive_path, mode="w", format=tarfile.PAX_FORMAT) as archive:
         archive.add(root, arcname="whisper-q5-candidate", recursive=True)
     if archive_path.stat().st_size >= MAX_RELEASE_ASSET_BYTES:
         raise ValueError("RELEASE_ASSET_EXCEEDS_GITHUB_TWO_GIB_LIMIT")

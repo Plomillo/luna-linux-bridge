@@ -26,7 +26,7 @@ jobs:
       - name: Checkout exact candidate asset branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: \${{ github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
           lfs: false
 
@@ -46,18 +46,18 @@ jobs:
         with:
           name: louksnapg-whisper-fullrank-q5_0-41788008012
           path: q5-candidate
-          repository: \${{ github.repository }}
+          repository: ${{ github.repository }}
           run-id: 41788008012
-          github-token: \${{ github.token }}
+          github-token: ${{ github.token }}
 
       - name: Download the exact Q5 evaluation report
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: louksnapg-whisper-fullrank-q5_0-evaluation-41788008012
           path: q5-evaluation
-          repository: \${{ github.repository }}
+          repository: ${{ github.repository }}
           run-id: 41788008012
-          github-token: \${{ github.token }}
+          github-token: ${{ github.token }}
 
       - name: Verify model, source, runtime, evaluation, and build an uncompressed archive
         shell: bash
@@ -74,7 +74,7 @@ jobs:
       - name: Create or update a DRAFT, non-promoting GitHub Release
         shell: bash
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
           TAG: louksnapg2-whisper-fullrank-q5_0-candidate-20261104
         run: |
           set -Eeuo pipefail
