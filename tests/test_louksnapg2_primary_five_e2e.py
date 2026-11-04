@@ -1,8 +1,14 @@
 from __future__ import annotations
 import unittest
 from pathlib import Path
+from louksnapg2_primary_five_e2e import bounded_case_timeout
 
 class PrimaryFiveModelRunnerTests(unittest.TestCase):
+    def test_case_timeout_is_a_cap_not_a_floor(self):
+        record = {"limits": {"timeout_seconds": 30}}
+        self.assertEqual(bounded_case_timeout(1800, record), 30)
+        self.assertEqual(bounded_case_timeout(10, record), 10)
+
     def test_runner_uses_five_registered_model_cases_and_excludes_alternates(self):
         root = Path(__file__).resolve().parents[1]
         source = (root / "tools" / "louksnapg2_primary_five_e2e.py").read_text(encoding="utf-8")

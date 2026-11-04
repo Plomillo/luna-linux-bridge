@@ -33,6 +33,15 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
         self.assertEqual(len(MODEL_CASES), 5)
         self.assertTrue(all(row.get("quality_check", {}).get("id") for row in MODEL_CASES))
 
+    def test_synthetic_case_generation_budgets_are_bounded_and_domain_specific(self):
+        budgets = {row["domain_id"]: row["limits"]["max_new_tokens"] for row in MODEL_CASES}
+        self.assertEqual(budgets["D01_CEREBRO"], 64)
+        self.assertEqual(budgets["D03_TRANSCRIPCION"], 32)
+        self.assertEqual(budgets["D04_TRADUCTOR_INTELIGENTE"], 64)
+        self.assertEqual(budgets["D05_INTELIGENCIA_DOCUMENTAL"], 128)
+        self.assertEqual(budgets["D06_SISTEMA_INTELIGENTE"], 16)
+        self.assertLessEqual(max(budgets.values()), 128)
+
     def test_repository_answer_requires_expected_concept(self):
         row = MODEL_CASES[0]
         self.assertEqual(quality_acceptance(row, "A repository stores source code and files.")["status"], "PASS")
@@ -51,7 +60,7 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
     def test_docling_extraction_requires_invoice_fields(self):
         row = MODEL_CASES[3]
         self.assertEqual(row["input"]["prompt"], "Convert this page to docling.")
-        self.assertEqual(row["limits"]["max_new_tokens"], 256)
+        self.assertEqual(row["limits"]["max_new_tokens"], 128)
         self.assertEqual(quality_acceptance(row, "<doctag> INVOICE 4821 TOTAL 37.50 </doctag>")["status"], "PASS")
         self.assertEqual(quality_acceptance(row, "<doctag> INVOICE 4821 TOTAL 37.00 </doctag>")["status"], "FAIL")
 

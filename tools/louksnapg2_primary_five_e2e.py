@@ -9,6 +9,16 @@ sys.path.insert(0, str(TOOLS))
 from cajita_task_e2e import MODEL_CASES, make_audio, run_case, task_execution_and_quality_pass, utc_now
 
 
+def bounded_case_timeout(global_cap: int, record: dict) -> int:
+    """Treat the CLI timeout as a hard ceiling, never as a per-case minimum."""
+    if isinstance(global_cap, bool) or not isinstance(global_cap, int) or not 1 <= global_cap <= 1800:
+        raise ValueError("GLOBAL_TIMEOUT_CAP_OUT_OF_RANGE")
+    limits = record.get("limits", {})
+    declared = limits.get("timeout_seconds", 900) if isinstance(limits, dict) else 900
+    if isinstance(declared, bool) or not isinstance(declared, int) or not 1 <= declared <= 1800:
+        raise ValueError("MODEL_CASE_TIMEOUT_OUT_OF_RANGE")
+    return min(global_cap, declared)
+
 def make_docling_fixture(path: Path) -> None:
     from PIL import Image, ImageDraw, ImageFont
     image = Image.new("RGB", (512, 512), "white")
@@ -48,7 +58,7 @@ def main(argv=None) -> int:
             record["input"]["audio_path"] = str(audio_path)
         if record["input"].get("image_path") == "@IMAGE@":
             record["input"]["image_path"] = str(image_path)
-        timeout = max(args.timeout, int(record.get("limits", {}).get("timeout_seconds", 900)))
+        timeout = bounded_case_timeout(args.timeout, record)
         rows.append(run_case(runtime_root, output_dir, record, timeout))
 
     passed = [row for row in rows if task_execution_and_quality_pass(row)]
