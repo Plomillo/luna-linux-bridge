@@ -1,22 +1,18 @@
-name: LOUKSNAPG — full-rank Whisper Q4/Q5 repair experiment
-
+name: LOUKSNAPG2 Whisper full-rank offline repair candidate
 on:
   push:
-    branches:
-      - louksnapg2/puac2-alternative-20261029
+    branches: [repair/louksnapg2-gpu-foundation-20261103]
     paths:
       - tools/louksnapg_whisper_fullrank_quantization.py
+      - tests/test_louksnapg2_whisper_fullrank_memory_split.py
       - .github/workflows/louksnapg-whisper-fullrank-quantization.yml
   workflow_dispatch:
-
 permissions:
   actions: read
   contents: write
-
 concurrency:
-  group: louksnapg-whisper-fullrank-${{ github.ref }}-${{ github.sha }}
+  group: louksnapg2-whisper-offline-${{ github.ref }}
   cancel-in-progress: false
-
 env:
   OMP_NUM_THREADS: "1"
   OMP_THREAD_LIMIT: "1"
@@ -25,27 +21,23 @@ env:
   NUMEXPR_NUM_THREADS: "1"
   TOKENIZERS_PARALLELISM: "false"
   PYTHONNOUSERSITE: "1"
-  HF_HUB_DISABLE_TELEMETRY: "1"
-  HF_HUB_ENABLE_HF_TRANSFER: "0"
 
 jobs:
   repair:
-    name: Build full-rank Q4_0/Q5_0 candidates under 3 GiB
+    name: Build full-rank Q4_0 and Q5_0 candidates
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 150
     container:
       image: ubuntu:24.04
       options: --memory=3g --memory-swap=3g --cpus=1
     steps:
-      - name: Install Git and native build prerequisites
-        shell: bash
+      - name: Install native prerequisites
         run: |
           set -Eeuo pipefail
           apt-get update -qq
           apt-get install -y --no-install-recommends ca-certificates git cmake build-essential python3-dev pkg-config libgomp1
           update-ca-certificates
-
-      - name: Checkout additive experiment and test fixture helper
+      - name: Checkout repair source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.sha }}
@@ -54,35 +46,21 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             tools/louksnapg_whisper_fullrank_quantization.py
-            tools/louksnapg_whisper_int8_repair.py
             tests/test_louksnapg2_whisper_fullrank_memory_split.py
-
-      - name: Set up pinned Python toolchain
+      - name: Set up Python
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
           python-version: "3.12"
-
-      - name: Run isolated evaluator contract tests
-        shell: bash
+      - name: Run offline contract tests
+        run: python -B -m unittest discover -s tests -p 'test_louksnapg2_whisper_fullrank_memory_split.py' -v
+      - name: Verify build cgroup
         run: |
           set -Eeuo pipefail
-          python -B -m unittest discover -s tests -p 'test_louksnapg2_whisper_fullrank_memory_split.py' -v
-
-      - name: Verify exact 3-GiB RAM, zero swap and one-core cgroup
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          memory="$(cat /sys/fs/cgroup/memory.max)"
-          swap="$(cat /sys/fs/cgroup/memory.swap.max)"
+          [[ "$(cat /sys/fs/cgroup/memory.max)" == "3221225472" ]]
+          [[ "$(cat /sys/fs/cgroup/memory.swap.max)" == "0" ]]
           read -r quota period < /sys/fs/cgroup/cpu.max
-          expected=$((3 * 1024 * 1024 * 1024))
-          [[ "$memory" == "$expected" ]] || { echo "REPAIR_MEMORY_CGROUP_MISMATCH:$memory:$expected" >&2; exit 1; }
-          [[ "$swap" == "0" ]] || { echo "REPAIR_SWAP_NOT_DISABLED:$swap" >&2; exit 1; }
-          [[ "$quota" =~ ^[0-9]+$ && "$period" =~ ^[0-9]+$ && "$quota" -eq "$period" ]] || { echo "REPAIR_CPU_CGROUP_MISMATCH:$quota:$period" >&2; exit 1; }
-          printf '{"status":"PASS","memory_limit_bytes":%s,"swap_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$swap" "$quota" "$period"
-
-      - name: Clone exact upstream converter and Whisper asset revisions
-        shell: bash
+          [[ "$quota" -gt 0 && "$quota" -eq "$period" ]]
+      - name: Clone exact upstream converter/assets
         env:
           WHISPER_CPP_REVISION: 482279b8a18855ba741d7b88c30fcb3874691f59
           OPENAI_WHISPER_REVISION: 86098128c0b4f24f0e2aa2994de830614b474227
@@ -98,37 +76,25 @@ jobs:
           git -C "$RUNNER_TEMP/upstream/openai-whisper" checkout --detach FETCH_HEAD
           test "$(git -C "$RUNNER_TEMP/upstream/openai-whisper" rev-parse HEAD)" = "$OPENAI_WHISPER_REVISION"
           test -s "$RUNNER_TEMP/upstream/openai-whisper/whisper/assets/mel_filters.npz"
-
-      - name: Install pinned single-threaded CPU conversion dependencies
-        shell: bash
+          test -s "$RUNNER_TEMP/upstream/openai-whisper/whisper/assets/multilingual.tiktoken"
+          test -s "$RUNNER_TEMP/upstream/whisper.cpp/samples/jfk.wav"
+      - name: Install pinned CPU conversion packages
         run: |
           set -Eeuo pipefail
           python -m pip install --disable-pip-version-check --no-cache-dir "torch==2.7.1" --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install --disable-pip-version-check --no-cache-dir "huggingface_hub==0.35.3" "safetensors==0.6.2" "numpy==2.2.6"
-
-      - name: Build pinned CPU inference and full-rank quantizer binaries
-        shell: bash
+          python -m pip install --disable-pip-version-check --no-cache-dir "numpy==2.2.6"
+      - name: Build whisper.cpp native inference and quantizer
         run: |
           set -Eeuo pipefail
           cmake -S "$RUNNER_TEMP/upstream/whisper.cpp" -B "$RUNNER_TEMP/upstream/whisper.cpp/build" -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON -DWHISPER_BUILD_SERVER=OFF -DGGML_CUDA=OFF -DGGML_OPENCL=OFF
           cmake --build "$RUNNER_TEMP/upstream/whisper.cpp/build" --config Release --parallel 1 --target whisper-cli whisper-quantize
-          test -x "$RUNNER_TEMP/upstream/whisper.cpp/build/bin/whisper-cli"
-          test -x "$RUNNER_TEMP/upstream/whisper.cpp/build/bin/whisper-quantize"
-
-      - name: Build full-rank block-quantized overlays from immutable teacher weights
-        shell: bash
-        env:
-          HF_HOME: ${{ runner.temp }}/whisper-fullrank/hf-home
-          HF_HUB_CACHE: ${{ runner.temp }}/whisper-fullrank/hf-cache
+      - name: Download official OpenAI checkpoint and build full-rank candidates
         run: |
           set -Eeuo pipefail
           mkdir -p "$RUNNER_TEMP/whisper-fullrank/evidence" "$RUNNER_TEMP/whisper-fullrank/work"
-          export HF_HUB_OFFLINE=0 TRANSFORMERS_OFFLINE=0
           python -B tools/louksnapg_whisper_fullrank_quantization.py build --whisper-cpp-root "$RUNNER_TEMP/upstream/whisper.cpp" --openai-whisper-root "$RUNNER_TEMP/upstream/openai-whisper" --output-dir "$RUNNER_TEMP/whisper-fullrank/work" --report "$RUNNER_TEMP/whisper-fullrank/evidence/WHISPER_FULLRANK_BUILD.json" 2>&1 | tee "$RUNNER_TEMP/whisper-fullrank/evidence/build.log"
-
-      - name: Stage isolated Q4_0 candidate with stable artifact root
+      - name: Stage Q4_0 candidate
         if: success()
-        shell: bash
         run: |
           set -Eeuo pipefail
           stage="$RUNNER_TEMP/whisper-fullrank/stage-q4_0"
@@ -136,8 +102,8 @@ jobs:
           cp "$RUNNER_TEMP/whisper-fullrank/work/artifact/fullrank_manifest.json" "$stage/"
           cp "$RUNNER_TEMP/whisper-fullrank/work/artifact/quantized/q4_0/ggml-large-v3-turbo-q4_0.bin" "$stage/quantized/q4_0/"
           cp -a "$RUNNER_TEMP/whisper-fullrank/work/artifact/toolchain" "$stage/"
-
-      - name: Upload isolated Q4_0 candidate and pinned CPU toolchain
+          cp -a "$RUNNER_TEMP/whisper-fullrank/work/artifact/fixtures" "$stage/"
+      - name: Upload Q4_0
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -146,10 +112,8 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
-
-      - name: Stage isolated Q5_0 candidate with stable artifact root
+      - name: Stage Q5_0 candidate
         if: success()
-        shell: bash
         run: |
           set -Eeuo pipefail
           stage="$RUNNER_TEMP/whisper-fullrank/stage-q5_0"
@@ -157,8 +121,8 @@ jobs:
           cp "$RUNNER_TEMP/whisper-fullrank/work/artifact/fullrank_manifest.json" "$stage/"
           cp "$RUNNER_TEMP/whisper-fullrank/work/artifact/quantized/q5_0/ggml-large-v3-turbo-q5_0.bin" "$stage/quantized/q5_0/"
           cp -a "$RUNNER_TEMP/whisper-fullrank/work/artifact/toolchain" "$stage/"
-
-      - name: Upload isolated Q5_0 candidate and pinned CPU toolchain
+          cp -a "$RUNNER_TEMP/whisper-fullrank/work/artifact/fixtures" "$stage/"
+      - name: Upload Q5_0
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -167,8 +131,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
-
-      - name: Upload 3-GiB repair evidence even when rejected
+      - name: Upload build evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -176,57 +139,9 @@ jobs:
           path: ${{ runner.temp }}/whisper-fullrank/evidence/
           if-no-files-found: warn
           retention-days: 90
-          compression-level: 0
-
-  persist-evidence:
-    name: Persist build and candidate evidence without model promotion
-    needs: [repair, evaluate]
-    if: always()
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout active repair branch
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ github.ref }}
-          fetch-depth: 1
-          persist-credentials: true
-
-      - name: Download immutable 3-GiB build evidence
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: louksnapg-whisper-fullrank-build-evidence-${{ github.run_id }}
-          path: ${{ runner.temp }}/whisper-fullrank-persist/build
-
-      - name: Download evaluation evidence when candidate evaluation ran
-        if: always()
-        continue-on-error: true
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          pattern: louksnapg-whisper-fullrank-*-evaluation-${{ github.run_id }}
-          path: ${{ runner.temp }}/whisper-fullrank-persist/evaluation
-          merge-multiple: false
-
-      - name: Append evidence to Git without modifying model assets
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          dest="evidence/louksnapg/whisper-fullrank-${GITHUB_RUN_ID}"
-          mkdir -p "$dest"
-          cp -a "$RUNNER_TEMP/whisper-fullrank-persist/." "$dest/"
-          test "$(find "$dest" -type f | wc -l)" -gt 0
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- "$dest"
-          if git diff --cached --quiet; then
-            echo "No new evidence bytes to persist"
-            exit 0
-          fi
-          git diff --cached --check
-          git commit -m "evidence: persist full-rank Whisper experiment ${GITHUB_RUN_ID}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
 
   evaluate:
-    name: Evaluate ${{ matrix.quantization }} under 1 GiB and one CPU
+    name: Evaluate ${{ matrix.quantization }} at 1 GiB and one CPU
     needs: repair
     if: needs.repair.result == 'success'
     strategy:
@@ -239,15 +154,13 @@ jobs:
       image: ubuntu:24.04
       options: --memory=1g --memory-swap=1g --cpus=1
     steps:
-      - name: Install Git, audio fixture generator and CPU shared libraries
-        shell: bash
+      - name: Install fixture generator and time utility
         run: |
           set -Eeuo pipefail
           apt-get update -qq
-          apt-get install -y --no-install-recommends ca-certificates git espeak-ng libgomp1
+          apt-get install -y --no-install-recommends ca-certificates espeak-ng libgomp1 time
           update-ca-certificates
-
-      - name: Checkout additive evaluator and pinned fixture helper
+      - name: Checkout offline evaluator
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.sha }}
@@ -256,55 +169,38 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             tools/louksnapg_whisper_fullrank_quantization.py
-            tools/louksnapg_whisper_int8_repair.py
-
-      - name: Set up pinned Python evaluator
+            tests/test_louksnapg2_whisper_fullrank_memory_split.py
+      - name: Set up evaluator Python
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
         with:
           python-version: "3.12"
-
-      - name: Verify exact 1-GiB RAM, zero swap and one-core cgroup
-        shell: bash
+      - name: Run offline tests
+        run: python -B -m unittest discover -s tests -p 'test_louksnapg2_whisper_fullrank_memory_split.py' -v
+      - name: Verify evaluation cgroup
         run: |
           set -Eeuo pipefail
-          memory="$(cat /sys/fs/cgroup/memory.max)"
-          swap="$(cat /sys/fs/cgroup/memory.swap.max)"
+          [[ "$(cat /sys/fs/cgroup/memory.max)" == "1073741824" ]]
+          [[ "$(cat /sys/fs/cgroup/memory.swap.max)" == "0" ]]
           read -r quota period < /sys/fs/cgroup/cpu.max
-          expected=$((1 * 1024 * 1024 * 1024))
-          [[ "$memory" == "$expected" ]] || { echo "CANDIDATE_MEMORY_CGROUP_MISMATCH:$memory:$expected" >&2; exit 1; }
-          [[ "$swap" == "0" ]] || { echo "CANDIDATE_SWAP_NOT_DISABLED:$swap" >&2; exit 1; }
-          [[ "$quota" =~ ^[0-9]+$ && "$period" =~ ^[0-9]+$ && "$quota" -eq "$period" ]] || { echo "CANDIDATE_CPU_CGROUP_MISMATCH:$quota:$period" >&2; exit 1; }
-          printf '{"status":"PASS","memory_limit_bytes":%s,"swap_limit_bytes":%s,"cpu_quota":%s,"cpu_period":%s}\n' "$memory" "$swap" "$quota" "$period"
-
-      - name: Install pinned CPU audio evaluation dependencies
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          python -m pip install --disable-pip-version-check --no-cache-dir "huggingface_hub==0.35.3" "datasets==3.2.0" "pyarrow==19.0.1" "soundfile==0.13.1" "numpy==2.2.6"
-
-      - name: Download only the selected immutable full-rank candidate
+          [[ "$quota" -gt 0 && "$quota" -eq "$period" ]]
+      - name: Download selected candidate
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: louksnapg-whisper-fullrank-${{ matrix.quantization }}-${{ github.run_id }}
           path: ${{ runner.temp }}/whisper-fullrank/artifact
-
-      - name: Prepare pinned audio fixtures in a separate short-lived process
-        shell: bash
+      - name: Prepare local pinned JFK and synthetic fixtures
         env:
-          HF_HOME: ${{ runner.temp }}/whisper-fullrank-evaluation/hf-home
-          HF_HUB_CACHE: ${{ runner.temp }}/whisper-fullrank-evaluation/hf-cache
+          WHISPER_CPP_REVISION: 482279b8a18855ba741d7b88c30fcb3874691f59
+          REAL_TRANSCRIPT: "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country."
         run: |
           set -Eeuo pipefail
           mkdir -p "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence" "$RUNNER_TEMP/whisper-fullrank-evaluation/work"
-          python -B tools/louksnapg_whisper_fullrank_quantization.py prepare-fixtures --fixture-helper "$GITHUB_WORKSPACE/tools/louksnapg_whisper_int8_repair.py" --work-dir "$RUNNER_TEMP/whisper-fullrank-evaluation/work" --report "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence/prepared-fixtures.json"
-
-      - name: Evaluate exact candidate in a clean low-memory process
-        shell: bash
+          python -B tools/louksnapg_whisper_fullrank_quantization.py prepare-fixtures --artifact-root "$RUNNER_TEMP/whisper-fullrank/artifact" --real-audio "$RUNNER_TEMP/whisper-fullrank/artifact/fixtures/jfk.wav" --real-transcript "$REAL_TRANSCRIPT" --real-source-revision "$WHISPER_CPP_REVISION" --work-dir "$RUNNER_TEMP/whisper-fullrank-evaluation/work" --report "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence/prepared-fixtures.json"
+      - name: Evaluate selected candidate
         run: |
           set -Eeuo pipefail
           python -B tools/louksnapg_whisper_fullrank_quantization.py evaluate --artifact-root "$RUNNER_TEMP/whisper-fullrank/artifact" --quantization "${{ matrix.quantization }}" --prepared-fixtures "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence/prepared-fixtures.json" --work-dir "$RUNNER_TEMP/whisper-fullrank-evaluation/work" --report "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence/${{ matrix.quantization }}-evaluation.json" 2>&1 | tee "$RUNNER_TEMP/whisper-fullrank-evaluation/evidence/${{ matrix.quantization }}-evaluation.log"
-
-      - name: Upload evaluation evidence even when quality fails
+      - name: Upload evaluation evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -312,4 +208,48 @@ jobs:
           path: ${{ runner.temp }}/whisper-fullrank-evaluation/evidence/
           if-no-files-found: warn
           retention-days: 90
-          compression-level: 0
+
+  persist-evidence:
+    name: Append build and evaluation evidence
+    needs: [repair, evaluate]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+          persist-credentials: true
+      - name: Download build evidence if present
+        if: always()
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksnapg-whisper-fullrank-build-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/whisper-fullrank-persist/build
+      - name: Download evaluation evidence if present
+        if: always()
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: louksnapg-whisper-fullrank-*-evaluation-${{ github.run_id }}
+          path: ${{ runner.temp }}/whisper-fullrank-persist/evaluation
+          merge-multiple: false
+      - name: Append evidence only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source="${{ runner.temp }}/whisper-fullrank-persist"
+          test -d "$source" || exit 0
+          test "$(find "$source" -type f | wc -l)" -gt 0 || exit 0
+          dest="evidence/louksnapg/whisper-fullrank-offline-${{ github.run_id }}"
+          mkdir -p "$dest"
+          cp -a "$source/." "$dest/"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git diff --cached --check
+          git commit -m "evidence: persist offline full-rank Whisper experiment ${{ github.run_id }}"
+          git push origin "HEAD:${{ github.ref }}"
