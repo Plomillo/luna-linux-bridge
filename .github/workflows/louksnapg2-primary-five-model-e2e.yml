@@ -210,8 +210,13 @@ jobs:
           print(f"GPT_OSS_MEDIA_OBJECT_VERIFIED bytes={written} sha256={observed_sha256}")
           PY
           mv "$temporary" "$GITHUB_WORKSPACE/$file"
+          # Re-measure the workspace file; Python heredoc variables are process-local.
+          actual_bytes="$(stat -c %s "$GITHUB_WORKSPACE/$file")"
+          test "$actual_bytes" -eq "$expected_bytes"
+          actual_sha256="$(sha256sum "$GITHUB_WORKSPACE/$file" | cut -d " " -f1)"
+          test "$actual_sha256" = "$expected_sha256"
           echo "GPT_OSS_LFS_VERIFIED=true" >> "$GITHUB_ENV"
-          echo "GPT_OSS_LFS_OBJECT_VERIFIED bytes=$actual_bytes sha256=$expected_sha256"
+          echo "GPT_OSS_LFS_OBJECT_VERIFIED bytes=$actual_bytes sha256=$actual_sha256"
 
       - name: Refresh and validate all five source-bound module tree descriptors
         shell: bash
