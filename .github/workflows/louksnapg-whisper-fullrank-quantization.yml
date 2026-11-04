@@ -152,6 +152,9 @@ jobs:
 
   evaluate:
     name: Evaluate ${{ matrix.quantization }} at 1 GiB and one CPU
+    defaults:
+      run:
+        shell: bash
     needs: repair
     if: needs.repair.result == 'success'
     strategy:
@@ -165,6 +168,7 @@ jobs:
       options: --memory=1g --memory-swap=1g --cpus=1
     steps:
       - name: Install fixture generator and time utility
+        shell: bash
         run: |
           set -Eeuo pipefail
           apt-get update -qq
