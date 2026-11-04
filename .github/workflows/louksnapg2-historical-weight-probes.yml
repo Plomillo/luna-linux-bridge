@@ -31,6 +31,9 @@ jobs:
   compare-retained-candidates:
     if: github.ref == 'refs/heads/repair/louksnapg2-gpu-foundation-20261103'
     runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:24.04
+      options: --memory=1g --memory-swap=1g --cpus=1
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -69,8 +72,8 @@ jobs:
       - name: Install local speech fixture generator
         if: env.SKIP_DOMAIN != 'true' && matrix.domain == 'D03_TRANSCRIPCION'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y espeak-ng
+          apt-get update
+          apt-get install -y espeak-ng
 
       - name: Create a detached worktree at the repository-retained pre-Q2 source commit
         if: env.SKIP_DOMAIN != 'true'
