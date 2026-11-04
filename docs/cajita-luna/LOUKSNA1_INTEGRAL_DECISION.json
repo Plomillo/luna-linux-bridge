@@ -38,7 +38,7 @@
   },
   "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023",
   "decision": "NOT_GRANTED",
-  "functional_certification": "NOT_GRANTED",
+  "functional_certification": "GRANTED",
   "gates": {
     "axiom_semantics": {
       "reason": "PROPOSITION_VALIDITY_AND_LOGICAL_CONSISTENCY_NOT_ESTABLISHED",
@@ -48,12 +48,11 @@
       "status": "PASS"
     },
     "coverage_21": {
-      "failed": [
-        "D02_MULTI_INTERDISCIPLINAR"
-      ],
+      "failed": [],
       "passed": [
         "D01_CEREBRO_ROOT",
         "D02_CONFESION_ECLESIAL_REFORMADA",
+        "D02_MULTI_INTERDISCIPLINAR",
         "D02_ORQUESTADOR",
         "D03_TRANSCRIPCION_ROOT",
         "D04_HERMENEUTICA_HG",
@@ -73,7 +72,7 @@
         "D06_RUNTIME_ANDROID_WINDOWS",
         "D06_TESTING"
       ],
-      "status": "FAIL"
+      "status": "PASS"
     },
     "host_resources": {
       "measurement": {
@@ -88,13 +87,13 @@
         },
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 85256658944,
+        "disk_available_bytes": 85011415040,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 6902009856
+        "ram_available_bytes": 6782709760
       },
       "reason": "",
       "status": "PASS"
@@ -133,7 +132,7 @@
       "status": "PASS"
     }
   },
-  "generated_at_utc": "2026-11-04T16:09:30Z",
+  "generated_at_utc": "2026-11-04T16:30:55Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -191,13 +190,19 @@
     },
     {
       "detail": {
-        "error": "RuntimeError"
+        "certification": "NOT_GRANTED",
+        "companion_sha256": "6caeb5d382516ed9d961d7d33675b7f0af30005639e387b91f818c26ad6c9764",
+        "framework_count": 18,
+        "protected_prefix_bytes": 11542631,
+        "protected_prefix_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+        "semantic_graph_execution": "PASS_STRUCTURAL_BLOCK_ROUTING_ONLY",
+        "status": "PASS_SOURCE_PREFIX_VERIFIED"
       },
-      "exit_code": 4,
+      "exit_code": 0,
       "operation": "verify_axiom_source_binding",
-      "output_sha256": "ba76a51c7c1830ff07c48ba25c5aefabf45190dcadf0bf437d21d53389036cd2",
-      "reason": "LOUKSNA1_COMPANION_HASH_MISMATCH",
-      "status": "FAIL",
+      "output_sha256": "258cc10407860b930698da053e46a6a09de7a78d04a1d5c8d2ca1dd434a9e641",
+      "reason": "",
+      "status": "PASS",
       "target_id": "D02_MULTI_INTERDISCIPLINAR",
       "worker_certification": "NOT_GRANTED"
     },
@@ -429,12 +434,12 @@
         "reference_engine": "llama.cpp",
         "reference_kind": "AUTHORIZED_REFERENCE_MODEL",
         "reference_known_answer": "PASS",
-        "reference_sha256": "0375797b2964557f6f9b1e1ee006d5b25a780036c2800b492890b1d5966c8e9e",
+        "reference_sha256": "1c3c0cd305aa0b8181b4d9434e84ee669bff1d619d1fc5998df9fe64fe2680f8",
         "stderr_tail": ""
       },
       "exit_code": 0,
       "operation": "analyze_reasoning",
-      "output_sha256": "71bdb9ebad84de4f2ea4bc3b6259818399c52d417a40374c00b69890f0367280",
+      "output_sha256": "ba5b13e32b6a80a4364b6fc20f6e843487c9f9694e09944dc10fba00211a0a62",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ANALISIS_AVANZADO",
@@ -446,11 +451,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "ecd9ce4c6d5fcfefdfa5de03d42e3b486cfb0f4f194d019424e60bd3d2703ddb"
+        "stdout_sha256": "66b8bae351ad9e9f2aa59620a84e6b9f541c373a55b5834072dcff0a3554c7f4"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "40436be48bea10208253233d10b87f51cdce37dab8c9a439919cf6e4e34eeed6",
+      "output_sha256": "52dbd9f9d479a16435c05edb19a47573b2ca5d802da1d3fa2203118470d437ae",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -507,12 +512,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "363f9523d6160b60b367972c8beb9e462b31fb56f51085f2c42b3cab10bdc699",
+        "query_sha256": "73a2223267e145e86c84bc1307ad16b2c76d0eccfefa5233ecf1690e7a204565",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "24eab10f3a71d6909cb8d887bb55285ec9a67069cabcbbcc2f026cbc9a20a83b",
+      "output_sha256": "34e0da728a9c39adad94232897d34fe7d678e8006fea93a297e857616fb1c184",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -604,11 +609,11 @@
       "stdout_sha256": "44d47c9675abf277caf0d7a5fc60e0aa76c8adc0c9a75c675c0951b9b8dac761"
     }
   },
-  "producer_commit": "07308f0799a45bb05c97a8bb17d64f602f058ac1",
+  "producer_commit": "719e63551a4dcf79125905cafe36e1cd47cf78ce",
   "release_manifest_refresh": {
     "build_error": "",
     "global_certification": "NOT_GRANTED",
-    "source_commit": "07308f0799a45bb05c97a8bb17d64f602f058ac1",
+    "source_commit": "719e63551a4dcf79125905cafe36e1cd47cf78ce",
     "status": "PASS"
   },
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
@@ -619,26 +624,41 @@
     "semantic_consistency": "NOT_ESTABLISHED"
   },
   "target_adapter_registration": {
-    "all_21_target_task_adapters": "NOT_ESTABLISHED",
+    "all_21_target_task_adapters": "ESTABLISHED",
     "canonical_target_count": 21
   },
   "worker": {
+    "canonical_promotion": "NOT_AUTHORIZED",
     "certification": "NOT_GRANTED",
-    "completed": [],
+    "completed_actions": [
+      "execute_consumer_matrix"
+    ],
+    "completion_claim": true,
     "coordinator_shim": "READ_VALIDATED_SOURCE_STATE_HASH_PROPERTY",
-    "failed_action": "execute_consumer_matrix",
-    "failure": {
-      "certification": "NOT_GRANTED",
-      "failed_targets": [
-        "D02_MULTI_INTERDISCIPLINAR"
+    "plan": {
+      "actions": [
+        {
+          "action_id": "execute_consumer_matrix",
+          "dependencies": [],
+          "idempotency": "IDEMPOTENT",
+          "permitted_effects": [
+            "WRITE_EVIDENCE"
+          ],
+          "required_capabilities": [
+            "execute_consumer_matrix"
+          ]
+        }
       ],
-      "result_state_hash": "5ba3b7dbeea13319f9e3439a7c39692cf267a72dc37ef2e22292bbe95af47595",
-      "status": "FAIL"
+      "execution_authorized": false,
+      "global_optimum_claimed": false,
+      "ordered_actions": [
+        "execute_consumer_matrix"
+      ],
+      "status": "PLAN_VALIDATED"
     },
-    "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
     "pyz_bytes_modified": false,
     "pyz_sha256": "d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817",
-    "status": "BLOCKED",
+    "status": "COMPLETED",
     "worker": "CUSTOSZV9"
   }
 }
