@@ -116,7 +116,7 @@ def load_candidate():
 def smoke_test(generate=False, prompt="Test", max_new_tokens=1):
     t0=time.monotonic()
     if not isinstance(prompt,str) or not prompt.strip(): raise ValueError("PROMPT_REQUIRED")
-    if isinstance(max_new_tokens,bool) or not 1<=int(max_new_tokens)<=128: raise ValueError("MAX_NEW_TOKENS_OUT_OF_RANGE")
+    if isinstance(max_new_tokens,bool) or not 1<=int(max_new_tokens)<=256: raise ValueError("MAX_NEW_TOKENS_OUT_OF_RANGE")
     tokenizer=load_pretrained_with_compressed_tokenizer(ROOT,AutoTokenizer,local_files_only=True)
     model=load_candidate()
     tok=tokenizer(prompt,return_tensors="pt")

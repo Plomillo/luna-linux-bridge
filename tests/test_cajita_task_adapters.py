@@ -67,7 +67,7 @@ class AdapterTests(unittest.TestCase):
                 with self.assertRaisesRegex(adapters.AdapterError,pattern):adapters.normalize(row,RUNTIME)
     def test_input_and_domain_specific_token_limits(self):
         with self.assertRaisesRegex(adapters.AdapterError,"INPUT_TEXT_REQUIRED"):adapters.normalize(req(prompt=" "),RUNTIME)
-        row=req(prompt="Hello");row["limits"]["max_new_tokens"]=129
+        row=req(prompt="Hello");row["limits"]["max_new_tokens"]=257
         with self.assertRaisesRegex(adapters.AdapterError,"MAX_NEW_TOKENS_OUT_OF_RANGE"):adapters.normalize(row,RUNTIME)
         with tempfile.TemporaryDirectory() as td:
             image=Path(td)/"invoice.png";image.write_bytes(b"fixture image")
@@ -78,6 +78,28 @@ class AdapterTests(unittest.TestCase):
             docling["limits"]["max_new_tokens"]=257
             with self.assertRaisesRegex(adapters.AdapterError,"MAX_NEW_TOKENS_OUT_OF_RANGE"):
                 adapters.normalize(docling,RUNTIME)
+    def test_all_five_model_adapters_accept_256_token_budget_and_reject_257(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            audio = root / "audio.wav"
+            image = root / "image.png"
+            audio.write_bytes(b"synthetic audio fixture")
+            image.write_bytes(b"synthetic image fixture")
+            records = [
+                req("D01_CEREBRO", "generate_text", prompt="Answer briefly."),
+                req("D03_TRANSCRIPCION", "transcribe_audio", audio_path=str(audio)),
+                req("D04_TRADUCTOR_INTELIGENTE", "translate_text", text="Hello.", src_lang="eng", tgt_lang="spa"),
+                req("D05_INTELIGENCIA_DOCUMENTAL", "extract_document_image", image_path=str(image), prompt="Convert this page to docling."),
+                req("D06_SISTEMA_INTELIGENTE", "analyze_reasoning", prompt="What is 2 + 2?"),
+            ]
+            for record in records:
+                record["limits"]["max_new_tokens"] = 256
+                normalized = adapters.normalize(record, RUNTIME)
+                self.assertEqual(normalized["limits"]["max_new_tokens"], 256, record["domain_id"])
+                record["limits"]["max_new_tokens"] = 257
+                with self.assertRaisesRegex(adapters.AdapterError, "MAX_NEW_TOKENS_OUT_OF_RANGE"):
+                    adapters.normalize(record, RUNTIME)
+
     def test_translation_language_normalization_and_same_language_guard(self):
         row=adapters.normalize(req("D04_TRADUCTOR_INTELIGENTE","translate_text",text="Hi",src_lang="en",tgt_lang="es"),RUNTIME)
         self.assertEqual(row["input"]["src_lang"],"eng");self.assertEqual(row["input"]["tgt_lang"],"spa")
