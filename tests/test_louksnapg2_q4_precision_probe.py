@@ -13,6 +13,8 @@ class HistoricalQ4PrecisionWorkflowTests(unittest.TestCase):
     def test_historical_q4_source_commit_is_pinned_and_fetched_shallowly(self):
         workflow = (ROOT / ".github" / "workflows" / "louksnapg2-q4-precision-probes.yml").read_text(encoding="utf-8")
         self.assertIn("Q4_COMMIT: fa8b64b1319605e050c2064f955f5fbf47951908", workflow)
+        self.assertIn('git config --global --add safe.directory "$GITHUB_WORKSPACE"', workflow)
+        self.assertIn('git config --global --add safe.directory "$RUNNER_TEMP/louksnapg2-q4"', workflow)
         self.assertIn('git fetch --no-tags --depth=1 origin "$Q4_COMMIT"', workflow)
         self.assertIn('git worktree add --detach "$RUNNER_TEMP/louksnapg2-q4" "$Q4_COMMIT"', workflow)
 
@@ -56,6 +58,8 @@ class HistoricalQ4PrecisionWorkflowTests(unittest.TestCase):
         workflow = (root / ".github" / "workflows" / "louksnapg2-historical-weight-probes.yml").read_text(encoding="utf-8")
         self.assertIn("repair/louksnapg2-gpu-foundation-20261103", workflow)
         self.assertIn("fetch-depth: 1", workflow)
+        self.assertIn('git config --global --add safe.directory "$GITHUB_WORKSPACE"', workflow)
+        self.assertIn('git config --global --add safe.directory "$RUNNER_TEMP/louksnapg2-historical"', workflow)
         self.assertIn('git fetch --no-tags --depth=1 origin "$HISTORICAL_COMMIT"', workflow)
         self.assertNotIn("git lfs pull", workflow)
         self.assertIn("D03_TRANSCRIPCION", workflow)
@@ -71,6 +75,7 @@ class HistoricalQ4PrecisionWorkflowTests(unittest.TestCase):
             checkout = workflow.index("uses: actions/checkout@")
             self.assertLess(install, checkout)
             self.assertIn("apt-get install -y --no-install-recommends ca-certificates git git-lfs espeak-ng", workflow)
+            self.assertIn('git config --global --add safe.directory "$GITHUB_WORKSPACE"', workflow)
 
     def test_precision_probe_workflows_run_inside_exact_one_gib_one_cpu_cgroup(self):
         root = Path(__file__).resolve().parents[1]
