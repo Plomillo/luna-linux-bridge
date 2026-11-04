@@ -31,10 +31,10 @@ class WhisperFullRankMemorySplitTests(unittest.TestCase):
             root = Path(temporary)
             converter = root / "convert-pt-to-ggml.py"
             converter.write_text(
-                'import io, torch\\n'
-                'model_bytes = open(fname_inp, "rb").read()\\n'
-                'with io.BytesIO(model_bytes) as fp:\\n'
-                '    checkpoint = torch.load(fp, map_location="cpu")\\n',
+                'import io, torch\n'
+                'model_bytes = open(fname_inp, "rb").read()\n'
+                'with io.BytesIO(model_bytes) as fp:\n'
+                '    checkpoint = torch.load(fp, map_location="cpu")\n',
                 encoding="utf-8",
             )
             patched = MODULE.create_mmap_pt_converter(converter, root)

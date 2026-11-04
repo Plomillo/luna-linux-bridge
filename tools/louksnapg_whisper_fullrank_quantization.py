@@ -771,6 +771,15 @@ def report_evaluation(args) -> int:
         raise RuntimeError("FULLRANK_QUANTIZED_MODEL_IDENTITY_MISMATCH")
     fixtures_path = Path(args.prepared_fixtures).resolve(strict=True)
     fixtures = json.loads(fixtures_path.read_text(encoding="utf-8"))
+    expected_fixture = manifest.get("evaluation_fixture", {})
+    observed_fixture = fixtures.get("dataset_fixture", {})
+    observed_audio = fixtures.get("real_audio", {})
+    if observed_fixture.get("source_revision") != WHISPER_CPP_REVISION or observed_fixture.get("source_path") != "samples/jfk.wav":
+        raise RuntimeError("EVALUATION_DATASET_FIXTURE_SOURCE_MISMATCH")
+    if observed_audio.get("sha256") != expected_fixture.get("sha256") or int(observed_audio.get("bytes", -1)) != int(expected_fixture.get("bytes", -2)):
+        raise RuntimeError("EVALUATION_AUDIO_FIXTURE_IDENTITY_MISMATCH")
+    if fixtures.get("real_transcript_sha256") != expected_fixture.get("reference_transcript_sha256"):
+        raise RuntimeError("EVALUATION_REFERENCE_TRANSCRIPT_IDENTITY_MISMATCH")
     work = Path(args.work_dir).resolve()
     def load_task(task_id: str) -> tuple[dict, str]:
         outdir = work / task_id
