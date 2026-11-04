@@ -14,6 +14,50 @@ SPEC.loader.exec_module(MODULE)
 
 
 class WhisperFullRankMemorySplitTests(unittest.TestCase):
+    def test_official_checkpoint_source_is_sha256_pinned_and_not_hub_hosted(self):
+        self.assertEqual(len(MODULE.SOURCE_MODEL_SHA256), 64)
+        self.assertIn("openaipublic.azureedge.net", MODULE.SOURCE_MODEL_URL)
+        self.assertNotIn("huggingface.co", MODULE.SOURCE_MODEL_URL)
+        self.assertFalse(MODULE.SOURCE_MODEL_URL.startswith("https://huggingface.co"))
+
+    def test_build_does_not_use_hub_download_api(self):
+        source = inspect.getsource(MODULE.build)
+        self.assertIn("download_official_whisper_checkpoint", source)
+        self.assertNotIn("huggingface_hub", source)
+        self.assertNotIn("snapshot_download", source)
+
+    def test_pytorch_converter_uses_safe_mmap(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            converter = root / "convert-pt-to-ggml.py"
+            converter.write_text(
+                'import io, torch\\n'
+                'model_bytes = open(fname_inp, "rb").read()\\n'
+                'with io.BytesIO(model_bytes) as fp:\\n'
+                '    checkpoint = torch.load(fp, map_location="cpu")\\n',
+                encoding="utf-8",
+            )
+            patched = MODULE.create_mmap_pt_converter(converter, root)
+            source = patched.read_text(encoding="utf-8")
+            self.assertIn("mmap=True, weights_only=True", source)
+            self.assertNotIn("model_bytes = open(fname_inp", source)
+
+    def test_offline_fixture_is_source_pinned_and_does_not_load_hub_dataset(self):
+        source = inspect.getsource(MODULE.prepare_fixtures)
+        self.assertIn("PINNED_GIT_COMMIT_ASSET", source)
+        self.assertNotIn("datasets", source)
+        self.assertNotIn("load_helper", source)
+
+    def test_memory_event_delta_tracks_new_oom_events_only(self):
+        delta = MODULE.memory_event_delta({"oom": 0, "oom_kill": 0, "high": 10}, {"oom": 0, "oom_kill": 0, "high": 12})
+        self.assertEqual(delta["oom"], 0)
+        self.assertEqual(delta["oom_kill"], 0)
+        self.assertEqual(delta["high"], 2)
+
+    def test_report_uses_per_process_rss_not_cumulative_cgroup_peak(self):
+        source = inspect.getsource(MODULE.report_evaluation)
+        self.assertIn("CANDIDATE_NATIVE_PROCESS_PEAK_OVER_1GIB", source)
+        self.assertNotIn("CANDIDATE_MEMORY_PEAK_OVER_1GIB", source)
     def test_normalization_matches_shared_whisper_evaluator(self):
         self.assertEqual(MODULE.normalized_words("Hello, WORLD! It's 2026."), ["hello", "world", "it", "s", "2026"])
 
@@ -22,7 +66,6 @@ class WhisperFullRankMemorySplitTests(unittest.TestCase):
         self.assertEqual(MODULE.word_error_rate("same text", "same text"), 0.0)
 
     def test_fixture_preparation_is_separate_from_model_evaluation(self):
-        import inspect
         source = inspect.getsource(MODULE.evaluate)
         self.assertNotIn("load_helper", source)
         self.assertNotIn("datasets", source)

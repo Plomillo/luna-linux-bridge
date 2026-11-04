@@ -9,7 +9,6 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import hashlib
-import importlib.util
 import json
 import os
 import re
@@ -18,17 +17,21 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.request
+import wave
 from pathlib import Path
 from typing import Any
 
+# Official OpenAI checkpoint; no hosted model-hub API/account is used.
 SOURCE_REPO = "openai/whisper-large-v3-turbo"
-SOURCE_REVISION = "7e2743d4d1fc5182f43d53b0204b2e151ffb6ef7"
-SOURCE_MODEL_SHA256 = "542566a422ae4f3fd23f1ba11add198fca01bbf82e66e6a2857b3f608b1eb9d1"
-DATASET_REPO = "hf-internal-testing/librispeech_asr_dummy"
-DATASET_REVISION = "5be91486e11a2d616f4ec5db8d3fd248585ac07a"
-DATASET_PARQUET_SHA256 = "4e69a06fa5edc90921e5e7e39a7084881f8b3ed9c805c574f4f39c6fde27c603"
-REAL_AUDIO_ID = "1272-128104-0000"
+SOURCE_REVISION = "OPENAI_OFFICIAL_AZURE_RELEASE"
+SOURCE_MODEL_URL = "https://openaipublic.azureedge.net/main/whisper/models/aff26ae408abcba5fbf8813c21e62b0941638c5f6eebfb145be0c9839262a19a/large-v3-turbo.pt"
+SOURCE_MODEL_SHA256 = "aff26ae408abcba5fbf8813c21e62b0941638c5f6eebfb145be0c9839262a19a"
+DATASET_REPO = "ggml-org/whisper.cpp"
+DATASET_REVISION = "482279b8a18855ba741d7b88c30fcb3874691f59"
+REAL_AUDIO_ID = "jfk"
 REAL_WER_MAX = 0.25
+JFK_TRANSCRIPT = "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country."
 
 REPAIR_RAM_BYTES = 3 * 1024**3
 CANDIDATE_RAM_BYTES = 1 * 1024**3
@@ -238,50 +241,90 @@ def git_head(path: Path) -> str:
 
 
 
-def create_streaming_converter(upstream_converter: Path, output_dir: Path) -> Path:
-    """Read the pinned Whisper safetensors checkpoint one tensor at a time."""
-    source = upstream_converter.read_text(encoding="utf-8")
-    replacements = [
-        (
-            "from transformers import WhisperForConditionalGeneration\n",
-            "from safetensors import safe_open\n",
-        ),
-        (
-            "model = WhisperForConditionalGeneration.from_pretrained(dir_model)\n",
-            'weight_path = dir_model / "model.safetensors"\n'
-            'if not weight_path.is_file():\n'
-            '    raise FileNotFoundError("PINNED_WHISPER_SAFETENSORS_MISSING")\n'
-            'safe_weights = safe_open(str(weight_path), framework="pt", device="cpu")\n'
-            "safe_weights.__enter__()\n",
-        ),
-        (
-            "list_vars = model.state_dict()\n",
-            "list_vars = safe_weights\n",
-        ),
-        (
-            "data = list_vars[src].squeeze().numpy()\n",
-            "data = safe_weights.get_tensor(src).squeeze().numpy()\n",
-        ),
-        (
-            "fout.close()\n",
-            "fout.close()\nsafe_weights.__exit__(None, None, None)\n",
-        ),
-    ]
-    for original, replacement in replacements:
-        if source.count(original) != 1:
-            raise RuntimeError(
-                "UPSTREAM_CONVERTER_PATCH_ANCHOR_MISMATCH:"
-                + original.splitlines()[0]
-            )
-        source = source.replace(original, replacement)
-    if "WhisperForConditionalGeneration.from_pretrained" in source:
-        raise RuntimeError("FULL_TRANSFORMERS_MODEL_LOADING_NOT_REMOVED")
-    if "safe_weights.get_tensor(src)" not in source:
-        raise RuntimeError("SAFE_TENSOR_LAZY_READ_NOT_INSTALLED")
-    patched = output_dir / "convert-h5-to-ggml-streaming.py"
+def download_official_whisper_checkpoint(destination: Path) -> dict:
+    """Stream the official OpenAI checkpoint and verify its published SHA-256."""
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_suffix(destination.suffix + ".building")
+    digest = hashlib.sha256()
+    total = 0
+    try:
+        with urllib.request.urlopen(SOURCE_MODEL_URL, timeout=180) as response, temporary.open("wb") as output:
+            while True:
+                chunk = response.read(8 * 1024 * 1024)
+                if not chunk:
+                    break
+                output.write(chunk)
+                digest.update(chunk)
+                total += len(chunk)
+        observed = digest.hexdigest()
+        if observed != SOURCE_MODEL_SHA256 or total <= 0:
+            raise RuntimeError("OFFICIAL_OPENAI_CHECKPOINT_SHA256_MISMATCH:" + observed)
+        os.replace(temporary, destination)
+        return {
+            "source_url": SOURCE_MODEL_URL,
+            "source_model_id": SOURCE_REPO,
+            "release_revision": SOURCE_REVISION,
+            "sha256": observed,
+            "bytes": total,
+            "verification": "PASS_OFFICIAL_RELEASE_SHA256",
+            "provider": "OPENAI_OFFICIAL_AZURE_BLOB",
+            "hub_api_used": False,
+        }
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def create_mmap_pt_converter(upstream_converter: Path, output_dir: Path) -> Path:
+    """Patch pinned convert-pt-to-ggml.py to mmap the .pt checkpoint instead of reading it into RAM."""
+    source = Path(upstream_converter).read_text(encoding="utf-8")
+    original = (
+        '    model_bytes = open(fname_inp, "rb").read()\n'
+        '    with io.BytesIO(model_bytes) as fp:\n'
+        '        checkpoint = torch.load(fp, map_location="cpu")'
+    )
+    replacement = '    checkpoint = torch.load(fname_inp, map_location="cpu", mmap=True, weights_only=True)'
+    if source.count(original) != 1:
+        raise RuntimeError("PINNED_PT_CONVERTER_MMAP_PATCH_ANCHOR_MISMATCH")
+    source = source.replace(original, replacement)
+    if "model_bytes = open(fname_inp" in source or "mmap=True, weights_only=True" not in source:
+        raise RuntimeError("PT_CONVERTER_SAFE_MMAP_MODE_MISSING")
+    patched = Path(output_dir) / "convert-pt-to-ggml-mmap.py"
     compile(source, str(patched), "exec")
     patched.write_text(source, encoding="utf-8")
     return patched
+
+
+def read_memory_events(path: Path) -> dict:
+    values = {}
+    for line in Path(path).read_text(encoding="ascii").splitlines():
+        key, value = line.split()
+        values[key] = int(value)
+    return values
+
+
+def memory_event_delta(before: dict, after: dict) -> dict:
+    return {key: max(0, int(after.get(key, 0)) - int(before.get(key, 0)))
+            for key in set(before) | set(after)}
+
+
+def make_synthetic_audio(path: Path) -> Path:
+    executable = shutil.which("espeak-ng")
+    if not executable:
+        raise RuntimeError("ESPEAK_NG_REQUIRED_FOR_KNOWN_SPEECH_FIXTURE")
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [executable, "-v", "en-us", "-s", "135", "-w", str(path), "hello world"],
+        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+        text=True, timeout=30,
+    )
+    with wave.open(str(path), "rb") as stream:
+        if stream.getnframes() <= 0 or stream.getsampwidth() != 2 or stream.getnchannels() not in (1, 2):
+            raise RuntimeError("ESPEAK_NG_FIXTURE_WAV_INVALID")
+    return path
+
 
 def release_projection(candidate_bytes: int) -> dict:
     projected = (
@@ -319,43 +362,26 @@ def build(args) -> int:
     cpp_root = Path(args.whisper_cpp_root).resolve(strict=True)
     openai_root = Path(args.openai_whisper_root).resolve(strict=True)
 
-    converter = cpp_root / "models" / "convert-h5-to-ggml.py"
+    converter = cpp_root / "models" / "convert-pt-to-ggml.py"
     mel_filters = openai_root / "whisper" / "assets" / "mel_filters.npz"
-    if not converter.is_file() or not mel_filters.is_file():
-        raise RuntimeError("PINNED_CONVERTER_OR_OPENAI_MEL_ASSET_MISSING")
-    converter_sha = sha256_file(converter)
-    if converter_sha != CONVERTER_SHA256:
-        raise RuntimeError("WHISPER_CPP_CONVERTER_SHA256_MISMATCH:" + converter_sha)
-    streaming_converter = create_streaming_converter(converter, out)
-    streaming_converter_sha = sha256_file(streaming_converter)
+    tokenizer = openai_root / "whisper" / "assets" / "multilingual.tiktoken"
+    if not converter.is_file() or not mel_filters.is_file() or not tokenizer.is_file():
+        raise RuntimeError("PINNED_PT_CONVERTER_OR_OPENAI_ASSETS_MISSING")
     if git_head(cpp_root) != WHISPER_CPP_REVISION:
         raise RuntimeError("WHISPER_CPP_REVISION_MISMATCH")
     if git_head(openai_root) != OPENAI_WHISPER_REVISION:
         raise RuntimeError("OPENAI_WHISPER_ASSETS_REVISION_MISMATCH")
+    converter_sha = sha256_file(converter)
+    streaming_converter = create_mmap_pt_converter(converter, out)
+    streaming_converter_sha = sha256_file(streaming_converter)
 
-    from huggingface_hub import snapshot_download
-
-    model_dir = Path(snapshot_download(
-        repo_id=SOURCE_REPO,
-        revision=SOURCE_REVISION,
-        repo_type="model",
-        local_dir=str(out / "source-cache"),
-        allow_patterns=[
-            "model.safetensors", "config.json", "vocab.json", "added_tokens.json",
-            "generation_config.json", "preprocessor_config.json",
-            "tokenizer_config.json", "special_tokens_map.json",
-        ],
-        max_workers=1,
-    )).resolve(strict=True)
-    source_weights = model_dir / "model.safetensors"
-    if not source_weights.is_file():
-        raise RuntimeError("PINNED_TEACHER_MODEL_WEIGHTS_MISSING")
+    source_dir = out / "source-cache"
+    source_dir.mkdir(parents=True, exist_ok=True)
+    source_weights = source_dir / "large-v3-turbo.pt"
+    source_download = download_official_whisper_checkpoint(source_weights)
     source_sha = sha256_file(source_weights)
     if source_sha != SOURCE_MODEL_SHA256:
         raise RuntimeError("PINNED_TEACHER_MODEL_SHA256_MISMATCH:" + source_sha)
-    for required in ("config.json", "vocab.json", "added_tokens.json"):
-        if not (model_dir / required).is_file():
-            raise RuntimeError("PINNED_TEACHER_METADATA_MISSING:" + required)
 
     env = os.environ.copy()
     env.update({
@@ -365,18 +391,16 @@ def build(args) -> int:
         "MKL_NUM_THREADS": "1",
         "NUMEXPR_NUM_THREADS": "1",
         "TOKENIZERS_PARALLELISM": "false",
-        "HF_HUB_OFFLINE": "1",
-        "TRANSFORMERS_OFFLINE": "1",
         "PYTHONNOUSERSITE": "1",
         "PYTHONUNBUFFERED": "1",
     })
     fp16_model = out / "ggml-model-f16.bin"
     conversion = run_checked(
-        [sys.executable, str(streaming_converter), str(model_dir), str(openai_root), str(out)],
+        [sys.executable, str(streaming_converter), str(source_weights), str(openai_root), str(out)],
         cwd=cpp_root, timeout=3600, env=env,
     )
     if not fp16_model.is_file():
-        # The pinned converter writes ggml-model.bin in the requested output directory.
+        # The pinned upstream .pt converter writes ggml-model.bin.
         expected = out / "ggml-model.bin"
         if expected.is_file():
             os.replace(expected, fp16_model)
@@ -429,26 +453,48 @@ def build(args) -> int:
     runtime_dependency_check = verify_whisper_runtime_dependencies(
         toolchain_root / "whisper-cli", toolchain_library_root
     )
+    fixture_source = cpp_root / "samples" / "jfk.wav"
+    if fixture_source.is_symlink() or not fixture_source.is_file():
+        raise RuntimeError("PINNED_JFK_AUDIO_FIXTURE_MISSING")
+    fixture_destination = artifact_root / "fixtures" / "jfk.wav"
+    fixture_destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(fixture_source, fixture_destination)
+    fixture_record = {
+        "path": "fixtures/jfk.wav",
+        "bytes": fixture_destination.stat().st_size,
+        "sha256": sha256_file(fixture_destination),
+        "source_repository": "https://github.com/ggml-org/whisper.cpp",
+        "source_revision": WHISPER_CPP_REVISION,
+        "source_path": "samples/jfk.wav",
+        "source_type": "PINNED_GIT_COMMIT_ASSET",
+        "reference_transcript": JFK_TRANSCRIPT,
+        "reference_transcript_sha256": hashlib.sha256(JFK_TRANSCRIPT.encode("utf-8")).hexdigest(),
+    }
     manifest = {
         "schema": "LOUKSNAPG_WHISPER_FULLRANK_QUANTIZATION_CANDIDATE/1.0",
         "created_at_utc": utc_now(),
         "candidate_status": "BUILT_AWAITING_SEPARATE_1GIB_FUNCTIONAL_EVALUATION",
         "source_model": {
-            "repo": SOURCE_REPO,
-            "revision": SOURCE_REVISION,
+            "model_id": SOURCE_REPO,
+            "release_revision": SOURCE_REVISION,
+            "source_url": SOURCE_MODEL_URL,
             "sha256": source_sha,
             "bytes": source_weights.stat().st_size,
             "model_type": "whisper-large-v3-turbo",
+            "provider": "OPENAI_OFFICIAL_AZURE_BLOB",
+            "download_record": source_download,
+            "hub_api_used": False,
         },
         "conversion": {
             "whisper_cpp_repository": "https://github.com/ggml-org/whisper.cpp",
             "whisper_cpp_revision": WHISPER_CPP_REVISION,
             "openai_whisper_assets_repository": "https://github.com/openai/whisper",
             "openai_whisper_assets_revision": OPENAI_WHISPER_REVISION,
-            "converter_path": "models/convert-h5-to-ggml.py",
+            "converter_path": "models/convert-pt-to-ggml.py",
             "converter_sha256": converter_sha,
+            "streaming_converter_path": "convert-pt-to-ggml-mmap.py",
             "streaming_converter_sha256": streaming_converter_sha,
-            "converter_execution_mode": "PINNED_UPSTREAM_TENSOR_MAPPING_WITH_LAZY_SAFETENSORS_PER_TENSOR_STREAMING",
+            "converter_execution_mode": "PINNED_UPSTREAM_PYTORCH_CHECKPOINT_WITH_MMAP_AND_WEIGHTS_ONLY",
             "full_transformers_model_materialization": False,
             "fp16_intermediate_bytes": fp16_model.stat().st_size,
             "fp16_intermediate_sha256": sha256_file(fp16_model),
@@ -462,6 +508,7 @@ def build(args) -> int:
         "resource_policy": budget,
         "build_peak_rss_bytes": child_peak_rss_bytes(),
         "build_cgroup_snapshot": cgroup_snapshot(),
+        "evaluation_fixture": fixture_record,
         "quantization_candidates": quantization_rows,
         "global_release_policy": {
             "hard_max_bytes": GLOBAL_RELEASE_MAX_BYTES,
@@ -481,8 +528,8 @@ def build(args) -> int:
     }
     json_write(artifact_root / "fullrank_manifest.json", manifest)
     fp16_model.unlink(missing_ok=True)
-    shutil.rmtree(model_dir, ignore_errors=True)
-    shutil.rmtree(out / "source-cache", ignore_errors=True)
+    source_weights.unlink(missing_ok=True)
+    shutil.rmtree(source_dir, ignore_errors=True)
     report = {
         "schema": "LOUKSNAPG_WHISPER_FULLRANK_REPAIR_BUILD_EVIDENCE/1.0",
         "status": "PASS_FULLRANK_QUANTIZED_CANDIDATES_BUILT",
@@ -497,15 +544,6 @@ def build(args) -> int:
     }
     json_write(Path(args.report), report)
     return 0
-
-
-def load_helper(path: Path):
-    spec = importlib.util.spec_from_file_location("louksnapg_existing_whisper_fixtures", path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError("EXISTING_WHISPER_FIXTURE_HELPER_UNAVAILABLE")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 def resolve_artifact_root(path: Path) -> Path:
@@ -534,28 +572,68 @@ def resolve_artifact_root(path: Path) -> Path:
 
 
 def prepare_fixtures(args) -> int:
-    """Prepare fixed speech fixtures in a short-lived process, then exit before inference."""
-    helper = load_helper(Path(args.fixture_helper).resolve(strict=True))
+    """Prepare synthetic and source-pinned JFK fixtures without external datasets or model hubs."""
     work = Path(args.work_dir).resolve()
     work.mkdir(parents=True, exist_ok=True)
-    fixtures = work / "fixtures"
-    fixtures.mkdir(parents=True, exist_ok=True)
-    synthetic = helper.make_synthetic_audio(fixtures / "synthetic-hello-world.wav")
-    real_audio, real_transcript, dataset_info = helper.get_librispeech_fixture(fixtures)
-    bundle = {
-        "schema": "LOUKSNAPG_WHISPER_FULLRANK_PREPARED_FIXTURES/1.0",
-        "synthetic_audio": {"path": str(Path(synthetic).resolve()), "bytes": Path(synthetic).stat().st_size, "sha256": sha256_file(Path(synthetic))},
-        "real_audio": {"path": str(Path(real_audio).resolve()), "bytes": Path(real_audio).stat().st_size, "sha256": sha256_file(Path(real_audio))},
-        "real_transcript": real_transcript,
-        "real_transcript_sha256": hashlib.sha256(real_transcript.encode("utf-8")).hexdigest(),
-        "dataset_fixture": dataset_info,
-    }
-    json_write(Path(args.report), bundle)
-    print(json.dumps({"status": "PASS_FIXTURES_PREPARED", "synthetic_audio_sha256": bundle["synthetic_audio"]["sha256"],
-        "real_audio_sha256": bundle["real_audio"]["sha256"], "real_transcript_sha256": bundle["real_transcript_sha256"],
-        "report": str(Path(args.report).resolve())}, ensure_ascii=False, sort_keys=True))
-    return 0
+    fixtures_dir = work / "fixtures"
+    fixtures_dir.mkdir(parents=True, exist_ok=True)
+    synthetic = make_synthetic_audio(fixtures_dir / "synthetic-hello-world.wav")
 
+    artifact_root = Path(args.artifact_root).resolve(strict=True)
+    manifest = json.loads((artifact_root / "fullrank_manifest.json").read_text(encoding="utf-8"))
+    expected = manifest.get("evaluation_fixture", {})
+    if expected.get("source_revision") != WHISPER_CPP_REVISION or expected.get("source_path") != "samples/jfk.wav":
+        raise RuntimeError("JFK_FIXTURE_MANIFEST_IDENTITY_MISMATCH")
+    if args.real_source_revision != WHISPER_CPP_REVISION:
+        raise RuntimeError("JFK_FIXTURE_SOURCE_REVISION_MISMATCH")
+    source_audio = Path(args.real_audio)
+    if source_audio.is_symlink() or not source_audio.is_file():
+        raise RuntimeError("PINNED_JFK_AUDIO_FIXTURE_MISSING_OR_UNSAFE")
+    real_audio = source_audio.resolve(strict=True)
+    expected_audio = (artifact_root / str(expected.get("path", ""))).resolve(strict=True)
+    if real_audio != expected_audio:
+        raise RuntimeError("JFK_FIXTURE_PATH_NOT_BOUND_TO_CANDIDATE_MANIFEST")
+    if real_audio.stat().st_size != int(expected.get("bytes", -1)) or sha256_file(real_audio) != expected.get("sha256"):
+        raise RuntimeError("JFK_FIXTURE_HASH_NOT_BOUND_TO_CANDIDATE_MANIFEST")
+    if real_audio.suffix.lower() != ".wav" or real_audio.stat().st_size <= 0:
+        raise RuntimeError("PINNED_JFK_AUDIO_FIXTURE_INVALID")
+    with wave.open(str(real_audio), "rb") as stream:
+        if stream.getnframes() <= 0 or stream.getsampwidth() != 2 or stream.getframerate() != 16000:
+            raise RuntimeError("PINNED_JFK_AUDIO_FIXTURE_WAVE_FORMAT_INVALID")
+    transcript = args.real_transcript.strip()
+    if not transcript or hashlib.sha256(transcript.encode("utf-8")).hexdigest() != expected.get("reference_transcript_sha256"):
+        raise RuntimeError("JFK_REFERENCE_TRANSCRIPT_NOT_BOUND_TO_CANDIDATE_MANIFEST")
+    fixture_manifest = {
+        "schema": "LOUKSNAPG_WHISPER_FULLRANK_PREPARED_FIXTURES/1.0",
+        "synthetic_audio": {
+            "path": str(synthetic.resolve()), "bytes": synthetic.stat().st_size,
+            "sha256": sha256_file(synthetic),
+        },
+        "real_audio": {
+            "path": str(real_audio), "bytes": real_audio.stat().st_size,
+            "sha256": sha256_file(real_audio),
+        },
+        "real_transcript": transcript,
+        "real_transcript_sha256": hashlib.sha256(transcript.encode("utf-8")).hexdigest(),
+        "dataset_fixture": {
+            "source_repository": "https://github.com/ggml-org/whisper.cpp",
+            "source_revision": WHISPER_CPP_REVISION,
+            "source_path": "samples/jfk.wav",
+            "source_type": "PINNED_GIT_COMMIT_ASSET",
+            "provider_api_used": False,
+        },
+    }
+    json_write(Path(args.report), fixture_manifest)
+    print(json.dumps({
+        "status": "PASS_FIXTURES_PREPARED_OFFLINE",
+        "synthetic_audio_sha256": fixture_manifest["synthetic_audio"]["sha256"],
+        "real_audio_sha256": fixture_manifest["real_audio"]["sha256"],
+        "real_transcript_sha256": fixture_manifest["real_transcript_sha256"],
+        "source_revision": WHISPER_CPP_REVISION,
+        "provider_api_used": False,
+        "report": str(Path(args.report).resolve()),
+    }, ensure_ascii=False, sort_keys=True))
+    return 0
 
 def normalized_words(text: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", str(text).casefold())
@@ -631,17 +709,25 @@ def evaluate(args) -> int:
         "CLI=" + q(cli), "MODEL=" + q(model_path), "WORK=" + q(work),
         "export LD_LIBRARY_PATH=" + q(library_dir) + ':"${LD_LIBRARY_PATH:-}"',
         "SYNTH=" + q(synthetic), "REAL=" + q(real_audio),
+        "CGROUP=/sys/fs/cgroup",
+        "test -w \"$CGROUP/memory.reclaim\" || { echo CGROUP_MEMORY_RECLAIM_UNAVAILABLE >&2; exit 90; }",
+        "cat \"$CGROUP/memory.events\" > \"$WORK/candidate-memory-events-before.txt\"",
         "run_one() {", " local audio=\"$1\" outdir=\"$2\"",
         " local prefix=\"$outdir/transcript\"",
-        " mkdir -p \"$outdir\"", " rm -f \"$prefix.txt\" \"$outdir/exit_code\"",
+        " mkdir -p \"$outdir\"", " rm -f \"$prefix.txt\" \"$outdir/exit_code\" \"$outdir/peak-rss-kib.txt\"",
+        " printf '1073741824\\n' > \"$CGROUP/memory.reclaim\"",
+        " local baseline=$(cat \"$CGROUP/memory.current\")",
+        " printf '%s\\n' \"$baseline\" > \"$outdir/resident-baseline-bytes.txt\"",
+        " if [ \"$baseline\" -gt 268435456 ]; then echo CANDIDATE_RESIDENT_BASELINE_OVER_256MIB:$baseline >&2; return 91; fi",
         " set +e",
-        " \"$CLI\" -m \"$MODEL\" -f \"$audio\" -l en -t 1 -ng -nt -otxt -of \"$prefix\" -np -nf -bs 1 -bo 1 >\"$outdir/whisper-cli.log\" 2>&1",
+        " /usr/bin/time -f '%M' -o \"$outdir/peak-rss-kib.txt\" \"$CLI\" -m \"$MODEL\" -f \"$audio\" -l en -t 1 -ng -nt -otxt -of \"$prefix\" -np -nf -bs 1 -bo 1 >\"$outdir/whisper-cli.log\" 2>&1",
         " local rc=$?", " set -e", " printf '%s\\n' \"$rc\" > \"$outdir/exit_code\"", "}",
         "set -e",
         "run_one \"$SYNTH\" \"$WORK/synthetic-hello-world\"",
-        "run_one \"$REAL\" \"$WORK/librispeech-" + REAL_AUDIO_ID + "\"",
-        "cat /sys/fs/cgroup/memory.peak > \"$WORK/candidate-memory-peak.txt\"",
-        "cat /sys/fs/cgroup/memory.events > \"$WORK/candidate-memory-events.txt\"",
+        "run_one \"$REAL\" \"$WORK/real-" + REAL_AUDIO_ID + "\"",
+        "cat \"$CGROUP/memory.events\" > \"$WORK/candidate-memory-events-after.txt\"",
+        "cat \"$CGROUP/memory.current\" > \"$WORK/candidate-memory-current-after.txt\"",
+        "cat \"$CGROUP/memory.peak\" > \"$WORK/candidate-cgroup-peak-diagnostic.txt\"",
         "exec " + q(sys.executable) + " -B " + q(Path(__file__).resolve()) + " report"
         + " --artifact-root " + q(artifact_root)
         + " --quantization " + q(args.quantization)
@@ -710,27 +796,61 @@ def report_evaluation(args) -> int:
     missing = [x for x in ("hello", "world") if x not in normalized_words(synth_text)]
     synth["quality_check"] = {"kind": "SYNTHETIC_KNOWN_ANSWER", "expected_words": ["hello", "world"],
         "missing_words": missing, "status": "PASS" if not missing else "FAIL"}
-    real, real_text = load_task("librispeech-" + REAL_AUDIO_ID)
+    real, real_text = load_task("real-" + REAL_AUDIO_ID)
     transcript = str(fixtures.get("real_transcript", ""))
     if hashlib.sha256(transcript.encode("utf-8")).hexdigest() != fixtures.get("real_transcript_sha256"):
         raise RuntimeError("PREPARED_TRANSCRIPT_IDENTITY_MISMATCH")
     wer = word_error_rate(transcript, real_text) if real_text else 1.0
-    real["quality_check"] = {"kind": "REAL_PUBLIC_RECORDED_SPEECH", "dataset_repo": DATASET_REPO,
+    real["quality_check"] = {"kind": "PINNED_UPSTREAM_RECORDED_SPEECH", "dataset_repo": DATASET_REPO,
         "dataset_revision": DATASET_REVISION, "audio_id": REAL_AUDIO_ID,
         "reference_word_count": len(normalized_words(transcript)), "wer": round(wer, 6),
         "wer_limit": REAL_WER_MAX, "status": "PASS" if wer <= REAL_WER_MAX else "FAIL"}
-    peak_path, events_path = work / "candidate-memory-peak.txt", work / "candidate-memory-events.txt"
-    if not peak_path.is_file() or not events_path.is_file():
-        raise RuntimeError("WHISPER_CGROUP_PEAK_EVIDENCE_MISSING")
-    events = {}
-    for line in events_path.read_text(encoding="ascii").splitlines():
-        key, value = line.split()
-        events[key] = int(value)
-    snapshot = {"memory_peak_bytes": int(peak_path.read_text(encoding="ascii").strip()), "memory_events": events}
-    if events.get("oom", 0) or events.get("oom_kill", 0):
-        raise RuntimeError("CANDIDATE_CGROUP_OOM_EVENT")
-    if snapshot["memory_peak_bytes"] > CANDIDATE_RAM_BYTES:
-        raise RuntimeError("CANDIDATE_MEMORY_PEAK_OVER_1GIB:" + str(snapshot["memory_peak_bytes"]))
+    before_path = work / "candidate-memory-events-before.txt"
+    after_path = work / "candidate-memory-events-after.txt"
+    current_path = work / "candidate-memory-current-after.txt"
+    cgroup_peak_path = work / "candidate-cgroup-peak-diagnostic.txt"
+    if not before_path.is_file() or not after_path.is_file() or not current_path.is_file():
+        raise RuntimeError("WHISPER_CGROUP_MEMORY_EVIDENCE_MISSING")
+    events_before = read_memory_events(before_path)
+    events_after = read_memory_events(after_path)
+    events_delta = memory_event_delta(events_before, events_after)
+    if events_delta.get("oom", 0) or events_delta.get("oom_kill", 0):
+        raise RuntimeError("CANDIDATE_CGROUP_OOM_EVENT:" + json.dumps(events_delta, sort_keys=True))
+    memory_rows = {}
+    for task_id, task in (("synthetic-hello-world", synth), ("real-" + REAL_AUDIO_ID, real)):
+        task_dir = work / task_id
+        peak_path = task_dir / "peak-rss-kib.txt"
+        baseline_path = task_dir / "resident-baseline-bytes.txt"
+        if not peak_path.is_file() or not baseline_path.is_file():
+            raise RuntimeError("WHISPER_PROCESS_RSS_EVIDENCE_MISSING:" + task_id)
+        peak_kib = int(peak_path.read_text(encoding="ascii").strip())
+        peak_bytes = peak_kib * 1024
+        baseline_bytes = int(baseline_path.read_text(encoding="ascii").strip())
+        if peak_bytes <= 0 or peak_bytes > CANDIDATE_RAM_BYTES:
+            raise RuntimeError("CANDIDATE_NATIVE_PROCESS_PEAK_OVER_1GIB:" + task_id + ":" + str(peak_bytes))
+        if baseline_bytes > 268435456:
+            raise RuntimeError("CANDIDATE_RESIDENT_BASELINE_OVER_256MIB:" + task_id + ":" + str(baseline_bytes))
+        task["native_process_peak_rss_bytes"] = peak_bytes
+        task["resident_baseline_bytes"] = baseline_bytes
+        memory_rows[task_id] = {
+            "native_process_peak_rss_bytes": peak_bytes,
+            "resident_baseline_bytes": baseline_bytes,
+        }
+    snapshot = {
+        "measurement_method": "GNU_TIME_PER_NATIVE_WHISPER_CLI_PROCESS_PLUS_CGROUP_OOM_DELTA",
+        "memory_limit_bytes": CANDIDATE_RAM_BYTES,
+        "swap_limit_bytes": 0,
+        "cpu_limit_cores": 1,
+        "process_measurements": memory_rows,
+        "max_native_process_peak_rss_bytes": max(x["native_process_peak_rss_bytes"] for x in memory_rows.values()),
+        "cgroup_memory_current_after_bytes": int(current_path.read_text(encoding="ascii").strip()),
+        "cgroup_memory_peak_diagnostic_bytes": int(cgroup_peak_path.read_text(encoding="ascii").strip()) if cgroup_peak_path.is_file() else None,
+        "cgroup_memory_events_before": events_before,
+        "cgroup_memory_events_after": events_after,
+        "cgroup_memory_events_delta": events_delta,
+        "oom_events_delta": events_delta.get("oom", 0),
+        "oom_kill_events_delta": events_delta.get("oom_kill", 0),
+    }
     tests = [synth, real]
     passed = all(x["execution_status"] == "PASS_EXECUTION" and x["quality_check"]["status"] == "PASS" for x in tests)
     projection = release_projection(model_path.stat().st_size)
@@ -743,7 +863,7 @@ def report_evaluation(args) -> int:
         "candidate_weight": {"path": str(row["path"]), "bytes": model_path.stat().st_size, "sha256": sha256_file(model_path)},
         "candidate_resource_policy": {"status": "PASS_EXACT_CGROUP_V2_LIMITS", "memory_limit_bytes": CANDIDATE_RAM_BYTES,
             "swap_limit_bytes": 0, "cpu_limit_cores": 1},
-        "candidate_memory_measurement": snapshot, "child_peak_rss_bytes": snapshot["memory_peak_bytes"],
+        "candidate_memory_measurement": snapshot, "child_peak_rss_bytes": snapshot["max_native_process_peak_rss_bytes"],
         "dataset_fixture": fixtures["dataset_fixture"], "prepared_fixture_manifest_sha256": sha256_file(fixtures_path),
         "task_results": tests, "global_release_projection": projection,
         "source_teacher_mutated": False, "active_runtime_mutated": False, "candidate_integrated": False,
@@ -762,7 +882,10 @@ def main() -> int:
     b.add_argument("--output-dir", type=Path, required=True)
     b.add_argument("--report", type=Path, required=True)
     p = sub.add_parser("prepare-fixtures")
-    p.add_argument("--fixture-helper", type=Path, required=True)
+    p.add_argument("--artifact-root", type=Path, required=True)
+    p.add_argument("--real-audio", type=Path, required=True)
+    p.add_argument("--real-transcript", required=True)
+    p.add_argument("--real-source-revision", required=True)
     p.add_argument("--work-dir", type=Path, required=True)
     p.add_argument("--report", type=Path, required=True)
     e = sub.add_parser("evaluate")
