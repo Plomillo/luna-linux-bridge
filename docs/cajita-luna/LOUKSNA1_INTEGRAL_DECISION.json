@@ -38,6 +38,7 @@
   },
   "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023",
   "decision": "NOT_GRANTED",
+  "functional_certification": "NOT_GRANTED",
   "gates": {
     "axiom_semantics": {
       "reason": "PROPOSITION_VALIDITY_AND_LOGICAL_CONSISTENCY_NOT_ESTABLISHED",
@@ -47,11 +48,12 @@
       "status": "PASS"
     },
     "coverage_21": {
-      "failed": [],
+      "failed": [
+        "D02_MULTI_INTERDISCIPLINAR"
+      ],
       "passed": [
         "D01_CEREBRO_ROOT",
         "D02_CONFESION_ECLESIAL_REFORMADA",
-        "D02_MULTI_INTERDISCIPLINAR",
         "D02_ORQUESTADOR",
         "D03_TRANSCRIPCION_ROOT",
         "D04_HERMENEUTICA_HG",
@@ -71,7 +73,7 @@
         "D06_RUNTIME_ANDROID_WINDOWS",
         "D06_TESTING"
       ],
-      "status": "PASS"
+      "status": "FAIL"
     },
     "host_resources": {
       "measurement": {
@@ -86,13 +88,13 @@
         },
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 85013553152,
+        "disk_available_bytes": 85256658944,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 6831538176
+        "ram_available_bytes": 6902009856
       },
       "reason": "",
       "status": "PASS"
@@ -131,7 +133,7 @@
       "status": "PASS"
     }
   },
-  "generated_at_utc": "2026-11-04T06:54:33Z",
+  "generated_at_utc": "2026-11-04T16:09:30Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -189,19 +191,13 @@
     },
     {
       "detail": {
-        "certification": "NOT_GRANTED",
-        "companion_sha256": "2894f4d98f32eb926bbd71de00e8cea0edd015587f46874b8cd24d784670614b",
-        "framework_count": 18,
-        "protected_prefix_bytes": 11542631,
-        "protected_prefix_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
-        "semantic_graph_execution": "PASS_STRUCTURAL_BLOCK_ROUTING_ONLY",
-        "status": "PASS_SOURCE_PREFIX_VERIFIED"
+        "error": "RuntimeError"
       },
-      "exit_code": 0,
+      "exit_code": 4,
       "operation": "verify_axiom_source_binding",
-      "output_sha256": "b96b9419d8221ee0ad32ecc8bfaf4e393c98885399263560dbe9108fea6fbe5f",
-      "reason": "",
-      "status": "PASS",
+      "output_sha256": "ba76a51c7c1830ff07c48ba25c5aefabf45190dcadf0bf437d21d53389036cd2",
+      "reason": "LOUKSNA1_COMPANION_HASH_MISMATCH",
+      "status": "FAIL",
       "target_id": "D02_MULTI_INTERDISCIPLINAR",
       "worker_certification": "NOT_GRANTED"
     },
@@ -433,12 +429,12 @@
         "reference_engine": "llama.cpp",
         "reference_kind": "AUTHORIZED_REFERENCE_MODEL",
         "reference_known_answer": "PASS",
-        "reference_sha256": "bf5443523f8b810a54d2f830f5ea4702a1f80f794d60e7db97fe9a8182420990",
+        "reference_sha256": "0375797b2964557f6f9b1e1ee006d5b25a780036c2800b492890b1d5966c8e9e",
         "stderr_tail": ""
       },
       "exit_code": 0,
       "operation": "analyze_reasoning",
-      "output_sha256": "75a3385206179086c470f417e88811fed9932d052cf957475c9778f7c2925338",
+      "output_sha256": "71bdb9ebad84de4f2ea4bc3b6259818399c52d417a40374c00b69890f0367280",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ANALISIS_AVANZADO",
@@ -450,11 +446,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "64c43b19ecd6a02581541c4d2e6e68193a7a3e68ef8d9f2ec4eed29defcdd88c"
+        "stdout_sha256": "ecd9ce4c6d5fcfefdfa5de03d42e3b486cfb0f4f194d019424e60bd3d2703ddb"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "0e258f744fdf40a71b23ca82239bf803f7383ccf38f3ffa714ef4d291fe2f559",
+      "output_sha256": "40436be48bea10208253233d10b87f51cdce37dab8c9a439919cf6e4e34eeed6",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -511,12 +507,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "b2e2e79124e48c085455b456e50adba8d4306cc21412956cd2f5f495ad784707",
+        "query_sha256": "363f9523d6160b60b367972c8beb9e462b31fb56f51085f2c42b3cab10bdc699",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "19ee77551f086a69c2c65c9a8305c4152fea6a10b45be4abf992e13c4248e357",
+      "output_sha256": "24eab10f3a71d6909cb8d887bb55285ec9a67069cabcbbcc2f026cbc9a20a83b",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -608,11 +604,11 @@
       "stdout_sha256": "44d47c9675abf277caf0d7a5fc60e0aa76c8adc0c9a75c675c0951b9b8dac761"
     }
   },
-  "producer_commit": "5690de74e29078e147091e84ae3f91cc3766be77",
+  "producer_commit": "07308f0799a45bb05c97a8bb17d64f602f058ac1",
   "release_manifest_refresh": {
     "build_error": "",
     "global_certification": "NOT_GRANTED",
-    "source_commit": "5690de74e29078e147091e84ae3f91cc3766be77",
+    "source_commit": "07308f0799a45bb05c97a8bb17d64f602f058ac1",
     "status": "PASS"
   },
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
@@ -623,41 +619,26 @@
     "semantic_consistency": "NOT_ESTABLISHED"
   },
   "target_adapter_registration": {
-    "all_21_target_task_adapters": "ESTABLISHED",
+    "all_21_target_task_adapters": "NOT_ESTABLISHED",
     "canonical_target_count": 21
   },
   "worker": {
-    "canonical_promotion": "NOT_AUTHORIZED",
     "certification": "NOT_GRANTED",
-    "completed_actions": [
-      "execute_consumer_matrix"
-    ],
-    "completion_claim": true,
+    "completed": [],
     "coordinator_shim": "READ_VALIDATED_SOURCE_STATE_HASH_PROPERTY",
-    "plan": {
-      "actions": [
-        {
-          "action_id": "execute_consumer_matrix",
-          "dependencies": [],
-          "idempotency": "IDEMPOTENT",
-          "permitted_effects": [
-            "WRITE_EVIDENCE"
-          ],
-          "required_capabilities": [
-            "execute_consumer_matrix"
-          ]
-        }
+    "failed_action": "execute_consumer_matrix",
+    "failure": {
+      "certification": "NOT_GRANTED",
+      "failed_targets": [
+        "D02_MULTI_INTERDISCIPLINAR"
       ],
-      "execution_authorized": false,
-      "global_optimum_claimed": false,
-      "ordered_actions": [
-        "execute_consumer_matrix"
-      ],
-      "status": "PLAN_VALIDATED"
+      "result_state_hash": "5ba3b7dbeea13319f9e3439a7c39692cf267a72dc37ef2e22292bbe95af47595",
+      "status": "FAIL"
     },
+    "next_action": "PRESERVE_CHECKPOINT_AND_REVALIDATE",
     "pyz_bytes_modified": false,
     "pyz_sha256": "d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817",
-    "status": "COMPLETED",
+    "status": "BLOCKED",
     "worker": "CUSTOSZV9"
   }
 }
