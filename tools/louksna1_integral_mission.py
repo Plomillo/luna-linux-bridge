@@ -769,7 +769,7 @@ def op_pytest(runtime: Path) -> dict:
             "    assert CRATE.stat().st_size > 0\n"
             "    with tarfile.open(CRATE, 'r:gz') as bundle:\n"
             "        names = bundle.getnames()\n"
-            "    assert any(name.endswith('Cargo.toml') for name in names)\n" % str(crate),
+            "    assert any(name.endswith('Cargo.toml') for name in names)\n" % str(crate.resolve()),
             encoding="utf-8",
         )
         env = os.environ.copy()
