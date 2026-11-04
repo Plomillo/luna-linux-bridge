@@ -179,13 +179,36 @@ jobs:
           temporary="$GITHUB_WORKSPACE/$file.download"
           trap 'rm -f "$temporary"' EXIT
           echo "GPT_OSS_MEDIA_SOURCE=$media_url"
-          curl --fail --silent --show-error --location \
-            --retry 2 --retry-all-errors --retry-delay 2 \
-            --connect-timeout 20 --max-time 240 \
-            "$media_url" --output "$temporary"
-          actual_bytes="$(stat -c %s "$temporary")"
-          test "$actual_bytes" -eq "$expected_bytes"
-          printf '%s  %s\n' "$expected_sha256" "$temporary" | sha256sum --check -
+          python - "$media_url" "$temporary" "$expected_bytes" "$expected_sha256" <<'PY'
+          import hashlib
+          import sys
+          from urllib.request import Request, urlopen
+
+          url, destination = sys.argv[1], sys.argv[2]
+          expected_bytes, expected_sha256 = int(sys.argv[3]), sys.argv[4]
+          request = Request(url, headers={"User-Agent": "LOUKSNAPG2-GitHub-Actions"})
+          digest = hashlib.sha256()
+          written = 0
+          with urlopen(request, timeout=240) as response, open(destination, "wb") as output:
+              status = getattr(response, "status", 200)
+              if status != 200:
+                  raise SystemExit("GPT_OSS_MEDIA_HTTP_STATUS:" + str(status))
+              while True:
+                  chunk = response.read(1024 * 1024)
+                  if not chunk:
+                      break
+                  written += len(chunk)
+                  if written > expected_bytes:
+                      raise SystemExit("GPT_OSS_MEDIA_SIZE_EXCEEDS_EXPECTED")
+                  digest.update(chunk)
+                  output.write(chunk)
+          observed_sha256 = digest.hexdigest()
+          if written != expected_bytes:
+              raise SystemExit(f"GPT_OSS_MEDIA_SIZE_MISMATCH:{written}:{expected_bytes}")
+          if observed_sha256 != expected_sha256:
+              raise SystemExit("GPT_OSS_MEDIA_SHA256_MISMATCH:" + observed_sha256)
+          print(f"GPT_OSS_MEDIA_OBJECT_VERIFIED bytes={written} sha256={observed_sha256}")
+          PY
           mv "$temporary" "$GITHUB_WORKSPACE/$file"
           echo "GPT_OSS_LFS_VERIFIED=true" >> "$GITHUB_ENV"
           echo "GPT_OSS_LFS_OBJECT_VERIFIED bytes=$actual_bytes sha256=$expected_sha256"
