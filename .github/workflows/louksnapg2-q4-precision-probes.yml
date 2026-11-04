@@ -71,6 +71,7 @@ jobs:
         shell: bash
         env:
           MODEL_DOMAIN: ${{ matrix.domain }}
+        working-directory: ${{ github.workspace }}
         run: |
           set -Eeuo pipefail
           case "$MODEL_DOMAIN" in
@@ -80,11 +81,12 @@ jobs:
             D06_SISTEMA_INTELIGENTE) WEIGHT_PATH="cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors" ;;
             *) echo "UNREGISTERED_MODEL_DOMAIN:$MODEL_DOMAIN" >&2; exit 2 ;;
           esac
-          git lfs install --local
-          git lfs pull --include="$WEIGHT_PATH" --exclude="" origin "$GITHUB_SHA"
-          git lfs checkout "$WEIGHT_PATH"
-          test -s "$WEIGHT_PATH"
-          if head -n 1 "$WEIGHT_PATH" | grep -q "git-lfs.github.com/spec"; then
+          test -d "$GITHUB_WORKSPACE/.git" || { echo "Q2_CHECKOUT_NOT_GIT_REPOSITORY" >&2; exit 2; }
+          git -C "$GITHUB_WORKSPACE" lfs install --local
+          git -C "$GITHUB_WORKSPACE" lfs pull --include="$WEIGHT_PATH" --exclude="" origin "$GITHUB_SHA"
+          git -C "$GITHUB_WORKSPACE" lfs checkout "$WEIGHT_PATH"
+          test -s "$GITHUB_WORKSPACE/$WEIGHT_PATH"
+          if head -n 1 "$GITHUB_WORKSPACE/$WEIGHT_PATH" | grep -q "git-lfs.github.com/spec"; then
             echo "ACTIVE_Q2_WEIGHT_REMAINS_LFS_POINTER:$WEIGHT_PATH" >&2
             exit 2
           fi
@@ -95,9 +97,10 @@ jobs:
           Q4_COMMIT: fa8b64b1319605e050c2064f955f5fbf47951908
         run: |
           set -Eeuo pipefail
-          git fetch --no-tags --depth=1 origin "$Q4_COMMIT"
-          git cat-file -e "$Q4_COMMIT^{commit}"
-          git worktree add --detach "$RUNNER_TEMP/louksnapg2-q4" "$Q4_COMMIT"
+          test -d "$GITHUB_WORKSPACE/.git" || { echo "Q4_ACTIVE_CHECKOUT_NOT_GIT_REPOSITORY" >&2; exit 2; }
+          git -C "$GITHUB_WORKSPACE" fetch --no-tags --depth=1 origin "$Q4_COMMIT"
+          git -C "$GITHUB_WORKSPACE" cat-file -e "$Q4_COMMIT^{commit}"
+          git -C "$GITHUB_WORKSPACE" worktree add --detach "$RUNNER_TEMP/louksnapg2-q4" "$Q4_COMMIT"
           case "${{ matrix.domain }}" in
             D01_CEREBRO) WEIGHT_PATH="cajita-luna-runtime/1. Cerebro/model.safetensors" ;;
             D03_TRANSCRIPCION) WEIGHT_PATH="cajita-luna-runtime/3. Transcripción/model.safetensors" ;;
