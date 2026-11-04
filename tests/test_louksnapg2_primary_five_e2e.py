@@ -21,6 +21,27 @@ class PrimaryFiveModelRunnerTests(unittest.TestCase):
         self.assertNotIn("whisper-cli", source)
         self.assertNotIn("apertium", source)
 
+    def test_exact_five_model_domains_have_fixed_quality_predicates(self):
+        import sys
+        root = Path(__file__).resolve().parents[1]
+        sys.path.insert(0, str(root / "tools"))
+        from cajita_task_e2e import MODEL_CASES
+        self.assertEqual(
+            [row["domain_id"] for row in MODEL_CASES],
+            [
+                "D01_CEREBRO",
+                "D03_TRANSCRIPCION",
+                "D04_TRADUCTOR_INTELIGENTE",
+                "D05_INTELIGENCIA_DOCUMENTAL",
+                "D06_SISTEMA_INTELIGENTE",
+            ],
+        )
+        self.assertEqual(len({row["task_id"] for row in MODEL_CASES}), 5)
+        for row in MODEL_CASES:
+            self.assertTrue(row.get("quality_check", {}).get("id"))
+            self.assertGreater(row.get("limits", {}).get("timeout_seconds", 0), 0)
+            self.assertGreater(row.get("limits", {}).get("max_new_tokens", 0), 0)
+
     def test_gpt_oss_media_download_remeasures_shell_variables_after_python(self):
         root = Path(__file__).resolve().parents[1]
         workflow = (root / ".github" / "workflows" / "louksnapg2-primary-five-model-e2e.yml").read_text(encoding="utf-8")
