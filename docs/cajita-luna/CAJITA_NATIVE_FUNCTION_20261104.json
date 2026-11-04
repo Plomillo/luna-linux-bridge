@@ -1,0 +1,33 @@
+{
+  "schema": "CAJITA_NATIVE_FUNCTION/1.0",
+  "quality_equivalence": "NOT_CLAIMED",
+  "global_certification": "NOT_CLAIMED",
+  "engines": [
+    {
+      "id": "SQLITE_SOURCE_3_53_4",
+      "function_status": "PASS",
+      "operation": "configure, build, and query the packaged source",
+      "observed": "3.53.4|louksna"
+    },
+    {
+      "id": "TAURI_2_11_5_SOURCE_ZIP",
+      "function_status": "PASS",
+      "operation": "build the packaged CLI and execute it",
+      "observed": "tauri-cli 2.11.4"
+    },
+    {
+      "id": "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+      "function_status": "PASS",
+      "operation": "extract the packaged cmake.exe and configure a project",
+      "run": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/41842034288",
+      "observed": "cmake version 4.4.3; Configuring done; Generating done",
+      "cmake_exe_sha256": "ab8247ca4554871e5d75c0ee118ee8663727bd6fdf37ad76b17e9cc8d5f286a8"
+    },
+    {
+      "id": "DAGGER_0_21_8_LINUX_AMD64",
+      "function_status": "NOT_PASS",
+      "cli_observed": "dagger v0.21.8",
+      "reason": "The packaged CLI responds. Its engine container did not start: the host rejected the devpts mount."
+    }
+  ]
+}
