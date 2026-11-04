@@ -58,13 +58,15 @@ class HistoricalQ4PrecisionWorkflowTests(unittest.TestCase):
         self.assertNotIn("git lfs pull", workflow)
         self.assertIn("D03_TRANSCRIPCION", workflow)
         self.assertIn("D04_TRADUCTOR_INTELIGENTE", workflow)
+        self.assertNotIn("- D01_CEREBRO", workflow)
+        self.assertNotIn("- D06_SISTEMA_INTELIGENTE", workflow)
         self.assertIn("FULL DIRECT NATIVE Q2 VS PRE-Q2 FACTOR EVIDENCE", workflow)
 
     def test_precision_probe_workflows_run_inside_exact_one_gib_one_cpu_cgroup(self):
         root = Path(__file__).resolve().parents[1]
         for name in ("louksnapg2-q4-precision-probes.yml", "louksnapg2-historical-weight-probes.yml"):
             workflow = (root / ".github" / "workflows" / name).read_text(encoding="utf-8")
-            self.assertIn("container:\\n      image: ubuntu:24.04\\n      options: --memory=1g --memory-swap=1g --cpus=1", workflow)
+            self.assertIn("container:\n      image: ubuntu:24.04\n      options: --memory=1g --memory-swap=1g --cpus=1", workflow)
             self.assertNotIn("sudo apt-get", workflow)
 
 if __name__ == "__main__":

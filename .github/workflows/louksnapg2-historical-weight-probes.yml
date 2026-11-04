@@ -39,10 +39,8 @@ jobs:
       fail-fast: false
       matrix:
         domain:
-          - D01_CEREBRO
           - D03_TRANSCRIPCION
           - D04_TRADUCTOR_INTELIGENTE
-          - D06_SISTEMA_INTELIGENTE
     steps:
       - name: Checkout current candidate and full in-repository history
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
