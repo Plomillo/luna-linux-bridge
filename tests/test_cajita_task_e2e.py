@@ -1,15 +1,46 @@
 from __future__ import annotations
 
+import os
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
-from cajita_task_e2e import (MODEL_CASES, quality_acceptance,
+from cajita_task_e2e import (MODEL_CASES, quality_acceptance, run_case,
                              required_domain_coverage, task_execution_and_quality_pass)
 
 
 class SyntheticQualityAcceptanceTests(unittest.TestCase):
+    def test_child_process_inherits_python_runtime_library_path(self):
+        record = {
+            "task_id": "e2e-child-runtime-env",
+            "domain_id": "D01_CEREBRO",
+            "operation": "generate_text",
+            "input": {"prompt": "test"},
+            "quality_check": {"id": "runtime-env", "mode": "contains_any", "phrases": ["ok"]},
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.dict(os.environ, {"LD_LIBRARY_PATH": "/opt/python/lib"}):
+                with patch("cajita_task_e2e.subprocess.run",
+                           return_value=subprocess.CompletedProcess([], 1, "", "mock child failure")) as mocked:
+                    run_case(root, root, record, 5)
+            child_env = mocked.call_args.kwargs["env"]
+        self.assertEqual(child_env.get("LD_LIBRARY_PATH"), "/opt/python/lib")
+
     def test_all_five_model_tasks_have_declared_acceptance_checks(self):
         self.assertEqual(len(MODEL_CASES), 5)
         self.assertTrue(all(row.get("quality_check", {}).get("id") for row in MODEL_CASES))
+
+    def test_synthetic_case_generation_budgets_are_bounded_and_domain_specific(self):
+        budgets = {row["domain_id"]: row["limits"]["max_new_tokens"] for row in MODEL_CASES}
+        self.assertEqual(budgets["D01_CEREBRO"], 64)
+        self.assertEqual(budgets["D03_TRANSCRIPCION"], 32)
+        self.assertEqual(budgets["D04_TRADUCTOR_INTELIGENTE"], 64)
+        self.assertEqual(budgets["D05_INTELIGENCIA_DOCUMENTAL"], 128)
+        self.assertEqual(budgets["D06_SISTEMA_INTELIGENTE"], 16)
+        self.assertLessEqual(max(budgets.values()), 128)
 
     def test_repository_answer_requires_expected_concept(self):
         row = MODEL_CASES[0]
@@ -26,10 +57,12 @@ class SyntheticQualityAcceptanceTests(unittest.TestCase):
         self.assertEqual(quality_acceptance(row, "Buenos días. ¿Cómo estás?")["status"], "PASS")
         self.assertEqual(quality_acceptance(row, "Good morning. How are you?")["status"], "FAIL")
 
-    def test_document_extraction_requires_the_fixture_total(self):
+    def test_docling_extraction_requires_invoice_fields(self):
         row = MODEL_CASES[3]
-        self.assertEqual(quality_acceptance(row, "TOTAL 133.45")["status"], "PASS")
-        self.assertEqual(quality_acceptance(row, "TOTAL 123.45")["status"], "FAIL")
+        self.assertEqual(row["input"]["prompt"], "Convert this page to docling.")
+        self.assertEqual(row["limits"]["max_new_tokens"], 128)
+        self.assertEqual(quality_acceptance(row, "<doctag> INVOICE 4821 TOTAL 37.50 </doctag>")["status"], "PASS")
+        self.assertEqual(quality_acceptance(row, "<doctag> INVOICE 4821 TOTAL 37.00 </doctag>")["status"], "FAIL")
 
     def test_arithmetic_answer_requires_the_correct_number(self):
         row = MODEL_CASES[4]

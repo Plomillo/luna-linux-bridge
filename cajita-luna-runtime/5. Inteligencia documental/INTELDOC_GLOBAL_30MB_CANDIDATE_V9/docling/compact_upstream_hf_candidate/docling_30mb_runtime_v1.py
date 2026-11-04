@@ -305,6 +305,10 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     prompt_text=proc.apply_chat_template(msgs,add_generation_prompt=True)
     inputs=proc(text=prompt_text,images=[image],return_tensors="pt")
     inputs={k:(v.to("cpu") if isinstance(v,torch.Tensor) else v) for k,v in inputs.items()}
+    pixel_values=inputs.get("pixel_values")
+    if not isinstance(pixel_values, torch.Tensor) or tuple(pixel_values.shape[-2:]) != (image_side, image_side):
+        observed_shape=list(pixel_values.shape) if isinstance(pixel_values, torch.Tensor) else None
+        raise RuntimeError("DOCLING_PROCESSOR_EXCEEDED_BOUNDED_IMAGE_SIDE:" + json.dumps({"expected":[image_side,image_side],"observed":observed_shape}))
     assert_ram_budget("after-image-preprocess")
     image_token_count=int((inputs["input_ids"] == int(model.config.image_token_id)).sum().item())
     if image_token_count != image_seq_len:

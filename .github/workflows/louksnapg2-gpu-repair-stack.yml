@@ -1,0 +1,154 @@
+name: "LOUKSNAPG2 — NVIDIA GPU repair stack preflight"
+
+on:
+  push:
+    branches:
+      - repair/louksnapg2-gpu-foundation-20261103
+    paths:
+      - "repair/gpu/**"
+      - "tools/louksnapg2_gpu_preflight.py"
+      - "tests/test_louksnapg2_gpu_preflight.py"
+      - ".github/workflows/louksnapg2-gpu-repair-stack.yml"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Original Cajita neural model to inspect"
+        type: choice
+        required: true
+        options:
+          - D01_CEREBRO
+          - D03_TRANSCRIPCION
+          - D04_TRADUCTOR_INTELIGENTE
+          - D05_INTELIGENCIA_DOCUMENTAL
+          - D06_SISTEMA_INTELIGENTE
+      mode:
+        description: "Preflight is read-only; repair remains blocked until an adapter is independently tested"
+        type: choice
+        required: true
+        default: preflight
+        options:
+          - preflight
+          - repair
+      source_revision:
+        description: "Exact 40-hex immutable upstream source revision; checkpoint must be staged in a local/organization mirror"
+        type: string
+        required: false
+      dataset_id:
+        description: "Logical dataset ID from the local/organization mirror manifest"
+        type: string
+        required: false
+      dataset_revision:
+        description: "Exact 40-hex immutable dataset revision; no managed model-hub API is used"
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg2-gpu-stack-${{ github.event.inputs.target || 'static' }}
+  cancel-in-progress: false
+
+jobs:
+  source_contract:
+    name: "Static contract and fail-closed unit tests"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          lfs: false
+      - name: Validate GPU target matrix and repair gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -m unittest discover -s tests -p 'test_louksnapg2_gpu_preflight.py' -v
+
+  gpu_stack_preflight:
+    name: "GPU runtime preflight — no training or weight mutation"
+    if: github.event_name == 'workflow_dispatch'
+    needs: [source_contract]
+    runs-on: [self-hosted, linux, x64, gpu]
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      NGC_API_KEY: ${{ secrets.NGC_API_KEY }}
+    steps:
+      - name: Checkout exact source commit read-only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          lfs: false
+
+      - name: Verify runner prerequisites
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -n "${NGC_API_KEY:-}" || { echo "NGC_API_KEY_SECRET_MISSING"; exit 2; }
+          command -v docker >/dev/null
+          command -v nvidia-smi >/dev/null
+          nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
+          docker version
+
+      - name: Authenticate and pull pinned NeMo release image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s' "$NGC_API_KEY" | docker login nvcr.io --username '$oauthtoken' --password-stdin
+          docker pull nvcr.io/nvidia/nemo:26.06
+          image_id="$(docker image inspect nvcr.io/nvidia/nemo:26.06 --format '{{.Id}}')"
+          test -n "$image_id"
+          echo "LOUKSNAPG2_CONTAINER_IMAGE_ID=$image_id" >> "$GITHUB_ENV"
+          echo "LOUKSNAPG2_CONTAINER_IMAGE=nvcr.io/nvidia/nemo:26.06" >> "$GITHUB_ENV"
+
+      - name: Run read-only GPU and framework preflight
+        shell: bash
+        env:
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          TARGET: ${{ inputs.target }}
+          MODE: ${{ inputs.mode }}
+          SOURCE_REVISION: ${{ inputs.source_revision }}
+          DATASET_ID: ${{ inputs.dataset_id }}
+          DATASET_REVISION: ${{ inputs.dataset_revision }}
+        run: |
+          set -Eeuo pipefail
+          evidence="$RUNNER_TEMP/louksnapg2-gpu-evidence"
+          mkdir -p "$evidence"
+          set +e
+          docker run --rm --gpus all --ipc=host \
+            --ulimit memlock=-1 --ulimit stack=67108864 \
+            -e LOUKSNAPG2_CONTAINER_IMAGE \
+            -e LOUKSNAPG2_CONTAINER_IMAGE_ID \
+            -v "$GITHUB_WORKSPACE:/workspace:ro" \
+            -v "$evidence:/evidence" \
+            -w /workspace \
+            nvcr.io/nvidia/nemo:26.06 \
+            python3 -B tools/louksnapg2_gpu_preflight.py \
+              --repo-root /workspace \
+              --target "$TARGET" \
+              --mode "$MODE" \
+              --source-revision "$SOURCE_REVISION" \
+              --dataset-id "$DATASET_ID" \
+              --dataset-revision "$DATASET_REVISION" \
+              --output /evidence/gpu-preflight.json
+          rc=$?
+          set -e
+          echo "PREFLIGHT_EXIT_CODE=$rc"
+          test -s "$evidence/gpu-preflight.json" || { echo "GPU_PREFLIGHT_EVIDENCE_MISSING"; exit 2; }
+          cat "$evidence/gpu-preflight.json"
+          exit "$rc"
+
+      - name: Upload GPU preflight evidence (diagnostic only)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-gpu-preflight-${{ github.run_id }}
+          path: ${{ runner.temp }}/louksnapg2-gpu-evidence/gpu-preflight.json
+          if-no-files-found: warn
+          retention-days: 90

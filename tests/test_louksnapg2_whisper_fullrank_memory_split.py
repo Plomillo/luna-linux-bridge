@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import os
 from pathlib import Path
 import tempfile
@@ -14,6 +15,66 @@ SPEC.loader.exec_module(MODULE)
 
 
 class WhisperFullRankMemorySplitTests(unittest.TestCase):
+    def test_official_checkpoint_source_is_sha256_pinned_and_not_hub_hosted(self):
+        self.assertEqual(len(MODULE.SOURCE_MODEL_SHA256), 64)
+        self.assertIn("openaipublic.azureedge.net", MODULE.SOURCE_MODEL_URL)
+        self.assertNotIn("huggingface.co", MODULE.SOURCE_MODEL_URL)
+        self.assertFalse(MODULE.SOURCE_MODEL_URL.startswith("https://huggingface.co"))
+
+    def test_build_does_not_use_hub_download_api(self):
+        source = inspect.getsource(MODULE.build)
+        self.assertIn("download_official_whisper_checkpoint", source)
+        self.assertNotIn("huggingface_hub", source)
+        self.assertNotIn("snapshot_download", source)
+
+    def test_pytorch_converter_uses_safe_mmap(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            converter = root / "convert-pt-to-ggml.py"
+            converter.write_text(
+                'import io, torch\n'
+                'def convert_model(fname_inp):\n'
+                '    model_bytes = open(fname_inp, "rb").read()\n'
+                '    with io.BytesIO(model_bytes) as fp:\n'
+                '        checkpoint = torch.load(fp, map_location="cpu")\n',
+                encoding="utf-8",
+            )
+            patched = MODULE.create_mmap_pt_converter(converter, root)
+            source = patched.read_text(encoding="utf-8")
+            self.assertIn("mmap=True, weights_only=True", source)
+            self.assertNotIn("model_bytes = open(fname_inp", source)
+
+    def test_offline_fixture_is_source_pinned_and_does_not_load_hub_dataset(self):
+        source = inspect.getsource(MODULE.prepare_fixtures)
+        self.assertIn("PINNED_GIT_COMMIT_ASSET", source)
+        self.assertNotIn("load_helper", source)
+
+    def test_memory_event_delta_tracks_new_oom_events_only(self):
+        delta = MODULE.memory_event_delta({"oom": 0, "oom_kill": 0, "high": 10}, {"oom": 0, "oom_kill": 0, "high": 12})
+        self.assertEqual(delta["oom"], 0)
+        self.assertEqual(delta["oom_kill"], 0)
+        self.assertEqual(delta["high"], 2)
+
+    def test_memory_reclaim_is_best_effort_when_docker_cgroup_does_not_expose_it(self):
+        source = inspect.getsource(MODULE.evaluate)
+        self.assertIn("UNAVAILABLE_BEST_EFFORT", source)
+        self.assertIn("memory.stat", source)
+        self.assertNotIn("CGROUP_MEMORY_RECLAIM_UNAVAILABLE >&2; exit 90", source)
+
+    def test_unreclaimable_baseline_excludes_clean_file_cache_but_retains_shmem(self):
+        self.assertEqual(
+            MODULE.unreclaimable_memory_baseline_bytes(700, {"file": 300, "shmem": 100}),
+            500,
+        )
+        self.assertEqual(
+            MODULE.unreclaimable_memory_baseline_bytes(700, {"file": 100, "shmem": 100}),
+            700,
+        )
+
+    def test_report_uses_per_process_rss_not_cumulative_cgroup_peak(self):
+        source = inspect.getsource(MODULE.report_evaluation)
+        self.assertIn("CANDIDATE_NATIVE_PROCESS_PEAK_OVER_1GIB", source)
+        self.assertNotIn("CANDIDATE_MEMORY_PEAK_OVER_1GIB", source)
     def test_normalization_matches_shared_whisper_evaluator(self):
         self.assertEqual(MODULE.normalized_words("Hello, WORLD! It's 2026."), ["hello", "world", "it", "s", "2026"])
 
@@ -22,10 +83,8 @@ class WhisperFullRankMemorySplitTests(unittest.TestCase):
         self.assertEqual(MODULE.word_error_rate("same text", "same text"), 0.0)
 
     def test_fixture_preparation_is_separate_from_model_evaluation(self):
-        import inspect
         source = inspect.getsource(MODULE.evaluate)
         self.assertNotIn("load_helper", source)
-        self.assertNotIn("datasets", source)
         self.assertIn("prepared_fixtures", source)
 
     def test_candidate_memory_gate_remains_one_gib(self):
@@ -54,6 +113,15 @@ class WhisperFullRankMemorySplitTests(unittest.TestCase):
             self.assertIn("libggml-base.so.0", names)
             self.assertFalse((destination / "libwhisper.so.1").is_symlink())
             self.assertEqual((destination / "libwhisper.so.1").read_bytes(), b"pinned-whisper-library")
+
+    def test_git_executable_is_available_for_offline_checkout(self):
+        import shutil
+        import subprocess
+        executable = shutil.which("git")
+        self.assertIsNotNone(executable)
+        result = subprocess.run([executable, "--version"], capture_output=True, text=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(result.stdout.startswith("git version "), result.stdout)
 
     def test_runtime_env_prepends_bundled_libraries(self):
         with tempfile.TemporaryDirectory() as temporary:

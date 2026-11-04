@@ -164,7 +164,7 @@ def candidate_policy() -> dict:
         "memory_limit_gib": 1,
         "memory_limit_mechanism": "DOCKER_CGROUP_V2_MEMORY_MAX",
         "cpu_count": CANDIDATE_CPU_COUNT,
-        "cpu_limit_mechanism": "DOCKER_CGROUP_V2_CPU_MAX_AND_SCHED_SETAFFINITY",
+        "cpu_limit_mechanism": "DOCKER_CGROUP_V2_CPU_MAX",
         "thread_environment": {
             "OMP_NUM_THREADS": "1",
             "OPENBLAS_NUM_THREADS": "1",

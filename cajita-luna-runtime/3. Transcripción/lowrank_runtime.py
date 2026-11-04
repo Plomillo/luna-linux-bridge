@@ -175,7 +175,7 @@ def load_waveform(audio_path):
 
 def smoke_test(audio_path=None, max_new_tokens=4):
     t0 = time.monotonic()
-    if isinstance(max_new_tokens, bool) or not 1 <= int(max_new_tokens) <= 128:
+    if isinstance(max_new_tokens, bool) or not 1 <= int(max_new_tokens) <= 256:
         raise ValueError("MAX_NEW_TOKENS_OUT_OF_RANGE")
     original_rate = 16000
     if audio_path:
