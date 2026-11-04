@@ -376,6 +376,8 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Record Louksna1 integral decision from GitHub execution"
+          git checkout -- .
+          git clean -fd
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main
