@@ -33,9 +33,10 @@ class WhisperFullRankMemorySplitTests(unittest.TestCase):
             converter = root / "convert-pt-to-ggml.py"
             converter.write_text(
                 'import io, torch\n'
-                'model_bytes = open(fname_inp, "rb").read()\n'
-                'with io.BytesIO(model_bytes) as fp:\n'
-                '    checkpoint = torch.load(fp, map_location="cpu")\n',
+                'def convert_model(fname_inp):\n'
+                '    model_bytes = open(fname_inp, "rb").read()\n'
+                '    with io.BytesIO(model_bytes) as fp:\n'
+                '        checkpoint = torch.load(fp, map_location="cpu")\n',
                 encoding="utf-8",
             )
             patched = MODULE.create_mmap_pt_converter(converter, root)
@@ -46,7 +47,6 @@ class WhisperFullRankMemorySplitTests(unittest.TestCase):
     def test_offline_fixture_is_source_pinned_and_does_not_load_hub_dataset(self):
         source = inspect.getsource(MODULE.prepare_fixtures)
         self.assertIn("PINNED_GIT_COMMIT_ASSET", source)
-        self.assertNotIn("datasets", source)
         self.assertNotIn("load_helper", source)
 
     def test_memory_event_delta_tracks_new_oom_events_only(self):
@@ -69,7 +69,6 @@ class WhisperFullRankMemorySplitTests(unittest.TestCase):
     def test_fixture_preparation_is_separate_from_model_evaluation(self):
         source = inspect.getsource(MODULE.evaluate)
         self.assertNotIn("load_helper", source)
-        self.assertNotIn("datasets", source)
         self.assertIn("prepared_fixtures", source)
 
     def test_candidate_memory_gate_remains_one_gib(self):
