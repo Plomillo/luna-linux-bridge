@@ -55,6 +55,7 @@ jobs:
           lfs: false
           persist-credentials: false
           sparse-checkout: |
+            .github/workflows/louksnapg-whisper-fullrank-quantization.yml
             tools/louksnapg_whisper_fullrank_quantization.py
             tests/test_louksnapg2_whisper_fullrank_memory_split.py
       - name: Set up Python
