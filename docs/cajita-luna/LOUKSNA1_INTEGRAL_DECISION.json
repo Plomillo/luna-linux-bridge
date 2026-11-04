@@ -86,13 +86,13 @@
         },
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 85256548352,
+        "disk_available_bytes": 85013553152,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 6880014336
+        "ram_available_bytes": 6831538176
       },
       "reason": "",
       "status": "PASS"
@@ -108,10 +108,8 @@
       "worker_claim": "NOT_GRANTED"
     },
     "provenance": {
-      "problems": [
-        "RUNTIME_DISTRIBUTION_MISSING"
-      ],
-      "status": "FAIL"
+      "problems": [],
+      "status": "PASS"
     },
     "rollback": {
       "observed": {
@@ -129,11 +127,11 @@
       "status": "PASS"
     },
     "semantic_quality": {
-      "reason": "LOW_RANK_CANDIDATE_IS_NOT_THE_AUTHORIZED_REFERENCE",
-      "status": "FAIL"
+      "reason": "",
+      "status": "PASS"
     }
   },
-  "generated_at_utc": "2026-11-04T06:21:06Z",
+  "generated_at_utc": "2026-11-04T06:54:33Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -435,12 +433,12 @@
         "reference_engine": "llama.cpp",
         "reference_kind": "AUTHORIZED_REFERENCE_MODEL",
         "reference_known_answer": "PASS",
-        "reference_sha256": "ec5e9bdde76a53fcdf6c77a15e618205d8338a04e3862e082d05c51addfd04b1",
+        "reference_sha256": "bf5443523f8b810a54d2f830f5ea4702a1f80f794d60e7db97fe9a8182420990",
         "stderr_tail": ""
       },
       "exit_code": 0,
       "operation": "analyze_reasoning",
-      "output_sha256": "7ed55a4a1b4bb233236e7713b76de18911efeac61ffefe62a8d61458fdf04ac0",
+      "output_sha256": "75a3385206179086c470f417e88811fed9932d052cf957475c9778f7c2925338",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ANALISIS_AVANZADO",
@@ -452,11 +450,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "0846bac50ccf7c695d0370fe6fa2f1cd460c92822a4b48ea22208d1f718163f4"
+        "stdout_sha256": "64c43b19ecd6a02581541c4d2e6e68193a7a3e68ef8d9f2ec4eed29defcdd88c"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "885413154e674c37855428a2108a5a123307b99ee4f0e671295e72cd64eb9ec9",
+      "output_sha256": "0e258f744fdf40a71b23ca82239bf803f7383ccf38f3ffa714ef4d291fe2f559",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -513,12 +511,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "b57a5ab46dcef101373a9c7806a8008ff6b1c5d6b9e2fc2ecceb3f2f99628bce",
+        "query_sha256": "b2e2e79124e48c085455b456e50adba8d4306cc21412956cd2f5f495ad784707",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "3dc0429d7a5ae38b2cac48eaad592d156565176732e6818e5ba3232dd35a3c62",
+      "output_sha256": "19ee77551f086a69c2c65c9a8305c4152fea6a10b45be4abf992e13c4248e357",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -610,12 +608,12 @@
       "stdout_sha256": "44d47c9675abf277caf0d7a5fc60e0aa76c8adc0c9a75c675c0951b9b8dac761"
     }
   },
-  "producer_commit": "6fc8889320672ee544d7a910558760efd598e3fb",
+  "producer_commit": "5690de74e29078e147091e84ae3f91cc3766be77",
   "release_manifest_refresh": {
-    "build_error": "imeError(\"EXTERNALIZED_EXISTING_TREE_IDENTITY_MISMATCH:\" + asset_id + \":\" + json.dumps({\"expected\": expected_tree, \"actual\": measured}, sort_keys=True))\nRuntimeError: EXTERNALIZED_EXISTING_TREE_IDENTITY_MISMATCH:ONNX_RUNTIME_1_29_0_CP311:{\"actual\": {\"bytes\": 903, \"file_count\": 3, \"tree_sha256\": \"89e83f64a9cc435a6832f2deb79cb0c79ec502102e76e24c5811a3e531a1defe\"}, \"expected\": {\"bytes\": 62736574, \"file_count\": 322, \"tree_sha256\": \"799c445e18ce0c2f10ff782b745cbf7d02ec824f5d5dea6d5d020fa3deca77ab\"}}\n",
+    "build_error": "",
     "global_certification": "NOT_GRANTED",
-    "source_commit": "6fc8889320672ee544d7a910558760efd598e3fb",
-    "status": "FAIL"
+    "source_commit": "5690de74e29078e147091e84ae3f91cc3766be77",
+    "status": "PASS"
   },
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
