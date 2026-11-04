@@ -194,8 +194,8 @@ def execute_task(record,root,timeout_cap=600):
   env={k:os.environ[k] for k in ("PATH","HOME","LANG","LC_ALL","TMPDIR","SYSTEMROOT","WINDIR","LD_LIBRARY_PATH") if k in os.environ}
   env.update({"OMP_NUM_THREADS":"1","OPENBLAS_NUM_THREADS":"1","MKL_NUM_THREADS":"1","NUMEXPR_NUM_THREADS":"1","TOKENIZERS_PARALLELISM":"false","HF_HUB_OFFLINE":"1","TRANSFORMERS_OFFLINE":"1","PYTHONNOUSERSITE":"1"})
   if row["domain_id"]=="D05_INTELIGENCIA_DOCUMENTAL":
-   side=os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE","256").strip()
-   if side not in ("256","384","512"): raise AdapterError("DOCLING_IMAGE_SIDE_OUT_OF_RANGE")
+   side=os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE","192").strip()
+   if side not in ("192","256","384","512"): raise AdapterError("DOCLING_IMAGE_SIDE_OUT_OF_RANGE")
    env["LOUKSNAPG2_DOCLING_IMAGE_SIDE"]=side
   child=dict(row["input"]);child.update({"operation":row["operation"],"max_new_tokens":row["limits"]["max_new_tokens"]})
   runtime_resource_policy=candidate_policy()

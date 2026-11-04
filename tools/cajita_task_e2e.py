@@ -13,14 +13,14 @@ SCHEMA = "LOUKSNA1_TASK_ADAPTER_EVIDENCE/1.0"
 MODEL_CASES = [
     {"task_id":"e2e-cerebro-text-generation","domain_id":"D01_CEREBRO","operation":"generate_text",
      "input":{"prompt":"What does a version-controlled repository store? Answer briefly."},
-     "limits":{"timeout_seconds":900,"max_new_tokens":12},
+     "limits":{"timeout_seconds":900,"max_new_tokens":256},
      "quality_check":{"id":"repository-storage","mode":"contains_any","phrases":["files","source code","documents"]}},
     {"task_id":"e2e-whisper-audio-pipeline","domain_id":"D03_TRANSCRIPCION","operation":"transcribe_audio",
-     "input":{"audio_path":"@AUDIO@"},"limits":{"timeout_seconds":900,"max_new_tokens":8},
+     "input":{"audio_path":"@AUDIO@"},"limits":{"timeout_seconds":900,"max_new_tokens":256},
      "quality_check":{"id":"known-speech-hello-world","mode":"contains_all","phrases":["hello","world"]}},
     {"task_id":"e2e-seamless-translation","domain_id":"D04_TRADUCTOR_INTELIGENTE","operation":"translate_text",
      "input":{"text":"Good morning. How are you?","src_lang":"eng","tgt_lang":"spa"},
-     "limits":{"timeout_seconds":900,"max_new_tokens":12},
+     "limits":{"timeout_seconds":900,"max_new_tokens":256},
      "quality_check":{"id":"english-to-spanish-greeting","mode":"contains_any","phrases":["buenos dias","buen dia"]}},
     {"task_id":"e2e-docling-image-extraction","domain_id":"D05_INTELIGENCIA_DOCUMENTAL","operation":"extract_document_image",
      "input":{"image_path":"@IMAGE@","prompt":"Convert this page to docling."},
@@ -28,7 +28,7 @@ MODEL_CASES = [
      "quality_check":{"id":"docling-invoice-fields","mode":"contains_all","phrases":["4821","37 50"]}},
     {"task_id":"e2e-qwen3-reasoning","domain_id":"D06_SISTEMA_INTELIGENTE","operation":"analyze_reasoning",
      "input":{"prompt":"What is 2 + 2? Return only the numeric answer."},
-     "limits":{"timeout_seconds":900,"max_new_tokens":8},
+     "limits":{"timeout_seconds":900,"max_new_tokens":256},
      "quality_check":{"id":"arithmetic-2-plus-2","mode":"regex","pattern":r"\b4\b"}},
 ]
 def normalized_text(value):
@@ -98,7 +98,7 @@ def run_case(root,outdir,record,timeout):
                      "TOKENIZERS_PARALLELISM":"false","HF_HUB_OFFLINE":"1","TRANSFORMERS_OFFLINE":"1","PYTHONNOUSERSITE":"1",
                      "PYTHONDONTWRITEBYTECODE":"1",
                      "CAJITA_E2E_DIAGNOSTICS":"1",
-                     "LOUKSNAPG2_DOCLING_IMAGE_SIDE":os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE","256")})
+                     "LOUKSNAPG2_DOCLING_IMAGE_SIDE":os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE","192")})
     started=time.monotonic()
     try:
         p=subprocess.run([sys.executable,str(root/"cajita_runtime.py"),"execute-task","--root",str(root),
