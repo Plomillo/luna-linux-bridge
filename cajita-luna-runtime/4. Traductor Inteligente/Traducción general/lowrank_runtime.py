@@ -249,7 +249,10 @@ def smoke_test(text="Hello world.", src_lang="eng", tgt_lang="spa", max_new_toke
     if tok is None:
         raise RuntimeError("TOKENIZER_REQUIRED_FOR_TEXT_LANGUAGE_MAP")
     decoder_map = {}
-    for token in getattr(tok, "additional_special_tokens", None) or []:
+    tokens = list(getattr(tok, "additional_special_tokens", None) or [])
+    if not tokens and hasattr(tok, "get_added_vocab"):
+        tokens = list(tok.get_added_vocab().keys())
+    for token in tokens:
         if isinstance(token, str) and token.startswith("__") and token.endswith("__") and len(token) > 4:
             lang = token[2:-2]
             token_id = tok.convert_tokens_to_ids(token)

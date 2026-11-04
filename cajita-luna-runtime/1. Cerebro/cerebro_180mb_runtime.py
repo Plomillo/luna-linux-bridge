@@ -77,7 +77,7 @@ class LowRankRouter(nn.Module):
         router_top_value, router_indices = torch.topk(router_logits, self.top_k, dim=-1)
         router_top_value = F.softmax(router_top_value, dim=1, dtype=router_top_value.dtype)
         router_scores = torch.zeros_like(router_logits).scatter_(1, router_indices, router_top_value)
-        return router_scores, router_indices
+        return router_logits, router_scores, router_indices
 
 
 class LowRankExperts(nn.Module):
@@ -86,7 +86,7 @@ class LowRankExperts(nn.Module):
         self.intermediate_size = base.intermediate_size
         self.num_experts = base.num_experts
         self.hidden_size = base.hidden_size
-        self.expert_dim = base.expert_dim
+        self.expert_dim = getattr(base, "expert_dim", base.intermediate_size)
         self.alpha = base.alpha
         self.limit = base.limit
         # Expert matrices are stored in source orientation [input, output].
@@ -169,7 +169,10 @@ def build_model():
     rope_count = 0
     for module in model.modules():
         if module.__class__.__name__ == "GptOssRotaryEmbedding":
-            inv_freq, attention_scaling = module.rope_init_fn(module.config, device=torch.device("cpu"))
+            if getattr(module, "rope_type", "default") == "default" or not hasattr(module, "rope_init_fn"):
+                inv_freq, attention_scaling = module.compute_default_rope_parameters(module.config)
+            else:
+                inv_freq, attention_scaling = module.rope_init_fn(module.config, device=torch.device("cpu"))
             module.inv_freq = inv_freq
             module.original_inv_freq = inv_freq.clone()
             module.attention_scaling = attention_scaling

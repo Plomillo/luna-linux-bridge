@@ -88,7 +88,10 @@ def load_candidate():
     rope_count = 0
     for module in model.modules():
         if module.__class__.__name__ == "Qwen3RotaryEmbedding":
-            inv_freq, attention_scaling = ROPE_INIT_FUNCTIONS[module.rope_type](module.config, device=torch.device("cpu"))
+            if module.rope_type == "default":
+                inv_freq, attention_scaling = module.compute_default_rope_parameters(module.config)
+            else:
+                inv_freq, attention_scaling = ROPE_INIT_FUNCTIONS[module.rope_type](module.config, device=torch.device("cpu"))
             module.inv_freq = inv_freq
             module.original_inv_freq = inv_freq.clone()
             module.attention_scaling = attention_scaling
