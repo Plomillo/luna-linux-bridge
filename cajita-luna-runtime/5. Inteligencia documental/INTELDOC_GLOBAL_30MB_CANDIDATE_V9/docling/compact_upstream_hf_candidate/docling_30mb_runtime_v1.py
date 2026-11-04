@@ -277,7 +277,7 @@ def smoke(candidate_dir, max_new_tokens=48, image_path=None, prompt="Convert thi
     image_processor=getattr(proc,"image_processor",None)
     if image_processor is None:
         raise RuntimeError("DOCLING_IMAGE_PROCESSOR_MISSING")
-    image_side=int(__import__("os").environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE", "192"))
+    image_side=int(__import__("os").environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE", "256"))
     vision_config=model.config.vision_config
     patch_size=int(vision_config.patch_size)
     scale_factor=int(model.config.scale_factor)

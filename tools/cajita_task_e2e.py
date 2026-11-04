@@ -98,7 +98,7 @@ def run_case(root,outdir,record,timeout):
                      "TOKENIZERS_PARALLELISM":"false","HF_HUB_OFFLINE":"1","TRANSFORMERS_OFFLINE":"1","PYTHONNOUSERSITE":"1",
                      "PYTHONDONTWRITEBYTECODE":"1",
                      "CAJITA_E2E_DIAGNOSTICS":"1",
-                     "LOUKSNAPG2_DOCLING_IMAGE_SIDE":os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE","192")})
+                     "LOUKSNAPG2_DOCLING_IMAGE_SIDE":os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE","256")})
     started=time.monotonic()
     try:
         p=subprocess.run([sys.executable,str(root/"cajita_runtime.py"),"execute-task","--root",str(root),
