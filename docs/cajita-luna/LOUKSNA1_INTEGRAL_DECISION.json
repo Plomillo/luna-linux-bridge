@@ -50,13 +50,13 @@
         },
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 85594513408,
+        "disk_available_bytes": 85834539008,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 7324913664
+        "ram_available_bytes": 7451529216
       },
       "reason": "",
       "status": "PASS"
@@ -72,12 +72,8 @@
       "worker_claim": "NOT_GRANTED"
     },
     "provenance": {
-      "problems": [
-        "PUBLISHED_MANIFEST_SOURCE_COMMIT_DIFFERS_FROM_EXECUTION_HEAD",
-        "RUNTIME_DISTRIBUTION_MISSING",
-        "AXIOM_BINDING_HASH_MISMATCH"
-      ],
-      "status": "FAIL"
+      "problems": [],
+      "status": "PASS"
     },
     "rollback": {
       "observed": {
@@ -99,7 +95,7 @@
       "status": "FAIL"
     }
   },
-  "generated_at_utc": "2026-11-03T23:12:12Z",
+  "generated_at_utc": "2026-11-04T01:50:16Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -396,12 +392,12 @@
         "reference_commit": "47c786924ad1ab7e91da2cdc72fcdb563780c2bd",
         "reference_engine": "llama.cpp",
         "reference_known_answer": "PASS",
-        "reference_sha256": "1ea10b5879d2780b696144d0c109f884bbd32f92dec6a112a5073c1eac970e0d",
+        "reference_sha256": "27019bda0db07de1593037bd4c0ef2e2b1629b56407cf88caef06512b9fafdf9",
         "stderr_tail": ""
       },
       "exit_code": 0,
       "operation": "analyze_reasoning",
-      "output_sha256": "782d5719f1c47e0b6c06b2d203f4c441f05312050ea9a0698272741151224d5c",
+      "output_sha256": "cd193648377e80d350a05c0b3385ea702aadd9de95c9a52c959acf7b8a5e40a7",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ANALISIS_AVANZADO",
@@ -413,11 +409,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "c67bb6a01bc2b19b9154940f4d5b3ea4ef397050779793e58fb7933eff60a090"
+        "stdout_sha256": "4df0b30e252d070f8f8387afc20d534afeeb3fa33978ba639698ed11cb92d9ad"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "e2416f62924fab8ee571e031fe856cbc2a69c1ab5e246044254528cd2bcaa671",
+      "output_sha256": "3a78e226567582b271643d8bbc519d6055512b8ec51327b6f966f6ecae7e3fe4",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -474,12 +470,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "47233f48be914f5bf02b85d21f99a7a184b39ab32ab85807b1835e118205eb1c",
+        "query_sha256": "d8317dd3862a9626aba2bab8b5d5cc86bdfe62fdf003f99d08b63a1520d285ff",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "66b098de2939e8cfb86687e0a7a6d05d07bf7ab847a9738505cce887563589fb",
+      "output_sha256": "41acec25fbbce0b9f4362f67348e71891c76a8b31763fe90be93c22fe07de6a1",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -571,7 +567,13 @@
       "stdout_sha256": "44d47c9675abf277caf0d7a5fc60e0aa76c8adc0c9a75c675c0951b9b8dac761"
     }
   },
-  "producer_commit": "d5ca9a32ad8017091af55ad18c1e7ea21e142f9a",
+  "producer_commit": "c1ec6e2378772fe6b78507469a9038856c1b99cc",
+  "release_manifest_refresh": {
+    "build_error": "",
+    "global_certification": "NOT_GRANTED",
+    "source_commit": "c1ec6e2378772fe6b78507469a9038856c1b99cc",
+    "status": "PASS"
+  },
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
     "axiom_proposition_validity": "NOT_ESTABLISHED",

@@ -1,12 +1,13 @@
 {
   "schema": "LOUKSNA1_RELEASE_MANIFEST/1.0",
-  "source_commit": "4ea9190df2f39581aa391584ab4ae868da82da79",
-  "generated_at_utc": "2026-10-25T03:26:34Z",
+  "source_commit": "c1ec6e2378772fe6b78507469a9038856c1b99cc",
+  "generated_at_utc": "2026-11-04T01:49:42Z",
   "protected_architecture": {
     "path": "LOUKSNAMEJORADA.md",
     "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
     "modified": false,
-    "prefix_byte_exact": true
+    "prefix_byte_exact": true,
+    "bytes": 11542631
   },
   "louksna1": {
     "path": "Louksna1.md",
@@ -15,8 +16,8 @@
   },
   "runtime_distribution": {
     "path": "CAJITA_LUNA_RUNTIME_V10.macrodown",
-    "bytes": 370870178,
-    "sha256": "7a7aa66d8048e504b67360d389a17e364f744d5e39acbb675724a6f117bc052d"
+    "bytes": 243142867,
+    "sha256": "daf0dde8d7e83c4dec9d2306160a4ad873262c3a27a98d0e9c47ee96bd667933"
   },
   "externalized_archives": [
     {
@@ -88,13 +89,14 @@
   },
   "axiom_interdisciplinary_binding": {
     "path": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
-    "sha256": "c90cd4f4f8af99a12e7849a07c86b1e37ae019f9e9b7d3decb3c11f00ac87570",
+    "sha256": "8b4892aa25d46fa2239b85b648b92ac985843af7ea8816480387130104dd9ab7",
     "target_module_count": 21,
     "declared_materialized_axioms": 11757,
     "declared_historical_gaps": 657,
     "block_count": 134,
     "framework_count": 18,
-    "source_binding": "PASS_PENDING_GRAPH_EXECUTION"
+    "source_binding": "PASS_PENDING_GRAPH_EXECUTION",
+    "bytes": 1984
   },
   "gates": {
     "G23": "PASS",
@@ -108,7 +110,8 @@
     "sha256": "0c5df5e00e223446f2f4c5c78992abdd3a84b7029c969cc2dd03b53e113228ee",
     "status": "PASS_SYNTHETIC_END_TO_END_EXECUTION_ONLY",
     "tested_model_domain_count": 5,
-    "registered_model_domain_count": 5
+    "registered_model_domain_count": 5,
+    "bytes": 8071
   },
   "G23_evidence_sha256": "b8177b0ef7bba61d9a2ba295400c74ba6749b85ed10755308ef73a210ee9e63a",
   "G24_evidence_sha256": "1cdcc2f5e402be2183ad56a09d8561b4f5fd180c603c1cf36f6ec9a6abb28668",
