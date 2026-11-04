@@ -82,25 +82,6 @@ jobs:
           run-id: 41554376806
           github-token: ${{ github.token }}
 
-      - name: Check out immutable upstream JFK speech fixture
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          repository: openai/whisper
-          ref: 86098128c0b4f24f0e2aa2994de830614b474227
-          path: whisper-source
-          sparse-checkout: tests/jfk.flac
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
-          lfs: false
-
-      - name: Confirm pinned audio fixture identity
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          test "$(git -C whisper-source rev-parse HEAD)" = "86098128c0b4f24f0e2aa2994de830614b474227"
-          test -s whisper-source/tests/jfk.flac
-          test "$(sha256sum whisper-source/tests/jfk.flac | cut -d' ' -f1)" = "e44b7c13897eae7f78beb220c61fe77429a3961d"
-
       - name: Run local synthetic and JFK audio inference against exact Q4 artifact
         shell: bash
         env:
@@ -116,7 +97,7 @@ jobs:
           set -Eeuo pipefail
           python -B tools/louksnapg2_whisper_fullrank_offline_diagnostic.py \
             --artifact-root whisper-q4-artifact \
-            --jfk-audio whisper-source/tests/jfk.flac \
+            --jfk-audio whisper-q4-artifact/fixtures/jfk.wav \
             --work-dir .whisper-q4-work \
             --report out/WHISPER_FULLRANK_OFFLINE_DIAGNOSTIC.json
 

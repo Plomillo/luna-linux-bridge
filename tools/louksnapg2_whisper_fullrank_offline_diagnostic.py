@@ -26,7 +26,6 @@ CANDIDATE_RAM_BYTES = 1_342_177_280  # Temporary 1.25-GiB diagnostic ceiling onl
 ACTIVE_RUNTIME_RAM_BYTES = 1_073_741_824
 GLOBAL_RELEASE_MAX_BYTES = 490_000_000
 PROJECTED_COMPLETE_RELEASE_BYTES = 836_570_159
-JFK_AUDIO_SHA256 = "e44b7c13897eae7f78beb220c61fe77429a3961d"
 JFK_REQUIRED_PHRASES = ("my fellow americans", "your country", "do for you")
 SYNTHETIC_REFERENCE = "Hello world. The meeting starts at noon."
 
@@ -147,6 +146,14 @@ def verify_artifact(artifact_root: Path) -> tuple[Path, dict[str, Any]]:
             raise RuntimeError("WHISPER_RUNTIME_LIBRARY_IDENTITY_MISMATCH:" + str(lib_rel))
     if not any(Path(str(lib.get("path", ""))).name == "libwhisper.so.1" for lib in libraries):
         raise RuntimeError("WHISPER_SONAME_NOT_IN_BUNDLE")
+    fixture = manifest.get("evaluation_fixture", {})
+    fixture_rel = Path(str(fixture.get("path", "")))
+    if fixture_rel.as_posix() != "fixtures/jfk.wav" or fixture.get("source_revision") != WHISPER_CPP_REVISION:
+        raise RuntimeError("Q4_JFK_FIXTURE_MANIFEST_IDENTITY_MISMATCH")
+    if not isinstance(fixture.get("bytes"), int) or fixture.get("bytes", 0) <= 0:
+        raise RuntimeError("Q4_JFK_FIXTURE_SIZE_INVALID")
+    if not re.fullmatch(r"[0-9a-f]{64}", str(fixture.get("sha256", ""))):
+        raise RuntimeError("Q4_JFK_FIXTURE_SHA256_INVALID")
     return model_path, {
         "manifest_sha256": sha256_file(manifest_path),
         "source_model": source,
@@ -154,6 +161,7 @@ def verify_artifact(artifact_root: Path) -> tuple[Path, dict[str, Any]]:
         "openai_whisper_assets_revision": conversion["openai_whisper_assets_revision"],
         "whisper_cli_sha256": conversion["whisper_cli_sha256"],
         "runtime_libraries_count": len(libraries),
+        "evaluation_fixture": fixture,
         "candidate": {"quantization": "q4_0", "representation": row.get("representation"),
                       "path": rel.as_posix(), "bytes": model_path.stat().st_size, "sha256": digest},
     }
@@ -203,8 +211,14 @@ def main() -> int:
     model, artifact = verify_artifact(args.artifact_root)
     root = args.artifact_root.resolve(strict=True)
     jfk = args.jfk_audio.resolve(strict=True)
-    if jfk.suffix.lower() != ".flac" or sha256_file(jfk) != JFK_AUDIO_SHA256:
-        raise RuntimeError("PINNED_JFK_FIXTURE_IDENTITY_MISMATCH")
+    expected_fixture = artifact["evaluation_fixture"]
+    bundled_fixture = (root / expected_fixture["path"]).resolve(strict=True)
+    if not bundled_fixture.is_relative_to(root) or bundled_fixture.is_symlink() or jfk != bundled_fixture:
+        raise RuntimeError("JFK_AUDIO_PATH_NOT_BOUND_TO_Q4_CANDIDATE_MANIFEST")
+    if jfk.stat().st_size != int(expected_fixture["bytes"]) or sha256_file(jfk) != expected_fixture["sha256"]:
+        raise RuntimeError("Q4_BUNDLED_JFK_AUDIO_IDENTITY_MISMATCH")
+    if jfk.suffix.lower() != ".wav":
+        raise RuntimeError("Q4_BUNDLED_JFK_AUDIO_FORMAT_INVALID")
     cli, lib_dir = root / "toolchain/bin/whisper-cli", root / "toolchain/lib"
 
     work = args.work_dir.resolve()
@@ -246,13 +260,14 @@ def main() -> int:
                             "hugging_face_tokens_used": False, "remote_inference_used": False,
                             "model_download_performed": False,
                             "model_source": "PREVIOUSLY_BUILT_GITHUB_ACTIONS_ARTIFACT",
-                            "audio_source": "PINNED_OPENAI_WHISPER_GITHUB_TEST_FIXTURE_AND_LOCAL_ESPEAK"},
+                            "audio_source": "Q4_CANDIDATE_BUNDLED_GGML_WHISPER_CPP_FIXTURE_AND_LOCAL_ESPEAK"},
         "resource_policy": {**budget, "observed_memory_peak_bytes": peak,
                             "observed_memory_peak_gib": round(peak / 1024**3, 4),
                             "memory_events_after": events, "memory_ok": memory_ok,
                             "note": "1.25-GiB limit is diagnostic only; active runtime remains 1 GiB."},
         "tests": {
-            "jfk_fixture_revision": OPENAI_WHISPER_FIXTURE_REVISION,
+            "jfk_fixture_revision": WHISPER_CPP_REVISION,
+            "jfk_fixture_source": expected_fixture,
             "jfk_required_phrase_anchors": anchors, "jfk_pass": jfk_pass,
             "jfk_transcription": jfk_result,
             "synthetic_reference": espeak_text, "synthetic_word_error_rate": round(synth_wer, 6),
