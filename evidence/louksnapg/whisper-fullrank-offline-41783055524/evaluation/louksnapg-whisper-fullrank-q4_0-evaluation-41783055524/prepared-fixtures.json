@@ -1,0 +1,22 @@
+{
+  "dataset_fixture": {
+    "provider_api_used": false,
+    "source_path": "samples/jfk.wav",
+    "source_repository": "https://github.com/ggml-org/whisper.cpp",
+    "source_revision": "482279b8a18855ba741d7b88c30fcb3874691f59",
+    "source_type": "PINNED_GIT_COMMIT_ASSET"
+  },
+  "real_audio": {
+    "bytes": 352078,
+    "path": "/__w/_temp/whisper-fullrank/artifact/fixtures/jfk.wav",
+    "sha256": "59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e"
+  },
+  "real_transcript": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+  "real_transcript_sha256": "e4e644650803b9dca2d1caaf17fbfa3b5cd835a792b8d53d888c6996f7eb1c5d",
+  "schema": "LOUKSNAPG_WHISPER_FULLRANK_PREPARED_FIXTURES/1.0",
+  "synthetic_audio": {
+    "bytes": 62728,
+    "path": "/__w/_temp/whisper-fullrank-evaluation/work/fixtures/synthetic-hello-world.wav",
+    "sha256": "88ebeb4aba0b257c2b9669356aaa5dfc7e974638ee3a76fdbcc510cb41de8eb6"
+  }
+}
