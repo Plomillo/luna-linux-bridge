@@ -61,6 +61,7 @@ jobs:
           filter: blob:none
           sparse-checkout: |
             /.gitattributes
+            /.github/workflows/louksnapg2-primary-five-model-e2e.yml
             /cajita-luna-runtime/cajita_runtime.py
             /cajita-luna-runtime/cajita_task_adapters.py
             /cajita-luna-runtime/cajita_tokenizer_materializer.py
