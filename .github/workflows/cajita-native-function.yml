@@ -1,0 +1,66 @@
+name: Cajita native function
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-cmake-function:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+
+      - name: Configure a project with the packaged CMake
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $false
+          $archive = Join-Path (Get-Location) "cajita-luna-runtime\6. Sistema Inteligente\Portabilidad base\CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z"
+          if (-not (Test-Path -LiteralPath $archive)) { throw "CMAKE_ARCHIVE_MISSING" }
+          $seven = (Get-Command 7z -ErrorAction SilentlyContinue).Source
+          if (-not $seven) { $seven = "C:\Program Files\7-Zip\7z.exe" }
+          if (-not (Test-Path -LiteralPath $seven)) { throw "SEVENZIP_MISSING" }
+          $dest = Join-Path $env:RUNNER_TEMP "cmake-extract"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          & $seven x -y "-o$dest" $archive
+          if ($LASTEXITCODE -ne 0) { throw "CMAKE_EXTRACT_FAILED" }
+          $exe = Join-Path $dest "cmake-4.4.3-windows-x86_64\bin\cmake.exe"
+          if (-not (Test-Path -LiteralPath $exe)) { throw "CMAKE_EXE_MISSING" }
+          $version = & $exe --version 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 0) { throw "CMAKE_VERSION_FAILED" }
+          $src = Join-Path $env:RUNNER_TEMP "cmake-project"
+          $build = Join-Path $env:RUNNER_TEMP "cmake-build"
+          New-Item -ItemType Directory -Force -Path $src | Out-Null
+          Set-Content -LiteralPath (Join-Path $src "CMakeLists.txt") -Encoding ascii -Value "cmake_minimum_required(VERSION 3.20)`nproject(LouksnaFunction LANGUAGES NONE)`n"
+          $configure = & $exe -S $src -B $build 2>&1 | Out-String
+          $configureExit = $LASTEXITCODE
+          if ($configureExit -ne 0) { throw "CMAKE_CONFIGURE_FAILED" }
+          if ($configure -notmatch "LouksnaFunction") { throw "CMAKE_PROJECT_NAME_MISSING" }
+          $witness = [ordered]@{
+            engine = "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE"
+            archive_sha256 = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLower()
+            cmake_exe_sha256 = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLower()
+            version_stdout = $version.Trim()
+            configure_exit_code = $configureExit
+            configure_stdout = $configure.Trim()
+            function_status = "PASS"
+            runner_os = $env:RUNNER_OS
+          }
+          $path = Join-Path $env:RUNNER_TEMP "cmake-function.json"
+          $witness | ConvertTo-Json | Set-Content -LiteralPath $path -Encoding utf8
+          Write-Output $version
+          Write-Output $configure
+
+      - name: Upload the CMake function witness
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmake-function
+          path: ${{ runner.temp }}/cmake-function.json
+          if-no-files-found: error
+          retention-days: 14
