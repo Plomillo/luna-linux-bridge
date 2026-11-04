@@ -37,7 +37,7 @@ jobs:
       - name: Checkout exact diagnostic commit and Docling inference closure
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: \${{ github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
           filter: blob:none
           sparse-checkout-cone-mode: false
@@ -86,10 +86,10 @@ jobs:
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: louksnapg2-docling-q4-source-candidate
-          path: \${{ runner.temp }}/docling-q4-build
-          repository: \${{ github.repository }}
+          path: ${{ runner.temp }}/docling-q4-build
+          repository: ${{ github.repository }}
           run-id: 41505447857
-          github-token: \${{ github.token }}
+          github-token: ${{ github.token }}
 
       - name: Verify candidate hashes and apply the temporary overlay
         shell: bash
@@ -113,7 +113,7 @@ jobs:
       - name: Build the exact 512px invoice fixture
         shell: bash
         env:
-          IMAGE_PATH: \${{ runner.temp }}/docling-q4-invoice-512.png
+          IMAGE_PATH: ${{ runner.temp }}/docling-q4-invoice-512.png
         run: |
           set -Eeuo pipefail
           python - <<'PY'
@@ -145,8 +145,8 @@ jobs:
           NUMEXPR_NUM_THREADS: "1"
           TOKENIZERS_PARALLELISM: "false"
           LOUKSNAPG2_DOCLING_IMAGE_SIDE: "512"
-          IMAGE_PATH: \${{ runner.temp }}/docling-q4-invoice-512.png
-          REPORT_PATH: \${{ runner.temp }}/docling-q4-native-512-evidence.json
+          IMAGE_PATH: ${{ runner.temp }}/docling-q4-invoice-512.png
+          REPORT_PATH: ${{ runner.temp }}/docling-q4-native-512-evidence.json
         run: |
           set -Eeuo pipefail
           BASE="cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate"
@@ -164,8 +164,8 @@ jobs:
         with:
           name: louksnapg2-docling-native-512-diagnostic
           path: |
-            \${{ runner.temp }}/docling-q4-native-512-evidence.json
-            \${{ runner.temp }}/docling-q4-native-512-summary.json
+            ${{ runner.temp }}/docling-q4-native-512-evidence.json
+            ${{ runner.temp }}/docling-q4-native-512-summary.json
           if-no-files-found: warn
           retention-days: 90
           compression-level: 0
