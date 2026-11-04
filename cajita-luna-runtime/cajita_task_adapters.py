@@ -4,7 +4,10 @@ from __future__ import annotations
 import argparse, datetime as dt, hashlib, json, os, platform, re, resource, subprocess, sys, time
 from pathlib import Path
 from cajita_tokenizer_materializer import MANIFEST_NAME as TOKENIZER_MANIFEST_NAME, TokenizerMaterializationError, tokenizer_tree_rows
-from cajita_resource_limits import candidate_policy, child_preexec_fn
+from cajita_resource_limits import (
+ candidate_policy, verify_cgroup_budget, ResourcePolicyError,
+ CANDIDATE_MEMORY_BYTES, CANDIDATE_CPU_COUNT,
+)
 
 REQUEST_SCHEMA = "CAJITA_TASK_REQUEST/1.0"
 RESULT_SCHEMA = "CAJITA_TASK_RESULT/1.0"
@@ -199,9 +202,23 @@ def execute_task(record,root,timeout_cap=600):
    env["LOUKSNAPG2_DOCLING_IMAGE_SIDE"]=side
   child=dict(row["input"]);child.update({"operation":row["operation"],"max_new_tokens":row["limits"]["max_new_tokens"]})
   runtime_resource_policy=candidate_policy()
+  # The enclosing GitHub Actions Docker cgroup already constrains the parent and
+  # every descendant process. Verify that aggregate limit before spawning; do not
+  # re-run sched_setaffinity from a Python preexec_fn, which hosted-runner container
+  # security profiles may reject from a forked child process.
+  try:
+   cgroup_evidence=verify_cgroup_budget(CANDIDATE_MEMORY_BYTES,CANDIDATE_CPU_COUNT)
+  except ResourcePolicyError as exc:
+   out.update({"status":"FAIL_RESOURCE_POLICY","reason":str(exc)[:240],"integrity":integrity,
+               "resource_policy":runtime_resource_policy,"elapsed_seconds":round(time.monotonic()-started,3)})
+   return out,4
+  runtime_resource_policy={**runtime_resource_policy,
+      "observed_cgroup":cgroup_evidence,
+      "child_process_limit_inheritance":"SAME_ENFORCED_PARENT_CGROUP",
+      "child_preexec_hook":"NOT_USED"}
   try:p=subprocess.run([sys.executable,str(entry),"--task-json-stdin"],input=json.dumps(child,ensure_ascii=False,sort_keys=True),text=True,
        stdout=subprocess.PIPE,stderr=subprocess.PIPE,cwd=str(root),env=env,timeout=row["limits"]["timeout_seconds"],check=False,shell=False,
-       preexec_fn=child_preexec_fn(),start_new_session=True)
+       start_new_session=True)
   except subprocess.TimeoutExpired as exc:
    out.update({"status":"FAIL_TIMEOUT","reason":"TASK_EXECUTION_TIMEOUT","integrity":integrity,"peak_rss_bytes":peak_child_rss(),"resource_policy":runtime_resource_policy,"elapsed_seconds":round(time.monotonic()-started,3)})
    # Bound partial child output and expose it only for synthetic CI diagnostics.

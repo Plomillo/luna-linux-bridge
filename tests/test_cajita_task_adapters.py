@@ -126,7 +126,9 @@ class AdapterTests(unittest.TestCase):
         integrity={"target_id":"D01_CEREBRO_ROOT","module_tree_sha256":"a"*64,"module_file_count":1,"module_bytes":10,
             "weight_manifest_sha256":"b"*64,"weight_path":"weight","weight_bytes":1,"weight_sha256":"c"*64}
         with patch.dict(adapters.os.environ, {"LD_LIBRARY_PATH": "/test/lib"}, clear=False):
-            with patch.object(adapters,"verify_integrity",return_value=integrity),patch.object(adapters.subprocess,"run",return_value=completed) as run:
+            with patch.object(adapters,"verify_integrity",return_value=integrity), \
+             patch.object(adapters,"verify_cgroup_budget",return_value={"memory_limit_bytes":1024**3,"cpu_limit_cores":1.0}), \
+             patch.object(adapters.subprocess,"run",return_value=completed) as run:
                 result,code=adapters.execute_task(row,RUNTIME,60)
         self.assertEqual(code,0);self.assertEqual(result["status"],"PASS_FUNCTIONAL_EXECUTION")
         self.assertEqual(result["target_id"],"D01_CEREBRO_ROOT")
@@ -134,11 +136,25 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(run.call_args.kwargs["env"]["HF_HUB_OFFLINE"],"1")
         self.assertEqual(run.call_args.kwargs["env"]["LD_LIBRARY_PATH"], "/test/lib")
         self.assertEqual(run.call_args.kwargs["start_new_session"], True)
-        self.assertTrue(callable(run.call_args.kwargs["preexec_fn"]))
+        self.assertNotIn("preexec_fn",run.call_args.kwargs)
         self.assertEqual(result["resource_policy"]["memory_limit_bytes"], 1024**3)
+        self.assertEqual(result["resource_policy"]["child_process_limit_inheritance"], "SAME_ENFORCED_PARENT_CGROUP")
         self.assertEqual(result["resource_policy"]["cpu_count"], 1)
         self.assertNotIn("PRIVATE_PROMPT_MUST_NOT_APPEAR",json.dumps(result))
         self.assertEqual(result["certification"],"NOT_GRANTED")
+    def test_execution_fails_closed_when_parent_cgroup_does_not_meet_budget(self):
+        row=req(prompt="A bounded task.")
+        integrity={"target_id":"D01_CEREBRO_ROOT","module_tree_sha256":"a"*64,"module_file_count":1,"module_bytes":10,
+            "weight_manifest_sha256":"b"*64,"weight_path":"weight","weight_bytes":1,"weight_sha256":"c"*64}
+        with patch.object(adapters,"verify_integrity",return_value=integrity), \
+             patch.object(adapters,"verify_cgroup_budget",side_effect=adapters.ResourcePolicyError("CGROUP_MEMORY_BUDGET_MISMATCH")), \
+             patch.object(adapters.subprocess,"run") as run:
+            result,code=adapters.execute_task(row,RUNTIME,60)
+        self.assertEqual(code,4)
+        self.assertEqual(result["status"],"FAIL_RESOURCE_POLICY")
+        self.assertIn("CGROUP_MEMORY_BUDGET_MISMATCH",result["reason"])
+        run.assert_not_called()
+
     def test_orchestration_never_executes_plan(self):
         result,code=adapters.execute_task(req("D02_ORQUESTACION","route_plan",request_text="transcribe audio"),RUNTIME,60)
         self.assertEqual(code,3);self.assertIn(result["status"],{"PLAN_ONLY_BLOCKED","PLAN_READY_NOT_EXECUTED"})
