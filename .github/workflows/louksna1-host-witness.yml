@@ -1,5 +1,8 @@
 name: louksna1-host-witness
 on:
+  push:
+    branches:
+      - louksna1-host-witness
   workflow_dispatch:
 jobs:
   windows:
