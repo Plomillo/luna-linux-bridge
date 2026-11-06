@@ -1,0 +1,76 @@
+name: louksna1-host-witness
+on:
+  workflow_dispatch:
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute pinned cmake.exe and Avalonia.Base on Windows
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $seven = @(
+            'C:\Program Files\7-Zip\7z.exe',
+            'C:\Program Files\7-Zip\7zz.exe'
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $seven) { throw '7ZIP_MISSING_ON_WINDOWS_RUNNER' }
+          $root = $env:GITHUB_WORKSPACE
+          function Invoke-Captured([string]$File, [string[]]$ArgumentList, [string]$OutFile) {
+            $errFile = "$OutFile.err"
+            $proc = Start-Process -FilePath $File -ArgumentList $ArgumentList -NoNewWindow -Wait -PassThru -RedirectStandardOutput $OutFile -RedirectStandardError $errFile
+            $text = ''
+            if (Test-Path $OutFile) { $text = [System.IO.File]::ReadAllText($OutFile) }
+            return @{ Code = [int]$proc.ExitCode; Text = $text }
+          }
+          function Hash-File([string]$Path) {
+            return (Get-FileHash -Algorithm SHA256 -Path $Path).Hash.ToLowerInvariant()
+          }
+          $cmakeArc = Join-Path $root 'CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z'
+          $avaArc = Join-Path $root 'AVALONIA_12_1_1_NUGET.7z'
+          $cmakeOut = Join-Path $root 'cmake-out'
+          New-Item -ItemType Directory -Force -Path $cmakeOut | Out-Null
+          & $seven x -y "-o$cmakeOut" $cmakeArc 'cmake-4.4.3-windows-x86_64/bin/cmake.exe'
+          if ($LASTEXITCODE -ne 0) { throw "CMAKE_EXTRACT_FAILED $LASTEXITCODE" }
+          $exe = Join-Path $cmakeOut 'cmake-4.4.3-windows-x86_64\bin\cmake.exe'
+          $ver = Invoke-Captured $exe @('--version') (Join-Path $root 'cmake-version.txt')
+          $echo = Invoke-Captured $exe @('-E','echo','LOUKSNA1_CMAKE_FIXTURE_V1') (Join-Path $root 'cmake-echo.txt')
+          $os = [System.Environment]::OSVersion.VersionString
+          $cmakeWitness = [ordered]@{
+            engine = 'CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE'
+            archive_sha256 = (Hash-File $cmakeArc)
+            cmake_exe_sha256 = (Hash-File $exe)
+            version_stdout = $ver.Text
+            exit_code = $ver.Code
+            echo_exit_code = $echo.Code
+            echo_stdout = $echo.Text.Trim()
+            function_status = 'MEASURED'
+            platform = $os
+            runner_os = [string]$env:RUNNER_OS
+          }
+          $avaOut = Join-Path $root 'ava-out'
+          New-Item -ItemType Directory -Force -Path $avaOut | Out-Null
+          & $seven x -y "-o$avaOut" $avaArc 'lib/net8.0/Avalonia.Base.dll'
+          if ($LASTEXITCODE -ne 0) { throw "AVALONIA_EXTRACT_FAILED $LASTEXITCODE" }
+          $dll = Join-Path $avaOut 'lib\net8.0\Avalonia.Base.dll'
+          $assembly = [System.Reflection.AssemblyName]::GetAssemblyName($dll)
+          $avaWitness = [ordered]@{
+            archive_sha256 = (Hash-File $avaArc)
+            dll_sha256 = (Hash-File $dll)
+            assembly_name = [string]$assembly.Name
+            assembly_version = [string]$assembly.Version.ToString()
+            platform = $os
+            runner_os = [string]$env:RUNNER_OS
+          }
+          $dest = Join-Path $root 'witnesses'
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          $cmakeJson = $cmakeWitness | ConvertTo-Json
+          $avaJson = $avaWitness | ConvertTo-Json
+          [System.IO.File]::WriteAllText((Join-Path $dest 'cmake-function.json'), $cmakeJson)
+          [System.IO.File]::WriteAllText((Join-Path $dest 'avalonia-witness.json'), $avaJson)
+          Write-Output $cmakeJson
+          Write-Output $avaJson
+      - uses: actions/upload-artifact@v4
+        with:
+          name: louksna1-witnesses
+          path: witnesses/*.json
