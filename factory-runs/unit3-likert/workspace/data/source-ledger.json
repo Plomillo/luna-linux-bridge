@@ -1,0 +1,29 @@
+{
+  "schema": "DOCUMENT_FACTORY_SOURCE_LEDGER/1.0",
+  "sources": [
+    {
+      "source_id": "BFI2_ES_VALIDATION_2022",
+      "verified": true,
+      "title": "Gallardo-Pujol et al. (2022), Spanish adaptation BFI-2",
+      "url": "https://doi.org/10.1027/2698-1866/a000020"
+    },
+    {
+      "source_id": "BFI2_ES_FORM",
+      "verified": true,
+      "title": "Spanish BFI-2 form, authors' laboratory copy",
+      "url": "https://www.ocf.berkeley.edu/~johnlab/bfi2-form-spanish.pdf"
+    },
+    {
+      "source_id": "NEOFFI30_ES_VALIDATION_2023",
+      "verified": true,
+      "title": "Fumero & de Miguel (2023), Spanish NEO-FFI-30 validation",
+      "url": "https://doi.org/10.33776/amc.v49i179.7325"
+    },
+    {
+      "source_id": "BFI2_ORIGINAL_2017",
+      "verified": true,
+      "title": "Soto & John (2017), BFI-2 original development",
+      "url": "https://doi.org/10.1037/pspp0000096"
+    }
+  ]
+}

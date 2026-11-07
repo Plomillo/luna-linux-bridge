@@ -1,0 +1,103 @@
+name: "Document Factory — UNIACC Unidad 3 Likert Entrega 1"
+
+on:
+  push:
+    branches:
+      - "candidate/document-factory-v1-unit2-*"
+    paths:
+      - "factory-runs/unit3-likert/**"
+      - ".github/workflows/document-factory-unit3-likert.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uniacc-u3-likert-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Install pinned document tool classes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y pandoc libreoffice-writer python3-docx poppler-utils
+
+      - name: Validate task profile and rubric
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B document-factory/src/selftest.py
+          python3 -B document-factory/src/factory.py validate-profile factory-runs/unit3-likert/profile.json --repo-root .
+          python3 - <<'PY'
+          import json
+          p=json.load(open("factory-runs/unit3-likert/profile.json",encoding="utf-8"))
+          assert abs(sum(float(x["points"]) for x in p["rubric"]["criteria"])-10.5)<1e-9
+          assert len([x for x in p["rubric"]["criteria"] if float(x["points"])>0]) == 4
+          print("RUBRIC_SUM=10.5")
+          PY
+
+      - name: Build through Louksna Document Factory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          W="$RUNNER_TEMP/uniacc-u3-likert"
+          mkdir -p "$W"
+          cp -a factory-runs/unit3-likert/workspace/. "$W/"
+          PROFILE=factory-runs/unit3-likert/profile.json
+          python3 -B document-factory/src/factory.py build "$W" "$PROFILE" --repo-root .
+
+      - name: Apply established UNIACC DOCX formatting provider
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          W="$RUNNER_TEMP/uniacc-u3-likert"
+          python3 -B factory-runs/unit2-research/format_docx.py "$W/build/report.docx" "$W/evidence/formatting.json"
+          rm -f "$W/build/report.pdf"
+          soffice --headless --convert-to pdf --outdir "$W/build" "$W/build/report.docx"
+          test -s "$W/build/report.docx"
+          test -s "$W/build/report.pdf"
+          pdfinfo "$W/build/report.pdf" | tee "$W/evidence/pdfinfo.txt"
+          PAGES="$(pdfinfo "$W/build/report.pdf" | awk '/^Pages:/ {print $2}')"
+          test "$PAGES" -ge 3
+          test "$PAGES" -le 4
+          echo "TOTAL_PAGES=$PAGES; expected cover + 1-2 body pages + references"
+
+      - name: Validate, self-audit and freeze
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          W="$RUNNER_TEMP/uniacc-u3-likert"
+          PROFILE=factory-runs/unit3-likert/profile.json
+          python3 -B document-factory/src/factory.py validate "$W" "$PROFILE" --repo-root .
+          python3 -B document-factory/src/factory.py self-audit "$W" "$PROFILE"
+          cp "$W/build/report.docx" "$W/build/Trabajo3Entrega1_ValeriaGalaz_DiegoNorambuena_PaulaPizarro_JoelQuezada.docx"
+          printf '{"run_id":"%s","commit":"%s","ref":"%s","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED","authority":"Louksna.md","module":"LOUKSNA_DOCUMENT_FACTORY_V1"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
+          python3 -B document-factory/src/factory.py freeze "$W"
+          {
+            echo "## UNIACC — Unidad 3, Entrega 1"
+            echo "- Factory profile: validated"
+            echo "- Rubric arithmetic: 10.5/10.5"
+            echo "- DOCX/PDF: generated, format applied, validation executed"
+            echo "- Self-audit: recorded"
+            echo "- G23: NOT_EXECUTED"
+            echo "- G24: NOT_EXECUTED"
+            echo "- Certification inheritance: FORBIDDEN"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload DOCX, PDF and factory evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: uniacc-u3-likert-entrega1-${{ github.run_id }}
+          path: ${{ runner.temp }}/uniacc-u3-likert
+          if-no-files-found: error
+          retention-days: 30

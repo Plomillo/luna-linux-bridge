@@ -1,0 +1,145 @@
+{
+  "schema": "LOUKSNA_ASSIGNMENT_PROFILE/1.0",
+  "profile_id": "UNIACC_METODOLOGIA_CUANTITATIVA_U3_LIKERT_ENTREGA1_20261107",
+  "profile_version": "1.0",
+  "status": "TASK_PROFILE_CANDIDATE_NOT_CERTIFIED",
+  "raw_instruction_ref": "factory-runs/unit3-likert/instructions.md",
+  "title": "Creando preguntas para una encuesta — Entrega 1",
+  "language": "es",
+  "required_research": {
+    "minimum_distinct_sources": 3,
+    "source_priority": "Artículos científicos y documentos del instrumento alojados por sus autores; metadatos verificables; no inventar evidencia psicométrica.",
+    "required_topics": [
+      "Responsabilidad (conscientiousness) en el Modelo de los Cinco Grandes",
+      "BFI-2 y adaptación española: validez y confiabilidad",
+      "NEO-FFI-30 y adaptación española: validez y confiabilidad",
+      "Preguntas cerradas con escala de respuesta tipo Likert y adaptación contextual"
+    ]
+  },
+  "deliverables": [
+    {
+      "id": "REPORT_DOCX",
+      "kind": "docx",
+      "submission_required": true
+    },
+    {
+      "id": "AUX_PDF",
+      "kind": "pdf",
+      "submission_required": false
+    },
+    {
+      "id": "AUX_PPTX",
+      "kind": "pptx",
+      "submission_required": false
+    },
+    {
+      "id": "AUX_XLSX",
+      "kind": "xlsx",
+      "submission_required": false
+    }
+  ],
+  "constraints": {
+    "report_word_count": {
+      "min": 350,
+      "max": 700,
+      "exclude": [
+        "cover",
+        "bibliography"
+      ]
+    },
+    "formatting": {
+      "font": "Arial",
+      "body_size_pt": 12,
+      "heading_size_pt": 16,
+      "line_spacing": 1.5,
+      "paragraph_alignment": "justified",
+      "heading_alignment": "center",
+      "margins_cm": {
+        "top": 2.5,
+        "bottom": 2.5,
+        "left": 2.5,
+        "right": 2.5
+      }
+    },
+    "language": "es",
+    "cover": {
+      "required": true,
+      "author_names": "Valeria Galaz; Diego Norambuena; Paula Pizarro; Joel Quezada",
+      "title": "Creando preguntas para una encuesta — Entrega 1"
+    },
+    "references": {
+      "apa_edition": 7,
+      "required": true,
+      "own_page": true
+    },
+    "body_pages": {
+      "minimum": 1,
+      "maximum": 2
+    },
+    "likert": {
+      "closed_items_required": 3,
+      "response_points": 5,
+      "options": [
+        "Muy en desacuerdo",
+        "Algo en desacuerdo",
+        "Neutral, sin opinión",
+        "Algo de acuerdo",
+        "Muy de acuerdo"
+      ]
+    }
+  },
+  "rubric": {
+    "declared_total_points": 10.5,
+    "criteria": [
+      {
+        "id": "R01",
+        "points": 1.75,
+        "text": "Entrega dentro del plazo y extensión del desarrollo entre una y dos planas.",
+        "validation": "AUTOMATED_PARTIAL_PLUS_PLATFORM_EVIDENCE"
+      },
+      {
+        "id": "R02",
+        "points": 1.75,
+        "text": "Documento Word, nombre de archivo y formato solicitado.",
+        "validation": "AUTOMATED_PARTIAL_PLUS_G23_HUMAN_REVIEW"
+      },
+      {
+        "id": "R03",
+        "points": 3.5,
+        "text": "Define responsabilidad e identifica al menos dos instrumentos cerrados que la miden, citando evidencia científica de validez y confiabilidad.",
+        "validation": "AUTOMATED_PARTIAL_PLUS_G23_HUMAN_REVIEW"
+      },
+      {
+        "id": "R04",
+        "points": 3.5,
+        "text": "Interpreta la evidencia psicométrica, selecciona tres preguntas y justifica sus adaptaciones sin atribuirles validez o confiabilidad no demostrada.",
+        "validation": "AUTOMATED_PARTIAL_PLUS_G23_HUMAN_REVIEW"
+      }
+    ]
+  },
+  "runtime_policy": {
+    "heartbeat_interval_seconds": 1,
+    "stages": {
+      "PROFILE_VALIDATE": {
+        "timeout_seconds": 30,
+        "max_attempts": 1
+      },
+      "BUILD_DOCX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PPTX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PDF": {
+        "timeout_seconds": 300,
+        "max_attempts": 1
+      }
+    }
+  },
+  "no_subject_matter_inference": true,
+  "certification_authority": false,
+  "g23_authority": false,
+  "g24_authority": false
+}
