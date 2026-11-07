@@ -1,36 +1,34 @@
 {
-  "sheets": {
-    "sheets": [
-      {
-        "name": "Rúbrica",
-        "rows": [
-          [
-            "Criterio",
-            "Puntaje máximo",
-            "Evidencia a revisar"
-          ],
-          [
-            "Extensión",
-            1.75,
-            "Desarrollo 1–2 planas"
-          ],
-          [
-            "Formato",
-            1.75,
-            "DOCX, Arial, márgenes, interlineado, APA 7"
-          ],
-          [
-            "Identificación de instrumentos",
-            3.5,
-            "Constructo y 2 instrumentos con evidencia psicométrica"
-          ],
-          [
-            "Elección fundamentada",
-            3.5,
-            "Interpretación de validez/confiabilidad y 3 ítems justificados"
-          ]
+  "sheets": [
+    {
+      "name": "Rúbrica",
+      "rows": [
+        [
+          "Criterio",
+          "Puntaje máximo",
+          "Evidencia a revisar"
+        ],
+        [
+          "Extensión",
+          1.75,
+          "Desarrollo 1–2 planas"
+        ],
+        [
+          "Formato",
+          1.75,
+          "DOCX, Arial, márgenes, interlineado, APA 7"
+        ],
+        [
+          "Identificación de instrumentos",
+          3.5,
+          "Constructo y 2 instrumentos con evidencia psicométrica"
+        ],
+        [
+          "Elección fundamentada",
+          3.5,
+          "Interpretación de validez/confiabilidad y 3 ítems justificados"
         ]
-      }
-    ]
-  }
+      ]
+    }
+  ]
 }
