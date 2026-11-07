@@ -62,6 +62,7 @@ jobs:
           set -Eeuo pipefail
           W="$RUNNER_TEMP/uniacc-u3-likert"
           python3 -B factory-runs/unit2-research/format_docx.py "$W/build/report.docx" "$W/evidence/formatting.json"
+          python3 -B factory-runs/unit3-likert/finalize_docx.py "$W/build/report.docx" "$W/evidence/formatting.json"
           rm -f "$W/build/report.pdf"
           soffice --headless --convert-to pdf --outdir "$W/build" "$W/build/report.docx"
           test -s "$W/build/report.docx"
