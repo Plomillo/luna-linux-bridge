@@ -1,0 +1,4 @@
+Historical terminal annotation detached from the JSON mission document to restore strict JSON validity.
+Original annotation (preserved verbatim): [executed on device: LOUKSNA (98c2b7f6-ee30-4f31-9444-06f7ba58f353)]
+
+This file is additive provenance metadata. It does not alter mission scope, model identity, or certification state.
