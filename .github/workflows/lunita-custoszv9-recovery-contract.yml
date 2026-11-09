@@ -82,6 +82,7 @@ jobs:
           python -m py_compile \
             recovery/lunita-custoszv9/runtime_engines_v1/engine_runtime_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/engine_acceptance_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/quantize_embedding_model_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/engine_gateway_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/gateway_acceptance_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/lunita_beta_v1_8.py \
