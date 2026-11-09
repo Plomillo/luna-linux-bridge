@@ -1,5 +1,3 @@
-[Reading 1306 lines from start (total: 1306 lines, 0 remaining)]
-
 #!/usr/bin/env python3
 """Fail-closed step classification and persistent Cajita quantization side-lane.
 
