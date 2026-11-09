@@ -239,7 +239,14 @@ class RealRuntimeEngineTests(unittest.TestCase):
             "op": "add",
             "args": [{"number": 0.5}, {"number": 0.25}, {"symbol": "x"}, {"number": 0.25}],
         })
-        self.assertEqual("x + 1", result["simplified"] if result["simplified"] == "add(number(1),x)" else result["simplified"])
+        self.assertEqual("add(1,x)", result["simplified"])
+        self.assertEqual(
+            {"type": "add", "args": [
+                {"type": "number", "numerator": 1, "denominator": 1},
+                {"type": "symbol", "name": "x"},
+            ]},
+            result["canonical_ast"],
+        )
         with self.assertRaises(engine.EngineContractError):
             engine.formalize_expression({"op": "__import__", "args": [{"symbol": "os"}]})
 
