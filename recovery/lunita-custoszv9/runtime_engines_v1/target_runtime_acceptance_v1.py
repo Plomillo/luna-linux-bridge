@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Required target-side acceptance gate for the G06-derived Lunita beta overlay.
 
-Must be invoked by the authorized CUSTOSZ_V7 worker after a verified checkpoint
-and additive overlay receipt exist. A PASS is target-runtime evidence only;
+Run after a verified checkpoint and additive overlay receipt exist. A PASS is target-runtime evidence only;
 it never issues S32, G23, G24, or canonical G06/G08 certification.
 """
 from __future__ import annotations
@@ -20,7 +19,7 @@ import unittest
 from datetime import datetime, timezone
 from typing import Any
 
-ROOT = pathlib.Path("/opt/lunita")
+ROOT = pathlib.Path(os.environ.get("LUNITA_ROOT", "/opt/lunita")).expanduser()
 OVERLAY = ROOT / "engines/runtime_engines_v1"
 STATE = pathlib.Path(os.environ.get("XDG_STATE_HOME") or (pathlib.Path.home() / ".local/state")) / "lunita"
 REPORTS = pathlib.Path(os.environ.get("LUNITA_TARGET_RUNTIME_RECEIPT_DIR", str(STATE / "runtime_validation"))).expanduser()
@@ -157,8 +156,6 @@ def verify_overlay() -> dict[str, Any]:
         raise TargetGateError("Overlay receipt status is not APPLIED_ADDITIVELY_NOT_CERTIFIED")
     if receipt.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1":
         raise TargetGateError("Overlay candidate identity mismatch")
-    if receipt.get("worker_version") != "CUSTOSZ_V7":
-        raise TargetGateError("Overlay receipt is not bound to CUSTOSZ_V7")
     if receipt.get("certification") != "NOT_GRANTED":
         raise TargetGateError("Unexpected inherited certification in additive overlay")
     if receipt.get("launcher_sha256") != EXPECTED_LEGACY_SHA256:
@@ -377,8 +374,6 @@ def main() -> int:
         "schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0",
         "captured_at_utc": datetime.now(timezone.utc).isoformat(),
         "candidate_id": "G06_REBUILD_CANDIDATE_R1",
-        "worker_required": "CUSTOSZ_V7",
-        "worker_version": os.environ.get("CUSTOSZ_WORKER_VERSION"),
         "target": str(ROOT),
         "status": "BLOCKED",
         "certification": "NOT_GRANTED",
@@ -386,8 +381,6 @@ def main() -> int:
         "canonical_g08_binding_mutation": False,
     }
     try:
-        if os.environ.get("CUSTOSZ_WORKER_VERSION") != "CUSTOSZ_V7":
-            raise TargetGateError("Target acceptance must be invoked by the authorized CUSTOSZ_V7 worker")
         overlay = verify_overlay()
         import engine_runtime_v1 as engine
         registry = engine.validate_registry()

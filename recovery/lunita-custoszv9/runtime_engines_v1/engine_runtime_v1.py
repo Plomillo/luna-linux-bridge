@@ -29,7 +29,7 @@ if VENDOR_SITE_PACKAGES.is_dir() and str(VENDOR_SITE_PACKAGES) not in sys.path:
 EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 EMBEDDING_DIMENSION = 384
 E02_MODEL = "LUNITA_SPANISH_RULE_BASED_NLP_V1"
-CANDIDATE_ROOT = pathlib.Path("/opt/lunita")
+CANDIDATE_ROOT = pathlib.Path(os.environ.get("LUNITA_ROOT", "/opt/lunita")).expanduser()
 DEFAULT_MODEL = CANDIDATE_ROOT / "brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf"
 DEFAULT_LLAMA_ROOT = CANDIDATE_ROOT / "brain/runtime"
 

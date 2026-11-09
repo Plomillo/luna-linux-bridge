@@ -179,7 +179,6 @@ class CertificationGateTests(unittest.TestCase):
                 "schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0",
                 "status": "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED",
                 "candidate_id": "G06_REBUILD_CANDIDATE_R1",
-                "worker_required": "CUSTOSZ_V7", "worker_version": "CUSTOSZ_V7",
                 "certification": "NOT_GRANTED",
             }), encoding="utf-8")
             independent = candidate / "independent.json"
@@ -298,8 +297,6 @@ class TargetRuntimeEvidenceGateTests(unittest.TestCase):
             "schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0",
             "status": "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED",
             "candidate_id": "G06_REBUILD_CANDIDATE_R1",
-            "worker_required": "CUSTOSZ_V7",
-            "worker_version": "CUSTOSZ_V7",
             "certification": "NOT_GRANTED",
             "canonical_g06_certification": "NOT_GRANTED",
             "canonical_g08_binding_mutation": False,

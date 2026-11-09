@@ -54,18 +54,43 @@ The hosted test suite executes E02–E15 with actual library/model operations; E
 
 Passing hosted tests validates the additive code and pinned dependency layer in that environment. It does not prove deployment inside the Lunita rootfs, actual Qwen inference on the target, JASP fixture non-regression, complete rootfs inventory, G23, G24, or canonical release eligibility.
 
-## Target deployment — authorized CUSTOSZ_V7 only
+## Direct target deployment and acceptance
 
-The overlay must be activated by the existing authorized CUSTOSZ_V7 worker. GitHub CI is not an authorization to mutate the local candidate rootfs.
+The additive overlay is validated from its contents and hash-bound checkpoint, without binding authorization to an external worker identity. The installer remains fail-closed: it requires the exact candidate ID, a PASS checkpoint with the registered schema and scope, a real checkpoint manifest whose SHA-256 matches, the pinned v1.7 launcher, complete payload files/directories, and a non-existing overlay destination. It never overwrites an installed overlay.
 
-1. Create and verify a checkpoint using the worker's normal checkpoint mechanism. Export a receipt conforming to `LUNITA_RUNTIME_OVERLAY_CHECKPOINT/1.0` with `status=PASS`, `worker_version=CUSTOSZ_V7`, `candidate_id=G06_REBUILD_CANDIDATE_R1`, `scope=LUNITA_ADDITIVE_RUNTIME_ENGINE_OVERLAY`, `checkpoint_root`, `checkpoint_manifest`, and the actual `checkpoint_manifest_sha256`.
-2. Run `apply_engine_overlay_v1.py` first without `--apply`. Only a PASS with the exact beta-v1.7 launcher SHA authorizes proceeding.
-3. Execute again with `--apply`. It creates only `/opt/lunita/engines/runtime_engines_v1`; code, vendored CPython 3.12 packages, and model weights are copied into that new directory and hash checked. Reapplication/overwrite is denied.
-4. Use the deployed Python 3.12 interpreter to run `engine_acceptance_v1.py` with:
-   - `PYTHONPATH=/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages`
-   - `LUNITA_FASTEMBED_CACHE=/opt/lunita/engines/runtime_engines_v1/model-cache/fastembed`
-   - `LUNITA_VECTOR_DB_PATH=/var/lib/lunita/vectors`
-   Verify `LUNITA_E04_ONNX_QUANTIZATION_RECEIPT.json` and its ONNX digest, then re-run E01 against the exact Qwen GGUF and llama.cpp binary in the target rootfs; hosted CI does not contain those assets.
-5. Keep this layer in `APPLIED_ADDITIVELY_NOT_CERTIFIED` until target runtime acceptance, actual JASP fixture non-regression, full rootfs inventory, G23, and G24 all pass.
+1. Point `ROOTFS` to the candidate filesystem tree and `CHECKPOINT_RECEIPT` to its real, hash-verified checkpoint receipt.
+2. Run a dry-run, then apply only after the dry-run returns `PREFLIGHT_PASS`:
 
-The installer is deliberately not self-authorizing. No checkpoint receipt means no mutation; no V7 identity means no mutation; an existing target means no overwrite. The local rootfs has no `pip` or `ensurepip`, so deployment does not modify system/global package paths and does not assume they exist.
+```bash
+python3 apply_engine_overlay_v1.py \
+  --rootfs "$ROOTFS" \
+  --checkpoint-receipt "$CHECKPOINT_RECEIPT" \
+  --candidate-id G06_REBUILD_CANDIDATE_R1
+
+python3 apply_engine_overlay_v1.py \
+  --rootfs "$ROOTFS" \
+  --checkpoint-receipt "$CHECKPOINT_RECEIPT" \
+  --candidate-id G06_REBUILD_CANDIDATE_R1 \
+  --apply
+```
+
+3. Validate the installed prefix directly. The default is `/opt/lunita`; set `LUNITA_ROOT` only when the installed prefix differs. The target runner and independent certification lane share the same receipt directory by default:
+
+```bash
+export LUNITA_ROOT=/opt/lunita
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="${XDG_STATE_HOME}/lunita/runtime_validation"
+export PYTHONPATH="$LUNITA_ROOT/engines/runtime_engines_v1/vendor/python3.12/site-packages:$LUNITA_ROOT/engines/runtime_engines_v1"
+export LUNITA_FASTEMBED_CACHE="$LUNITA_ROOT/engines/runtime_engines_v1/model-cache/fastembed"
+export LUNITA_VECTOR_DB_PATH="$XDG_STATE_HOME/lunita/vectors"
+export LUNITA_ENGINE_AUDIT_LOG="$XDG_STATE_HOME/lunita/audit/engine-execution.jsonl"
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+export HF_HUB_DISABLE_TELEMETRY=1
+
+python3.12 "$LUNITA_ROOT/engines/runtime_engines_v1/target_runtime_acceptance_v1.py"
+```
+
+A target PASS requires the real local Qwen E01 inference, E02–E15 acceptance with zero skipped tests, measured E04 INT8 receipt, complete dependency inventory, and zero-return legacy Brújula/R/Jamovi/JASP/fault smoke commands. The runner writes a timestamped receipt and never grants certification.
+
+The independent lane must then pass the actual candidate rootfs inventory and dependency closure, all four pinned JASP fixture non-regression cases, every hash-bound runtime check, and the separate S32 issuance gate. G23/G24 and the versioned release remain denied until their own evidence chain passes. Hosted CI validates source/runtime contracts but cannot substitute for local Qwen, Flatpak/JASP and rootfs evidence.

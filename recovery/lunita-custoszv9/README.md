@@ -117,20 +117,20 @@ python3 recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py --se
 
 These tests prove the fail-closed policy and sidecar contract, not live Lunita certification.
 
-## Lunita v1.8 additive candidate and Kestra gate (2026-11-09)
+## Lunita v1.8 additive candidate — direct certification path
 
-The v1.8 runtime is additive over the hash-pinned v1.7 launcher. Existing commands delegate to that preserved launcher; the v1.8 engine gateway adds E01-E15 without replacing the legacy application paths. The displayed instrument labels are metadata only:
+The v1.8 runtime is additive over the hash-pinned v1.7 launcher. Existing commands delegate to that preserved launcher; the v1.8 engine gateway exposes E01–E15 without replacing the legacy application paths. Instrument labels remain metadata only:
 
-- BRUJULA: Brújula giroscópica; runtime component/path remains brujula.
-- JAMOVI: Sacapuntas; application ID remains org.jamovi.jamovi.
-- JASP: Lupa; application ID remains org.jaspstats.JASP.
+- BRUJULA: Brújula giroscópica; runtime component/path remains `brujula`.
+- JAMOVI: Sacapuntas; application ID remains `org.jamovi.jamovi`.
+- JASP: Lupa; application ID remains `org.jaspstats.JASP`.
 
-The labels are covered by launcher acceptance tests. E15 consensus requires all assigned agents to vote on the same evidence digest; the acceptance suite checks both unanimous approval and a conflicting decision. No engine ID, command route, runtime component, application ID or legacy launcher is reassigned.
+E15 consensus requires all assigned agents to vote on the same evidence digest; acceptance tests cover unanimous approval and conflicting decisions. No engine ID, command route, runtime component, application ID or legacy launcher is reassigned.
 
-The certification acquisition lane now targets LUNITA_STABLE_1_8, version 1.8.0. The earlier LUNITA_STABLE_1_7 history remains intact; the v1.8 release uses a separate receipt directory and does not overwrite prior receipts. Stable v1.8 is emitted only after the exact hash-bound v1.8 target receipt, complete candidate rootfs/dependency inventory, all four pinned JASP regression cases, every independent check and the separate candidate-bound S32 receipt pass. The certification scope remains VERSIONED_DERIVED_CANDIDATE_ONLY; there is no automatic certification propagation to frozen G06 or canonical G08.
+The candidate remains version 1.8.0 / `G06_REBUILD_CANDIDATE_R1`. Stable release requires the exact hash-bound target acceptance receipt, complete candidate rootfs/dependency inventory, all four pinned JASP regression cases, every independent check and the separate candidate-bound S32 receipt. Certification scope remains `VERSIONED_DERIVED_CANDIDATE_ONLY`; there is no automatic propagation to frozen G06 or canonical G08.
 
-The recovery-contract workflow passed at commit 59da15dc7587600cf8c6e9e305ccb14476eef594 (run 42667123744). Its passing CI proves the repository contracts and hosted engine tests; it does not prove the live candidate rootfs or target installation.
+The certification path is direct. The overlay installer validates a real checkpoint and payload hashes without an external worker identity. The target acceptance runner writes to `LUNITA_TARGET_RUNTIME_RECEIPT_DIR`; the independent lane reads that same configurable path. No Kestra service, flow, workflow, or publication bridge is part of the acceptance or certification decision.
 
-The Kestra integration under integrations/kestra is a read-only evidence coordinator. Its ephemeral GitHub Actions workflow starts a temporary Kestra/PostgreSQL stack, imports the Lunita v1.8 gate and executes it. It checks the latest recovery-contract run and overlay artifact, then looks for the complete CUSTOSZ_V7 target receipt publication at evidence/lunita/target-runtime-acceptance/CURRENT.json. Kestra cannot run the authorized target worker, apply the overlay, or grant certification. A successful Kestra orchestration with a HOLD decision is not a product pass.
+Hosted CI can prove source contracts, library-backed engine tests, E04 quantization and overlay integrity within its runner. It cannot claim actual target E01 inference, live Brújula/R/Jamovi/JASP smoke tests, full installed rootfs inventory or packaged JASP fixture non-regression without the actual target assets. These remain hard certification gates; mocked or historical receipts are not substitutes.
 
-Current certification state remains NOT_GRANTED. The v1.8 target acceptance handoff is still required on the actual candidate under CUSTOSZ_V7. G23 remains NOT_PERFORMED, G24 remains NOT_GRANTED, and S32 has not issued a candidate-bound receipt. The latest target receipt must be consumed by the independent lane; stale or missing passes cannot override a newer blocked receipt.
+Current repository state after this remediation remains `NOT_GRANTED` until those real target and independent receipts exist and pass. S32, G23 and G24 are separate gates. The certification code does not manufacture receipts or automatically elevate a successful test run into a stable release.
