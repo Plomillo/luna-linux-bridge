@@ -24,16 +24,31 @@ import time
 import uuid
 
 ROOT = pathlib.Path(__file__).resolve().parent
-ST = ROOT / "state"
-OUT = ST / "worker_outputs"
-EVIDENCE = ST / "lunita_certification_evidence"
-CANDIDATE = ST / "g06_rebuild_candidates" / "G06_REBUILD_CANDIDATE_R1"
-ROOTFS = CANDIDATE / "rootfs"
-RUNTIME_REPORT = CANDIDATE / "BETA_RUNTIME_FUNCTIONAL_TESTS.json"
-TARGET_RUNTIME_RECEIPT_DIR = pathlib.Path(os.environ.get("LUNITA_TARGET_RUNTIME_RECEIPT_DIR", str(pathlib.Path(os.environ.get("XDG_STATE_HOME") or (pathlib.Path.home() / ".local/state")) / "lunita/runtime_validation"))).expanduser()
-INDEPENDENT_REPORT = CANDIDATE / "BETA_INDEPENDENT_VALIDATION.json"
-MISSION_PATH = ROOT.parent / "MISION1.txt"
+ST = pathlib.Path(os.environ.get("LUNITA_STATE_DIR", str(ROOT / "state"))).expanduser()
+OUT = pathlib.Path(os.environ.get("LUNITA_OUTPUT_DIR", str(ST / "worker_outputs"))).expanduser()
+EVIDENCE = pathlib.Path(os.environ.get("LUNITA_EVIDENCE_DIR", str(ST / "lunita_certification_evidence"))).expanduser()
+CANDIDATE = pathlib.Path(os.environ.get(
+    "LUNITA_CANDIDATE_DIR", str(ST / "g06_rebuild_candidates" / "G06_REBUILD_CANDIDATE_R1")
+)).expanduser()
+ROOTFS = pathlib.Path(os.environ.get("LUNITA_ROOTFS", str(CANDIDATE / "rootfs"))).expanduser()
+RUNTIME_REPORT = pathlib.Path(os.environ.get(
+    "LUNITA_RUNTIME_REPORT", str(CANDIDATE / "BETA_RUNTIME_FUNCTIONAL_TESTS.json")
+)).expanduser()
+TARGET_RUNTIME_RECEIPT_DIR = pathlib.Path(os.environ.get(
+    "LUNITA_TARGET_RUNTIME_RECEIPT_DIR",
+    str(pathlib.Path(os.environ.get("XDG_STATE_HOME") or (pathlib.Path.home() / ".local/state"))
+        / "lunita/runtime_validation")
+)).expanduser()
+INDEPENDENT_REPORT = pathlib.Path(os.environ.get(
+    "LUNITA_INDEPENDENT_REPORT", str(CANDIDATE / "BETA_INDEPENDENT_VALIDATION.json")
+)).expanduser()
+MISSION_PATH = pathlib.Path(os.environ.get("LUNITA_MISSION_PATH", str(ROOT.parent / "MISION1.txt"))).expanduser()
 MISSION_SHA = "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f"
+CERTIFICATION_PROFILE = os.environ.get("LUNITA_CERTIFICATION_PROFILE", "LEGACY_V1_7").strip().upper()
+CANDIDATE_MANIFEST = pathlib.Path(os.environ.get(
+    "LUNITA_CANDIDATE_MANIFEST", str(ROOT.parent.parent / "LUNITA_V1_8_CANDIDATE_FREEZE.json")
+)).expanduser()
+
 POLL_SECONDS = 60
 RUNNING_CAJITA_STAGES = {
     "ENV_INSTALL_RUNNING", "ENV_INSTALL_FALLBACK_RUNNING", "DRY_RUN_RUNNING",
@@ -746,29 +761,87 @@ def latest_target_runtime_acceptance() -> dict:
     }
 
 
+
+def direct_candidate_manifest_identity() -> dict:
+    """Bind v1.8 direct certification to the frozen candidate manifest, not the retired v1.7 mission."""
+    row = load_json(CANDIDATE_MANIFEST, {}) or {}
+    digest = sha_file(CANDIDATE_MANIFEST) if CANDIDATE_MANIFEST.is_file() else None
+    preserved = row.get("preserved_baseline") if isinstance(row.get("preserved_baseline"), dict) else {}
+    valid = (
+        row.get("schema") == "LUNITA_CANDIDATE_FREEZE/1.0"
+        and row.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
+        and row.get("version") == "1.8.0"
+        and row.get("freeze_status") == "FROZEN_CANDIDATE_NOT_CERTIFIED"
+        and preserved.get("frozen_g06_mutated") is False
+        and preserved.get("canonical_g08_bindings_mutated") is False
+        and preserved.get("legacy_v1_7_launcher_replaced") is False
+    )
+    return {"status": "PASS" if valid and digest else "BLOCKED",
+            "path": str(CANDIDATE_MANIFEST), "sha256": digest,
+            "candidate_id": row.get("candidate_id"), "version": row.get("version")}
+
+
 def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
+    direct = CERTIFICATION_PROFILE == "V1_8_DIRECT"
     old = load_json(INDEPENDENT_REPORT, {}) or {}
-    runtime = load_json(RUNTIME_REPORT, {}) or {}
-    runtime_sha = sha_file(RUNTIME_REPORT) if RUNTIME_REPORT.is_file() else None
-    actual_launcher = CANDIDATE / "rootfs" / "opt/lunita/agent/lunita.py"
-    launcher_sha = sha_file(actual_launcher) if actual_launcher.is_file() else None
-    launcher_ok = bool(runtime.get("candidate", {}).get("beta_launcher_sha256") == launcher_sha and
-                       runtime.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1")
-    identity_ok = MISSION_PATH.is_file() and sha_file(MISSION_PATH) == MISSION_SHA
     old_checks = old.get("checks") if isinstance(old.get("checks"), dict) else {}
-    checks = dict(old_checks)
-    checks["MISION1_identity_sha256"] = {"status": "PASS" if identity_ok else "BLOCKED",
-        "returncode": 0 if identity_ok else 1, "sha256": sha_file(MISSION_PATH) if MISSION_PATH.is_file() else None}
-    checks["runtime_report_and_launcher_identity"] = {"status": "PASS" if (
-        runtime.get("schema") == "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0" and
-        runtime.get("status") == "PASS_RUNTIME_TESTS" and runtime.get("all_tests_pass") is True and
-        launcher_ok and runtime.get("frozen_g06_mutated") is False and
-        runtime.get("canonical_g08_bindings_mutated") is False
-    ) else "BLOCKED", "returncode": 0 if (
-        runtime.get("schema") == "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0" and
-        runtime.get("status") == "PASS_RUNTIME_TESTS" and runtime.get("all_tests_pass") is True and
-        launcher_ok and runtime.get("frozen_g06_mutated") is False and runtime.get("canonical_g08_bindings_mutated") is False
-    ) else 1, "runtime_report_sha256": runtime_sha, "launcher_sha256": launcher_sha}
+    # v1.8 starts from a clean candidate-specific check set; the immutable history
+    # archive preserves v1.7 observations, but no legacy PASS is carried forward.
+    checks = {} if direct else dict(old_checks)
+    actual_launcher = ROOTFS / "opt/lunita/agent/lunita.py"
+    launcher_sha = sha_file(actual_launcher) if actual_launcher.is_file() else None
+    target_before = latest_target_runtime_acceptance() if direct else {}
+    target_before_path = pathlib.Path(target_before.get("receipt_path", "")) if target_before.get("receipt_path") else None
+    target_before_hash_valid = bool(
+        target_before.get("status") == "PASS_TARGET_RUNTIME_ACCEPTANCE"
+        and target_before_path and target_before_path.is_file()
+        and target_before.get("receipt_sha256") == sha_file(target_before_path)
+    ) if direct else False
+    if direct:
+        manifest_identity = direct_candidate_manifest_identity()
+        target_launcher_sha = (target_before.get("overlay_integrity") or {}).get("legacy_launcher_sha256")
+        launcher_ok = bool(target_before_hash_valid and launcher_sha and launcher_sha == target_launcher_sha)
+        checks.pop("MISION1_identity_sha256", None)
+        checks["candidate_manifest_identity_sha256"] = {
+            "status": manifest_identity["status"],
+            "returncode": 0 if manifest_identity["status"] == "PASS" else 1,
+            "sha256": manifest_identity["sha256"],
+            "evidence": {manifest_identity["path"]: manifest_identity["sha256"]} if manifest_identity["sha256"] else {},
+        }
+        checks["runtime_report_and_launcher_identity"] = {
+            "status": "PASS" if launcher_ok and manifest_identity["status"] == "PASS" else "BLOCKED",
+            "returncode": 0 if launcher_ok and manifest_identity["status"] == "PASS" else 1,
+            "runtime_report_sha256": target_before.get("receipt_sha256"),
+            "launcher_sha256": launcher_sha,
+            "runtime_evidence_schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0",
+            "runtime_evidence_status": target_before.get("status"),
+        }
+        runtime_sha = target_before.get("receipt_sha256") if target_before_hash_valid else None
+        runtime_path_text = str(target_before_path) if target_before_path else None
+        mission_sha = None
+        candidate_manifest_sha = manifest_identity["sha256"]
+    else:
+        runtime = load_json(RUNTIME_REPORT, {}) or {}
+        runtime_sha = sha_file(RUNTIME_REPORT) if RUNTIME_REPORT.is_file() else None
+        launcher_ok = bool(runtime.get("candidate", {}).get("beta_launcher_sha256") == launcher_sha and
+                           runtime.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1")
+        identity_ok = MISSION_PATH.is_file() and sha_file(MISSION_PATH) == MISSION_SHA
+        checks["MISION1_identity_sha256"] = {"status": "PASS" if identity_ok else "BLOCKED",
+            "returncode": 0 if identity_ok else 1, "sha256": sha_file(MISSION_PATH) if MISSION_PATH.is_file() else None}
+        checks["runtime_report_and_launcher_identity"] = {"status": "PASS" if (
+            runtime.get("schema") == "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0" and
+            runtime.get("status") == "PASS_RUNTIME_TESTS" and runtime.get("all_tests_pass") is True and
+            launcher_ok and runtime.get("frozen_g06_mutated") is False and
+            runtime.get("canonical_g08_bindings_mutated") is False
+        ) else "BLOCKED", "returncode": 0 if (
+            runtime.get("schema") == "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0" and
+            runtime.get("status") == "PASS_RUNTIME_TESTS" and runtime.get("all_tests_pass") is True and
+            launcher_ok and runtime.get("frozen_g06_mutated") is False and
+            runtime.get("canonical_g08_bindings_mutated") is False
+        ) else 1, "runtime_report_sha256": runtime_sha, "launcher_sha256": launcher_sha}
+        runtime_path_text = str(RUNTIME_REPORT)
+        mission_sha = MISSION_SHA
+        candidate_manifest_sha = None
     target_runtime = latest_target_runtime_acceptance()
     target_receipt_path = pathlib.Path(target_runtime.get("receipt_path", "")) if target_runtime.get("receipt_path") else None
     target_runtime_hash_valid = bool(
@@ -849,8 +922,10 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
     report = {
         "schema": "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0",
         "captured_at_utc": utc(), "candidate_id": "G06_REBUILD_CANDIDATE_R1",
-        "mission_sha256": MISSION_SHA, "runtime_report_path": str(RUNTIME_REPORT),
+        "mission_sha256": mission_sha, "runtime_report_path": runtime_path_text,
         "runtime_report_sha256": runtime_sha, "beta_launcher_sha256": launcher_sha,
+        "certification_profile": "V1_8_DIRECT" if direct else "LEGACY_V1_7",
+        "candidate_manifest_sha256": candidate_manifest_sha,
         "target_runtime_acceptance": target_runtime,
         "checks": checks, "status": desired_status,
         "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
@@ -889,13 +964,36 @@ def persist_independent_report(report: dict) -> dict:
 
 
 def stable_release_gate() -> dict:
+    direct = CERTIFICATION_PROFILE == "V1_8_DIRECT"
     report = load_json(INDEPENDENT_REPORT, {}) or {}
-    runtime = load_json(RUNTIME_REPORT, {}) or {}
-    if (report.get("schema") != "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0"
-        or report.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1"
-        or report.get("mission_sha256") != MISSION_SHA
-        or runtime.get("schema") != "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0"
-        or runtime.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1"):
+    if direct:
+        manifest_identity = direct_candidate_manifest_identity()
+        target_runtime = latest_target_runtime_acceptance()
+        target_path = pathlib.Path(target_runtime.get("receipt_path", "")) if target_runtime.get("receipt_path") else None
+        runtime = (load_json(target_path, {}) or {}) if target_path else {}
+        runtime_sha = sha_file(target_path) if target_path and target_path.is_file() else None
+        identity_ok = (
+            manifest_identity.get("status") == "PASS"
+            and report.get("schema") == "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0"
+            and report.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
+            and report.get("certification_profile") == "V1_8_DIRECT"
+            and report.get("candidate_manifest_sha256") == manifest_identity.get("sha256")
+            and runtime.get("schema") == "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0"
+            and runtime.get("status") == "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED"
+            and runtime.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
+            and report.get("runtime_report_path") == str(target_path)
+        )
+    else:
+        runtime = load_json(RUNTIME_REPORT, {}) or {}
+        runtime_sha = sha_file(RUNTIME_REPORT) if RUNTIME_REPORT.is_file() else None
+        identity_ok = (
+            report.get("schema") == "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0"
+            and report.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
+            and report.get("mission_sha256") == MISSION_SHA
+            and runtime.get("schema") == "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0"
+            and runtime.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
+        )
+    if not identity_ok:
         return {"status": "BLOCKED_CANDIDATE_OR_MISSION_IDENTITY", "certification": "NOT_GRANTED"}
     if report.get("status") != "PASS_INDEPENDENT_VALIDATION":
         return {"status": "BLOCKED_INDEPENDENT_VALIDATION", "certification": "NOT_GRANTED"}
@@ -907,7 +1005,7 @@ def stable_release_gate() -> dict:
     checks = report.get("checks")
     if not isinstance(checks, dict) or not checks or not all(_stable_check(x) for x in checks.values()):
         return {"status": "BLOCKED_REQUIRED_CHECKS", "certification": "NOT_GRANTED"}
-    if report.get("runtime_report_sha256") != (sha_file(RUNTIME_REPORT) if RUNTIME_REPORT.is_file() else None):
+    if report.get("runtime_report_sha256") != runtime_sha:
         return {"status": "BLOCKED_RUNTIME_REPORT_BINDING_MISMATCH", "certification": "NOT_GRANTED"}
     if report.get("frozen_g06_mutated") is not False or report.get("canonical_g08_bindings_mutated") is not False:
         return {"status": "BLOCKED_CANONICAL_IDENTITY_GUARD", "certification": "NOT_GRANTED"}
@@ -927,7 +1025,8 @@ def stable_release_gate() -> dict:
     return {
         "status": "STABLE_RELEASE_ELIGIBLE", "version": "1.8.0", "release_name": "LUNITA_STABLE_1_8",
         "candidate_id": "G06_REBUILD_CANDIDATE_R1",
-        "runtime_report_sha256": sha_file(RUNTIME_REPORT),
+        "runtime_report_sha256": runtime_sha,
+        "candidate_manifest_sha256": report.get("candidate_manifest_sha256"),
         "independent_report_sha256": sha_file(INDEPENDENT_REPORT),
         "s32_receipt": receipt, "rootfs_path": str(ROOTFS),
         "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
@@ -990,7 +1089,15 @@ def tick() -> dict:
     state_path = EVIDENCE / "lane_state.json"
     state = load_json(state_path, {}) or {"schema": "CUSTOSZ_LUNITA_STABILITY_CERT_LANE_STATE/1.0",
                                          "created_at_utc": utc(), "inventory_job": None}
-    if not MISSION_PATH.is_file() or sha_file(MISSION_PATH) != MISSION_SHA:
+    if CERTIFICATION_PROFILE == "V1_8_DIRECT":
+        identity = direct_candidate_manifest_identity()
+        if identity.get("status") != "PASS":
+            result = {"status": "BLOCKED_CANDIDATE_MANIFEST_IDENTITY", "timestamp_utc": utc(),
+                      "candidate_manifest": identity, "certification": "NOT_GRANTED",
+                      "mission_completion_claim": False}
+            atomic_json(state_path, {**state, "last_tick": result})
+            return result
+    elif not MISSION_PATH.is_file() or sha_file(MISSION_PATH) != MISSION_SHA:
         result = {"status": "BLOCKED_MISSION_IDENTITY_MISMATCH", "timestamp_utc": utc(),
                   "mission_path": str(MISSION_PATH), "certification": "NOT_GRANTED",
                   "mission_completion_claim": False}
@@ -1108,7 +1215,9 @@ def tick() -> dict:
 
     result = {
         "schema": "CUSTOSZ_LUNITA_STABILITY_CERT_LANE_TICK/1.0",
-        "timestamp_utc": utc(), "mission_sha256": MISSION_SHA,
+        "timestamp_utc": utc(), "mission_sha256": None if CERTIFICATION_PROFILE == "V1_8_DIRECT" else MISSION_SHA,
+        "candidate_manifest_sha256": direct_candidate_manifest_identity().get("sha256") if CERTIFICATION_PROFILE == "V1_8_DIRECT" else None,
+        "certification_profile": CERTIFICATION_PROFILE,
         "status": "CERTIFICATION_SEARCH_ACTIVE" if report.get("status") != "PASS_INDEPENDENT_VALIDATION" else release.get("status", "WAITING_FOR_S32_BOUND_CERTIFICATION_RECEIPT"),
         "candidate_id": "G06_REBUILD_CANDIDATE_R1", "candidate_rootfs": str(ROOTFS),
         "cajita_heavy_lane": active, "inventory_stage": result_status,
