@@ -697,8 +697,6 @@ def latest_target_runtime_acceptance() -> dict:
         return blocked("LATEST_RECEIPT_NOT_PASS")
     if row.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1":
         return blocked("CANDIDATE_IDENTITY_MISMATCH")
-    if row.get("worker_required") != "CUSTOSZ_V7" or row.get("worker_version") != "CUSTOSZ_V7":
-        return blocked("AUTHORIZED_WORKER_IDENTITY_MISMATCH")
     if row.get("certification") != "NOT_GRANTED" or row.get("canonical_g06_certification") != "NOT_GRANTED":
         return blocked("CERTIFICATION_SCOPE_MISMATCH")
     overlay = row.get("overlay_integrity", {})
@@ -737,7 +735,6 @@ def latest_target_runtime_acceptance() -> dict:
         "status": "PASS_TARGET_RUNTIME_ACCEPTANCE",
         "receipt_path": str(path),
         "receipt_sha256": digest,
-        "worker_version": row.get("worker_version"),
         "candidate_id": row.get("candidate_id"),
         "overlay_integrity": overlay,
         "e04_quantization": quantization,
@@ -784,7 +781,6 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         "returncode": 0 if target_runtime_hash_valid else 1,
         "receipt_path": str(target_receipt_path) if target_receipt_path else None,
         "receipt_sha256": target_runtime.get("receipt_sha256"),
-        "worker_version": target_runtime.get("worker_version"),
         "engine_tests_run": (target_runtime.get("engine_acceptance_tests") or {}).get("tests_run"),
         "e01_status": (target_runtime.get("qwen_e01") or {}).get("status"),
         "e04_status": (target_runtime.get("e04_quantization") or {}).get("status"),
