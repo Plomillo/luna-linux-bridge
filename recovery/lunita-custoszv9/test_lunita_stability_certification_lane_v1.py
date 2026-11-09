@@ -189,6 +189,16 @@ class JaspRunnerTests(unittest.TestCase):
                 result = lane.run_jasp_regression_suite(report)
             self.assertEqual("BLOCKED_JASP_REGRESSION", result["status"])
             self.assertEqual(6, runner.call_count)
+            # Unknown JASP CLI arguments print help and return RC=1.
+            # Qt's offscreen backend is selected through the environment.
+            for call in runner.call_args_list:
+                self.assertEqual("offscreen", call.kwargs["env"].get("QT_QPA_PLATFORM"))
+                self.assertNotIn("-platform", call.args[0])
+            jasp_calls = [call.args[0] for call in runner.call_args_list
+                          if "--unitTest" in call.args[0]]
+            self.assertEqual(5, len(jasp_calls))
+            self.assertTrue(all(command[command.index("org.jaspstats.JASP") + 1] == "--unitTest"
+                                for command in jasp_calls))
             self.assertEqual("PASS", result["tests"]["flatpak_launch"]["status"])
             self.assertEqual(1, result["tests"]["reliability"]["returncode"])
             self.assertEqual("BLOCKED", result["tests"]["reliability"]["status"])
