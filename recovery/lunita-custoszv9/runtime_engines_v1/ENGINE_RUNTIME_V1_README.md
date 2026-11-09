@@ -21,45 +21,35 @@ This directory adds adapters for existing E01–E15 identities. It does not add,
 - E14 provenance: append-only SHA-256 hash chain.
 - E15 consensus: unanimity gate from assigned agents against one evidence digest.
 
-## Installation
-Install the version-pinned Python dependencies listed in `requirements-engine-stack.txt`, then install the Spanish model:
+
+## Installation and validation
+
+The GitHub Actions workflow provisions CPython 3.12 dependencies into the isolated `vendor/python3.12/site-packages` folder, verifies the OWL-RL wheel SHA-256, installs the official Spanish spaCy model, downloads the FastEmbed model weights into `model-cache/fastembed`, and runs the acceptance suite against those vendored files. The resulting Actions artifact is named `lunita-engine-overlay-v1-py312`.
+
+Run from this directory when validating a locally provisioned build:
 
 ```bash
-python -m pip install --disable-pip-version-check -r requirements-engine-stack.txt
-python -m pip install --disable-pip-version-check \
-  "https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.8.0/es_core_news_sm-3.8.0-py3-none-any.whl"
-python -m pip download --disable-pip-version-check --no-deps --only-binary=:all: \
-  --dest /tmp/lunita-owlrl "owlrl==7.6.2"
-echo "83347bf7f133979e87b2b18695d51d25510b99cec3f6919b5df05d4fbf058ae0  /tmp/lunita-owlrl/owlrl-7.6.2-py3-none-any.whl" | sha256sum -c -
-python -m pip install --disable-pip-version-check --no-deps /tmp/lunita-owlrl/owlrl-7.6.2-py3-none-any.whl
+PYTHONPATH=vendor/python3.12/site-packages \
+LUNITA_FASTEMBED_CACHE=model-cache/fastembed \
+python engine_acceptance_v1.py
 ```
 
-The multilingual embedding weights are downloaded by FastEmbed on first use. The target candidate must provision the model before offline operation and record its exact cache hash and Hugging Face revision. No model is treated as installed merely because its name is in a registry.
+The hosted test suite executes E02–E15 with actual library/model operations. E01 requires the actual Qwen GGUF and llama.cpp binaries from the target runtime; its target-specific test is skipped on hosted CI only when those external assets are absent, and must be executed on the deployed target.
 
-## Validation
-Run from this directory:
-
-```bash
-python -m unittest -v test_engine_runtime_v1.py
-```
-
-The tests perform actual NLP, embedding, vector indexing/search, graph, RDF/SPARQL, OWL profile, OWL-RL inference, rule evaluation, hermeneutic staging, symbolic formalization, schema validation, provenance, and consensus operations. E01 requires the actual Qwen GGUF and llama.cpp binaries from the target runtime; its target-specific test is skipped on hosted CI only when those external assets are absent, and is mandatory on the deployed target.
-
-Passing these tests validates this additive code/dependency candidate in the tested environment only. It does not prove deployment inside the Lunita rootfs, the JASP fixture regression gate, complete rootfs inventory, G23, G24, or canonical release eligibility.
-
+Passing hosted tests validates the additive code and pinned dependency layer in that environment. It does not prove deployment inside the Lunita rootfs, actual Qwen inference on the target, JASP fixture non-regression, complete rootfs inventory, G23, G24, or canonical release eligibility.
 
 ## Target deployment — authorized CUSTOSZ_V7 only
 
 The overlay must be activated by the existing authorized CUSTOSZ_V7 worker. GitHub CI is not an authorization to mutate the local candidate rootfs.
 
-1. Create and verify a checkpoint using the worker's normal checkpoint mechanism. Export a receipt conforming to \`LUNITA_RUNTIME_OVERLAY_CHECKPOINT/1.0\` with:
-   - \`status=PASS\`, \`worker_version=CUSTOSZ_V7\`, \`candidate_id=G06_REBUILD_CANDIDATE_R1\`
-   - \`scope=LUNITA_ADDITIVE_RUNTIME_ENGINE_OVERLAY\`
-   - \`checkpoint_root\`, \`checkpoint_manifest\` and the actual \`checkpoint_manifest_sha256\`.
-2. Run \`apply_engine_overlay_v1.py\` first without \`--apply\`. Only a PASS with the exact beta-v1.7 launcher SHA authorizes proceeding.
-3. Execute again with \`--apply\`. It creates only \`/opt/lunita/engines/runtime_engines_v1\`; all files are copied into a new directory and hash checked. Reapplication/overwrite is denied.
-4. Use the target's Python 3.12 binary to run \`provision_engine_runtime_v1.py\`, directing site packages into the overlay vendor directory and model cache into a separate writable state path. No system/global Python package path is modified.
-5. Run \`engine_acceptance_v1.py\` with \`PYTHONPATH=/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages\`, \`LUNITA_FASTEMBED_CACHE\` and \`LUNITA_VECTOR_DB_PATH\` set to the receipt-bound locations. Re-run E01 on the target rootfs; the hosted E01 test is skipped because the Qwen GGUF is not present in the hosted runner.
-6. Keep this layer in \`DEPENDENCIES_PROVISIONED_NOT_CERTIFIED\` until target runtime acceptance, actual JASP fixture non-regression, full rootfs inventory, G23 and G24 all pass.
+1. Create and verify a checkpoint using the worker's normal checkpoint mechanism. Export a receipt conforming to `LUNITA_RUNTIME_OVERLAY_CHECKPOINT/1.0` with `status=PASS`, `worker_version=CUSTOSZ_V7`, `candidate_id=G06_REBUILD_CANDIDATE_R1`, `scope=LUNITA_ADDITIVE_RUNTIME_ENGINE_OVERLAY`, `checkpoint_root`, `checkpoint_manifest`, and the actual `checkpoint_manifest_sha256`.
+2. Run `apply_engine_overlay_v1.py` first without `--apply`. Only a PASS with the exact beta-v1.7 launcher SHA authorizes proceeding.
+3. Execute again with `--apply`. It creates only `/opt/lunita/engines/runtime_engines_v1`; code, vendored CPython 3.12 packages, and model weights are copied into that new directory and hash checked. Reapplication/overwrite is denied.
+4. Use the deployed Python 3.12 interpreter to run `engine_acceptance_v1.py` with:
+   - `PYTHONPATH=/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages`
+   - `LUNITA_FASTEMBED_CACHE=/opt/lunita/engines/runtime_engines_v1/model-cache/fastembed`
+   - `LUNITA_VECTOR_DB_PATH=/var/lib/lunita/vectors`
+   Re-run E01 against the exact Qwen GGUF and llama.cpp binary in the target rootfs; hosted CI does not contain those assets.
+5. Keep this layer in `APPLIED_ADDITIVELY_NOT_CERTIFIED` until target runtime acceptance, actual JASP fixture non-regression, full rootfs inventory, G23, and G24 all pass.
 
-The installer and provisioner are deliberately not self-authorizing. No checkpoint receipt means no mutation; no V7 identity means no mutation; an existing target means no overwrite.
+The installer is deliberately not self-authorizing. No checkpoint receipt means no mutation; no V7 identity means no mutation; an existing target means no overwrite. The local rootfs has no `pip` or `ensurepip`, so deployment does not modify system/global package paths and does not assume they exist.
