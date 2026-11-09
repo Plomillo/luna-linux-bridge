@@ -97,10 +97,25 @@ jobs:
         working-directory: recovery/lunita-custoszv9/runtime_engines_v1
         env:
           HF_HUB_DISABLE_TELEMETRY: "1"
-          LUNITA_FASTEMBED_CACHE: ${{ github.workspace }}/recovery/lunita-custoszv9/runtime_engines_v1/model-cache/fastembed
+          LUNITA_FASTEMBED_CACHE: ${{ runner.temp }}/lunita-fastembed-cache
         run: |
           mkdir -p "$LUNITA_FASTEMBED_CACHE"
           python engine_acceptance_v1.py
+          python - <<'PY'
+          import os
+          import pathlib
+          import shutil
+          source = pathlib.Path(os.environ["LUNITA_FASTEMBED_CACHE"])
+          destination = pathlib.Path("model-cache/fastembed")
+          if destination.exists():
+              raise SystemExit("Refusing to overwrite existing packaged model cache")
+          destination.parent.mkdir(parents=True, exist_ok=True)
+          shutil.copytree(source, destination, symlinks=False)
+          symlinks = [str(path) for path in destination.rglob("*") if path.is_symlink()]
+          if symlinks:
+              raise SystemExit(f"Materialized model cache still contains symlinks: {symlinks[:10]}")
+          print(f"MATERIALIZED_FASTEMBED_CACHE={destination}")
+          PY
       - name: Execute additive overlay and checkpoint acceptance tests
         working-directory: recovery/lunita-custoszv9/runtime_engines_v1
         run: python overlay_acceptance_v1.py
