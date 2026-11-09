@@ -45,6 +45,8 @@ def runtime_environment(base: dict[str, str] | None = None) -> dict[str, str]:
     env.setdefault("LUNITA_FASTEMBED_CACHE", str(OVERLAY / "model-cache/fastembed"))
     env.setdefault("LUNITA_VECTOR_DB_PATH", "/var/lib/lunita/vectors")
     env.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+    env.setdefault("HF_HUB_OFFLINE", "1")
+    env.setdefault("TRANSFORMERS_OFFLINE", "1")
     return env
 
 
