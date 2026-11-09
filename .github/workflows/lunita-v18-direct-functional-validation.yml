@@ -1,6 +1,11 @@
 name: Lunita v1.8 Direct Functional Validation
 
 on:
+  push:
+    branches:
+      - fix/lunita-v18-rootfs-bound-checkpoint-20261109
+    paths:
+      - "recovery/lunita-custoszv9/**"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
@@ -11,19 +16,19 @@ permissions:
   contents: read
 
 concurrency:
-  group: lunita-v1-8-direct-functional-validation-${{ github.event.pull_request.number }}
+  group: lunita-v1-8-direct-functional-validation-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
   contract-tests:
-    if: ${{ github.event.pull_request.head.ref == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109' && github.event.pull_request.base.ref == 'fix/lunita-v18-certification-path-20261109' }}
+    if: ${{ (github.event_name == 'push' && github.ref_name == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109') || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109' && github.event.pull_request.base.ref == 'fix/lunita-v18-certification-path-20261109') }}
     name: "Lunita v1.8 contract and overlay acceptance"
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
