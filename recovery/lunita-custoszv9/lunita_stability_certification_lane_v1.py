@@ -785,7 +785,9 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
     direct = CERTIFICATION_PROFILE == "V1_8_DIRECT"
     old = load_json(INDEPENDENT_REPORT, {}) or {}
     old_checks = old.get("checks") if isinstance(old.get("checks"), dict) else {}
-    checks = dict(old_checks)
+    # v1.8 starts from a clean candidate-specific check set; the immutable history
+    # archive preserves v1.7 observations, but no legacy PASS is carried forward.
+    checks = {} if direct else dict(old_checks)
     actual_launcher = ROOTFS / "opt/lunita/agent/lunita.py"
     launcher_sha = sha_file(actual_launcher) if actual_launcher.is_file() else None
     target_before = latest_target_runtime_acceptance() if direct else {}
