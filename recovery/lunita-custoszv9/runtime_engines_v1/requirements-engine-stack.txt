@@ -1,5 +1,6 @@
 # Version-pinned runtime dependencies for E02-E15.
 # E01 uses the existing Qwen3 GGUF + llama.cpp deployment in the candidate rootfs.
+# OWL-RL is installed separately only after verifying its published wheel SHA-256.
 numpy==2.2.6
 spacy==3.8.18
 fastembed==0.9.1
