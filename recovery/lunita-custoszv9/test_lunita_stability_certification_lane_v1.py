@@ -200,6 +200,7 @@ class JaspRunnerTests(unittest.TestCase):
             self.assertEqual(5, len(jasp_calls))
             self.assertTrue(all(command[command.index("org.jaspstats.JASP") + 1] == "--unitTest"
                                 for command in jasp_calls))
+            self.assertTrue(all(command.count("--hide") == 1 for command in jasp_calls))
             self.assertEqual("PASS", result["tests"]["flatpak_launch"]["status"])
             self.assertEqual(1, result["tests"]["reliability"]["returncode"])
             self.assertEqual("BLOCKED", result["tests"]["reliability"]["status"])
