@@ -167,6 +167,7 @@ def verify_overlay() -> dict[str, Any]:
         "__init__.py", "engine_runtime_v1.py", "engine_acceptance_v1.py",
         "engine_gateway_v1.py", "gateway_acceptance_v1.py", "lunita_beta_v1_8.py",
         "launcher_acceptance_v1.py", "target_runtime_acceptance_v1.py",
+        "apply_engine_overlay_v1.py", "checkpoint_v1.py", "overlay_acceptance_v1.py",
         "engine_assignments_v1.json", "requirements-engine-stack.txt",
         "DEPENDENCY_EVIDENCE_v1.json", "ENGINE_RUNTIME_V1_README.md",
     }
