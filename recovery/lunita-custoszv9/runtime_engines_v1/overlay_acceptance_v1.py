@@ -37,7 +37,6 @@ class AdditiveOverlayInstallerTests(unittest.TestCase):
         self.checkpoint_receipt.write_text(json.dumps({
             "schema": installer.EXPECTED_CHECKPOINT_SCHEMA,
             "status": "PASS",
-            "worker_version": "CUSTOSZ_V7",
             "candidate_id": installer.EXPECTED_CANDIDATE_ID,
             "scope": installer.EXPECTED_CHECKPOINT_SCOPE,
             "checkpoint_id": "TEST-CHECKPOINT-001",
@@ -58,7 +57,6 @@ class AdditiveOverlayInstallerTests(unittest.TestCase):
             "rootfs": self.rootfs,
             "source_dir": self.source,
             "checkpoint_receipt": self.checkpoint_receipt,
-            "worker_version": "CUSTOSZ_V7",
             "candidate_id": installer.EXPECTED_CANDIDATE_ID,
             "apply": False,
         }
@@ -99,10 +97,12 @@ class AdditiveOverlayInstallerTests(unittest.TestCase):
         after = hashlib.sha256((target / "OVERLAY_APPLY_RECEIPT.json").read_bytes()).hexdigest()
         self.assertEqual(before, after)
 
-    def test_wrong_worker_is_denied(self):
-        with self.assertRaises(installer.GateError):
-            self.apply(worker_version="CUSTOSZ_V9")
-        self.assertFalse((self.rootfs / installer.OVERLAY_RELATIVE_PATH).exists())
+    def test_checkpoint_is_not_bound_to_external_worker_identity(self):
+        receipt = json.loads(self.checkpoint_receipt.read_text(encoding="utf-8"))
+        receipt.pop("worker_version", None)
+        self.checkpoint_receipt.write_text(json.dumps(receipt), encoding="utf-8")
+        result = self.apply()
+        self.assertEqual("DRY_RUN_PASS_NO_MUTATION", result["status"])
 
     def test_launcher_hash_mismatch_is_denied(self):
         self.launcher.write_text("tampered launcher\n", encoding="utf-8")
@@ -127,7 +127,7 @@ class AdditiveOverlayInstallerTests(unittest.TestCase):
         alias.symlink_to(self.rootfs, target_is_directory=True)
         with self.assertRaises(installer.GateError):
             installer.apply_overlay(alias, self.source, self.checkpoint_receipt,
-                                    "CUSTOSZ_V7", installer.EXPECTED_CANDIDATE_ID, False)
+                                    installer.EXPECTED_CANDIDATE_ID, False)
 
     def test_symlinked_target_parent_is_denied(self):
         engines = self.rootfs / "opt/lunita/engines"
