@@ -929,7 +929,7 @@ def stable_release_gate() -> dict:
     if not receipt:
         return {"status": "WAITING_FOR_S32_BOUND_CERTIFICATION_RECEIPT", "certification": "NOT_GRANTED"}
     return {
-        "status": "STABLE_RELEASE_ELIGIBLE", "version": "1.7.0", "release_name": "LUNITA_STABLE_1_7",
+        "status": "STABLE_RELEASE_ELIGIBLE", "version": "1.8.0", "release_name": "LUNITA_STABLE_1_8",
         "candidate_id": "G06_REBUILD_CANDIDATE_R1",
         "runtime_report_sha256": sha_file(RUNTIME_REPORT),
         "independent_report_sha256": sha_file(INDEPENDENT_REPORT),
@@ -942,7 +942,7 @@ def stable_release_gate() -> dict:
 
 def persist_stable_release_status(release_gate: dict) -> dict:
     """Store immutable release receipts keyed by evidence; keep a mutable current-state pointer."""
-    release_dir = ST / "releases" / "LUNITA_STABLE_1_7"
+    release_dir = ST / "releases" / "LUNITA_STABLE_1_8"
     release_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     current_path = release_dir / "current_status.json"
     eligible = release_gate.get("status") == "STABLE_RELEASE_ELIGIBLE"
@@ -975,7 +975,8 @@ def persist_stable_release_status(release_gate: dict) -> dict:
         "updated_at_utc": utc(), "status": status, "release_gate_status": release_gate.get("status"),
         "release_receipt_path": str(receipt_path) if receipt_path else None,
         "release_receipt_sha256": receipt_sha,
-        "candidate_id": "G06_REBUILD_CANDIDATE_R1", "version": "1.7.0",
+        "candidate_id": "G06_REBUILD_CANDIDATE_R1", "version": "1.8.0",
+        "release_name": "LUNITA_STABLE_1_8",
         "certification_scope": "VERSIONED_DERIVED_CANDIDATE_ONLY",
         "previous_release_receipts_retained": True,
         "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
@@ -1126,7 +1127,7 @@ def tick() -> dict:
         "blocked_checks": report.get("open_items", []), "next_action": (
             "Continue independent evidence acquisition; diagnose and rerun JASP packaged fixtures with the pinned candidate runner. Do not accept new reference outputs merely to silence differences."
             if not jasp.get("all_required_jasp_cases_pass") else
-            "Wait for S32 to consume the hash-bound independent report, then emit the separate LUNITA_STABLE_1_7 release receipt."
+            "Wait for S32 to consume the hash-bound independent report, then emit the separate LUNITA_STABLE_1_8 release receipt."
         ),
         "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
         "certification": "NOT_GRANTED", "mission_completion_claim": False,
