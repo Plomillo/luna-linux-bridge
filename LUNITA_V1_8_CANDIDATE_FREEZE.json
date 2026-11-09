@@ -6,7 +6,6 @@
   "version": "1.8.0",
   "release_name_when_certified": "LUNITA_STABLE_1_8",
   "freeze_status": "FROZEN_CANDIDATE_NOT_CERTIFIED",
-  "frozen_at_utc": "2026-11-09T17:53:06Z",
   "frozen_ref": "candidate/lunita-v1.8.0-frozen-20261109",
   "frozen_commit": "95b43d4fd20a24cc52726086d7616d394be54906",
   "source_branch": "recovery/lunita-custoszv9-operational-20261020",
