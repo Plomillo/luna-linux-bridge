@@ -29,12 +29,11 @@ jobs:
           ref: ${{ github.ref }}
           persist-credentials: false
 
-      - name: Validate the Kestra gate and Compose configuration
+      - name: Validate the Kestra gate contract
         working-directory: integrations/kestra
         run: |
           set -Eeuo pipefail
           python3 validate.py
-          docker compose -f compose.yml config --quiet
 
       - name: Create ephemeral local credentials
         working-directory: integrations/kestra
@@ -55,6 +54,10 @@ jobs:
           )
           path.chmod(0o600)
           PY
+
+      - name: Validate Compose with generated local credentials
+        working-directory: integrations/kestra
+        run: docker compose -f compose.yml config --quiet
 
       - name: Pull and start ephemeral Kestra and PostgreSQL
         working-directory: integrations/kestra
