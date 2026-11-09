@@ -79,12 +79,20 @@ class LunitaBetaV18Tests(unittest.TestCase):
                 self.assertEqual(before, audit.read_bytes())
 
     def test_legacy_delegation_does_not_inject_vendor_python_packages(self):
-        with mock.patch.object(launcher.subprocess, "run", return_value=type("R", (), {"returncode": 0})()) as run:
-            self.assertEqual(0, launcher.run_legacy(["r-self-test"]))
-        kwargs = run.call_args.kwargs
-        self.assertNotIn("/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages",
-                         kwargs["env"].get("PYTHONPATH", ""))
-        self.assertEqual("1", kwargs["env"].get("HF_HUB_OFFLINE", "1"))
+        with tempfile.TemporaryDirectory() as temporary:
+            legacy = pathlib.Path(temporary) / "lunita.py"
+            legacy.write_bytes(b"immutable beta v1.7 test fixture")
+            legacy_sha = hashlib.sha256(legacy.read_bytes()).hexdigest()
+            with mock.patch.object(launcher, "LEGACY_LAUNCHER", legacy), \
+                 mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha), \
+                 mock.patch.object(launcher.subprocess, "run",
+                                   return_value=type("R", (), {"returncode": 0})()) as run:
+                self.assertEqual(0, launcher.run_legacy(["r-self-test"]))
+            kwargs = run.call_args.kwargs
+            self.assertNotIn("/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages",
+                             kwargs["env"].get("PYTHONPATH", ""))
+            self.assertEqual("1", kwargs["env"].get("HF_HUB_OFFLINE", "1"))
+            self.assertEqual([str(legacy), "r-self-test"], run.call_args.args[0][1:])
 
     def test_legacy_hash_verifier_detects_modified_launcher(self):
         with tempfile.TemporaryDirectory() as temporary:
