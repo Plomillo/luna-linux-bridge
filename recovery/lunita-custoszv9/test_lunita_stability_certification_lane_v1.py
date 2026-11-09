@@ -429,7 +429,7 @@ class StableReleaseReceiptTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             st = pathlib.Path(tmp) / "state"
             gate = {
-                "status": "STABLE_RELEASE_ELIGIBLE", "version": "1.7.0", "release_name": "LUNITA_STABLE_1_7",
+                "status": "STABLE_RELEASE_ELIGIBLE", "version": "1.8.0", "release_name": "LUNITA_STABLE_1_8",
                 "candidate_id": "G06_REBUILD_CANDIDATE_R1", "runtime_report_sha256": "1" * 64,
                 "independent_report_sha256": "2" * 64,
                 "s32_receipt": {"path": "/tmp/s32.json", "sha256": "3" * 64},
@@ -444,7 +444,11 @@ class StableReleaseReceiptTests(unittest.TestCase):
                 second = lane.persist_stable_release_status({"status": "BLOCKED_INDEPENDENT_VALIDATION"})
                 pointer = json.loads(pathlib.Path(second["current_status_path"]).read_text())
             self.assertEqual("CERTIFIED_STABLE_RELEASE_ACTIVE", first["status"])
+            self.assertEqual("LUNITA_STABLE_1_8", first["release_name"])
+            self.assertEqual("1.8.0", json.loads(original_bytes)["version"])
+            self.assertEqual("LUNITA_STABLE_1_8", json.loads(original_bytes)["release_name"])
             self.assertEqual("REVALIDATION_REQUIRED", second["status"])
             self.assertEqual(original_bytes, receipt.read_bytes())
             self.assertEqual("REVALIDATION_REQUIRED", pointer["status"])
+            self.assertEqual("LUNITA_STABLE_1_8", pointer["release_name"])
             self.assertEqual("CERTIFIED_STABLE_RELEASE", json.loads(original_bytes)["status"])
