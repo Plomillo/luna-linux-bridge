@@ -48,6 +48,15 @@ def sha256_file(path: pathlib.Path) -> str:
     return digest.hexdigest()
 
 
+def reject_any_symlink(path: pathlib.Path) -> None:
+    absolute = pathlib.Path(os.path.abspath(path))
+    current = pathlib.Path(absolute.anchor)
+    for component in absolute.parts[1:]:
+        current = current / component
+        if current.exists() and current.is_symlink():
+            raise GateError(f"Symlink path component is not allowed: {current}")
+
+
 def reject_symlink_components(path: pathlib.Path, stop: pathlib.Path) -> None:
     """Reject symlink traversal from path down to the declared root."""
     path_abs = pathlib.Path(os.path.abspath(path))
@@ -66,6 +75,7 @@ def reject_symlink_components(path: pathlib.Path, stop: pathlib.Path) -> None:
 
 
 def load_checkpoint_receipt(receipt_path: pathlib.Path, worker: str, candidate_id: str) -> dict[str, Any]:
+    reject_any_symlink(receipt_path)
     receipt_path = receipt_path.resolve(strict=True)
     if not receipt_path.is_file():
         raise GateError("Checkpoint receipt must be a regular file")
@@ -87,6 +97,8 @@ def load_checkpoint_receipt(receipt_path: pathlib.Path, worker: str, candidate_i
         raise GateError("Checkpoint root and manifest paths are required")
     if not isinstance(expected_hash, str) or len(expected_hash) != 64:
         raise GateError("Checkpoint manifest SHA-256 is required")
+    reject_any_symlink(pathlib.Path(root_value))
+    reject_any_symlink(pathlib.Path(manifest_value))
     checkpoint_root = pathlib.Path(root_value).resolve(strict=True)
     manifest = pathlib.Path(manifest_value).resolve(strict=True)
     if not checkpoint_root.is_dir() or not manifest.is_file():
@@ -120,6 +132,7 @@ def preflight(
         raise GateError("Only CUSTOSZ_V7 may authorize this overlay operation")
     if candidate_id != EXPECTED_CANDIDATE_ID:
         raise GateError("Candidate identifier mismatch")
+    reject_any_symlink(rootfs)
     rootfs = rootfs.resolve(strict=True)
     if not rootfs.is_dir():
         raise GateError("Rootfs must be a directory")
@@ -130,6 +143,7 @@ def preflight(
     launcher_hash = sha256_file(launcher)
     if launcher_hash != EXPECTED_LAUNCHER_SHA256:
         raise GateError("Candidate launcher does not match the hash-pinned beta-v1.7 source")
+    reject_any_symlink(source_dir)
     source_dir = source_dir.resolve(strict=True)
     if not source_dir.is_dir():
         raise GateError("Engine source directory is missing")
