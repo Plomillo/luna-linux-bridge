@@ -681,59 +681,72 @@ def _stable_check(check: dict) -> bool:
 
 
 def latest_target_runtime_acceptance() -> dict:
-    """Load and validate the newest CUSTOSZ_V7 target-runtime acceptance receipt."""
+    """Use only the newest receipt; stale prior PASS evidence must never override a later failure."""
     files = sorted(TARGET_RUNTIME_RECEIPT_DIR.glob("LUNITA_TARGET_RUNTIME_ACCEPTANCE_*.json"),
                    key=lambda path: path.stat().st_mtime_ns, reverse=True)
     if not files:
         return {"status": "BLOCKED_TARGET_RUNTIME_RECEIPT_MISSING", "receipt_path": None}
-    for path in files:
-        row = load_json(path, {}) or {}
-        if row.get("schema") != "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0":
-            continue
-        if row.get("status") != "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED":
-            continue
-        if row.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1":
-            continue
-        if row.get("worker_required") != "CUSTOSZ_V7" or row.get("worker_version") != "CUSTOSZ_V7":
-            continue
-        if row.get("certification") != "NOT_GRANTED":
-            continue
-        if row.get("canonical_g06_certification") != "NOT_GRANTED":
-            continue
-        if row.get("canonical_g08_binding_mutation") is not False:
-            continue
-        if row.get("overlay_integrity", {}).get("status") != "PASS_OVERLAY_INTEGRITY":
-            continue
-        if row.get("e04_quantization", {}).get("status") != "PASS_E04_INT8_QUALITY_GATE":
-            continue
-        if row.get("qwen_e01", {}).get("status") != "PASS_E01_QWEN_INFERENCE":
-            continue
-        tests = row.get("engine_acceptance_tests", {})
-        if tests.get("status") != "PASS" or tests.get("skipped") != 0 or not isinstance(tests.get("tests_run"), int) or tests["tests_run"] < 1:
-            continue
-        applications = row.get("legacy_application_smokes", {})
-        commands = applications.get("commands") if isinstance(applications.get("commands"), dict) else {}
-        if applications.get("status") != "PASS_LEGACY_APPLICATION_SMOKES" or not commands or any(
-            command.get("status") != "PASS" or command.get("returncode") != 0
-            for command in commands.values()
-        ):
-            continue
-        digest = sha_file(path)
-        return {
-            "status": "PASS_TARGET_RUNTIME_ACCEPTANCE",
-            "receipt_path": str(path),
-            "receipt_sha256": digest,
-            "worker_version": row.get("worker_version"),
-            "candidate_id": row.get("candidate_id"),
-            "overlay_integrity": row.get("overlay_integrity"),
-            "e04_quantization": row.get("e04_quantization"),
-            "qwen_e01": row.get("qwen_e01"),
-            "engine_acceptance_tests": row.get("engine_acceptance_tests"),
-            "legacy_application_smokes": applications,
-            "frozen_g06_mutated": row.get("frozen_g06_mutated"),
-            "canonical_g08_binding_mutation": row.get("canonical_g08_binding_mutation"),
-        }
-    return {"status": "BLOCKED_TARGET_RUNTIME_RECEIPT_INVALID", "receipt_path": str(files[0])}
+    path = files[0]
+    row = load_json(path, {}) or {}
+    def blocked(reason: str) -> dict:
+        return {"status": "BLOCKED_TARGET_RUNTIME_RECEIPT_INVALID", "receipt_path": str(path),
+                "reason": reason}
+    if row.get("schema") != "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0":
+        return blocked("SCHEMA_MISMATCH")
+    if row.get("status") != "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED":
+        return blocked("LATEST_RECEIPT_NOT_PASS")
+    if row.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1":
+        return blocked("CANDIDATE_IDENTITY_MISMATCH")
+    if row.get("worker_required") != "CUSTOSZ_V7" or row.get("worker_version") != "CUSTOSZ_V7":
+        return blocked("AUTHORIZED_WORKER_IDENTITY_MISMATCH")
+    if row.get("certification") != "NOT_GRANTED" or row.get("canonical_g06_certification") != "NOT_GRANTED":
+        return blocked("CERTIFICATION_SCOPE_MISMATCH")
+    overlay = row.get("overlay_integrity", {})
+    if overlay.get("status") != "PASS_OVERLAY_INTEGRITY":
+        return blocked("OVERLAY_INTEGRITY_NOT_PASS")
+    if overlay.get("frozen_g06_mutated") is not False or overlay.get("canonical_g08_mutated") is not False:
+        return blocked("FROZEN_IDENTITY_INVARIANT_MISMATCH")
+    if row.get("canonical_g08_binding_mutation") is not False:
+        return blocked("CANONICAL_G08_BINDING_MUTATION")
+    quantization = row.get("e04_quantization", {})
+    if quantization.get("status") != "PASS_E04_INT8_QUALITY_GATE":
+        return blocked("E04_INT8_QUALITY_GATE_NOT_PASS")
+    qwen = row.get("qwen_e01", {})
+    if qwen.get("status") != "PASS_E01_QWEN_INFERENCE":
+        return blocked("E01_QWEN_INFERENCE_NOT_PASS")
+    tests = row.get("engine_acceptance_tests", {})
+    required_engine_ids = {f"E{i:02d}" for i in range(2, 16)}
+    if tests.get("status") != "PASS" or tests.get("skipped") != 0:
+        return blocked("ENGINE_ACCEPTANCE_NOT_PASS_OR_SKIPPED")
+    if not isinstance(tests.get("tests_run"), int) or tests["tests_run"] < 1:
+        return blocked("ENGINE_TEST_COUNT_INVALID")
+    if set(tests.get("engine_ids_covered", [])) != required_engine_ids:
+        return blocked("ENGINE_ID_COVERAGE_INCOMPLETE")
+    if tests.get("command_route_matrix_test_present") is not True:
+        return blocked("COMMAND_AGENT_ENGINE_ROUTE_MATRIX_NOT_TESTED")
+    applications = row.get("legacy_application_smokes", {})
+    commands = applications.get("commands") if isinstance(applications.get("commands"), dict) else {}
+    required_commands = {"brujula-self-test", "r-self-test", "jamovi-self-test", "jasp-self-test", "fault"}
+    if applications.get("status") != "PASS_LEGACY_APPLICATION_SMOKES" or set(commands) != required_commands:
+        return blocked("LEGACY_APPLICATION_SMOKE_SET_INCOMPLETE")
+    if any(command.get("status") != "PASS" or command.get("returncode") != 0
+           for command in commands.values()):
+        return blocked("LEGACY_APPLICATION_SMOKE_FAILED")
+    digest = sha_file(path)
+    return {
+        "status": "PASS_TARGET_RUNTIME_ACCEPTANCE",
+        "receipt_path": str(path),
+        "receipt_sha256": digest,
+        "worker_version": row.get("worker_version"),
+        "candidate_id": row.get("candidate_id"),
+        "overlay_integrity": overlay,
+        "e04_quantization": quantization,
+        "qwen_e01": qwen,
+        "engine_acceptance_tests": tests,
+        "legacy_application_smokes": applications,
+        "frozen_g06_mutated": overlay.get("frozen_g06_mutated"),
+        "canonical_g08_binding_mutation": row.get("canonical_g08_binding_mutation"),
+    }
 
 
 def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
