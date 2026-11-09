@@ -476,6 +476,10 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
             manifest.write_text(json.dumps(self.frozen_manifest()), encoding="utf-8")
             receipt = base / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_test.json"
             receipt.write_text(json.dumps({"schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0"}), encoding="utf-8")
+            independent = base / "independent.json"
+            independent.write_text(json.dumps({
+                "checks": {"legacy_v17_unbound_pass": {"status": "PASS", "returncode": 0}}
+            }), encoding="utf-8")
             target = {
                 "status": "PASS_TARGET_RUNTIME_ACCEPTANCE",
                 "receipt_path": str(receipt),
@@ -495,7 +499,7 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
                  mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
                  mock.patch.object(lane, "ROOTFS", rootfs), \
                  mock.patch.object(lane, "RUNTIME_REPORT", base / "missing-v17-runtime.json"), \
-                 mock.patch.object(lane, "INDEPENDENT_REPORT", base / "independent.json"), \
+                 mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
                  mock.patch.object(lane, "MISSION_PATH", base / "missing-MISION1.txt"), \
                  mock.patch.object(lane, "latest_target_runtime_acceptance", return_value=target):
                 report = lane.update_independent_report(
@@ -506,6 +510,7 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
             self.assertEqual("PASS", checks["runtime_report_and_launcher_identity"]["status"])
             self.assertEqual("PASS", checks["target_v1_8_runtime_acceptance_e01_e15_int8"]["status"])
             self.assertNotIn("MISION1_identity_sha256", checks)
+            self.assertNotIn("legacy_v17_unbound_pass", checks)
             self.assertEqual(str(receipt), report["runtime_report_path"])
             self.assertEqual(lane.sha_file(receipt), report["runtime_report_sha256"])
             self.assertEqual("V1_8_DIRECT", report["certification_profile"])
