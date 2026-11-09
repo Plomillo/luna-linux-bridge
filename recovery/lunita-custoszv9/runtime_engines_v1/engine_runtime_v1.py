@@ -39,24 +39,6 @@ ENGINE_NAMES = {
     "E14": "PROVENANCE", "E15": "CONSENSUS",
 }
 
-ENGINE_ASSIGNMENTS = {
-    "E01": frozenset({"Luna", "Josefina", "Katya"}),
-    "E02": frozenset({"Luna", "Josefina", "Katya"}),
-    "E03": frozenset({"Luna", "Josefina", "Katya", "Ancapi"}),
-    "E04": frozenset({"Luna", "Josefina", "Katya"}),
-    "E05": frozenset({"Luna", "Josefina", "Katya", "Ancapi"}),
-    "E06": frozenset({"Luna", "Ancapi"}),
-    "E07": frozenset({"Luna", "Ancapi"}),
-    "E08": frozenset({"Luna", "Ancapi"}),
-    "E09": frozenset({"Luna", "Josefina", "Katya", "Ancapi"}),
-    "E10": frozenset({"Luna", "Josefina", "Ancapi"}),
-    "E11": frozenset({"Luna", "Josefina", "Katya"}),
-    "E12": frozenset({"Luna", "Josefina", "Katya", "Ancapi"}),
-    "E13": frozenset({"Luna", "Josefina", "Katya", "Ancapi"}),
-    "E14": frozenset({"Luna", "Josefina", "Ancapi"}),
-    "E15": frozenset({"Luna", "Josefina", "Katya", "Ancapi"}),
-}
-
 COMMAND_ENGINES = {
     "/help": ("E13", "E14", "E15"),
     "/play PT": ("E01", "E02", "E11", "E12", "E13"),
@@ -111,7 +93,7 @@ class EngineContractError(ValueError):
 
 def validate_registry() -> dict[str, Any]:
     expected = {f"E{i:02d}" for i in range(1, 16)}
-    if set(ENGINE_NAMES) != expected or set(ENGINE_ASSIGNMENTS) != expected:
+    if set(ENGINE_NAMES) != expected:
         raise EngineContractError("Canonical seed-engine namespace mismatch")
     if set(COMMAND_ENGINES) != {
         "/help", "/play PT", "/play PA", "/play DCI", "/play DCIL",
@@ -139,11 +121,21 @@ def validate_registry() -> dict[str, Any]:
     }
 
 
-def assert_agent_assignment(engine_id: str, agent: str) -> None:
-    if engine_id not in ENGINE_ASSIGNMENTS:
+def assert_command_route(command: str, agent: str, engine_id: str) -> None:
+    """Validate only the canonical command -> team + engine relation.
+
+    Louksna defines agent teams per command; it does not define an independent
+    agent-to-engine ownership matrix. This gate deliberately avoids inventing one.
+    """
+    if command not in COMMAND_ENGINES or command not in COMMAND_AGENTS:
+        raise EngineContractError(f"Unknown canonical command: {command}")
+    if engine_id not in ENGINE_NAMES:
         raise EngineContractError(f"Unknown canonical engine: {engine_id}")
-    if agent not in ENGINE_ASSIGNMENTS[engine_id]:
-        raise EngineContractError(f"{agent} is not assigned to {engine_id}")
+    if engine_id not in COMMAND_ENGINES[command]:
+        raise EngineContractError(f"{engine_id} is not routed by {command}")
+    if agent not in COMMAND_AGENTS[command]:
+        raise EngineContractError(f"{agent} is not assigned to command {command}")
+    return None
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -693,17 +685,21 @@ def aggregate_consensus(
     evidence_sha256: str,
     votes: Sequence[Mapping[str, str]],
     *,
+    command: str,
     required_agents: Sequence[str],
 ) -> dict[str, Any]:
-    if engine_id not in ENGINE_ASSIGNMENTS:
-        raise EngineContractError(f"Unknown engine: {engine_id}")
+    if engine_id != "E15":
+        raise EngineContractError("Consensus aggregation is restricted to canonical engine E15")
+    if command not in COMMAND_ENGINES or "E15" not in COMMAND_ENGINES[command]:
+        raise EngineContractError(f"Command {command} does not route E15")
+    expected_agents = COMMAND_AGENTS[command]
+    if tuple(required_agents) != expected_agents:
+        raise EngineContractError("Consensus participants must match the exact command team")
     if "Luna" not in required_agents:
         raise EngineContractError("Luna must chair every consensus route")
     required = set(required_agents)
     if len(required) != len(required_agents) or not required:
         raise EngineContractError("required_agents must be unique and non-empty")
-    for agent in required:
-        assert_agent_assignment(engine_id, agent)
     if len(evidence_sha256) != 64:
         raise EngineContractError("evidence_sha256 must be a SHA-256 digest")
     submitted: dict[str, str] = {}
@@ -739,6 +735,10 @@ def capability_status_snapshot() -> dict[str, Any]:
         "command_count": 14,
         "engine_implementation_candidate": "runtime_engines_v1",
         "canonical_certification": "NOT_GRANTED",
-        "engine_assignments": {key: sorted(value) for key, value in ENGINE_ASSIGNMENTS.items()},
+        "command_routes": {
+            command: {"agents": list(COMMAND_AGENTS[command]), "engines": list(COMMAND_ENGINES[command])}
+            for command in COMMAND_ENGINES
+        },
+        "direct_agent_to_engine_assignment": "NOT_DEFINED_BY_CANONICAL_SPEC",
         "dependencies": engine_dependency_inventory(),
     }
