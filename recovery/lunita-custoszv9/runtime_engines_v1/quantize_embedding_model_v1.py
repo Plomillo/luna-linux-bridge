@@ -125,11 +125,14 @@ def find_onnx_model(cache: pathlib.Path) -> pathlib.Path:
     return path
 
 
-def quantize_model(model: pathlib.Path, output: pathlib.Path, pythonpath: str) -> None:
+def quantize_model(model: pathlib.Path, output: pathlib.Path, pythonpath: str) -> dict[str, Any]:
     source = r'''
-import sys
-from onnx import checker
+import json, re, sys
+import onnx
+import onnxruntime as ort
+from onnx import checker, TensorProto
 from onnxruntime.quantization import QuantType, quantize_dynamic
+
 model_in, model_out = sys.argv[1], sys.argv[2]
 quantize_dynamic(
     model_input=model_in,
@@ -138,7 +141,78 @@ quantize_dynamic(
     per_channel=True,
     reduce_range=False,
 )
-checker.check_model(model_out, full_check=True)
+
+graph = onnx.load(model_out, load_external_data=True)
+if not graph.graph.node or not graph.graph.input or not graph.graph.output:
+    raise RuntimeError("Quantized ONNX graph has missing nodes, inputs, or outputs")
+
+opset_imports = {item.domain or "ai.onnx": int(item.version) for item in graph.opset_import}
+default_opset = opset_imports.get("ai.onnx")
+layer_norm_nodes = [
+    {"name": node.name, "domain": node.domain or "ai.onnx"}
+    for node in graph.graph.node if node.op_type == "LayerNormalization"
+]
+int8_initializers = [
+    initializer.name for initializer in graph.graph.initializer
+    if initializer.data_type == TensorProto.INT8
+]
+quantized_operators = [
+    node.op_type for node in graph.graph.node
+    if node.op_type in {
+        "MatMulInteger", "DynamicQuantizeLinear", "QLinearMatMul",
+        "QLinearConv", "QuantizeLinear", "DequantizeLinear",
+    }
+]
+try:
+    checker.check_model(graph, full_check=True)
+    checker_status = "PASS_ONNX_CHECKER"
+    checker_error = None
+except Exception as exc:
+    checker_error = f"{type(exc).__name__}: {exc}"
+    known_compatibility_gap = (
+        default_opset == 11
+        and bool(layer_norm_nodes)
+        and "No Op registered for LayerNormalization with domain_version of 11" in str(exc)
+        and all(node["domain"] == "ai.onnx" for node in layer_norm_nodes)
+    )
+    if not known_compatibility_gap:
+        raise
+    checker_status = "KNOWN_ONNX_SCHEMA_REGISTRY_GAP_LAYER_NORMALIZATION_OPSET11"
+
+if not int8_initializers:
+    raise RuntimeError("Quantized model contains no INT8 initializer tensors")
+if not quantized_operators:
+    raise RuntimeError("Quantized model contains no quantized ONNX operators")
+
+# The standard ONNX schema registry in the pinned checker does not know this
+# model's legacy LayerNormalization declaration. Require ONNX Runtime itself to
+# load the complete candidate graph, then FastEmbed performs actual inference
+# and semantic comparison in a fresh process in the parent pipeline.
+session = ort.InferenceSession(model_out, providers=["CPUExecutionProvider"])
+inputs = session.get_inputs()
+outputs = session.get_outputs()
+if not inputs or not outputs:
+    raise RuntimeError("ONNX Runtime candidate session has no inputs or outputs")
+
+report = {
+    "checker_status": checker_status,
+    "checker_error": checker_error,
+    "opset_imports": opset_imports,
+    "layer_normalization_node_count": len(layer_norm_nodes),
+    "int8_initializer_count": len(int8_initializers),
+    "int8_initializer_names_sha256": __import__("hashlib").sha256(
+        "\n".join(int8_initializers).encode("utf-8")
+    ).hexdigest(),
+    "quantized_operator_counts": {
+        name: sum(1 for value in quantized_operators if value == name)
+        for name in sorted(set(quantized_operators))
+    },
+    "onnxruntime_load_status": "PASS",
+    "onnxruntime_provider": session.get_providers()[0],
+    "input_names": [item.name for item in inputs],
+    "output_names": [item.name for item in outputs],
+}
+print(json.dumps(report, sort_keys=True, separators=(",", ":")))
 '''
     env = os.environ.copy()
     env["PYTHONPATH"] = pythonpath + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
@@ -147,7 +221,14 @@ checker.check_model(model_out, full_check=True)
         env=env, capture_output=True, text=True, timeout=900, check=False,
     )
     if result.returncode != 0 or not output.is_file():
-        raise QuantizationError("ONNX Runtime INT8 quantization failed: " + (result.stderr or result.stdout)[-2500:])
+        raise QuantizationError("ONNX Runtime INT8 quantization/validation failed: " + (result.stderr or result.stdout)[-3000:])
+    try:
+        report = json.loads(result.stdout.strip().splitlines()[-1])
+    except (json.JSONDecodeError, IndexError) as exc:
+        raise QuantizationError("ONNX Runtime quantization validation did not emit a valid JSON receipt") from exc
+    if report.get("onnxruntime_load_status") != "PASS" or not report.get("int8_initializer_count"):
+        raise QuantizationError("INT8 candidate did not pass structural/runtime validation")
+    return report
 
 
 def run(cache: pathlib.Path, pythonpath: str) -> dict[str, Any]:
@@ -166,7 +247,7 @@ def run(cache: pathlib.Path, pythonpath: str) -> dict[str, Any]:
         quantized = root / "model_optimized.int8.onnx"
         backup = root / "model_optimized.float32.onnx"
         shutil.copy2(model, backup)
-        quantize_model(model, quantized, pythonpath)
+        onnx_validation = quantize_model(model, quantized, pythonpath)
         quantized_size = quantized.stat().st_size
         if quantized_size >= original_size * MAX_QUANTIZED_SIZE_RATIO:
             raise QuantizationError(
@@ -221,6 +302,7 @@ def run(cache: pathlib.Path, pythonpath: str) -> dict[str, Any]:
                 "original_bytes": original_size,
                 "quantized_bytes": quantized_size,
                 "size_ratio": quantized_size / original_size,
+                "onnx_validation": onnx_validation,
                 "mean_vector_cosine": mean_cosine,
                 "minimum_vector_cosine": minimum_cosine,
                 "retrieval_top1_agreement": agreement,
