@@ -204,12 +204,49 @@ def verify_overlay() -> dict[str, Any]:
     }
 
 
+REQUIRED_ENGINE_TEST_MATCHERS = {
+    "E02": "test_e02_spanish_nlp_executes_pipeline",
+    "E03": "test_e03_rag_returns_source_bound_context",
+    "E04": "test_e04_embedding_and_e05_vector_search_execute_real_models",
+    "E05": "test_e04_embedding_and_e05_vector_search_execute_real_models",
+    "E06": "test_e06_knowledge_graph_executes_paths",
+    "E07": "test_e07_rdf_parse_serialize_and_sparql",
+    "E08": "test_e08_owl_profile_validates_explicit_classes_and_properties",
+    "E09": "test_e09_owlrl_semantic_inference_materializes_subclass_entailment",
+    "E10": "test_e10_safe_rule_engine_converges_without_eval",
+    "E11": "test_e11_hermeneutic_separates_source_context_and_hypothesis",
+    "E12": "test_e12_formalization_builds_symbolic_expression_without_eval",
+    "E13": "test_e13_json_schema_validation_positive_and_negative",
+    "E14": "test_e14_provenance_chain_detects_tampering",
+    "E15": "test_e15_consensus_requires_all_assigned_votes_and_same_evidence",
+}
+
+
+def _flatten_test_ids(suite) -> list[str]:
+    identifiers = []
+    for item in suite:
+        if isinstance(item, unittest.TestSuite):
+            identifiers.extend(_flatten_test_ids(item))
+        else:
+            identifiers.append(item.id())
+    return identifiers
+
+
 def run_unittests() -> dict[str, Any]:
     loader = unittest.defaultTestLoader
     suite = unittest.TestSuite()
     for module_name in TEST_MODULES:
         module = importlib.import_module(module_name)
         suite.addTests(loader.loadTestsFromModule(module))
+    test_ids = _flatten_test_ids(suite)
+    engine_ids_covered = sorted(
+        engine_id for engine_id, matcher in REQUIRED_ENGINE_TEST_MATCHERS.items()
+        if any(matcher in test_id for test_id in test_ids)
+    )
+    command_route_matrix_test = any(
+        "test_complete_canonical_route_matrix_for_all_fourteen_commands" in test_id
+        for test_id in test_ids
+    )
     result = unittest.TextTestRunner(stream=sys.stdout, verbosity=2).run(suite)
     return {
         "status": "PASS" if result.wasSuccessful() and not result.skipped else "FAIL",
@@ -217,9 +254,13 @@ def run_unittests() -> dict[str, Any]:
         "failures": len(result.failures),
         "errors": len(result.errors),
         "skipped": len(result.skipped),
+        "engine_ids_covered": engine_ids_covered,
+        "required_engine_ids": sorted(REQUIRED_ENGINE_TEST_MATCHERS),
+        "command_route_matrix_test_present": command_route_matrix_test,
         "failure_test_ids": [test.id() for test, _ in result.failures],
         "error_test_ids": [test.id() for test, _ in result.errors],
         "skipped_test_ids": [test.id() for test, _ in result.skipped],
+        "test_ids": test_ids,
     }
 
 
