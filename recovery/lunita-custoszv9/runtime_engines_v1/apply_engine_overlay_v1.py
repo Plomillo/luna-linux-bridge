@@ -28,6 +28,8 @@ FILES = (
     "__init__.py",
     "engine_runtime_v1.py",
     "engine_acceptance_v1.py",
+    "engine_gateway_v1.py",
+    "gateway_acceptance_v1.py",
     "engine_assignments_v1.json",
     "requirements-engine-stack.txt",
     "DEPENDENCY_EVIDENCE_v1.json",
