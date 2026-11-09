@@ -130,7 +130,8 @@ def quantize_model(model: pathlib.Path, output: pathlib.Path, pythonpath: str) -
 import json, re, sys
 import onnx
 import onnxruntime as ort
-from onnx import checker, TensorProto
+import numpy as np
+from onnx import checker, TensorProto, numpy_helper
 from onnxruntime.quantization import QuantType, quantize_dynamic
 
 model_in, model_out = sys.argv[1], sys.argv[2]
@@ -143,6 +144,41 @@ quantize_dynamic(
 )
 
 graph = onnx.load(model_out, load_external_data=True)
+
+# ONNX Runtime's DequantizeLinear kernel requires FP32 scale tensors for this
+# model/opset. Dynamic quantization inherits FP16 scale initializers from the
+# source graph; canonicalize only those scale tensors to FP32 while preserving
+# INT8 zero-points and quantized weight tensors.
+def normalize_quantization_scales(graph_proto):
+    initializers = {item.name: item for item in graph_proto.initializer}
+    converted = []
+    quant_ops = {"QuantizeLinear", "DequantizeLinear", "QLinearMatMul", "QLinearConv"}
+    for node in graph_proto.node:
+        if node.op_type not in quant_ops:
+            continue
+        scale_input_indices = (1,) if node.op_type in {"QuantizeLinear", "DequantizeLinear"} else (1, 4)
+        for index in scale_input_indices:
+            if len(node.input) <= index or node.input[index] not in initializers:
+                continue
+            scale = initializers[node.input[index]]
+            if scale.data_type == TensorProto.FLOAT16:
+                values = numpy_helper.to_array(scale).astype(np.float32)
+                replacement = numpy_helper.from_array(values, name=scale.name)
+                scale.CopyFrom(replacement)
+                converted.append(scale.name)
+    for node in graph_proto.node:
+        for attribute in node.attribute:
+            if attribute.type == onnx.AttributeProto.GRAPH:
+                converted.extend(normalize_quantization_scales(attribute.g))
+            elif attribute.type == onnx.AttributeProto.GRAPHS:
+                for nested in attribute.graphs:
+                    converted.extend(normalize_quantization_scales(nested))
+    return converted
+
+converted_fp16_scales = normalize_quantization_scales(graph.graph)
+if not converted_fp16_scales:
+    raise RuntimeError("Quantized graph contained no quantization scales; expected FP16 scale normalization")
+onnx.save_model(graph, model_out)
 if not graph.graph.node or not graph.graph.input or not graph.graph.output:
     raise RuntimeError("Quantized ONNX graph has missing nodes, inputs, or outputs")
 
@@ -178,6 +214,17 @@ except Exception as exc:
     if not known_compatibility_gap:
         raise
     checker_status = "KNOWN_ONNX_SCHEMA_REGISTRY_GAP_LAYER_NORMALIZATION_OPSET11"
+
+if converted_fp16_scales:
+    remaining_fp16_scales = []
+    current_initializers = {item.name: item for item in graph.graph.initializer}
+    for node in graph.graph.node:
+        if node.op_type in {"QuantizeLinear", "DequantizeLinear"} and len(node.input) > 1:
+            scale = current_initializers.get(node.input[1])
+            if scale is not None and scale.data_type == TensorProto.FLOAT16:
+                remaining_fp16_scales.append(scale.name)
+    if remaining_fp16_scales:
+        raise RuntimeError("FP16 quantization scales remain: " + ",".join(remaining_fp16_scales[:20]))
 
 if not int8_initializers:
     raise RuntimeError("Quantized model contains no INT8 initializer tensors")
