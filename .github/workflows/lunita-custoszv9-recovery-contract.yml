@@ -328,7 +328,7 @@ jobs:
           if engines.is_symlink():
               raise SystemExit("BLOCKED: target engines directory is a symlink")
           checkpoint = pathlib.Path(os.environ["CHECKPOINT_DIR"])
-          checkpoint.mkdir(parents=True, mode=0o700, parents=True, exist_ok=False)
+          checkpoint.mkdir(parents=True, mode=0o700, exist_ok=False)
           preserved = [{"path": str(launcher), "sha256": launcher_sha, "bytes": launcher.stat().st_size}]
           model = root / "brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf"
           if model.is_file() and not model.is_symlink():
@@ -402,13 +402,20 @@ jobs:
           cp -a "$LUNITA_ROOT/engines/runtime_engines_v1/OVERLAY_APPLY_RECEIPT.json" "$RUNNER_TEMP/lunita-target-evidence/" 2>/dev/null || true
           exit "$rc"
 
+      - name: Collect target acceptance and checkpoint evidence
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/lunita-target-evidence/checkpoints"
+          if [ -d "$HOME/.local/state/lunita/checkpoints/G06_REBUILD_CANDIDATE_R1" ]; then
+            cp -a "$HOME/.local/state/lunita/checkpoints/G06_REBUILD_CANDIDATE_R1"/. "$RUNNER_TEMP/lunita-target-evidence/checkpoints/"
+          fi
+
       - name: Preserve target acceptance and deployment checkpoint evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lunita-v1-8-target-acceptance-${{ github.run_id }}
-          path: |
-            ${{ runner.temp }}/lunita-target-evidence/
-            ~/.local/state/lunita/checkpoints/G06_REBUILD_CANDIDATE_R1/
+          path: ${{ runner.temp }}/lunita-target-evidence/
           if-no-files-found: warn
           retention-days: 90
