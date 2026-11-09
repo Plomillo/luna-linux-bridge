@@ -984,6 +984,7 @@ def persist_stable_release_status(release_gate: dict) -> dict:
     }
     atomic_json(current_path, pointer)
     return {"status": status, "current_status_path": str(current_path),
+            "release_name": "LUNITA_STABLE_1_8", "version": "1.8.0",
             "release_receipt_path": str(receipt_path) if receipt_path else None,
             "release_receipt_sha256": receipt_sha, "gate_status": release_gate.get("status")}
 
