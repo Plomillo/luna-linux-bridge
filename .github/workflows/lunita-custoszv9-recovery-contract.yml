@@ -77,9 +77,9 @@ jobs:
           PY
           python -m pip install --disable-pip-version-check --no-deps "$RUNNER_TEMP"/owlrl/*.whl
       - name: Compile additive engine implementation
-        run: python -m py_compile recovery/lunita-custoszv9/runtime_engines_v1/engine_runtime_v1.py recovery/lunita-custoszv9/runtime_engines_v1/test_engine_runtime_v1.py
+        run: python -m py_compile recovery/lunita-custoszv9/runtime_engines_v1/engine_runtime_v1.py recovery/lunita-custoszv9/runtime_engines_v1/engine_acceptance_v1.py
       - name: Execute real E02-E15 engine acceptance tests
         working-directory: recovery/lunita-custoszv9/runtime_engines_v1
         env:
           HF_HUB_DISABLE_TELEMETRY: "1"
-        run: python -m unittest -v test_engine_runtime_v1.py
+        run: python engine_acceptance_v1.py
