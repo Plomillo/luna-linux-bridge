@@ -1,0 +1,177 @@
+name: Lunita v1.8 — Kestra evidence gate
+
+on:
+  push:
+    branches:
+      - recovery/lunita-custoszv9-operational-20261020
+    paths:
+      - "integrations/kestra/**"
+      - ".github/workflows/lunita-kestra-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lunita-kestra-gate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  kestra-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      EVIDENCE_DIR: ${{ github.workspace }}/kestra-lunita-evidence
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.ref }}
+          persist-credentials: false
+
+      - name: Validate the Kestra gate and Compose configuration
+        working-directory: integrations/kestra
+        run: |
+          set -Eeuo pipefail
+          python3 validate.py
+          docker compose -f compose.yml config --quiet
+
+      - name: Create ephemeral local credentials
+        working-directory: integrations/kestra
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          mkdir -p "$EVIDENCE_DIR"
+          python3 - <<'PY'
+          import secrets
+          from pathlib import Path
+          path = Path(".env")
+          path.write_text(
+              "KESTRA_DB_PASSWORD=" + secrets.token_hex(32) + "\n"
+              "KESTRA_ADMIN_EMAIL=kestra-ci@example.com\n"
+              "KESTRA_ADMIN_PASSWORD=" + secrets.token_hex(32) + "\n",
+              encoding="utf-8",
+          )
+          path.chmod(0o600)
+          PY
+
+      - name: Pull and start ephemeral Kestra and PostgreSQL
+        working-directory: integrations/kestra
+        run: |
+          set -Eeuo pipefail
+          docker compose -f compose.yml pull
+          docker compose -f compose.yml up -d --wait --wait-timeout 300
+
+      - name: Wait for authenticated Kestra health
+        working-directory: integrations/kestra
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          source .env
+          auth_cfg="$RUNNER_TEMP/kestra-lunita-auth"
+          printf 'user = "%s:%s"\n' "$KESTRA_ADMIN_EMAIL" "$KESTRA_ADMIN_PASSWORD" > "$auth_cfg"
+          chmod 600 "$auth_cfg"
+          ready=0
+          http_code="000"
+          for attempt in $(seq 1 60); do
+            http_code="$(curl --connect-timeout 3 --max-time 5 --config "$auth_cfg" \
+              --silent --show-error --output "$EVIDENCE_DIR/health.json" --write-out '%{http_code}' \
+              http://127.0.0.1:18081/health || true)"
+            if [ "$http_code" = "200" ] && \
+              python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if d.get("status") == "UP" else 1)' \
+              "$EVIDENCE_DIR/health.json"; then
+              ready=1
+              break
+            fi
+            sleep 5
+          done
+          if [ "$ready" -ne 1 ]; then
+            docker compose -f compose.yml ps --all > "$EVIDENCE_DIR/compose-ps.txt" 2>&1 || true
+            echo "Authenticated Kestra health did not become UP; HTTP=$http_code" >&2
+            exit 1
+          fi
+          printf '{"status":"UP","http_code":%s}\n' "$http_code" > "$EVIDENCE_DIR/kestra-health-summary.json"
+
+      - name: Import and execute the Lunita v1.8 evidence gate
+        working-directory: integrations/kestra
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          source .env
+          auth_cfg="$RUNNER_TEMP/kestra-lunita-auth"
+          printf 'user = "%s:%s"\n' "$KESTRA_ADMIN_EMAIL" "$KESTRA_ADMIN_PASSWORD" > "$auth_cfg"
+          chmod 600 "$auth_cfg"
+
+          import_http="$(curl --connect-timeout 3 --max-time 20 --config "$auth_cfg" \
+            --silent --show-error --output "$EVIDENCE_DIR/import-response.json" --write-out '%{http_code}' \
+            -X POST -H 'Content-Type: application/x-yaml' \
+            --data-binary @flows/30-lunita-v1-8-certification-gate.yml \
+            http://127.0.0.1:8080/api/v1/main/flows || true)"
+          if [ "$import_http" != "200" ] && [ "$import_http" != "201" ]; then
+            echo "Kestra flow import failed; HTTP=$import_http" >&2
+            exit 1
+          fi
+
+          execution_http="$(curl --connect-timeout 3 --max-time 20 --config "$auth_cfg" \
+            --silent --show-error --output "$EVIDENCE_DIR/execution-start.json" --write-out '%{http_code}' \
+            -X POST http://127.0.0.1:8080/api/v1/main/executions/louksna.lunita/lunita_v1_8_certification_gate || true)"
+          if [ "$execution_http" != "200" ] && [ "$execution_http" != "201" ]; then
+            echo "Kestra gate execution could not start; HTTP=$execution_http" >&2
+            exit 1
+          fi
+
+          execution_id="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["id"])' "$EVIDENCE_DIR/execution-start.json")"
+          printf '%s\n' "$execution_id" > "$EVIDENCE_DIR/execution-id.txt"
+          state="UNKNOWN"
+          for attempt in $(seq 1 90); do
+            status_http="$(curl --connect-timeout 3 --max-time 10 --config "$auth_cfg" \
+              --silent --show-error --output "$EVIDENCE_DIR/execution-status.json" --write-out '%{http_code}' \
+              "http://127.0.0.1:8080/api/v1/main/executions/$execution_id" || true)"
+            if [ "$status_http" = "200" ]; then
+              state="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); print((d.get("state") or {}).get("current","UNKNOWN"))' "$EVIDENCE_DIR/execution-status.json")"
+              case "$state" in
+                SUCCESS) break ;;
+                FAILED|KILLED|WARNING)
+                  echo "Kestra execution ended in $state" >&2
+                  exit 1
+                  ;;
+              esac
+            fi
+            sleep 2
+          done
+          if [ "$state" != "SUCCESS" ]; then
+            echo "Kestra gate did not finish successfully; state=$state" >&2
+            exit 1
+          fi
+          printf '{"execution_id":"%s","state":"%s","certification":"NOT_GRANTED"}\n' \
+            "$execution_id" "$state" > "$EVIDENCE_DIR/kestra-execution-summary.json"
+          echo "Kestra orchestration execution: SUCCESS. Product certification remains a separate gate." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Capture non-secret runtime diagnostics
+        if: always()
+        working-directory: integrations/kestra
+        run: |
+          mkdir -p "$EVIDENCE_DIR"
+          docker compose -f compose.yml ps --all > "$EVIDENCE_DIR/compose-ps.txt" 2>&1 || true
+
+      - name: Stop the ephemeral Kestra stack
+        if: always()
+        working-directory: integrations/kestra
+        run: docker compose -f compose.yml down --volumes --remove-orphans || true
+
+      - name: Remove temporary credentials
+        if: always()
+        working-directory: integrations/kestra
+        run: rm -f .env "$RUNNER_TEMP/kestra-lunita-auth"
+
+      - name: Upload Kestra execution evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lunita-kestra-gate-${{ github.run_id }}
+          path: ${{ github.workspace }}/kestra-lunita-evidence/
+          if-no-files-found: error
+          retention-days: 30
