@@ -303,10 +303,18 @@ class TargetRuntimeEvidenceGateTests(unittest.TestCase):
             "certification": "NOT_GRANTED",
             "canonical_g06_certification": "NOT_GRANTED",
             "canonical_g08_binding_mutation": False,
-            "overlay_integrity": {"status": "PASS_OVERLAY_INTEGRITY"},
+            "overlay_integrity": {
+                "status": "PASS_OVERLAY_INTEGRITY",
+                "frozen_g06_mutated": False,
+                "canonical_g08_mutated": False,
+            },
             "e04_quantization": {"status": "PASS_E04_INT8_QUALITY_GATE"},
             "qwen_e01": {"status": "PASS_E01_QWEN_INFERENCE"},
-            "engine_acceptance_tests": {"status": "PASS", "tests_run": 25, "skipped": 0},
+            "engine_acceptance_tests": {
+                "status": "PASS", "tests_run": 25, "skipped": 0,
+                "engine_ids_covered": [f"E{i:02d}" for i in range(2, 16)],
+                "command_route_matrix_test_present": True,
+            },
             "legacy_application_smokes": {
                 "status": "PASS_LEGACY_APPLICATION_SMOKES",
                 "commands": {
@@ -332,6 +340,23 @@ class TargetRuntimeEvidenceGateTests(unittest.TestCase):
             self.assertEqual("PASS_E01_QWEN_INFERENCE", result["qwen_e01"]["status"])
             self.assertEqual("PASS_E04_INT8_QUALITY_GATE", result["e04_quantization"]["status"])
             self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), result["receipt_sha256"])
+
+    def test_newest_failed_target_receipt_cannot_fall_back_to_an_older_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = pathlib.Path(tmp) / "target-receipts"
+            directory.mkdir()
+            older = directory / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_older.json"
+            newer = directory / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_newer.json"
+            older.write_text(json.dumps(self.valid_target_receipt()), encoding="utf-8")
+            newer.write_text(json.dumps({"schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0",
+                                         "status": "BLOCKED_E01_QWEN"}), encoding="utf-8")
+            import os, time
+            os.utime(older, (1000, 1000))
+            os.utime(newer, (2000, 2000))
+            with mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", directory):
+                result = lane.latest_target_runtime_acceptance()
+            self.assertEqual("BLOCKED_TARGET_RUNTIME_RECEIPT_INVALID", result["status"])
+            self.assertEqual(str(newer), result["receipt_path"])
 
     def test_target_runtime_receipt_rejects_missing_e01(self):
         with tempfile.TemporaryDirectory() as tmp:
