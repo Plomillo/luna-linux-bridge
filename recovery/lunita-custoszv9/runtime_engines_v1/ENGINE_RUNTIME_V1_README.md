@@ -21,6 +21,7 @@ This directory adds adapters for existing E01–E15 identities. It does not add,
 - E14 provenance: append-only SHA-256 hash chain.
 - E15 consensus: unanimity gate from the exact agent team assigned to the invoking command, against one evidence digest.
 - Command gateway: `engine_gateway_v1.py` exposes each engine through a validated `(command, agent team, engine)` route. It rejects agents outside the command team and engines outside that command's engine set.
+- Additive launcher beta v1.8: `lunita_beta_v1_8.py` delegates legacy v1.7 commands only after verifying the exact v1.7 launcher SHA-256; `engine-run` and `engine-status` expose the new engine runtime without replacing v1.7.
 
 
 ## Installation and validation
@@ -34,6 +35,7 @@ PYTHONPATH=vendor/python3.12/site-packages \
 LUNITA_FASTEMBED_CACHE=model-cache/fastembed \
 python engine_acceptance_v1.py
 python gateway_acceptance_v1.py
+python launcher_acceptance_v1.py
 ```
 
 The hosted test suite executes E02–E15 with actual library/model operations. E01 requires the actual Qwen GGUF and llama.cpp binaries from the target runtime; its target-specific test is skipped on hosted CI only when those external assets are absent, and must be executed on the deployed target.
