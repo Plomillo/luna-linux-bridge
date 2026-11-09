@@ -6,6 +6,5 @@ fastembed==0.9.1
 qdrant-client==1.20.0
 networkx==3.7
 rdflib==7.6.0
-owlrl==7.6.2
 sympy==1.14.0
 jsonschema==4.26.0
