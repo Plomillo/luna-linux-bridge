@@ -1,0 +1,55 @@
+{
+  "sheets": [
+    {
+      "name": "Participantes",
+      "rows": [[
+        "id_participante","edad_anios","semestre","condicion",
+        "bfi2s_i01","bfi2s_i02","bfi2s_i03","bfi2s_i04","bfi2s_i05","bfi2s_i06","bfi2s_i07","bfi2s_i08","bfi2s_i09","bfi2s_i10",
+        "bfi2s_i11","bfi2s_i12","bfi2s_i13","bfi2s_i14","bfi2s_i15","bfi2s_i16","bfi2s_i17","bfi2s_i18","bfi2s_i19","bfi2s_i20",
+        "bfi2s_i21","bfi2s_i22","bfi2s_i23","bfi2s_i24","bfi2s_i25","bfi2s_i26","bfi2s_i27","bfi2s_i28","bfi2s_i29","bfi2s_i30",
+        "responsabilidad_media","cam_rt_total_ms","cam_error_total_pct",
+        "cam_set8_rt_ms","cam_set8_error_pct","cam_set16_rt_ms","cam_set16_error_pct","cam_set32_rt_ms","cam_set32_error_pct",
+        "ensayos_validos","ensayos_omitidos","incidencia_tecnica","inclusion_final"
+      ]]
+    },
+    {
+      "name": "Ensayos_CAM",
+      "rows": [[
+        "id_participante","trial_id","tamano_conjunto","objetivo_presente",
+        "respuesta_correcta","tiempo_respuesta_ms","error","condicion","incidencia"
+      ]]
+    },
+    {
+      "name": "Diccionario",
+      "rows": [
+        ["variable","tipo","codificacion_o_unidad","regla"],
+        ["id_participante","ID","P001...; anónimo","Único; no usar nombre/RUT/correo"],
+        ["edad_anios","Continua","Años cumplidos","Solo mayores de 18"],
+        ["semestre","Ordinal","Semestre cursado","Registrar según respuesta"],
+        ["condicion","Nominal","0=control; 1=planificacion","Aleatorización 1:1"],
+        ["bfi2s_i01...bfi2s_i30","Ordinal","1 a 5","Aplicar BFI-2-S completo en español"],
+        ["responsabilidad_media","Continua","1 a 5","Media ítems 4,9,11,17R,23R,25R; inversos 6 menos respuesta"],
+        ["cam_rt_total_ms","Continua","Milisegundos","Media de respuestas correctas; no mezclar con errores"],
+        ["cam_error_total_pct","Continua","0 a 100","Porcentaje de errores"],
+        ["cam_set8/16/32_*","Continua","ms o porcentaje","Separar por tamaño de conjunto"],
+        ["ensayos_validos","Discreta","Conteo","Registrar denominador usado"],
+        ["ensayos_omitidos","Discreta","Conteo","No imputar como correctos"],
+        ["incidencia_tecnica","Texto/categoría","NO/SI + detalle separado","Documentar caída, latencia o interrupción"],
+        ["inclusion_final","Nominal","1=incluido; 0=excluido","Motivo documentado; no excluir por puntuación"]
+      ]
+    },
+    {
+      "name": "Control_calidad",
+      "rows": [
+        ["control","estado_inicial","regla"],
+        ["respuestas_reales","PENDIENTE","No incorporar filas simuladas"],
+        ["consentimiento","PENDIENTE","Debe existir antes de aplicar"],
+        ["id_unico","PENDIENTE","Sin duplicados"],
+        ["rangos_BFI2S","PENDIENTE","Todos los ítems entre 1 y 5"],
+        ["tiempos_CAM","PENDIENTE","Milisegundos positivos plausibles; revisar extremos"],
+        ["faltantes","PENDIENTE","Contabilizar y reportar, no convertir a cero"],
+        ["incidencias","PENDIENTE","Documentar errores técnicos y abandono"]
+      ]
+    }
+  ]
+}
