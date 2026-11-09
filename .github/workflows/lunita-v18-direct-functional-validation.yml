@@ -298,6 +298,8 @@ jobs:
           if [ "$(id -u)" -ne 0 ]; then sudo -n true; fi
           printf 'LUNITA_ROOTFS_REAL=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
           printf 'LUNITA_ROOT=%s\n' "$ROOTFS/opt/lunita" >> "$GITHUB_ENV"
+          printf 'LUNITA_XDG_STATE_HOME=%s\n' "$RUNNER_TEMP/lunita-xdg" >> "$GITHUB_ENV"
+          printf 'LUNITA_CHECKPOINT_DIR=\n' >> "$GITHUB_ENV"
           printf 'FLATPAK_SYSTEM_DIR=%s\n' "$ROOTFS/var/lib/flatpak" >> "$GITHUB_ENV"
       - name: Apply the overlay only when it is absent and the candidate is clean
         shell: bash
@@ -319,11 +321,12 @@ jobs:
             test -n "$ENGINE_FILE"
             SOURCE_DIR="$(dirname "$ENGINE_FILE")"
             CHECKPOINT_DIR="$RUNNER_TEMP/lunita-checkpoint-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-            run_root python3.12 recovery/lunita-custoszv9/runtime_engines_v1/checkpoint_v1.py \
+            PYTHON312="$(command -v python3.12)"
+            run_root "$PYTHON312" recovery/lunita-custoszv9/runtime_engines_v1/checkpoint_v1.py \
               --rootfs "$LUNITA_ROOTFS_REAL" \
               --checkpoint-dir "$CHECKPOINT_DIR" \
               --candidate-id G06_REBUILD_CANDIDATE_R1
-            run_root python3.12 recovery/lunita-custoszv9/runtime_engines_v1/apply_engine_overlay_v1.py \
+            run_root "$PYTHON312" recovery/lunita-custosz9/runtime_engines_v1/apply_engine_overlay_v1.py \
               --rootfs "$LUNITA_ROOTFS_REAL" \
               --source-dir "$SOURCE_DIR" \
               --checkpoint-receipt "$CHECKPOINT_DIR/CHECKPOINT_RECEIPT.json" \
@@ -336,8 +339,8 @@ jobs:
         run: |
           set -euo pipefail
           OVERLAY="$LUNITA_ROOT/engines/runtime_engines_v1"
-          export XDG_STATE_HOME="$RUNNER_TEMP/lunita-xdg"
-          export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$XDG_STATE_HOME/lunita/runtime_validation"
+          export XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME"
+          export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$LUNITA_XDG_STATE_HOME/lunita/runtime_validation"
           export PYTHONPATH="$OVERLAY/vendor/python3.12/site-packages:$OVERLAY"
           export LUNITA_FASTEMBED_CACHE="$OVERLAY/model-cache/fastembed"
           export LUNITA_VECTOR_DB_PATH="$RUNNER_TEMP/lunita-target-vectors"
@@ -353,13 +356,14 @@ jobs:
           CERT_STATE="$RUNNER_TEMP/lunita-stability-state"
           CERT_CANDIDATE="$RUNNER_TEMP/lunita-stability-candidate"
           mkdir -p "$CERT_STATE" "$CERT_CANDIDATE"
+          export XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME"
           export LUNITA_CERTIFICATION_PROFILE=V1_8_DIRECT
           export LUNITA_STATE_DIR="$CERT_STATE"
           export LUNITA_OUTPUT_DIR="$CERT_STATE/worker_outputs"
           export LUNITA_EVIDENCE_DIR="$CERT_STATE/lunita_certification_evidence"
           export LUNITA_CANDIDATE_DIR="$CERT_CANDIDATE"
           export LUNITA_ROOTFS="$LUNITA_ROOTFS_REAL"
-          export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$XDG_STATE_HOME/lunita/runtime_validation"
+          export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$LUNITA_XDG_STATE_HOME/lunita/runtime_validation"
           export FLATPAK_SYSTEM_DIR="$LUNITA_ROOTFS_REAL/var/lib/flatpak"
           export QT_QPA_PLATFORM=offscreen
           LANE="recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py"
@@ -413,10 +417,10 @@ jobs:
             if [ "$(id -u)" -eq 0 ]; then "$@"; else sudo -n "$@"; fi
           }
           for PATH_IN in \
-            "$XDG_STATE_HOME/lunita/runtime_validation" \
-            "$LUNITA_ROOT/engines/runtime_engines_v1/OVERLAY_APPLY_RECEIPT.json" \
-            "$LUNITA_CHECKPOINT_DIR"; do
-            if [ -e "$PATH_IN" ]; then
+            "${LUNITA_XDG_STATE_HOME:-}/lunita/runtime_validation" \
+            "${LUNITA_ROOT:-}/engines/runtime_engines_v1/OVERLAY_APPLY_RECEIPT.json" \
+            "${LUNITA_CHECKPOINT_DIR:-}"; do
+            if [ -n "$PATH_IN" ] && [ -e "$PATH_IN" ]; then
               run_root cp -a "$PATH_IN" "$OUT/"
             fi
           done
