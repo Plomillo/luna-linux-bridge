@@ -102,8 +102,10 @@ jobs:
         env:
           HF_HUB_DISABLE_TELEMETRY: "1"
           LUNITA_FASTEMBED_CACHE: ${{ runner.temp }}/lunita-fastembed-cache
+          HF_HOME: ${{ runner.temp }}/lunita-fastembed-cache
+          HF_HUB_CACHE: ${{ runner.temp }}/lunita-fastembed-cache/hub
         run: |
-          mkdir -p "$LUNITA_FASTEMBED_CACHE"
+          mkdir -p "$LUNITA_FASTEMBED_CACHE" "$HF_HUB_CACHE"
           python engine_acceptance_v1.py
           python - <<'PY'
           import os
@@ -139,9 +141,11 @@ jobs:
                       if item.is_symlink():
                           resolved = item.resolve(strict=True)
                           try:
-                              resolved.relative_to(repository.resolve())
+                              resolved.relative_to(source)
                           except ValueError as exc:
-                              raise SystemExit(f"Cache symlink escapes repository: {item}") from exc
+                              raise SystemExit(f"Cache symlink escapes approved cache root: {item}") from exc
+                          if not resolved.is_file():
+                              raise SystemExit(f"Cache symlink target is not a regular file: {item}")
                           source_file = resolved
                       elif item.is_file():
                           source_file = item
