@@ -23,8 +23,8 @@ VENDOR_SITE_PACKAGES = ENGINE_DIR / "vendor" / "python3.12" / "site-packages"
 if VENDOR_SITE_PACKAGES.is_dir() and str(VENDOR_SITE_PACKAGES) not in sys.path:
     sys.path.insert(0, str(VENDOR_SITE_PACKAGES))
 
-EMBEDDING_MODEL = "minishlab/potion-multilingual-128M"
-EMBEDDING_DIMENSION = 256
+EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+EMBEDDING_DIMENSION = 384
 SPACY_MODEL = "es_core_news_sm"
 CANDIDATE_ROOT = pathlib.Path("/opt/lunita")
 DEFAULT_MODEL = CANDIDATE_ROOT / "brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf"
@@ -364,7 +364,7 @@ class RAGIndex:
             vectors = [[float(value) for value in vector] for vector in document_vectors]
             self.embedding_mode = "PRECOMPUTED_VECTOR_INPUT"
         if len(vectors) != len(self.texts) or any(len(vector) != EMBEDDING_DIMENSION for vector in vectors):
-            raise EngineContractError("RAG requires one 256-dimensional vector per source")
+            raise EngineContractError("RAG requires one 384-dimensional vector per source")
         if not all(math.isfinite(value) for vector in vectors for value in vector):
             raise EngineContractError("RAG vectors must contain finite values")
         self.index = VectorIndex(storage_path=storage_path)
@@ -384,7 +384,7 @@ class RAGIndex:
             query_values = [float(value) for value in query_vector]
             query_mode = "PRECOMPUTED_QUERY_VECTOR"
         if len(query_values) != EMBEDDING_DIMENSION or not all(math.isfinite(value) for value in query_values):
-            raise EngineContractError("RAG query vector must be finite and 256-dimensional")
+            raise EngineContractError("RAG query vector must be finite and 384-dimensional")
         hits = self.index.search(query_values, limit=limit)
         return {
             "engine_id": "E03", "query_sha256": _sha256_bytes(query.encode("utf-8")),
