@@ -449,3 +449,112 @@ class StableReleaseReceiptTests(unittest.TestCase):
             self.assertEqual("REVALIDATION_REQUIRED", pointer["status"])
             self.assertEqual("LUNITA_STABLE_1_8", pointer["release_name"])
             self.assertEqual("CERTIFIED_STABLE_RELEASE", json.loads(original_bytes)["status"])
+
+class DirectV18CertificationProfileTests(unittest.TestCase):
+    @staticmethod
+    def frozen_manifest():
+        return {
+            "schema": "LUNITA_CANDIDATE_FREEZE/1.0",
+            "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+            "version": "1.8.0",
+            "freeze_status": "FROZEN_CANDIDATE_NOT_CERTIFIED",
+            "preserved_baseline": {
+                "frozen_g06_mutated": False,
+                "canonical_g08_bindings_mutated": False,
+                "legacy_v1_7_launcher_replaced": False,
+            },
+        }
+
+    def test_direct_independent_report_uses_v18_receipt_without_v17_mission_or_report(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            rootfs = base / "rootfs"
+            launcher = rootfs / "opt/lunita/agent/lunita.py"
+            launcher.parent.mkdir(parents=True)
+            launcher.write_bytes(b"pinned legacy launcher")
+            manifest = base / "LUNITA_V1_8_CANDIDATE_FREEZE.json"
+            manifest.write_text(json.dumps(self.frozen_manifest()), encoding="utf-8")
+            receipt = base / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_test.json"
+            receipt.write_text(json.dumps({"schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0"}), encoding="utf-8")
+            independent = base / "independent.json"
+            independent.write_text(json.dumps({
+                "checks": {"legacy_v17_unbound_pass": {"status": "PASS", "returncode": 0}}
+            }), encoding="utf-8")
+            target = {
+                "status": "PASS_TARGET_RUNTIME_ACCEPTANCE",
+                "receipt_path": str(receipt),
+                "receipt_sha256": lane.sha_file(receipt),
+                "overlay_integrity": {
+                    "status": "PASS_OVERLAY_INTEGRITY",
+                    "legacy_launcher_sha256": lane.sha_file(launcher),
+                    "frozen_g06_mutated": False,
+                    "canonical_g08_mutated": False,
+                },
+                "e04_quantization": {"status": "PASS_E04_INT8_QUALITY_GATE"},
+                "qwen_e01": {"status": "PASS_E01_QWEN_INFERENCE"},
+                "engine_acceptance_tests": {"tests_run": 25},
+                "legacy_application_smokes": {"status": "PASS_LEGACY_APPLICATION_SMOKES"},
+            }
+            with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
+                 mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
+                 mock.patch.object(lane, "ROOTFS", rootfs), \
+                 mock.patch.object(lane, "RUNTIME_REPORT", base / "missing-v17-runtime.json"), \
+                 mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
+                 mock.patch.object(lane, "MISSION_PATH", base / "missing-MISION1.txt"), \
+                 mock.patch.object(lane, "latest_target_runtime_acceptance", return_value=target):
+                report = lane.update_independent_report(
+                    None, {"status": "BLOCKED_JASP_PACKAGED_FIXTURE_NONREGRESSION", "cases": {}}
+                )
+            checks = report["checks"]
+            self.assertEqual("PASS", checks["candidate_manifest_identity_sha256"]["status"])
+            self.assertEqual("PASS", checks["runtime_report_and_launcher_identity"]["status"])
+            self.assertEqual("PASS", checks["target_v1_8_runtime_acceptance_e01_e15_int8"]["status"])
+            self.assertNotIn("MISION1_identity_sha256", checks)
+            self.assertNotIn("legacy_v17_unbound_pass", checks)
+            self.assertEqual(str(receipt), report["runtime_report_path"])
+            self.assertEqual(lane.sha_file(receipt), report["runtime_report_sha256"])
+            self.assertEqual("V1_8_DIRECT", report["certification_profile"])
+            self.assertEqual("BLOCKED_REQUIRED_REGRESSION_OR_INVENTORY", report["status"])
+
+    def test_direct_stable_gate_uses_v18_receipt_and_still_requires_s32(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            receipts = base / "target-receipts"
+            receipts.mkdir()
+            receipt = receipts / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_test.json"
+            receipt.write_text(json.dumps(TargetRuntimeEvidenceGateTests.valid_target_receipt()), encoding="utf-8")
+            manifest = base / "LUNITA_V1_8_CANDIDATE_FREEZE.json"
+            manifest.write_text(json.dumps(self.frozen_manifest()), encoding="utf-8")
+            independent = base / "independent.json"
+            independent.write_text(json.dumps({
+                "schema": "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0",
+                "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+                "certification_profile": "V1_8_DIRECT",
+                "candidate_manifest_sha256": lane.sha_file(manifest),
+                "mission_sha256": None,
+                "status": "PASS_INDEPENDENT_VALIDATION",
+                "runtime_report_path": str(receipt),
+                "runtime_report_sha256": lane.sha_file(receipt),
+                "checks": {
+                    "target_v1_8_runtime_acceptance_e01_e15_int8": {
+                        "status": "PASS", "returncode": 0,
+                        "receipt_path": str(receipt), "receipt_sha256": lane.sha_file(receipt),
+                    },
+                    "rootfs": {"status": "PASS", "returncode": 0},
+                    "jasp": {"status": "PASS", "returncode": 0},
+                },
+                "frozen_g06_mutated": False,
+                "canonical_g08_bindings_mutated": False,
+            }), encoding="utf-8")
+            out = base / "outputs"
+            out.mkdir()
+            with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
+                 mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
+                 mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", receipts), \
+                 mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
+                 mock.patch.object(lane, "RUNTIME_REPORT", base / "missing-v17-runtime.json"), \
+                 mock.patch.object(lane, "OUT", out):
+                result = lane.stable_release_gate()
+            self.assertEqual("WAITING_FOR_S32_BOUND_CERTIFICATION_RECEIPT", result["status"])
+            self.assertEqual("NOT_GRANTED", result["certification"])
+
