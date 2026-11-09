@@ -8,7 +8,7 @@ This directory adds adapters for existing E01–E15 identities. It does not add,
 - E01 LLM: existing candidate-rootfs Qwen3-0.6B GGUF through the bundled llama.cpp runtime; no placeholder model.
 - E02 NLP: spaCy Spanish small pipeline.
 - E03 RAG: source-bound retrieval/context assembly, delegating response generation to E01.
-- E04 embeddings: FastEmbed `minishlab/potion-multilingual-128M`, 256-dimensional multilingual static embeddings (not contextual token embeddings).
+- E04 embeddings: FastEmbed `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, 384-dimensional multilingual transformer embeddings. The official FastEmbed catalogue lists it at approximately 0.220 GB and Apache-2.0.
 - E05 vector search: Qdrant embedded local index, memory or persistent path.
 - E06 knowledge graph: NetworkX directed multigraph.
 - E07 RDF: RDFLib parsing, serialization and SPARQL.
