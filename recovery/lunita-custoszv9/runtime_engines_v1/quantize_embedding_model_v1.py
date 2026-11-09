@@ -218,8 +218,30 @@ def normalize_quantization_scales(graph_proto):
     return converted
 
 converted_fp16_scales = normalize_quantization_scales(graph.graph)
-if not converted_fp16_scales:
-    raise RuntimeError("Quantized graph contained no quantization scales; expected FP16 scale normalization")
+
+def collect_fp16_quantization_scales(graph_proto):
+    initializers = {item.name: item for item in graph_proto.initializer}
+    found = []
+    quant_ops = {"QuantizeLinear", "DequantizeLinear", "QLinearMatMul", "QLinearConv"}
+    for node in graph_proto.node:
+        if node.op_type in quant_ops:
+            scale_input_indices = (1,) if node.op_type in {"QuantizeLinear", "DequantizeLinear"} else (1, 4, 6)
+            for index in scale_input_indices:
+                if len(node.input) > index:
+                    scale = initializers.get(node.input[index])
+                    if scale is not None and scale.data_type == TensorProto.FLOAT16:
+                        found.append(scale.name)
+        for attribute in node.attribute:
+            if attribute.type == onnx.AttributeProto.GRAPH:
+                found.extend(collect_fp16_quantization_scales(attribute.g))
+            elif attribute.type == onnx.AttributeProto.GRAPHS:
+                for nested in attribute.graphs:
+                    found.extend(collect_fp16_quantization_scales(nested))
+    return found
+
+remaining_fp16_scales = collect_fp16_quantization_scales(graph.graph)
+if remaining_fp16_scales:
+    raise RuntimeError("FP16 quantization scales remain: " + ",".join(remaining_fp16_scales[:20]))
 onnx.save_model(graph, model_out)
 if not graph.graph.node or not graph.graph.input or not graph.graph.output:
     raise RuntimeError("Quantized ONNX graph has missing nodes, inputs, or outputs")
@@ -257,17 +279,6 @@ except Exception as exc:
         raise
     checker_status = "KNOWN_ONNX_SCHEMA_REGISTRY_GAP_LAYER_NORMALIZATION_OPSET11"
 
-if converted_fp16_scales:
-    remaining_fp16_scales = []
-    current_initializers = {item.name: item for item in graph.graph.initializer}
-    for node in graph.graph.node:
-        if node.op_type in {"QuantizeLinear", "DequantizeLinear"} and len(node.input) > 1:
-            scale = current_initializers.get(node.input[1])
-            if scale is not None and scale.data_type == TensorProto.FLOAT16:
-                remaining_fp16_scales.append(scale.name)
-    if remaining_fp16_scales:
-        raise RuntimeError("FP16 quantization scales remain: " + ",".join(remaining_fp16_scales[:20]))
-
 if not int8_initializers:
     raise RuntimeError("Quantized model contains no INT8 initializer tensors")
 if not quantized_operators:
@@ -287,6 +298,8 @@ report = {
     "checker_status": checker_status,
     "checker_error": checker_error,
     "source_fp16_to_fp32_conversion_count": fp32_conversion_count,
+    "quantization_scale_fp16_to_fp32_count": len(converted_fp16_scales),
+    "remaining_fp16_quantization_scales": len(remaining_fp16_scales),
     "opset_imports": opset_imports,
     "layer_normalization_node_count": len(layer_norm_nodes),
     "int8_initializer_count": len(int8_initializers),
