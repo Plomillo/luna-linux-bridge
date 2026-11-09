@@ -1,0 +1,47 @@
+{
+  "schema": "LUNITA_OVERLAY_SIZE_EVIDENCE/1.0",
+  "observed_at_utc": "2026-11-09T06:27:22Z",
+  "repository": "Plomillo/luna-linux-bridge",
+  "source_branch": "recovery/lunita-custoszv9-operational-20261020",
+  "source_commit": "5d5e5bc124bf2ab992d35b504e43bf09c9ba3b9f",
+  "workflow": {
+    "name": "Lunita CUSTOSZ V9 Recovery Contract",
+    "run_id": 42572736545,
+    "conclusion": "success",
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/42572736545"
+  },
+  "measured_overlay": {
+    "raw_tree_bytes_before_upload_exclusions": 367685812,
+    "raw_tree_mib_before_upload_exclusions": 350.65,
+    "conservative_ceiling_bytes": 479000000,
+    "headroom_bytes_to_conservative_ceiling": 111314188,
+    "ci_budget_bytes": 503316480,
+    "ci_budget_mib": 480,
+    "result": "PASS_CONSERVATIVE_UPPER_BOUND",
+    "notes": [
+      "The raw-tree measurement includes generated __pycache__/bytecode that the upload step excludes, so it is a conservative upper bound for the uploaded overlay payload.",
+      "This measurement covers only recovery/lunita-custoszv9/runtime_engines_v1; it is not a complete candidate-rootfs or installed-system census."
+    ]
+  },
+  "uploaded_artifact": {
+    "name": "lunita-engine-overlay-v1-py312",
+    "artifact_id": 13654460482,
+    "zip_bytes": 154589937,
+    "zip_sha256": "221c624fede0713f8a33736baa0a65d33dc59129bf261a7b9f5e92c75d3d2f22",
+    "uploaded_file_count": 3022,
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/42572736545/artifacts/13654460482"
+  },
+  "scope_exclusions": [
+    "/opt/lunita/brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf",
+    "/opt/lunita/brain/runtime",
+    "The complete candidate rootfs and its other pre-existing payloads"
+  ],
+  "target_integration_status": "NOT_EXECUTED",
+  "target_runtime_acceptance_status": "NOT_EXECUTED",
+  "jasp_regression_status": "NOT_EXECUTED",
+  "independent_rootfs_inventory_status": "BLOCKED_NOT_EXECUTED",
+  "s32_status": "NOT_ISSUED",
+  "g23_status": "NOT_GRANTED",
+  "g24_status": "NOT_GRANTED",
+  "certification": "NOT_GRANTED"
+}
