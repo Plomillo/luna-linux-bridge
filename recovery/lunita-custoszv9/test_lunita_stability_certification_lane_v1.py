@@ -174,14 +174,28 @@ class CertificationGateTests(unittest.TestCase):
             runtime.write_text(json.dumps({"schema": "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0",
                                             "candidate_id": "G06_REBUILD_CANDIDATE_R1",
                                             "status": "PASS_RUNTIME_TESTS", "all_tests_pass": True}), encoding="utf-8")
+            target_receipt = candidate / "target-v1.8-runtime.json"
+            target_receipt.write_text(json.dumps({
+                "schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0",
+                "status": "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED",
+                "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+                "worker_required": "CUSTOSZ_V7", "worker_version": "CUSTOSZ_V7",
+                "certification": "NOT_GRANTED",
+            }), encoding="utf-8")
             independent = candidate / "independent.json"
             independent.write_text(json.dumps({
                 "schema": "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0",
                 "candidate_id": "G06_REBUILD_CANDIDATE_R1", "mission_sha256": lane.MISSION_SHA,
                 "status": "PASS_INDEPENDENT_VALIDATION",
                 "runtime_report_sha256": lane.sha_file(runtime),
-                "checks": {"rootfs": {"status": "PASS", "returncode": 0},
-                           "jasp": {"status": "PASS", "returncode": 0}},
+                "checks": {
+                    "rootfs": {"status": "PASS", "returncode": 0},
+                    "jasp": {"status": "PASS", "returncode": 0},
+                    "target_v1_8_runtime_acceptance_e01_e15_int8": {
+                        "status": "PASS", "receipt_path": str(target_receipt),
+                        "receipt_sha256": lane.sha_file(target_receipt),
+                    },
+                },
                 "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
             }), encoding="utf-8")
             with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "RUNTIME_REPORT", runtime), \
