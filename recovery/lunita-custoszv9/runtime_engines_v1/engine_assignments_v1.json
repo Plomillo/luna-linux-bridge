@@ -14,154 +14,76 @@
     "E01": {
       "name": "LLM",
       "implementation": "Existing Qwen3-0.6B GGUF via llama.cpp",
-      "agents": [
-        "Luna",
-        "Josefina",
-        "Katya"
-      ],
       "cfe_family": "CFE001-CFE010"
     },
     "E02": {
       "name": "NLP",
       "implementation": "spaCy Spanish pipeline es_core_news_sm",
-      "agents": [
-        "Luna",
-        "Josefina",
-        "Katya"
-      ],
       "cfe_family": "CFE001-CFE010"
     },
     "E03": {
       "name": "RAG",
       "implementation": "Source-bound retrieval and answer-context assembly",
-      "agents": [
-        "Luna",
-        "Josefina",
-        "Katya",
-        "Ancapi"
-      ],
       "cfe_family": "CFE011-CFE020"
     },
     "E04": {
       "name": "EMBEDDINGS",
       "implementation": "FastEmbed potion-multilingual-128M, 256-dimensional static embeddings",
-      "agents": [
-        "Luna",
-        "Josefina",
-        "Katya"
-      ],
       "cfe_family": "CFE011-CFE020"
     },
     "E05": {
       "name": "VECTOR_SEARCH",
       "implementation": "Qdrant local vector index/search",
-      "agents": [
-        "Luna",
-        "Josefina",
-        "Katya",
-        "Ancapi"
-      ],
       "cfe_family": "CFE011-CFE020"
     },
     "E06": {
       "name": "KNOWLEDGE_GRAPH",
       "implementation": "NetworkX directed knowledge graph",
-      "agents": [
-        "Luna",
-        "Ancapi"
-      ],
       "cfe_family": "CFE021-CFE030"
     },
     "E07": {
       "name": "RDF",
       "implementation": "RDFLib graph parsing, serialization and SPARQL",
-      "agents": [
-        "Luna",
-        "Ancapi"
-      ],
       "cfe_family": "CFE021-CFE030"
     },
     "E08": {
       "name": "OWL",
       "implementation": "RDFLib OWL vocabulary and ontology profile validation",
-      "agents": [
-        "Luna",
-        "Ancapi"
-      ],
       "cfe_family": "CFE031-CFE040"
     },
     "E09": {
       "name": "SEMANTIC_INFERENCE",
       "implementation": "OWL 2 RL deductive closure and entailment",
-      "agents": [
-        "Luna",
-        "Josefina",
-        "Katya",
-        "Ancapi"
-      ],
       "cfe_family": "CFE031-CFE040"
     },
     "E10": {
       "name": "RULE_ENGINE",
       "implementation": "Deterministic allow-listed fact/rule evaluator; no eval/exec",
-      "agents": [
-        "Luna",
-        "Josefina",
-        "Ancapi"
-      ],
       "cfe_family": "CFE041-CFE050"
     },
     "E11": {
       "name": "HERMENEUTIC",
       "implementation": "Source-preserving staged interpretation workflow with contextual gates",
-      "agents": [
-        "Luna",
-        "Josefina",
-        "Katya"
-      ],
       "cfe_family": "CFE051-CFE060"
     },
     "E12": {
       "name": "FORMALIZATION",
       "implementation": "Structured expression AST to SymPy",
-      "agents": [
-        "Luna",
-        "Josefina",
-        "Katya",
-        "Ancapi"
-      ],
       "cfe_family": "CFE051-CFE060"
     },
     "E13": {
       "name": "VALIDATION",
       "implementation": "JSON Schema Draft 2020-12 validation",
-      "agents": [
-        "Luna",
-        "Josefina",
-        "Katya",
-        "Ancapi"
-      ],
       "cfe_family": "CFE041-CFE050"
     },
     "E14": {
       "name": "PROVENANCE",
       "implementation": "SHA-256 event chain and integrity verification",
-      "agents": [
-        "Luna",
-        "Josefina",
-        "Ancapi"
-      ],
       "cfe_family": "CFE061-CFE070"
     },
     "E15": {
       "name": "CONSENSUS",
       "implementation": "Assigned-agent unanimous evidence-bound decision gate",
-      "agents": [
-        "Luna",
-        "Josefina",
-        "Katya",
-        "Ancapi"
-      ],
       "cfe_family": "CFE071-CFE074"
     }
   },
@@ -305,7 +227,9 @@
     "no_silent_reassignment": true,
     "luna_mandatory_in_every_command": true,
     "registry_declaration_is_not_runtime_evidence": true,
-    "this_candidate_certifies_canonical_architecture": false
+    "this_candidate_certifies_canonical_architecture": false,
+    "direct_agent_to_engine_assignment": "NOT_DEFINED_IN_CANONICAL_SPEC",
+    "command_team_routing": "CANONICAL_AGENT_TEAM_AND_ENGINE_SET_VALIDATED_PER_COMMAND"
   },
   "command_agents": {
     "/help": [
@@ -365,5 +289,223 @@
       "Luna",
       "Ancapi"
     ]
+  },
+  "command_routes": {
+    "/help": {
+      "agents": [
+        "Luna"
+      ],
+      "engines": [
+        "E13",
+        "E14",
+        "E15"
+      ]
+    },
+    "/play PT": {
+      "agents": [
+        "Luna",
+        "Katya"
+      ],
+      "engines": [
+        "E01",
+        "E02",
+        "E11",
+        "E12",
+        "E13"
+      ]
+    },
+    "/play PA": {
+      "agents": [
+        "Luna",
+        "Ancapi"
+      ],
+      "engines": [
+        "E06",
+        "E07",
+        "E08",
+        "E09",
+        "E10",
+        "E12",
+        "E13",
+        "E14"
+      ]
+    },
+    "/play DCI": {
+      "agents": [
+        "Luna",
+        "Josefina"
+      ],
+      "engines": [
+        "E03",
+        "E04",
+        "E05",
+        "E09",
+        "E11",
+        "E12",
+        "E13",
+        "E14"
+      ]
+    },
+    "/play DCIL": {
+      "agents": [
+        "Luna",
+        "Josefina",
+        "Katya"
+      ],
+      "engines": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E09",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
+    },
+    "/play traductor": {
+      "agents": [
+        "Luna",
+        "Katya"
+      ],
+      "engines": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
+    },
+    "/play e": {
+      "agents": [
+        "Luna",
+        "Josefina"
+      ],
+      "engines": [
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
+    },
+    "/play ema": {
+      "agents": [
+        "Luna",
+        "Josefina",
+        "Katya"
+      ],
+      "engines": [
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
+    },
+    "/play p": {
+      "agents": [
+        "Luna",
+        "Ancapi"
+      ],
+      "engines": [
+        "E10",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
+    },
+    "/play c": {
+      "agents": [
+        "Luna",
+        "Katya"
+      ],
+      "engines": [
+        "E01",
+        "E02",
+        "E09",
+        "E12",
+        "E13",
+        "E15"
+      ]
+    },
+    "/play cp": {
+      "agents": [
+        "Luna",
+        "Josefina",
+        "Katya"
+      ],
+      "engines": [
+        "E03",
+        "E05",
+        "E06",
+        "E09",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
+    },
+    "/play MA": {
+      "agents": [
+        "Luna"
+      ],
+      "engines": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E08",
+        "E09",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
+    },
+    "/play H": {
+      "agents": [
+        "Luna",
+        "Josefina"
+      ],
+      "engines": [
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
+    },
+    "/play AE": {
+      "agents": [
+        "Luna",
+        "Ancapi"
+      ],
+      "engines": [
+        "E06",
+        "E07",
+        "E08",
+        "E09",
+        "E10",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
+    }
   }
 }
