@@ -296,6 +296,7 @@ def run(cache: pathlib.Path, pythonpath: str) -> dict[str, Any]:
                 "status": "PASS_INT8_QUANTIZATION_MEASURED",
                 "model_id": MODEL_ID,
                 "model_file": "model_optimized.onnx",
+                "model_cache_relative_path": model.relative_to(cache).as_posix(),
                 "quantization": "ONNX_RUNTIME_DYNAMIC_QINT8_PER_CHANNEL",
                 "original_sha256": original_sha,
                 "quantized_sha256": quantized_sha,
@@ -320,15 +321,32 @@ def run(cache: pathlib.Path, pythonpath: str) -> dict[str, Any]:
                 "certification": "NOT_GRANTED",
             }
             payload = json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
-            fd = os.open(receipt_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+            receipt_temp = cache / f".{receipt_path.name}.{os.getpid()}.tmp"
+            fd = os.open(receipt_temp, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
             try:
-                os.write(fd, payload.encode("utf-8"))
+                view = memoryview(payload.encode("utf-8"))
+                while view:
+                    written = os.write(fd, view)
+                    if written <= 0:
+                        raise OSError("Short write while persisting E04 quantization receipt")
+                    view = view[written:]
                 os.fsync(fd)
+            except Exception:
+                receipt_temp.unlink(missing_ok=True)
+                raise
             finally:
                 os.close(fd)
+            try:
+                os.link(receipt_temp, receipt_path)
+            except Exception:
+                receipt_temp.unlink(missing_ok=True)
+                raise
+            receipt_temp.unlink()
             return receipt
         except Exception:
             shutil.copy2(backup, model)
+            if sha256_file(model) != original_sha:
+                raise QuantizationError("E04 rollback failed to restore the exact original ONNX model digest")
             raise
 
 
