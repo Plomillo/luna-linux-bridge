@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import tempfile
 import unittest
 
 import engine_runtime_v1 as engine
@@ -103,6 +104,38 @@ class RealRuntimeEngineTests(unittest.TestCase):
             self.assertTrue(hits[0]["source_sha256"])
         finally:
             index.close()
+
+    def test_e05_persistent_collection_reuses_only_matching_schema(self):
+        with tempfile.TemporaryDirectory(prefix="lunita-e05-qdrant-") as temporary:
+            first = engine.VectorIndex(storage_path=temporary, collection="e05_persistent_test")
+            try:
+                vector = [0.0] * engine.EMBEDDING_DIMENSION
+                vector[0] = 1.0
+                first.upsert(["persistent-1"], ["persisted evidence"], [vector])
+            finally:
+                first.close()
+            second = engine.VectorIndex(storage_path=temporary, collection="e05_persistent_test")
+            try:
+                hits = second.search(vector, limit=1)
+                self.assertEqual("persistent-1", hits[0]["source_id"])
+            finally:
+                second.close()
+
+    def test_e03_rag_deletes_its_scratch_collection_after_close(self):
+        with tempfile.TemporaryDirectory(prefix="lunita-e03-rag-") as temporary:
+            rag = engine.RAGIndex(
+                [{"source_id": "rag-1", "text": "La fuente queda vinculada por SHA-256."}],
+                storage_path=temporary,
+            )
+            collection = rag.index.collection
+            self.assertTrue(rag.index.client.collection_exists(collection))
+            rag.close()
+            from qdrant_client import QdrantClient
+            verifier = QdrantClient(path=temporary)
+            try:
+                self.assertFalse(verifier.collection_exists(collection))
+            finally:
+                verifier.close()
 
     def test_e03_rag_returns_source_bound_context(self):
         rag = engine.RAGIndex([
