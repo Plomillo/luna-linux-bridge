@@ -17,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: lunita-custoszv9-recovery-contract-\${{ github.ref }}
+  group: lunita-custoszv9-recovery-contract-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
