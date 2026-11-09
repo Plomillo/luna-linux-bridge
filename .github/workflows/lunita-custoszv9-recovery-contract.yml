@@ -155,6 +155,32 @@ jobs:
           print(f"MATERIALIZED_MODEL_FILES={copied_files}")
           print(f"MATERIALIZED_MODEL_BYTES={copied_bytes}")
           PY
+      - name: Install isolated ONNX quantization tool
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/onnx-quant-tools"
+          python -m pip install --disable-pip-version-check --only-binary=:all: \
+            --no-compile --target "$RUNNER_TEMP/onnx-quant-tools" "onnx==1.19.1"
+      - name: Quantize E04 embedding ONNX and enforce semantic quality
+        working-directory: recovery/lunita-custoszv9/runtime_engines_v1
+        env:
+          PYTHONPATH: ${{ runner.temp }}/onnx-quant-tools:${{ github.workspace }}/recovery/lunita-custoszv9/runtime_engines_v1/vendor/python3.12/site-packages
+          LUNITA_FASTEMBED_CACHE: ${{ github.workspace }}/recovery/lunita-custoszv9/runtime_engines_v1/model-cache/fastembed
+          HF_HOME: ${{ github.workspace }}/recovery/lunita-custoszv9/runtime_engines_v1/model-cache/fastembed
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          HF_HUB_DISABLE_TELEMETRY: "1"
+        run: python quantize_embedding_model_v1.py
+      - name: Re-run E02-E15 acceptance against measured INT8 E04 model
+        working-directory: recovery/lunita-custoszv9/runtime_engines_v1
+        env:
+          PYTHONPATH: ${{ github.workspace }}/recovery/lunita-custoszv9/runtime_engines_v1/vendor/python3.12/site-packages
+          LUNITA_FASTEMBED_CACHE: ${{ github.workspace }}/recovery/lunita-custoszv9/runtime_engines_v1/model-cache/fastembed
+          LUNITA_VECTOR_DB_PATH: ${{ runner.temp }}/lunita-int8-qdrant
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          HF_HUB_DISABLE_TELEMETRY: "1"
+        run: python engine_acceptance_v1.py
       - name: Diagnose overlay size by package and largest files
         shell: bash
         run: |
