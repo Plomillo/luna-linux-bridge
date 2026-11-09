@@ -17,6 +17,7 @@ import uuid
 import sys
 from collections import deque
 from fractions import Fraction
+from functools import lru_cache
 from importlib import metadata
 from typing import Any, Iterable, Mapping, Sequence
 
