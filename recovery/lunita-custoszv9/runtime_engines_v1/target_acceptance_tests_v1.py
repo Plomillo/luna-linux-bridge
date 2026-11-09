@@ -76,7 +76,6 @@ class TargetOverlayAcceptanceTests(unittest.TestCase):
             "schema": "LUNITA_ADDITIVE_ENGINE_OVERLAY_RECEIPT/1.0",
             "status": "APPLIED_ADDITIVELY_NOT_CERTIFIED",
             "candidate_id": "G06_REBUILD_CANDIDATE_R1",
-            "worker_version": "CUSTOSZ_V7",
             "certification": "NOT_GRANTED",
             "launcher_sha256": self.legacy_hash,
             "files": files,
