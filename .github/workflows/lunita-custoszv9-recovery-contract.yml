@@ -109,16 +109,67 @@ jobs:
           import os
           import pathlib
           import shutil
-          source = pathlib.Path(os.environ["LUNITA_FASTEMBED_CACHE"])
+          source = pathlib.Path(os.environ["LUNITA_FASTEMBED_CACHE"]).resolve(strict=True)
           destination = pathlib.Path("model-cache/fastembed")
           if destination.exists():
               raise SystemExit("Refusing to overwrite existing packaged model cache")
-          destination.parent.mkdir(parents=True, exist_ok=True)
-          shutil.copytree(source, destination, symlinks=False)
+          destination.mkdir(parents=True, exist_ok=False)
+          repositories = sorted(path for path in source.glob("models--*") if path.is_dir())
+          if not repositories:
+              raise SystemExit(f"No Hugging Face model cache repositories found under {source}")
+          copied_files = 0
+          copied_bytes = 0
+          for repository in repositories:
+              target_repository = destination / repository.name
+              refs = repository / "refs"
+              if refs.is_dir():
+                  shutil.copytree(refs, target_repository / "refs")
+              snapshots = repository / "snapshots"
+              if not snapshots.is_dir():
+                  raise SystemExit(f"Snapshot directory is missing: {snapshots}")
+              for snapshot in sorted(path for path in snapshots.iterdir() if path.is_dir()):
+                  target_snapshot = target_repository / "snapshots" / snapshot.name
+                  target_snapshot.mkdir(parents=True, exist_ok=False)
+                  for item in sorted(snapshot.rglob("*")):
+                      relative = item.relative_to(snapshot)
+                      target = target_snapshot / relative
+                      if item.is_dir() and not item.is_symlink():
+                          target.mkdir(parents=True, exist_ok=True)
+                          continue
+                      if item.is_symlink():
+                          resolved = item.resolve(strict=True)
+                          try:
+                              resolved.relative_to(repository.resolve())
+                          except ValueError as exc:
+                              raise SystemExit(f"Cache symlink escapes repository: {item}") from exc
+                          source_file = resolved
+                      elif item.is_file():
+                          source_file = item
+                      else:
+                          raise SystemExit(f"Unexpected cache filesystem entry: {item}")
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      shutil.copy2(source_file, target)
+                      copied_files += 1
+                      copied_bytes += target.stat().st_size
           symlinks = [str(path) for path in destination.rglob("*") if path.is_symlink()]
           if symlinks:
-              raise SystemExit(f"Materialized model cache still contains symlinks: {symlinks[:10]}")
+              raise SystemExit(f"Materialized model cache contains symlinks: {symlinks[:10]}")
           print(f"MATERIALIZED_FASTEMBED_CACHE={destination}")
+          print(f"MATERIALIZED_MODEL_FILES={copied_files}")
+          print(f"MATERIALIZED_MODEL_BYTES={copied_bytes}")
+          PY
+      - name: Enforce distributable overlay size budget
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib
+          root = pathlib.Path("recovery/lunita-custoszv9/runtime_engines_v1")
+          total = sum(path.stat().st_size for path in root.rglob("*") if path.is_file())
+          print(f"LUNITA_OVERLAY_BYTES={total}")
+          print(f"LUNITA_OVERLAY_MIB={total / 1024 / 1024:.2f}")
+          limit = 480 * 1024 * 1024
+          if total > limit:
+              raise SystemExit(f"Overlay exceeds 480 MiB distributable budget: {total}")
           PY
       - name: Execute command-team engine gateway acceptance tests
         working-directory: recovery/lunita-custoszv9/runtime_engines_v1
