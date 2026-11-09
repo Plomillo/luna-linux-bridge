@@ -8,7 +8,10 @@ import pathlib
 import tempfile
 import unittest
 
-GOVERNOR = pathlib.Path(__file__).resolve().parents[2] / "integrations" / "lunita-custoszv9" / "custoszv9_continuous_governor_v2.py"
+HERE = pathlib.Path(__file__).resolve().parent
+GOVERNOR = HERE.parents[2] / "integrations" / "lunita-custoszv9" / "custoszv9_continuous_governor_v2.py"
+if not GOVERNOR.is_file():
+    GOVERNOR = HERE / "custoszv9_continuous_governor_v2.py"
 spec = importlib.util.spec_from_file_location("cajita_governor_under_test", GOVERNOR)
 assert spec and spec.loader
 mod = importlib.util.module_from_spec(spec)
