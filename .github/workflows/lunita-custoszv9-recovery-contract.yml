@@ -91,6 +91,7 @@ jobs:
             recovery/lunita-custoszv9/runtime_engines_v1/provision_engine_runtime_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/overlay_acceptance_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/target_runtime_acceptance_v1.py
+            recovery/lunita-custoszv9/runtime_engines_v1/target_acceptance_tests_v1.py
       - name: Execute real E02-E15 engine acceptance tests
         working-directory: recovery/lunita-custoszv9/runtime_engines_v1
         env:
@@ -237,6 +238,9 @@ jobs:
       - name: Execute additive overlay and checkpoint acceptance tests
         working-directory: recovery/lunita-custoszv9/runtime_engines_v1
         run: python overlay_acceptance_v1.py
+      - name: Execute target-side overlay and INT8 receipt acceptance tests
+        working-directory: recovery/lunita-custoszv9/runtime_engines_v1
+        run: python target_acceptance_tests_v1.py
       - name: Upload reproducible Lunita engine overlay bundle
         uses: actions/upload-artifact@v4
         with:
