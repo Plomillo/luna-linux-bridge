@@ -68,6 +68,23 @@ COMMAND_ENGINES = {
     "/play AE": ("E06", "E07", "E08", "E09", "E10", "E12", "E13", "E14", "E15"),
 }
 
+COMMAND_AGENTS = {
+    "/help": ("Luna",),
+    "/play PT": ("Luna", "Katya"),
+    "/play PA": ("Luna", "Ancapi"),
+    "/play DCI": ("Luna", "Josefina"),
+    "/play DCIL": ("Luna", "Josefina", "Katya"),
+    "/play traductor": ("Luna", "Katya"),
+    "/play e": ("Luna", "Josefina"),
+    "/play ema": ("Luna", "Josefina", "Katya"),
+    "/play p": ("Luna", "Ancapi"),
+    "/play c": ("Luna", "Katya"),
+    "/play cp": ("Luna", "Josefina", "Katya"),
+    "/play MA": ("Luna",),
+    "/play H": ("Luna", "Josefina"),
+    "/play AE": ("Luna", "Ancapi"),
+}
+
 CFE_FAMILY_BY_ENGINE = {
     "E01": "CFE001-CFE010", "E02": "CFE001-CFE010",
     "E03": "CFE011-CFE020", "E04": "CFE011-CFE020", "E05": "CFE011-CFE020",
@@ -96,8 +113,13 @@ def validate_registry() -> dict[str, Any]:
         "/play cp", "/play MA", "/play H", "/play AE",
     }:
         raise EngineContractError("Canonical command namespace mismatch")
-    if any("Luna" not in engines for engines in COMMAND_ENGINES.values()):
+    if set(COMMAND_AGENTS) != set(COMMAND_ENGINES):
+        raise EngineContractError("Command-to-agent routing namespace mismatch")
+    if any("Luna" not in agents for agents in COMMAND_AGENTS.values()):
         raise EngineContractError("Luna must remain present in every command route")
+    allowed_agents = {"Luna", "Josefina", "Katya", "Ancapi"}
+    if any(not set(agents).issubset(allowed_agents) for agents in COMMAND_AGENTS.values()):
+        raise EngineContractError("Unsupported agent in command route")
     for command, engines in COMMAND_ENGINES.items():
         for engine in engines:
             if engine not in ENGINE_NAMES:
