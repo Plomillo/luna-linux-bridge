@@ -90,6 +90,8 @@ jobs:
           python -m py_compile \
             recovery/lunita-custoszv9/runtime_engines_v1/engine_runtime_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/engine_acceptance_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/engine_gateway_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/gateway_acceptance_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/apply_engine_overlay_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/provision_engine_runtime_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/overlay_acceptance_v1.py
@@ -116,6 +118,9 @@ jobs:
               raise SystemExit(f"Materialized model cache still contains symlinks: {symlinks[:10]}")
           print(f"MATERIALIZED_FASTEMBED_CACHE={destination}")
           PY
+      - name: Execute command-team engine gateway acceptance tests
+        working-directory: recovery/lunita-custoszv9/runtime_engines_v1
+        run: python gateway_acceptance_v1.py
       - name: Execute additive overlay and checkpoint acceptance tests
         working-directory: recovery/lunita-custoszv9/runtime_engines_v1
         run: python overlay_acceptance_v1.py
