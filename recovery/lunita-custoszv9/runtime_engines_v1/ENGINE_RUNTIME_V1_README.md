@@ -24,6 +24,18 @@ This directory adds adapters for existing E01–E15 identities. It does not add,
 - Additive launcher beta v1.8: `lunita_beta_v1_8.py` delegates legacy v1.7 commands only after verifying the exact v1.7 launcher SHA-256; `engine-run` and `engine-status` expose the new engine runtime without replacing v1.7.
 
 
+## Instrument display labels — additive v1.8 metadata
+
+The v1.8 status surface exposes the following human-facing labels. These are labels only; they do not rename binaries, paths, Flatpak application IDs, smoke-test commands, engine IDs, or command routes:
+
+| Display label | Existing technical identity | Existing acceptance command |
+|---|---|---|
+| Brújula giroscópica | `/opt/lunita/instruments/brujula` | `brujula-self-test` |
+| Sacapuntas | Flatpak `org.jamovi.jamovi` | `jamovi-self-test` |
+| Lupa | Flatpak `org.jaspstats.JASP` | `jasp-self-test` |
+
+The registry is separate from canonical E01–E15 engine identities. Existing v1.7 application checks remain delegated with the pinned legacy launcher; v1.8 adds the display metadata and the E01–E15 consensus-capable engine gateway without replacing that launcher.
+
 ## Installation and validation
 
 The GitHub Actions workflow provisions CPython 3.12 dependencies into the isolated `vendor/python3.12/site-packages` folder, verifies the OWL-RL wheel SHA-256, downloads the FastEmbed model weights into `model-cache/fastembed`, and runs the acceptance suite against those vendored files. The resulting Actions artifact is named `lunita-engine-overlay-v1-py312`.
