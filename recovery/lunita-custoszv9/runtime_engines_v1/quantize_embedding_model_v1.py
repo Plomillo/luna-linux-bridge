@@ -127,7 +127,7 @@ def find_onnx_model(cache: pathlib.Path) -> pathlib.Path:
 
 def quantize_model(model: pathlib.Path, output: pathlib.Path, pythonpath: str) -> dict[str, Any]:
     source = r'''
-import json, re, sys
+import json, os, sys
 import onnx
 import onnxruntime as ort
 import numpy as np
@@ -135,13 +135,55 @@ from onnx import checker, TensorProto, numpy_helper
 from onnxruntime.quantization import QuantType, quantize_dynamic
 
 model_in, model_out = sys.argv[1], sys.argv[2]
-quantize_dynamic(
-    model_input=model_in,
-    model_output=model_out,
-    weight_type=QuantType.QInt8,
-    per_channel=True,
-    reduce_range=False,
-)
+
+def convert_tensor_fp16_to_fp32(tensor):
+    if tensor.data_type != TensorProto.FLOAT16:
+        return False
+    values = numpy_helper.to_array(tensor).astype(np.float32)
+    tensor.CopyFrom(numpy_helper.from_array(values, name=tensor.name))
+    return True
+
+def convert_graph_fp16_to_fp32(graph_proto):
+    converted = 0
+    for tensor in graph_proto.initializer:
+        converted += int(convert_tensor_fp16_to_fp32(tensor))
+    for sparse in graph_proto.sparse_initializer:
+        converted += int(convert_tensor_fp16_to_fp32(sparse.values))
+    for value_info in list(graph_proto.input) + list(graph_proto.output) + list(graph_proto.value_info):
+        if value_info.type.HasField("tensor_type") and value_info.type.tensor_type.elem_type == TensorProto.FLOAT16:
+            value_info.type.tensor_type.elem_type = TensorProto.FLOAT
+            converted += 1
+    for node in graph_proto.node:
+        for attribute in node.attribute:
+            if attribute.type == onnx.AttributeProto.TENSOR:
+                converted += int(convert_tensor_fp16_to_fp32(attribute.t))
+            elif attribute.type == onnx.AttributeProto.TENSORS:
+                for tensor in attribute.tensors:
+                    converted += int(convert_tensor_fp16_to_fp32(tensor))
+            elif attribute.type == onnx.AttributeProto.GRAPH:
+                converted += convert_graph_fp16_to_fp32(attribute.g)
+            elif attribute.type == onnx.AttributeProto.GRAPHS:
+                for nested in attribute.graphs:
+                    converted += convert_graph_fp16_to_fp32(nested)
+    return converted
+
+# Preprocess a throwaway FP32 copy. The registered source ONNX and original
+# FastEmbed cache entry remain byte-identical until an INT8 candidate passes.
+source_graph = onnx.load(model_in, load_external_data=True)
+fp32_conversion_count = convert_graph_fp16_to_fp32(source_graph.graph)
+fp32_input = model_out + ".fp32.onnx"
+onnx.save_model(source_graph, fp32_input)
+try:
+    quantize_dynamic(
+        model_input=fp32_input,
+        model_output=model_out,
+        weight_type=QuantType.QInt8,
+        per_channel=True,
+        reduce_range=False,
+    )
+finally:
+    if os.path.exists(fp32_input):
+        os.unlink(fp32_input)
 
 graph = onnx.load(model_out, load_external_data=True)
 
@@ -244,6 +286,7 @@ if not inputs or not outputs:
 report = {
     "checker_status": checker_status,
     "checker_error": checker_error,
+    "source_fp16_to_fp32_conversion_count": fp32_conversion_count,
     "opset_imports": opset_imports,
     "layer_normalization_node_count": len(layer_norm_nodes),
     "int8_initializer_count": len(int8_initializers),
@@ -351,6 +394,7 @@ def run(cache: pathlib.Path, pythonpath: str) -> dict[str, Any]:
                 "quantized_bytes": quantized_size,
                 "size_ratio": quantized_size / original_size,
                 "onnx_validation": onnx_validation,
+                "preprocessing": "COPY_ONLY_FP16_TO_FP32;SOURCE_MODEL_UNCHANGED;DYNAMIC_QINT8_PER_CHANNEL",
                 "mean_vector_cosine": mean_cosine,
                 "minimum_vector_cosine": minimum_cosine,
                 "retrieval_top1_agreement": agreement,
