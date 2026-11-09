@@ -326,7 +326,7 @@ jobs:
               --rootfs "$LUNITA_ROOTFS_REAL" \
               --checkpoint-dir "$CHECKPOINT_DIR" \
               --candidate-id G06_REBUILD_CANDIDATE_R1
-            run_root "$PYTHON312" recovery/lunita-custosz9/runtime_engines_v1/apply_engine_overlay_v1.py \
+            run_root "$PYTHON312" recovery/lunita-custoszv9/runtime_engines_v1/apply_engine_overlay_v1.py \
               --rootfs "$LUNITA_ROOTFS_REAL" \
               --source-dir "$SOURCE_DIR" \
               --checkpoint-receipt "$CHECKPOINT_DIR/CHECKPOINT_RECEIPT.json" \
