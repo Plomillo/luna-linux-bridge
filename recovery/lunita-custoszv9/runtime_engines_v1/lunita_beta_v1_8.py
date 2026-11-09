@@ -158,6 +158,7 @@ def engine_status() -> dict:
         "schema": "LUNITA_BETA_V1_8_ENGINE_STATUS/1.0",
         "status": "RUNTIME_CANDIDATE",
         "engine_registry": engine.validate_registry(),
+        "instrument_registry": {key: dict(value) for key, value in engine.INSTRUMENT_REGISTRY.items()},
         "dependencies": engine.engine_dependency_inventory(),
         "command_agents": {key: list(value) for key, value in engine.COMMAND_AGENTS.items()},
         "command_engines": {key: list(value) for key, value in engine.COMMAND_ENGINES.items()},
