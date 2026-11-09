@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import fcntl
 import os
 import pathlib
 import subprocess
 import sys
+from datetime import datetime, timezone
 from typing import Sequence
 
 ROOT = pathlib.Path("/opt/lunita")
@@ -62,6 +64,69 @@ def run_legacy(arguments: Sequence[str]) -> int:
         return 4
 
 
+def _canonical_sha256(value: object) -> str:
+    payload = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def append_execution_audit(request: dict, result: dict) -> dict:
+    """Append one digest-only execution event; refuse malformed/tampered history."""
+    import engine_runtime_v1 as engine
+    path = pathlib.Path(os.environ.get(
+        "LUNITA_ENGINE_AUDIT_LOG", "/var/lib/lunita/audit/engine-execution.jsonl"
+    ))
+    absolute = pathlib.Path(os.path.abspath(path))
+    current = pathlib.Path(absolute.anchor)
+    for component in absolute.parts[1:]:
+        current = current / component
+        if current.exists() and current.is_symlink():
+            raise RuntimeError(f"Audit log path contains a symlink: {current}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    flags = os.O_CREAT | os.O_RDWR | os.O_APPEND
+    fd = os.open(path, flags, 0o600)
+    try:
+        if not os.path.isfile(path) or os.path.islink(path):
+            raise RuntimeError("Audit log is not a regular non-symlink file")
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        with os.fdopen(os.dup(fd), "r", encoding="utf-8") as stream:
+            lines = stream.read().splitlines()
+        records = []
+        for line_number, line in enumerate(lines, 1):
+            if not line.strip():
+                raise RuntimeError(f"Blank line in append-only audit log at line {line_number}")
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                raise RuntimeError(f"Malformed audit record at line {line_number}") from exc
+        verified = engine.verify_provenance_chain(records)
+        if verified["status"] != "PASS_PROVENANCE_CHAIN":
+            raise RuntimeError("Existing audit chain failed integrity verification")
+        event = {
+            "captured_at_utc": datetime.now(timezone.utc).isoformat(),
+            "command": request["command"],
+            "agent": request["agent"],
+            "engine_id": request["engine_id"],
+            "request_sha256": _canonical_sha256(request),
+            "result_sha256": _canonical_sha256(result),
+            "result_status": result["status"],
+        }
+        record = engine.append_provenance_event(verified["terminal_hash"], event)
+        encoded = (json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+        view = memoryview(encoded)
+        while view:
+            written = os.write(fd, view)
+            if written <= 0:
+                raise OSError("Short write while appending audit record")
+            view = view[written:]
+        os.fsync(fd)
+        return record
+    finally:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
+
+
 def engine_status() -> dict:
     import engine_runtime_v1 as engine
     return {
@@ -103,6 +168,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
             result = execute_engine_for_route(
                 request["command"], request["agent"], request["engine_id"], request["payload"]
             )
+            audit_record = append_execution_audit(request, result)
+            result["audit_event_hash"] = audit_record["event_hash"]
         except (OSError, ValueError, KeyError, RuntimeError) as exc:
             print(json.dumps({"status": "DENIED_OR_BLOCKED", "error": str(exc)},
                              ensure_ascii=False, indent=2), file=sys.stderr)
