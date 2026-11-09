@@ -58,11 +58,32 @@ def run_legacy(arguments: Sequence[str]) -> int:
     if observed != LEGACY_SHA256:
         print("DENIED: beta v1.7 launcher SHA-256 mismatch", file=sys.stderr)
         return 3
-    # Preserve the legacy v1.7 Python environment exactly. E02-E15 vendor
-    # packages are injected only for v1.8 engine operations, never for legacy apps.
+    # Preserve the legacy v1.7 Python environment exactly. The target-side
+    # acceptance process itself runs with the v1.8 overlay on PYTHONPATH; remove
+    # only those two overlay entries before delegating to v1.7.
+    environment = os.environ.copy()
+    overlay_entries = {
+        str(OVERLAY.resolve()),
+        str((OVERLAY / "vendor/python3.12/site-packages").resolve()),
+    }
+    existing = environment.get("PYTHONPATH", "")
+    retained = []
+    for entry in existing.split(os.pathsep):
+        if not entry:
+            continue
+        try:
+            normalized = str(pathlib.Path(entry).resolve())
+        except (OSError, RuntimeError):
+            normalized = entry
+        if normalized not in overlay_entries:
+            retained.append(entry)
+    if retained:
+        environment["PYTHONPATH"] = os.pathsep.join(retained)
+    else:
+        environment.pop("PYTHONPATH", None)
     command = [sys.executable, str(LEGACY_LAUNCHER), *arguments]
     try:
-        return subprocess.run(command, env=os.environ.copy(), check=False).returncode
+        return subprocess.run(command, env=environment, check=False).returncode
     except OSError as exc:
         print(f"DENIED: unable to delegate to beta v1.7: {exc}", file=sys.stderr)
         return 4
