@@ -2,7 +2,7 @@
 
 Status: `IMPLEMENTATION_CANDIDATE_PENDING_TARGET_DEPLOYMENT_AND_INDEPENDENT_CERTIFICATION`.
 
-This directory adds adapters for existing E01–E15 identities. It does not add, rename, merge, replace, or reassign canonical engines, agents, commands, blocks, axioms, or CFE identifiers. Luna remains present in every command route. The exact assignment and 14-command routing matrix is in `engine_assignments_v1.json`.
+This directory adds adapters for existing E01–E15 identities. It does not add, rename, merge, replace, or reassign canonical engines, agents, commands, blocks, axioms, or CFE identifiers. Luna remains present in every command route. The exact 14-command team-to-engine routing matrix is in `engine_assignments_v1.json`. Louksna does not define an independent one-agent-to-one-engine ownership table; the runtime enforces the canonical team and engine set together for each command.
 
 ## Implementation
 - E01 LLM: existing candidate-rootfs Qwen3-0.6B GGUF through the bundled llama.cpp runtime; no placeholder model.
@@ -19,7 +19,7 @@ This directory adds adapters for existing E01–E15 identities. It does not add,
 - E12 formalization: structured expression AST into SymPy; user strings are never evaluated as code.
 - E13 validation: JSON Schema Draft 2020-12.
 - E14 provenance: append-only SHA-256 hash chain.
-- E15 consensus: unanimity gate from assigned agents against one evidence digest.
+- E15 consensus: unanimity gate from the exact agent team assigned to the invoking command, against one evidence digest.
 
 
 ## Installation and validation
