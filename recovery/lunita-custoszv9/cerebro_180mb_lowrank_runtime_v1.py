@@ -196,5 +196,4 @@ if __name__ == "__main__":
     print(json.dumps(result, indent=2))
     if result["status"] != "PASS_MODEL_START_AND_FORWARD" or result.get("generation_status", "").startswith("FAIL"):
         raise SystemExit(1)
-
-[executed on device: LOUKSNA (98c2b7f6-ee30-4f31-9444-06f7ba58f353)]
+# [executed on device: LOUKSNA (98c2b7f6-ee30-4f31-9444-06f7ba58f353)]
