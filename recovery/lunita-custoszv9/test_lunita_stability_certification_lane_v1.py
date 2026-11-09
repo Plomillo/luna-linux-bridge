@@ -194,6 +194,7 @@ class JaspRunnerTests(unittest.TestCase):
             for call in runner.call_args_list:
                 self.assertEqual("offscreen", call.kwargs["env"].get("QT_QPA_PLATFORM"))
                 self.assertNotIn("-platform", call.args[0])
+                self.assertNotIn("--timeOut=2", call.args[0])
             jasp_calls = [call.args[0] for call in runner.call_args_list
                           if "--unitTest" in call.args[0]]
             self.assertEqual(5, len(jasp_calls))
