@@ -306,5 +306,64 @@
     "luna_mandatory_in_every_command": true,
     "registry_declaration_is_not_runtime_evidence": true,
     "this_candidate_certifies_canonical_architecture": false
+  },
+  "command_agents": {
+    "/help": [
+      "Luna"
+    ],
+    "/play PT": [
+      "Luna",
+      "Katya"
+    ],
+    "/play PA": [
+      "Luna",
+      "Ancapi"
+    ],
+    "/play DCI": [
+      "Luna",
+      "Josefina"
+    ],
+    "/play DCIL": [
+      "Luna",
+      "Josefina",
+      "Katya"
+    ],
+    "/play traductor": [
+      "Luna",
+      "Katya"
+    ],
+    "/play e": [
+      "Luna",
+      "Josefina"
+    ],
+    "/play ema": [
+      "Luna",
+      "Josefina",
+      "Katya"
+    ],
+    "/play p": [
+      "Luna",
+      "Ancapi"
+    ],
+    "/play c": [
+      "Luna",
+      "Katya"
+    ],
+    "/play cp": [
+      "Luna",
+      "Josefina",
+      "Katya"
+    ],
+    "/play MA": [
+      "Luna"
+    ],
+    "/play H": [
+      "Luna",
+      "Josefina"
+    ],
+    "/play AE": [
+      "Luna",
+      "Ancapi"
+    ]
   }
 }
