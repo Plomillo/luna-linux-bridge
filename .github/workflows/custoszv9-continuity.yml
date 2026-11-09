@@ -33,10 +33,16 @@ jobs:
             recovery/lunita-custoszv9/custoszv9_continuous_governor_v2.py \
             recovery/lunita-custoszv9/custoszv9_lunita_bridge.py \
             recovery/lunita-custoszv9/test_custoszv9_continuous_governor_v2.py \
-            recovery/lunita-custoszv9/test_custosz_mision1_continuation_v1.py
+            recovery/lunita-custoszv9/test_custosz_mision1_continuation_v1.py \
+            recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py \
+            recovery/lunita-custoszv9/test_lunita_stability_certification_lane_v1.py
       - name: Test fail-closed controller and quantization lane contracts
         run: |
           python recovery/lunita-custoszv9/test_custoszv9_continuous_governor_v2.py
           python recovery/lunita-custoszv9/test_custosz_mision1_continuation_v1.py
       - name: Test versioned Lunita beta contract
         run: python recovery/lunita-custoszv9/test_lunita_beta_v1_7.py
+      - name: Test Lunita independent certification gates
+        env:
+          PYTHONPATH: recovery/lunita-custoszv9
+        run: python -m unittest -v test_lunita_stability_certification_lane_v1
