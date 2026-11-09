@@ -271,6 +271,14 @@ class E01TargetRuntimeContractTests(unittest.TestCase):
         binary = engine.discover_llama_cli()
         self.assertTrue(binary.is_file())
         self.assertTrue(binary.stat().st_mode & 0o111)
+        result = engine.llm_infer(
+            "Responde únicamente OK.",
+            max_tokens=4,
+            timeout_seconds=120,
+        )
+        self.assertEqual("E01", result["engine_id"])
+        self.assertEqual(0, result["returncode"])
+        self.assertTrue(result["output"].strip(), "Qwen completed without an output token")
 
 
 if __name__ == "__main__":
