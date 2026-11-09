@@ -1,0 +1,11 @@
+# Version-pinned runtime dependencies for E02-E15.
+# E01 uses the existing Qwen3 GGUF + llama.cpp deployment in the candidate rootfs.
+numpy==2.2.6
+spacy==3.8.18
+fastembed==0.9.1
+qdrant-client==1.20.0
+networkx==3.7
+rdflib==7.6.0
+owlrl==7.6.2
+sympy==1.14.0
+jsonschema==4.26.0
