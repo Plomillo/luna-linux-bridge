@@ -21,6 +21,8 @@ class LunitaBetaV18Tests(unittest.TestCase):
                          env["LUNITA_FASTEMBED_CACHE"])
         self.assertEqual("/var/lib/lunita/vectors", env["LUNITA_VECTOR_DB_PATH"])
         self.assertEqual("1", env["HF_HUB_DISABLE_TELEMETRY"])
+        self.assertEqual("1", env["HF_HUB_OFFLINE"])
+        self.assertEqual("1", env["TRANSFORMERS_OFFLINE"])
 
     def test_v17_legacy_launcher_path_matches_real_candidate_rootfs(self):
         self.assertEqual(pathlib.Path("/opt/lunita/agent/lunita.py"), launcher.LEGACY_LAUNCHER)
