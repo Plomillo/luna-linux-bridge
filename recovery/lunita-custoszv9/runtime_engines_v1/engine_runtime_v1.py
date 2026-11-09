@@ -164,9 +164,13 @@ def _distribution_version(package: str) -> str:
 
 def engine_dependency_inventory() -> dict[str, Any]:
     packages = {
-        "spacy": "spacy", "fastembed": "fastembed", "qdrant-client": "qdrant-client",
-        "networkx": "networkx", "rdflib": "rdflib", "owlrl": "owlrl",
-        "sympy": "sympy", "jsonschema": "jsonschema",
+        "fastembed": "fastembed",
+        "onnxruntime": "onnxruntime",
+        "qdrant-client": "qdrant-client",
+        "rdflib": "rdflib",
+        "owlrl": "owlrl",
+        "jsonschema": "jsonschema",
+        "numpy": "numpy",
     }
     found = {}
     missing = []
