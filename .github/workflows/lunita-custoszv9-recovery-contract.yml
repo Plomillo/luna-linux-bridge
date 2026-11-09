@@ -16,9 +16,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: lunita-custoszv9-recovery-contract
-  cancel-in-progress: false
 
 jobs:
   contract-tests:
@@ -254,6 +251,9 @@ jobs:
   target-runtime-acceptance:
     name: "Lunita v1.8 — direct installed-runtime acceptance"
     needs: contract-tests
+    concurrency:
+      group: lunita-v1-8-target-${{ github.ref }}
+      cancel-in-progress: false
     if: github.event_name == 'push' && github.ref == 'refs/heads/recovery/lunita-custoszv9-operational-20261020'
     runs-on: [self-hosted, Linux, X64, luna-aux]
     timeout-minutes: 60
@@ -448,7 +448,8 @@ jobs:
           export LUNITA_STATE_DIR="$state_dir"
           export LUNITA_OUTPUT_DIR="$state_dir/worker_outputs"
           export LUNITA_EVIDENCE_DIR="$state_dir/lunita_certification_evidence"
-          export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$HOME/.local/state/lunita/runtime_validation"
+          export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+          export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$XDG_STATE_HOME/lunita/runtime_validation"
           export LUNITA_CANDIDATE_MANIFEST="$GITHUB_WORKSPACE/LUNITA_V1_8_CANDIDATE_FREEZE.json"
           export LUNITA_CERTIFICATION_PROFILE
           mkdir -p "$LUNITA_OUTPUT_DIR" "$LUNITA_EVIDENCE_DIR"
