@@ -94,3 +94,31 @@ python3.12 "$LUNITA_ROOT/engines/runtime_engines_v1/target_runtime_acceptance_v1
 A target PASS requires the real local Qwen E01 inference, E02–E15 acceptance with zero skipped tests, measured E04 INT8 receipt, complete dependency inventory, and zero-return legacy Brújula/R/Jamovi/JASP/fault smoke commands. The runner writes a timestamped receipt and never grants certification.
 
 The independent lane must then pass the actual candidate rootfs inventory and dependency closure, all four pinned JASP fixture non-regression cases, every hash-bound runtime check, and the separate S32 issuance gate. G23/G24 and the versioned release remain denied until their own evidence chain passes. Hosted CI validates source/runtime contracts but cannot substitute for local Qwen, Flatpak/JASP and rootfs evidence.
+
+
+## Independent certification inputs
+
+The independent lane preserves its existing defaults and accepts explicit locations for a real target deployment. Set these variables before running the lane so it inspects the actual candidate rather than an empty Git checkout:
+
+- `LUNITA_ROOTFS`: root of the candidate filesystem tree containing `var/lib/flatpak`, `opt/lunita`, and the dependency inventory.
+- `LUNITA_CANDIDATE_DIR`: directory containing the hash-bound `BETA_RUNTIME_FUNCTIONAL_TESTS.json` and independent validation report.
+- `LUNITA_MISSION_PATH`: the original mission file. Its SHA-256 must still equal the pinned `MISSION_SHA`; changing the path does not relax that identity check.
+- `LUNITA_TARGET_RUNTIME_RECEIPT_DIR`: same receipt directory used by the target runner; by default both resolve to `$XDG_STATE_HOME/lunita/runtime_validation`.
+- `LUNITA_STATE_DIR`, `LUNITA_OUTPUT_DIR`, and `LUNITA_EVIDENCE_DIR`: state, worker-output and evidence destinations. Defaults remain inside this source tree.
+
+Example configuration (replace paths with the actual candidate locations):
+
+```bash
+export LUNITA_ROOTFS=/path/to/candidate/rootfs
+export LUNITA_CANDIDATE_DIR=/path/to/candidate/state
+export LUNITA_MISSION_PATH=/path/to/recovery/MISION1.txt
+export LUNITA_STATE_DIR=/path/to/lunita-certification-state
+export LUNITA_OUTPUT_DIR="$LUNITA_STATE_DIR/worker_outputs"
+export LUNITA_EVIDENCE_DIR="$LUNITA_STATE_DIR/lunita_certification_evidence"
+export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/lunita/runtime_validation"
+
+python3 recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py --self-test
+python3 recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py --once
+```
+
+The mission file must match its pinned hash, the original packaged JASP fixtures must remain unchanged, and the lane must produce PASS reports from actual executions. A path override never turns missing evidence into a pass.
