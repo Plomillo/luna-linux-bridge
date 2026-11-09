@@ -376,7 +376,13 @@ def embed_texts(texts: Sequence[str]) -> list[list[float]]:
 
 # E05 — Vector Search: Qdrant's embedded local index (memory or persistent path).
 class VectorIndex:
-    def __init__(self, storage_path: str | None = None, collection: str = "lunita_e05"):
+    def __init__(
+        self,
+        storage_path: str | None = None,
+        collection: str = "lunita_e05",
+        *,
+        delete_collection_on_close: bool = False,
+    ):
         from qdrant_client import QdrantClient
         from qdrant_client.models import Distance, VectorParams
         if storage_path is None:
@@ -384,10 +390,21 @@ class VectorIndex:
         self.client = QdrantClient(":memory:") if storage_path is None else QdrantClient(path=storage_path)
         self.collection = collection
         self._closed = False
-        self.client.create_collection(
-            collection_name=collection,
-            vectors_config=VectorParams(size=EMBEDDING_DIMENSION, distance=Distance.COSINE),
-        )
+        self._delete_collection_on_close = delete_collection_on_close
+        if self.client.collection_exists(collection):
+            existing = self.client.get_collection(collection)
+            vector_config = existing.config.params.vectors
+            if isinstance(vector_config, dict) or vector_config.size != EMBEDDING_DIMENSION:
+                self.client.close()
+                raise EngineContractError("Existing Qdrant collection has a non-canonical vector schema")
+            if vector_config.distance != Distance.COSINE:
+                self.client.close()
+                raise EngineContractError("Existing Qdrant collection has a non-canonical distance metric")
+        else:
+            self.client.create_collection(
+                collection_name=collection,
+                vectors_config=VectorParams(size=EMBEDDING_DIMENSION, distance=Distance.COSINE),
+            )
 
     def upsert(self, ids: Sequence[str], texts: Sequence[str], vectors: Sequence[Sequence[float]]) -> None:
         from qdrant_client.models import PointStruct
@@ -423,8 +440,12 @@ class VectorIndex:
 
     def close(self) -> None:
         if not self._closed:
-            self.client.close()
-            self._closed = True
+            try:
+                if self._delete_collection_on_close and self.client.collection_exists(self.collection):
+                    self.client.delete_collection(self.collection)
+            finally:
+                self.client.close()
+                self._closed = True
 
 
 # E03 — RAG: source-bound retrieval plus explicit context for E01 synthesis.
@@ -458,7 +479,13 @@ class RAGIndex:
             raise EngineContractError("RAG requires one 384-dimensional vector per source")
         if not all(math.isfinite(value) for vector in vectors for value in vector):
             raise EngineContractError("RAG vectors must contain finite values")
-        self.index = VectorIndex(storage_path=storage_path)
+        # RAG is a per-request scratch index; never share its collection with E05
+        # and always remove it on close, including in a persistent Qdrant store.
+        self.index = VectorIndex(
+            storage_path=storage_path,
+            collection=f"lunita_rag_{uuid.uuid4().hex}",
+            delete_collection_on_close=True,
+        )
         self.index.upsert(self.source_ids, self.texts, vectors)
 
     def retrieve(
