@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import os
 import pathlib
 import tempfile
 import unittest
 from unittest import mock
 
 import lunita_beta_v1_8 as launcher
+import engine_runtime_v1 as engine
 
 
 class LunitaBetaV18Tests(unittest.TestCase):
@@ -30,6 +33,45 @@ class LunitaBetaV18Tests(unittest.TestCase):
         self.assertEqual("NOT_GRANTED", status["canonical_certification"])
         self.assertEqual(15, status["engine_registry"]["engine_count"])
         self.assertEqual(14, len(status["command_agents"]))
+
+    def test_execution_audit_is_append_only_hash_chained_and_redacts_payload(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            audit = pathlib.Path(temporary) / "audit" / "engine.jsonl"
+            request = {
+                "command": "/play AE", "agent": "Ancapi", "engine_id": "E15",
+                "payload": {"private_prompt": "DO_NOT_STORE_RAW_PROMPT"},
+            }
+            result = {"status": "PASS_ENGINE_OPERATION", "result": {"status": "PASS_CONSENSUS"}}
+            with mock.patch.dict(os.environ, {"LUNITA_ENGINE_AUDIT_LOG": str(audit)}):
+                first = launcher.append_execution_audit(request, result)
+                second = launcher.append_execution_audit(request, result)
+            lines = audit.read_text(encoding="utf-8").splitlines()
+            records = [json.loads(line) for line in lines]
+            verified = engine.verify_provenance_chain(records)
+            self.assertEqual("PASS_PROVENANCE_CHAIN", verified["status"])
+            self.assertEqual(2, verified["event_count"])
+            self.assertEqual(first["event_hash"], second["previous_hash"])
+            self.assertEqual(
+                hashlib.sha256(json.dumps(request, ensure_ascii=False, sort_keys=True,
+                    separators=(",", ":")).encode("utf-8")).hexdigest(),
+                records[0]["event"]["request_sha256"],
+            )
+            self.assertNotIn("DO_NOT_STORE_RAW_PROMPT", audit.read_text(encoding="utf-8"))
+
+    def test_execution_audit_fails_closed_on_tampered_history(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            audit = pathlib.Path(temporary) / "audit" / "engine.jsonl"
+            request = {"command": "/play AE", "agent": "Ancapi", "engine_id": "E15", "payload": {}}
+            result = {"status": "PASS_ENGINE_OPERATION"}
+            with mock.patch.dict(os.environ, {"LUNITA_ENGINE_AUDIT_LOG": str(audit)}):
+                launcher.append_execution_audit(request, result)
+                records = [json.loads(line) for line in audit.read_text(encoding="utf-8").splitlines()]
+                records[0]["event"]["result_status"] = "FORGED"
+                audit.write_text(json.dumps(records[0], sort_keys=True) + "\n", encoding="utf-8")
+                before = audit.read_bytes()
+                with self.assertRaises(RuntimeError):
+                    launcher.append_execution_audit(request, result)
+                self.assertEqual(before, audit.read_bytes())
 
     def test_legacy_hash_verifier_detects_modified_launcher(self):
         with tempfile.TemporaryDirectory() as temporary:
