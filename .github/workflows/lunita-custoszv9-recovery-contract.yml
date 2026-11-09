@@ -255,7 +255,7 @@ jobs:
     name: "Lunita v1.8 — direct installed-runtime acceptance"
     needs: contract-tests
     if: github.event_name == 'push' && github.ref == 'refs/heads/recovery/lunita-custoszv9-operational-20261020'
-    runs-on: [self-hosted, Linux, x64, luna-aux]
+    runs-on: [self-hosted, Linux, X64, luna-aux]
     timeout-minutes: 60
     permissions:
       actions: read
@@ -410,6 +410,94 @@ jobs:
           if [ -d "$HOME/.local/state/lunita/checkpoints/G06_REBUILD_CANDIDATE_R1" ]; then
             cp -a "$HOME/.local/state/lunita/checkpoints/G06_REBUILD_CANDIDATE_R1"/. "$RUNNER_TEMP/lunita-target-evidence/checkpoints/"
           fi
+
+      - name: Run independent candidate rootfs and four-case JASP validation
+        if: success()
+        shell: bash
+        env:
+          LUNITA_CERTIFICATION_PROFILE: V1_8_DIRECT
+          LUNITA_CERTIFICATION_OUTPUT: ${{ runner.temp }}/lunita-target-evidence/independent-certification.json
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/lunita-target-evidence"
+          candidate_rootfs="${LUNITA_ROOTFS:-}"
+          if [[ -z "$candidate_rootfs" || ! -d "$candidate_rootfs" ]]; then
+            for search_root in "$HOME/.local/state" "$HOME/Proyectos" "$GITHUB_WORKSPACE/recovery/lunita-custoszv9/state"; do
+              if [[ -d "$search_root" ]]; then
+                candidate_rootfs="$(find "$search_root" -type d -path '*/g06_rebuild_candidates/G06_REBUILD_CANDIDATE_R1/rootfs' -prune -print -quit 2>/dev/null || true)"
+                [[ -n "$candidate_rootfs" ]] && break
+              fi
+            done
+          fi
+          if [[ -z "$candidate_rootfs" || ! -d "$candidate_rootfs" ]]; then
+            cat > "$RUNNER_TEMP/lunita-target-evidence/independent-certification.json" <<'JSON'
+          {"schema":"LUNITA_V1_8_INDEPENDENT_CERTIFICATION/1.0","status":"BLOCKED_CANDIDATE_ROOTFS_NOT_FOUND","certification":"NOT_GRANTED","searched_roots":["$HOME/.local/state","$HOME/Proyectos","$GITHUB_WORKSPACE/recovery/lunita-custoszv9/state"]}
+          JSON
+            echo "::error::Candidate rootfs not found. No full-host scan or substitute rootfs will be used."
+            exit 1
+          fi
+          candidate_rootfs="$(realpath -e "$candidate_rootfs")"
+          candidate_dir="$(dirname "$candidate_rootfs")"
+          case "$candidate_dir" in
+            */g06_rebuild_candidates/G06_REBUILD_CANDIDATE_R1) ;;
+            *) echo "::error::Candidate rootfs path does not match the frozen candidate identity: $candidate_rootfs"; exit 1 ;;
+          esac
+          state_dir="$(dirname "$(dirname "$(dirname "$candidate_rootfs")")")"
+          export LUNITA_ROOTFS="$candidate_rootfs"
+          export LUNITA_CANDIDATE_DIR="$candidate_dir"
+          export LUNITA_STATE_DIR="$state_dir"
+          export LUNITA_OUTPUT_DIR="$state_dir/worker_outputs"
+          export LUNITA_EVIDENCE_DIR="$state_dir/lunita_certification_evidence"
+          export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$HOME/.local/state/lunita/runtime_validation"
+          export LUNITA_CANDIDATE_MANIFEST="$GITHUB_WORKSPACE/LUNITA_V1_8_CANDIDATE_FREEZE.json"
+          export LUNITA_CERTIFICATION_PROFILE
+          mkdir -p "$LUNITA_OUTPUT_DIR" "$LUNITA_EVIDENCE_DIR"
+          export PYTHONPATH="$GITHUB_WORKSPACE/recovery/lunita-custoszv9"
+          python - <<'PY'
+          import datetime, json, os, pathlib, sys
+          import lunita_stability_certification_lane_v1 as lane
+
+          output = pathlib.Path(os.environ["LUNITA_CERTIFICATION_OUTPUT"])
+          rootfs = pathlib.Path(os.environ["LUNITA_ROOTFS"])
+          if not (rootfs / "var/lib/dpkg/status").is_file():
+              raise SystemExit("BLOCKED: candidate rootfs has no dpkg status manifest")
+          if not (rootfs / "etc/os-release").is_file():
+              raise SystemExit("BLOCKED: candidate rootfs has no os-release")
+          if not (rootfs / "opt/lunita/agent/lunita.py").is_file():
+              raise SystemExit("BLOCKED: candidate rootfs does not contain the pinned Lunita launcher")
+          stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+          inventory_path = lane.EVIDENCE / f"rootfs_inventory_direct_{stamp}.json"
+          inventory = lane.build_rootfs_inventory(inventory_path)
+          inventory["report_path"] = str(inventory_path)
+          inventory["report_sha256"] = lane.sha_file(inventory_path)
+          jasp_path = lane.OUT / f"jasp_suite_direct_{stamp}.json"
+          jasp_run = lane.run_jasp_regression_suite(jasp_path)
+          jasp = lane.latest_jasp_evidence()
+          report = lane.update_independent_report(inventory, jasp)
+          persisted = lane.persist_independent_report(report)
+          gate = lane.stable_release_gate()
+          release = lane.persist_stable_release_status(gate)
+          result = {
+              "schema": "LUNITA_V1_8_INDEPENDENT_CERTIFICATION/1.0",
+              "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+              "candidate_rootfs": str(rootfs),
+              "rootfs_inventory": inventory.get("status"),
+              "rootfs_inventory_sha256": inventory.get("report_sha256"),
+              "jasp_suite": jasp_run.get("status"),
+              "jasp_cases": jasp.get("cases"),
+              "independent_report": report.get("status"),
+              "independent_report_sha256": persisted.get("current_sha256"),
+              "stable_release_gate": gate.get("status"),
+              "release_status": release.get("status"),
+              "certification": "NOT_GRANTED",
+              "open_items": report.get("open_items", []),
+              "next_action": report.get("next_action"),
+          }
+          output.write_text(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
+          if report.get("status") != "PASS_INDEPENDENT_VALIDATION":
+              raise SystemExit(1)
+          PY
 
       - name: Preserve target acceptance and deployment checkpoint evidence
         if: always()
