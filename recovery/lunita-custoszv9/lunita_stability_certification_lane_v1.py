@@ -257,7 +257,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             temp_before = sha_file(temp_fixture)
             cmd = ["/usr/bin/flatpak", "--system", "run", "--unshare=network",
                    f"--filesystem={temp_root}", "org.jaspstats.JASP", "--unitTest",
-                   str(temp_fixture), "--hide", "--timeOut=2", "-platform", "minimal"]
+                   str(temp_fixture), "--hide", "--timeOut=2"]
             save_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_save.log"
             rerun_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_rerun.log"
             save_started = utc()
@@ -332,6 +332,8 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
     }
     env = os.environ.copy()
     env["FLATPAK_SYSTEM_DIR"] = str(ROOTFS / "var/lib/flatpak")
+    # Qt platform selection is an environment setting, not a JASP CLI option.
+    env["QT_QPA_PLATFORM"] = "offscreen"
     results = {"schema": "CUSTOSZ_LUNITA_JASP_AUTOMATED_REGRESSION_SUITE/1.0", "timestamp_utc": utc(),
                "candidate_id": "G06_REBUILD_CANDIDATE_R1", "expected_app_commit": expected_commit,
                "flatpak_system_dir": env["FLATPAK_SYSTEM_DIR"], "network_unshared": True,
@@ -360,7 +362,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                 try:
                     run = subprocess.run(["/usr/bin/flatpak", "--system", "run", "--unshare=network",
                                           "org.jaspstats.JASP", "--unitTest", fixture, "--hide",
-                                          "--timeOut=2", "-platform", "minimal"],
+                                          "--timeOut=2"],
                                          env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                          text=True, timeout=300, check=False)
                     rc = int(run.returncode)
@@ -369,7 +371,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                     results["tests"][case_id] = {"status": "PASS" if rc == 0 else "BLOCKED", "returncode": rc,
                         "fixture": fixture, "log_path": str(log_path), "log_sha256": sha_file(log_path),
                         "command": ["/usr/bin/flatpak", "--system", "run", "--unshare=network",
-                                    "org.jaspstats.JASP", "--unitTest", fixture, "--hide", "--timeOut=2", "-platform", "minimal"],
+                                    "org.jaspstats.JASP", "--unitTest", fixture, "--hide", "--timeOut=2"],
                         "started_at_utc": started, "finished_at_utc": utc()}
                 except subprocess.TimeoutExpired as exc:
                     out = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
