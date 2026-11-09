@@ -79,18 +79,25 @@ class LunitaBetaV18Tests(unittest.TestCase):
                 self.assertEqual(before, audit.read_bytes())
 
     def test_legacy_delegation_does_not_inject_vendor_python_packages(self):
+        vendor = "/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages"
+        overlay = "/opt/lunita/engines/runtime_engines_v1"
+        custom = "/opt/custom/python"
         with tempfile.TemporaryDirectory() as temporary:
             legacy = pathlib.Path(temporary) / "lunita.py"
             legacy.write_bytes(b"immutable beta v1.7 test fixture")
             legacy_sha = hashlib.sha256(legacy.read_bytes()).hexdigest()
+            inherited_pythonpath = os.pathsep.join([vendor, overlay, custom])
             with mock.patch.object(launcher, "LEGACY_LAUNCHER", legacy), \
                  mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha), \
+                 mock.patch.dict(os.environ, {"PYTHONPATH": inherited_pythonpath}), \
                  mock.patch.object(launcher.subprocess, "run",
                                    return_value=type("R", (), {"returncode": 0})()) as run:
                 self.assertEqual(0, launcher.run_legacy(["r-self-test"]))
             kwargs = run.call_args.kwargs
-            self.assertNotIn("/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages",
-                             kwargs["env"].get("PYTHONPATH", ""))
+            child_paths = kwargs["env"].get("PYTHONPATH", "").split(os.pathsep)
+            self.assertNotIn(vendor, child_paths)
+            self.assertNotIn(overlay, child_paths)
+            self.assertEqual([custom], child_paths)
             self.assertEqual("1", kwargs["env"].get("HF_HUB_OFFLINE", "1"))
             self.assertEqual([str(legacy), "r-self-test"], run.call_args.args[0][1:])
 
