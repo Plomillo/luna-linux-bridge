@@ -1307,4 +1307,4 @@ def tick_cajita_priority_lane(
     return {"status": "CAJITA_LANE_UNRECOGNIZED_STAGE", "stage": stage, "did_work": False,
             "next_action": "Reconcile the versioned lane checkpoint before any mutation."}
 
-[executed on device: LOUKSNA (98c2b7f6-ee30-4f31-9444-06f7ba58f353)]
+# [executed on device: LOUKSNA (98c2b7f6-ee30-4f31-9444-06f7ba58f353)]
