@@ -32,7 +32,6 @@ FILES = (
     "requirements-engine-stack.txt",
     "DEPENDENCY_EVIDENCE_v1.json",
     "ENGINE_RUNTIME_V1_README.md",
-    "provision_engine_runtime_v1.py",
 )
 DIRECTORIES = (
     "vendor/python3.12/site-packages",
