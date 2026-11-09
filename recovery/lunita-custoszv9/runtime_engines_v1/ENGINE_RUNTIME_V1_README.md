@@ -28,6 +28,10 @@ Install the version-pinned Python dependencies listed in `requirements-engine-st
 python -m pip install --disable-pip-version-check -r requirements-engine-stack.txt
 python -m pip install --disable-pip-version-check \
   "https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.8.0/es_core_news_sm-3.8.0-py3-none-any.whl"
+python -m pip download --disable-pip-version-check --no-deps --only-binary=:all: \
+  --dest /tmp/lunita-owlrl "owlrl==7.6.2"
+echo "83347bf7f133979e87b2b18695d51d25510b99cec3f6919b5df05d4fbf058ae0  /tmp/lunita-owlrl/owlrl-7.6.2-py3-none-any.whl" | sha256sum -c -
+python -m pip install --disable-pip-version-check --no-deps /tmp/lunita-owlrl/owlrl-7.6.2-py3-none-any.whl
 ```
 
 The multilingual embedding weights are downloaded by FastEmbed on first use. The target candidate must provision the model before offline operation and record its exact cache hash and Hugging Face revision. No model is treated as installed merely because its name is in a registry.
