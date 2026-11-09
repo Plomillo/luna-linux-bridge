@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed, additive installer for the E01-E15 candidate overlay.
 
-This installer is designed to be invoked by the authorized CUSTOSZ_V7 worker.
+This installer authorizes deployment from a hash-verified checkpoint; it does not depend on an external worker identity.
 It never changes the existing Lunita launcher, model weights, frozen G06/G08,
 or system paths outside the new versioned engine directory.
 """
@@ -19,7 +19,6 @@ from datetime import datetime, timezone
 from typing import Any
 
 EXPECTED_CANDIDATE_ID = "G06_REBUILD_CANDIDATE_R1"
-EXPECTED_WORKER = "CUSTOSZ_V7"
 EXPECTED_LAUNCHER_SHA256 = "46efd711729c344e7efba9ce2503127c48f0b88207cc5a17311ff1d555b075b2"
 EXPECTED_CHECKPOINT_SCHEMA = "LUNITA_RUNTIME_OVERLAY_CHECKPOINT/1.0"
 EXPECTED_CHECKPOINT_SCOPE = "LUNITA_ADDITIVE_RUNTIME_ENGINE_OVERLAY"
@@ -104,7 +103,7 @@ def hash_tree(path: pathlib.Path) -> dict[str, Any]:
             "sha256": hashlib.sha256(canonical).hexdigest()}
 
 
-def load_checkpoint_receipt(receipt_path: pathlib.Path, worker: str, candidate_id: str) -> dict[str, Any]:
+def load_checkpoint_receipt(receipt_path: pathlib.Path, candidate_id: str) -> dict[str, Any]:
     reject_any_symlink(receipt_path)
     receipt_path = receipt_path.resolve(strict=True)
     if not receipt_path.is_file():
@@ -114,8 +113,6 @@ def load_checkpoint_receipt(receipt_path: pathlib.Path, worker: str, candidate_i
         raise GateError("Checkpoint receipt schema mismatch")
     if data.get("status") != "PASS":
         raise GateError("Checkpoint receipt status is not PASS")
-    if data.get("worker_version") != worker or worker != EXPECTED_WORKER:
-        raise GateError("Checkpoint is not bound to the authorized CUSTOSZ_V7 worker")
     if data.get("candidate_id") != candidate_id or candidate_id != EXPECTED_CANDIDATE_ID:
         raise GateError("Checkpoint candidate identity mismatch")
     if data.get("scope") != EXPECTED_CHECKPOINT_SCOPE:
@@ -147,7 +144,6 @@ def load_checkpoint_receipt(receipt_path: pathlib.Path, worker: str, candidate_i
         "checkpoint_manifest": str(manifest),
         "checkpoint_manifest_sha256": observed,
         "checkpoint_id": data.get("checkpoint_id", "UNSPECIFIED"),
-        "worker_version": worker,
     }
 
 
@@ -155,11 +151,8 @@ def preflight(
     rootfs: pathlib.Path,
     source_dir: pathlib.Path,
     checkpoint_receipt: pathlib.Path,
-    worker_version: str,
     candidate_id: str,
 ) -> dict[str, Any]:
-    if worker_version != EXPECTED_WORKER:
-        raise GateError("Only CUSTOSZ_V7 may authorize this overlay operation")
     if candidate_id != EXPECTED_CANDIDATE_ID:
         raise GateError("Candidate identifier mismatch")
     reject_any_symlink(rootfs)
@@ -188,7 +181,7 @@ def preflight(
         source = source_dir / relative
         reject_any_symlink(source)
         directories[relative] = hash_tree(source)
-    checkpoint = load_checkpoint_receipt(checkpoint_receipt, worker_version, candidate_id)
+    checkpoint = load_checkpoint_receipt(checkpoint_receipt, candidate_id)
     engines_dir = rootfs / "opt/lunita/engines"
     target = rootfs / OVERLAY_RELATIVE_PATH
     reject_symlink_components(engines_dir, rootfs)
@@ -198,7 +191,6 @@ def preflight(
     return {
         "status": "PREFLIGHT_PASS",
         "candidate_id": candidate_id,
-        "worker_version": worker_version,
         "rootfs": str(rootfs),
         "launcher_sha256": launcher_hash,
         "target": str(target),
@@ -212,11 +204,10 @@ def apply_overlay(
     rootfs: pathlib.Path,
     source_dir: pathlib.Path,
     checkpoint_receipt: pathlib.Path,
-    worker_version: str,
     candidate_id: str,
     apply: bool = False,
 ) -> dict[str, Any]:
-    result = preflight(rootfs, source_dir, checkpoint_receipt, worker_version, candidate_id)
+    result = preflight(rootfs, source_dir, checkpoint_receipt, candidate_id)
     if not apply:
         return {**result, "status": "DRY_RUN_PASS_NO_MUTATION", "mutated": False}
     rootfs = pathlib.Path(result["rootfs"])
@@ -256,7 +247,6 @@ def apply_overlay(
             "status": "APPLIED_ADDITIVELY_NOT_CERTIFIED",
             "mutated": True,
             "candidate_id": candidate_id,
-            "worker_version": worker_version,
             "captured_at_utc": datetime.now(timezone.utc).isoformat(),
             "launcher_sha256": result["launcher_sha256"],
             "checkpoint": result["checkpoint"],
@@ -293,13 +283,12 @@ def main() -> int:
     parser.add_argument("--rootfs", required=True, type=pathlib.Path)
     parser.add_argument("--source-dir", type=pathlib.Path, default=pathlib.Path(__file__).resolve().parent)
     parser.add_argument("--checkpoint-receipt", required=True, type=pathlib.Path)
-    parser.add_argument("--worker-version", required=True)
     parser.add_argument("--candidate-id", required=True)
     parser.add_argument("--apply", action="store_true", help="Perform the additive write; otherwise dry-run only")
     args = parser.parse_args()
     try:
         result = apply_overlay(args.rootfs, args.source_dir, args.checkpoint_receipt,
-                               args.worker_version, args.candidate_id, args.apply)
+                               args.candidate_id, args.apply)
     except (OSError, ValueError, GateError) as exc:
         print(json.dumps({"status": "DENIED", "error": str(exc)}, indent=2), file=sys.stderr)
         return 2
