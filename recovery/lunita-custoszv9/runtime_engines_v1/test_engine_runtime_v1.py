@@ -171,7 +171,7 @@ class RealRuntimeEngineTests(unittest.TestCase):
             "args": [
                 {"op": "sub",
                  "args": [
-                     {"op": "pow", "args": [{"symbol": "x"}, {"number": 2}],
+                     {"op": "pow", "args": [{"symbol": "x"}, {"number": 2}]},
                      {"number": 1},
                  ]},
                 {"number": 0},
