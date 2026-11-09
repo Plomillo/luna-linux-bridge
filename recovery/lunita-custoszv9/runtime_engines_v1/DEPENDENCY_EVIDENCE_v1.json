@@ -1,0 +1,95 @@
+{
+  "schema": "LUNITA_ENGINE_DEPENDENCY_EVIDENCE/1.0",
+  "candidate": "runtime_engines_v1",
+  "install_policy": "VERSION_PINNED; WHEEL_CHECKSUM_VERIFIED_WHERE_AVAILABLE; NO_UNBOUNDED_PIP_INSTALLS",
+  "python": "3.12",
+  "packages": [
+    {
+      "name": "spacy",
+      "version": "3.8.18",
+      "purpose": "E02 Spanish NLP pipeline",
+      "source": "https://pypi.org/project/spacy/",
+      "provenance": "PyPI release metadata reports full provenance for 3.8.18"
+    },
+    {
+      "name": "es_core_news_sm",
+      "version": "3.8.0",
+      "purpose": "Spanish morphology, lemmatization, parsing and NER",
+      "source": "https://github.com/explosion/spacy-models/releases/tag/es_core_news_sm-3.8.0",
+      "compatibility_source": "https://github.com/explosion/spacy-models/blob/master/compatibility.json",
+      "license_review": "Keep original model license notice; verify before redistribution"
+    },
+    {
+      "name": "fastembed",
+      "version": "0.9.1",
+      "purpose": "E04 local CPU embeddings",
+      "source": "https://github.com/qdrant/fastembed/releases/tag/v0.9.1",
+      "provenance": "Signed Git tag at release; pin package version"
+    },
+    {
+      "name": "minishlab/potion-multilingual-128M",
+      "version": "FastEmbed registered model",
+      "purpose": "Multilingual static embeddings for E04",
+      "dimension": 256,
+      "languages": 101,
+      "license": "MIT",
+      "source": "https://huggingface.co/minishlab/potion-multilingual-128M",
+      "model_type": "Static embeddings; not contextual token embeddings"
+    },
+    {
+      "name": "qdrant-client",
+      "version": "1.20.0",
+      "purpose": "E05 embedded local vector index",
+      "source": "https://pypi.org/project/qdrant-client/1.20.0/",
+      "local_mode": "QdrantClient(:memory:) supported by upstream documentation"
+    },
+    {
+      "name": "networkx",
+      "version": "3.7",
+      "purpose": "E06 directed knowledge graph",
+      "source": "https://pypi.org/project/networkx/"
+    },
+    {
+      "name": "rdflib",
+      "version": "7.6.0",
+      "purpose": "E07 RDF and SPARQL",
+      "license": "BSD-3-Clause",
+      "source": "https://pypi.org/project/rdflib/7.6.0/"
+    },
+    {
+      "name": "owlrl",
+      "version": "7.6.2",
+      "purpose": "E09 OWL 2 RL entailment",
+      "source": "https://pypi.org/project/owlrl/7.6.2/",
+      "wheel_sha256": "83347bf7f133979e87b2b18695d51d25510b99cec3f6919b5df05d4fbf058ae0",
+      "pypi_provenance": "Not present; CI verifies exact wheel SHA-256 before installation"
+    },
+    {
+      "name": "sympy",
+      "version": "1.14.0",
+      "purpose": "E12 structured symbolic formalization",
+      "license": "BSD",
+      "source": "https://pypi.org/project/sympy/1.14.0/",
+      "provenance": "PyPI release files report full provenance"
+    },
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "purpose": "E13 JSON Schema Draft 2020-12 validation",
+      "source": "https://pypi.org/project/jsonschema/4.26.0/"
+    },
+    {
+      "name": "numpy",
+      "version": "2.2.6",
+      "purpose": "Pinned numeric dependency shared with existing CPU tensor test environment",
+      "source": "https://pypi.org/project/numpy/2.2.6/"
+    }
+  ],
+  "security_notes": [
+    "No model is described as deployed merely because its package is installed.",
+    "Embedding model weights are downloaded at first use; target deployment must cache them and record exact weight hashes before offline activation.",
+    "RAG retrieval and E01 generation remain separate stages; every retrieved source carries its source digest.",
+    "The model2vec/Potion model is static; suitability must be measured against Lunita's Spanish retrieval evaluation corpus before production activation.",
+    "This manifest is dependency evidence for a candidate runtime, not a security certification or target-rootfs inventory."
+  ]
+}
