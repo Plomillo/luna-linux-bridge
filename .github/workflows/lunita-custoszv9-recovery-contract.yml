@@ -163,6 +163,27 @@ jobs:
           print(f"MATERIALIZED_MODEL_FILES={copied_files}")
           print(f"MATERIALIZED_MODEL_BYTES={copied_bytes}")
           PY
+      - name: Diagnose overlay size by package and largest files
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib
+          from collections import defaultdict
+          root = pathlib.Path("recovery/lunita-custoszv9/runtime_engines_v1")
+          totals = defaultdict(int)
+          files = []
+          for path in root.rglob("*"):
+              if path.is_file():
+                  size = path.stat().st_size
+                  rel = path.relative_to(root)
+                  key = rel.parts[0] if rel.parts else "."
+                  totals[key] += size
+                  files.append((size, rel.as_posix()))
+          for key, size in sorted(totals.items(), key=lambda item: item[1], reverse=True):
+              print(f"OVERLAY_COMPONENT_BYTES {size} {key}")
+          for size, name in sorted(files, reverse=True)[:40]:
+              print(f"OVERLAY_LARGEST_FILE_BYTES {size} {name}")
+          PY
       - name: Enforce distributable overlay size budget
         shell: bash
         run: |
