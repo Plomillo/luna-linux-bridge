@@ -442,6 +442,40 @@ def _meta_digest(root: pathlib.Path) -> tuple[str, int]:
     return h.hexdigest(), count
 
 
+def hash_regular_file_read_only(path: pathlib.Path) -> tuple[str, str]:
+    """Hash as the current user; on EACCES, use non-interactive sudo for read-only sha256sum.
+
+    This does not chmod, chown, copy, or otherwise mutate the candidate rootfs.
+    If passwordless sudo is unavailable, the inventory remains blocked.
+    """
+    try:
+        h = hashlib.sha256()
+        with path.open("rb") as stream:
+            for block in iter(lambda: stream.read(1024 * 1024), b""):
+                h.update(block)
+        return h.hexdigest(), "CURRENT_USER_READ"
+    except PermissionError as original:
+        try:
+            path.relative_to(ROOTFS)
+        except ValueError as exc:
+            raise PermissionError("Privileged hash path escapes candidate rootfs") from exc
+        sudo = shutil.which("sudo")
+        sha256sum = shutil.which("sha256sum")
+        if not sudo or not sha256sum:
+            raise PermissionError("Read denied and sudo/sha256sum is unavailable") from original
+        result = subprocess.run(
+            [sudo, "-n", sha256sum, "--", str(path)],
+            stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=600, check=False,
+        )
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout or "sudo read-only hash failed").strip()[-600:]
+            raise PermissionError("Passwordless sudo read-only hash failed: " + detail) from original
+        token = result.stdout.split(maxsplit=1)[0] if result.stdout.split() else ""
+        if not re.fullmatch(r"[0-9a-fA-F]{64}", token):
+            raise RuntimeError("Privileged sha256sum returned an invalid digest")
+        return token.lower(), "SUDO_NONINTERACTIVE_READ_ONLY_SHA256SUM"
+
+
 def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
     """Hash every regular file without following symlinks; retain a JSONL manifest."""
     EVIDENCE.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -459,7 +493,7 @@ def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
     launcher = ROOTFS / "opt/lunita/agent/lunita.py"
     before_digest, before_count = _meta_digest(ROOTFS)
     tmp_manifest = manifest.with_suffix(".jsonl.partial")
-    count = total_bytes = errors_count = symlink_count = regular_count = 0
+    count = total_bytes = errors_count = symlink_count = regular_count = privileged_hash_count = 0
     errors = []
     digest = hashlib.sha256()
     with tmp_manifest.open("x", encoding="utf-8") as out:
@@ -474,21 +508,23 @@ def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
                     kind, link, file_hash = "directory", None, None
                 elif path.is_file():
                     kind, link = "file", None
-                    fh = hashlib.sha256()
-                    with path.open("rb") as stream:
-                        for block in iter(lambda: stream.read(1024 * 1024), b""):
-                            fh.update(block)
+                    file_hash, hash_method = hash_regular_file_read_only(path)
+                    if hash_method == "SUDO_NONINTERACTIVE_READ_ONLY_SHA256SUM":
+                        privileged_hash_count += 1
                     st1 = path.lstat()
                     if (st0.st_size, st0.st_mtime_ns, st0.st_mode) != (st1.st_size, st1.st_mtime_ns, st1.st_mode):
                         raise RuntimeError("FILE_CHANGED_DURING_INVENTORY")
-                    file_hash = fh.hexdigest()
                     regular_count += 1
                     total_bytes += st0.st_size
                 else:
                     kind, link, file_hash = "special", None, None
+                    hash_method = None
+                if kind != "file":
+                    hash_method = None
                 row = {"path": rel, "type": kind, "mode": st0.st_mode & 0o7777,
                        "uid": st0.st_uid, "gid": st0.st_gid, "size_bytes": st0.st_size,
-                       "mtime_ns": st0.st_mtime_ns, "sha256": file_hash, "symlink_target": link}
+                       "mtime_ns": st0.st_mtime_ns, "sha256": file_hash,
+                       "hash_method": hash_method, "symlink_target": link}
             except Exception as exc:
                 errors_count += 1
                 if len(errors) < 200:
@@ -519,6 +555,8 @@ def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
         "metadata_entry_count_after": after_count, "inventory_entry_count": count,
         "regular_file_count": regular_count, "symlink_count": symlink_count,
         "regular_file_total_bytes": total_bytes, "inventory_errors_count": errors_count,
+        "privileged_read_only_hash_count": privileged_hash_count,
+        "privileged_hashing_policy": "SUDO_NONINTERACTIVE_READ_ONLY_SHA256SUM_OR_FAIL_CLOSED",
         "inventory_errors": errors, "manifest_path": str(manifest), "manifest_sha256": sha_file(manifest),
         "manifest_stream_sha256": digest.hexdigest(), "manifest_bytes": manifest.stat().st_size,
         "dpkg_dependency_closure": dep, "dpkg_status_path": str(status_path),
