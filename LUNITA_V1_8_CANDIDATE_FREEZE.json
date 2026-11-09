@@ -8,7 +8,7 @@
   "freeze_status": "FROZEN_CANDIDATE_NOT_CERTIFIED",
   "frozen_ref": "candidate/lunita-v1.8.0-frozen-20261109",
   "frozen_commit": "95b43d4fd20a24cc52726086d7616d394be54906",
-  "source_branch": "recovery/lunita-custoszv9-operational-20261020",
+  "source_branch": "fix/lunita-v18-rootfs-bound-checkpoint-20261109",
   "preserved_baseline": {
     "frozen_g06_mutated": false,
     "canonical_g08_bindings_mutated": false,
@@ -35,10 +35,11 @@
     "implementation": "ALL_ASSIGNED_AGENTS_SAME_EVIDENCE_DIGEST_UNANIMOUS_VOTE",
     "contract_test": "test_e15_consensus_requires_all_assigned_votes_and_same_evidence",
     "hosted_acceptance": "PASS",
-    "target_acceptance": "PENDING_CUSTOSZ_V7"
+    "target_acceptance": "PENDING_DIRECT_TARGET_RUNTIME_VALIDATION"
   },
   "hosted_evidence": {
     "recovery_contract_workflow": {
+      "status": "HISTORICAL_BASELINE_ONLY",
       "run_id": 42668604034,
       "head_sha": "5dd548c0f09464ba7d14af104fa6e44e58f1c07c",
       "conclusion": "success",
@@ -50,31 +51,30 @@
       "size_bytes": 154590773,
       "expired": false,
       "source_run_id": 42668604034
-    },
-    "kestra_execution": {
-      "run_id": 42668930691,
-      "head_sha": "95b43d4fd20a24cc52726086d7616d394be54906",
-      "conclusion": "success",
-      "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/42668930691",
-      "scope": "EPHEMERAL_READ_ONLY_EVIDENCE_GATE"
     }
   },
   "certification_gates": {
-    "target_runtime_acceptance": "NOT_YET_EXECUTED_ON_TARGET",
-    "authorized_worker": "CUSTOSZ_V7",
-    "target_receipt_path": "evidence/lunita/target-runtime-acceptance/CURRENT.json",
+    "target_runtime_acceptance": "PENDING_DIRECT_GITHUB_ACTIONS_RUNNER",
+    "target_receipt_path": "$XDG_STATE_HOME/lunita/runtime_validation/LUNITA_TARGET_RUNTIME_ACCEPTANCE_<UTC_TIMESTAMP>.json",
     "target_receipt_present_at_freeze": false,
     "independent_validation": "NOT_PERFORMED",
     "rootfs_dependency_closure": "PENDING",
     "jasp_four_case_non_regression": "PENDING",
-    "S32": "NOT_ISSUED",
     "G23": "NOT_PERFORMED",
     "G24": "NOT_GRANTED",
+    "S32": "NOT_ISSUED",
     "certification": "NOT_GRANTED"
   },
   "release_policy": {
-    "emit_stable_release_only_after_all_hash_bound_target_and_independent_gates_pass": true,
+    "emit_stable_release_only_after_direct_target_acceptance_g23_g24_and_s32_pass": true,
     "scope": "VERSIONED_DERIVED_CANDIDATE_ONLY",
     "automatic_certification_propagation": false
+  },
+  "execution_authority": "GITHUB_ACTIONS_DIRECT_RUNNER",
+  "orchestration": {
+    "mode": "DIRECT_GITHUB_ACTIONS_ONLY",
+    "kestra": "OUT_OF_SCOPE",
+    "external_worker": "NONE",
+    "remote_desktop_commander": "PROHIBITED"
   }
 }
