@@ -90,7 +90,7 @@ jobs:
             recovery/lunita-custoszv9/runtime_engines_v1/apply_engine_overlay_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/provision_engine_runtime_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/overlay_acceptance_v1.py \
-            recovery/lunita-custoszv9/runtime_engines_v1/target_runtime_acceptance_v1.py
+            recovery/lunita-custoszv9/runtime_engines_v1/target_runtime_acceptance_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/target_acceptance_tests_v1.py
       - name: Execute real E02-E15 engine acceptance tests
         working-directory: recovery/lunita-custoszv9/runtime_engines_v1
