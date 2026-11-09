@@ -95,7 +95,7 @@ Path(cache).mkdir(parents=True, exist_ok=True)
 nlp = spacy.load("es_core_news_sm")
 doc = nlp("Lunita valida la evidencia y preserva la procedencia.")
 assert len([t for t in doc if not t.is_space]) >= 6
-embedder = TextEmbedding(model_name="minishlab/potion-multilingual-128M", cache_dir=cache, threads=1, mmap=True)
+embedder = TextEmbedding(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", cache_dir=cache, threads=1, mmap=True)
 vectors = list(embedder.embed(["Lunita conserva el contexto"]))
 assert len(vectors) == 1 and len(vectors[0]) == 256
 print(json.dumps({"spacy":"PASS","fastembed":"PASS","embedding_dimension":256,
