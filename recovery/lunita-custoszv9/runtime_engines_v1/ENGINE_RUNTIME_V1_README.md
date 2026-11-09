@@ -20,6 +20,7 @@ This directory adds adapters for existing E01–E15 identities. It does not add,
 - E13 validation: JSON Schema Draft 2020-12.
 - E14 provenance: append-only SHA-256 hash chain.
 - E15 consensus: unanimity gate from the exact agent team assigned to the invoking command, against one evidence digest.
+- Command gateway: `engine_gateway_v1.py` exposes each engine through a validated `(command, agent team, engine)` route. It rejects agents outside the command team and engines outside that command's engine set.
 
 
 ## Installation and validation
@@ -32,6 +33,7 @@ Run from this directory when validating a locally provisioned build:
 PYTHONPATH=vendor/python3.12/site-packages \
 LUNITA_FASTEMBED_CACHE=model-cache/fastembed \
 python engine_acceptance_v1.py
+python gateway_acceptance_v1.py
 ```
 
 The hosted test suite executes E02–E15 with actual library/model operations. E01 requires the actual Qwen GGUF and llama.cpp binaries from the target runtime; its target-specific test is skipped on hosted CI only when those external assets are absent, and must be executed on the deployed target.
