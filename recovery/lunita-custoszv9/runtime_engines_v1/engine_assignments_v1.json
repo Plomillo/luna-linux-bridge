@@ -1,5 +1,5 @@
 {
-  "schema": "LOUKSNA_ENGINE_ASSIGNMENTS/1.0",
+  "schema": "LOUKSNA_ENGINE_IDENTITIES_AND_COMMAND_ROUTES/1.0",
   "status": "ADDITIVE_RUNTIME_IMPLEMENTATION_CANDIDATE",
   "canonical_identity_mutation": false,
   "engine_reassignment": false,
