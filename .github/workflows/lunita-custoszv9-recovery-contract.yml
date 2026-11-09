@@ -251,3 +251,164 @@ jobs:
             !recovery/lunita-custoszv9/runtime_engines_v1/**/*.pyc
           if-no-files-found: error
           retention-days: 30
+  target-runtime-acceptance:
+    name: "Lunita v1.8 — direct installed-runtime acceptance"
+    needs: contract-tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/recovery/lunita-custoszv9-operational-20261020'
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+    env:
+      LUNITA_ROOT: /opt/lunita
+      LUNITA_CANDIDATE_ID: G06_REBUILD_CANDIDATE_R1
+    steps:
+      - name: Checkout exact tested source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Prepare Python 3.12 without changing system Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download the overlay built by this exact workflow run
+        uses: actions/download-artifact@v4
+        with:
+          name: lunita-engine-overlay-v1-py312
+          path: ${{ runner.temp }}/lunita-overlay
+
+      - name: Verify target and create a hash-bound additive checkpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+          export CHECKPOINT_DIR="$XDG_STATE_HOME/lunita/checkpoints/$LUNITA_CANDIDATE_ID/$(date -u +%Y%m%dT%H%M%S%NZ)"
+          python - <<'PY'
+          import hashlib, json, os, pathlib, sys
+          from datetime import datetime, timezone
+          root = pathlib.Path(os.environ["LUNITA_ROOT"])
+          candidate = os.environ["LUNITA_CANDIDATE_ID"]
+          source = pathlib.Path(os.environ["RUNNER_TEMP"]) / "lunita-overlay"
+          expected_launcher = "46efd711729c344e7efba9ce2503127c48f0b88207cc5a17311ff1d555b075b2"
+          launcher = root / "agent/lunita.py"
+          overlay = root / "engines/runtime_engines_v1"
+          def digest(path):
+              h = hashlib.sha256()
+              with path.open("rb") as f:
+                  for block in iter(lambda: f.read(1024 * 1024), b""):
+                      h.update(block)
+              return h.hexdigest()
+          if not launcher.is_file() or launcher.is_symlink():
+              raise SystemExit(f"BLOCKED: pinned legacy launcher missing or unsafe: {launcher}")
+          launcher_sha = digest(launcher)
+          if launcher_sha != expected_launcher:
+              raise SystemExit(f"BLOCKED: legacy launcher SHA mismatch: {launcher_sha}")
+          if overlay.exists():
+              receipt = overlay / "OVERLAY_APPLY_RECEIPT.json"
+              if not receipt.is_file():
+                  raise SystemExit("BLOCKED: overlay path exists without a valid receipt; refusing overwrite")
+              row = json.loads(receipt.read_text(encoding="utf-8"))
+              if row.get("candidate_id") != candidate or row.get("status") != "APPLIED_ADDITIVELY_NOT_CERTIFIED":
+                  raise SystemExit("BLOCKED: existing overlay belongs to another candidate or has invalid status")
+              print("OVERLAY_ALREADY_PRESENT=TRUE; REAPPLY=DENIED")
+              raise SystemExit(0)
+          required = [
+              source / "engine_runtime_v1.py",
+              source / "target_runtime_acceptance_v1.py",
+              source / "vendor/python3.12/site-packages",
+              source / "model-cache/fastembed",
+          ]
+          missing = [str(p) for p in required if not p.exists()]
+          if missing:
+              raise SystemExit("BLOCKED: built overlay artifact incomplete: " + ", ".join(missing))
+          engines = root / "engines"
+          if engines.is_symlink():
+              raise SystemExit("BLOCKED: target engines directory is a symlink")
+          checkpoint = pathlib.Path(os.environ["CHECKPOINT_DIR"])
+          checkpoint.mkdir(parents=True, mode=0o700, parents=True, exist_ok=False)
+          preserved = [{"path": str(launcher), "sha256": launcher_sha, "bytes": launcher.stat().st_size}]
+          model = root / "brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf"
+          if model.is_file() and not model.is_symlink():
+              preserved.append({"path": str(model), "sha256": digest(model), "bytes": model.stat().st_size})
+          manifest = {
+              "schema": "LUNITA_RUNTIME_OVERLAY_PREDEPLOYMENT_MANIFEST/1.0",
+              "candidate_id": candidate,
+              "captured_at_utc": datetime.now(timezone.utc).isoformat(),
+              "rootfs": "/",
+              "target_path": str(overlay),
+              "target_prestate": "ABSENT",
+              "preserved_inputs": preserved,
+              "mutation_scope": ["additive-create:" + str(overlay)],
+              "rollback": "remove-only-the-new-overlay-directory; preserve launcher, models and all pre-existing paths",
+          }
+          manifest_path = checkpoint / "checkpoint_manifest.json"
+          payload = json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2).encode() + b"\n"
+          manifest_path.write_bytes(payload)
+          manifest_sha = hashlib.sha256(payload).hexdigest()
+          receipt = {
+              "schema": "LUNITA_RUNTIME_OVERLAY_CHECKPOINT/1.0",
+              "status": "PASS",
+              "candidate_id": candidate,
+              "scope": "LUNITA_ADDITIVE_RUNTIME_ENGINE_OVERLAY",
+              "checkpoint_id": "PREDEPLOY_" + candidate + "_" + checkpoint.name,
+              "checkpoint_root": str(checkpoint),
+              "checkpoint_manifest": str(manifest_path),
+              "checkpoint_manifest_sha256": manifest_sha,
+          }
+          receipt_path = checkpoint / "CHECKPOINT_RECEIPT.json"
+          receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps({"status":"CHECKPOINT_PASS","checkpoint":str(receipt_path),"manifest_sha256":manifest_sha,"preserved":preserved},sort_keys=True))
+          PY
+
+      - name: Apply the overlay additively; never replace an existing path
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+          if [ -d "$LUNITA_ROOT/engines/runtime_engines_v1" ]; then
+            echo "Existing overlay left untouched; the target acceptance runner will verify every hash."
+            exit 0
+          fi
+          CHECKPOINT="$(find "$XDG_STATE_HOME/lunita/checkpoints/$LUNITA_CANDIDATE_ID" -name CHECKPOINT_RECEIPT.json -type f -printf '%T@ %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
+          test -n "$CHECKPOINT"
+          python recovery/lunita-custoszv9/runtime_engines_v1/apply_engine_overlay_v1.py \
+            --rootfs / \
+            --source-dir "$RUNNER_TEMP/lunita-overlay" \
+            --checkpoint-receipt "$CHECKPOINT" \
+            --candidate-id "$LUNITA_CANDIDATE_ID" \
+            --apply
+
+      - name: Execute actual E01-E15, E04 INT8 and legacy application acceptance
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+          export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$XDG_STATE_HOME/lunita/runtime_validation"
+          export LUNITA_FASTEMBED_CACHE="$LUNITA_ROOT/engines/runtime_engines_v1/model-cache/fastembed"
+          export LUNITA_VECTOR_DB_PATH="$XDG_STATE_HOME/lunita/vectors"
+          export LUNITA_ENGINE_AUDIT_LOG="$XDG_STATE_HOME/lunita/audit/engine-execution.jsonl"
+          export PYTHONPATH="$LUNITA_ROOT/engines/runtime_engines_v1/vendor/python3.12/site-packages:$LUNITA_ROOT/engines/runtime_engines_v1"
+          export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1
+          mkdir -p "$RUNNER_TEMP/lunita-target-evidence"
+          set +e
+          python "$LUNITA_ROOT/engines/runtime_engines_v1/target_runtime_acceptance_v1.py" \
+            | tee "$RUNNER_TEMP/lunita-target-evidence/target-runtime-acceptance.stdout.json"
+          rc=${PIPESTATUS[0]}
+          set -e
+          cp -a "$LUNITA_TARGET_RUNTIME_RECEIPT_DIR"/. "$RUNNER_TEMP/lunita-target-evidence/" 2>/dev/null || true
+          cp -a "$LUNITA_ROOT/engines/runtime_engines_v1/OVERLAY_APPLY_RECEIPT.json" "$RUNNER_TEMP/lunita-target-evidence/" 2>/dev/null || true
+          exit "$rc"
+
+      - name: Preserve target acceptance and deployment checkpoint evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunita-v1-8-target-acceptance-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/lunita-target-evidence/
+            ~/.local/state/lunita/checkpoints/G06_REBUILD_CANDIDATE_R1/
+          if-no-files-found: warn
+          retention-days: 90
