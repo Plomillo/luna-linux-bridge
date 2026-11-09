@@ -94,7 +94,7 @@ class RootfsInventoryTests(unittest.TestCase):
             self.assertEqual(expected, digest)
             self.assertEqual("SUDO_NONINTERACTIVE_READ_ONLY_SHA256SUM", method)
             self.assertIn("-n", run.call_args.args[0])
-            self.assertIn("sha256sum", run.call_args.args[0])
+            self.assertTrue(any(str(part).endswith("sha256sum") for part in run.call_args.args[0]))
 
     def test_privileged_read_only_hash_fails_closed_without_sudo_authorization(self):
         with tempfile.TemporaryDirectory() as tmp:
