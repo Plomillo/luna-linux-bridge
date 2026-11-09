@@ -8,6 +8,21 @@ import engine_runtime_v1 as engine
 
 
 class CanonicalCommandGatewayTests(unittest.TestCase):
+    def test_complete_canonical_route_matrix_for_all_fourteen_commands(self):
+        self.assertEqual(14, len(engine.COMMAND_AGENTS))
+        self.assertEqual(set(engine.COMMAND_AGENTS), set(engine.COMMAND_ENGINES))
+        for command, agents in engine.COMMAND_AGENTS.items():
+            engines = engine.COMMAND_ENGINES[command]
+            self.assertTrue(agents, command)
+            self.assertTrue(engines, command)
+            self.assertIn("Luna", agents, command)
+            for agent in agents:
+                for engine_id in engines:
+                    with self.subTest(command=command, agent=agent, engine=engine_id):
+                        self.assertIsNone(engine.assert_command_route(command, agent, engine_id))
+        self.assertEqual({f"E{i:02d}" for i in range(1, 16)},
+                         set().union(*map(set, engine.COMMAND_ENGINES.values())))
+
     def test_support_agent_can_run_engine_in_its_assigned_command(self):
         receipt = gateway.execute_engine_for_route(
             "/play PA", "Ancapi", "E06",
