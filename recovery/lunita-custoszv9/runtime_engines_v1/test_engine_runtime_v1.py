@@ -21,10 +21,26 @@ class EngineRegistryTests(unittest.TestCase):
         with self.assertRaises(engine.EngineContractError):
             engine.assert_agent_assignment("E06", "Katya")
 
-    def test_luna_remains_on_all_command_routes(self):
+    def test_exact_fourteen_command_agent_routes_and_luna_presence(self):
+        expected = {
+            "/help": ("Luna",),
+            "/play PT": ("Luna", "Katya"),
+            "/play PA": ("Luna", "Ancapi"),
+            "/play DCI": ("Luna", "Josefina"),
+            "/play DCIL": ("Luna", "Josefina", "Katya"),
+            "/play traductor": ("Luna", "Katya"),
+            "/play e": ("Luna", "Josefina"),
+            "/play ema": ("Luna", "Josefina", "Katya"),
+            "/play p": ("Luna", "Ancapi"),
+            "/play c": ("Luna", "Katya"),
+            "/play cp": ("Luna", "Josefina", "Katya"),
+            "/play MA": ("Luna",),
+            "/play H": ("Luna", "Josefina"),
+            "/play AE": ("Luna", "Ancapi"),
+        }
+        self.assertEqual(expected, engine.COMMAND_AGENTS)
         self.assertEqual(14, len(engine.COMMAND_ENGINES))
-        self.assertTrue(all("E13" in engines or command == "/play MA"
-                            for command, engines in engine.COMMAND_ENGINES.items()))
+        self.assertTrue(all("Luna" in agents for agents in engine.COMMAND_AGENTS.values()))
 
 
 class RealRuntimeEngineTests(unittest.TestCase):
