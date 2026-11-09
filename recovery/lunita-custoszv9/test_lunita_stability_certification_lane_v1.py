@@ -531,7 +531,7 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
                 "runtime_report_path": str(receipt),
                 "runtime_report_sha256": lane.sha_file(receipt),
                 "checks": {
-                    "target_runtime": {
+                    "target_v1_8_runtime_acceptance_e01_e15_int8": {
                         "status": "PASS", "returncode": 0,
                         "receipt_path": str(receipt), "receipt_sha256": lane.sha_file(receipt),
                     },
