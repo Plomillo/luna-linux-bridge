@@ -34,6 +34,10 @@ FILES = (
     "ENGINE_RUNTIME_V1_README.md",
     "provision_engine_runtime_v1.py",
 )
+DIRECTORIES = (
+    "vendor/python3.12/site-packages",
+    "model-cache/fastembed",
+)
 
 
 class GateError(RuntimeError):
@@ -72,6 +76,28 @@ def reject_symlink_components(path: pathlib.Path, stop: pathlib.Path) -> None:
         current = current / component
         if current.is_symlink():
             raise GateError(f"Symlink component is not allowed: {current}")
+
+
+def hash_tree(path: pathlib.Path) -> dict[str, Any]:
+    if path.is_symlink() or not path.is_dir():
+        raise GateError(f"Required payload directory is missing or not a real directory: {path}")
+    entries = []
+    for item in sorted(path.rglob("*")):
+        if item.is_symlink():
+            raise GateError(f"Symlink inside deployable payload is forbidden: {item}")
+        if item.is_file():
+            entries.append({
+                "path": item.relative_to(path).as_posix(),
+                "sha256": sha256_file(item),
+                "bytes": item.stat().st_size,
+            })
+        elif not item.is_dir():
+            raise GateError(f"Unsupported filesystem object in payload: {item}")
+    if not entries:
+        raise GateError(f"Deployable payload directory is empty: {path}")
+    canonical = json.dumps(entries, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return {"file_count": len(entries), "bytes": sum(item["bytes"] for item in entries),
+            "sha256": hashlib.sha256(canonical).hexdigest()}
 
 
 def load_checkpoint_receipt(receipt_path: pathlib.Path, worker: str, candidate_id: str) -> dict[str, Any]:
@@ -153,6 +179,11 @@ def preflight(
         if source.is_symlink() or not source.is_file():
             raise GateError(f"Required additive payload is missing or not regular: {filename}")
         sources[filename] = sha256_file(source)
+    directories: dict[str, Any] = {}
+    for relative in DIRECTORIES:
+        source = source_dir / relative
+        reject_any_symlink(source)
+        directories[relative] = hash_tree(source)
     checkpoint = load_checkpoint_receipt(checkpoint_receipt, worker_version, candidate_id)
     engines_dir = rootfs / "opt/lunita/engines"
     target = rootfs / OVERLAY_RELATIVE_PATH
@@ -169,6 +200,7 @@ def preflight(
         "target": str(target),
         "checkpoint": checkpoint,
         "files": sources,
+        "directories": directories,
     }
 
 
@@ -206,6 +238,15 @@ def apply_overlay(
             if observed != result["files"][filename]:
                 raise GateError(f"Copied file digest mismatch: {filename}")
             copied[filename] = observed
+        copied_directories: dict[str, Any] = {}
+        for relative in DIRECTORIES:
+            source = source_dir / relative
+            destination = stage / relative
+            shutil.copytree(source, destination, symlinks=False)
+            observed = hash_tree(destination)
+            if observed != result["directories"][relative]:
+                raise GateError(f"Copied directory digest mismatch: {relative}")
+            copied_directories[relative] = observed
         receipt = {
             "schema": "LUNITA_ADDITIVE_ENGINE_OVERLAY_RECEIPT/1.0",
             "status": "APPLIED_ADDITIVELY_NOT_CERTIFIED",
@@ -216,6 +257,7 @@ def apply_overlay(
             "launcher_sha256": result["launcher_sha256"],
             "checkpoint": result["checkpoint"],
             "files": copied,
+            "directories": copied_directories,
             "target_relative_path": str(OVERLAY_RELATIVE_PATH),
             "canonical_identity_mutation": False,
             "engine_reassignment": False,
@@ -234,7 +276,7 @@ def apply_overlay(
         os.rename(stage, target)
         return {**result, "status": "APPLIED_ADDITIVELY_NOT_CERTIFIED", "mutated": True,
                 "target": str(target), "receipt": str(target / "OVERLAY_APPLY_RECEIPT.json"),
-                "files": copied}
+                "files": copied, "directories": copied_directories}
     except Exception:
         # Only the uniquely-owned staging directory is cleaned. No existing path is touched.
         if stage.exists() and not stage.is_symlink():
