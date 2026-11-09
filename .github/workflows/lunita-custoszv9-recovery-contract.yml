@@ -17,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: lunita-custoszv9-recovery-contract-${{ github.ref }}
+  group: lunita-custoszv9-recovery-contract
   cancel-in-progress: false
 
 jobs:
@@ -30,9 +30,15 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install pinned CPU-only PyTorch for SeamlessM4T tensor contracts
-        run: python -m pip install --disable-pip-version-check --only-binary=:all: "torch==2.14.1" --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check --only-binary=:all: "torch==2.14.1" \
+            --index-url https://download.pytorch.org/whl/cpu \
+            --extra-index-url https://pypi.org/simple
       - name: Verify CPU tensor runtime
-        run: python -c "import torch; assert torch.__version__.startswith('2.14.1'); print('PYTORCH_CPU_RUNTIME=' + torch.__version__)"
+        shell: bash
+        run: |
+          python -c 'import torch; assert torch.__version__.startswith("2.14.1"); print("PYTORCH_CPU_RUNTIME=" + torch.__version__)'
       - name: Compile recovery gate and tests
         run: python -m py_compile recovery/lunita-custoszv9/permission_gate.py recovery/lunita-custoszv9/test_permission_gate.py recovery/lunita-custoszv9/test_continuation_antiparalysis.py
       - name: Run fail-closed contract tests
