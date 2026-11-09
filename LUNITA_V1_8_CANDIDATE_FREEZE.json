@@ -1,0 +1,81 @@
+{
+  "schema": "LUNITA_CANDIDATE_FREEZE/1.0",
+  "project": "LUNITA",
+  "candidate_name": "LUNITA_V1_8_CANDIDATE",
+  "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+  "version": "1.8.0",
+  "release_name_when_certified": "LUNITA_STABLE_1_8",
+  "freeze_status": "FROZEN_CANDIDATE_NOT_CERTIFIED",
+  "frozen_at_utc": "2026-11-09T17:53:06Z",
+  "frozen_ref": "candidate/lunita-v1.8.0-frozen-20261109",
+  "frozen_commit": "95b43d4fd20a24cc52726086d7616d394be54906",
+  "source_branch": "recovery/lunita-custoszv9-operational-20261020",
+  "preserved_baseline": {
+    "frozen_g06_mutated": false,
+    "canonical_g08_bindings_mutated": false,
+    "legacy_v1_7_launcher_replaced": false,
+    "previous_v1_7_receipts_overwritten": false
+  },
+  "instruments": {
+    "BRUJULA": {
+      "display_label": "Brújula giroscópica",
+      "runtime_component": "brujula",
+      "runtime_path": "/opt/lunita/instruments/brujula"
+    },
+    "JAMOVI": {
+      "display_label": "Sacapuntas",
+      "application_id": "org.jamovi.jamovi"
+    },
+    "JASP": {
+      "display_label": "Lupa",
+      "application_id": "org.jaspstats.JASP"
+    }
+  },
+  "consensus": {
+    "engine_id": "E15",
+    "implementation": "ALL_ASSIGNED_AGENTS_SAME_EVIDENCE_DIGEST_UNANIMOUS_VOTE",
+    "contract_test": "test_e15_consensus_requires_all_assigned_votes_and_same_evidence",
+    "hosted_acceptance": "PASS",
+    "target_acceptance": "PENDING_CUSTOSZ_V7"
+  },
+  "hosted_evidence": {
+    "recovery_contract_workflow": {
+      "run_id": 42668604034,
+      "head_sha": "5dd548c0f09464ba7d14af104fa6e44e58f1c07c",
+      "conclusion": "success",
+      "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/42668604034"
+    },
+    "engine_overlay_artifact": {
+      "id": 13697413181,
+      "name": "lunita-engine-overlay-v1-py312",
+      "size_bytes": 154590773,
+      "expired": false,
+      "source_run_id": 42668604034
+    },
+    "kestra_execution": {
+      "run_id": 42668930691,
+      "head_sha": "95b43d4fd20a24cc52726086d7616d394be54906",
+      "conclusion": "success",
+      "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/42668930691",
+      "scope": "EPHEMERAL_READ_ONLY_EVIDENCE_GATE"
+    }
+  },
+  "certification_gates": {
+    "target_runtime_acceptance": "NOT_YET_EXECUTED_ON_TARGET",
+    "authorized_worker": "CUSTOSZ_V7",
+    "target_receipt_path": "evidence/lunita/target-runtime-acceptance/CURRENT.json",
+    "target_receipt_present_at_freeze": false,
+    "independent_validation": "NOT_PERFORMED",
+    "rootfs_dependency_closure": "PENDING",
+    "jasp_four_case_non_regression": "PENDING",
+    "S32": "NOT_ISSUED",
+    "G23": "NOT_PERFORMED",
+    "G24": "NOT_GRANTED",
+    "certification": "NOT_GRANTED"
+  },
+  "release_policy": {
+    "emit_stable_release_only_after_all_hash_bound_target_and_independent_gates_pass": true,
+    "scope": "VERSIONED_DERIVED_CANDIDATE_ONLY",
+    "automatic_certification_propagation": false
+  }
+}
