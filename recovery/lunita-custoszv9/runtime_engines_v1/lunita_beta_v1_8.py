@@ -17,7 +17,7 @@ import sys
 from datetime import datetime, timezone
 from typing import Sequence
 
-ROOT = pathlib.Path("/opt/lunita")
+ROOT = pathlib.Path(os.environ.get("LUNITA_ROOT", "/opt/lunita")).expanduser()
 OVERLAY = ROOT / "engines/runtime_engines_v1"
 LEGACY_LAUNCHER = ROOT / "agent/lunita.py"
 LEGACY_SHA256 = "46efd711729c344e7efba9ce2503127c48f0b88207cc5a17311ff1d555b075b2"
