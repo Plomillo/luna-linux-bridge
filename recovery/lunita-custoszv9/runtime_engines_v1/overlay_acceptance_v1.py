@@ -89,7 +89,7 @@ class AdditiveOverlayInstallerTests(unittest.TestCase):
         after = hashlib.sha256((target / "OVERLAY_APPLY_RECEIPT.json").read_bytes()).hexdigest()
         self.assertEqual(before, after)
 
-    def test_checkpoint_is_not_bound_to_external_worker_identity(self):
+    def test_checkpoint_does_not_require_external_worker_identity(self):
         receipt = json.loads(self.checkpoint_receipt.read_text(encoding="utf-8"))
         receipt.pop("worker_version", None)
         self.checkpoint_receipt.write_text(json.dumps(receipt), encoding="utf-8")

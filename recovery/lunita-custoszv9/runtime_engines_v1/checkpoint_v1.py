@@ -25,7 +25,7 @@ class CheckpointError(RuntimeError):
 
 
 def canonical_json(value: Any) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
 
 
 def sha256_file(path: pathlib.Path) -> str:
@@ -72,6 +72,9 @@ def build_manifest(rootfs: pathlib.Path, candidate_id: str = EXPECTED_CANDIDATE_
             "path": relative_directory,
             "type": "directory",
             "mode": stat.S_IMODE(directory_stat.st_mode),
+            "uid": directory_stat.st_uid,
+            "gid": directory_stat.st_gid,
+            "mtime_ns": directory_stat.st_mtime_ns,
             "size_bytes": directory_stat.st_size,
             "sha256": None,
             "symlink_target": None,
@@ -93,6 +96,9 @@ def build_manifest(rootfs: pathlib.Path, candidate_id: str = EXPECTED_CANDIDATE_
                 "path": relative,
                 "type": "special",
                 "mode": mode,
+                "uid": before.st_uid,
+                "gid": before.st_gid,
+                "mtime_ns": before.st_mtime_ns,
                 "size_bytes": before.st_size,
                 "sha256": None,
                 "symlink_target": None,
@@ -194,7 +200,7 @@ def create_checkpoint(
 
     try:
         manifest = build_manifest(rootfs, candidate_id)
-        manifest_bytes = json.dumps(manifest, sort_keys=True, ensure_ascii=False, indent=2).encode("utf-8") + b"\n"
+        manifest_bytes = json.dumps(manifest, sort_keys=True, ensure_ascii=True, indent=2).encode("utf-8") + b"\n"
         manifest_path = checkpoint_dir / "MANIFEST.json"
         _atomic_write(manifest_path, manifest_bytes)
         receipt = {
@@ -213,7 +219,7 @@ def create_checkpoint(
             "certification": "NOT_GRANTED",
         }
         receipt_path = checkpoint_dir / "CHECKPOINT_RECEIPT.json"
-        receipt_bytes = json.dumps(receipt, sort_keys=True, ensure_ascii=False, indent=2).encode("utf-8") + b"\n"
+        receipt_bytes = json.dumps(receipt, sort_keys=True, ensure_ascii=True, indent=2).encode("utf-8") + b"\n"
         _atomic_write(receipt_path, receipt_bytes)
         return {**receipt, "receipt_path": str(receipt_path),
                 "receipt_sha256": hashlib.sha256(receipt_bytes).hexdigest()}
