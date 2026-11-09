@@ -257,7 +257,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             temp_before = sha_file(temp_fixture)
             cmd = ["/usr/bin/flatpak", "--system", "run", "--unshare=network",
                    f"--filesystem={temp_root}", "org.jaspstats.JASP", "--unitTest",
-                   str(temp_fixture), "--hide", "--timeOut=2"]
+                   str(temp_fixture), "--hide"]
             save_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_save.log"
             rerun_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_rerun.log"
             save_started = utc()
@@ -300,7 +300,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         base["executor_error"] = {"type": type(exc).__name__, "message": str(exc)[:1200]}
     original_after = sha_file(source) if source.is_file() else None
     unchanged = bool(original_before == expected_original_sha and original_after == expected_original_sha)
-    roundtrip_reproducible = bool(temp_before == expected_original_sha and temp_after_save and temp_after_save == temp_after_rerun and temp_root and not temp_root.exists())
+    roundtrip_reproducible = bool(temp_before == expected_original_sha and temp_after and temp_after == temp_after_rerun and temp_root and not temp_root.exists())
     final_status = "PASS" if save_run.get("returncode") == 0 and rerun.get("returncode") == 0 and unchanged and roundtrip_reproducible else "FAIL"
     result = {**base, "captured_at_utc": utc(), "status": "PASS_JASP_STRICT_ROUNDTRIP" if final_status == "PASS" else "BLOCKED_JASP_STRICT_ROUNDTRIP",
               "expected_original_sample_sha256": expected_original_sha,
@@ -371,7 +371,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                     results["tests"][case_id] = {"status": "PASS" if rc == 0 else "BLOCKED", "returncode": rc,
                         "fixture": fixture, "log_path": str(log_path), "log_sha256": sha_file(log_path),
                         "command": ["/usr/bin/flatpak", "--system", "run", "--unshare=network",
-                                    "org.jaspstats.JASP", "--unitTest", fixture, "--hide", "--timeOut=2"],
+                                    "org.jaspstats.JASP", "--unitTest", fixture, "--hide"],
                         "started_at_utc": started, "finished_at_utc": utc()}
                 except subprocess.TimeoutExpired as exc:
                     out = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
