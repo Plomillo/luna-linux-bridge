@@ -6,9 +6,9 @@ This directory adds adapters for existing E01–E15 identities. It does not add,
 
 ## Implementation
 - E01 LLM: existing candidate-rootfs Qwen3-0.6B GGUF through the bundled llama.cpp runtime; no placeholder model.
-- E02 NLP: deterministic Spanish tokenizer, sentence segmentation, stop-word lexicon, morphology/lemma rules, heuristic POS and proper-name candidate detection. It explicitly does not claim statistical dependency parsing; named-entity candidates remain heuristic.
+- E02 NLP: deterministic Spanish tokenizer, sentence segmentation, stop-word lexicon, morphology/lemma rules, heuristic POS and proper-name candidate detection. It explicitly does not claim statistical dependency parsing; named-entity candidates remain heuristic. The runtime exposes those limitations in every result.
 - E03 RAG: source-bound retrieval/context assembly, delegating response generation to E01.
-- E04 embeddings: FastEmbed `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, 384-dimensional multilingual transformer embeddings. The official FastEmbed catalogue lists it at approximately 0.220 GB and Apache-2.0.
+- E04 embeddings: FastEmbed `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, 384-dimensional multilingual transformer embeddings. CI creates a dynamic per-channel INT8 ONNX candidate only when mean cosine ≥0.995, minimum cosine ≥0.985, and the Spanish retrieval corpus keeps 100% top-1 decisions; its hash-bound receipt is required on target.
 - E05 vector search: Qdrant embedded local index, memory or persistent path.
 - E06 knowledge graph: pure-Python directed multigraph with adjacency indexes, multi-edge relation metadata and breadth-first shortest-path traversal.
 - E07 RDF: RDFLib parsing, serialization and SPARQL.
@@ -16,7 +16,7 @@ This directory adds adapters for existing E01–E15 identities. It does not add,
 - E09 semantic inference: OWL 2 RL entailment closure via OWL-RL.
 - E10 rule engine: deterministic allow-listed rules; no dynamic Python evaluation.
 - E11 hermeneutic: source-preserving staged workflow; context and hypotheses remain separate; human/independent validation required.
-- E12 formalization: typed symbolic AST with exact rational constants, associative flattening, commutative normalization and safe constant folding; no string evaluation, no arbitrary code execution.
+- E12 formalization: typed symbolic AST with exact rational constants, associative flattening, commutative normalization and safe constant folding over the declared operator set; no string evaluation or arbitrary code execution.
 - E13 validation: JSON Schema Draft 2020-12.
 - E14 provenance: append-only SHA-256 hash chain.
 - E15 consensus: unanimity gate from the exact agent team assigned to the invoking command, against one evidence digest.
@@ -53,7 +53,7 @@ The overlay must be activated by the existing authorized CUSTOSZ_V7 worker. GitH
    - `PYTHONPATH=/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages`
    - `LUNITA_FASTEMBED_CACHE=/opt/lunita/engines/runtime_engines_v1/model-cache/fastembed`
    - `LUNITA_VECTOR_DB_PATH=/var/lib/lunita/vectors`
-   Re-run E01 against the exact Qwen GGUF and llama.cpp binary in the target rootfs; hosted CI does not contain those assets.
+   Verify `LUNITA_E04_ONNX_QUANTIZATION_RECEIPT.json` and its ONNX digest, then re-run E01 against the exact Qwen GGUF and llama.cpp binary in the target rootfs; hosted CI does not contain those assets.
 5. Keep this layer in `APPLIED_ADDITIVELY_NOT_CERTIFIED` until target runtime acceptance, actual JASP fixture non-regression, full rootfs inventory, G23, and G24 all pass.
 
 The installer is deliberately not self-authorizing. No checkpoint receipt means no mutation; no V7 identity means no mutation; an existing target means no overwrite. The local rootfs has no `pip` or `ensurepip`, so deployment does not modify system/global package paths and does not assume they exist.
