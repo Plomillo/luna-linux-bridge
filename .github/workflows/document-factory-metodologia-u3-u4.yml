@@ -1,0 +1,151 @@
+name: "Document Factory — Metodología Cuantitativa UNIACC U3 y U4"
+
+on:
+  push:
+    branches:
+      - "candidate/document-factory-v1-unit2-20261013"
+    paths:
+      - "factory-runs/metodologia-cuantitativa-u3-u4/**"
+      - ".github/workflows/document-factory-metodologia-u3-u4.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uniacc-metodologia-u3-u4-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Install document providers
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y pandoc libreoffice-writer python3-docx poppler-utils
+
+      - name: Run Document Factory self-tests and validate both task profiles
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B document-factory/src/selftest.py
+          python3 -B document-factory/src/factory.py validate-profile factory-runs/metodologia-cuantitativa-u3-u4/profile-entrega3.json --repo-root .
+          python3 -B document-factory/src/factory.py validate-profile factory-runs/metodologia-cuantitativa-u3-u4/profile-entrega4.json --repo-root .
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          base=Path("factory-runs/metodologia-cuantitativa-u3-u4")
+          for name in ("profile-entrega3.json","profile-entrega4.json"):
+              profile=json.loads((base/name).read_text(encoding="utf-8"))
+              assert sum(float(x["points"]) for x in profile["rubric"]["criteria"]) == float(profile["rubric"]["declared_total_points"])
+              assert profile["rubric"]["official_teacher_rubric"] == "NOT_PROVIDED_IN_SOURCE_INSTRUCTIONS"
+              print(profile["profile_id"], "PROFILE_ARITHMETIC=PASS; OFFICIAL_RUBRIC=NOT_PROVIDED")
+          PY
+
+      - name: Build Entrega 3 with Louksna Document Factory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          W="$RUNNER_TEMP/uniacc-met-cuanti-u3"
+          mkdir -p "$W"
+          cp -a factory-runs/metodologia-cuantitativa-u3-u4/workspace-entrega3/. "$W/"
+          PROFILE=factory-runs/metodologia-cuantitativa-u3-u4/profile-entrega3.json
+          python3 -B document-factory/src/factory.py build "$W" "$PROFILE" --repo-root .
+          python3 -B factory-runs/metodologia-cuantitativa-u3-u4/format_docx.py "$W/build/report.docx" "$W/evidence/formatting.json" ENTREGA3
+          rm -f "$W/build/report.pdf"
+          soffice --headless --convert-to pdf --outdir "$W/build" "$W/build/report.docx"
+          test -s "$W/build/report.docx"
+          test -s "$W/build/report.pdf"
+          PAGES="$(pdfinfo "$W/build/report.pdf" | awk '/^Pages:/ {print $2}')"
+          echo "ENTREGA3_TOTAL_PAGES=$PAGES"
+          test "$PAGES" -le 2
+          python3 -B document-factory/src/factory.py validate "$W" "$PROFILE" --repo-root .
+          python3 -B document-factory/src/factory.py self-audit "$W" "$PROFILE"
+          printf '{"run_id":"%s","commit":"%s","ref":"%s","task":"ENTREGA3","field_data":"NOT_PROVIDED","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED","authority":"Louksna.md"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
+          python3 -B document-factory/src/factory.py freeze "$W"
+          OUT="$RUNNER_TEMP/Entrega3"
+          mkdir -p "$OUT"
+          cp "$W/build/report.docx" "$OUT/Entrega3_Informe_Trabajo_de_Campo.docx"
+          cp "$W/build/report.pdf" "$OUT/Entrega3_Informe_Trabajo_de_Campo.pdf"
+          cp "$W/build/evidence.xlsx" "$OUT/Entrega3_Base_de_Datos_Plantilla.xlsx"
+          cp "$W/build/slides.pptx" "$OUT/Entrega3_Resumen_Metodologico.pptx"
+          cp "$W/data/datos_participantes.csv" "$OUT/"
+          cp "$W/data/ensayos_cam.csv" "$OUT/"
+          cp -a "$W/evidence" "$OUT/"
+          cp "$W/FROZEN_CANDIDATE.json" "$OUT/"
+          cp factory-runs/metodologia-cuantitativa-u3-u4/instrumento-y-protocolo.md "$OUT/"
+          cp factory-runs/metodologia-cuantitativa-u3-u4/profile-entrega3.json "$OUT/"
+
+      - name: Build Entrega 4 with Louksna Document Factory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          W="$RUNNER_TEMP/uniacc-met-cuanti-u4"
+          mkdir -p "$W"
+          cp -a factory-runs/metodologia-cuantitativa-u3-u4/workspace-entrega4/. "$W/"
+          PROFILE=factory-runs/metodologia-cuantitativa-u3-u4/profile-entrega4.json
+          python3 -B document-factory/src/factory.py build "$W" "$PROFILE" --repo-root .
+          python3 -B factory-runs/metodologia-cuantitativa-u3-u4/format_docx.py "$W/build/report.docx" "$W/evidence/formatting.json" ENTREGA4
+          rm -f "$W/build/report.pdf"
+          soffice --headless --convert-to pdf --outdir "$W/build" "$W/build/report.docx"
+          test -s "$W/build/report.docx"
+          test -s "$W/build/report.pdf"
+          PAGES="$(pdfinfo "$W/build/report.pdf" | awk '/^Pages:/ {print $2}')"
+          echo "ENTREGA4_TOTAL_PAGES=$PAGES"
+          test "$PAGES" -le 10
+          python3 -B document-factory/src/factory.py validate "$W" "$PROFILE" --repo-root .
+          python3 -B document-factory/src/factory.py self-audit "$W" "$PROFILE"
+          printf '{"run_id":"%s","commit":"%s","ref":"%s","task":"ENTREGA4","real_data":"NOT_PROVIDED","jamovi_results":"NOT_GENERATED","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED","authority":"Louksna.md"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
+          python3 -B document-factory/src/factory.py freeze "$W"
+          OUT="$RUNNER_TEMP/Entrega4"
+          mkdir -p "$OUT"
+          cp "$W/build/report.docx" "$OUT/Entrega4_Informe_Analitico_PENDIENTE_DE_DATOS.docx"
+          cp "$W/build/report.pdf" "$OUT/Entrega4_Informe_Analitico_PENDIENTE_DE_DATOS.pdf"
+          cp "$W/build/evidence.xlsx" "$OUT/Entrega4_Base_Jamovi_Plantilla.xlsx"
+          cp "$W/build/slides.pptx" "$OUT/Entrega4_Guia_de_Analisis.pptx"
+          cp "$W/data/datos_participantes.csv" "$OUT/"
+          cp -a "$W/evidence" "$OUT/"
+          cp "$W/FROZEN_CANDIDATE.json" "$OUT/"
+          cp factory-runs/metodologia-cuantitativa-u3-u4/analysis-plan-jamovi.md "$OUT/"
+          cp factory-runs/metodologia-cuantitativa-u3-u4/profile-entrega4.json "$OUT/"
+
+      - name: Publish task artifacts and limitations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          {
+            echo "## UNIACC — Metodología Cuantitativa U3 y U4"
+            echo "- Document Factory self-tests: executed"
+            echo "- Entrega 3: DOCX/PDF, XLSX template, CSV headers, instrument protocol and evidence generated."
+            echo "- Entrega 3 field responses: NOT PROVIDED; no sample or real field results asserted."
+            echo "- Entrega 4: DOCX/PDF analysis framework, Jamovi input template and analysis guide generated."
+            echo "- Entrega 4 Jamovi tables/graphs: NOT GENERATED because there is no real participant dataset."
+            echo "- BFI-2-S evidence: Spanish adaptation, no Chile-specific validation claimed."
+            echo "- CAM evidence: study in French preteens; adult Chilean use remains exploratory."
+            echo "- G23: NOT EXECUTED; G24: NOT EXECUTED; certification propagation: FORBIDDEN."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Entrega 3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: uniacc-metodologia-entrega3-${{ github.run_id }}
+          path: ${{ runner.temp }}/Entrega3
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Entrega 4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: uniacc-metodologia-entrega4-${{ github.run_id }}
+          path: ${{ runner.temp }}/Entrega4
+          if-no-files-found: error
+          retention-days: 30
