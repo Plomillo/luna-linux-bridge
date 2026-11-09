@@ -58,7 +58,19 @@ Passing hosted tests validates the additive code and pinned dependency layer in 
 
 The additive overlay is validated from its contents and hash-bound checkpoint, without binding authorization to an external worker identity. The installer remains fail-closed: it requires the exact candidate ID, a PASS checkpoint with the registered schema and scope, a real checkpoint manifest whose SHA-256 matches, the pinned v1.7 launcher, complete payload files/directories, and a non-existing overlay destination. It never overwrites an installed overlay.
 
-1. Point `ROOTFS` to the candidate filesystem tree and `CHECKPOINT_RECEIPT` to its real, hash-verified checkpoint receipt.
+1. Point `ROOTFS` to the candidate filesystem tree. Create the real checkpoint receipt and complete rootfs manifest from that exact tree; the checkpoint directory must be outside the rootfs and must not already exist:
+
+```bash
+python3 checkpoint_v1.py \
+  --rootfs "$ROOTFS" \
+  --checkpoint-dir "$CHECKPOINT_DIR" \
+  --candidate-id G06_REBUILD_CANDIDATE_R1
+
+export CHECKPOINT_RECEIPT="$CHECKPOINT_DIR/CHECKPOINT_RECEIPT.json"
+```
+
+The checkpoint tool hashes every regular file, records symlinks and filesystem modes without following links, checks that the tree did not change during the scan, and refuses to overwrite an existing checkpoint. The installer recomputes the tree manifest before applying and rejects a receipt for a different path or changed bytes.
+
 2. Run a dry-run, then apply only after the dry-run returns `PREFLIGHT_PASS`:
 
 ```bash

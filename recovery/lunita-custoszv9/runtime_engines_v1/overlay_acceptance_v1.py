@@ -8,6 +8,7 @@ import unittest
 from unittest import mock
 
 import apply_engine_overlay_v1 as installer
+import checkpoint_v1
 
 
 class AdditiveOverlayInstallerTests(unittest.TestCase):
@@ -29,21 +30,12 @@ class AdditiveOverlayInstallerTests(unittest.TestCase):
         model_cache = self.source / "model-cache/fastembed"
         model_cache.mkdir(parents=True)
         (model_cache / "model-fixture.bin").write_bytes(b"hash-bound-model-fixture")
+        (self.rootfs / "etc").mkdir()
+        (self.rootfs / "etc/os-release").write_text("ID=ubuntu\nVERSION_ID=24.04\n", encoding="utf-8")
         self.checkpoint = self.base / "checkpoint"
-        self.checkpoint.mkdir()
+        checkpoint = checkpoint_v1.create_checkpoint(self.rootfs, self.checkpoint)
         self.manifest = self.checkpoint / "MANIFEST.json"
-        self.manifest.write_text('{"checkpoint":"pre-overlay"}\n', encoding="utf-8")
-        self.checkpoint_receipt = self.base / "checkpoint-receipt.json"
-        self.checkpoint_receipt.write_text(json.dumps({
-            "schema": installer.EXPECTED_CHECKPOINT_SCHEMA,
-            "status": "PASS",
-            "candidate_id": installer.EXPECTED_CANDIDATE_ID,
-            "scope": installer.EXPECTED_CHECKPOINT_SCOPE,
-            "checkpoint_id": "TEST-CHECKPOINT-001",
-            "checkpoint_root": str(self.checkpoint),
-            "checkpoint_manifest": str(self.manifest),
-            "checkpoint_manifest_sha256": hashlib.sha256(self.manifest.read_bytes()).hexdigest(),
-        }), encoding="utf-8")
+        self.checkpoint_receipt = pathlib.Path(checkpoint["receipt_path"])
         self.launcher_digest = hashlib.sha256(self.launcher.read_bytes()).hexdigest()
         self.hash_patch = mock.patch.object(installer, "EXPECTED_LAUNCHER_SHA256", self.launcher_digest)
         self.hash_patch.start()
@@ -118,6 +110,33 @@ class AdditiveOverlayInstallerTests(unittest.TestCase):
 
     def test_checkpoint_manifest_tampering_is_denied(self):
         self.manifest.write_text('{"checkpoint":"modified"}\n', encoding="utf-8")
+        with self.assertRaises(installer.GateError):
+            self.apply()
+        self.assertFalse((self.rootfs / installer.OVERLAY_RELATIVE_PATH).exists())
+
+
+    def test_checkpoint_is_bound_to_exact_rootfs_and_rejects_post_checkpoint_mutation(self):
+        protected_file = self.rootfs / "etc/os-release"
+        protected_file.write_text("ID=ubuntu\nVERSION_ID=24.04\nBUILD_ID=changed-after-checkpoint\n", encoding="utf-8")
+        with self.assertRaises(installer.GateError):
+            self.apply()
+        self.assertFalse((self.rootfs / installer.OVERLAY_RELATIVE_PATH).exists())
+
+    def test_checkpoint_cannot_be_replayed_against_a_different_rootfs_path(self):
+        other_rootfs = self.base / "other-rootfs"
+        import shutil
+        shutil.copytree(self.rootfs, other_rootfs, symlinks=True)
+        with self.assertRaises(installer.GateError):
+            self.apply(rootfs=other_rootfs)
+        self.assertFalse((other_rootfs / installer.OVERLAY_RELATIVE_PATH).exists())
+
+    def test_manifest_content_cannot_be_substituted_even_with_a_recomputed_receipt_hash(self):
+        manifest = json.loads(self.manifest.read_text(encoding="utf-8"))
+        manifest["rootfs_path"] = str(self.base / "attacker-rootfs")
+        self.manifest.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+        receipt = json.loads(self.checkpoint_receipt.read_text(encoding="utf-8"))
+        receipt["checkpoint_manifest_sha256"] = hashlib.sha256(self.manifest.read_bytes()).hexdigest()
+        self.checkpoint_receipt.write_text(json.dumps(receipt), encoding="utf-8")
         with self.assertRaises(installer.GateError):
             self.apply()
         self.assertFalse((self.rootfs / installer.OVERLAY_RELATIVE_PATH).exists())
