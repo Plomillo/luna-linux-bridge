@@ -1,0 +1,438 @@
+name: Lunita v1.8 Direct Functional Validation
+
+on:
+  push:
+    branches:
+      - fix/lunita-v18-rootfs-bound-checkpoint-20261109
+    paths:
+      - "recovery/lunita-custoszv9/**"
+      - ".github/workflows/lunita-v18-direct-functional-validation.yml"
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "recovery/lunita-custoszv9/**"
+      - ".github/workflows/lunita-v18-direct-functional-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lunita-v1-8-direct-functional-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract-tests:
+    if: ${{ (github.event_name == 'push' && github.ref_name == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109') || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109' && github.event.pull_request.base.ref == 'fix/lunita-v18-certification-path-20261109') }}
+    name: "Lunita v1.8 contract and overlay acceptance"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned CPU-only PyTorch for SeamlessM4T tensor contracts
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check --only-binary=:all: "torch==2.14.1" \
+            --index-url https://download.pytorch.org/whl/cpu \
+            --extra-index-url https://pypi.org/simple
+      - name: Install pinned SeamlessM4T Python dependencies
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check --only-binary=:all: \
+            "numpy==2.2.6" "safetensors==0.7.0" "transformers==4.57.6"
+      - name: Verify CPU tensor runtime
+        shell: bash
+        run: |
+          python -c 'import torch; assert torch.__version__.startswith("2.14.1"); print("PYTORCH_CPU_RUNTIME=" + torch.__version__)'
+      - name: Compile recovery gate and tests
+        run: python -m py_compile recovery/lunita-custoszv9/permission_gate.py recovery/lunita-custoszv9/test_permission_gate.py recovery/lunita-custoszv9/test_continuation_antiparalysis.py
+      - name: Run fail-closed contract tests
+        run: python -m unittest discover -s recovery/lunita-custoszv9 -p "test_*.py" -v
+      - name: Install pinned E02-E15 runtime dependencies into isolated vendor directory
+        shell: bash
+        env:
+          SITE_PACKAGES: recovery/lunita-custoszv9/runtime_engines_v1/vendor/python3.12/site-packages
+        run: |
+          mkdir -p "$SITE_PACKAGES"
+          python -m pip install --disable-pip-version-check --only-binary=:all: --no-compile \
+            --target "$SITE_PACKAGES" \
+            -r recovery/lunita-custoszv9/runtime_engines_v1/requirements-engine-stack.txt
+      - name: Download and verify OWL-RL wheel checksum
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/owlrl"
+          python -m pip download --disable-pip-version-check --no-deps --only-binary=:all: \
+            --dest "$RUNNER_TEMP/owlrl" "owlrl==7.6.2"
+          python - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+          files = list((Path(os.environ["RUNNER_TEMP"]) / "owlrl").glob("owlrl-7.6.2-*.whl"))
+          assert len(files) == 1, f"Expected one OWL-RL wheel, found {len(files)}"
+          digest = hashlib.sha256(files[0].read_bytes()).hexdigest()
+          expected = "83347bf7f133979e87b2b18695d51d25510b99cec3f6919b5df05d4fbf058ae0"
+          assert digest == expected, f"OWL-RL wheel checksum mismatch: {digest}"
+          print(f"OWL_RL_WHEEL_SHA256={digest}")
+          PY
+          python -m pip install --disable-pip-version-check --no-deps --no-compile \
+            --target recovery/lunita-custoszv9/runtime_engines_v1/vendor/python3.12/site-packages \
+            "$RUNNER_TEMP"/owlrl/*.whl
+      - name: Compile additive engine and deployment implementation
+        run: |
+          python -m py_compile \
+            recovery/lunita-custoszv9/runtime_engines_v1/engine_runtime_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/engine_acceptance_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/quantize_embedding_model_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/engine_gateway_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/gateway_acceptance_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/lunita_beta_v1_8.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/launcher_acceptance_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/apply_engine_overlay_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/checkpoint_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/provision_engine_runtime_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/overlay_acceptance_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/target_runtime_acceptance_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/target_acceptance_tests_v1.py
+      - name: Execute real E02-E15 engine acceptance tests
+        working-directory: recovery/lunita-custoszv9/runtime_engines_v1
+        env:
+          HF_HUB_DISABLE_TELEMETRY: "1"
+          LUNITA_FASTEMBED_CACHE: ${{ runner.temp }}/lunita-fastembed-cache
+          HF_HOME: ${{ runner.temp }}/lunita-fastembed-cache
+          HF_HUB_CACHE: ${{ runner.temp }}/lunita-fastembed-cache/hub
+        run: |
+          mkdir -p "$LUNITA_FASTEMBED_CACHE" "$HF_HUB_CACHE"
+          python engine_acceptance_v1.py
+          python - <<'PY'
+          import os
+          import pathlib
+          import shutil
+          source = pathlib.Path(os.environ["LUNITA_FASTEMBED_CACHE"]).resolve(strict=True)
+          destination = pathlib.Path("model-cache/fastembed")
+          if destination.exists():
+              raise SystemExit("Refusing to overwrite existing packaged model cache")
+          destination.mkdir(parents=True, exist_ok=False)
+          repositories = sorted(path for path in source.glob("models--*") if path.is_dir())
+          if not repositories:
+              raise SystemExit(f"No Hugging Face model cache repositories found under {source}")
+          copied_files = 0
+          copied_bytes = 0
+          for repository in repositories:
+              target_repository = destination / repository.name
+              refs = repository / "refs"
+              if refs.is_dir():
+                  shutil.copytree(refs, target_repository / "refs")
+              snapshots = repository / "snapshots"
+              if not snapshots.is_dir():
+                  raise SystemExit(f"Snapshot directory is missing: {snapshots}")
+              for snapshot in sorted(path for path in snapshots.iterdir() if path.is_dir()):
+                  target_snapshot = target_repository / "snapshots" / snapshot.name
+                  target_snapshot.mkdir(parents=True, exist_ok=False)
+                  for item in sorted(snapshot.rglob("*")):
+                      relative = item.relative_to(snapshot)
+                      target = target_snapshot / relative
+                      if item.is_dir() and not item.is_symlink():
+                          target.mkdir(parents=True, exist_ok=True)
+                          continue
+                      if item.is_symlink():
+                          resolved = item.resolve(strict=True)
+                          try:
+                              resolved.relative_to(source)
+                          except ValueError as exc:
+                              raise SystemExit(f"Cache symlink escapes approved cache root: {item}") from exc
+                          if not resolved.is_file():
+                              raise SystemExit(f"Cache symlink target is not a regular file: {item}")
+                          source_file = resolved
+                      elif item.is_file():
+                          source_file = item
+                      else:
+                          raise SystemExit(f"Unexpected cache filesystem entry: {item}")
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      shutil.copy2(source_file, target)
+                      copied_files += 1
+                      copied_bytes += target.stat().st_size
+          symlinks = [str(path) for path in destination.rglob("*") if path.is_symlink()]
+          if symlinks:
+              raise SystemExit(f"Materialized model cache contains symlinks: {symlinks[:10]}")
+          print(f"MATERIALIZED_FASTEMBED_CACHE={destination}")
+          print(f"MATERIALIZED_MODEL_FILES={copied_files}")
+          print(f"MATERIALIZED_MODEL_BYTES={copied_bytes}")
+          PY
+      - name: Install isolated ONNX quantization tool
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/onnx-quant-tools"
+          python -m pip install --disable-pip-version-check --only-binary=:all: \
+            --no-compile --target "$RUNNER_TEMP/onnx-quant-tools" "onnx==1.19.1"
+      - name: Quantize E04 embedding ONNX and enforce semantic quality
+        working-directory: recovery/lunita-custoszv9/runtime_engines_v1
+        env:
+          PYTHONPATH: ${{ runner.temp }}/onnx-quant-tools:${{ github.workspace }}/recovery/lunita-custoszv9/runtime_engines_v1/vendor/python3.12/site-packages
+          LUNITA_FASTEMBED_CACHE: ${{ github.workspace }}/recovery/lunita-custoszv9/runtime_engines_v1/model-cache/fastembed
+          HF_HOME: ${{ github.workspace }}/recovery/lunita-custoszv9/runtime_engines_v1/model-cache/fastembed
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          HF_HUB_DISABLE_TELEMETRY: "1"
+        run: python quantize_embedding_model_v1.py
+      - name: Re-run E02-E15 acceptance against measured INT8 E04 model
+        working-directory: recovery/lunita-custoszv9/runtime_engines_v1
+        env:
+          PYTHONPATH: ${{ github.workspace }}/recovery/lunita-custoszv9/runtime_engines_v1/vendor/python3.12/site-packages
+          LUNITA_FASTEMBED_CACHE: ${{ github.workspace }}/recovery/lunita-custoszv9/runtime_engines_v1/model-cache/fastembed
+          LUNITA_VECTOR_DB_PATH: ${{ runner.temp }}/lunita-int8-qdrant
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          HF_HUB_DISABLE_TELEMETRY: "1"
+        run: python engine_acceptance_v1.py
+      - name: Diagnose overlay size by package and largest files
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib
+          from collections import defaultdict
+          root = pathlib.Path("recovery/lunita-custoszv9/runtime_engines_v1")
+          totals = defaultdict(int)
+          files = []
+          for path in root.rglob("*"):
+              if path.is_file():
+                  size = path.stat().st_size
+                  rel = path.relative_to(root)
+                  key = rel.parts[0] if rel.parts else "."
+                  totals[key] += size
+                  files.append((size, rel.as_posix()))
+          for key, size in sorted(totals.items(), key=lambda item: item[1], reverse=True):
+              print(f"OVERLAY_COMPONENT_BYTES {size} {key}")
+          vendor = root / "vendor/python3.12/site-packages"
+          package_sizes = []
+          for package in vendor.iterdir():
+              if package.is_dir():
+                  size = sum(item.stat().st_size for item in package.rglob("*") if item.is_file())
+              elif package.is_file():
+                  size = package.stat().st_size
+              else:
+                  continue
+              package_sizes.append((size, package.name))
+          for size, name in sorted(package_sizes, reverse=True)[:80]:
+              print(f"VENDOR_PACKAGE_BYTES {size} {name}")
+          for size, name in sorted(files, reverse=True)[:40]:
+              print(f"OVERLAY_LARGEST_FILE_BYTES {size} {name}")
+          PY
+      - name: Enforce distributable overlay size budget
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib
+          root = pathlib.Path("recovery/lunita-custoszv9/runtime_engines_v1")
+          total = sum(path.stat().st_size for path in root.rglob("*") if path.is_file())
+          print(f"LUNITA_OVERLAY_BYTES={total}")
+          print(f"LUNITA_OVERLAY_MIB={total / 1024 / 1024:.2f}")
+          limit = 480 * 1024 * 1024
+          if total > limit:
+              raise SystemExit(f"Overlay exceeds 480 MiB distributable budget: {total}")
+          PY
+      - name: Execute command-team engine gateway acceptance tests
+        working-directory: recovery/lunita-custoszv9/runtime_engines_v1
+        run: python gateway_acceptance_v1.py
+      - name: Execute additive beta v1.8 launcher acceptance tests
+        working-directory: recovery/lunita-custoszv9/runtime_engines_v1
+        run: python launcher_acceptance_v1.py
+      - name: Execute additive overlay and checkpoint acceptance tests
+        working-directory: recovery/lunita-custoszv9/runtime_engines_v1
+        run: python overlay_acceptance_v1.py
+      - name: Execute target-side overlay and INT8 receipt acceptance tests
+        working-directory: recovery/lunita-custoszv9/runtime_engines_v1
+        run: python target_acceptance_tests_v1.py
+      - name: Upload reproducible Lunita engine overlay bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunita-engine-overlay-v1-py312
+          path: |
+            recovery/lunita-custoszv9/runtime_engines_v1/
+            !recovery/lunita-custoszv9/runtime_engines_v1/__pycache__/
+            !recovery/lunita-custoszv9/runtime_engines_v1/**/*.pyc
+          if-no-files-found: error
+          retention-days: 30
+
+  target-runtime:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/fix/lunita-v18-rootfs-bound-checkpoint-20261109' }}
+    name: "Lunita v1.8 real target and independent acceptance"
+    needs: contract-tests
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 200
+    env:
+      LUNITA_ROOTFS: ${{ vars.LUNITA_ROOTFS }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download the exact overlay built by this workflow run
+        uses: actions/download-artifact@v4
+        with:
+          name: lunita-engine-overlay-v1-py312
+          path: ${{ runner.temp }}/lunita-engine-overlay
+      - name: Verify the actual candidate rootfs and target prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${LUNITA_ROOTFS:?Configure the repository Actions variable LUNITA_ROOTFS with the absolute path to G06_REBUILD_CANDIDATE_R1/rootfs on this self-hosted runner}"
+          ROOTFS="$(realpath -e "$LUNITA_ROOTFS")"
+          test -d "$ROOTFS"
+          test -f "$ROOTFS/var/lib/dpkg/status"
+          test -f "$ROOTFS/opt/lunita/agent/lunita.py"
+          test -f "$ROOTFS/opt/lunita/brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf"
+          test -x "$ROOTFS/usr/bin/python3.12"
+          test -x "$ROOTFS/usr/bin/flatpak"
+          test -d "$ROOTFS/var/lib/flatpak/app/org.jaspstats.JASP"
+          test -d "$ROOTFS/var/lib/flatpak/app/org.jamovi.jamovi"
+          find "$ROOTFS/opt/lunita/brain/runtime" -type f -name llama-cli -perm -111 -print -quit | grep -q .
+          command -v flatpak >/dev/null
+          if [ "$(id -u)" -ne 0 ]; then sudo -n true; fi
+          printf 'LUNITA_ROOTFS_REAL=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'LUNITA_ROOT=%s\n' "$ROOTFS/opt/lunita" >> "$GITHUB_ENV"
+          printf 'FLATPAK_SYSTEM_DIR=%s\n' "$ROOTFS/var/lib/flatpak" >> "$GITHUB_ENV"
+      - name: Apply the overlay only when it is absent and the candidate is clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_root() {
+            if [ "$(id -u)" -eq 0 ]; then "$@"; else sudo -n "$@"; fi
+          }
+          OVERLAY="$LUNITA_ROOT/engines/runtime_engines_v1"
+          if [ -e "$OVERLAY" ]; then
+            test -d "$OVERLAY"
+            test -f "$OVERLAY/OVERLAY_APPLY_RECEIPT.json" || {
+              echo "BLOCKED: overlay path exists without its immutable apply receipt; no overwrite attempted."
+              exit 2
+            }
+            echo "Existing additive overlay detected; preserving it without reapplication."
+          else
+            ENGINE_FILE="$(find "$RUNNER_TEMP/lunita-engine-overlay" -type f -name engine_runtime_v1.py -print -quit)"
+            test -n "$ENGINE_FILE"
+            SOURCE_DIR="$(dirname "$ENGINE_FILE")"
+            CHECKPOINT_DIR="$RUNNER_TEMP/lunita-checkpoint-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+            run_root python3.12 recovery/lunita-custoszv9/runtime_engines_v1/checkpoint_v1.py \
+              --rootfs "$LUNITA_ROOTFS_REAL" \
+              --checkpoint-dir "$CHECKPOINT_DIR" \
+              --candidate-id G06_REBUILD_CANDIDATE_R1
+            run_root python3.12 recovery/lunita-custoszv9/runtime_engines_v1/apply_engine_overlay_v1.py \
+              --rootfs "$LUNITA_ROOTFS_REAL" \
+              --source-dir "$SOURCE_DIR" \
+              --checkpoint-receipt "$CHECKPOINT_DIR/CHECKPOINT_RECEIPT.json" \
+              --candidate-id G06_REBUILD_CANDIDATE_R1 \
+              --apply
+            printf 'LUNITA_CHECKPOINT_DIR=%s\n' "$CHECKPOINT_DIR" >> "$GITHUB_ENV"
+          fi
+      - name: Execute actual E01 inference and E02-E15 plus legacy application smoke tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          OVERLAY="$LUNITA_ROOT/engines/runtime_engines_v1"
+          export XDG_STATE_HOME="$RUNNER_TEMP/lunita-xdg"
+          export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$XDG_STATE_HOME/lunita/runtime_validation"
+          export PYTHONPATH="$OVERLAY/vendor/python3.12/site-packages:$OVERLAY"
+          export LUNITA_FASTEMBED_CACHE="$OVERLAY/model-cache/fastembed"
+          export LUNITA_VECTOR_DB_PATH="$RUNNER_TEMP/lunita-target-vectors"
+          export LUNITA_ENGINE_AUDIT_LOG="$RUNNER_TEMP/lunita-target-audit/engine-execution.jsonl"
+          export HF_HUB_OFFLINE=1
+          export TRANSFORMERS_OFFLINE=1
+          export HF_HUB_DISABLE_TELEMETRY=1
+          python3.12 "$OVERLAY/target_runtime_acceptance_v1.py"
+      - name: Run the existing v1.8 independent rootfs and JASP certification lane
+        shell: bash
+        run: |
+          set -euo pipefail
+          CERT_STATE="$RUNNER_TEMP/lunita-stability-state"
+          CERT_CANDIDATE="$RUNNER_TEMP/lunita-stability-candidate"
+          mkdir -p "$CERT_STATE" "$CERT_CANDIDATE"
+          export LUNITA_CERTIFICATION_PROFILE=V1_8_DIRECT
+          export LUNITA_STATE_DIR="$CERT_STATE"
+          export LUNITA_OUTPUT_DIR="$CERT_STATE/worker_outputs"
+          export LUNITA_EVIDENCE_DIR="$CERT_STATE/lunita_certification_evidence"
+          export LUNITA_CANDIDATE_DIR="$CERT_CANDIDATE"
+          export LUNITA_ROOTFS="$LUNITA_ROOTFS_REAL"
+          export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$XDG_STATE_HOME/lunita/runtime_validation"
+          export FLATPAK_SYSTEM_DIR="$LUNITA_ROOTFS_REAL/var/lib/flatpak"
+          export QT_QPA_PLATFORM=offscreen
+          LANE="recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py"
+          python3.12 - "$LANE" "$LUNITA_EVIDENCE_DIR/lane_state.json" <<'PY'
+          import json, os, pathlib, signal, subprocess, sys, time
+          lane = pathlib.Path(sys.argv[1])
+          state_path = pathlib.Path(sys.argv[2])
+          for attempt in range(180):
+              run = subprocess.run([sys.executable, str(lane), "--once"], text=True,
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
+              print(run.stdout, flush=True)
+              if run.returncode != 0:
+                  raise SystemExit(f"Certification lane exited {run.returncode}")
+              try:
+                  state = json.loads(state_path.read_text(encoding="utf-8"))
+                  tick = state.get("last_tick") or {}
+              except (OSError, ValueError):
+                  tick = {}
+                  state = {}
+              if tick.get("independent_report_status") == "PASS_INDEPENDENT_VALIDATION":
+                  print("PASS_G23_INPUT: hash-bound independent report is complete; S32/G24 remain distinct.", flush=True)
+                  raise SystemExit(0)
+              jobs = [state.get("jasp_job"), state.get("inventory_job")]
+              active = False
+              for job in jobs:
+                  pid = (job or {}).get("pid")
+                  if isinstance(pid, int) and pid > 1:
+                      try:
+                          os.kill(pid, 0)
+                          active = True
+                      except OSError:
+                          pass
+              if (tick.get("cajita_heavy_lane") or {}).get("active"):
+                  active = True
+              jasp_done = str(tick.get("jasp_status", "")).startswith(("PASS_", "BLOCKED_"))
+              inventory_done = str(tick.get("inventory_status", "")).startswith(("PASS_", "BLOCKED_"))
+              if not active and jasp_done and inventory_done:
+                  raise SystemExit("BLOCKED: the independent JASP/rootfs lane completed with one or more failed checks.")
+              print(f"WAITING_FOR_INDEPENDENT_EVIDENCE attempt={attempt + 1}/180", flush=True)
+              time.sleep(30)
+          raise SystemExit("BLOCKED: independent evidence did not complete within the bounded run window.")
+          PY
+      - name: Collect immutable target and independent evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/lunita-certification-evidence"
+          mkdir -p "$OUT"
+          run_root() {
+            if [ "$(id -u)" -eq 0 ]; then "$@"; else sudo -n "$@"; fi
+          }
+          for PATH_IN in \
+            "$XDG_STATE_HOME/lunita/runtime_validation" \
+            "$LUNITA_ROOT/engines/runtime_engines_v1/OVERLAY_APPLY_RECEIPT.json" \
+            "$LUNITA_CHECKPOINT_DIR"; do
+            if [ -e "$PATH_IN" ]; then
+              run_root cp -a "$PATH_IN" "$OUT/"
+            fi
+          done
+          for PATH_IN in \
+            "$RUNNER_TEMP/lunita-stability-state" \
+            "$RUNNER_TEMP/lunita-stability-candidate"; do
+            if [ -e "$PATH_IN" ]; then
+              cp -a "$PATH_IN" "$OUT/"
+            fi
+          done
+          run_root chmod -R a+rX "$OUT"
+      - name: Upload real target and independent evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunita-v1-8-target-independent-evidence
+          path: ${{ runner.temp }}/lunita-certification-evidence/
+          if-no-files-found: warn
+          retention-days: 30
