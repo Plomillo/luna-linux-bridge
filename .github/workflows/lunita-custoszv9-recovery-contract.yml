@@ -88,6 +88,7 @@ jobs:
             recovery/lunita-custoszv9/runtime_engines_v1/lunita_beta_v1_8.py \
             recovery/lunita-custoszv9/runtime_engines_v1/launcher_acceptance_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/apply_engine_overlay_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/checkpoint_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/provision_engine_runtime_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/overlay_acceptance_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/target_runtime_acceptance_v1.py \
