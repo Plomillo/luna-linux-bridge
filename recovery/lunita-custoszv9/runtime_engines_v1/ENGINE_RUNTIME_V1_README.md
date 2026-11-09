@@ -6,17 +6,17 @@ This directory adds adapters for existing E01–E15 identities. It does not add,
 
 ## Implementation
 - E01 LLM: existing candidate-rootfs Qwen3-0.6B GGUF through the bundled llama.cpp runtime; no placeholder model.
-- E02 NLP: spaCy Spanish small pipeline.
+- E02 NLP: deterministic Spanish tokenizer, sentence segmentation, stop-word lexicon, morphology/lemma rules, heuristic POS and proper-name candidate detection. It explicitly does not claim statistical dependency parsing; named-entity candidates remain heuristic.
 - E03 RAG: source-bound retrieval/context assembly, delegating response generation to E01.
 - E04 embeddings: FastEmbed `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, 384-dimensional multilingual transformer embeddings. The official FastEmbed catalogue lists it at approximately 0.220 GB and Apache-2.0.
 - E05 vector search: Qdrant embedded local index, memory or persistent path.
-- E06 knowledge graph: NetworkX directed multigraph.
+- E06 knowledge graph: pure-Python directed multigraph with adjacency indexes, multi-edge relation metadata and breadth-first shortest-path traversal.
 - E07 RDF: RDFLib parsing, serialization and SPARQL.
 - E08 OWL: explicit OWL vocabulary/profile validation.
 - E09 semantic inference: OWL 2 RL entailment closure via OWL-RL.
 - E10 rule engine: deterministic allow-listed rules; no dynamic Python evaluation.
 - E11 hermeneutic: source-preserving staged workflow; context and hypotheses remain separate; human/independent validation required.
-- E12 formalization: structured expression AST into SymPy; user strings are never evaluated as code.
+- E12 formalization: typed symbolic AST with exact rational constants, associative flattening, commutative normalization and safe constant folding; no string evaluation, no arbitrary code execution.
 - E13 validation: JSON Schema Draft 2020-12.
 - E14 provenance: append-only SHA-256 hash chain.
 - E15 consensus: unanimity gate from the exact agent team assigned to the invoking command, against one evidence digest.
@@ -26,7 +26,7 @@ This directory adds adapters for existing E01–E15 identities. It does not add,
 
 ## Installation and validation
 
-The GitHub Actions workflow provisions CPython 3.12 dependencies into the isolated `vendor/python3.12/site-packages` folder, verifies the OWL-RL wheel SHA-256, installs the official Spanish spaCy model, downloads the FastEmbed model weights into `model-cache/fastembed`, and runs the acceptance suite against those vendored files. The resulting Actions artifact is named `lunita-engine-overlay-v1-py312`.
+The GitHub Actions workflow provisions CPython 3.12 dependencies into the isolated `vendor/python3.12/site-packages` folder, verifies the OWL-RL wheel SHA-256, downloads the FastEmbed model weights into `model-cache/fastembed`, and runs the acceptance suite against those vendored files. The resulting Actions artifact is named `lunita-engine-overlay-v1-py312`.
 
 Run from this directory when validating a locally provisioned build:
 
@@ -38,7 +38,7 @@ python gateway_acceptance_v1.py
 python launcher_acceptance_v1.py
 ```
 
-The hosted test suite executes E02–E15 with actual library/model operations. E01 requires the actual Qwen GGUF and llama.cpp binaries from the target runtime; its target-specific test is skipped on hosted CI only when those external assets are absent, and must be executed on the deployed target.
+The hosted test suite executes E02–E15 with actual library/model operations; E02, E06 and E12 are deterministic code-native engines, while E04 runs the multilingual ONNX model. E01 requires the actual Qwen GGUF and llama.cpp binaries from the target runtime; its target-specific test is skipped on hosted CI only when those external assets are absent, and must be executed on the deployed target.
 
 Passing hosted tests validates the additive code and pinned dependency layer in that environment. It does not prove deployment inside the Lunita rootfs, actual Qwen inference on the target, JASP fixture non-regression, complete rootfs inventory, G23, G24, or canonical release eligibility.
 
