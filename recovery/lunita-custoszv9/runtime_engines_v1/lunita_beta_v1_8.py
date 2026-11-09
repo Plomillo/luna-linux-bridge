@@ -58,9 +58,11 @@ def run_legacy(arguments: Sequence[str]) -> int:
     if observed != LEGACY_SHA256:
         print("DENIED: beta v1.7 launcher SHA-256 mismatch", file=sys.stderr)
         return 3
+    # Preserve the legacy v1.7 Python environment exactly. E02-E15 vendor
+    # packages are injected only for v1.8 engine operations, never for legacy apps.
     command = [sys.executable, str(LEGACY_LAUNCHER), *arguments]
     try:
-        return subprocess.run(command, env=runtime_environment(), check=False).returncode
+        return subprocess.run(command, env=os.environ.copy(), check=False).returncode
     except OSError as exc:
         print(f"DENIED: unable to delegate to beta v1.7: {exc}", file=sys.stderr)
         return 4
