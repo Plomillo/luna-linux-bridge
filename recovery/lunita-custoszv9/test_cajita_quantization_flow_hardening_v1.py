@@ -1,5 +1,3 @@
-[Reading 295 lines from start (total: 295 lines, 0 remaining)]
-
 #!/usr/bin/env python3
 """Regression tests for bounded, fail-closed Cajita Qwen3 conversion progression."""
 from __future__ import annotations
