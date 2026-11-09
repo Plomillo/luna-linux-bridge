@@ -491,12 +491,12 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
                 "engine_acceptance_tests": {"tests_run": 25},
                 "legacy_application_smokes": {"status": "PASS_LEGACY_APPLICATION_SMOKES"},
             }
-            with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \\
-                 mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \\
-                 mock.patch.object(lane, "ROOTFS", rootfs), \\
-                 mock.patch.object(lane, "RUNTIME_REPORT", base / "missing-v17-runtime.json"), \\
-                 mock.patch.object(lane, "INDEPENDENT_REPORT", base / "independent.json"), \\
-                 mock.patch.object(lane, "MISSION_PATH", base / "missing-MISION1.txt"), \\
+            with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
+                 mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
+                 mock.patch.object(lane, "ROOTFS", rootfs), \
+                 mock.patch.object(lane, "RUNTIME_REPORT", base / "missing-v17-runtime.json"), \
+                 mock.patch.object(lane, "INDEPENDENT_REPORT", base / "independent.json"), \
+                 mock.patch.object(lane, "MISSION_PATH", base / "missing-MISION1.txt"), \
                  mock.patch.object(lane, "latest_target_runtime_acceptance", return_value=target):
                 report = lane.update_independent_report(
                     None, {"status": "BLOCKED_JASP_PACKAGED_FIXTURE_NONREGRESSION", "cases": {}}
@@ -543,11 +543,11 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
             }), encoding="utf-8")
             out = base / "outputs"
             out.mkdir()
-            with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \\
-                 mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \\
-                 mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", receipts), \\
-                 mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \\
-                 mock.patch.object(lane, "RUNTIME_REPORT", base / "missing-v17-runtime.json"), \\
+            with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
+                 mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
+                 mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", receipts), \
+                 mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
+                 mock.patch.object(lane, "RUNTIME_REPORT", base / "missing-v17-runtime.json"), \
                  mock.patch.object(lane, "OUT", out):
                 result = lane.stable_release_gate()
             self.assertEqual("WAITING_FOR_S32_BOUND_CERTIFICATION_RECEIPT", result["status"])
