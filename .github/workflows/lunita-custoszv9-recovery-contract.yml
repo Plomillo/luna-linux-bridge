@@ -57,14 +57,6 @@ jobs:
           python -m pip install --disable-pip-version-check --only-binary=:all: --no-compile \
             --target "$SITE_PACKAGES" \
             -r recovery/lunita-custoszv9/runtime_engines_v1/requirements-engine-stack.txt
-      - name: Install version-compatible Spanish NLP model into vendor directory
-        shell: bash
-        env:
-          SITE_PACKAGES: recovery/lunita-custoszv9/runtime_engines_v1/vendor/python3.12/site-packages
-        run: |
-          python -m pip install --disable-pip-version-check --only-binary=:all: --no-compile \
-            --target "$SITE_PACKAGES" \
-            "https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.8.0/es_core_news_sm-3.8.0-py3-none-any.whl"
       - name: Download and verify OWL-RL wheel checksum
         shell: bash
         run: |
