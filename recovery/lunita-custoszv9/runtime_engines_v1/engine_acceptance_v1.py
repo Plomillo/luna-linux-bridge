@@ -14,12 +14,16 @@ class EngineRegistryTests(unittest.TestCase):
         self.assertEqual(14, result["command_count"])
         self.assertFalse(result["canonical_identity_mutation"])
 
-    def test_assignment_matrix_is_not_silently_reassigned(self):
-        self.assertEqual({"Luna", "Josefina", "Katya"}, set(engine.ENGINE_ASSIGNMENTS["E01"]))
-        self.assertEqual({"Luna", "Ancapi"}, set(engine.ENGINE_ASSIGNMENTS["E06"]))
-        self.assertEqual({"Luna", "Josefina", "Katya", "Ancapi"}, set(engine.ENGINE_ASSIGNMENTS["E13"]))
+    def test_command_team_to_engine_routes_are_canonical_and_not_reassigned(self):
+        self.assertEqual(("Luna", "Ancapi"), engine.COMMAND_AGENTS["/play PA"])
+        self.assertEqual(("E06", "E07", "E08", "E09", "E10", "E12", "E13", "E14"),
+                         engine.COMMAND_ENGINES["/play PA"])
+        engine.assert_command_route("/play PA", "Ancapi", "E06")
+        engine.assert_command_route("/play MA", "Luna", "E15")
         with self.assertRaises(engine.EngineContractError):
-            engine.assert_agent_assignment("E06", "Katya")
+            engine.assert_command_route("/play PA", "Katya", "E06")
+        with self.assertRaises(engine.EngineContractError):
+            engine.assert_command_route("/play PA", "Ancapi", "E15")
 
     def test_exact_fourteen_command_agent_routes_and_luna_presence(self):
         expected = {
@@ -39,6 +43,23 @@ class EngineRegistryTests(unittest.TestCase):
             "/play AE": ("Luna", "Ancapi"),
         }
         self.assertEqual(expected, engine.COMMAND_AGENTS)
+        expected_engine_sets = {
+            "/help": ("E13", "E14", "E15"),
+            "/play PT": ("E01", "E02", "E11", "E12", "E13"),
+            "/play PA": ("E06", "E07", "E08", "E09", "E10", "E12", "E13", "E14"),
+            "/play DCI": ("E03", "E04", "E05", "E09", "E11", "E12", "E13", "E14"),
+            "/play DCIL": ("E01", "E02", "E03", "E04", "E05", "E09", "E11", "E12", "E13", "E14", "E15"),
+            "/play traductor": ("E01", "E02", "E03", "E04", "E05", "E12", "E13", "E14", "E15"),
+            "/play e": ("E11", "E12", "E13", "E14", "E15"),
+            "/play ema": ("E11", "E12", "E13", "E14", "E15"),
+            "/play p": ("E10", "E12", "E13", "E14", "E15"),
+            "/play c": ("E01", "E02", "E09", "E12", "E13", "E15"),
+            "/play cp": ("E03", "E05", "E06", "E09", "E11", "E12", "E13", "E14", "E15"),
+            "/play MA": tuple(f"E{i:02d}" for i in range(1, 16)),
+            "/play H": ("E11", "E12", "E13", "E14", "E15"),
+            "/play AE": ("E06", "E07", "E08", "E09", "E10", "E12", "E13", "E14", "E15"),
+        }
+        self.assertEqual(expected_engine_sets, engine.COMMAND_ENGINES)
         self.assertEqual(14, len(engine.COMMAND_ENGINES))
         self.assertTrue(all("Luna" in agents for agents in engine.COMMAND_AGENTS.values()))
 
@@ -227,12 +248,13 @@ class RealRuntimeEngineTests(unittest.TestCase):
             {"agent": agent, "decision": "APPROVE", "evidence_sha256": evidence_hash}
             for agent in ["Luna", "Ancapi"]
         ]
-        result = engine.aggregate_consensus("E06", evidence_hash, votes, required_agents=["Luna", "Ancapi"])
+        result = engine.aggregate_consensus("E15", evidence_hash, votes, command="/play AE",
+                                            required_agents=["Luna", "Ancapi"])
         self.assertEqual("PASS_CONSENSUS", result["status"])
         conflict = engine.aggregate_consensus(
-            "E06", evidence_hash,
+            "E15", evidence_hash,
             [votes[0], {"agent": "Ancapi", "decision": "REJECT", "evidence_sha256": evidence_hash}],
-            required_agents=["Luna", "Ancapi"],
+            command="/play AE", required_agents=["Luna", "Ancapi"],
         )
         self.assertEqual("HOLD_CONSENSUS", conflict["status"])
 
