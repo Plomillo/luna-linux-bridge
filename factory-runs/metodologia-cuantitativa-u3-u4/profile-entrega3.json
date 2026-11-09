@@ -62,10 +62,10 @@
     "declared_total_points": 0,
     "official_teacher_rubric": "NOT_PROVIDED_IN_SOURCE_INSTRUCTIONS",
     "criteria": [
-      {"id": "R01", "points": 0, "text": "Instrument applied to the defined sample; fieldwork evidence recorded.", "validation": "HUMAN_AND_FIELD_EVIDENCE"},
-      {"id": "R02", "points": 0, "text": "Participant responses reviewed; missingness and exclusions documented.", "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN"},
+      {"id": "R01", "points": 0, "text": "Instrument applied to the defined sample; fieldwork evidence recorded.", "validation": "G23_HUMAN_FIELD_EVIDENCE"},
+      {"id": "R02", "points": 0, "text": "Participant responses reviewed; missingness and exclusions documented.", "validation": "AUTOMATED_PARTIAL_PLUS_G23_HUMAN"},
       {"id": "R03", "points": 0, "text": "Organized, anonymized and Jamovi-importable data table with data dictionary.", "validation": "AUTOMATED"},
-      {"id": "R04", "points": 0, "text": "Brief report no longer than two pages.", "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN"}
+      {"id": "R04", "points": 0, "text": "Brief report no longer than two pages.", "validation": "AUTOMATED_PARTIAL_PLUS_G23_HUMAN"}
     ]
   },
   "runtime_policy": {
