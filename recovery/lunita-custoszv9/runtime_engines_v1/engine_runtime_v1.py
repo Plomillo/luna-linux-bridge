@@ -9,12 +9,14 @@ import hashlib
 import json
 import math
 import os
+import re
 import pathlib
 import subprocess
 import tempfile
 import uuid
 import sys
-from functools import lru_cache
+from collections import deque
+from fractions import Fraction
 from importlib import metadata
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -25,7 +27,7 @@ if VENDOR_SITE_PACKAGES.is_dir() and str(VENDOR_SITE_PACKAGES) not in sys.path:
 
 EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 EMBEDDING_DIMENSION = 384
-SPACY_MODEL = "es_core_news_sm"
+E02_MODEL = "LUNITA_SPANISH_RULE_BASED_NLP_V1"
 CANDIDATE_ROOT = pathlib.Path("/opt/lunita")
 DEFAULT_MODEL = CANDIDATE_ROOT / "brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf"
 DEFAULT_LLAMA_ROOT = CANDIDATE_ROOT / "brain/runtime"
@@ -226,29 +228,117 @@ def llm_infer(
     }
 
 
-# E02 — NLP: Spanish tokenization, morphology, lemmatization, parsing and NER.
-@lru_cache(maxsize=1)
-def _spanish_nlp():
-    import spacy
-    try:
-        return spacy.load(SPACY_MODEL)
-    except OSError as exc:
-        raise EngineUnavailable(f"Spanish spaCy model is not installed: {SPACY_MODEL}") from exc
+# E02 — NLP: deterministic Spanish tokenizer, sentence segmentation,
+# lexicon/suffix morphology, heuristic POS and proper-name recognition.
+# The model is explicit and versioned; no network access or external weights.
+_SPANISH_STOP_WORDS = frozenset({
+    "a", "al", "algo", "algunas", "algunos", "ante", "antes", "como", "con",
+    "contra", "cual", "cuando", "de", "del", "desde", "donde", "durante",
+    "e", "el", "ella", "ellas", "ellos", "en", "entre", "era", "erais",
+    "eran", "eras", "eres", "es", "esa", "esas", "ese", "eso", "esos",
+    "esta", "estaba", "estaban", "estado", "estais", "estamos", "estan",
+    "estar", "estas", "este", "esto", "estos", "fue", "fueron", "ha",
+    "habeis", "haber", "habia", "habian", "han", "hasta", "hay", "la",
+    "las", "le", "les", "lo", "los", "mas", "me", "mi", "mis", "mucho",
+    "muy", "no", "nos", "o", "os", "otra", "otras", "otro", "otros",
+    "para", "pero", "poco", "por", "porque", "que", "quien", "se", "sea",
+    "ser", "si", "sin", "sobre", "son", "su", "sus", "tambien", "te",
+    "tiene", "tienen", "todo", "todos", "tu", "tus", "un", "una", "unas",
+    "uno", "unos", "y", "ya",
+})
+_SPANISH_DETERMINERS = frozenset({"el", "la", "los", "las", "un", "una", "unos", "unas", "este", "esta", "estos", "estas", "ese", "esa", "mi", "mis", "su", "sus"})
+_SPANISH_PRONOUNS = frozenset({"yo", "tu", "tú", "usted", "ustedes", "el", "él", "ella", "nosotros", "nosotras", "vosotros", "vosotras", "ellos", "ellas", "me", "te", "se", "nos", "os", "lo", "la", "le", "les"})
+_SPANISH_PREPOSITIONS = frozenset({"a", "ante", "bajo", "con", "contra", "de", "desde", "durante", "en", "entre", "hacia", "hasta", "para", "por", "segun", "sin", "sobre", "tras"})
+_SPANISH_CONJUNCTIONS = frozenset({"y", "e", "o", "u", "ni", "pero", "aunque", "porque", "si", "que"})
+_SPANISH_VERB_LEMMAS = {
+    "conserva": "conservar", "conservan": "conservar", "conservar": "conservar",
+    "valida": "validar", "validan": "validar", "validar": "validar",
+    "requiere": "requerir", "requieren": "requerir", "requiere": "requerir",
+    "protege": "proteger", "protegen": "proteger", "proteger": "proteger",
+    "preparan": "preparar", "prepara": "preparar", "preparar": "preparar",
+    "organiza": "organizar", "organizan": "organizar", "organizar": "organizar",
+    "analiza": "analizar", "analizan": "analizar", "analizar": "analizar",
+    "preserva": "preservar", "preservan": "preservar", "preservar": "preservar",
+    "es": "ser", "son": "ser", "era": "ser", "fue": "ser", "ser": "ser",
+    "esta": "estar", "está": "estar", "estan": "estar", "están": "estar",
+    "estar": "estar", "tiene": "tener", "tienen": "tener", "tener": "tener",
+    "puede": "poder", "pueden": "poder", "poder": "poder",
+}
+_SPANISH_ADJECTIVE_SUFFIXES = ("able", "ible", "oso", "osa", "osos", "osas", "ico", "ica", "icos", "icas", "ivo", "iva", "ivos", "ivas", "al", "ar")
+_SPANISH_ADVERB_SUFFIXES = ("mente",)
+
+
+def _spanish_lemma_and_pos(token: str) -> tuple[str, str]:
+    word = token.casefold()
+    if word in _SPANISH_VERB_LEMMAS:
+        return _SPANISH_VERB_LEMMAS[word], "VERB"
+    if word in _SPANISH_DETERMINERS:
+        return word, "DET"
+    if word in _SPANISH_PRONOUNS:
+        return word, "PRON"
+    if word in _SPANISH_PREPOSITIONS:
+        return word, "ADP"
+    if word in _SPANISH_CONJUNCTIONS:
+        return word, "CCONJ"
+    if word.endswith(_SPANISH_ADVERB_SUFFIXES):
+        return word, "ADV"
+    if word.endswith(_SPANISH_ADJECTIVE_SUFFIXES):
+        return word, "ADJ"
+    # Conservative regular morphology: plural nominal endings only.
+    if len(word) > 4 and word.endswith("es") and not word.endswith(("ies", "ues")):
+        return word[:-2], "NOUN"
+    if len(word) > 3 and word.endswith("s") and not word.endswith(("is", "us")):
+        return word[:-1], "NOUN"
+    # Verb suffix classification is evidence-based and deliberately labelled heuristic.
+    if len(word) > 5 and word.endswith(("ando", "iendo", "aron", "ieron", "aba", "aban", "ía", "ían")):
+        return word, "VERB"
+    return word, "NOUN"
 
 
 def nlp_analyze(text: str) -> dict[str, Any]:
     _require_nonempty(text, "text")
-    nlp = _spanish_nlp()
-    doc = nlp(text)
+    sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text.strip()) if part.strip()]
+    tokens = re.findall(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?:['’][A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)?|\d+(?:[.,]\d+)?", text)
+    token_rows = []
+    sentence_initials = set()
+    for sentence in sentences:
+        match = re.search(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+", sentence)
+        if match:
+            sentence_initials.add(match.group(0))
+    for token in tokens:
+        lemma, pos = _spanish_lemma_and_pos(token)
+        token_rows.append({
+            "text": token,
+            "lemma": lemma,
+            "pos": pos,
+            "is_stop": token.casefold() in _SPANISH_STOP_WORDS,
+            "morphology": "LEXICON" if token.casefold() in _SPANISH_VERB_LEMMAS else "RULE_BASED",
+        })
+    # Proper-name candidate extraction: two or more consecutive title-case tokens.
+    entities = []
+    pattern = re.compile(r"\b[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+(?:\s+[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+)+\b")
+    for match in pattern.finditer(text):
+        phrase = match.group(0)
+        first = phrase.split()[0]
+        if first not in sentence_initials and all(part.casefold() not in _SPANISH_STOP_WORDS for part in phrase.split()):
+            entities.append({"text": phrase, "label": "PROPER_NAME_CANDIDATE", "confidence": "HEURISTIC"})
     return {
-        "engine_id": "E02", "language": nlp.lang, "model": SPACY_MODEL,
-        "pipeline": list(nlp.pipe_names), "source_sha256": _sha256_bytes(text.encode("utf-8")),
-        "tokens": [
-            {"text": token.text, "lemma": token.lemma_, "pos": token.pos_, "is_stop": bool(token.is_stop)}
-            for token in doc if not token.is_space
+        "engine_id": "E02",
+        "language": "es",
+        "model": E02_MODEL,
+        "pipeline": [
+            "unicode_tokenizer", "sentence_boundary_detection",
+            "spanish_stopword_lexicon", "spanish_lemma_and_pos_rules",
+            "proper_name_candidate_detection",
         ],
-        "sentences": [sentence.text for sentence in doc.sents],
-        "entities": [{"text": ent.text, "label": ent.label_} for ent in doc.ents],
+        "source_sha256": _sha256_bytes(text.encode("utf-8")),
+        "tokens": token_rows,
+        "sentences": sentences,
+        "entities": entities,
+        "limitations": [
+            "Rule-based Spanish morphology and POS; not a statistical dependency parser.",
+            "Proper names are heuristic candidates and require contextual validation.",
+        ],
     }
 
 
@@ -402,19 +492,77 @@ class RAGIndex:
         self.index.close()
 
 
-# E06 — Knowledge Graph: explicit directed graph, edge types and traversals.
+# E06 — Directed multigraph with adjacency indexes and breadth-first traversal.
+# The implementation is pure Python and preserves multi-edge relation metadata.
+class DirectedKnowledgeGraph:
+    def __init__(self):
+        self._nodes: dict[str, dict[str, Any]] = {}
+        self._edges: list[tuple[str, str, dict[str, Any]]] = []
+        self._adjacency: dict[str, list[str]] = {}
+
+    def add_node(self, node_id: str, **attributes: Any) -> None:
+        self._nodes.setdefault(node_id, {}).update(attributes)
+        self._adjacency.setdefault(node_id, [])
+
+    def add_edge(self, source: str, target: str, **attributes: Any) -> None:
+        if source not in self._nodes or target not in self._nodes:
+            raise EngineContractError("Knowledge graph edge references an undeclared node")
+        self._edges.append((source, target, dict(attributes)))
+        self._adjacency[source].append(target)
+
+    def has_edge(self, source: str, target: str) -> bool:
+        return any(destination == target for destination in self._adjacency.get(source, []))
+
+    def nodes(self, data: bool = False):
+        if data:
+            return [(node_id, dict(attributes)) for node_id, attributes in self._nodes.items()]
+        return list(self._nodes)
+
+    def edges(self, data: bool = False):
+        if data:
+            return [(source, target, dict(attributes)) for source, target, attributes in self._edges]
+        return [(source, target) for source, target, _ in self._edges]
+
+    def shortest_path(self, source: str, target: str) -> list[str]:
+        if source not in self._nodes or target not in self._nodes:
+            raise EngineContractError("Knowledge graph path endpoint is undeclared")
+        queue = deque([source])
+        predecessor: dict[str, str | None] = {source: None}
+        while queue:
+            current = queue.popleft()
+            if current == target:
+                path = []
+                while current is not None:
+                    path.append(current)
+                    current = predecessor[current]
+                return list(reversed(path))
+            for neighbor in self._adjacency[current]:
+                if neighbor not in predecessor:
+                    predecessor[neighbor] = current
+                    queue.append(neighbor)
+        raise EngineContractError(f"No directed path from {source} to {target}")
+
+    def number_of_nodes(self) -> int:
+        return len(self._nodes)
+
+    def number_of_edges(self) -> int:
+        return len(self._edges)
+
+    def is_directed(self) -> bool:
+        return True
+
+
 def build_knowledge_graph(nodes: Sequence[Mapping[str, Any]], edges: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-    import networkx as nx
-    graph = nx.MultiDiGraph()
+    graph = DirectedKnowledgeGraph()
     for node in nodes:
         node_id = _require_nonempty(str(node.get("id", "")), "node id")
+        if node_id in graph._nodes:
+            raise EngineContractError(f"Duplicate knowledge graph node: {node_id}")
         graph.add_node(node_id, **dict(node.get("attributes", {})))
     for edge in edges:
         source = _require_nonempty(str(edge.get("source", "")), "edge source")
         target = _require_nonempty(str(edge.get("target", "")), "edge target")
         relation = _require_nonempty(str(edge.get("relation", "")), "edge relation")
-        if source not in graph or target not in graph:
-            raise EngineContractError("Knowledge graph edge references an undeclared node")
         graph.add_edge(source, target, relation=relation)
     return {"engine_id": "E06", "graph": graph, "node_count": graph.number_of_nodes(),
             "edge_count": graph.number_of_edges(), "is_directed": graph.is_directed()}
@@ -627,59 +775,158 @@ def hermeneutic_analyze(
     }
 
 
-# E12 — Formalization: structured AST -> symbolic expression; no parsing/eval of source code.
-def _build_symbolic_expression(node: Any, symbols: dict[str, Any]):
-    import sympy as sp
+# E12 — Formalization: typed mathematical AST, exact rational constants,
+# deterministic normalization, and no parsing/eval of source code.
+def _formal_number(value: Any) -> Fraction:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise EngineContractError("Only integer or finite decimal constants are allowed")
+    if isinstance(value, float) and not math.isfinite(value):
+        raise EngineContractError("Numeric constants must be finite")
+    try:
+        return Fraction(str(value))
+    except (ValueError, ZeroDivisionError) as exc:
+        raise EngineContractError("Invalid rational numeric constant") from exc
+
+
+def _formal_expr_key(expression: Any) -> str:
+    return json.dumps(_formal_expr_data(expression), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def _formal_expr_data(expression: Any) -> dict[str, Any]:
+    kind = expression[0]
+    if kind == "symbol":
+        return {"type": "symbol", "name": expression[1]}
+    if kind == "number":
+        value: Fraction = expression[1]
+        return {"type": "number", "numerator": value.numerator, "denominator": value.denominator}
+    if kind == "boolean":
+        return {"type": "boolean", "value": expression[1]}
+    return {"type": kind, "args": [_formal_expr_data(value) for value in expression[1]]}
+
+
+def _formalize_node(node: Any, symbols: set[str]):
     if not isinstance(node, Mapping):
         raise EngineContractError("Formalization nodes must be typed objects")
-    if "symbol" in node:
+    if set(node) == {"symbol"}:
         name = _require_nonempty(str(node["symbol"]), "symbol")
         if not name.isidentifier():
             raise EngineContractError(f"Invalid symbol name: {name}")
-        return symbols.setdefault(name, sp.Symbol(name, real=True))
-    if "number" in node:
-        number = node["number"]
-        if isinstance(number, bool) or not isinstance(number, (int, float)):
-            raise EngineContractError("Only numeric constants are allowed")
-        if isinstance(number, float) and not math.isfinite(number):
-            raise EngineContractError("Numeric constants must be finite")
-        return sp.Rational(str(number))
-    operator = node.get("op")
-    args = node.get("args")
+        symbols.add(name)
+        return ("symbol", name)
+    if set(node) == {"number"}:
+        return ("number", _formal_number(node["number"]))
+    if set(node) != {"op", "args"}:
+        raise EngineContractError("Formalization nodes accept only symbol, number, or op/args shapes")
+    operator = node["op"]
+    args = node["args"]
     if not isinstance(args, list):
         raise EngineContractError("Formalization operator requires an args list")
-    built = [_build_symbolic_expression(argument, symbols) for argument in args]
-    operations = {
-        "add": (lambda a: sp.Add(*a)),
-        "mul": (lambda a: sp.Mul(*a)),
-        "sub": (lambda a: a[0] - a[1] if len(a) == 2 else (_ for _ in ()).throw(EngineContractError("sub requires 2 args"))),
-        "div": (lambda a: a[0] / a[1] if len(a) == 2 else (_ for _ in ()).throw(EngineContractError("div requires 2 args"))),
-        "pow": (lambda a: a[0] ** a[1] if len(a) == 2 else (_ for _ in ()).throw(EngineContractError("pow requires 2 args"))),
-        "eq": (lambda a: sp.Eq(*a) if len(a) == 2 else (_ for _ in ()).throw(EngineContractError("eq requires 2 args"))),
-        "lt": (lambda a: sp.Lt(*a) if len(a) == 2 else (_ for _ in ()).throw(EngineContractError("lt requires 2 args"))),
-        "gt": (lambda a: sp.Gt(*a) if len(a) == 2 else (_ for _ in ()).throw(EngineContractError("gt requires 2 args"))),
-        "and": (lambda a: sp.And(*a)),
-        "or": (lambda a: sp.Or(*a)),
-        "not": (lambda a: sp.Not(a[0]) if len(a) == 1 else (_ for _ in ()).throw(EngineContractError("not requires 1 arg"))),
-    }
-    if operator not in operations:
+    built = [_formalize_node(item, symbols) for item in args]
+    arity = {"sub": 2, "div": 2, "pow": 2, "eq": 2, "lt": 2, "gt": 2, "not": 1}
+    if operator not in {"add", "mul", "sub", "div", "pow", "eq", "lt", "gt", "and", "or", "not"}:
         raise EngineContractError(f"Unsupported formalization operator: {operator}")
-    if not built:
-        raise EngineContractError(f"Operator {operator} requires arguments")
-    return operations[operator](built)
+    if operator in arity and len(built) != arity[operator]:
+        raise EngineContractError(f"{operator} requires exactly {arity[operator]} arguments")
+    if operator in {"add", "mul", "and", "or"} and len(built) < 2:
+        raise EngineContractError(f"{operator} requires at least two arguments")
+
+    # Flatten associative operators and sort commutative operands deterministically.
+    if operator in {"add", "mul", "and", "or"}:
+        flattened = []
+        for item in built:
+            flattened.extend(item[1] if item[0] == operator else [item])
+        built = flattened
+
+    if operator == "add":
+        numeric = sum((item[1] for item in built if item[0] == "number"), Fraction(0))
+        rest = [item for item in built if item[0] != "number"]
+        if numeric or not rest:
+            rest.append(("number", numeric))
+        rest.sort(key=_formal_expr_key)
+        return rest[0] if len(rest) == 1 else ("add", tuple(rest))
+    if operator == "mul":
+        numeric = Fraction(1)
+        rest = []
+        for item in built:
+            if item[0] == "number":
+                numeric *= item[1]
+            else:
+                rest.append(item)
+        if numeric == 0:
+            return ("number", Fraction(0))
+        if numeric != 1 or not rest:
+            rest.append(("number", numeric))
+        rest.sort(key=_formal_expr_key)
+        return rest[0] if len(rest) == 1 else ("mul", tuple(rest))
+    if operator == "sub":
+        left, right = built
+        if right[0] == "number" and right[1] == 0:
+            return left
+        if left[0] == right[0] == "number":
+            return ("number", left[1] - right[1])
+    if operator == "div":
+        left, right = built
+        if right[0] == "number" and right[1] == 0:
+            raise EngineContractError("Division by zero is not permitted")
+        if right[0] == "number" and right[1] == 1:
+            return left
+        if left[0] == right[0] == "number":
+            return ("number", left[1] / right[1])
+    if operator == "pow":
+        left, right = built
+        if right[0] == "number" and right[1].denominator == 1:
+            exponent = right[1].numerator
+            if abs(exponent) > 64:
+                raise EngineContractError("Constant exponent magnitude exceeds 64")
+            if left[0] == "number":
+                if left[1] == 0 and exponent < 0:
+                    raise EngineContractError("Zero cannot be raised to a negative exponent")
+                return ("number", left[1] ** exponent)
+            if exponent == 1:
+                return left
+            if exponent == 0:
+                return ("number", Fraction(1))
+    if operator in {"eq", "lt", "gt"} and built[0][0] == built[1][0] == "number":
+        left, right = built[0][1], built[1][1]
+        result = left == right if operator == "eq" else left < right if operator == "lt" else left > right
+        return ("boolean", result)
+    if operator in {"and", "or"}:
+        if all(item[0] == "boolean" for item in built):
+            values = [item[1] for item in built]
+            return ("boolean", all(values) if operator == "and" else any(values))
+        built.sort(key=_formal_expr_key)
+    return (operator, tuple(built))
+
+
+def _formal_expr_string(expression: Any) -> str:
+    kind = expression[0]
+    if kind == "symbol":
+        return expression[1]
+    if kind == "number":
+        value: Fraction = expression[1]
+        return str(value.numerator) if value.denominator == 1 else f"{value.numerator}/{value.denominator}"
+    if kind == "boolean":
+        return "true" if expression[1] else "false"
+    args = [_formal_expr_string(value) for value in expression[1]]
+    if kind == "not":
+        return f"not({args[0]})"
+    return f"{kind}({','.join(args)})"
 
 
 def formalize_expression(ast: Mapping[str, Any]) -> dict[str, Any]:
-    import sympy as sp
-    symbols: dict[str, Any] = {}
-    expression = _build_symbolic_expression(ast, symbols)
-    simplified = sp.simplify(expression)
+    symbols: set[str] = set()
+    expression = _formalize_node(ast, symbols)
+    canonical = _formal_expr_data(expression)
     return {
-        "engine_id": "E12", "status": "PASS_FORMALIZATION",
-        "expression": str(expression), "simplified": str(simplified),
-        "srepr": sp.srepr(simplified),
-        "free_symbols": sorted(str(symbol) for symbol in simplified.free_symbols),
-        "symbolic_boolean": bool(getattr(simplified, "is_Boolean", False)),
+        "engine_id": "E12",
+        "status": "PASS_FORMALIZATION",
+        "expression": _formal_expr_string(_formalize_node(ast, set())),
+        "simplified": _formal_expr_string(expression),
+        "canonical_expression": _formal_expr_string(expression),
+        "canonical_ast": canonical,
+        "free_symbols": sorted(symbols),
+        "symbolic_boolean": expression[0] in {"eq", "lt", "gt", "and", "or", "not", "boolean"},
+        "normalization": "EXACT_RATIONALS; ASSOCIATIVE_FLATTENING; COMMUTATIVE_SORTING; SAFE_CONSTANT_FOLDING",
     }
 
 
