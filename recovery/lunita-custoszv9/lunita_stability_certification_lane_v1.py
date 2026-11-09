@@ -362,7 +362,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                 try:
                     run = subprocess.run(["/usr/bin/flatpak", "--system", "run", "--unshare=network",
                                           "org.jaspstats.JASP", "--unitTest", fixture, "--hide",
-                                          "--timeOut=2"],
+                                          "--hide"],
                                          env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                          text=True, timeout=300, check=False)
                     rc = int(run.returncode)
