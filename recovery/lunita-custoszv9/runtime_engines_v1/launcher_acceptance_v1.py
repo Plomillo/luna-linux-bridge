@@ -39,6 +39,22 @@ class LunitaBetaV18Tests(unittest.TestCase):
         self.assertEqual(15, status["engine_registry"]["engine_count"])
         self.assertEqual(14, len(status["command_agents"]))
 
+    def test_instrument_labels_are_display_only_and_preserve_runtime_bindings(self):
+        status = launcher.engine_status()
+        instruments = status["instrument_registry"]
+        self.assertEqual("Brújula giroscópica", instruments["BRUJULA"]["display_label"])
+        self.assertEqual("/opt/lunita/instruments/brujula", instruments["BRUJULA"]["runtime_path"])
+        self.assertEqual("brujula-self-test", instruments["BRUJULA"]["smoke_test_command"])
+        self.assertEqual("Sacapuntas", instruments["JAMOVI"]["display_label"])
+        self.assertEqual("org.jamovi.jamovi", instruments["JAMOVI"]["application_id"])
+        self.assertEqual("jamovi-self-test", instruments["JAMOVI"]["smoke_test_command"])
+        self.assertEqual("Lupa", instruments["JASP"]["display_label"])
+        self.assertEqual("org.jaspstats.JASP", instruments["JASP"]["application_id"])
+        self.assertEqual("jasp-self-test", instruments["JASP"]["smoke_test_command"])
+        self.assertEqual(15, status["engine_registry"]["engine_count"])
+        self.assertEqual(14, len(status["command_agents"]))
+        self.assertEqual("NOT_GRANTED", status["canonical_certification"])
+
     def test_execution_audit_is_append_only_hash_chained_and_redacts_payload(self):
         with tempfile.TemporaryDirectory() as temporary:
             audit = pathlib.Path(temporary) / "audit" / "engine.jsonl"
