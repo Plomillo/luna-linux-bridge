@@ -22,7 +22,7 @@ from typing import Any
 ROOT = pathlib.Path("/opt/lunita")
 OVERLAY = ROOT / "engines/runtime_engines_v1"
 STATE = pathlib.Path(os.environ.get("XDG_STATE_HOME") or (pathlib.Path.home() / ".local/state")) / "lunita"
-REPORTS = STATE / "runtime_validation"
+REPORTS = pathlib.Path(os.environ.get("LUNITA_TARGET_RUNTIME_RECEIPT_DIR", str(STATE / "runtime_validation"))).expanduser()
 OVERLAY_RECEIPT = OVERLAY / "OVERLAY_APPLY_RECEIPT.json"
 LEGACY_LAUNCHER = ROOT / "agent/lunita.py"
 EXPECTED_LEGACY_SHA256 = "46efd711729c344e7efba9ce2503127c48f0b88207cc5a17311ff1d555b075b2"
@@ -325,6 +325,7 @@ def main() -> int:
         "captured_at_utc": datetime.now(timezone.utc).isoformat(),
         "candidate_id": "G06_REBUILD_CANDIDATE_R1",
         "worker_required": "CUSTOSZ_V7",
+        "worker_version": os.environ.get("CUSTOSZ_WORKER_VERSION"),
         "target": str(ROOT),
         "status": "BLOCKED",
         "certification": "NOT_GRANTED",
@@ -332,6 +333,8 @@ def main() -> int:
         "canonical_g08_binding_mutation": False,
     }
     try:
+        if os.environ.get("CUSTOSZ_WORKER_VERSION") != "CUSTOSZ_V7":
+            raise TargetGateError("Target acceptance must be invoked by the authorized CUSTOSZ_V7 worker")
         overlay = verify_overlay()
         import engine_runtime_v1 as engine
         registry = engine.validate_registry()
