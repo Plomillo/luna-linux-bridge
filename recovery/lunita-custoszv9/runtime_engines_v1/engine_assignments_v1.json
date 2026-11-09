@@ -28,7 +28,7 @@
     },
     "E04": {
       "name": "EMBEDDINGS",
-      "implementation": "FastEmbed potion-multilingual-128M, 256-dimensional static embeddings",
+      "implementation": "FastEmbed sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2, 384-dimensional multilingual transformer embeddings",
       "cfe_family": "CFE011-CFE020"
     },
     "E05": {
