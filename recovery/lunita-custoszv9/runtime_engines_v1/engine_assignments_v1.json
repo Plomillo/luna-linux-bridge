@@ -18,7 +18,7 @@
     },
     "E02": {
       "name": "NLP",
-      "implementation": "spaCy Spanish pipeline es_core_news_sm",
+      "implementation": "Deterministic Spanish NLP: tokenizer, sentence segmentation, stopword lexicon, morphology/lemma rules, heuristic POS and proper-name candidate detection",
       "cfe_family": "CFE001-CFE010"
     },
     "E03": {
@@ -38,7 +38,7 @@
     },
     "E06": {
       "name": "KNOWLEDGE_GRAPH",
-      "implementation": "NetworkX directed knowledge graph",
+      "implementation": "Pure-Python directed multigraph with adjacency indexes, multi-edge metadata and breadth-first shortest-path traversal",
       "cfe_family": "CFE021-CFE030"
     },
     "E07": {
@@ -68,7 +68,7 @@
     },
     "E12": {
       "name": "FORMALIZATION",
-      "implementation": "Structured expression AST to SymPy",
+      "implementation": "Typed symbolic AST with exact rational arithmetic, associative flattening, commutative normalization and safe constant folding",
       "cfe_family": "CFE051-CFE060"
     },
     "E13": {
