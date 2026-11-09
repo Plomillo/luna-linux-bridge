@@ -22,6 +22,9 @@ class LunitaBetaV18Tests(unittest.TestCase):
         self.assertEqual("/var/lib/lunita/vectors", env["LUNITA_VECTOR_DB_PATH"])
         self.assertEqual("1", env["HF_HUB_DISABLE_TELEMETRY"])
 
+    def test_v17_legacy_launcher_path_matches_real_candidate_rootfs(self):
+        self.assertEqual(pathlib.Path("/opt/lunita/agent/lunita.py"), launcher.LEGACY_LAUNCHER)
+
     def test_v17_legacy_launcher_digest_is_explicitly_pinned(self):
         self.assertEqual(64, len(launcher.LEGACY_SHA256))
         self.assertEqual("46efd711729c344e7efba9ce2503127c48f0b88207cc5a17311ff1d555b075b2",
