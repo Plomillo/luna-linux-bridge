@@ -477,23 +477,53 @@ jobs:
           persisted = lane.persist_independent_report(report)
           gate = lane.stable_release_gate()
           release = lane.persist_stable_release_status(gate)
+          artifact_evidence = output.parent / "independent-evidence"
+          artifact_evidence.mkdir(parents=True, exist_ok=True)
+          evidence_paths = [
+              inventory_path,
+              pathlib.Path(inventory.get("manifest_path", "")),
+              jasp_path,
+              lane.INDEPENDENT_REPORT,
+              pathlib.Path(release.get("current_status_path", "")),
+          ]
+          evidence_paths.extend(
+              pathlib.Path(row["evidence_path"])
+              for row in (jasp.get("cases") or {}).values()
+              if row.get("evidence_path")
+          )
+          copied = []
+          for source in evidence_paths:
+              if source.is_file():
+                  target = artifact_evidence / source.name
+                  if source.resolve() != target.resolve():
+                      import shutil
+                      shutil.copy2(source, target)
+                  copied.append({
+                      "path": str(target),
+                      "sha256": lane.sha_file(target),
+                      "source_path": str(source),
+                  })
           result = {
               "schema": "LUNITA_V1_8_INDEPENDENT_CERTIFICATION/1.0",
               "candidate_id": "G06_REBUILD_CANDIDATE_R1",
               "candidate_rootfs": str(rootfs),
+              "candidate_manifest_sha256": lane.sha_file(lane.CANDIDATE_MANIFEST),
+              "target_runtime_receipt": lane.latest_target_runtime_acceptance(),
               "rootfs_inventory": inventory.get("status"),
               "rootfs_inventory_sha256": inventory.get("report_sha256"),
+              "rootfs_inventory_manifest_sha256": inventory.get("manifest_sha256"),
               "jasp_suite": jasp_run.get("status"),
               "jasp_cases": jasp.get("cases"),
               "independent_report": report.get("status"),
               "independent_report_sha256": persisted.get("current_sha256"),
               "stable_release_gate": gate.get("status"),
               "release_status": release.get("status"),
+              "evidence_artifacts": copied,
               "certification": "NOT_GRANTED",
               "open_items": report.get("open_items", []),
               "next_action": report.get("next_action"),
           }
-          output.write_text(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          output.write_text(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2) + "\\n", encoding="utf-8")
           print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
           if report.get("status") != "PASS_INDEPENDENT_VALIDATION":
               raise SystemExit(1)
