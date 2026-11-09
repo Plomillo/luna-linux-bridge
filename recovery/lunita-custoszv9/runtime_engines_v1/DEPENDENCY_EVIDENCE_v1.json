@@ -5,21 +5,6 @@
   "python": "3.12",
   "packages": [
     {
-      "name": "spacy",
-      "version": "3.8.18",
-      "purpose": "E02 Spanish NLP pipeline",
-      "source": "https://pypi.org/project/spacy/",
-      "provenance": "PyPI release metadata reports full provenance for 3.8.18"
-    },
-    {
-      "name": "es_core_news_sm",
-      "version": "3.8.0",
-      "purpose": "Spanish morphology, lemmatization, parsing and NER",
-      "source": "https://github.com/explosion/spacy-models/releases/tag/es_core_news_sm-3.8.0",
-      "compatibility_source": "https://github.com/explosion/spacy-models/blob/master/compatibility.json",
-      "license_review": "Keep original model license notice; verify before redistribution"
-    },
-    {
       "name": "fastembed",
       "version": "0.9.1",
       "purpose": "E04 local CPU embeddings",
@@ -32,12 +17,6 @@
       "purpose": "E05 embedded local vector index",
       "source": "https://pypi.org/project/qdrant-client/1.20.0/",
       "local_mode": "QdrantClient(:memory:) supported by upstream documentation"
-    },
-    {
-      "name": "networkx",
-      "version": "3.7",
-      "purpose": "E06 directed knowledge graph",
-      "source": "https://pypi.org/project/networkx/"
     },
     {
       "name": "rdflib",
@@ -53,14 +32,6 @@
       "source": "https://pypi.org/project/owlrl/7.6.2/",
       "wheel_sha256": "83347bf7f133979e87b2b18695d51d25510b99cec3f6919b5df05d4fbf058ae0",
       "pypi_provenance": "Not present; CI verifies exact wheel SHA-256 before installation"
-    },
-    {
-      "name": "sympy",
-      "version": "1.14.0",
-      "purpose": "E12 structured symbolic formalization",
-      "license": "BSD",
-      "source": "https://pypi.org/project/sympy/1.14.0/",
-      "provenance": "PyPI release files report full provenance"
     },
     {
       "name": "jsonschema",
@@ -91,8 +62,10 @@
     "No model is described as deployed merely because its package is installed.",
     "Embedding model weights are downloaded at first use; target deployment must cache them and record exact weight hashes before offline activation.",
     "RAG retrieval and E01 generation remain separate stages; every retrieved source carries its source digest.",
-    "The model2vec/Potion model is static; suitability must be measured against Lunita's Spanish retrieval evaluation corpus before production activation.",
     "This manifest is dependency evidence for a candidate runtime, not a security certification or target-rootfs inventory.",
-    "The E04 model is a smaller multilingual transformer than potion-multilingual-128M; its model files are included in the packaged cache and bound by SHA-256."
+    "The E04 model is a smaller multilingual transformer than potion-multilingual-128M; its model files are included in the packaged cache and bound by SHA-256.",
+    "E02, E06 and E12 are implemented with deterministic, versioned Python code and no external ML/statistical package dependencies; their limitations and method identifiers are emitted in runtime results.",
+    "E02's POS and named-entity labels are heuristic candidates, not a statistical dependency parser or verified named-entity recognition model.",
+    "E12 performs typed-AST formalization and exact rational normalization over a bounded operator set; it is not a general-purpose CAS or theorem prover."
   ]
 }
