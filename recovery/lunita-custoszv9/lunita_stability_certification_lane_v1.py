@@ -30,6 +30,7 @@ EVIDENCE = ST / "lunita_certification_evidence"
 CANDIDATE = ST / "g06_rebuild_candidates" / "G06_REBUILD_CANDIDATE_R1"
 ROOTFS = CANDIDATE / "rootfs"
 RUNTIME_REPORT = CANDIDATE / "BETA_RUNTIME_FUNCTIONAL_TESTS.json"
+TARGET_RUNTIME_RECEIPT_DIR = OUT / "lunita_target_runtime_acceptance"
 INDEPENDENT_REPORT = CANDIDATE / "BETA_INDEPENDENT_VALIDATION.json"
 MISSION_PATH = ROOT.parent / "MISION1.txt"
 MISSION_SHA = "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f"
@@ -679,6 +680,62 @@ def _stable_check(check: dict) -> bool:
     return isinstance(check, dict) and check.get("status") == "PASS" and check.get("returncode", 0) == 0
 
 
+def latest_target_runtime_acceptance() -> dict:
+    """Load and validate the newest CUSTOSZ_V7 target-runtime acceptance receipt."""
+    files = sorted(TARGET_RUNTIME_RECEIPT_DIR.glob("LUNITA_TARGET_RUNTIME_ACCEPTANCE_*.json"),
+                   key=lambda path: path.stat().st_mtime_ns, reverse=True)
+    if not files:
+        return {"status": "BLOCKED_TARGET_RUNTIME_RECEIPT_MISSING", "receipt_path": None}
+    for path in files:
+        row = load_json(path, {}) or {}
+        if row.get("schema") != "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0":
+            continue
+        if row.get("status") != "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED":
+            continue
+        if row.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1":
+            continue
+        if row.get("worker_required") != "CUSTOSZ_V7" or row.get("worker_version") != "CUSTOSZ_V7":
+            continue
+        if row.get("certification") != "NOT_GRANTED":
+            continue
+        if row.get("canonical_g06_certification") != "NOT_GRANTED":
+            continue
+        if row.get("canonical_g08_binding_mutation") is not False:
+            continue
+        if row.get("overlay_integrity", {}).get("status") != "PASS_OVERLAY_INTEGRITY":
+            continue
+        if row.get("e04_quantization", {}).get("status") != "PASS_E04_INT8_QUALITY_GATE":
+            continue
+        if row.get("qwen_e01", {}).get("status") != "PASS_E01_QWEN_INFERENCE":
+            continue
+        tests = row.get("engine_acceptance_tests", {})
+        if tests.get("status") != "PASS" or tests.get("skipped") != 0 or not isinstance(tests.get("tests_run"), int) or tests["tests_run"] < 1:
+            continue
+        applications = row.get("legacy_application_smokes", {})
+        commands = applications.get("commands") if isinstance(applications.get("commands"), dict) else {}
+        if applications.get("status") != "PASS_LEGACY_APPLICATION_SMOKES" or not commands or any(
+            command.get("status") != "PASS" or command.get("returncode") != 0
+            for command in commands.values()
+        ):
+            continue
+        digest = sha_file(path)
+        return {
+            "status": "PASS_TARGET_RUNTIME_ACCEPTANCE",
+            "receipt_path": str(path),
+            "receipt_sha256": digest,
+            "worker_version": row.get("worker_version"),
+            "candidate_id": row.get("candidate_id"),
+            "overlay_integrity": row.get("overlay_integrity"),
+            "e04_quantization": row.get("e04_quantization"),
+            "qwen_e01": row.get("qwen_e01"),
+            "engine_acceptance_tests": row.get("engine_acceptance_tests"),
+            "legacy_application_smokes": applications,
+            "frozen_g06_mutated": row.get("frozen_g06_mutated"),
+            "canonical_g08_binding_mutation": row.get("canonical_g08_binding_mutation"),
+        }
+    return {"status": "BLOCKED_TARGET_RUNTIME_RECEIPT_INVALID", "receipt_path": str(files[0])}
+
+
 def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
     old = load_json(INDEPENDENT_REPORT, {}) or {}
     runtime = load_json(RUNTIME_REPORT, {}) or {}
@@ -702,6 +759,26 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         runtime.get("status") == "PASS_RUNTIME_TESTS" and runtime.get("all_tests_pass") is True and
         launcher_ok and runtime.get("frozen_g06_mutated") is False and runtime.get("canonical_g08_bindings_mutated") is False
     ) else 1, "runtime_report_sha256": runtime_sha, "launcher_sha256": launcher_sha}
+    target_runtime = latest_target_runtime_acceptance()
+    target_receipt_path = pathlib.Path(target_runtime.get("receipt_path", "")) if target_runtime.get("receipt_path") else None
+    target_runtime_hash_valid = bool(
+        target_runtime.get("status") == "PASS_TARGET_RUNTIME_ACCEPTANCE"
+        and target_receipt_path and target_receipt_path.is_file()
+        and target_runtime.get("receipt_sha256") == sha_file(target_receipt_path)
+    )
+    checks["target_v1_8_runtime_acceptance_e01_e15_int8"] = {
+        "status": "PASS" if target_runtime_hash_valid else "BLOCKED",
+        "returncode": 0 if target_runtime_hash_valid else 1,
+        "receipt_path": str(target_receipt_path) if target_receipt_path else None,
+        "receipt_sha256": target_runtime.get("receipt_sha256"),
+        "worker_version": target_runtime.get("worker_version"),
+        "engine_tests_run": (target_runtime.get("engine_acceptance_tests") or {}).get("tests_run"),
+        "e01_status": (target_runtime.get("qwen_e01") or {}).get("status"),
+        "e04_status": (target_runtime.get("e04_quantization") or {}).get("status"),
+        "legacy_smokes_status": (target_runtime.get("legacy_application_smokes") or {}).get("status"),
+        "evidence": {str(target_receipt_path): target_runtime.get("receipt_sha256")} if target_receipt_path else {},
+        "details": target_runtime.get("status"),
+    }
     inventory_report_path = pathlib.Path(inventory.get("report_path", "")) if inventory and inventory.get("report_path") else None
     inventory_manifest_path = pathlib.Path(inventory.get("manifest_path", "")) if inventory and inventory.get("manifest_path") else None
     inventory_hashes_valid = bool(
@@ -765,6 +842,7 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         "captured_at_utc": utc(), "candidate_id": "G06_REBUILD_CANDIDATE_R1",
         "mission_sha256": MISSION_SHA, "runtime_report_path": str(RUNTIME_REPORT),
         "runtime_report_sha256": runtime_sha, "beta_launcher_sha256": launcher_sha,
+        "target_runtime_acceptance": target_runtime,
         "checks": checks, "status": desired_status,
         "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
         "certification": "NOT_GRANTED",
@@ -812,6 +890,11 @@ def stable_release_gate() -> dict:
         return {"status": "BLOCKED_CANDIDATE_OR_MISSION_IDENTITY", "certification": "NOT_GRANTED"}
     if report.get("status") != "PASS_INDEPENDENT_VALIDATION":
         return {"status": "BLOCKED_INDEPENDENT_VALIDATION", "certification": "NOT_GRANTED"}
+    target_check = (report.get("checks") or {}).get("target_v1_8_runtime_acceptance_e01_e15_int8", {})
+    target_path = pathlib.Path(target_check.get("receipt_path", "")) if target_check.get("receipt_path") else None
+    if (target_check.get("status") != "PASS" or not target_path or not target_path.is_file()
+        or target_check.get("receipt_sha256") != sha_file(target_path)):
+        return {"status": "BLOCKED_TARGET_V1_8_RUNTIME_BINDING", "certification": "NOT_GRANTED"}
     checks = report.get("checks")
     if not isinstance(checks, dict) or not checks or not all(_stable_check(x) for x in checks.values()):
         return {"status": "BLOCKED_REQUIRED_CHECKS", "certification": "NOT_GRANTED"}
