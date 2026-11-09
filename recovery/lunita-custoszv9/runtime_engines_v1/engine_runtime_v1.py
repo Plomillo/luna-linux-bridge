@@ -34,6 +34,28 @@ DEFAULT_MODEL = CANDIDATE_ROOT / "brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf"
 DEFAULT_LLAMA_ROOT = CANDIDATE_ROOT / "brain/runtime"
 
 
+# Human-facing names are metadata only. Executable paths, application IDs,
+# smoke-test commands, engine IDs and command routes remain unchanged.
+INSTRUMENT_REGISTRY = {
+    "BRUJULA": {
+        "display_label": "Brújula giroscópica",
+        "runtime_component": "brujula",
+        "runtime_path": "/opt/lunita/instruments/brujula",
+        "smoke_test_command": "brujula-self-test",
+    },
+    "JAMOVI": {
+        "display_label": "Sacapuntas",
+        "application_id": "org.jamovi.jamovi",
+        "smoke_test_command": "jamovi-self-test",
+    },
+    "JASP": {
+        "display_label": "Lupa",
+        "application_id": "org.jaspstats.JASP",
+        "smoke_test_command": "jasp-self-test",
+    },
+}
+
+
 ENGINE_NAMES = {
     "E01": "LLM", "E02": "NLP", "E03": "RAG", "E04": "EMBEDDINGS",
     "E05": "VECTOR_SEARCH", "E06": "KNOWLEDGE_GRAPH", "E07": "RDF",
