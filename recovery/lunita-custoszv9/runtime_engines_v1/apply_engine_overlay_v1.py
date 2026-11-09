@@ -154,6 +154,11 @@ def load_checkpoint_receipt(
         raise GateError("Checkpoint directory must be outside the protected rootfs")
     except ValueError:
         pass
+    try:
+        rootfs.relative_to(checkpoint_root)
+        raise GateError("Checkpoint directory must not contain the protected rootfs")
+    except ValueError:
+        pass
     observed_manifest_hash = sha256_file(manifest_path)
     if observed_manifest_hash != expected_hash:
         raise GateError("Checkpoint manifest SHA-256 mismatch")

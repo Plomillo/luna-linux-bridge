@@ -89,6 +89,17 @@ class AdditiveOverlayInstallerTests(unittest.TestCase):
         after = hashlib.sha256((target / "OVERLAY_APPLY_RECEIPT.json").read_bytes()).hexdigest()
         self.assertEqual(before, after)
 
+    def test_checkpoint_directory_inside_rootfs_is_denied(self):
+        with self.assertRaises(checkpoint_v1.CheckpointError):
+            checkpoint_v1.create_checkpoint(
+                self.rootfs,
+                self.rootfs / "var/lib/lunita/checkpoints",
+            )
+
+    def test_checkpoint_directory_containing_rootfs_is_denied(self):
+        with self.assertRaises(checkpoint_v1.CheckpointError):
+            checkpoint_v1.create_checkpoint(self.rootfs, self.base)
+
     def test_checkpoint_does_not_require_external_worker_identity(self):
         receipt = json.loads(self.checkpoint_receipt.read_text(encoding="utf-8"))
         receipt.pop("worker_version", None)
