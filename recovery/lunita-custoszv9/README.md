@@ -116,3 +116,21 @@ python3 recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py --se
 ~~~
 
 These tests prove the fail-closed policy and sidecar contract, not live Lunita certification.
+
+## Lunita v1.8 additive candidate and Kestra gate (2026-11-09)
+
+The v1.8 runtime is additive over the hash-pinned v1.7 launcher. Existing commands delegate to that preserved launcher; the v1.8 engine gateway adds E01-E15 without replacing the legacy application paths. The displayed instrument labels are metadata only:
+
+- BRUJULA: Brújula giroscópica; runtime component/path remains brujula.
+- JAMOVI: Sacapuntas; application ID remains org.jamovi.jamovi.
+- JASP: Lupa; application ID remains org.jaspstats.JASP.
+
+The labels are covered by launcher acceptance tests. E15 consensus requires all assigned agents to vote on the same evidence digest; the acceptance suite checks both unanimous approval and a conflicting decision. No engine ID, command route, runtime component, application ID or legacy launcher is reassigned.
+
+The certification acquisition lane now targets LUNITA_STABLE_1_8, version 1.8.0. The earlier LUNITA_STABLE_1_7 history remains intact; the v1.8 release uses a separate receipt directory and does not overwrite prior receipts. Stable v1.8 is emitted only after the exact hash-bound v1.8 target receipt, complete candidate rootfs/dependency inventory, all four pinned JASP regression cases, every independent check and the separate candidate-bound S32 receipt pass. The certification scope remains VERSIONED_DERIVED_CANDIDATE_ONLY; there is no automatic certification propagation to frozen G06 or canonical G08.
+
+The recovery-contract workflow passed at commit 59da15dc7587600cf8c6e9e305ccb14476eef594 (run 42667123744). Its passing CI proves the repository contracts and hosted engine tests; it does not prove the live candidate rootfs or target installation.
+
+The Kestra integration under integrations/kestra is a read-only evidence coordinator. Its ephemeral GitHub Actions workflow starts a temporary Kestra/PostgreSQL stack, imports the Lunita v1.8 gate and executes it. It checks the latest recovery-contract run and overlay artifact, then looks for the complete CUSTOSZ_V7 target receipt publication at evidence/lunita/target-runtime-acceptance/CURRENT.json. Kestra cannot run the authorized target worker, apply the overlay, or grant certification. A successful Kestra orchestration with a HOLD decision is not a product pass.
+
+Current certification state remains NOT_GRANTED. The v1.8 target acceptance handoff is still required on the actual candidate under CUSTOSZ_V7. G23 remains NOT_PERFORMED, G24 remains NOT_GRANTED, and S32 has not issued a candidate-bound receipt. The latest target receipt must be consumed by the independent lane; stale or missing passes cannot override a newer blocked receipt.
