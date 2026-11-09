@@ -229,15 +229,15 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
                 SimpleNamespace(returncode=0, stdout="save successful\\n", stderr=""),
                 SimpleNamespace(returncode=0, stdout="strict reopen successful\\n", stderr=""),
             ]
-            with mock.patch.object(lane, "OUT", out), \\
-                 mock.patch.object(lane, "ROOTFS", rootfs), \\
-                 mock.patch.object(lane, "sha_file", return_value=expected), \\
-                 mock.patch.object(lane.subprocess, "run", side_effect=responses) as runner:
-                result = lane.run_death_penalty_roundtrip(
-                    "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
-                    {"QT_QPA_PLATFORM": "offscreen"},
-                    "POSITIVE_TEST",
-                )
+            with mock.patch.object(lane, "OUT", out):
+                with mock.patch.object(lane, "ROOTFS", rootfs):
+                    with mock.patch.object(lane, "sha_file", return_value=expected):
+                        with mock.patch.object(lane.subprocess, "run", side_effect=responses) as runner:
+                            result = lane.run_death_penalty_roundtrip(
+                                "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
+                                {"QT_QPA_PLATFORM": "offscreen"},
+                                "POSITIVE_TEST",
+                            )
             self.assertEqual(2, runner.call_count)
             self.assertEqual("PASS_JASP_STRICT_ROUNDTRIP", result["status"])
             self.assertEqual("PASS", result["save_run"]["status"])
