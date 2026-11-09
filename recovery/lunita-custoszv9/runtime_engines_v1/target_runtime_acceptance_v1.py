@@ -15,6 +15,7 @@ import pathlib
 import subprocess
 import sys
 import time
+import tempfile
 import unittest
 from datetime import datetime, timezone
 from typing import Any
@@ -247,7 +248,18 @@ def run_unittests() -> dict[str, Any]:
         "test_complete_canonical_route_matrix_for_all_fourteen_commands" in test_id
         for test_id in test_ids
     )
-    result = unittest.TextTestRunner(stream=sys.stdout, verbosity=2).run(suite)
+    # Never run acceptance tests against the user's persistent vector database.
+    # Each target-validation run receives a fresh, disposable Qdrant directory.
+    previous_vector_path = os.environ.get("LUNITA_VECTOR_DB_PATH")
+    with tempfile.TemporaryDirectory(prefix="lunita-target-engine-tests-") as vector_db:
+        os.environ["LUNITA_VECTOR_DB_PATH"] = vector_db
+        try:
+            result = unittest.TextTestRunner(stream=sys.stdout, verbosity=2).run(suite)
+        finally:
+            if previous_vector_path is None:
+                os.environ.pop("LUNITA_VECTOR_DB_PATH", None)
+            else:
+                os.environ["LUNITA_VECTOR_DB_PATH"] = previous_vector_path
     return {
         "status": "PASS" if result.wasSuccessful() and not result.skipped else "FAIL",
         "tests_run": result.testsRun,
