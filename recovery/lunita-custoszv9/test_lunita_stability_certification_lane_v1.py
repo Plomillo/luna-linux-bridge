@@ -277,6 +277,114 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
             self.assertTrue(result["temporary_fixture_removed_after_test"])
 
 
+class TargetRuntimeEvidenceGateTests(unittest.TestCase):
+    @staticmethod
+    def valid_target_receipt():
+        return {
+            "schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0",
+            "status": "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED",
+            "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+            "worker_required": "CUSTOSZ_V7",
+            "worker_version": "CUSTOSZ_V7",
+            "certification": "NOT_GRANTED",
+            "canonical_g06_certification": "NOT_GRANTED",
+            "canonical_g08_binding_mutation": False,
+            "overlay_integrity": {"status": "PASS_OVERLAY_INTEGRITY"},
+            "e04_quantization": {"status": "PASS_E04_INT8_QUALITY_GATE"},
+            "qwen_e01": {"status": "PASS_E01_QWEN_INFERENCE"},
+            "engine_acceptance_tests": {"status": "PASS", "tests_run": 25, "skipped": 0},
+            "legacy_application_smokes": {
+                "status": "PASS_LEGACY_APPLICATION_SMOKES",
+                "commands": {
+                    "brujula-self-test": {"status": "PASS", "returncode": 0},
+                    "r-self-test": {"status": "PASS", "returncode": 0},
+                    "jamovi-self-test": {"status": "PASS", "returncode": 0},
+                    "jasp-self-test": {"status": "PASS", "returncode": 0},
+                    "fault": {"status": "PASS", "returncode": 0},
+                },
+            },
+        }
+
+    def test_target_runtime_receipt_requires_all_motors_and_legacy_smokes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = pathlib.Path(tmp) / "target-receipts"
+            directory.mkdir()
+            path = directory / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_test.json"
+            path.write_text(json.dumps(self.valid_target_receipt()), encoding="utf-8")
+            with mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", directory):
+                result = lane.latest_target_runtime_acceptance()
+            self.assertEqual("PASS_TARGET_RUNTIME_ACCEPTANCE", result["status"])
+            self.assertEqual(25, result["engine_acceptance_tests"]["tests_run"])
+            self.assertEqual("PASS_E01_QWEN_INFERENCE", result["qwen_e01"]["status"])
+            self.assertEqual("PASS_E04_INT8_QUALITY_GATE", result["e04_quantization"]["status"])
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), result["receipt_sha256"])
+
+    def test_target_runtime_receipt_rejects_missing_e01(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = pathlib.Path(tmp) / "target-receipts"
+            directory.mkdir()
+            receipt = self.valid_target_receipt()
+            receipt["qwen_e01"] = {"status": "BLOCKED"}
+            (directory / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_test.json").write_text(
+                json.dumps(receipt), encoding="utf-8")
+            with mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", directory):
+                result = lane.latest_target_runtime_acceptance()
+            self.assertEqual("BLOCKED_TARGET_RUNTIME_RECEIPT_INVALID", result["status"])
+
+    def test_target_runtime_receipt_rejects_skipped_engine_test(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = pathlib.Path(tmp) / "target-receipts"
+            directory.mkdir()
+            receipt = self.valid_target_receipt()
+            receipt["engine_acceptance_tests"]["skipped"] = 1
+            (directory / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_test.json").write_text(
+                json.dumps(receipt), encoding="utf-8")
+            with mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", directory):
+                result = lane.latest_target_runtime_acceptance()
+            self.assertEqual("BLOCKED_TARGET_RUNTIME_RECEIPT_INVALID", result["status"])
+
+    def test_independent_report_blocks_without_target_runtime_receipt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", pathlib.Path(tmp) / "missing"), \
+                 mock.patch.object(lane, "INDEPENDENT_REPORT", pathlib.Path(tmp) / "old-independent.json"), \
+                 mock.patch.object(lane, "RUNTIME_REPORT", pathlib.Path(tmp) / "runtime.json"), \
+                 mock.patch.object(lane, "MISSION_PATH", pathlib.Path(tmp) / "MISION1.txt"):
+                report = lane.update_independent_report(
+                    None, {"status": "BLOCKED_JASP_REGRESSION", "cases": {}}
+                )
+            check = report["checks"]["target_v1_8_runtime_acceptance_e01_e15_int8"]
+            self.assertEqual("BLOCKED", check["status"])
+            self.assertEqual("BLOCKED_TARGET_RUNTIME_RECEIPT_MISSING", check["details"])
+            self.assertIn("target_v1_8_runtime_acceptance_e01_e15_int8", report["open_items"])
+
+    def test_stable_release_is_blocked_without_hash_bound_target_acceptance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            runtime_path = root / "runtime.json"
+            runtime_path.write_text(json.dumps({
+                "schema": "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0",
+                "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+            }), encoding="utf-8")
+            report_path = root / "independent.json"
+            report = {
+                "schema": "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0",
+                "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+                "mission_sha256": lane.MISSION_SHA,
+                "status": "PASS_INDEPENDENT_VALIDATION",
+                "checks": {"baseline_check": {"status": "PASS"}},
+                "runtime_report_sha256": hashlib.sha256(runtime_path.read_bytes()).hexdigest(),
+                "frozen_g06_mutated": False,
+                "canonical_g08_bindings_mutated": False,
+            }
+            report_path.write_text(json.dumps(report), encoding="utf-8")
+            with mock.patch.object(lane, "INDEPENDENT_REPORT", report_path), \
+                 mock.patch.object(lane, "RUNTIME_REPORT", runtime_path), \
+                 mock.patch.object(lane, "OUT", root / "outputs"):
+                result = lane.stable_release_gate()
+            self.assertEqual("BLOCKED_TARGET_V1_8_RUNTIME_BINDING", result["status"])
+            self.assertEqual("NOT_GRANTED", result["certification"])
+
+
 class StableReleaseReceiptTests(unittest.TestCase):
     def test_release_receipt_is_immutable_and_current_pointer_requires_revalidation(self):
         with tempfile.TemporaryDirectory() as tmp:
