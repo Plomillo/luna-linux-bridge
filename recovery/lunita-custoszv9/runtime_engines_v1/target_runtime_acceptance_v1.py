@@ -79,32 +79,66 @@ def hash_directory(path: pathlib.Path) -> dict[str, Any]:
 def verify_e04_quantization_receipt() -> dict[str, Any]:
     cache = OVERLAY / "model-cache/fastembed"
     receipt_path = cache / "LUNITA_E04_ONNX_QUANTIZATION_RECEIPT.json"
-    model_path = cache / (
+    relative_model = pathlib.Path(
         "models--Qdrant--paraphrase-multilingual-MiniLM-L12-v2-onnx-Q/"
         "snapshots/faf4aa4225822f3bc6376869cb1164e8e3feedd0/model_optimized.onnx"
     )
-    if not receipt_path.is_file() or not model_path.is_file():
-        raise TargetGateError("Measured INT8 E04 model or quantization receipt is missing")
+    model_path = cache / relative_model
+    if receipt_path.is_symlink() or model_path.is_symlink() or not receipt_path.is_file() or not model_path.is_file():
+        raise TargetGateError("Measured INT8 E04 model or regular quantization receipt is missing")
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     if receipt.get("status") != "PASS_INT8_QUANTIZATION_MEASURED":
         raise TargetGateError("E04 quantization receipt is not a measured PASS")
+    if receipt.get("model_id") != "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2":
+        raise TargetGateError("E04 model identity mismatch")
+    if receipt.get("model_cache_relative_path") != relative_model.as_posix():
+        raise TargetGateError("E04 model snapshot path is not the registered pinned snapshot")
+    if receipt.get("embedding_dimension") != 384:
+        raise TargetGateError("E04 embedding dimension mismatch")
     if receipt.get("quantization") != "ONNX_RUNTIME_DYNAMIC_QINT8_PER_CHANNEL":
         raise TargetGateError("Unexpected E04 quantization method")
     if sha256_file(model_path) != receipt.get("quantized_sha256"):
         raise TargetGateError("E04 ONNX quantized model digest mismatch")
+    validation = receipt.get("onnx_validation", {})
+    if validation.get("onnxruntime_load_status") != "PASS":
+        raise TargetGateError("ONNX Runtime did not load the quantized model")
+    if not isinstance(validation.get("int8_initializer_count"), int) or validation["int8_initializer_count"] < 1:
+        raise TargetGateError("INT8 model contains no measured quantized weight initializers")
+    if not validation.get("quantized_operator_counts"):
+        raise TargetGateError("INT8 model contains no quantized ONNX operators")
+    if validation.get("checker_status") not in {
+        "PASS_ONNX_CHECKER",
+        "KNOWN_ONNX_SCHEMA_REGISTRY_GAP_LAYER_NORMALIZATION_OPSET11",
+    }:
+        raise TargetGateError("Unsupported ONNX graph validation status")
     thresholds = receipt.get("thresholds", {})
-    if receipt.get("mean_vector_cosine", 0) < thresholds.get("minimum_mean_vector_cosine", 1):
+    mean_min = thresholds.get("minimum_mean_vector_cosine")
+    vector_min = thresholds.get("minimum_vector_cosine")
+    retrieval_required = thresholds.get("required_retrieval_top1_agreement")
+    size_max = thresholds.get("maximum_model_size_ratio")
+    if not isinstance(mean_min, (int, float)) or receipt.get("mean_vector_cosine", 0) < mean_min:
         raise TargetGateError("E04 mean vector cosine fell below the measured threshold")
-    if receipt.get("minimum_vector_cosine", 0) < thresholds.get("minimum_vector_cosine", 1):
+    if not isinstance(vector_min, (int, float)) or receipt.get("minimum_vector_cosine", 0) < vector_min:
         raise TargetGateError("E04 minimum vector cosine fell below the measured threshold")
-    if receipt.get("retrieval_top1_agreement") != thresholds.get("required_retrieval_top1_agreement"):
+    if receipt.get("retrieval_top1_agreement") != retrieval_required:
         raise TargetGateError("E04 retrieval top-1 agreement did not meet the registered threshold")
-    if not all(item.get("top1_match") for item in receipt.get("retrieval_decisions", [])):
+    if not isinstance(size_max, (int, float)) or receipt.get("size_ratio", 1) >= size_max:
+        raise TargetGateError("E04 INT8 model did not meet the registered size-reduction threshold")
+    if receipt.get("quantized_bytes") != model_path.stat().st_size or receipt.get("original_bytes", 0) <= 0:
+        raise TargetGateError("E04 quantized model size is not bound to the receipt")
+    observed_ratio = receipt["quantized_bytes"] / receipt["original_bytes"]
+    if abs(observed_ratio - receipt.get("size_ratio", -1)) > 1e-9:
+        raise TargetGateError("E04 quantized model size ratio does not match its byte counts")
+    decisions = receipt.get("retrieval_decisions", [])
+    if len(decisions) != receipt.get("query_count") or len(decisions) != 10:
+        raise TargetGateError("E04 retrieval evidence is incomplete")
+    if not all(item.get("top1_match") for item in decisions):
         raise TargetGateError("E04 retrieval corpus contains a top-1 regression")
     return {
         "status": "PASS_E04_INT8_QUALITY_GATE",
         "receipt_sha256": sha256_file(receipt_path),
         "model_sha256": sha256_file(model_path),
+        "onnx_validation": validation,
         "mean_vector_cosine": receipt["mean_vector_cosine"],
         "minimum_vector_cosine": receipt["minimum_vector_cosine"],
         "retrieval_top1_agreement": receipt["retrieval_top1_agreement"],
@@ -131,10 +165,35 @@ def verify_overlay() -> dict[str, Any]:
     observed_launcher = sha256_file(LEGACY_LAUNCHER)
     if observed_launcher != EXPECTED_LEGACY_SHA256:
         raise TargetGateError("Installed legacy launcher SHA-256 mismatch")
-    for relative, expected in receipt.get("directories", {}).items():
+    required_files = {
+        "__init__.py", "engine_runtime_v1.py", "engine_acceptance_v1.py",
+        "engine_gateway_v1.py", "gateway_acceptance_v1.py", "lunita_beta_v1_8.py",
+        "launcher_acceptance_v1.py", "target_runtime_acceptance_v1.py",
+        "engine_assignments_v1.json", "requirements-engine-stack.txt",
+        "DEPENDENCY_EVIDENCE_v1.json", "ENGINE_RUNTIME_V1_README.md",
+    }
+    files = receipt.get("files")
+    if not isinstance(files, dict) or set(files) != required_files:
+        raise TargetGateError("Overlay file manifest is incomplete or contains unexpected entries")
+    for relative, expected in files.items():
+        path = OVERLAY / relative
+        if path.is_symlink() or not path.is_file() or sha256_file(path) != expected:
+            raise TargetGateError(f"Installed overlay file hash mismatch: {relative}")
+    required_directories = {"vendor/python3.12/site-packages", "model-cache/fastembed"}
+    directories = receipt.get("directories")
+    if not isinstance(directories, dict) or set(directories) != required_directories:
+        raise TargetGateError("Overlay directory manifest is incomplete or unexpected")
+    for relative, expected in directories.items():
         actual = hash_directory(OVERLAY / relative)
         if actual != expected:
             raise TargetGateError(f"Installed overlay directory hash mismatch: {relative}")
+    immutable_flags = (
+        "canonical_identity_mutation", "engine_reassignment", "command_reassignment",
+        "agent_reassignment", "frozen_g06_mutated", "canonical_g08_mutated",
+        "launcher_mutated", "model_weights_mutated",
+    )
+    if any(receipt.get(flag) is not False for flag in immutable_flags):
+        raise TargetGateError("Overlay receipt does not prove all frozen identity and artifact invariants")
     return {
         "status": "PASS_OVERLAY_INTEGRITY",
         "receipt_sha256": sha256_file(OVERLAY_RECEIPT),
