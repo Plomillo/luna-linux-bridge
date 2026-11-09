@@ -476,7 +476,7 @@ jobs:
           report = lane.update_independent_report(inventory, jasp)
           persisted = lane.persist_independent_report(report)
           gate = lane.stable_release_gate()
-          release = lane.persist_stable_release_status(gate)
+          release = {"status": "WAITING_FOR_G23_G24_CERTIFICATION"} if gate.get("status") == "STABLE_RELEASE_ELIGIBLE" else {"status": gate.get("status", "NOT_GRANTED")}
           artifact_evidence = output.parent / "independent-evidence"
           artifact_evidence.mkdir(parents=True, exist_ok=True)
           evidence_paths = [
@@ -484,7 +484,6 @@ jobs:
               pathlib.Path(inventory.get("manifest_path", "")),
               jasp_path,
               lane.INDEPENDENT_REPORT,
-              pathlib.Path(release.get("current_status_path", "")),
           ]
           evidence_paths.extend(
               pathlib.Path(row["evidence_path"])
@@ -523,7 +522,7 @@ jobs:
               "open_items": report.get("open_items", []),
               "next_action": report.get("next_action"),
           }
-          output.write_text(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2) + "\\n", encoding="utf-8")
+          output.write_text(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
           print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
           if report.get("status") != "PASS_INDEPENDENT_VALIDATION":
               raise SystemExit(1)
