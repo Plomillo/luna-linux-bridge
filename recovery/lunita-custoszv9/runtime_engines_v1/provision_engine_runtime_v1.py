@@ -19,7 +19,6 @@ from datetime import datetime, timezone
 
 OWL_RL_SHA256 = "83347bf7f133979e87b2b18695d51d25510b99cec3f6919b5df05d4fbf058ae0"
 OWL_RL_VERSION = "7.6.2"
-SPACY_MODEL_URL = "https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.8.0/es_core_news_sm-3.8.0-py3-none-any.whl"
 
 
 class ProvisionError(RuntimeError):
@@ -67,9 +66,6 @@ def provision(overlay: pathlib.Path, python: pathlib.Path, model_cache: pathlib.
     requirements = overlay / "requirements-engine-stack.txt"
     run([str(python), "-m", "pip", "install", "--disable-pip-version-check",
          "--only-binary=:all:", "--no-compile", "--target", str(site), "-r", str(requirements)], env)
-    run([str(python), "-m", "pip", "install", "--disable-pip-version-check",
-         "--only-binary=:all:", "--no-compile", "--target", str(site), SPACY_MODEL_URL], env)
-
     with tempfile.TemporaryDirectory(prefix="lunita-owlrl-") as temporary:
         wheel_dir = pathlib.Path(temporary)
         run([str(python), "-m", "pip", "download", "--disable-pip-version-check", "--no-deps",
@@ -87,21 +83,27 @@ def provision(overlay: pathlib.Path, python: pathlib.Path, model_cache: pathlib.
     smoke = r'''
 import json
 import os
+import sys
 from pathlib import Path
 from fastembed import TextEmbedding
-import spacy, qdrant_client, networkx, rdflib, owlrl, sympy, jsonschema
+import qdrant_client, rdflib, owlrl, jsonschema, onnxruntime, numpy
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from engine_runtime_v1 import nlp_analyze, build_knowledge_graph, formalize_expression
 cache = os.environ["LUNITA_FASTEMBED_CACHE"]
 Path(cache).mkdir(parents=True, exist_ok=True)
-nlp = spacy.load("es_core_news_sm")
-doc = nlp("Lunita valida la evidencia y preserva la procedencia.")
-assert len([t for t in doc if not t.is_space]) >= 6
+nlp = nlp_analyze("Lunita valida la evidencia y preserva la procedencia.")
+assert len(nlp["tokens"]) >= 6 and nlp["engine_id"] == "E02"
+graph = build_knowledge_graph([{"id":"a"},{"id":"b"}],[{"source":"a","target":"b","relation":"supports"}])
+assert graph["graph"].shortest_path("a","b") == ["a","b"]
+formal = formalize_expression({"op":"add","args":[{"number":0.5},{"number":0.5},{"symbol":"x"}]})
+assert formal["simplified"] == "add(1,x)"
 embedder = TextEmbedding(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", cache_dir=cache, threads=1, mmap=True)
 vectors = list(embedder.embed(["Lunita conserva el contexto"]))
-assert len(vectors) == 1 and len(vectors[0]) == 256
-print(json.dumps({"spacy":"PASS","fastembed":"PASS","embedding_dimension":256,
- "qdrant":qdrant_client.__version__,"networkx":networkx.__version__,
- "rdflib":rdflib.__version__,"owlrl":"PASS","sympy":sympy.__version__,
- "jsonschema":jsonschema.__version__},sort_keys=True))
+assert len(vectors) == 1 and len(vectors[0]) == 384
+print(json.dumps({"E02":"PASS","E04":"PASS","E06":"PASS","E12":"PASS",
+ "embedding_dimension":384,"qdrant":qdrant_client.__version__,
+ "rdflib":rdflib.__version__,"owlrl":"PASS","jsonschema":jsonschema.__version__,
+ "onnxruntime":onnxruntime.__version__,"numpy":numpy.__version__},sort_keys=True))
 '''
     output = run([str(python), "-c", smoke], env)
     receipt = {
