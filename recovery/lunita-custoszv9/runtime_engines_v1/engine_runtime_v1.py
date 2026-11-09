@@ -13,9 +13,15 @@ import pathlib
 import subprocess
 import tempfile
 import uuid
+import sys
 from functools import lru_cache
 from importlib import metadata
 from typing import Any, Iterable, Mapping, Sequence
+
+ENGINE_DIR = pathlib.Path(__file__).resolve().parent
+VENDOR_SITE_PACKAGES = ENGINE_DIR / "vendor" / "python3.12" / "site-packages"
+if VENDOR_SITE_PACKAGES.is_dir() and str(VENDOR_SITE_PACKAGES) not in sys.path:
+    sys.path.insert(0, str(VENDOR_SITE_PACKAGES))
 
 EMBEDDING_MODEL = "minishlab/potion-multilingual-128M"
 EMBEDDING_DIMENSION = 256
@@ -259,7 +265,12 @@ def nlp_analyze(text: str) -> dict[str, Any]:
 def _embedder():
     from fastembed import TextEmbedding
     try:
-        return TextEmbedding(model_name=EMBEDDING_MODEL)
+        cache_dir = os.environ.get("LUNITA_FASTEMBED_CACHE")
+        if cache_dir:
+            pathlib.Path(cache_dir).mkdir(parents=True, exist_ok=True)
+        return TextEmbedding(
+            model_name=EMBEDDING_MODEL, cache_dir=cache_dir, threads=1, mmap=True,
+        )
     except Exception as exc:
         raise EngineUnavailable(f"Unable to load embedding model {EMBEDDING_MODEL}: {exc}") from exc
 
@@ -285,6 +296,8 @@ class VectorIndex:
     def __init__(self, storage_path: str | None = None, collection: str = "lunita_e05"):
         from qdrant_client import QdrantClient
         from qdrant_client.models import Distance, VectorParams
+        if storage_path is None:
+            storage_path = os.environ.get("LUNITA_VECTOR_DB_PATH")
         self.client = QdrantClient(":memory:") if storage_path is None else QdrantClient(path=storage_path)
         self.collection = collection
         self._closed = False
