@@ -19,7 +19,7 @@ from typing import Sequence
 
 ROOT = pathlib.Path("/opt/lunita")
 OVERLAY = ROOT / "engines/runtime_engines_v1"
-LEGACY_LAUNCHER = ROOT / "agent/lunita_beta_v1_7.py"
+LEGACY_LAUNCHER = ROOT / "agent/lunita.py"
 LEGACY_SHA256 = "46efd711729c344e7efba9ce2503127c48f0b88207cc5a17311ff1d555b075b2"
 LEGACY_COMMANDS = {
     "start", "qwen-load", "qwen-inference", "brujula-self-test",
