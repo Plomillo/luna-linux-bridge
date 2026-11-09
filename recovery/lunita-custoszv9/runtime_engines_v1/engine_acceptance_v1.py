@@ -65,13 +65,25 @@ class EngineRegistryTests(unittest.TestCase):
 
 
 class RealRuntimeEngineTests(unittest.TestCase):
-    def test_e02_spanish_nlp_executes_pipeline(self):
+    def test_e02_spanish_nlp_executes_tokenization_morphology_and_pos(self):
         result = engine.nlp_analyze("La arquitectura conserva la evidencia y valida las inferencias.")
         self.assertEqual("E02", result["engine_id"])
         self.assertEqual("es", result["language"])
-        self.assertIn("lemmatizer", result["pipeline"])
+        self.assertEqual("LUNITA_SPANISH_RULE_BASED_NLP_V1", result["model"])
+        self.assertIn("spanish_lemma_and_pos_rules", result["pipeline"])
         self.assertGreaterEqual(len(result["tokens"]), 8)
         self.assertEqual(1, len(result["sentences"]))
+        conserva = next(token for token in result["tokens"] if token["text"] == "conserva")
+        self.assertEqual("conservar", conserva["lemma"])
+        self.assertEqual("VERB", conserva["pos"])
+        self.assertTrue(next(token for token in result["tokens"] if token["text"] == "La")["is_stop"])
+
+    def test_e02_spanish_nlp_recognizes_proper_name_candidates(self):
+        result = engine.nlp_analyze("Diego Norambuena valida la evidencia.")
+        self.assertIn(
+            {"text": "Diego Norambuena", "label": "PROPER_NAME_CANDIDATE", "confidence": "HEURISTIC"},
+            result["entities"],
+        )
 
     def test_e04_embedding_and_e05_vector_search_execute_real_models(self):
         texts = [
@@ -116,8 +128,10 @@ class RealRuntimeEngineTests(unittest.TestCase):
         self.assertEqual(3, result["node_count"])
         self.assertEqual(2, result["edge_count"])
         self.assertTrue(graph.has_edge("diego", "luna"))
-        self.assertEqual(["diego", "luna", "louksna"],
-                         __import__("networkx").shortest_path(graph, "diego", "louksna"))
+        self.assertEqual(["diego", "luna", "louksna"], graph.shortest_path("diego", "louksna"))
+        self.assertEqual(2, len(graph.edges(data=True)))
+        with self.assertRaises(engine.EngineContractError):
+            graph.shortest_path("louksna", "diego")
 
     def test_e07_rdf_parse_serialize_and_sparql(self):
         turtle = """
@@ -216,7 +230,18 @@ class RealRuntimeEngineTests(unittest.TestCase):
         })
         self.assertEqual("PASS_FORMALIZATION", result["status"])
         self.assertEqual(["x"], result["free_symbols"])
-        self.assertIn("Eq", result["srepr"])
+        self.assertIn("eq(", result["canonical_expression"])
+        self.assertEqual("EXACT_RATIONALS; ASSOCIATIVE_FLATTENING; COMMUTATIVE_SORTING; SAFE_CONSTANT_FOLDING",
+                         result["normalization"])
+
+    def test_e12_formalization_folds_exact_rationals_and_rejects_code(self):
+        result = engine.formalize_expression({
+            "op": "add",
+            "args": [{"number": 0.5}, {"number": 0.25}, {"symbol": "x"}, {"number": 0.25}],
+        })
+        self.assertEqual("x + 1", result["simplified"] if result["simplified"] == "add(number(1),x)" else result["simplified"])
+        with self.assertRaises(engine.EngineContractError):
+            engine.formalize_expression({"op": "__import__", "args": [{"symbol": "os"}]})
 
     def test_e13_json_schema_validation_positive_and_negative(self):
         schema = {
