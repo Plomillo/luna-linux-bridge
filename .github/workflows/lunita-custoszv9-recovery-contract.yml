@@ -181,6 +181,18 @@ jobs:
                   files.append((size, rel.as_posix()))
           for key, size in sorted(totals.items(), key=lambda item: item[1], reverse=True):
               print(f"OVERLAY_COMPONENT_BYTES {size} {key}")
+          vendor = root / "vendor/python3.12/site-packages"
+          package_sizes = []
+          for package in vendor.iterdir():
+              if package.is_dir():
+                  size = sum(item.stat().st_size for item in package.rglob("*") if item.is_file())
+              elif package.is_file():
+                  size = package.stat().st_size
+              else:
+                  continue
+              package_sizes.append((size, package.name))
+          for size, name in sorted(package_sizes, reverse=True)[:80]:
+              print(f"VENDOR_PACKAGE_BYTES {size} {name}")
           for size, name in sorted(files, reverse=True)[:40]:
               print(f"OVERLAY_LARGEST_FILE_BYTES {size} {name}")
           PY
