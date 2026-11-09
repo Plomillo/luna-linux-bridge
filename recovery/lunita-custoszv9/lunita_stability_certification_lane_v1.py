@@ -24,15 +24,25 @@ import time
 import uuid
 
 ROOT = pathlib.Path(__file__).resolve().parent
-ST = ROOT / "state"
-OUT = ST / "worker_outputs"
-EVIDENCE = ST / "lunita_certification_evidence"
-CANDIDATE = ST / "g06_rebuild_candidates" / "G06_REBUILD_CANDIDATE_R1"
-ROOTFS = CANDIDATE / "rootfs"
-RUNTIME_REPORT = CANDIDATE / "BETA_RUNTIME_FUNCTIONAL_TESTS.json"
-TARGET_RUNTIME_RECEIPT_DIR = pathlib.Path(os.environ.get("LUNITA_TARGET_RUNTIME_RECEIPT_DIR", str(pathlib.Path(os.environ.get("XDG_STATE_HOME") or (pathlib.Path.home() / ".local/state")) / "lunita/runtime_validation"))).expanduser()
-INDEPENDENT_REPORT = CANDIDATE / "BETA_INDEPENDENT_VALIDATION.json"
-MISSION_PATH = ROOT.parent / "MISION1.txt"
+ST = pathlib.Path(os.environ.get("LUNITA_STATE_DIR", str(ROOT / "state"))).expanduser()
+OUT = pathlib.Path(os.environ.get("LUNITA_OUTPUT_DIR", str(ST / "worker_outputs"))).expanduser()
+EVIDENCE = pathlib.Path(os.environ.get("LUNITA_EVIDENCE_DIR", str(ST / "lunita_certification_evidence"))).expanduser()
+CANDIDATE = pathlib.Path(os.environ.get(
+    "LUNITA_CANDIDATE_DIR", str(ST / "g06_rebuild_candidates" / "G06_REBUILD_CANDIDATE_R1")
+)).expanduser()
+ROOTFS = pathlib.Path(os.environ.get("LUNITA_ROOTFS", str(CANDIDATE / "rootfs"))).expanduser()
+RUNTIME_REPORT = pathlib.Path(os.environ.get(
+    "LUNITA_RUNTIME_REPORT", str(CANDIDATE / "BETA_RUNTIME_FUNCTIONAL_TESTS.json")
+)).expanduser()
+TARGET_RUNTIME_RECEIPT_DIR = pathlib.Path(os.environ.get(
+    "LUNITA_TARGET_RUNTIME_RECEIPT_DIR",
+    str(pathlib.Path(os.environ.get("XDG_STATE_HOME") or (pathlib.Path.home() / ".local/state"))
+        / "lunita/runtime_validation")
+)).expanduser()
+INDEPENDENT_REPORT = pathlib.Path(os.environ.get(
+    "LUNITA_INDEPENDENT_REPORT", str(CANDIDATE / "BETA_INDEPENDENT_VALIDATION.json")
+)).expanduser()
+MISSION_PATH = pathlib.Path(os.environ.get("LUNITA_MISSION_PATH", str(ROOT.parent / "MISION1.txt"))).expanduser()
 MISSION_SHA = "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f"
 POLL_SECONDS = 60
 RUNNING_CAJITA_STAGES = {
