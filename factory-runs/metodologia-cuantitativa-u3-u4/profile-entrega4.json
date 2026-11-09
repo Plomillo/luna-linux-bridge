@@ -54,10 +54,10 @@
     "declared_total_points": 0,
     "official_teacher_rubric": "NOT_PROVIDED_IN_SOURCE_INSTRUCTIONS",
     "criteria": [
-      {"id": "R01", "points": 0, "text": "Sample characterized with frequency tables and descriptive statistics.", "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN"},
-      {"id": "R02", "points": 0, "text": "Charts and tables generated from the actual Jamovi dataset.", "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN"},
-      {"id": "R03", "points": 0, "text": "Results compared with H1-H3 without overclaiming inferential evidence.", "validation": "HUMAN"},
-      {"id": "R04", "points": 0, "text": "Analytic report does not exceed ten pages.", "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN"}
+      {"id": "R01", "points": 0, "text": "Sample characterized with frequency tables and descriptive statistics.", "validation": "AUTOMATED_PARTIAL_PLUS_G23_HUMAN"},
+      {"id": "R02", "points": 0, "text": "Charts and tables generated from the actual Jamovi dataset.", "validation": "AUTOMATED_PARTIAL_PLUS_G23_HUMAN"},
+      {"id": "R03", "points": 0, "text": "Results compared with H1-H3 without overclaiming inferential evidence.", "validation": "G23_HUMAN"},
+      {"id": "R04", "points": 0, "text": "Analytic report does not exceed ten pages.", "validation": "AUTOMATED_PARTIAL_PLUS_G23_HUMAN"}
     ]
   },
   "runtime_policy": {
