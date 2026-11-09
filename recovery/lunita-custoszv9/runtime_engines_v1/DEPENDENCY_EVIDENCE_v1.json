@@ -27,16 +27,6 @@
       "provenance": "Signed Git tag at release; pin package version"
     },
     {
-      "name": "minishlab/potion-multilingual-128M",
-      "version": "FastEmbed registered model",
-      "purpose": "Multilingual static embeddings for E04",
-      "dimension": 256,
-      "languages": 101,
-      "license": "MIT",
-      "source": "https://huggingface.co/minishlab/potion-multilingual-128M",
-      "model_type": "Static embeddings; not contextual token embeddings"
-    },
-    {
       "name": "qdrant-client",
       "version": "1.20.0",
       "purpose": "E05 embedded local vector index",
@@ -83,6 +73,18 @@
       "version": "2.2.6",
       "purpose": "Pinned numeric dependency shared with existing CPU tensor test environment",
       "source": "https://pypi.org/project/numpy/2.2.6/"
+    },
+    {
+      "name": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+      "version": "FastEmbed built-in model descriptor pinned through fastembed==0.9.1",
+      "purpose": "E04 multilingual semantic embeddings",
+      "dimension": 384,
+      "size_estimate_gb": 0.22,
+      "license": "Apache-2.0",
+      "model_type": "Multilingual transformer sentence embeddings",
+      "source": "https://qdrant.github.io/fastembed/examples/Supported_Models/",
+      "model_card": "https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+      "artifact_integrity": "Exact model files are SHA-256 bound in the generated overlay tree manifest"
     }
   ],
   "security_notes": [
@@ -90,6 +92,7 @@
     "Embedding model weights are downloaded at first use; target deployment must cache them and record exact weight hashes before offline activation.",
     "RAG retrieval and E01 generation remain separate stages; every retrieved source carries its source digest.",
     "The model2vec/Potion model is static; suitability must be measured against Lunita's Spanish retrieval evaluation corpus before production activation.",
-    "This manifest is dependency evidence for a candidate runtime, not a security certification or target-rootfs inventory."
+    "This manifest is dependency evidence for a candidate runtime, not a security certification or target-rootfs inventory.",
+    "The E04 model is a smaller multilingual transformer than potion-multilingual-128M; its model files are included in the packaged cache and bound by SHA-256."
   ]
 }
