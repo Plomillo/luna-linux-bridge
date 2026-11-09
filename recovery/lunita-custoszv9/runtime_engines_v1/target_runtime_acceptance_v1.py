@@ -76,6 +76,42 @@ def hash_directory(path: pathlib.Path) -> dict[str, Any]:
     }
 
 
+def verify_e04_quantization_receipt() -> dict[str, Any]:
+    cache = OVERLAY / "model-cache/fastembed"
+    receipt_path = cache / "LUNITA_E04_ONNX_QUANTIZATION_RECEIPT.json"
+    model_path = cache / (
+        "models--Qdrant--paraphrase-multilingual-MiniLM-L12-v2-onnx-Q/"
+        "snapshots/faf4aa4225822f3bc6376869cb1164e8e3feedd0/model_optimized.onnx"
+    )
+    if not receipt_path.is_file() or not model_path.is_file():
+        raise TargetGateError("Measured INT8 E04 model or quantization receipt is missing")
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    if receipt.get("status") != "PASS_INT8_QUANTIZATION_MEASURED":
+        raise TargetGateError("E04 quantization receipt is not a measured PASS")
+    if receipt.get("quantization") != "ONNX_RUNTIME_DYNAMIC_QINT8_PER_CHANNEL":
+        raise TargetGateError("Unexpected E04 quantization method")
+    if sha256_file(model_path) != receipt.get("quantized_sha256"):
+        raise TargetGateError("E04 ONNX quantized model digest mismatch")
+    thresholds = receipt.get("thresholds", {})
+    if receipt.get("mean_vector_cosine", 0) < thresholds.get("minimum_mean_vector_cosine", 1):
+        raise TargetGateError("E04 mean vector cosine fell below the measured threshold")
+    if receipt.get("minimum_vector_cosine", 0) < thresholds.get("minimum_vector_cosine", 1):
+        raise TargetGateError("E04 minimum vector cosine fell below the measured threshold")
+    if receipt.get("retrieval_top1_agreement") != thresholds.get("required_retrieval_top1_agreement"):
+        raise TargetGateError("E04 retrieval top-1 agreement did not meet the registered threshold")
+    if not all(item.get("top1_match") for item in receipt.get("retrieval_decisions", [])):
+        raise TargetGateError("E04 retrieval corpus contains a top-1 regression")
+    return {
+        "status": "PASS_E04_INT8_QUALITY_GATE",
+        "receipt_sha256": sha256_file(receipt_path),
+        "model_sha256": sha256_file(model_path),
+        "mean_vector_cosine": receipt["mean_vector_cosine"],
+        "minimum_vector_cosine": receipt["minimum_vector_cosine"],
+        "retrieval_top1_agreement": receipt["retrieval_top1_agreement"],
+        "size_ratio": receipt["size_ratio"],
+    }
+
+
 def verify_overlay() -> dict[str, Any]:
     if not OVERLAY_RECEIPT.is_file():
         raise TargetGateError("Additive overlay receipt is missing")
@@ -244,6 +280,7 @@ def main() -> int:
         if dependencies["status"] != "PASS":
             raise TargetGateError("Runtime dependencies are missing: " + ", ".join(dependencies["missing"]))
         report["overlay_integrity"] = overlay
+        report["e04_quantization"] = verify_e04_quantization_receipt()
         report["engine_registry"] = registry
         report["dependency_inventory"] = dependencies
         report["qwen_e01"] = run_qwen_via_v18()
