@@ -23,6 +23,12 @@ class AdditiveOverlayInstallerTests(unittest.TestCase):
         self.source.mkdir()
         for filename in installer.FILES:
             (self.source / filename).write_text(f"additive fixture {filename}\n", encoding="utf-8")
+        vendor = self.source / "vendor/python3.12/site-packages"
+        vendor.mkdir(parents=True)
+        (vendor / "runtime_fixture.py").write_text("VENDORED_RUNTIME = True\n", encoding="utf-8")
+        model_cache = self.source / "model-cache/fastembed"
+        model_cache.mkdir(parents=True)
+        (model_cache / "model-fixture.bin").write_bytes(b"hash-bound-model-fixture")
         self.checkpoint = self.base / "checkpoint"
         self.checkpoint.mkdir()
         self.manifest = self.checkpoint / "MANIFEST.json"
