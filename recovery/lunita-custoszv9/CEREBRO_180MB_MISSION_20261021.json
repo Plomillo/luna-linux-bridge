@@ -51,5 +51,3 @@
   },
   "known_caveat": "A single MXFP4 expert matrix rank-1 INT8-factor pilot completed, but its relative Frobenius error was approximately 0.9994. A successful size fit or one-token generation must not be represented as equivalent model quality."
 }
-
-[executed on device: LOUKSNA (98c2b7f6-ee30-4f31-9444-06f7ba58f353)]
