@@ -1,0 +1,76 @@
+{
+  "schema": "LOUKSNA_ASSIGNMENT_PROFILE/1.0",
+  "profile_id": "UNIACC_METODOLOGIA_CUANTITATIVA_U4_ENTREGA4_20261108",
+  "profile_version": "1.0",
+  "status": "TASK_PROFILE_CANDIDATE_NOT_CERTIFIED",
+  "raw_instruction_ref": "factory-runs/metodologia-cuantitativa-u3-u4/instructions-entrega4.md",
+  "title": "Análisis descriptivo en Jamovi — planificación, atención selectiva y responsabilidad",
+  "language": "es",
+  "required_research": {
+    "minimum_distinct_sources": 5,
+    "source_priority": "Fuentes del proyecto, artículos de medición y documentación oficial de Jamovi. Las conclusiones deben depender solo de los datos reales incorporados.",
+    "required_topics": [
+      "Diseño experimental y variables del estudio",
+      "Puntuación del dominio Responsabilidad del BFI-2-S",
+      "Métricas de la tarea de atención selectiva",
+      "Estadística descriptiva, frecuencias y visualización en Jamovi",
+      "Interpretación prudente de hipótesis y límites de análisis descriptivo"
+    ]
+  },
+  "deliverables": [
+    {"id": "ANALYTIC_REPORT_DOCX", "kind": "docx", "submission_required": true},
+    {"id": "ANALYTIC_REPORT_PDF", "kind": "pdf", "submission_required": false},
+    {"id": "JAMOVI_INPUT_XLSX", "kind": "xlsx", "submission_required": false},
+    {"id": "AUX_PPTX", "kind": "pptx", "submission_required": false}
+  ],
+  "constraints": {
+    "report_word_count": {"min": 900, "max": 2600, "exclude": ["cover", "bibliography"]},
+    "page_count_total": {"min": 1, "max": 10},
+    "formatting": {
+      "font": "Arial",
+      "body_size_pt": 12,
+      "heading_size_pt": 16,
+      "line_spacing": 1.5,
+      "paragraph_alignment": "justified",
+      "heading_alignment": "center",
+      "margins_cm": {"top": 2.5, "bottom": 2.5, "left": 2.5, "right": 2.5},
+      "paper": "letter"
+    },
+    "language": "es",
+    "apa_edition": 7,
+    "data_dependency": {
+      "required_upstream": "Entrega 3 real cleaned dataset",
+      "status_at_build": "NO_REAL_PARTICIPANT_RESPONSES_PROVIDED",
+      "results_must_remain_pending_until_data_loaded": true,
+      "synthetic_statistics_forbidden": true
+    },
+    "jamovi": {
+      "analysis_core": "Exploration > Descriptives",
+      "minimum_outputs": ["frequencies", "descriptive_statistics", "bar_chart", "histogram_or_boxplot", "split_by_condition"],
+      "inferential_moderation": "NOT_INCLUDED_IN_REQUIRED_DESCRIPTIVE_SCOPE; requires instructor authorization and an appropriate model"
+    }
+  },
+  "rubric": {
+    "declared_total_points": 0,
+    "official_teacher_rubric": "NOT_PROVIDED_IN_SOURCE_INSTRUCTIONS",
+    "criteria": [
+      {"id": "R01", "points": 0, "text": "Sample characterized with frequency tables and descriptive statistics.", "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN"},
+      {"id": "R02", "points": 0, "text": "Charts and tables generated from the actual Jamovi dataset.", "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN"},
+      {"id": "R03", "points": 0, "text": "Results compared with H1-H3 without overclaiming inferential evidence.", "validation": "HUMAN"},
+      {"id": "R04", "points": 0, "text": "Analytic report does not exceed ten pages.", "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN"}
+    ]
+  },
+  "runtime_policy": {
+    "heartbeat_interval_seconds": 1,
+    "stages": {
+      "PROFILE_VALIDATE": {"timeout_seconds": 30, "max_attempts": 1},
+      "BUILD_DOCX": {"timeout_seconds": 180, "max_attempts": 1},
+      "BUILD_PPTX": {"timeout_seconds": 180, "max_attempts": 1},
+      "BUILD_PDF": {"timeout_seconds": 300, "max_attempts": 1}
+    }
+  },
+  "no_subject_matter_inference": true,
+  "certification_authority": false,
+  "g23_authority": false,
+  "g24_authority": false
+}
