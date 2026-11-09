@@ -338,7 +338,12 @@ class VectorIndex:
 
 # E03 — RAG: source-bound retrieval plus explicit context for E01 synthesis.
 class RAGIndex:
-    def __init__(self, documents: Sequence[Mapping[str, str]], storage_path: str | None = None):
+    def __init__(
+        self,
+        documents: Sequence[Mapping[str, str]],
+        storage_path: str | None = None,
+        document_vectors: Sequence[Sequence[float]] | None = None,
+    ):
         if not documents:
             raise EngineContractError("RAG requires at least one source document")
         self.source_ids = []
@@ -350,16 +355,41 @@ class RAGIndex:
                 raise EngineContractError(f"Duplicate RAG source_id: {source_id}")
             self.source_ids.append(source_id)
             self.texts.append(text)
-        vectors = embed_texts(self.texts)
+        # E04 is invoked only when the calling command actually routes E04.
+        # Commands without E04 must supply precomputed vectors; no hidden engine call.
+        if document_vectors is None:
+            vectors = embed_texts(self.texts)
+            self.embedding_mode = "E04_RUNTIME_VECTOR_PREPARATION"
+        else:
+            vectors = [[float(value) for value in vector] for vector in document_vectors]
+            self.embedding_mode = "PRECOMPUTED_VECTOR_INPUT"
+        if len(vectors) != len(self.texts) or any(len(vector) != EMBEDDING_DIMENSION for vector in vectors):
+            raise EngineContractError("RAG requires one 256-dimensional vector per source")
+        if not all(math.isfinite(value) for vector in vectors for value in vector):
+            raise EngineContractError("RAG vectors must contain finite values")
         self.index = VectorIndex(storage_path=storage_path)
         self.index.upsert(self.source_ids, self.texts, vectors)
 
-    def retrieve(self, query: str, limit: int = 5) -> dict[str, Any]:
+    def retrieve(
+        self,
+        query: str,
+        limit: int = 5,
+        query_vector: Sequence[float] | None = None,
+    ) -> dict[str, Any]:
         _require_nonempty(query, "query")
-        query_vector = embed_texts([query])[0]
-        hits = self.index.search(query_vector, limit=limit)
+        if query_vector is None:
+            query_values = embed_texts([query])[0]
+            query_mode = "E04_RUNTIME_QUERY_VECTOR"
+        else:
+            query_values = [float(value) for value in query_vector]
+            query_mode = "PRECOMPUTED_QUERY_VECTOR"
+        if len(query_values) != EMBEDDING_DIMENSION or not all(math.isfinite(value) for value in query_values):
+            raise EngineContractError("RAG query vector must be finite and 256-dimensional")
+        hits = self.index.search(query_values, limit=limit)
         return {
             "engine_id": "E03", "query_sha256": _sha256_bytes(query.encode("utf-8")),
+            "retrieval_mode": self.embedding_mode,
+            "query_vector_mode": query_mode,
             "retrieved_sources": hits,
             "context": "\n\n".join(
                 f"[SOURCE:{hit['source_id']}][SHA256:{hit['source_sha256']}]\n{hit['text']}"
@@ -526,6 +556,7 @@ def hermeneutic_analyze(
     preceding_context: str,
     following_context: str,
     hypotheses: Sequence[Mapping[str, Any]],
+    linguistic_analysis: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     _require_nonempty(source_text, "source_text")
     required = {
@@ -541,7 +572,23 @@ def hermeneutic_analyze(
                 "source_text_preserved": True}
     if not hypotheses:
         raise EngineContractError("Hermeneutic processing requires explicit, reviewable hypotheses")
-    observations = nlp_analyze(source_text)
+    if linguistic_analysis is not None:
+        observations = dict(linguistic_analysis)
+        if "tokens" not in observations or "sentences" not in observations:
+            raise EngineContractError("Provided E02 linguistic analysis is incomplete")
+        observation_source = "E02_ROUTE_INPUT"
+    else:
+        # E11 remains independently operable when the invoking command does
+        # not route E02. These are lexical observations, not spaCy NLP claims.
+        import re
+        tokens = re.findall(r"[^\W_]+", source_text, flags=re.UNICODE)
+        sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", source_text) if part.strip()]
+        observations = {
+            "tokens": [{"text": token} for token in tokens],
+            "sentences": sentences,
+            "entities": [],
+        }
+        observation_source = "E11_INTRINSIC_TEXT_OBSERVATION"
     reviewed = []
     ungrounded = []
     for hypothesis in hypotheses:
@@ -562,6 +609,7 @@ def hermeneutic_analyze(
         "observation": {"token_count": len(observations["tokens"]), "sentences": observations["sentences"],
                         "entities": observations["entities"]},
         "linguistic_analysis": observations,
+        "observation_source": observation_source,
         "context": {key: value for key, value in required.items()},
         "historical_cultural_analysis": {"status": "CONTEXT_SUPPLIED_NOT_INDEPENDENTLY_VERIFIED"},
         "inference": {"hypotheses": reviewed, "ungrounded_hypotheses": ungrounded},
