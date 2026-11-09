@@ -79,6 +79,36 @@ class RootfsInventoryTests(unittest.TestCase):
             launcher = next(x for x in rows if x["path"] == "opt/lunita/agent/lunita.py")
             self.assertEqual(hashlib.sha256(b"print('candidate')\n").hexdigest(), launcher["sha256"])
 
+    def test_privileged_read_only_hash_fallback_is_hash_bound(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "protected"
+            path.write_bytes(b"protected candidate file")
+            expected = hashlib.sha256(path.read_bytes()).hexdigest()
+            with mock.patch.object(lane, "ROOTFS", pathlib.Path(tmp)):
+                with mock.patch.object(pathlib.Path, "open", side_effect=PermissionError("EACCES")):
+                    with mock.patch.object(lane.shutil, "which", side_effect=lambda name: "/usr/bin/" + name):
+                        with mock.patch.object(lane.subprocess, "run", return_value=type("R", (), {
+                            "returncode": 0, "stdout": expected + "  " + str(path) + "\n", "stderr": ""
+                        })()) as run:
+                            digest, method = lane.hash_regular_file_read_only(path)
+            self.assertEqual(expected, digest)
+            self.assertEqual("SUDO_NONINTERACTIVE_READ_ONLY_SHA256SUM", method)
+            self.assertIn("-n", run.call_args.args[0])
+            self.assertIn("sha256sum", run.call_args.args[0])
+
+    def test_privileged_read_only_hash_fails_closed_without_sudo_authorization(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "protected"
+            path.write_bytes(b"protected candidate file")
+            with mock.patch.object(lane, "ROOTFS", pathlib.Path(tmp)):
+                with mock.patch.object(pathlib.Path, "open", side_effect=PermissionError("EACCES")):
+                    with mock.patch.object(lane.shutil, "which", side_effect=lambda name: "/usr/bin/" + name):
+                        with mock.patch.object(lane.subprocess, "run", return_value=type("R", (), {
+                            "returncode": 1, "stdout": "", "stderr": "sudo: a password is required"
+                        })()):
+                            with self.assertRaises(PermissionError):
+                                lane.hash_regular_file_read_only(path)
+
     def test_missing_rootfs_never_passes(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)
