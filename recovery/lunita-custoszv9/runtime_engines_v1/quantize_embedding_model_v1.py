@@ -80,7 +80,7 @@ def cosine(left: list[float], right: list[float]) -> float:
     return dot / (norm_left * norm_right)
 
 
-def embedding_probe(cache: pathlib.Path, pythonpath: str) -> list[list[float]]:
+def embedding_probe(cache: pathlib.Path, pythonpath: str, texts: list[str]) -> list[list[float]]:
     source = r'''
 import json, os, sys
 from fastembed import TextEmbedding
@@ -160,7 +160,7 @@ def run(cache: pathlib.Path, pythonpath: str) -> dict[str, Any]:
     all_texts = DOCUMENTS + QUERIES
 
     # Baseline must run before the candidate file is created or installed.
-    baseline = embedding_probe(cache, pythonpath)
+    baseline = embedding_probe(cache, pythonpath, all_texts)
     with tempfile.TemporaryDirectory(prefix="lunita-e04-int8-") as temporary:
         root = pathlib.Path(temporary)
         quantized = root / "model_optimized.int8.onnx"
@@ -175,7 +175,7 @@ def run(cache: pathlib.Path, pythonpath: str) -> dict[str, Any]:
         # Replace one candidate cache file, then execute a fresh FastEmbed process.
         os.replace(quantized, model)
         try:
-            candidate = embedding_probe(cache, pythonpath)
+            candidate = embedding_probe(cache, pythonpath, all_texts)
             vector_cosines = [cosine(a, b) for a, b in zip(baseline, candidate)]
             if len(vector_cosines) != len(all_texts):
                 raise QuantizationError("Embedding comparison vector count mismatch")
