@@ -304,11 +304,6 @@ def nlp_analyze(text: str) -> dict[str, Any]:
     sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text.strip()) if part.strip()]
     tokens = re.findall(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?:['’][A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)?|\d+(?:[.,]\d+)?", text)
     token_rows = []
-    sentence_initials = set()
-    for sentence in sentences:
-        match = re.search(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+", sentence)
-        if match:
-            sentence_initials.add(match.group(0))
     for token in tokens:
         lemma, pos = _spanish_lemma_and_pos(token)
         token_rows.append({
@@ -318,13 +313,14 @@ def nlp_analyze(text: str) -> dict[str, Any]:
             "is_stop": token.casefold() in _SPANISH_STOP_WORDS,
             "morphology": "LEXICON" if token.casefold() in _SPANISH_VERB_LEMMAS else "RULE_BASED",
         })
-    # Proper-name candidate extraction: two or more consecutive title-case tokens.
+    # Proper-name candidate extraction: two or more consecutive title-case tokens,
+    # excluding common determiners/connectors even when they start a sentence.
     entities = []
     pattern = re.compile(r"\b[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+(?:\s+[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+)+\b")
     for match in pattern.finditer(text):
         phrase = match.group(0)
         first = phrase.split()[0]
-        if first not in sentence_initials and all(part.casefold() not in _SPANISH_STOP_WORDS for part in phrase.split()):
+        if all(part.casefold() not in _SPANISH_STOP_WORDS for part in phrase.split()):
             entities.append({"text": phrase, "label": "PROPER_NAME_CANDIDATE", "confidence": "HEURISTIC"})
     return {
         "engine_id": "E02",
