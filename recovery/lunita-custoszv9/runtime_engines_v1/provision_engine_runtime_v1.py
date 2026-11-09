@@ -59,6 +59,7 @@ def provision(overlay: pathlib.Path, python: pathlib.Path, model_cache: pathlib.
     model_cache.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
     env["PYTHONPATH"] = str(site)
+    env["LUNITA_ENGINE_DIR"] = str(overlay)
     env["LUNITA_FASTEMBED_CACHE"] = str(model_cache / "fastembed")
     env["LUNITA_VECTOR_DB_PATH"] = str(model_cache / "qdrant")
     env["HF_HUB_DISABLE_TELEMETRY"] = "1"
@@ -87,7 +88,7 @@ import sys
 from pathlib import Path
 from fastembed import TextEmbedding
 import qdrant_client, rdflib, owlrl, jsonschema, onnxruntime, numpy
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, os.environ["LUNITA_ENGINE_DIR"])
 from engine_runtime_v1 import nlp_analyze, build_knowledge_graph, formalize_expression
 cache = os.environ["LUNITA_FASTEMBED_CACHE"]
 Path(cache).mkdir(parents=True, exist_ok=True)
