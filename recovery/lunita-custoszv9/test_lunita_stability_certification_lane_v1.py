@@ -210,6 +210,42 @@ class JaspRunnerTests(unittest.TestCase):
             self.assertTrue(report.is_file())
 
 
+class JaspStrictRoundtripPositiveTests(unittest.TestCase):
+    def test_roundtrip_passes_when_save_reopen_and_sample_pins_match(self):
+        from types import SimpleNamespace
+        expected = "fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895"
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            out = base / "out"
+            out.mkdir()
+            rootfs = base / "rootfs"
+            source = rootfs / (
+                "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/"
+                "Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
+            )
+            source.parent.mkdir(parents=True)
+            source.write_bytes(b"fixture bytes for positive mocked roundtrip")
+            responses = [
+                SimpleNamespace(returncode=0, stdout="save successful\\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="strict reopen successful\\n", stderr=""),
+            ]
+            with mock.patch.object(lane, "OUT", out), \\
+                 mock.patch.object(lane, "ROOTFS", rootfs), \\
+                 mock.patch.object(lane, "sha_file", return_value=expected), \\
+                 mock.patch.object(lane.subprocess, "run", side_effect=responses) as runner:
+                result = lane.run_death_penalty_roundtrip(
+                    "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
+                    {"QT_QPA_PLATFORM": "offscreen"},
+                    "POSITIVE_TEST",
+                )
+            self.assertEqual(2, runner.call_count)
+            self.assertEqual("PASS_JASP_STRICT_ROUNDTRIP", result["status"])
+            self.assertEqual("PASS", result["save_run"]["status"])
+            self.assertEqual("PASS", result["strict_rerun_after_save"]["status"])
+            self.assertTrue(result["original_sample_unchanged"])
+            self.assertTrue(result["temporary_fixture_removed_after_test"])
+
+
 class StableReleaseReceiptTests(unittest.TestCase):
     def test_release_receipt_is_immutable_and_current_pointer_requires_revalidation(self):
         with tempfile.TemporaryDirectory() as tmp:
