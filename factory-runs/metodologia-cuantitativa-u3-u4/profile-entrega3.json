@@ -1,0 +1,84 @@
+{
+  "schema": "LOUKSNA_ASSIGNMENT_PROFILE/1.0",
+  "profile_id": "UNIACC_METODOLOGIA_CUANTITATIVA_U3_ENTREGA3_20261108",
+  "profile_version": "1.0",
+  "status": "TASK_PROFILE_CANDIDATE_NOT_CERTIFIED",
+  "raw_instruction_ref": "factory-runs/metodologia-cuantitativa-u3-u4/instructions-entrega3.md",
+  "title": "Trabajo de campo y base de datos — continuidad del estudio de planificación y atención selectiva",
+  "language": "es",
+  "required_research": {
+    "minimum_distinct_sources": 5,
+    "source_priority": "Marco teórico del equipo, instrumentos oficiales, artículos científicos revisados por pares y documentación oficial de Jamovi. No inventar metadatos ni extrapolar validaciones entre países o edades.",
+    "required_topics": [
+      "Responsabilidad como dominio de personalidad en el Modelo de los Cinco Grandes",
+      "BFI-2-S español, estructura de 30 ítems y clave de puntuación de Responsabilidad",
+      "Intervenciones de planificación e intenciones de implementación",
+      "Tarea de búsqueda visual para atención selectiva y limitaciones de CAM",
+      "Diseño experimental, muestreo, consentimiento y control de calidad de datos"
+    ]
+  },
+  "deliverables": [
+    {"id": "REPORT_DOCX", "kind": "docx", "submission_required": true},
+    {"id": "REPORT_PDF", "kind": "pdf", "submission_required": false},
+    {"id": "DATA_XLSX", "kind": "xlsx", "submission_required": true},
+    {"id": "DATA_CSV_TEMPLATE", "kind": "csv", "submission_required": false},
+    {"id": "AUX_PPTX", "kind": "pptx", "submission_required": false}
+  ],
+  "constraints": {
+    "report_word_count": {"min": 300, "max": 750, "exclude": ["cover", "bibliography"]},
+    "page_count_total": {"min": 1, "max": 2},
+    "formatting": {
+      "font": "Arial",
+      "body_size_pt": 12,
+      "heading_size_pt": 16,
+      "line_spacing": 1.5,
+      "paragraph_alignment": "justified",
+      "heading_alignment": "center",
+      "margins_cm": {"top": 2.5, "bottom": 2.5, "left": 2.5, "right": 2.5},
+      "paper": "letter"
+    },
+    "language": "es",
+    "apa_edition": 7,
+    "field_data": {
+      "status_at_build": "NO_REAL_PARTICIPANT_RESPONSES_PROVIDED",
+      "empty_template_must_not_be_claimed_as_completed_fieldwork": true,
+      "synthetic_participant_rows_forbidden": true
+    },
+    "population": {
+      "proposed": "Estudiantes universitarios de 18 años o más",
+      "sampling": "No probabilístico por conveniencia",
+      "target_n": 60,
+      "allocation": "Aleatoria 1:1, 30 por condición",
+      "power_analysis": "NOT_PERFORMED; target is exploratory and requires teacher review"
+    },
+    "measures": {
+      "personality": "BFI-2-S español completo (30 ítems); puntuar Responsabilidad con ítems 4, 9, 11, 17R, 23R y 25R",
+      "attention": "CAM visual selective-attention/search task reference; 6 practice + 90 trials; set sizes 8, 16, 32; adapt for adult Chilean sample and report as exploratory",
+      "intervention": "Five-minute structured planning worksheet",
+      "control": "Five-minute neutral reading with equal time and no planning instruction"
+    }
+  },
+  "rubric": {
+    "declared_total_points": 0,
+    "official_teacher_rubric": "NOT_PROVIDED_IN_SOURCE_INSTRUCTIONS",
+    "criteria": [
+      {"id": "R01", "points": 0, "text": "Instrument applied to the defined sample; fieldwork evidence recorded.", "validation": "HUMAN_AND_FIELD_EVIDENCE"},
+      {"id": "R02", "points": 0, "text": "Participant responses reviewed; missingness and exclusions documented.", "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN"},
+      {"id": "R03", "points": 0, "text": "Organized, anonymized and Jamovi-importable data table with data dictionary.", "validation": "AUTOMATED"},
+      {"id": "R04", "points": 0, "text": "Brief report no longer than two pages.", "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN"}
+    ]
+  },
+  "runtime_policy": {
+    "heartbeat_interval_seconds": 1,
+    "stages": {
+      "PROFILE_VALIDATE": {"timeout_seconds": 30, "max_attempts": 1},
+      "BUILD_DOCX": {"timeout_seconds": 180, "max_attempts": 1},
+      "BUILD_PPTX": {"timeout_seconds": 180, "max_attempts": 1},
+      "BUILD_PDF": {"timeout_seconds": 300, "max_attempts": 1}
+    }
+  },
+  "no_subject_matter_inference": true,
+  "certification_authority": false,
+  "g23_authority": false,
+  "g24_authority": false
+}
