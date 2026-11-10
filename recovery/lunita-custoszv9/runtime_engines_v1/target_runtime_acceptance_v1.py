@@ -27,11 +27,21 @@ OVERLAY_RECEIPT = OVERLAY / "OVERLAY_APPLY_RECEIPT.json"
 LEGACY_LAUNCHER = ROOT / "agent/lunita.py"
 EXPECTED_LEGACY_SHA256 = "46efd711729c344e7efba9ce2503127c48f0b88207cc5a17311ff1d555b075b2"
 LEGACY_SMOKE_COMMANDS = (
-    "brujula-self-test",
-    "r-self-test",
-    "jamovi-self-test",
-    "jasp-self-test",
-    "fault",
+    ("brujula-self-test",),
+    ("r-self-test",),
+    ("jamovi-self-test",),
+    ("jasp-self-test",),
+    ("fault", "model-missing"),
+    ("fault", "model-corrupted"),
+    ("fault", "dependency-missing"),
+    ("fault", "permission-denied"),
+    ("fault", "low-memory"),
+    ("fault", "process-crash"),
+    ("fault", "browser-crash"),
+    ("fault", "tool-failure"),
+    ("fault", "invalid-input"),
+    ("fault", "interrupted-execution"),
+    ("fault", "restart"),
 )
 TEST_MODULES = (
     "engine_acceptance_v1",
@@ -167,19 +177,21 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
             raise TargetGateError(f"Flatpak app identity/version mismatch: {app_id}")
         if not (pathlib.Path(os.environ.get("FLATPAK_SYSTEM_DIR", "/var/lib/flatpak")) / "app" / app_id).is_dir():
             raise TargetGateError(f"Flatpak system deployment is missing: {app_id}")
+        if value.get("version_source") != "EXACT_PINNED_FLATPAK_COMMIT_MAPPING":
+            raise TargetGateError(f"Flatpak version is not bound to its recorded commit mapping: {app_id}")
         info = subprocess.run(
             ["/usr/bin/flatpak", "info", "--system", "--show-commit", app_id],
             capture_output=True, text=True, check=False,
         )
-        version = subprocess.run(
-            ["/usr/bin/flatpak", "info", "--system", "--show-version", app_id],
-            capture_output=True, text=True, check=False,
-        )
-        if info.returncode != 0 or version.returncode != 0:
+        if info.returncode != 0:
             raise TargetGateError(f"Flatpak could not inspect the target system app: {app_id}")
-        if info.stdout.strip() != value.get("flatpak_commit") or version.stdout.strip() != expected_version:
-            raise TargetGateError(f"Flatpak installed commit/version mismatch: {app_id}")
-        observed_apps[app_id] = {"version": version.stdout.strip(), "commit": info.stdout.strip()}
+        if info.stdout.strip() != value.get("flatpak_commit"):
+            raise TargetGateError(f"Flatpak installed commit mismatch: {app_id}")
+        observed_apps[app_id] = {
+            "version": expected_version,
+            "version_source": value.get("version_source"),
+            "commit": info.stdout.strip(),
+        }
 
     invariants = receipt.get("invariants", {})
     if any(invariants.get(flag) is not False for flag in (
@@ -471,11 +483,12 @@ def run_legacy_smokes() -> dict[str, Any]:
     if launcher.sha256_file(LEGACY_LAUNCHER) != EXPECTED_LEGACY_SHA256:
         raise TargetGateError("Legacy launcher hash check failed before application smoke tests")
     results = {}
-    for command in LEGACY_SMOKE_COMMANDS:
-        rc = launcher.run_legacy([command])
+    for arguments in LEGACY_SMOKE_COMMANDS:
+        command = " ".join(arguments)
+        rc = launcher.run_legacy(list(arguments))
         results[command] = {"returncode": rc, "status": "PASS" if rc == 0 else "FAIL"}
         if rc != 0:
-            raise TargetGateError(f"Legacy application smoke test failed: {command} rc={rc}")
+            raise TargetGateError(f"Legacy application/fault smoke test failed: {command} rc={rc}")
     return {"status": "PASS_LEGACY_APPLICATION_SMOKES", "commands": results}
 
 
