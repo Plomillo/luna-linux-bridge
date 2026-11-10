@@ -12,6 +12,7 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - "recovery/lunita-custoszv9/**"
+      - "scripts/lunita/**"
       - ".github/workflows/lunita-v18-direct-functional-validation.yml"
   workflow_dispatch:
 
