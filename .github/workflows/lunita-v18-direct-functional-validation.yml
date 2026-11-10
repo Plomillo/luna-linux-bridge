@@ -38,8 +38,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends squashfs-tools
-          mksquashfs -version
-          unsquashfs -version
+          command -v mksquashfs
+          command -v unsquashfs
       - name: Compile and execute reproducible SquashFS packager acceptance
         shell: bash
         run: |
