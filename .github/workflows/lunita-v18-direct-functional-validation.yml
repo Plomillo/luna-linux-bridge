@@ -280,7 +280,7 @@ jobs:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/fix/lunita-v18-rootfs-bound-checkpoint-20261109' }}
     name: "Lunita v1.8 real target and independent acceptance"
     concurrency:
-      group: lunita-v1-8-target-runtime-${{ github.ref }}
+      group: lunita-v1-8-target-runtime-${{ github.ref }}-${{ github.sha }}
       cancel-in-progress: true
     needs: contract-tests
     runs-on: ubuntu-24.04
@@ -459,6 +459,7 @@ jobs:
           export LUNITA_OUTPUT_DIR="$CERT_STATE/worker_outputs"
           export LUNITA_EVIDENCE_DIR="$CERT_STATE/lunita_certification_evidence"
           export LUNITA_CANDIDATE_DIR="$CERT_CANDIDATE"
+          export LUNITA_CANDIDATE_MANIFEST="$GITHUB_WORKSPACE/LUNITA_V1_8_CANDIDATE_FREEZE.json"
           export LUNITA_ROOTFS="$LUNITA_ROOTFS_REAL"
           export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$LUNITA_XDG_STATE_HOME/lunita/runtime_validation"
           export FLATPAK_SYSTEM_DIR="$LUNITA_ROOTFS_REAL/var/lib/flatpak"
