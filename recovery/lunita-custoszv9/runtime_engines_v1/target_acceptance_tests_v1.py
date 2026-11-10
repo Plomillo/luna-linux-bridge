@@ -129,7 +129,8 @@ class TargetUserRequestFileTests(unittest.TestCase):
         self.assertIn("O_NOFOLLOW", code)
         self.assertIn("0o600", code)
         compile(code, "<e01-request-writer>", "exec")
-        self.assertIn("/tmp/lunita-xdg", command)
+        self.assertIn("TMPDIR=/tmp/lunita-xdg", command)
+        self.assertEqual(str(request_path), command[-2])
 
     def test_e01_request_writer_rejects_direct_tmp_without_mutation(self):
         with (
