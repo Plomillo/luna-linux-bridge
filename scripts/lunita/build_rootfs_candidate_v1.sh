@@ -133,13 +133,14 @@ NODE_ARCHIVE="$RUNNER_TEMP/lunita-build/node-v$NODE_VERSION-linux-x64.tar.xz"
 curl --fail --location --retry 3 --retry-all-errors \
   "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" -o "$NODE_ARCHIVE"
 [ "$(sha256sum "$NODE_ARCHIVE" | awk '{print $1}')" = "$NODE_SHA256" ] || fail "Node.js checksum mismatch."
-mkdir -p "$BROWSER_PREFIX"
-tar -xJf "$NODE_ARCHIVE" -C "$BROWSER_PREFIX" --strip-components=1
-PATH="$BROWSER_PREFIX/bin:$PATH" PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
-  "$BROWSER_PREFIX/bin/npm" install --prefix "$BROWSER_PREFIX" --no-audit --no-fund \
+NODE_PREFIX="$BROWSER_PREFIX/node"
+mkdir -p "$NODE_PREFIX"
+tar -xJf "$NODE_ARCHIVE" -C "$NODE_PREFIX" --strip-components=1
+PATH="$NODE_PREFIX/bin:$PATH" PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
+  "$NODE_PREFIX/bin/npm" install --prefix "$BROWSER_PREFIX" --no-audit --no-fund \
   "playwright@$PLAYWRIGHT_VERSION" "playwright-core@$PLAYWRIGHT_VERSION"
-PLAYWRIGHT_ACTUAL="$("$BROWSER_PREFIX/bin/node" -p "require('$BROWSER_PREFIX/node_modules/playwright/package.json').version")"
-PLAYWRIGHT_CORE_ACTUAL="$("$BROWSER_PREFIX/bin/node" -p "require('$BROWSER_PREFIX/node_modules/playwright-core/package.json').version")"
+PLAYWRIGHT_ACTUAL="$("$NODE_PREFIX/bin/node" -p "require('$BROWSER_PREFIX/node_modules/playwright/package.json').version")"
+PLAYWRIGHT_CORE_ACTUAL="$("$NODE_PREFIX/bin/node" -p "require('$BROWSER_PREFIX/node_modules/playwright-core/package.json').version")"
 [ "$PLAYWRIGHT_ACTUAL" = "$PLAYWRIGHT_VERSION" ] || fail "Playwright version mismatch."
 [ "$PLAYWRIGHT_CORE_ACTUAL" = "$PLAYWRIGHT_VERSION" ] || fail "playwright-core version mismatch."
 
@@ -156,7 +157,7 @@ if [ -f "$BROWSER_PREFIX/chrome/chrome-sandbox" ]; then
 fi
 cp "$WORKSPACE/scripts/lunita/brujula.js" "$BROWSER_PREFIX/brujula.js"
 chmod 0755 "$BROWSER_PREFIX/brujula.js"
-NODE_ACTUAL="$(chroot "$ROOTFS" "$BRUJULA_PREFIX/bin/node" --version)"
+NODE_ACTUAL="$(chroot "$ROOTFS" "$BRUJULA_PREFIX/node/bin/node" --version)"
 [ "$NODE_ACTUAL" = "v$NODE_VERSION" ] || fail "Node version mismatch."
 CHROME_ACTUAL="$(chroot "$ROOTFS" "$BRUJULA_PREFIX/chrome/chrome" --version | awk '{print $NF}')"
 [ "$CHROME_ACTUAL" = "$CHROME_VERSION" ] || fail "Chrome version mismatch: $CHROME_ACTUAL"
@@ -166,7 +167,7 @@ BROWSER_SMOKE="$(chroot "$ROOTFS" /usr/sbin/runuser -u lunita -- /usr/bin/env \
   XDG_CONFIG_HOME=/tmp/lunita-xdg/config \
   XDG_DATA_HOME=/tmp/lunita-xdg/data \
   XDG_RUNTIME_DIR=/run/lunita-runtime-1000 \
-  "$BRUJULA_PREFIX/bin/node" "$BRUJULA_PREFIX/brujula.js" \
+  "$BRUJULA_PREFIX/node/bin/node" "$BRUJULA_PREFIX/brujula.js" \
   'data:text/html,<title>LUNITA_BRUJULA_OK</title><body>OK</body>')"
 grep -q "LUNITA_BRUJULA_OK" <<<"$BROWSER_SMOKE" || fail "Brújula Playwright smoke test failed."
 
@@ -243,7 +244,7 @@ NODE_TARBALL_SHA256="$NODE_SHA256"
 CHROME_ZIP_SHA256="$(sha256sum "$CHROME_ZIP" | awk '{print $1}')"
 PLAYWRIGHT_LOCK_SHA256="$(sha256sum "$BROWSER_PREFIX/package-lock.json" | awk '{print $1}')"
 LLAMA_BINARY_SHA256="$(sha256sum "$RUNTIME_PREFIX/llama-cli" | awk '{print $1}')"
-NODE_BINARY_SHA256="$(sha256sum "$BROWSER_PREFIX/bin/node" | awk '{print $1}')"
+NODE_BINARY_SHA256="$(sha256sum "$NODE_PREFIX/bin/node" | awk '{print $1}')"
 CHROME_BINARY_SHA256="$(sha256sum "$BROWSER_PREFIX/chrome/chrome" | awk '{print $1}')"
 R_SCRIPT_SHA256="$(sha256sum "$ROOTFS$R_PREFIX/bin/Rscript" | awk '{print $1}')"
 ROOTFS_LAUNCHER_SHA256="$(sha256sum "$ROOTFS/opt/lunita/agent/lunita.py" | awk '{print $1}')"
