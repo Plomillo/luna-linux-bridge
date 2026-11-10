@@ -29,7 +29,7 @@ EXPECTED_LAUNCHER_SHA256 = "46efd711729c344e7efba9ce2503127c48f0b88207cc5a17311f
 EXPECTED_CHECKPOINT_SCHEMA = "LUNITA_RUNTIME_OVERLAY_CHECKPOINT/1.0"
 EXPECTED_CHECKPOINT_SCOPE = "LUNITA_ADDITIVE_RUNTIME_ENGINE_OVERLAY"
 EXPECTED_CHECKPOINT_MANIFEST_SCHEMA = "LUNITA_RUNTIME_OVERLAY_CHECKPOINT_MANIFEST/1.0"
-OVERLAY_RELATIVE_PATH = pathlib.Path("engines/runtime_engines_v1")
+OVERLAY_RELATIVE_PATH = pathlib.Path("opt/lunita/engines/runtime_engines_v1")
 FILES = (
     "__init__.py",
     "engine_runtime_v1.py",
@@ -211,7 +211,7 @@ def preflight(
     rootfs = rootfs.resolve(strict=True)
     if not rootfs.is_dir():
         raise GateError("Rootfs must be a directory")
-    launcher = rootfs / "agent/lunita.py"
+    launcher = rootfs / "opt/lunita/agent/lunita.py"
     reject_symlink_components(launcher, rootfs)
     if not launcher.is_file():
         raise GateError("Candidate launcher is missing")
