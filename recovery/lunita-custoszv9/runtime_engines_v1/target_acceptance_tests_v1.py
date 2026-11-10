@@ -126,6 +126,7 @@ class TargetUserRequestFileTests(unittest.TestCase):
         self.assertIn("O_EXCL", code)
         self.assertIn("O_NOFOLLOW", code)
         self.assertIn("0o600", code)
+        compile(code, "<e01-request-writer>", "exec")
         self.assertIn("/tmp/lunita-xdg", command)
 
     def test_e01_request_writer_rejects_direct_tmp_without_mutation(self):
@@ -154,6 +155,7 @@ class TargetUserRequestFileTests(unittest.TestCase):
         self.assertNotIn("chroot", command)
         code = command[command.index("-c") + 1]
         self.assertIn("path.unlink()", code)
+        compile(code, "<e01-request-cleanup>", "exec")
         self.assertIn("1000", code)
 
 
