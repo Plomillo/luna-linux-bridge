@@ -376,6 +376,7 @@ jobs:
           sudo mount --make-rslave "$LUNITA_ROOTFS_REAL/sys"
           sudo mount --rbind /run "$LUNITA_ROOTFS_REAL/run"
           sudo mount --make-rslave "$LUNITA_ROOTFS_REAL/run"
+          sudo install -d -o 1000 -g 1000 -m 0700 "$LUNITA_ROOTFS_REAL/run/lunita-runtime-1000"
       - name: Execute actual E01 inference and E02-E15 plus legacy application smoke tests
         shell: bash
         run: |
