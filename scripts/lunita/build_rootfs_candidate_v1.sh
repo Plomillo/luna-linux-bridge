@@ -46,10 +46,14 @@ apt-get install -y --no-install-recommends \
   xz-utils unzip zip file
 
 # Ubuntu 24.04 minimal amd64 root filesystem.
-debootstrap --arch=amd64 --variant=minbase \
+if ! debootstrap --arch=amd64 --variant=minbase \
   --components=main,restricted,universe,multiverse \
-  --include=ca-certificates,curl,wget,gnupg,locales,flatpak,python3.12,python3.12-venv,python3.12-dev \
-  noble "$ROOTFS" http://archive.ubuntu.com/ubuntu
+  --include=ca-certificates,curl,wget,gnupg,locales,python3.12,python3.12-venv,python3.12-dev \
+  noble "$ROOTFS" http://archive.ubuntu.com/ubuntu; then
+  echo "DEBOOTSTRAP_FAILED: final log excerpt follows" >&2
+  tail -n 160 "$ROOTFS/debootstrap/debootstrap.log" >&2 || true
+  fail "Ubuntu Noble minimal bootstrap failed."
+fi
 rm -f "$ROOTFS/etc/apt/sources.list.d/ubuntu.sources"
 cat > "$ROOTFS/etc/apt/sources.list" <<EOF
 deb http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
