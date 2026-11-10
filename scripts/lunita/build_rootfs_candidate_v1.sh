@@ -6,7 +6,7 @@ ROOTFS="$1"
 [ -n "$ROOTFS" ] || { echo "usage: build_rootfs_candidate_v1.sh ROOTFS_PATH" >&2; exit 2; }
 ROOTFS="$(realpath -m "$ROOTFS")"
 WORKSPACE="$(cd "$(dirname "$0")/../.." && pwd)"
-RUNNER_TEMP="${{RUNNER_TEMP:-/tmp}"
+RUNNER_TEMP="${RUNNER_TEMP:-/tmp}"
 CANDIDATE_ID="G06_REBUILD_CANDIDATE_R1"
 NODE_VERSION="22.23.2"
 NODE_SHA256="d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307"
@@ -18,7 +18,8 @@ JAMOVI_COMMIT="4685c60d99398dc687837d58f370b31e01edc160c2e3bbd3d4b204a20b249fab"
 JASP_VERSION="0.98.1"
 JASP_COMMIT="83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
 QWEN_REPO="bartowski/Qwen_Qwen3-0.6B-GGUF"
-QWEN_REVISION="f9184d8b4c371cb52af5b8cb3d38e55e3cf0f4a0"
+QWEN_REVISION="46041aded1d8825aa4202eb50b87bd09138a36a0"
+QWEN_SHA256="0906dcf62aa4f005887e855731376f0bf3be8f5ffa61f547df71e6154ea748d9"
 QWEN_FILE="Qwen_Qwen3-0.6B-IQ3_XS.gguf"
 LLAMA_CPP_TAG="v0.9.0"
 LLAMA_CPP_COMMIT="cd959bae99ff4bed22bef2604f45241c09bbb8c8"
@@ -34,7 +35,7 @@ fail() { echo "ROOTFS_BUILD_BLOCKED: $*" >&2; exit 2; }
 [ -f "$WORKSPACE/scripts/lunita/brujula.js" ] || fail "Brújula source missing."
 HOST_OS="$(. /etc/os-release; echo "${{VERSION_ID:-unknown}")"
 [ "$HOST_OS" = "24.04" ] || fail "Builder requires Ubuntu 24.04, found $HOST_OS."
-mkdir -p "$RUNNER_TEMP/lunita-build" "$ROOTFS"
+mkdir -p "$RUNNER_TEMP/lunita-build"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y --no-install-recommends \
@@ -49,6 +50,7 @@ debootstrap --arch=amd64 --variant=minbase \
   --components=main,restricted,universe,multiverse \
   --include=ca-certificates,curl,wget,gnupg,locales,flatpak,python3.12,python3.12-venv,python3.12-dev \
   noble "$ROOTFS" http://archive.ubuntu.com/ubuntu
+rm -f "$ROOTFS/etc/apt/sources.list.d/ubuntu.sources"
 cat > "$ROOTFS/etc/apt/sources.list" <<EOF
 deb http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
 deb http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
@@ -93,7 +95,7 @@ tar -xzf "$R_ARCHIVE" -C "$RUNNER_TEMP/lunita-build"
   make -j2
   make DESTDIR="$ROOTFS" install
 )
-R_HOME="$ROOTFS$R_PREFIX/lib/R" "$ROOTFS$R_PREFIX/bin/Rscript" \
+chroot "$ROOTFS" env R_HOME="$R_PREFIX/lib/R" "$R_PREFIX/bin/Rscript" \
   -e 'stopifnot(as.character(getRversion()) == "4.6.1", 2 + 2 == 4)'
 
 # Preserve the registered v1.7 launcher byte-for-byte.
@@ -134,11 +136,11 @@ if [ -f "$BROWSER_PREFIX/chrome/chrome-sandbox" ]; then
 fi
 cp "$WORKSPACE/scripts/lunita/brujula.js" "$BROWSER_PREFIX/brujula.js"
 chmod 0755 "$BROWSER_PREFIX/brujula.js"
-NODE_ACTUAL="$("$BROWSER_PREFIX/bin/node" --version)"
+NODE_ACTUAL="$(chroot "$ROOTFS" "$BRUJULA_PREFIX/bin/node" --version)"
 [ "$NODE_ACTUAL" = "v$NODE_VERSION" ] || fail "Node version mismatch."
-CHROME_ACTUAL="$("$BROWSER_PREFIX/chrome/chrome" --version | awk '{print $3}')"
+CHROME_ACTUAL="$(chroot "$ROOTFS" "$BRUJULA_PREFIX/chrome/chrome" --version | awk '{print $3}')"
 [ "$CHROME_ACTUAL" = "$CHROME_VERSION" ] || fail "Chrome version mismatch: $CHROME_ACTUAL"
-BROWSER_SMOKE="$(cd "$BROWSER_PREFIX" && "$BROWSER_PREFIX/bin/node" "$BROWSER_PREFIX/brujula.js" 'data:text/html,<title>LUNITA_BRUJULA_OK</title><body>OK</body>')"
+BROWSER_SMOKE="$(chroot "$ROOTFS" env HOME=/tmp/lunita-brujula-home "$BRUJULA_PREFIX/bin/node" "$BRUJULA_PREFIX/brujula.js" 'data:text/html,<title>LUNITA_BRUJULA_OK</title><body>OK</body>')"
 grep -q "LUNITA_BRUJULA_OK" <<<"$BROWSER_SMOKE" || fail "Brújula Playwright smoke test failed."
 
 # Build llama.cpp from the exact published v0.9.0 commit for the same ABI.
@@ -154,7 +156,7 @@ cp "$LLAMA_SRC/build/bin/llama-cli" "$RUNTIME_PREFIX/llama-cli"
 find "$LLAMA_SRC/build/bin" -maxdepth 1 -type f -name 'libggml*.so*' -exec cp -a {} "$RUNTIME_PREFIX/" \;
 find "$LLAMA_SRC/build/bin" -maxdepth 1 -type f -name 'libllama.so*' -exec cp -a {} "$RUNTIME_PREFIX/" \;
 chmod 0755 "$RUNTIME_PREFIX/llama-cli"
-LLAMA_VERSION="$(LD_LIBRARY_PATH="$RUNTIME_PREFIX" "$RUNTIME_PREFIX/llama-cli" --version 2>&1 | head -n 1)"
+LLAMA_VERSION="$(chroot "$ROOTFS" "$RUNTIME_PREFIX/llama-cli" --version 2>&1 | head -n 1)"
 [ -x "$RUNTIME_PREFIX/llama-cli" ] || fail "llama-cli output missing."
 
 # Pin the actual model file to an immutable Hugging Face repository revision.
@@ -162,14 +164,17 @@ curl --fail --location --retry 3 --retry-all-errors \
   "https://huggingface.co/$QWEN_REPO/resolve/$QWEN_REVISION/$QWEN_FILE?download=true" -o "$MODEL_PATH"
 MODEL_SHA256="$(sha256sum "$MODEL_PATH" | awk '{print $1}')"
 MODEL_BYTES="$(stat -c '%s' "$MODEL_PATH")"
+[ "$MODEL_SHA256" = "$QWEN_SHA256" ] || fail "Pinned Qwen GGUF SHA-256 mismatch: $MODEL_SHA256"
 [ "$MODEL_BYTES" -gt 300000000 ] || fail "Qwen GGUF size is implausible: $MODEL_BYTES"
 file "$MODEL_PATH" | grep -qi "GGUF" || fail "Qwen file is not GGUF."
 
 # Pin both applications to the exact Flatpak commits recorded by the candidate.
 export FLATPAK_SYSTEM_DIR="$ROOTFS/var/lib/flatpak"
 flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install --system --noninteractive --assumeyes --commit="$JAMOVI_COMMIT" flathub "org.jamovi.jamovi//stable"
-flatpak install --system --noninteractive --assumeyes --commit="$JASP_COMMIT" flathub "org.jaspstats.JASP//stable"
+flatpak install --system --noninteractive --assumeyes flathub "org.jamovi.jamovi//stable"
+flatpak update --system --noninteractive --assumeyes --commit="$JAMOVI_COMMIT" org.jamovi.jamovi
+flatpak install --system --noninteractive --assumeyes flathub "org.jaspstats.JASP//stable"
+flatpak update --system --noninteractive --assumeyes --commit="$JASP_COMMIT" org.jaspstats.JASP
 JAMOVI_OBSERVED_COMMIT="$(flatpak info --system --show-commit org.jamovi.jamovi)"
 JASP_OBSERVED_COMMIT="$(flatpak info --system --show-commit org.jaspstats.JASP)"
 JAMOVI_OBSERVED_VERSION="$(flatpak info --system --show-version org.jamovi.jamovi)"
