@@ -184,25 +184,37 @@ chroot "$ROOTFS" cmake -S /tmp/llama.cpp-src -B /tmp/llama.cpp-build \
 chroot "$ROOTFS" cmake --build /tmp/llama.cpp-build --target llama-cli -j2
 mkdir -p "$RUNTIME_PREFIX"
 cp "$ROOTFS/tmp/llama.cpp-build/bin/llama-cli" "$RUNTIME_PREFIX/llama-cli"
-find "$ROOTFS/tmp/llama.cpp-build/bin" -maxdepth 1 -type f -name 'libggml*.so*' \
-  -exec cp -a {} "$RUNTIME_PREFIX/" \;
-find "$ROOTFS/tmp/llama.cpp-build/bin" -maxdepth 1 -type f -name 'libllama.so*' \
+# Keep every shared library produced for llama-cli beside the executable.
+# v0.9.0 uses libllama-cli-impl.so in addition to libllama/libggml;
+# copying only the latter leaves a binary that works in the build tree but
+# fails after the temporary CMake directory is removed.
+find "$ROOTFS/tmp/llama.cpp-build/bin" -maxdepth 1 \
+  \( -type f -o -type l \) \
+  \( -name 'lib*.so' -o -name 'lib*.so.*' \) \
   -exec cp -a {} "$RUNTIME_PREFIX/" \;
 chmod 0755 "$RUNTIME_PREFIX/llama-cli"
 GUEST_RUNTIME_PREFIX="/opt/lunita/brain/runtime/llama.cpp-$LLAMA_CPP_TAG"
-CPU_BACKEND="$(find "$RUNTIME_PREFIX" -maxdepth 1 -type f -name 'libggml-cpu-x64.so' -print -quit)"
-if [ -n "$CPU_BACKEND" ]; then
-  LLAMA_VERSION="$(chroot "$ROOTFS" /usr/bin/env -C /tmp \
-    "LD_LIBRARY_PATH=$GUEST_RUNTIME_PREFIX" \
-    "GGML_BACKEND_PATH=$GUEST_RUNTIME_PREFIX/$(basename "$CPU_BACKEND")" \
-    "$GUEST_RUNTIME_PREFIX/llama-cli" --version 2>&1 | head -n 1)"
-else
-  LLAMA_VERSION="$(chroot "$ROOTFS" /usr/bin/env -C /tmp \
-    "LD_LIBRARY_PATH=$GUEST_RUNTIME_PREFIX" \
-    "$GUEST_RUNTIME_PREFIX/llama-cli" --version 2>&1 | head -n 1)"
-fi
 [ -x "$RUNTIME_PREFIX/llama-cli" ] || fail "llama-cli output missing."
+CPU_BACKEND="$(find "$RUNTIME_PREFIX" -maxdepth 1 -type f -name 'libggml-cpu-x64.so' -print -quit)"
+[ -n "$CPU_BACKEND" ] || fail "Pinned llama.cpp CPU backend library is missing."
+find "$RUNTIME_PREFIX" -maxdepth 1 -type f \
+  \( -name 'lib*.so' -o -name 'lib*.so.*' \) -print -quit | grep -q . \
+  || fail "llama.cpp runtime shared libraries were not packaged."
+
+# Remove the build tree before verification: the packaged runtime must not
+# accidentally resolve CMake build-tree libraries through an absolute RPATH.
 rm -rf "$ROOTFS/tmp/llama.cpp-src" "$ROOTFS/tmp/llama.cpp-build"
+LLAMA_LDD="$(chroot "$ROOTFS" /usr/bin/env -C /tmp \
+  "LD_LIBRARY_PATH=$GUEST_RUNTIME_PREFIX" \
+  /usr/bin/ldd "$GUEST_RUNTIME_PREFIX/llama-cli" 2>&1)" \
+  || fail "Unable to inspect packaged llama-cli dependencies: $LLAMA_LDD"
+if grep -Fq "not found" <<<"$LLAMA_LDD"; then
+  fail "Packaged llama.cpp runtime has unresolved shared libraries: $LLAMA_LDD"
+fi
+LLAMA_VERSION="$(chroot "$ROOTFS" /usr/bin/env -C /tmp \
+  "LD_LIBRARY_PATH=$GUEST_RUNTIME_PREFIX" \
+  "GGML_BACKEND_PATH=$GUEST_RUNTIME_PREFIX/$(basename "$CPU_BACKEND")" \
+  "$GUEST_RUNTIME_PREFIX/llama-cli" --version 2>&1 | head -n 1)"
 
 # Pin the actual model file to an immutable Hugging Face repository revision.
 curl --fail --location --retry 3 --retry-all-errors \
