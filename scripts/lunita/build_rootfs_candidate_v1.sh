@@ -75,7 +75,7 @@ trap cleanup_mounts EXIT
 chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get update
 chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   flatpak python3.12 python3.12-venv ca-certificates curl wget gnupg locales \
-  libnss3 libgtk-3-0 libatk1.0-0 libatk-bridge2.0-0 libatspi2.0-0 \
+  libnss3 libgtk-3-0t64 libatk1.0-0t64 libatk-bridge2.0-0t64 libatspi2.0-0t64 \
   libcups2t64 libdrm2 libgbm1 libasound2t64 libx11-xcb1 libxcomposite1 \
   libxdamage1 libxfixes3 libxrandr2 libxkbcommon0 libxshmfence1 \
   libpango-1.0-0 libcairo2 fonts-liberation libstdc++6 libgomp1 \
