@@ -99,7 +99,11 @@ def tree_manifest(root: pathlib.Path) -> dict[str, Any]:
         directory_stat = directory.lstat()
         if not stat.S_ISDIR(directory_stat.st_mode):
             raise PackageError(f"Directory changed type during scan: {directory}")
-        signatures[directory] = _stat_signature(directory_stat)
+        directory_signature = _stat_signature(directory_stat)
+        previous_signature = signatures.get(directory)
+        if previous_signature is not None and previous_signature != directory_signature:
+            raise PackageError(f"Directory changed before scan completed: {directory}")
+        signatures[directory] = directory_signature
         rows.append({
             "path": relative_directory,
             "type": "directory",
@@ -127,11 +131,10 @@ def tree_manifest(root: pathlib.Path) -> dict[str, Any]:
                 "mtime_seconds": int(before.st_mtime),
             }
             if stat.S_ISDIR(before.st_mode):
-                row = {
-                    **common, "type": "directory", "mode": stat.S_IMODE(before.st_mode),
-                    "xattrs": xattr_manifest(path, is_symlink=False),
-                }
                 pending.append((path, relative))
+                if _stat_signature(path.lstat()) != signatures[path]:
+                    raise PackageError(f"Rootfs directory changed during scan: {relative}")
+                continue
             elif stat.S_ISREG(before.st_mode):
                 row = {
                     **common, "type": "file", "mode": stat.S_IMODE(before.st_mode),
