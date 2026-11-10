@@ -17,7 +17,7 @@ class AdditiveOverlayInstallerTests(unittest.TestCase):
         self.base = pathlib.Path(self.temporary.name)
         self.rootfs = self.base / "rootfs"
         self.rootfs.mkdir()
-        self.launcher = self.rootfs / "opt/lunita/agent/lunita.py"
+        self.launcher = self.rootfs / "agent/lunita.py"
         self.launcher.parent.mkdir(parents=True)
         self.launcher.write_text("# candidate launcher test fixture\n", encoding="utf-8")
         self.source = self.base / "source"
@@ -160,7 +160,7 @@ class AdditiveOverlayInstallerTests(unittest.TestCase):
                                     installer.EXPECTED_CANDIDATE_ID, False)
 
     def test_symlinked_target_parent_is_denied(self):
-        engines = self.rootfs / "opt/lunita/engines"
+        engines = self.rootfs / "engines"
         engines.symlink_to(self.base, target_is_directory=True)
         with self.assertRaises(installer.GateError):
             self.apply()
