@@ -370,6 +370,7 @@ def self_test() -> dict[str, Any]:
             "candidate_id": CANDIDATE_ID,
             "status": TARGET_PASS,
             "certification": "NOT_GRANTED",
+            "rootfs_build": {"status": "PASS_ROOTFS_BUILD_IDENTITY"},
             "overlay_integrity": {"status": "PASS_OVERLAY_INTEGRITY"},
             "e04_quantization": {"status": "PASS_E04_INT8_QUALITY_GATE"},
             "qwen_e01": {"status": "PASS_E01_QWEN_INFERENCE"},
