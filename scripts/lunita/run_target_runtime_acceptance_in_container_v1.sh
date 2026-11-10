@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-: "\${LUNITA_ROOTFS_REAL:?LUNITA_ROOTFS_REAL is required}"
-: "\${LUNITA_ROOT:?LUNITA_ROOT is required}"
-: "\${LUNITA_XDG_STATE_HOME:?LUNITA_XDG_STATE_HOME is required}"
-: "\${RUNNER_TEMP:?RUNNER_TEMP is required}"
+: "${LUNITA_ROOTFS_REAL:?LUNITA_ROOTFS_REAL is required}"
+: "${LUNITA_ROOT:?LUNITA_ROOT is required}"
+: "${LUNITA_XDG_STATE_HOME:?LUNITA_XDG_STATE_HOME is required}"
+: "${RUNNER_TEMP:?RUNNER_TEMP is required}"
 
 ROOTFS="$(realpath -e "$LUNITA_ROOTFS_REAL")"
 OVERLAY="$LUNITA_ROOT/engines/runtime_engines_v1"

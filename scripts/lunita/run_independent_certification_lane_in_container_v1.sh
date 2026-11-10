@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-: "\${LUNITA_XDG_STATE_HOME:?LUNITA_XDG_STATE_HOME is required}"
-: "\${LUNITA_ROOTFS_REAL:?LUNITA_ROOTFS_REAL is required}"
-: "\${RUNNER_TEMP:?RUNNER_TEMP is required}"
-: "\${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
+: "${LUNITA_XDG_STATE_HOME:?LUNITA_XDG_STATE_HOME is required}"
+: "${LUNITA_ROOTFS_REAL:?LUNITA_ROOTFS_REAL is required}"
+: "${RUNNER_TEMP:?RUNNER_TEMP is required}"
+: "${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
 
 CERT_STATE="$RUNNER_TEMP/lunita-stability-state"
 CERT_CANDIDATE="$RUNNER_TEMP/lunita-stability-candidate"
