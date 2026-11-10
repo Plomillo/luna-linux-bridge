@@ -76,6 +76,134 @@ def hash_directory(path: pathlib.Path) -> dict[str, Any]:
     }
 
 
+def verify_rootfs_build_receipt() -> dict[str, Any]:
+    """Verify the reconstructed rootfs provenance and every declared major runtime payload."""
+    path = ROOT / "metadata/ROOTFS_BUILD_RECEIPT.json"
+    if path.is_symlink() or not path.is_file():
+        raise TargetGateError("Rootfs build receipt is missing or not a regular file")
+    receipt = json.loads(path.read_text(encoding="utf-8"))
+    if receipt.get("schema") != "LUNITA_ROOTFS_BUILD_RECEIPT/1.0":
+        raise TargetGateError("Rootfs build receipt schema mismatch")
+    if receipt.get("status") != "PASS_ROOTFS_BUILD_NOT_CERTIFIED":
+        raise TargetGateError("Rootfs builder did not report an accepted build")
+    if receipt.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1":
+        raise TargetGateError("Rootfs build candidate identity mismatch")
+    if receipt.get("source_rootfs_recovered") is not False:
+        raise TargetGateError("Rebuilt rootfs provenance is ambiguous")
+    ubuntu = receipt.get("ubuntu", {})
+    if ubuntu.get("release") != "24.04" or ubuntu.get("codename") != "noble" or ubuntu.get("architecture") != "amd64":
+        raise TargetGateError("Rootfs is not the registered Ubuntu 24.04 amd64 baseline")
+
+    def require_hash(relative: str, expected: str, label: str) -> pathlib.Path:
+        target = pathlib.Path(relative)
+        if target.is_absolute():
+            full = target
+        else:
+            full = ROOT / target
+        if full.is_symlink() or not full.is_file():
+            raise TargetGateError(f"Required rootfs payload is missing: {label}")
+        observed = sha256_file(full)
+        if not isinstance(expected, str) or observed != expected:
+            raise TargetGateError(f"Rootfs payload digest mismatch: {label}")
+        return full
+
+    launcher = receipt.get("legacy_launcher", {})
+    require_hash("agent/lunita.py", launcher.get("sha256"), "legacy beta-v1.7 launcher")
+    qwen = receipt.get("qwen", {})
+    if qwen.get("quantization") != "IQ3_XS" or qwen.get("revision") != "f9184d8b4c371cb52af5b8cb3d38e55e3cf0f4a0":
+        raise TargetGateError("Qwen model source identity or quantization is not pinned")
+    model = require_hash("brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf", qwen.get("sha256"), "Qwen3 IQ3_XS model")
+    if model.stat().st_size != qwen.get("bytes"):
+        raise TargetGateError("Qwen model byte count differs from the build receipt")
+
+    llama = receipt.get("llama_cpp", {})
+    if llama.get("commit") != "cd959bae99ff4bed22bef2604f45241c09bbb8c8":
+        raise TargetGateError("llama.cpp source commit is not pinned to the registered release")
+    llama_candidates = list((ROOT / "brain/runtime").rglob("llama-cli"))
+    if len(llama_candidates) != 1:
+        raise TargetGateError(f"Expected exactly one packaged llama-cli, found {len(llama_candidates)}")
+    require_hash(str(llama_candidates[0]), llama.get("llama_cli_sha256"), "llama.cpp llama-cli")
+
+    brujula = receipt.get("brujula", {})
+    if brujula.get("node") != "v22.23.2" or brujula.get("playwright") != "1.63.0" or brujula.get("playwright_core") != "1.63.0":
+        raise TargetGateError("Brújula Node/Playwright versions do not match the registered runtime")
+    browser_root = ROOT / "instruments/brujula"
+    require_hash("instruments/brujula/node/bin/node", brujula.get("node_binary_sha256"), "Node.js binary")
+    require_hash("instruments/brujula/chrome/chrome", brujula.get("chrome_binary_sha256"), "Chrome for Testing binary")
+    for package in ("playwright", "playwright-core"):
+        metadata = browser_root / "node_modules" / package / "package.json"
+        if metadata.is_symlink() or not metadata.is_file():
+            raise TargetGateError(f"Brújula package is missing: {package}")
+        if json.loads(metadata.read_text(encoding="utf-8")).get("version") != "1.63.0":
+            raise TargetGateError(f"Brújula package version mismatch: {package}")
+    chrome_result = subprocess.run(
+        [str(browser_root / "chrome/chrome"), "--version"],
+        capture_output=True, text=True, check=False,
+    )
+    if chrome_result.returncode != 0 or "153.0.8010.12" not in chrome_result.stdout:
+        raise TargetGateError("Chrome for Testing executable did not return the pinned version")
+
+    lapiz = receipt.get("lapiz", {})
+    if lapiz.get("r_version") != "4.6.1":
+        raise TargetGateError("Lápiz R version is not pinned to 4.6.1")
+    rscript = require_hash("instruments/lapiz/R-4.6.1/bin/Rscript", lapiz.get("rscript_sha256"), "Rscript binary")
+    r_env = os.environ.copy()
+    r_env["R_HOME"] = str(rscript.parent.parent / "lib/R")
+    r = subprocess.run(
+        [str(rscript), "-e", 'stopifnot(as.character(getRversion())=="4.6.1", 2+2==4)'],
+        env=r_env, capture_output=True, text=True, check=False,
+    )
+    if r.returncode != 0:
+        raise TargetGateError("Lápiz R 4.6.1 execution failed: " + (r.stderr or r.stdout)[-1200:])
+
+    apps = (
+        ("org.jamovi.jamovi", "sacapuntas", "2.7.27"),
+        ("org.jaspstats.JASP", "lupa", "0.98.1"),
+    )
+    observed_apps = {}
+    for app_id, key, expected_version in apps:
+        value = receipt.get(key, {})
+        if value.get("application_id") != app_id or value.get("version") != expected_version:
+            raise TargetGateError(f"Flatpak app identity/version mismatch: {app_id}")
+        if not (pathlib.Path(os.environ.get("FLATPAK_SYSTEM_DIR", "/var/lib/flatpak")) / "app" / app_id).is_dir():
+            raise TargetGateError(f"Flatpak system deployment is missing: {app_id}")
+        info = subprocess.run(
+            ["/usr/bin/flatpak", "info", "--system", "--show-commit", app_id],
+            capture_output=True, text=True, check=False,
+        )
+        version = subprocess.run(
+            ["/usr/bin/flatpak", "info", "--system", "--show-version", app_id],
+            capture_output=True, text=True, check=False,
+        )
+        if info.returncode != 0 or version.returncode != 0:
+            raise TargetGateError(f"Flatpak could not inspect the target system app: {app_id}")
+        if info.stdout.strip() != value.get("flatpak_commit") or version.stdout.strip() != expected_version:
+            raise TargetGateError(f"Flatpak installed commit/version mismatch: {app_id}")
+        observed_apps[app_id] = {"version": version.stdout.strip(), "commit": info.stdout.strip()}
+
+    invariants = receipt.get("invariants", {})
+    if any(invariants.get(flag) is not False for flag in (
+        "frozen_g06_mutated", "canonical_g08_mutated", "legacy_launcher_replaced",
+        "canonical_certification_inherited",
+    )):
+        raise TargetGateError("Rootfs build receipt does not preserve frozen/canonical identity")
+
+    return {
+        "status": "PASS_ROOTFS_BUILD_IDENTITY",
+        "receipt_sha256": sha256_file(path),
+        "source_rootfs_recovered": False,
+        "ubuntu": ubuntu,
+        "qwen_model_sha256": sha256_file(model),
+        "llama_cli_sha256": sha256_file(llama_candidates[0]),
+        "node_version": brujula.get("node"),
+        "playwright_version": brujula.get("playwright"),
+        "chrome_version": brujula.get("chrome_for_testing"),
+        "r_version": lapiz.get("r_version"),
+        "flatpak_apps": observed_apps,
+        "certification": "NOT_GRANTED",
+    }
+
+
 def verify_e04_quantization_receipt() -> dict[str, Any]:
     cache = OVERLAY / "model-cache/fastembed"
     receipt_path = cache / "LUNITA_E04_ONNX_QUANTIZATION_RECEIPT.json"
@@ -382,6 +510,7 @@ def main() -> int:
         "canonical_g08_binding_mutation": False,
     }
     try:
+        report["rootfs_build"] = verify_rootfs_build_receipt()
         overlay = verify_overlay()
         import engine_runtime_v1 as engine
         registry = engine.validate_registry()
