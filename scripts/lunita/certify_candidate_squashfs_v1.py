@@ -146,9 +146,11 @@ def build_certificate(
         raise CertificationError(f"SquashFS image is missing, empty, or symlinked: {image}")
     image_sha = sha256_file(image)
     image_bytes = image.stat().st_size
+    if checksum.is_symlink() or not checksum.is_file():
+        raise CertificationError("LUNITA.squashfs.sha256 is missing or symlinked")
     checksum_text = checksum.read_text(encoding="ascii").strip()
     expected_checksum = f"{image_sha}  {image.name}"
-    if checksum.is_symlink() or checksum_text != expected_checksum:
+    if checksum_text != expected_checksum:
         raise CertificationError("LUNITA.squashfs.sha256 does not match the exact image bytes")
 
     package = load_json(package_receipt_path, "SquashFS package receipt")
@@ -181,6 +183,8 @@ def build_certificate(
     if len(target_matches) != 1:
         raise CertificationError(f"Expected exactly one target-runtime receipt matching package SHA; found {len(target_matches)}")
     target_path = target_matches[0]
+    if package.get("target_runtime_receipt_path") != str(target_path):
+        raise CertificationError("Package receipt target-runtime path does not match the hash-selected receipt")
     target = load_json(target_path, "Target runtime receipt")
     if target.get("schema") != TARGET_SCHEMA or target.get("status") != PASS_TARGET:
         raise CertificationError("Target-runtime receipt is not a functional PASS")
