@@ -83,7 +83,7 @@ chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-inst
   libwayland-client0 libwayland-cursor0 libwayland-egl1 libwayland-server0 \
   libpango-1.0-0 libcairo2 fonts-liberation libstdc++6 libgomp1 \
   libreadline8t64 libpcre2-8-0 liblzma5 libbz2-1.0 zlib1g \
-  libcurl4t64 libicu74 libtirpc3t64 libblas3 liblapack3
+  libcurl4t64 libicu74 libtirpc3t64 libblas3 liblapack3 libgfortran5 libquadmath0 passwd
 chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   build-essential cmake pkg-config gfortran \
   libreadline-dev libpcre2-dev liblzma-dev libbz2-dev libcurl4-openssl-dev \
@@ -93,6 +93,7 @@ chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-inst
 chroot "$ROOTFS" useradd --uid 1000 --create-home --user-group --shell /bin/bash lunita
 chroot "$ROOTFS" install -d -o 1000 -g 1000 -m 0700 \
   /tmp/lunita-xdg/cache /tmp/lunita-xdg/config /tmp/lunita-xdg/data
+chroot "$ROOTFS" install -d -o 1000 -g 1000 -m 0700 /run/lunita-runtime-1000
 
 # R 4.6.1 is compiled inside Ubuntu 24.04 to bind its ELF dependencies
 # to Noble's glibc and runtime libraries, never to the GitHub host ABI.
