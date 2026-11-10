@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import pathlib
@@ -116,7 +117,7 @@ class TargetLabelHierarchyAcceptanceTests(unittest.TestCase):
             "candidate_id": "G06_REBUILD_CANDIDATE_R1",
             "version": "1.8.0",
             "preservation_policy": "APPEND_ONLY;DO_NOT_REWRITE_EXISTING_LABELS",
-            "hierarchy": target.EXPECTED_LABEL_HIERARCHY,
+            "hierarchy": copy.deepcopy(target.EXPECTED_LABEL_HIERARCHY),
             "rendered_tree": target.EXPECTED_LABEL_HIERARCHY_TEXT,
         }
 
