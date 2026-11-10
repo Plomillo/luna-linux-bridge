@@ -62,6 +62,28 @@ def xattr_manifest(path: pathlib.Path, *, is_symlink: bool) -> list[dict[str, st
         raise PackageError(f"Cannot read extended attributes for {path}: {exc}") from exc
 
 
+def _stat_signature(st: os.stat_result) -> tuple[int, ...]:
+    return (st.st_dev, st.st_ino, st.st_mode, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+
+
+def _hash_open_regular(path: pathlib.Path, expected: os.stat_result) -> str:
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags)
+    try:
+        opened = os.fstat(fd)
+        if _stat_signature(opened) != _stat_signature(expected) or not stat.S_ISREG(opened.st_mode):
+            raise PackageError(f"Regular file changed before hashing: {path}")
+        digest = hashlib.sha256()
+        with os.fdopen(fd, "rb", closefd=False) as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
+        if _stat_signature(os.fstat(fd)) != _stat_signature(expected):
+            raise PackageError(f"Regular file changed while hashing: {path}")
+        return digest.hexdigest()
+    finally:
+        os.close(fd)
+
+
 def tree_manifest(root: pathlib.Path) -> dict[str, Any]:
     reject_symlink_components(root)
     root = root.resolve(strict=True)
@@ -69,19 +91,22 @@ def tree_manifest(root: pathlib.Path) -> dict[str, Any]:
         raise PackageError(f"Rootfs must be an existing real directory: {root}")
 
     rows: list[dict[str, Any]] = []
+    signatures: dict[pathlib.Path, tuple[int, ...]] = {}
+    symlink_targets: dict[pathlib.Path, str] = {}
     pending: list[tuple[pathlib.Path, str]] = [(root, ".")]
     while pending:
         directory, relative_directory = pending.pop()
-        before = directory.lstat()
-        if not stat.S_ISDIR(before.st_mode):
+        directory_stat = directory.lstat()
+        if not stat.S_ISDIR(directory_stat.st_mode):
             raise PackageError(f"Directory changed type during scan: {directory}")
+        signatures[directory] = _stat_signature(directory_stat)
         rows.append({
             "path": relative_directory,
             "type": "directory",
-            "mode": stat.S_IMODE(before.st_mode),
-            "uid": before.st_uid,
-            "gid": before.st_gid,
-            "mtime_seconds": int(before.st_mtime),
+            "mode": stat.S_IMODE(directory_stat.st_mode),
+            "uid": directory_stat.st_uid,
+            "gid": directory_stat.st_gid,
+            "mtime_seconds": int(directory_stat.st_mtime),
             "xattrs": xattr_manifest(directory, is_symlink=False),
         })
         try:
@@ -94,6 +119,7 @@ def tree_manifest(root: pathlib.Path) -> dict[str, Any]:
             path = directory / child.name
             relative = path.relative_to(root).as_posix()
             before = path.lstat()
+            signatures[path] = _stat_signature(before)
             common = {
                 "path": relative,
                 "uid": before.st_uid,
@@ -109,12 +135,14 @@ def tree_manifest(root: pathlib.Path) -> dict[str, Any]:
             elif stat.S_ISREG(before.st_mode):
                 row = {
                     **common, "type": "file", "mode": stat.S_IMODE(before.st_mode),
-                    "size_bytes": before.st_size, "sha256": sha256_file(path),
+                    "size_bytes": before.st_size, "sha256": _hash_open_regular(path, before),
                     "xattrs": xattr_manifest(path, is_symlink=False),
                 }
             elif stat.S_ISLNK(before.st_mode):
+                target = os.readlink(path)
+                symlink_targets[path] = target
                 row = {
-                    **common, "type": "symlink", "target": os.readlink(path),
+                    **common, "type": "symlink", "target": target,
                     "xattrs": xattr_manifest(path, is_symlink=True),
                 }
             elif stat.S_ISFIFO(before.st_mode):
@@ -132,16 +160,19 @@ def tree_manifest(root: pathlib.Path) -> dict[str, Any]:
                 raise PackageError(f"Transient socket cannot be captured in a static rootfs: {relative}")
             else:
                 raise PackageError(f"Unsupported filesystem object in rootfs: {relative}")
-            after = path.lstat()
-            if (before.st_dev, before.st_ino, before.st_mode, before.st_size, before.st_mtime_ns, before.st_ctime_ns) != (
-                after.st_dev, after.st_ino, after.st_mode, after.st_size, after.st_mtime_ns, after.st_ctime_ns
-            ):
+            if _stat_signature(path.lstat()) != signatures[path]:
                 raise PackageError(f"Rootfs entry changed during scan: {relative}")
             rows.append(row)
 
-        after_directory = directory.lstat()
-        if (before.st_dev, before.st_ino, before.st_mode) == (after_directory.st_dev, after_directory.st_ino, after_directory.st_mode):
-            pass
+    for path, expected in signatures.items():
+        try:
+            observed = _stat_signature(path.lstat())
+        except OSError as exc:
+            raise PackageError(f"Rootfs entry disappeared during scan: {path}") from exc
+        if observed != expected:
+            raise PackageError(f"Rootfs changed during scan: {path}")
+        if path in symlink_targets and os.readlink(path) != symlink_targets[path]:
+            raise PackageError(f"Rootfs symlink changed during scan: {path}")
 
     rows.sort(key=lambda item: item["path"])
     payload = canonical_json(rows)
@@ -153,7 +184,6 @@ def tree_manifest(root: pathlib.Path) -> dict[str, Any]:
         "entries_sha256": hashlib.sha256(payload).hexdigest(),
         "entries": rows,
     }
-
 
 def validate_target_receipt(path: pathlib.Path) -> dict[str, Any]:
     reject_symlink_components(path)
@@ -218,8 +248,10 @@ def package_rootfs(
     rootfs: pathlib.Path,
     output: pathlib.Path,
     target_receipt_path: pathlib.Path,
+    *,
+    require_root: bool = True,
 ) -> dict[str, Any]:
-    if os.geteuid() != 0:
+    if require_root and os.geteuid() != 0:
         raise PackageError("SquashFS packaging must run as root to preserve uid/gid, device nodes and xattrs")
     rootfs = rootfs.resolve(strict=True)
     output = pathlib.Path(os.path.abspath(output))
@@ -342,8 +374,8 @@ def self_test() -> dict[str, Any]:
         }
         receipt_file = base / "target-receipt.json"
         receipt_file.write_text(json.dumps(receipt), encoding="utf-8")
-        first = package_rootfs(root, base / "first" / "LUNITA.squashfs", receipt_file)
-        second = package_rootfs(root, base / "second" / "LUNITA.squashfs", receipt_file)
+        first = package_rootfs(root, base / "first" / "LUNITA.squashfs", receipt_file, require_root=False)
+        second = package_rootfs(root, base / "second" / "LUNITA.squashfs", receipt_file, require_root=False)
         checks["source_tree_roundtrip_verified"] = first["roundtrip_manifest_match"] is True
         checks["repeat_build_is_byte_identical"] = first["image_sha256"] == second["image_sha256"]
         checks["target_receipt_hash_bound"] = first["image_sha256"] and first["receipt_sha256"]
