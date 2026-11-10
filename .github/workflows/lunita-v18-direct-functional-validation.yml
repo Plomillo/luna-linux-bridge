@@ -6,25 +6,26 @@ on:
       - fix/lunita-v18-rootfs-bound-checkpoint-20261109
     paths:
       - "recovery/lunita-custoszv9/**"
+      - "scripts/lunita/**"
       - ".github/workflows/lunita-v18-direct-functional-validation.yml"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - "recovery/lunita-custoszv9/**"
+      - "scripts/lunita/**"
       - ".github/workflows/lunita-v18-direct-functional-validation.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: lunita-v1-8-direct-functional-validation-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
-
 jobs:
   contract-tests:
     if: ${{ (github.event_name == 'push' && github.ref_name == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109') || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109' && github.event.pull_request.base.ref == 'fix/lunita-v18-certification-path-20261109') }}
     name: "Lunita v1.8 contract and overlay acceptance"
+    concurrency:
+      group: lunita-v1-8-contract-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -35,6 +36,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install SquashFS tooling for reproducible packaging acceptance
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends squashfs-tools
+          command -v mksquashfs
+          command -v unsquashfs
+      - name: Compile and execute reproducible SquashFS packaging and certification acceptance
+        shell: bash
+        run: |
+          python -m py_compile \
+            scripts/lunita/package_candidate_squashfs_v1.py \
+            scripts/lunita/certify_candidate_squashfs_v1.py
+          python scripts/lunita/package_candidate_squashfs_v1.py --self-test
+          python scripts/lunita/certify_candidate_squashfs_v1.py --self-test
+          python -m unittest discover -s scripts/lunita -p "test_certify_candidate_squashfs_v1.py" -v
       - name: Install pinned CPU-only PyTorch for SeamlessM4T tensor contracts
         shell: bash
         run: |
@@ -262,11 +279,12 @@ jobs:
   target-runtime:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/fix/lunita-v18-rootfs-bound-checkpoint-20261109' }}
     name: "Lunita v1.8 real target and independent acceptance"
+    concurrency:
+      group: lunita-v1-8-target-runtime-${{ github.ref }}-${{ github.sha }}
+      cancel-in-progress: true
     needs: contract-tests
-    runs-on: [self-hosted, linux, x64]
-    timeout-minutes: 200
-    env:
-      LUNITA_ROOTFS: ${{ vars.LUNITA_ROOTFS }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
         with:
@@ -279,12 +297,32 @@ jobs:
         with:
           name: lunita-engine-overlay-v1-py312
           path: ${{ runner.temp }}/lunita-engine-overlay
+      - name: Rebuild the Ubuntu 24.04 Lunita candidate rootfs from pinned inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo env RUNNER_TEMP="$RUNNER_TEMP" bash scripts/lunita/build_rootfs_candidate_v1.sh "$RUNNER_TEMP/lunita-rootfs"
+          ROOTFS="$RUNNER_TEMP/lunita-rootfs"
+          test -f "$ROOTFS/var/lib/dpkg/status"
+          test -f "$ROOTFS/opt/lunita/metadata/ROOTFS_BUILD_RECEIPT.json"
+          printf 'LUNITA_ROOTFS=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'LUNITA_ROOTFS_REAL=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'LUNITA_ROOT=%s\n' "$ROOTFS/opt/lunita" >> "$GITHUB_ENV"
+          printf 'LUNITA_XDG_STATE_HOME=%s/lunita-xdg\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'LUNITA_CHECKPOINT_DIR=\n' >> "$GITHUB_ENV"
+          printf 'FLATPAK_SYSTEM_DIR=%s/var/lib/flatpak\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'R_HOME=%s/opt/lunita/instruments/lapiz/R-4.6.1/lib/R\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'LUNITA_TARGET_ROOTFS=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
       - name: Verify the actual candidate rootfs and target prerequisites
         shell: bash
         run: |
           set -euo pipefail
-          : "${LUNITA_ROOTFS:?Configure the repository Actions variable LUNITA_ROOTFS with the absolute path to G06_REBUILD_CANDIDATE_R1/rootfs on this self-hosted runner}"
+          : "${LUNITA_ROOTFS:?The repository rootfs builder did not emit LUNITA_ROOTFS}"
           ROOTFS="$(realpath -e "$LUNITA_ROOTFS")"
+          test -f "$ROOTFS/opt/lunita/metadata/ROOTFS_BUILD_RECEIPT.json"
+          test -x "$ROOTFS/opt/lunita/instruments/brujula/node/bin/node"
+          test -x "$ROOTFS/opt/lunita/instruments/brujula/chrome/chrome"
+          test -x "$ROOTFS/opt/lunita/instruments/lapiz/R-4.6.1/bin/Rscript"
           test -d "$ROOTFS"
           test -f "$ROOTFS/var/lib/dpkg/status"
           test -f "$ROOTFS/opt/lunita/agent/lunita.py"
@@ -323,17 +361,29 @@ jobs:
             CHECKPOINT_DIR="$RUNNER_TEMP/lunita-checkpoint-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
             PYTHON312="$(command -v python3.12)"
             run_root "$PYTHON312" recovery/lunita-custoszv9/runtime_engines_v1/checkpoint_v1.py \
-              --rootfs "$LUNITA_ROOTFS_REAL" \
+              --rootfs "$LUNITA_ROOT" \
               --checkpoint-dir "$CHECKPOINT_DIR" \
               --candidate-id G06_REBUILD_CANDIDATE_R1
             run_root "$PYTHON312" recovery/lunita-custoszv9/runtime_engines_v1/apply_engine_overlay_v1.py \
-              --rootfs "$LUNITA_ROOTFS_REAL" \
+              --rootfs "$LUNITA_ROOT" \
               --source-dir "$SOURCE_DIR" \
               --checkpoint-receipt "$CHECKPOINT_DIR/CHECKPOINT_RECEIPT.json" \
               --candidate-id G06_REBUILD_CANDIDATE_R1 \
               --apply
             printf 'LUNITA_CHECKPOINT_DIR=%s\n' "$CHECKPOINT_DIR" >> "$GITHUB_ENV"
           fi
+      - name: Mount target virtual filesystems for in-rootfs application tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo mount --rbind /dev "$LUNITA_ROOTFS_REAL/dev"
+          sudo mount --make-rslave "$LUNITA_ROOTFS_REAL/dev"
+          sudo mount -t proc proc "$LUNITA_ROOTFS_REAL/proc"
+          sudo mount --rbind /sys "$LUNITA_ROOTFS_REAL/sys"
+          sudo mount --make-rslave "$LUNITA_ROOTFS_REAL/sys"
+          sudo mount --rbind /run "$LUNITA_ROOTFS_REAL/run"
+          sudo mount --make-rslave "$LUNITA_ROOTFS_REAL/run"
+          sudo install -d -o 1000 -g 1000 -m 0700 "$LUNITA_ROOTFS_REAL/run/lunita-runtime-1000"
       - name: Execute actual E01 inference and E02-E15 plus legacy application smoke tests
         shell: bash
         run: |
@@ -348,7 +398,54 @@ jobs:
           export HF_HUB_OFFLINE=1
           export TRANSFORMERS_OFFLINE=1
           export HF_HUB_DISABLE_TELEMETRY=1
+          export R_HOME="$LUNITA_ROOTFS_REAL/opt/lunita/instruments/lapiz/R-4.6.1/lib/R"
           python3.12 "$OVERLAY/target_runtime_acceptance_v1.py"
+      - name: Unmount target virtual filesystems before image materialization
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          if [ -n "${LUNITA_ROOTFS_REAL:-}" ] && [ -d "$LUNITA_ROOTFS_REAL" ]; then
+            sudo umount -R "$LUNITA_ROOTFS_REAL/run" 2>/dev/null || true
+            sudo umount -R "$LUNITA_ROOTFS_REAL/sys" 2>/dev/null || true
+            sudo umount -R "$LUNITA_ROOTFS_REAL/proc" 2>/dev/null || true
+            sudo umount -R "$LUNITA_ROOTFS_REAL/dev" 2>/dev/null || true
+          fi
+          exit 0
+      - name: Build and round-trip verify LUNITA.squashfs
+        id: package-squashfs
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n apt-get update
+          sudo -n apt-get install -y --no-install-recommends squashfs-tools
+          RECEIPT_DIR="$LUNITA_XDG_STATE_HOME/lunita/runtime_validation"
+          TARGET_RECEIPT_COUNT="$(find "$RECEIPT_DIR" -maxdepth 1 -type f -name 'LUNITA_TARGET_RUNTIME_ACCEPTANCE_*.json' -printf '.' | wc -c)"
+          if [ "$TARGET_RECEIPT_COUNT" -ne 1 ]; then
+            echo "Expected exactly one direct target-runtime receipt; found $TARGET_RECEIPT_COUNT"
+            exit 2
+          fi
+          TARGET_RECEIPT="$(find "$RECEIPT_DIR" -maxdepth 1 -type f -name 'LUNITA_TARGET_RUNTIME_ACCEPTANCE_*.json' -print -quit)"
+          IMAGE_DIR="$RUNNER_TEMP/lunita-squashfs"
+          mkdir -p "$IMAGE_DIR"
+          sudo -n python3.12 scripts/lunita/package_candidate_squashfs_v1.py \
+            --rootfs "$LUNITA_ROOTFS_REAL" \
+            --target-receipt "$TARGET_RECEIPT" \
+            --output "$IMAGE_DIR/LUNITA.squashfs"
+          sudo -n chmod 0644 "$IMAGE_DIR/LUNITA.squashfs" "$IMAGE_DIR/LUNITA.squashfs.sha256" "$IMAGE_DIR/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json"
+          sudo -n chmod 0755 "$IMAGE_DIR"
+          printf 'image=%s\n' "$IMAGE_DIR/LUNITA.squashfs" >> "$GITHUB_OUTPUT"
+      - name: Upload verified LUNITA.squashfs candidate artifact
+        if: always() && steps.package-squashfs.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunita-v1-8-squashfs-candidate
+          path: |
+            ${{ runner.temp }}/lunita-squashfs/LUNITA.squashfs
+            ${{ runner.temp }}/lunita-squashfs/LUNITA.squashfs.sha256
+            ${{ runner.temp }}/lunita-squashfs/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Run the existing v1.8 independent rootfs and JASP certification lane
         shell: bash
         run: |
@@ -362,6 +459,7 @@ jobs:
           export LUNITA_OUTPUT_DIR="$CERT_STATE/worker_outputs"
           export LUNITA_EVIDENCE_DIR="$CERT_STATE/lunita_certification_evidence"
           export LUNITA_CANDIDATE_DIR="$CERT_CANDIDATE"
+          export LUNITA_CANDIDATE_MANIFEST="$GITHUB_WORKSPACE/LUNITA_V1_8_CANDIDATE_FREEZE.json"
           export LUNITA_ROOTFS="$LUNITA_ROOTFS_REAL"
           export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$LUNITA_XDG_STATE_HOME/lunita/runtime_validation"
           export FLATPAK_SYSTEM_DIR="$LUNITA_ROOTFS_REAL/var/lib/flatpak"
@@ -406,6 +504,35 @@ jobs:
               time.sleep(30)
           raise SystemExit("BLOCKED: independent evidence did not complete within the bounded run window.")
           PY
+      - name: Certify the exact SquashFS image from S32 and independent evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          CERT_STATE="$RUNNER_TEMP/lunita-stability-state"
+          CERT_CANDIDATE="$RUNNER_TEMP/lunita-stability-candidate"
+          IMAGE_DIR="$RUNNER_TEMP/lunita-squashfs"
+          python3 scripts/lunita/certify_candidate_squashfs_v1.py \
+            --image "$IMAGE_DIR/LUNITA.squashfs" \
+            --checksum "$IMAGE_DIR/LUNITA.squashfs.sha256" \
+            --package-receipt "$IMAGE_DIR/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json" \
+            --target-receipt-dir "$LUNITA_XDG_STATE_HOME/lunita/runtime_validation" \
+            --independent-report "$CERT_CANDIDATE/BETA_INDEPENDENT_VALIDATION.json" \
+            --candidate-manifest "$GITHUB_WORKSPACE/LUNITA_V1_8_CANDIDATE_FREEZE.json" \
+            --s32-receipt-dir "$CERT_STATE/worker_outputs" \
+            --stable-release-dir "$CERT_STATE/releases/LUNITA_STABLE_1_8" \
+            --output "$IMAGE_DIR/LUNITA_FUNCTIONAL_CERTIFICATE.json"
+      - name: Upload certified Lunita v1.8 SquashFS bundle
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunita-v1-8-squashfs-certified
+          path: |
+            ${{ runner.temp }}/lunita-squashfs/LUNITA.squashfs
+            ${{ runner.temp }}/lunita-squashfs/LUNITA.squashfs.sha256
+            ${{ runner.temp }}/lunita-squashfs/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json
+            ${{ runner.temp }}/lunita-squashfs/LUNITA_FUNCTIONAL_CERTIFICATE.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Collect immutable target and independent evidence
         if: always()
         shell: bash
@@ -432,6 +559,18 @@ jobs:
             fi
           done
           run_root chmod -R a+rX "$OUT"
+      - name: Final cleanup of target rootfs mounts
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          if [ -n "${LUNITA_ROOTFS_REAL:-}" ] && [ -d "$LUNITA_ROOTFS_REAL" ]; then
+            sudo umount -R "$LUNITA_ROOTFS_REAL/run" 2>/dev/null || true
+            sudo umount -R "$LUNITA_ROOTFS_REAL/sys" 2>/dev/null || true
+            sudo umount -R "$LUNITA_ROOTFS_REAL/proc" 2>/dev/null || true
+            sudo umount -R "$LUNITA_ROOTFS_REAL/dev" 2>/dev/null || true
+          fi
+          exit 0
       - name: Upload real target and independent evidence
         if: always()
         uses: actions/upload-artifact@v4

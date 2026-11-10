@@ -12,6 +12,7 @@ import json
 import os
 import pathlib
 import subprocess
+import stat
 import sys
 import time
 import tempfile
@@ -27,11 +28,21 @@ OVERLAY_RECEIPT = OVERLAY / "OVERLAY_APPLY_RECEIPT.json"
 LEGACY_LAUNCHER = ROOT / "agent/lunita.py"
 EXPECTED_LEGACY_SHA256 = "46efd711729c344e7efba9ce2503127c48f0b88207cc5a17311ff1d555b075b2"
 LEGACY_SMOKE_COMMANDS = (
-    "brujula-self-test",
-    "r-self-test",
-    "jamovi-self-test",
-    "jasp-self-test",
-    "fault",
+    ("brujula-self-test",),
+    ("r-self-test",),
+    ("jamovi-self-test",),
+    ("jasp-self-test",),
+    ("fault", "model-missing"),
+    ("fault", "model-corrupted"),
+    ("fault", "dependency-missing"),
+    ("fault", "permission-denied"),
+    ("fault", "low-memory"),
+    ("fault", "process-crash"),
+    ("fault", "browser-crash"),
+    ("fault", "tool-failure"),
+    ("fault", "invalid-input"),
+    ("fault", "interrupted-execution"),
+    ("fault", "restart"),
 )
 TEST_MODULES = (
     "engine_acceptance_v1",
@@ -43,6 +54,158 @@ TEST_MODULES = (
 
 class TargetGateError(RuntimeError):
     pass
+
+
+def inspect_rootfs_directory_as_root(path: pathlib.Path, label: str) -> dict[str, Any]:
+    """Read target-rootfs directory metadata without traversing it as the host runner.
+
+    The target directories are intentionally 0700 and owned by UID/GID 1000.
+    The unprivileged GitHub runner cannot stat entries below those directories.
+    This performs only a privileged lstat; actual application execution remains
+    inside chroot as UID/GID 1000.
+    """
+    inspector = (
+        "import json, os, stat, sys; "
+        "s=os.lstat(sys.argv[1]); "
+        "print(json.dumps({"
+        "'is_symlink': stat.S_ISLNK(s.st_mode), "
+        "'is_directory': stat.S_ISDIR(s.st_mode), "
+        "'uid': s.st_uid, 'gid': s.st_gid, "
+        "'mode': stat.S_IMODE(s.st_mode)"
+        "}))"
+    )
+    try:
+        result = subprocess.run(
+            ["sudo", "-n", "/usr/bin/python3", "-c", inspector, str(path)],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise TargetGateError(
+            f"Cannot inspect {label} with privileged read-only lstat: {path}: {exc}"
+        ) from exc
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "no diagnostic output").strip()[-1000:]
+        raise TargetGateError(
+            f"Privileged read-only lstat failed for {label}: {path}: {detail}"
+        )
+    try:
+        metadata = json.loads(result.stdout)
+    except (TypeError, ValueError) as exc:
+        raise TargetGateError(
+            f"Privileged lstat returned invalid metadata for {label}: {path}"
+        ) from exc
+    if not isinstance(metadata, dict):
+        raise TargetGateError(f"Privileged lstat returned a non-object for {label}: {path}")
+    if metadata.get("is_symlink") is not False or metadata.get("is_directory") is not True:
+        raise TargetGateError(f"{label} is missing, not a directory, or symlinked: {path}")
+    if (metadata.get("uid") != 1000 or metadata.get("gid") != 1000
+            or metadata.get("mode") != 0o700):
+        raise TargetGateError(
+            f"{label} must be owned by uid/gid 1000 with mode 0700: "
+            f"uid={metadata.get('uid')} gid={metadata.get('gid')} "
+            f"mode={metadata.get('mode')!r}"
+        )
+    return metadata
+
+
+def inspect_rootfs_regular_file_as_root(path: pathlib.Path, label: str) -> dict[str, Any]:
+    """Read and hash a private target-rootfs file without traversing it as the host runner.
+
+    The audit log is intentionally 0600 and owned by UID/GID 1000 beneath a 0700
+    directory. The host runner cannot read it. This performs a privileged,
+    read-only O_NOFOLLOW open, verifies inode stability, and hashes through the
+    descriptor; it never changes ownership, permissions, or contents.
+    """
+    inspector = """
+import hashlib
+import json
+import os
+import stat
+import sys
+
+path = sys.argv[1]
+before = os.lstat(path)
+if stat.S_ISLNK(before.st_mode) or not stat.S_ISREG(before.st_mode):
+    raise SystemExit("target file is not a regular non-symlink file")
+flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+fd = os.open(path, flags)
+try:
+    opened = os.fstat(fd)
+    if not stat.S_ISREG(opened.st_mode):
+        raise SystemExit("opened target file is not regular")
+    if (opened.st_dev, opened.st_ino) != (before.st_dev, before.st_ino):
+        raise SystemExit("target file changed before read-only inspection")
+    digest = hashlib.sha256()
+    size = 0
+    while True:
+        chunk = os.read(fd, 1024 * 1024)
+        if not chunk:
+            break
+        digest.update(chunk)
+        size += len(chunk)
+    after = os.fstat(fd)
+    stable_before = (opened.st_dev, opened.st_ino, opened.st_size,
+                     opened.st_mtime_ns, opened.st_ctime_ns)
+    stable_after = (after.st_dev, after.st_ino, after.st_size,
+                    after.st_mtime_ns, after.st_ctime_ns)
+    if stable_before != stable_after or size != after.st_size:
+        raise SystemExit("target file changed while hashing")
+    print(json.dumps({
+        "is_symlink": False,
+        "is_regular_file": stat.S_ISREG(after.st_mode),
+        "uid": after.st_uid,
+        "gid": after.st_gid,
+        "mode": stat.S_IMODE(after.st_mode),
+        "size": size,
+        "sha256": digest.hexdigest(),
+    }))
+finally:
+    os.close(fd)
+"""
+    try:
+        result = subprocess.run(
+            ["sudo", "-n", "/usr/bin/python3", "-c", inspector, str(path)],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise TargetGateError(
+            f"Cannot inspect {label} with privileged read-only open: {path}: {exc}"
+        ) from exc
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "no diagnostic output").strip()[-1000:]
+        raise TargetGateError(
+            f"Privileged read-only file inspection failed for {label}: {path}: {detail}"
+        )
+    try:
+        metadata = json.loads(result.stdout)
+    except (TypeError, ValueError) as exc:
+        raise TargetGateError(
+            f"Privileged file inspection returned invalid metadata for {label}: {path}"
+        ) from exc
+    if not isinstance(metadata, dict):
+        raise TargetGateError(f"Privileged file inspection returned a non-object for {label}: {path}")
+    if metadata.get("is_symlink") is not False or metadata.get("is_regular_file") is not True:
+        raise TargetGateError(f"{label} is missing, not a regular file, or symlinked: {path}")
+    if (metadata.get("uid") != 1000 or metadata.get("gid") != 1000
+            or metadata.get("mode") != 0o600):
+        raise TargetGateError(
+            f"{label} must be owned by uid/gid 1000 with mode 0600: "
+            f"uid={metadata.get('uid')} gid={metadata.get('gid')} "
+            f"mode={metadata.get('mode')!r}"
+        )
+    if not isinstance(metadata.get("size"), int) or metadata["size"] <= 0:
+        raise TargetGateError(f"{label} must contain a non-empty audit record: {path}")
+    digest = metadata.get("sha256")
+    if (not isinstance(digest, str) or len(digest) != 64
+            or any(character not in "0123456789abcdef" for character in digest)):
+        raise TargetGateError(f"{label} returned an invalid SHA-256 digest: {path}")
+    return metadata
 
 
 def sha256_file(path: pathlib.Path) -> str:
@@ -73,6 +236,193 @@ def hash_directory(path: pathlib.Path) -> dict[str, Any]:
         "file_count": len(entries),
         "bytes": sum(entry["bytes"] for entry in entries),
         "sha256": hashlib.sha256(canonical).hexdigest(),
+    }
+
+
+def verify_system_python_alias(rootfs: pathlib.Path) -> dict[str, str]:
+    """Require Ubuntu's system python3 entrypoint to resolve to the pinned 3.12 runtime."""
+    python3 = rootfs / "usr/bin/python3"
+    python312 = rootfs / "usr/bin/python3.12"
+    if not python3.is_symlink():
+        raise TargetGateError("Ubuntu system /usr/bin/python3 compatibility symlink is missing")
+    if not python312.is_file() or not os.access(python312, os.X_OK):
+        raise TargetGateError("Ubuntu target /usr/bin/python3.12 is missing or not executable")
+    try:
+        observed = python3.resolve(strict=True)
+        expected = python312.resolve(strict=True)
+    except OSError as exc:
+        raise TargetGateError(f"Ubuntu system python3 symlink is broken: {exc}") from exc
+    if observed != expected:
+        raise TargetGateError(
+            "Ubuntu system /usr/bin/python3 must resolve to /usr/bin/python3.12; "
+            f"observed={observed} expected={expected}"
+        )
+    return {
+        "status": "PASS_SYSTEM_PYTHON_ALIAS",
+        "default_executable": "/usr/bin/python3",
+        "symlink_target": os.readlink(python3),
+        "resolved_executable": str(observed),
+    }
+
+
+def verify_rootfs_build_receipt() -> dict[str, Any]:
+    """Verify the reconstructed rootfs provenance and every declared major runtime payload."""
+    path = ROOT / "metadata/ROOTFS_BUILD_RECEIPT.json"
+    if path.is_symlink() or not path.is_file():
+        raise TargetGateError("Rootfs build receipt is missing or not a regular file")
+    receipt = json.loads(path.read_text(encoding="utf-8"))
+    if receipt.get("schema") != "LUNITA_ROOTFS_BUILD_RECEIPT/1.0":
+        raise TargetGateError("Rootfs build receipt schema mismatch")
+    if receipt.get("status") != "PASS_ROOTFS_BUILD_NOT_CERTIFIED":
+        raise TargetGateError("Rootfs builder did not report an accepted build")
+    if receipt.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1":
+        raise TargetGateError("Rootfs build candidate identity mismatch")
+    if receipt.get("source_rootfs_recovered") is not False:
+        raise TargetGateError("Rebuilt rootfs provenance is ambiguous")
+    ubuntu = receipt.get("ubuntu", {})
+    if ubuntu.get("release") != "24.04" or ubuntu.get("codename") != "noble" or ubuntu.get("architecture") != "amd64":
+        raise TargetGateError("Rootfs is not the registered Ubuntu 24.04 amd64 baseline")
+    target_rootfs = ROOT.parents[1]
+    system_python = verify_system_python_alias(target_rootfs)
+    python_receipt = receipt.get("system_python", {})
+    if (python_receipt.get("default_executable") != "/usr/bin/python3"
+            or python_receipt.get("symlink_target") != "python3.12"
+            or not str(python_receipt.get("version_output", "")).startswith("Python 3.12.")):
+        raise TargetGateError("Rootfs build receipt does not bind the Ubuntu Python 3.12 system alias")
+
+    def require_hash(relative: str, expected: str, label: str) -> pathlib.Path:
+        target = pathlib.Path(relative)
+        if target.is_absolute():
+            full = target
+        else:
+            full = ROOT / target
+        if full.is_symlink() or not full.is_file():
+            raise TargetGateError(f"Required rootfs payload is missing: {label}")
+        observed = sha256_file(full)
+        if not isinstance(expected, str) or observed != expected:
+            raise TargetGateError(f"Rootfs payload digest mismatch: {label}")
+        return full
+
+    launcher = receipt.get("legacy_launcher", {})
+    require_hash("agent/lunita.py", launcher.get("sha256"), "legacy beta-v1.7 launcher")
+    qwen = receipt.get("qwen", {})
+    if qwen.get("quantization") != "IQ3_XS" or qwen.get("revision") != "f9184d8b4c371cb52af5b8cb3d38e55e3cf0f4a0":
+        raise TargetGateError("Qwen model source identity or quantization is not pinned")
+    model = require_hash("brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf", qwen.get("sha256"), "Qwen3 IQ3_XS model")
+    if model.stat().st_size != qwen.get("bytes"):
+        raise TargetGateError("Qwen model byte count differs from the build receipt")
+
+    llama = receipt.get("llama_cpp", {})
+    if llama.get("commit") != "cd959bae99ff4bed22bef2604f45241c09bbb8c8":
+        raise TargetGateError("llama.cpp source commit is not pinned to the registered release")
+    llama_candidates = list((ROOT / "brain/runtime").rglob("llama-cli"))
+    if len(llama_candidates) != 1:
+        raise TargetGateError(f"Expected exactly one packaged llama-cli, found {len(llama_candidates)}")
+    require_hash(str(llama_candidates[0]), llama.get("llama_cli_sha256"), "llama.cpp llama-cli")
+
+    brujula = receipt.get("brujula", {})
+    if brujula.get("node") != "v22.23.2" or brujula.get("playwright") != "1.63.0" or brujula.get("playwright_core") != "1.63.0":
+        raise TargetGateError("Brújula Node/Playwright versions do not match the registered runtime")
+    browser_root = ROOT / "instruments/brujula"
+    require_hash("instruments/brujula/node/bin/node", brujula.get("node_binary_sha256"), "Node.js binary")
+    require_hash("instruments/brujula/chrome/chrome", brujula.get("chrome_binary_sha256"), "Chrome for Testing binary")
+    for package in ("playwright", "playwright-core"):
+        metadata = browser_root / "node_modules" / package / "package.json"
+        if metadata.is_symlink() or not metadata.is_file():
+            raise TargetGateError(f"Brújula package is missing: {package}")
+        if json.loads(metadata.read_text(encoding="utf-8")).get("version") != "1.63.0":
+            raise TargetGateError(f"Brújula package version mismatch: {package}")
+    target_rootfs = ROOT.parents[1]
+
+    def run_as_lunita(*argv: str, extra_env: tuple[str, ...] = ()) -> subprocess.CompletedProcess:
+        environment = (
+            "HOME=/home/lunita",
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
+            "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
+            "XDG_DATA_HOME=/tmp/lunita-xdg/data",
+            "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+            "FLATPAK_SYSTEM_DIR=/var/lib/flatpak",
+            *extra_env,
+        )
+        return subprocess.run(
+            [
+                "sudo", "-n", "chroot", "--userspec=1000:1000", str(target_rootfs),
+                "/usr/bin/env", "-C", "/tmp", *environment, *argv,
+            ],
+            capture_output=True, text=True, check=False,
+        )
+
+    guest_node = "/opt/lunita/instruments/brujula/node/bin/node"
+    guest_chrome = "/opt/lunita/instruments/brujula/chrome/chrome"
+    node_result = run_as_lunita(guest_node, "--version")
+    if node_result.returncode != 0 or node_result.stdout.strip() != "v22.23.2":
+        raise TargetGateError("Node.js target-rootfs runtime did not return the pinned version")
+    chrome_result = run_as_lunita(guest_chrome, "--version")
+    if chrome_result.returncode != 0 or "153.0.8010.12" not in chrome_result.stdout:
+        raise TargetGateError("Chrome for Testing target-rootfs executable did not return the pinned version")
+
+    lapiz = receipt.get("lapiz", {})
+    if lapiz.get("r_version") != "4.6.1":
+        raise TargetGateError("Lápiz R version is not pinned to 4.6.1")
+    rscript = require_hash("instruments/lapiz/R-4.6.1/bin/Rscript", lapiz.get("rscript_sha256"), "Rscript binary")
+    r_home = "/opt/lunita/instruments/lapiz/R-4.6.1/lib/R"
+    r = run_as_lunita(
+        "/opt/lunita/instruments/lapiz/R-4.6.1/bin/Rscript",
+        "-e", 'stopifnot(as.character(getRversion())=="4.6.1", 2+2==4)',
+        extra_env=(f"R_HOME={r_home}",),
+    )
+    if r.returncode != 0:
+        raise TargetGateError("Lápiz R 4.6.1 execution failed: " + (r.stderr or r.stdout)[-1200:])
+
+    apps = (
+        ("org.jamovi.jamovi", "sacapuntas", "2.7.27"),
+        ("org.jaspstats.JASP", "lupa", "0.98.1"),
+    )
+    observed_apps = {}
+    for app_id, key, expected_version in apps:
+        value = receipt.get(key, {})
+        if value.get("application_id") != app_id or value.get("version") != expected_version:
+            raise TargetGateError(f"Flatpak app identity/version mismatch: {app_id}")
+        if not (pathlib.Path(os.environ.get("FLATPAK_SYSTEM_DIR", "/var/lib/flatpak")) / "app" / app_id).is_dir():
+            raise TargetGateError(f"Flatpak system deployment is missing: {app_id}")
+        if value.get("version_source") != "EXACT_PINNED_FLATPAK_COMMIT_MAPPING":
+            raise TargetGateError(f"Flatpak version is not bound to its recorded commit mapping: {app_id}")
+        info = subprocess.run(
+            ["/usr/bin/flatpak", "info", "--system", "--show-commit", app_id],
+            capture_output=True, text=True, check=False,
+        )
+        if info.returncode != 0:
+            raise TargetGateError(f"Flatpak could not inspect the target system app: {app_id}")
+        if info.stdout.strip() != value.get("flatpak_commit"):
+            raise TargetGateError(f"Flatpak installed commit mismatch: {app_id}")
+        observed_apps[app_id] = {
+            "version": expected_version,
+            "version_source": value.get("version_source"),
+            "commit": info.stdout.strip(),
+        }
+
+    invariants = receipt.get("invariants", {})
+    if any(invariants.get(flag) is not False for flag in (
+        "frozen_g06_mutated", "canonical_g08_mutated", "legacy_launcher_replaced",
+        "canonical_certification_inherited",
+    )):
+        raise TargetGateError("Rootfs build receipt does not preserve frozen/canonical identity")
+
+    return {
+        "status": "PASS_ROOTFS_BUILD_IDENTITY",
+        "receipt_sha256": sha256_file(path),
+        "source_rootfs_recovered": False,
+        "system_python": system_python,
+        "ubuntu": ubuntu,
+        "qwen_model_sha256": sha256_file(model),
+        "llama_cli_sha256": sha256_file(llama_candidates[0]),
+        "node_version": brujula.get("node"),
+        "playwright_version": brujula.get("playwright"),
+        "chrome_version": brujula.get("chrome_for_testing"),
+        "r_version": lapiz.get("r_version"),
+        "flatpak_apps": observed_apps,
+        "certification": "NOT_GRANTED",
     }
 
 
@@ -167,6 +517,7 @@ def verify_overlay() -> dict[str, Any]:
         "__init__.py", "engine_runtime_v1.py", "engine_acceptance_v1.py",
         "engine_gateway_v1.py", "gateway_acceptance_v1.py", "lunita_beta_v1_8.py",
         "launcher_acceptance_v1.py", "target_runtime_acceptance_v1.py",
+        "apply_engine_overlay_v1.py", "checkpoint_v1.py", "overlay_acceptance_v1.py",
         "engine_assignments_v1.json", "requirements-engine-stack.txt",
         "DEPENDENCY_EVIDENCE_v1.json", "ENGINE_RUNTIME_V1_README.md",
     }
@@ -203,7 +554,7 @@ def verify_overlay() -> dict[str, Any]:
 
 
 REQUIRED_ENGINE_TEST_MATCHERS = {
-    "E02": "test_e02_spanish_nlp_executes_pipeline",
+    "E02": "test_e02_spanish_nlp_executes_tokenization_morphology_and_pos",
     "E03": "test_e03_rag_returns_source_bound_context",
     "E04": "test_e04_embedding_and_e05_vector_search_execute_real_models",
     "E05": "test_e04_embedding_and_e05_vector_search_execute_real_models",
@@ -245,6 +596,7 @@ def run_unittests() -> dict[str, Any]:
         "test_complete_canonical_route_matrix_for_all_fourteen_commands" in test_id
         for test_id in test_ids
     )
+    missing_engine_ids = sorted(set(REQUIRED_ENGINE_TEST_MATCHERS) - set(engine_ids_covered))
     # Never run acceptance tests against the user's persistent vector database.
     # Each target-validation run receives a fresh, disposable Qdrant directory.
     previous_vector_path = os.environ.get("LUNITA_VECTOR_DB_PATH")
@@ -258,13 +610,19 @@ def run_unittests() -> dict[str, Any]:
             else:
                 os.environ["LUNITA_VECTOR_DB_PATH"] = previous_vector_path
     return {
-        "status": "PASS" if result.wasSuccessful() and not result.skipped else "FAIL",
+        "status": (
+            "PASS"
+            if result.wasSuccessful() and not result.skipped
+            and not missing_engine_ids and command_route_matrix_test
+            else "FAIL"
+        ),
         "tests_run": result.testsRun,
         "failures": len(result.failures),
         "errors": len(result.errors),
         "skipped": len(result.skipped),
         "engine_ids_covered": engine_ids_covered,
         "required_engine_ids": sorted(REQUIRED_ENGINE_TEST_MATCHERS),
+        "missing_engine_ids": missing_engine_ids,
         "command_route_matrix_test_present": command_route_matrix_test,
         "failure_test_ids": [test.id() for test, _ in result.failures],
         "error_test_ids": [test.id() for test, _ in result.errors],
@@ -274,9 +632,15 @@ def run_unittests() -> dict[str, Any]:
 
 
 def run_qwen_via_v18() -> dict[str, Any]:
+    """Execute E01 through the installed v1.8 gateway inside the target rootfs."""
     model = ROOT / "brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf"
     if not model.is_file():
         raise TargetGateError(f"Required Qwen model is missing: {model}")
+    target_rootfs = ROOT.parents[1]
+    xdg_root = target_rootfs / "tmp/lunita-xdg"
+    audit_dir = xdg_root / "audit"
+    for directory, label in ((xdg_root, "XDG runtime root"), (audit_dir, "append-only audit directory")):
+        inspect_rootfs_directory_as_root(directory, label)
     request = {
         "command": "/play PT",
         "agent": "Luna",
@@ -287,33 +651,49 @@ def run_qwen_via_v18() -> dict[str, Any]:
             "timeout_seconds": 120,
         },
     }
-    temporary = STATE / "requests"
-    temporary.mkdir(parents=True, exist_ok=True)
-    request_path = temporary / f"e01-qwen-{time.time_ns()}.json"
-    request_path.write_text(json.dumps(request, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
-    environment = os.environ.copy()
-    environment["PYTHONPATH"] = os.pathsep.join([
-        str(OVERLAY / "vendor/python3.12/site-packages"),
-        str(OVERLAY),
-        environment.get("PYTHONPATH", ""),
-    ]).rstrip(os.pathsep)
-    environment["LUNITA_FASTEMBED_CACHE"] = str(OVERLAY / "model-cache/fastembed")
-    environment["LUNITA_VECTOR_DB_PATH"] = str(STATE / "vectors")
-    environment["LUNITA_ENGINE_AUDIT_LOG"] = str(STATE / "audit/engine-execution.jsonl")
-    environment["HF_HUB_OFFLINE"] = "1"
-    environment["TRANSFORMERS_OFFLINE"] = "1"
-    environment["HF_HUB_DISABLE_TELEMETRY"] = "1"
+    request_path = target_rootfs / "tmp" / f"lunita-e01-qwen-{time.time_ns()}.json"
+    request_path.write_text(
+        json.dumps(request, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     try:
         proc = subprocess.run(
-            [sys.executable, str(OVERLAY / "lunita_beta_v1_8.py"),
-             "engine-run", "--request", str(request_path)],
-            env=environment, capture_output=True, text=True, timeout=150, check=False,
+            [
+                "sudo", "-n", "chroot", "--userspec=1000:1000", str(target_rootfs),
+                "/usr/bin/env", "-C", "/tmp",
+                "HOME=/home/lunita",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
+                "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
+                "XDG_DATA_HOME=/tmp/lunita-xdg/data",
+                "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+                "XDG_STATE_HOME=/tmp/lunita-xdg/state",
+                "LUNITA_ROOT=/opt/lunita",
+                "LUNITA_FASTEMBED_CACHE=/opt/lunita/engines/runtime_engines_v1/model-cache/fastembed",
+                "LUNITA_VECTOR_DB_PATH=/tmp/lunita-xdg/vectors",
+                "LUNITA_ENGINE_AUDIT_LOG=/tmp/lunita-xdg/audit/engine-execution.jsonl",
+                "PYTHONPATH=/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages:/opt/lunita/engines/runtime_engines_v1",
+                "HF_HUB_OFFLINE=1",
+                "TRANSFORMERS_OFFLINE=1",
+                "HF_HUB_DISABLE_TELEMETRY=1",
+                "/usr/bin/python3.12",
+                "/opt/lunita/engines/runtime_engines_v1/lunita_beta_v1_8.py",
+                "engine-run", "--request", "/" + request_path.relative_to(target_rootfs).as_posix(),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
         )
     finally:
         request_path.unlink(missing_ok=True)
+
     if proc.returncode != 0:
-        raise TargetGateError("E01 Qwen inference failed: " + (proc.stderr or proc.stdout)[-2000:])
-    result = json.loads(proc.stdout)
+        raise TargetGateError("E01 Qwen inference failed inside target rootfs: " + (proc.stderr or proc.stdout)[-2000:])
+    try:
+        result = json.loads(proc.stdout)
+    except ValueError as exc:
+        raise TargetGateError("E01 target-rootfs gateway did not return valid JSON") from exc
     if result.get("status") != "PASS_ENGINE_OPERATION" or result.get("engine_id") != "E01":
         raise TargetGateError("E01 gateway did not return PASS_ENGINE_OPERATION")
     if not result.get("audit_event_hash"):
@@ -322,18 +702,77 @@ def run_qwen_via_v18() -> dict[str, Any]:
     output = payload.get("output", "")
     if payload.get("returncode") != 0 or not output.strip():
         raise TargetGateError("Qwen returned no generated output")
-    audit = pathlib.Path(environment["LUNITA_ENGINE_AUDIT_LOG"])
-    if not audit.is_file():
-        raise TargetGateError("Append-only engine audit log was not created")
+    audit = target_rootfs / "tmp/lunita-xdg/audit/engine-execution.jsonl"
+    audit_metadata = inspect_rootfs_regular_file_as_root(
+        audit, "append-only target-rootfs engine audit log"
+    )
+    llama_candidates = list((ROOT / "brain/runtime").rglob("llama-cli"))
+    if len(llama_candidates) != 1:
+        raise TargetGateError(f"Expected exactly one target-rootfs llama-cli, found {len(llama_candidates)}")
     return {
         "status": "PASS_E01_QWEN_INFERENCE",
+        "execution_environment": "CHROOT_UBUNTU_24_04_UID_1000",
         "model": model.name,
         "model_sha256": sha256_file(model),
-        "llama_cli_sha256": sha256_file(pathlib.Path(payload["runtime"])),
+        "llama_cli_sha256": sha256_file(llama_candidates[0]),
         "prompt_sha256": payload["prompt_sha256"],
         "output_sha256": hashlib.sha256(output.encode("utf-8")).hexdigest(),
         "audit_event_hash": result["audit_event_hash"],
-        "audit_log_sha256": sha256_file(audit),
+        "audit_log_sha256": audit_metadata["sha256"],
+    }
+
+
+def diagnose_flatpak_smoke(app_id: str) -> dict[str, Any]:
+    """Capture the sandbox failure with inherited and clean guest environments."""
+    if app_id not in {"org.jamovi.jamovi", "org.jaspstats.JASP"}:
+        raise TargetGateError(f"Unsupported Flatpak diagnostic application: {app_id}")
+    target_rootfs = ROOT.parents[1]
+    guest_environment = (
+        "HOME=/home/lunita",
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
+        "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
+        "XDG_DATA_HOME=/tmp/lunita-xdg/data",
+        "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+        "XDG_STATE_HOME=/tmp/lunita-xdg/state",
+        "FLATPAK_SYSTEM_DIR=/var/lib/flatpak",
+        "TMPDIR=/tmp",
+        "LANG=C.UTF-8",
+        "LC_ALL=C.UTF-8",
+    )
+    results = {}
+    for clean_environment in (False, True):
+        command = [
+            "sudo", "-n", "chroot", "--userspec=1000:1000", str(target_rootfs),
+            "/usr/bin/env",
+        ]
+        if clean_environment:
+            command.append("-i")
+        command.extend([
+            "-C", "/tmp", *guest_environment,
+            "/usr/bin/flatpak", "--system", "run", "--command=sh",
+            app_id, "-c", "test -d /app",
+        ])
+        try:
+            result = subprocess.run(
+                command, capture_output=True, text=True, timeout=90, check=False
+            )
+            results["clean" if clean_environment else "inherited"] = {
+                "returncode": result.returncode,
+                "stdout": (result.stdout or "")[-1200:],
+                "stderr": (result.stderr or "")[-1600:],
+            }
+        except (OSError, subprocess.SubprocessError) as exc:
+            results["clean" if clean_environment else "inherited"] = {
+                "returncode": None, "error_type": type(exc).__name__,
+                "error": str(exc)[:1200],
+            }
+    return {
+        "application_id": app_id,
+        "execution_user": "1000:1000",
+        "diagnostic_only": True,
+        "does_not_change_flatpak_commit_or_permissions": True,
+        "runs": results,
     }
 
 
@@ -342,11 +781,22 @@ def run_legacy_smokes() -> dict[str, Any]:
     if launcher.sha256_file(LEGACY_LAUNCHER) != EXPECTED_LEGACY_SHA256:
         raise TargetGateError("Legacy launcher hash check failed before application smoke tests")
     results = {}
-    for command in LEGACY_SMOKE_COMMANDS:
-        rc = launcher.run_legacy([command])
+    for arguments in LEGACY_SMOKE_COMMANDS:
+        command = " ".join(arguments)
+        rc = launcher.run_legacy(list(arguments))
         results[command] = {"returncode": rc, "status": "PASS" if rc == 0 else "FAIL"}
         if rc != 0:
-            raise TargetGateError(f"Legacy application smoke test failed: {command} rc={rc}")
+            details = {}
+            if command in {"jamovi-self-test", "jasp-self-test"}:
+                details = diagnose_flatpak_smoke({
+                    "jamovi-self-test": "org.jamovi.jamovi",
+                    "jasp-self-test": "org.jaspstats.JASP",
+                }[command])
+            diagnostic_text = json.dumps(details, ensure_ascii=False, sort_keys=True)
+            raise TargetGateError(
+                f"Legacy application/fault smoke test failed: {command} rc={rc}; "
+                f"flatpak_diagnostic={diagnostic_text[-2400:]}"
+            )
     return {"status": "PASS_LEGACY_APPLICATION_SMOKES", "commands": results}
 
 
@@ -381,6 +831,7 @@ def main() -> int:
         "canonical_g08_binding_mutation": False,
     }
     try:
+        report["rootfs_build"] = verify_rootfs_build_receipt()
         overlay = verify_overlay()
         import engine_runtime_v1 as engine
         registry = engine.validate_registry()

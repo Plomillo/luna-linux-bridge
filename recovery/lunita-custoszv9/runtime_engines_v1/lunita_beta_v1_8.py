@@ -81,9 +81,37 @@ def run_legacy(arguments: Sequence[str]) -> int:
         environment["PYTHONPATH"] = os.pathsep.join(retained)
     else:
         environment.pop("PYTHONPATH", None)
-    command = [sys.executable, str(LEGACY_LAUNCHER), *arguments]
+    target_rootfs_value = environment.get("LUNITA_TARGET_ROOTFS")
+    if target_rootfs_value:
+        try:
+            target_rootfs = pathlib.Path(target_rootfs_value).resolve(strict=True)
+            launcher_relative = LEGACY_LAUNCHER.resolve(strict=True).relative_to(target_rootfs)
+        except (OSError, ValueError) as exc:
+            print(f"DENIED: legacy launcher is not inside the declared target rootfs: {exc}", file=sys.stderr)
+            return 5
+        guest_launcher = "/" + launcher_relative.as_posix()
+        guest_environment = [
+            "HOME=/home/lunita",
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
+            "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
+            "XDG_DATA_HOME=/tmp/lunita-xdg/data",
+            "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+            "FLATPAK_SYSTEM_DIR=/var/lib/flatpak",
+            "R_HOME=/opt/lunita/instruments/lapiz/R-4.6.1/lib/R",
+        ]
+        command = [
+            "sudo", "-n", "chroot", "--userspec=1000:1000",
+            str(target_rootfs), "/usr/bin/env", "-C", "/tmp",
+            *guest_environment, "/usr/bin/python3.12", guest_launcher, *arguments,
+        ]
+        child_environment = os.environ.copy()
+        child_environment.pop("PYTHONPATH", None)
+    else:
+        command = [sys.executable, str(LEGACY_LAUNCHER), *arguments]
+        child_environment = environment
     try:
-        return subprocess.run(command, env=environment, check=False).returncode
+        return subprocess.run(command, env=child_environment, check=False).returncode
     except OSError as exc:
         print(f"DENIED: unable to delegate to beta v1.7: {exc}", file=sys.stderr)
         return 4

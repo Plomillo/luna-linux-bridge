@@ -24,16 +24,31 @@ import time
 import uuid
 
 ROOT = pathlib.Path(__file__).resolve().parent
-ST = ROOT / "state"
-OUT = ST / "worker_outputs"
-EVIDENCE = ST / "lunita_certification_evidence"
-CANDIDATE = ST / "g06_rebuild_candidates" / "G06_REBUILD_CANDIDATE_R1"
-ROOTFS = CANDIDATE / "rootfs"
-RUNTIME_REPORT = CANDIDATE / "BETA_RUNTIME_FUNCTIONAL_TESTS.json"
-TARGET_RUNTIME_RECEIPT_DIR = pathlib.Path(os.environ.get("LUNITA_TARGET_RUNTIME_RECEIPT_DIR", str(pathlib.Path(os.environ.get("XDG_STATE_HOME") or (pathlib.Path.home() / ".local/state")) / "lunita/runtime_validation"))).expanduser()
-INDEPENDENT_REPORT = CANDIDATE / "BETA_INDEPENDENT_VALIDATION.json"
-MISSION_PATH = ROOT.parent / "MISION1.txt"
+ST = pathlib.Path(os.environ.get("LUNITA_STATE_DIR", str(ROOT / "state"))).expanduser()
+OUT = pathlib.Path(os.environ.get("LUNITA_OUTPUT_DIR", str(ST / "worker_outputs"))).expanduser()
+EVIDENCE = pathlib.Path(os.environ.get("LUNITA_EVIDENCE_DIR", str(ST / "lunita_certification_evidence"))).expanduser()
+CANDIDATE = pathlib.Path(os.environ.get(
+    "LUNITA_CANDIDATE_DIR", str(ST / "g06_rebuild_candidates" / "G06_REBUILD_CANDIDATE_R1")
+)).expanduser()
+ROOTFS = pathlib.Path(os.environ.get("LUNITA_ROOTFS", str(CANDIDATE / "rootfs"))).expanduser()
+RUNTIME_REPORT = pathlib.Path(os.environ.get(
+    "LUNITA_RUNTIME_REPORT", str(CANDIDATE / "BETA_RUNTIME_FUNCTIONAL_TESTS.json")
+)).expanduser()
+TARGET_RUNTIME_RECEIPT_DIR = pathlib.Path(os.environ.get(
+    "LUNITA_TARGET_RUNTIME_RECEIPT_DIR",
+    str(pathlib.Path(os.environ.get("XDG_STATE_HOME") or (pathlib.Path.home() / ".local/state"))
+        / "lunita/runtime_validation")
+)).expanduser()
+INDEPENDENT_REPORT = pathlib.Path(os.environ.get(
+    "LUNITA_INDEPENDENT_REPORT", str(CANDIDATE / "BETA_INDEPENDENT_VALIDATION.json")
+)).expanduser()
+MISSION_PATH = pathlib.Path(os.environ.get("LUNITA_MISSION_PATH", str(ROOT.parent / "MISION1.txt"))).expanduser()
 MISSION_SHA = "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f"
+CERTIFICATION_PROFILE = os.environ.get("LUNITA_CERTIFICATION_PROFILE", "LEGACY_V1_7").strip().upper()
+CANDIDATE_MANIFEST = pathlib.Path(os.environ.get(
+    "LUNITA_CANDIDATE_MANIFEST", str(ROOT.parent.parent / "LUNITA_V1_8_CANDIDATE_FREEZE.json")
+)).expanduser()
+
 POLL_SECONDS = 60
 RUNNING_CAJITA_STAGES = {
     "ENV_INSTALL_RUNNING", "ENV_INSTALL_FALLBACK_RUNNING", "DRY_RUN_RUNNING",
@@ -86,6 +101,10 @@ def pid_alive(pid) -> bool:
         if len(stat) > 2 and stat[2] == "Z":
             return False
         os.kill(pid, 0)
+        return True
+    except PermissionError:
+        # A root-owned inventory worker is alive even though its unprivileged
+        # supervisor cannot signal it. Treat EPERM as existence, not exit.
         return True
     except (OSError, ValueError, IndexError):
         return False
@@ -401,9 +420,56 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
     return results
 
 
+INVENTORY_PRIVILEGED_ENV = (
+    "LUNITA_ROOTFS",
+    "LUNITA_STATE_DIR",
+    "LUNITA_OUTPUT_DIR",
+    "LUNITA_EVIDENCE_DIR",
+    "LUNITA_CANDIDATE_DIR",
+    "LUNITA_TARGET_RUNTIME_RECEIPT_DIR",
+    "LUNITA_CANDIDATE_MANIFEST",
+    "LUNITA_CERTIFICATION_PROFILE",
+)
+
+
+def inventory_worker_command(result_path: pathlib.Path) -> list[str]:
+    """Run only the read-only rootfs inventory with root traversal rights.
+
+    Candidate directories remain 0700/0600. The worker uses sudo read-only
+    access; it does not chown/chmod or otherwise alter rootfs content.
+    """
+    script = str(pathlib.Path(__file__).resolve())
+    worker = [sys.executable, "-B", script, "--inventory-worker", str(result_path)]
+    if os.geteuid() == 0:
+        return worker
+    sudo = shutil.which("sudo")
+    if not sudo:
+        raise PermissionError("Rootfs inventory requires read-only privileged traversal; sudo is unavailable")
+    preserved = ",".join(INVENTORY_PRIVILEGED_ENV)
+    return [sudo, "-n", f"--preserve-env={preserved}", *worker]
+
+
+def restore_inventory_artifact_owner(path: pathlib.Path) -> None:
+    """Return root-created evidence files to the invoking workflow user, mode 0600."""
+    if os.geteuid() != 0:
+        return
+    uid_text, gid_text = os.environ.get("SUDO_UID"), os.environ.get("SUDO_GID")
+    if uid_text is None and gid_text is None:
+        return
+    if not (uid_text and gid_text and uid_text.isdigit() and gid_text.isdigit()):
+        raise PermissionError("Cannot restore inventory evidence ownership from incomplete sudo identity")
+    os.chown(path, int(uid_text), int(gid_text), follow_symlinks=False)
+    os.chmod(path, 0o600)
+
+
 def _entry_rows(root: pathlib.Path):
     """Yield non-following filesystem entries in stable order."""
-    for base, dirs, files in os.walk(root, topdown=True, followlinks=False):
+    def deny_walk_error(error: OSError) -> None:
+        raise error
+
+    for base, dirs, files in os.walk(
+        root, topdown=True, followlinks=False, onerror=deny_walk_error
+    ):
         dirs.sort()
         files.sort()
         bp = pathlib.Path(base)
@@ -487,6 +553,7 @@ def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
         result = {"schema": "CUSTOSZ_LUNITA_ROOTFS_INVENTORY/1.0", "status": "BLOCKED_ROOTFS_MISSING",
                   "timestamp_utc": utc(), "rootfs_path": str(ROOTFS), "certification": "NOT_GRANTED"}
         atomic_json(report_path, result)
+        restore_inventory_artifact_owner(report_path)
         return result
 
     status_path = ROOTFS / "var/lib/dpkg/status"
@@ -540,6 +607,7 @@ def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
     after_digest, after_count = _meta_digest(ROOTFS)
     stable_tree = before_digest == after_digest and before_count == after_count
     os.replace(tmp_manifest, manifest)
+    restore_inventory_artifact_owner(manifest)
     dep = parse_dpkg_status(status_path)
     launcher_sha = sha_file(launcher) if launcher.is_file() else None
     basics_pass = status_path.is_file() and os_release.is_file() and launcher_sha is not None
@@ -567,6 +635,7 @@ def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
         "certification": "NOT_GRANTED",
     }
     atomic_json(report_path, result)
+    restore_inventory_artifact_owner(report_path)
     return result
 
 
@@ -724,7 +793,13 @@ def latest_target_runtime_acceptance() -> dict:
         return blocked("COMMAND_AGENT_ENGINE_ROUTE_MATRIX_NOT_TESTED")
     applications = row.get("legacy_application_smokes", {})
     commands = applications.get("commands") if isinstance(applications.get("commands"), dict) else {}
-    required_commands = {"brujula-self-test", "r-self-test", "jamovi-self-test", "jasp-self-test", "fault"}
+    required_commands = {
+        "brujula-self-test", "r-self-test", "jamovi-self-test", "jasp-self-test",
+        "fault model-missing", "fault model-corrupted", "fault dependency-missing",
+        "fault permission-denied", "fault low-memory", "fault process-crash",
+        "fault browser-crash", "fault tool-failure", "fault invalid-input",
+        "fault interrupted-execution", "fault restart",
+    }
     if applications.get("status") != "PASS_LEGACY_APPLICATION_SMOKES" or set(commands) != required_commands:
         return blocked("LEGACY_APPLICATION_SMOKE_SET_INCOMPLETE")
     if any(command.get("status") != "PASS" or command.get("returncode") != 0
@@ -746,29 +821,87 @@ def latest_target_runtime_acceptance() -> dict:
     }
 
 
+
+def direct_candidate_manifest_identity() -> dict:
+    """Bind v1.8 direct certification to the frozen candidate manifest, not the retired v1.7 mission."""
+    row = load_json(CANDIDATE_MANIFEST, {}) or {}
+    digest = sha_file(CANDIDATE_MANIFEST) if CANDIDATE_MANIFEST.is_file() else None
+    preserved = row.get("preserved_baseline") if isinstance(row.get("preserved_baseline"), dict) else {}
+    valid = (
+        row.get("schema") == "LUNITA_CANDIDATE_FREEZE/1.0"
+        and row.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
+        and row.get("version") == "1.8.0"
+        and row.get("freeze_status") == "FROZEN_CANDIDATE_NOT_CERTIFIED"
+        and preserved.get("frozen_g06_mutated") is False
+        and preserved.get("canonical_g08_bindings_mutated") is False
+        and preserved.get("legacy_v1_7_launcher_replaced") is False
+    )
+    return {"status": "PASS" if valid and digest else "BLOCKED",
+            "path": str(CANDIDATE_MANIFEST), "sha256": digest,
+            "candidate_id": row.get("candidate_id"), "version": row.get("version")}
+
+
 def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
+    direct = CERTIFICATION_PROFILE == "V1_8_DIRECT"
     old = load_json(INDEPENDENT_REPORT, {}) or {}
-    runtime = load_json(RUNTIME_REPORT, {}) or {}
-    runtime_sha = sha_file(RUNTIME_REPORT) if RUNTIME_REPORT.is_file() else None
-    actual_launcher = CANDIDATE / "rootfs" / "opt/lunita/agent/lunita.py"
-    launcher_sha = sha_file(actual_launcher) if actual_launcher.is_file() else None
-    launcher_ok = bool(runtime.get("candidate", {}).get("beta_launcher_sha256") == launcher_sha and
-                       runtime.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1")
-    identity_ok = MISSION_PATH.is_file() and sha_file(MISSION_PATH) == MISSION_SHA
     old_checks = old.get("checks") if isinstance(old.get("checks"), dict) else {}
-    checks = dict(old_checks)
-    checks["MISION1_identity_sha256"] = {"status": "PASS" if identity_ok else "BLOCKED",
-        "returncode": 0 if identity_ok else 1, "sha256": sha_file(MISSION_PATH) if MISSION_PATH.is_file() else None}
-    checks["runtime_report_and_launcher_identity"] = {"status": "PASS" if (
-        runtime.get("schema") == "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0" and
-        runtime.get("status") == "PASS_RUNTIME_TESTS" and runtime.get("all_tests_pass") is True and
-        launcher_ok and runtime.get("frozen_g06_mutated") is False and
-        runtime.get("canonical_g08_bindings_mutated") is False
-    ) else "BLOCKED", "returncode": 0 if (
-        runtime.get("schema") == "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0" and
-        runtime.get("status") == "PASS_RUNTIME_TESTS" and runtime.get("all_tests_pass") is True and
-        launcher_ok and runtime.get("frozen_g06_mutated") is False and runtime.get("canonical_g08_bindings_mutated") is False
-    ) else 1, "runtime_report_sha256": runtime_sha, "launcher_sha256": launcher_sha}
+    # v1.8 starts from a clean candidate-specific check set; the immutable history
+    # archive preserves v1.7 observations, but no legacy PASS is carried forward.
+    checks = {} if direct else dict(old_checks)
+    actual_launcher = ROOTFS / "opt/lunita/agent/lunita.py"
+    launcher_sha = sha_file(actual_launcher) if actual_launcher.is_file() else None
+    target_before = latest_target_runtime_acceptance() if direct else {}
+    target_before_path = pathlib.Path(target_before.get("receipt_path", "")) if target_before.get("receipt_path") else None
+    target_before_hash_valid = bool(
+        target_before.get("status") == "PASS_TARGET_RUNTIME_ACCEPTANCE"
+        and target_before_path and target_before_path.is_file()
+        and target_before.get("receipt_sha256") == sha_file(target_before_path)
+    ) if direct else False
+    if direct:
+        manifest_identity = direct_candidate_manifest_identity()
+        target_launcher_sha = (target_before.get("overlay_integrity") or {}).get("legacy_launcher_sha256")
+        launcher_ok = bool(target_before_hash_valid and launcher_sha and launcher_sha == target_launcher_sha)
+        checks.pop("MISION1_identity_sha256", None)
+        checks["candidate_manifest_identity_sha256"] = {
+            "status": manifest_identity["status"],
+            "returncode": 0 if manifest_identity["status"] == "PASS" else 1,
+            "sha256": manifest_identity["sha256"],
+            "evidence": {manifest_identity["path"]: manifest_identity["sha256"]} if manifest_identity["sha256"] else {},
+        }
+        checks["runtime_report_and_launcher_identity"] = {
+            "status": "PASS" if launcher_ok and manifest_identity["status"] == "PASS" else "BLOCKED",
+            "returncode": 0 if launcher_ok and manifest_identity["status"] == "PASS" else 1,
+            "runtime_report_sha256": target_before.get("receipt_sha256"),
+            "launcher_sha256": launcher_sha,
+            "runtime_evidence_schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0",
+            "runtime_evidence_status": target_before.get("status"),
+        }
+        runtime_sha = target_before.get("receipt_sha256") if target_before_hash_valid else None
+        runtime_path_text = str(target_before_path) if target_before_path else None
+        mission_sha = None
+        candidate_manifest_sha = manifest_identity["sha256"]
+    else:
+        runtime = load_json(RUNTIME_REPORT, {}) or {}
+        runtime_sha = sha_file(RUNTIME_REPORT) if RUNTIME_REPORT.is_file() else None
+        launcher_ok = bool(runtime.get("candidate", {}).get("beta_launcher_sha256") == launcher_sha and
+                           runtime.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1")
+        identity_ok = MISSION_PATH.is_file() and sha_file(MISSION_PATH) == MISSION_SHA
+        checks["MISION1_identity_sha256"] = {"status": "PASS" if identity_ok else "BLOCKED",
+            "returncode": 0 if identity_ok else 1, "sha256": sha_file(MISSION_PATH) if MISSION_PATH.is_file() else None}
+        checks["runtime_report_and_launcher_identity"] = {"status": "PASS" if (
+            runtime.get("schema") == "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0" and
+            runtime.get("status") == "PASS_RUNTIME_TESTS" and runtime.get("all_tests_pass") is True and
+            launcher_ok and runtime.get("frozen_g06_mutated") is False and
+            runtime.get("canonical_g08_bindings_mutated") is False
+        ) else "BLOCKED", "returncode": 0 if (
+            runtime.get("schema") == "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0" and
+            runtime.get("status") == "PASS_RUNTIME_TESTS" and runtime.get("all_tests_pass") is True and
+            launcher_ok and runtime.get("frozen_g06_mutated") is False and
+            runtime.get("canonical_g08_bindings_mutated") is False
+        ) else 1, "runtime_report_sha256": runtime_sha, "launcher_sha256": launcher_sha}
+        runtime_path_text = str(RUNTIME_REPORT)
+        mission_sha = MISSION_SHA
+        candidate_manifest_sha = None
     target_runtime = latest_target_runtime_acceptance()
     target_receipt_path = pathlib.Path(target_runtime.get("receipt_path", "")) if target_runtime.get("receipt_path") else None
     target_runtime_hash_valid = bool(
@@ -849,8 +982,10 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
     report = {
         "schema": "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0",
         "captured_at_utc": utc(), "candidate_id": "G06_REBUILD_CANDIDATE_R1",
-        "mission_sha256": MISSION_SHA, "runtime_report_path": str(RUNTIME_REPORT),
+        "mission_sha256": mission_sha, "runtime_report_path": runtime_path_text,
         "runtime_report_sha256": runtime_sha, "beta_launcher_sha256": launcher_sha,
+        "certification_profile": "V1_8_DIRECT" if direct else "LEGACY_V1_7",
+        "candidate_manifest_sha256": candidate_manifest_sha,
         "target_runtime_acceptance": target_runtime,
         "checks": checks, "status": desired_status,
         "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
@@ -888,14 +1023,154 @@ def persist_independent_report(report: dict) -> dict:
             "status": report.get("status")}
 
 
+def issue_s32_independent_beta_validation_receipt() -> dict:
+    """Issue S32 only for a fully hash-bound direct-v1.8 candidate PASS.
+
+    This is candidate-beta operational certification only. It never grants G23/G24,
+    canonical G06/G08 certification, promotion, or mission completion.
+    """
+    if CERTIFICATION_PROFILE != "V1_8_DIRECT":
+        return {"status": "NOT_APPLICABLE_LEGACY_PROFILE", "certification": "NOT_GRANTED"}
+
+    report_path = INDEPENDENT_REPORT
+    if report_path.is_symlink() or not report_path.is_file():
+        return {"status": "BLOCKED_INDEPENDENT_REPORT_MISSING", "certification": "NOT_GRANTED"}
+    report = load_json(report_path, {}) or {}
+    if report.get("schema") != "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0":
+        return {"status": "BLOCKED_INDEPENDENT_REPORT_SCHEMA", "certification": "NOT_GRANTED"}
+    if report.get("status") != "PASS_INDEPENDENT_VALIDATION":
+        return {"status": "BLOCKED_INDEPENDENT_VALIDATION", "certification": "NOT_GRANTED"}
+    if report.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1" or report.get("certification_profile") != "V1_8_DIRECT":
+        return {"status": "BLOCKED_CANDIDATE_PROFILE_IDENTITY", "certification": "NOT_GRANTED"}
+
+    manifest = direct_candidate_manifest_identity()
+    if manifest.get("status") != "PASS" or report.get("candidate_manifest_sha256") != manifest.get("sha256"):
+        return {"status": "BLOCKED_CANDIDATE_MANIFEST_BINDING", "certification": "NOT_GRANTED"}
+
+    target = latest_target_runtime_acceptance()
+    target_path = pathlib.Path(target.get("receipt_path", "")) if target.get("receipt_path") else None
+    if (target.get("status") != "PASS_TARGET_RUNTIME_ACCEPTANCE" or not target_path
+        or target_path.is_symlink() or not target_path.is_file()
+        or target.get("receipt_sha256") != sha_file(target_path)):
+        return {"status": "BLOCKED_TARGET_RUNTIME_ACCEPTANCE", "certification": "NOT_GRANTED"}
+    target_sha = sha_file(target_path)
+    if (report.get("runtime_report_path") != str(target_path)
+        or report.get("runtime_report_sha256") != target_sha):
+        return {"status": "BLOCKED_RUNTIME_REPORT_HASH_BINDING", "certification": "NOT_GRANTED"}
+
+    checks = report.get("checks")
+    required_checks = {
+        "candidate_manifest_identity_sha256",
+        "runtime_report_and_launcher_identity",
+        "target_v1_8_runtime_acceptance_e01_e15_int8",
+        "candidate_rootfs_inventory_and_dependency_manifest",
+        "jasp_packaged_fixture_nonregression",
+    }
+    if not isinstance(checks, dict) or not required_checks.issubset(checks):
+        return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS_MISSING", "certification": "NOT_GRANTED"}
+    if any(not _stable_check(check) for check in checks.values()):
+        return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS", "certification": "NOT_GRANTED"}
+    target_check = checks["target_v1_8_runtime_acceptance_e01_e15_int8"]
+    if (target_check.get("receipt_path") != str(target_path)
+        or target_check.get("receipt_sha256") != target_sha):
+        return {"status": "BLOCKED_TARGET_RUNTIME_CHECK_BINDING", "certification": "NOT_GRANTED"}
+    if (checks["candidate_manifest_identity_sha256"].get("sha256") != manifest.get("sha256")
+        or report.get("frozen_g06_mutated") is not False
+        or report.get("canonical_g08_bindings_mutated") is not False
+        or target.get("canonical_g08_binding_mutation") is not False):
+        return {"status": "BLOCKED_CANONICAL_IDENTITY_GUARD", "certification": "NOT_GRANTED"}
+
+    independent_sha = sha_file(report_path)
+    evidence = {
+        "independent_validation": "PASS",
+        "independent_report_path": str(report_path),
+        "independent_report_sha256": independent_sha,
+        "target_runtime_receipt_path": str(target_path),
+        "target_runtime_receipt_sha256": target_sha,
+        "candidate_manifest_sha256": manifest["sha256"],
+    }
+    payload = {
+        "schema": "CUSTOSZ_LUNITA_BETA_CERTIFICATION_RECEIPT/1.0",
+        "status": "BETA_OPERATIONAL_CERTIFIED",
+        "step_completion": True,
+        "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+        "version": "1.8.0",
+        "basis": "VERSIONED_DERIVED_UBUNTU_24_04_CANDIDATE; NOT_THE_MISSING_FROZEN_ORIGINAL",
+        "runtime_report_path": str(target_path),
+        "runtime_report_sha256": target_sha,
+        "independent_report_path": str(report_path),
+        "independent_report_sha256": independent_sha,
+        "evidence": evidence,
+        "frozen_g06_mutated": False,
+        "canonical_g08_bindings_mutated": False,
+        "canonical_g06_certification": "NOT_GRANTED",
+        "g23_status": "NOT_GRANTED",
+        "g24_status": "NOT_GRANTED",
+        "certification_scope": "CANDIDATE_BETA_ONLY; NO AUTOMATIC CERTIFICATION PROPAGATION",
+        "certification": "GRANTED_FOR_VERSIONED_CANDIDATE_ONLY",
+        "mission_completion_claim": False,
+        "created_at_utc": utc(),
+    }
+    OUT.mkdir(parents=True, exist_ok=True, mode=0o700)
+    receipt_path = OUT / f"S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT_{independent_sha[:16]}.json"
+    if receipt_path.exists():
+        existing = load_json(receipt_path, {}) or {}
+        comparable = dict(existing)
+        comparable.pop("created_at_utc", None)
+        expected = dict(payload)
+        expected.pop("created_at_utc", None)
+        if comparable != expected:
+            return {"status": "BLOCKED_S32_RECEIPT_IDENTITY_COLLISION", "certification": "NOT_GRANTED"}
+    else:
+        atomic_json(receipt_path, payload)
+    observed = load_json(receipt_path, {}) or {}
+    if (observed.get("status") != "BETA_OPERATIONAL_CERTIFIED"
+        or observed.get("evidence") != evidence
+        or observed.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1"):
+        return {"status": "BLOCKED_S32_RECEIPT_POST_WRITE_VERIFICATION", "certification": "NOT_GRANTED"}
+    return {
+        "status": "BETA_OPERATIONAL_CERTIFIED",
+        "receipt_path": str(receipt_path),
+        "receipt_sha256": sha_file(receipt_path),
+        "independent_report_sha256": independent_sha,
+        "target_runtime_receipt_sha256": target_sha,
+        "certification": "GRANTED_FOR_VERSIONED_CANDIDATE_ONLY",
+        "g23_status": "NOT_GRANTED",
+        "g24_status": "NOT_GRANTED",
+    }
+
+
 def stable_release_gate() -> dict:
+    direct = CERTIFICATION_PROFILE == "V1_8_DIRECT"
     report = load_json(INDEPENDENT_REPORT, {}) or {}
-    runtime = load_json(RUNTIME_REPORT, {}) or {}
-    if (report.get("schema") != "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0"
-        or report.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1"
-        or report.get("mission_sha256") != MISSION_SHA
-        or runtime.get("schema") != "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0"
-        or runtime.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1"):
+    if direct:
+        manifest_identity = direct_candidate_manifest_identity()
+        target_runtime = latest_target_runtime_acceptance()
+        target_path = pathlib.Path(target_runtime.get("receipt_path", "")) if target_runtime.get("receipt_path") else None
+        runtime = (load_json(target_path, {}) or {}) if target_path else {}
+        runtime_sha = sha_file(target_path) if target_path and target_path.is_file() else None
+        identity_ok = (
+            manifest_identity.get("status") == "PASS"
+            and report.get("schema") == "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0"
+            and report.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
+            and report.get("certification_profile") == "V1_8_DIRECT"
+            and report.get("candidate_manifest_sha256") == manifest_identity.get("sha256")
+            and runtime.get("schema") == "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0"
+            and runtime.get("status") == "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED"
+            and runtime.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
+            and report.get("runtime_report_path") == str(target_path)
+        )
+    else:
+        runtime = load_json(RUNTIME_REPORT, {}) or {}
+        runtime_sha = sha_file(RUNTIME_REPORT) if RUNTIME_REPORT.is_file() else None
+        identity_ok = (
+            report.get("schema") == "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0"
+            and report.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
+            and report.get("mission_sha256") == MISSION_SHA
+            and runtime.get("schema") == "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0"
+            and runtime.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
+        )
+    if not identity_ok:
         return {"status": "BLOCKED_CANDIDATE_OR_MISSION_IDENTITY", "certification": "NOT_GRANTED"}
     if report.get("status") != "PASS_INDEPENDENT_VALIDATION":
         return {"status": "BLOCKED_INDEPENDENT_VALIDATION", "certification": "NOT_GRANTED"}
@@ -907,7 +1182,7 @@ def stable_release_gate() -> dict:
     checks = report.get("checks")
     if not isinstance(checks, dict) or not checks or not all(_stable_check(x) for x in checks.values()):
         return {"status": "BLOCKED_REQUIRED_CHECKS", "certification": "NOT_GRANTED"}
-    if report.get("runtime_report_sha256") != (sha_file(RUNTIME_REPORT) if RUNTIME_REPORT.is_file() else None):
+    if report.get("runtime_report_sha256") != runtime_sha:
         return {"status": "BLOCKED_RUNTIME_REPORT_BINDING_MISMATCH", "certification": "NOT_GRANTED"}
     if report.get("frozen_g06_mutated") is not False or report.get("canonical_g08_bindings_mutated") is not False:
         return {"status": "BLOCKED_CANONICAL_IDENTITY_GUARD", "certification": "NOT_GRANTED"}
@@ -927,7 +1202,8 @@ def stable_release_gate() -> dict:
     return {
         "status": "STABLE_RELEASE_ELIGIBLE", "version": "1.8.0", "release_name": "LUNITA_STABLE_1_8",
         "candidate_id": "G06_REBUILD_CANDIDATE_R1",
-        "runtime_report_sha256": sha_file(RUNTIME_REPORT),
+        "runtime_report_sha256": runtime_sha,
+        "candidate_manifest_sha256": report.get("candidate_manifest_sha256"),
         "independent_report_sha256": sha_file(INDEPENDENT_REPORT),
         "s32_receipt": receipt, "rootfs_path": str(ROOTFS),
         "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
@@ -990,7 +1266,15 @@ def tick() -> dict:
     state_path = EVIDENCE / "lane_state.json"
     state = load_json(state_path, {}) or {"schema": "CUSTOSZ_LUNITA_STABILITY_CERT_LANE_STATE/1.0",
                                          "created_at_utc": utc(), "inventory_job": None}
-    if not MISSION_PATH.is_file() or sha_file(MISSION_PATH) != MISSION_SHA:
+    if CERTIFICATION_PROFILE == "V1_8_DIRECT":
+        identity = direct_candidate_manifest_identity()
+        if identity.get("status") != "PASS":
+            result = {"status": "BLOCKED_CANDIDATE_MANIFEST_IDENTITY", "timestamp_utc": utc(),
+                      "candidate_manifest": identity, "certification": "NOT_GRANTED",
+                      "mission_completion_claim": False}
+            atomic_json(state_path, {**state, "last_tick": result})
+            return result
+    elif not MISSION_PATH.is_file() or sha_file(MISSION_PATH) != MISSION_SHA:
         result = {"status": "BLOCKED_MISSION_IDENTITY_MISMATCH", "timestamp_utc": utc(),
                   "mission_path": str(MISSION_PATH), "certification": "NOT_GRANTED",
                   "mission_completion_claim": False}
@@ -1079,7 +1363,7 @@ def tick() -> dict:
             result_path = EVIDENCE / f"rootfs_inventory_{stamp}.json"
             log_path = EVIDENCE / f"rootfs_inventory_{stamp}.log"
             log = log_path.open("ab")
-            proc = subprocess.Popen([sys.executable, "-B", str(pathlib.Path(__file__).resolve()), "--inventory-worker", str(result_path)],
+            proc = subprocess.Popen(inventory_worker_command(result_path),
                                     stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
                                     close_fds=True, start_new_session=True)
             log.close()
@@ -1102,19 +1386,23 @@ def tick() -> dict:
     jasp_queue = persist_jasp_remediation_queue(jasp)
     report = update_independent_report(inventory, jasp)
     report_update = persist_independent_report(report)
+    s32_receipt = issue_s32_independent_beta_validation_receipt()
     release = stable_release_gate()
     release_status = persist_stable_release_status(release)
     release_path = pathlib.Path(release_status["release_receipt_path"]) if release_status.get("release_receipt_path") else None
 
     result = {
         "schema": "CUSTOSZ_LUNITA_STABILITY_CERT_LANE_TICK/1.0",
-        "timestamp_utc": utc(), "mission_sha256": MISSION_SHA,
+        "timestamp_utc": utc(), "mission_sha256": None if CERTIFICATION_PROFILE == "V1_8_DIRECT" else MISSION_SHA,
+        "candidate_manifest_sha256": direct_candidate_manifest_identity().get("sha256") if CERTIFICATION_PROFILE == "V1_8_DIRECT" else None,
+        "certification_profile": CERTIFICATION_PROFILE,
         "status": "CERTIFICATION_SEARCH_ACTIVE" if report.get("status") != "PASS_INDEPENDENT_VALIDATION" else release.get("status", "WAITING_FOR_S32_BOUND_CERTIFICATION_RECEIPT"),
         "candidate_id": "G06_REBUILD_CANDIDATE_R1", "candidate_rootfs": str(ROOTFS),
         "cajita_heavy_lane": active, "inventory_stage": result_status,
         "inventory_status": inventory.get("status") if inventory else "NOT_AVAILABLE",
         "inventory_report_path": inventory.get("report_path") if inventory else None,
         "independent_report_update": report_update, "independent_report_status": report.get("status"),
+        "s32_certification_receipt": s32_receipt,
         "jasp_status": jasp.get("status"), "jasp_cases": jasp.get("cases"),
         "jasp_remediation_queue": jasp_queue,
         "stable_release_gate": release, "stable_release_current_status": release_status,
@@ -1178,8 +1466,10 @@ def main() -> int:
         result = build_rootfs_inventory(result_path)
         actual_report_path = result_path or (EVIDENCE / f"rootfs_inventory_{dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json")
         # The supervising tick records this exact, preallocated result path.
-        atomic_json(EVIDENCE / "rootfs_inventory_latest.json", {**result, "report_path": str(actual_report_path),
+        latest_path = EVIDENCE / "rootfs_inventory_latest.json"
+        atomic_json(latest_path, {**result, "report_path": str(actual_report_path),
                     "report_sha256": sha_file(actual_report_path) if actual_report_path.is_file() else None})
+        restore_inventory_artifact_owner(latest_path)
         print(json.dumps(result, sort_keys=True))
         return 0 if result.get("status") == "PASS_ROOTFS_INVENTORY_AND_DEPENDENCY_CLOSURE" else 1
     if "--once" in sys.argv:

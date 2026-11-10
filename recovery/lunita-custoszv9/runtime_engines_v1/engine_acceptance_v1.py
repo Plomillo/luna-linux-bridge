@@ -325,6 +325,24 @@ class RealRuntimeEngineTests(unittest.TestCase):
 
 
 class E01TargetRuntimeContractTests(unittest.TestCase):
+    def test_e01_discovers_current_llama_cpp_cpu_backend_name(self):
+        with tempfile.TemporaryDirectory(prefix="lunita-llama-backend-") as temporary:
+            runtime = __import__("pathlib").Path(temporary)
+            binary = runtime / "llama-cli"
+            binary.write_bytes(b"fixture")
+            backend = runtime / "libggml-cpu.so"
+            backend.write_bytes(b"current CPU backend")
+            self.assertEqual(backend, engine.discover_llama_cpu_backend(binary))
+
+    def test_e01_retains_legacy_llama_cpp_cpu_backend_name(self):
+        with tempfile.TemporaryDirectory(prefix="lunita-llama-backend-") as temporary:
+            runtime = __import__("pathlib").Path(temporary)
+            binary = runtime / "llama-cli"
+            binary.write_bytes(b"fixture")
+            backend = runtime / "libggml-cpu-x64.so"
+            backend.write_bytes(b"legacy CPU backend")
+            self.assertEqual(backend, engine.discover_llama_cpu_backend(binary))
+
     def test_e01_requires_real_qwen_weights_and_never_returns_a_stub(self):
         with self.assertRaises(engine.EngineUnavailable):
             engine.llm_infer("Devuelve OK.", model_path=__import__("pathlib").Path("/nonexistent/lunita-model.gguf"))

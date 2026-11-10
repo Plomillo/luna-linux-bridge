@@ -12,17 +12,24 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shutil
 import sys
 import tempfile
 from datetime import datetime, timezone
 from typing import Any
 
+try:
+    from . import checkpoint_v1
+except ImportError:
+    import checkpoint_v1
+
 EXPECTED_CANDIDATE_ID = "G06_REBUILD_CANDIDATE_R1"
 EXPECTED_LAUNCHER_SHA256 = "46efd711729c344e7efba9ce2503127c48f0b88207cc5a17311ff1d555b075b2"
 EXPECTED_CHECKPOINT_SCHEMA = "LUNITA_RUNTIME_OVERLAY_CHECKPOINT/1.0"
 EXPECTED_CHECKPOINT_SCOPE = "LUNITA_ADDITIVE_RUNTIME_ENGINE_OVERLAY"
-OVERLAY_RELATIVE_PATH = pathlib.Path("opt/lunita/engines/runtime_engines_v1")
+EXPECTED_CHECKPOINT_MANIFEST_SCHEMA = "LUNITA_RUNTIME_OVERLAY_CHECKPOINT_MANIFEST/1.0"
+OVERLAY_RELATIVE_PATH = pathlib.Path("engines/runtime_engines_v1")
 FILES = (
     "__init__.py",
     "engine_runtime_v1.py",
@@ -32,6 +39,9 @@ FILES = (
     "lunita_beta_v1_8.py",
     "launcher_acceptance_v1.py",
     "target_runtime_acceptance_v1.py",
+    "apply_engine_overlay_v1.py",
+    "checkpoint_v1.py",
+    "overlay_acceptance_v1.py",
     "engine_assignments_v1.json",
     "requirements-engine-stack.txt",
     "DEPENDENCY_EVIDENCE_v1.json",
@@ -103,7 +113,11 @@ def hash_tree(path: pathlib.Path) -> dict[str, Any]:
             "sha256": hashlib.sha256(canonical).hexdigest()}
 
 
-def load_checkpoint_receipt(receipt_path: pathlib.Path, candidate_id: str) -> dict[str, Any]:
+def load_checkpoint_receipt(
+    receipt_path: pathlib.Path,
+    candidate_id: str,
+    rootfs: pathlib.Path,
+) -> dict[str, Any]:
     reject_any_symlink(receipt_path)
     receipt_path = receipt_path.resolve(strict=True)
     if not receipt_path.is_file():
@@ -122,28 +136,66 @@ def load_checkpoint_receipt(receipt_path: pathlib.Path, candidate_id: str) -> di
     expected_hash = data.get("checkpoint_manifest_sha256")
     if not isinstance(root_value, str) or not root_value or not isinstance(manifest_value, str) or not manifest_value:
         raise GateError("Checkpoint root and manifest paths are required")
-    if not isinstance(expected_hash, str) or len(expected_hash) != 64:
+    if not isinstance(expected_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_hash):
         raise GateError("Checkpoint manifest SHA-256 is required")
     reject_any_symlink(pathlib.Path(root_value))
     reject_any_symlink(pathlib.Path(manifest_value))
     checkpoint_root = pathlib.Path(root_value).resolve(strict=True)
-    manifest = pathlib.Path(manifest_value).resolve(strict=True)
-    if not checkpoint_root.is_dir() or not manifest.is_file():
+    manifest_path = pathlib.Path(manifest_value).resolve(strict=True)
+    rootfs = rootfs.resolve(strict=True)
+    if not checkpoint_root.is_dir() or not manifest_path.is_file():
         raise GateError("Checkpoint root or manifest is not available")
     try:
-        manifest.relative_to(checkpoint_root)
+        manifest_path.relative_to(checkpoint_root)
     except ValueError as exc:
         raise GateError("Checkpoint manifest must be contained inside checkpoint root") from exc
-    observed = sha256_file(manifest)
-    if observed != expected_hash:
+    try:
+        checkpoint_root.relative_to(rootfs)
+        raise GateError("Checkpoint directory must be outside the protected rootfs")
+    except ValueError:
+        pass
+    try:
+        rootfs.relative_to(checkpoint_root)
+        raise GateError("Checkpoint directory must not contain the protected rootfs")
+    except ValueError:
+        pass
+    observed_manifest_hash = sha256_file(manifest_path)
+    if observed_manifest_hash != expected_hash:
         raise GateError("Checkpoint manifest SHA-256 mismatch")
+
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise GateError("Checkpoint manifest is not valid JSON") from exc
+    if (
+        manifest.get("schema") != EXPECTED_CHECKPOINT_MANIFEST_SCHEMA
+        or manifest.get("candidate_id") != candidate_id
+        or manifest.get("scope") != EXPECTED_CHECKPOINT_SCOPE
+    ):
+        raise GateError("Checkpoint manifest identity or schema mismatch")
+    if data.get("rootfs_path") != str(rootfs) or manifest.get("rootfs_path") != str(rootfs):
+        raise GateError("Checkpoint is not bound to the exact rootfs path")
+    if (
+        data.get("rootfs_tree_sha256") != manifest.get("entries_sha256")
+        or data.get("rootfs_entry_count") != manifest.get("entry_count")
+    ):
+        raise GateError("Checkpoint receipt and manifest rootfs bindings differ")
+
+    # Re-hash the current rootfs. A valid receipt for another tree or an older
+    # tree must never authorize installation onto the present candidate.
+    current_manifest = checkpoint_v1.build_manifest(rootfs, candidate_id)
+    if manifest != current_manifest:
+        raise GateError("Checkpoint manifest does not describe the current rootfs bytes and metadata")
     return {
         "receipt_path": str(receipt_path),
         "receipt_sha256": sha256_file(receipt_path),
         "checkpoint_root": str(checkpoint_root),
-        "checkpoint_manifest": str(manifest),
-        "checkpoint_manifest_sha256": observed,
-        "checkpoint_id": data.get("checkpoint_id", "UNSPECIFIED"),
+        "checkpoint_manifest": str(manifest_path),
+        "checkpoint_manifest_sha256": observed_manifest_hash,
+        "rootfs_path": str(rootfs),
+        "rootfs_tree_sha256": current_manifest["entries_sha256"],
+        "rootfs_entry_count": current_manifest["entry_count"],
+        "checkpoint_id": data.get("checkpoint_id"),
     }
 
 
@@ -159,7 +211,7 @@ def preflight(
     rootfs = rootfs.resolve(strict=True)
     if not rootfs.is_dir():
         raise GateError("Rootfs must be a directory")
-    launcher = rootfs / "opt/lunita/agent/lunita.py"
+    launcher = rootfs / "agent/lunita.py"
     reject_symlink_components(launcher, rootfs)
     if not launcher.is_file():
         raise GateError("Candidate launcher is missing")
@@ -181,8 +233,8 @@ def preflight(
         source = source_dir / relative
         reject_any_symlink(source)
         directories[relative] = hash_tree(source)
-    checkpoint = load_checkpoint_receipt(checkpoint_receipt, candidate_id)
-    engines_dir = rootfs / "opt/lunita/engines"
+    checkpoint = load_checkpoint_receipt(checkpoint_receipt, candidate_id, rootfs)
+    engines_dir = rootfs / "engines"
     target = rootfs / OVERLAY_RELATIVE_PATH
     reject_symlink_components(engines_dir, rootfs)
     reject_symlink_components(target, rootfs)
