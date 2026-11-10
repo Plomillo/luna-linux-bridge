@@ -12,6 +12,7 @@ import json
 import os
 import pathlib
 import subprocess
+import stat
 import sys
 import time
 import tempfile
@@ -443,6 +444,18 @@ def run_qwen_via_v18() -> dict[str, Any]:
     if not model.is_file():
         raise TargetGateError(f"Required Qwen model is missing: {model}")
     target_rootfs = ROOT.parents[1]
+    xdg_root = target_rootfs / "tmp/lunita-xdg"
+    audit_dir = xdg_root / "audit"
+    for directory, label in ((xdg_root, "XDG runtime root"), (audit_dir, "append-only audit directory")):
+        if directory.is_symlink() or not directory.is_dir():
+            raise TargetGateError(f"{label} is missing or symlinked: {directory}")
+        metadata = directory.stat()
+        if (metadata.st_uid != 1000 or metadata.st_gid != 1000
+                or stat.S_IMODE(metadata.st_mode) != 0o700):
+            raise TargetGateError(
+                f"{label} must be owned by uid/gid 1000 with mode 0700: "
+                f"uid={metadata.st_uid} gid={metadata.st_gid} mode={stat.S_IMODE(metadata.st_mode):04o}"
+            )
     request = {
         "command": "/play PT",
         "agent": "Luna",

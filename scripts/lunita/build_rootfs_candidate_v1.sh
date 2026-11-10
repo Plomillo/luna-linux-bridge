@@ -95,8 +95,11 @@ chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-inst
 
 # Desktop application smoke tests must execute as the candidate's regular user.
 chroot "$ROOTFS" useradd --uid 1000 --create-home --user-group --shell /bin/bash lunita
+# The XDG parent and every prepared child must belong to the runtime user.
+# Otherwise later append-only audit creation fails with EACCES in the chroot.
+chroot "$ROOTFS" install -d -o 1000 -g 1000 -m 0700 /tmp/lunita-xdg
 chroot "$ROOTFS" install -d -o 1000 -g 1000 -m 0700 \
-  /tmp/lunita-xdg/cache /tmp/lunita-xdg/config /tmp/lunita-xdg/data
+  /tmp/lunita-xdg/cache /tmp/lunita-xdg/config /tmp/lunita-xdg/data /tmp/lunita-xdg/audit
 chroot "$ROOTFS" install -d -o 1000 -g 1000 -m 0700 /run/lunita-runtime-1000
 
 # R 4.6.1 is compiled inside Ubuntu 24.04 to bind its ELF dependencies
