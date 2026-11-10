@@ -215,6 +215,19 @@ def discover_llama_cli(runtime_root: pathlib.Path = DEFAULT_LLAMA_ROOT) -> pathl
     return matches[0]
 
 
+def discover_llama_cpu_backend(binary: pathlib.Path) -> pathlib.Path | None:
+    """Find the CPU backend filename emitted by the pinned llama.cpp build.
+
+    Current llama.cpp v0.9.0 on Ubuntu 24.04 emits libggml-cpu.so.
+    Keep the former x64 name as a compatibility fallback for older bundles.
+    """
+    for name in ("libggml-cpu.so", "libggml-cpu-x64.so"):
+        candidate = binary.parent / name
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def llm_infer(
     prompt: str,
     *,
@@ -234,8 +247,8 @@ def llm_infer(
     env = os.environ.copy()
     libdir = str(binary.parent)
     env["LD_LIBRARY_PATH"] = libdir + (os.pathsep + env["LD_LIBRARY_PATH"] if env.get("LD_LIBRARY_PATH") else "")
-    cpu_backend = binary.parent / "libggml-cpu-x64.so"
-    if cpu_backend.is_file():
+    cpu_backend = discover_llama_cpu_backend(binary)
+    if cpu_backend is not None:
         env["GGML_BACKEND_PATH"] = str(cpu_backend)
     command = [
         str(binary), "-m", str(model_path), "-t", "1", "-c", "512", "-b", "64", "-ub", "32",
