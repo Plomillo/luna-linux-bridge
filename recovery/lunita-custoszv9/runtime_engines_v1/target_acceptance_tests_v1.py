@@ -105,10 +105,12 @@ class TargetUserRequestFileTests(unittest.TestCase):
 
     def test_e01_request_is_created_exclusively_by_target_uid_1000(self):
         request_path = pathlib.Path("/tmp/lunita-xdg/lunita-e01-qwen-test.json")
-        result = mock.Mock(returncode=0, stdout="PASS_TARGET_USER_REQUEST_CREATED\\n", stderr="")
-        with mock.patch.dict(target.os.environ, {"LUNITA_IN_PIVOT_ROOT": "1"}), \\
-             mock.patch.object(target.os, "geteuid", return_value=0), \\
-             mock.patch.object(target.subprocess, "run", return_value=result) as run:
+        result = mock.Mock(returncode=0, stdout="PASS_TARGET_USER_REQUEST_CREATED", stderr="")
+        with (
+            mock.patch.dict(target.os.environ, {"LUNITA_IN_PIVOT_ROOT": "1"}),
+            mock.patch.object(target.os, "geteuid", return_value=0),
+            mock.patch.object(target.subprocess, "run", return_value=result) as run,
+        ):
             receipt = target.write_target_user_json(
                 pathlib.Path("/"), request_path, {"engine_id": "E01", "payload": {"prompt": "OK"}},
                 self.environment,
@@ -130,9 +132,11 @@ class TargetUserRequestFileTests(unittest.TestCase):
         self.assertIn("/tmp/lunita-xdg", command)
 
     def test_e01_request_writer_rejects_direct_tmp_without_mutation(self):
-        with mock.patch.dict(target.os.environ, {"LUNITA_IN_PIVOT_ROOT": "1"}), \\
-             mock.patch.object(target.os, "geteuid", return_value=0), \\
-             mock.patch.object(target.subprocess, "run") as run:
+        with (
+            mock.patch.dict(target.os.environ, {"LUNITA_IN_PIVOT_ROOT": "1"}),
+            mock.patch.object(target.os, "geteuid", return_value=0),
+            mock.patch.object(target.subprocess, "run") as run,
+        ):
             with self.assertRaisesRegex(target.TargetGateError, "private target XDG directory"):
                 target.write_target_user_json(
                     pathlib.Path("/"), pathlib.Path("/tmp/lunita-e01-qwen-test.json"),
@@ -142,10 +146,12 @@ class TargetUserRequestFileTests(unittest.TestCase):
 
     def test_e01_request_cleanup_runs_as_owning_target_uid(self):
         request_path = pathlib.Path("/tmp/lunita-xdg/lunita-e01-qwen-test.json")
-        result = mock.Mock(returncode=0, stdout="PASS_TARGET_USER_REQUEST_REMOVED\\n", stderr="")
-        with mock.patch.dict(target.os.environ, {"LUNITA_IN_PIVOT_ROOT": "1"}), \\
-             mock.patch.object(target.os, "geteuid", return_value=0), \\
-             mock.patch.object(target.subprocess, "run", return_value=result) as run:
+        result = mock.Mock(returncode=0, stdout="PASS_TARGET_USER_REQUEST_REMOVED", stderr="")
+        with (
+            mock.patch.dict(target.os.environ, {"LUNITA_IN_PIVOT_ROOT": "1"}),
+            mock.patch.object(target.os, "geteuid", return_value=0),
+            mock.patch.object(target.subprocess, "run", return_value=result) as run,
+        ):
             target.unlink_target_user_request(pathlib.Path("/"), request_path, self.environment)
         command = run.call_args.args[0]
         self.assertEqual(
@@ -157,7 +163,6 @@ class TargetUserRequestFileTests(unittest.TestCase):
         self.assertIn("path.unlink()", code)
         compile(code, "<e01-request-cleanup>", "exec")
         self.assertIn("1000", code)
-
 
 class TargetSystemPythonAliasTests(unittest.TestCase):
     def setUp(self):
