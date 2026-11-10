@@ -6,6 +6,7 @@ on:
       - fix/lunita-v18-rootfs-bound-checkpoint-20261109
     paths:
       - "recovery/lunita-custoszv9/**"
+      - "scripts/lunita/**"
       - ".github/workflows/lunita-v18-direct-functional-validation.yml"
   pull_request:
     types: [opened, synchronize, reopened]
@@ -35,6 +36,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install SquashFS tooling for reproducible packaging acceptance
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends squashfs-tools
+          mksquashfs -version
+          unsquashfs -version
+      - name: Compile and execute reproducible SquashFS packager acceptance
+        shell: bash
+        run: |
+          python -m py_compile scripts/lunita/package_candidate_squashfs_v1.py
+          python scripts/lunita/package_candidate_squashfs_v1.py --self-test
       - name: Install pinned CPU-only PyTorch for SeamlessM4T tensor contracts
         shell: bash
         run: |
@@ -349,6 +362,42 @@ jobs:
           export TRANSFORMERS_OFFLINE=1
           export HF_HUB_DISABLE_TELEMETRY=1
           python3.12 "$OVERLAY/target_runtime_acceptance_v1.py"
+      - name: Build and round-trip verify LUNITA.squashfs
+        id: package-squashfs
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n apt-get update
+          sudo -n apt-get install -y --no-install-recommends squashfs-tools
+          RECEIPT_DIR="$LUNITA_XDG_STATE_HOME/lunita/runtime_validation"
+          mapfile -t TARGET_RECEIPTS < <(find "$RECEIPT_DIR" -maxdepth 1 -type f -name 'LUNITA_TARGET_RUNTIME_ACCEPTANCE_*.json' -print | sort)
+          if [ "\${#TARGET_RECEIPTS[@]}" -ne 1 ]; then
+            echo "Expected exactly one direct target-runtime receipt; found \${#TARGET_RECEIPTS[@]}"
+            exit 2
+          fi
+          IMAGE_DIR="$RUNNER_TEMP/lunita-squashfs"
+          mkdir -p "$IMAGE_DIR"
+          sudo -n python3.12 scripts/lunita/package_candidate_squashfs_v1.py \\
+            --rootfs "$LUNITA_ROOTFS_REAL" \\
+            --target-receipt "\${TARGET_RECEIPTS[0]}" \\
+            --output "$IMAGE_DIR/LUNITA.squashfs"
+          sudo -n chmod 0644 \\
+            "$IMAGE_DIR/LUNITA.squashfs" \\
+            "$IMAGE_DIR/LUNITA.squashfs.sha256" \\
+            "$IMAGE_DIR/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json"
+          sudo -n chmod 0755 "$IMAGE_DIR"
+          printf 'image=%s\\n' "$IMAGE_DIR/LUNITA.squashfs" >> "$GITHUB_OUTPUT"
+      - name: Upload verified LUNITA.squashfs candidate artifact
+        if: always() && steps.package-squashfs.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunita-v1-8-squashfs-candidate
+          path: |
+            \${{ runner.temp }}/lunita-squashfs/LUNITA.squashfs
+            \${{ runner.temp }}/lunita-squashfs/LUNITA.squashfs.sha256
+            \${{ runner.temp }}/lunita-squashfs/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Run the existing v1.8 independent rootfs and JASP certification lane
         shell: bash
         run: |
