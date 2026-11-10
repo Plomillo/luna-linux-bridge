@@ -85,6 +85,11 @@ chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-inst
   libreadline8t64 libpcre2-8-0 liblzma5 libbz2-1.0 zlib1g \
   libcurl4t64 libicu74 libtirpc3t64 libblas3 liblapack3
 
+# Desktop application smoke tests must execute as the candidate's regular user.
+chroot "$ROOTFS" useradd --uid 1000 --create-home --user-group --shell /bin/bash lunita
+chroot "$ROOTFS" install -d -o 1000 -g 1000 -m 0700 \
+  /tmp/lunita-xdg/cache /tmp/lunita-xdg/config /tmp/lunita-xdg/data
+
 # R 4.6.1 source build. The fixed /opt prefix is stable after image deployment.
 R_ARCHIVE="$RUNNER_TEMP/lunita-build/R-$R_VERSION.tar.gz"
 curl --fail --location --retry 3 --retry-all-errors \
