@@ -143,6 +143,119 @@ def build_target_user_command(
     return command
 
 
+def run_target_user_command(
+    target_rootfs: pathlib.Path,
+    environment: tuple[str, ...] | list[str],
+    argv: tuple[str, ...] | list[str],
+    *,
+    timeout: int = 30,
+) -> subprocess.CompletedProcess:
+    """Run an argv-only command as the actual Lunita UID/GID 1000."""
+    return subprocess.run(
+        build_target_user_command(target_rootfs, environment, argv),
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def write_target_user_json(
+    target_rootfs: pathlib.Path,
+    request_path: pathlib.Path,
+    request: dict[str, Any],
+    environment: tuple[str, ...] | list[str],
+) -> dict[str, Any]:
+    """Create an exclusive, private E01 request as UID 1000 inside its owned XDG directory."""
+    target_rootfs = pathlib.Path(target_rootfs)
+    request_path = pathlib.Path(request_path)
+    expected_parent = target_rootfs / "tmp/lunita-xdg"
+    if request_path.parent != expected_parent or not (
+        request_path.name.startswith("lunita-e01-qwen-") and request_path.name.endswith(".json")
+    ):
+        raise TargetGateError("E01 request path must be a unique file directly inside the private target XDG directory")
+    writer = (
+        "import json, os, pathlib, stat, sys\\n"
+        "path = pathlib.Path(sys.argv[1])\\n"
+        "payload = json.loads(sys.argv[2])\\n"
+        "parent = path.parent.lstat()\\n"
+        "if not stat.S_ISDIR(parent.st_mode) or (parent.st_uid, parent.st_gid, stat.S_IMODE(parent.st_mode)) != (1000, 1000, 0o700):\\n"
+        "    raise SystemExit('E01 request parent is not the private UID/GID 1000 XDG directory')\\n"
+        "flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW\\n"
+        "fd = os.open(path, flags, 0o600)\\n"
+        "with os.fdopen(fd, 'w', encoding='utf-8') as stream:\\n"
+        "    stream.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + '\\\\n')\\n"
+        "    stream.flush()\\n"
+        "    os.fsync(stream.fileno())\\n"
+        "created = path.lstat()\\n"
+        "if not stat.S_ISREG(created.st_mode) or (created.st_uid, created.st_gid, stat.S_IMODE(created.st_mode)) != (1000, 1000, 0o600):\\n"
+        "    path.unlink(missing_ok=True)\\n"
+        "    raise SystemExit('E01 request ownership or mode verification failed')\\n"
+        "print('PASS_TARGET_USER_REQUEST_CREATED')"
+    )
+    guest_path = pathlib.Path("/tmp/lunita-xdg") / request_path.name
+    result = run_target_user_command(
+        target_rootfs,
+        environment,
+        (
+            "/usr/bin/python3.12",
+            "-c",
+            writer,
+            str(guest_path),
+            json.dumps(request, ensure_ascii=False, sort_keys=True),
+        ),
+        timeout=30,
+    )
+    if result.returncode != 0 or "PASS_TARGET_USER_REQUEST_CREATED" not in result.stdout:
+        detail = (result.stderr or result.stdout or "no diagnostic output").strip()[-1200:]
+        raise TargetGateError("Could not create E01 request as UID 1000: " + detail)
+    return {
+        "status": "PASS_TARGET_USER_REQUEST_CREATED",
+        "path": str(guest_path),
+        "owner": "1000:1000",
+        "mode": "0600",
+    }
+
+
+def unlink_target_user_request(
+    target_rootfs: pathlib.Path,
+    request_path: pathlib.Path,
+    environment: tuple[str, ...] | list[str],
+) -> None:
+    """Remove only the exact E01 regular request file as its owning target user."""
+    target_rootfs = pathlib.Path(target_rootfs)
+    request_path = pathlib.Path(request_path)
+    if request_path.parent != target_rootfs / "tmp/lunita-xdg" or not (
+        request_path.name.startswith("lunita-e01-qwen-") and request_path.name.endswith(".json")
+    ):
+        raise TargetGateError("Refusing cleanup outside the private E01 request directory")
+    remover = (
+        "import pathlib, stat, sys\\n"
+        "path = pathlib.Path(sys.argv[1])\\n"
+        "if path.parent != pathlib.Path('/tmp/lunita-xdg'):\\n"
+        "    raise SystemExit('E01 request cleanup path mismatch')\\n"
+        "try:\\n"
+        "    current = path.lstat()\\n"
+        "except FileNotFoundError:\\n"
+        "    pass\\n"
+        "else:\\n"
+        "    if not stat.S_ISREG(current.st_mode) or (current.st_uid, current.st_gid) != (1000, 1000):\\n"
+        "        raise SystemExit('E01 request cleanup refused unsafe file')\\n"
+        "    path.unlink()\\n"
+        "print('PASS_TARGET_USER_REQUEST_REMOVED')"
+    )
+    guest_path = pathlib.Path("/tmp/lunita-xdg") / request_path.name
+    result = run_target_user_command(
+        target_rootfs,
+        environment,
+        ("/usr/bin/python3.12", "-c", remover, str(guest_path)),
+        timeout=15,
+    )
+    if result.returncode != 0 or "PASS_TARGET_USER_REQUEST_REMOVED" not in result.stdout:
+        detail = (result.stderr or result.stdout or "no diagnostic output").strip()[-1000:]
+        raise TargetGateError("Could not securely remove E01 request as UID 1000: " + detail)
+
+
 def build_root_inspection_command(inspector: str, path: pathlib.Path) -> list[str]:
     """Use privileged read-only inspection without leaving the pivot-root candidate."""
     if os.environ.get("LUNITA_IN_PIVOT_ROOT") == "1":
@@ -443,6 +556,17 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
     if ubuntu.get("release") != "24.04" or ubuntu.get("codename") != "noble" or ubuntu.get("architecture") != "amd64":
         raise TargetGateError("Rootfs is not the registered Ubuntu 24.04 amd64 baseline")
     target_rootfs = ROOT.parents[1]
+    tmp_path = target_rootfs / "tmp"
+    if tmp_path.is_symlink() or not tmp_path.is_dir():
+        raise TargetGateError("Ubuntu target-rootfs /tmp is missing, unsafe, or not a directory")
+    tmp_stat = tmp_path.lstat()
+    tmp_mode = stat.S_IMODE(tmp_stat.st_mode)
+    tmp_receipt = receipt.get("filesystem_permissions", {}).get("tmp_directory", {})
+    if ((tmp_stat.st_uid, tmp_stat.st_gid, tmp_mode) != (0, 0, 0o1777)
+            or tmp_receipt != {"path": "/tmp", "uid": 0, "gid": 0, "mode_octal": "01777"}):
+        raise TargetGateError(
+            "Ubuntu target-rootfs /tmp permissions are not the required root-owned 01777 sticky directory"
+        )
     system_python = verify_system_python_alias(target_rootfs)
     python_receipt = receipt.get("system_python", {})
     if (python_receipt.get("default_executable") != "/usr/bin/python3"
@@ -810,45 +934,39 @@ def run_qwen_via_v18() -> dict[str, Any]:
             "timeout_seconds": 120,
         },
     }
-    request_path = target_rootfs / "tmp" / f"lunita-e01-qwen-{time.time_ns()}.json"
-    request_path.write_text(
-        json.dumps(request, ensure_ascii=False, sort_keys=True) + "\n",
-        encoding="utf-8",
+    request_path = xdg_root / f"lunita-e01-qwen-{time.time_ns()}.json"
+    target_environment = (
+        "HOME=/home/lunita",
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
+        "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
+        "XDG_DATA_HOME=/tmp/lunita-xdg/data",
+        "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+        "XDG_STATE_HOME=/tmp/lunita-xdg/state",
+        "TMPDIR=/tmp/lunita-xdg",
+        "LUNITA_ROOT=/opt/lunita",
+        "LUNITA_FASTEMBED_CACHE=/opt/lunita/engines/runtime_engines_v1/model-cache/fastembed",
+        "LUNITA_VECTOR_DB_PATH=/tmp/lunita-xdg/vectors",
+        "LUNITA_ENGINE_AUDIT_LOG=/tmp/lunita-xdg/audit/engine-execution.jsonl",
+        "PYTHONPATH=/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages:/opt/lunita/engines/runtime_engines_v1",
+        "HF_HUB_OFFLINE=1",
+        "TRANSFORMERS_OFFLINE=1",
+        "HF_HUB_DISABLE_TELEMETRY=1",
     )
+    write_target_user_json(target_rootfs, request_path, request, target_environment)
     try:
-        proc = subprocess.run(
-            build_target_user_command(
-                target_rootfs,
-                (
-                    "HOME=/home/lunita",
-                    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-                    "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
-                    "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
-                    "XDG_DATA_HOME=/tmp/lunita-xdg/data",
-                    "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
-                    "XDG_STATE_HOME=/tmp/lunita-xdg/state",
-                    "LUNITA_ROOT=/opt/lunita",
-                    "LUNITA_FASTEMBED_CACHE=/opt/lunita/engines/runtime_engines_v1/model-cache/fastembed",
-                    "LUNITA_VECTOR_DB_PATH=/tmp/lunita-xdg/vectors",
-                    "LUNITA_ENGINE_AUDIT_LOG=/tmp/lunita-xdg/audit/engine-execution.jsonl",
-                    "PYTHONPATH=/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages:/opt/lunita/engines/runtime_engines_v1",
-                    "HF_HUB_OFFLINE=1",
-                    "TRANSFORMERS_OFFLINE=1",
-                    "HF_HUB_DISABLE_TELEMETRY=1",
-                ),
-                (
-                    "/usr/bin/python3.12",
-                    "/opt/lunita/engines/runtime_engines_v1/lunita_beta_v1_8.py",
-                    "engine-run", "--request", "/" + request_path.relative_to(target_rootfs).as_posix(),
-                ),
+        proc = run_target_user_command(
+            target_rootfs,
+            target_environment,
+            (
+                "/usr/bin/python3.12",
+                "/opt/lunita/engines/runtime_engines_v1/lunita_beta_v1_8.py",
+                "engine-run", "--request", "/" + request_path.relative_to(target_rootfs).as_posix(),
             ),
-            capture_output=True,
-            text=True,
             timeout=180,
-            check=False,
         )
     finally:
-        request_path.unlink(missing_ok=True)
+        unlink_target_user_request(target_rootfs, request_path, target_environment)
 
     if proc.returncode != 0:
         raise TargetGateError("E01 Qwen inference failed inside target rootfs: " + (proc.stderr or proc.stdout)[-2000:])

@@ -54,6 +54,12 @@ if ! debootstrap --arch=amd64 --variant=minbase \
   tail -n 160 "$ROOTFS/debootstrap/debootstrap.log" >&2 || true
   fail "Ubuntu Noble minimal bootstrap failed."
 fi
+# Ubuntu's /tmp must retain the standard root-owned sticky, world-writable mode.
+# This is required by real runtime temporary-file operations after pivot_root.
+[ -d "$ROOTFS/tmp" ] || fail "Ubuntu rootfs /tmp directory is missing."
+chmod 1777 "$ROOTFS/tmp"
+TMP_DIRECTORY_MODE="$(stat -c '%a' "$ROOTFS/tmp")"
+[ "$TMP_DIRECTORY_MODE" = "1777" ] || fail "Ubuntu rootfs /tmp mode must be 1777, found $TMP_DIRECTORY_MODE."
 rm -f "$ROOTFS/etc/apt/sources.list.d/ubuntu.sources"
 cat > "$ROOTFS/etc/apt/sources.list" <<EOF
 deb http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
@@ -375,6 +381,7 @@ data = {
   "rootfs_origin": "REBUILT_FROM_PINNED_SOURCES_ON_GITHUB_ACTIONS",
   "source_rootfs_recovered": False,
   "ubuntu": {"distribution": "Ubuntu", "release": "24.04", "codename": "noble", "architecture": "amd64"},
+  "filesystem_permissions": {"tmp_directory": {"path": "/tmp", "uid": 0, "gid": 0, "mode_octal": "01777"}},
   "system_python": {"default_executable": "/usr/bin/python3", "symlink_target": "$SYSTEM_PYTHON_ALIAS", "version_output": "$SYSTEM_PYTHON_VERSION"},
   "legacy_launcher": {"version": "beta-v1.7", "sha256": "$ROOTFS_LAUNCHER_SHA256"},
   "qwen": {"repository": "$QWEN_REPO", "revision": "$QWEN_REVISION", "file": "$QWEN_FILE", "sha256": "$MODEL_SHA256", "bytes": int("$MODEL_BYTES"), "quantization": "IQ3_XS"},
