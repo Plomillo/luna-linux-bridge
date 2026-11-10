@@ -399,6 +399,53 @@ jobs:
           export TRANSFORMERS_OFFLINE=1
           export HF_HUB_DISABLE_TELEMETRY=1
           export R_HOME="$LUNITA_ROOTFS_REAL/opt/lunita/instruments/lapiz/R-4.6.1/lib/R"
+          # Flatpak's bubblewrap sandbox requires unprivileged user namespaces.
+          # Relax only the ephemeral CI host policy for this step; never alter the
+          # candidate rootfs or Flatpak permissions, and restore every changed
+          # host sysctl before this step exits (including on test failure).
+          RESTORE_FILE="$RUNNER_TEMP/lunita-userns-sysctl.restore"
+          : > "$RESTORE_FILE"
+          restore_userns_sysctls() {
+            local key original path observed failed=0
+            while IFS='=' read -r key original; do
+              [ -n "$key" ] || continue
+              if ! sudo -n sysctl -q -w "$key=$original"; then
+                echo "ERROR: could not restore host sysctl $key" >&2
+                failed=1
+                continue
+              fi
+              path="/proc/sys/${key//./\\/}"
+              observed="$(cat "$path")"
+              if [ "$observed" != "$original" ]; then
+                echo "ERROR: host sysctl restoration mismatch for $key: $observed != $original" >&2
+                failed=1
+              fi
+            done < "$RESTORE_FILE"
+            return "$failed"
+          }
+          trap restore_userns_sysctls EXIT
+          enable_userns_sysctl() {
+            local key="$1" wanted="$2" original path
+            path="/proc/sys/${key//./\\/}"
+            if [ ! -r "$path" ]; then
+              echo "USERNS_SYSCTL_UNAVAILABLE=$key"
+              return 0
+            fi
+            original="$(cat "$path")"
+            if [ "$original" != "$wanted" ]; then
+              printf '%s=%s\\n' "$key" "$original" >> "$RESTORE_FILE"
+              sudo -n sysctl -q -w "$key=$wanted"
+            fi
+            printf 'USERNS_SYSCTL_ACTIVE %s=%s (original=%s)\\n' "$key" "$wanted" "$original"
+          }
+          enable_userns_sysctl kernel.apparmor_restrict_unprivileged_userns 0
+          enable_userns_sysctl kernel.unprivileged_userns_clone 1
+          if [ -r /proc/sys/user/max_user_namespaces ] && [ "$(cat /proc/sys/user/max_user_namespaces)" = "0" ]; then
+            enable_userns_sysctl user.max_user_namespaces 65536
+          fi
+          sudo -n chroot --userspec=1000:1000 "$LUNITA_ROOTFS_REAL" \\
+            /usr/bin/unshare --user --map-root-user /usr/bin/true
+          echo "PASS: target UID 1000 can create the user namespace required by Flatpak bubblewrap."
           python3.12 "$OVERLAY/target_runtime_acceptance_v1.py"
       - name: Unmount target virtual filesystems before image materialization
         if: always()
