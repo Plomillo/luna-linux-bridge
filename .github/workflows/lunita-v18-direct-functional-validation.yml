@@ -277,7 +277,7 @@ jobs:
     name: "Lunita v1.8 real target and independent acceptance"
     concurrency:
       group: lunita-v1-8-target-runtime-${{ github.ref }}
-      cancel-in-progress: false
+      cancel-in-progress: true
     needs: contract-tests
     runs-on: ubuntu-24.04
     timeout-minutes: 300
