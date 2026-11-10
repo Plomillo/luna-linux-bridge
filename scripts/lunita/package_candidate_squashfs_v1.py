@@ -206,6 +206,7 @@ def validate_target_receipt(path: pathlib.Path) -> dict[str, Any]:
     if receipt.get("certification") != "NOT_GRANTED":
         raise PackageError("Target receipt must not claim certification")
     required = {
+        "rootfs_build": "PASS_ROOTFS_BUILD_IDENTITY",
         "overlay_integrity": "PASS_OVERLAY_INTEGRITY",
         "e04_quantization": "PASS_E04_INT8_QUALITY_GATE",
         "qwen_e01": "PASS_E01_QWEN_INFERENCE",
