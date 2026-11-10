@@ -15,17 +15,23 @@ import engine_runtime_v1 as engine
 class LunitaBetaV18Tests(unittest.TestCase):
     def test_runtime_environment_is_overlay_scoped(self):
         env = launcher.runtime_environment({})
-        self.assertIn("/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages",
-                      env["PYTHONPATH"])
-        self.assertEqual("/opt/lunita/engines/runtime_engines_v1/model-cache/fastembed",
-                         env["LUNITA_FASTEMBED_CACHE"])
+        expected_overlay = launcher.OVERLAY
+        python_paths = env["PYTHONPATH"].split(os.pathsep)
+        self.assertEqual(
+            str(expected_overlay / "vendor/python3.12/site-packages"), python_paths[0]
+        )
+        self.assertEqual(str(expected_overlay), python_paths[1])
+        self.assertEqual(
+            str(expected_overlay / "model-cache/fastembed"),
+            env["LUNITA_FASTEMBED_CACHE"],
+        )
         self.assertEqual("/var/lib/lunita/vectors", env["LUNITA_VECTOR_DB_PATH"])
         self.assertEqual("1", env["HF_HUB_DISABLE_TELEMETRY"])
         self.assertEqual("1", env["HF_HUB_OFFLINE"])
         self.assertEqual("1", env["TRANSFORMERS_OFFLINE"])
 
     def test_v17_legacy_launcher_path_matches_real_candidate_rootfs(self):
-        self.assertEqual(pathlib.Path("/opt/lunita/agent/lunita.py"), launcher.LEGACY_LAUNCHER)
+        self.assertEqual(launcher.ROOT / "agent/lunita.py", launcher.LEGACY_LAUNCHER)
 
     def test_v17_legacy_launcher_digest_is_explicitly_pinned(self):
         self.assertEqual(64, len(launcher.LEGACY_SHA256))
@@ -95,8 +101,8 @@ class LunitaBetaV18Tests(unittest.TestCase):
                 self.assertEqual(before, audit.read_bytes())
 
     def test_legacy_delegation_does_not_inject_vendor_python_packages(self):
-        vendor = "/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages"
-        overlay = "/opt/lunita/engines/runtime_engines_v1"
+        vendor = str(launcher.OVERLAY / "vendor/python3.12/site-packages")
+        overlay = str(launcher.OVERLAY)
         custom = "/opt/custom/python"
         with tempfile.TemporaryDirectory() as temporary:
             legacy = pathlib.Path(temporary) / "lunita.py"
@@ -105,7 +111,11 @@ class LunitaBetaV18Tests(unittest.TestCase):
             inherited_pythonpath = os.pathsep.join([vendor, overlay, custom])
             with mock.patch.object(launcher, "LEGACY_LAUNCHER", legacy), \
                  mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha), \
-                 mock.patch.dict(os.environ, {"PYTHONPATH": inherited_pythonpath}), \
+                 mock.patch.dict(os.environ, {
+                     "PYTHONPATH": inherited_pythonpath,
+                     # Exercise the direct host-delegation branch, not target chroot.
+                     "LUNITA_TARGET_ROOTFS": "",
+                 }), \
                  mock.patch.object(launcher.subprocess, "run",
                                    return_value=type("R", (), {"returncode": 0})()) as run:
                 self.assertEqual(0, launcher.run_legacy(["r-self-test"]))
@@ -116,6 +126,56 @@ class LunitaBetaV18Tests(unittest.TestCase):
             self.assertEqual([custom], child_paths)
             self.assertEqual("1", kwargs["env"].get("HF_HUB_OFFLINE", "1"))
             self.assertEqual([str(legacy), "r-self-test"], run.call_args.args[0][1:])
+
+    def test_legacy_delegation_uses_guest_path_inside_target_rootfs(self):
+        with tempfile.TemporaryDirectory(prefix="lunita-legacy-rootfs-") as temporary:
+            rootfs = pathlib.Path(temporary)
+            legacy = rootfs / "opt/lunita/agent/lunita.py"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_bytes(b"immutable beta v1.7 target fixture")
+            legacy_sha = hashlib.sha256(legacy.read_bytes()).hexdigest()
+            inherited_pythonpath = os.pathsep.join([
+                str(launcher.OVERLAY / "vendor/python3.12/site-packages"),
+                str(launcher.OVERLAY),
+            ])
+            with mock.patch.object(launcher, "LEGACY_LAUNCHER", legacy), \
+                 mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha), \
+                 mock.patch.dict(os.environ, {
+                     "LUNITA_TARGET_ROOTFS": str(rootfs),
+                     "PYTHONPATH": inherited_pythonpath,
+                 }), \
+                 mock.patch.object(
+                     launcher.subprocess, "run",
+                     return_value=type("R", (), {"returncode": 0})(),
+                 ) as run:
+                self.assertEqual(0, launcher.run_legacy(["r-self-test"]))
+
+            command = run.call_args.args[0]
+            self.assertEqual(
+                ["sudo", "-n", "chroot", "--userspec=1000:1000",
+                 str(rootfs), "/usr/bin/env", "-C", "/tmp"],
+                command[:8],
+            )
+            python_index = command.index("/usr/bin/python3")
+            self.assertEqual(
+                ["/opt/lunita/agent/lunita.py", "r-self-test"],
+                command[python_index + 1:],
+            )
+            self.assertNotIn("PYTHONPATH", run.call_args.kwargs["env"])
+
+    def test_legacy_delegation_outside_declared_target_rootfs_is_denied(self):
+        with tempfile.TemporaryDirectory(prefix="lunita-rootfs-") as rootfs_dir, \
+             tempfile.TemporaryDirectory(prefix="lunita-outside-") as outside_dir:
+            rootfs = pathlib.Path(rootfs_dir)
+            legacy = pathlib.Path(outside_dir) / "lunita.py"
+            legacy.write_bytes(b"immutable beta v1.7 outside fixture")
+            legacy_sha = hashlib.sha256(legacy.read_bytes()).hexdigest()
+            with mock.patch.object(launcher, "LEGACY_LAUNCHER", legacy), \
+                 mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha), \
+                 mock.patch.dict(os.environ, {"LUNITA_TARGET_ROOTFS": str(rootfs)}), \
+                 mock.patch.object(launcher.subprocess, "run") as run:
+                self.assertEqual(5, launcher.run_legacy(["r-self-test"]))
+            run.assert_not_called()
 
     def test_legacy_hash_verifier_detects_modified_launcher(self):
         with tempfile.TemporaryDirectory() as temporary:

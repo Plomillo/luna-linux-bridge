@@ -520,7 +520,7 @@ def verify_overlay() -> dict[str, Any]:
 
 
 REQUIRED_ENGINE_TEST_MATCHERS = {
-    "E02": "test_e02_spanish_nlp_executes_pipeline",
+    "E02": "test_e02_spanish_nlp_executes_tokenization_morphology_and_pos",
     "E03": "test_e03_rag_returns_source_bound_context",
     "E04": "test_e04_embedding_and_e05_vector_search_execute_real_models",
     "E05": "test_e04_embedding_and_e05_vector_search_execute_real_models",
@@ -562,6 +562,7 @@ def run_unittests() -> dict[str, Any]:
         "test_complete_canonical_route_matrix_for_all_fourteen_commands" in test_id
         for test_id in test_ids
     )
+    missing_engine_ids = sorted(set(REQUIRED_ENGINE_TEST_MATCHERS) - set(engine_ids_covered))
     # Never run acceptance tests against the user's persistent vector database.
     # Each target-validation run receives a fresh, disposable Qdrant directory.
     previous_vector_path = os.environ.get("LUNITA_VECTOR_DB_PATH")
@@ -575,13 +576,19 @@ def run_unittests() -> dict[str, Any]:
             else:
                 os.environ["LUNITA_VECTOR_DB_PATH"] = previous_vector_path
     return {
-        "status": "PASS" if result.wasSuccessful() and not result.skipped else "FAIL",
+        "status": (
+            "PASS"
+            if result.wasSuccessful() and not result.skipped
+            and not missing_engine_ids and command_route_matrix_test
+            else "FAIL"
+        ),
         "tests_run": result.testsRun,
         "failures": len(result.failures),
         "errors": len(result.errors),
         "skipped": len(result.skipped),
         "engine_ids_covered": engine_ids_covered,
         "required_engine_ids": sorted(REQUIRED_ENGINE_TEST_MATCHERS),
+        "missing_engine_ids": missing_engine_ids,
         "command_route_matrix_test_present": command_route_matrix_test,
         "failure_test_ids": [test.id() for test, _ in result.failures],
         "error_test_ids": [test.id() for test, _ in result.errors],
