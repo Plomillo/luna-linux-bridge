@@ -401,10 +401,13 @@ jobs:
         shell: bash
         run: |
           set +e
-          sudo umount -R "$LUNITA_ROOTFS_REAL/run" 2>/dev/null
-          sudo umount -R "$LUNITA_ROOTFS_REAL/sys" 2>/dev/null
-          sudo umount -R "$LUNITA_ROOTFS_REAL/proc" 2>/dev/null
-          sudo umount -R "$LUNITA_ROOTFS_REAL/dev" 2>/dev/null
+          if [ -n "${LUNITA_ROOTFS_REAL:-}" ] && [ -d "$LUNITA_ROOTFS_REAL" ]; then
+            sudo umount -R "$LUNITA_ROOTFS_REAL/run" 2>/dev/null || true
+            sudo umount -R "$LUNITA_ROOTFS_REAL/sys" 2>/dev/null || true
+            sudo umount -R "$LUNITA_ROOTFS_REAL/proc" 2>/dev/null || true
+            sudo umount -R "$LUNITA_ROOTFS_REAL/dev" 2>/dev/null || true
+          fi
+          exit 0
       - name: Build and round-trip verify LUNITA.squashfs
         id: package-squashfs
         shell: bash
@@ -527,10 +530,13 @@ jobs:
         shell: bash
         run: |
           set +e
-          sudo umount -R "$LUNITA_ROOTFS_REAL/run" 2>/dev/null
-          sudo umount -R "$LUNITA_ROOTFS_REAL/sys" 2>/dev/null
-          sudo umount -R "$LUNITA_ROOTFS_REAL/proc" 2>/dev/null
-          sudo umount -R "$LUNITA_ROOTFS_REAL/dev" 2>/dev/null
+          if [ -n "${LUNITA_ROOTFS_REAL:-}" ] && [ -d "$LUNITA_ROOTFS_REAL" ]; then
+            sudo umount -R "$LUNITA_ROOTFS_REAL/run" 2>/dev/null || true
+            sudo umount -R "$LUNITA_ROOTFS_REAL/sys" 2>/dev/null || true
+            sudo umount -R "$LUNITA_ROOTFS_REAL/proc" 2>/dev/null || true
+            sudo umount -R "$LUNITA_ROOTFS_REAL/dev" 2>/dev/null || true
+          fi
+          exit 0
       - name: Upload real target and independent evidence
         if: always()
         uses: actions/upload-artifact@v4
