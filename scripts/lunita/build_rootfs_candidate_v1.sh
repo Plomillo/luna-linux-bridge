@@ -76,8 +76,11 @@ chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get update
 chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   flatpak python3.12 python3.12-venv ca-certificates curl wget gnupg locales \
   libnss3 libgtk-3-0t64 libatk1.0-0t64 libatk-bridge2.0-0t64 libatspi2.0-0t64 \
-  libcups2t64 libdrm2 libgbm1 libasound2t64 libx11-xcb1 libxcomposite1 \
-  libxdamage1 libxfixes3 libxrandr2 libxkbcommon0 libxshmfence1 \
+  libcups2t64 libdrm2 libgbm1 libasound2t64 libdbus-1-3 libglib2.0-0t64 \
+  libexpat1 libfontconfig1 libfreetype6 libx11-6 libx11-xcb1 libxcb1 libxext6 \
+  libxi6 libxinerama1 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+  libxrender1 libxss1 libxtst6 libxkbcommon0 libxshmfence1 libudev1 libvulkan1 \
+  libwayland-client0 libwayland-cursor0 libwayland-egl1 libwayland-server0 \
   libpango-1.0-0 libcairo2 fonts-liberation libstdc++6 libgomp1 \
   libreadline8t64 libpcre2-8-0 liblzma5 libbz2-1.0 zlib1g \
   libcurl4t64 libicu74 libtirpc3t64 libblas3 liblapack3
