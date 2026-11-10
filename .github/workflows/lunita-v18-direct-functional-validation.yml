@@ -36,6 +36,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Validate pivot-root target execution script syntax
+        shell: bash
+        run: bash -n scripts/lunita/run_target_runtime_acceptance_in_container_v1.sh
       - name: Install SquashFS tooling for reproducible packaging acceptance
         shell: bash
         run: |

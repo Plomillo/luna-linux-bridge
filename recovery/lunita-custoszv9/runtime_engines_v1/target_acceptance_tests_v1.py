@@ -47,6 +47,54 @@ def tree_receipt(root: pathlib.Path) -> dict:
     }
 
 
+class TargetPivotRootCommandTests(unittest.TestCase):
+    def test_pivot_root_user_command_uses_setpriv_and_no_chroot(self):
+        with mock.patch.dict(target.os.environ, {"LUNITA_IN_PIVOT_ROOT": "1"}), \
+             mock.patch.object(target.os, "geteuid", return_value=0):
+            command = target.build_target_user_command(
+                pathlib.Path("/"),
+                ("HOME=/home/lunita", "PATH=/usr/bin:/bin"),
+                ("/usr/bin/flatpak", "--system", "run", "org.jamovi.jamovi"),
+            )
+        self.assertEqual(
+            ["/usr/bin/setpriv", "--reuid=1000", "--regid=1000", "--clear-groups", "/usr/bin/env"],
+            command[:5],
+        )
+        self.assertNotIn("chroot", command)
+        self.assertIn("/usr/bin/flatpak", command)
+
+    def test_pivot_root_mode_rejects_non_candidate_root(self):
+        with mock.patch.dict(target.os.environ, {"LUNITA_IN_PIVOT_ROOT": "1"}), \
+             mock.patch.object(target.os, "geteuid", return_value=0):
+            with self.assertRaisesRegex(target.TargetGateError, "candidate mount root"):
+                target.build_target_user_command(
+                    pathlib.Path("/tmp/not-the-rootfs"),
+                    ("HOME=/home/lunita",), ("/usr/bin/true",),
+                )
+
+    def test_pivot_root_mode_rejects_non_root_supervisor(self):
+        with mock.patch.dict(target.os.environ, {"LUNITA_IN_PIVOT_ROOT": "1"}), \
+             mock.patch.object(target.os, "geteuid", return_value=1001):
+            with self.assertRaisesRegex(target.TargetGateError, "candidate mount root"):
+                target.build_target_user_command(
+                    pathlib.Path("/"),
+                    ("HOME=/home/lunita",), ("/usr/bin/true",),
+                )
+
+    def test_non_pivot_mode_keeps_existing_chroot_boundary(self):
+        with tempfile.TemporaryDirectory(prefix="lunita-legacy-chroot-") as temporary:
+            with mock.patch.dict(target.os.environ, {"LUNITA_IN_PIVOT_ROOT": ""}):
+                command = target.build_target_user_command(
+                    pathlib.Path(temporary),
+                    ("HOME=/home/lunita",), ("/usr/bin/true",),
+                )
+        self.assertEqual(
+            ["sudo", "-n", "chroot", "--userspec=1000:1000", temporary, "/usr/bin/env"],
+            command[:6],
+        )
+        self.assertIn("/usr/bin/true", command)
+
+
 class TargetSystemPythonAliasTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="lunita-system-python-")

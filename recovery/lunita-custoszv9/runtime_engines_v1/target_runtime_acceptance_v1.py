@@ -113,6 +113,47 @@ class TargetGateError(RuntimeError):
     pass
 
 
+def build_target_user_command(
+    target_rootfs: pathlib.Path,
+    environment: tuple[str, ...] | list[str],
+    argv: tuple[str, ...] | list[str],
+    *,
+    clean_environment: bool = False,
+) -> list[str]:
+    """Construct a fail-closed UID/GID 1000 command for chroot or pivot-root mode."""
+    rootfs = pathlib.Path(target_rootfs)
+    pivot_mode = os.environ.get("LUNITA_IN_PIVOT_ROOT") == "1"
+    if pivot_mode:
+        if os.geteuid() != 0 or rootfs != pathlib.Path("/"):
+            raise TargetGateError(
+                "Pivot-root execution requires root inside the candidate mount root; refusing a chroot fallback."
+            )
+        command = [
+            "/usr/bin/setpriv", "--reuid=1000", "--regid=1000", "--clear-groups",
+            "/usr/bin/env",
+        ]
+    else:
+        command = [
+            "sudo", "-n", "chroot", "--userspec=1000:1000", str(rootfs),
+            "/usr/bin/env",
+        ]
+    if clean_environment:
+        command.append("-i")
+    command.extend(["-C", "/tmp", *environment, *argv])
+    return command
+
+
+def build_root_inspection_command(inspector: str, path: pathlib.Path) -> list[str]:
+    """Use privileged read-only inspection without leaving the pivot-root candidate."""
+    if os.environ.get("LUNITA_IN_PIVOT_ROOT") == "1":
+        if os.geteuid() != 0 or ROOT.parents[1] != pathlib.Path("/"):
+            raise TargetGateError("Pivot-root inspection is not bound to the actual candidate mount root.")
+        prefix = ["/usr/bin/python3"]
+    else:
+        prefix = ["sudo", "-n", "/usr/bin/python3"]
+    return [*prefix, "-c", inspector, str(path)]
+
+
 def inspect_rootfs_directory_as_root(path: pathlib.Path, label: str) -> dict[str, Any]:
     """Read target-rootfs directory metadata without traversing it as the host runner.
 
@@ -133,7 +174,7 @@ def inspect_rootfs_directory_as_root(path: pathlib.Path, label: str) -> dict[str
     )
     try:
         result = subprocess.run(
-            ["sudo", "-n", "/usr/bin/python3", "-c", inspector, str(path)],
+            build_root_inspection_command(inspector, path),
             capture_output=True,
             text=True,
             timeout=15,
@@ -224,7 +265,7 @@ finally:
 """
     try:
         result = subprocess.run(
-            ["sudo", "-n", "/usr/bin/python3", "-c", inspector, str(path)],
+            build_root_inspection_command(inspector, path),
             capture_output=True,
             text=True,
             timeout=15,
@@ -465,10 +506,7 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
             *extra_env,
         )
         return subprocess.run(
-            [
-                "sudo", "-n", "chroot", "--userspec=1000:1000", str(target_rootfs),
-                "/usr/bin/env", "-C", "/tmp", *environment, *argv,
-            ],
+            build_target_user_command(target_rootfs, environment, argv),
             capture_output=True, text=True, check=False,
         )
 
@@ -779,28 +817,31 @@ def run_qwen_via_v18() -> dict[str, Any]:
     )
     try:
         proc = subprocess.run(
-            [
-                "sudo", "-n", "chroot", "--userspec=1000:1000", str(target_rootfs),
-                "/usr/bin/env", "-C", "/tmp",
-                "HOME=/home/lunita",
-                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-                "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
-                "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
-                "XDG_DATA_HOME=/tmp/lunita-xdg/data",
-                "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
-                "XDG_STATE_HOME=/tmp/lunita-xdg/state",
-                "LUNITA_ROOT=/opt/lunita",
-                "LUNITA_FASTEMBED_CACHE=/opt/lunita/engines/runtime_engines_v1/model-cache/fastembed",
-                "LUNITA_VECTOR_DB_PATH=/tmp/lunita-xdg/vectors",
-                "LUNITA_ENGINE_AUDIT_LOG=/tmp/lunita-xdg/audit/engine-execution.jsonl",
-                "PYTHONPATH=/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages:/opt/lunita/engines/runtime_engines_v1",
-                "HF_HUB_OFFLINE=1",
-                "TRANSFORMERS_OFFLINE=1",
-                "HF_HUB_DISABLE_TELEMETRY=1",
-                "/usr/bin/python3.12",
-                "/opt/lunita/engines/runtime_engines_v1/lunita_beta_v1_8.py",
-                "engine-run", "--request", "/" + request_path.relative_to(target_rootfs).as_posix(),
-            ],
+            build_target_user_command(
+                target_rootfs,
+                (
+                    "HOME=/home/lunita",
+                    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                    "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
+                    "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
+                    "XDG_DATA_HOME=/tmp/lunita-xdg/data",
+                    "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+                    "XDG_STATE_HOME=/tmp/lunita-xdg/state",
+                    "LUNITA_ROOT=/opt/lunita",
+                    "LUNITA_FASTEMBED_CACHE=/opt/lunita/engines/runtime_engines_v1/model-cache/fastembed",
+                    "LUNITA_VECTOR_DB_PATH=/tmp/lunita-xdg/vectors",
+                    "LUNITA_ENGINE_AUDIT_LOG=/tmp/lunita-xdg/audit/engine-execution.jsonl",
+                    "PYTHONPATH=/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages:/opt/lunita/engines/runtime_engines_v1",
+                    "HF_HUB_OFFLINE=1",
+                    "TRANSFORMERS_OFFLINE=1",
+                    "HF_HUB_DISABLE_TELEMETRY=1",
+                ),
+                (
+                    "/usr/bin/python3.12",
+                    "/opt/lunita/engines/runtime_engines_v1/lunita_beta_v1_8.py",
+                    "engine-run", "--request", "/" + request_path.relative_to(target_rootfs).as_posix(),
+                ),
+            ),
             capture_output=True,
             text=True,
             timeout=180,
@@ -832,7 +873,11 @@ def run_qwen_via_v18() -> dict[str, Any]:
         raise TargetGateError(f"Expected exactly one target-rootfs llama-cli, found {len(llama_candidates)}")
     return {
         "status": "PASS_E01_QWEN_INFERENCE",
-        "execution_environment": "CHROOT_UBUNTU_24_04_UID_1000",
+        "execution_environment": (
+            "PIVOT_ROOT_UBUNTU_24_04_UID_1000"
+            if os.environ.get("LUNITA_IN_PIVOT_ROOT") == "1"
+            else "CHROOT_UBUNTU_24_04_UID_1000"
+        ),
         "model": model.name,
         "model_sha256": sha256_file(model),
         "llama_cli_sha256": sha256_file(llama_candidates[0]),
@@ -863,17 +908,15 @@ def diagnose_flatpak_smoke(app_id: str) -> dict[str, Any]:
     )
     results = {}
     for clean_environment in (False, True):
-        command = [
-            "sudo", "-n", "chroot", "--userspec=1000:1000", str(target_rootfs),
-            "/usr/bin/env",
-        ]
-        if clean_environment:
-            command.append("-i")
-        command.extend([
-            "-C", "/tmp", *guest_environment,
-            "/usr/bin/flatpak", "--system", "run", "--command=sh",
-            app_id, "-c", "test -d /app",
-        ])
+        command = build_target_user_command(
+            target_rootfs,
+            guest_environment,
+            (
+                "/usr/bin/flatpak", "--system", "run", "--command=sh",
+                app_id, "-c", "test -d /app",
+            ),
+            clean_environment=clean_environment,
+        )
         try:
             result = subprocess.run(
                 command, capture_output=True, text=True, timeout=90, check=False

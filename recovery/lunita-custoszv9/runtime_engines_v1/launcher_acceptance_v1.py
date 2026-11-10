@@ -163,6 +163,36 @@ class LunitaBetaV18Tests(unittest.TestCase):
             )
             self.assertNotIn("PYTHONPATH", run.call_args.kwargs["env"])
 
+    def test_legacy_delegation_in_pivot_root_drops_uid_without_chroot(self):
+        with tempfile.TemporaryDirectory(prefix="lunita-pivot-root-") as temporary:
+            legacy = pathlib.Path(temporary) / "opt/lunita/agent/lunita.py"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_bytes(b"immutable beta v1.7 pivot-root fixture")
+            legacy_sha = hashlib.sha256(legacy.read_bytes()).hexdigest()
+            with mock.patch.object(launcher, "LEGACY_LAUNCHER", legacy), \
+                 mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha), \
+                 mock.patch.dict(os.environ, {
+                     "LUNITA_TARGET_ROOTFS": "/",
+                     "LUNITA_IN_PIVOT_ROOT": "1",
+                     "PYTHONPATH": "",
+                 }), \
+                 mock.patch.object(launcher.os, "geteuid", return_value=0), \
+                 mock.patch.object(
+                     launcher.subprocess, "run",
+                     return_value=type("R", (), {"returncode": 0})(),
+                 ) as run:
+                self.assertEqual(0, launcher.run_legacy(["jamovi-self-test"]))
+            command = run.call_args.args[0]
+            self.assertEqual(
+                ["/usr/bin/setpriv", "--reuid=1000", "--regid=1000", "--clear-groups"],
+                command[:4],
+            )
+            self.assertNotIn("chroot", command)
+            python_index = command.index("/usr/bin/python3.12")
+            self.assertTrue(command[python_index + 1].endswith("/opt/lunita/agent/lunita.py"))
+            self.assertEqual(["jamovi-self-test"], command[python_index + 2:])
+            self.assertNotIn("PYTHONPATH", run.call_args.kwargs["env"])
+
     def test_legacy_delegation_outside_declared_target_rootfs_is_denied(self):
         with tempfile.TemporaryDirectory(prefix="lunita-rootfs-") as rootfs_dir, \
              tempfile.TemporaryDirectory(prefix="lunita-outside-") as outside_dir:

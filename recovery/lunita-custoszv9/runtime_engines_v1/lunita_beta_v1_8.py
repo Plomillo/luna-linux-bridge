@@ -100,11 +100,21 @@ def run_legacy(arguments: Sequence[str]) -> int:
             "FLATPAK_SYSTEM_DIR=/var/lib/flatpak",
             "R_HOME=/opt/lunita/instruments/lapiz/R-4.6.1/lib/R",
         ]
-        command = [
-            "sudo", "-n", "chroot", "--userspec=1000:1000",
-            str(target_rootfs), "/usr/bin/env", "-C", "/tmp",
-            *guest_environment, "/usr/bin/python3.12", guest_launcher, *arguments,
-        ]
+        if os.environ.get("LUNITA_IN_PIVOT_ROOT") == "1":
+            if target_rootfs != pathlib.Path("/") or os.geteuid() != 0:
+                print("DENIED: pivot-root identity does not match the candidate mount root", file=sys.stderr)
+                return 5
+            command = [
+                "/usr/bin/setpriv", "--reuid=1000", "--regid=1000", "--clear-groups",
+                "/usr/bin/env", "-C", "/tmp",
+                *guest_environment, "/usr/bin/python3.12", guest_launcher, *arguments,
+            ]
+        else:
+            command = [
+                "sudo", "-n", "chroot", "--userspec=1000:1000",
+                str(target_rootfs), "/usr/bin/env", "-C", "/tmp",
+                *guest_environment, "/usr/bin/python3.12", guest_launcher, *arguments,
+            ]
         child_environment = os.environ.copy()
         child_environment.pop("PYTHONPATH", None)
     else:
