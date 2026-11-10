@@ -372,114 +372,42 @@ jobs:
               --apply
             printf 'LUNITA_CHECKPOINT_DIR=%s\n' "$CHECKPOINT_DIR" >> "$GITHUB_ENV"
           fi
-      - name: Mount target virtual filesystems for in-rootfs application tests
+      - name: Prepare isolated namespace-capable runner for actual target acceptance
         shell: bash
         run: |
           set -euo pipefail
-          sudo mount --rbind /dev "$LUNITA_ROOTFS_REAL/dev"
-          sudo mount --make-rslave "$LUNITA_ROOTFS_REAL/dev"
-          sudo mount -t proc proc "$LUNITA_ROOTFS_REAL/proc"
-          sudo mount --rbind /sys "$LUNITA_ROOTFS_REAL/sys"
-          sudo mount --make-rslave "$LUNITA_ROOTFS_REAL/sys"
-          sudo mount --rbind /run "$LUNITA_ROOTFS_REAL/run"
-          sudo mount --make-rslave "$LUNITA_ROOTFS_REAL/run"
-          sudo install -d -o 1000 -g 1000 -m 0700 "$LUNITA_ROOTFS_REAL/run/lunita-runtime-1000"
+          sudo -n docker build --pull=false -f scripts/lunita/target-runtime-ci/Dockerfile -t lunita-v18-target-runtime-ci:1 .
+          sudo -n docker run --detach \
+            --name lunita-v18-target-runtime-ci \
+            --privileged \
+            --security-opt seccomp=unconfined \
+            --security-opt apparmor=unconfined \
+            --init \
+            --volume "$RUNNER_TEMP:$RUNNER_TEMP" \
+            --volume "$GITHUB_WORKSPACE:/workspace" \
+            --workdir /workspace \
+            lunita-v18-target-runtime-ci:1
+          sudo -n docker exec lunita-v18-target-runtime-ci python3.12 --version
       - name: Execute actual E01 inference and E02-E15 plus legacy application smoke tests
         shell: bash
         run: |
           set -euo pipefail
-          OVERLAY="$LUNITA_ROOT/engines/runtime_engines_v1"
-          export XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME"
-          export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$LUNITA_XDG_STATE_HOME/lunita/runtime_validation"
-          export PYTHONPATH="$OVERLAY/vendor/python3.12/site-packages:$OVERLAY"
-          export LUNITA_FASTEMBED_CACHE="$OVERLAY/model-cache/fastembed"
-          export LUNITA_VECTOR_DB_PATH="$RUNNER_TEMP/lunita-target-vectors"
-          export LUNITA_ENGINE_AUDIT_LOG="$RUNNER_TEMP/lunita-target-audit/engine-execution.jsonl"
-          export HF_HUB_OFFLINE=1
-          export TRANSFORMERS_OFFLINE=1
-          export HF_HUB_DISABLE_TELEMETRY=1
-          export R_HOME="$LUNITA_ROOTFS_REAL/opt/lunita/instruments/lapiz/R-4.6.1/lib/R"
-          # Flatpak's bubblewrap sandbox requires unprivileged user namespaces.
-          # Relax only the ephemeral CI host policy for this step; never alter the
-          # candidate rootfs or Flatpak permissions, and restore every changed
-          # host sysctl before this step exits (including on test failure).
-          RESTORE_FILE="$RUNNER_TEMP/lunita-userns-sysctl.restore"
-          : > "$RESTORE_FILE"
-          sysctl_path() {
-            case "$1" in
-              kernel.apparmor_restrict_unprivileged_userns)
-                printf '%s\n' /proc/sys/kernel/apparmor_restrict_unprivileged_userns
-                ;;
-              kernel.unprivileged_userns_clone)
-                printf '%s\n' /proc/sys/kernel/unprivileged_userns_clone
-                ;;
-              user.max_user_namespaces)
-                printf '%s\n' /proc/sys/user/max_user_namespaces
-                ;;
-              *)
-                echo "ERROR: unregistered user-namespace sysctl: $1" >&2
-                return 2
-                ;;
-            esac
-          }
-          restore_userns_sysctls() {
-            local key original path observed failed=0
-            while IFS='=' read -r key original; do
-              [ -n "$key" ] || continue
-              if ! sudo -n sysctl -q -w "$key=$original"; then
-                echo "ERROR: could not restore host sysctl $key" >&2
-                failed=1
-                continue
-              fi
-              path="$(sysctl_path "$key")"
-              observed="$(cat "$path")"
-              if [ "$observed" != "$original" ]; then
-                echo "ERROR: host sysctl restoration mismatch for $key: $observed != $original" >&2
-                failed=1
-              fi
-            done < "$RESTORE_FILE"
-            return "$failed"
-          }
-          trap restore_userns_sysctls EXIT
-          enable_userns_sysctl() {
-            local key="$1" wanted="$2" original path
-            path="$(sysctl_path "$key")"
-            if [ ! -e "$path" ]; then
-              echo "USERNS_SYSCTL_UNAVAILABLE=$key"
-              return 0
-            fi
-            if [ ! -r "$path" ]; then
-              echo "ERROR: user-namespace sysctl is not readable: $key" >&2
-              return 1
-            fi
-            original="$(cat "$path")"
-            if [ "$original" != "$wanted" ]; then
-              printf '%s=%s\n' "$key" "$original" >> "$RESTORE_FILE"
-              sudo -n sysctl -q -w "$key=$wanted"
-            fi
-            printf 'USERNS_SYSCTL_ACTIVE %s=%s (original=%s)\n' "$key" "$wanted" "$original"
-          }
-          enable_userns_sysctl kernel.apparmor_restrict_unprivileged_userns 0
-          enable_userns_sysctl kernel.unprivileged_userns_clone 1
-          if [ -r /proc/sys/user/max_user_namespaces ] && [ "$(cat /proc/sys/user/max_user_namespaces)" = "0" ]; then
-            enable_userns_sysctl user.max_user_namespaces 65536
-          fi
-          test -x "$LUNITA_ROOTFS_REAL/usr/bin/unshare"
-          sudo -n chroot --userspec=1000:1000 "$LUNITA_ROOTFS_REAL" /usr/bin/unshare --user --map-root-user /usr/bin/true
-          echo "PASS: target UID 1000 can create the user namespace required by Flatpak bubblewrap."
-          python3.12 "$OVERLAY/target_runtime_acceptance_v1.py"
-      - name: Unmount target virtual filesystems before image materialization
+          sudo -n docker exec \
+            -e LUNITA_ROOTFS_REAL="$LUNITA_ROOTFS_REAL" \
+            -e LUNITA_ROOT="$LUNITA_ROOT" \
+            -e LUNITA_XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME" \
+            -e RUNNER_TEMP="$RUNNER_TEMP" \
+            lunita-v18-target-runtime-ci \
+            /workspace/scripts/lunita/run_target_runtime_acceptance_in_container_v1.sh
+      - name: Verify target virtual filesystems were unmounted before image materialization
         if: always()
         shell: bash
         run: |
-          set +e
-          if [ -n "${LUNITA_ROOTFS_REAL:-}" ] && [ -d "$LUNITA_ROOTFS_REAL" ]; then
-            sudo umount -R "$LUNITA_ROOTFS_REAL/run" 2>/dev/null || true
-            sudo umount -R "$LUNITA_ROOTFS_REAL/sys" 2>/dev/null || true
-            sudo umount -R "$LUNITA_ROOTFS_REAL/proc" 2>/dev/null || true
-            sudo umount -R "$LUNITA_ROOTFS_REAL/dev" 2>/dev/null || true
-          fi
-          exit 0
+          set -euo pipefail
+          sudo -n docker exec \
+            -e LUNITA_ROOTFS_REAL="$LUNITA_ROOTFS_REAL" \
+            lunita-v18-target-runtime-ci \
+            bash -euc 'for part in dev proc sys run; do if mountpoint -q "$LUNITA_ROOTFS_REAL/$part"; then echo "BLOCKED: target mount remains active: $part"; exit 2; fi; done'
       - name: Build and round-trip verify LUNITA.squashfs
         id: package-squashfs
         shell: bash
@@ -518,60 +446,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          CERT_STATE="$RUNNER_TEMP/lunita-stability-state"
-          CERT_CANDIDATE="$RUNNER_TEMP/lunita-stability-candidate"
-          mkdir -p "$CERT_STATE" "$CERT_CANDIDATE"
-          export XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME"
-          export LUNITA_CERTIFICATION_PROFILE=V1_8_DIRECT
-          export LUNITA_STATE_DIR="$CERT_STATE"
-          export LUNITA_OUTPUT_DIR="$CERT_STATE/worker_outputs"
-          export LUNITA_EVIDENCE_DIR="$CERT_STATE/lunita_certification_evidence"
-          export LUNITA_CANDIDATE_DIR="$CERT_CANDIDATE"
-          export LUNITA_CANDIDATE_MANIFEST="$GITHUB_WORKSPACE/LUNITA_V1_8_CANDIDATE_FREEZE.json"
-          export LUNITA_ROOTFS="$LUNITA_ROOTFS_REAL"
-          export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$LUNITA_XDG_STATE_HOME/lunita/runtime_validation"
-          export FLATPAK_SYSTEM_DIR="$LUNITA_ROOTFS_REAL/var/lib/flatpak"
-          export QT_QPA_PLATFORM=offscreen
-          LANE="recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py"
-          python3.12 - "$LANE" "$LUNITA_EVIDENCE_DIR/lane_state.json" <<'PY'
-          import json, os, pathlib, signal, subprocess, sys, time
-          lane = pathlib.Path(sys.argv[1])
-          state_path = pathlib.Path(sys.argv[2])
-          for attempt in range(180):
-              run = subprocess.run([sys.executable, str(lane), "--once"], text=True,
-                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
-              print(run.stdout, flush=True)
-              if run.returncode != 0:
-                  raise SystemExit(f"Certification lane exited {run.returncode}")
-              try:
-                  state = json.loads(state_path.read_text(encoding="utf-8"))
-                  tick = state.get("last_tick") or {}
-              except (OSError, ValueError):
-                  tick = {}
-                  state = {}
-              if tick.get("independent_report_status") == "PASS_INDEPENDENT_VALIDATION":
-                  print("PASS_G23_INPUT: hash-bound independent report is complete; S32/G24 remain distinct.", flush=True)
-                  raise SystemExit(0)
-              jobs = [state.get("jasp_job"), state.get("inventory_job")]
-              active = False
-              for job in jobs:
-                  pid = (job or {}).get("pid")
-                  if isinstance(pid, int) and pid > 1:
-                      try:
-                          os.kill(pid, 0)
-                          active = True
-                      except OSError:
-                          pass
-              if (tick.get("cajita_heavy_lane") or {}).get("active"):
-                  active = True
-              jasp_done = str(tick.get("jasp_status", "")).startswith(("PASS_", "BLOCKED_"))
-              inventory_done = str(tick.get("inventory_status", "")).startswith(("PASS_", "BLOCKED_"))
-              if not active and jasp_done and inventory_done:
-                  raise SystemExit("BLOCKED: the independent JASP/rootfs lane completed with one or more failed checks.")
-              print(f"WAITING_FOR_INDEPENDENT_EVIDENCE attempt={attempt + 1}/180", flush=True)
-              time.sleep(30)
-          raise SystemExit("BLOCKED: independent evidence did not complete within the bounded run window.")
-          PY
+          sudo -n docker exec \
+            -e RUNNER_TEMP="$RUNNER_TEMP" \
+            -e GITHUB_WORKSPACE=/workspace \
+            -e LUNITA_XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME" \
+            -e LUNITA_ROOTFS_REAL="$LUNITA_ROOTFS_REAL" \
+            lunita-v18-target-runtime-ci \
+            /workspace/scripts/lunita/run_independent_certification_lane_in_container_v1.sh
       - name: Certify the exact SquashFS image from S32 and independent evidence
         shell: bash
         run: |
@@ -627,17 +508,12 @@ jobs:
             fi
           done
           run_root chmod -R a+rX "$OUT"
-      - name: Final cleanup of target rootfs mounts
+      - name: Final cleanup of isolated target acceptance container
         if: always()
         shell: bash
         run: |
           set +e
-          if [ -n "${LUNITA_ROOTFS_REAL:-}" ] && [ -d "$LUNITA_ROOTFS_REAL" ]; then
-            sudo umount -R "$LUNITA_ROOTFS_REAL/run" 2>/dev/null || true
-            sudo umount -R "$LUNITA_ROOTFS_REAL/sys" 2>/dev/null || true
-            sudo umount -R "$LUNITA_ROOTFS_REAL/proc" 2>/dev/null || true
-            sudo umount -R "$LUNITA_ROOTFS_REAL/dev" 2>/dev/null || true
-          fi
+          sudo -n docker rm -f lunita-v18-target-runtime-ci >/dev/null 2>&1 || true
           exit 0
       - name: Upload real target and independent evidence
         if: always()

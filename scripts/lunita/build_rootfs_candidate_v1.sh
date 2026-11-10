@@ -271,6 +271,99 @@ CHROME_BINARY_SHA256="$(sha256sum "$BROWSER_PREFIX/chrome/chrome" | awk '{print 
 R_SCRIPT_SHA256="$(sha256sum "$ROOTFS$R_PREFIX/bin/Rscript" | awk '{print $1}')"
 ROOTFS_LAUNCHER_SHA256="$(sha256sum "$ROOTFS/opt/lunita/agent/lunita.py" | awk '{print $1}')"
 mkdir -p "$ROOTFS/opt/lunita/metadata"
+# Add the requested identity hierarchy as separate metadata. The pre-existing
+# instrument_labels receipt entries below are deliberately retained verbatim.
+python3 - "$ROOTFS" <<'PY'
+import hashlib, json, os, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+metadata = root / "opt/lunita/metadata"
+tree_text = """LA PIEZA
+└── EL ESTUCHE
+    └── UBUNTU 24.04 LTS MINIMAL
+        └── LUNITA LA INVESTIGADORA
+            ├── MOTOR COGNITIVO
+            │   └── Qwen3-0.6B IQ3_XS GGUF
+            │
+            ├── BRÚJULA GIROSCÓPICA
+            │   ├── Node.js 22.23.2
+            │   ├── Playwright 1.63.0
+            │   ├── playwright-core 1.63.0
+            │   └── Chrome for Testing 153.0.8010.12
+            │
+            ├── LÁPIZ
+            │   └── R 4.6.1
+            │
+            ├── SACAPUNTAS
+            │   └── jamovi 2.7.27
+            │
+            └── LUPA
+                └── JASP 0.98.1
+"""
+hierarchy = {
+  "label": "LA PIEZA",
+  "children": [{
+    "label": "EL ESTUCHE",
+    "children": [{
+      "label": "UBUNTU 24.04 LTS MINIMAL",
+      "children": [{
+        "label": "LUNITA LA INVESTIGADORA",
+        "children": [
+          {"label": "MOTOR COGNITIVO", "children": [
+            {"label": "Qwen3-0.6B IQ3_XS GGUF",
+             "path": "/opt/lunita/brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf"}
+          ]},
+          {"label": "BRÚJULA GIROSCÓPICA", "children": [
+            {"label": "Node.js 22.23.2", "path": "/opt/lunita/instruments/brujula/node/bin/node"},
+            {"label": "Playwright 1.63.0", "path": "/opt/lunita/instruments/brujula/node_modules/playwright"},
+            {"label": "playwright-core 1.63.0", "path": "/opt/lunita/instruments/brujula/node_modules/playwright-core"},
+            {"label": "Chrome for Testing 153.0.8010.12", "path": "/opt/lunita/instruments/brujula/chrome/chrome"}
+          ]},
+          {"label": "LÁPIZ", "children": [
+            {"label": "R 4.6.1", "path": "/opt/lunita/instruments/lapiz/R-4.6.1/bin/Rscript"}
+          ]},
+          {"label": "SACAPUNTAS", "children": [
+            {"label": "jamovi 2.7.27", "application_id": "org.jamovi.jamovi"}
+          ]},
+          {"label": "LUPA", "children": [
+            {"label": "JASP 0.98.1", "application_id": "org.jaspstats.JASP"}
+          ]}
+        ]
+      }]
+    }]
+  }]
+}
+document = {
+  "schema": "LUNITA_LABEL_HIERARCHY/1.0",
+  "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+  "version": "1.8.0",
+  "preservation_policy": "APPEND_ONLY;DO_NOT_REWRITE_EXISTING_LABELS",
+  "hierarchy": hierarchy,
+  "rendered_tree": tree_text,
+}
+json_path = metadata / "LUNITA_LABEL_HIERARCHY.json"
+text_path = metadata / "LUNITA_LABEL_HIERARCHY.txt"
+json_payload = (json.dumps(document, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
+text_payload = tree_text.encode("utf-8")
+def create_or_preserve(path, payload, label):
+    if path.exists():
+        if not path.is_file() or path.is_symlink() or path.read_bytes() != payload:
+            raise SystemExit(f"BLOCKED: existing {label} differs; it was not rewritten.")
+        return
+    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(payload)
+        stream.flush()
+        os.fsync(stream.fileno())
+create_or_preserve(json_path, json_payload, "label hierarchy JSON")
+create_or_preserve(text_path, text_payload, "label hierarchy tree")
+print(json.dumps({
+  "status": "PASS_LABEL_HIERARCHY_ADDED_OR_PRESERVED",
+  "json_sha256": hashlib.sha256(json_payload).hexdigest(),
+  "text_sha256": hashlib.sha256(text_payload).hexdigest(),
+}, sort_keys=True))
+PY
+LABEL_HIERARCHY_SHA256="$(sha256sum "$ROOTFS/opt/lunita/metadata/LUNITA_LABEL_HIERARCHY.json" | awk '{print $1}')"
+LABEL_HIERARCHY_TEXT_SHA256="$(sha256sum "$ROOTFS/opt/lunita/metadata/LUNITA_LABEL_HIERARCHY.txt" | awk '{print $1}')"
 python3 - "$ROOTFS" <<PY
 import hashlib, json, pathlib, sys
 root = pathlib.Path(sys.argv[1])
@@ -291,6 +384,7 @@ data = {
   "sacapuntas": {"version": "$JAMOVI_OBSERVED_VERSION", "version_source": "EXACT_PINNED_FLATPAK_COMMIT_MAPPING", "application_id": "org.jamovi.jamovi", "flatpak_commit": "$JAMOVI_OBSERVED_COMMIT"},
   "lupa": {"version": "$JASP_OBSERVED_VERSION", "version_source": "EXACT_PINNED_FLATPAK_COMMIT_MAPPING", "application_id": "org.jaspstats.JASP", "flatpak_commit": "$JASP_OBSERVED_COMMIT"},
   "instrument_labels": {"BRUJULA": "Brújula giroscópica", "JAMOVI": "Sacapuntas", "JASP": "Lupa", "R": "Lápiz", "QWEN": "Motor Cognitivo"},
+  "label_hierarchy": {"schema": "LUNITA_LABEL_HIERARCHY/1.0", "json_path": "/opt/lunita/metadata/LUNITA_LABEL_HIERARCHY.json", "json_sha256": "$LABEL_HIERARCHY_SHA256", "text_path": "/opt/lunita/metadata/LUNITA_LABEL_HIERARCHY.txt", "text_sha256": "$LABEL_HIERARCHY_TEXT_SHA256"},
   "invariants": {"frozen_g06_mutated": False, "canonical_g08_mutated": False, "legacy_launcher_replaced": False, "canonical_certification_inherited": False},
   "certification": "NOT_GRANTED",
 }

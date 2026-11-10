@@ -51,6 +51,63 @@ TEST_MODULES = (
     "overlay_acceptance_v1",
 )
 
+EXPECTED_LABEL_HIERARCHY = {
+    "label": "LA PIEZA",
+    "children": [{
+        "label": "EL ESTUCHE",
+        "children": [{
+            "label": "UBUNTU 24.04 LTS MINIMAL",
+            "children": [{
+                "label": "LUNITA LA INVESTIGADORA",
+                "children": [
+                    {"label": "MOTOR COGNITIVO", "children": [
+                        {"label": "Qwen3-0.6B IQ3_XS GGUF",
+                         "path": "/opt/lunita/brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf"}
+                    ]},
+                    {"label": "BRÚJULA GIROSCÓPICA", "children": [
+                        {"label": "Node.js 22.23.2", "path": "/opt/lunita/instruments/brujula/node/bin/node"},
+                        {"label": "Playwright 1.63.0", "path": "/opt/lunita/instruments/brujula/node_modules/playwright"},
+                        {"label": "playwright-core 1.63.0", "path": "/opt/lunita/instruments/brujula/node_modules/playwright-core"},
+                        {"label": "Chrome for Testing 153.0.8010.12", "path": "/opt/lunita/instruments/brujula/chrome/chrome"}
+                    ]},
+                    {"label": "LÁPIZ", "children": [
+                        {"label": "R 4.6.1", "path": "/opt/lunita/instruments/lapiz/R-4.6.1/bin/Rscript"}
+                    ]},
+                    {"label": "SACAPUNTAS", "children": [
+                        {"label": "jamovi 2.7.27", "application_id": "org.jamovi.jamovi"}
+                    ]},
+                    {"label": "LUPA", "children": [
+                        {"label": "JASP 0.98.1", "application_id": "org.jaspstats.JASP"}
+                    ]}
+                ]
+            }]
+        }]
+    }]
+}
+
+EXPECTED_LABEL_HIERARCHY_TEXT = """LA PIEZA
+└── EL ESTUCHE
+    └── UBUNTU 24.04 LTS MINIMAL
+        └── LUNITA LA INVESTIGADORA
+            ├── MOTOR COGNITIVO
+            │   └── Qwen3-0.6B IQ3_XS GGUF
+            │
+            ├── BRÚJULA GIROSCÓPICA
+            │   ├── Node.js 22.23.2
+            │   ├── Playwright 1.63.0
+            │   ├── playwright-core 1.63.0
+            │   └── Chrome for Testing 153.0.8010.12
+            │
+            ├── LÁPIZ
+            │   └── R 4.6.1
+            │
+            ├── SACAPUNTAS
+            │   └── jamovi 2.7.27
+            │
+            └── LUPA
+                └── JASP 0.98.1
+"""
+
 
 class TargetGateError(RuntimeError):
     pass
@@ -265,6 +322,68 @@ def verify_system_python_alias(rootfs: pathlib.Path) -> dict[str, str]:
     }
 
 
+def validate_label_hierarchy_document(document: dict[str, Any]) -> dict[str, Any]:
+    """Fail closed unless the exact requested identity hierarchy is preserved."""
+    if not isinstance(document, dict):
+        raise TargetGateError("LUNITA label hierarchy is not a JSON object")
+    if document.get("schema") != "LUNITA_LABEL_HIERARCHY/1.0":
+        raise TargetGateError("LUNITA label hierarchy schema mismatch")
+    if document.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1" or document.get("version") != "1.8.0":
+        raise TargetGateError("LUNITA label hierarchy candidate identity mismatch")
+    if document.get("preservation_policy") != "APPEND_ONLY;DO_NOT_REWRITE_EXISTING_LABELS":
+        raise TargetGateError("LUNITA label hierarchy preservation policy mismatch")
+    if document.get("hierarchy") != EXPECTED_LABEL_HIERARCHY:
+        raise TargetGateError("LUNITA label hierarchy differs from the exact requested labels or mappings")
+    if document.get("rendered_tree") != EXPECTED_LABEL_HIERARCHY_TEXT:
+        raise TargetGateError("LUNITA rendered label tree differs from the exact requested hierarchy")
+    labels: list[str] = []
+    def walk(node: dict[str, Any]) -> None:
+        if not isinstance(node, dict) or not isinstance(node.get("label"), str):
+            raise TargetGateError("LUNITA label hierarchy contains a malformed node")
+        labels.append(node["label"])
+        children = node.get("children", [])
+        if not isinstance(children, list):
+            raise TargetGateError("LUNITA label hierarchy children must be an array")
+        for child in children:
+            walk(child)
+    walk(document["hierarchy"])
+    return {"status": "PASS_EXACT_LABEL_HIERARCHY", "labels": labels, "label_count": len(labels)}
+
+
+def verify_label_hierarchy(receipt: dict[str, Any]) -> dict[str, Any]:
+    binding = receipt.get("label_hierarchy", {})
+    json_path = ROOT / "metadata/LUNITA_LABEL_HIERARCHY.json"
+    text_path = ROOT / "metadata/LUNITA_LABEL_HIERARCHY.txt"
+    if binding.get("schema") != "LUNITA_LABEL_HIERARCHY/1.0":
+        raise TargetGateError("Rootfs receipt does not bind the requested LUNITA label hierarchy")
+    if binding.get("json_path") != "/opt/lunita/metadata/LUNITA_LABEL_HIERARCHY.json":
+        raise TargetGateError("Rootfs label hierarchy JSON path mismatch")
+    if binding.get("text_path") != "/opt/lunita/metadata/LUNITA_LABEL_HIERARCHY.txt":
+        raise TargetGateError("Rootfs label hierarchy text path mismatch")
+    for path, expected_sha, label in (
+        (json_path, binding.get("json_sha256"), "JSON"),
+        (text_path, binding.get("text_sha256"), "text"),
+    ):
+        if path.is_symlink() or not path.is_file():
+            raise TargetGateError(f"Exact LUNITA label hierarchy {label} file is missing or unsafe")
+        if not isinstance(expected_sha, str) or sha256_file(path) != expected_sha:
+            raise TargetGateError(f"Exact LUNITA label hierarchy {label} digest mismatch")
+    try:
+        document = json.loads(json_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise TargetGateError(f"Exact LUNITA label hierarchy JSON is unreadable: {exc}") from exc
+    result = validate_label_hierarchy_document(document)
+    if text_path.read_text(encoding="utf-8") != EXPECTED_LABEL_HIERARCHY_TEXT:
+        raise TargetGateError("Exact LUNITA label hierarchy text file is not preserved")
+    return {
+        **result,
+        "json_sha256": binding["json_sha256"],
+        "text_sha256": binding["text_sha256"],
+        "existing_instrument_labels_preserved": True,
+        "certification": "NOT_GRANTED",
+    }
+
+
 def verify_rootfs_build_receipt() -> dict[str, Any]:
     """Verify the reconstructed rootfs provenance and every declared major runtime payload."""
     path = ROOT / "metadata/ROOTFS_BUILD_RECEIPT.json"
@@ -402,6 +521,7 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
             "commit": info.stdout.strip(),
         }
 
+    label_hierarchy = verify_label_hierarchy(receipt)
     invariants = receipt.get("invariants", {})
     if any(invariants.get(flag) is not False for flag in (
         "frozen_g06_mutated", "canonical_g08_mutated", "legacy_launcher_replaced",
@@ -422,6 +542,7 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
         "chrome_version": brujula.get("chrome_for_testing"),
         "r_version": lapiz.get("r_version"),
         "flatpak_apps": observed_apps,
+        "label_hierarchy": label_hierarchy,
         "certification": "NOT_GRANTED",
     }
 

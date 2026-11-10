@@ -109,6 +109,37 @@ class TargetLegacyFlatpakDiagnosticTests(unittest.TestCase):
         run.assert_not_called()
 
 
+class TargetLabelHierarchyAcceptanceTests(unittest.TestCase):
+    def _document(self):
+        return {
+            "schema": "LUNITA_LABEL_HIERARCHY/1.0",
+            "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+            "version": "1.8.0",
+            "preservation_policy": "APPEND_ONLY;DO_NOT_REWRITE_EXISTING_LABELS",
+            "hierarchy": target.EXPECTED_LABEL_HIERARCHY,
+            "rendered_tree": target.EXPECTED_LABEL_HIERARCHY_TEXT,
+        }
+
+    def test_exact_requested_hierarchy_passes(self):
+        result = target.validate_label_hierarchy_document(self._document())
+        self.assertEqual("PASS_EXACT_LABEL_HIERARCHY", result["status"])
+        self.assertIn("LUNITA LA INVESTIGADORA", result["labels"])
+        self.assertIn("SACAPUNTAS", result["labels"])
+        self.assertIn("LUPA", result["labels"])
+
+    def test_missing_sacapuntas_label_is_rejected(self):
+        document = self._document()
+        del document["hierarchy"]["children"][0]["children"][0]["children"][0]["children"][3]
+        with self.assertRaisesRegex(target.TargetGateError, "exact requested labels"):
+            target.validate_label_hierarchy_document(document)
+
+    def test_label_case_rewrite_is_rejected(self):
+        document = self._document()
+        document["hierarchy"]["children"][0]["children"][0]["children"][0]["children"][4]["label"] = "Lupa"
+        with self.assertRaisesRegex(target.TargetGateError, "exact requested labels"):
+            target.validate_label_hierarchy_document(document)
+
+
 class TargetOverlayAcceptanceTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="lunita-target-gate-")
