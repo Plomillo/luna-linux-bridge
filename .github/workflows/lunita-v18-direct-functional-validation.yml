@@ -19,10 +19,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: lunita-v1-8-direct-functional-validation-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
-
 jobs:
   contract-tests:
     if: ${{ (github.event_name == 'push' && github.ref_name == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109') || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109' && github.event.pull_request.base.ref == 'fix/lunita-v18-certification-path-20261109') }}
@@ -276,6 +272,9 @@ jobs:
   target-runtime:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/fix/lunita-v18-rootfs-bound-checkpoint-20261109' }}
     name: "Lunita v1.8 real target and independent acceptance"
+    concurrency:
+      group: lunita-v1-8-target-runtime-${{ github.ref }}
+      cancel-in-progress: false
     needs: contract-tests
     runs-on: [self-hosted, linux, x64]
     timeout-minutes: 200
