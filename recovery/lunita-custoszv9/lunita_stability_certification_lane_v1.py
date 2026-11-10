@@ -739,7 +739,13 @@ def latest_target_runtime_acceptance() -> dict:
         return blocked("COMMAND_AGENT_ENGINE_ROUTE_MATRIX_NOT_TESTED")
     applications = row.get("legacy_application_smokes", {})
     commands = applications.get("commands") if isinstance(applications.get("commands"), dict) else {}
-    required_commands = {"brujula-self-test", "r-self-test", "jamovi-self-test", "jasp-self-test", "fault"}
+    required_commands = {
+        "brujula-self-test", "r-self-test", "jamovi-self-test", "jasp-self-test",
+        "fault model-missing", "fault model-corrupted", "fault dependency-missing",
+        "fault permission-denied", "fault low-memory", "fault process-crash",
+        "fault browser-crash", "fault tool-failure", "fault invalid-input",
+        "fault interrupted-execution", "fault restart",
+    }
     if applications.get("status") != "PASS_LEGACY_APPLICATION_SMOKES" or set(commands) != required_commands:
         return blocked("LEGACY_APPLICATION_SMOKE_SET_INCOMPLETE")
     if any(command.get("status") != "PASS" or command.get("returncode") != 0
