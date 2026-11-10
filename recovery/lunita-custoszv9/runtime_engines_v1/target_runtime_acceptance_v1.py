@@ -438,9 +438,11 @@ def run_unittests() -> dict[str, Any]:
 
 
 def run_qwen_via_v18() -> dict[str, Any]:
+    """Execute E01 through the installed v1.8 gateway inside the target rootfs."""
     model = ROOT / "brain/model/Qwen_Qwen3-0.6B-IQ3_XS.gguf"
     if not model.is_file():
         raise TargetGateError(f"Required Qwen model is missing: {model}")
+    target_rootfs = ROOT.parents[1]
     request = {
         "command": "/play PT",
         "agent": "Luna",
@@ -451,33 +453,49 @@ def run_qwen_via_v18() -> dict[str, Any]:
             "timeout_seconds": 120,
         },
     }
-    temporary = STATE / "requests"
-    temporary.mkdir(parents=True, exist_ok=True)
-    request_path = temporary / f"e01-qwen-{time.time_ns()}.json"
-    request_path.write_text(json.dumps(request, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
-    environment = os.environ.copy()
-    environment["PYTHONPATH"] = os.pathsep.join([
-        str(OVERLAY / "vendor/python3.12/site-packages"),
-        str(OVERLAY),
-        environment.get("PYTHONPATH", ""),
-    ]).rstrip(os.pathsep)
-    environment["LUNITA_FASTEMBED_CACHE"] = str(OVERLAY / "model-cache/fastembed")
-    environment["LUNITA_VECTOR_DB_PATH"] = str(STATE / "vectors")
-    environment["LUNITA_ENGINE_AUDIT_LOG"] = str(STATE / "audit/engine-execution.jsonl")
-    environment["HF_HUB_OFFLINE"] = "1"
-    environment["TRANSFORMERS_OFFLINE"] = "1"
-    environment["HF_HUB_DISABLE_TELEMETRY"] = "1"
+    request_path = target_rootfs / "tmp" / f"lunita-e01-qwen-{time.time_ns()}.json"
+    request_path.write_text(
+        json.dumps(request, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     try:
         proc = subprocess.run(
-            [sys.executable, str(OVERLAY / "lunita_beta_v1_8.py"),
-             "engine-run", "--request", str(request_path)],
-            env=environment, capture_output=True, text=True, timeout=150, check=False,
+            [
+                "sudo", "-n", "chroot", "--userspec=1000:1000", str(target_rootfs),
+                "/usr/bin/env", "-C", "/tmp",
+                "HOME=/home/lunita",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
+                "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
+                "XDG_DATA_HOME=/tmp/lunita-xdg/data",
+                "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+                "XDG_STATE_HOME=/tmp/lunita-xdg/state",
+                "LUNITA_ROOT=/opt/lunita",
+                "LUNITA_FASTEMBED_CACHE=/opt/lunita/engines/runtime_engines_v1/model-cache/fastembed",
+                "LUNITA_VECTOR_DB_PATH=/tmp/lunita-xdg/vectors",
+                "LUNITA_ENGINE_AUDIT_LOG=/tmp/lunita-xdg/audit/engine-execution.jsonl",
+                "PYTHONPATH=/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages:/opt/lunita/engines/runtime_engines_v1",
+                "HF_HUB_OFFLINE=1",
+                "TRANSFORMERS_OFFLINE=1",
+                "HF_HUB_DISABLE_TELEMETRY=1",
+                "/usr/bin/python3.12",
+                "/opt/lunita/engines/runtime_engines_v1/lunita_beta_v1_8.py",
+                "engine-run", "--request", "/" + request_path.relative_to(target_rootfs).as_posix(),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
         )
     finally:
         request_path.unlink(missing_ok=True)
+
     if proc.returncode != 0:
-        raise TargetGateError("E01 Qwen inference failed: " + (proc.stderr or proc.stdout)[-2000:])
-    result = json.loads(proc.stdout)
+        raise TargetGateError("E01 Qwen inference failed inside target rootfs: " + (proc.stderr or proc.stdout)[-2000:])
+    try:
+        result = json.loads(proc.stdout)
+    except ValueError as exc:
+        raise TargetGateError("E01 target-rootfs gateway did not return valid JSON") from exc
     if result.get("status") != "PASS_ENGINE_OPERATION" or result.get("engine_id") != "E01":
         raise TargetGateError("E01 gateway did not return PASS_ENGINE_OPERATION")
     if not result.get("audit_event_hash"):
@@ -486,14 +504,18 @@ def run_qwen_via_v18() -> dict[str, Any]:
     output = payload.get("output", "")
     if payload.get("returncode") != 0 or not output.strip():
         raise TargetGateError("Qwen returned no generated output")
-    audit = pathlib.Path(environment["LUNITA_ENGINE_AUDIT_LOG"])
+    audit = target_rootfs / "tmp/lunita-xdg/audit/engine-execution.jsonl"
     if not audit.is_file():
-        raise TargetGateError("Append-only engine audit log was not created")
+        raise TargetGateError("Append-only target-rootfs engine audit log was not created")
+    llama_candidates = list((ROOT / "brain/runtime").rglob("llama-cli"))
+    if len(llama_candidates) != 1:
+        raise TargetGateError(f"Expected exactly one target-rootfs llama-cli, found {len(llama_candidates)}")
     return {
         "status": "PASS_E01_QWEN_INFERENCE",
+        "execution_environment": "CHROOT_UBUNTU_24_04_UID_1000",
         "model": model.name,
         "model_sha256": sha256_file(model),
-        "llama_cli_sha256": sha256_file(pathlib.Path(payload["runtime"])),
+        "llama_cli_sha256": sha256_file(llama_candidates[0]),
         "prompt_sha256": payload["prompt_sha256"],
         "output_sha256": hashlib.sha256(output.encode("utf-8")).hexdigest(),
         "audit_event_hash": result["audit_event_hash"],
