@@ -195,8 +195,11 @@ find "$ROOTFS/tmp/llama.cpp-build/bin" -maxdepth 1 \
 chmod 0755 "$RUNTIME_PREFIX/llama-cli"
 GUEST_RUNTIME_PREFIX="/opt/lunita/brain/runtime/llama.cpp-$LLAMA_CPP_TAG"
 [ -x "$RUNTIME_PREFIX/llama-cli" ] || fail "llama-cli output missing."
-CPU_BACKEND="$(find "$RUNTIME_PREFIX" -maxdepth 1 -type f -name 'libggml-cpu-x64.so' -print -quit)"
-[ -n "$CPU_BACKEND" ] || fail "Pinned llama.cpp CPU backend library is missing."
+CPU_BACKEND="$RUNTIME_PREFIX/libggml-cpu.so"
+if [ ! -f "$CPU_BACKEND" ]; then
+  CPU_BACKEND="$RUNTIME_PREFIX/libggml-cpu-x64.so"
+fi
+[ -f "$CPU_BACKEND" ] || fail "Pinned llama.cpp CPU backend library is missing (expected libggml-cpu.so or legacy libggml-cpu-x64.so)."
 find "$RUNTIME_PREFIX" -maxdepth 1 -type f \
   \( -name 'lib*.so' -o -name 'lib*.so.*' \) -print -quit | grep -q . \
   || fail "llama.cpp runtime shared libraries were not packaged."
