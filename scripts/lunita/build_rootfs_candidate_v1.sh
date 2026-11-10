@@ -84,25 +84,32 @@ chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-inst
   libpango-1.0-0 libcairo2 fonts-liberation libstdc++6 libgomp1 \
   libreadline8t64 libpcre2-8-0 liblzma5 libbz2-1.0 zlib1g \
   libcurl4t64 libicu74 libtirpc3t64 libblas3 liblapack3
+chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+  build-essential cmake pkg-config gfortran \
+  libreadline-dev libpcre2-dev liblzma-dev libbz2-dev libcurl4-openssl-dev \
+  libicu-dev libtirpc-dev libblas-dev liblapack-dev
 
 # Desktop application smoke tests must execute as the candidate's regular user.
 chroot "$ROOTFS" useradd --uid 1000 --create-home --user-group --shell /bin/bash lunita
 chroot "$ROOTFS" install -d -o 1000 -g 1000 -m 0700 \
   /tmp/lunita-xdg/cache /tmp/lunita-xdg/config /tmp/lunita-xdg/data
 
-# R 4.6.1 source build. The fixed /opt prefix is stable after image deployment.
+# R 4.6.1 is compiled inside Ubuntu 24.04 to bind its ELF dependencies
+# to Noble's glibc and runtime libraries, never to the GitHub host ABI.
 R_ARCHIVE="$RUNNER_TEMP/lunita-build/R-$R_VERSION.tar.gz"
 curl --fail --location --retry 3 --retry-all-errors \
   "https://cloud.r-project.org/src/base/R-4/R-$R_VERSION.tar.gz" -o "$R_ARCHIVE"
 R_ARCHIVE_SHA256="$(sha256sum "$R_ARCHIVE" | awk '{print $1}')"
-tar -xzf "$R_ARCHIVE" -C "$RUNNER_TEMP/lunita-build"
-(
-  cd "$RUNNER_TEMP/lunita-build/R-$R_VERSION"
-  ./configure --prefix="$R_PREFIX" --with-x=no --with-tcltk=no \
+cp "$R_ARCHIVE" "$ROOTFS/tmp/R-$R_VERSION.tar.gz"
+chroot "$ROOTFS" /bin/bash -euc "
+  tar -xzf /tmp/R-$R_VERSION.tar.gz -C /tmp
+  cd /tmp/R-$R_VERSION
+  ./configure --prefix='$R_PREFIX' --with-x=no --with-tcltk=no \\
     --enable-R-shlib --with-readline=yes --with-blas --with-lapack
   make -j2
-  make DESTDIR="$ROOTFS" install
-)
+  make install
+  rm -rf /tmp/R-$R_VERSION /tmp/R-$R_VERSION.tar.gz
+"
 chroot "$ROOTFS" env R_HOME="$R_PREFIX/lib/R" "$R_PREFIX/bin/Rscript" \
   -e 'stopifnot(as.character(getRversion()) == "4.6.1", 2 + 2 == 4)'
 
@@ -158,18 +165,23 @@ BROWSER_SMOKE="$(chroot "$ROOTFS" /usr/sbin/runuser -u lunita -- /usr/bin/env \
   'data:text/html,<title>LUNITA_BRUJULA_OK</title><body>OK</body>')"
 grep -q "LUNITA_BRUJULA_OK" <<<"$BROWSER_SMOKE" || fail "Brújula Playwright smoke test failed."
 
-# Build llama.cpp from the exact published v0.9.0 commit for the same ABI.
+# Build the pinned llama.cpp commit inside the Ubuntu 24.04 target. This
+# prevents a runner-host glibc/toolchain ABI from leaking into the rootfs.
 LLAMA_SRC="$RUNNER_TEMP/lunita-build/llama.cpp"
 git clone --filter=blob:none --no-checkout https://github.com/ggml-org/llama.cpp.git "$LLAMA_SRC"
 git -C "$LLAMA_SRC" checkout --detach "$LLAMA_CPP_COMMIT"
 [ "$(git -C "$LLAMA_SRC" rev-parse HEAD)" = "$LLAMA_CPP_COMMIT" ] || fail "llama.cpp commit mismatch."
-cmake -S "$LLAMA_SRC" -B "$LLAMA_SRC/build" \
+mkdir -p "$ROOTFS/tmp/llama.cpp-src"
+git -C "$LLAMA_SRC" archive --format=tar "$LLAMA_CPP_COMMIT" | tar -xf - -C "$ROOTFS/tmp/llama.cpp-src"
+chroot "$ROOTFS" cmake -S /tmp/llama.cpp-src -B /tmp/llama.cpp-build \
   -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DGGML_OPENMP=ON -DGGML_CUDA=OFF -DGGML_VULKAN=OFF
-cmake --build "$LLAMA_SRC/build" --target llama-cli -j2
+chroot "$ROOTFS" cmake --build /tmp/llama.cpp-build --target llama-cli -j2
 mkdir -p "$RUNTIME_PREFIX"
-cp "$LLAMA_SRC/build/bin/llama-cli" "$RUNTIME_PREFIX/llama-cli"
-find "$LLAMA_SRC/build/bin" -maxdepth 1 -type f -name 'libggml*.so*' -exec cp -a {} "$RUNTIME_PREFIX/" \;
-find "$LLAMA_SRC/build/bin" -maxdepth 1 -type f -name 'libllama.so*' -exec cp -a {} "$RUNTIME_PREFIX/" \;
+cp "$ROOTFS/tmp/llama.cpp-build/bin/llama-cli" "$RUNTIME_PREFIX/llama-cli"
+find "$ROOTFS/tmp/llama.cpp-build/bin" -maxdepth 1 -type f -name 'libggml*.so*' \
+  -exec cp -a {} "$RUNTIME_PREFIX/" \;
+find "$ROOTFS/tmp/llama.cpp-build/bin" -maxdepth 1 -type f -name 'libllama.so*' \
+  -exec cp -a {} "$RUNTIME_PREFIX/" \;
 chmod 0755 "$RUNTIME_PREFIX/llama-cli"
 GUEST_RUNTIME_PREFIX="/opt/lunita/brain/runtime/llama.cpp-$LLAMA_CPP_TAG"
 CPU_BACKEND="$(find "$RUNTIME_PREFIX" -maxdepth 1 -type f -name 'libggml-cpu-x64.so' -print -quit)"
@@ -184,6 +196,7 @@ else
     "$GUEST_RUNTIME_PREFIX/llama-cli" --version 2>&1 | head -n 1)"
 fi
 [ -x "$RUNTIME_PREFIX/llama-cli" ] || fail "llama-cli output missing."
+rm -rf "$ROOTFS/tmp/llama.cpp-src" "$ROOTFS/tmp/llama.cpp-build"
 
 # Pin the actual model file to an immutable Hugging Face repository revision.
 curl --fail --location --retry 3 --retry-all-errors \
@@ -210,7 +223,12 @@ JASP_OBSERVED_VERSION="$JASP_VERSION"
 [ "$JAMOVI_OBSERVED_VERSION" = "$JAMOVI_VERSION" ] || fail "Jamovi version mismatch: $JAMOVI_OBSERVED_VERSION"
 [ "$JASP_OBSERVED_VERSION" = "$JASP_VERSION" ] || fail "JASP version mismatch: $JASP_OBSERVED_VERSION"
 
-# Clean only apt caches and temporary mount points; installed system files remain.
+# Remove temporary build toolchains only after the ABI-matched builds and checks.
+chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get purge -y --auto-remove \
+  build-essential cmake pkg-config gfortran \
+  libreadline-dev libpcre2-dev liblzma-dev libbz2-dev libcurl4-openssl-dev \
+  libicu-dev libtirpc-dev libblas-dev liblapack-dev
+# Clean only apt caches and temporary mount points; installed runtime files remain.
 chroot "$ROOTFS" apt-get clean
 rm -rf "$ROOTFS/var/lib/apt/lists/"* "$ROOTFS/var/cache/apt/archives/"*.deb
 cleanup_mounts
