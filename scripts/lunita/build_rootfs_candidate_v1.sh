@@ -33,7 +33,7 @@ fail() { echo "ROOTFS_BUILD_BLOCKED: $*" >&2; exit 2; }
 [ ! -e "$ROOTFS" ] || fail "Refusing to overwrite existing rootfs: $ROOTFS"
 [ -f "$WORKSPACE/recovery/lunita-custoszv9/lunita_beta_v1_7.py" ] || fail "Pinned legacy launcher source missing."
 [ -f "$WORKSPACE/scripts/lunita/brujula.js" ] || fail "Brújula source missing."
-HOST_OS="$(. /etc/os-release; echo "${{VERSION_ID:-unknown}")"
+HOST_OS="$(. /etc/os-release; echo "${VERSION_ID:-unknown}")"
 [ "$HOST_OS" = "24.04" ] || fail "Builder requires Ubuntu 24.04, found $HOST_OS."
 mkdir -p "$RUNNER_TEMP/lunita-build"
 export DEBIAN_FRONTEND=noninteractive
