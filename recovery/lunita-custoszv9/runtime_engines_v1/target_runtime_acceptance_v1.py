@@ -146,22 +146,35 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
             raise TargetGateError(f"Brújula package is missing: {package}")
         if json.loads(metadata.read_text(encoding="utf-8")).get("version") != "1.63.0":
             raise TargetGateError(f"Brújula package version mismatch: {package}")
+    target_rootfs = ROOT.parents[1]
+    guest_node = "/opt/lunita/instruments/brujula/node/bin/node"
+    guest_chrome = "/opt/lunita/instruments/brujula/chrome/chrome"
+    node_result = subprocess.run(
+        ["chroot", str(target_rootfs), "/usr/bin/env", "-C", "/tmp", guest_node, "--version"],
+        capture_output=True, text=True, check=False,
+    )
+    if node_result.returncode != 0 or node_result.stdout.strip() != "v22.23.2":
+        raise TargetGateError("Node.js target-rootfs runtime did not return the pinned version")
     chrome_result = subprocess.run(
-        [str(browser_root / "chrome/chrome"), "--version"],
+        ["chroot", str(target_rootfs), "/usr/bin/env", "-C", "/tmp", guest_chrome, "--version"],
         capture_output=True, text=True, check=False,
     )
     if chrome_result.returncode != 0 or "153.0.8010.12" not in chrome_result.stdout:
-        raise TargetGateError("Chrome for Testing executable did not return the pinned version")
+        raise TargetGateError("Chrome for Testing target-rootfs executable did not return the pinned version")
 
     lapiz = receipt.get("lapiz", {})
     if lapiz.get("r_version") != "4.6.1":
         raise TargetGateError("Lápiz R version is not pinned to 4.6.1")
     rscript = require_hash("instruments/lapiz/R-4.6.1/bin/Rscript", lapiz.get("rscript_sha256"), "Rscript binary")
-    r_env = os.environ.copy()
-    r_env["R_HOME"] = str(rscript.parent.parent / "lib/R")
+    r_home = "/opt/lunita/instruments/lapiz/R-4.6.1/lib/R"
     r = subprocess.run(
-        [str(rscript), "-e", 'stopifnot(as.character(getRversion())=="4.6.1", 2+2==4)'],
-        env=r_env, capture_output=True, text=True, check=False,
+        [
+            "chroot", str(target_rootfs), "/usr/bin/env", "-C", "/tmp",
+            f"R_HOME={r_home}",
+            "/opt/lunita/instruments/lapiz/R-4.6.1/bin/Rscript",
+            "-e", 'stopifnot(as.character(getRversion())=="4.6.1", 2+2==4)',
+        ],
+        capture_output=True, text=True, check=False,
     )
     if r.returncode != 0:
         raise TargetGateError("Lápiz R 4.6.1 execution failed: " + (r.stderr or r.stdout)[-1200:])
