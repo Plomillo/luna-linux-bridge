@@ -371,32 +371,30 @@ jobs:
           sudo -n apt-get update
           sudo -n apt-get install -y --no-install-recommends squashfs-tools
           RECEIPT_DIR="$LUNITA_XDG_STATE_HOME/lunita/runtime_validation"
-          mapfile -t TARGET_RECEIPTS < <(find "$RECEIPT_DIR" -maxdepth 1 -type f -name 'LUNITA_TARGET_RUNTIME_ACCEPTANCE_*.json' -print | sort)
-          if [ "\${#TARGET_RECEIPTS[@]}" -ne 1 ]; then
-            echo "Expected exactly one direct target-runtime receipt; found \${#TARGET_RECEIPTS[@]}"
+          TARGET_RECEIPT_COUNT="$(find "$RECEIPT_DIR" -maxdepth 1 -type f -name 'LUNITA_TARGET_RUNTIME_ACCEPTANCE_*.json' -printf '.' | wc -c)"
+          if [ "$TARGET_RECEIPT_COUNT" -ne 1 ]; then
+            echo "Expected exactly one direct target-runtime receipt; found $TARGET_RECEIPT_COUNT"
             exit 2
           fi
+          TARGET_RECEIPT="$(find "$RECEIPT_DIR" -maxdepth 1 -type f -name 'LUNITA_TARGET_RUNTIME_ACCEPTANCE_*.json' -print -quit)"
           IMAGE_DIR="$RUNNER_TEMP/lunita-squashfs"
           mkdir -p "$IMAGE_DIR"
-          sudo -n python3.12 scripts/lunita/package_candidate_squashfs_v1.py \\
-            --rootfs "$LUNITA_ROOTFS_REAL" \\
-            --target-receipt "\${TARGET_RECEIPTS[0]}" \\
+          sudo -n python3.12 scripts/lunita/package_candidate_squashfs_v1.py \
+            --rootfs "$LUNITA_ROOTFS_REAL" \
+            --target-receipt "$TARGET_RECEIPT" \
             --output "$IMAGE_DIR/LUNITA.squashfs"
-          sudo -n chmod 0644 \\
-            "$IMAGE_DIR/LUNITA.squashfs" \\
-            "$IMAGE_DIR/LUNITA.squashfs.sha256" \\
-            "$IMAGE_DIR/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json"
+          sudo -n chmod 0644 "$IMAGE_DIR/LUNITA.squashfs" "$IMAGE_DIR/LUNITA.squashfs.sha256" "$IMAGE_DIR/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json"
           sudo -n chmod 0755 "$IMAGE_DIR"
-          printf 'image=%s\\n' "$IMAGE_DIR/LUNITA.squashfs" >> "$GITHUB_OUTPUT"
+          printf 'image=%s\n' "$IMAGE_DIR/LUNITA.squashfs" >> "$GITHUB_OUTPUT"
       - name: Upload verified LUNITA.squashfs candidate artifact
         if: always() && steps.package-squashfs.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: lunita-v1-8-squashfs-candidate
           path: |
-            \${{ runner.temp }}/lunita-squashfs/LUNITA.squashfs
-            \${{ runner.temp }}/lunita-squashfs/LUNITA.squashfs.sha256
-            \${{ runner.temp }}/lunita-squashfs/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json
+            ${{ runner.temp }}/lunita-squashfs/LUNITA.squashfs
+            ${{ runner.temp }}/lunita-squashfs/LUNITA.squashfs.sha256
+            ${{ runner.temp }}/lunita-squashfs/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json
           if-no-files-found: error
           retention-days: 90
       - name: Run the existing v1.8 independent rootfs and JASP certification lane
