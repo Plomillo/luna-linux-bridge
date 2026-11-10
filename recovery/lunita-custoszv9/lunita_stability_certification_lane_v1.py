@@ -963,6 +963,123 @@ def persist_independent_report(report: dict) -> dict:
             "status": report.get("status")}
 
 
+def issue_s32_independent_beta_validation_receipt() -> dict:
+    """Issue S32 only for a fully hash-bound direct-v1.8 candidate PASS.
+
+    This is candidate-beta operational certification only. It never grants G23/G24,
+    canonical G06/G08 certification, promotion, or mission completion.
+    """
+    if CERTIFICATION_PROFILE != "V1_8_DIRECT":
+        return {"status": "NOT_APPLICABLE_LEGACY_PROFILE", "certification": "NOT_GRANTED"}
+
+    report_path = INDEPENDENT_REPORT
+    if report_path.is_symlink() or not report_path.is_file():
+        return {"status": "BLOCKED_INDEPENDENT_REPORT_MISSING", "certification": "NOT_GRANTED"}
+    report = load_json(report_path, {}) or {}
+    if report.get("schema") != "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0":
+        return {"status": "BLOCKED_INDEPENDENT_REPORT_SCHEMA", "certification": "NOT_GRANTED"}
+    if report.get("status") != "PASS_INDEPENDENT_VALIDATION":
+        return {"status": "BLOCKED_INDEPENDENT_VALIDATION", "certification": "NOT_GRANTED"}
+    if report.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1" or report.get("certification_profile") != "V1_8_DIRECT":
+        return {"status": "BLOCKED_CANDIDATE_PROFILE_IDENTITY", "certification": "NOT_GRANTED"}
+
+    manifest = direct_candidate_manifest_identity()
+    if manifest.get("status") != "PASS" or report.get("candidate_manifest_sha256") != manifest.get("sha256"):
+        return {"status": "BLOCKED_CANDIDATE_MANIFEST_BINDING", "certification": "NOT_GRANTED"}
+
+    target = latest_target_runtime_acceptance()
+    target_path = pathlib.Path(target.get("receipt_path", "")) if target.get("receipt_path") else None
+    if (target.get("status") != "PASS_TARGET_RUNTIME_ACCEPTANCE" or not target_path
+        or target_path.is_symlink() or not target_path.is_file()
+        or target.get("receipt_sha256") != sha_file(target_path)):
+        return {"status": "BLOCKED_TARGET_RUNTIME_ACCEPTANCE", "certification": "NOT_GRANTED"}
+    target_sha = sha_file(target_path)
+    if (report.get("runtime_report_path") != str(target_path)
+        or report.get("runtime_report_sha256") != target_sha):
+        return {"status": "BLOCKED_RUNTIME_REPORT_HASH_BINDING", "certification": "NOT_GRANTED"}
+
+    checks = report.get("checks")
+    required_checks = {
+        "candidate_manifest_identity_sha256",
+        "runtime_report_and_launcher_identity",
+        "target_v1_8_runtime_acceptance_e01_e15_int8",
+        "candidate_rootfs_inventory_and_dependency_manifest",
+        "jasp_packaged_fixture_nonregression",
+    }
+    if not isinstance(checks, dict) or not required_checks.issubset(checks):
+        return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS_MISSING", "certification": "NOT_GRANTED"}
+    if any(not _stable_check(check) for check in checks.values()):
+        return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS", "certification": "NOT_GRANTED"}
+    target_check = checks["target_v1_8_runtime_acceptance_e01_e15_int8"]
+    if (target_check.get("receipt_path") != str(target_path)
+        or target_check.get("receipt_sha256") != target_sha):
+        return {"status": "BLOCKED_TARGET_RUNTIME_CHECK_BINDING", "certification": "NOT_GRANTED"}
+    if (checks["candidate_manifest_identity_sha256"].get("sha256") != manifest.get("sha256")
+        or report.get("frozen_g06_mutated") is not False
+        or report.get("canonical_g08_bindings_mutated") is not False
+        or target.get("canonical_g08_binding_mutation") is not False):
+        return {"status": "BLOCKED_CANONICAL_IDENTITY_GUARD", "certification": "NOT_GRANTED"}
+
+    independent_sha = sha_file(report_path)
+    evidence = {
+        "independent_validation": "PASS",
+        "independent_report_path": str(report_path),
+        "independent_report_sha256": independent_sha,
+        "target_runtime_receipt_path": str(target_path),
+        "target_runtime_receipt_sha256": target_sha,
+        "candidate_manifest_sha256": manifest["sha256"],
+    }
+    payload = {
+        "schema": "CUSTOSZ_LUNITA_BETA_CERTIFICATION_RECEIPT/1.0",
+        "status": "BETA_OPERATIONAL_CERTIFIED",
+        "step_completion": True,
+        "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+        "version": "1.8.0",
+        "basis": "VERSIONED_DERIVED_UBUNTU_24_04_CANDIDATE; NOT_THE_MISSING_FROZEN_ORIGINAL",
+        "runtime_report_path": str(target_path),
+        "runtime_report_sha256": target_sha,
+        "independent_report_path": str(report_path),
+        "independent_report_sha256": independent_sha,
+        "evidence": evidence,
+        "frozen_g06_mutated": False,
+        "canonical_g08_bindings_mutated": False,
+        "canonical_g06_certification": "NOT_GRANTED",
+        "g23_status": "NOT_GRANTED",
+        "g24_status": "NOT_GRANTED",
+        "certification_scope": "CANDIDATE_BETA_ONLY; NO AUTOMATIC CERTIFICATION PROPAGATION",
+        "certification": "GRANTED_FOR_VERSIONED_CANDIDATE_ONLY",
+        "mission_completion_claim": False,
+        "created_at_utc": utc(),
+    }
+    OUT.mkdir(parents=True, exist_ok=True, mode=0o700)
+    receipt_path = OUT / f"S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT_{independent_sha[:16]}.json"
+    if receipt_path.exists():
+        existing = load_json(receipt_path, {}) or {}
+        comparable = dict(existing)
+        comparable.pop("created_at_utc", None)
+        expected = dict(payload)
+        expected.pop("created_at_utc", None)
+        if comparable != expected:
+            return {"status": "BLOCKED_S32_RECEIPT_IDENTITY_COLLISION", "certification": "NOT_GRANTED"}
+    else:
+        atomic_json(receipt_path, payload)
+    observed = load_json(receipt_path, {}) or {}
+    if (observed.get("status") != "BETA_OPERATIONAL_CERTIFIED"
+        or observed.get("evidence") != evidence
+        or observed.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1"):
+        return {"status": "BLOCKED_S32_RECEIPT_POST_WRITE_VERIFICATION", "certification": "NOT_GRANTED"}
+    return {
+        "status": "BETA_OPERATIONAL_CERTIFIED",
+        "receipt_path": str(receipt_path),
+        "receipt_sha256": sha_file(receipt_path),
+        "independent_report_sha256": independent_sha,
+        "target_runtime_receipt_sha256": target_sha,
+        "certification": "GRANTED_FOR_VERSIONED_CANDIDATE_ONLY",
+        "g23_status": "NOT_GRANTED",
+        "g24_status": "NOT_GRANTED",
+    }
+
+
 def stable_release_gate() -> dict:
     direct = CERTIFICATION_PROFILE == "V1_8_DIRECT"
     report = load_json(INDEPENDENT_REPORT, {}) or {}
@@ -1209,6 +1326,7 @@ def tick() -> dict:
     jasp_queue = persist_jasp_remediation_queue(jasp)
     report = update_independent_report(inventory, jasp)
     report_update = persist_independent_report(report)
+    s32_receipt = issue_s32_independent_beta_validation_receipt()
     release = stable_release_gate()
     release_status = persist_stable_release_status(release)
     release_path = pathlib.Path(release_status["release_receipt_path"]) if release_status.get("release_receipt_path") else None
@@ -1224,6 +1342,7 @@ def tick() -> dict:
         "inventory_status": inventory.get("status") if inventory else "NOT_AVAILABLE",
         "inventory_report_path": inventory.get("report_path") if inventory else None,
         "independent_report_update": report_update, "independent_report_status": report.get("status"),
+        "s32_certification_receipt": s32_receipt,
         "jasp_status": jasp.get("status"), "jasp_cases": jasp.get("cases"),
         "jasp_remediation_queue": jasp_queue,
         "stable_release_gate": release, "stable_release_current_status": release_status,
