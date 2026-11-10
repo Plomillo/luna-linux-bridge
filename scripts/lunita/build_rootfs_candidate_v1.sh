@@ -118,7 +118,7 @@ curl --fail --location --retry 3 --retry-all-errors \
 [ "$(sha256sum "$NODE_ARCHIVE" | awk '{print $1}')" = "$NODE_SHA256" ] || fail "Node.js checksum mismatch."
 mkdir -p "$BROWSER_PREFIX"
 tar -xJf "$NODE_ARCHIVE" -C "$BROWSER_PREFIX" --strip-components=1
-PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
+PATH="$BROWSER_PREFIX/bin:$PATH" PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
   "$BROWSER_PREFIX/bin/npm" install --prefix "$BROWSER_PREFIX" --no-audit --no-fund \
   "playwright@$PLAYWRIGHT_VERSION" "playwright-core@$PLAYWRIGHT_VERSION"
 PLAYWRIGHT_ACTUAL="$("$BROWSER_PREFIX/bin/node" -p "require('$BROWSER_PREFIX/node_modules/playwright/package.json').version")"
