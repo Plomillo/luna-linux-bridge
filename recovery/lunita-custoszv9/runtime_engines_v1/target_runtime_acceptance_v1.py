@@ -147,18 +147,32 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
         if json.loads(metadata.read_text(encoding="utf-8")).get("version") != "1.63.0":
             raise TargetGateError(f"Brújula package version mismatch: {package}")
     target_rootfs = ROOT.parents[1]
+
+    def run_as_lunita(*argv: str, extra_env: tuple[str, ...] = ()) -> subprocess.CompletedProcess:
+        environment = (
+            "HOME=/home/lunita",
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
+            "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
+            "XDG_DATA_HOME=/tmp/lunita-xdg/data",
+            "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+            "FLATPAK_SYSTEM_DIR=/var/lib/flatpak",
+            *extra_env,
+        )
+        return subprocess.run(
+            [
+                "sudo", "-n", "chroot", "--userspec=1000:1000", str(target_rootfs),
+                "/usr/bin/env", "-C", "/tmp", *environment, *argv,
+            ],
+            capture_output=True, text=True, check=False,
+        )
+
     guest_node = "/opt/lunita/instruments/brujula/node/bin/node"
     guest_chrome = "/opt/lunita/instruments/brujula/chrome/chrome"
-    node_result = subprocess.run(
-        ["chroot", str(target_rootfs), "/usr/bin/env", "-C", "/tmp", guest_node, "--version"],
-        capture_output=True, text=True, check=False,
-    )
+    node_result = run_as_lunita(guest_node, "--version")
     if node_result.returncode != 0 or node_result.stdout.strip() != "v22.23.2":
         raise TargetGateError("Node.js target-rootfs runtime did not return the pinned version")
-    chrome_result = subprocess.run(
-        ["chroot", str(target_rootfs), "/usr/bin/env", "-C", "/tmp", guest_chrome, "--version"],
-        capture_output=True, text=True, check=False,
-    )
+    chrome_result = run_as_lunita(guest_chrome, "--version")
     if chrome_result.returncode != 0 or "153.0.8010.12" not in chrome_result.stdout:
         raise TargetGateError("Chrome for Testing target-rootfs executable did not return the pinned version")
 
@@ -167,14 +181,10 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
         raise TargetGateError("Lápiz R version is not pinned to 4.6.1")
     rscript = require_hash("instruments/lapiz/R-4.6.1/bin/Rscript", lapiz.get("rscript_sha256"), "Rscript binary")
     r_home = "/opt/lunita/instruments/lapiz/R-4.6.1/lib/R"
-    r = subprocess.run(
-        [
-            "chroot", str(target_rootfs), "/usr/bin/env", "-C", "/tmp",
-            f"R_HOME={r_home}",
-            "/opt/lunita/instruments/lapiz/R-4.6.1/bin/Rscript",
-            "-e", 'stopifnot(as.character(getRversion())=="4.6.1", 2+2==4)',
-        ],
-        capture_output=True, text=True, check=False,
+    r = run_as_lunita(
+        "/opt/lunita/instruments/lapiz/R-4.6.1/bin/Rscript",
+        "-e", 'stopifnot(as.character(getRversion())=="4.6.1", 2+2==4)',
+        extra_env=(f"R_HOME={r_home}",),
     )
     if r.returncode != 0:
         raise TargetGateError("Lápiz R 4.6.1 execution failed: " + (r.stderr or r.stdout)[-1200:])
