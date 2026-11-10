@@ -297,6 +297,57 @@ jobs:
         with:
           name: lunita-engine-overlay-v1-py312
           path: ${{ runner.temp }}/lunita-engine-overlay
+      - name: Prove host user namespaces before the expensive rootfs rebuild
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n bash -euo pipefail <<'ROOT'
+          RESTORE_FILE="$(mktemp)"
+          restore_userns_sysctls() {
+            local result=$?
+            trap - EXIT
+            set +e
+            local key original path observed
+            while IFS='=' read -r key original; do
+              [ -n "$key" ] || continue
+              sysctl -q -w "$key=$original" || result=1
+              case "$key" in
+                kernel.apparmor_restrict_unprivileged_userns) path=/proc/sys/kernel/apparmor_restrict_unprivileged_userns ;;
+                kernel.unprivileged_userns_clone) path=/proc/sys/kernel/unprivileged_userns_clone ;;
+                user.max_user_namespaces) path=/proc/sys/user/max_user_namespaces ;;
+                *) result=1; continue ;;
+              esac
+              observed="$(cat "$path" 2>/dev/null)"
+              [ "$observed" = "$original" ] || result=1
+            done < "$RESTORE_FILE"
+            rm -f "$RESTORE_FILE"
+            exit "$result"
+          }
+          trap restore_userns_sysctls EXIT
+          enable_userns_sysctl() {
+            local key="$1" wanted="$2" path original
+            case "$key" in
+              kernel.apparmor_restrict_unprivileged_userns) path=/proc/sys/kernel/apparmor_restrict_unprivileged_userns ;;
+              kernel.unprivileged_userns_clone) path=/proc/sys/kernel/unprivileged_userns_clone ;;
+              user.max_user_namespaces) path=/proc/sys/user/max_user_namespaces ;;
+              *) echo "ERROR: unregistered user-namespace sysctl: $key" >&2; return 2 ;;
+            esac
+            if [ ! -e "$path" ]; then echo "USERNS_SYSCTL_UNAVAILABLE=$key"; return 0; fi
+            original="$(cat "$path")"
+            if [ "$original" != "$wanted" ]; then
+              printf '%s=%s\n' "$key" "$original" >> "$RESTORE_FILE"
+              sysctl -q -w "$key=$wanted"
+            fi
+            echo "USERNS_SYSCTL_ACTIVE $key=$wanted (original=$original)"
+          }
+          enable_userns_sysctl kernel.apparmor_restrict_unprivileged_userns 0
+          enable_userns_sysctl kernel.unprivileged_userns_clone 1
+          if [ -r /proc/sys/user/max_user_namespaces ] && [ "$(cat /proc/sys/user/max_user_namespaces)" = "0" ]; then
+            enable_userns_sysctl user.max_user_namespaces 65536
+          fi
+          sudo -n -u nobody /usr/bin/unshare --user --map-root-user /usr/bin/true
+          echo "PASS_HOST_USERNS_PREFLIGHT: unprivileged user namespace creation is available on the actual GitHub runner kernel."
+          ROOT
       - name: Rebuild the Ubuntu 24.04 Lunita candidate rootfs from pinned inputs
         shell: bash
         run: |
@@ -339,6 +390,87 @@ jobs:
           printf 'LUNITA_XDG_STATE_HOME=%s\n' "$RUNNER_TEMP/lunita-xdg" >> "$GITHUB_ENV"
           printf 'LUNITA_CHECKPOINT_DIR=\n' >> "$GITHUB_ENV"
           printf 'FLATPAK_SYSTEM_DIR=%s\n' "$ROOTFS/var/lib/flatpak" >> "$GITHUB_ENV"
+      - name: Verify exact candidate identity labels and preservation of existing instrument labels
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3.12 - "$LUNITA_ROOTFS_REAL" <<'PY'
+          import hashlib, json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          metadata = root / "opt/lunita/metadata"
+          json_path = metadata / "LUNITA_LABEL_HIERARCHY.json"
+          text_path = metadata / "LUNITA_LABEL_HIERARCHY.txt"
+          receipt_path = metadata / "ROOTFS_BUILD_RECEIPT.json"
+          for path in (json_path, text_path, receipt_path):
+              if path.is_symlink() or not path.is_file():
+                  raise SystemExit(f"BLOCKED: required candidate metadata is missing or unsafe: {path}")
+          expected_tree = """LA PIEZA
+          └── EL ESTUCHE
+              └── UBUNTU 24.04 LTS MINIMAL
+                  └── LUNITA LA INVESTIGADORA
+                      ├── MOTOR COGNITIVO
+                      │   └── Qwen3-0.6B IQ3_XS GGUF
+                      │
+                      ├── BRÚJULA GIROSCÓPICA
+                      │   ├── Node.js 22.23.2
+                      │   ├── Playwright 1.63.0
+                      │   ├── playwright-core 1.63.0
+                      │   └── Chrome for Testing 153.0.8010.12
+                      │
+                      ├── LÁPIZ
+                      │   └── R 4.6.1
+                      │
+                      ├── SACAPUNTAS
+                      │   └── jamovi 2.7.27
+                      │
+                      └── LUPA
+                          └── JASP 0.98.1
+          """
+          # Strip only the YAML block's common indentation; preserve every label and branch glyph.
+          expected_tree = "\n".join(line[10:] if line.startswith("          ") else line for line in expected_tree.splitlines()) + "\n"
+          document = json.loads(json_path.read_text(encoding="utf-8"))
+          receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+          binding = receipt.get("label_hierarchy", {})
+          if document.get("schema") != "LUNITA_LABEL_HIERARCHY/1.0" or document.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1" or document.get("version") != "1.8.0":
+              raise SystemExit("BLOCKED: label hierarchy identity/schema mismatch.")
+          if document.get("preservation_policy") != "APPEND_ONLY;DO_NOT_REWRITE_EXISTING_LABELS":
+              raise SystemExit("BLOCKED: candidate label preservation policy mismatch.")
+          if document.get("rendered_tree") != expected_tree or text_path.read_text(encoding="utf-8") != expected_tree:
+              raise SystemExit("BLOCKED: exact candidate label tree mismatch.")
+          labels = []
+          def walk(node):
+              if not isinstance(node, dict) or not isinstance(node.get("label"), str):
+                  raise SystemExit("BLOCKED: malformed label node.")
+              labels.append(node["label"])
+              children = node.get("children", [])
+              if not isinstance(children, list):
+                  raise SystemExit("BLOCKED: malformed label children.")
+              for child in children:
+                  walk(child)
+          walk(document.get("hierarchy"))
+          expected_labels = [
+              "LA PIEZA", "EL ESTUCHE", "UBUNTU 24.04 LTS MINIMAL", "LUNITA LA INVESTIGADORA",
+              "MOTOR COGNITIVO", "Qwen3-0.6B IQ3_XS GGUF", "BRÚJULA GIROSCÓPICA",
+              "Node.js 22.23.2", "Playwright 1.63.0", "playwright-core 1.63.0",
+              "Chrome for Testing 153.0.8010.12", "LÁPIZ", "R 4.6.1",
+              "SACAPUNTAS", "jamovi 2.7.27", "LUPA", "JASP 0.98.1"
+          ]
+          if labels != expected_labels:
+              raise SystemExit(f"BLOCKED: exact candidate labels differ: {labels!r}")
+          if binding.get("schema") != "LUNITA_LABEL_HIERARCHY/1.0" or binding.get("json_path") != "/opt/lunita/metadata/LUNITA_LABEL_HIERARCHY.json" or binding.get("text_path") != "/opt/lunita/metadata/LUNITA_LABEL_HIERARCHY.txt":
+              raise SystemExit("BLOCKED: rootfs build receipt does not bind the exact label files.")
+          if binding.get("json_sha256") != hashlib.sha256(json_path.read_bytes()).hexdigest() or binding.get("text_sha256") != hashlib.sha256(text_path.read_bytes()).hexdigest():
+              raise SystemExit("BLOCKED: candidate label file digest mismatch.")
+          preserved = {
+              "BRUJULA": "Brújula giroscópica", "JAMOVI": "Sacapuntas",
+              "JASP": "Lupa", "R": "Lápiz", "QWEN": "Motor Cognitivo"
+          }
+          if receipt.get("instrument_labels") != preserved:
+              raise SystemExit("BLOCKED: pre-existing instrument labels were changed.")
+          print("PASS_EXACT_CANDIDATE_LABEL_HIERARCHY")
+          print(f"LUNITA_LABEL_COUNT={len(labels)}")
+          print("PASS_PREEXISTING_INSTRUMENT_LABELS_PRESERVED")
+          PY
       - name: Apply the overlay only when it is absent and the candidate is clean
         shell: bash
         run: |
@@ -372,42 +504,27 @@ jobs:
               --apply
             printf 'LUNITA_CHECKPOINT_DIR=%s\n' "$CHECKPOINT_DIR" >> "$GITHUB_ENV"
           fi
-      - name: Prepare isolated namespace-capable runner for actual target acceptance
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo -n docker build --pull=false -f scripts/lunita/target-runtime-ci/Dockerfile -t lunita-v18-target-runtime-ci:1 .
-          sudo -n docker run --detach \
-            --name lunita-v18-target-runtime-ci \
-            --privileged \
-            --security-opt seccomp=unconfined \
-            --security-opt apparmor=unconfined \
-            --init \
-            --volume "$RUNNER_TEMP:$RUNNER_TEMP" \
-            --volume "$GITHUB_WORKSPACE:/workspace" \
-            --workdir /workspace \
-            lunita-v18-target-runtime-ci:1
-          sudo -n docker exec lunita-v18-target-runtime-ci python3.12 --version
       - name: Execute actual E01 inference and E02-E15 plus legacy application smoke tests
         shell: bash
         run: |
           set -euo pipefail
-          sudo -n docker exec \
-            -e LUNITA_ROOTFS_REAL="$LUNITA_ROOTFS_REAL" \
-            -e LUNITA_ROOT="$LUNITA_ROOT" \
-            -e LUNITA_XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME" \
-            -e RUNNER_TEMP="$RUNNER_TEMP" \
-            lunita-v18-target-runtime-ci \
-            /workspace/scripts/lunita/run_target_runtime_acceptance_in_container_v1.sh
+          sudo -n env PATH="$PATH" \
+            LUNITA_ROOTFS_REAL="$LUNITA_ROOTFS_REAL" \
+            LUNITA_ROOT="$LUNITA_ROOT" \
+            LUNITA_XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME" \
+            RUNNER_TEMP="$RUNNER_TEMP" \
+            bash scripts/lunita/run_target_runtime_acceptance_in_container_v1.sh
       - name: Verify target virtual filesystems were unmounted before image materialization
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          sudo -n docker exec \
-            -e LUNITA_ROOTFS_REAL="$LUNITA_ROOTFS_REAL" \
-            lunita-v18-target-runtime-ci \
-            bash -euc 'for part in dev proc sys run; do if mountpoint -q "$LUNITA_ROOTFS_REAL/$part"; then echo "BLOCKED: target mount remains active: $part"; exit 2; fi; done'
+          for part in dev proc sys run; do
+            if mountpoint -q "$LUNITA_ROOTFS_REAL/$part"; then
+              echo "BLOCKED: target mount remains active: $part"
+              exit 2
+            fi
+          done
       - name: Build and round-trip verify LUNITA.squashfs
         id: package-squashfs
         shell: bash
@@ -446,13 +563,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sudo -n docker exec \
-            -e RUNNER_TEMP="$RUNNER_TEMP" \
-            -e GITHUB_WORKSPACE=/workspace \
-            -e LUNITA_XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME" \
-            -e LUNITA_ROOTFS_REAL="$LUNITA_ROOTFS_REAL" \
-            lunita-v18-target-runtime-ci \
-            /workspace/scripts/lunita/run_independent_certification_lane_in_container_v1.sh
+          sudo -n env PATH="$PATH" \
+            RUNNER_TEMP="$RUNNER_TEMP" \
+            GITHUB_WORKSPACE="$GITHUB_WORKSPACE" \
+            LUNITA_XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME" \
+            LUNITA_ROOTFS_REAL="$LUNITA_ROOTFS_REAL" \
+            bash scripts/lunita/run_independent_certification_lane_in_container_v1.sh
       - name: Certify the exact SquashFS image from S32 and independent evidence
         shell: bash
         run: |
@@ -460,7 +576,7 @@ jobs:
           CERT_STATE="$RUNNER_TEMP/lunita-stability-state"
           CERT_CANDIDATE="$RUNNER_TEMP/lunita-stability-candidate"
           IMAGE_DIR="$RUNNER_TEMP/lunita-squashfs"
-          python3 scripts/lunita/certify_candidate_squashfs_v1.py \
+          sudo -n env PATH="$PATH" python3.12 scripts/lunita/certify_candidate_squashfs_v1.py \
             --image "$IMAGE_DIR/LUNITA.squashfs" \
             --checksum "$IMAGE_DIR/LUNITA.squashfs.sha256" \
             --package-receipt "$IMAGE_DIR/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json" \
@@ -470,6 +586,7 @@ jobs:
             --s32-receipt-dir "$CERT_STATE/worker_outputs" \
             --stable-release-dir "$CERT_STATE/releases/LUNITA_STABLE_1_8" \
             --output "$IMAGE_DIR/LUNITA_FUNCTIONAL_CERTIFICATE.json"
+          sudo -n chmod 0644 "$IMAGE_DIR/LUNITA_FUNCTIONAL_CERTIFICATE.json"
       - name: Upload certified Lunita v1.8 SquashFS bundle
         if: success()
         uses: actions/upload-artifact@v4
@@ -504,17 +621,28 @@ jobs:
             "$RUNNER_TEMP/lunita-stability-state" \
             "$RUNNER_TEMP/lunita-stability-candidate"; do
             if [ -e "$PATH_IN" ]; then
-              cp -a "$PATH_IN" "$OUT/"
+              run_root cp -a "$PATH_IN" "$OUT/"
             fi
           done
           run_root chmod -R a+rX "$OUT"
-      - name: Final cleanup of isolated target acceptance container
+      - name: Final cleanup of target rootfs mounts
         if: always()
         shell: bash
         run: |
-          set +e
-          sudo -n docker rm -f lunita-v18-target-runtime-ci >/dev/null 2>&1 || true
-          exit 0
+          set -euo pipefail
+          if [ -n "${LUNITA_ROOTFS_REAL:-}" ] && [ -d "$LUNITA_ROOTFS_REAL" ]; then
+            for part in run sys proc dev; do
+              if mountpoint -q "$LUNITA_ROOTFS_REAL/$part"; then
+                sudo -n umount -R "$LUNITA_ROOTFS_REAL/$part"
+              fi
+            done
+            for part in dev proc sys run; do
+              if mountpoint -q "$LUNITA_ROOTFS_REAL/$part"; then
+                echo "BLOCKED: target mount remains active after cleanup: $part"
+                exit 2
+              fi
+            done
+          fi
       - name: Upload real target and independent evidence
         if: always()
         uses: actions/upload-artifact@v4
