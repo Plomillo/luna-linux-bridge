@@ -43,11 +43,15 @@ jobs:
           sudo apt-get install -y --no-install-recommends squashfs-tools
           command -v mksquashfs
           command -v unsquashfs
-      - name: Compile and execute reproducible SquashFS packager acceptance
+      - name: Compile and execute reproducible SquashFS packaging and certification acceptance
         shell: bash
         run: |
-          python -m py_compile scripts/lunita/package_candidate_squashfs_v1.py
+          python -m py_compile \
+            scripts/lunita/package_candidate_squashfs_v1.py \
+            scripts/lunita/certify_candidate_squashfs_v1.py
           python scripts/lunita/package_candidate_squashfs_v1.py --self-test
+          python scripts/lunita/certify_candidate_squashfs_v1.py --self-test
+          python -m unittest discover -s scripts/lunita -p "test_certify_candidate_squashfs_v1.py" -v
       - name: Install pinned CPU-only PyTorch for SeamlessM4T tensor contracts
         shell: bash
         run: |
@@ -357,11 +361,11 @@ jobs:
             CHECKPOINT_DIR="$RUNNER_TEMP/lunita-checkpoint-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
             PYTHON312="$(command -v python3.12)"
             run_root "$PYTHON312" recovery/lunita-custoszv9/runtime_engines_v1/checkpoint_v1.py \
-              --rootfs "$LUNITA_ROOTFS_REAL" \
+              --rootfs "$LUNITA_ROOT" \
               --checkpoint-dir "$CHECKPOINT_DIR" \
               --candidate-id G06_REBUILD_CANDIDATE_R1
             run_root "$PYTHON312" recovery/lunita-custoszv9/runtime_engines_v1/apply_engine_overlay_v1.py \
-              --rootfs "$LUNITA_ROOTFS_REAL" \
+              --rootfs "$LUNITA_ROOT" \
               --source-dir "$SOURCE_DIR" \
               --checkpoint-receipt "$CHECKPOINT_DIR/CHECKPOINT_RECEIPT.json" \
               --candidate-id G06_REBUILD_CANDIDATE_R1 \
@@ -499,6 +503,35 @@ jobs:
               time.sleep(30)
           raise SystemExit("BLOCKED: independent evidence did not complete within the bounded run window.")
           PY
+      - name: Certify the exact SquashFS image from S32 and independent evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          CERT_STATE="$RUNNER_TEMP/lunita-stability-state"
+          CERT_CANDIDATE="$RUNNER_TEMP/lunita-stability-candidate"
+          IMAGE_DIR="$RUNNER_TEMP/lunita-squashfs"
+          python3 scripts/lunita/certify_candidate_squashfs_v1.py \
+            --image "$IMAGE_DIR/LUNITA.squashfs" \
+            --checksum "$IMAGE_DIR/LUNITA.squashfs.sha256" \
+            --package-receipt "$IMAGE_DIR/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json" \
+            --target-receipt-dir "$LUNITA_XDG_STATE_HOME/lunita/runtime_validation" \
+            --independent-report "$CERT_CANDIDATE/BETA_INDEPENDENT_VALIDATION.json" \
+            --candidate-manifest "$GITHUB_WORKSPACE/LUNITA_V1_8_CANDIDATE_FREEZE.json" \
+            --s32-receipt-dir "$CERT_STATE/worker_outputs" \
+            --stable-release-dir "$CERT_STATE/releases/LUNITA_STABLE_1_8" \
+            --output "$IMAGE_DIR/LUNITA_FUNCTIONAL_CERTIFICATE.json"
+      - name: Upload certified Lunita v1.8 SquashFS bundle
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunita-v1-8-squashfs-certified
+          path: |
+            ${{ runner.temp }}/lunita-squashfs/LUNITA.squashfs
+            ${{ runner.temp }}/lunita-squashfs/LUNITA.squashfs.sha256
+            ${{ runner.temp }}/lunita-squashfs/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json
+            ${{ runner.temp }}/lunita-squashfs/LUNITA_FUNCTIONAL_CERTIFICATE.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Collect immutable target and independent evidence
         if: always()
         shell: bash
