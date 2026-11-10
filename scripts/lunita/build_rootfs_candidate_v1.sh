@@ -159,7 +159,18 @@ cp "$LLAMA_SRC/build/bin/llama-cli" "$RUNTIME_PREFIX/llama-cli"
 find "$LLAMA_SRC/build/bin" -maxdepth 1 -type f -name 'libggml*.so*' -exec cp -a {} "$RUNTIME_PREFIX/" \;
 find "$LLAMA_SRC/build/bin" -maxdepth 1 -type f -name 'libllama.so*' -exec cp -a {} "$RUNTIME_PREFIX/" \;
 chmod 0755 "$RUNTIME_PREFIX/llama-cli"
-LLAMA_VERSION="$(chroot "$ROOTFS" "$RUNTIME_PREFIX/llama-cli" --version 2>&1 | head -n 1)"
+GUEST_RUNTIME_PREFIX="/opt/lunita/brain/runtime/llama.cpp-$LLAMA_CPP_TAG"
+CPU_BACKEND="$(find "$RUNTIME_PREFIX" -maxdepth 1 -type f -name 'libggml-cpu-x64.so' -print -quit)"
+if [ -n "$CPU_BACKEND" ]; then
+  LLAMA_VERSION="$(chroot "$ROOTFS" /usr/bin/env -C /tmp \
+    "LD_LIBRARY_PATH=$GUEST_RUNTIME_PREFIX" \
+    "GGML_BACKEND_PATH=$GUEST_RUNTIME_PREFIX/$(basename "$CPU_BACKEND")" \
+    "$GUEST_RUNTIME_PREFIX/llama-cli" --version 2>&1 | head -n 1)"
+else
+  LLAMA_VERSION="$(chroot "$ROOTFS" /usr/bin/env -C /tmp \
+    "LD_LIBRARY_PATH=$GUEST_RUNTIME_PREFIX" \
+    "$GUEST_RUNTIME_PREFIX/llama-cli" --version 2>&1 | head -n 1)"
+fi
 [ -x "$RUNTIME_PREFIX/llama-cli" ] || fail "llama-cli output missing."
 
 # Pin the actual model file to an immutable Hugging Face repository revision.
