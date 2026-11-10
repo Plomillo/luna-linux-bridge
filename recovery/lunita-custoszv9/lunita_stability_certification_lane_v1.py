@@ -102,6 +102,10 @@ def pid_alive(pid) -> bool:
             return False
         os.kill(pid, 0)
         return True
+    except PermissionError:
+        # A root-owned inventory worker is alive even though its unprivileged
+        # supervisor cannot signal it. Treat EPERM as existence, not exit.
+        return True
     except (OSError, ValueError, IndexError):
         return False
 
@@ -416,9 +420,56 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
     return results
 
 
+INVENTORY_PRIVILEGED_ENV = (
+    "LUNITA_ROOTFS",
+    "LUNITA_STATE_DIR",
+    "LUNITA_OUTPUT_DIR",
+    "LUNITA_EVIDENCE_DIR",
+    "LUNITA_CANDIDATE_DIR",
+    "LUNITA_TARGET_RUNTIME_RECEIPT_DIR",
+    "LUNITA_CANDIDATE_MANIFEST",
+    "LUNITA_CERTIFICATION_PROFILE",
+)
+
+
+def inventory_worker_command(result_path: pathlib.Path) -> list[str]:
+    """Run only the read-only rootfs inventory with root traversal rights.
+
+    Candidate directories remain 0700/0600. The worker uses sudo read-only
+    access; it does not chown/chmod or otherwise alter rootfs content.
+    """
+    script = str(pathlib.Path(__file__).resolve())
+    worker = [sys.executable, "-B", script, "--inventory-worker", str(result_path)]
+    if os.geteuid() == 0:
+        return worker
+    sudo = shutil.which("sudo")
+    if not sudo:
+        raise PermissionError("Rootfs inventory requires read-only privileged traversal; sudo is unavailable")
+    preserved = ",".join(INVENTORY_PRIVILEGED_ENV)
+    return [sudo, "-n", f"--preserve-env={preserved}", *worker]
+
+
+def restore_inventory_artifact_owner(path: pathlib.Path) -> None:
+    """Return root-created evidence files to the invoking workflow user, mode 0600."""
+    if os.geteuid() != 0:
+        return
+    uid_text, gid_text = os.environ.get("SUDO_UID"), os.environ.get("SUDO_GID")
+    if uid_text is None and gid_text is None:
+        return
+    if not (uid_text and gid_text and uid_text.isdigit() and gid_text.isdigit()):
+        raise PermissionError("Cannot restore inventory evidence ownership from incomplete sudo identity")
+    os.chown(path, int(uid_text), int(gid_text), follow_symlinks=False)
+    os.chmod(path, 0o600)
+
+
 def _entry_rows(root: pathlib.Path):
     """Yield non-following filesystem entries in stable order."""
-    for base, dirs, files in os.walk(root, topdown=True, followlinks=False):
+    def deny_walk_error(error: OSError) -> None:
+        raise error
+
+    for base, dirs, files in os.walk(
+        root, topdown=True, followlinks=False, onerror=deny_walk_error
+    ):
         dirs.sort()
         files.sort()
         bp = pathlib.Path(base)
@@ -502,6 +553,7 @@ def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
         result = {"schema": "CUSTOSZ_LUNITA_ROOTFS_INVENTORY/1.0", "status": "BLOCKED_ROOTFS_MISSING",
                   "timestamp_utc": utc(), "rootfs_path": str(ROOTFS), "certification": "NOT_GRANTED"}
         atomic_json(report_path, result)
+        restore_inventory_artifact_owner(report_path)
         return result
 
     status_path = ROOTFS / "var/lib/dpkg/status"
@@ -555,6 +607,7 @@ def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
     after_digest, after_count = _meta_digest(ROOTFS)
     stable_tree = before_digest == after_digest and before_count == after_count
     os.replace(tmp_manifest, manifest)
+    restore_inventory_artifact_owner(manifest)
     dep = parse_dpkg_status(status_path)
     launcher_sha = sha_file(launcher) if launcher.is_file() else None
     basics_pass = status_path.is_file() and os_release.is_file() and launcher_sha is not None
@@ -582,6 +635,7 @@ def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
         "certification": "NOT_GRANTED",
     }
     atomic_json(report_path, result)
+    restore_inventory_artifact_owner(report_path)
     return result
 
 
@@ -1309,7 +1363,7 @@ def tick() -> dict:
             result_path = EVIDENCE / f"rootfs_inventory_{stamp}.json"
             log_path = EVIDENCE / f"rootfs_inventory_{stamp}.log"
             log = log_path.open("ab")
-            proc = subprocess.Popen([sys.executable, "-B", str(pathlib.Path(__file__).resolve()), "--inventory-worker", str(result_path)],
+            proc = subprocess.Popen(inventory_worker_command(result_path),
                                     stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
                                     close_fds=True, start_new_session=True)
             log.close()
@@ -1412,8 +1466,10 @@ def main() -> int:
         result = build_rootfs_inventory(result_path)
         actual_report_path = result_path or (EVIDENCE / f"rootfs_inventory_{dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json")
         # The supervising tick records this exact, preallocated result path.
-        atomic_json(EVIDENCE / "rootfs_inventory_latest.json", {**result, "report_path": str(actual_report_path),
+        latest_path = EVIDENCE / "rootfs_inventory_latest.json"
+        atomic_json(latest_path, {**result, "report_path": str(actual_report_path),
                     "report_sha256": sha_file(actual_report_path) if actual_report_path.is_file() else None})
+        restore_inventory_artifact_owner(latest_path)
         print(json.dumps(result, sort_keys=True))
         return 0 if result.get("status") == "PASS_ROOTFS_INVENTORY_AND_DEPENDENCY_CLOSURE" else 1
     if "--once" in sys.argv:

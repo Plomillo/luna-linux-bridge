@@ -48,7 +48,7 @@ apt-get install -y --no-install-recommends \
 # Ubuntu 24.04 minimal amd64 root filesystem.
 if ! debootstrap --arch=amd64 --variant=minbase \
   --components=main,restricted,universe,multiverse \
-  --include=ca-certificates,curl,wget,gnupg,locales,python3.12,python3.12-venv,python3.12-dev \
+  --include=ca-certificates,curl,wget,gnupg,locales,python3-minimal,python3.12,python3.12-venv,python3.12-dev \
   noble "$ROOTFS" http://archive.ubuntu.com/ubuntu; then
   echo "DEBOOTSTRAP_FAILED: final log excerpt follows" >&2
   tail -n 160 "$ROOTFS/debootstrap/debootstrap.log" >&2 || true
@@ -78,7 +78,7 @@ cleanup_mounts() {
 trap cleanup_mounts EXIT
 chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get update
 chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-  flatpak python3.12 python3.12-venv ca-certificates curl wget gnupg locales \
+  flatpak python3-minimal python3.12 python3.12-venv ca-certificates curl wget gnupg locales \
   libnss3 libgtk-3-0t64 libatk1.0-0t64 libatk-bridge2.0-0t64 libatspi2.0-0t64 \
   libcups2t64 libdrm2 libgbm1 libasound2t64 libdbus-1-3 libglib2.0-0t64 \
   libexpat1 libfontconfig1 libfreetype6 libx11-6 libx11-xcb1 libxcb1 libxext6 \
@@ -88,6 +88,10 @@ chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-inst
   libpango-1.0-0 libcairo2 fonts-liberation libstdc++6 libgomp1 \
   libreadline8t64 libpcre2-8-0 liblzma5 libbz2-1.0 zlib1g \
   libcurl4t64 libicu74 libtirpc3t64 libblas3 liblapack3 libgfortran5 libquadmath0 passwd util-linux
+SYSTEM_PYTHON_ALIAS="$(readlink "$ROOTFS/usr/bin/python3")"
+[ "$SYSTEM_PYTHON_ALIAS" = "python3.12" ] || fail "Ubuntu system python3 alias is not bound to python3.12: $SYSTEM_PYTHON_ALIAS"
+SYSTEM_PYTHON_VERSION="$(chroot "$ROOTFS" /usr/bin/python3 --version)"
+[[ "$SYSTEM_PYTHON_VERSION" == "Python 3.12."* ]] || fail "Ubuntu system python3 compatibility runtime mismatch: $SYSTEM_PYTHON_VERSION"
 chroot "$ROOTFS" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   build-essential cmake pkg-config gfortran \
   libreadline-dev libpcre2-dev liblzma-dev libbz2-dev libcurl4-openssl-dev \
@@ -278,6 +282,7 @@ data = {
   "rootfs_origin": "REBUILT_FROM_PINNED_SOURCES_ON_GITHUB_ACTIONS",
   "source_rootfs_recovered": False,
   "ubuntu": {"distribution": "Ubuntu", "release": "24.04", "codename": "noble", "architecture": "amd64"},
+  "system_python": {"default_executable": "/usr/bin/python3", "symlink_target": "$SYSTEM_PYTHON_ALIAS", "version_output": "$SYSTEM_PYTHON_VERSION"},
   "legacy_launcher": {"version": "beta-v1.7", "sha256": "$ROOTFS_LAUNCHER_SHA256"},
   "qwen": {"repository": "$QWEN_REPO", "revision": "$QWEN_REVISION", "file": "$QWEN_FILE", "sha256": "$MODEL_SHA256", "bytes": int("$MODEL_BYTES"), "quantization": "IQ3_XS"},
   "llama_cpp": {"tag": "$LLAMA_CPP_TAG", "commit": "$LLAMA_CPP_COMMIT", "version_output": "$LLAMA_VERSION", "llama_cli_sha256": "$LLAMA_BINARY_SHA256"},

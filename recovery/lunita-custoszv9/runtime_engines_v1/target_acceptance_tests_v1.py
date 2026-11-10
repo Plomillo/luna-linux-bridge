@@ -46,6 +46,69 @@ def tree_receipt(root: pathlib.Path) -> dict:
     }
 
 
+class TargetSystemPythonAliasTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="lunita-system-python-")
+        self.addCleanup(self.temp.cleanup)
+        self.root = pathlib.Path(self.temp.name)
+        self.bin = self.root / "usr/bin"
+        self.bin.mkdir(parents=True)
+        self.python312 = self.bin / "python3.12"
+        self.python312.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        self.python312.chmod(0o755)
+        self.python3 = self.bin / "python3"
+
+    def test_ubuntu_python3_alias_resolves_to_python312(self):
+        self.python3.symlink_to("python3.12")
+        result = target.verify_system_python_alias(self.root)
+        self.assertEqual("PASS_SYSTEM_PYTHON_ALIAS", result["status"])
+        self.assertEqual("python3.12", result["symlink_target"])
+        self.assertEqual(str(self.python312.resolve()), result["resolved_executable"])
+
+    def test_missing_python3_alias_is_denied(self):
+        with self.assertRaisesRegex(
+            target.TargetGateError, "compatibility symlink is missing"
+        ):
+            target.verify_system_python_alias(self.root)
+
+    def test_wrong_python3_alias_target_is_denied(self):
+        python311 = self.bin / "python3.11"
+        python311.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        python311.chmod(0o755)
+        self.python3.symlink_to("python3.11")
+        with self.assertRaisesRegex(
+            target.TargetGateError, "must resolve to /usr/bin/python3.12"
+        ):
+            target.verify_system_python_alias(self.root)
+
+
+class TargetLegacyFlatpakDiagnosticTests(unittest.TestCase):
+    def test_flatpak_diagnostic_compares_inherited_and_clean_guest_environments(self):
+        calls = [
+            mock.Mock(returncode=3, stdout="", stderr="inherited dbus failure"),
+            mock.Mock(returncode=0, stdout="", stderr=""),
+        ]
+        with mock.patch.object(target.subprocess, "run", side_effect=calls) as run:
+            result = target.diagnose_flatpak_smoke("org.jamovi.jamovi")
+        self.assertTrue(result["diagnostic_only"])
+        self.assertEqual(1000, int(result["execution_user"].split(":")[0]))
+        self.assertEqual(3, result["runs"]["inherited"]["returncode"])
+        self.assertEqual("inherited dbus failure", result["runs"]["inherited"]["stderr"])
+        self.assertEqual(0, result["runs"]["clean"]["returncode"])
+        inherited_command = run.call_args_list[0].args[0]
+        clean_command = run.call_args_list[1].args[0]
+        self.assertNotIn("-i", inherited_command)
+        self.assertIn("-i", clean_command)
+        self.assertIn("/usr/bin/flatpak", clean_command)
+        self.assertIn("--system", clean_command)
+
+    def test_flatpak_diagnostic_rejects_unregistered_application(self):
+        with mock.patch.object(target.subprocess, "run") as run:
+            with self.assertRaisesRegex(target.TargetGateError, "Unsupported Flatpak"):
+                target.diagnose_flatpak_smoke("org.example.unregistered")
+        run.assert_not_called()
+
+
 class TargetOverlayAcceptanceTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="lunita-target-gate-")

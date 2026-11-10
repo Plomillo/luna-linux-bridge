@@ -239,6 +239,32 @@ def hash_directory(path: pathlib.Path) -> dict[str, Any]:
     }
 
 
+def verify_system_python_alias(rootfs: pathlib.Path) -> dict[str, str]:
+    """Require Ubuntu's system python3 entrypoint to resolve to the pinned 3.12 runtime."""
+    python3 = rootfs / "usr/bin/python3"
+    python312 = rootfs / "usr/bin/python3.12"
+    if not python3.is_symlink():
+        raise TargetGateError("Ubuntu system /usr/bin/python3 compatibility symlink is missing")
+    if not python312.is_file() or not os.access(python312, os.X_OK):
+        raise TargetGateError("Ubuntu target /usr/bin/python3.12 is missing or not executable")
+    try:
+        observed = python3.resolve(strict=True)
+        expected = python312.resolve(strict=True)
+    except OSError as exc:
+        raise TargetGateError(f"Ubuntu system python3 symlink is broken: {exc}") from exc
+    if observed != expected:
+        raise TargetGateError(
+            "Ubuntu system /usr/bin/python3 must resolve to /usr/bin/python3.12; "
+            f"observed={observed} expected={expected}"
+        )
+    return {
+        "status": "PASS_SYSTEM_PYTHON_ALIAS",
+        "default_executable": "/usr/bin/python3",
+        "symlink_target": os.readlink(python3),
+        "resolved_executable": str(observed),
+    }
+
+
 def verify_rootfs_build_receipt() -> dict[str, Any]:
     """Verify the reconstructed rootfs provenance and every declared major runtime payload."""
     path = ROOT / "metadata/ROOTFS_BUILD_RECEIPT.json"
@@ -256,6 +282,13 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
     ubuntu = receipt.get("ubuntu", {})
     if ubuntu.get("release") != "24.04" or ubuntu.get("codename") != "noble" or ubuntu.get("architecture") != "amd64":
         raise TargetGateError("Rootfs is not the registered Ubuntu 24.04 amd64 baseline")
+    target_rootfs = ROOT.parents[1]
+    system_python = verify_system_python_alias(target_rootfs)
+    python_receipt = receipt.get("system_python", {})
+    if (python_receipt.get("default_executable") != "/usr/bin/python3"
+            or python_receipt.get("symlink_target") != "python3.12"
+            or not str(python_receipt.get("version_output", "")).startswith("Python 3.12.")):
+        raise TargetGateError("Rootfs build receipt does not bind the Ubuntu Python 3.12 system alias")
 
     def require_hash(relative: str, expected: str, label: str) -> pathlib.Path:
         target = pathlib.Path(relative)
@@ -380,6 +413,7 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
         "status": "PASS_ROOTFS_BUILD_IDENTITY",
         "receipt_sha256": sha256_file(path),
         "source_rootfs_recovered": False,
+        "system_python": system_python,
         "ubuntu": ubuntu,
         "qwen_model_sha256": sha256_file(model),
         "llama_cli_sha256": sha256_file(llama_candidates[0]),
@@ -688,6 +722,60 @@ def run_qwen_via_v18() -> dict[str, Any]:
     }
 
 
+def diagnose_flatpak_smoke(app_id: str) -> dict[str, Any]:
+    """Capture the sandbox failure with inherited and clean guest environments."""
+    if app_id not in {"org.jamovi.jamovi", "org.jaspstats.JASP"}:
+        raise TargetGateError(f"Unsupported Flatpak diagnostic application: {app_id}")
+    target_rootfs = ROOT.parents[1]
+    guest_environment = (
+        "HOME=/home/lunita",
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
+        "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
+        "XDG_DATA_HOME=/tmp/lunita-xdg/data",
+        "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+        "XDG_STATE_HOME=/tmp/lunita-xdg/state",
+        "FLATPAK_SYSTEM_DIR=/var/lib/flatpak",
+        "TMPDIR=/tmp",
+        "LANG=C.UTF-8",
+        "LC_ALL=C.UTF-8",
+    )
+    results = {}
+    for clean_environment in (False, True):
+        command = [
+            "sudo", "-n", "chroot", "--userspec=1000:1000", str(target_rootfs),
+            "/usr/bin/env",
+        ]
+        if clean_environment:
+            command.append("-i")
+        command.extend([
+            "-C", "/tmp", *guest_environment,
+            "/usr/bin/flatpak", "--system", "run", "--command=sh",
+            app_id, "-c", "test -d /app",
+        ])
+        try:
+            result = subprocess.run(
+                command, capture_output=True, text=True, timeout=90, check=False
+            )
+            results["clean" if clean_environment else "inherited"] = {
+                "returncode": result.returncode,
+                "stdout": (result.stdout or "")[-1200:],
+                "stderr": (result.stderr or "")[-1600:],
+            }
+        except (OSError, subprocess.SubprocessError) as exc:
+            results["clean" if clean_environment else "inherited"] = {
+                "returncode": None, "error_type": type(exc).__name__,
+                "error": str(exc)[:1200],
+            }
+    return {
+        "application_id": app_id,
+        "execution_user": "1000:1000",
+        "diagnostic_only": True,
+        "does_not_change_flatpak_commit_or_permissions": True,
+        "runs": results,
+    }
+
+
 def run_legacy_smokes() -> dict[str, Any]:
     import lunita_beta_v1_8 as launcher
     if launcher.sha256_file(LEGACY_LAUNCHER) != EXPECTED_LEGACY_SHA256:
@@ -698,7 +786,17 @@ def run_legacy_smokes() -> dict[str, Any]:
         rc = launcher.run_legacy(list(arguments))
         results[command] = {"returncode": rc, "status": "PASS" if rc == 0 else "FAIL"}
         if rc != 0:
-            raise TargetGateError(f"Legacy application/fault smoke test failed: {command} rc={rc}")
+            details = {}
+            if command in {"jamovi-self-test", "jasp-self-test"}:
+                details = diagnose_flatpak_smoke({
+                    "jamovi-self-test": "org.jamovi.jamovi",
+                    "jasp-self-test": "org.jaspstats.JASP",
+                }[command])
+            diagnostic_text = json.dumps(details, ensure_ascii=False, sort_keys=True)
+            raise TargetGateError(
+                f"Legacy application/fault smoke test failed: {command} rc={rc}; "
+                f"flatpak_diagnostic={diagnostic_text[-2400:]}"
+            )
     return {"status": "PASS_LEGACY_APPLICATION_SMOKES", "commands": results}
 
 
