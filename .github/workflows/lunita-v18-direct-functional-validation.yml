@@ -404,30 +404,29 @@ jobs:
           for path in (json_path, text_path, receipt_path):
               if path.is_symlink() or not path.is_file():
                   raise SystemExit(f"BLOCKED: required candidate metadata is missing or unsafe: {path}")
-          expected_tree = """LA PIEZA
-          └── EL ESTUCHE
-              └── UBUNTU 24.04 LTS MINIMAL
-                  └── LUNITA LA INVESTIGADORA
-                      ├── MOTOR COGNITIVO
-                      │   └── Qwen3-0.6B IQ3_XS GGUF
-                      │
-                      ├── BRÚJULA GIROSCÓPICA
-                      │   ├── Node.js 22.23.2
-                      │   ├── Playwright 1.63.0
-                      │   ├── playwright-core 1.63.0
-                      │   └── Chrome for Testing 153.0.8010.12
-                      │
-                      ├── LÁPIZ
-                      │   └── R 4.6.1
-                      │
-                      ├── SACAPUNTAS
-                      │   └── jamovi 2.7.27
-                      │
-                      └── LUPA
-                          └── JASP 0.98.1
-          """
-          # Strip only the YAML block's common indentation; preserve every label and branch glyph.
-          expected_tree = "\n".join(line[10:] if line.startswith("          ") else line for line in expected_tree.splitlines()) + "\n"
+          expected_tree = "\n".join([
+              "LA PIEZA",
+              "└── EL ESTUCHE",
+              "    └── UBUNTU 24.04 LTS MINIMAL",
+              "        └── LUNITA LA INVESTIGADORA",
+              "            ├── MOTOR COGNITIVO",
+              "            │   └── Qwen3-0.6B IQ3_XS GGUF",
+              "            │",
+              "            ├── BRÚJULA GIROSCÓPICA",
+              "            │   ├── Node.js 22.23.2",
+              "            │   ├── Playwright 1.63.0",
+              "            │   ├── playwright-core 1.63.0",
+              "            │   └── Chrome for Testing 153.0.8010.12",
+              "            │",
+              "            ├── LÁPIZ",
+              "            │   └── R 4.6.1",
+              "            │",
+              "            ├── SACAPUNTAS",
+              "            │   └── jamovi 2.7.27",
+              "            │",
+              "            └── LUPA",
+              "                └── JASP 0.98.1",
+          ]) + "\n"
           document = json.loads(json_path.read_text(encoding="utf-8"))
           receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
           binding = receipt.get("label_hierarchy", {})
@@ -467,9 +466,22 @@ jobs:
           }
           if receipt.get("instrument_labels") != preserved:
               raise SystemExit("BLOCKED: pre-existing instrument labels were changed.")
+          manifest_path = pathlib.Path(__import__("os").environ["GITHUB_WORKSPACE"]) / "LUNITA_V1_8_CANDIDATE_FREEZE.json"
+          if manifest_path.is_symlink() or not manifest_path.is_file():
+              raise SystemExit("BLOCKED: frozen candidate manifest is missing or unsafe.")
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          existing = manifest.get("instruments", {})
+          for key in ("BRUJULA", "JAMOVI", "JASP"):
+              record = existing.get(key, {})
+              original_label = record.get("display_label")
+              if not isinstance(original_label, str) or not original_label:
+                  raise SystemExit(f"BLOCKED: frozen manifest has no original display label for {key}.")
+              if preserved[key] != original_label:
+                  raise SystemExit(f"BLOCKED: existing {key} label differs; refusing to rewrite it.")
           print("PASS_EXACT_CANDIDATE_LABEL_HIERARCHY")
           print(f"LUNITA_LABEL_COUNT={len(labels)}")
-          print("PASS_PREEXISTING_INSTRUMENT_LABELS_PRESERVED")
+          print("PASS_PREEXISTING_MANIFEST_LABELS_PRESERVED")
+          print("PASS_ONLY_ABSENT_INSTRUMENT_LABELS_ADDED")
           PY
       - name: Apply the overlay only when it is absent and the candidate is clean
         shell: bash
