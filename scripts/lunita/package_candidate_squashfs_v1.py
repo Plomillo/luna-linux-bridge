@@ -277,7 +277,7 @@ def package_rootfs(
         build_log = run_tool([
             "mksquashfs", str(rootfs), str(temporary_image),
             "-noappend", "-comp", "zstd", "-Xcompression-level", "15",
-            "-no-progress", "-reproducible",
+            "-no-progress", "-repro",
         ])
         if not temporary_image.is_file() or temporary_image.stat().st_size <= 0:
             raise PackageError("mksquashfs returned without a non-empty image")
