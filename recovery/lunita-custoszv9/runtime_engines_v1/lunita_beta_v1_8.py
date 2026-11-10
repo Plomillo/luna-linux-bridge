@@ -91,16 +91,18 @@ def run_legacy(arguments: Sequence[str]) -> int:
             return 5
         guest_launcher = "/" + launcher_relative.as_posix()
         guest_environment = [
-            "HOME=/root",
+            "HOME=/home/lunita",
             "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
             "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
             "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
             "XDG_DATA_HOME=/tmp/lunita-xdg/data",
+            "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
             "FLATPAK_SYSTEM_DIR=/var/lib/flatpak",
             "R_HOME=/opt/lunita/instruments/lapiz/R-4.6.1/lib/R",
         ]
         command = [
-            "chroot", str(target_rootfs), "/usr/bin/env", "-C", "/tmp",
+            "sudo", "-n", "chroot", "--userspec=1000:1000",
+            str(target_rootfs), "/usr/bin/env", "-C", "/tmp",
             *guest_environment, "/usr/bin/python3", guest_launcher, *arguments,
         ]
         child_environment = os.environ.copy()
