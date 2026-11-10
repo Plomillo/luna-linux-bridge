@@ -204,6 +204,113 @@ class CertificationGateTests(unittest.TestCase):
         self.assertEqual("NOT_GRANTED", result["certification"])
 
 
+class DirectV18S32IssuerTests(unittest.TestCase):
+    @staticmethod
+    def valid_manifest():
+        return {
+            "schema": "LUNITA_CANDIDATE_FREEZE/1.0",
+            "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+            "version": "1.8.0",
+            "freeze_status": "FROZEN_CANDIDATE_NOT_CERTIFIED",
+            "preserved_baseline": {
+                "frozen_g06_mutated": False,
+                "canonical_g08_bindings_mutated": False,
+                "legacy_v1_7_launcher_replaced": False,
+            },
+        }
+
+    def prepare_valid_evidence(self, base):
+        out = base / "outputs"
+        out.mkdir()
+        manifest = base / "LUNITA_V1_8_CANDIDATE_FREEZE.json"
+        manifest.write_text(json.dumps(self.valid_manifest()), encoding="utf-8")
+        target = base / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_test.json"
+        target.write_text(json.dumps({
+            "schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0",
+            "status": "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED",
+            "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+            "certification": "NOT_GRANTED",
+            "canonical_g06_certification": "NOT_GRANTED",
+            "canonical_g08_binding_mutation": False,
+        }), encoding="utf-8")
+        independent = base / "BETA_INDEPENDENT_VALIDATION.json"
+        target_sha = lane.sha_file(target)
+        manifest_sha = lane.sha_file(manifest)
+        required = {
+            "candidate_manifest_identity_sha256",
+            "runtime_report_and_launcher_identity",
+            "target_v1_8_runtime_acceptance_e01_e15_int8",
+            "candidate_rootfs_inventory_and_dependency_manifest",
+            "jasp_packaged_fixture_nonregression",
+        }
+        checks = {name: {"status": "PASS", "returncode": 0} for name in required}
+        checks["candidate_manifest_identity_sha256"]["sha256"] = manifest_sha
+        checks["target_v1_8_runtime_acceptance_e01_e15_int8"].update({
+            "receipt_path": str(target), "receipt_sha256": target_sha,
+        })
+        independent.write_text(json.dumps({
+            "schema": "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0",
+            "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+            "certification_profile": "V1_8_DIRECT",
+            "candidate_manifest_sha256": manifest_sha,
+            "status": "PASS_INDEPENDENT_VALIDATION",
+            "runtime_report_path": str(target),
+            "runtime_report_sha256": target_sha,
+            "checks": checks,
+            "frozen_g06_mutated": False,
+            "canonical_g08_bindings_mutated": False,
+        }), encoding="utf-8")
+        target_acceptance = {
+            "status": "PASS_TARGET_RUNTIME_ACCEPTANCE",
+            "receipt_path": str(target),
+            "receipt_sha256": target_sha,
+            "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+            "canonical_g08_binding_mutation": False,
+        }
+        return out, manifest, target, independent, target_acceptance
+
+    def test_s32_issues_hash_bound_receipt_and_unlocks_candidate_stable_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            out, manifest, target, independent, acceptance = self.prepare_valid_evidence(base)
+            with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
+                 mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
+                 mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", target.parent), \
+                 mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
+                 mock.patch.object(lane, "OUT", out), \
+                 mock.patch.object(lane, "latest_target_runtime_acceptance", return_value=acceptance):
+                first = lane.issue_s32_independent_beta_validation_receipt()
+                second = lane.issue_s32_independent_beta_validation_receipt()
+                gate = lane.stable_release_gate()
+            self.assertEqual("BETA_OPERATIONAL_CERTIFIED", first["status"])
+            self.assertEqual(first["receipt_path"], second["receipt_path"])
+            self.assertEqual(first["receipt_sha256"], second["receipt_sha256"])
+            receipt = json.loads(pathlib.Path(first["receipt_path"]).read_text(encoding="utf-8"))
+            self.assertEqual("BETA_OPERATIONAL_CERTIFIED", receipt["status"])
+            self.assertEqual(lane.sha_file(independent), receipt["evidence"]["independent_report_sha256"])
+            self.assertEqual(lane.sha_file(target), receipt["evidence"]["target_runtime_receipt_sha256"])
+            self.assertEqual("NOT_GRANTED", receipt["canonical_g06_certification"])
+            self.assertEqual("NOT_GRANTED", receipt["g23_status"])
+            self.assertEqual("NOT_GRANTED", receipt["g24_status"])
+            self.assertEqual("STABLE_RELEASE_ELIGIBLE", gate["status"])
+
+    def test_s32_never_issues_when_independent_report_is_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            out, manifest, target, independent, acceptance = self.prepare_valid_evidence(base)
+            report = json.loads(independent.read_text(encoding="utf-8"))
+            report["status"] = "BLOCKED_REQUIRED_REGRESSION_OR_INVENTORY"
+            independent.write_text(json.dumps(report), encoding="utf-8")
+            with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
+                 mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
+                 mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
+                 mock.patch.object(lane, "OUT", out), \
+                 mock.patch.object(lane, "latest_target_runtime_acceptance", return_value=acceptance):
+                result = lane.issue_s32_independent_beta_validation_receipt()
+            self.assertEqual("BLOCKED_INDEPENDENT_VALIDATION", result["status"])
+            self.assertEqual([], list(out.glob("S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT_*.json")))
+
+
 if __name__ == "__main__":
     unittest.main()
 
