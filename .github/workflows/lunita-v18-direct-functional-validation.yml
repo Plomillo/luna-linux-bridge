@@ -276,10 +276,8 @@ jobs:
       group: lunita-v1-8-target-runtime-${{ github.ref }}
       cancel-in-progress: false
     needs: contract-tests
-    runs-on: [self-hosted, linux, x64]
-    timeout-minutes: 200
-    env:
-      LUNITA_ROOTFS: ${{ vars.LUNITA_ROOTFS }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
         with:
@@ -292,12 +290,31 @@ jobs:
         with:
           name: lunita-engine-overlay-v1-py312
           path: ${{ runner.temp }}/lunita-engine-overlay
+      - name: Rebuild the Ubuntu 24.04 Lunita candidate rootfs from pinned inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo bash scripts/lunita/build_rootfs_candidate_v1.sh "$RUNNER_TEMP/lunita-rootfs"
+          ROOTFS="$RUNNER_TEMP/lunita-rootfs"
+          test -f "$ROOTFS/var/lib/dpkg/status"
+          test -f "$ROOTFS/opt/lunita/metadata/ROOTFS_BUILD_RECEIPT.json"
+          printf 'LUNITA_ROOTFS=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'LUNITA_ROOTFS_REAL=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'LUNITA_ROOT=%s\n' "$ROOTFS/opt/lunita" >> "$GITHUB_ENV"
+          printf 'LUNITA_XDG_STATE_HOME=%s/lunita-xdg\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'LUNITA_CHECKPOINT_DIR=\n' >> "$GITHUB_ENV"
+          printf 'FLATPAK_SYSTEM_DIR=%s/var/lib/flatpak\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'R_HOME=%s/opt/lunita/instruments/lapiz/R-4.6.1/lib/R\n' "$ROOTFS" >> "$GITHUB_ENV"
       - name: Verify the actual candidate rootfs and target prerequisites
         shell: bash
         run: |
           set -euo pipefail
-          : "${LUNITA_ROOTFS:?Configure the repository Actions variable LUNITA_ROOTFS with the absolute path to G06_REBUILD_CANDIDATE_R1/rootfs on this self-hosted runner}"
+          : "${LUNITA_ROOTFS:?The repository rootfs builder did not emit LUNITA_ROOTFS}"
           ROOTFS="$(realpath -e "$LUNITA_ROOTFS")"
+          test -f "$ROOTFS/opt/lunita/metadata/ROOTFS_BUILD_RECEIPT.json"
+          test -x "$ROOTFS/opt/lunita/instruments/brujula/node/bin/node"
+          test -x "$ROOTFS/opt/lunita/instruments/brujula/chrome/chrome"
+          test -x "$ROOTFS/opt/lunita/instruments/lapiz/R-4.6.1/bin/Rscript"
           test -d "$ROOTFS"
           test -f "$ROOTFS/var/lib/dpkg/status"
           test -f "$ROOTFS/opt/lunita/agent/lunita.py"
@@ -361,6 +378,7 @@ jobs:
           export HF_HUB_OFFLINE=1
           export TRANSFORMERS_OFFLINE=1
           export HF_HUB_DISABLE_TELEMETRY=1
+          export R_HOME="$LUNITA_ROOTFS_REAL/opt/lunita/instruments/lapiz/R-4.6.1/lib/R"
           python3.12 "$OVERLAY/target_runtime_acceptance_v1.py"
       - name: Build and round-trip verify LUNITA.squashfs
         id: package-squashfs
