@@ -156,7 +156,7 @@ class LunitaBetaV18Tests(unittest.TestCase):
                  str(rootfs), "/usr/bin/env", "-C", "/tmp"],
                 command[:8],
             )
-            python_index = command.index("/usr/bin/python3")
+            python_index = command.index("/usr/bin/python3.12")
             self.assertEqual(
                 ["/opt/lunita/agent/lunita.py", "r-self-test"],
                 command[python_index + 1:],

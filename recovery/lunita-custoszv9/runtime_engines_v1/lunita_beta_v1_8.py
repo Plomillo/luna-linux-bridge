@@ -103,7 +103,7 @@ def run_legacy(arguments: Sequence[str]) -> int:
         command = [
             "sudo", "-n", "chroot", "--userspec=1000:1000",
             str(target_rootfs), "/usr/bin/env", "-C", "/tmp",
-            *guest_environment, "/usr/bin/python3", guest_launcher, *arguments,
+            *guest_environment, "/usr/bin/python3.12", guest_launcher, *arguments,
         ]
         child_environment = os.environ.copy()
         child_environment.pop("PYTHONPATH", None)
