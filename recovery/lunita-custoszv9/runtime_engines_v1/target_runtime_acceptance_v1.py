@@ -111,6 +111,103 @@ def inspect_rootfs_directory_as_root(path: pathlib.Path, label: str) -> dict[str
     return metadata
 
 
+def inspect_rootfs_regular_file_as_root(path: pathlib.Path, label: str) -> dict[str, Any]:
+    """Read and hash a private target-rootfs file without traversing it as the host runner.
+
+    The audit log is intentionally 0600 and owned by UID/GID 1000 beneath a 0700
+    directory. The host runner cannot read it. This performs a privileged,
+    read-only O_NOFOLLOW open, verifies inode stability, and hashes through the
+    descriptor; it never changes ownership, permissions, or contents.
+    """
+    inspector = """
+import hashlib
+import json
+import os
+import stat
+import sys
+
+path = sys.argv[1]
+before = os.lstat(path)
+if stat.S_ISLNK(before.st_mode) or not stat.S_ISREG(before.st_mode):
+    raise SystemExit("target file is not a regular non-symlink file")
+flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+fd = os.open(path, flags)
+try:
+    opened = os.fstat(fd)
+    if not stat.S_ISREG(opened.st_mode):
+        raise SystemExit("opened target file is not regular")
+    if (opened.st_dev, opened.st_ino) != (before.st_dev, before.st_ino):
+        raise SystemExit("target file changed before read-only inspection")
+    digest = hashlib.sha256()
+    size = 0
+    while True:
+        chunk = os.read(fd, 1024 * 1024)
+        if not chunk:
+            break
+        digest.update(chunk)
+        size += len(chunk)
+    after = os.fstat(fd)
+    stable_before = (opened.st_dev, opened.st_ino, opened.st_size,
+                     opened.st_mtime_ns, opened.st_ctime_ns)
+    stable_after = (after.st_dev, after.st_ino, after.st_size,
+                    after.st_mtime_ns, after.st_ctime_ns)
+    if stable_before != stable_after or size != after.st_size:
+        raise SystemExit("target file changed while hashing")
+    print(json.dumps({
+        "is_symlink": False,
+        "is_regular_file": stat.S_ISREG(after.st_mode),
+        "uid": after.st_uid,
+        "gid": after.st_gid,
+        "mode": stat.S_IMODE(after.st_mode),
+        "size": size,
+        "sha256": digest.hexdigest(),
+    }))
+finally:
+    os.close(fd)
+"""
+    try:
+        result = subprocess.run(
+            ["sudo", "-n", "/usr/bin/python3", "-c", inspector, str(path)],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise TargetGateError(
+            f"Cannot inspect {label} with privileged read-only open: {path}: {exc}"
+        ) from exc
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "no diagnostic output").strip()[-1000:]
+        raise TargetGateError(
+            f"Privileged read-only file inspection failed for {label}: {path}: {detail}"
+        )
+    try:
+        metadata = json.loads(result.stdout)
+    except (TypeError, ValueError) as exc:
+        raise TargetGateError(
+            f"Privileged file inspection returned invalid metadata for {label}: {path}"
+        ) from exc
+    if not isinstance(metadata, dict):
+        raise TargetGateError(f"Privileged file inspection returned a non-object for {label}: {path}")
+    if metadata.get("is_symlink") is not False or metadata.get("is_regular_file") is not True:
+        raise TargetGateError(f"{label} is missing, not a regular file, or symlinked: {path}")
+    if (metadata.get("uid") != 1000 or metadata.get("gid") != 1000
+            or metadata.get("mode") != 0o600):
+        raise TargetGateError(
+            f"{label} must be owned by uid/gid 1000 with mode 0600: "
+            f"uid={metadata.get('uid')} gid={metadata.get('gid')} "
+            f"mode={metadata.get('mode')!r}"
+        )
+    if not isinstance(metadata.get("size"), int) or metadata["size"] <= 0:
+        raise TargetGateError(f"{label} must contain a non-empty audit record: {path}")
+    digest = metadata.get("sha256")
+    if (not isinstance(digest, str) or len(digest) != 64
+            or any(character not in "0123456789abcdef" for character in digest)):
+        raise TargetGateError(f"{label} returned an invalid SHA-256 digest: {path}")
+    return metadata
+
+
 def sha256_file(path: pathlib.Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -565,8 +662,9 @@ def run_qwen_via_v18() -> dict[str, Any]:
     if payload.get("returncode") != 0 or not output.strip():
         raise TargetGateError("Qwen returned no generated output")
     audit = target_rootfs / "tmp/lunita-xdg/audit/engine-execution.jsonl"
-    if not audit.is_file():
-        raise TargetGateError("Append-only target-rootfs engine audit log was not created")
+    audit_metadata = inspect_rootfs_regular_file_as_root(
+        audit, "append-only target-rootfs engine audit log"
+    )
     llama_candidates = list((ROOT / "brain/runtime").rglob("llama-cli"))
     if len(llama_candidates) != 1:
         raise TargetGateError(f"Expected exactly one target-rootfs llama-cli, found {len(llama_candidates)}")
@@ -579,7 +677,7 @@ def run_qwen_via_v18() -> dict[str, Any]:
         "prompt_sha256": payload["prompt_sha256"],
         "output_sha256": hashlib.sha256(output.encode("utf-8")).hexdigest(),
         "audit_event_hash": result["audit_event_hash"],
-        "audit_log_sha256": sha256_file(audit),
+        "audit_log_sha256": audit_metadata["sha256"],
     }
 
 
