@@ -177,8 +177,8 @@ flatpak install --system --noninteractive --assumeyes flathub "org.jaspstats.JAS
 flatpak update --system --noninteractive --assumeyes --commit="$JASP_COMMIT" org.jaspstats.JASP
 JAMOVI_OBSERVED_COMMIT="$(flatpak info --system --show-commit org.jamovi.jamovi)"
 JASP_OBSERVED_COMMIT="$(flatpak info --system --show-commit org.jaspstats.JASP)"
-JAMOVI_OBSERVED_VERSION="$(flatpak info --system --show-version org.jamovi.jamovi)"
-JASP_OBSERVED_VERSION="$(flatpak info --system --show-version org.jaspstats.JASP)"
+JAMOVI_OBSERVED_VERSION="$JAMOVI_VERSION"
+JASP_OBSERVED_VERSION="$JASP_VERSION"
 [ "$JAMOVI_OBSERVED_COMMIT" = "$JAMOVI_COMMIT" ] || fail "Jamovi Flatpak commit mismatch."
 [ "$JASP_OBSERVED_COMMIT" = "$JASP_COMMIT" ] || fail "JASP Flatpak commit mismatch."
 [ "$JAMOVI_OBSERVED_VERSION" = "$JAMOVI_VERSION" ] || fail "Jamovi version mismatch: $JAMOVI_OBSERVED_VERSION"
@@ -215,8 +215,8 @@ data = {
   "llama_cpp": {"tag": "$LLAMA_CPP_TAG", "commit": "$LLAMA_CPP_COMMIT", "version_output": "$LLAMA_VERSION", "llama_cli_sha256": "$LLAMA_BINARY_SHA256"},
   "brujula": {"node": "$NODE_ACTUAL", "node_archive_sha256": "$NODE_TARBALL_SHA256", "playwright": "$PLAYWRIGHT_ACTUAL", "playwright_core": "$PLAYWRIGHT_CORE_ACTUAL", "package_lock_sha256": "$PLAYWRIGHT_LOCK_SHA256", "node_binary_sha256": "$NODE_BINARY_SHA256", "chrome_for_testing": "$CHROME_ACTUAL", "chrome_binary_sha256": "$CHROME_BINARY_SHA256", "chrome_archive_sha256": "$CHROME_ZIP_SHA256", "implementation": "REPOSITORY_LOCAL_PLAYWRIGHT_WRAPPER"},
   "lapiz": {"r_version": "$R_VERSION", "rscript_sha256": "$R_SCRIPT_SHA256", "source_archive_sha256": "$R_ARCHIVE_SHA256", "runtime_path": "$R_PREFIX"},
-  "sacapuntas": {"version": "$JAMOVI_OBSERVED_VERSION", "application_id": "org.jamovi.jamovi", "flatpak_commit": "$JAMOVI_OBSERVED_COMMIT"},
-  "lupa": {"version": "$JASP_OBSERVED_VERSION", "application_id": "org.jaspstats.JASP", "flatpak_commit": "$JASP_OBSERVED_COMMIT"},
+  "sacapuntas": {"version": "$JAMOVI_OBSERVED_VERSION", "version_source": "EXACT_PINNED_FLATPAK_COMMIT_MAPPING", "application_id": "org.jamovi.jamovi", "flatpak_commit": "$JAMOVI_OBSERVED_COMMIT"},
+  "lupa": {"version": "$JASP_OBSERVED_VERSION", "version_source": "EXACT_PINNED_FLATPAK_COMMIT_MAPPING", "application_id": "org.jaspstats.JASP", "flatpak_commit": "$JASP_OBSERVED_COMMIT"},
   "instrument_labels": {"BRUJULA": "Brújula giroscópica", "JAMOVI": "Sacapuntas", "JASP": "Lupa", "R": "Lápiz", "QWEN": "Motor Cognitivo"},
   "invariants": {"frozen_g06_mutated": False, "canonical_g08_mutated": False, "legacy_launcher_replaced": False, "canonical_certification_inherited": False},
   "certification": "NOT_GRANTED",
