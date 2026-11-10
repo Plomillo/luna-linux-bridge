@@ -148,7 +148,14 @@ NODE_ACTUAL="$(chroot "$ROOTFS" "$BRUJULA_PREFIX/bin/node" --version)"
 [ "$NODE_ACTUAL" = "v$NODE_VERSION" ] || fail "Node version mismatch."
 CHROME_ACTUAL="$(chroot "$ROOTFS" "$BRUJULA_PREFIX/chrome/chrome" --version | awk '{print $NF}')"
 [ "$CHROME_ACTUAL" = "$CHROME_VERSION" ] || fail "Chrome version mismatch: $CHROME_ACTUAL"
-BROWSER_SMOKE="$(chroot "$ROOTFS" env HOME=/tmp/lunita-brujula-home "$BRUJULA_PREFIX/bin/node" "$BRUJULA_PREFIX/brujula.js" 'data:text/html,<title>LUNITA_BRUJULA_OK</title><body>OK</body>')"
+BROWSER_SMOKE="$(chroot "$ROOTFS" /usr/sbin/runuser -u lunita -- /usr/bin/env \
+  HOME=/home/lunita \
+  XDG_CACHE_HOME=/tmp/lunita-xdg/cache \
+  XDG_CONFIG_HOME=/tmp/lunita-xdg/config \
+  XDG_DATA_HOME=/tmp/lunita-xdg/data \
+  XDG_RUNTIME_DIR=/run/lunita-runtime-1000 \
+  "$BRUJULA_PREFIX/bin/node" "$BRUJULA_PREFIX/brujula.js" \
+  'data:text/html,<title>LUNITA_BRUJULA_OK</title><body>OK</body>')"
 grep -q "LUNITA_BRUJULA_OK" <<<"$BROWSER_SMOKE" || fail "Brújula Playwright smoke test failed."
 
 # Build llama.cpp from the exact published v0.9.0 commit for the same ABI.
