@@ -294,7 +294,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sudo bash scripts/lunita/build_rootfs_candidate_v1.sh "$RUNNER_TEMP/lunita-rootfs"
+          sudo env RUNNER_TEMP="$RUNNER_TEMP" bash scripts/lunita/build_rootfs_candidate_v1.sh "$RUNNER_TEMP/lunita-rootfs"
           ROOTFS="$RUNNER_TEMP/lunita-rootfs"
           test -f "$ROOTFS/var/lib/dpkg/status"
           test -f "$ROOTFS/opt/lunita/metadata/ROOTFS_BUILD_RECEIPT.json"
@@ -305,6 +305,7 @@ jobs:
           printf 'LUNITA_CHECKPOINT_DIR=\n' >> "$GITHUB_ENV"
           printf 'FLATPAK_SYSTEM_DIR=%s/var/lib/flatpak\n' "$ROOTFS" >> "$GITHUB_ENV"
           printf 'R_HOME=%s/opt/lunita/instruments/lapiz/R-4.6.1/lib/R\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'LUNITA_TARGET_ROOTFS=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
       - name: Verify the actual candidate rootfs and target prerequisites
         shell: bash
         run: |
@@ -364,6 +365,17 @@ jobs:
               --apply
             printf 'LUNITA_CHECKPOINT_DIR=%s\n' "$CHECKPOINT_DIR" >> "$GITHUB_ENV"
           fi
+      - name: Mount target virtual filesystems for in-rootfs application tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo mount --rbind /dev "$LUNITA_ROOTFS_REAL/dev"
+          sudo mount --make-rslave "$LUNITA_ROOTFS_REAL/dev"
+          sudo mount -t proc proc "$LUNITA_ROOTFS_REAL/proc"
+          sudo mount --rbind /sys "$LUNITA_ROOTFS_REAL/sys"
+          sudo mount --make-rslave "$LUNITA_ROOTFS_REAL/sys"
+          sudo mount --rbind /run "$LUNITA_ROOTFS_REAL/run"
+          sudo mount --make-rslave "$LUNITA_ROOTFS_REAL/run"
       - name: Execute actual E01 inference and E02-E15 plus legacy application smoke tests
         shell: bash
         run: |
@@ -380,6 +392,15 @@ jobs:
           export HF_HUB_DISABLE_TELEMETRY=1
           export R_HOME="$LUNITA_ROOTFS_REAL/opt/lunita/instruments/lapiz/R-4.6.1/lib/R"
           python3.12 "$OVERLAY/target_runtime_acceptance_v1.py"
+      - name: Unmount target virtual filesystems before image materialization
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          sudo umount -R "$LUNITA_ROOTFS_REAL/run" 2>/dev/null
+          sudo umount -R "$LUNITA_ROOTFS_REAL/sys" 2>/dev/null
+          sudo umount -R "$LUNITA_ROOTFS_REAL/proc" 2>/dev/null
+          sudo umount -R "$LUNITA_ROOTFS_REAL/dev" 2>/dev/null
       - name: Build and round-trip verify LUNITA.squashfs
         id: package-squashfs
         shell: bash
@@ -497,6 +518,15 @@ jobs:
             fi
           done
           run_root chmod -R a+rX "$OUT"
+      - name: Final cleanup of target rootfs mounts
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          sudo umount -R "$LUNITA_ROOTFS_REAL/run" 2>/dev/null
+          sudo umount -R "$LUNITA_ROOTFS_REAL/sys" 2>/dev/null
+          sudo umount -R "$LUNITA_ROOTFS_REAL/proc" 2>/dev/null
+          sudo umount -R "$LUNITA_ROOTFS_REAL/dev" 2>/dev/null
       - name: Upload real target and independent evidence
         if: always()
         uses: actions/upload-artifact@v4
