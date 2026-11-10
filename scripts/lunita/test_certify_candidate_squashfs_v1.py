@@ -154,17 +154,18 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
     def test_certificate_binds_exact_image_and_all_required_gates(self):
         with tempfile.TemporaryDirectory() as tmp:
             paths = self.prepare(pathlib.Path(tmp))
+            image_sha = cert.sha256_file(paths["image"])
             result = cert.build_certificate(
                 paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
                 paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
             )
-        self.assertEqual("CERTIFIED_FUNCTIONAL_CANDIDATE", result["status"])
-        self.assertEqual(cert.sha256_file(paths["image"]), result["artifact"]["sha256"])
-        self.assertEqual(paths["target_sha"], result["target_runtime_receipt"]["sha256"])
-        self.assertEqual(paths["independent_sha"], result["independent_validation"]["sha256"])
-        self.assertEqual("NOT_GRANTED", result["g23"])
-        self.assertEqual("NOT_GRANTED", result["g24"])
-        self.assertFalse(result["automatic_canonical_promotion"])
+            self.assertEqual("CERTIFIED_FUNCTIONAL_CANDIDATE", result["status"])
+            self.assertEqual(image_sha, result["artifact"]["sha256"])
+            self.assertEqual(paths["target_sha"], result["target_runtime_receipt"]["sha256"])
+            self.assertEqual(paths["independent_sha"], result["independent_validation"]["sha256"])
+            self.assertEqual("NOT_GRANTED", result["g23"])
+            self.assertEqual("NOT_GRANTED", result["g24"])
+            self.assertFalse(result["automatic_canonical_promotion"])
 
     def test_missing_s32_receipt_blocks_functional_certificate(self):
         with tempfile.TemporaryDirectory() as tmp:
