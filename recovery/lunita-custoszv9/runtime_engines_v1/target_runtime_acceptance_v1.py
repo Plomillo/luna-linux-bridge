@@ -56,6 +56,61 @@ class TargetGateError(RuntimeError):
     pass
 
 
+def inspect_rootfs_directory_as_root(path: pathlib.Path, label: str) -> dict[str, Any]:
+    """Read target-rootfs directory metadata without traversing it as the host runner.
+
+    The target directories are intentionally 0700 and owned by UID/GID 1000.
+    The unprivileged GitHub runner cannot stat entries below those directories.
+    This performs only a privileged lstat; actual application execution remains
+    inside chroot as UID/GID 1000.
+    """
+    inspector = (
+        "import json, os, stat, sys; "
+        "s=os.lstat(sys.argv[1]); "
+        "print(json.dumps({"
+        "'is_symlink': stat.S_ISLNK(s.st_mode), "
+        "'is_directory': stat.S_ISDIR(s.st_mode), "
+        "'uid': s.st_uid, 'gid': s.st_gid, "
+        "'mode': stat.S_IMODE(s.st_mode)"
+        "}))"
+    )
+    try:
+        result = subprocess.run(
+            ["sudo", "-n", "/usr/bin/python3", "-c", inspector, str(path)],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise TargetGateError(
+            f"Cannot inspect {label} with privileged read-only lstat: {path}: {exc}"
+        ) from exc
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "no diagnostic output").strip()[-1000:]
+        raise TargetGateError(
+            f"Privileged read-only lstat failed for {label}: {path}: {detail}"
+        )
+    try:
+        metadata = json.loads(result.stdout)
+    except (TypeError, ValueError) as exc:
+        raise TargetGateError(
+            f"Privileged lstat returned invalid metadata for {label}: {path}"
+        ) from exc
+    if not isinstance(metadata, dict):
+        raise TargetGateError(f"Privileged lstat returned a non-object for {label}: {path}")
+    if metadata.get("is_symlink") is not False or metadata.get("is_directory") is not True:
+        raise TargetGateError(f"{label} is missing, not a directory, or symlinked: {path}")
+    if (metadata.get("uid") != 1000 or metadata.get("gid") != 1000
+            or metadata.get("mode") != 0o700):
+        raise TargetGateError(
+            f"{label} must be owned by uid/gid 1000 with mode 0700: "
+            f"uid={metadata.get('uid')} gid={metadata.get('gid')} "
+            f"mode={metadata.get('mode')!r}"
+        )
+    return metadata
+
+
 def sha256_file(path: pathlib.Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -447,15 +502,7 @@ def run_qwen_via_v18() -> dict[str, Any]:
     xdg_root = target_rootfs / "tmp/lunita-xdg"
     audit_dir = xdg_root / "audit"
     for directory, label in ((xdg_root, "XDG runtime root"), (audit_dir, "append-only audit directory")):
-        if directory.is_symlink() or not directory.is_dir():
-            raise TargetGateError(f"{label} is missing or symlinked: {directory}")
-        metadata = directory.stat()
-        if (metadata.st_uid != 1000 or metadata.st_gid != 1000
-                or stat.S_IMODE(metadata.st_mode) != 0o700):
-            raise TargetGateError(
-                f"{label} must be owned by uid/gid 1000 with mode 0700: "
-                f"uid={metadata.st_uid} gid={metadata.st_gid} mode={stat.S_IMODE(metadata.st_mode):04o}"
-            )
+        inspect_rootfs_directory_as_root(directory, label)
     request = {
         "command": "/play PT",
         "agent": "Luna",
