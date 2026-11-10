@@ -189,6 +189,9 @@ NODE_TARBALL_SHA256="$NODE_SHA256"
 CHROME_ZIP_SHA256="$(sha256sum "$CHROME_ZIP" | awk '{print $1}')"
 PLAYWRIGHT_LOCK_SHA256="$(sha256sum "$BROWSER_PREFIX/package-lock.json" | awk '{print $1}')"
 LLAMA_BINARY_SHA256="$(sha256sum "$RUNTIME_PREFIX/llama-cli" | awk '{print $1}')"
+NODE_BINARY_SHA256="$(sha256sum "$BROWSER_PREFIX/bin/node" | awk '{print $1}')"
+CHROME_BINARY_SHA256="$(sha256sum "$BROWSER_PREFIX/chrome/chrome" | awk '{print $1}')"
+R_SCRIPT_SHA256="$(sha256sum "$ROOTFS$R_PREFIX/bin/Rscript" | awk '{print $1}')"
 ROOTFS_LAUNCHER_SHA256="$(sha256sum "$ROOTFS/opt/lunita/agent/lunita.py" | awk '{print $1}')"
 mkdir -p "$ROOTFS/opt/lunita/metadata"
 python3 - "$ROOTFS" <<PY
@@ -205,8 +208,8 @@ data = {
   "legacy_launcher": {"version": "beta-v1.7", "sha256": "$ROOTFS_LAUNCHER_SHA256"},
   "qwen": {"repository": "$QWEN_REPO", "revision": "$QWEN_REVISION", "file": "$QWEN_FILE", "sha256": "$MODEL_SHA256", "bytes": int("$MODEL_BYTES"), "quantization": "IQ3_XS"},
   "llama_cpp": {"tag": "$LLAMA_CPP_TAG", "commit": "$LLAMA_CPP_COMMIT", "version_output": "$LLAMA_VERSION", "llama_cli_sha256": "$LLAMA_BINARY_SHA256"},
-  "brujula": {"node": "$NODE_ACTUAL", "node_archive_sha256": "$NODE_TARBALL_SHA256", "playwright": "$PLAYWRIGHT_ACTUAL", "playwright_core": "$PLAYWRIGHT_CORE_ACTUAL", "package_lock_sha256": "$PLAYWRIGHT_LOCK_SHA256", "chrome_for_testing": "$CHROME_ACTUAL", "chrome_archive_sha256": "$CHROME_ZIP_SHA256", "implementation": "REPOSITORY_LOCAL_PLAYWRIGHT_WRAPPER"},
-  "lapiz": {"r_version": "$R_VERSION", "source_archive_sha256": "$R_ARCHIVE_SHA256", "runtime_path": "$R_PREFIX"},
+  "brujula": {"node": "$NODE_ACTUAL", "node_archive_sha256": "$NODE_TARBALL_SHA256", "playwright": "$PLAYWRIGHT_ACTUAL", "playwright_core": "$PLAYWRIGHT_CORE_ACTUAL", "package_lock_sha256": "$PLAYWRIGHT_LOCK_SHA256", "node_binary_sha256": "$NODE_BINARY_SHA256", "chrome_for_testing": "$CHROME_ACTUAL", "chrome_binary_sha256": "$CHROME_BINARY_SHA256", "chrome_archive_sha256": "$CHROME_ZIP_SHA256", "implementation": "REPOSITORY_LOCAL_PLAYWRIGHT_WRAPPER"},
+  "lapiz": {"r_version": "$R_VERSION", "rscript_sha256": "$R_SCRIPT_SHA256", "source_archive_sha256": "$R_ARCHIVE_SHA256", "runtime_path": "$R_PREFIX"},
   "sacapuntas": {"version": "$JAMOVI_OBSERVED_VERSION", "application_id": "org.jamovi.jamovi", "flatpak_commit": "$JAMOVI_OBSERVED_COMMIT"},
   "lupa": {"version": "$JASP_OBSERVED_VERSION", "application_id": "org.jaspstats.JASP", "flatpak_commit": "$JASP_OBSERVED_COMMIT"},
   "instrument_labels": {"BRUJULA": "Brújula giroscópica", "JAMOVI": "Sacapuntas", "JASP": "Lupa", "R": "Lápiz", "QWEN": "Motor Cognitivo"},
