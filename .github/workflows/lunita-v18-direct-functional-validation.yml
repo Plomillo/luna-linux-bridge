@@ -52,9 +52,11 @@ jobs:
           python -m py_compile \
             scripts/lunita/package_candidate_squashfs_v1.py \
             scripts/lunita/certify_candidate_squashfs_v1.py \
-            scripts/lunita/rootfs_base_cache_v1.py
+            scripts/lunita/rootfs_base_cache_v1.py \
+            scripts/lunita/clean_transient_browser_tmp_v1.py
           python scripts/lunita/package_candidate_squashfs_v1.py --self-test
           python scripts/lunita/rootfs_base_cache_v1.py self-test
+          python scripts/lunita/clean_transient_browser_tmp_v1.py self-test
           python scripts/lunita/certify_candidate_squashfs_v1.py --self-test
           python -m unittest discover -s scripts/lunita -p "test_certify_candidate_squashfs_v1.py" -v
       - name: Install pinned CPU-only PyTorch for SeamlessM4T tensor contracts
@@ -583,6 +585,14 @@ jobs:
               exit 2
             fi
           done
+      - name: Remove only verified transient Chromium smoke-test sockets
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n python3.12 scripts/lunita/clean_transient_browser_tmp_v1.py clean \
+            --rootfs "$LUNITA_ROOTFS_REAL" \
+            --expected-uid 1000 \
+            --receipt "$RUNNER_TEMP/lunita-rootfs-temp-cleanup-receipt.json"
       - name: Build and round-trip verify LUNITA.squashfs
         id: package-squashfs
         shell: bash
@@ -670,7 +680,9 @@ jobs:
           for PATH_IN in \
             "${LUNITA_XDG_STATE_HOME:-}/lunita/runtime_validation" \
             "${LUNITA_ROOT:-}/engines/runtime_engines_v1/OVERLAY_APPLY_RECEIPT.json" \
-            "${LUNITA_CHECKPOINT_DIR:-}"; do
+            "${LUNITA_CHECKPOINT_DIR:-}" \
+            "$RUNNER_TEMP/lunita-rootfs-temp-cleanup-receipt.json" \
+            "$RUNNER_TEMP/lunita-rootfs-base-cache/LUNITA_ROOTFS_BASE_CACHE_RECEIPT.json"; do
             if [ -n "$PATH_IN" ] && [ -e "$PATH_IN" ]; then
               run_root cp -a "$PATH_IN" "$OUT/"
             fi
