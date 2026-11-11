@@ -142,6 +142,7 @@ class LunitaBetaV18Tests(unittest.TestCase):
                  mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha), \
                  mock.patch.dict(os.environ, {
                      "LUNITA_TARGET_ROOTFS": str(rootfs),
+                     "LUNITA_IN_PIVOT_ROOT": "0",
                      "PYTHONPATH": inherited_pythonpath,
                  }), \
                  mock.patch.object(
