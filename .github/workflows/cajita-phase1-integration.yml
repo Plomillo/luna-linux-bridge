@@ -1,0 +1,25 @@
+name: Cajita phase I integration
+
+on:
+  push:
+    branches:
+      - integration/cajita-wiring-20261111
+    paths:
+      - "architecture/cajita_phase1/**"
+      - ".github/workflows/cajita-phase1-integration.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Phase I command, frame and cycle wiring
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run phase I integration tests
+        run: python -m unittest discover -s architecture/cajita_phase1 -p "test_*.py" -v
