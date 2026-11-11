@@ -30,6 +30,21 @@ for path in "$RUNNER_TEMP/lunita-xdg" "$RUNNER_TEMP/lunita-xdg/lunita" \
     fi
     mkdir -p "$path"
 done
+
+# Flatpak allocates per-instance state under XDG_RUNTIME_DIR. The candidate
+# /run is replaced by the host /run bind below, so provide a dedicated UID 1000
+# runtime directory through a separate bind mount.
+RUNTIME_SOURCE="$RUNNER_TEMP/lunita-runtime-1000"
+if [ -e "$RUNTIME_SOURCE" ] || [ -L "$RUNTIME_SOURCE" ]; then
+    echo "BLOCKED: per-run Flatpak runtime source already exists: $RUNTIME_SOURCE" >&2
+    exit 2
+fi
+install -d -o 1000 -g 1000 -m 0700 "$RUNTIME_SOURCE"
+[ "$(stat -c '%u:%g:%a' "$RUNTIME_SOURCE")" = "1000:1000:700" ] || {
+    echo "BLOCKED: Flatpak runtime source owner/mode is not UID/GID 1000 and 0700." >&2
+    exit 2
+}
+
 RESTORE_FILE="$RUNNER_TEMP/lunita-userns-sysctl.restore"
 if [ -e "$RESTORE_FILE" ] || [ -L "$RESTORE_FILE" ]; then
     echo "BLOCKED: stale sysctl restore file already exists: $RESTORE_FILE" >&2
@@ -118,21 +133,57 @@ cd /
 umount -l /.oldroot
 rmdir /.oldroot
 
+RUNTIME_BIND_TARGET=/run/lunita-runtime-1000
+RUNTIME_BIND_CREATED=0
+RUNTIME_BIND_MOUNTED=0
+
 cleanup_host_bind() {
     local result=$?
     trap - EXIT
     set +e
+    if [ "$RUNTIME_BIND_MOUNTED" -eq 1 ]; then
+        umount -l "$RUNTIME_BIND_TARGET" 2>/dev/null || result=1
+    fi
+    if [ "$RUNTIME_BIND_CREATED" -eq 1 ]; then
+        rmdir "$RUNTIME_BIND_TARGET" 2>/dev/null || result=1
+    fi
     umount -l "/run/$HOST_BIND_NAME" 2>/dev/null || result=1
     rmdir "/run/$HOST_BIND_NAME" 2>/dev/null || result=1
     exit "$result"
 }
 trap cleanup_host_bind EXIT
 
+RUNTIME_BIND_SOURCE="/run/$HOST_BIND_NAME/lunita-runtime-1000"
+if [ -e "$RUNTIME_BIND_TARGET" ] || [ -L "$RUNTIME_BIND_TARGET" ]; then
+    echo "BLOCKED: target Flatpak runtime mountpoint already exists: $RUNTIME_BIND_TARGET" >&2
+    exit 2
+fi
+if [ -L "$RUNTIME_BIND_SOURCE" ] || [ ! -d "$RUNTIME_BIND_SOURCE" ]; then
+    echo "BLOCKED: per-run Flatpak runtime source is missing or unsafe: $RUNTIME_BIND_SOURCE" >&2
+    exit 2
+fi
+[ "$(stat -c '%u:%g:%a' "$RUNTIME_BIND_SOURCE")" = "1000:1000:700" ] || {
+    echo "BLOCKED: per-run Flatpak runtime source owner/mode changed before bind." >&2
+    exit 2
+}
+mkdir -m 0700 "$RUNTIME_BIND_TARGET"
+RUNTIME_BIND_CREATED=1
+mount --bind "$RUNTIME_BIND_SOURCE" "$RUNTIME_BIND_TARGET"
+RUNTIME_BIND_MOUNTED=1
+mount --make-rslave "$RUNTIME_BIND_TARGET"
+[ "$(stat -c '%u:%g:%a' "$RUNTIME_BIND_TARGET")" = "1000:1000:700" ] || {
+    echo "BLOCKED: mounted Flatpak runtime directory owner/mode mismatch." >&2
+    exit 2
+}
+setpriv --reuid=1000 --regid=1000 --clear-groups /usr/bin/test -w "$RUNTIME_BIND_TARGET"
+echo "PASS_XDG_RUNTIME_DIR_UID1000_BIND: private Flatpak runtime directory is writable by UID 1000."
+
 export LUNITA_IN_PIVOT_ROOT=1
 export LUNITA_ROOTFS_REAL=/
 export LUNITA_TARGET_ROOTFS=/
 export LUNITA_ROOT=/opt/lunita
 export FLATPAK_SYSTEM_DIR=/var/lib/flatpak
+export XDG_RUNTIME_DIR=/run/lunita-runtime-1000
 export XDG_STATE_HOME="/run/$HOST_BIND_NAME/lunita-xdg"
 export LUNITA_XDG_STATE_HOME="$XDG_STATE_HOME"
 export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$XDG_STATE_HOME/lunita/runtime_validation"

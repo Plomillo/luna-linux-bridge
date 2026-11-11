@@ -113,6 +113,34 @@ class TargetGateError(RuntimeError):
     pass
 
 
+def verify_xdg_runtime_dir() -> dict[str, Any]:
+    """Require the Flatpak runtime directory to be a real private UID 1000 directory."""
+    expected = "/run/lunita-runtime-1000"
+    observed = os.environ.get("XDG_RUNTIME_DIR")
+    if observed != expected:
+        raise TargetGateError(f"XDG_RUNTIME_DIR must be exactly {expected}; observed {observed!r}")
+    path = pathlib.Path(observed)
+    try:
+        metadata = os.lstat(path)
+    except OSError as exc:
+        raise TargetGateError(f"XDG_RUNTIME_DIR cannot be inspected: {path}: {exc}") from exc
+    if not stat.S_ISDIR(metadata.st_mode):
+        raise TargetGateError("XDG_RUNTIME_DIR must be a real directory, not a symlink or other entry")
+    mode = stat.S_IMODE(metadata.st_mode)
+    if (metadata.st_uid, metadata.st_gid, mode) != (1000, 1000, 0o700):
+        raise TargetGateError(
+            "XDG_RUNTIME_DIR must be owned by UID/GID 1000 with mode 0700; "
+            f"observed uid={metadata.st_uid} gid={metadata.st_gid} mode={oct(mode)}"
+        )
+    return {
+        "path": str(path),
+        "uid": metadata.st_uid,
+        "gid": metadata.st_gid,
+        "mode_octal": oct(mode),
+        "status": "PASS_XDG_RUNTIME_DIR_UID1000_PRIVATE",
+    }
+
+
 def build_target_user_command(
     target_rootfs: pathlib.Path,
     environment: tuple[str, ...] | list[str],
@@ -1113,6 +1141,7 @@ def main() -> int:
         "canonical_g08_binding_mutation": False,
     }
     try:
+        report["xdg_runtime_dir"] = verify_xdg_runtime_dir()
         report["rootfs_build"] = verify_rootfs_build_receipt()
         overlay = verify_overlay()
         import engine_runtime_v1 as engine

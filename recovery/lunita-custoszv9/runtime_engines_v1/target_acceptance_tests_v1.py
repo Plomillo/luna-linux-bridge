@@ -201,6 +201,40 @@ class TargetSystemPythonAliasTests(unittest.TestCase):
             target.verify_system_python_alias(self.root)
 
 
+class TargetXdgRuntimeDirectoryTests(unittest.TestCase):
+    def test_private_uid1000_runtime_directory_passes(self):
+        metadata = mock.Mock(st_mode=0o40700, st_uid=1000, st_gid=1000)
+        with mock.patch.dict(target.os.environ, {"XDG_RUNTIME_DIR": "/run/lunita-runtime-1000"}), \
+             mock.patch.object(target.os, "lstat", return_value=metadata):
+            result = target.verify_xdg_runtime_dir()
+        self.assertEqual("PASS_XDG_RUNTIME_DIR_UID1000_PRIVATE", result["status"])
+        self.assertEqual("0o700", result["mode_octal"])
+
+    def test_runtime_directory_path_must_match_legacy_flatpak_contract(self):
+        with mock.patch.dict(target.os.environ, {"XDG_RUNTIME_DIR": "/tmp/runtime"}):
+            with self.assertRaisesRegex(target.TargetGateError, "must be exactly"):
+                target.verify_xdg_runtime_dir()
+
+    def test_runtime_directory_must_exist_as_a_real_directory(self):
+        metadata = mock.Mock(st_mode=0o120700, st_uid=1000, st_gid=1000)
+        with mock.patch.dict(target.os.environ, {"XDG_RUNTIME_DIR": "/run/lunita-runtime-1000"}), \
+             mock.patch.object(target.os, "lstat", return_value=metadata):
+            with self.assertRaisesRegex(target.TargetGateError, "real directory"):
+                target.verify_xdg_runtime_dir()
+
+    def test_runtime_directory_rejects_wrong_owner_group_or_mode(self):
+        invalid_metadata = (
+            mock.Mock(st_mode=0o40700, st_uid=0, st_gid=1000),
+            mock.Mock(st_mode=0o40700, st_uid=1000, st_gid=0),
+            mock.Mock(st_mode=0o40755, st_uid=1000, st_gid=1000),
+        )
+        for metadata in invalid_metadata:
+            with self.subTest(uid=metadata.st_uid, gid=metadata.st_gid, mode=oct(metadata.st_mode)):
+                with mock.patch.dict(target.os.environ, {"XDG_RUNTIME_DIR": "/run/lunita-runtime-1000"}), \
+                     mock.patch.object(target.os, "lstat", return_value=metadata):
+                    with self.assertRaisesRegex(target.TargetGateError, "owned by UID/GID 1000"):
+                        target.verify_xdg_runtime_dir()
+
 class TargetLegacyFlatpakDiagnosticTests(unittest.TestCase):
     def test_flatpak_diagnostic_compares_inherited_and_clean_guest_environments(self):
         calls = [
