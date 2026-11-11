@@ -1,0 +1,282 @@
+name: LOUKSNAPG2 primary five-model E2E (local/offline adapters only)
+
+on:
+  push:
+    branches:
+      - repair/louksnapg2-gpu-foundation-20261103
+    paths:
+      - ".github/workflows/louksnapg2-primary-five-model-e2e.yml"
+      - "tools/louksnapg2_primary_five_e2e.py"
+      - "tools/cajita_task_e2e.py"
+      - "tests/test_louksnapg2_primary_five_e2e.py"
+      - "tests/test_cajita_task_adapters.py"
+      - "tests/test_cajita_task_e2e.py"
+      - "cajita-luna-runtime/cajita_task_adapters.py"
+      - "cajita-luna-runtime/REQUIREMENTS.runtime.lock"
+      - "cajita-luna-runtime/**/model.safetensors"
+      - "cajita-luna-runtime/**/quantized_weights.bin"
+  pull_request:
+    branches:
+      - repair/louksnapg2-operational-engines-20261103
+    paths:
+      - ".github/workflows/louksnapg2-primary-five-model-e2e.yml"
+      - "tools/louksnapg2_primary_five_e2e.py"
+      - "tools/cajita_task_e2e.py"
+      - "tests/test_louksnapg2_primary_five_e2e.py"
+      - "tests/test_cajita_task_adapters.py"
+      - "tests/test_cajita_task_e2e.py"
+      - "cajita-luna-runtime/cajita_task_adapters.py"
+      - "cajita-luna-runtime/REQUIREMENTS.runtime.lock"
+      - "cajita-luna-runtime/**/model.safetensors"
+      - "cajita-luna-runtime/**/quantized_weights.bin"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksnapg2-primary-five-model-e2e-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  primary-five-models:
+    name: "Five registered compact model adapters; no auxiliary fallback"
+    runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:24.04
+      options: --memory=1g --memory-swap=1g --cpus=1
+    timeout-minutes: 120
+    env:
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      PYTHONNOUSERSITE: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      LOUKSNAPG2_DOCLING_IMAGE_SIDE: "192"
+    steps:
+      - name: Install Git LFS and known-speech fixture tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          apt-get update -qq
+          apt-get install -y --no-install-recommends ca-certificates git-lfs espeak-ng fonts-dejavu-core
+          git lfs version
+          espeak-ng --version | head -n 1
+
+      - name: Checkout exact source branch without hydrating every LFS object
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            /.gitattributes
+            /.github/workflows/louksnapg2-primary-five-model-e2e.yml
+            /cajita-luna-runtime/cajita_runtime.py
+            /cajita-luna-runtime/cajita_task_adapters.py
+            /cajita-luna-runtime/cajita_tokenizer_materializer.py
+            /cajita-luna-runtime/cajita_resource_limits.py
+            /cajita-luna-runtime/cajita_weight_materializer.py
+            /cajita-luna-runtime/cajita_router.py
+            /cajita-luna-runtime/cajita_antiparalysis.py
+            /cajita-luna-runtime/command_subdomain_routing.json
+            /cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json
+            /cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
+            /cajita-luna-runtime/REQUIREMENTS.runtime.lock
+            /cajita-luna-runtime/1. Cerebro/**
+            /cajita-luna-runtime/2. Orquestación/Orquestador/punto.json
+            /cajita-luna-runtime/3. Transcripción/**
+            /cajita-luna-runtime/4. Traductor Inteligente/Traducción general/**
+            /cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/**
+            /cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/**
+            /tools/cajita_task_e2e.py
+            /tools/louksnapg2_primary_five_e2e.py
+            /tools/louksnapg2_refresh_module_integrity.py
+            /tests/test_cajita_task_adapters.py
+            /tests/test_cajita_task_e2e.py
+            /tests/test_louksnapg2_primary_five_e2e.py
+          sparse-checkout-cone-mode: false
+          lfs: false
+          persist-credentials: true
+
+      - name: Set up pinned Python 3.13 runtime
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+
+      - name: Install the committed CPU runtime lock
+        shell: bash
+        env:
+          PIP_NO_CACHE_DIR: "1"
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check \
+            --extra-index-url https://download.pytorch.org/whl/cpu \
+            -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
+
+      - name: Compile Python sources in memory without changing model trees
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B - <<'PY'
+          from pathlib import Path
+          sources = (
+              'tests/test_cajita_task_adapters.py',
+              'tests/test_cajita_task_e2e.py',
+              'tests/test_louksnapg2_primary_five_e2e.py',
+              'tools/cajita_task_e2e.py',
+              'tools/louksnapg2_primary_five_e2e.py',
+              'cajita-luna-runtime/cajita_runtime.py',
+              'cajita-luna-runtime/cajita_task_adapters.py',
+              'cajita-luna-runtime/cajita_resource_limits.py',
+              'cajita-luna-runtime/cajita_tokenizer_materializer.py',
+              'cajita-luna-runtime/cajita_weight_materializer.py',
+              'cajita-luna-runtime/cajita_router.py',
+              'cajita-luna-runtime/cajita_antiparalysis.py',
+              'cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py',
+              'cajita-luna-runtime/3. Transcripción/lowrank_runtime.py',
+              'cajita-luna-runtime/4. Traductor Inteligente/Traducción general/lowrank_runtime.py',
+              'cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py',
+              'cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py',
+          )
+          for name in sources:
+              path = Path(name)
+              compile(path.read_text(encoding='utf-8'), name, 'exec', dont_inherit=True)
+          print(f'SOURCE_COMPILE_PASS:{len(sources)}; NO_BYTECODE_WRITTEN')
+          PY
+
+      - name: Run source and task-contract tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PYTHONPATH="$PWD/cajita-luna-runtime:$PWD/tools${PYTHONPATH:+:$PYTHONPATH}"
+          python -B -m unittest discover -s tests -p 'test_cajita_task_adapters.py' -v
+          python -B -m unittest discover -s tests -p 'test_cajita_task_e2e.py' -v
+          python -B -m unittest discover -s tests -p 'test_louksnapg2_primary_five_e2e.py' -v
+
+      - name: Measure Docling module tree against its pinned tokenizer projection
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B - <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+          root = Path("cajita-luna-runtime").resolve()
+          sys.path.insert(0, str(root))
+          from cajita_task_adapters import tree_rows
+          from cajita_tokenizer_materializer import tokenizer_tree_rows
+          module = root / "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate"
+          rows = tokenizer_tree_rows(module, root, tree_rows(module))
+          payload = json.dumps(rows, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+          print(json.dumps({
+              "schema": "LOUKSNAPG2_DOCLING_TREE_DIAGNOSTIC/1.0",
+              "file_count": len(rows),
+              "logical_bytes": sum(row["bytes"] for row in rows),
+              "logical_tree_sha256": hashlib.sha256(payload).hexdigest(),
+              "rows": rows,
+          }, ensure_ascii=False, sort_keys=True, indent=2))
+          PY
+
+      - name: Download the exact GPT-OSS LFS object from GitHub media and verify identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          file="cajita-luna-runtime/1. Cerebro/model.safetensors"
+          expected_bytes=40489120
+          expected_sha256="e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0"
+          safe_path="$(python -c 'from urllib.parse import quote; print(quote("cajita-luna-runtime/1. Cerebro/model.safetensors", safe="/"))')"
+          media_url="https://media.githubusercontent.com/media/$GITHUB_REPOSITORY/$GITHUB_SHA/$safe_path"
+          temporary="$GITHUB_WORKSPACE/$file.download"
+          trap 'rm -f "$temporary"' EXIT
+          echo "GPT_OSS_MEDIA_SOURCE=$media_url"
+          python - "$media_url" "$temporary" "$expected_bytes" "$expected_sha256" <<'PY'
+          import hashlib
+          import sys
+          from urllib.request import Request, urlopen
+
+          url, destination = sys.argv[1], sys.argv[2]
+          expected_bytes, expected_sha256 = int(sys.argv[3]), sys.argv[4]
+          request = Request(url, headers={"User-Agent": "LOUKSNAPG2-GitHub-Actions"})
+          digest = hashlib.sha256()
+          written = 0
+          with urlopen(request, timeout=240) as response, open(destination, "wb") as output:
+              status = getattr(response, "status", 200)
+              if status != 200:
+                  raise SystemExit("GPT_OSS_MEDIA_HTTP_STATUS:" + str(status))
+              while True:
+                  chunk = response.read(1024 * 1024)
+                  if not chunk:
+                      break
+                  written += len(chunk)
+                  if written > expected_bytes:
+                      raise SystemExit("GPT_OSS_MEDIA_SIZE_EXCEEDS_EXPECTED")
+                  digest.update(chunk)
+                  output.write(chunk)
+          observed_sha256 = digest.hexdigest()
+          if written != expected_bytes:
+              raise SystemExit(f"GPT_OSS_MEDIA_SIZE_MISMATCH:{written}:{expected_bytes}")
+          if observed_sha256 != expected_sha256:
+              raise SystemExit("GPT_OSS_MEDIA_SHA256_MISMATCH:" + observed_sha256)
+          print(f"GPT_OSS_MEDIA_OBJECT_VERIFIED bytes={written} sha256={observed_sha256}")
+          PY
+          mv "$temporary" "$GITHUB_WORKSPACE/$file"
+          # Re-measure the workspace file; Python heredoc variables are process-local.
+          actual_bytes="$(stat -c %s "$GITHUB_WORKSPACE/$file")"
+          test "$actual_bytes" -eq "$expected_bytes"
+          actual_sha256="$(sha256sum "$GITHUB_WORKSPACE/$file" | cut -d " " -f1)"
+          test "$actual_sha256" = "$expected_sha256"
+          echo "GPT_OSS_LFS_VERIFIED=true" >> "$GITHUB_ENV"
+          echo "GPT_OSS_LFS_OBJECT_VERIFIED bytes=$actual_bytes sha256=$actual_sha256"
+
+      - name: Refresh and validate all five source-bound module tree descriptors
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/primary-five-models
+          python -B tools/louksnapg2_refresh_module_integrity.py \
+            --runtime-root cajita-luna-runtime \
+            --all-models | tee out/primary-five-models/MODULE_TREE_REFRESH.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path("out/primary-five-models/MODULE_TREE_REFRESH.json").read_text())
+          if report.get("status") != "PASS_ALL_FIVE_MODULE_TREES_REFRESHED_AND_VALIDATED":
+              raise SystemExit("FIVE_MODEL_TREE_REFRESH_NOT_PASS")
+          if len(report.get("models", [])) != 5:
+              raise SystemExit("FIVE_MODEL_TREE_REFRESH_COVERAGE_MISMATCH")
+          PY
+
+      - name: Execute the five registered compact model adapters directly
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p out/primary-five-models
+          set +e
+          python -B tools/louksnapg2_primary_five_e2e.py \
+            --runtime-root cajita-luna-runtime \
+            --output-dir out/primary-five-models/work \
+            --output out/primary-five-models/LOUKSNAPG2_PRIMARY_FIVE_MODEL_E2E.json \
+            --timeout 1800
+          rc=$?
+          set -e
+          echo "$rc" > out/primary-five-models/EXIT_CODE.txt
+          test -s out/primary-five-models/LOUKSNAPG2_PRIMARY_FIVE_MODEL_E2E.json
+          cat out/primary-five-models/LOUKSNAPG2_PRIMARY_FIVE_MODEL_E2E.json
+          exit "$rc"
+
+      - name: Upload exact model evaluation evidence on success or failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksnapg2-primary-five-model-e2e-${{ github.run_id }}
+          path: out/primary-five-models/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
+

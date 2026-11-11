@@ -41,8 +41,8 @@
   "target_kind": "SUBDOMAIN",
   "target_name": "Docling",
   "tree_integrity": {
-    "bytes_excluding_module_descriptors": 20879633,
+    "bytes_excluding_module_descriptors": 20884392,
     "file_count_excluding_module_descriptors": 12,
-    "sha256": "0d141c43aacfebd63e511bd26dd028950b79b845cc0f88415de4221dfd84e071"
+    "sha256": "68cd5966aee39988a6e5c2db0c6a234bdacc2da5cc7b92d9f9276aee41a2ee61"
   }
 }
