@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Remove only dead Chromium smoke-test singleton sockets and their cookie links.
+"""Remove only a verified dead Chromium smoke-test singleton socket.
 
 Chromium's Linux ProcessSingleton creates a 0700 temporary directory containing
-SingletonSocket and a SingletonCookie symlink to a decimal uint64 token. This
-cleanup removes only that exact, dead-socket shape; all other contents fail
-closed without recursive deletion.
+SingletonSocket and, when present, SingletonCookie. SingletonCookie is companion
+metadata, not a socket, and is never authorized for deletion. This cleanup
+unlinks only a dead, non-symlink Unix socket that belongs to the expected user
+and is not registered in the supplied live-socket table. Every other entry is
+preserved. The directory is removed only when that socket was its sole entry.
 """
 
 from __future__ import annotations
@@ -208,15 +210,26 @@ def cleanup(
                 or os.readlink(cookie_path) != candidate["cookie_target"]
             ):
                 raise CleanupError(f"Chromium companion cookie changed after preflight: {cookie_path}")
-            cookie_path.unlink()
         sock.unlink()
-        directory.rmdir()
+        remaining = sorted(item.name for item in directory.iterdir())
+        directory_removed = False
+        if not remaining:
+            directory.rmdir()
+            directory_removed = True
+        elif set(remaining) != ({COOKIE_NAME} if cookie_path is not None else set()):
+            raise CleanupError(
+                f"Chromium temporary directory retained unexpected entries after socket removal: "
+                f"{directory}; entries={remaining!r}"
+            )
         removed.append({
             "path": candidate["guest_socket_path"],
             "uid": candidate["uid"],
             "gid": candidate["gid"],
             "mode_octal": candidate["mode_octal"],
-            "companion_cookie_symlink_removed": cookie_path is not None,
+            "companion_cookie_symlink_removed": False,
+            "companion_cookie_preserved": cookie_path is not None,
+            "directory_removed": directory_removed,
+            "preserved_entries": remaining,
             "status": "REMOVED_DEAD_TEST_SOCKET",
         })
     return {
@@ -226,7 +239,7 @@ def cleanup(
         "expected_socket_owner_uid": expected_uid,
         "removed_count": len(removed),
         "removed": removed,
-        "policy": "ONLY_DIRECT_0700_ORG_CHROMIUM_DIR_WITH_DEAD_SINGLETONSOCKET_AND_OPTIONAL_NUMERIC_UINT64_COOKIE_SYMLINK;NO_RECURSIVE_DELETE",
+        "policy": "REMOVE_ONLY_DEAD_DIRECT_0700_SINGLETONSOCKET;PRESERVE_SINGLETONCOOKIE_AND_ALL_OTHER_ENTRIES;NO_RECURSIVE_DELETE",
         "certification": "NOT_GRANTED",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
     }
@@ -302,12 +315,17 @@ def self_test() -> None:
         cookie_result = cleanup(rootfs, expected_uid=owner, proc_net_unix=fake_proc)
         if (
             cookie_result["removed_count"] != 1
-            or cookie_dir.exists()
+            or not cookie_dir.exists()
             or cookie_socket.exists()
-            or cookie_link.exists()
-            or cookie_result["removed"][0]["companion_cookie_symlink_removed"] is not True
+            or not cookie_link.is_symlink()
+            or os.readlink(cookie_link) != "18446744073709551615"
+            or cookie_result["removed"][0]["companion_cookie_symlink_removed"] is not False
+            or cookie_result["removed"][0]["companion_cookie_preserved"] is not True
+            or cookie_result["removed"][0]["directory_removed"] is not False
+            or cookie_result["removed"][0]["preserved_entries"] != [COOKIE_NAME]
         ):
-            raise CleanupError("Self-test failed to remove the exact dead socket plus Chromium uint64 cookie symlink")
+            raise CleanupError("Self-test failed to remove only the dead socket while preserving SingletonCookie")
+        shutil.rmtree(cookie_dir)
 
         unsafe_cookie_dir = tmp / f"{PREFIX}unsafe-cookie"
         unsafe_cookie_dir.mkdir()
@@ -349,6 +367,63 @@ def self_test() -> None:
         if not live_socket.exists():
             raise CleanupError("Self-test removed a socket that was still registered as live")
         listener.close()
+        shutil.rmtree(live_dir)
+        fake_proc.write_text("Num RefCount Protocol Flags Type St Inode Path\n", encoding="utf-8")
+
+        missing = base / "missing-rootfs"
+        try:
+            cleanup(missing, expected_uid=owner, proc_net_unix=fake_proc)
+        except CleanupError:
+            pass
+        else:
+            raise CleanupError("Self-test failed to reject a missing rootfs")
+
+        outside = tmp / "not-chromium"
+        outside.mkdir()
+        outside_socket = outside / SOCKET_NAME
+        listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        listener.bind(str(outside_socket))
+        listener.close()
+        kept = cleanup(rootfs, expected_uid=owner, proc_net_unix=fake_proc)
+        if kept["removed_count"] != 0 or not outside_socket.exists():
+            raise CleanupError("Self-test removed a socket outside the Chromium temp prefix")
+        shutil.rmtree(outside)
+
+        link_dir = tmp / f"{PREFIX}link"
+        link_target = base / "outside-temp"
+        link_target.mkdir()
+        (link_target / "secret").write_text("preserve", encoding="utf-8")
+        link_dir.symlink_to(link_target, target_is_directory=True)
+        try:
+            cleanup(rootfs, expected_uid=owner, proc_net_unix=fake_proc)
+        except CleanupError:
+            pass
+        else:
+            raise CleanupError("Self-test failed to reject a Chromium path that is a symlink")
+        if not (link_target / "secret").exists():
+            raise CleanupError("Self-test followed a symlink and modified data outside the temp directory")
+        link_dir.unlink()
+
+        locked = tmp / f"{PREFIX}locked"
+        locked.mkdir()
+        os.chmod(locked, 0o700)
+        locked_socket = locked / SOCKET_NAME
+        listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        listener.bind(str(locked_socket))
+        listener.close()
+        os.chmod(locked, 0o000)
+        try:
+            try:
+                cleanup(rootfs, expected_uid=owner, proc_net_unix=fake_proc)
+            except CleanupError:
+                pass
+            else:
+                raise CleanupError("Self-test failed to reject a Chromium directory that cannot be inspected")
+        finally:
+            os.chmod(locked, 0o700)
+        if not locked_socket.exists():
+            raise CleanupError("Self-test removed a socket from a directory that could not be inspected")
+        shutil.rmtree(locked)
     print("PASS_TRANSIENT_CHROMIUM_CLEANUP_SELF_TEST")
 
 

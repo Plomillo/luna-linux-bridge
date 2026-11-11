@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shutil
 import stat
 import subprocess
@@ -224,14 +225,54 @@ def validate_target_receipt(path: pathlib.Path) -> dict[str, Any]:
     return {"path": str(path), "sha256": sha256_file(path), "data": receipt}
 
 
-def run_tool(argv: list[str], *, cwd: pathlib.Path | None = None) -> str:
+def run_tool(argv: list[str], *, cwd: pathlib.Path | None = None, env: dict[str, str] | None = None) -> str:
+    merged = os.environ.copy()
+    if env:
+        merged.update(env)
     result = subprocess.run(argv, cwd=cwd, text=True, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, check=False)
+                            stderr=subprocess.STDOUT, check=False, env=merged)
     if result.returncode != 0:
+        output = result.stdout or ""
+        if len(output) > 3000:
+            shown = output[:1500] + "\n…[truncated]…\n" + output[-1500:]
+        else:
+            shown = output
         raise PackageError(
-            f"Command failed ({result.returncode}): {' '.join(argv)}\n{result.stdout[-5000:]}"
+            f"Command failed ({result.returncode}): {' '.join(argv)}\n{shown}"
         )
     return result.stdout
+
+
+def reproducible_mksquashfs(manifest: dict[str, Any]) -> tuple[list[str], dict[str, str], dict[str, Any]]:
+    """Choose a reproducible build mode the installed mksquashfs actually supports.
+
+    Ubuntu 26.04 ships Squashfs-tools 4.7, where ``-repro`` means ``-mkfs-time inode``.
+    The target job still runs Ubuntu 24.04 with Squashfs-tools 4.6.1, which rejects
+    ``-repro`` (it only has ``-reproducible``) and already honors SOURCE_DATE_EPOCH.
+    A substring match is unsafe: ``-reproducible`` contains ``-repro``.
+    """
+    probe = subprocess.run(
+        ["mksquashfs", "-help"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    help_text = probe.stdout or ""
+    has_repro_flag = bool(re.search(r"(?m)^\s*-repro(?:\s|$)", help_text))
+    epochs = [int(row["mtime_seconds"]) for row in manifest["entries"]]
+    epoch = max(epochs) if epochs else 0
+    if has_repro_flag:
+        return ["-repro"], {}, {
+            "reproducible_mode": True,
+            "reproducible_method": "mksquashfs_-repro",
+            "source_date_epoch": None,
+        }
+    return [], {"SOURCE_DATE_EPOCH": str(epoch)}, {
+        "reproducible_mode": True,
+        "reproducible_method": "SOURCE_DATE_EPOCH",
+        "source_date_epoch": epoch,
+    }
 
 
 def _write_exclusive(path: pathlib.Path, payload: bytes, mode: int = 0o644) -> None:
@@ -274,11 +315,12 @@ def package_rootfs(
         temp_dir = pathlib.Path(temp)
         temporary_image = temp_dir / "candidate.squashfs"
         extracted = temp_dir / "extracted-rootfs"
+        extra_args, repro_env, repro_meta = reproducible_mksquashfs(source_before)
         build_log = run_tool([
             "mksquashfs", str(rootfs), str(temporary_image),
             "-noappend", "-comp", "zstd", "-Xcompression-level", "15",
-            "-no-progress", "-repro",
-        ])
+            "-no-progress", *extra_args,
+        ], env=repro_env)
         if not temporary_image.is_file() or temporary_image.stat().st_size <= 0:
             raise PackageError("mksquashfs returned without a non-empty image")
         superblock = run_tool(["unsquashfs", "-s", str(temporary_image)])
@@ -305,7 +347,9 @@ def package_rootfs(
         "image_bytes": image_bytes,
         "compression": "zstd",
         "compression_level": 15,
-        "reproducible_mode": True,
+        "reproducible_mode": repro_meta["reproducible_mode"],
+        "reproducible_method": repro_meta["reproducible_method"],
+        "source_date_epoch": repro_meta["source_date_epoch"],
         "source_rootfs": str(rootfs),
         "source_rootfs_manifest_sha256": source_before["entries_sha256"],
         "source_rootfs_entry_count": source_before["entry_count"],
