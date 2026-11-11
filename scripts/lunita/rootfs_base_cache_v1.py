@@ -29,6 +29,20 @@ RECEIPT_RELATIVE = Path("opt/lunita/metadata/ROOTFS_BUILD_RECEIPT.json")
 CACHE_RECEIPT_NAME = "LUNITA_ROOTFS_BASE_CACHE_RECEIPT.json"
 ARCHIVE_NAME = "LUNITA_ROOTFS_BASE.tar"
 
+# Exact static device nodes emitted by debootstrap's minimal-device setup for
+# this Ubuntu 24.04 rootfs. No wildcard paths or device-number ranges are used.
+# /dev/console is hardened to 0600 before packing; the remaining nodes retain
+# debootstrap's 0666 mode. All are root:root in this pinned candidate.
+ROOTFS_DEVICE_ALLOWLIST: dict[str, dict[str, Any]] = {
+    "dev/console": {"type": "character", "major": 5, "minor": 1, "uid": 0, "gid": 0, "mode": 0o600},
+    "dev/full": {"type": "character", "major": 1, "minor": 7, "uid": 0, "gid": 0, "mode": 0o666},
+    "dev/null": {"type": "character", "major": 1, "minor": 3, "uid": 0, "gid": 0, "mode": 0o666},
+    "dev/random": {"type": "character", "major": 1, "minor": 8, "uid": 0, "gid": 0, "mode": 0o666},
+    "dev/tty": {"type": "character", "major": 5, "minor": 0, "uid": 0, "gid": 0, "mode": 0o666},
+    "dev/urandom": {"type": "character", "major": 1, "minor": 9, "uid": 0, "gid": 0, "mode": 0o666},
+    "dev/zero": {"type": "character", "major": 1, "minor": 5, "uid": 0, "gid": 0, "mode": 0o666},
+}
+
 
 def deny(message: str) -> "NoReturn":
     raise SystemExit(f"ROOTFS_BASE_CACHE_BLOCKED: {message}")
@@ -197,7 +211,7 @@ def normalized_archive_path(name: str) -> str:
 
 
 def validate_archive_paths(archive: Path) -> None:
-    """Reject unsafe paths and every special entry except Ubuntu's canonical /dev/console."""
+    """Reject unsafe paths and every special entry outside the exact Ubuntu device allowlist."""
     seen_paths: set[str] = set()
     try:
         with tarfile.open(archive, mode="r:") as bundle:
@@ -210,23 +224,19 @@ def validate_archive_paths(archive: Path) -> None:
                     deny(f"duplicate rootfs cache archive path: {member.name}")
                 seen_paths.add(relative_name)
                 if member.isdev():
-                    # Ubuntu's boot console is a required static rootfs device node.
-                    # No other block/character device or altered console metadata is admitted.
-                    canonical_console = (
-                        relative_name == "dev/console"
-                        and member.ischr()
-                        and member.devmajor == 5
-                        and member.devminor == 1
-                        and member.uid == 0
-                        and member.gid == 0
-                        and member.mode == 0o600
-                    )
-                    if not canonical_console:
+                    expected = ROOTFS_DEVICE_ALLOWLIST.get(relative_name)
+                    observed = {
+                        "type": "character" if member.ischr() else "block",
+                        "major": member.devmajor,
+                        "minor": member.devminor,
+                        "uid": member.uid,
+                        "gid": member.gid,
+                        "mode": member.mode,
+                    }
+                    if expected is None or observed != expected:
                         deny(
                             "non-canonical device node is forbidden in rootfs cache: "
-                            f"{member.name} type={'character' if member.ischr() else 'block'} "
-                            f"major={member.devmajor} minor={member.devminor} "
-                            f"uid={member.uid} gid={member.gid} mode={oct(member.mode)}"
+                            f"{member.name} observed={observed} expected={expected}"
                         )
                 if member.isfifo():
                     deny(f"FIFO filesystem entry is forbidden in rootfs cache: {member.name}")
@@ -249,7 +259,6 @@ def validate_archive_paths(archive: Path) -> None:
         raise
     except Exception as exc:
         deny(f"rootfs cache archive cannot be inspected: {exc}")
-
 
 def cache_paths(cache_dir: Path) -> tuple[Path, Path]:
     return cache_dir / ARCHIVE_NAME, cache_dir / CACHE_RECEIPT_NAME
@@ -293,6 +302,18 @@ def pack_base(workspace: Path, rootfs: Path, cache_dir: Path, commit: str) -> di
             "rootfs_build_receipt_sha256": build_receipt_sha,
             "rootfs_build_status": build["status"],
             "rootfs_console_policy": console_policy,
+            "rootfs_device_policy": {
+                "schema": "LUNITA_ROOTFS_STATIC_DEVICE_POLICY/1.0",
+                "allowed_nodes": [
+                    {
+                        "path": path,
+                        **{key: value for key, value in spec.items() if key != "mode"},
+                        "mode_octal": oct(spec["mode"]),
+                    }
+                    for path, spec in sorted(ROOTFS_DEVICE_ALLOWLIST.items())
+                ],
+                "unlisted_special_entries": "REJECTED",
+            },
             "archive": {
                 "file": ARCHIVE_NAME,
                 "sha256": archive_sha,
@@ -393,36 +414,45 @@ def self_test() -> None:
                 continue
             deny("self-test failed to reject altered /dev/console identity or permissions")
 
-        # Admit only the canonical Ubuntu boot console device and reject
-        # altered metadata, other device nodes, and FIFOs.
-        valid_console_archive = root / "valid-console.tar"
-        console = tarfile.TarInfo("./dev/console")
-        console.type = tarfile.CHRTYPE
-        console.mode = 0o600
-        console.uid = 0
-        console.gid = 0
-        console.devmajor = 5
-        console.devminor = 1
-        with tarfile.open(valid_console_archive, "w") as bundle:
-            bundle.addfile(console)
-        validate_archive_paths(valid_console_archive)
+        # Every static device allowed by the pinned Ubuntu debootstrap
+        # candidate must round-trip with its exact path and metadata.
+        valid_devices_archive = root / "valid-ubuntu-devices.tar"
+        with tarfile.open(valid_devices_archive, "w") as bundle:
+            for relative_name, spec in sorted(ROOTFS_DEVICE_ALLOWLIST.items()):
+                member = tarfile.TarInfo(f"./{relative_name}")
+                member.type = tarfile.CHRTYPE
+                member.mode = spec["mode"]
+                member.uid = spec["uid"]
+                member.gid = spec["gid"]
+                member.devmajor = spec["major"]
+                member.devminor = spec["minor"]
+                bundle.addfile(member)
+        validate_archive_paths(valid_devices_archive)
 
-        invalid_device_archive = root / "invalid-device.tar"
-        invalid_device = tarfile.TarInfo("./dev/mem")
-        invalid_device.type = tarfile.CHRTYPE
-        invalid_device.mode = 0o600
-        invalid_device.uid = 0
-        invalid_device.gid = 0
-        invalid_device.devmajor = 1
-        invalid_device.devminor = 1
-        with tarfile.open(invalid_device_archive, "w") as bundle:
-            bundle.addfile(invalid_device)
-        try:
-            validate_archive_paths(invalid_device_archive)
-        except SystemExit:
-            pass
-        else:
-            deny("self-test failed to reject a non-canonical device node")
+        invalid_device_cases = (
+            ("./dev/mem", {"type": "character", "major": 1, "minor": 3, "uid": 0, "gid": 0, "mode": 0o666}),
+            ("./dev/full", {"type": "character", "major": 1, "minor": 3, "uid": 0, "gid": 0, "mode": 0o666}),
+            ("./dev/null", {"type": "character", "major": 1, "minor": 3, "uid": 1000, "gid": 0, "mode": 0o666}),
+            ("./dev/tty", {"type": "character", "major": 5, "minor": 0, "uid": 0, "gid": 5, "mode": 0o666}),
+            ("./dev/zero", {"type": "block", "major": 1, "minor": 5, "uid": 0, "gid": 0, "mode": 0o666}),
+            ("./dev/random", {"type": "character", "major": 1, "minor": 8, "uid": 0, "gid": 0, "mode": 0o600}),
+        )
+        for index, (member_name, observed) in enumerate(invalid_device_cases):
+            invalid_archive = root / f"invalid-device-{index}.tar"
+            member = tarfile.TarInfo(member_name)
+            member.type = tarfile.CHRTYPE if observed["type"] == "character" else tarfile.BLKTYPE
+            member.mode = observed["mode"]
+            member.uid = observed["uid"]
+            member.gid = observed["gid"]
+            member.devmajor = observed["major"]
+            member.devminor = observed["minor"]
+            with tarfile.open(invalid_archive, "w") as bundle:
+                bundle.addfile(member)
+            try:
+                validate_archive_paths(invalid_archive)
+            except SystemExit:
+                continue
+            deny(f"self-test failed to reject altered or unlisted device node: {member_name}")
 
         altered_console_archive = root / "altered-console.tar"
         altered_console = tarfile.TarInfo("./dev/console")
@@ -439,7 +469,19 @@ def self_test() -> None:
         except SystemExit:
             pass
         else:
-            deny("self-test failed to reject altered /dev/console permissions")
+            deny("self-test failed to reject un-hardened /dev/console permissions")
+
+        fifo_archive = root / "invalid-fifo.tar"
+        fifo = tarfile.TarInfo("./dev/test-fifo")
+        fifo.type = tarfile.FIFOTYPE
+        with tarfile.open(fifo_archive, "w") as bundle:
+            bundle.addfile(fifo)
+        try:
+            validate_archive_paths(fifo_archive)
+        except SystemExit:
+            pass
+        else:
+            deny("self-test failed to reject a FIFO filesystem entry")
 
         for relative in SOURCE_PATHS:
             path = workspace / relative
