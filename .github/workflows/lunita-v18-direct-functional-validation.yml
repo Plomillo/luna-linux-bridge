@@ -51,8 +51,10 @@ jobs:
         run: |
           python -m py_compile \
             scripts/lunita/package_candidate_squashfs_v1.py \
-            scripts/lunita/certify_candidate_squashfs_v1.py
+            scripts/lunita/certify_candidate_squashfs_v1.py \
+            scripts/lunita/rootfs_base_cache_v1.py
           python scripts/lunita/package_candidate_squashfs_v1.py --self-test
+          python scripts/lunita/rootfs_base_cache_v1.py self-test
           python scripts/lunita/certify_candidate_squashfs_v1.py --self-test
           python -m unittest discover -s scripts/lunita -p "test_certify_candidate_squashfs_v1.py" -v
       - name: Install pinned CPU-only PyTorch for SeamlessM4T tensor contracts
@@ -300,7 +302,13 @@ jobs:
         with:
           name: lunita-engine-overlay-v1-py312
           path: ${{ runner.temp }}/lunita-engine-overlay
-      - name: Prove host user namespaces before the expensive rootfs rebuild
+      - name: Restore exact-input Ubuntu 24.04 rootfs base cache
+        id: rootfs-base-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/lunita-rootfs-base-cache
+          key: lunita-rootfs-base-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/lunita/build_rootfs_candidate_v1.sh', 'scripts/lunita/brujula.js', 'recovery/lunita-custoszv9/lunita_beta_v1_7.py', 'scripts/lunita/rootfs_base_cache_v1.py') }}
+      - name: Prove host user namespaces before target-side acceptance
         shell: bash
         run: |
           set -euo pipefail
@@ -351,22 +359,57 @@ jobs:
           sudo -n -u nobody /usr/bin/unshare --user --map-root-user /usr/bin/true
           echo "PASS_HOST_USERNS_PREFLIGHT: unprivileged user namespace creation is available on the actual GitHub runner kernel."
           ROOT
-      - name: Rebuild the Ubuntu 24.04 Lunita candidate rootfs from pinned inputs
+      - name: Rebuild Ubuntu 24.04 rootfs only when the exact base cache is absent
+        if: steps.rootfs-base-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
-          sudo env RUNNER_TEMP="$RUNNER_TEMP" bash scripts/lunita/build_rootfs_candidate_v1.sh "$RUNNER_TEMP/lunita-rootfs"
           ROOTFS="$RUNNER_TEMP/lunita-rootfs"
+          mkdir -p "$RUNNER_TEMP/lunita-rootfs-base-cache"
+          sudo env RUNNER_TEMP="$RUNNER_TEMP" bash scripts/lunita/build_rootfs_candidate_v1.sh "$ROOTFS"
           test -f "$ROOTFS/var/lib/dpkg/status"
           test -f "$ROOTFS/opt/lunita/metadata/ROOTFS_BUILD_RECEIPT.json"
+          sudo python3.12 scripts/lunita/rootfs_base_cache_v1.py pack \
+            --workspace "$GITHUB_WORKSPACE" \
+            --rootfs "$ROOTFS" \
+            --cache-dir "$RUNNER_TEMP/lunita-rootfs-base-cache" \
+            --commit "$GITHUB_SHA"
           printf 'LUNITA_ROOTFS=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
           printf 'LUNITA_ROOTFS_REAL=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
-          printf 'LUNITA_ROOT=%s\n' "$ROOTFS/opt/lunita" >> "$GITHUB_ENV"
+          printf 'LUNITA_ROOT=%s/opt/lunita\n' "$ROOTFS" >> "$GITHUB_ENV"
           printf 'LUNITA_XDG_STATE_HOME=%s/lunita-xdg\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
           printf 'LUNITA_CHECKPOINT_DIR=\n' >> "$GITHUB_ENV"
           printf 'FLATPAK_SYSTEM_DIR=%s/var/lib/flatpak\n' "$ROOTFS" >> "$GITHUB_ENV"
           printf 'R_HOME=%s/opt/lunita/instruments/lapiz/R-4.6.1/lib/R\n' "$ROOTFS" >> "$GITHUB_ENV"
           printf 'LUNITA_TARGET_ROOTFS=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
+      - name: Restore and verify the immutable Ubuntu 24.04 rootfs base
+        if: steps.rootfs-base-cache.outputs.cache-hit == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOTFS="$RUNNER_TEMP/lunita-rootfs"
+          sudo python3.12 scripts/lunita/rootfs_base_cache_v1.py restore \
+            --workspace "$GITHUB_WORKSPACE" \
+            --cache-dir "$RUNNER_TEMP/lunita-rootfs-base-cache" \
+            --rootfs "$ROOTFS"
+          test -f "$ROOTFS/var/lib/dpkg/status"
+          test -f "$ROOTFS/opt/lunita/metadata/ROOTFS_BUILD_RECEIPT.json"
+          printf 'LUNITA_ROOTFS=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'LUNITA_ROOTFS_REAL=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'LUNITA_ROOT=%s/opt/lunita\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'LUNITA_XDG_STATE_HOME=%s/lunita-xdg\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'LUNITA_CHECKPOINT_DIR=\n' >> "$GITHUB_ENV"
+          printf 'FLATPAK_SYSTEM_DIR=%s/var/lib/flatpak\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'R_HOME=%s/opt/lunita/instruments/lapiz/R-4.6.1/lib/R\n' "$ROOTFS" >> "$GITHUB_ENV"
+          printf 'LUNITA_TARGET_ROOTFS=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
+      - name: Save verified pristine Ubuntu base for later candidates
+        id: rootfs-base-cache-save
+        if: success() && steps.rootfs-base-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: ${{ runner.temp }}/lunita-rootfs-base-cache
+          key: lunita-rootfs-base-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/lunita/build_rootfs_candidate_v1.sh', 'scripts/lunita/brujula.js', 'recovery/lunita-custoszv9/lunita_beta_v1_7.py', 'scripts/lunita/rootfs_base_cache_v1.py') }}
       - name: Verify the actual candidate rootfs and target prerequisites
         shell: bash
         run: |
@@ -548,12 +591,12 @@ jobs:
           sudo -n apt-get update
           sudo -n apt-get install -y --no-install-recommends squashfs-tools
           RECEIPT_DIR="$LUNITA_XDG_STATE_HOME/lunita/runtime_validation"
-          TARGET_RECEIPT_COUNT="$(find "$RECEIPT_DIR" -maxdepth 1 -type f -name 'LUNITA_TARGET_RUNTIME_ACCEPTANCE_*.json' -printf '.' | wc -c)"
+          TARGET_RECEIPT_COUNT="$(sudo -n find "$RECEIPT_DIR" -maxdepth 1 -type f -name 'LUNITA_TARGET_RUNTIME_ACCEPTANCE_*.json' -printf '.' | wc -c)"
           if [ "$TARGET_RECEIPT_COUNT" -ne 1 ]; then
             echo "Expected exactly one direct target-runtime receipt; found $TARGET_RECEIPT_COUNT"
             exit 2
           fi
-          TARGET_RECEIPT="$(find "$RECEIPT_DIR" -maxdepth 1 -type f -name 'LUNITA_TARGET_RUNTIME_ACCEPTANCE_*.json' -print -quit)"
+          TARGET_RECEIPT="$(sudo -n find "$RECEIPT_DIR" -maxdepth 1 -type f -name 'LUNITA_TARGET_RUNTIME_ACCEPTANCE_*.json' -print -quit)"
           IMAGE_DIR="$RUNNER_TEMP/lunita-squashfs"
           mkdir -p "$IMAGE_DIR"
           sudo -n python3.12 scripts/lunita/package_candidate_squashfs_v1.py \
