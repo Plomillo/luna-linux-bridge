@@ -91,6 +91,7 @@ def inspect_candidates(
             continue
         if directory.parent != tmp or directory.is_symlink():
             raise CleanupError(f"Chromium temporary path is not a direct, real /tmp directory: {directory}")
+        directory_stat = directory.lstat()
         if not stat.S_ISDIR(directory_stat.st_mode):
             raise CleanupError(f"Chromium temporary path is not a directory: {directory}")
         if directory_stat.st_uid != expected_uid:
