@@ -320,9 +320,9 @@ def main() -> int:
     subparsers.add_parser("self-test")
     args = parser.parse_args()
     if args.command == "pack":
-        pack_base(args.workspace.resolve(), args.rootfs.resolve(), args.cache_dir.resolve(), args.commit)
+        pack_base(args.workspace.resolve(), Path(os.path.abspath(args.rootfs)), Path(os.path.abspath(args.cache_dir)), args.commit)
     elif args.command == "restore":
-        restore_base(args.workspace.resolve(), args.cache_dir.resolve(), args.rootfs.resolve())
+        restore_base(args.workspace.resolve(), Path(os.path.abspath(args.cache_dir)), Path(os.path.abspath(args.rootfs)))
     else:
         self_test()
     return 0
