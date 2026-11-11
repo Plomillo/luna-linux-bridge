@@ -404,11 +404,18 @@ jobs:
           printf 'FLATPAK_SYSTEM_DIR=%s/var/lib/flatpak\n' "$ROOTFS" >> "$GITHUB_ENV"
           printf 'R_HOME=%s/opt/lunita/instruments/lapiz/R-4.6.1/lib/R\n' "$ROOTFS" >> "$GITHUB_ENV"
           printf 'LUNITA_TARGET_ROOTFS=%s\n' "$ROOTFS" >> "$GITHUB_ENV"
+      - name: Verify pristine Ubuntu rootfs cache archive and receipt before persistent save
+        if: success() && steps.rootfs-base-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo python3.12 scripts/lunita/rootfs_base_cache_v1.py verify \
+            --workspace "$GITHUB_WORKSPACE" \
+            --cache-dir "$RUNNER_TEMP/lunita-rootfs-base-cache"
       - name: Save verified pristine Ubuntu base for later candidates
         id: rootfs-base-cache-save
         if: success() && steps.rootfs-base-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
-        continue-on-error: true
         with:
           path: ${{ runner.temp }}/lunita-rootfs-base-cache
           key: lunita-rootfs-base-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/lunita/build_rootfs_candidate_v1.sh', 'scripts/lunita/brujula.js', 'recovery/lunita-custoszv9/lunita_beta_v1_7.py', 'scripts/lunita/rootfs_base_cache_v1.py') }}
