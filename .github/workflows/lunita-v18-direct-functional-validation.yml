@@ -423,6 +423,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          set -x
           : "${LUNITA_ROOTFS:?The repository rootfs builder did not emit LUNITA_ROOTFS}"
           ROOTFS="$(realpath -e "$LUNITA_ROOTFS")"
           test -f "$ROOTFS/opt/lunita/metadata/ROOTFS_BUILD_RECEIPT.json"
