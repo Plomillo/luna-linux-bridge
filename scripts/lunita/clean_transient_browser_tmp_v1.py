@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Remove only dead, uniquely identified Chromium smoke-test singleton sockets.
+"""Remove only dead Chromium smoke-test singleton sockets and their cookie links.
 
-This is a narrow pre-packaging cleanup. Unknown files, live sockets, symlinks,
-wrong owners, and unexpected directory contents are rejected without mutation.
+Chromium's Linux ProcessSingleton creates a 0700 temporary directory containing
+SingletonSocket and a SingletonCookie symlink to a decimal uint64 token. This
+cleanup removes only that exact, dead-socket shape; all other contents fail
+closed without recursive deletion.
 """
 
 from __future__ import annotations
@@ -21,6 +23,8 @@ from typing import Any
 SCHEMA = "LUNITA_ROOTFS_TRANSIENT_BROWSER_CLEANUP/1.0"
 PREFIX = "org.chromium.Chromium."
 SOCKET_NAME = "SingletonSocket"
+COOKIE_NAME = "SingletonCookie"
+COOKIE_UINT64_MAX = (1 << 64) - 1
 
 
 class CleanupError(RuntimeError):
@@ -44,6 +48,31 @@ def registered_unix_sockets(proc_net_unix: pathlib.Path) -> set[str]:
     return registered
 
 
+def validated_cookie_target(cookie_path: pathlib.Path, *, expected_uid: int) -> tuple[str, os.stat_result]:
+    """Validate Chromium's remote SingletonCookie symlink without following it."""
+    if not cookie_path.is_symlink():
+        raise CleanupError(f"Chromium companion cookie is not a symlink: {cookie_path}")
+    cookie_stat = cookie_path.lstat()
+    if cookie_stat.st_uid != expected_uid:
+        raise CleanupError(
+            f"Chromium companion cookie owner mismatch at {cookie_path}: "
+            f"expected uid {expected_uid}, found {cookie_stat.st_uid}"
+        )
+    try:
+        target = os.readlink(cookie_path)
+    except OSError as exc:
+        raise CleanupError(f"Cannot inspect Chromium companion cookie {cookie_path}: {exc}") from exc
+    if (
+        not target.isascii()
+        or not target.isdigit()
+        or len(target) > 20
+        or str(int(target)) != target
+        or int(target) > COOKIE_UINT64_MAX
+    ):
+        raise CleanupError(f"Chromium companion cookie has an invalid uint64 token: {cookie_path}")
+    return target, cookie_stat
+
+
 def inspect_candidates(
     rootfs: pathlib.Path,
     *,
@@ -62,19 +91,30 @@ def inspect_candidates(
             continue
         if directory.parent != tmp or directory.is_symlink():
             raise CleanupError(f"Chromium temporary path is not a direct, real /tmp directory: {directory}")
-        directory_stat = directory.lstat()
         if not stat.S_ISDIR(directory_stat.st_mode):
             raise CleanupError(f"Chromium temporary path is not a directory: {directory}")
+        if directory_stat.st_uid != expected_uid:
+            raise CleanupError(
+                f"Chromium temporary directory owner mismatch at {directory}: "
+                f"expected uid {expected_uid}, found {directory_stat.st_uid}"
+            )
+        directory_mode = stat.S_IMODE(directory_stat.st_mode)
+        if directory_mode != 0o700:
+            raise CleanupError(
+                f"Chromium temporary directory mode mismatch at {directory}: "
+                f"expected 0o700, found {oct(directory_mode)}"
+            )
         try:
             children = list(directory.iterdir())
         except OSError as exc:
             raise CleanupError(f"Cannot inspect Chromium temporary directory {directory}: {exc}") from exc
-        if len(children) != 1 or children[0].name != SOCKET_NAME:
-            names = sorted(child.name for child in children)
+        names = {child.name for child in children}
+        if names not in ({SOCKET_NAME}, {SOCKET_NAME, COOKIE_NAME}):
             raise CleanupError(
-                f"Refusing to remove non-socket Chromium temp data at {directory}; entries={names!r}"
+                f"Refusing to remove non-canonical Chromium temp data at {directory}; "
+                f"entries={sorted(names)!r}"
             )
-        sock = children[0]
+        sock = directory / SOCKET_NAME
         if sock.is_symlink():
             raise CleanupError(f"Chromium singleton socket path is a symlink: {sock}")
         socket_stat = sock.lstat()
@@ -85,12 +125,23 @@ def inspect_candidates(
                 f"Chromium singleton socket owner mismatch at {sock}: "
                 f"expected uid {expected_uid}, found {socket_stat.st_uid}"
             )
+        cookie_path = directory / COOKIE_NAME if COOKIE_NAME in names else None
+        cookie_target = None
+        cookie_stat = None
+        if cookie_path is not None:
+            cookie_target, cookie_stat = validated_cookie_target(cookie_path, expected_uid=expected_uid)
         guest_socket_path = f"/tmp/{directory.name}/{SOCKET_NAME}"
         if guest_socket_path in registered:
             raise CleanupError(f"Chromium singleton socket is still registered as live: {guest_socket_path}")
         candidates.append({
             "directory": directory,
+            "directory_stat": directory_stat,
+            "directory_mode": directory_mode,
             "socket": sock,
+            "socket_stat": socket_stat,
+            "cookie": cookie_path,
+            "cookie_target": cookie_target,
+            "cookie_stat": cookie_stat,
             "guest_socket_path": guest_socket_path,
             "uid": socket_stat.st_uid,
             "gid": socket_stat.st_gid,
@@ -108,15 +159,55 @@ def cleanup(
     rootfs = pathlib.Path(os.path.abspath(rootfs))
     candidates = inspect_candidates(rootfs, expected_uid=expected_uid, proc_net_unix=proc_net_unix)
     removed: list[dict[str, Any]] = []
-    # Validation is complete before the first unlink; rmdir refuses unexpected new entries.
+    # Validation is complete before the first unlink; no recursive deletion is used.
     for candidate in candidates:
         sock = candidate["socket"]
         directory = candidate["directory"]
-        current = sock.lstat()
-        if not stat.S_ISSOCK(current.st_mode) or current.st_uid != expected_uid:
-            raise CleanupError(f"Chromium singleton socket changed after preflight: {sock}")
-        if directory.is_symlink() or not directory.is_dir():
+        original_dir = candidate["directory_stat"]
+        current_dir = directory.lstat()
+        if (
+            not stat.S_ISDIR(current_dir.st_mode)
+            or current_dir.st_dev != original_dir.st_dev
+            or current_dir.st_ino != original_dir.st_ino
+            or current_dir.st_uid != expected_uid
+            or stat.S_IMODE(current_dir.st_mode) != 0o700
+        ):
             raise CleanupError(f"Chromium temporary directory changed after preflight: {directory}")
+        expected_names = {SOCKET_NAME}
+        if candidate["cookie"] is not None:
+            expected_names.add(COOKIE_NAME)
+        current_names = {item.name for item in directory.iterdir()}
+        if current_names != expected_names:
+            raise CleanupError(
+                f"Chromium temporary directory contents changed after preflight: "
+                f"{directory}; entries={sorted(current_names)!r}"
+            )
+        original_socket = candidate["socket_stat"]
+        current_socket = sock.lstat()
+        if (
+            not stat.S_ISSOCK(current_socket.st_mode)
+            or current_socket.st_uid != expected_uid
+            or current_socket.st_dev != original_socket.st_dev
+            or current_socket.st_ino != original_socket.st_ino
+        ):
+            raise CleanupError(f"Chromium singleton socket changed after preflight: {sock}")
+        if candidate["guest_socket_path"] in registered_unix_sockets(proc_net_unix):
+            raise CleanupError(
+                f"Chromium singleton socket became live after preflight: {candidate['guest_socket_path']}"
+            )
+        cookie_path = candidate["cookie"]
+        if cookie_path is not None:
+            original_cookie = candidate["cookie_stat"]
+            current_cookie = cookie_path.lstat()
+            if (
+                not stat.S_ISLNK(current_cookie.st_mode)
+                or current_cookie.st_uid != expected_uid
+                or current_cookie.st_dev != original_cookie.st_dev
+                or current_cookie.st_ino != original_cookie.st_ino
+                or os.readlink(cookie_path) != candidate["cookie_target"]
+            ):
+                raise CleanupError(f"Chromium companion cookie changed after preflight: {cookie_path}")
+            cookie_path.unlink()
         sock.unlink()
         directory.rmdir()
         removed.append({
@@ -124,6 +215,7 @@ def cleanup(
             "uid": candidate["uid"],
             "gid": candidate["gid"],
             "mode_octal": candidate["mode_octal"],
+            "companion_cookie_symlink_removed": cookie_path is not None,
             "status": "REMOVED_DEAD_TEST_SOCKET",
         })
     return {
@@ -133,7 +225,7 @@ def cleanup(
         "expected_socket_owner_uid": expected_uid,
         "removed_count": len(removed),
         "removed": removed,
-        "policy": "ONLY_DIRECT_ORG_CHROMIUM_DIR_WITH_SINGLE_DEAD_SINGLETONSOCKET;NO_RECURSIVE_DELETE",
+        "policy": "ONLY_DIRECT_0700_ORG_CHROMIUM_DIR_WITH_DEAD_SINGLETONSOCKET_AND_OPTIONAL_NUMERIC_UINT64_COOKIE_SYMLINK;NO_RECURSIVE_DELETE",
         "certification": "NOT_GRANTED",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
     }
@@ -168,6 +260,7 @@ def self_test() -> None:
 
         dead_dir = tmp / f"{PREFIX}dead"
         dead_dir.mkdir()
+        os.chmod(dead_dir, 0o700)
         dead_socket = dead_dir / SOCKET_NAME
         listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         listener.bind(str(dead_socket))
@@ -178,6 +271,7 @@ def self_test() -> None:
 
         extra_dir = tmp / f"{PREFIX}extra"
         extra_dir.mkdir()
+        os.chmod(extra_dir, 0o700)
         extra_socket = extra_dir / SOCKET_NAME
         listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         listener.bind(str(extra_socket))
@@ -194,8 +288,48 @@ def self_test() -> None:
             raise CleanupError("Self-test modified data in a rejected Chromium temp directory")
 
         shutil.rmtree(extra_dir)
+
+        cookie_dir = tmp / f"{PREFIX}cookie"
+        cookie_dir.mkdir()
+        os.chmod(cookie_dir, 0o700)
+        cookie_socket = cookie_dir / SOCKET_NAME
+        listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        listener.bind(str(cookie_socket))
+        listener.close()
+        cookie_link = cookie_dir / COOKIE_NAME
+        cookie_link.symlink_to("18446744073709551615")
+        cookie_result = cleanup(rootfs, expected_uid=owner, proc_net_unix=fake_proc)
+        if (
+            cookie_result["removed_count"] != 1
+            or cookie_dir.exists()
+            or cookie_socket.exists()
+            or cookie_link.exists()
+            or cookie_result["removed"][0]["companion_cookie_symlink_removed"] is not True
+        ):
+            raise CleanupError("Self-test failed to remove the exact dead socket plus Chromium uint64 cookie symlink")
+
+        unsafe_cookie_dir = tmp / f"{PREFIX}unsafe-cookie"
+        unsafe_cookie_dir.mkdir()
+        os.chmod(unsafe_cookie_dir, 0o700)
+        unsafe_cookie_socket = unsafe_cookie_dir / SOCKET_NAME
+        listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        listener.bind(str(unsafe_cookie_socket))
+        listener.close()
+        unsafe_cookie = unsafe_cookie_dir / COOKIE_NAME
+        unsafe_cookie.symlink_to("../../etc/passwd")
+        try:
+            cleanup(rootfs, expected_uid=owner, proc_net_unix=fake_proc)
+        except CleanupError:
+            pass
+        else:
+            raise CleanupError("Self-test failed to reject a non-numeric Chromium companion cookie")
+        if not unsafe_cookie_socket.exists() or not unsafe_cookie.is_symlink():
+            raise CleanupError("Self-test modified a Chromium directory with an invalid companion cookie")
+        shutil.rmtree(unsafe_cookie_dir)
+
         live_dir = tmp / f"{PREFIX}live"
         live_dir.mkdir()
+        os.chmod(live_dir, 0o700)
         live_socket = live_dir / SOCKET_NAME
         listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         listener.bind(str(live_socket))
