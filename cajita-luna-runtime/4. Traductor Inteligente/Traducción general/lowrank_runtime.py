@@ -241,7 +241,7 @@ def smoke_test(text="Hello world.", src_lang="eng", tgt_lang="spa", max_new_toke
     t0 = time.monotonic()
     if not isinstance(text, str) or not text.strip():
         raise ValueError("TRANSLATION_TEXT_REQUIRED")
-    if isinstance(max_new_tokens, bool) or not 1 <= int(max_new_tokens) <= 128:
+    if isinstance(max_new_tokens, bool) or not 1 <= int(max_new_tokens) <= 256:
         raise ValueError("MAX_NEW_TOKENS_OUT_OF_RANGE")
     processor = load_pretrained_with_compressed_tokenizer(ROOT, AutoProcessor, local_files_only=True)
     model = load_candidate()

@@ -1,0 +1,164 @@
+{
+  "active_runtime_mutated": false,
+  "candidate_id": "WHISPER_LARGE_V3_TURBO_FULLRANK_Q5_0",
+  "candidate_integrated": false,
+  "candidate_memory_measurement": {
+    "baseline_method": "MEMORY_CURRENT_MINUS_RECLAIMABLE_FILE_CACHE_FROM_CGROUP_MEMORY_STAT",
+    "cgroup_memory_current_after_bytes": 292360192,
+    "cgroup_memory_events_after": {
+      "high": 0,
+      "low": 0,
+      "max": 3807,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0,
+      "sock_throttled": 0
+    },
+    "cgroup_memory_events_before": {
+      "high": 0,
+      "low": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0,
+      "sock_throttled": 0
+    },
+    "cgroup_memory_events_delta": {
+      "high": 0,
+      "low": 0,
+      "max": 3807,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0,
+      "sock_throttled": 0
+    },
+    "cgroup_memory_peak_diagnostic_bytes": 1073741824,
+    "cpu_limit_cores": 1,
+    "max_native_process_peak_rss_bytes": 759226368,
+    "measurement_method": "GNU_TIME_PER_NATIVE_WHISPER_CLI_PROCESS_PLUS_CGROUP_OOM_DELTA",
+    "memory_limit_bytes": 1073741824,
+    "memory_reclaim_status": "UNAVAILABLE_BEST_EFFORT",
+    "oom_events_delta": 0,
+    "oom_kill_events_delta": 0,
+    "process_measurements": {
+      "real-jfk": {
+        "memory_current_before_bytes": 322068480,
+        "native_process_peak_rss_bytes": 759226368,
+        "reclaimable_file_cache_bytes": 297721856,
+        "unreclaimable_baseline_bytes": 24346624
+      },
+      "synthetic-hello-world": {
+        "memory_current_before_bytes": 901611520,
+        "native_process_peak_rss_bytes": 757858304,
+        "reclaimable_file_cache_bytes": 861818880,
+        "unreclaimable_baseline_bytes": 39792640
+      }
+    },
+    "swap_limit_bytes": 0
+  },
+  "candidate_resource_policy": {
+    "cpu_limit_cores": 1,
+    "memory_limit_bytes": 1073741824,
+    "status": "PASS_EXACT_CGROUP_V2_LIMITS",
+    "swap_limit_bytes": 0
+  },
+  "candidate_weight": {
+    "bytes": 574041195,
+    "path": "quantized/q5_0/ggml-large-v3-turbo-q5_0.bin",
+    "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2"
+  },
+  "child_peak_rss_bytes": 759226368,
+  "dataset_fixture": {
+    "provider_api_used": false,
+    "source_path": "samples/jfk.wav",
+    "source_repository": "https://github.com/ggml-org/whisper.cpp",
+    "source_revision": "482279b8a18855ba741d7b88c30fcb3874691f59",
+    "source_type": "PINNED_GIT_COMMIT_ASSET"
+  },
+  "domain_certification": "NOT_GRANTED",
+  "externalization": "REQUIRED_BUT_NOT_IMPLEMENTED",
+  "global_certification": "NOT_GRANTED",
+  "global_release_projection": {
+    "baseline_evidence_commit": "7a73c524ecaef709fd9e6fdacb8edefb74482e0a",
+    "baseline_release_bytes": 371977806,
+    "baseline_whisper_weight_bytes": 10399882,
+    "candidate_weight_bytes": 574041195,
+    "external_asset_required": true,
+    "hard_max_bytes": 490000000,
+    "is_projection_not_final_package_measurement": true,
+    "metadata_reserve_bytes": 1000000,
+    "package_policy": "DO_NOT_PROMOTE_WHEN_OVER_CAP",
+    "projected_release_bytes": 936619119,
+    "projected_size_pass": false
+  },
+  "prepared_fixture_manifest_sha256": "2740983c8513ffeb6b03537496d5471423e2689d14a741df4e4ada0dc9fcca87",
+  "promotion_performed": false,
+  "quantization": "q5_0",
+  "representation": "FULL_RANK_GGML_BLOCKWISE_INTEGER_QUANTIZATION",
+  "schema": "LOUKSNAPG_WHISPER_FULLRANK_CANDIDATE_EVALUATION/4.0",
+  "source_teacher_mutated": false,
+  "status": "PASS_FULLRANK_CANDIDATE_TWO_TASKS_EXTERNAL_ASSET_REQUIRED",
+  "task_results": [
+    {
+      "diagnostic_output_tail": "read_audio_data: reading audio data from '/__w/_temp/whisper-fullrank-evaluation/work/fixtures/synthetic-hello-world.wav' ...\nread_audio_data: trying to decode with miniaudio\n\n Hello world.output_txt: saving output to '/__w/_temp/whisper-fullrank-evaluation/work/synthetic-hello-world/transcript.txt'\n",
+      "execution_status": "PASS_EXECUTION",
+      "exit_code": 0,
+      "native_process_peak_rss_bytes": 757858304,
+      "output_file_bytes": 13,
+      "output_sha256": "aa3ec16e6acc809d8b2818662276256abfd2f1b441cb51574933f3d4bd115d11",
+      "quality_check": {
+        "expected_words": [
+          "hello",
+          "world"
+        ],
+        "kind": "SYNTHETIC_KNOWN_ANSWER",
+        "missing_words": [],
+        "status": "PASS"
+      },
+      "resident_baseline_bytes": 39792640,
+      "task_id": "synthetic-hello-world",
+      "transcription_text": "Hello world."
+    },
+    {
+      "diagnostic_output_tail": "read_audio_data: reading audio data from '/__w/_temp/whisper-fullrank/artifact/fixtures/jfk.wav' ...\nread_audio_data: trying to decode with miniaudio\n\n And so, my fellow Americans, ask not what your country can do for you, ask what you can do for your country.output_txt: saving output to '/__w/_temp/whisper-fullrank-evaluation/work/real-jfk/transcript.txt'\n",
+      "execution_status": "PASS_EXECUTION",
+      "exit_code": 0,
+      "native_process_peak_rss_bytes": 759226368,
+      "output_file_bytes": 109,
+      "output_sha256": "37d003a932256f11d07e00d0c1478443140ea5e87d817b0f8bc577c1d2aa2e1b",
+      "quality_check": {
+        "audio_id": "jfk",
+        "dataset_repo": "ggml-org/whisper.cpp",
+        "dataset_revision": "482279b8a18855ba741d7b88c30fcb3874691f59",
+        "kind": "PINNED_UPSTREAM_RECORDED_SPEECH",
+        "reference_word_count": 22,
+        "status": "PASS",
+        "wer": 0.0,
+        "wer_limit": 0.25
+      },
+      "resident_baseline_bytes": 24346624,
+      "task_id": "real-jfk",
+      "transcription_text": "And so, my fellow Americans, ask not what your country can do for you, ask what you can do for your country."
+    }
+  ],
+  "teacher_source": {
+    "bytes": 1617941637,
+    "download_record": {
+      "bytes": 1617941637,
+      "hub_api_used": false,
+      "provider": "OPENAI_OFFICIAL_AZURE_BLOB",
+      "release_revision": "OPENAI_OFFICIAL_AZURE_RELEASE",
+      "sha256": "aff26ae408abcba5fbf8813c21e62b0941638c5f6eebfb145be0c9839262a19a",
+      "source_model_id": "openai/whisper-large-v3-turbo",
+      "source_url": "https://openaipublic.azureedge.net/main/whisper/models/aff26ae408abcba5fbf8813c21e62b0941638c5f6eebfb145be0c9839262a19a/large-v3-turbo.pt",
+      "verification": "PASS_OFFICIAL_RELEASE_SHA256"
+    },
+    "hub_api_used": false,
+    "model_id": "openai/whisper-large-v3-turbo",
+    "model_type": "whisper-large-v3-turbo",
+    "provider": "OPENAI_OFFICIAL_AZURE_BLOB",
+    "release_revision": "OPENAI_OFFICIAL_AZURE_RELEASE",
+    "sha256": "aff26ae408abcba5fbf8813c21e62b0941638c5f6eebfb145be0c9839262a19a",
+    "source_url": "https://openaipublic.azureedge.net/main/whisper/models/aff26ae408abcba5fbf8813c21e62b0941638c5f6eebfb145be0c9839262a19a/large-v3-turbo.pt"
+  }
+}

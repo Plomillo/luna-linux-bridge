@@ -4,19 +4,22 @@ from __future__ import annotations
 import argparse, datetime as dt, hashlib, json, os, platform, re, resource, subprocess, sys, time
 from pathlib import Path
 from cajita_tokenizer_materializer import MANIFEST_NAME as TOKENIZER_MANIFEST_NAME, TokenizerMaterializationError, tokenizer_tree_rows
-from cajita_resource_limits import candidate_policy, child_preexec_fn
+from cajita_resource_limits import (
+ candidate_policy, verify_cgroup_budget, ResourcePolicyError,
+ CANDIDATE_MEMORY_BYTES, CANDIDATE_CPU_COUNT,
+)
 
 REQUEST_SCHEMA = "CAJITA_TASK_REQUEST/1.0"
 RESULT_SCHEMA = "CAJITA_TASK_RESULT/1.0"
 MANIFEST_SHA = "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d"
 CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023"
-MAX_TEXT, MAX_AUDIO, MAX_IMAGE, MAX_TOKENS, MAX_DOCLING_TOKENS, MAX_TIMEOUT = 16384, 32*1024*1024, 24*1024*1024, 128, 256, 1800
+MAX_TEXT, MAX_AUDIO, MAX_IMAGE, MAX_TOKENS, MAX_DOCLING_TOKENS, MAX_TIMEOUT = 16384, 32*1024*1024, 24*1024*1024, 256, 256, 1800
 
 ADAPTERS = {
  "D01_CEREBRO": {"weight":"1. Cerebro/model.safetensors","sha":"e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0","bytes":40489120,"module":"1. Cerebro","target":"D01_CEREBRO_ROOT","entry":"1. Cerebro/cerebro_180mb_runtime.py","op":"generate_text","id":"CAJITA_CEREBRO_TEXT_GENERATION/1.0","tokens":8},
  "D03_TRANSCRIPCION": {"weight":"3. Transcripción/model.safetensors","sha":"67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f","bytes":10399882,"module":"3. Transcripción","target":"D03_TRANSCRIPCION_ROOT","entry":"3. Transcripción/lowrank_runtime.py","op":"transcribe_audio","id":"CAJITA_WHISPER_TRANSCRIPTION/1.0","tokens":8},
  "D04_TRADUCTOR_INTELIGENTE": {"weight":"4. Traductor Inteligente/Traducción general/model.safetensors","sha":"630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f","bytes":11720882,"module":"4. Traductor Inteligente/Traducción general","target":"D04_TRADUCCION_GENERAL","entry":"4. Traductor Inteligente/Traducción general/lowrank_runtime.py","op":"translate_text","id":"CAJITA_SEAMLESS_TRANSLATION/1.0","tokens":8},
- "D05_INTELIGENCIA_DOCUMENTAL": {"weight":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin","sha":"4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88","bytes":13483380,"module":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate","target":"D05_DOCLING","entry":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py","op":"extract_document_image","id":"CAJITA_DOCLING_IMAGE_EXTRACTION/1.0","tokens":24},
+ "D05_INTELIGENCIA_DOCUMENTAL": {"weight":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin","sha":"4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88","bytes":13483380,"module":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate","target":"D05_DOCLING","entry":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py","op":"extract_document_image","id":"CAJITA_DOCLING_IMAGE_EXTRACTION/1.0","tokens":256},
  "D06_SISTEMA_INTELIGENTE": {"weight":"6. Sistema Inteligente/Análisis Avanzado/model.safetensors","sha":"01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56","bytes":14956240,"module":"6. Sistema Inteligente/Análisis Avanzado","target":"D06_ANALISIS_AVANZADO","entry":"6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py","op":"analyze_reasoning","id":"CAJITA_QWEN3_REASONING/1.0","tokens":8},
 }
 PLAN_ONLY={"domain":"D02_ORQUESTACION","op":"route_plan","id":"CAJITA_CANONICAL_ROUTE_PLANNER/PLAN_ONLY"}
@@ -80,7 +83,7 @@ def normalize(record,root,timeout_cap=600):
   if data["src_lang"]==data["tgt_lang"]: raise AdapterError("SOURCE_AND_TARGET_LANGUAGE_IDENTICAL")
  elif domain=="D05_INTELIGENCIA_DOCUMENTAL":
   p=input_file(payload.get("image_path"),root,"image_path",MAX_IMAGE,{".png",".jpg",".jpeg",".webp",".bmp"})
-  data["image_path"]=str(p);data["prompt"]=required_text(payload.get("prompt","Extract visible text and fields."),"prompt")
+  data["image_path"]=str(p);data["prompt"]=required_text(payload.get("prompt","Convert this page to docling."),"prompt")
   files.append({"field":"image_path","bytes":p.stat().st_size,"sha256":digest_file(p)})
  else:data["prompt"]=required_text(payload.get("prompt"),"prompt")
  tokens=limits.get("max_new_tokens",spec["tokens"])
@@ -193,11 +196,29 @@ def execute_task(record,root,timeout_cap=600):
   if entry.is_symlink() or not entry.is_file():raise AdapterError("TASK_ADAPTER_ENTRYPOINT_MISSING")
   env={k:os.environ[k] for k in ("PATH","HOME","LANG","LC_ALL","TMPDIR","SYSTEMROOT","WINDIR","LD_LIBRARY_PATH") if k in os.environ}
   env.update({"OMP_NUM_THREADS":"1","OPENBLAS_NUM_THREADS":"1","MKL_NUM_THREADS":"1","NUMEXPR_NUM_THREADS":"1","TOKENIZERS_PARALLELISM":"false","HF_HUB_OFFLINE":"1","TRANSFORMERS_OFFLINE":"1","PYTHONNOUSERSITE":"1"})
+  if row["domain_id"]=="D05_INTELIGENCIA_DOCUMENTAL":
+   side=os.environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE","192").strip()
+   if side not in ("192","256","384","512"): raise AdapterError("DOCLING_IMAGE_SIDE_OUT_OF_RANGE")
+   env["LOUKSNAPG2_DOCLING_IMAGE_SIDE"]=side
   child=dict(row["input"]);child.update({"operation":row["operation"],"max_new_tokens":row["limits"]["max_new_tokens"]})
   runtime_resource_policy=candidate_policy()
+  # The enclosing GitHub Actions Docker cgroup already constrains the parent and
+  # every descendant process. Verify that aggregate limit before spawning; do not
+  # re-run sched_setaffinity from a Python preexec_fn, which hosted-runner container
+  # security profiles may reject from a forked child process.
+  try:
+   cgroup_evidence=verify_cgroup_budget(CANDIDATE_MEMORY_BYTES,CANDIDATE_CPU_COUNT)
+  except ResourcePolicyError as exc:
+   out.update({"status":"FAIL_RESOURCE_POLICY","reason":str(exc)[:240],"integrity":integrity,
+               "resource_policy":runtime_resource_policy,"elapsed_seconds":round(time.monotonic()-started,3)})
+   return out,4
+  runtime_resource_policy={**runtime_resource_policy,
+      "observed_cgroup":cgroup_evidence,
+      "child_process_limit_inheritance":"SAME_ENFORCED_PARENT_CGROUP",
+      "child_preexec_hook":"NOT_USED"}
   try:p=subprocess.run([sys.executable,str(entry),"--task-json-stdin"],input=json.dumps(child,ensure_ascii=False,sort_keys=True),text=True,
        stdout=subprocess.PIPE,stderr=subprocess.PIPE,cwd=str(root),env=env,timeout=row["limits"]["timeout_seconds"],check=False,shell=False,
-       preexec_fn=child_preexec_fn(),start_new_session=True)
+       start_new_session=True)
   except subprocess.TimeoutExpired as exc:
    out.update({"status":"FAIL_TIMEOUT","reason":"TASK_EXECUTION_TIMEOUT","integrity":integrity,"peak_rss_bytes":peak_child_rss(),"resource_policy":runtime_resource_policy,"elapsed_seconds":round(time.monotonic()-started,3)})
    # Bound partial child output and expose it only for synthetic CI diagnostics.

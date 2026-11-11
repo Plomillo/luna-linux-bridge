@@ -194,7 +194,7 @@ def build_model():
 def smoke_test(generate: bool = False, prompt: str = "Test", max_new_tokens: int = 1):
     if not isinstance(prompt, str) or not prompt.strip():
         raise ValueError("PROMPT_REQUIRED")
-    if isinstance(max_new_tokens, bool) or not 1 <= int(max_new_tokens) <= 128:
+    if isinstance(max_new_tokens, bool) or not 1 <= int(max_new_tokens) <= 256:
         raise ValueError("MAX_NEW_TOKENS_OUT_OF_RANGE")
     started = time.monotonic()
     tokenizer = load_pretrained_with_compressed_tokenizer(ROOT, AutoTokenizer, local_files_only=True)

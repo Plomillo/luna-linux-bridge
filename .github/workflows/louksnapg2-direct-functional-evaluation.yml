@@ -5,6 +5,7 @@ on:
     branches:
       - louksnapg2/puac2-alternative-20261029
       - repair/louksnapg2-foma-sense-xml-20261102
+      - repair/louksnapg2-operational-engines-20261103
     paths:
       - ".github/workflows/louksnapg2-direct-functional-evaluation.yml"
       - "tools/louksnapg2_functional_eval.py"
@@ -12,6 +13,7 @@ on:
       - "tools/louksnapg2_q4_precision_probe.py"
       - "tools/louksnapg2_model_identity_evidence.py"
       - "tools/louksnapg2_refresh_module_integrity.py"
+      - "tools/louksnapg2_whisper_build.py"
       - "cajita-luna-runtime/LOUKSNAPG2_RUNTIME/**"
       - "cajita-luna-runtime/cajita_task_adapters.py"
       - "cajita-luna-runtime/cajita_resource_limits.py"
@@ -29,12 +31,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: louksnapg2-direct-functional-evaluation-${{ github.ref }}-${{ github.sha }}
-  cancel-in-progress: false
+  group: louksnapg2-direct-functional-evaluation-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   evaluate-real-local-models:
-    if: (github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' || github.ref == 'refs/heads/repair/louksnapg2-foma-sense-xml-20261102')
+    if: (github.ref == 'refs/heads/louksnapg2/puac2-alternative-20261029' || github.ref == 'refs/heads/repair/louksnapg2-foma-sense-xml-20261102' || github.ref == 'refs/heads/repair/louksnapg2-operational-engines-20261103')
     runs-on: ubuntu-24.04
     container:
       image: ubuntu:24.04
@@ -74,6 +76,28 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
+          # Non-cone sparse paths keep the functional lane bounded to the
+          # five exact source-bound model trees, the Foma source/runtime,
+          # and the runtime support files used by preflight and dispatch.
+          sparse-checkout: |
+            /cajita-luna-runtime/LOUKSNAPG2_RUNTIME/**
+            /cajita-luna-runtime/1. Cerebro/**
+            /cajita-luna-runtime/3. Transcripción/**
+            /cajita-luna-runtime/4. Traductor Inteligente/Traducción general/**
+            /cajita-luna-runtime/4. Traductor Inteligente/Traducción de lenguas antiguas/foma-master/foma-master/foma/**
+            /cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/**
+            /cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/**
+            /cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json
+            /cajita-luna-runtime/CAJITA_COMPRESSED_TOKENIZER_MANIFEST.json
+            /cajita-luna-runtime/REQUIREMENTS.runtime.lock
+            /cajita-luna-runtime/cajita_task_adapters.py
+            /cajita-luna-runtime/cajita_tokenizer_materializer.py
+            /cajita-luna-runtime/cajita_resource_limits.py
+            /cajita-luna-runtime/cajita_weight_materializer.py
+            /cajita-luna-runtime/command_subdomain_routing.json
+            /tools/**
+            /tests/**
+          sparse-checkout-cone-mode: false
           lfs: false
           persist-credentials: false
 
@@ -117,8 +141,8 @@ jobs:
         run: |
           set -Eeuo pipefail
           apt-get update
-          apt-get install -y --no-install-recommends espeak-ng build-essential flex bison libreadline-dev zlib1g-dev
-          for tool in make cc flex bison; do command -v "$tool"; done
+          apt-get install -y --no-install-recommends espeak-ng fonts-dejavu-core build-essential cmake flex bison libreadline-dev zlib1g-dev apertium apertium-eng-spa apertium-fr-es tesseract-ocr tesseract-ocr-eng
+          for tool in make cc flex bison cmake apertium tesseract; do command -v "$tool"; done
 
       - name: Install only the committed CPU runtime lock
         shell: bash
@@ -139,23 +163,41 @@ jobs:
           from pathlib import Path
           from PIL import Image, ImageDraw, ImageFont
           path = Path(__import__("os").environ["RUNNER_TEMP"]) / "louksnapg2-invoice.png"
-          image = Image.new("RGB", (1400, 900), "white")
+          image = Image.new("RGB", (1800, 1200), "white")
           draw = ImageDraw.Draw(image)
-          # Use large, anti-aliased, high-contrast text. The previous default
-          # bitmap font was too small for a 1400x900 document and could make a
-          # model failure indistinguishable from a fixture legibility failure.
-          title_font = ImageFont.load_default(size=84)
-          body_font = ImageFont.load_default(size=64)
-          draw.text((110, 90), "INVOICE", fill=(0, 0, 0), font=title_font, stroke_width=1)
-          draw.line((100, 215, 1300, 215), fill=(0, 0, 0), width=5)
-          draw.text((110, 300), "Invoice Number: 4821", fill=(0, 0, 0), font=body_font, stroke_width=1)
-          draw.text((110, 470), "Total: 37.50", fill=(0, 0, 0), font=body_font, stroke_width=1)
-          image.save(path, format="PNG", optimize=False)
+          font_path = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
+          if not font_path.is_file():
+              raise SystemExit("DEJAVU_SANS_BOLD_FONT_MISSING")
+          title_font = ImageFont.truetype(str(font_path), size=112)
+          body_font = ImageFont.truetype(str(font_path), size=88)
+          draw.text((150, 140), "INVOICE 4821", fill=(0, 0, 0), font=title_font)
+          draw.line((140, 360, 1660, 360), fill=(0, 0, 0), width=6)
+          draw.text((150, 520), "TOTAL 37.50", fill=(0, 0, 0), font=body_font)
+          image.save(path, format="PNG", optimize=False, dpi=(300, 300))
           assert path.is_file() and path.stat().st_size > 0
           print("INVOICE_FIXTURE_SHA256_READY")
           PY
           test -s "$RUNNER_TEMP/louksnapg2-audio-one.wav"
           test -s "$RUNNER_TEMP/louksnapg2-audio-two.wav"
+
+      - name: Provision verified Whisper.cpp tiny auxiliary ASR runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B tools/louksnapg2_whisper_build.py --runtime-root cajita-luna-runtime --work-dir "$RUNNER_TEMP/louksnapg2-whisper-build" | tee out/louksnapg2-direct-functional/WHISPER_AUXILIARY_ASSETS.json
+
+      - name: Verify Apertium, Tesseract and Whisper auxiliary executables
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          tesseract --version | head -n 1
+          apertium -V
+          printf 'The meeting starts at noon.\\n' | apertium eng-spa | tee "$RUNNER_TEMP/apertium-eng-spa.txt"
+          grep -qi 'reunión\|reunion' "$RUNNER_TEMP/apertium-eng-spa.txt"
+          printf 'Le livre est sur la table.\\n' | apertium fra-spa | apertium spa-eng | tee "$RUNNER_TEMP/apertium-fra-eng.txt"
+          grep -qi 'book' "$RUNNER_TEMP/apertium-fra-eng.txt"
+          test -s cajita-luna-runtime/LOUKSNAPG2_RUNTIME/auxiliary_models/ggml-tiny.bin
+          test -x cajita-luna-runtime/LOUKSNAPG2_RUNTIME/auxiliary_bin/linux-x86_64/whisper-cli
 
       - name: Refresh Docling derived module-tree metadata without modifying its source weights
         shell: bash

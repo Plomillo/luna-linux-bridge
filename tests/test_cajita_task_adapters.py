@@ -9,13 +9,14 @@ def req(domain="D01_CEREBRO",op="generate_text",**payload):
     return {"schema":adapters.REQUEST_SCHEMA,"task_id":"unit-task-001","domain_id":domain,"operation":op,
             "input":payload,"limits":{"timeout_seconds":30,"max_new_tokens":2}}
 class AdapterTests(unittest.TestCase):
-    def test_docling_e2e_profile_is_bounded_to_single_256px_view(self):
+    def test_docling_e2e_profile_uses_single_bounded_256px_view(self):
         source=RUNTIME/"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py"
         text=source.read_text(encoding="utf-8")
         self.assertIn("image_processor.do_image_splitting=False",text)
-        self.assertIn("image_side=256",text)
+        self.assertIn('image_side=int(__import__("os").environ.get("LOUKSNAPG2_DOCLING_IMAGE_SIDE", "256"))',text)
         self.assertIn('image_processor.size={"longest_edge":image_side}',text)
         self.assertIn('image_processor.max_image_size={"longest_edge":image_side}',text)
+        self.assertIn('DOCLING_PROCESSOR_EXCEEDED_BOUNDED_IMAGE_SIDE',text)
         self.assertIn("not a quality-equivalence claim",text)
         self.assertIn("def prepare_bounded_square_image(image, side):",text)
         self.assertIn("image=prepare_bounded_square_image(image, image_side)",text)
@@ -25,7 +26,20 @@ class AdapterTests(unittest.TestCase):
         harness=Path(__file__).resolve().parents[1]/"tools"/"cajita_task_e2e.py"
         e2e=harness.read_text(encoding="utf-8")
         self.assertIn('"task_id":"e2e-docling-image-extraction"',e2e)
-        self.assertIn('"max_new_tokens":8',e2e)
+        self.assertIn('"max_new_tokens":128',e2e)
+        self.assertIn('"prompt":"Convert this page to docling."',e2e)
+
+    def test_docling_module_tree_integrity_descriptor_has_required_shape(self):
+        module = RUNTIME / "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate"
+        descriptor = json.loads((module / "CAJITA_MODULE.json").read_text(encoding="utf-8"))
+        integrity = descriptor["tree_integrity"]
+        self.assertEqual(
+            set(integrity),
+            {"file_count_excluding_module_descriptors", "bytes_excluding_module_descriptors", "sha256"},
+        )
+        self.assertGreater(integrity["file_count_excluding_module_descriptors"], 0)
+        self.assertGreater(integrity["bytes_excluding_module_descriptors"], 0)
+        self.assertRegex(integrity["sha256"], r"^[0-9a-f]{64}$")
 
     def test_five_model_contracts_and_plan_only_orchestration(self):
         report=adapters.registry_report()
@@ -56,7 +70,7 @@ class AdapterTests(unittest.TestCase):
                 with self.assertRaisesRegex(adapters.AdapterError,pattern):adapters.normalize(row,RUNTIME)
     def test_input_and_domain_specific_token_limits(self):
         with self.assertRaisesRegex(adapters.AdapterError,"INPUT_TEXT_REQUIRED"):adapters.normalize(req(prompt=" "),RUNTIME)
-        row=req(prompt="Hello");row["limits"]["max_new_tokens"]=129
+        row=req(prompt="Hello");row["limits"]["max_new_tokens"]=257
         with self.assertRaisesRegex(adapters.AdapterError,"MAX_NEW_TOKENS_OUT_OF_RANGE"):adapters.normalize(row,RUNTIME)
         with tempfile.TemporaryDirectory() as td:
             image=Path(td)/"invoice.png";image.write_bytes(b"fixture image")
@@ -67,6 +81,28 @@ class AdapterTests(unittest.TestCase):
             docling["limits"]["max_new_tokens"]=257
             with self.assertRaisesRegex(adapters.AdapterError,"MAX_NEW_TOKENS_OUT_OF_RANGE"):
                 adapters.normalize(docling,RUNTIME)
+    def test_all_five_model_adapters_accept_256_token_budget_and_reject_257(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            audio = root / "audio.wav"
+            image = root / "image.png"
+            audio.write_bytes(b"synthetic audio fixture")
+            image.write_bytes(b"synthetic image fixture")
+            records = [
+                req("D01_CEREBRO", "generate_text", prompt="Answer briefly."),
+                req("D03_TRANSCRIPCION", "transcribe_audio", audio_path=str(audio)),
+                req("D04_TRADUCTOR_INTELIGENTE", "translate_text", text="Hello.", src_lang="eng", tgt_lang="spa"),
+                req("D05_INTELIGENCIA_DOCUMENTAL", "extract_document_image", image_path=str(image), prompt="Convert this page to docling."),
+                req("D06_SISTEMA_INTELIGENTE", "analyze_reasoning", prompt="What is 2 + 2?"),
+            ]
+            for record in records:
+                record["limits"]["max_new_tokens"] = 256
+                normalized = adapters.normalize(record, RUNTIME)
+                self.assertEqual(normalized["limits"]["max_new_tokens"], 256, record["domain_id"])
+                record["limits"]["max_new_tokens"] = 257
+                with self.assertRaisesRegex(adapters.AdapterError, "MAX_NEW_TOKENS_OUT_OF_RANGE"):
+                    adapters.normalize(record, RUNTIME)
+
     def test_translation_language_normalization_and_same_language_guard(self):
         row=adapters.normalize(req("D04_TRADUCTOR_INTELIGENTE","translate_text",text="Hi",src_lang="en",tgt_lang="es"),RUNTIME)
         self.assertEqual(row["input"]["src_lang"],"eng");self.assertEqual(row["input"]["tgt_lang"],"spa")
@@ -90,7 +126,9 @@ class AdapterTests(unittest.TestCase):
         integrity={"target_id":"D01_CEREBRO_ROOT","module_tree_sha256":"a"*64,"module_file_count":1,"module_bytes":10,
             "weight_manifest_sha256":"b"*64,"weight_path":"weight","weight_bytes":1,"weight_sha256":"c"*64}
         with patch.dict(adapters.os.environ, {"LD_LIBRARY_PATH": "/test/lib"}, clear=False):
-            with patch.object(adapters,"verify_integrity",return_value=integrity),patch.object(adapters.subprocess,"run",return_value=completed) as run:
+            with patch.object(adapters,"verify_integrity",return_value=integrity), \
+             patch.object(adapters,"verify_cgroup_budget",return_value={"memory_limit_bytes":1024**3,"cpu_limit_cores":1.0}), \
+             patch.object(adapters.subprocess,"run",return_value=completed) as run:
                 result,code=adapters.execute_task(row,RUNTIME,60)
         self.assertEqual(code,0);self.assertEqual(result["status"],"PASS_FUNCTIONAL_EXECUTION")
         self.assertEqual(result["target_id"],"D01_CEREBRO_ROOT")
@@ -98,11 +136,25 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(run.call_args.kwargs["env"]["HF_HUB_OFFLINE"],"1")
         self.assertEqual(run.call_args.kwargs["env"]["LD_LIBRARY_PATH"], "/test/lib")
         self.assertEqual(run.call_args.kwargs["start_new_session"], True)
-        self.assertTrue(callable(run.call_args.kwargs["preexec_fn"]))
+        self.assertNotIn("preexec_fn",run.call_args.kwargs)
         self.assertEqual(result["resource_policy"]["memory_limit_bytes"], 1024**3)
+        self.assertEqual(result["resource_policy"]["child_process_limit_inheritance"], "SAME_ENFORCED_PARENT_CGROUP")
         self.assertEqual(result["resource_policy"]["cpu_count"], 1)
         self.assertNotIn("PRIVATE_PROMPT_MUST_NOT_APPEAR",json.dumps(result))
         self.assertEqual(result["certification"],"NOT_GRANTED")
+    def test_execution_fails_closed_when_parent_cgroup_does_not_meet_budget(self):
+        row=req(prompt="A bounded task.")
+        integrity={"target_id":"D01_CEREBRO_ROOT","module_tree_sha256":"a"*64,"module_file_count":1,"module_bytes":10,
+            "weight_manifest_sha256":"b"*64,"weight_path":"weight","weight_bytes":1,"weight_sha256":"c"*64}
+        with patch.object(adapters,"verify_integrity",return_value=integrity), \
+             patch.object(adapters,"verify_cgroup_budget",side_effect=adapters.ResourcePolicyError("CGROUP_MEMORY_BUDGET_MISMATCH")), \
+             patch.object(adapters.subprocess,"run") as run:
+            result,code=adapters.execute_task(row,RUNTIME,60)
+        self.assertEqual(code,4)
+        self.assertEqual(result["status"],"FAIL_RESOURCE_POLICY")
+        self.assertIn("CGROUP_MEMORY_BUDGET_MISMATCH",result["reason"])
+        run.assert_not_called()
+
     def test_orchestration_never_executes_plan(self):
         result,code=adapters.execute_task(req("D02_ORQUESTACION","route_plan",request_text="transcribe audio"),RUNTIME,60)
         self.assertEqual(code,3);self.assertIn(result["status"],{"PLAN_ONLY_BLOCKED","PLAN_READY_NOT_EXECUTED"})
