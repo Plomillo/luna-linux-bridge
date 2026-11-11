@@ -419,6 +419,17 @@ jobs:
         with:
           path: ${{ runner.temp }}/lunita-rootfs-base-cache
           key: lunita-rootfs-base-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/lunita/build_rootfs_candidate_v1.sh', 'scripts/lunita/brujula.js', 'recovery/lunita-custoszv9/lunita_beta_v1_7.py', 'scripts/lunita/rootfs_base_cache_v1.py') }}
+      - name: Ensure host Flatpak client is available for independent JASP validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v flatpak >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends flatpak
+          fi
+          command -v flatpak
+          flatpak --version
+
       - name: Verify the actual candidate rootfs and target prerequisites
         shell: bash
         run: |
