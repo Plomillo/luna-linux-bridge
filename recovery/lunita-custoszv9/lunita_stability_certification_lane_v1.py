@@ -48,6 +48,15 @@ CERTIFICATION_PROFILE = os.environ.get("LUNITA_CERTIFICATION_PROFILE", "LEGACY_V
 CANDIDATE_MANIFEST = pathlib.Path(os.environ.get(
     "LUNITA_CANDIDATE_MANIFEST", str(ROOT.parent.parent / "LUNITA_V1_8_CANDIDATE_FREEZE.json")
 )).expanduser()
+SQUASHFS_IMAGE = pathlib.Path(os.environ.get(
+    "LUNITA_SQUASHFS_IMAGE", str(CANDIDATE / "LUNITA.squashfs")
+)).expanduser()
+SQUASHFS_CHECKSUM = pathlib.Path(os.environ.get(
+    "LUNITA_SQUASHFS_CHECKSUM", str(SQUASHFS_IMAGE.with_name(SQUASHFS_IMAGE.name + ".sha256"))
+)).expanduser()
+SQUASHFS_PACKAGE_RECEIPT = pathlib.Path(os.environ.get(
+    "LUNITA_SQUASHFS_PACKAGE_RECEIPT", str(SQUASHFS_IMAGE.with_name("LUNITA_SQUASHFS_PACKAGE_RECEIPT.json"))
+)).expanduser()
 
 POLL_SECONDS = 60
 RUNNING_CAJITA_STAGES = {
@@ -841,6 +850,69 @@ def direct_candidate_manifest_identity() -> dict:
             "candidate_id": row.get("candidate_id"), "version": row.get("version")}
 
 
+def direct_candidate_squashfs_identity() -> dict:
+    """Bind the independent lane to the exact packaged image and frozen manifest."""
+    manifest = direct_candidate_manifest_identity()
+    if manifest.get("status") != "PASS":
+        return {"status": "BLOCKED", "reason": "FROZEN_MANIFEST_INVALID"}
+    for path, label in (
+        (SQUASHFS_IMAGE, "SquashFS image"),
+        (SQUASHFS_CHECKSUM, "SquashFS checksum"),
+        (SQUASHFS_PACKAGE_RECEIPT, "SquashFS package receipt"),
+    ):
+        if path.is_symlink() or not path.is_file():
+            return {"status": "BLOCKED", "reason": f"{label} missing or unsafe"}
+    try:
+        image_sha = sha_file(SQUASHFS_IMAGE)
+        image_bytes = SQUASHFS_IMAGE.stat().st_size
+        checksum_sha = sha_file(SQUASHFS_CHECKSUM)
+        checksum_text = SQUASHFS_CHECKSUM.read_text(encoding="ascii").strip()
+        if image_bytes <= 0 or checksum_text != f"{image_sha}  {SQUASHFS_IMAGE.name}":
+            return {"status": "BLOCKED", "reason": "IMAGE_CHECKSUM_MISMATCH"}
+        package = load_json(SQUASHFS_PACKAGE_RECEIPT, {}) or {}
+        package_sha = sha_file(SQUASHFS_PACKAGE_RECEIPT)
+        if (
+            package.get("schema") != "LUNITA_SQUASHFS_PACKAGE_RECEIPT/1.0"
+            or package.get("status") != "PASS_SQUASHFS_PACKAGE_AND_ROUNDTRIP_NOT_CERTIFIED"
+            or package.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1"
+            or package.get("version") != "1.8.0"
+            or package.get("image_name") != SQUASHFS_IMAGE.name
+            or package.get("image_sha256") != image_sha
+            or package.get("image_bytes") != image_bytes
+            or package.get("roundtrip_manifest_match") is not True
+            or package.get("source_rootfs_unchanged") is not True
+            or package.get("mksquashfs") != "PASS"
+            or package.get("unsquashfs_superblock") != "PASS"
+            or package.get("unsquashfs_roundtrip") != "PASS"
+        ):
+            return {"status": "BLOCKED", "reason": "PACKAGE_RECEIPT_IMAGE_BINDING_MISMATCH"}
+        target = latest_target_runtime_acceptance()
+        target_path = pathlib.Path(target.get("receipt_path", "")) if target.get("receipt_path") else None
+        if (
+            target.get("status") != "PASS_TARGET_RUNTIME_ACCEPTANCE"
+            or not target_path or target_path.is_symlink() or not target_path.is_file()
+            or target.get("receipt_sha256") != sha_file(target_path)
+            or package.get("target_runtime_receipt_path") != str(target_path)
+            or package.get("target_runtime_receipt_sha256") != target.get("receipt_sha256")
+            or package.get("target_runtime_status") != "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED"
+        ):
+            return {"status": "BLOCKED", "reason": "PACKAGE_TARGET_RECEIPT_BINDING_MISMATCH"}
+        return {
+            "status": "PASS",
+            "image_path": str(SQUASHFS_IMAGE),
+            "image_sha256": image_sha,
+            "image_bytes": image_bytes,
+            "checksum_path": str(SQUASHFS_CHECKSUM),
+            "checksum_sha256": checksum_sha,
+            "package_receipt_path": str(SQUASHFS_PACKAGE_RECEIPT),
+            "package_receipt_sha256": package_sha,
+            "candidate_manifest_path": manifest["path"],
+            "candidate_manifest_sha256": manifest["sha256"],
+        }
+    except Exception as exc:
+        return {"status": "BLOCKED", "reason": f"IMAGE_EVIDENCE_INVALID:{type(exc).__name__}:{exc}"}
+
+
 def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
     direct = CERTIFICATION_PROFILE == "V1_8_DIRECT"
     old = load_json(INDEPENDENT_REPORT, {}) or {}
@@ -962,6 +1034,32 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         "evidence": {row["evidence_path"]: row["evidence_sha256"] for row in jasp_cases.values()
                      if row.get("evidence_path") and row.get("evidence_sha256")},
     }
+    squashfs_identity = direct_candidate_squashfs_identity() if direct else {}
+    if direct:
+        checks["squashfs_image_and_package_binding"] = {
+            "status": squashfs_identity.get("status", "BLOCKED"),
+            "returncode": 0 if squashfs_identity.get("status") == "PASS" else 1,
+            "image_path": squashfs_identity.get("image_path"),
+            "image_sha256": squashfs_identity.get("image_sha256"),
+            "image_bytes": squashfs_identity.get("image_bytes"),
+            "checksum_path": squashfs_identity.get("checksum_path"),
+            "checksum_sha256": squashfs_identity.get("checksum_sha256"),
+            "package_receipt_path": squashfs_identity.get("package_receipt_path"),
+            "package_receipt_sha256": squashfs_identity.get("package_receipt_sha256"),
+            "candidate_manifest_path": squashfs_identity.get("candidate_manifest_path"),
+            "candidate_manifest_sha256": squashfs_identity.get("candidate_manifest_sha256"),
+            "evidence": {
+                squashfs_identity[key]: squashfs_identity[digest_key]
+                for key, digest_key in (
+                    ("image_path", "image_sha256"),
+                    ("checksum_path", "checksum_sha256"),
+                    ("package_receipt_path", "package_receipt_sha256"),
+                    ("candidate_manifest_path", "candidate_manifest_sha256"),
+                )
+                if squashfs_identity.get(key) and squashfs_identity.get(digest_key)
+            },
+            "details": squashfs_identity.get("reason"),
+        }
     # Re-validate pre-existing source-bound checks instead of overwriting their history.
     for name, check in list(checks.items()):
         if name in {"MISION1_identity_sha256", "runtime_report_and_launcher_identity"}:
@@ -986,6 +1084,13 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         "runtime_report_sha256": runtime_sha, "beta_launcher_sha256": launcher_sha,
         "certification_profile": "V1_8_DIRECT" if direct else "LEGACY_V1_7",
         "candidate_manifest_sha256": candidate_manifest_sha,
+        "squashfs_image_path": squashfs_identity.get("image_path") if direct else None,
+        "squashfs_image_sha256": squashfs_identity.get("image_sha256") if direct else None,
+        "squashfs_image_bytes": squashfs_identity.get("image_bytes") if direct else None,
+        "squashfs_checksum_path": squashfs_identity.get("checksum_path") if direct else None,
+        "squashfs_checksum_sha256": squashfs_identity.get("checksum_sha256") if direct else None,
+        "squashfs_package_receipt_path": squashfs_identity.get("package_receipt_path") if direct else None,
+        "squashfs_package_receipt_sha256": squashfs_identity.get("package_receipt_sha256") if direct else None,
         "target_runtime_acceptance": target_runtime,
         "checks": checks, "status": desired_status,
         "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
@@ -1065,6 +1170,7 @@ def issue_s32_independent_beta_validation_receipt() -> dict:
         "target_v1_8_runtime_acceptance_e01_e15_int8",
         "candidate_rootfs_inventory_and_dependency_manifest",
         "jasp_packaged_fixture_nonregression",
+        "squashfs_image_and_package_binding",
     }
     if not isinstance(checks, dict) or not required_checks.issubset(checks):
         return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS_MISSING", "certification": "NOT_GRANTED"}
@@ -1080,6 +1186,16 @@ def issue_s32_independent_beta_validation_receipt() -> dict:
         or target.get("canonical_g08_binding_mutation") is not False):
         return {"status": "BLOCKED_CANONICAL_IDENTITY_GUARD", "certification": "NOT_GRANTED"}
 
+    squashfs_identity = direct_candidate_squashfs_identity()
+    image_check = checks["squashfs_image_and_package_binding"]
+    if squashfs_identity.get("status") != "PASS":
+        return {"status": "BLOCKED_SQUASHFS_IMAGE_BINDING", "certification": "NOT_GRANTED"}
+    for field in ("image_path", "image_sha256", "image_bytes", "checksum_path", "checksum_sha256",
+                  "package_receipt_path", "package_receipt_sha256", "candidate_manifest_path",
+                  "candidate_manifest_sha256"):
+        if image_check.get(field) != squashfs_identity.get(field):
+            return {"status": "BLOCKED_SQUASHFS_IMAGE_REPORT_BINDING", "certification": "NOT_GRANTED"}
+
     independent_sha = sha_file(report_path)
     evidence = {
         "independent_validation": "PASS",
@@ -1088,6 +1204,13 @@ def issue_s32_independent_beta_validation_receipt() -> dict:
         "target_runtime_receipt_path": str(target_path),
         "target_runtime_receipt_sha256": target_sha,
         "candidate_manifest_sha256": manifest["sha256"],
+        "squashfs_image_path": squashfs_identity["image_path"],
+        "squashfs_image_sha256": squashfs_identity["image_sha256"],
+        "squashfs_image_bytes": squashfs_identity["image_bytes"],
+        "squashfs_checksum_path": squashfs_identity["checksum_path"],
+        "squashfs_checksum_sha256": squashfs_identity["checksum_sha256"],
+        "squashfs_package_receipt_path": squashfs_identity["package_receipt_path"],
+        "squashfs_package_receipt_sha256": squashfs_identity["package_receipt_sha256"],
     }
     payload = {
         "schema": "CUSTOSZ_LUNITA_BETA_CERTIFICATION_RECEIPT/1.0",
@@ -1100,6 +1223,14 @@ def issue_s32_independent_beta_validation_receipt() -> dict:
         "runtime_report_sha256": target_sha,
         "independent_report_path": str(report_path),
         "independent_report_sha256": independent_sha,
+        "squashfs_image_path": squashfs_identity["image_path"],
+        "squashfs_image_sha256": squashfs_identity["image_sha256"],
+        "squashfs_image_bytes": squashfs_identity["image_bytes"],
+        "squashfs_checksum_path": squashfs_identity["checksum_path"],
+        "squashfs_checksum_sha256": squashfs_identity["checksum_sha256"],
+        "squashfs_package_receipt_path": squashfs_identity["package_receipt_path"],
+        "squashfs_package_receipt_sha256": squashfs_identity["package_receipt_sha256"],
+        "candidate_manifest_sha256": manifest["sha256"],
         "evidence": evidence,
         "frozen_g06_mutated": False,
         "canonical_g08_bindings_mutated": False,
@@ -1174,6 +1305,25 @@ def stable_release_gate() -> dict:
         return {"status": "BLOCKED_CANDIDATE_OR_MISSION_IDENTITY", "certification": "NOT_GRANTED"}
     if report.get("status") != "PASS_INDEPENDENT_VALIDATION":
         return {"status": "BLOCKED_INDEPENDENT_VALIDATION", "certification": "NOT_GRANTED"}
+    squashfs_identity = direct_candidate_squashfs_identity() if direct else {}
+    if direct:
+        if squashfs_identity.get("status") != "PASS":
+            return {"status": "BLOCKED_SQUASHFS_IMAGE_BINDING", "certification": "NOT_GRANTED"}
+        for field, report_field in (
+            ("image_path", "squashfs_image_path"),
+            ("image_sha256", "squashfs_image_sha256"),
+            ("image_bytes", "squashfs_image_bytes"),
+            ("checksum_path", "squashfs_checksum_path"),
+            ("checksum_sha256", "squashfs_checksum_sha256"),
+            ("package_receipt_path", "squashfs_package_receipt_path"),
+            ("package_receipt_sha256", "squashfs_package_receipt_sha256"),
+            ("candidate_manifest_sha256", "candidate_manifest_sha256"),
+        ):
+            if report.get(report_field) != squashfs_identity.get(field):
+                return {"status": "BLOCKED_SQUASHFS_IMAGE_REPORT_BINDING", "certification": "NOT_GRANTED"}
+        image_check = (report.get("checks") or {}).get("squashfs_image_and_package_binding", {})
+        if image_check.get("status") != "PASS":
+            return {"status": "BLOCKED_SQUASHFS_IMAGE_REPORT_BINDING", "certification": "NOT_GRANTED"}
     target_check = (report.get("checks") or {}).get("target_v1_8_runtime_acceptance_e01_e15_int8", {})
     target_path = pathlib.Path(target_check.get("receipt_path", "")) if target_check.get("receipt_path") else None
     if (target_check.get("status") != "PASS" or not target_path or not target_path.is_file()
@@ -1194,7 +1344,15 @@ def stable_release_gate() -> dict:
         row = load_json(p, {}) or {}
         ev = row.get("evidence") if isinstance(row.get("evidence"), dict) else {}
         if row.get("status") == "BETA_OPERATIONAL_CERTIFIED" and ev.get("independent_validation") == "PASS":
-            if ev.get("independent_report_path") == str(INDEPENDENT_REPORT) and ev.get("independent_report_sha256") == sha_file(INDEPENDENT_REPORT):
+            if (
+                ev.get("independent_report_path") == str(INDEPENDENT_REPORT)
+                and ev.get("independent_report_sha256") == sha_file(INDEPENDENT_REPORT)
+                and ev.get("candidate_manifest_sha256") == report.get("candidate_manifest_sha256")
+                and ev.get("squashfs_image_sha256") == squashfs_identity.get("image_sha256")
+                and ev.get("squashfs_image_bytes") == squashfs_identity.get("image_bytes")
+                and ev.get("squashfs_checksum_sha256") == squashfs_identity.get("checksum_sha256")
+                and ev.get("squashfs_package_receipt_sha256") == squashfs_identity.get("package_receipt_sha256")
+            ):
                 receipt = {"path": str(p), "sha256": sha_file(p)}
                 break
     if not receipt:
@@ -1204,6 +1362,13 @@ def stable_release_gate() -> dict:
         "candidate_id": "G06_REBUILD_CANDIDATE_R1",
         "runtime_report_sha256": runtime_sha,
         "candidate_manifest_sha256": report.get("candidate_manifest_sha256"),
+        "squashfs_image_path": squashfs_identity.get("image_path") if direct else None,
+        "squashfs_image_sha256": squashfs_identity.get("image_sha256") if direct else None,
+        "squashfs_image_bytes": squashfs_identity.get("image_bytes") if direct else None,
+        "squashfs_checksum_path": squashfs_identity.get("checksum_path") if direct else None,
+        "squashfs_checksum_sha256": squashfs_identity.get("checksum_sha256") if direct else None,
+        "squashfs_package_receipt_path": squashfs_identity.get("package_receipt_path") if direct else None,
+        "squashfs_package_receipt_sha256": squashfs_identity.get("package_receipt_sha256") if direct else None,
         "independent_report_sha256": sha_file(INDEPENDENT_REPORT),
         "s32_receipt": receipt, "rootfs_path": str(ROOTFS),
         "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
@@ -1233,6 +1398,11 @@ def persist_stable_release_status(release_gate: dict) -> dict:
             if (existing.get("status") != "CERTIFIED_STABLE_RELEASE"
                 or existing.get("independent_report_sha256") != digest
                 or existing.get("runtime_report_sha256") != payload.get("runtime_report_sha256")
+                or existing.get("candidate_manifest_sha256") != payload.get("candidate_manifest_sha256")
+                or existing.get("squashfs_image_sha256") != payload.get("squashfs_image_sha256")
+                or existing.get("squashfs_image_bytes") != payload.get("squashfs_image_bytes")
+                or existing.get("squashfs_checksum_sha256") != payload.get("squashfs_checksum_sha256")
+                or existing.get("squashfs_package_receipt_sha256") != payload.get("squashfs_package_receipt_sha256")
                 or existing.get("s32_receipt") != payload.get("s32_receipt")):
                 raise RuntimeError("STABLE_RELEASE_RECEIPT_IDENTITY_COLLISION")
         else:

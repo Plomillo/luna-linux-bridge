@@ -98,6 +98,28 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "unsquashfs_superblock": "PASS",
             "unsquashfs_roundtrip": "PASS",
         }), encoding="utf-8")
+        package_sha = cert.sha256_file(package_path)
+        checksum_sha = cert.sha256_file(checksum)
+        independent_data = json.loads(independent.read_text(encoding="utf-8"))
+        image_binding = {
+            "status": "PASS", "returncode": 0,
+            "image_path": str(image), "image_sha256": image_sha, "image_bytes": image.stat().st_size,
+            "checksum_path": str(checksum), "checksum_sha256": checksum_sha,
+            "package_receipt_path": str(package_path), "package_receipt_sha256": package_sha,
+            "candidate_manifest_path": str(manifest), "candidate_manifest_sha256": manifest_sha,
+            "evidence": {str(image): image_sha, str(checksum): checksum_sha,
+                         str(package_path): package_sha, str(manifest): manifest_sha},
+        }
+        independent_data["checks"]["squashfs_image_and_package_binding"] = image_binding
+        independent_data.update({
+            "squashfs_image_path": str(image), "squashfs_image_sha256": image_sha,
+            "squashfs_image_bytes": image.stat().st_size,
+            "squashfs_checksum_path": str(checksum), "squashfs_checksum_sha256": checksum_sha,
+            "squashfs_package_receipt_path": str(package_path),
+            "squashfs_package_receipt_sha256": package_sha,
+        })
+        independent.write_text(json.dumps(independent_data), encoding="utf-8")
+        independent_sha = cert.sha256_file(independent)
 
         s32 = s32_dir / f"S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT_{independent_sha[:16]}.json"
         s32.write_text(json.dumps({
@@ -115,7 +137,16 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
                 "target_runtime_receipt_path": str(target),
                 "target_runtime_receipt_sha256": target_sha,
                 "candidate_manifest_sha256": manifest_sha,
+                "squashfs_image_sha256": image_sha,
+                "squashfs_image_bytes": image.stat().st_size,
+                "squashfs_checksum_sha256": checksum_sha,
+                "squashfs_package_receipt_sha256": package_sha,
             },
+            "candidate_manifest_sha256": manifest_sha,
+            "squashfs_image_sha256": image_sha,
+            "squashfs_image_bytes": image.stat().st_size,
+            "squashfs_checksum_sha256": checksum_sha,
+            "squashfs_package_receipt_sha256": package_sha,
             "canonical_g06_certification": "NOT_GRANTED",
             "frozen_g06_mutated": False,
             "canonical_g08_bindings_mutated": False,
@@ -133,6 +164,11 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "certification": "GRANTED_FOR_VERSIONED_CANDIDATE",
             "independent_report_sha256": independent_sha,
             "runtime_report_sha256": target_sha,
+            "candidate_manifest_sha256": manifest_sha,
+            "squashfs_image_sha256": image_sha,
+            "squashfs_image_bytes": image.stat().st_size,
+            "squashfs_checksum_sha256": checksum_sha,
+            "squashfs_package_receipt_sha256": package_sha,
             "s32_receipt": {"path": str(s32), "sha256": s32_sha},
             "frozen_g06_mutated": False,
             "canonical_g08_bindings_mutated": False,
@@ -166,6 +202,32 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             self.assertEqual("NOT_GRANTED", result["g23"])
             self.assertEqual("NOT_GRANTED", result["g24"])
             self.assertFalse(result["automatic_canonical_promotion"])
+
+    def test_s32_receipt_with_other_image_or_manifest_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = self.prepare(pathlib.Path(tmp))
+            receipt_path = next(paths["s32_dir"].glob("S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT_*.json"))
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            receipt["evidence"]["squashfs_image_sha256"] = "f" * 64
+            receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+            with self.assertRaisesRegex(cert.CertificationError, "No S32 receipt is bound"):
+                cert.build_certificate(
+                    paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
+                    paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
+                )
+
+    def test_stable_release_with_other_image_or_manifest_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = self.prepare(pathlib.Path(tmp))
+            stable_path = next(paths["stable_dir"].glob("release_*.json"))
+            stable = json.loads(stable_path.read_text(encoding="utf-8"))
+            stable["candidate_manifest_sha256"] = "e" * 64
+            stable_path.write_text(json.dumps(stable), encoding="utf-8")
+            with self.assertRaisesRegex(cert.CertificationError, "No stable-release receipt is bound"):
+                cert.build_certificate(
+                    paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
+                    paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
+                )
 
     def test_missing_s32_receipt_blocks_functional_certificate(self):
         with tempfile.TemporaryDirectory() as tmp:

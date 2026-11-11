@@ -237,29 +237,59 @@ class DirectV18S32IssuerTests(unittest.TestCase):
         independent = base / "BETA_INDEPENDENT_VALIDATION.json"
         target_sha = lane.sha_file(target)
         manifest_sha = lane.sha_file(manifest)
+        image = base / "LUNITA.squashfs"
+        image.write_bytes(b"verified target image")
+        image_sha = lane.sha_file(image)
+        checksum = base / "LUNITA.squashfs.sha256"
+        checksum.write_text(f"{image_sha}  {image.name}\n", encoding="ascii")
+        package = base / "LUNITA_SQUASHFS_PACKAGE_RECEIPT.json"
+        package.write_text(json.dumps({
+            "schema": "LUNITA_SQUASHFS_PACKAGE_RECEIPT/1.0",
+            "status": "PASS_SQUASHFS_PACKAGE_AND_ROUNDTRIP_NOT_CERTIFIED",
+            "candidate_id": "G06_REBUILD_CANDIDATE_R1", "version": "1.8.0",
+            "image_name": image.name, "image_sha256": image_sha, "image_bytes": image.stat().st_size,
+            "roundtrip_manifest_match": True, "source_rootfs_unchanged": True,
+            "target_runtime_receipt_path": str(target), "target_runtime_receipt_sha256": target_sha,
+            "target_runtime_status": "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED",
+            "mksquashfs": "PASS", "unsquashfs_superblock": "PASS", "unsquashfs_roundtrip": "PASS",
+            "certification": "NOT_GRANTED", "g23": "NOT_GRANTED", "g24": "NOT_GRANTED",
+        }), encoding="utf-8")
+        package_sha = lane.sha_file(package)
+        checksum_sha = lane.sha_file(checksum)
         required = {
             "candidate_manifest_identity_sha256",
             "runtime_report_and_launcher_identity",
             "target_v1_8_runtime_acceptance_e01_e15_int8",
             "candidate_rootfs_inventory_and_dependency_manifest",
             "jasp_packaged_fixture_nonregression",
+            "squashfs_image_and_package_binding",
         }
         checks = {name: {"status": "PASS", "returncode": 0} for name in required}
         checks["candidate_manifest_identity_sha256"]["sha256"] = manifest_sha
         checks["target_v1_8_runtime_acceptance_e01_e15_int8"].update({
             "receipt_path": str(target), "receipt_sha256": target_sha,
         })
+        checks["squashfs_image_and_package_binding"] = {
+            "status": "PASS", "returncode": 0,
+            "image_path": str(image), "image_sha256": image_sha, "image_bytes": image.stat().st_size,
+            "checksum_path": str(checksum), "checksum_sha256": checksum_sha,
+            "package_receipt_path": str(package), "package_receipt_sha256": package_sha,
+            "candidate_manifest_path": str(manifest), "candidate_manifest_sha256": manifest_sha,
+            "evidence": {str(image): image_sha, str(checksum): checksum_sha,
+                         str(package): package_sha, str(manifest): manifest_sha},
+        }
         independent.write_text(json.dumps({
             "schema": "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0",
             "candidate_id": "G06_REBUILD_CANDIDATE_R1",
             "certification_profile": "V1_8_DIRECT",
             "candidate_manifest_sha256": manifest_sha,
+            "squashfs_image_path": str(image), "squashfs_image_sha256": image_sha,
+            "squashfs_image_bytes": image.stat().st_size,
+            "squashfs_checksum_path": str(checksum), "squashfs_checksum_sha256": checksum_sha,
+            "squashfs_package_receipt_path": str(package), "squashfs_package_receipt_sha256": package_sha,
             "status": "PASS_INDEPENDENT_VALIDATION",
-            "runtime_report_path": str(target),
-            "runtime_report_sha256": target_sha,
-            "checks": checks,
-            "frozen_g06_mutated": False,
-            "canonical_g08_bindings_mutated": False,
+            "runtime_report_path": str(target), "runtime_report_sha256": target_sha,
+            "checks": checks, "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
         }), encoding="utf-8")
         target_acceptance = {
             "status": "PASS_TARGET_RUNTIME_ACCEPTANCE",
@@ -268,14 +298,17 @@ class DirectV18S32IssuerTests(unittest.TestCase):
             "candidate_id": "G06_REBUILD_CANDIDATE_R1",
             "canonical_g08_binding_mutation": False,
         }
-        return out, manifest, target, independent, target_acceptance
+        return out, manifest, target, independent, target_acceptance, image, checksum, package
 
     def test_s32_issues_hash_bound_receipt_and_unlocks_candidate_stable_gate(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)
-            out, manifest, target, independent, acceptance = self.prepare_valid_evidence(base)
+            out, manifest, target, independent, acceptance, image, checksum, package = self.prepare_valid_evidence(base)
             with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
                  mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
+                 mock.patch.object(lane, "SQUASHFS_IMAGE", image), \
+                 mock.patch.object(lane, "SQUASHFS_CHECKSUM", checksum), \
+                 mock.patch.object(lane, "SQUASHFS_PACKAGE_RECEIPT", package), \
                  mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", target.parent), \
                  mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
                  mock.patch.object(lane, "OUT", out), \
@@ -298,12 +331,15 @@ class DirectV18S32IssuerTests(unittest.TestCase):
     def test_s32_never_issues_when_independent_report_is_blocked(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)
-            out, manifest, target, independent, acceptance = self.prepare_valid_evidence(base)
+            out, manifest, target, independent, acceptance, image, checksum, package = self.prepare_valid_evidence(base)
             report = json.loads(independent.read_text(encoding="utf-8"))
             report["status"] = "BLOCKED_REQUIRED_REGRESSION_OR_INVENTORY"
             independent.write_text(json.dumps(report), encoding="utf-8")
             with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
                  mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
+                 mock.patch.object(lane, "SQUASHFS_IMAGE", image), \
+                 mock.patch.object(lane, "SQUASHFS_CHECKSUM", checksum), \
+                 mock.patch.object(lane, "SQUASHFS_PACKAGE_RECEIPT", package), \
                  mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
                  mock.patch.object(lane, "OUT", out), \
                  mock.patch.object(lane, "latest_target_runtime_acceptance", return_value=acceptance):
@@ -643,31 +679,65 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
             receipt.write_text(json.dumps(TargetRuntimeEvidenceGateTests.valid_target_receipt()), encoding="utf-8")
             manifest = base / "LUNITA_V1_8_CANDIDATE_FREEZE.json"
             manifest.write_text(json.dumps(self.frozen_manifest()), encoding="utf-8")
+            image = base / "LUNITA.squashfs"
+            image.write_bytes(b"verified stable-gate target image")
+            image_sha = lane.sha_file(image)
+            checksum = base / "LUNITA.squashfs.sha256"
+            checksum.write_text(f"{image_sha}  {image.name}\n", encoding="ascii")
+            package = base / "LUNITA_SQUASHFS_PACKAGE_RECEIPT.json"
+            target_sha = lane.sha_file(receipt)
+            package.write_text(json.dumps({
+                "schema": "LUNITA_SQUASHFS_PACKAGE_RECEIPT/1.0",
+                "status": "PASS_SQUASHFS_PACKAGE_AND_ROUNDTRIP_NOT_CERTIFIED",
+                "candidate_id": "G06_REBUILD_CANDIDATE_R1", "version": "1.8.0",
+                "image_name": image.name, "image_sha256": image_sha, "image_bytes": image.stat().st_size,
+                "roundtrip_manifest_match": True, "source_rootfs_unchanged": True,
+                "target_runtime_receipt_path": str(receipt), "target_runtime_receipt_sha256": target_sha,
+                "target_runtime_status": "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED",
+                "mksquashfs": "PASS", "unsquashfs_superblock": "PASS", "unsquashfs_roundtrip": "PASS",
+            }), encoding="utf-8")
+            package_sha = lane.sha_file(package)
+            checksum_sha = lane.sha_file(checksum)
+            manifest_sha = lane.sha_file(manifest)
+            image_check = {
+                "status": "PASS", "returncode": 0,
+                "image_path": str(image), "image_sha256": image_sha, "image_bytes": image.stat().st_size,
+                "checksum_path": str(checksum), "checksum_sha256": checksum_sha,
+                "package_receipt_path": str(package), "package_receipt_sha256": package_sha,
+                "candidate_manifest_path": str(manifest), "candidate_manifest_sha256": manifest_sha,
+                "evidence": {str(image): image_sha, str(checksum): checksum_sha,
+                             str(package): package_sha, str(manifest): manifest_sha},
+            }
             independent = base / "independent.json"
             independent.write_text(json.dumps({
                 "schema": "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0",
                 "candidate_id": "G06_REBUILD_CANDIDATE_R1",
                 "certification_profile": "V1_8_DIRECT",
-                "candidate_manifest_sha256": lane.sha_file(manifest),
-                "mission_sha256": None,
-                "status": "PASS_INDEPENDENT_VALIDATION",
-                "runtime_report_path": str(receipt),
-                "runtime_report_sha256": lane.sha_file(receipt),
+                "candidate_manifest_sha256": manifest_sha,
+                "squashfs_image_path": str(image), "squashfs_image_sha256": image_sha,
+                "squashfs_image_bytes": image.stat().st_size,
+                "squashfs_checksum_path": str(checksum), "squashfs_checksum_sha256": checksum_sha,
+                "squashfs_package_receipt_path": str(package), "squashfs_package_receipt_sha256": package_sha,
+                "mission_sha256": None, "status": "PASS_INDEPENDENT_VALIDATION",
+                "runtime_report_path": str(receipt), "runtime_report_sha256": target_sha,
                 "checks": {
                     "target_v1_8_runtime_acceptance_e01_e15_int8": {
                         "status": "PASS", "returncode": 0,
-                        "receipt_path": str(receipt), "receipt_sha256": lane.sha_file(receipt),
+                        "receipt_path": str(receipt), "receipt_sha256": target_sha,
                     },
                     "rootfs": {"status": "PASS", "returncode": 0},
                     "jasp": {"status": "PASS", "returncode": 0},
+                    "squashfs_image_and_package_binding": image_check,
                 },
-                "frozen_g06_mutated": False,
-                "canonical_g08_bindings_mutated": False,
+                "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
             }), encoding="utf-8")
             out = base / "outputs"
             out.mkdir()
             with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
                  mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
+                 mock.patch.object(lane, "SQUASHFS_IMAGE", image), \
+                 mock.patch.object(lane, "SQUASHFS_CHECKSUM", checksum), \
+                 mock.patch.object(lane, "SQUASHFS_PACKAGE_RECEIPT", package), \
                  mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", receipts), \
                  mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
                  mock.patch.object(lane, "RUNTIME_REPORT", base / "missing-v17-runtime.json"), \

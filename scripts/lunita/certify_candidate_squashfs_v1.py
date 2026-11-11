@@ -81,7 +81,8 @@ def validate_evidence_map(checks: dict[str, Any]) -> None:
 
 
 def find_bound_s32(s32_dir: pathlib.Path, independent_path: pathlib.Path, independent_sha: str,
-                   target_path: pathlib.Path, target_sha: str) -> tuple[pathlib.Path, dict, str]:
+                   target_path: pathlib.Path, target_sha: str, image_sha: str, image_bytes: int,
+                   checksum_sha: str, package_sha: str, manifest_sha: str) -> tuple[pathlib.Path, dict, str]:
     if s32_dir.is_symlink() or not s32_dir.is_dir():
         raise CertificationError(f"S32 receipt directory is missing or symlinked: {s32_dir}")
     candidates = sorted(s32_dir.glob("S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT_*.json"))
@@ -95,11 +96,21 @@ def find_bound_s32(s32_dir: pathlib.Path, independent_path: pathlib.Path, indepe
             and row.get("independent_report_sha256") == independent_sha
             and row.get("runtime_report_path") == str(target_path)
             and row.get("runtime_report_sha256") == target_sha
+            and row.get("candidate_manifest_sha256") == manifest_sha
+            and row.get("squashfs_image_sha256") == image_sha
+            and row.get("squashfs_image_bytes") == image_bytes
+            and row.get("squashfs_checksum_sha256") == checksum_sha
+            and row.get("squashfs_package_receipt_sha256") == package_sha
             and evidence.get("independent_validation") == "PASS"
             and evidence.get("independent_report_path") == str(independent_path)
             and evidence.get("independent_report_sha256") == independent_sha
             and evidence.get("target_runtime_receipt_path") == str(target_path)
             and evidence.get("target_runtime_receipt_sha256") == target_sha
+            and evidence.get("candidate_manifest_sha256") == manifest_sha
+            and evidence.get("squashfs_image_sha256") == image_sha
+            and evidence.get("squashfs_image_bytes") == image_bytes
+            and evidence.get("squashfs_checksum_sha256") == checksum_sha
+            and evidence.get("squashfs_package_receipt_sha256") == package_sha
             and row.get("canonical_g06_certification") == "NOT_GRANTED"
             and row.get("frozen_g06_mutated") is False
             and row.get("canonical_g08_bindings_mutated") is False
@@ -110,7 +121,8 @@ def find_bound_s32(s32_dir: pathlib.Path, independent_path: pathlib.Path, indepe
 
 
 def find_bound_stable_release(stable_dir: pathlib.Path, s32_path: pathlib.Path, s32_sha: str,
-                              independent_sha: str, target_sha: str) -> tuple[pathlib.Path, dict, str]:
+                              independent_sha: str, target_sha: str, image_sha: str, image_bytes: int,
+                              checksum_sha: str, package_sha: str, manifest_sha: str) -> tuple[pathlib.Path, dict, str]:
     if stable_dir.is_symlink() or not stable_dir.is_dir():
         raise CertificationError(f"Stable release directory is missing or symlinked: {stable_dir}")
     candidates = sorted(stable_dir.glob("release_*.json"))
@@ -124,6 +136,11 @@ def find_bound_stable_release(stable_dir: pathlib.Path, s32_path: pathlib.Path, 
             and row.get("certification") == "GRANTED_FOR_VERSIONED_CANDIDATE"
             and row.get("independent_report_sha256") == independent_sha
             and row.get("runtime_report_sha256") == target_sha
+            and row.get("candidate_manifest_sha256") == manifest_sha
+            and row.get("squashfs_image_sha256") == image_sha
+            and row.get("squashfs_image_bytes") == image_bytes
+            and row.get("squashfs_checksum_sha256") == checksum_sha
+            and row.get("squashfs_package_receipt_sha256") == package_sha
             and s32_ref.get("path") == str(s32_path)
             and s32_ref.get("sha256") == s32_sha
             and row.get("frozen_g06_mutated") is False
@@ -214,6 +231,7 @@ def build_certificate(
         "target_v1_8_runtime_acceptance_e01_e15_int8",
         "candidate_rootfs_inventory_and_dependency_manifest",
         "jasp_packaged_fixture_nonregression",
+        "squashfs_image_and_package_binding",
     }
     if not isinstance(checks, dict) or not required_checks.issubset(checks):
         raise CertificationError("Independent report lacks one or more required v1.8 checks")
@@ -221,6 +239,36 @@ def build_certificate(
     target_check = checks["target_v1_8_runtime_acceptance_e01_e15_int8"]
     if target_check.get("receipt_path") != str(target_path) or target_check.get("receipt_sha256") != target_sha_expected:
         raise CertificationError("Independent target check does not bind the package's target receipt")
+
+    manifest_sha = sha256_file(candidate_manifest_path)
+    package_sha = sha256_file(package_receipt_path)
+    checksum_sha = sha256_file(checksum)
+    image_check = checks["squashfs_image_and_package_binding"]
+    expected_image_binding = {
+        "image_path": str(image), "image_sha256": image_sha, "image_bytes": image_bytes,
+        "checksum_path": str(checksum), "checksum_sha256": checksum_sha,
+        "package_receipt_path": str(package_receipt_path), "package_receipt_sha256": package_sha,
+        "candidate_manifest_path": str(candidate_manifest_path), "candidate_manifest_sha256": manifest_sha,
+    }
+    for field, expected in expected_image_binding.items():
+        if image_check.get(field) != expected:
+            raise CertificationError(f"Independent image/manifest binding mismatch: {field}")
+    expected_evidence = {
+        str(image): image_sha, str(checksum): checksum_sha,
+        str(package_receipt_path): package_sha, str(candidate_manifest_path): manifest_sha,
+    }
+    if image_check.get("evidence") != expected_evidence:
+        raise CertificationError("Independent image/manifest evidence map is incomplete or mismatched")
+    if (report.get("squashfs_image_path") != str(image)
+        or report.get("squashfs_image_sha256") != image_sha
+        or report.get("squashfs_image_bytes") != image_bytes
+        or report.get("squashfs_checksum_path") != str(checksum)
+        or report.get("squashfs_checksum_sha256") != checksum_sha
+        or report.get("squashfs_package_receipt_path") != str(package_receipt_path)
+        or report.get("squashfs_package_receipt_sha256") != package_sha
+        or report.get("candidate_manifest_sha256") != manifest_sha):
+        raise CertificationError("Independent report does not bind the exact image, package, checksum, and frozen manifest")
+    validate_evidence_map({"squashfs_image_and_package_binding": image_check})
 
     manifest = load_json(candidate_manifest_path, "Frozen v1.8 candidate manifest")
     preserved = manifest.get("preserved_baseline") if isinstance(manifest.get("preserved_baseline"), dict) else {}
@@ -234,12 +282,13 @@ def build_certificate(
         raise CertificationError("Frozen candidate manifest identity/preservation checks failed")
 
     s32_path, s32, s32_sha = find_bound_s32(
-        s32_receipt_dir, independent_report_path, independent_sha, target_path, target_sha_expected
+        s32_receipt_dir, independent_report_path, independent_sha, target_path, target_sha_expected,
+        image_sha, image_bytes, checksum_sha, package_sha, manifest_sha
     )
     stable_path, stable, stable_sha = find_bound_stable_release(
-        stable_release_dir, s32_path, s32_sha, independent_sha, target_sha_expected
+        stable_release_dir, s32_path, s32_sha, independent_sha, target_sha_expected,
+        image_sha, image_bytes, checksum_sha, package_sha, manifest_sha
     )
-    package_sha = sha256_file(package_receipt_path)
     return {
         "schema": "LUNITA_SQUASHFS_FUNCTIONAL_CERTIFICATE/1.0",
         "status": "CERTIFIED_FUNCTIONAL_CANDIDATE",
@@ -254,6 +303,8 @@ def build_certificate(
             "checksum_path": str(checksum),
         },
         "package_receipt": {"path": str(package_receipt_path), "sha256": package_sha},
+        "checksum": {"path": str(checksum), "sha256": checksum_sha},
+        "candidate_manifest": {"path": str(candidate_manifest_path), "sha256": manifest_sha},
         "source_rootfs_manifest_sha256": package["source_rootfs_manifest_sha256"],
         "target_runtime_receipt": {"path": str(target_path), "sha256": target_sha_expected},
         "independent_validation": {"path": str(independent_report_path), "sha256": independent_sha, "status": "PASS"},
