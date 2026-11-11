@@ -37,6 +37,7 @@ ROOTFS_DEVICE_ALLOWLIST: dict[str, dict[str, Any]] = {
     "dev/console": {"type": "character", "major": 5, "minor": 1, "uid": 0, "gid": 0, "mode": 0o600},
     "dev/full": {"type": "character", "major": 1, "minor": 7, "uid": 0, "gid": 0, "mode": 0o666},
     "dev/null": {"type": "character", "major": 1, "minor": 3, "uid": 0, "gid": 0, "mode": 0o666},
+    "dev/ptmx": {"type": "character", "major": 5, "minor": 2, "uid": 0, "gid": 0, "mode": 0o666},
     "dev/random": {"type": "character", "major": 1, "minor": 8, "uid": 0, "gid": 0, "mode": 0o666},
     "dev/tty": {"type": "character", "major": 5, "minor": 0, "uid": 0, "gid": 0, "mode": 0o666},
     "dev/urandom": {"type": "character", "major": 1, "minor": 9, "uid": 0, "gid": 0, "mode": 0o666},
@@ -432,6 +433,9 @@ def self_test() -> None:
         invalid_device_cases = (
             ("./dev/mem", {"type": "character", "major": 1, "minor": 3, "uid": 0, "gid": 0, "mode": 0o666}),
             ("./dev/full", {"type": "character", "major": 1, "minor": 3, "uid": 0, "gid": 0, "mode": 0o666}),
+            ("./dev/ptmx", {"type": "character", "major": 5, "minor": 3, "uid": 0, "gid": 0, "mode": 0o666}),
+            ("./dev/ptmx", {"type": "character", "major": 5, "minor": 2, "uid": 0, "gid": 0, "mode": 0o600}),
+            ("./dev/ptmx", {"type": "character", "major": 5, "minor": 2, "uid": 0, "gid": 5, "mode": 0o666}),
             ("./dev/null", {"type": "character", "major": 1, "minor": 3, "uid": 1000, "gid": 0, "mode": 0o666}),
             ("./dev/tty", {"type": "character", "major": 5, "minor": 0, "uid": 0, "gid": 5, "mode": 0o666}),
             ("./dev/zero", {"type": "block", "major": 1, "minor": 5, "uid": 0, "gid": 0, "mode": 0o666}),
@@ -540,6 +544,9 @@ def main() -> int:
     pack.add_argument("--rootfs", type=Path, required=True)
     pack.add_argument("--cache-dir", type=Path, required=True)
     pack.add_argument("--commit", default="unknown")
+    verify = subparsers.add_parser("verify")
+    verify.add_argument("--workspace", type=Path, required=True)
+    verify.add_argument("--cache-dir", type=Path, required=True)
     restore = subparsers.add_parser("restore")
     restore.add_argument("--workspace", type=Path, required=True)
     restore.add_argument("--cache-dir", type=Path, required=True)
@@ -548,6 +555,14 @@ def main() -> int:
     args = parser.parse_args()
     if args.command == "pack":
         pack_base(args.workspace.resolve(), Path(os.path.abspath(args.rootfs)), Path(os.path.abspath(args.cache_dir)), args.commit)
+    elif args.command == "verify":
+        archive, record = verify_cache(args.workspace.resolve(), Path(os.path.abspath(args.cache_dir)))
+        print(
+            "PASS_ROOTFS_BASE_CACHE_VERIFIED "
+            f"sha256={record['archive']['sha256']} "
+            f"bytes={record['archive']['bytes']} "
+            f"fingerprint={record['input_fingerprint_sha256']}"
+        )
     elif args.command == "restore":
         restore_base(args.workspace.resolve(), Path(os.path.abspath(args.cache_dir)), Path(os.path.abspath(args.rootfs)))
     else:
