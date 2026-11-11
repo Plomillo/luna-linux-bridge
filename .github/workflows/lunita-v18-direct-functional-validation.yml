@@ -579,8 +579,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          ROOTFS="${LUNITA_ROOTFS_REAL:-}"
+          if [[ -z "$ROOTFS" || ! -d "$ROOTFS" ]]; then
+            echo "Rootfs path was not established; preserve the earlier setup/restore failure as the blocking result."
+            exit 0
+          fi
           for part in dev proc sys run; do
-            if mountpoint -q "$LUNITA_ROOTFS_REAL/$part"; then
+            if mountpoint -q "$ROOTFS/$part"; then
               echo "BLOCKED: target mount remains active: $part"
               exit 2
             fi

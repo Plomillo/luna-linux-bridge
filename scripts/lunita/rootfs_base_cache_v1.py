@@ -112,16 +112,46 @@ def validate_rootfs_identity(rootfs: Path) -> tuple[dict[str, Any], str]:
     return build, sha256_file(receipt_path)
 
 
+def normalized_archive_path(name: str) -> str:
+    path = PurePosixPath(name)
+    parts = path.parts[1:] if path.parts and path.parts[0] == "." else path.parts
+    return "/".join(parts) if parts else "."
+
+
 def validate_archive_paths(archive: Path) -> None:
-    """Reject archive entries or relative links that can escape the extraction root."""
+    """Reject unsafe paths and every special entry except Ubuntu's canonical /dev/console."""
+    seen_paths: set[str] = set()
     try:
         with tarfile.open(archive, mode="r:") as bundle:
             for member in bundle:
                 name = PurePosixPath(member.name)
                 if name.is_absolute() or ".." in name.parts:
                     deny(f"unsafe archive member path: {member.name}")
-                if member.isdev() or member.isfifo():
-                    deny(f"special filesystem entry is forbidden in rootfs cache: {member.name}")
+                relative_name = normalized_archive_path(member.name)
+                if relative_name in seen_paths:
+                    deny(f"duplicate rootfs cache archive path: {member.name}")
+                seen_paths.add(relative_name)
+                if member.isdev():
+                    # Ubuntu's boot console is a required static rootfs device node.
+                    # No other block/character device or altered console metadata is admitted.
+                    canonical_console = (
+                        relative_name == "dev/console"
+                        and member.ischr()
+                        and member.devmajor == 5
+                        and member.devminor == 1
+                        and member.uid == 0
+                        and member.gid == 0
+                        and member.mode == 0o600
+                    )
+                    if not canonical_console:
+                        deny(
+                            "non-canonical device node is forbidden in rootfs cache: "
+                            f"{member.name} type={'character' if member.ischr() else 'block'} "
+                            f"major={member.devmajor} minor={member.devminor} "
+                            f"uid={member.uid} gid={member.gid} mode={oct(member.mode)}"
+                        )
+                if member.isfifo():
+                    deny(f"FIFO filesystem entry is forbidden in rootfs cache: {member.name}")
                 if member.issym() and not PurePosixPath(member.linkname).is_absolute():
                     stack: list[str] = []
                     for part in (name.parent / PurePosixPath(member.linkname)).parts:
@@ -164,6 +194,9 @@ def pack_base(workspace: Path, rootfs: Path, cache_dir: Path, commit: str) -> di
     ]
     try:
         subprocess.run(command, check=True)
+        # Validate before publishing the snapshot: a bad first fill must never
+        # poison the cache and fail only on a later cache hit.
+        validate_archive_paths(temporary)
         with temporary.open("rb") as stream:
             os.fsync(stream.fileno())
         archive_sha = sha256_file(temporary)
@@ -256,6 +289,55 @@ def self_test() -> None:
         rootfs = root / "rootfs"
         restored = root / "restored"
         cache = root / "cache"
+
+        # Admit only the canonical Ubuntu boot console device and reject
+        # altered metadata, other device nodes, and FIFOs.
+        valid_console_archive = root / "valid-console.tar"
+        console = tarfile.TarInfo("./dev/console")
+        console.type = tarfile.CHRTYPE
+        console.mode = 0o600
+        console.uid = 0
+        console.gid = 0
+        console.devmajor = 5
+        console.devminor = 1
+        with tarfile.open(valid_console_archive, "w") as bundle:
+            bundle.addfile(console)
+        validate_archive_paths(valid_console_archive)
+
+        invalid_device_archive = root / "invalid-device.tar"
+        invalid_device = tarfile.TarInfo("./dev/mem")
+        invalid_device.type = tarfile.CHRTYPE
+        invalid_device.mode = 0o600
+        invalid_device.uid = 0
+        invalid_device.gid = 0
+        invalid_device.devmajor = 1
+        invalid_device.devminor = 1
+        with tarfile.open(invalid_device_archive, "w") as bundle:
+            bundle.addfile(invalid_device)
+        try:
+            validate_archive_paths(invalid_device_archive)
+        except SystemExit:
+            pass
+        else:
+            deny("self-test failed to reject a non-canonical device node")
+
+        altered_console_archive = root / "altered-console.tar"
+        altered_console = tarfile.TarInfo("./dev/console")
+        altered_console.type = tarfile.CHRTYPE
+        altered_console.mode = 0o666
+        altered_console.uid = 0
+        altered_console.gid = 0
+        altered_console.devmajor = 5
+        altered_console.devminor = 1
+        with tarfile.open(altered_console_archive, "w") as bundle:
+            bundle.addfile(altered_console)
+        try:
+            validate_archive_paths(altered_console_archive)
+        except SystemExit:
+            pass
+        else:
+            deny("self-test failed to reject altered /dev/console permissions")
+
         for relative in SOURCE_PATHS:
             path = workspace / relative
             path.parent.mkdir(parents=True, exist_ok=True)
