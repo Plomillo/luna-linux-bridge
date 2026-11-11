@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
@@ -112,6 +113,83 @@ def validate_rootfs_identity(rootfs: Path) -> tuple[dict[str, Any], str]:
     return build, sha256_file(receipt_path)
 
 
+
+def canonical_console_mode(
+    *,
+    is_character: bool,
+    major: int,
+    minor: int,
+    uid: int,
+    gid: int,
+    mode: int,
+) -> int:
+    """Validate Ubuntu's exact console identity and return its restrictive mode."""
+    if not (is_character and major == 5 and minor == 1 and uid == 0 and gid == 0):
+        deny(
+            "rootfs /dev/console identity mismatch: "
+            f"type={'character' if is_character else 'non-character'} "
+            f"major={major} minor={minor} uid={uid} gid={gid}"
+        )
+    # The pinned Ubuntu bootstrap may leave the canonical 5:1 node at 0666.
+    # Accept only that known source mode (or already-hardened 0600), then
+    # normalize it to root-only access before archive creation.
+    if mode not in (0o600, 0o666):
+        deny(f"rootfs /dev/console has an unapproved source mode: {oct(mode)}")
+    return 0o600
+
+
+def normalize_console_device(rootfs: Path) -> dict[str, Any]:
+    """Harden only the exact root-owned 5:1 console node before caching."""
+    dev_dir = rootfs / "dev"
+    if dev_dir.is_symlink():
+        deny("rootfs /dev must not be a symlink")
+    if not dev_dir.exists():
+        return {"path": "dev/console", "present": False, "normalization": "NOT_PRESENT"}
+    if not dev_dir.is_dir():
+        deny("rootfs /dev is not a directory")
+    console = dev_dir / "console"
+    if console.is_symlink():
+        deny("rootfs /dev/console must not be a symlink")
+    try:
+        before = console.lstat()
+    except FileNotFoundError:
+        return {"path": "dev/console", "present": False, "normalization": "NOT_PRESENT"}
+    is_character = stat.S_ISCHR(before.st_mode)
+    source_mode = stat.S_IMODE(before.st_mode)
+    target_mode = canonical_console_mode(
+        is_character=is_character,
+        major=os.major(before.st_rdev) if is_character else -1,
+        minor=os.minor(before.st_rdev) if is_character else -1,
+        uid=before.st_uid,
+        gid=before.st_gid,
+        mode=source_mode,
+    )
+    if source_mode != target_mode:
+        os.chmod(console, target_mode, follow_symlinks=False)
+    after = console.lstat()
+    if (
+        not stat.S_ISCHR(after.st_mode)
+        or os.major(after.st_rdev) != 5
+        or os.minor(after.st_rdev) != 1
+        or after.st_uid != 0
+        or after.st_gid != 0
+        or stat.S_IMODE(after.st_mode) != target_mode
+    ):
+        deny("rootfs /dev/console failed post-normalization verification")
+    return {
+        "path": "dev/console",
+        "present": True,
+        "type": "character",
+        "major": 5,
+        "minor": 1,
+        "uid": 0,
+        "gid": 0,
+        "source_mode_octal": oct(source_mode),
+        "normalized_mode_octal": oct(target_mode),
+        "normalization": "ALREADY_CANONICAL" if source_mode == target_mode else "HARDENED_TO_0600",
+    }
+
+
 def normalized_archive_path(name: str) -> str:
     path = PurePosixPath(name)
     parts = path.parts[1:] if path.parts and path.parts[0] == "." else path.parts
@@ -180,6 +258,7 @@ def cache_paths(cache_dir: Path) -> tuple[Path, Path]:
 def pack_base(workspace: Path, rootfs: Path, cache_dir: Path, commit: str) -> dict[str, Any]:
     sources, fingerprint = input_identity(workspace)
     build, build_receipt_sha = validate_rootfs_identity(rootfs)
+    console_policy = normalize_console_device(rootfs)
     cache_dir.mkdir(parents=True, exist_ok=True)
     if cache_dir.is_symlink():
         deny("cache directory must not be a symlink")
@@ -213,6 +292,7 @@ def pack_base(workspace: Path, rootfs: Path, cache_dir: Path, commit: str) -> di
             "input_sources": sources,
             "rootfs_build_receipt_sha256": build_receipt_sha,
             "rootfs_build_status": build["status"],
+            "rootfs_console_policy": console_policy,
             "archive": {
                 "file": ARCHIVE_NAME,
                 "sha256": archive_sha,
@@ -289,6 +369,29 @@ def self_test() -> None:
         rootfs = root / "rootfs"
         restored = root / "restored"
         cache = root / "cache"
+
+        if canonical_console_mode(
+            is_character=True, major=5, minor=1, uid=0, gid=0, mode=0o666
+        ) != 0o600:
+            deny("self-test failed to harden canonical /dev/console mode 0666")
+        if canonical_console_mode(
+            is_character=True, major=5, minor=1, uid=0, gid=0, mode=0o600
+        ) != 0o600:
+            deny("self-test failed to preserve canonical /dev/console mode 0600")
+        invalid_console_metadata = (
+            {"is_character": False, "major": 5, "minor": 1, "uid": 0, "gid": 0, "mode": 0o600},
+            {"is_character": True, "major": 1, "minor": 1, "uid": 0, "gid": 0, "mode": 0o600},
+            {"is_character": True, "major": 5, "minor": 2, "uid": 0, "gid": 0, "mode": 0o600},
+            {"is_character": True, "major": 5, "minor": 1, "uid": 1000, "gid": 0, "mode": 0o600},
+            {"is_character": True, "major": 5, "minor": 1, "uid": 0, "gid": 1000, "mode": 0o600},
+            {"is_character": True, "major": 5, "minor": 1, "uid": 0, "gid": 0, "mode": 0o644},
+        )
+        for metadata_case in invalid_console_metadata:
+            try:
+                canonical_console_mode(**metadata_case)
+            except SystemExit:
+                continue
+            deny("self-test failed to reject altered /dev/console identity or permissions")
 
         # Admit only the canonical Ubuntu boot console device and reject
         # altered metadata, other device nodes, and FIFOs.
