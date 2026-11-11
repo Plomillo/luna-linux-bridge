@@ -424,8 +424,20 @@ jobs:
         run: |
           set -euo pipefail
           if ! command -v flatpak >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends flatpak
+            installed=false
+            for attempt in 1 2 3 4; do
+              echo "HOST_FLATPAK_INSTALL_ATTEMPT=$attempt/4"
+              if sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update && \
+                 sudo DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends flatpak; then
+                installed=true
+                break
+              fi
+              if [ "$attempt" -lt 4 ]; then sleep $((attempt * 10)); fi
+            done
+            [ "$installed" = true ] || {
+              echo "BLOCKED: host Flatpak installation failed after bounded network retries." >&2
+              exit 1
+            }
           fi
           command -v flatpak
           flatpak --version

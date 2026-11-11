@@ -235,6 +235,21 @@ class TargetXdgRuntimeDirectoryTests(unittest.TestCase):
                     with self.assertRaisesRegex(target.TargetGateError, "owned by UID/GID 1000"):
                         target.verify_xdg_runtime_dir()
 
+class TargetHostFlatpakInstallWorkflowTests(unittest.TestCase):
+    def test_host_flatpak_install_retries_network_and_still_requires_cli(self):
+        repository = pathlib.Path(__file__).resolve().parents[3]
+        workflow = repository / ".github/workflows/lunita-v18-direct-functional-validation.yml"
+        content = workflow.read_text(encoding="utf-8")
+        start = content.index("      - name: Ensure host Flatpak client is available for independent JASP validation")
+        end = content.index("      - name: Verify the actual candidate rootfs and target prerequisites", start)
+        step = content[start:end]
+        self.assertIn("for attempt in 1 2 3 4", step)
+        self.assertIn("Acquire::Retries=3", step)
+        self.assertIn("apt-get", step)
+        self.assertIn("install -y --no-install-recommends flatpak", step)
+        self.assertIn("BLOCKED: host Flatpak installation failed", step)
+        self.assertIn("flatpak --version", step)
+
 class TargetLegacyFlatpakDiagnosticTests(unittest.TestCase):
     def test_flatpak_diagnostic_compares_inherited_and_clean_guest_environments(self):
         calls = [
