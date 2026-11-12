@@ -26,7 +26,7 @@ host_flatpak() {
 }
 host_flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 host_flatpak install --system --noninteractive --assumeyes flathub org.kde.Sdk//6.11
-qt_version="$(host_flatpak run --system --command=bash org.kde.Sdk//6.11 -c 'qmake6 -query QT_VERSION')"
+qt_version="$(host_flatpak run --system --command=bash org.kde.Sdk//6.11 -c 'pkg-config --modversion Qt6Core')"
 echo "SDK Qt version $qt_version"
 src="/tmp/qthttpserver-src"
 rm -rf "$src"
