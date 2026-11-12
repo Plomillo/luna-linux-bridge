@@ -1,32 +1,56 @@
 #!/bin/bash
-# Pin org.kde.Platform//6.11 to the Qt 6.11.2 commit that JASP 0.98.1 was built against.
-# The current Flathub runtime (fb23e178, Qt 6.11.3) drops QtPrivate_6_11_2, so
-# libQt6HttpServer.so.6 fails at startup. The JASP app commit stays pinned.
+# Keep the pinned JASP app on the current KDE 6.11 runtime and replace
+# libQt6HttpServer with one built against that runtime. The published app
+# library asks for QtPrivate_6_11_2, which Qt 6.11.3 no longer exports.
 set -euo pipefail
 : "${FLATPAK_SYSTEM_DIR:?FLATPAK_SYSTEM_DIR is required}"
 PINNED_APP_COMMIT="83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
-QT6112_RUNTIME_COMMIT="76fa01ac42ecf45d2c5020ef80de1c474c0c2ae86a51a79e8fec44c48f9dc473"
 flatpak info --system org.jaspstats.JASP
 runtime="$(flatpak info --system org.jaspstats.JASP | sed -n 's/^[[:space:]]*Runtime:[[:space:]]*//p' | head -n 1)"
 if [ -z "$runtime" ]; then
   echo "JASP runtime id is missing" >&2
   exit 2
 fi
-echo "Pinning $runtime to Qt 6.11.2 commit $QT6112_RUNTIME_COMMIT"
-flatpak update --system --noninteractive --assumeyes --commit="$QT6112_RUNTIME_COMMIT" "$runtime"
+echo "Updating $runtime to the published tip"
+flatpak update --system --noninteractive --assumeyes "$runtime"
 app_commit="$(flatpak info --system --show-commit org.jaspstats.JASP)"
-runtime_commit="$(flatpak info --system --show-commit "$runtime")"
 if [ "$app_commit" != "$PINNED_APP_COMMIT" ]; then
   echo "JASP app commit moved: $app_commit" >&2
   exit 2
 fi
-if [ "$runtime_commit" != "$QT6112_RUNTIME_COMMIT" ]; then
-  echo "Runtime commit is $runtime_commit, expected $QT6112_RUNTIME_COMMIT" >&2
+echo "JASP app commit remains $app_commit"
+echo "Runtime commit $(flatpak info --system --show-commit "$runtime")"
+
+host_flatpak() {
+  env -u FLATPAK_SYSTEM_DIR flatpak "$@"
+}
+host_flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+host_flatpak install --system --noninteractive --assumeyes flathub org.kde.Sdk//6.11
+qt_version="$(host_flatpak run --system --command=bash org.kde.Sdk//6.11 -c 'qmake6 -query QT_VERSION')"
+echo "SDK Qt version $qt_version"
+src="/tmp/qthttpserver-src"
+rm -rf "$src"
+mkdir -p "$src"
+curl --fail --location --retry 3 "https://github.com/qt/qthttpserver/archive/refs/tags/v${qt_version}.tar.gz" | tar -xz -C "$src" --strip-components=1
+host_flatpak run --system --command=bash --filesystem="$src" org.kde.Sdk//6.11 -c "
+set -eu
+cd '$src'
+cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX='$src/out'
+cmake --build build
+cmake --install build
+"
+built="$(find "$src/out" -name 'libQt6HttpServer.so*' -print)"
+if [ -z "$built" ]; then
+  echo "qthttpserver build produced no libQt6HttpServer" >&2
   exit 2
 fi
-echo "JASP app commit remains $app_commit"
-echo "Runtime commit $runtime_commit"
+echo "$built"
 files="$FLATPAK_SYSTEM_DIR/app/org.jaspstats.JASP/x86_64/stable/active/files"
+dest="$files/lib/x86_64-linux-gnu"
+mkdir -p "$dest"
+find "$src/out" -name 'libQt6HttpServer.so*' -exec cp -a {} "$dest/" \;
+echo "Replaced HttpServer libraries in $dest"
+
 mkdir -p "$files/lunita-fixtures"
 link_fixture() {
   relative="$1"
@@ -40,10 +64,3 @@ link_fixture() {
 link_fixture "Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp" DeathPenalty.jasp
 link_fixture "Resources/Data Sets/Data Library/13. Reliability/Interrater Data from Shrout and Fleiss (1979).jasp" Reliability.jasp
 link_fixture "Resources/Data Sets/Data Library/2. T-Tests/Weight Gain.jasp" WeightGain.jasp
-if [ "$(head -c 2 "$files/bin/org.jaspstats.JASP")" = "#!" ]; then
-  echo "JASP entry is a script:"
-  head -n 20 "$files/bin/org.jaspstats.JASP"
-else
-  echo "JASP entry is a binary"
-fi
-

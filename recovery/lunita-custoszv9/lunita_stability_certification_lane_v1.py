@@ -260,7 +260,6 @@ def flatpak_jasp_launch(flatpak_options: list[str], app_args: list[str]) -> list
         "--command=/app/bin/JASP",
         "--env=QT_QPA_PLATFORM=offscreen",
         "--env=QTWEBENGINE_DISABLE_SANDBOX=1",
-        "--env=LD_LIBRARY_PATH=/app/lib/x86_64-linux-gnu/:/app/lib/aarch64-linux-gnu/",
         "--env=QML2_IMPORT_PATH=/app/qml",
         *flatpak_options, "org.jaspstats.JASP", *app_args,
     ]
