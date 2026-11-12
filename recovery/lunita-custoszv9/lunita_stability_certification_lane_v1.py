@@ -308,7 +308,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             temp_fixture = temp_root / "DeathPenalty.jasp"
             shutil.copy2(source, temp_fixture)
             temp_before = sha_file(temp_fixture)
-            cmd = flatpak_jasp_launch([f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture), "--hide"])
+            cmd = flatpak_jasp_launch([f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)])
             save_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_save.log"
             rerun_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_rerun.log"
             save_started = utc()
@@ -410,7 +410,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                 header = (f"START_UTC={started}\nAPP_COMMIT={actual_commit}\nTEST_FILE={fixture}\n"
                           "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED\n")
                 try:
-                    run = subprocess.run(flatpak_jasp_launch([], ["--unitTest", fixture, "--hide"]),
+                    run = subprocess.run(flatpak_jasp_launch([], ["--unitTest", fixture]),
                                          env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                          text=True, timeout=300, check=False)
                     rc = int(run.returncode)
@@ -418,7 +418,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                     log_path.write_text(payload, encoding="utf-8", errors="replace")
                     results["tests"][case_id] = {"status": "PASS" if rc == 0 else "BLOCKED", "returncode": rc,
                         "fixture": fixture, "log_path": str(log_path), "log_sha256": sha_file(log_path),
-                        "command": flatpak_jasp_launch([], ["--unitTest", fixture, "--hide"]),
+                        "command": flatpak_jasp_launch([], ["--unitTest", fixture]),
                         "started_at_utc": started, "finished_at_utc": utc()}
                 except subprocess.TimeoutExpired as exc:
                     out = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
@@ -710,10 +710,10 @@ def latest_jasp_evidence() -> dict:
                 text = p.read_text(encoding="utf-8", errors="replace")
             except OSError:
                 text = ""
-            match = re.findall(re.escape(marker or "") + r"\s*=\s*([01])", text) if marker else []
+            match = re.findall(re.escape(marker or "") + r"\s*=\s*([0-9]+)", text) if marker else []
             rc = int(match[-1]) if match else None
             expected_commit = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
-            commits = re.findall(r"^APP_COMMIT=([0-9a-f]{40})$", text, re.M)
+            commits = re.findall(r"^APP_COMMIT=([0-9a-f]{64})$", text, re.M)
             pinned_commit = bool(commits) and all(x == expected_commit for x in commits)
             sandbox_bound = "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED" in text
             passed = rc == 0 and pinned_commit and sandbox_bound
