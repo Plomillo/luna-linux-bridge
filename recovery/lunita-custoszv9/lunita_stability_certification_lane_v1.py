@@ -311,7 +311,7 @@ def extract_actual_jasp_unit_test_rows(output: str) -> list[str]:
     for line in lines[headings[-1]:mismatch_at]:
         if "Footer:" in line:
             break
-        match = re.search(r"Row:\\s*(.*)$", line)
+        match = re.search(r"Row:\s*(.*)$", line)
         if match and match.group(1).strip():
             rows.append(match.group(1).strip())
     if len(rows) < 2:
@@ -668,7 +668,10 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
     roundtrip_fixture_receipt = roundtrip.get("deterministic_fixture_receipt")
     roundtrip_ok = (
         roundtrip.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
-        and (roundtrip.get("strict_rerun_after_save") or {}).get("returncode") == 0
+        and roundtrip.get("deterministic_replay_status") == "PASS_DETERMINISTIC_REPLAY"
+        and roundtrip.get("actual_result_rows_equal") is True
+        and isinstance(roundtrip.get("save_actual_result_rows_sha256"), str)
+        and roundtrip.get("save_actual_result_rows_sha256") == roundtrip.get("rerun_actual_result_rows_sha256")
         and roundtrip.get("original_sample_unchanged") is True
         and roundtrip.get("deterministic_fixture_receipt_valid") is True
         and verify_deterministic_fixture_receipt(
