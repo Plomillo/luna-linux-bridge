@@ -15,8 +15,9 @@ CHROME_VERSION="153.0.8010.12"
 R_VERSION="4.6.1"
 JAMOVI_VERSION="2.7.27"
 JAMOVI_COMMIT="4685c60d99398dc687837d58f370b31e01edc160c2e3bbd3d4b204a20b249fab"
-JASP_VERSION="0.98.1"
+JASP_VERSION="0.98.8"
 JASP_COMMIT="83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
+JASP_SOURCE_COMMIT="b6cd3b0310be4e18e1b673ac11f14e55615c8fa1"
 QWEN_REPO="bartowski/Qwen_Qwen3-0.6B-GGUF"
 QWEN_REVISION="f9184d8b4c371cb52af5b8cb3d38e55e3cf0f4a0"
 QWEN_SHA256="0906dcf62aa4f005887e855731376f0bf3be8f5ffa61f547df71e6154ea748d9"
@@ -251,7 +252,9 @@ flatpak update --system --noninteractive --assumeyes --commit="$JASP_COMMIT" org
 JAMOVI_OBSERVED_COMMIT="$(flatpak info --system --show-commit org.jamovi.jamovi)"
 JASP_OBSERVED_COMMIT="$(flatpak info --system --show-commit org.jaspstats.JASP)"
 JAMOVI_OBSERVED_VERSION="$JAMOVI_VERSION"
-JASP_OBSERVED_VERSION="$JASP_VERSION"
+JASP_INFO="$(flatpak info --system org.jaspstats.JASP)"
+JASP_OBSERVED_VERSION="$(awk -F': *' '$1 == "Version" { print $2; exit }' <<<"$JASP_INFO")"
+[ -n "$JASP_OBSERVED_VERSION" ] || fail "JASP Flatpak metadata did not expose an installed version."
 [ "$JAMOVI_OBSERVED_COMMIT" = "$JAMOVI_COMMIT" ] || fail "Jamovi Flatpak commit mismatch."
 [ "$JASP_OBSERVED_COMMIT" = "$JASP_COMMIT" ] || fail "JASP Flatpak commit mismatch."
 [ "$JAMOVI_OBSERVED_VERSION" = "$JAMOVI_VERSION" ] || fail "Jamovi version mismatch: $JAMOVI_OBSERVED_VERSION"
@@ -303,7 +306,7 @@ tree_text = """LA PIEZA
             │   └── jamovi 2.7.27
             │
             └── LUPA
-                └── JASP 0.98.1
+                └── JASP 0.98.8
 """
 hierarchy = {
   "label": "LA PIEZA",
@@ -331,7 +334,7 @@ hierarchy = {
             {"label": "jamovi 2.7.27", "application_id": "org.jamovi.jamovi"}
           ]},
           {"label": "LUPA", "children": [
-            {"label": "JASP 0.98.1", "application_id": "org.jaspstats.JASP"}
+            {"label": "JASP 0.98.8", "application_id": "org.jaspstats.JASP"}
           ]}
         ]
       }]
@@ -389,7 +392,7 @@ data = {
   "brujula": {"node": "$NODE_ACTUAL", "node_archive_sha256": "$NODE_TARBALL_SHA256", "playwright": "$PLAYWRIGHT_ACTUAL", "playwright_core": "$PLAYWRIGHT_CORE_ACTUAL", "package_lock_sha256": "$PLAYWRIGHT_LOCK_SHA256", "node_binary_sha256": "$NODE_BINARY_SHA256", "chrome_for_testing": "$CHROME_ACTUAL", "chrome_binary_sha256": "$CHROME_BINARY_SHA256", "chrome_archive_sha256": "$CHROME_ZIP_SHA256", "implementation": "REPOSITORY_LOCAL_PLAYWRIGHT_WRAPPER"},
   "lapiz": {"r_version": "$R_VERSION", "rscript_sha256": "$R_SCRIPT_SHA256", "source_archive_sha256": "$R_ARCHIVE_SHA256", "runtime_path": "$R_PREFIX"},
   "sacapuntas": {"version": "$JAMOVI_OBSERVED_VERSION", "version_source": "EXACT_PINNED_FLATPAK_COMMIT_MAPPING", "application_id": "org.jamovi.jamovi", "flatpak_commit": "$JAMOVI_OBSERVED_COMMIT"},
-  "lupa": {"version": "$JASP_OBSERVED_VERSION", "version_source": "EXACT_PINNED_FLATPAK_COMMIT_MAPPING", "application_id": "org.jaspstats.JASP", "flatpak_commit": "$JASP_OBSERVED_COMMIT"},
+  "lupa": {"version": "$JASP_OBSERVED_VERSION", "version_source": "FLATPAK_APP_METADATA_VERIFIED", "source_commit": "$JASP_SOURCE_COMMIT", "application_id": "org.jaspstats.JASP", "flatpak_commit": "$JASP_OBSERVED_COMMIT"},
   "instrument_labels": {"BRUJULA": "Brújula giroscópica", "JAMOVI": "Sacapuntas", "JASP": "Lupa", "R": "Lápiz", "QWEN": "Motor Cognitivo"},
   "label_hierarchy": {"schema": "LUNITA_LABEL_HIERARCHY/1.0", "json_path": "/opt/lunita/metadata/LUNITA_LABEL_HIERARCHY.json", "json_sha256": "$LABEL_HIERARCHY_SHA256", "text_path": "/opt/lunita/metadata/LUNITA_LABEL_HIERARCHY.txt", "text_sha256": "$LABEL_HIERARCHY_TEXT_SHA256"},
   "invariants": {"frozen_g06_mutated": False, "canonical_g08_mutated": False, "legacy_launcher_replaced": False, "canonical_certification_inherited": False},
