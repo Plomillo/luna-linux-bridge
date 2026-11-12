@@ -255,9 +255,9 @@ flatpak update --system --noninteractive --assumeyes --commit="$JASP_COMMIT" org
 JAMOVI_OBSERVED_COMMIT="$(flatpak info --system --show-commit org.jamovi.jamovi)"
 JASP_OBSERVED_COMMIT="$(flatpak info --system --show-commit org.jaspstats.JASP)"
 JAMOVI_OBSERVED_VERSION="$JAMOVI_VERSION"
-[JAMOVI_OBSERVED_COMMIT = "$JAMOVI_COMMIT" ] || fail "Jamovi Flatpak commit mismatch."
-[JASP_OBSERVED_COMMIT = "$JASP_COMMIT" ] || fail "JASP Flatpak commit mismatch."
-[JAMOVI_OBSERVED_VERSION = "$JAMOVI_VERSION" ] || fail "Jamovi version mismatch: $JAMOVI_OBSERVED_VERSION"
+[ "$JAMOVI_OBSERVED_COMMIT" = "$JAMOVI_COMMIT" ] || fail "Jamovi Flatpak commit mismatch."
+[ "$JASP_OBSERVED_COMMIT" = "$JASP_COMMIT" ] || fail "JASP Flatpak commit mismatch."
+[ "$JAMOVI_OBSERVED_VERSION" = "$JAMOVI_VERSION" ] || fail "Jamovi version mismatch: $JAMOVI_OBSERVED_VERSION"
 
 # Flatpak's friendly Version field is AppStream-derived and may be absent or
 # stale. Bind release identity to the immutable Flathub manifest and exact
