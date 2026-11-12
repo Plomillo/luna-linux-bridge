@@ -64,7 +64,7 @@ class TargetJaspSourceReleaseIdentityTests(unittest.TestCase):
             sort_keys=True,
             separators=(",", ":"),
         ).encode("utf-8")
-        self.cmake = b"project(JASP VERSION 0.98.8.0 LANGUAGES CXX C)\\n"
+        self.cmake = b"project(JASP VERSION 0.98.8.0 LANGUAGES CXX C)"
 
     def _verify(self, manifest=None, cmake=None, source_commit="a" * 40, version="0.98.8"):
         manifest = self.manifest if manifest is None else manifest
