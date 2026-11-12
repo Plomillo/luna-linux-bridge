@@ -4,6 +4,7 @@ import pathlib
 import sys
 import tempfile
 import unittest
+import zipfile
 from unittest import mock
 
 try:
@@ -352,38 +353,64 @@ if __name__ == "__main__":
     unittest.main()
 
 
-class JaspSeedHookReceiptTests(unittest.TestCase):
-    def test_seed_hook_receipt_is_hash_bound_and_rejects_wrong_seed(self):
+class JaspDeterministicFixtureTests(unittest.TestCase):
+    @staticmethod
+    def write_fixture(path, options_list):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr(
+                "analyses.json",
+                json.dumps({"analyses": [{"analysisId": f"analysis-{i}", "options": option}
+                                         for i, option in enumerate(options_list)]}),
+            )
+            archive.writestr("data/data.bin", b"immutable data payload")
+
+    def test_clone_changes_only_one_native_seed_option_and_preserves_source(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)
-            out = base / "out"
-            out.mkdir()
-            marker = base / "seed-hook.log"
-            marker.write_text("SEED_APPLIED\t123\t1\tFALSE\n", encoding="utf-8")
-            with mock.patch.object(lane, "OUT", out):
-                receipt = lane.capture_jasp_seed_hook_receipt(marker, "seed-hook-evidence.log")
-            self.assertEqual("PASS", receipt["status"])
-            self.assertTrue(lane.seed_hook_evidence_valid(receipt))
-            marker.write_text("SEED_APPLIED\t123\t2\tFALSE\n", encoding="utf-8")
-            with mock.patch.object(lane, "OUT", out):
-                invalid = lane.capture_jasp_seed_hook_receipt(marker, "seed-hook-invalid.log")
-            self.assertEqual("BLOCKED", invalid["status"])
-            self.assertFalse(lane.seed_hook_evidence_valid(invalid))
-
-    def test_flatpak_jasp_pass_is_blocked_without_executed_seed_hook_receipt(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            out = pathlib.Path(tmp)
-            log = out / "JASP_UNITTEST_FLATPAK_20261112.log"
-            log.write_text(
-                "APP_COMMIT=83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7\n"
-                "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED\n"
-                "JASP_UNITTEST_RC=0\n",
-                encoding="utf-8",
+            source = base / "Death Penalty.jasp"
+            clone = base / "Death Penalty_seeded.jasp"
+            receipt_path = base / "evidence" / "fixture_receipt.json"
+            self.write_fixture(source, [{"setSeed": False, "seed": 1, "other": "preserved"}])
+            source_sha = lane.sha_file(source)
+            receipt = lane.prepare_deterministic_fixture(
+                source, clone, receipt_path, source_sha
             )
-            with mock.patch.object(lane, "OUT", out):
-                result = lane.latest_jasp_evidence()
-            self.assertEqual("BLOCKED", result["cases"]["flatpak_launch"]["status"])
-            self.assertFalse(result["cases"]["flatpak_launch"]["seed_hook_evidence_valid"])
+            self.assertTrue(receipt["source_unchanged"])
+            self.assertEqual(source_sha, lane.sha_file(source))
+            self.assertNotEqual(source_sha, lane.sha_file(clone))
+            self.assertEqual("/analyses/0/options", receipt["changed_json_pointer"])
+            self.assertTrue(lane.verify_deterministic_fixture_receipt(receipt, source_sha))
+            with zipfile.ZipFile(source) as original, zipfile.ZipFile(clone) as seeded:
+                original_names = sorted(original.namelist())
+                self.assertEqual(original_names, sorted(seeded.namelist()))
+                self.assertEqual(original.read("data/data.bin"), seeded.read("data/data.bin"))
+                original_json = json.loads(original.read("analyses.json"))
+                seeded_json = json.loads(seeded.read("analyses.json"))
+                self.assertEqual(False, original_json["analyses"][0]["options"]["setSeed"])
+                self.assertEqual(True, seeded_json["analyses"][0]["options"]["setSeed"])
+                self.assertEqual(1, seeded_json["analyses"][0]["options"]["seed"])
+                self.assertEqual("preserved", seeded_json["analyses"][0]["options"]["other"])
+            receipt["receipt_sha256"] = "0" * 64
+            self.assertFalse(lane.verify_deterministic_fixture_receipt(receipt, source_sha))
+
+    def test_ambiguous_or_missing_seed_options_fail_closed(self):
+        for options in (
+            [{"setSeed": False, "seed": 1}, {"setSeed": False, "seed": 1}],
+            [{"setSeed": False, "seed": 2}],
+        ):
+            with self.subTest(options=options), tempfile.TemporaryDirectory() as tmp:
+                base = pathlib.Path(tmp)
+                source = base / "Death Penalty.jasp"
+                clone = base / "clone.jasp"
+                receipt = base / "receipt.json"
+                self.write_fixture(source, options)
+                with self.assertRaises(lane.FixtureError):
+                    lane.prepare_deterministic_fixture(
+                        source, clone, receipt, lane.sha_file(source)
+                    )
+                self.assertFalse(clone.exists())
+                self.assertFalse(receipt.exists())
 
 
 class JaspRunnerTests(unittest.TestCase):
@@ -395,29 +422,27 @@ class JaspRunnerTests(unittest.TestCase):
             out.mkdir()
             report = base / "evidence" / "jasp-suite.json"
             rootfs = base / "rootfs"
-            source_fixture = rootfs / "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
-            source_fixture.parent.mkdir(parents=True)
-            source_fixture.write_bytes(b"fake jasp fixture - immutable source")
-            seed_dir = base / "seed-hooks"
+            source_fixture = rootfs / (
+                "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/"
+                "Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
+            )
+            JaspDeterministicFixtureTests.write_fixture(
+                source_fixture, [{"setSeed": False, "seed": 1}]
+            )
+            source_sha = lane.sha_file(source_fixture)
             responses = [
-                SimpleNamespace(returncode=0, stdout="83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="flatpak test pass\n", stderr=""),
-                SimpleNamespace(returncode=1, stdout="numeric delta\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="flatpak test pass\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="roundtrip save passed\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="roundtrip strict rerun passed\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7\\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="flatpak test pass\\n", stderr=""),
+                SimpleNamespace(returncode=1, stdout="numeric delta\\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="flatpak test pass\\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="roundtrip save passed\\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="roundtrip strict rerun passed\\n", stderr=""),
             ]
             response_iter = iter(responses)
             def fake_run(*args, **kwargs):
-                command = args[0]
-                for part in command:
-                    if part.startswith("--env=LUNITA_JASP_SEED_HOOK_RECEIPT="):
-                        marker = pathlib.Path(part.removeprefix("--env=LUNITA_JASP_SEED_HOOK_RECEIPT="))
-                        marker.parent.mkdir(parents=True, exist_ok=True)
-                        marker.write_text("SEED_APPLIED\t123\t1\tFALSE\n", encoding="utf-8")
                 return next(response_iter)
-            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "ROOTFS", rootfs), \
-                 mock.patch.object(lane, "JASP_SEED_HOOK_DIR", seed_dir), \
+            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "ROOTFS", rootfs), \\
+                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha), \\
                  mock.patch.object(lane.subprocess, "run", side_effect=fake_run) as runner:
                 result = lane.run_jasp_regression_suite(report)
             self.assertEqual("BLOCKED_JASP_REGRESSION", result["status"])
@@ -432,22 +457,23 @@ class JaspRunnerTests(unittest.TestCase):
                                 for command in jasp_calls))
             self.assertTrue(all("--hide" not in command for command in jasp_calls))
             flatpak_command = result["tests"]["flatpak_launch"]["command"]
-            self.assertIn("--env=LUNITA_JASP_CERTIFICATION_DETERMINISTIC_SEED=1", flatpak_command)
+            self.assertFalse(any("RPROFILE" in arg or "SEED_HOOK" in arg for arg in flatpak_command))
+            self.assertTrue(any(arg.startswith("--filesystem=") and "seeded-fixture" in arg
+                                for arg in flatpak_command))
             self.assertEqual("PASS", result["tests"]["flatpak_launch"]["status"])
-            self.assertTrue(lane.seed_hook_evidence_valid(result["tests"]["flatpak_launch"]["seed_hook_receipt"]))
+            self.assertTrue(result["tests"]["flatpak_launch"]["deterministic_fixture_receipt_valid"])
             self.assertEqual(1, result["tests"]["reliability"]["returncode"])
             self.assertEqual("BLOCKED", result["tests"]["reliability"]["status"])
             self.assertIn("JASP_RELIABILITY_UNITTEST_RC=1", pathlib.Path(result["tests"]["reliability"]["log_path"]).read_text())
-            self.assertEqual("BLOCKED_JASP_STRICT_ROUNDTRIP", result["roundtrip_gate"]["status"])
-            self.assertFalse(result["roundtrip_gate"]["original_sample_unchanged"])
+            self.assertEqual("PASS_JASP_STRICT_ROUNDTRIP", result["roundtrip_gate"]["status"])
+            self.assertTrue(result["roundtrip_gate"]["original_sample_unchanged"])
             self.assertTrue(result["roundtrip_gate"]["temporary_fixture_removed_after_test"])
             self.assertTrue(report.is_file())
 
 
 class JaspStrictRoundtripPositiveTests(unittest.TestCase):
-    def test_roundtrip_passes_when_save_reopen_and_sample_pins_match(self):
+    def test_roundtrip_passes_when_native_seed_clone_is_stable(self):
         from types import SimpleNamespace
-        expected = "fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895"
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)
             out = base / "out"
@@ -457,48 +483,32 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
                 "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/"
                 "Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
             )
-            source.parent.mkdir(parents=True)
-            source.write_bytes(b"fixture bytes for positive mocked roundtrip")
-            seed_dir = base / "seed-hooks"
+            JaspDeterministicFixtureTests.write_fixture(
+                source, [{"setSeed": False, "seed": 1}]
+            )
+            source_sha = lane.sha_file(source)
             responses = [
-                SimpleNamespace(returncode=0, stdout="save successful\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="strict reopen successful\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="save successful\\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="strict reopen successful\\n", stderr=""),
             ]
             response_iter = iter(responses)
-            def fake_run(*args, **kwargs):
-                command = args[0]
-                for part in command:
-                    if part.startswith("--env=LUNITA_JASP_SEED_HOOK_RECEIPT="):
-                        marker = pathlib.Path(part.removeprefix("--env=LUNITA_JASP_SEED_HOOK_RECEIPT="))
-                        marker.parent.mkdir(parents=True, exist_ok=True)
-                        marker.write_text("SEED_APPLIED\t123\t1\tFALSE\n", encoding="utf-8")
-                return next(response_iter)
-            with mock.patch.object(lane, "OUT", out):
-                with mock.patch.object(lane, "ROOTFS", rootfs):
-                    with mock.patch.object(lane, "JASP_SEED_HOOK_DIR", seed_dir):
-                        real_sha_file = lane.sha_file
-                        def path_aware_sha_file(path):
-                            # Pin only the packaged fixture copies to the known fixture digest.
-                            # Evidence artifacts must retain their real, independently checked SHA-256.
-                            candidate = pathlib.Path(path)
-                            if candidate == source or candidate.name == "DeathPenalty.jasp":
-                                return expected
-                            return real_sha_file(candidate)
-                        with mock.patch.object(lane, "sha_file", side_effect=path_aware_sha_file):
-                            with mock.patch.object(lane.subprocess, "run", side_effect=fake_run) as runner:
-                                result = lane.run_death_penalty_roundtrip(
-                                    "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
-                                    {"QT_QPA_PLATFORM": "offscreen"},
-                                    "POSITIVE_TEST",
-                                )
+            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "ROOTFS", rootfs), \\
+                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha), \\
+                 mock.patch.object(lane.subprocess, "run", side_effect=lambda *a, **k: next(response_iter)) as runner:
+                result = lane.run_death_penalty_roundtrip(
+                    "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
+                    {"QT_QPA_PLATFORM": "offscreen"},
+                    "POSITIVE_TEST",
+                )
             self.assertEqual(2, runner.call_count)
             self.assertEqual("PASS_JASP_STRICT_ROUNDTRIP", result["status"])
             self.assertEqual("PASS", result["save_run"]["status"])
             self.assertEqual("PASS", result["strict_rerun_after_save"]["status"])
-            self.assertTrue(lane.seed_hook_evidence_valid(result["save_run"]["seed_hook_receipt"]))
-            self.assertTrue(lane.seed_hook_evidence_valid(result["strict_rerun_after_save"]["seed_hook_receipt"]))
+            self.assertTrue(result["deterministic_fixture_receipt_valid"])
             self.assertTrue(result["original_sample_unchanged"])
             self.assertTrue(result["temporary_fixture_removed_after_test"])
+            self.assertTrue(result["temporary_fixture_stable_after_save_and_rerun"])
+
 
 class TargetRuntimeEvidenceGateTests(unittest.TestCase):
     @staticmethod
