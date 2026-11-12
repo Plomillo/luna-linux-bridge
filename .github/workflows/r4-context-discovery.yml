@@ -1,0 +1,75 @@
+name: "R4: localizar esqueleto original sin modificar el sistema"
+on:
+  push:
+    branches: [staging/luna-r4-context-recovery-20260927]
+    paths: [.github/workflows/r4-context-discovery.yml]
+permissions:
+  contents: read
+jobs:
+  inventory:
+    if: >-
+      github.repository == 'Plomillo/luna-linux-bridge' &&
+      github.event.head_commit.message == 'ci(R4): inventariar posibles documentos PART 0-9'
+    runs-on: [self-hosted, Linux, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Inventariar posibles documentos R4 sin modificar archivos
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_REF" = "refs/heads/staging/luna-r4-context-recovery-20260927"
+          python3 - <<'PY'
+          import os,re,json,hashlib,datetime
+          from pathlib import Path
+          home=Path.home()
+          roots=[home/p for p in ("LOUKSNA_MAESTRO_20260925","LOUKSNA_MAESTRO_20250925","SYMPHYLAX_LAB","Downloads","Documentos","Documents","Escritorio","Desktop")]
+          roots=[r for r in roots if r.is_dir() and not r.is_symlink()]
+          skip={".git",".cache","node_modules",".venv","venv","__pycache__",".npm",".cargo","18_HASH_INDEX","OBJECTS"}
+          named=re.compile(r"luna|r4|skeleton|esqueleto|reinicio|deployment|deploy|estado|system|sistema|part",re.I)
+          parts=re.compile(r"(?im)^[ \t]*(?:#{1,6}[ \t]*)?(?:PART|PARTE)[ \t_:\-]*([0-9])(?:[ \t]*[:.\-]|[ \t]+|$)")
+          cutoff=datetime.datetime(2026,9,24,tzinfo=datetime.timezone.utc).timestamp()
+          seen=set();records=[];scanned=0
+          for root in roots:
+              for base,dirs,files in os.walk(root,followlinks=False):
+                  depth=len(Path(base).relative_to(root).parts)
+                  dirs[:]=[d for d in dirs if d not in skip and not Path(base,d).is_symlink()] if depth<7 else []
+                  for name in files:
+                      if not name.lower().endswith((".md",".txt",".markdown")):continue
+                      path=Path(base,name)
+                      try:
+                          st=path.lstat()
+                          if not path.is_file() or path.is_symlink() or st.st_size>16_000_000:continue
+                          if str(path.resolve()) in seen:continue
+                          seen.add(str(path.resolve()));scanned+=1
+                          priority=bool(named.search(name))
+                          if not priority and st.st_mtime<cutoff:continue
+                          with path.open("rb") as f:data=f.read(min(st.st_size,3_000_000))
+                          content=data.decode("utf-8",errors="replace")
+                          found=sorted(set(parts.findall(content)))
+                          kde="kde" in content.lower() and "plasma" in content.lower()
+                          skeleton="skeleton" in name.lower() or "esqueleto" in name.lower()
+                          if not(skeleton or len(found)>=3 or (priority and (kde or "custosz" in content.lower()))):continue
+                          h=hashlib.sha256()
+                          with path.open("rb") as f:
+                              for block in iter(lambda:f.read(1024*1024),b""):h.update(block)
+                          rel="~/"+str(path.relative_to(home)) if path.is_relative_to(home) else str(path)
+                          score=len(found)*10+int(kde)*9+int(skeleton)*15+int("r4" in name.lower())*4
+                          records.append({"path":rel,"size_bytes":st.st_size,"sha256":h.hexdigest(),"parts_in_first_3MB":found,"kde_plasma":kde,"name_suggests_skeleton":skeleton,"discovery_score":score})
+                      except (OSError,ValueError):continue
+          records.sort(key=lambda x:(-x["discovery_score"],x["path"]))
+          report={"timestamp":datetime.datetime.now(datetime.timezone.utc).isoformat(),"status":"DISCOVERY_ONLY","roots":[str(p.relative_to(home)) for p in roots],"text_files_scanned":scanned,"candidate_count":len(records),"candidates":records[:80],"no_g23_or_g24":True}
+          dst=Path(os.environ["RUNNER_TEMP"])/"r4_context_census.json"
+          dst.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          print("SEARCH_ROOTS="+json.dumps(report["roots"]))
+          print("TEXT_FILES_SCANNED="+str(scanned))
+          print("CANDIDATE_COUNT="+str(len(records)))
+          for r in records[:20]:print("R4_CANDIDATE "+json.dumps(r,ensure_ascii=False,sort_keys=True))
+          print("NO_DOCUMENT_BODY_OR_CREDENTIALS_EXPORTED")
+          PY
+      - name: Archivar solo manifiesto de identificación
+        uses: actions/upload-artifact@v4
+        with:
+          name: r4-context-candidate-census
+          path: ${{ runner.temp }}/r4_context_census.json
+          retention-days: 30
+          if-no-files-found: error

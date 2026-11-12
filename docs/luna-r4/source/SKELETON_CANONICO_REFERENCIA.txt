@@ -1,0 +1,832 @@
+===============================================================================
+LUNA / METAOS WORKSTATION
+SKELETON CANÓNICO DE REFERENCIA
+TAXONOMÍA + MATERIALIZACIÓN + INSTALACIÓN + UI + OPERACIÓN LOCAL
+===============================================================================
+
+SPEC_ID=LUNA_WORKSTATION_REFERENCE_V1
+SPEC_STATUS=SPECIFIED_NOT_CERTIFIED
+RELEASE_AUTHORITY=Louksna.md
+CHANGE_DOCTRINE=EXTEND_DO_NOT_REPLACE
+FAILURE_POSTURE=FAIL_CLOSED
+NO_SILENT_OPERATIONS=TRUE
+TRACEABILITY_REQUIRED=TRUE
+PROVENANCE_REQUIRED=TRUE
+AUDITABILITY_REQUIRED=TRUE
+ROLLBACK_REQUIRED=TRUE
+NON_REGRESSION_REQUIRED=TRUE
+AUTO_CERTIFICATION=FORBIDDEN
+AUTHORITY_TRANSFER=FORBIDDEN
+
+PURPOSE:
+Aterrizar lo ya resuelto, investigar solamente lo no resuelto, cruzar
+compatibilidades, materializar lo que falte dentro del instalador y dejar
+separados con cero ambigüedad los estados ACQUIRED/MATERIALIZED/INSTALLED/
+VALIDATED/CERTIFIED/ACTIVE.
+
+===============================================================================
+00. REGLA DE CIERRE DE BUCLES
+===============================================================================
+
+RESOLVED_COMPONENT:
+- conservar identidad, versión, hash, procedencia y decisión ya evidenciados;
+- no reiniciar investigación por defecto;
+- reabrir sólo por cambio upstream, incompatibilidad, contradicción, fallo o
+  requisito nuevo.
+
+UNRESOLVED_COMPONENT:
+- identificar incertidumbre concreta;
+- investigar sólo esa incertidumbre;
+- seleccionar;
+- cruzar compatibilidad;
+- adquirir;
+- verificar;
+- materializar;
+- probar;
+- registrar evidencia;
+- cerrar el punto.
+
+NO_RESEARCH_LOOP=TRUE
+NO_SILENT_REOPEN=TRUE
+
+===============================================================================
+01. MODELO EPISTÉMICO DE ESTADOS
+===============================================================================
+
+DECLARED
+-> SELECTED
+-> SOURCE_RESOLVED
+-> ACQUIRED
+-> HASH_VERIFIED
+-> MATERIALIZED
+-> INSTALLABLE
+-> INSTALLED
+-> CONFIGURED
+-> FUNCTIONALLY_VALIDATED
+-> INDEPENDENTLY_VALIDATED
+-> CERTIFIED
+-> ACTIVE
+
+EXCEPTIONAL_STATES:
+PARTIAL
+QUARANTINED
+LICENSE_BLOCKED
+BYTES_PRESENT_UNADOPTED
+RESEARCH_REQUIRED
+FAILED
+DEGRADED
+HISTORICAL
+ROLLBACK_READY
+
+INVARIANTS:
+ACQUIRED!=MATERIALIZED
+MATERIALIZED!=INSTALLED
+INSTALLED!=VALIDATED
+VALIDATED!=CERTIFIED
+CERTIFIED!=ACTIVE
+BYTES_PRESENT!=AUTHORIZED
+DOWNLOADED!=MATERIALIZED
+
+===============================================================================
+02. GOBERNANZA Y EJECUCIÓN
+===============================================================================
+
+AUTHORITY=Louksna.md
+PROTECTED_BASELINE=LUNACORE_final_formalized_v25.md
+IMPROVED_REFERENCE=LOUKSNAMEJORADA.md
+
+WORKER=CUSTOSZ_V7
+CUSTOSZ_V7_SHA256=dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2
+
+RUNTIME=CUSTOSZ_RUNTIME_V1
+RUNTIME_SHA256=4e9bf0e799487ea0fd6a6d32359176bdce996010e33ed151ce0f186155d11df0
+
+GOVERNOR=MetaOS
+METAOS_SHA256=5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0
+
+SEMANTIC_CONTAINER_MANIFEST_SHA256=74e6d3f616ff0460b995b183ffde73ae6728d7339afe8c23ce19dd61df2a304f
+
+VALIDATOR=G23
+CERTIFIER=G24
+REMOTE_DESKTOP_COMMANDER=AUXILIARY_ONLY
+
+ROLE_RULE:
+MetaOS gobierna.
+CUSTOSZ trabaja.
+Runtime supervisa ejecución material, tiempo, checkpoints y continuidad.
+Contenedor semántico conserva contexto y conocimiento persistente.
+G23 valida independientemente.
+G24 certifica.
+
+===============================================================================
+03. REGISTRO DE ARQUITECTURAS Y VERSIONES
+===============================================================================
+
+ARCHITECTURES/
+  ACTIVE_CANONICAL/
+  CERTIFIED_HISTORICAL/
+  CANDIDATES/
+  REJECTED/
+  ROLLBACK/
+  MIGRATION_EVIDENCE/
+
+ARCHITECTURE_TRANSITION:
+candidate->evidence->validation->G23->G24->explicit_activation->pointer_update
+
+/opt/luna/custos/
+  versions/v06/
+  versions/v07/
+  versions/v08/
+  versions/v09/
+  current/
+  candidates/
+  compatibility/
+  migrations/
+  rollback/
+  evidence/
+
+CUSTOS_UPDATE:
+discover->acquire->verify->isolated_test->compatibility->non_regression
+->G23->G24->explicit_activation->atomic_current_switch
+
+LEGACY_CUSTOS_ALLOWED=SANDBOXED_TESTING_ONLY
+NO_SELF_PROMOTION=TRUE
+
+===============================================================================
+04. PROYECTOS COMO WORKSPACE INTELIGENTE LOCAL
+===============================================================================
+
+USER_VIEW:
+Proyectos/
+  1. Luna/
+  2. Lunita/
+  3. Luna Core/
+  5. CUSTOSZ/
+  6. Louksna/
+  Cápsula contenida/
+  Meta 2/
+  Roadmaps/
+  Metas/
+  Checkpoints/
+  Histórico/
+
+PROJECT_METADATA:
+<PROJECT>/.luna/
+  project.manifest.json
+  identity.json
+  roadmap.json
+  goals.json
+  runtime.policy.json
+  architecture.binding.json
+  semantic.binding.json
+  checkpoints.index.json
+  evidence.index.json
+  state.json
+
+NO_DUPLICATE_CUSTOS_BINARY_PER_PROJECT=TRUE
+NO_DUPLICATE_RUNTIME_PER_PROJECT=TRUE
+NO_DUPLICATE_METAOS_PER_PROJECT=TRUE
+
+APPLICATION=LUNA_PROJECTS_CENTER
+LOCAL_FIRST=TRUE
+REMOTE_REQUIRED=FALSE
+
+USER_CAN:
+- hablar con CUSTOS local;
+- ir al último checkpoint;
+- revisar roadmap y metas;
+- solicitar materialización;
+- solicitar prueba/diagnóstico/rollback;
+- solicitar misión por tiempo;
+- revisar evidencia.
+
+TIMED_MISSION:
+User->Projects_UI->Runtime_TimeBudgetController->MetaOS->CUSTOSZ
+->Semantic_Container->Evidence_Journal->Checkpoint->Final_State
+
+===============================================================================
+05. FRONTERA HUMANO / AUTOMATIZACIÓN
+===============================================================================
+
+HUMAN_REQUIRED:
+H1 doble clic en "Instalar Luna".
+H2 particionado físico manual.
+H3 aceptación legal/licencias cuando aplique.
+H4 autorización explícita para operación irreversible/destructiva.
+
+AUTOMATIC_TARGET:
+prechecks, hashes, dependencias, paquetes, configuración, drivers, gaming,
+toolchains, virtualización, UI, Projects Center, Devocional, Hygiene, pruebas,
+evidencia y postvalidación.
+
+MANUAL_PARTITIONING!=MANUAL_PACKAGE_INSTALLATION
+
+===============================================================================
+06. ACTIVO PROTEGIDO Y MÁQUINA
+===============================================================================
+
+PROTECTED_ASSET=C:\PROYECTOS
+POLICY=LIFE_CRITICAL_ZERO_DATA_LOSS
+
+DENIED_WITHOUT_GATE:
+delete, rename, move, overwrite, format, partition_overlap, unsafe_boot_write,
+cleanup, deduplication, relocation.
+
+CPU=AMD Ryzen 5 3500U 4C/8T
+GPU=AMD Radeon Vega 8
+VISIBLE_RAM=6351777792 bytes
+NVME=KIOXIA KXG60ZNV512G
+WIFI=Realtek RTL8821CE
+ETHERNET=Realtek RTL8168
+BIOS=AMI F.55
+VIRTUALIZATION=AMD-V/SVM
+
+===============================================================================
+07. STORAGE Y PATHS
+===============================================================================
+
+WINDOWS_DRIVE_LETTER!=LINUX_GLOBAL_PROGRAM_PATH
+
+LINUX_RUNTIME_LOCATIONS:
+/usr/bin
+/usr/local/bin
+/opt/luna
+~/.local/bin
+
+C:\PROYECTOS remains protected.
+Future cross-OS artifact mirror must be separate and explicitly governed.
+
+===============================================================================
+08. SISTEMA BASE + UI
+===============================================================================
+
+TARGET_OS=Debian GNU/Linux 13 Trixie
+DESKTOP=KDE Plasma
+
+[MATERIALIZED]
+debian-live-13.7.0-amd64-kde.iso
+SIZE_BYTES=4186112000
+SHA256=37dedc921f50325665c75829597126b3eeb70ff5cd8c511a7230ace09ae939be
+
+UI_STYLE:
+dark, sober, minimal, mature, refined, stable, warm,
+technical_without_hostility.
+
+WINDOWS_11_REFERENCE:
+information order, taskbar familiarity, search familiarity,
+file-manager discoverability.
+
+NOT_A_LITERAL_WINDOWS_CLONE=TRUE
+
+FILE_MANAGER=Dolphin
+ORDER:
+Inicio, Escritorio, Documentos, Descargas, Imágenes, Música, Vídeos,
+Proyectos, Papelera, Este equipo, Dispositivos y unidades, Red.
+
+DRIVE_LABEL_RULE:
+show only real volumes/mountpoints; never fabricate Windows drive semantics.
+
+DEFAULT_EXCLUDED_BY_USER:
+Spotify
+Firefox
+
+===============================================================================
+09. NAVEGADOR
+===============================================================================
+
+FAMILY=Chromium-based
+EXACT_PRODUCT=RESEARCH_REQUIRED
+
+CRITERIA:
+low RAM, tab sleeping/discarding, CPU efficiency, Vega 8 acceleration,
+security sandbox, rapid updates, university/LMS compatibility, WebRTC,
+WebAuthn, PDF, modern JS, extensions, privacy, Debian 13 maintainability,
+offline materialization feasibility.
+
+BENCHMARK:
+1/5/10/20 tabs + university site + PDF + video conference + file upload
++ memory pressure on Ryzen 5 3500U / ~5.92 GiB usable RAM.
+
+PIPELINE:
+research->shortlist->benchmark->security_review->select->materialize
+->install_test->G23->baseline_browser
+
+===============================================================================
+10. DESARROLLO BASE
+===============================================================================
+
+NODE.JS:
+required; node/npm/npx; pending exact closure; pending materialization.
+
+PYTHON:
+required; python3/python3-venv/python3-pip/pipx;
+pending exact closure; pending materialization.
+
+GIT:
+required; pending materialization.
+
+7-ZIP:
+required Linux implementation; pending exact resolution/materialization.
+
+JAVA:
+required OpenJDK family; Prism/Minecraft + development;
+pending exact closure/materialization.
+
+MOJO LAB:
+COMPONENT_ID=CLI_MOJO
+STATE=RESEARCH_REQUIRED
+MATERIALIZATION=PENDING
+Require official Linux source, pinned version, provenance, hash when available,
+offline reconstruction and compile/run test.
+
+C++23 LAB:
+COMPONENT_ID=CLI_CPP23_TOOLCHAIN
+Require GCC/G++, C++23, CMake, Ninja, GDB, pkg-config.
+Optional: Clang/LLDB.
+STATE=PENDING_PACKAGE_CLOSURE
+MATERIALIZATION=PENDING
+
+===============================================================================
+11. GAMING / COMPATIBILIDAD
+===============================================================================
+
+[MATERIALIZED] wine-stable-amd64.deb
+SHA256=854d460bc15f55a1a0e00ecbe0d2cdd0eb5a4ad78dc17e8648efe6d7c15dd5b3
+
+[MATERIALIZED] wine-stable-common.deb
+SHA256=d2146065d38f9ee27251bed144e3cc6669702273e24f34f974379754f0fd0c47
+
+[MATERIALIZED] winehq-stable-meta.deb
+SHA256=851d83d3916d3713cb64d82e0a2617c0daca8692a670b3ff6427087367049a55
+
+[MATERIALIZED] steam_latest.deb
+SHA256=765aba9a0ed339a50226ceb614fcc9879a991ba184098bc8de920efb12c714a4
+
+[MATERIALIZED] proton-11.0-2.tar.gz
+SHA256=c1fa47262f4b6dd2bdc8197613742e49244708740e5f901c72b1446cfdd5ffe8
+
+[MATERIALIZED] bottles.flatpakref
+SHA256=2228c531429e8a0ef9f8bb5ffb3ae013f0ac6c3aa6f44e9ea8828f096b292c16
+
+[MATERIALIZED] lutris-v0.5.22.tar.gz
+SHA256=31999b002b15ffb95d2088f693bb5eaa9cd41bd463cb2e3d937b1fc9fc36b64b
+
+[MATERIALIZED] PrismLauncher.AppImage
+SHA256=07d0987fd46b3ec442c15b25b6ab78b29737d33a8095039f488f301103bca463
+DEPENDENCY=Java
+
+[MATERIALIZED_VERIFIED] waydroid_1.6.2_all.deb
+SIZE=229276
+SHA256=002124e57517627d86d68b0ce136e911b4f7babc34dfaa9980d5e97c29ed5e9e
+
+===============================================================================
+12. LABORATORIO
+===============================================================================
+
+[MATERIALIZED] nix-install.sh
+SHA256=9adda97297d9e8ab360df95c729eabff4f4f93d6db091953c3a68f29e3fb130c
+
+VIRTUALIZATION:
+QEMU, KVM, libvirt, virt-manager, kvm_amd.
+Pending exact Debian closure if absent from base.
+
+[MATERIALIZED] ubuntu-24.04-minimal-cloudimg-amd64.img
+SIZE=264372224
+SHA256=46b0dbaffa6950a7da5ff2dc5ed34c46084610b3b6d1fae8f1ec2d7e953984a3
+
+WINDOWS_11:
+selected=Windows 11 IoT Enterprise LTSC 2024 Evaluation x64
+build=26100.1742
+expected_sha256=8abf91c9cd408368dc73aab3425d5e3c02dae74900742072eb5c750fc637c195
+
+BAD_COMPLETE_DOWNLOAD:
+size=5060020224
+observed_sha256=2cee70bd183df42b92a2e0da08cc2bb7a2a9ce3a3841955a012c0f77aeb3cb29
+state=HASH_MISMATCH_QUARANTINED
+NEVER_PROMOTE=TRUE
+
+REACQUISITION:
+Windows11_IoT_Enterprise_LTSC_2024_Eval_x64.iso.reacquire.part
+last_observed_size=1546813440
+state=PARTIAL
+
+ANDROID_16:
+target=AOSP x86_64 GSI QPR2 BP4A.251205.006
+expected_sha256=aa5d832edfb7e4c05138b459b21a219039048f65bc103ac38e25e410fa561512
+observed_bytes=956034415
+observed_hash_match=TRUE
+canonical_state=BYTES_PRESENT_UNADOPTED
+reason=human license authorization not proven in canonical path
+
+ANDROID_17:
+target=AOSP x86_64 GSI QPR1 CP3A.260905.010
+expected_sha256=81e37ae9e9280497c92fbda758b998a7dfab91ab9de000021622afa868a43b70
+observed_bytes=1237475685
+observed_hash_match=TRUE
+canonical_state=BYTES_PRESENT_UNADOPTED
+reason=human license authorization not proven in canonical path
+
+===============================================================================
+13. AUXILIAR
+===============================================================================
+
+[MATERIALIZED] archlinux-x86_64.iso
+SIZE=1608286208
+SHA256=be8458032f8105e60ee2a3067f950b6e3c007ee51b38dac50e8b48e765561c91
+
+ROLE=diagnostics,current-package comparison,experimental compilation,
+ArchWiki/AUR contrast.
+
+===============================================================================
+14. DEVOCIONAL
+===============================================================================
+
+APPLICATION=LUNA_DEVOTIONAL
+LOCAL_FIRST=TRUE
+PRIVATE_BY_DEFAULT=TRUE
+SOURCE_DRIVEN=TRUE
+PROVENANCE_AWARE=TRUE
+METACOGNITIVE=TRUE
+PRIMARY_CONFESSIONAL_MODE=REFORMED
+SCRIPTURE_SUPREME=TRUE
+SOLAS=TRUE
+
+DOCUMENT_CLASSES:
+BIBLE_TEXT, STUDY_BIBLE, COMMENTARY, LEXICON, BIBLICAL_DICTIONARY,
+CONFESSION, CATECHISM, THEOLOGICAL_TREATISE, CHURCH_HISTORY,
+CHURCH_FATHER, ACADEMIC_ARTICLE, MAP_ATLAS, PERSONAL_NOTE, UNKNOWN.
+
+UNKNOWN->FAIL_CLOSED before consequential synthesis.
+
+DETECTION:
+title, author, edition, publisher, language, document class,
+translation where detectable, metadata, checksum.
+
+HERMENEUTIC_PIPELINE:
+TEXT->OBSERVATION->LINGUISTIC_ANALYSIS->CONTEXT
+->HISTORICAL_CULTURAL_ANALYSIS->INFERENCE->INTERPRETATION
+->DOCTRINAL_SYNTHESIS->VALIDATION
+
+CONTROLS:
+EISEGESIS, PROOF_TEXTING, ANACHRONISM, LEXICAL_FALLACY,
+SEMANTIC_OVERLOADING, CONTEXTUAL_DISPLACEMENT.
+
+TEXT_MEANING_DISTINCT=TRUE
+
+COMPARATIVE_PROFILES:
+Reformed, Roman Catholic, Eastern Orthodox, future explicitly sourced profiles.
+
+RULE:
+represent opposing traditions from attributable sources and distinguish
+primary doctrine from polemical characterization.
+
+DEVOTIONAL_DATA:
+Devocional/
+  Biblioteca/
+  Biblia/
+  Biblias_de_estudio/
+  Comentarios/
+  Diccionarios/
+  Lexicos/
+  Confesiones/
+  Historia/
+  Articulos/
+  Notas/
+  Indice/
+  Provenance/
+  Hermeneutics/
+  Comparative/
+  Evidence/
+  .luna/
+
+ORIGINAL_SOURCE_FILE=IMMUTABLE_BY_DEFAULT
+GENERATED_ANALYSIS=STORED_SEPARATELY
+
+===============================================================================
+15. BACKEND COGNITIVO LOCAL
+===============================================================================
+
+REQUIREMENT=Projects+Devotional must remain locally operable.
+EXACT_MODEL=NOT_YET_SELECTED
+STATE=BENCHMARK_REQUIRED
+
+CRITERIA:
+RAM footprint, CPU latency, context, Spanish, English, theological vocabulary,
+structured output, hallucination resistance, document reasoning, tool use,
+semantic-container integration.
+
+LOCAL_BACKEND=REQUIRED
+REMOTE_BACKEND=OPTIONAL
+
+===============================================================================
+16. LUNA HYGIENE ENGINE
+===============================================================================
+
+NOT_A_BLIND_CLEANER=TRUE
+GOVERNED=TRUE
+TRACEABLE=TRUE
+AUDITABLE=TRUE
+
+CLASSES:
+R0_PROTECTED,R1_SAFE_TEMP,R2_PACKAGE_CACHE,R3_USER_APP_CACHE,
+R4_LANGUAGE_TOOL_CACHE,R5_BUILD_OUTPUT,R6_LOGS,R7_FLATPAK_UNUSED,
+R8_NIX_STORE,R9_BROWSER_CACHE,R10_VM_TEMP,R11_UNKNOWN.
+
+UNKNOWN->PRESERVE
+
+NEVER_AUTO_DELETE:
+C:\PROYECTOS, project sources, CUSTOS evidence, MetaOS evidence,
+Runtime journals, G23/G24 evidence, checkpoints, backup manifests, VM disks,
+active Wine/Bottles data, Nix GC roots, semantic container,
+Devotional source library, roadmaps, goals.
+
+DECISION:
+observe->identify->classify->active?->referenced?->protected?
+->reconstructible?->recovery_cost?->evidence?->age?->size?->disk_pressure?
+->propose->checkpoint->execute->verify->log
+
+SCHEDULER:
+daily=observe+trivial safe temp
+weekly=governed cache assessment
+monthly=deep optimization proposal
+NO_AGE_ONLY_DELETE=TRUE
+
+===============================================================================
+17. RESOURCE GOVERNOR
+===============================================================================
+
+MONITOR=CPU,RAM,disk,network,processes,VM load,cache growth,download state
+MACHINE_AWARE=TRUE
+POLICY=prioritize desktop responsiveness; serialize heavy work as needed;
+do not silently lower quality floor.
+
+===============================================================================
+18. TAXONOMÍA DE INFORMACIÓN Y UI
+===============================================================================
+
+TOP_LEVEL:
+INICIO
+ESTUDIO
+DEVOCIONAL
+JUEGOS
+INGENIERIA
+LABORATORIO
+PROYECTOS
+SISTEMA
+
+ESTUDIO:
+Psicologia, PDFs, Notas, Biblioteca, Calendario, Universidad, Referencias.
+
+DEVOCIONAL:
+Biblia, Biblioteca, Subir fuente, Analisis, Exegesis, Hermeneutica,
+Comparativo, Notas.
+
+JUEGOS:
+Steam, Proton, Wine, Bottles, Lutris, Prism, Waydroid.
+
+INGENIERIA:
+Node, Python, Git, Java, Mojo Lab, C++ Lab, Nix, Terminal, Toolchain Center.
+
+LABORATORIO:
+Ubuntu 24.04, Windows 11 LTSC, Android 16, Android 17, Arch,
+Virtual Machine Manager.
+
+PROYECTOS:
+Project browser, CUSTOS Local, Roadmaps, Goals, Checkpoints, Evidence,
+Semantic context.
+
+SISTEMA:
+Status, Resources, Updates, Backup, Recovery, Storage, Hygiene, Architecture,
+CUSTOS version manager, Runtime, MetaOS, Evidence, Advanced settings.
+
+UI_COGNITIVE_MODEL:
+plain Spanish, minimal surface, dark sober palette, progressive disclosure.
+
+ERROR_VIEW:
+What happened?
+What does it mean?
+Is my data safe?
+What did the system do?
+What do I need to do?
+
+PRIMARY=human-readable
+SECONDARY=Ver detalles tecnicos
+TERTIARY=raw evidence/log
+
+===============================================================================
+19. UI REFERENCE SET
+===============================================================================
+
+TARGET=UI y SKELETON\UI
+
+REFERENCE_FILES:
+UI_REF_01.webp
+UI_REF_02.webp
+UI_REF_03.webp
+UI_REF_04.webp
+
+ROLE:
+visual reference, mood, spatial hierarchy, taxonomy, desktop composition,
+Devotional concept, Projects/CUSTOS concept.
+
+NOT:
+executable specification or literal pixel-perfect requirement.
+
+IMPLEMENTATION_DERIVES:
+spacing, typography, icons, navigation, contrast, focus, accessibility,
+window states, responsive behavior, error states.
+
+===============================================================================
+20. CURRENT CANONICAL MATERIALIZED SET
+===============================================================================
+
+CURRENT_CANONICAL_V5_PAYLOAD_COUNT=13
+PAYLOAD_MANIFEST_SHA256=cfb631a0588c4bc709725a1487729d54952bef1bb457252c22994da0f4f5ac68
+
+01 archlinux-x86_64.iso
+02 bottles.flatpakref
+03 debian-live-13.7.0-amd64-kde.iso
+04 lutris-v0.5.22.tar.gz
+05 nix-install.sh
+06 PrismLauncher.AppImage
+07 proton-11.0-2.tar.gz
+08 steam_latest.deb
+09 ubuntu-24.04-minimal-cloudimg-amd64.img
+10 waydroid_1.6.2_all.deb
+11 wine-stable-amd64.deb
+12 wine-stable-common.deb
+13 winehq-stable-meta.deb
+
+PREVIOUS_G23_INTERNAL_PAYLOAD_REHASH=PASS
+
+===============================================================================
+21. CURRENT INSTALLER STATE
+===============================================================================
+
+REFERENCE_CANDIDATE=LUNA_SINGLE_INSTALLER_V5_MATERIALIZED_HARDENED_CANDIDATE
+SHELL_SYNTAX=PASS
+13_PAYLOAD_HASH_CONSISTENCY=PASS
+GUI_PRESENT=PASS
+PROTECTED_ASSET_PRESENT=PASS
+DISK_GEOMETRY_UNCHANGED=PASS
+INSTALLATION_PERFORMED=FALSE
+DISK_MUTATION=FALSE
+STRESS=FAIL
+DRY_RUN=FAIL
+KNOWN_FAIL_CLOSED="politica de cero perdida ausente"
+G23_HARDENING=FAIL
+G24_HARDENING=CERTIFICATION_DENIED
+G24_MATERIALIZATION=CERTIFICATION_PENDING
+FULL_RELEASE=CERTIFICATION_DENIED
+ACTIVATION=FORBIDDEN
+FAILURE_MUST_NOT_BE_HIDDEN=TRUE
+
+===============================================================================
+22. INSTALLER FLOW
+===============================================================================
+
+USER:
+double-click Instalar Luna.
+
+SYSTEM:
+authority check->payload manifest->hashes->protected assets->machine->resources
+->backup/recovery proof->disk geometry.
+
+STOP=MANUAL_DISK_PARTITION
+
+USER=performs partitioning.
+
+SYSTEM:
+reobserve disk->prove no protected overlap->install Debian->configure KDE
+->hardware->core utilities->development foundation->gaming->virtualization
+->UI->Projects Center->CUSTOS Local->Devocional->Hygiene->functional tests
+->reboot->post-reboot tests->G23->G24->ACTIVE.
+
+===============================================================================
+23. POST-INSTALL TEST MATRIX
+===============================================================================
+
+BASE: boot, login, KDE, storage, network, audio, Bluetooth, Vulkan,
+suspend/resume.
+
+NODE: node/npm/npx versions + simple JS.
+PYTHON: python3 + venv + pip + pipx + script.
+GIT: init/status/commit.
+7ZIP: create/test/extract/hash compare.
+JAVA: java/javac/compile/run.
+MOJO: version/compile/run.
+CPP23: configure/compile/link/run/debug smoke.
+GAMING: Wine/Steam/Proton/Bottles/Lutris/Prism/Waydroid.
+VM: KVM/libvirt/Ubuntu/Windows/authorized Android/Arch.
+PROJECTS: open/read .luna/query CUSTOS/roadmap/checkpoint/timed mission/evidence.
+DEVOTIONAL: import/classify/preserve/provenance/index/query/hermeneutics/
+comparative/export note.
+HYGIENE: dry-run/protected denial/safe cleanup/audit reconstruction.
+
+===============================================================================
+24. SEARCH / MATERIALIZATION QUEUE
+===============================================================================
+
+P01 Windows 11 LTSC correct complete ISO
+P02 Chromium-family browser selection
+P03 Node.js closure
+P04 npm/npx closure
+P05 Python 3 closure
+P06 python3-venv
+P07 python3-pip
+P08 pipx
+P09 Git
+P10 Linux 7-Zip
+P11 OpenJDK
+P12 exact current Linux Mojo SDK
+P13 GCC/G++ C++23 closure
+P14 CMake
+P15 Ninja
+P16 GDB
+P17 QEMU
+P18 libvirt
+P19 virt-manager
+P20 verify AMD firmware inclusion
+P21 verify Realtek firmware inclusion
+P22 verify Mesa/Vulkan inclusion
+P23 verify NetworkManager inclusion
+P24 verify PipeWire inclusion
+P25 local cognitive backend
+P26 document ingestion stack
+P27 CUSTOS Local GUI
+P28 Projects Center
+P29 Devotional application
+P30 CUSTOS version manager
+P31 Architecture version manager
+P32 Luna Hygiene Engine
+
+RULE:
+IF_PRESENT_AND_CORRECT_IN_DEBIAN_BASE->DO_NOT_DUPLICATE
+IF_ABSENT->MATERIALIZE_EXACT_DEPENDENCY_CLOSURE
+
+===============================================================================
+25. CROSS-COMPATIBILITY MATRIX
+===============================================================================
+
+CHECK:
+Debian<->KDE
+Debian<->AMDGPU/Mesa
+Debian<->Realtek firmware
+Debian<->Waydroid
+Debian<->Node/Python/Git/7Zip/OpenJDK/Mojo/C++23
+Java<->Prism
+Steam<->Proton
+Wine<->Bottles/Lutris
+KVM<->Ryzen 3500U
+VMs<->RAM budget
+Browser<->university/LMS
+Projects UI<->Runtime/MetaOS/CUSTOS/Semantic Container
+Devotional<->local backend/Louksna hermeneutic controls
+Hygiene<->protected assets
+
+NO_CROSS_DOMAIN_SILENT_MUTATION=TRUE
+
+===============================================================================
+26. EVIDENCE CONTRACT
+===============================================================================
+
+EVERY_CONSEQUENTIAL_OPERATION_RECORDS:
+operation_id, mission_id, project_id, actor, governor, runtime, timestamp,
+source, version, input_path, input_hash, output_path, output_hash,
+input_size, output_size, parameters, reason, expected_result, actual_result,
+validation, regression_test, checkpoint, rollback_pointer, status.
+
+===============================================================================
+27. DELIVERY DIRECTORIES
+===============================================================================
+
+ROOT=C:\PROYECTOS\1. PROYECTOS PRIORITARIOS\8. META OS\UI y SKELETON
+SKELETON=ROOT\Skeleton\SKELETON_CANONICO_REFERENCIA.txt
+UI=ROOT\UI\UI_REF_01.webp..UI_REF_04.webp
+UI_MANIFEST=ROOT\UI\UI_MANIFEST.json
+MIGRATION_MANIFEST=ROOT\MIGRATION_MANIFEST.json
+MIGRATION_EVIDENCE=ROOT\MIGRATION_EVIDENCE\
+
+===============================================================================
+28. FINAL PRINCIPLE
+===============================================================================
+
+VISIBLE_SYSTEM:
+simple, familiar, stable, quiet, human.
+
+INTERNAL_SYSTEM:
+exact, taxonomic, versioned, metacognitive, traceable, auditable,
+recoverable, provenance-aware, fail-closed.
+
+USER_SHOULD_FEEL="Todo está listo para trabajar."
+
+SYSTEM_MUST_KNOW:
+what exists; what is missing; what is only downloaded; what is materialized;
+what is installed; what is validated; what is certified; what failed;
+what is quarantined; what may be deleted; what is protected;
+what architecture governs; what CUSTOS version is active;
+what checkpoint restores state; what evidence justifies each transition.
+
+===============================================================================
+END OF CANONICAL REFERENCE SKELETON
+===============================================================================

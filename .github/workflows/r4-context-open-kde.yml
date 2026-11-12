@@ -1,0 +1,51 @@
+name: "R4: mostrar README original en KDE"
+on:
+  push:
+    branches: [staging/luna-r4-context-recovery-20260927]
+    paths: [.github/workflows/r4-context-open-kde.yml]
+permissions:
+  contents: read
+jobs:
+  open-readme:
+    if: >-
+      github.repository == 'Plomillo/luna-linux-bridge' &&
+      github.event.head_commit.message == 'ui(R4): abrir README autentico en KDE a peticion de Diego'
+    runs-on: [self-hosted, Linux, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Comprobar documento original y solicitar apertura grafica en KDE
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_REF" = "refs/heads/staging/luna-r4-context-recovery-20260927"
+          python3 - <<'PY'
+          import os,hashlib,subprocess,time
+          from pathlib import Path
+          home=Path.home()
+          src=home/"LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/README_R4_V2_ES.md"
+          expected="5614b1a1c2fdded0d43f8f6cc7c73dda7efd832faffc7c1a8ef5ca53e1eaa628"
+          if not src.is_file() or src.is_symlink():
+              raise SystemExit("BLOCKED: expected original README not found")
+          data=src.read_bytes()
+          if len(data)!=4686 or hashlib.sha256(data).hexdigest()!=expected:
+              raise SystemExit("BLOCKED: README original size or SHA-256 changed")
+          if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+              raise SystemExit("BLOCKED: no KDE graphical session in authorized runner")
+          from shutil import which
+          app=next((name for name in ("kate","kwrite","xdg-open") if which(name)),None)
+          if not app:
+              raise SystemExit("BLOCKED: no supported KDE text opener")
+          args=[app,str(src)]
+          if app=="kate":args=[app,"--new",str(src)]
+          with open(os.devnull,"wb") as out:
+              p=subprocess.Popen(args,stdin=subprocess.DEVNULL,stdout=out,stderr=out,start_new_session=True,close_fds=True)
+          time.sleep(3)
+          code=p.poll()
+          if code not in (None,0):
+              raise SystemExit("GUI_OPEN_FAILED: launcher exit status "+str(code))
+          print("README_LOCAL_SHA256_PASS="+expected)
+          print("KDE_OPEN_COMMAND="+app)
+          print("OPEN_REQUEST_DISPATCHED_TO_KDE=PASS")
+          print("GUI_FOREGROUND_FOCUS_NOT_INDEPENDENTLY_OBSERVED")
+          print("NO_CONTENT_OR_CREDENTIALS_EXPORTED; NO_SYSTEM_MUTATION")
+          PY
