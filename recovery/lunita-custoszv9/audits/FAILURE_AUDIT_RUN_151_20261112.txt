@@ -1,0 +1,184 @@
+LUNITA V1.8 — FAILURE AUDIT
+AUDIT_ID: LUNITA-FAIL-151-20261112
+AUDIT_DATE_UTC: 2026-11-12
+REPOSITORY: Plomillo/luna-linux-bridge
+BRANCH: fix/lunita-v18-rootfs-bound-checkpoint-20261109
+WORKFLOW_RUN_ID: 43316200842
+WORKFLOW_RUN_URL: https://github.com/Plomillo/luna-linux-bridge/actions/runs/43316200842
+TARGET_JOB_ID: 131525595707
+TARGET_JOB_URL: https://github.com/Plomillo/luna-linux-bridge/actions/runs/43316200842/job/131525595707
+HEAD_SHA: ec8d8cf70e632551f341a34fc61c6a8316eb56c3
+CANDIDATE_ID: G06_REBUILD_CANDIDATE_R1
+CANDIDATE_VERSION: 1.8.0
+CERTIFICATION_STATUS: NOT_GRANTED
+S32_STATUS: BLOCKED_INDEPENDENT_VALIDATION
+G23_STATUS: NOT_GRANTED
+G24_STATUS: NOT_GRANTED
+
+1. EXECUTIVE DETERMINATION
+
+The workflow did not fail while building or round-trip verifying LUNITA.squashfs. Step 19 (build and round-trip verification) passed, and step 20 (upload candidate artifact) passed. The failure occurred in step 21, the independent rootfs/JASP lane. Step 22, which certifies the exact image from S32 and independent evidence, was skipped.
+
+The direct target runtime passed its acceptance checks, including E01 inference, E02-E15 engine acceptance, legacy application smoke tests, candidate identity/label preservation, and JASP runtime refresh. The independent rootfs inventory and dependency closure also completed PASS. The only open independent check at the final lane tick was jasp_packaged_fixture_nonregression.
+
+This audit therefore isolates the failure to the JASP packaged-fixture acceptance path. It is not a SquashFS packaging failure, not a missing worker receipt, not an inventory failure, and not a failed engine gateway.
+
+2. WORKFLOW STEP RESULTS
+
+PASS:
+- Step 15: actual E01 inference and E02-E15 plus legacy application smoke tests.
+- Step 18: pinned JASP runtime refresh.
+- Step 19: build and round-trip verify LUNITA.squashfs.
+- Step 20: upload verified LUNITA.squashfs candidate artifact.
+- Independent rootfs inventory: PASS_ROOTFS_INVENTORY_AND_DEPENDENCY_CLOSURE.
+- Target runtime receipt: PASS_TARGET_RUNTIME_ACCEPTANCE (the lane accepted its complete receipt).
+
+FAIL:
+- Step 21: Run the existing v1.8 independent rootfs and JASP certification lane.
+- Independent check: jasp_packaged_fixture_nonregression.
+
+SKIPPED:
+- Step 22: Certify exact SquashFS image from S32 and independent evidence.
+- Step 23: Upload certified SquashFS bundle.
+
+PRESERVATION:
+- frozen_g06_mutated = false
+- canonical_g08_bindings_mutated = false
+- original packaged Death Penalty fixture SHA remained unchanged.
+
+3. JASP TEST EVIDENCE
+
+Pinned Flatpak app commit expected and observed by the lane:
+83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7
+
+The JASP process launched and entered the analysis engine. Its runtime banner identified JASP 0.98.8 and internal source commit b6cd3b0310be4e18e1b673ac11f14e55615c8fa1. The pinned Flatpak deployment commit check itself returned code 0 and matched the configured pin.
+
+Case results:
+- reliability: PASS, return code 0.
+- weight_gain: PASS, return code 0.
+- flatpak_launch: BLOCKED, return code 1.
+- death_penalty_roundtrip: BLOCKED; both save and strict rerun returned code 1.
+
+The failed cases were actually executed. They are not BLOCKED_NOT_RUN.
+
+4. PRIMARY FAILURE SIGNATURE
+
+The actual JASP log contains two Model Comparison outputs for the same Death Penalty analysis. The packaged reference side reports four models visited; the newly calculated side reports three. The tables also differ in model membership/order, posterior model probabilities, and Bayes factors. The comparator prints “The results are different...” and exits with JASP_UNITTEST_RC=1.
+
+Packaged/reference output (four models):
+1. RaceVictim + RaceDefendant + Death + RaceVictim*RaceDefendant + RaceVictim*Death
+   P(M|data)=0.508; BF01=1.000
+2. RaceVictim + RaceDefendant + Death + RaceVictim*RaceDefendant + RaceVictim*Death + RaceDefendant*Death
+   P(M|data)=0.394; BF01=1.289
+3. RaceVictim + RaceDefendant + Death + RaceVictim*RaceDefendant + RaceVictim*Death + RaceDefendant*Death + RaceVictim*RaceDefendant*Death
+   P(M|data)=0.094; BF01=5.404
+4. RaceVictim + RaceDefendant + Death + RaceVictim*RaceDefendant
+   P(M|data)=0.004; BF01=127.0
+Note: Total number of models visited = 4
+
+New seeded calculation (three models):
+1. RaceVictim + RaceDefendant + Death + RaceVictim*RaceDefendant + RaceVictim*Death + RaceDefendant*Death
+   P(M|data)=0.454; BF01=1.000
+2. RaceVictim + RaceDefendant + Death + RaceVictim*RaceDefendant + RaceVictim*Death
+   P(M|data)=0.417; BF01=1.089
+3. RaceVictim + RaceDefendant + Death + RaceVictim*RaceDefendant + RaceVictim*Death + RaceDefendant*Death + RaceVictim*RaceDefendant*Death
+   P(M|data)=0.130; BF01=3.488
+Note: Total number of models visited = 3
+
+The difference is substantive statistical output, not merely HTML formatting or decimal display.
+
+5. HASH-BOUND INPUT AND FIXTURE PROVENANCE
+
+Original packaged source fixture:
+SHA-256 fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895
+
+Disposable seeded clone:
+SHA-256 4b642cc13549f99f1b386791c3a670e6fb9cc34430f564ad68820bde46af4c2f
+
+Seed fixture receipt (Flatpak launch):
+SHA-256 a3095d7b7609ee676d730c96750fd4e0c86c261e1aa72097981cfd992e1f7575
+
+Seed fixture receipt (round-trip):
+SHA-256 dbc981a1aa863324c166a54ede7bf445e810fb6e35ef138fa0a41c446f46b048
+
+The helper inspected the active analyses.json member and identified one option:
+- before: setSeed=false, seed=1
+- after in disposable clone: setSeed=true, seed=1
+- changed member: analyses.json
+- changed pointer: /analyses/0/options
+- analysis: RegressionLogLinearBayesian
+- all five non-active archive members were byte-identical.
+- source fixture before and after retained the pinned SHA-256.
+- reference_results_modified=false.
+- temporary clone remained byte-identical across the two round-trip attempts and was deleted after the test.
+
+6. ROOT CAUSE
+
+CONFIRMED HARNESS-LEVEL DEFECT:
+
+The deterministic fixture preparation changes the active analysis input from setSeed=false to setSeed=true, seed=1, but deliberately preserves all non-active archive members, including the previously saved JASP result/reference material. The same clone is then passed to JASP with --unitTest. That mode compares the newly computed seeded analysis with the historical saved output still contained in the clone.
+
+The test therefore compares results produced under two different RNG configurations:
+- stored reference: generated when the active configuration had setSeed=false;
+- current calculation: generated after the disposable test copy changes the active configuration to setSeed=true, seed=1.
+
+The logs prove that this comparison is the direct trigger for the exit code 1. The same mismatch is reproduced in the flatpak_launch test and both round-trip invocations. The deterministic seed receipt validates the input-copy operation; it does not make the historic saved output equivalent to a newly seeded result.
+
+The two GUI/runtime warnings seen in the logs (missing system D-Bus socket and transient GPU command-buffer errors) are not the primary failure: JASP initializes, runs the analysis, emits the model-comparison tables, and fails specifically when comparing those tables.
+
+BOUNDARY OF CONCLUSION:
+This evidence proves the test harness pairs a newly seeded input with old stored output. It does not, by itself, establish whether JASP 0.98.8 also has a computational regression relative to the application version that produced the archived reference output. That possibility must not be silently dismissed or silently accepted.
+
+7. SOURCE LOCATIONS IMPLICATED
+
+recovery/lunita-custoszv9/jasp_seed_fixture_v1.py
+- prepare_deterministic_fixture() changes only the active analyses.json seed option.
+- It verifies that all non-active archive members, including stored results, remain unchanged.
+
+recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py
+- run_jasp_regression_suite(): creates the seeded Death Penalty fixture and runs it through --unitTest.
+- run_death_penalty_roundtrip(): invokes --unitTest twice on the seeded copy and requires return code 0 both times.
+- latest_jasp_evidence(): maps a non-zero return code to BLOCKED.
+- update_independent_report(): requires all four JASP cases to pass with hash-valid evidence before independent validation can pass.
+
+scripts/lunita/patch_jasp_certification_runtime_v1.py
+- The patch addresses JASP 0.98.8 numeric display formatting compatibility.
+- It is not the cause of the model-count/posterior/BF mismatch recorded here; the failure contains different model sets and Bayesian values.
+
+scripts/lunita/run_independent_certification_lane_in_container_v1.sh
+- Executes the independent lane and emits bounded diagnostics when the JASP worker reports failed checks.
+
+8. REQUIRED CORRECTIVE ACTION — DO NOT CHANGE REFERENCE OUTPUTS
+
+The fix must repair the test methodology, not rewrite, regenerate, overwrite, or bless the original packaged reference results.
+
+Required actions:
+A. Keep the original packaged Death Penalty fixture and its complete archive immutable; preserve its source hash and all stored reference members.
+B. Separate the legacy-reference comparison from deterministic-seed reproducibility. Do not run a seed-mutated input through --unitTest while asking that command to compare against stored outputs produced from the unseeded configuration.
+C. For deterministic reproducibility, execute two independent runs from the same hash-bound seeded disposable input and compare their actual result structures (model membership, posterior probabilities, Bayes factors, model count, and relevant diagnostics). Bind both run logs/results to the exact input clone hash, app commit, runtime identity, and commands.
+D. Keep the original stored-reference check as a separate explicit result. If JASP 0.98.8 cannot reproduce the archived output, record that as a distinct version/reference compatibility result; do not mark it PASS by changing the reference or by relabeling the mismatch as formatting.
+E. Require the two deterministic executions to agree within a documented numerical policy. Any tolerance must be predeclared, field-specific, justified, and independently validated. Do not infer a tolerance from the failing output.
+F. Preserve provenance, hashes, canonical invariants, all previous failure evidence, and rollback capability.
+G. Re-run the complete independent lane, not only a local helper test. The rootfs inventory already passed in run #151; it must still be hash-bound to the new candidate run.
+
+9. CERTIFICATION CONSEQUENCE
+
+The candidate SquashFS build and upload passed, but the independent JASP gate did not. No S32 receipt was issued; no stable release receipt exists; final certification step 22 was skipped.
+
+LUNITA.squashfs is NOT CERTIFIED.
+
+Candidate artifact:
+lunita-v1-8-squashfs-candidate
+Artifact ID: 13988019792
+Artifact URL: https://github.com/Plomillo/luna-linux-bridge/actions/runs/43316200842/artifacts/13988019792
+Artifact ZIP digest (not the internal SquashFS digest):
+3e40f6d76d9e248628173624b55d1c585537e51eeea8e8883b05c3b5d60f6dd5
+
+Audit evidence artifact:
+lunita-v1-8-target-independent-evidence
+Artifact ID: 13990067026
+Artifact ZIP digest:
+9baaf8394ce772c5b920686f68ff647f9a598e421f15637a76787cbe16990af1
+
+Final rule:
+NO CERTIFICATION UNTIL THE SAME EXACT LUNITA.squashfs SHA-256 IS BOUND TO A PASSING TARGET RECEIPT, PASSING INDEPENDENT REPORT, PASSING S32 RECEIPT, AND PASSING STABLE RELEASE RECEIPT.
