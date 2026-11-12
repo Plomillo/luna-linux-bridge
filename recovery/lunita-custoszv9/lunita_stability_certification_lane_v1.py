@@ -252,6 +252,26 @@ def parse_dpkg_status(status_path: pathlib.Path) -> dict:
     }
 
 
+def flatpak_jasp_launch(flatpak_options: list[str], app_args: list[str]) -> list[str]:
+    """Launch the pinned app with its own Qt ahead of an older runtime copy."""
+    return [
+        "/usr/bin/flatpak", "--system", "run", "--unshare=network",
+        "--env=QT_QPA_PLATFORM=offscreen",
+        "--env=LD_LIBRARY_PATH=/app/lib/x86_64-linux-gnu",
+        *flatpak_options, "org.jaspstats.JASP", *app_args,
+    ]
+
+
+def jasp_process_env(base: dict[str, str]) -> dict[str, str]:
+    env = dict(base)
+    # The GitHub runner injects a host Python library path. It must not leak
+    # into the Flatpak sandbox ahead of the KDE runtime.
+    env.pop("LD_LIBRARY_PATH", None)
+    env.pop("LD_PRELOAD", None)
+    env["QT_QPA_PLATFORM"] = "offscreen"
+    return env
+
+
 def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: str) -> dict:
     """Run the strict JASP save-and-rerun test on a temporary copy, not the packaged source."""
     source = ROOTFS / "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
@@ -284,9 +304,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             temp_fixture = temp_root / "Death Penalty.jasp"
             shutil.copy2(source, temp_fixture)
             temp_before = sha_file(temp_fixture)
-            cmd = ["/usr/bin/flatpak", "--system", "run", "--unshare=network",
-                   f"--filesystem={temp_root}", "org.jaspstats.JASP", "--unitTest",
-                   str(temp_fixture), "--hide"]
+            cmd = flatpak_jasp_launch([f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture), "--hide"])
             save_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_save.log"
             rerun_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_rerun.log"
             save_started = utc()
@@ -360,10 +378,8 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
         "reliability": ("JASP_UNITTEST_RELIABILITY", "/app/Resources/Data Sets/Data Library/13. Reliability/Interrater Data from Shrout and Fleiss (1979).jasp", "JASP_RELIABILITY_UNITTEST_RC"),
         "weight_gain": ("JASP_UNITTEST_WEIGHT_GAIN", "/app/Resources/Data Sets/Data Library/2. T-Tests/Weight Gain.jasp", "JASP_WEIGHT_GAIN_UNITTEST_RC"),
     }
-    env = os.environ.copy()
+    env = jasp_process_env(os.environ)
     env["FLATPAK_SYSTEM_DIR"] = str(ROOTFS / "var/lib/flatpak")
-    # Qt platform selection is an environment setting, not a JASP CLI option.
-    env["QT_QPA_PLATFORM"] = "offscreen"
     results = {"schema": "CUSTOSZ_LUNITA_JASP_AUTOMATED_REGRESSION_SUITE/1.0", "timestamp_utc": utc(),
                "candidate_id": "G06_REBUILD_CANDIDATE_R1", "expected_app_commit": expected_commit,
                "flatpak_system_dir": env["FLATPAK_SYSTEM_DIR"], "network_unshared": True,
@@ -390,8 +406,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                 header = (f"START_UTC={started}\nAPP_COMMIT={actual_commit}\nTEST_FILE={fixture}\n"
                           "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED\n")
                 try:
-                    run = subprocess.run(["/usr/bin/flatpak", "--system", "run", "--unshare=network",
-                                          "org.jaspstats.JASP", "--unitTest", fixture, "--hide"],
+                    run = subprocess.run(flatpak_jasp_launch([], ["--unitTest", fixture, "--hide"]),
                                          env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                          text=True, timeout=300, check=False)
                     rc = int(run.returncode)
@@ -399,8 +414,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                     log_path.write_text(payload, encoding="utf-8", errors="replace")
                     results["tests"][case_id] = {"status": "PASS" if rc == 0 else "BLOCKED", "returncode": rc,
                         "fixture": fixture, "log_path": str(log_path), "log_sha256": sha_file(log_path),
-                        "command": ["/usr/bin/flatpak", "--system", "run", "--unshare=network",
-                                    "org.jaspstats.JASP", "--unitTest", fixture, "--hide"],
+                        "command": flatpak_jasp_launch([], ["--unitTest", fixture, "--hide"]),
                         "started_at_utc": started, "finished_at_utc": utc()}
                 except subprocess.TimeoutExpired as exc:
                     out = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")

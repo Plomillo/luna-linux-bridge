@@ -629,6 +629,12 @@ jobs:
             --rootfs "$LUNITA_ROOTFS_REAL" \
             --expected-uid 1000 \
             --receipt "$RUNNER_TEMP/lunita-rootfs-temp-cleanup-receipt.json"
+      - name: Refresh the pinned JASP runtime without moving the app commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n env FLATPAK_SYSTEM_DIR="$LUNITA_ROOTFS_REAL/var/lib/flatpak" \
+            bash scripts/lunita/refresh_jasp_runtime_v1.sh
       - name: Build and round-trip verify LUNITA.squashfs
         id: package-squashfs
         shell: bash
