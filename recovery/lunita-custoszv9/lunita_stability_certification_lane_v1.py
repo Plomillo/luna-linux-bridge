@@ -632,12 +632,15 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
         atomic_json(result_path, results)
         return results
     roundtrip = results.get("roundtrip_gate") or {"status": "BLOCKED_ROUNDTRIP_NOT_RUN"}
+    roundtrip_fixture_receipt = roundtrip.get("deterministic_fixture_receipt")
     roundtrip_ok = (
         roundtrip.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
         and (roundtrip.get("strict_rerun_after_save") or {}).get("returncode") == 0
         and roundtrip.get("original_sample_unchanged") is True
-        and seed_hook_evidence_valid((roundtrip.get("save_run") or {}).get("seed_hook_receipt"))
-        and seed_hook_evidence_valid((roundtrip.get("strict_rerun_after_save") or {}).get("seed_hook_receipt"))
+        and roundtrip.get("deterministic_fixture_receipt_valid") is True
+        and verify_deterministic_fixture_receipt(
+            roundtrip_fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=False
+        )
     )
     results["status"] = "PASS_REGISTERED_JASP_TESTS" if (
         results["tests"] and all(x.get("status") == "PASS" and x.get("returncode") == 0
@@ -872,9 +875,13 @@ def latest_jasp_evidence() -> dict:
             temp_before = data.get("temporary_fixture_sha256_before")
             temp_after_save = data.get("temporary_fixture_sha256_after_save")
             temp_after_rerun = data.get("temporary_fixture_sha256_after_rerun")
-            save_seed = save_run.get("seed_hook_receipt")
-            rerun_seed = rerun.get("seed_hook_receipt")
-            seed_evidence_ok = seed_hook_evidence_valid(save_seed) and seed_hook_evidence_valid(rerun_seed)
+            fixture_receipt = data.get("deterministic_fixture_receipt")
+            fixture_evidence_ok = (
+                data.get("deterministic_fixture_receipt_valid") is True
+                and verify_deterministic_fixture_receipt(
+                    fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=False
+                )
+            )
             passed = (
                 data.get("schema") == "CUSTOSZ_LUNITA_JASP_UNITTEST_ROUNDTRIP/1.0"
                 and data.get("app_commit") == "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
@@ -882,62 +889,69 @@ def latest_jasp_evidence() -> dict:
                 and data.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
                 and rerun.get("status") == "PASS" and rc == 0
                 and save_run.get("returncode") == 0 and save_run.get("status") == "PASS"
-                and seed_evidence_ok
+                and fixture_evidence_ok
                 and data.get("original_sample_identity_matches_pin") is True
                 and data.get("original_sample_unchanged") is True
                 and data.get("temporary_fixture_removed_after_test") is True
-                and bool(temp_before) and temp_before == data.get("expected_original_sample_sha256")
+                and data.get("temporary_fixture_stable_after_save_and_rerun") is True
+                and bool(temp_before) and temp_before == fixture_receipt.get("clone_sha256")
                 and bool(temp_after_save) and temp_after_save == temp_after_rerun
             )
             item.update({
-                "returncode": rc, "save_returncode": save_run.get("returncode"),
+                "returncode": rc,
+                "save_returncode": save_run.get("returncode"),
                 "status": "PASS" if passed else "BLOCKED",
-                "case_status": data.get("status"), "rerun_status": rerun.get("status"),
+                "case_status": data.get("status"),
+                "rerun_status": rerun.get("status"),
                 "original_sample_unchanged": data.get("original_sample_unchanged"),
                 "original_sample_identity_matches_pin": data.get("original_sample_identity_matches_pin"),
                 "temporary_fixture_removed_after_test": data.get("temporary_fixture_removed_after_test"),
                 "temporary_fixture_stable_after_save_and_rerun": bool(temp_after_save and temp_after_save == temp_after_rerun),
-                "seed_hook_evidence_valid": seed_evidence_ok,
-                "save_seed_hook_receipt": save_seed,
-                "rerun_seed_hook_receipt": rerun_seed,
+                "deterministic_fixture_evidence_valid": fixture_evidence_ok,
+                "deterministic_fixture_receipt": fixture_receipt,
             })
         else:
             try:
                 text = p.read_text(encoding="utf-8", errors="replace")
             except OSError:
                 text = ""
-            match = re.findall(re.escape(marker or "") + r"\s*=\s*([0-9]+)", text) if marker else []
+            match = re.findall(re.escape(marker or "") + r"\\s*=\\s*([0-9]+)", text) if marker else []
             rc = int(match[-1]) if match else None
             expected_commit = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
             commits = re.findall(r"^APP_COMMIT=([0-9a-f]{64})$", text, re.M)
             pinned_commit = bool(commits) and all(x == expected_commit for x in commits)
             sandbox_bound = "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED" in text
-            seed_status = re.findall(r"^SEED_HOOK_STATUS=(.+)$", text, re.M)
-            seed_paths = re.findall(r"^SEED_HOOK_EVIDENCE_PATH=(.+)$", text, re.M)
-            seed_hashes = re.findall(r"^SEED_HOOK_EVIDENCE_SHA256=([0-9a-f]{64})$", text, re.M)
-            seed_ok = False
-            if case == "flatpak_launch" and seed_status and seed_paths and seed_hashes:
-                seed_path = pathlib.Path(seed_paths[-1])
-                seed_ok = (
-                    seed_status[-1] == "PASS" and seed_path.is_file()
-                    and sha_file(seed_path) == seed_hashes[-1]
-                    and any(row["pid"] > 1 and row["seed"] == 1 and row["set_seed"] == "FALSE"
-                            for row in _seed_hook_records(seed_path))
+            fixture_paths = re.findall(r"^DETERMINISTIC_FIXTURE_EVIDENCE_PATH=(.+)$", text, re.M)
+            fixture_hashes = re.findall(r"^DETERMINISTIC_FIXTURE_EVIDENCE_SHA256=([0-9a-f]{64})$", text, re.M)
+            fixture_ok = False
+            if case == "flatpak_launch" and fixture_paths and fixture_hashes:
+                fixture_path = pathlib.Path(fixture_paths[-1])
+                receipt = load_json(fixture_path, {}) or {}
+                receipt["receipt_path"] = str(fixture_path)
+                receipt["receipt_sha256"] = fixture_hashes[-1]
+                fixture_ok = (
+                    fixture_path.is_file()
+                    and sha_file(fixture_path) == fixture_hashes[-1]
+                    and verify_deterministic_fixture_receipt(
+                        receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=False
+                    )
                 )
-            passed = rc == 0 and pinned_commit and sandbox_bound and (case != "flatpak_launch" or seed_ok)
+            passed = rc == 0 and pinned_commit and sandbox_bound and (case != "flatpak_launch" or fixture_ok)
             item.update({
-                "returncode": rc, "status": "PASS" if passed else "BLOCKED",
-                "observed_app_commits": commits, "pinned_commit_match": pinned_commit,
+                "returncode": rc,
+                "status": "PASS" if passed else "BLOCKED",
+                "observed_app_commits": commits,
+                "pinned_commit_match": pinned_commit,
                 "sandbox_execution_marker_present": sandbox_bound,
-                "seed_hook_evidence_valid": seed_ok if case == "flatpak_launch" else None,
-                "semantic_shape_mismatch": bool(re.search(r"Row is missing|Total number of models visited\s*=\s*\d+\s*!=|results are different", text, re.I)),
-                "log_has_numeric_deltas": bool(re.search(r"\d+(?:\.\d+)?\s*!=\s*\d+(?:\.\d+)?", text)),
+                "deterministic_fixture_evidence_valid": fixture_ok if case == "flatpak_launch" else None,
+                "semantic_shape_mismatch": bool(re.search(r"Row is missing|Total number of models visited\\s*=\\s*\\d+\\s*!=|results are different", text, re.I)),
+                "log_has_numeric_deltas": bool(re.search(r"\\d+(?:\\.\\d+)?\\s*!=\\s*\\d+(?:\\.\\d+)?", text)),
             })
         rows[case] = item
     all_pass = all(x.get("status") == "PASS" and x.get("returncode") == 0 for x in rows.values())
     return {"status": "PASS_JASP_PACKAGED_FIXTURE_NONREGRESSION" if all_pass else "BLOCKED_JASP_PACKAGED_FIXTURE_NONREGRESSION",
             "all_required_jasp_cases_pass": all_pass, "cases": rows,
-            "next_action": "Verify that the actual Flatpak R_HOME loaded Rprofile.site and applied the stored seed on isolated Death Penalty copies; compare model count and posterior/BF output only after the hash-bound hook receipt passes. Do not rewrite reference fixtures or relax thresholds."}
+            "next_action": "Audit the hash-bound disposable Death Penalty fixture transform, native setSeed/seed execution, save/reopen stability, and all packaged-fixture regressions. Never modify source fixtures or reference results to make a test pass."}
 
 def persist_jasp_remediation_queue(jasp: dict) -> dict:
     """Keep a hash-bound, append-only queue for each unresolved packaged JASP case."""
