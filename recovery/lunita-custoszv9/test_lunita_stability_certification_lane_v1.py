@@ -431,19 +431,22 @@ class JaspRunnerTests(unittest.TestCase):
             )
             source_sha = lane.sha_file(source_fixture)
             responses = [
-                SimpleNamespace(returncode=0, stdout="83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7\\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="flatpak test pass\\n", stderr=""),
-                SimpleNamespace(returncode=1, stdout="numeric delta\\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="flatpak test pass\\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="roundtrip save passed\\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="roundtrip strict rerun passed\\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="flatpak test pass\n", stderr=""),
+                SimpleNamespace(returncode=1, stdout="numeric delta\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="flatpak test pass\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="roundtrip save passed\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="roundtrip strict rerun passed\n", stderr=""),
             ]
             response_iter = iter(responses)
             def fake_run(*args, **kwargs):
                 return next(response_iter)
-            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "ROOTFS", rootfs), \\
-                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha), \\
-                 mock.patch.object(lane.subprocess, "run", side_effect=fake_run) as runner:
+            with (
+                mock.patch.object(lane, "OUT", out),
+                mock.patch.object(lane, "ROOTFS", rootfs),
+                mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
+                mock.patch.object(lane.subprocess, "run", side_effect=fake_run) as runner,
+            ):
                 result = lane.run_jasp_regression_suite(report)
             self.assertEqual("BLOCKED_JASP_REGRESSION", result["status"])
             self.assertEqual(6, runner.call_count)
@@ -488,13 +491,16 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
             )
             source_sha = lane.sha_file(source)
             responses = [
-                SimpleNamespace(returncode=0, stdout="save successful\\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="strict reopen successful\\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="save successful\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="strict reopen successful\n", stderr=""),
             ]
             response_iter = iter(responses)
-            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "ROOTFS", rootfs), \\
-                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha), \\
-                 mock.patch.object(lane.subprocess, "run", side_effect=lambda *a, **k: next(response_iter)) as runner:
+            with (
+                mock.patch.object(lane, "OUT", out),
+                mock.patch.object(lane, "ROOTFS", rootfs),
+                mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
+                mock.patch.object(lane.subprocess, "run", side_effect=lambda *a, **k: next(response_iter)) as runner,
+            ):
                 result = lane.run_death_penalty_roundtrip(
                     "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
                     {"QT_QPA_PLATFORM": "offscreen"},
