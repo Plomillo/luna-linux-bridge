@@ -2005,6 +2005,30 @@ def selftest() -> dict:
     checks["a_jasp_pass_requires_returncode_zero"] = all(
         row.get("status") != "PASS" or row.get("returncode") == 0 for row in jasp.get("cases", {}).values()
     )
+    synthetic_output = "\\n".join([
+        "Row: | h: Model Comparison | ",
+        "Row: | h: Models | ",
+        "Row: | stored reference row | 0.50 | ",
+        "Footer:",
+        "Row: | h: Model Comparison | ",
+        "Row: | calculated row | 0.75 | ",
+        "Row: | Note.Total number of models visited = 1 | ",
+        "Footer:",
+        "The results are different...",
+    ])
+    try:
+        actual_rows = extract_actual_jasp_unit_test_rows(synthetic_output)
+        checks["jasp_replay_parser_selects_fresh_table"] = actual_rows == [
+            "| h: Model Comparison |",
+            "| calculated row | 0.75 |",
+            "| Note.Total number of models visited = 1 |",
+        ]
+        checks["jasp_replay_digest_is_deterministic"] = (
+            jasp_result_rows_sha256(actual_rows) == jasp_result_rows_sha256(list(actual_rows))
+        )
+    except Exception:
+        checks["jasp_replay_parser_selects_fresh_table"] = False
+        checks["jasp_replay_digest_is_deterministic"] = False
     checks["inventory_does_not_follow_symlinks"] = True
     return {"schema": "CUSTOSZ_LUNITA_STABILITY_CERT_LANE_SELFTEST/1.0",
             "status": "PASS" if all(checks.values()) else "FAIL", "checks": checks,
