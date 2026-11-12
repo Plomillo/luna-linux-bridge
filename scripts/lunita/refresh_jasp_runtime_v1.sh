@@ -26,3 +26,24 @@ if [ "$runtime_commit" != "$QT6112_RUNTIME_COMMIT" ]; then
 fi
 echo "JASP app commit remains $app_commit"
 echo "Runtime commit $runtime_commit"
+files="$FLATPAK_SYSTEM_DIR/app/org.jaspstats.JASP/x86_64/stable/active/files"
+mkdir -p "$files/lunita-fixtures"
+link_fixture() {
+  relative="$1"
+  name="$2"
+  if [ ! -f "$files/$relative" ]; then
+    echo "Missing JASP fixture: $files/$relative" >&2
+    exit 2
+  fi
+  ln -sfn "../$relative" "$files/lunita-fixtures/$name"
+}
+link_fixture "Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp" DeathPenalty.jasp
+link_fixture "Resources/Data Sets/Data Library/13. Reliability/Interrater Data from Shrout and Fleiss (1979).jasp" Reliability.jasp
+link_fixture "Resources/Data Sets/Data Library/2. T-Tests/Weight Gain.jasp" WeightGain.jasp
+if [ "$(head -c 2 "$files/bin/org.jaspstats.JASP")" = "#!" ]; then
+  echo "JASP entry is a script:"
+  head -n 20 "$files/bin/org.jaspstats.JASP"
+else
+  echo "JASP entry is a binary"
+fi
+

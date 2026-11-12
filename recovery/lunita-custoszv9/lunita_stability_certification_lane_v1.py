@@ -302,7 +302,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     try:
         with __import__("tempfile").TemporaryDirectory(prefix="lunita-jasp-death-roundtrip-") as tmp:
             temp_root = pathlib.Path(tmp)
-            temp_fixture = temp_root / "Death Penalty.jasp"
+            temp_fixture = temp_root / "DeathPenalty.jasp"
             shutil.copy2(source, temp_fixture)
             temp_before = sha_file(temp_fixture)
             cmd = flatpak_jasp_launch([f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture), "--hide"])
@@ -375,9 +375,9 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
     OUT.mkdir(parents=True, exist_ok=True)
     expected_commit = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
     fixtures = {
-        "flatpak_launch": ("JASP_UNITTEST_FLATPAK", "/app/Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp", "JASP_UNITTEST_RC"),
-        "reliability": ("JASP_UNITTEST_RELIABILITY", "/app/Resources/Data Sets/Data Library/13. Reliability/Interrater Data from Shrout and Fleiss (1979).jasp", "JASP_RELIABILITY_UNITTEST_RC"),
-        "weight_gain": ("JASP_UNITTEST_WEIGHT_GAIN", "/app/Resources/Data Sets/Data Library/2. T-Tests/Weight Gain.jasp", "JASP_WEIGHT_GAIN_UNITTEST_RC"),
+        "flatpak_launch": ("JASP_UNITTEST_FLATPAK", "/app/lunita-fixtures/DeathPenalty.jasp", "JASP_UNITTEST_RC"),
+        "reliability": ("JASP_UNITTEST_RELIABILITY", "/app/lunita-fixtures/Reliability.jasp", "JASP_RELIABILITY_UNITTEST_RC"),
+        "weight_gain": ("JASP_UNITTEST_WEIGHT_GAIN", "/app/lunita-fixtures/WeightGain.jasp", "JASP_WEIGHT_GAIN_UNITTEST_RC"),
     }
     env = jasp_process_env(os.environ)
     env["FLATPAK_SYSTEM_DIR"] = str(ROOTFS / "var/lib/flatpak")
