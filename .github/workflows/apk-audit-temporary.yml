@@ -13,7 +13,7 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 12
     steps:
       - name: Checkout repository branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -25,102 +25,106 @@ jobs:
           set -Eeuo pipefail
           APK="base (1).apk"
           test -s "$APK"
-          echo "=== FILE ==="
           file "$APK"
-          echo "=== SIZE ==="
           stat -c "%s bytes" "$APK"
-          echo "=== SHA256 ==="
           sha256sum "$APK"
-          echo "=== ZIP INTEGRITY ==="
           python3 - "$APK" <<'PY'
           import sys, zipfile
-          p=sys.argv[1]
-          with zipfile.ZipFile(p) as z:
+          with zipfile.ZipFile(sys.argv[1]) as z:
               bad=z.testzip()
-              print('ZIP_TEST=' + ('PASS' if bad is None else 'FAIL:' + bad))
+              print('ZIP_TEST=' + ('PASS' if bad is None else 'FAIL:'+bad))
               if bad: raise SystemExit(2)
-              infos=z.infolist()
-              print('ENTRY_COUNT=',len(infos))
-              print('DEX_FILES=',[x.filename for x in infos if x.filename.endswith('.dex')])
-              print('NATIVE_LIBRARIES=',[x.filename for x in infos if x.filename.startswith('lib/') and x.filename.endswith('.so')])
-              print('ASSET_TOTAL_BYTES=',sum(x.file_size for x in infos if x.filename.startswith('assets/')))
-              print('LARGEST_ENTRIES=')
-              for x in sorted(infos,key=lambda y:y.file_size,reverse=True)[:20]: print(x.file_size,x.filename)
+              print('ZIP_ENTRIES=',len(z.infolist()))
           PY
-      - name: Parse Android manifest and DEX symbols
+      - name: Parse manifest and DEX without xref graph
         shell: bash
         run: |
           set -Eeuo pipefail
           python3 -m pip install --disable-pip-version-check --no-input --no-cache-dir androguard==4.1.3
-          python3 - "base (1).apk" <<'PY'
-          import collections, logging, re, sys, zipfile
-          logging.basicConfig(level=logging.ERROR)
-          from androguard.misc import AnalyzeAPK
-          p=sys.argv[1]
-          a,dexes,dx=AnalyzeAPK(p)
+          python3 - "base (1).apk" "$RUNNER_TEMP/apk-audit-report.txt" <<'PY'
+          import collections, hashlib, logging, re, sys, zipfile
+          logging.disable(logging.CRITICAL)
+          from androguard.core.apk import APK
+          from androguard.core.dex import DEX
+          apk_path, report_path = sys.argv[1], sys.argv[2]
           def emit(k,v): print(f'{k}={v}')
-          print('=== ANDROID PACKAGE METADATA ===')
-          for k,m in [('PACKAGE','get_package'),('APP_LABEL','get_app_name'),('VERSION_NAME','get_androidversion_name'),('VERSION_CODE','get_androidversion_code'),('MIN_SDK','get_min_sdk_version'),('TARGET_SDK','get_target_sdk_version'),('MAX_SDK','get_max_sdk_version'),('MAIN_ACTIVITY','get_main_activity')]:
-              try: emit(k,getattr(a,m)())
-              except Exception as e: emit(k,'UNAVAILABLE:'+type(e).__name__)
-          for k,m in [('PERMISSIONS','get_permissions'),('ACTIVITIES','get_activities'),('SERVICES','get_services'),('RECEIVERS','get_receivers'),('PROVIDERS','get_providers'),('SHARED_LIBRARIES','get_libraries')]:
-              try:
-                  vals=getattr(a,m)()
-                  print(k+'=')
-                  for v in (vals or []): print('  '+str(v))
-              except Exception as e: emit(k,'UNAVAILABLE:'+type(e).__name__)
-          print('=== MANIFEST COMPONENT DETAILS ===')
-          try:
-              root=a.get_android_manifest_xml()
-              ns='{http://schemas.android.com/apk/res/android}'
-              for kind in ('activity','activity-alias','service','receiver','provider'):
-                  for el in root.findall('.//application/'+kind):
-                      attrs={key.split('}')[-1]:val for key,val in el.attrib.items()}
-                      acts=[x.attrib.get(ns+'name') for x in el.findall('./intent-filter/action')]
-                      cats=[x.attrib.get(ns+'name') for x in el.findall('./intent-filter/category')]
-                      print(kind.upper(),attrs,'actions=',acts,'categories=',cats)
-          except Exception as e: print('MANIFEST_COMPONENT_PARSE_ERROR',type(e).__name__,str(e)[:250])
-          print('=== DEX INVENTORY ===')
-          emit('DEX_COUNT',len(dexes))
-          class_count=0
-          prefixes=collections.Counter()
-          needles=('service','worker','job','alarm','receiver','boot','firebase','push','foreground','notification','sync','accessibility','vpn','inputmethod','admin','devicepolicy','wake')
-          interesting=[]
-          strings_found=[]
-          string_pat=re.compile(r'workmanager|androidx\.work|alarmmanager|jobscheduler|startforeground|startforegroundservice|startsticky|onstartcommand|boot_completed|firebasemessaging|wakelock|ignore_battery|foreground_service|accessibilityservice|vpnservice|device_admin|input_method',re.I)
-          for dex in dexes:
-              try: classes=dex.get_classes()
-              except Exception: classes=[]
-              for c in classes:
-                  class_count+=1
-                  name=c.get_name()
-                  parts=name.strip('L;').split('/')
-                  prefixes['/'.join(parts[:2]) if len(parts)>1 else parts[0]]+=1
-                  if any(n in name.lower() for n in needles): interesting.append(name)
+          with open(report_path,'w',encoding='utf-8') as report:
+              from contextlib import redirect_stdout
+              with redirect_stdout(report):
+                  a=APK(apk_path)
+                  print('=== PACKAGE IDENTITY ===')
+                  for key, method in [('PACKAGE','get_package'),('APP_LABEL','get_app_name'),('VERSION_NAME','get_androidversion_name'),('VERSION_CODE','get_androidversion_code'),('MIN_SDK','get_min_sdk_version'),('TARGET_SDK','get_target_sdk_version'),('EFFECTIVE_TARGET_SDK','get_effective_target_sdk_version'),('MAX_SDK','get_max_sdk_version'),('MAIN_ACTIVITY','get_main_activity')]:
+                      try: emit(key,getattr(a,method)())
+                      except Exception as e: emit(key,'UNAVAILABLE:'+type(e).__name__)
+                  for key, method in [('PERMISSIONS','get_permissions'),('ACTIVITIES','get_activities'),('SERVICES','get_services'),('RECEIVERS','get_receivers'),('PROVIDERS','get_providers'),('LIBRARIES','get_libraries'),('FEATURES','get_features')]:
+                      try:
+                          print(key+'=')
+                          for v in (getattr(a,method)() or []): print('  '+str(v))
+                      except Exception as e: emit(key,'UNAVAILABLE:'+type(e).__name__)
+                  print('=== MANIFEST COMPONENT DETAILS ===')
                   try:
-                      for m in c.get_methods():
-                          mn=name+'->'+m.get_name()
-                          if any(n in mn.lower() for n in ('foreground','startcommand','boot','alarm','worker','job','wake','firebase','push','notification','accessibility','vpn')): interesting.append(mn)
-                  except Exception: pass
-              try:
-                  for s in dex.get_strings():
-                      value=str(s)
-                      if string_pat.search(value): strings_found.append(value[:250])
-              except Exception: pass
-          emit('CLASS_COUNT',class_count)
-          print('TOP_CLASS_NAMESPACES=')
-          for k,v in prefixes.most_common(30): print(f'  {k}: {v}')
-          print('BACKGROUND_RELATED_CLASSES_AND_METHODS=')
-          for x in sorted(set(interesting))[:160]: print('  '+x)
-          print('BACKGROUND_RELATED_DEX_STRINGS=')
-          for x in sorted(set(strings_found))[:100]: print('  '+x)
-          print('=== APK SIGNATURE SCHEME INDICATORS ===')
-          for k in ('is_signed_v1','is_signed_v2','is_signed_v3','is_signed_v4'):
-              try:
-                  if hasattr(a,k): emit(k.upper(),getattr(a,k)())
-              except Exception as e: emit(k.upper(),'UNAVAILABLE:'+type(e).__name__)
-          with zipfile.ZipFile(p) as z:
-              sig=[x.filename for x in z.infolist() if x.filename.upper().startswith('META-INF/') and x.filename.upper().endswith(('.RSA','.DSA','.EC','.MF'))]
-              emit('JAR_SIGNATURE_FILES',sig)
-          print('AUDIT_PARSE=COMPLETED')
+                      root=a.get_android_manifest_xml()
+                      ns='{http://schemas.android.com/apk/res/android}'
+                      for kind in ('activity','activity-alias','service','receiver','provider'):
+                          for el in root.findall('.//application/'+kind):
+                              attrs={key.split('}')[-1]:val for key,val in el.attrib.items()}
+                              acts=[x.attrib.get(ns+'name') for x in el.findall('./intent-filter/action')]
+                              cats=[x.attrib.get(ns+'name') for x in el.findall('./intent-filter/category')]
+                              print(kind.upper(),attrs,'actions=',acts,'categories=',cats)
+                  except Exception as e: print('MANIFEST_COMPONENT_PARSE_ERROR',type(e).__name__,str(e)[:250])
+                  print('=== ARCHIVE AND DEX INVENTORY ===')
+                  with zipfile.ZipFile(apk_path) as z:
+                      infos=z.infolist()
+                      emit('ZIP_ENTRY_COUNT',len(infos))
+                      emit('DEX_FILES',[x.filename for x in infos if re.fullmatch(r'classes(\d*)\.dex',x.filename)])
+                      emit('NATIVE_LIBRARIES',[x.filename for x in infos if x.filename.startswith('lib/') and x.filename.endswith('.so')])
+                      emit('APK_ASSET_BYTES',sum(x.file_size for x in infos if x.filename.startswith('assets/')))
+                  dex_names=list(a.get_dex_names())
+                  emit('DEX_COUNT',len(dex_names))
+                  class_count=0
+                  packages=collections.Counter()
+                  matches=[]
+                  dex_terms=('service','worker','job','alarm','receiver','boot','firebase','push','foreground','notification','sync','accessibility','vpn','inputmethod','wake','deviceadmin')
+                  string_terms=re.compile(r'workmanager|androidx\.work|alarmmanager|jobscheduler|startforeground|startforegroundservice|startsticky|onstartcommand|boot_completed|firebasemessaging|wakelock|ignore_battery|foreground_service|accessibilityservice|vpnservice|device_admin|input_method',re.I)
+                  string_hits=set()
+                  for dex_name, raw in zip(dex_names,a.get_all_dex()):
+                      d=DEX(raw)
+                      names=d.get_names()
+                      for name in names:
+                          class_count+=1
+                          parts=name.strip('L;').split('/')
+                          packages['/'.join(parts[:2]) if len(parts)>1 else parts[0]]+=1
+                          if any(t in name.lower() for t in dex_terms): matches.append(name)
+                      try:
+                          for value in d.get_strings():
+                              s=str(value)
+                              if string_terms.search(s): string_hits.add(s[:220])
+                      except Exception: pass
+                  emit('DEX_CLASS_COUNT',class_count)
+                  print('TOP_CLASS_NAMESPACES=')
+                  for k,v in packages.most_common(35): print(f'  {k}: {v}')
+                  print('BACKGROUND_RELATED_CLASSES=')
+                  for x in sorted(set(matches))[:150]: print('  '+x)
+                  print('BACKGROUND_RELATED_STRINGS=')
+                  for x in sorted(string_hits)[:100]: print('  '+x)
+                  print('=== SIGNATURE INDICATORS ===')
+                  for key in ('is_signed_v1','is_signed_v2','is_signed_v3','is_signed_v4'):
+                      try:
+                          if hasattr(a,key): emit(key.upper(),getattr(a,key)())
+                      except Exception as e: emit(key.upper(),'UNAVAILABLE:'+type(e).__name__)
+                  try:
+                      from cryptography.hazmat.primitives import hashes
+                      certs=a.get_certificates_v2()
+                      emit('V2_CERTIFICATE_SHA256',[c.fingerprint(hashes.SHA256()).hex() for c in certs])
+                  except Exception as e: emit('V2_CERTIFICATE_SHA256','UNAVAILABLE:'+type(e).__name__)
+                  print('AUDIT_PARSE=COMPLETED')
+          print('REPORT_BYTES=',__import__('os').path.getsize(report_path))
           PY
+          cat "$RUNNER_TEMP/apk-audit-report.txt"
+      - name: Upload compact forensic report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: apk-forensic-report
+          path: ${{ runner.temp }}/apk-audit-report.txt
+          if-no-files-found: error
+          retention-days: 7
