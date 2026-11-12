@@ -24,6 +24,7 @@ import time
 import uuid
 
 from jasp_seed_fixture_v1 import (
+    FixtureError,
     prepare_deterministic_fixture,
     verify_deterministic_fixture_receipt,
 )
