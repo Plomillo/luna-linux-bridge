@@ -212,7 +212,7 @@ def prepare_deterministic_fixture(
     }
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
     receipt_path.write_text(
-        json.dumps(receipt, sort_keys=True, indent=2, ensure_ascii=False) + "\\n",
+        json.dumps(receipt, sort_keys=True, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     receipt["receipt_path"] = str(receipt_path)
