@@ -1042,6 +1042,9 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 and data.get("network_unshared") is True and data.get("flatpak_sandbox") is True
                 and data.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
                 and replay_pass
+                and data.get("runtime_identity_status") == "PASS"
+                and (save_run.get("runtime_identity") or {}).get("status") == "PASS"
+                and (rerun.get("runtime_identity") or {}).get("status") == "PASS"
                 and fixture_evidence_ok
                 and data.get("original_sample_identity_matches_pin") is True
                 and data.get("original_sample_unchanged") is True
@@ -1081,6 +1084,7 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
             commits = re.findall(r"^APP_COMMIT=([0-9a-f]{64})$", text, re.M)
             pinned_commit = bool(commits) and all(x == expected_commit for x in commits)
             sandbox_bound = "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED" in text
+            runtime_identity = inspect_jasp_runtime_identity(text)
             fixture_ok = True
             if case == "flatpak_launch":
                 original_paths = re.findall(r"^ORIGINAL_FIXTURE_PATH=(.+)$", text, re.M)
@@ -1103,8 +1107,12 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                     )
                 except (OSError, ValueError):
                     fixture_ok = False
-            passed = rc == 0 and pinned_commit and sandbox_bound and fixture_ok
-            runtime_versions = re.findall(r"Starting JASP ([0-9]+(?:\.[0-9]+)+) from commit", text)
+            passed = (
+                rc == 0 and pinned_commit and sandbox_bound and fixture_ok
+                and runtime_identity.get("status") == "PASS"
+            )
+            runtime_versions = [item["version"] for item in runtime_identity.get("observed", [])]
+            runtime_source_commits = [item["source_commit"] for item in runtime_identity.get("observed", [])]
             item.update({
                 "returncode": rc,
                 "status": "PASS" if passed else "BLOCKED",
@@ -1113,6 +1121,8 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "sandbox_execution_marker_present": sandbox_bound,
                 "original_packaged_fixture_identity_valid": fixture_ok if case == "flatpak_launch" else None,
                 "observed_runtime_versions": runtime_versions,
+                "observed_runtime_source_commits": runtime_source_commits,
+                "runtime_identity": runtime_identity,
                 "semantic_shape_mismatch": bool(re.search(r"Row is missing|Total number of models visited\s*=\s*\d+\s*!=|results are different", text, re.I)),
                 "log_has_numeric_deltas": bool(re.search(r"\d+(?:\.\d+)?\s*!=\s*\d+(?:\.\d+)?", text)),
             })
