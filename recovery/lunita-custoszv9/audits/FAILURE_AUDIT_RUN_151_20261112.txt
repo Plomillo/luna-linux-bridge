@@ -207,3 +207,46 @@ https://github.com/flathub/org.jaspstats.JASP/blob/master/org.jaspstats.JASP.jso
 DETERMINATION:
 The runtime identity currently observed is JASP 0.98.8, while the frozen candidate label states JASP 0.98.1. This is an independently verifiable candidate identity/version mismatch. It must not be hidden by changing only the label or by weakening validation. The next target run must record and validate the actual application version. Certification must remain denied until the version identity is aligned with the frozen candidate authority through a traceable correction and a full revalidation.
 
+11. CORRECTIVE IMPLEMENTATION — IDENTITY AND JASP TEST-SEPARATION
+
+The deployed/pinned JASP application is intentionally the 0.98.8 build:
+- Flatpak deployment commit: 83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7
+- JASP desktop source commit: b6cd3b0310be4e18e1b673ac11f14e55615c8fa1
+- Verified runtime banner expected by the independent lane: Starting JASP 0.98.8 from commit b6cd3b0310be4e18e1b673ac11f14e55615c8fa1
+
+The previous candidate builder's JASP_VERSION=0.98.1 was stale. More seriously, it assigned JASP_OBSERVED_VERSION from the same expected constant instead of reading the installed Flatpak metadata. The workflow therefore passed a self-referential version check without establishing the executable version. The application commit and formatter patch, however, were already for JASP 0.98.8.
+
+Correction applied to the operational candidate construction:
+- JASP_VERSION is now 0.98.8, the version represented by the already-pinned JASP desktop commit.
+- The build reads the installed Flatpak application's Version metadata and fails closed if it is absent or does not match.
+- The newly added hierarchy and workflow's exact hierarchy check now state JASP 0.98.8.
+- The original instrument display label remains exactly "Lupa".
+- The Flatpak deployment commit is unchanged.
+- The rootfs build receipt now records the source commit and identifies its version source as FLATPAK_APP_METADATA_VERIFIED.
+
+Correction applied to independent JASP validation:
+- Every actual JASP process must emit the pinned version and exact 40-character desktop source commit in its startup banner.
+- The original packaged Death Penalty fixture is run without changing its seed options or stored results.
+- The lane validates that /app/lunita-fixtures/DeathPenalty.jasp is a symlink to the exact original data-library fixture and that the original source digest matches the pinned SHA.
+- The seeded disposable clone is used only for deterministic replay, in two independent executions on the same hash-bound input.
+- The replay comparator extracts the freshly calculated Model Comparison table from each execution, hashes the ordered rows, and requires exact equality of both row arrays and SHA-256 digests.
+- The replay records raw subprocess return codes and the historical stored-reference mismatch separately. A historic mismatch cannot be mislabeled as a baseline PASS, and it cannot be silently converted into a source-reference update.
+- The independent report requires the baseline fixture case, both other packaged fixtures, deterministic replay, runtime identity, and inventory all to pass.
+
+Contract-test maintenance:
+- The former contract test that required the seeded clone to be passed to the baseline flatpak_launch case was replaced with assertions requiring the original immutable fixture and its verified alias.
+- The positive replay test now supplies two complete, matching fresh result tables and the pinned JASP runtime banner/commit.
+- Self-tests cover selecting the freshly calculated table rather than the stored reference, deterministic row hashing, and explicit rejection of runtime-version or source-commit drift.
+
+These modifications do not alter original .jasp fixture bytes, stored reference results, canonical G06/G08 bindings, the Flatpak deployment commit, or the pre-existing instrument labels.
+
+CURRENT CORRECTIVE-CODE COMMITS:
+- JASP test separation and replay evidence: fdc7ab2b0ed40494fab1e26a83f2000251785dfb
+- Original fixture baseline preservation: abb56d8153c3244b4b020fcba0beacf20995efa9
+- Replay hash gate: ea24338d62188ec4c9c7aac64692d8cf39b7d676
+- Independent evidence parser: c06ed32c00ff0a71fcfc05b544faeca2719e5b84
+- JASP runtime version/source binding and builder correction are appended later on the same protected operational branch.
+
+VALIDATION RULE:
+The above commits demonstrate implementation changes, not a passing independent test and not certification. The next full workflow must pass contract tests, rebuild the rootfs with the corrected version receipt, pass the actual baseline JASP tests, pass deterministic replay, pass independent inventory, issue S32 and stable release receipts, and certify the exact same SquashFS image SHA-256 before the candidate may be declared functionally certified.
+
