@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import ctypes
 import pathlib
 import subprocess
 import sys
@@ -121,49 +122,42 @@ def _zstd_decompress(frame: bytes) -> bytes | None:
 
 
 def _zstd_compress(payload: bytes) -> bytes | None:
-    try:
-        proc = subprocess.run(
-            ["zstd", "-19", "--ultra", "-c"],
-            input=payload,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
-    except FileNotFoundError:
+    """One-shot ZSTD_compress. The CLI streams and omits the content size, and
+    Qt then rejects the frame in ZSTD_getFrameContentSize (empty script, 0 tables)."""
+    lib = None
+    for name in ("libzstd.so.1", "libzstd.so"):
+        try:
+            lib = ctypes.CDLL(name)
+            break
+        except OSError:
+            continue
+    if lib is None:
         return None
-    if proc.returncode != 0 or not proc.stdout:
+    lib.ZSTD_compress.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_int,
+    ]
+    lib.ZSTD_compress.restype = ctypes.c_size_t
+    lib.ZSTD_compressBound.argtypes = [ctypes.c_size_t]
+    lib.ZSTD_compressBound.restype = ctypes.c_size_t
+    lib.ZSTD_isError.argtypes = [ctypes.c_size_t]
+    lib.ZSTD_isError.restype = ctypes.c_uint
+    lib.ZSTD_getFrameContentSize.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    lib.ZSTD_getFrameContentSize.restype = ctypes.c_ulonglong
+    bound = lib.ZSTD_compressBound(len(payload))
+    dst = ctypes.create_string_buffer(bound)
+    src = ctypes.create_string_buffer(payload)
+    got = lib.ZSTD_compress(dst, bound, ctypes.addressof(src), len(payload), 19)
+    if lib.ZSTD_isError(got):
         return None
-    return proc.stdout
-
-
-def _fit_zstd_frame(payload: bytes, declared: int) -> bytes:
-    """Recompress and pad to the exact original slot.
-
-    Qt passes that slot length to ZSTD_decompress, which rejects a short
-    buffer and a buffer with trailing junk that is not a frame. A skippable
-    frame fills the gap. The length prefix stays equal to `declared`.
-    """
-    compressed = _zstd_compress(payload)
-    if not compressed:
-        raise SystemExit("zstd could not recompress the JASP formatter resource")
-    if len(compressed) > declared:
-        raise SystemExit(
-            f"Recompressed JASP formatter resource grew from {declared} to {len(compressed)} bytes"
-        )
-    gap = declared - len(compressed)
-    if gap == 0:
-        return compressed
-    if gap < 8:
-        raise SystemExit(
-            f"Recompressed JASP formatter resource is {gap} bytes under {declared}, "
-            "too little room for a skippable zstd frame"
-        )
-    user = b"\x00" * (gap - 8)
-    skip = (0x184D2A50).to_bytes(4, "little") + len(user).to_bytes(4, "little") + user
-    fitted = compressed + skip
-    if len(fitted) != declared:
-        raise SystemExit("zstd skippable pad did not land on the original frame size")
-    return fitted
+    frame = dst.raw[:got]
+    content = lib.ZSTD_getFrameContentSize(frame, len(frame))
+    if content != len(payload):
+        return None
+    return frame
 
 
 def _patch_zstd_blob(blob: bytearray) -> tuple[int, int]:
@@ -177,8 +171,15 @@ def _patch_zstd_blob(blob: bytearray) -> tuple[int, int]:
         rewritten, call_count, latex_count = _apply_pairs(decoded)
         if call_count == 0 and latex_count == 0:
             continue
-        fitted = _fit_zstd_frame(rewritten, declared)
-        blob[frame_at:frame_at + declared] = fitted
+        compressed = _zstd_compress(rewritten)
+        if not compressed or len(compressed) > declared:
+            raise SystemExit(
+                "Recompressed JASP formatter resource "
+                f"{'is missing a content-size header' if not compressed else 'grew'} "
+                f"from {declared} to {0 if not compressed else len(compressed)} bytes"
+            )
+        blob[length_at:frame_at] = len(compressed).to_bytes(4, "big")
+        blob[frame_at:frame_at + len(compressed)] = compressed
         calls += call_count
         latex += latex_count
     return calls, latex
