@@ -259,6 +259,7 @@ def flatpak_jasp_launch(flatpak_options: list[str], app_args: list[str]) -> list
         "/usr/bin/flatpak", "--system", "run", "--unshare=network",
         "--command=/app/bin/JASP",
         "--env=QT_QPA_PLATFORM=offscreen",
+        "--env=QTWEBENGINE_DISABLE_SANDBOX=1",
         *flatpak_options, "org.jaspstats.JASP", *app_args,
     ]
 
