@@ -412,7 +412,7 @@ class JaspRunnerTests(unittest.TestCase):
                 command = args[0]
                 for part in command:
                     if part.startswith("--env=LUNITA_JASP_SEED_HOOK_RECEIPT="):
-                        marker = pathlib.Path(part.split("=", 1)[1])
+                        marker = pathlib.Path(part.removeprefix("--env=LUNITA_JASP_SEED_HOOK_RECEIPT="))
                         marker.parent.mkdir(parents=True, exist_ok=True)
                         marker.write_text("SEED_APPLIED\t123\t1\tFALSE\n", encoding="utf-8")
                 return next(response_iter)
@@ -469,7 +469,7 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
                 command = args[0]
                 for part in command:
                     if part.startswith("--env=LUNITA_JASP_SEED_HOOK_RECEIPT="):
-                        marker = pathlib.Path(part.split("=", 1)[1])
+                        marker = pathlib.Path(part.removeprefix("--env=LUNITA_JASP_SEED_HOOK_RECEIPT="))
                         marker.parent.mkdir(parents=True, exist_ok=True)
                         marker.write_text("SEED_APPLIED\t123\t1\tFALSE\n", encoding="utf-8")
                 return next(response_iter)

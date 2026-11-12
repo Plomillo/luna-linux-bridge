@@ -617,6 +617,213 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
     atomic_json(result_path, results)
     return results
 
+def inventory_worker_command(result_path: pathlib.Path) -> list[str]:
+    """Run only the read-only rootfs inventory with root traversal rights.
+
+    Candidate directories remain 0700/0600. The worker uses sudo read-only
+    access; it does not chown/chmod or otherwise alter rootfs content.
+    """
+    script = str(pathlib.Path(__file__).resolve())
+    worker = [sys.executable, "-B", script, "--inventory-worker", str(result_path)]
+    if os.geteuid() == 0:
+        return worker
+    sudo = shutil.which("sudo")
+    if not sudo:
+        raise PermissionError("Rootfs inventory requires read-only privileged traversal; sudo is unavailable")
+    preserved = ",".join(INVENTORY_PRIVILEGED_ENV)
+    return [sudo, "-n", f"--preserve-env={preserved}", *worker]
+
+
+def restore_inventory_artifact_owner(path: pathlib.Path) -> None:
+    """Return root-created evidence files to the invoking workflow user, mode 0600."""
+    if os.geteuid() != 0:
+        return
+    uid_text, gid_text = os.environ.get("SUDO_UID"), os.environ.get("SUDO_GID")
+    if uid_text is None and gid_text is None:
+        return
+    if not (uid_text and gid_text and uid_text.isdigit() and gid_text.isdigit()):
+        raise PermissionError("Cannot restore inventory evidence ownership from incomplete sudo identity")
+    os.chown(path, int(uid_text), int(gid_text), follow_symlinks=False)
+    os.chmod(path, 0o600)
+
+
+def _entry_rows(root: pathlib.Path):
+    """Yield non-following filesystem entries in stable order."""
+    def deny_walk_error(error: OSError) -> None:
+        raise error
+
+    for base, dirs, files in os.walk(
+        root, topdown=True, followlinks=False, onerror=deny_walk_error
+    ):
+        dirs.sort()
+        files.sort()
+        bp = pathlib.Path(base)
+        # Include the base directory itself, then children. Symlinked dirs are not traversed.
+        if bp != root:
+            yield bp
+        for name in list(dirs):
+            p = bp / name
+            if p.is_symlink():
+                yield p
+                dirs.remove(name)
+        for name in files:
+            yield bp / name
+
+
+def _meta_digest(root: pathlib.Path) -> tuple[str, int]:
+    h = hashlib.sha256()
+    count = 0
+    for path in _entry_rows(root):
+        try:
+            st = path.lstat()
+            if pathlib.Path(path).is_symlink():
+                kind, extra = "symlink", os.readlink(path)
+            elif pathlib.Path(path).is_dir():
+                kind, extra = "dir", ""
+            elif pathlib.Path(path).is_file():
+                kind, extra = "file", ""
+            else:
+                kind, extra = "special", str(st.st_rdev)
+            row = [path.relative_to(root).as_posix(), kind, st.st_mode, st.st_uid,
+                   st.st_gid, st.st_size, st.st_mtime_ns, extra]
+            h.update((json.dumps(row, separators=(",", ":"), ensure_ascii=False) + "\n").encode())
+            count += 1
+        except OSError as exc:
+            h.update((f"ERROR\t{path}\t{type(exc).__name__}\n").encode())
+            count += 1
+    return h.hexdigest(), count
+
+
+def hash_regular_file_read_only(path: pathlib.Path) -> tuple[str, str]:
+    """Hash as the current user; on EACCES, use non-interactive sudo for read-only sha256sum.
+
+    This does not chmod, chown, copy, or otherwise mutate the candidate rootfs.
+    If passwordless sudo is unavailable, the inventory remains blocked.
+    """
+    try:
+        h = hashlib.sha256()
+        with path.open("rb") as stream:
+            for block in iter(lambda: stream.read(1024 * 1024), b""):
+                h.update(block)
+        return h.hexdigest(), "CURRENT_USER_READ"
+    except PermissionError as original:
+        try:
+            path.relative_to(ROOTFS)
+        except ValueError as exc:
+            raise PermissionError("Privileged hash path escapes candidate rootfs") from exc
+        sudo = shutil.which("sudo")
+        sha256sum = shutil.which("sha256sum")
+        if not sudo or not sha256sum:
+            raise PermissionError("Read denied and sudo/sha256sum is unavailable") from original
+        result = subprocess.run(
+            [sudo, "-n", sha256sum, "--", str(path)],
+            stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=600, check=False,
+        )
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout or "sudo read-only hash failed").strip()[-600:]
+            raise PermissionError("Passwordless sudo read-only hash failed: " + detail) from original
+        token = result.stdout.split(maxsplit=1)[0] if result.stdout.split() else ""
+        if not re.fullmatch(r"[0-9a-fA-F]{64}", token):
+            raise RuntimeError("Privileged sha256sum returned an invalid digest")
+        return token.lower(), "SUDO_NONINTERACTIVE_READ_ONLY_SHA256SUM"
+
+
+def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
+    """Hash every regular file without following symlinks; retain a JSONL manifest."""
+    EVIDENCE.mkdir(parents=True, exist_ok=True, mode=0o700)
+    stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    manifest = EVIDENCE / f"rootfs_inventory_{stamp}.jsonl"
+    report_path = report_path or (EVIDENCE / f"rootfs_inventory_{stamp}.json")
+    if not ROOTFS.is_dir():
+        result = {"schema": "CUSTOSZ_LUNITA_ROOTFS_INVENTORY/1.0", "status": "BLOCKED_ROOTFS_MISSING",
+                  "timestamp_utc": utc(), "rootfs_path": str(ROOTFS), "certification": "NOT_GRANTED"}
+        atomic_json(report_path, result)
+        restore_inventory_artifact_owner(report_path)
+        return result
+
+    status_path = ROOTFS / "var/lib/dpkg/status"
+    os_release = ROOTFS / "etc/os-release"
+    launcher = ROOTFS / "opt/lunita/agent/lunita.py"
+    before_digest, before_count = _meta_digest(ROOTFS)
+    tmp_manifest = manifest.with_suffix(".jsonl.partial")
+    count = total_bytes = errors_count = symlink_count = regular_count = privileged_hash_count = 0
+    errors = []
+    digest = hashlib.sha256()
+    with tmp_manifest.open("x", encoding="utf-8") as out:
+        for path in _entry_rows(ROOTFS):
+            rel = path.relative_to(ROOTFS).as_posix()
+            try:
+                st0 = path.lstat()
+                if path.is_symlink():
+                    kind, link, file_hash = "symlink", os.readlink(path), None
+                    symlink_count += 1
+                elif path.is_dir():
+                    kind, link, file_hash = "directory", None, None
+                elif path.is_file():
+                    kind, link = "file", None
+                    file_hash, hash_method = hash_regular_file_read_only(path)
+                    if hash_method == "SUDO_NONINTERACTIVE_READ_ONLY_SHA256SUM":
+                        privileged_hash_count += 1
+                    st1 = path.lstat()
+                    if (st0.st_size, st0.st_mtime_ns, st0.st_mode) != (st1.st_size, st1.st_mtime_ns, st1.st_mode):
+                        raise RuntimeError("FILE_CHANGED_DURING_INVENTORY")
+                    regular_count += 1
+                    total_bytes += st0.st_size
+                else:
+                    kind, link, file_hash = "special", None, None
+                    hash_method = None
+                if kind != "file":
+                    hash_method = None
+                row = {"path": rel, "type": kind, "mode": st0.st_mode & 0o7777,
+                       "uid": st0.st_uid, "gid": st0.st_gid, "size_bytes": st0.st_size,
+                       "mtime_ns": st0.st_mtime_ns, "sha256": file_hash,
+                       "hash_method": hash_method, "symlink_target": link}
+            except Exception as exc:
+                errors_count += 1
+                if len(errors) < 200:
+                    errors.append({"path": rel, "error_type": type(exc).__name__, "error": str(exc)[:400]})
+                row = {"path": rel, "type": "ERROR", "error_type": type(exc).__name__, "error": str(exc)[:400]}
+            line = json.dumps(row, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n"
+            out.write(line)
+            digest.update(line.encode())
+            count += 1
+        out.flush()
+        os.fsync(out.fileno())
+    after_digest, after_count = _meta_digest(ROOTFS)
+    stable_tree = before_digest == after_digest and before_count == after_count
+    os.replace(tmp_manifest, manifest)
+    restore_inventory_artifact_owner(manifest)
+    dep = parse_dpkg_status(status_path)
+    launcher_sha = sha_file(launcher) if launcher.is_file() else None
+    basics_pass = status_path.is_file() and os_release.is_file() and launcher_sha is not None
+    pass_all = basics_pass and stable_tree and errors_count == 0 and dep["status"] == "PASS_DECLARED_PACKAGE_DEPENDENCIES_RESOLVED"
+    result = {
+        "schema": "CUSTOSZ_LUNITA_ROOTFS_INVENTORY/1.0",
+        "timestamp_utc": utc(),
+        "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+        "rootfs_path": str(ROOTFS),
+        "rootfs_inventory_status": "PASS" if pass_all else "BLOCKED",
+        "status": "PASS_ROOTFS_INVENTORY_AND_DEPENDENCY_CLOSURE" if pass_all else "BLOCKED_ROOTFS_INVENTORY_OR_DEPENDENCY_CLOSURE",
+        "metadata_tree_sha256_before": before_digest, "metadata_tree_sha256_after": after_digest,
+        "tree_stable_during_scan": stable_tree, "metadata_entry_count_before": before_count,
+        "metadata_entry_count_after": after_count, "inventory_entry_count": count,
+        "regular_file_count": regular_count, "symlink_count": symlink_count,
+        "regular_file_total_bytes": total_bytes, "inventory_errors_count": errors_count,
+        "privileged_read_only_hash_count": privileged_hash_count,
+        "privileged_hashing_policy": "SUDO_NONINTERACTIVE_READ_ONLY_SHA256SUM_OR_FAIL_CLOSED",
+        "inventory_errors": errors, "manifest_path": str(manifest), "manifest_sha256": sha_file(manifest),
+        "manifest_stream_sha256": digest.hexdigest(), "manifest_bytes": manifest.stat().st_size,
+        "dpkg_dependency_closure": dep, "dpkg_status_path": str(status_path),
+        "os_release_sha256": sha_file(os_release) if os_release.is_file() else None,
+        "launcher_sha256": launcher_sha,
+        "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
+        "certification": "NOT_GRANTED",
+    }
+    atomic_json(report_path, result)
+    restore_inventory_artifact_owner(report_path)
+    return result
+
+
 def latest_jasp_evidence() -> dict:
     rows = {}
     for case, (prefix, pattern, marker) in JASP_CASES.items():
