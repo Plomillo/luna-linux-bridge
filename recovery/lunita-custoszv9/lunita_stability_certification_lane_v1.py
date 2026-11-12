@@ -858,12 +858,84 @@ def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
     return result
 
 
-def latest_jasp_evidence() -> dict:
+def _latest_jasp_worker_report(worker_receipt: dict | None = None) -> tuple[pathlib.Path | None, dict | None, str | None]:
+    """Load the latest worker result, including preflight failures before case logs exist."""
+    evidence_root = EVIDENCE.resolve()
+    reports = sorted(
+        (path for path in EVIDENCE.glob("jasp_suite_*.json")
+         if path.is_file() and not path.is_symlink()),
+        key=lambda path: path.stat().st_mtime_ns,
+        reverse=True,
+    )
+    if reports:
+        path = reports[0]
+        try:
+            path.resolve(strict=True).relative_to(evidence_root)
+        except (OSError, ValueError):
+            return None, None, None
+        return path, load_json(path, {}) or {}, sha_file(path)
+    if isinstance(worker_receipt, dict):
+        path_text = worker_receipt.get("path") or worker_receipt.get("result_path")
+        if path_text:
+            path = pathlib.Path(path_text)
+            try:
+                path.resolve(strict=True).relative_to(evidence_root)
+                if path.is_file() and not path.is_symlink():
+                    return path, load_json(path, {}) or {}, sha_file(path)
+            except (OSError, ValueError):
+                pass
+        result = worker_receipt.get("result")
+        if isinstance(result, dict):
+            return None, result, None
+        if worker_receipt.get("status") == "BLOCKED_JASP_WORKER_EXIT_WITHOUT_RECEIPT":
+            return None, worker_receipt, None
+    return None, None, None
+
+
+def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
+    worker_path, worker_data, worker_sha = _latest_jasp_worker_report(worker_receipt)
+    worker_tests = worker_data.get("tests", {}) if isinstance(worker_data, dict) else {}
+    worker_cases = dict(worker_tests) if isinstance(worker_tests, dict) else {}
+    if isinstance(worker_data, dict) and "death_penalty_roundtrip" not in worker_cases:
+        roundtrip = worker_data.get("roundtrip_gate")
+        if isinstance(roundtrip, dict):
+            worker_cases["death_penalty_roundtrip"] = roundtrip
+    worker_status = worker_data.get("status") if isinstance(worker_data, dict) else None
+    worker_failure = None
+    if isinstance(worker_data, dict):
+        worker_failure = (
+            worker_data.get("executor_error")
+            or worker_data.get("app_commit_probe")
+            or worker_data.get("worker_failure")
+        )
     rows = {}
     for case, (prefix, pattern, marker) in JASP_CASES.items():
         files = sorted((OUT.glob(prefix + pattern)), key=lambda p: p.stat().st_mtime_ns, reverse=True)
         if not files:
-            rows[case] = {"status": "BLOCKED_NOT_RUN", "returncode": None, "evidence_path": None}
+            case_result = worker_cases.get(case) if isinstance(worker_cases, dict) else None
+            if isinstance(worker_data, dict):
+                rows[case] = {
+                    "status": "BLOCKED",
+                    "case_status": (case_result or {}).get("status", "BLOCKED_WORKER_DID_NOT_REACH_CASE"),
+                    "returncode": (case_result or {}).get("returncode"),
+                    "evidence_path": str(worker_path) if worker_path else None,
+                    "evidence_sha256": worker_sha,
+                    "worker_status": worker_status,
+                    "worker_failure": worker_failure,
+                    "worker_case_result": case_result,
+                }
+            elif worker_receipt:
+                rows[case] = {
+                    "status": "BLOCKED",
+                    "case_status": "BLOCKED_JASP_WORKER_EXIT_WITHOUT_RECEIPT",
+                    "returncode": None,
+                    "evidence_path": None,
+                    "evidence_sha256": None,
+                    "worker_status": worker_receipt.get("status"),
+                    "worker_failure": worker_receipt,
+                }
+            else:
+                rows[case] = {"status": "BLOCKED_NOT_RUN", "returncode": None, "evidence_path": None}
             continue
         p = files[0]
         item = {"evidence_path": str(p), "evidence_sha256": sha_file(p),
@@ -950,9 +1022,23 @@ def latest_jasp_evidence() -> dict:
             })
         rows[case] = item
     all_pass = all(x.get("status") == "PASS" and x.get("returncode") == 0 for x in rows.values())
+    worker_evidence = None
+    if isinstance(worker_data, dict):
+        worker_evidence = {
+            "path": str(worker_path) if worker_path else None,
+            "sha256": worker_sha,
+            "status": worker_status,
+            "failure": worker_failure,
+            "case_count": len(worker_cases),
+        }
     return {"status": "PASS_JASP_PACKAGED_FIXTURE_NONREGRESSION" if all_pass else "BLOCKED_JASP_PACKAGED_FIXTURE_NONREGRESSION",
             "all_required_jasp_cases_pass": all_pass, "cases": rows,
-            "next_action": "Audit the hash-bound disposable Death Penalty fixture transform, native setSeed/seed execution, save/reopen stability, and all packaged-fixture regressions. Never modify source fixtures or reference results to make a test pass."}
+            "worker_evidence": worker_evidence,
+            "next_action": (
+                "Resolve the explicit JASP worker preflight/executor failure recorded in worker_evidence; absence of per-case logs is not a PASS."
+                if worker_evidence and not worker_cases else
+                "Audit the hash-bound disposable Death Penalty fixture transform, native setSeed/seed execution, save/reopen stability, and all packaged-fixture regressions. Never modify source fixtures or reference results to make a test pass."
+            )}
 
 def persist_jasp_remediation_queue(jasp: dict) -> dict:
     """Keep a hash-bound, append-only queue for each unresolved packaged JASP case."""
@@ -1796,7 +1882,7 @@ def tick() -> dict:
         reports = sorted(EVIDENCE.glob("rootfs_inventory_*.json"), key=lambda p:p.stat().st_mtime_ns, reverse=True)
         if reports:
             inventory = load_json(reports[0], {})
-    jasp = latest_jasp_evidence()
+    jasp = latest_jasp_evidence(None if jasp_busy else state.get("last_jasp_job_receipt"))
     jasp_queue = persist_jasp_remediation_queue(jasp)
     report = update_independent_report(inventory, jasp)
     report_update = persist_independent_report(report)
@@ -1818,6 +1904,9 @@ def tick() -> dict:
         "independent_report_update": report_update, "independent_report_status": report.get("status"),
         "s32_certification_receipt": s32_receipt,
         "jasp_status": jasp.get("status"), "jasp_cases": jasp.get("cases"),
+        "jasp_worker_evidence": jasp.get("worker_evidence"),
+        "jasp_worker_receipt": state.get("last_jasp_job_receipt"),
+        "jasp_job": state.get("jasp_job"),
         "jasp_remediation_queue": jasp_queue,
         "stable_release_gate": release, "stable_release_current_status": release_status,
         "stable_release_status": release_status.get("status"),

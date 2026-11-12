@@ -130,10 +130,56 @@ class CertificationGateTests(unittest.TestCase):
                 "strict_rerun_after_save": {"status": "FAIL", "returncode": 1},
                 "original_sample_unchanged": True,
             }), encoding="utf-8")
-            with mock.patch.object(lane, "OUT", out):
+            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "EVIDENCE", base / "evidence"):
                 result = lane.latest_jasp_evidence()
         self.assertEqual("BLOCKED_JASP_PACKAGED_FIXTURE_NONREGRESSION", result["status"])
         self.assertTrue(all(x["status"] == "BLOCKED" and x["returncode"] == 1 for x in result["cases"].values()))
+
+    def test_worker_preflight_failure_is_not_downgraded_to_not_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            out, evidence = base / "out", base / "evidence"
+            out.mkdir()
+            evidence.mkdir()
+            suite = evidence / "jasp_suite_20261112T000000Z.json"
+            suite.write_text(json.dumps({
+                "schema": "CUSTOSZ_LUNITA_JASP_AUTOMATED_REGRESSION_SUITE/1.0",
+                "status": "BLOCKED_JASP_PIN_MISMATCH",
+                "app_commit_probe": {
+                    "returncode": 0,
+                    "actual_commit": "0" * 64,
+                    "expected_commit": "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
+                },
+                "tests": {},
+            }), encoding="utf-8")
+            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "EVIDENCE", evidence):
+                result = lane.latest_jasp_evidence()
+            self.assertEqual("BLOCKED_JASP_PACKAGED_FIXTURE_NONREGRESSION", result["status"])
+            self.assertEqual("BLOCKED_JASP_PIN_MISMATCH", result["worker_evidence"]["status"])
+            self.assertEqual(0, result["worker_evidence"]["case_count"])
+            for case in result["cases"].values():
+                self.assertEqual("BLOCKED", case["status"])
+                self.assertEqual("BLOCKED_WORKER_DID_NOT_REACH_CASE", case["case_status"])
+                self.assertEqual("BLOCKED_JASP_PIN_MISMATCH", case["worker_status"])
+                self.assertEqual(str(suite), case["evidence_path"])
+                self.assertEqual(lane.sha_file(suite), case["evidence_sha256"])
+
+    def test_worker_exit_without_receipt_is_explicitly_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            out, evidence = base / "out", base / "evidence"
+            out.mkdir()
+            evidence.mkdir()
+            receipt = {
+                "status": "BLOCKED_JASP_WORKER_EXIT_WITHOUT_RECEIPT",
+                "pid": 4312,
+            }
+            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "EVIDENCE", evidence):
+                result = lane.latest_jasp_evidence(receipt)
+            self.assertEqual("BLOCKED_JASP_PACKAGED_FIXTURE_NONREGRESSION", result["status"])
+            for case in result["cases"].values():
+                self.assertEqual("BLOCKED", case["status"])
+                self.assertEqual("BLOCKED_JASP_WORKER_EXIT_WITHOUT_RECEIPT", case["worker_status"])
 
     def test_independent_report_does_not_pass_with_missing_inventory_and_jasp_failure(self):
         with tempfile.TemporaryDirectory() as tmp:

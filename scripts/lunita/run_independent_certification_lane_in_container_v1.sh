@@ -82,9 +82,17 @@ for attempt in range(180):
                 pass
     if (tick.get("cajita_heavy_lane") or {}).get("active"):
         active = True
-    jasp_done = str(tick.get("jasp_status", "")).startswith(("PASS_", "BLOCKED_"))
+    jasp_cases = tick.get("jasp_cases") if isinstance(tick.get("jasp_cases"), dict) else {}
+    jasp_done = set(jasp_cases) == {
+        "flatpak_launch", "reliability", "weight_gain", "death_penalty_roundtrip"
+    } and all(
+        isinstance(row, dict) and row.get("status") in {"PASS", "BLOCKED"}
+        for row in jasp_cases.values()
+    )
+    last_jasp_receipt = state.get("last_jasp_job_receipt") or {}
+    worker_exited_without_receipt = last_jasp_receipt.get("status") == "BLOCKED_JASP_WORKER_EXIT_WITHOUT_RECEIPT"
     inventory_done = str(tick.get("inventory_status", "")).startswith(("PASS_", "BLOCKED_"))
-    if not active and jasp_done and inventory_done:
+    if not active and (jasp_done or worker_exited_without_receipt) and inventory_done:
         print("BEGIN_BOUNDED_JASP_FAILURE_DIAGNOSTICS", flush=True)
         output_dir = pathlib.Path(os.environ["LUNITA_OUTPUT_DIR"])
         patterns = (
@@ -102,6 +110,16 @@ for attempt in range(180):
                     excerpt = content[-180:]
                     print(f"\n===== {evidence.name} ({len(content)} lines; last {len(excerpt)}) =====", flush=True)
                     print("\n".join(excerpt), flush=True)
+                except OSError as exc:
+                    print(f"DIAGNOSTIC_READ_FAILED {evidence}: {type(exc).__name__}: {exc}", flush=True)
+        evidence_dir = pathlib.Path(os.environ["LUNITA_EVIDENCE_DIR"])
+        for pattern in ("jasp_suite_*.json", "jasp_suite_*.log", "lane_state.json", "last_error.json", "jasp_remediation_queue.json"):
+            for evidence in sorted(evidence_dir.glob(pattern), key=lambda path: path.stat().st_mtime_ns, reverse=True):
+                try:
+                    content = evidence.read_text(encoding="utf-8", errors="replace").splitlines()
+                    excerpt = content[-240:]
+                    print(f"\\n===== {evidence.name} ({len(content)} lines; last {len(excerpt)}) =====", flush=True)
+                    print("\\n".join(excerpt), flush=True)
                 except OSError as exc:
                     print(f"DIAGNOSTIC_READ_FAILED {evidence}: {type(exc).__name__}: {exc}", flush=True)
         print("END_BOUNDED_JASP_FAILURE_DIAGNOSTICS", flush=True)
