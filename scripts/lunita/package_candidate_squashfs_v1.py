@@ -243,6 +243,32 @@ def run_tool(argv: list[str], *, cwd: pathlib.Path | None = None, env: dict[str,
     return result.stdout
 
 
+def manifest_mismatch(source: dict[str, Any], extracted: dict[str, Any]) -> str:
+    """Name the first stored differences. Identical file content must not collapse metadata."""
+    src = {row["path"]: row for row in source["entries"]}
+    dst = {row["path"]: row for row in extracted["entries"]}
+    missing = sorted(set(src) - set(dst))[:8]
+    extra = sorted(set(dst) - set(src))[:8]
+    changed = []
+    for path in sorted(set(src) & set(dst)):
+        if src[path] == dst[path]:
+            continue
+        fields = sorted(set(src[path]) | set(dst[path]))
+        delta = {field: [src[path].get(field), dst[path].get(field)] for field in fields if src[path].get(field) != dst[path].get(field)}
+        changed.append({"path": path, "fields": delta})
+        if len(changed) >= 8:
+            break
+    summary = {
+        "error": "SquashFS extraction does not reproduce the candidate rootfs manifest",
+        "source_entries": source["entry_count"],
+        "extracted_entries": extracted["entry_count"],
+        "missing_paths": missing,
+        "extra_paths": extra,
+        "changed": changed,
+    }
+    return json.dumps(summary, ensure_ascii=True, sort_keys=True)
+
+
 def reproducible_mksquashfs(manifest: dict[str, Any]) -> tuple[list[str], dict[str, str], dict[str, Any]]:
     """Choose a reproducible build mode the installed mksquashfs actually supports.
 
@@ -318,7 +344,7 @@ def package_rootfs(
         extra_args, repro_env, repro_meta = reproducible_mksquashfs(source_before)
         build_log = run_tool([
             "mksquashfs", str(rootfs), str(temporary_image),
-            "-noappend", "-comp", "zstd", "-Xcompression-level", "15",
+            "-noappend", "-no-duplicates", "-comp", "zstd", "-Xcompression-level", "15",
             "-no-progress", *extra_args,
         ], env=repro_env)
         if not temporary_image.is_file() or temporary_image.stat().st_size <= 0:
@@ -330,7 +356,7 @@ def package_rootfs(
         if source_before["entries_sha256"] != source_after["entries_sha256"]:
             raise PackageError("Protected source rootfs changed during SquashFS packaging")
         if source_before["entries_sha256"] != extracted_manifest["entries_sha256"]:
-            raise PackageError("SquashFS extraction does not reproduce the candidate rootfs manifest")
+            raise PackageError(manifest_mismatch(source_before, extracted_manifest))
 
         digest = sha256_file(temporary_image)
         image_bytes = temporary_image.stat().st_size
@@ -405,6 +431,15 @@ def self_test() -> dict[str, Any]:
         (root / "etc").mkdir(parents=True)
         (root / "opt/lunita").mkdir(parents=True)
         (root / "etc/os-release").write_text("ID=ubuntu\nVERSION_ID=24.04\n", encoding="utf-8")
+        same = b"LUNITA_DUPLICATE_BYTES"
+        first_copy = root / "etc/copy-a"
+        second_copy = root / "opt/lunita/copy-b"
+        first_copy.write_bytes(same)
+        second_copy.write_bytes(same)
+        os.utime(first_copy, (111, 111))
+        os.utime(second_copy, (222, 222))
+        first_copy.chmod(0o644)
+        second_copy.chmod(0o755)
         app = root / "opt/lunita/agent"
         app.write_text("#!/bin/sh\nprintf 'LUNITA_SELFTEST_OK\\n'\n", encoding="utf-8")
         app.chmod(0o755)
