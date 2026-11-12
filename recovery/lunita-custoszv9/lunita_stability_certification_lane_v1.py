@@ -555,16 +555,16 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                     deterministic_receipt = seeded_fixture_receipt
                 command = flatpak_jasp_launch(flatpak_options, ["--unitTest", test_fixture])
                 header = (
-                    f"START_UTC={started}\\nAPP_COMMIT={actual_commit}\\nTEST_FILE={test_fixture}\\n"
-                    "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED\\n"
+                    f"START_UTC={started}\nAPP_COMMIT={actual_commit}\nTEST_FILE={test_fixture}\n"
+                    "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED\n"
                 )
                 if deterministic_receipt is not None:
                     header += (
-                        "DETERMINISTIC_FIXTURE_STATUS=PASS\\n"
-                        f"DETERMINISTIC_FIXTURE_EVIDENCE_PATH={seeded_fixture_receipt_path}\\n"
-                        f"DETERMINISTIC_FIXTURE_EVIDENCE_SHA256={sha_file(seeded_fixture_receipt_path)}\\n"
-                        f"DETERMINISTIC_FIXTURE_SHA256={deterministic_receipt['clone_sha256']}\\n"
-                        f"DETERMINISTIC_FIXTURE_JSON_POINTER={deterministic_receipt['changed_json_pointer']}\\n"
+                        "DETERMINISTIC_FIXTURE_STATUS=PASS\n"
+                        f"DETERMINISTIC_FIXTURE_EVIDENCE_PATH={seeded_fixture_receipt_path}\n"
+                        f"DETERMINISTIC_FIXTURE_EVIDENCE_SHA256={sha_file(seeded_fixture_receipt_path)}\n"
+                        f"DETERMINISTIC_FIXTURE_SHA256={deterministic_receipt['clone_sha256']}\n"
+                        f"DETERMINISTIC_FIXTURE_JSON_POINTER={deterministic_receipt['changed_json_pointer']}\n"
                     )
                 try:
                     run = subprocess.run(
@@ -580,8 +580,8 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                     )
                     case_status = "PASS" if rc == 0 and deterministic_ok else "BLOCKED"
                     payload = (
-                        header + run.stdout + ("" if run.stdout.endswith("\\n") else "\\n")
-                        + f"\\n{marker}={rc}\\nFINISHED_UTC={utc()}\\n"
+                        header + run.stdout + ("" if run.stdout.endswith("\n") else "\n")
+                        + f"\n{marker}={rc}\nFINISHED_UTC={utc()}\n"
                     )
                     log_path.write_text(payload, encoding="utf-8", errors="replace")
                     results["tests"][case_id] = {
@@ -600,7 +600,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                 except subprocess.TimeoutExpired as exc:
                     output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
                     log_path.write_text(
-                        header + output + f"\\n{marker}=124\\nTIMEOUT=300\\n",
+                        header + output + f"\n{marker}=124\nTIMEOUT=300\n",
                         encoding="utf-8",
                     )
                     results["tests"][case_id] = {
@@ -614,7 +614,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                     }
                 except Exception as exc:
                     log_path.write_text(
-                        header + f"EXECUTION_ERROR={type(exc).__name__}:{str(exc)[:1000]}\\n{marker}=125\\n",
+                        header + f"EXECUTION_ERROR={type(exc).__name__}:{str(exc)[:1000]}\n{marker}=125\n",
                         encoding="utf-8",
                     )
                     results["tests"][case_id] = {
@@ -916,7 +916,7 @@ def latest_jasp_evidence() -> dict:
                 text = p.read_text(encoding="utf-8", errors="replace")
             except OSError:
                 text = ""
-            match = re.findall(re.escape(marker or "") + r"\\s*=\\s*([0-9]+)", text) if marker else []
+            match = re.findall(re.escape(marker or "") + r"\s*=\s*([0-9]+)", text) if marker else []
             rc = int(match[-1]) if match else None
             expected_commit = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
             commits = re.findall(r"^APP_COMMIT=([0-9a-f]{64})$", text, re.M)
@@ -945,8 +945,8 @@ def latest_jasp_evidence() -> dict:
                 "pinned_commit_match": pinned_commit,
                 "sandbox_execution_marker_present": sandbox_bound,
                 "deterministic_fixture_evidence_valid": fixture_ok if case == "flatpak_launch" else None,
-                "semantic_shape_mismatch": bool(re.search(r"Row is missing|Total number of models visited\\s*=\\s*\\d+\\s*!=|results are different", text, re.I)),
-                "log_has_numeric_deltas": bool(re.search(r"\\d+(?:\\.\\d+)?\\s*!=\\s*\\d+(?:\\.\\d+)?", text)),
+                "semantic_shape_mismatch": bool(re.search(r"Row is missing|Total number of models visited\s*=\s*\d+\s*!=|results are different", text, re.I)),
+                "log_has_numeric_deltas": bool(re.search(r"\d+(?:\.\d+)?\s*!=\s*\d+(?:\.\d+)?", text)),
             })
         rows[case] = item
     all_pass = all(x.get("status") == "PASS" and x.get("returncode") == 0 for x in rows.values())
