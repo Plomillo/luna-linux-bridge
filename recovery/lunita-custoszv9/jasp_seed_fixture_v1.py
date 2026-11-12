@@ -17,6 +17,7 @@ import zipfile
 
 SCHEMA = "LUNITA_JASP_DETERMINISTIC_FIXTURE/1.0"
 EXPECTED_SEED = 1
+ACTIVE_ANALYSES_MEMBER = "analyses.json"
 
 
 class FixtureError(RuntimeError):
@@ -70,29 +71,54 @@ def _safe_members(archive: zipfile.ZipFile):
 
 
 def inspect_seed_option(source: pathlib.Path) -> dict:
+    """Inspect active analysis options, not serialized result/output JSON.
+
+    JASP archives may persist copies of seed values in resources/.../jaspResults.json.
+    Those are saved outputs, not the active analysis configuration, and must remain
+    byte-for-byte unchanged when creating a deterministic disposable fixture copy.
+    """
     if source.is_symlink() or not source.is_file():
         raise FixtureError("Packaged Death Penalty fixture is missing or is a symlink")
     matches = []
     with zipfile.ZipFile(source, "r") as archive:
         infos = _safe_members(archive)
-        for info in infos:
-            if info.is_dir() or info.file_size > 8 * 1024 * 1024:
-                continue
-            if not info.filename.lower().endswith(".json"):
-                continue
-            try:
-                document = json.loads(archive.read(info).decode("utf-8"))
-            except (UnicodeDecodeError, json.JSONDecodeError):
-                continue
-            for pointer_parts, option in _walk_seed_options(document):
-                matches.append({
-                    "archive_member": info.filename,
-                    "json_pointer": _pointer(pointer_parts),
-                    "setSeed": option["setSeed"],
-                    "seed": option["seed"],
-                })
+        active_infos = [info for info in infos if info.filename == ACTIVE_ANALYSES_MEMBER]
+        if len(active_infos) != 1:
+            raise FixtureError(
+                f"Expected exactly one {ACTIVE_ANALYSES_MEMBER!r} active-configuration member; "
+                f"found {len(active_infos)}"
+            )
+        info = active_infos[0]
+        if info.is_dir() or info.file_size > 8 * 1024 * 1024:
+            raise FixtureError("Active JASP analyses.json is a directory or exceeds the size limit")
+        try:
+            document = json.loads(archive.read(info).decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise FixtureError("Active JASP analyses.json is not valid UTF-8 JSON") from exc
+        if not isinstance(document, dict) or not isinstance(document.get("analyses"), list):
+            raise FixtureError("Active JASP analyses.json has no analyses list")
+        analyses = document["analyses"]
+        if not analyses:
+            raise FixtureError("Active JASP analyses.json contains no analyses")
+        for pointer_parts, option in _walk_seed_options(analyses):
+            pointer_parts = tuple(pointer_parts)
+            analysis_index = int(pointer_parts[0]) if pointer_parts and str(pointer_parts[0]).isdigit() else None
+            analysis = analyses[analysis_index] if analysis_index is not None else None
+            dynamic = analysis.get("dynamicModule", {}) if isinstance(analysis, dict) else {}
+            matches.append({
+                "archive_member": ACTIVE_ANALYSES_MEMBER,
+                "json_pointer": _pointer(("analyses",) + pointer_parts),
+                "analysis_index": analysis_index,
+                "analysis_id": analysis.get("id") if isinstance(analysis, dict) else None,
+                "analysis_name": analysis.get("name") if isinstance(analysis, dict) else None,
+                "module_name": dynamic.get("moduleName") if isinstance(dynamic, dict) else None,
+                "setSeed": option["setSeed"],
+                "seed": option["seed"],
+            })
     return {
         "archive_member_count": len(infos),
+        "active_configuration_member": ACTIVE_ANALYSES_MEMBER,
+        "active_analysis_count": len(analyses),
         "seed_option_match_count": len(matches),
         "matches": matches,
     }
@@ -139,12 +165,14 @@ def prepare_deterministic_fixture(
     inspection = inspect_seed_option(source)
     if inspection["seed_option_match_count"] != 1:
         raise FixtureError(
-            "Expected exactly one stored Death Penalty setSeed=false, seed=1 option; "
-            f"found {inspection['seed_option_match_count']}"
+            "Expected exactly one active Death Penalty setSeed=false, seed=1 option "
+            f"in {ACTIVE_ANALYSES_MEMBER}; found {inspection['seed_option_match_count']}"
         )
     match = inspection["matches"][0]
     changed_member = match["archive_member"]
     changed_pointer = match["json_pointer"]
+    if changed_member != ACTIVE_ANALYSES_MEMBER:
+        raise FixtureError("Refusing to change a non-active JASP result/archive member")
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(source, "r") as src, zipfile.ZipFile(destination, "x") as dst:
@@ -171,10 +199,23 @@ def prepare_deterministic_fixture(
         raise FixtureError("Source preservation or deterministic-copy identity check failed")
 
     verified = inspect_seed_option(destination)
-    if verified["seed_option_match_count"] != 0:
-        # A valid clone must no longer contain the old false/1 option.
+    if verified["active_configuration_member"] != ACTIVE_ANALYSES_MEMBER or verified["seed_option_match_count"] != 0:
         destination.unlink(missing_ok=True)
-        raise FixtureError("Deterministic copy still contains the original false/1 seed option")
+        raise FixtureError("Deterministic copy still contains the original active false/1 seed option")
+    unchanged_member_count = 0
+    with zipfile.ZipFile(source, "r") as original, zipfile.ZipFile(destination, "r") as seeded:
+        original_names = [info.filename for info in original.infolist()]
+        seeded_names = [info.filename for info in seeded.infolist()]
+        if original_names != seeded_names:
+            destination.unlink(missing_ok=True)
+            raise FixtureError("Deterministic copy changed JASP archive member identity or order")
+        for name in original_names:
+            if name == changed_member:
+                continue
+            if original.read(name) != seeded.read(name):
+                destination.unlink(missing_ok=True)
+                raise FixtureError(f"Non-active JASP archive member changed: {name}")
+            unchanged_member_count += 1
     with zipfile.ZipFile(destination, "r") as archive:
         document = json.loads(archive.read(changed_member).decode("utf-8"))
     # Verify exact selected pointer in the output, not just absence of the old state.
@@ -201,12 +242,19 @@ def prepare_deterministic_fixture(
         "clone_path": str(destination),
         "clone_sha256": clone_sha,
         "clone_is_distinct": clone_sha != source_before,
+        "active_configuration_member": ACTIVE_ANALYSES_MEMBER,
         "changed_archive_member": changed_member,
         "changed_json_pointer": changed_pointer,
+        "analysis_index": match.get("analysis_index"),
+        "analysis_id": match.get("analysis_id"),
+        "analysis_name": match.get("analysis_name"),
+        "module_name": match.get("module_name"),
         "before": {"setSeed": False, "seed": EXPECTED_SEED},
         "after": {"setSeed": True, "seed": EXPECTED_SEED},
         "archive_member_count": inspection["archive_member_count"],
         "changed_archive_member_count": changed_count,
+        "unchanged_non_active_member_count": unchanged_member_count,
+        "result_output_members_changed": False,
         "reference_results_modified": False,
         "certification": "NOT_GRANTED",
     }
@@ -251,7 +299,12 @@ def verify_deterministic_fixture_receipt(
         and sha_file(source) == expected_source_sha256
         and (not require_clone or sha_file(clone) == receipt.get("clone_sha256"))
         and receipt.get("clone_is_distinct") is True
+        and receipt.get("active_configuration_member") == ACTIVE_ANALYSES_MEMBER
+        and receipt.get("changed_archive_member") == ACTIVE_ANALYSES_MEMBER
         and receipt.get("changed_archive_member_count") == 1
+        and isinstance(receipt.get("unchanged_non_active_member_count"), int)
+        and receipt.get("unchanged_non_active_member_count") >= 0
+        and receipt.get("result_output_members_changed") is False
         and receipt.get("before") == {"setSeed": False, "seed": EXPECTED_SEED}
         and receipt.get("after") == {"setSeed": True, "seed": EXPECTED_SEED}
         and receipt.get("reference_results_modified") is False
