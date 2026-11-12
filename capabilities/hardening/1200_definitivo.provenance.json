@@ -1,0 +1,46 @@
+{
+  "schema": "LOUKSNA_SOURCE_ARTIFACT_PROVENANCE/1.0",
+  "status": "CANDIDATE_ONLY",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "operational_governor": "CUSTOSZ_V7",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch": "candidate/capability-1200-hardening-20261007",
+  "pull_request": 45,
+  "source": {
+    "original_name": "1200 definitivo.txt",
+    "acquisition_class": "USER_SUPPLIED_DEFINITIVE_SOURCE",
+    "repository_path": "capabilities/hardening/1200_definitivo.txt",
+    "size_bytes": 280658,
+    "line_count": 1606,
+    "sha256": "eeb3b32e170cd2780c25ce65156978fa58682b6faef0d5da50b35e50993e652e",
+    "git_blob_sha": "cc994ab1518f8f5f6fd68f7485f977ba5384f844",
+    "source_commit_sha": "f7a55ddffd238ff7a3dcd7eacdbdd7891e7615b3"
+  },
+  "integrity": {
+    "local_reconstruction_byte_check": "PASS",
+    "remote_byte_count_check": "PASS",
+    "remote_sha256_check": "PASS",
+    "remote_git_blob_identity": "RECORDED"
+  },
+  "governance": {
+    "implementation_authorized": false,
+    "canonical_mutation": false,
+    "auto_activation": false,
+    "certification_inheritance": false,
+    "g23_executed": false,
+    "g24_executed": false,
+    "operational_authorization_granted": false,
+    "fail_closed": true,
+    "no_silent_operations": true,
+    "extend_do_not_replace": true
+  },
+  "traceability": {
+    "supersedes_identity_gap_statement_only": true,
+    "supersedes_hardening_contract": false,
+    "supersedes_canonical_authority": false,
+    "historical_forensic_baseline_preserved": true,
+    "exact_identity_range": "1..1200",
+    "identity_count": 1200
+  }
+}
