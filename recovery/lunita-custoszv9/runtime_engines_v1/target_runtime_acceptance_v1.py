@@ -510,7 +510,7 @@ def inspect_jasp_release_sources(
     except UnicodeDecodeError as exc:
         raise TargetGateError("Pinned JASP CMakeLists.txt is not UTF-8") from exc
     match = re.search(
-        r"project\\s*\\(\\s*JASP\\s+VERSION\\s+([0-9]+(?:\\.[0-9]+){2,3})",
+        r"project\s*\(\s*JASP\s+VERSION\s+([0-9]+(?:\.[0-9]+){2,3})",
         cmake_text,
         flags=re.IGNORECASE,
     )
@@ -582,9 +582,11 @@ def verify_jasp_source_release_identity(lupa: dict[str, Any], metadata_dir: path
         raise TargetGateError(f"JASP source release identity receipt is unreadable: {exc}") from exc
     expected_identity = {
         "schema": "LUNITA_JASP_SOURCE_RELEASE_IDENTITY/1.0",
+        "schema": "LUNITA_JASP_SOURCE_RELEASE_IDENTITY/1.0",
         "status": "PASS_JASP_SOURCE_RELEASE_IDENTITY",
         "application_id": "org.jaspstats.JASP",
         "version": EXPECTED_JASP_VERSION,
+        "version_source": "PINNED_JASP_CMAKE_PROJECT_VERSION",
         "cmake_project_version": "0.98.8.0",
         "flathub_manifest_commit": EXPECTED_JASP_FLATHUB_MANIFEST_COMMIT,
         "flathub_manifest_git_blob_sha1": source_check["flathub_manifest_git_blob_sha1"],
