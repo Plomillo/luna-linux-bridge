@@ -23,6 +23,11 @@ import sys
 import time
 import uuid
 
+from jasp_seed_fixture_v1 import (
+    prepare_deterministic_fixture,
+    verify_deterministic_fixture_receipt,
+)
+
 ROOT = pathlib.Path(__file__).resolve().parent
 ST = pathlib.Path(os.environ.get("LUNITA_STATE_DIR", str(ROOT / "state"))).expanduser()
 OUT = pathlib.Path(os.environ.get("LUNITA_OUTPUT_DIR", str(ST / "worker_outputs"))).expanduser()
@@ -69,7 +74,7 @@ JASP_CASES = {
     "weight_gain": ("JASP_UNITTEST_WEIGHT_GAIN_", "*.log", "JASP_WEIGHT_GAIN_UNITTEST_RC"),
     "death_penalty_roundtrip": ("JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_", "*.json", None),
 }
-JASP_SEED_HOOK_DIR = pathlib.Path(os.environ.get("LUNITA_JASP_SEED_HOOK_DIR", "/tmp/lunita-dbus")).expanduser()
+DEATH_PENALTY_SOURCE_SHA256 = "fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895"
 
 
 def utc() -> str:
@@ -253,12 +258,12 @@ def parse_dpkg_status(status_path: pathlib.Path) -> dict:
     }
 
 
-def flatpak_jasp_launch(
-    flatpak_options: list[str],
-    app_args: list[str],
-    seed_hook_receipt: pathlib.Path | None = None,
-) -> list[str]:
-    """Run /app/bin/JASP with only the explicitly requested certification seed receipt."""
+def flatpak_jasp_launch(flatpak_options: list[str], app_args: list[str]) -> list[str]:
+    """Launch the pinned JASP app in an unshared Flatpak sandbox.
+
+    Seed control is applied to a disposable .jasp fixture copy through JASP's
+    native setSeed/seed options; no R startup profile or injected hook is used.
+    """
     command = [
         "/usr/bin/flatpak", "--system", "run", "--unshare=network",
         "--command=/app/bin/JASP",
@@ -271,73 +276,9 @@ def flatpak_jasp_launch(
         "--env=QTWEBENGINE_DISABLE_SANDBOX=1",
         "--env=LD_LIBRARY_PATH=/app/lib/x86_64-linux-gnu/:/app/lib/aarch64-linux-gnu/",
     ]
-    if seed_hook_receipt is not None:
-        command.extend([
-            "--env=LUNITA_JASP_CERTIFICATION_DETERMINISTIC_SEED=1",
-            f"--env=LUNITA_JASP_SEED_HOOK_RECEIPT={seed_hook_receipt}",
-        ])
     command.extend([*flatpak_options, "org.jaspstats.JASP", *app_args])
     return command
 
-
-def _seed_hook_records(path: pathlib.Path) -> list[dict]:
-    records = []
-    try:
-        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    except OSError:
-        return records
-    for line in lines:
-        parts = line.split("\t")
-        if len(parts) != 4 or parts[0] != "SEED_APPLIED":
-            continue
-        try:
-            pid = int(parts[1])
-            seed = int(parts[2])
-        except ValueError:
-            continue
-        records.append({"pid": pid, "seed": seed, "set_seed": parts[3]})
-    return records
-
-
-def capture_jasp_seed_hook_receipt(source: pathlib.Path, evidence_name: str) -> dict:
-    records = _seed_hook_records(source)
-    valid = any(
-        row["pid"] > 1 and row["seed"] == 1 and row["set_seed"] == "FALSE"
-        for row in records
-    )
-    evidence_path = None
-    evidence_sha256 = None
-    if source.is_file():
-        evidence_path = OUT / evidence_name
-        evidence_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, evidence_path)
-        evidence_sha256 = sha_file(evidence_path)
-    return {
-        "status": "PASS" if valid and evidence_path is not None else "BLOCKED",
-        "returncode": 0 if valid and evidence_path is not None else 1,
-        "source_path": str(source),
-        "evidence_path": str(evidence_path) if evidence_path else None,
-        "evidence_sha256": evidence_sha256,
-        "records": records,
-        "expected_seed": 1,
-        "expected_set_seed": False,
-    }
-
-
-def seed_hook_evidence_valid(receipt: dict | None) -> bool:
-    if not isinstance(receipt, dict) or receipt.get("status") != "PASS" or receipt.get("returncode") != 0:
-        return False
-    path_text = receipt.get("evidence_path")
-    digest = receipt.get("evidence_sha256")
-    if not path_text or not digest:
-        return False
-    path = pathlib.Path(path_text)
-    if not path.is_file() or sha_file(path) != digest:
-        return False
-    return any(
-        row["pid"] > 1 and row["seed"] == 1 and row["set_seed"] == "FALSE"
-        for row in _seed_hook_records(path)
-    )
 
 def jasp_process_env(base: dict[str, str]) -> dict[str, str]:
     env = dict(base)
@@ -350,158 +291,208 @@ def jasp_process_env(base: dict[str, str]) -> dict[str, str]:
 
 
 def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: str) -> dict:
-    """Run strict JASP save-and-rerun on an isolated copy with an observed seed-hook receipt."""
+    """Prove save/reopen reproducibility with a disposable native-seed JASP copy.
+
+    RInside starts its embedded R with --vanilla, so Rprofile.site hooks are
+    intentionally not used. The original packaged fixture remains byte-exact;
+    exactly one setSeed=false, seed=1 option is changed to true in a temporary
+    archive copy. The copy is deleted after the two real JASP executions.
+    """
     source = ROOTFS / "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
     report_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}.json"
-    base = {"schema": "CUSTOSZ_LUNITA_JASP_UNITTEST_ROUNDTRIP/1.0",
-            "captured_at_utc": utc(), "app_commit": actual_commit,
-            "app_id": "org.jaspstats.JASP", "candidate_id": "G06_REBUILD_CANDIDATE_R1",
-            "beta_revision": "beta-v1.7", "network_unshared": True, "flatpak_sandbox": True,
-            "real_analysis_engine_invoked": "JASPEngine", "sample_relative_path": "Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp",
-            "downloads_performed": False, "persistent_sample_copy_created": False,
-            "certification": "NOT_GRANTED", "mission_completion_claim": False}
-    if not source.is_file():
-        result = {**base, "status": "BLOCKED_PACKAGED_ROUNDTRIP_FIXTURE_MISSING",
-                  "original_sample_unchanged": False, "strict_rerun_after_save": {"status": "BLOCKED", "returncode": 125},
-                  "source_fixture_path": str(source)}
+    fixture_receipt_path = OUT / f"JASP_DETERMINISTIC_FIXTURE_ROUNDTRIP_{stamp}.json"
+    base = {
+        "schema": "CUSTOSZ_LUNITA_JASP_UNITTEST_ROUNDTRIP/1.0",
+        "captured_at_utc": utc(),
+        "app_commit": actual_commit,
+        "app_id": "org.jaspstats.JASP",
+        "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+        "beta_revision": "beta-v1.7",
+        "network_unshared": True,
+        "flatpak_sandbox": True,
+        "real_analysis_engine_invoked": "JASPEngine",
+        "sample_relative_path": "Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp",
+        "downloads_performed": False,
+        "persistent_sample_copy_created": False,
+        "certification": "NOT_GRANTED",
+        "mission_completion_claim": False,
+    }
+    if not source.is_file() or source.is_symlink():
+        result = {
+            **base,
+            "status": "BLOCKED_PACKAGED_ROUNDTRIP_FIXTURE_MISSING",
+            "original_sample_unchanged": False,
+            "strict_rerun_after_save": {"status": "BLOCKED", "returncode": 125},
+            "source_fixture_path": str(source),
+        }
         atomic_json(report_path, result)
         return result
-    expected_original_sha = "fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895"
+
     original_before = sha_file(source)
     save_run = {"status": "BLOCKED", "returncode": 125}
     rerun = {"status": "BLOCKED", "returncode": 125}
-    temp_before = None
-    temp_after = None
-    temp_after_rerun = None
+    temp_before = temp_after = temp_after_rerun = None
     temp_fixture = None
     temp_root = None
+    fixture_receipt = None
+    fixture_receipt_valid = False
+    save_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_save.log"
+    rerun_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_rerun.log"
     try:
-        JASP_SEED_HOOK_DIR.mkdir(parents=True, exist_ok=True)
-        with __import__("tempfile").TemporaryDirectory(prefix="lunita-jasp-death-roundtrip-") as tmp:
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix="lunita-jasp-death-roundtrip-") as tmp:
             temp_root = pathlib.Path(tmp)
-            temp_fixture = temp_root / "DeathPenalty.jasp"
-            shutil.copy2(source, temp_fixture)
+            temp_fixture = temp_root / "DeathPenalty_seeded.jasp"
+            fixture_receipt = prepare_deterministic_fixture(
+                source,
+                temp_fixture,
+                fixture_receipt_path,
+                DEATH_PENALTY_SOURCE_SHA256,
+            )
+            fixture_receipt_valid = verify_deterministic_fixture_receipt(
+                fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=True
+            )
             temp_before = sha_file(temp_fixture)
-            save_marker = JASP_SEED_HOOK_DIR / f"JASP_SEED_HOOK_ROUNDTRIP_SAVE_{stamp}.log"
-            rerun_marker = JASP_SEED_HOOK_DIR / f"JASP_SEED_HOOK_ROUNDTRIP_RERUN_{stamp}.log"
-            save_marker.unlink(missing_ok=True)
-            rerun_marker.unlink(missing_ok=True)
+            if not fixture_receipt_valid:
+                raise PermissionError("Deterministic JASP fixture receipt failed hash-bound validation")
+
             cmd_save = flatpak_jasp_launch(
-                [f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)], save_marker
+                [f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)]
             )
             cmd_rerun = flatpak_jasp_launch(
-                [f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)], rerun_marker
+                [f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)]
             )
-            save_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_save.log"
-            rerun_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_rerun.log"
+
             save_started = utc()
             try:
-                save_proc = subprocess.run(cmd_save, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                           text=True, timeout=300, check=False)
-                save_rc = int(save_proc.returncode)
-                save_hook = capture_jasp_seed_hook_receipt(
-                    save_marker, f"JASP_SEED_HOOK_ROUNDTRIP_SAVE_{stamp}.log"
+                save_proc = subprocess.run(
+                    cmd_save, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    text=True, timeout=300, check=False,
                 )
+                save_rc = int(save_proc.returncode)
+                save_run = {
+                    "status": "PASS" if save_rc == 0 and fixture_receipt_valid else "BLOCKED",
+                    "returncode": save_rc,
+                    "log_path": str(save_log_path),
+                    "deterministic_fixture_receipt": fixture_receipt,
+                }
                 save_log_path.write_text(
                     f"START_UTC={save_started}\nCOMMAND={json.dumps(cmd_save)}\nAPP_COMMIT={actual_commit}\n"
                     + save_proc.stdout + ("" if save_proc.stdout.endswith("\n") else "\n")
-                    + f"SEED_HOOK_STATUS={save_hook['status']}\n"
-                    + f"SEED_HOOK_EVIDENCE_PATH={save_hook.get('evidence_path') or ''}\n"
-                    + f"SEED_HOOK_EVIDENCE_SHA256={save_hook.get('evidence_sha256') or ''}\n"
+                    + f"DETERMINISTIC_FIXTURE_STATUS={'PASS' if fixture_receipt_valid else 'BLOCKED'}\n"
+                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_PATH={fixture_receipt_path}\n"
+                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_SHA256={sha_file(fixture_receipt_path)}\n"
+                    + f"DETERMINISTIC_FIXTURE_SHA256={fixture_receipt.get('clone_sha256', '')}\n"
                     + f"SAVE_RUN_RC={save_rc}\nFINISHED_UTC={utc()}\n",
                     encoding="utf-8", errors="replace",
                 )
-                save_run = {
-                    "status": "PASS" if save_rc == 0 and seed_hook_evidence_valid(save_hook) else "BLOCKED",
-                    "returncode": save_rc, "log_path": str(save_log_path),
-                    "log_sha256": sha_file(save_log_path), "seed_hook_receipt": save_hook,
-                }
+                save_run["log_sha256"] = sha_file(save_log_path)
             except subprocess.TimeoutExpired as exc:
                 output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-                save_hook = capture_jasp_seed_hook_receipt(
-                    save_marker, f"JASP_SEED_HOOK_ROUNDTRIP_SAVE_{stamp}.log"
-                )
                 save_log_path.write_text(
                     f"START_UTC={save_started}\nCOMMAND={json.dumps(cmd_save)}\n{output}\n"
-                    + f"SEED_HOOK_STATUS={save_hook['status']}\nSAVE_RUN_RC=124\nTIMEOUT=300\n",
+                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_PATH={fixture_receipt_path}\n"
+                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_SHA256={sha_file(fixture_receipt_path)}\n"
+                    + "SAVE_RUN_RC=124\nTIMEOUT=300\n",
                     encoding="utf-8", errors="replace",
                 )
-                save_run = {"status": "BLOCKED_TIMEOUT", "returncode": 124,
-                            "log_path": str(save_log_path), "log_sha256": sha_file(save_log_path),
-                            "seed_hook_receipt": save_hook}
+                save_run = {
+                    "status": "BLOCKED_TIMEOUT",
+                    "returncode": 124,
+                    "log_path": str(save_log_path),
+                    "log_sha256": sha_file(save_log_path),
+                    "deterministic_fixture_receipt": fixture_receipt,
+                }
             temp_after = sha_file(temp_fixture) if temp_fixture.is_file() else None
 
             rerun_started = utc()
             try:
-                rerun_proc = subprocess.run(cmd_rerun, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                            text=True, timeout=300, check=False)
-                rerun_rc = int(rerun_proc.returncode)
-                rerun_hook = capture_jasp_seed_hook_receipt(
-                    rerun_marker, f"JASP_SEED_HOOK_ROUNDTRIP_RERUN_{stamp}.log"
+                rerun_proc = subprocess.run(
+                    cmd_rerun, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    text=True, timeout=300, check=False,
                 )
+                rerun_rc = int(rerun_proc.returncode)
+                rerun = {
+                    "status": "PASS" if rerun_rc == 0 and fixture_receipt_valid else "BLOCKED",
+                    "returncode": rerun_rc,
+                    "log_path": str(rerun_log_path),
+                    "deterministic_fixture_receipt": fixture_receipt,
+                }
                 rerun_log_path.write_text(
                     f"START_UTC={rerun_started}\nCOMMAND={json.dumps(cmd_rerun)}\nAPP_COMMIT={actual_commit}\n"
                     + rerun_proc.stdout + ("" if rerun_proc.stdout.endswith("\n") else "\n")
-                    + f"SEED_HOOK_STATUS={rerun_hook['status']}\n"
-                    + f"SEED_HOOK_EVIDENCE_PATH={rerun_hook.get('evidence_path') or ''}\n"
-                    + f"SEED_HOOK_EVIDENCE_SHA256={rerun_hook.get('evidence_sha256') or ''}\n"
+                    + f"DETERMINISTIC_FIXTURE_STATUS={'PASS' if fixture_receipt_valid else 'BLOCKED'}\n"
+                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_PATH={fixture_receipt_path}\n"
+                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_SHA256={sha_file(fixture_receipt_path)}\n"
+                    + f"DETERMINISTIC_FIXTURE_SHA256={fixture_receipt.get('clone_sha256', '')}\n"
                     + f"STRICT_RERUN_RC={rerun_rc}\nFINISHED_UTC={utc()}\n",
                     encoding="utf-8", errors="replace",
                 )
-                rerun = {
-                    "status": "PASS" if rerun_rc == 0 and seed_hook_evidence_valid(rerun_hook) else "BLOCKED",
-                    "returncode": rerun_rc, "log_path": str(rerun_log_path),
-                    "log_sha256": sha_file(rerun_log_path), "seed_hook_receipt": rerun_hook,
-                }
+                rerun["log_sha256"] = sha_file(rerun_log_path)
             except subprocess.TimeoutExpired as exc:
                 output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-                rerun_hook = capture_jasp_seed_hook_receipt(
-                    rerun_marker, f"JASP_SEED_HOOK_ROUNDTRIP_RERUN_{stamp}.log"
-                )
                 rerun_log_path.write_text(
                     f"START_UTC={rerun_started}\nCOMMAND={json.dumps(cmd_rerun)}\n{output}\n"
-                    + f"SEED_HOOK_STATUS={rerun_hook['status']}\nSTRICT_RERUN_RC=124\nTIMEOUT=300\n",
+                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_PATH={fixture_receipt_path}\n"
+                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_SHA256={sha_file(fixture_receipt_path)}\n"
+                    + "STRICT_RERUN_RC=124\nTIMEOUT=300\n",
                     encoding="utf-8", errors="replace",
                 )
-                rerun = {"status": "BLOCKED_TIMEOUT", "returncode": 124,
-                         "log_path": str(rerun_log_path), "log_sha256": sha_file(rerun_log_path),
-                         "seed_hook_receipt": rerun_hook}
+                rerun = {
+                    "status": "BLOCKED_TIMEOUT",
+                    "returncode": 124,
+                    "log_path": str(rerun_log_path),
+                    "log_sha256": sha_file(rerun_log_path),
+                    "deterministic_fixture_receipt": fixture_receipt,
+                }
             temp_after_rerun = sha_file(temp_fixture) if temp_fixture.is_file() else None
     except Exception as exc:
         base["executor_error"] = {"type": type(exc).__name__, "message": str(exc)[:1200]}
-    original_after = sha_file(source) if source.is_file() else None
-    unchanged = bool(original_before == expected_original_sha and original_after == expected_original_sha)
+
+    original_after = sha_file(source) if source.is_file() and not source.is_symlink() else None
+    unchanged = bool(original_before == DEATH_PENALTY_SOURCE_SHA256 and original_after == DEATH_PENALTY_SOURCE_SHA256)
     roundtrip_reproducible = bool(
-        temp_before == expected_original_sha and temp_after and temp_after == temp_after_rerun
+        fixture_receipt and fixture_receipt_valid
+        and temp_before == fixture_receipt.get("clone_sha256")
+        and temp_after and temp_after == temp_after_rerun
         and temp_root and not temp_root.exists()
     )
     final_status = (
         "PASS"
         if save_run.get("returncode") == 0 and rerun.get("returncode") == 0
         and save_run.get("status") == "PASS" and rerun.get("status") == "PASS"
-        and seed_hook_evidence_valid(save_run.get("seed_hook_receipt"))
-        and seed_hook_evidence_valid(rerun.get("seed_hook_receipt"))
-        and unchanged and roundtrip_reproducible
+        and fixture_receipt_valid and unchanged and roundtrip_reproducible
         else "FAIL"
     )
-    result = {**base, "captured_at_utc": utc(),
-              "status": "PASS_JASP_STRICT_ROUNDTRIP" if final_status == "PASS" else "BLOCKED_JASP_STRICT_ROUNDTRIP",
-              "expected_original_sample_sha256": expected_original_sha,
-              "original_sample_sha256_before": original_before, "original_sample_sha256_after": original_after,
-              "original_sample_identity_matches_pin": original_before == expected_original_sha,
-              "original_sample_unchanged": unchanged, "source_fixture_path": str(source),
-              "save_run": save_run,
-              "strict_rerun_after_save": {**rerun, "status": final_status},
-              "temporary_fixture_sha256_before": temp_before, "temporary_fixture_sha256_after_save": temp_after,
-              "temporary_fixture_sha256_after_rerun": temp_after_rerun,
-              "temporary_fixture_changed": bool(temp_before and temp_after and temp_before != temp_after),
-              "temporary_fixture_path": str(temp_fixture) if temp_fixture else None,
-              "temporary_fixture_removed_after_test": bool(temp_root and not temp_root.exists()),
-              "downloaded": False}
+    result = {
+        **base,
+        "captured_at_utc": utc(),
+        "status": "PASS_JASP_STRICT_ROUNDTRIP" if final_status == "PASS" else "BLOCKED_JASP_STRICT_ROUNDTRIP",
+        "expected_original_sample_sha256": DEATH_PENALTY_SOURCE_SHA256,
+        "original_sample_sha256_before": original_before,
+        "original_sample_sha256_after": original_after,
+        "original_sample_identity_matches_pin": original_before == DEATH_PENALTY_SOURCE_SHA256,
+        "original_sample_unchanged": unchanged,
+        "source_fixture_path": str(source),
+        "deterministic_fixture_receipt": fixture_receipt,
+        "deterministic_fixture_receipt_valid": fixture_receipt_valid,
+        "save_run": save_run,
+        "strict_rerun_after_save": rerun,
+        "temporary_fixture_sha256_before": temp_before,
+        "temporary_fixture_sha256_after_save": temp_after,
+        "temporary_fixture_sha256_after_rerun": temp_after_rerun,
+        "temporary_fixture_changed": bool(temp_before and temp_after and temp_before != temp_after),
+        "temporary_fixture_path": str(temp_fixture) if temp_fixture else None,
+        "temporary_fixture_removed_after_test": bool(temp_root and not temp_root.exists()),
+        "temporary_fixture_stable_after_save_and_rerun": bool(temp_after and temp_after == temp_after_rerun),
+        "reference_results_modified": False,
+        "downloaded": False,
+    }
     atomic_json(report_path, result)
     result["report_path"] = str(report_path)
     result["report_sha256"] = sha_file(report_path)
     return result
+
 
 def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
     """Rerun the registered JASP packaged-data tests in the pinned sandbox."""
