@@ -31,7 +31,7 @@ class IdentityError(ValueError):
 
 
 def git_blob_sha1(payload: bytes) -> str:
-    header = f"blob {len(payload)}\\0".encode("ascii")
+    header = f"blob {len(payload)}\0".encode("ascii")
     return hashlib.sha1(header + payload).hexdigest()
 
 
@@ -106,7 +106,7 @@ def verify_jasp_release_identity(
     except UnicodeDecodeError as exc:
         raise IdentityError("Pinned JASP CMakeLists.txt is not UTF-8") from exc
     match = re.search(
-        r"project\\s*\\(\\s*JASP\\s+VERSION\\s+([0-9]+(?:\\.[0-9]+){2,3})",
+        r"project\s*\(\s*JASP\s+VERSION\s+([0-9]+(?:\.[0-9]+){2,3})",
         cmake_text,
         flags=re.IGNORECASE,
     )
@@ -159,7 +159,7 @@ def self_test() -> dict[str, Any]:
         sort_keys=True,
         separators=(",", ":"),
     ).encode("utf-8")
-    cmake = b"project(\\n  JASP\\n  VERSION 0.98.8.0\\n  LANGUAGES CXX C\\n)"
+    cmake = b"project(\n  JASP\n  VERSION 0.98.8.0\n  LANGUAGES CXX C\n)"
     manifest_sha = git_blob_sha1(manifest)
     cmake_sha = git_blob_sha1(cmake)
 
@@ -238,7 +238,7 @@ def main() -> int:
                 args.manifest.read_bytes(),
                 args.cmake.read_bytes(),
             )
-        payload = json.dumps(result, ensure_ascii=True, sort_keys=True, indent=2) + "\\n"
+        payload = json.dumps(result, ensure_ascii=True, sort_keys=True, indent=2) + "\n"
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(payload, encoding="utf-8")
