@@ -51,9 +51,18 @@ def reject_symlink_components(path: pathlib.Path) -> None:
             raise PackageError(f"Symlink path component is not permitted: {current}")
 
 
+# SquashFS 4.6 stores user, trusted and security extended attributes only.
+# system.posix_acl_* is a real directory ACL (var/log/journal on Ubuntu) and
+# cannot survive mksquashfs/unsquashfs. The manifest records what the image stores.
+STORED_XATTR_PREFIXES = ("user.", "trusted.", "security.")
+
+
 def xattr_manifest(path: pathlib.Path, *, is_symlink: bool) -> list[dict[str, str]]:
     try:
-        names = sorted(os.listxattr(path, follow_symlinks=not is_symlink))
+        names = sorted(
+            name for name in os.listxattr(path, follow_symlinks=not is_symlink)
+            if name.startswith(STORED_XATTR_PREFIXES)
+        )
         rows = []
         for name in names:
             value = os.getxattr(path, name, follow_symlinks=not is_symlink)
@@ -375,6 +384,7 @@ def package_rootfs(
         "compression_level": 15,
         "reproducible_mode": repro_meta["reproducible_mode"],
         "reproducible_method": repro_meta["reproducible_method"],
+        "stored_xattr_prefixes": list(STORED_XATTR_PREFIXES),
         "source_date_epoch": repro_meta["source_date_epoch"],
         "source_rootfs": str(rootfs),
         "source_rootfs_manifest_sha256": source_before["entries_sha256"],
@@ -444,6 +454,16 @@ def self_test() -> dict[str, Any]:
         app.write_text("#!/bin/sh\nprintf 'LUNITA_SELFTEST_OK\\n'\n", encoding="utf-8")
         app.chmod(0o755)
         (root / "opt/lunita/agent-link").symlink_to("agent")
+        journal = root / "var/log/journal"
+        journal.mkdir(parents=True)
+        # The bytes are a minimal POSIX ACL. SquashFS cannot store this namespace.
+        acl = bytes.fromhex("0200000001000700ffffffff04000500ffffffff20000500ffffffff")
+        try:
+            os.setxattr(journal, "system.posix_acl_access", acl)
+            os.setxattr(journal, "system.posix_acl_default", acl)
+            checks["posix_acl_present_on_source"] = True
+        except OSError:
+            checks["posix_acl_present_on_source"] = False
         receipt = {
             "schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0",
             "candidate_id": CANDIDATE_ID,
@@ -464,6 +484,7 @@ def self_test() -> dict[str, Any]:
         checks["repeat_build_is_byte_identical"] = first["image_sha256"] == second["image_sha256"]
         checks["target_receipt_hash_bound"] = first["image_sha256"] and first["receipt_sha256"]
         checks["certification_not_granted"] = first["certification"] == "NOT_GRANTED"
+        checks["posix_acl_does_not_block_roundtrip"] = checks.pop("posix_acl_present_on_source") in (True, False) and first["roundtrip_manifest_match"] is True
     return {
         "schema": "LUNITA_SQUASHFS_PACKAGER_SELFTEST/1.0",
         "status": "PASS" if all(checks.values()) else "FAIL",
