@@ -36,6 +36,18 @@ if [ ! -S "/tmp/.X11-unix/X${DISPLAY#:}" ]; then
     sleep 0.25
   done
 fi
+if [ ! -S /tmp/lunita-dbus/bus ]; then
+  if [ "$(id -u)" -eq 0 ]; then
+    apt-get install -y --no-install-recommends dbus
+  fi
+  mkdir -p /tmp/lunita-dbus
+  dbus-daemon --session --address=unix:path=/tmp/lunita-dbus/bus --nofork --nopidfile >/tmp/lunita-dbus.log 2>&1 &
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+    [ -S /tmp/lunita-dbus/bus ] && break
+    sleep 0.25
+  done
+fi
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/lunita-dbus/bus
 
 LANE="$GITHUB_WORKSPACE/recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py"
 test -f "$LANE"
