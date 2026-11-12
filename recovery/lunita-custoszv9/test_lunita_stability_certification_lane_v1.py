@@ -527,17 +527,37 @@ class JaspRunnerTests(unittest.TestCase):
                 source_fixture, [{"setSeed": False, "seed": 1}]
             )
             source_sha = lane.sha_file(source_fixture)
+            original_alias = rootfs / (
+                "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/"
+                "lunita-fixtures/DeathPenalty.jasp"
+            )
+            original_alias.parent.mkdir(parents=True, exist_ok=True)
+            original_alias.symlink_to(source_fixture)
+
+            banner = (
+                "Starting JASP 0.98.8 from commit "
+                "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1\n"
+            )
+            fresh_rows = (
+                "Row: | h: Model Comparison | \n"
+                "Row: | h: Models | \n"
+                "Row: | Model A | 0.500 | 1.000 | \n"
+                "Row: | Note.Total number of models visited = 1 | \n"
+                "Footer:\n"
+            )
             responses = [
                 SimpleNamespace(returncode=0, stdout="83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="flatpak test pass\n", stderr=""),
-                SimpleNamespace(returncode=1, stdout="numeric delta\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="flatpak test pass\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="roundtrip save passed\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="roundtrip strict rerun passed\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout=banner + "flatpak baseline pass\n", stderr=""),
+                SimpleNamespace(returncode=1, stdout=banner + "numeric delta\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout=banner + "flatpak baseline pass\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout=banner + fresh_rows, stderr=""),
+                SimpleNamespace(returncode=0, stdout=banner + fresh_rows, stderr=""),
             ]
             response_iter = iter(responses)
+
             def fake_run(*args, **kwargs):
                 return next(response_iter)
+
             with (
                 mock.patch.object(lane, "OUT", out),
                 mock.patch.object(lane, "ROOTFS", rootfs),
@@ -545,27 +565,45 @@ class JaspRunnerTests(unittest.TestCase):
                 mock.patch.object(lane.subprocess, "run", side_effect=fake_run) as runner,
             ):
                 result = lane.run_jasp_regression_suite(report)
+
             self.assertEqual("BLOCKED_JASP_REGRESSION", result["status"])
             self.assertEqual(6, runner.call_count)
             for call in runner.call_args_list:
                 self.assertEqual("offscreen", call.kwargs["env"].get("QT_QPA_PLATFORM"))
                 self.assertNotIn("-platform", call.args[0])
                 self.assertNotIn("--timeOut=2", call.args[0])
+
             jasp_calls = [call.args[0] for call in runner.call_args_list if "--unitTest" in call.args[0]]
             self.assertEqual(5, len(jasp_calls))
-            self.assertTrue(all(command[command.index("org.jaspstats.JASP") + 1] == "--unitTest"
-                                for command in jasp_calls))
+            self.assertTrue(all(
+                command[command.index("org.jaspstats.JASP") + 1] == "--unitTest"
+                for command in jasp_calls
+            ))
             self.assertTrue(all("--hide" not in command for command in jasp_calls))
+
             flatpak_command = result["tests"]["flatpak_launch"]["command"]
             self.assertFalse(any("RPROFILE" in arg or "SEED_HOOK" in arg for arg in flatpak_command))
-            self.assertTrue(any(arg.startswith("--filesystem=") and "seeded-fixture" in arg
-                                for arg in flatpak_command))
+            self.assertFalse(any(
+                arg.startswith("--filesystem=") and "seeded-fixture" in arg
+                for arg in flatpak_command
+            ))
+            self.assertEqual(str(source_fixture), result["tests"]["flatpak_launch"]["original_fixture_path"])
+            self.assertEqual(source_sha, result["tests"]["flatpak_launch"]["original_fixture_sha256"])
+            self.assertTrue(result["tests"]["flatpak_launch"]["original_fixture_alias_valid"])
             self.assertEqual("PASS", result["tests"]["flatpak_launch"]["status"])
-            self.assertTrue(result["tests"]["flatpak_launch"]["deterministic_fixture_receipt_valid"])
             self.assertEqual(1, result["tests"]["reliability"]["returncode"])
             self.assertEqual("BLOCKED", result["tests"]["reliability"]["status"])
-            self.assertIn("JASP_RELIABILITY_UNITTEST_RC=1", pathlib.Path(result["tests"]["reliability"]["log_path"]).read_text())
+            self.assertIn(
+                "JASP_RELIABILITY_UNITTEST_RC=1",
+                pathlib.Path(result["tests"]["reliability"]["log_path"]).read_text()
+            )
             self.assertEqual("PASS_JASP_STRICT_ROUNDTRIP", result["roundtrip_gate"]["status"])
+            self.assertEqual("PASS_DETERMINISTIC_REPLAY", result["roundtrip_gate"]["deterministic_replay_status"])
+            self.assertEqual("PASS", result["roundtrip_gate"]["runtime_identity_status"])
+            self.assertEqual(
+                result["roundtrip_gate"]["save_actual_result_rows_sha256"],
+                result["roundtrip_gate"]["rerun_actual_result_rows_sha256"],
+            )
             self.assertTrue(result["roundtrip_gate"]["original_sample_unchanged"])
             self.assertTrue(result["roundtrip_gate"]["temporary_fixture_removed_after_test"])
             self.assertTrue(report.is_file())
@@ -587,9 +625,20 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
                 source, [{"setSeed": False, "seed": 1}]
             )
             source_sha = lane.sha_file(source)
+            banner = (
+                "Starting JASP 0.98.8 from commit "
+                "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1\n"
+            )
+            fresh_rows = (
+                "Row: | h: Model Comparison | \n"
+                "Row: | h: Models | \n"
+                "Row: | Model A | 0.500 | 1.000 | \n"
+                "Row: | Note.Total number of models visited = 1 | \n"
+                "Footer:\n"
+            )
             responses = [
-                SimpleNamespace(returncode=0, stdout="save successful\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="strict reopen successful\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout=banner + fresh_rows, stderr=""),
+                SimpleNamespace(returncode=0, stdout=banner + fresh_rows, stderr=""),
             ]
             response_iter = iter(responses)
             with (
@@ -605,8 +654,14 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
                 )
             self.assertEqual(2, runner.call_count)
             self.assertEqual("PASS_JASP_STRICT_ROUNDTRIP", result["status"])
-            self.assertEqual("PASS", result["save_run"]["status"])
-            self.assertEqual("PASS", result["strict_rerun_after_save"]["status"])
+            self.assertEqual("PASS_DETERMINISTIC_REPLAY", result["deterministic_replay_status"])
+            self.assertEqual("PASS", result["runtime_identity_status"])
+            self.assertEqual("PASS_REFERENCE_AND_REPLAY", result["save_run"]["status"])
+            self.assertEqual("PASS_REFERENCE_AND_REPLAY", result["strict_rerun_after_save"]["status"])
+            self.assertEqual(
+                result["save_actual_result_rows_sha256"],
+                result["rerun_actual_result_rows_sha256"],
+            )
             self.assertTrue(result["deterministic_fixture_receipt_valid"])
             self.assertTrue(result["original_sample_unchanged"])
             self.assertTrue(result["temporary_fixture_removed_after_test"])
