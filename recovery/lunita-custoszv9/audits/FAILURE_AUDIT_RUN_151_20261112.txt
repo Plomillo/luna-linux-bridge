@@ -182,3 +182,28 @@ Artifact ZIP digest:
 
 Final rule:
 NO CERTIFICATION UNTIL THE SAME EXACT LUNITA.squashfs SHA-256 IS BOUND TO A PASSING TARGET RECEIPT, PASSING INDEPENDENT REPORT, PASSING S32 RECEIPT, AND PASSING STABLE RELEASE RECEIPT.
+
+10. ADDITIONAL IDENTITY DEFECT — JASP RUNTIME VERSION DOES NOT MATCH THE FROZEN LABEL
+
+The target candidate's exact label hierarchy (checked in workflow step 13) requires:
+JASP 0.98.1
+
+The actual JASP process in the failed independent worker reported:
+Starting JASP 0.98.8 from commit b6cd3b0310be4e18e1b673ac11f14e55615c8fa1
+
+The workflow also verified the Flatpak deployment commit:
+83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7
+That Flatpak deployment commit is not the same identifier as the JASP source Git commit printed by the application. The current test validates the deployment hash but does not bind the application banner version to the frozen label.
+
+Independent public provenance check against Flathub's signed manifest history:
+- Flathub commit 8937bf00c782b7831492e10e6d86addbcb346c14 is titled "0.98.1" (2026-07-07) and its manifest pins jasp-desktop source commit 8fe3677d2e6aeea71f7135f48281e92aa88f38ba.
+- Flathub commit 95e467d83089fb292e5d0746e98e188fef6f9113 is titled "0.98.8" (2026-10-12) and explicitly pins jasp-desktop release head b6cd3b03.
+
+Sources:
+https://github.com/flathub/org.jaspstats.JASP/commit/8937bf00c782b7831492e10e6d86addbcb346c14
+https://github.com/flathub/org.jaspstats.JASP/commit/95e467d83089fb292e5d0746e98e188fef6f9113
+https://github.com/flathub/org.jaspstats.JASP/blob/master/org.jaspstats.JASP.json
+
+DETERMINATION:
+The runtime identity currently observed is JASP 0.98.8, while the frozen candidate label states JASP 0.98.1. This is an independently verifiable candidate identity/version mismatch. It must not be hidden by changing only the label or by weakening validation. The next target run must record and validate the actual application version. Certification must remain denied until the version identity is aligned with the frozen candidate authority through a traceable correction and a full revalidation.
+
