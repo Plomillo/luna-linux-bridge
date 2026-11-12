@@ -44,6 +44,8 @@ jobs:
           python3 - "base (1).apk" "$RUNNER_TEMP/apk-audit-report.txt" <<'PY'
           import collections, hashlib, logging, re, sys, zipfile
           logging.disable(logging.CRITICAL)
+          from loguru import logger
+          logger.remove()
           from androguard.core.apk import APK
           from androguard.core.dex import DEX
           apk_path, report_path = sys.argv[1], sys.argv[2]
@@ -89,7 +91,7 @@ jobs:
                   string_hits=set()
                   for dex_name, raw in zip(dex_names,a.get_all_dex()):
                       d=DEX(raw)
-                      names=d.get_names()
+                      names=[c.get_name() for c in d.get_classes()]
                       for name in names:
                           class_count+=1
                           parts=name.strip('L;').split('/')
