@@ -195,9 +195,9 @@ def main() -> int:
     class_names = set(namespace_counts)
     frameworks = {}
     framework_signals = {
-        "Flutter": any("flutter" in name.lower() for name in inventory["largest_entries"] if "path" in name)
+        "Flutter": any("flutter" in item["path"].lower() for item in inventory["native_libraries"])
                     or any("io/flutter" in name for name in class_names)
-                    or any(item["path"].startswith("assets/flutter_assets/") for item in inventory["largest_entries"]),
+                    or any(name.startswith("assets/flutter_assets/") for name in names),
         "React Native": any("com/facebook/react" in name for name in class_names),
         "Unity": any("com/unity3d" in name for name in class_names)
                  or any(item["path"].endswith("/libunity.so") for item in inventory["native_libraries"]),
