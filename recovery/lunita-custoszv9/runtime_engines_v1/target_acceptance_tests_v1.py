@@ -99,6 +99,36 @@ class TargetJaspSourceReleaseIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(target.TargetGateError, "unsupported nonzero fourth"):
             self._verify(cmake=changed)
 
+    def test_target_rootfs_requires_source_verified_version_authority(self):
+        lupa = {
+            "version": "0.98.8",
+            "version_source": "EXACT_PINNED_FLATPAK_COMMIT_MAPPING",
+            "application_id": "org.jaspstats.JASP",
+            "flatpak_deployment_commit": target.EXPECTED_JASP_DEPLOYMENT_COMMIT,
+            "flathub_manifest_commit": target.EXPECTED_JASP_FLATHUB_MANIFEST_COMMIT,
+            "flathub_manifest_git_blob_sha1": target.EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+            "jasp_source_commit": target.EXPECTED_JASP_SOURCE_COMMIT,
+            "jasp_source_cmake_git_blob_sha1": target.EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+        }
+        with tempfile.TemporaryDirectory(prefix="lunita-jasp-rootfs-") as tmp:
+            with self.assertRaisesRegex(target.TargetGateError, "version_source"):
+                target.verify_jasp_source_release_identity(lupa, pathlib.Path(tmp))
+
+    def test_target_rootfs_requires_the_pinned_flatpak_deployment_commit(self):
+        lupa = {
+            "version": "0.98.8",
+            "version_source": target.EXPECTED_JASP_VERSION_SOURCE,
+            "application_id": "org.jaspstats.JASP",
+            "flatpak_deployment_commit": "0" * 64,
+            "flathub_manifest_commit": target.EXPECTED_JASP_FLATHUB_MANIFEST_COMMIT,
+            "flathub_manifest_git_blob_sha1": target.EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+            "jasp_source_commit": target.EXPECTED_JASP_SOURCE_COMMIT,
+            "jasp_source_cmake_git_blob_sha1": target.EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+        }
+        with tempfile.TemporaryDirectory(prefix="lunita-jasp-rootfs-") as tmp:
+            with self.assertRaisesRegex(target.TargetGateError, "flatpak_deployment_commit"):
+                target.verify_jasp_source_release_identity(lupa, pathlib.Path(tmp))
+
     def test_app_id_mismatch_is_rejected(self):
         changed = self.manifest.replace(b"org.jaspstats.JASP", b"org.example.JASP")
         with self.assertRaisesRegex(target.TargetGateError, "application identity mismatch"):
