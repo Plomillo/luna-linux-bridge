@@ -1,0 +1,378 @@
+{
+  "schema": "LOUKSNAPG_ARCHITECTURAL_CONTRACT/1.0",
+  "contract_id": "LOUKSNAPG-AC-001",
+  "contract_version": "1.0.0",
+  "state": "ACTIVE_ENFORCED",
+  "authority": "Louksna.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "mutation_policy": "APPEND_ONLY",
+  "failure_policy": "FAIL_CLOSED",
+  "purpose": "Repair the exact LOUKSNAPG candidate before any integral certification. Enforce CUSTOSZ V9 as primary worker and Kestra as independent secondary auditor, with real task evidence, telemetry, provenance and separate G23/G24 decisions.",
+  "release_state_without_complete_evidence": "HOLD_NOT_CERTIFIED",
+  "workers": {
+    "primary": {
+      "id": "CUSTOSZ_V9",
+      "responsibility": "Bounded candidate repair/build and evidence emission",
+      "must_emit_real_runtime_receipt": true,
+      "may_self_certify": false
+    },
+    "secondary": {
+      "id": "KESTRA",
+      "responsibility": "Independent orchestration, evidence-envelope audit, telemetry observation and fail-closed hold/pass decision",
+      "must_emit_real_runtime_receipt": true,
+      "may_replace_g23_or_g24": false
+    },
+    "correlation_fields": [
+      "source_commit",
+      "bundle_sha256",
+      "contract_sha256",
+      "execution_id",
+      "worker_run_id"
+    ],
+    "missing_or_disconnected_worker": "HOLD"
+  },
+  "obligations": [
+    {
+      "id": "C1_COORDINATED_WORKERS",
+      "status": "MANDATORY",
+      "rule": "CUSTOSZ_V9 is the primary bounded worker; Kestra is the independent secondary auditor. Both must have real execution receipts tied to the same source commit and candidate digest. A repository workflow definition alone is not an execution receipt."
+    },
+    {
+      "id": "C2_OFFICIAL_SOURCE_REPAIR",
+      "status": "MANDATORY",
+      "rule": "Inspect official upstream source documentation and pin exact repository/model variant/revision before model repair. Repair the existing candidate using available, identity-bound assets; do not silently substitute a model or claim that repackaging restores lost information."
+    },
+    {
+      "id": "C3_PRIMITIVE_FUNCTIONS",
+      "status": "MANDATORY",
+      "rule": "Run real, non-synthetic, behavior-specific tests for all 21 registered target IDs. Every model-backed target must prove model load and inference, bind the exact model and weights, and pass task-relevant quality criteria; exit code zero or non-empty output is insufficient."
+    },
+    {
+      "id": "C4_TELEMETRY_AND_AUDIT",
+      "status": "MANDATORY",
+      "rule": "Persist source/input/operation/output/test/validation/G23/Kestra/G24 decision telemetry with ordered IDs, UTC timestamps, actor/tool/version, hashes/sizes, status, error and rollback reference. Missing, unbound, redacted-away or non-persisted evidence is HOLD."
+    },
+    {
+      "id": "C5_GOVERNED_RELEASE_CHAIN",
+      "status": "MANDATORY",
+      "rule": "Execute SPECIFICATION -> EVIDENCE -> VALIDATION -> INDEPENDENT_VALIDATION_G23 -> KESTRA_AUDIT -> SEPARATE_CERTIFICATION_G24 -> NON_REGRESSION -> ROLLBACK_VERIFICATION -> ACTIVE. G23 and G24 are distinct; no automatic certification propagation or promotion."
+    },
+    {
+      "id": "C6_PROHIBITIONS_AND_RECOVERY",
+      "status": "MANDATORY",
+      "rule": "Do not download heavy model weights, use Remote Commander, mutate canonical identities/blocks/axioms, use synthetic evidence as product proof, or merge/promote without a complete evidence chain. Abort, restore checkpoint, verify restoration, record failure and audit."
+    }
+  ],
+  "source_catalog": [
+    {
+      "target_id": "D01_CEREBRO_ROOT",
+      "model_id": "openai/gpt-oss-120b",
+      "official_url": "https://github.com/openai/gpt-oss",
+      "official_docs_url": "https://github.com/openai/gpt-oss/blob/main/README.md",
+      "task": "reasoning_and_generation",
+      "heavy_weight_download_prohibited": true,
+      "variant_must_be_pinned": true,
+      "official_source_revision_commit": "5681a6b6552635e7b29cde94a61ca6a7aee90ebd",
+      "official_source_revision_url": "https://github.com/openai/gpt-oss/commit/5681a6b6552635e7b29cde94a61ca6a7aee90ebd",
+      "source_pin_type": "official_source_code_commit",
+      "model_repository": "https://huggingface.co/openai/gpt-oss-120b",
+      "model_repository_revision_commit": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+      "model_revision_source": "Hugging Face model API snapshot, 2026-10-26; metadata only, no weights downloaded"
+    },
+    {
+      "target_id": "D03_TRANSCRIPCION_ROOT",
+      "model_id": "openai/whisper-large-v3-turbo",
+      "official_url": "https://github.com/openai/whisper",
+      "official_docs_url": "https://github.com/openai/whisper/blob/main/README.md",
+      "task": "speech_transcription_only",
+      "translation_use_prohibited": true,
+      "variant_must_be_pinned": true,
+      "official_source_revision_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
+      "official_source_revision_url": "https://github.com/openai/whisper/commit/86098128c0b4f24f0e2aa2994de830614b474227",
+      "source_pin_type": "official_source_code_commit",
+      "model_repository": "https://huggingface.co/openai/whisper-large-v3-turbo",
+      "model_repository_revision_commit": "41f01f3fe87f28c78e2fbf8b568835947dd65ed9",
+      "model_revision_source": "Official Hugging Face model snapshot, metadata only; 1.62 GB checkpoint not downloaded"
+    },
+    {
+      "target_id": "D04_TRADUCCION_GENERAL",
+      "model_id": "facebook/seamless-m4t-v2-large",
+      "official_url": "https://github.com/facebookresearch/seamless_communication",
+      "official_docs_url": "https://github.com/facebookresearch/seamless_communication/blob/main/docs/m4t/README.md",
+      "task": "multilingual_translation",
+      "heavy_weight_download_prohibited": true,
+      "variant_must_be_pinned": true,
+      "official_source_revision_commit": "9a081e935c29c6b1e0e05bcbf3fcb623ad306524",
+      "official_source_revision_url": "https://github.com/facebookresearch/seamless_communication/commit/9a081e935c29c6b1e0e05bcbf3fcb623ad306524",
+      "source_pin_type": "official_source_code_commit",
+      "model_repository": "https://huggingface.co/facebook/seamless-m4t-v2-large",
+      "model_repository_revision_commit": "b8d7691bcced0d24b2655f534b6148be78346b72",
+      "model_revision_source": "Official Hugging Face model snapshot; upstream checkpoint SHA256 f2122cedcffc532d6048847092414e638cfb4db402881cb8146a606008e9ff56 from file metadata; checkpoint not downloaded"
+    },
+    {
+      "target_id": "D05_DOCLING",
+      "model_id": "ibm-granite/granite-docling-258M",
+      "official_url": "https://huggingface.co/ibm-granite/granite-docling-258M",
+      "official_docs_url": "https://www.ibm.com/granite/docs/models/docling",
+      "task": "document_understanding_and_structured_conversion",
+      "variant_must_be_pinned": true,
+      "official_source_revision_commit": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+      "official_source_revision_url": "https://huggingface.co/ibm-granite/granite-docling-258M/commit/982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+      "source_pin_type": "official_model_repository_commit",
+      "model_repository": "https://huggingface.co/ibm-granite/granite-docling-258M",
+      "model_repository_revision_commit": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+      "model_revision_source": "Hugging Face model API snapshot, 2026-10-26; metadata only, no weights downloaded"
+    },
+    {
+      "target_id": "D06_ANALISIS_AVANZADO",
+      "model_id": "Qwen/Qwen3-0.6B",
+      "official_url": "https://github.com/QwenLM/Qwen3",
+      "official_docs_url": "https://github.com/QwenLM/Qwen3/blob/main/docs/source/inference/transformers.md",
+      "task": "advanced_text_reasoning",
+      "variant_must_be_pinned": true,
+      "allowed_variants": [
+        "Qwen/Qwen3-0.6B"
+      ],
+      "official_source_revision_commit": "7a2f61ffc7a20d47efcd2bf97f6f2bf52729042e",
+      "official_source_revision_url": "https://github.com/QwenLM/Qwen3/commit/7a2f61ffc7a20d47efcd2bf97f6f2bf52729042e",
+      "source_pin_type": "official_source_code_commit",
+      "model_repository": "https://huggingface.co/Qwen/Qwen3-0.6B",
+      "model_repository_revision_commit": "c1899de289a04d12100db370d81485cdf75e47ca",
+      "model_revision_source": "Official Hugging Face model snapshot, metadata only; 1.52 GB checkpoint not downloaded"
+    }
+  ],
+  "target_ids": [
+    "D01_CEREBRO_ROOT",
+    "D02_CONFESION_ECLESIAL_REFORMADA",
+    "D02_MULTI_INTERDISCIPLINAR",
+    "D02_ORQUESTADOR",
+    "D03_TRANSCRIPCION_ROOT",
+    "D04_HERMENEUTICA_HG",
+    "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+    "D04_TRADUCCION_GENERAL",
+    "D05_CALIBRE",
+    "D05_DOCLING",
+    "D06_ANTI_ALUCINACIONES",
+    "D06_ANALISIS_AVANZADO",
+    "D06_ARCHIVADO_DETECCION",
+    "D06_COGNITIVE_CI_CD",
+    "D06_CONSOLA",
+    "D06_MEMORIA_GOBERNADA",
+    "D06_MIGRACION_PERSISTENCIA",
+    "D06_MOTOR_PROTOCOLAR",
+    "D06_PORTABILIDAD_BASE",
+    "D06_RUNTIME_ANDROID_WINDOWS",
+    "D06_TESTING"
+  ],
+  "telemetry": {
+    "required_event_types": [
+      "SOURCE",
+      "INPUT",
+      "OPERATION",
+      "OUTPUT",
+      "TEST",
+      "VALIDATION",
+      "INDEPENDENT_VALIDATION_G23",
+      "KESTRA_AUDIT",
+      "CERTIFICATION_DECISION_G24",
+      "NON_REGRESSION",
+      "ROLLBACK"
+    ],
+    "required_fields": [
+      "operation_id",
+      "sequence_id",
+      "timestamp_utc",
+      "actor",
+      "tool_name",
+      "tool_version",
+      "source",
+      "input_sha256",
+      "output_sha256",
+      "input_bytes",
+      "output_bytes",
+      "validation_status",
+      "rollback_reference",
+      "status"
+    ],
+    "persistence_required": true,
+    "candidate_and_source_commit_binding_required": true,
+    "secrets_must_never_be_logged": true
+  },
+  "gates": {
+    "hard_requirements": [
+      "all_21_targets_pass",
+      "real_runtime_execution",
+      "synthetic_only_false",
+      "official_revision_pinned",
+      "weights_sha256_bound",
+      "semantic_quality_pass",
+      "host_matrix_pass",
+      "rollback_pass",
+      "axiom_binding_pass",
+      "block_binding_pass",
+      "telemetry_pass",
+      "custosz_v9_real_receipt",
+      "kestra_real_receipt",
+      "g23_signature_verified",
+      "separate_g24_signature_verified",
+      "non_regression_pass",
+      "custosz_worker_repair_preflight_pass",
+      "custosz_repair_report_subject_bound",
+      "three_candidate_bound_primitives_pass"
+    ],
+    "chain": [
+      "SPECIFICATION",
+      "EVIDENCE",
+      "VALIDATION",
+      "INDEPENDENT_VALIDATION_G23",
+      "KESTRA_AUDIT",
+      "SEPARATE_CERTIFICATION_G24",
+      "NON_REGRESSION",
+      "ROLLBACK_VERIFICATION",
+      "ACTIVE"
+    ],
+    "missing_evidence_action": "HOLD_NOT_CERTIFIED",
+    "global_certification_before_g24": "NOT_GRANTED",
+    "merge_or_promotion_before_all_gates": "PROHIBITED"
+  },
+  "prohibitions": {
+    "heavy_model_weights_download": false,
+    "remote_commander_use": false,
+    "canonical_identity_mutation": false,
+    "block_or_axiom_reassignment": false,
+    "engine_substitution_without_explicit_authorization": false,
+    "synthetic_evidence_as_product_proof": false,
+    "self_certification": false,
+    "automatic_g23_to_g24_propagation": false,
+    "merge_or_promotion_without_complete_chain": false
+  },
+  "evidence_schema": "LOUKSNAPG_ARCHITECTURE_EXECUTION_EVIDENCE/1.0",
+  "validator_semantics": {
+    "contract_integrity_pass_does_not_certify_product": true,
+    "missing_execution_evidence": "HOLD_NOT_CERTIFIED",
+    "actual_release_requires": "separate independently verifiable evidence for every mandatory obligation"
+  },
+  "model_repair_evidence": {
+    "required_model_target_count": 5,
+    "target_ids": [
+      "D01_CEREBRO_ROOT",
+      "D03_TRANSCRIPCION_ROOT",
+      "D04_TRADUCCION_GENERAL",
+      "D05_DOCLING",
+      "D06_ANALISIS_AVANZADO"
+    ],
+    "required_per_target_fields": [
+      "target_id",
+      "status",
+      "synthetic_only",
+      "official_source_url",
+      "upstream_model_id",
+      "upstream_revision_commit",
+      "upstream_weights_sha256",
+      "candidate_before_weights_sha256",
+      "candidate_after_weights_sha256",
+      "repair_implementation_commit",
+      "test_evidence_sha256",
+      "quality_report_sha256",
+      "expected_test_count",
+      "passed_test_count",
+      "semantic_quality_status"
+    ],
+    "repair_must_change_candidate_weights": true,
+    "candidate_after_hash_must_match_functional_gate": true,
+    "synthetic_evidence_allowed": false,
+    "semantic_quality_pass_required": true,
+    "release_implication_if_missing": "HOLD_NOT_CERTIFIED"
+  },
+  "source_catalog_reviewed_at_utc": "2026-10-26T07:22:00Z",
+  "global_luna_hard_max_bytes": 479000000,
+  "candidate_distribution_max_bytes": 479000000,
+  "cajita_runtime_archive_max_bytes": 470000000,
+  "byte_budget_policy": "GLOBAL_LUNA_HARD_MAX_BYTES_APPLIES_TO_COMPLETE_SINGLE_FILE_DISTRIBUTION; NO_REWARD_FOR_APPROACHING_CAP; CAJITA_RUNTIME_CAP_IS_SEPARATE",
+  "toolchain_pins": [
+    {
+      "id": "CAJITA_CALIBRE_SLIM",
+      "upstream_repository": "https://github.com/kovidgoyal/calibre",
+      "official_release_url": "https://github.com/kovidgoyal/calibre/releases/tag/v9.17.0",
+      "tag": "v9.17.0",
+      "tag_object_sha": "58cfea71a2c2d893b853d73ca586ec9b28f7b2ba",
+      "tag_signature_verified": true,
+      "tag_signature_key_id": "06BC317B515ACE7C",
+      "commit_sha": "e6b9e09472f6e63f8a12bf376eb54836042f0f5f",
+      "runtime_version": "9.17.0",
+      "source_lock_path": "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/source-lock.json",
+      "release_assets": [
+        {
+          "id": "CALIBRE_V9_17_0_LINUX_X86_64_BINARY",
+          "url": "https://github.com/kovidgoyal/calibre/releases/download/v9.17.0/calibre-9.17.0-x86_64.txz",
+          "filename": "calibre-9.17.0-x86_64.txz",
+          "size_bytes": 201590724,
+          "sha256": "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53"
+        },
+        {
+          "id": "CALIBRE_V9_17_0_SOURCE",
+          "url": "https://github.com/kovidgoyal/calibre/releases/download/v9.17.0/calibre-9.17.0.tar.xz",
+          "filename": "calibre-9.17.0.tar.xz",
+          "size_bytes": 50661596,
+          "sha256": "07507ea8ace5f8a0f768c13afdb799ad685a636c1cdbd8b11162ddb419743be5"
+        }
+      ],
+      "overlay_archive": {
+        "path": "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-overlay.tar.xz",
+        "filename": "calibre-slim-overlay.tar.xz",
+        "size_bytes": 58180,
+        "sha256": "dc1518eccd24d0bb6a294918381d9d42fa24df8b05026d1f173dadbd6e70977b"
+      },
+      "inventory_policy": "RECOMPUTE_ARCHIVE_AND_FULL_CACHE_FILE_SET_SIZE_SHA256_MODE_DIRECTORY_SET_ON_EVERY_INVOCATION",
+      "runtime_policy": "DISCOVER_SYSTEM_EBOOK_CONVERT_AND_REQUIRE_EXACT_CALIBRE_VERSION_TOKEN"
+    }
+  ],
+  "worker_mission": {
+    "schema": "LOUKSNAPG_CUSTOSZ_REPAIR_MISSION_CONTRACT/1.0",
+    "worker_id": "CUSTOSZV9",
+    "mission_id": "issue-155",
+    "task_id": "louksnapg-integral-release",
+    "authorized_scope": "VERIFY_REPAIR_PRIMITIVES_AND_BUILD_LOUKSNAPG_CANDIDATE",
+    "required_capabilities": [
+      "verify_repair_primitives",
+      "build_single_file_distribution"
+    ],
+    "permitted_effects": [
+      "WRITE_EVIDENCE"
+    ],
+    "required_preconditions": [
+      "NO_SELF_CERTIFICATION",
+      "FAIL_CLOSED",
+      "INPUT_HASHES_VERIFIABLE",
+      "REPAIR_SOURCE_HASHES_PINNED",
+      "REAL_CANDIDATE_PRIMITIVE_TESTS_REQUIRED"
+    ],
+    "repair_target_ids": [
+      "D04_HERMENEUTICA_HG",
+      "D04_TRADUCCION_LENGUAS_ANTIGUAS",
+      "D06_MIGRACION_PERSISTENCIA"
+    ],
+    "evidence_schema": "LOUKSNAPG_CUSTOSZ_PRIMITIVE_REPAIR_EVIDENCE/1.0",
+    "evidence_must_bind": [
+      "source_commit",
+      "contract_sha256",
+      "bundle_sha256",
+      "repair_source_sha256",
+      "repair_test_source_sha256",
+      "primitive_report_sha256"
+    ],
+    "unit_test_fixtures_are_product_proof": false,
+    "candidate_repair_run_must_execute": true,
+    "required_for_release": [
+      "repair_preflight_status_PASS",
+      "candidate_integrity_PASS",
+      "all_three_repair_targets_PASS_PRIMITIVE_SMOKE",
+      "primitive_report_hash_verified",
+      "source_commit_contract_and_bundle_hashes_match"
+    ],
+    "global_certification_authority": "NONE",
+    "missing_or_failed_target_action": "HOLD_NOT_CERTIFIED",
+    "heavy_model_weight_download_count": 0,
+    "remote_commander_used": false
+  }
+}

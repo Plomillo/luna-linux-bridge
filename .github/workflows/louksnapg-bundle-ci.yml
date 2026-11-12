@@ -6,20 +6,66 @@ on:
       - "louksnapg/**"
     paths:
       - ".github/workflows/louksnapg-bundle-ci.yml"
+      - ".github/workflows/louksnapg-kestra-auxiliary.yml"
       - ".github/workflows/cajita-louksna1-factory.yml"
       - "tools/louksnapg_worker_mission.py"
+      - "tools/cajita_extended_target_e2e.py"
+      - "tests/test_cajita_extended_target_e2e.py"
+      - "tests/test_calibre_slim_integrity.py"
+      - "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py"
+      - "tools/louksnapg_six_obligation_audit.py"
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
       - "tests/test_louksnapg_bundle.py"
+      - "tests/test_louksnapg_worker_mission.py"
+      - "tests/test_louksnapg_six_obligation_audit.py"
+      - "tools/louksnapg_integral_gate.py"
+      - "tools/louksnapg_evidence_adapter.py"
+      - "tests/test_louksnapg_evidence_adapter.py"
+      - "tests/test_louksnapg_integral_gate.py"
+      - "tools/louksnapg_architecture_contract.py"
+      - "tests/test_louksnapg_architecture_contract.py"
+      - "contracts/louksnapg/architecture-contract.v1.json"
+      - "docs/cajita-luna/LOUKSNAPG_ARCHITECTURAL_CONTRACT.md"
+      - "docs/cajita-luna/LOUKSNAPG_FUNCTIONAL_REPAIR_AUDIT_20261026.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT_40302483781_20261026.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT_40302483781_20261026.md"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
   pull_request:
     paths:
       - ".github/workflows/louksnapg-bundle-ci.yml"
+      - "cajita-luna-runtime/cajita_task_adapters.py"
+      - "tests/test_cajita_task_adapters.py"
+      - "tools/cajita_task_e2e.py"
+      - "tests/test_cajita_task_e2e.py"
+      - ".github/workflows/louksnapg-kestra-auxiliary.yml"
       - ".github/workflows/cajita-louksna1-factory.yml"
       - "tools/louksnapg_worker_mission.py"
+      - "tools/cajita_extended_target_e2e.py"
+      - "tests/test_cajita_extended_target_e2e.py"
+      - "tests/test_calibre_slim_integrity.py"
+      - "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py"
+      - "tools/louksnapg_six_obligation_audit.py"
       - "tools/louksnapg_bundle.py"
       - "tools/louksnapg_independent_validator.py"
       - "tests/test_louksnapg_bundle.py"
+      - "tests/test_louksnapg_worker_mission.py"
+      - "tests/test_louksnapg_six_obligation_audit.py"
+      - "tools/louksnapg_integral_gate.py"
+      - "tests/test_louksnapg_integral_gate.py"
+      - "tools/louksnapg_architecture_contract.py"
+      - "tests/test_louksnapg_architecture_contract.py"
+      - "contracts/louksnapg/architecture-contract.v1.json"
+      - "docs/cajita-luna/LOUKSNAPG_ARCHITECTURAL_CONTRACT.md"
+      - "docs/cajita-luna/LOUKSNAPG_FUNCTIONAL_REPAIR_AUDIT_20261026.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT_40302483781_20261026.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT_40302483781_20261026.md"
       - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
 
 permissions:
@@ -43,32 +89,141 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Install pinned YAML parser for Kestra static contract validation
-        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
-      - name: Compile LOUKSNAPG packaging and independent validator
+      - name: Install pinned validation dependencies
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3 cryptography==45.0.7 Pillow==11.3.0
+      - name: Compile LOUKSNAPG packaging, evidence gate and independent validator
         run: |
-          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py tests/test_louksnapg_bundle.py
+          python -m py_compile tools/louksnapg_bundle.py tools/louksnapg_independent_validator.py tools/louksnapg_worker_mission.py tools/louksnapg_integral_gate.py tools/louksnapg_evidence_adapter.py tests/test_louksnapg_evidence_adapter.py tests/test_louksnapg_bundle.py tests/test_louksnapg_integral_gate.py tests/test_louksnapg_worker_mission.py tools/louksnapg_architecture_contract.py tests/test_louksnapg_architecture_contract.py tools/louksnapg_six_obligation_audit.py tests/test_louksnapg_six_obligation_audit.py tests/test_cajita_extended_target_e2e.py tools/cajita_extended_target_e2e.py
+          python -m py_compile tests/test_calibre_slim_integrity.py "cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py"
       - name: Exercise ZIP build, cap, tamper and independent source-binding tests
         run: |
           python -m unittest discover -s tests -p 'test_louksnapg*.py' -v
+          python -m py_compile cajita-luna-runtime/cajita_task_adapters.py tools/cajita_task_e2e.py tests/test_cajita_task_adapters.py tests/test_cajita_task_e2e.py
+          PYTHONPATH=tools:cajita-luna-runtime python -m unittest discover -s tests -p 'test_cajita_task_adapters.py' -v
+          PYTHONPATH=tools:cajita-luna-runtime python -m unittest discover -s tests -p 'test_cajita_task_e2e.py' -v
+          python -m unittest discover -s tests -p 'test_cajita_extended_target_e2e.py' -v
+          python -m unittest discover -s tests -p 'test_calibre_slim_integrity.py' -v
+          python tools/louksnapg_architecture_contract.py --contract contracts/louksnapg/architecture-contract.v1.json --report "$RUNNER_TEMP/LOUKSNAPG_ARCHITECTURE_CONTRACT.json"
       - name: Validate Kestra contract and pinned release ceiling
         shell: bash
         run: |
           python - <<'PY'
+          import json
           import yaml
           from pathlib import Path
           path = Path("integrations/kestra/flows/24-louksnapg-bundle-audit.yml")
-          flow = yaml.safe_load(path.read_text(encoding="utf-8"))
+          flow_text = path.read_text(encoding="utf-8")
+          flow = yaml.safe_load(flow_text)
+          shape_condition = flow["tasks"][0]["condition"]
+          assert "| regexMatch(" in shape_condition
+          assert " matches " not in shape_condition
           assert flow["id"] == "louksnapg_bundle_audit"
           assert flow["namespace"] == "louksna.kestra"
           inputs = {row["id"]: row for row in flow["inputs"]}
-          assert inputs["max_bytes"]["defaults"] == 490000000
+          assert inputs["max_bytes"]["defaults"] == 479000000
+          contract = json.loads(Path("contracts/louksnapg/architecture-contract.v1.json").read_text(encoding="utf-8"))
+          assert contract["global_luna_hard_max_bytes"] == 479000000
+          assert contract["candidate_distribution_max_bytes"] == 479000000
+          assert contract["cajita_runtime_archive_max_bytes"] == 470000000
+          bundle_builder = Path("tools/louksnapg_bundle.py").read_text(encoding="utf-8")
+          independent_validator = Path("tools/louksnapg_independent_validator.py").read_text(encoding="utf-8")
+          integral_gate = Path("tools/louksnapg_integral_gate.py").read_text(encoding="utf-8")
+          factory_text = Path(".github/workflows/cajita-louksna1-factory.yml").read_text(encoding="utf-8")
+          extended_harness = Path("tools/cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+          extended_tests = Path("tests/test_cajita_extended_target_e2e.py").read_text(encoding="utf-8")
+          calibre_slim_source = Path("cajita-luna-runtime/5. Inteligencia documental/Conversión documental/Calibre Slim/calibre-slim-convert.py").read_text(encoding="utf-8")
+          calibre_slim_tests = Path("tests/test_calibre_slim_integrity.py").read_text(encoding="utf-8")
+          assert "MATERIALIZED_OVERLAY_TREE_HASH_MISMATCH" in calibre_slim_source
+          assert "CALIBRE_RUNTIME_VERSION_MISMATCH" in calibre_slim_source
+          assert "CALIBRE_SOURCE_LOCK_IDENTITY_MISMATCH" in calibre_slim_source
+          assert "test_tampered_cached_file_is_rejected_on_every_invocation" in calibre_slim_tests
+          assert "test_wrong_external_converter_version_fails_closed" in calibre_slim_tests
+          assert '"D04_HERMENEUTICA_HG"' in extended_harness
+          assert '"D04_TRADUCCION_LENGUAS_ANTIGUAS"' in extended_harness
+          assert '"D05_CALIBRE"' in extended_harness
+          assert '"D06_ANTI_ALUCINACIONES"' in extended_harness
+          assert '"D06_ARCHIVADO_DETECCION"' in extended_harness
+          assert '"D06_COGNITIVE_CI_CD"' in extended_harness
+          assert '"D06_MIGRACION_PERSISTENCIA"' in extended_harness
+          assert '"D06_PORTABILIDAD_BASE"' in extended_harness
+          assert '"D06_RUNTIME_ANDROID_WINDOWS"' in extended_harness
+          assert '"D06_TESTING"' in extended_harness
+          assert "test_calibre_is_held_if_no_external_executable_is_available" in extended_tests
+          assert "test_calibre_runs_the_pinned_wrapper_and_validates_real_epub_contract" in extended_tests
+          assert "test_calibre_runtime_asset_without_exact_hash_receipt_is_blocked" in extended_tests
+          assert "test_antihallucination_lfs_pointer_is_not_misreported_as_a_model" in extended_tests
+          auxiliary_workflow_text = Path(".github/workflows/louksnapg-kestra-auxiliary.yml").read_text(encoding="utf-8")
+          telemetry_writer = next((line for line in auxiliary_workflow_text.splitlines() if "tp.write_text(json.dumps(telem" in line), "")
+          assert telemetry_writer, "PREAUDIT_TELEMETRY_WRITER_MISSING"
+          assert '+"\\\\n"' not in telemetry_writer, "PREAUDIT_TELEMETRY_MUST_NOT_APPEND_LITERAL_BACKSLASH_N"
+          assert "LOUKSNAPG_SIX_OBLIGATION_AUDIT.json" in auxiliary_workflow_text
+          assert "DEFAULT_MAX_BYTES = 479_000_000" in bundle_builder
+          assert "CAP_BYTES = 479_000_000" in independent_validator
+          assert "GLOBAL_LUNA_HARD_MAX_BYTES = 479000000" in integral_gate
+          assert "BUNDLE_OVER_GLOBAL_LUNA_HARD_MAX_BYTES" in integral_gate
+          assert "--max-bytes 490000000" not in factory_text
+          assert "--max-bytes 490000000" not in auxiliary_workflow_text
+          worker_mission = Path("tools/louksnapg_worker_mission.py").read_text(encoding="utf-8")
+          assert "output_within_479000000_bytes" in worker_mission
+          assert "runtime_archive_within_470000000_bytes" in worker_mission
+          assert "output_within_470000000_bytes" not in worker_mission
+          audit_path = Path("docs/cajita-luna/LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT_40302483781_20261026.json")
+          execution_audit = json.loads(audit_path.read_text(encoding="utf-8"))
+          assert execution_audit["schema"] == "LOUKSNAPG_INTEGRAL_EXECUTION_AUDIT/1.0"
+          assert execution_audit["evidence_sources"]["factory_workflow_run_id"] == 40302483781
+          assert execution_audit["evidence_sources"]["source_commit"] == "59bedb1c47739e577068eeb31576ddea21b21467"
+          assert execution_audit["candidate"]["bytes"] == 371947709
+          assert execution_audit["candidate"]["sha256"] == "515b6e9c164c0e5add32ea7968c2ef00aab3a849eb756f76448c4e47f97e40a8"
+          assert execution_audit["summary"]["decision"] == "HOLD_NOT_CERTIFIED"
+          assert execution_audit["summary"]["obligations_passed"] == 2
+          assert execution_audit["summary"]["obligations_held"] == 4
+          assert execution_audit["six_obligations"]["C4_TELEMETRY_AND_AUDIT"]["status"] == "PASS_TRACEABILITY_WITH_RELEASE_HOLD"
+          assert execution_audit["six_obligations"]["C6_PROHIBITIONS_AND_RECOVERY"]["status"] == "PASS_PROHIBITIONS_OBSERVED"
+          assert all(execution_audit["model_tasks"]["task_results"][i]["quality_status"] == "FAIL" for i in range(5))
+          assert execution_audit["worker_receipts"]["secondary"]["status"] == "NOT_CONFIGURED"
+          # Preserve the prior audit above, and validate the later immutable report for run 40309113060.
+          latest_path = Path("docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.json")
+          latest = json.loads(latest_path.read_text(encoding="utf-8"))
+          assert latest["schema"] == "LOUKSNAPG_INTEGRAL_REPAIR_BLOCKER_AUDIT/1.0"
+          assert latest["audit_id"] == "LOUKSNAPG-REPAIR-HOLD-20261026-RUN40309113060"
+          assert latest["evidence_scope"]["factory_run_id"] == 40309113060
+          assert latest["evidence_scope"]["source_commit"] == "5fab498b6faae08f59962861503b1a1202fcc83c"
+          assert latest["evidence_scope"]["candidate_sha256"] == "3337c635d77d509e061768d573330345ff6673bafa8de828ad8b0bd3b1d52f7c"
+          assert latest["size_integrity"]["candidate_size_gate"] == "PASS"
+          assert latest["size_integrity"]["runtime_size_gate"] == "PASS"
+          assert latest["six_obligations"]["C1_COORDINATED_WORKERS"]["status"] == "HOLD"
+          assert latest["six_obligations"]["C2_OFFICIAL_SOURCE_REPAIR"]["status"] == "HOLD"
+          assert latest["six_obligations"]["C3_PRIMITIVE_FUNCTIONS"]["status"] == "FAIL"
+          assert latest["six_obligations"]["C4_TELEMETRY_AND_AUDIT"]["status"] == "PASS_PARTIAL"
+          assert latest["six_obligations"]["C5_GOVERNED_RELEASE_CHAIN"]["status"] == "HOLD"
+          assert latest["six_obligations"]["C6_PROHIBITIONS_AND_RECOVERY"]["status"] == "PASS_FOR_OBSERVED_RUN"
+          assert len(latest["model_task_results"]) == 5
+          assert sum(row["quality_status"] == "PASS" for row in latest["model_task_results"]) == 0
+          assert sum(row["quality_status"] == "FAIL" for row in latest["model_task_results"]) == 5
+          assert latest["exact_gate_results"]["g24_decision"] == "NOT_GRANTED"
+          assert latest["exact_gate_results"]["kestra_receipt"] == "NOT_CONFIGURED"
+          assert latest["safety_observations"]["heavy_model_weights_downloaded"] is False
+          assert latest["safety_observations"]["remote_commander_used"] is False
           required = {
               "source_commit", "bundle_sha256", "bundle_bytes", "document_sha256",
               "runtime_source_sha256", "worker_status", "independent_integrity_status",
               "identity_binding_status", "engine_replacement_status",
               "functional_status", "semantic_quality_status", "host_matrix_status",
               "rollback_status", "axiom_binding_status", "block_binding_status",
+              "functional_evidence_sha256", "functional_evidence_source_commit",
+              "functional_evidence_status", "functional_target_pass_count",
+              "functional_target_expected_count", "functional_evidence_mode",
+              "g23_attestation_sha256", "g23_signature_verification_status",
+              "g23_producer_id", "g23_validator_id", "g24_decision_sha256", "g24_decision_status",
+              "g24_signature_verification_status", "g24_signer_id",
+              "architecture_contract_sha256", "architecture_contract_status",
+              "primary_worker_id", "secondary_worker_id", "custosz_worker_evidence_sha256",
+              "custosz_repair_report_sha256", "custosz_repair_status", "custosz_repair_preflight_status",
+              "custosz_candidate_integrity_status", "custosz_repair_target_pass_count",
+              "custosz_repair_target_expected_count", "custosz_repair_source_commit",
+              "custosz_repair_bundle_sha256", "custosz_repair_contract_sha256", "custosz_repair_hash_verified",
+              "official_source_review_status", "telemetry_evidence_sha256", "telemetry_status",
+              "heavy_model_download_count", "remote_commander_used",
           }
           assert required <= set(inputs)
           tasks = {row["id"]: row for row in flow["tasks"]}
@@ -77,6 +232,122 @@ jobs:
           assert tasks["release_gates"]["type"] == "io.kestra.plugin.core.flow.If"
           text = path.read_text(encoding="utf-8")
           assert "LOUKSNAPG_KESTRA_AUXILIARY_AUDIT=HOLD" in text
-          assert "global_certification=REQUIRES_SEPARATE_INDEPENDENT_DECISION" in text
-          print("LOUKSNAPG_KESTRA_CONTRACT=PASS; INTEGRAL_CERTIFICATION=SEPARATE_GATE")
+          assert "global_certification=PASS_ONLY_FOR_SEPARATELY_SIGNED_G24_SUBJECT" in text
+          assert "functional_evidence_status == 'PASS_INTEGRAL_FUNCTIONAL_EVIDENCE'" in text
+          assert "g23_signature_verification_status == 'PASS_VERIFIED'" in text
+          assert "g24_decision_status == 'GRANTED'" in text
+          assert "g24_signature_verification_status == 'PASS_VERIFIED'" in text
+          assert "g24_signer_id != inputs.g23_producer_id" in text
+          assert "g24_signer_id != inputs.g23_validator_id" in text
+          assert "functional_target_pass_count == 21" in text
+          assert "architecture_contract_status == 'PASS_CONTRACT_INTEGRITY'" in text
+          assert "primary_worker_id == 'CUSTOSZ_V9'" in text
+          assert "secondary_worker_id == 'KESTRA'" in text
+          assert "custosz_repair_status == 'PASS_THREE_TARGETED_PRIMITIVES'" in text
+          assert "custosz_repair_preflight_status == 'PASS'" in text
+          assert "custosz_candidate_integrity_status == 'PASS'" in text
+          assert "custosz_repair_target_pass_count == 3" in text
+          assert "custosz_repair_hash_verified == 'true'" in text
+          assert "custosz_repair_source_commit == inputs.source_commit" in text
+          assert "custosz_repair_bundle_sha256 == inputs.bundle_sha256" in text
+          assert "custosz_repair_contract_sha256 == inputs.architecture_contract_sha256" in text
+          assert "official_source_review_status == 'PASS'" in text
+          assert "telemetry_status == 'PASS'" in text
+          assert "heavy_model_download_count == 0" in text
+          assert "remote_commander_used == 'false'" in text
+          gate = Path("tools/louksnapg_integral_gate.py").read_text(encoding="utf-8")
+          assert "G23_ED25519_SIGNATURE_INVALID" in gate
+          assert "G23_TRUSTED_PUBLIC_KEY_NOT_CONFIGURED" in gate
+          assert "global_certification" in gate and "NOT_GRANTED" in gate
+          factory = Path(".github/workflows/cajita-louksna1-factory.yml").read_text(encoding="utf-8")
+          assert "Enforce LOUKSNAPG architectural contract before model asset access" in factory
+          assert "STATIC_CONTRACT_CHECK_MUST_NOT_GRANT_PRODUCT_CERTIFICATION" in factory
+          assert "task_adapter_execution_pass_count" in factory
+          assert "task_adapter_quality_pass_count" in factory
+          assert "task_adapter_quality_fail_count" in factory
+          assert '"task_adapter_pass_count":task_quality_pass_count' in factory
+          assert "tools/cajita_extended_target_e2e.py" in factory
+          assert "tests/test_cajita_extended_target_e2e.py" in factory
+          assert "/telemetry/extended-target-e2e.json" in factory
+          assert "extended_target_pass_count" in factory
+          assert '"primitive_target_expected_count":16' in factory
+          assert "primitive_target_coverage" in factory
+          assert 'EXT_PASS_COUNT" -eq 10' in factory
+          assert "primitive_target_observed_count" in factory
+          assert "primitive_target_blocked_count" in factory
+          assert "primitive_target_missing_count" in factory
+          assert "primitive_target_coverage_sha256" in factory
+          for target_id in (
+              "D02_ORQUESTADOR","D02_CONFESION_ECLESIAL_REFORMADA","D02_MULTI_INTERDISCIPLINAR",
+              "D06_CONSOLA","D06_MEMORIA_GOBERNADA","D06_MOTOR_PROTOCOLAR",
+              "D04_HERMENEUTICA_HG","D04_TRADUCCION_LENGUAS_ANTIGUAS","D05_CALIBRE",
+              "D06_ANTI_ALUCINACIONES","D06_ARCHIVADO_DETECCION","D06_COGNITIVE_CI_CD",
+              "D06_MIGRACION_PERSISTENCIA","D06_PORTABILIDAD_BASE","D06_RUNTIME_ANDROID_WINDOWS","D06_TESTING",
+          ):
+              assert target_id in factory, "primitive target omitted from G24 telemetry: " + target_id
+          aux_path = Path(".github/workflows/louksnapg-kestra-auxiliary.yml")
+          aux = yaml.safe_load(aux_path.read_text(encoding="utf-8"))
+          aux_steps = aux["jobs"]["independently-validate-and-publish-product-artifact"]["steps"]
+          step_ids = {step.get("id"):step for step in aux_steps if step.get("id")}
+          assert "contract" in step_ids and "kestra" in step_ids
+          aux_text = aux_path.read_text(encoding="utf-8")
+          assert 'base+"/api/v1/main/flows/search?size=1"' in aux_text
+          assert 'Request(base+"/api/v1/main/flows",headers=' not in aux_text
+          assert "for name in LOUKSNAPG_BUILD_REPORT.json LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json LOUKSNAPG_CUSTOSZV9_PRIMITIVE_REPAIR_EVIDENCE.json;" in aux_text
+          assert aux_text.count("CUSTOSZ_PRIMITIVE_REPAIR_REPORT_MISSING_OR_INVALID_SHA256") == 2
+          assert '"custosz_repair_report_sha256":repair_sha' in aux_text
+          assert 'g24_name="g24-resource-limited-runtime-smoke"' in aux_text
+          assert 'return jobs_by_name[g24_name].get("status")=="completed"' in aux_text
+          assert "FACTORY_MANUFACTURE_G23_AND_G24_NOT_TERMINAL_WITHIN_AUXILIARY_WAIT_WINDOW" in aux_text
+          factory_yaml = yaml.safe_load(factory)
+          g24_job = factory_yaml["jobs"]["g24-resource-limited-runtime-smoke"]
+          g24_needs = g24_job.get("needs", [])
+          if isinstance(g24_needs, str):
+              g24_needs = [g24_needs]
+          assert set(g24_needs) == {"manufacture", "g23-independent-validation"}
+          assert all("kestra" not in str(need).lower() for need in g24_needs)
+          for required_text in (
+              "LOUKSNAPG_TELEMETRY_PREAUDIT.json",
+              "LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json",
+              "LOUKSNAPG_G23_ATTESTATION_NOT_PERFORMED.json",
+              "LOUKSNAPG_G24_DECISION_NOT_GRANTED.json",
+              "CONTRACT_SHA256:",
+              "TELEMETRY_SHA256:",
+              "/api/v1/main/executions/",
+              "kestra_terminal_state",
+              "POLL_TIMEOUT_TERMINAL_STATE_UNCONFIRMED",
+              "KESTRA_SECONDARY_WORKER_NOT_VERIFIED",
+              "Run the secondary Kestra audit locally if the hosted endpoint is unavailable",
+              "kestra/kestra:v2.0.3-slim",
+              "application/x-yaml",
+              "/api/v1/main/flows",
+              "/api/v1/main/flows/search?size=1",
+              "LOCAL_EPHEMERAL_KESTRA",
+              "KESTRA_LOCAL_API_AUTH_REQUIRED",
+              "AUDIT_FAILED_OR_FAIL_CLOSED_HOLD",
+              "g24_decision_sha256",
+              "g24_signature_verification_status",
+              "global_certification",
+              "NOT_GRANTED",
+          ):
+              assert required_text in aux_text, "auxiliary contract missing: " + required_text
+          assert "Append the exact Kestra receipt to final C4 telemetry" in aux_text
+          assert "KESTRA_AUDIT_RESULT" in aux_text
+          assert "LOUKSNAPG_TELEMETRY_FINAL.json" in aux_text
+          assert "--telemetry candidate/LOUKSNAPG_TELEMETRY_FINAL.json" in aux_text
+          six_audit = Path("tools/louksnapg_six_obligation_audit.py").read_text(encoding="utf-8")
+          assert 'POST_AUDIT_EVENT_TYPE = "KESTRA_AUDIT_RESULT"' in six_audit
+          assert "KESTRA_RECEIPT_MISSING_OR_NOT_BOUND_TO_FINAL_TELEMETRY" in six_audit
+          assert "expected_event_count" in six_audit
+          blockers = json.loads(Path("docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json").read_text(encoding="utf-8"))
+          assert blockers["final_decision"] == "HOLD_NOT_CERTIFIED"
+          assert blockers["evidence_scope"]["source_commit"] == "d09f79a088781d26fc5b1c3e830db9abfb42c147"
+          assert len(blockers["model_quality_results"]) == 5
+          assert all(row["quality_status"] == "FAIL" for row in blockers["model_quality_results"])
+          assert blockers["worker_and_safety"]["heavy_model_weight_download_count"] == 0
+          assert blockers["worker_and_safety"]["remote_commander_used"] is False
+          assert blockers["worker_and_safety"]["kestra_status"] == "NOT_CONFIGURED"
+          assert all(key in factory for key in ("task_adapter_execution_pass_count","task_adapter_quality_pass_count","task_adapter_quality_fail_count"))
+          print("LOUKSNAPG_FACTORY_AND_KESTRA_RUNTIME_CONTRACT=PASS; PRODUCT_CERTIFICATION=NOT_GRANTED_UNLESS_EVIDENCED")
+          print("LOUKSNAPG_KESTRA_AND_INTEGRAL_GATE_CONTRACT=PASS; PRODUCT_CERTIFICATION=NOT_GRANTED_UNLESS_EVIDENCED")
           PY

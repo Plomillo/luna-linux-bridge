@@ -54,6 +54,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install pinned synthetic image-fixture dependency
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+
       - name: Install safe archive verifier
         shell: bash
         run: |

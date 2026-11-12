@@ -6,6 +6,20 @@ on:
       - "louksnapg/**"
     paths:
       - ".github/workflows/louksnapg-kestra-auxiliary.yml"
+      - "contracts/louksnapg/architecture-contract.v1.json"
+      - "tools/louksnapg_architecture_contract.py"
+      - "integrations/kestra/flows/24-louksnapg-bundle-audit.yml"
+      - ".github/workflows/cajita-louksna1-factory.yml"
+      - ".github/workflows/louksnapg-bundle-ci.yml"
+      - "tools/louksnapg_integral_gate.py"
+      - "tools/louksnapg_six_obligation_audit.py"
+      - "tests/test_louksnapg_six_obligation_audit.py"
+      - "tools/louksnapg_worker_mission.py"
+      - "docs/cajita-luna/LOUKSNAPG_ARCHITECTURAL_CONTRACT.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.md"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.json"
+      - "docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.md"
   workflow_dispatch:
     inputs:
       source_run_id:
@@ -80,24 +94,29 @@ jobs:
               with urllib.request.urlopen(req,timeout=30) as response:
                   return json.load(response)
           def product_candidate_ready(run):
-              # The distribution may be independently integrity-checked as soon
-              # as manufacture and G23 are successful. Do not wait for the slower
-              # G24 model-quality gate merely to make the un-certified candidate
-              # downloadable; this workflow still passes NOT_ESTABLISHED to Kestra.
+              # Wait for terminal G24—not a G24 PASS—so its final decision and
+              # runtime telemetry artifacts exist before the independent Kestra audit
+              # downloads them. G24 has no dependency on this auxiliary workflow, so
+              # this is synchronization, not a dependency cycle.
               jobs_result=get("/actions/runs/"+urllib.parse.quote(str(run["id"]),safe="")+"/jobs?per_page=100")
               jobs_by_name={item.get("name"):item for item in jobs_result.get("jobs",[])}
-              required=("manufacture","g23-independent-validation")
-              if any(name not in jobs_by_name for name in required):
+              required_integrity=("manufacture","g23-independent-validation")
+              g24_name="g24-resource-limited-runtime-smoke"
+              if any(name not in jobs_by_name for name in (*required_integrity,g24_name)):
                   return False
-              for name in required:
+              for name in required_integrity:
                   item=jobs_by_name[name]
                   if item.get("status")=="completed" and item.get("conclusion")!="success":
                       raise RuntimeError("SOURCE_FACTORY_OR_G23_FAILED_CLOSED:"+name+":"+str(item.get("conclusion")))
-              return all(
+              if not all(
                   jobs_by_name[name].get("status")=="completed"
                   and jobs_by_name[name].get("conclusion")=="success"
-                  for name in required
-              )
+                  for name in required_integrity
+              ):
+                  return False
+              # Accept either PASS or FAIL as a terminal subject; do not hide a
+              # quality failure. Kestra must independently record the exact outcome.
+              return jobs_by_name[g24_name].get("status")=="completed"
           selected=None
           for attempt in range(361):
               try:
@@ -108,11 +127,22 @@ jobs:
                       selected=candidate
                   else:
                       query=urllib.parse.urlencode({"branch":branch,"per_page":100})
-                      result=get("/actions/workflows/cajita-louksna1-factory.yml/runs?"+query)
+                      # Use the repository-wide Actions endpoint (already permissioned
+                      # by actions:read) and filter the exact producer workflow locally.
+                      # This avoids the workflow-file route returning an incomplete list
+                      # when the same push only changes the auxiliary workflow.
+                      result=get("/actions/runs?"+query)
                       candidates=[row for row in result.get("workflow_runs",[])
                           if row.get("path")==".github/workflows/cajita-louksna1-factory.yml"
                           and row.get("event")=="push"
                           and row.get("head_branch")==branch]
+                      if attempt == 0:
+                          print(json.dumps({
+                              "resolver_branch":branch,
+                              "event_sha":wanted_sha,
+                              "candidate_count":len(candidates),
+                              "candidates":[{"id":row.get("id"),"sha":row.get("head_sha"),"status":row.get("status"),"created_at":row.get("created_at")} for row in candidates[:8]]
+                          },indent=2))
                       exact=[row for row in candidates if row.get("head_sha")==wanted_sha]
                       if exact:
                           exact.sort(key=lambda row:(row.get("run_attempt",0),row.get("created_at","")),reverse=True)
@@ -129,17 +159,22 @@ jobs:
                   if exc.code not in (404,429,500,502,503,504):
                       raise
               if attempt==360:
-                  raise SystemExit("FACTORY_MANUFACTURE_AND_G23_NOT_PASSED_WITHIN_AUXILIARY_WAIT_WINDOW")
+                  raise SystemExit("FACTORY_MANUFACTURE_G23_AND_G24_NOT_TERMINAL_WITHIN_AUXILIARY_WAIT_WINDOW")
               time.sleep(10)
           if not selected:
               raise SystemExit("EXACT_FACTORY_RUN_NOT_FOUND")
+          final_jobs=get("/actions/runs/"+urllib.parse.quote(str(selected["id"]),safe="")+"/jobs?per_page=100")
+          jobs_by_name={item.get("name"):item for item in final_jobs.get("jobs",[])}
+          g24=jobs_by_name.get("g24-resource-limited-runtime-smoke",{})
+          g24_state="COMPLETED" if g24.get("status")=="completed" else "IN_PROGRESS_OR_NOT_YET_STARTED"
           output=os.environ["GITHUB_OUTPUT"]
           with open(output,"a",encoding="utf-8") as handle:
               handle.write("run_id="+str(selected["id"])+"\n")
               handle.write("source_sha="+selected["head_sha"]+"\n")
               handle.write("run_conclusion="+str(selected.get("conclusion") or "unknown")+"\n")
               handle.write("source_branch="+str(selected.get("head_branch") or "")+"\n")
-          print(json.dumps({"run_id":selected["id"],"source_sha":selected["head_sha"],"conclusion":selected.get("conclusion"),"branch":selected.get("head_branch")},indent=2))
+              handle.write("g24_conclusion="+str(g24.get("conclusion") or "unknown")+"\n")
+          print(json.dumps({"run_id":selected["id"],"source_sha":selected["head_sha"],"conclusion":selected.get("conclusion"),"branch":selected.get("head_branch"),"g24_conclusion":g24.get("conclusion") or g24_state},indent=2))
           PY
 
       - name: Download candidate and reports from the exact factory run
@@ -150,6 +185,33 @@ jobs:
           github-token: ${{ github.token }}
           path: evidence
 
+      - name: Download exact package-level G23 artifact from the same factory run
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: louksna1-g23-evidence
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: evidence/g23-evidence
+
+      - name: Download exact G24 decision artifact from the same factory run
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: louksna1-g24-evidence
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: evidence/g24-evidence
+
+      - name: Download exact G24 runtime telemetry from the same factory run
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: louksna1-g24-telemetry
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: evidence/g24-telemetry
+
       - name: Locate the actual single-file product and source-bound reports
         id: locate
         shell: bash
@@ -159,11 +221,22 @@ jobs:
           find evidence -type f -name 'LOUKSNAPG.md' -print -quit | grep -q .
           PRODUCT="$(find evidence -type f -name 'LOUKSNAPG.md' -print -quit)"
           cp "$PRODUCT" candidate/LOUKSNAPG.md
-          for name in LOUKSNAPG_BUILD_REPORT.json LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json; do
+          for name in LOUKSNAPG_BUILD_REPORT.json LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json LOUKSNAPG_CUSTOSZV9_PRIMITIVE_REPAIR_EVIDENCE.json; do
             source="$(find evidence -type f -name "$name" -print -quit)"
             test -n "$source"
             cp "$source" "candidate/$name"
           done
+          G23_EVIDENCE="$(find evidence/g23-evidence -type f -name 'G23_EVIDENCE.json' -print -quit || true)"
+          if [ -n "$G23_EVIDENCE" ]; then cp "$G23_EVIDENCE" candidate/LOUKSNAPG_G23_INTEGRITY_EVIDENCE.json; fi
+          G24_EVIDENCE="$(find evidence/g24-evidence -type f -name 'LOUKSNA1_G24_EVIDENCE.json' -print -quit || true)"
+          G24_TASKS="$(find evidence/g24-telemetry -type f -name 'task-adapter-e2e-raw.json' -print -quit || true)"
+          G24_GATE="$(find evidence/g24-telemetry -type f -name 'LOUKSNAPG_FUNCTIONAL_GATE.json' -print -quit || true)"
+          if [ -n "$G24_EVIDENCE" ]; then cp "$G24_EVIDENCE" candidate/LOUKSNAPG_G24_DECISION.json; fi
+          if [ -n "$G24_TASKS" ]; then cp "$G24_TASKS" candidate/LOUKSNAPG_G24_TASK_DIAGNOSTICS.json; fi
+          if [ -n "$G24_GATE" ]; then cp "$G24_GATE" candidate/LOUKSNAPG_G24_FUNCTIONAL_GATE.json; fi
+          echo "g24_evidence_available=$([ -n "$G24_EVIDENCE" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "g24_task_report_available=$([ -n "$G24_TASKS" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "g24_functional_gate_available=$([ -n "$G24_GATE" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "product_path=candidate/LOUKSNAPG.md" >> "$GITHUB_OUTPUT"
           ls -lh candidate
 
@@ -178,7 +251,7 @@ jobs:
           python -m py_compile tools/louksnapg_independent_validator.py
           python tools/louksnapg_independent_validator.py \
             --bundle candidate/LOUKSNAPG.md \
-            --max-bytes 490000000 \
+            --max-bytes 479000000 \
             --expected-source-commit "$SOURCE_COMMIT" \
             --report candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json
           python - <<'PY'
@@ -189,7 +262,7 @@ jobs:
           worker=json.loads(Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json").read_text(encoding="utf-8"))
           check=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
           sha=hashlib.sha256(b.read_bytes()).hexdigest()
-          assert b.stat().st_size==check["bundle_bytes"]<=490000000
+          assert b.stat().st_size==check["bundle_bytes"]<=479000000
           assert sha==check["bundle_sha256"]==build["bundle_sha256"]==worker["artifact"]["sha256"]
           assert check["source_commit"]==build["source_commit"]==worker["source_commit"]==os.environ["SOURCE_COMMIT"]
           assert check["container_integrity"]=="PASS"
@@ -204,6 +277,156 @@ jobs:
           assert build["global_certification"]=="NOT_GRANTED"
           assert worker["worker_status"]=="PASS"
           print(json.dumps({"status":"PASS_SINGLE_FILE_PACKAGE_INTEGRITY","artifact":b.name,"bytes":b.stat().st_size,"sha256":sha,"source_commit":check["source_commit"],"worker_status":worker["worker_status"],"global_certification":"NOT_GRANTED"},indent=2))
+          PY
+
+      - name: Build contract integrity report and immutable pre-audit telemetry
+        id: contract
+        if: steps.verify.outcome == 'success'
+        shell: bash
+        env:
+          SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+          G24_JOB_CONCLUSION: ${{ steps.source.outputs.g24_conclusion }}
+        run: |
+          set -euo pipefail
+          python tools/louksnapg_architecture_contract.py \
+            --contract contracts/louksnapg/architecture-contract.v1.json \
+            --report candidate/LOUKSNAPG_ARCHITECTURE_CONTRACT.json
+          python - <<'PY'
+          import hashlib,json,os
+          from datetime import datetime,timezone
+          from pathlib import Path
+          cp=Path("contracts/louksnapg/architecture-contract.v1.json")
+          contract_bytes=cp.read_bytes()
+          contract_sha=hashlib.sha256(contract_bytes).hexdigest()
+          report=json.loads(Path("candidate/LOUKSNAPG_ARCHITECTURE_CONTRACT.json").read_text(encoding="utf-8"))
+          bundle=Path("candidate/LOUKSNAPG.md")
+          bundle_sha=hashlib.sha256(bundle.read_bytes()).hexdigest()
+          worker_path=Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json")
+          worker=json.loads(worker_path.read_text(encoding="utf-8"))
+          worker_sha=hashlib.sha256(worker_path.read_bytes()).hexdigest()
+          validation=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
+          now=lambda:datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+          task_path=Path("candidate/LOUKSNAPG_G24_TASK_DIAGNOSTICS.json")
+          gate_path=Path("candidate/LOUKSNAPG_G24_FUNCTIONAL_GATE.json")
+          g24_path=Path("candidate/LOUKSNAPG_G24_DECISION.json")
+          task_report=json.loads(task_path.read_text(encoding="utf-8")) if task_path.is_file() else {}
+          gate_report=json.loads(gate_path.read_text(encoding="utf-8")) if gate_path.is_file() else {}
+          g24_report=json.loads(g24_path.read_text(encoding="utf-8")) if g24_path.is_file() else {}
+          task_rows=task_report.get("task_results",[]) if isinstance(task_report.get("task_results",[]),list) else []
+          quality_pass_count=sum(1 for row in task_rows if isinstance(row,dict) and row.get("status")=="PASS_FUNCTIONAL_EXECUTION" and row.get("exit_code")==0 and (row.get("quality_acceptance") or {}).get("status")=="PASS")
+          quality_fail_count=sum(1 for row in task_rows if isinstance(row,dict) and (row.get("quality_acceptance") or {}).get("status")=="FAIL")
+          observed_target_ids=sorted({row.get("target_id") for row in task_rows if isinstance(row,dict) and isinstance(row.get("target_id"),str)})
+          task_sha=hashlib.sha256(task_path.read_bytes()).hexdigest() if task_path.is_file() else None
+          gate_subject_bound=gate_report.get("source_commit")==os.environ["SOURCE_COMMIT"] and gate_report.get("bundle_sha256")==bundle_sha
+          g24_subject_bound=g24_report.get("source_commit")==os.environ["SOURCE_COMMIT"] and g24_report.get("package_sha256")==bundle_sha
+          synthetic_diagnostics=bool(task_report) and ("synthetic" in str(task_report.get("inputs","")).casefold() or any(isinstance(row,dict) and (row.get("quality_acceptance") or {}).get("reference_kind")=="FIXED_SYNTHETIC_EXPECTATION" for row in task_rows))
+          functional_status="FAIL" if quality_fail_count>0 or gate_report.get("decision")=="HOLD" else "NOT_ESTABLISHED"
+          functional_absence={
+            "schema":"LOUKSNAPG_FUNCTIONAL_EVIDENCE/1.0",
+            "status":functional_status,
+            "execution_mode":"SYNTHETIC_DIAGNOSTIC_ONLY" if synthetic_diagnostics else ("REAL_RUNTIME_EXECUTION_INCOMPLETE" if task_report else "NOT_PERFORMED"),
+            "synthetic_only":True if synthetic_diagnostics else None,
+            "source_commit":os.environ["SOURCE_COMMIT"],
+            "bundle_sha256":bundle_sha,
+            "task_harness_status":task_report.get("status","NOT_COMPLETED"),
+            "task_report_sha256":task_sha,
+            "task_execution_count":len(task_rows),
+            "observed_target_ids":observed_target_ids,
+            "observed_target_count":len(observed_target_ids),
+            "expected_target_count":21,
+            "quality_pass_count":quality_pass_count,
+            "quality_fail_count":quality_fail_count,
+            "target_pass_count":0 if synthetic_diagnostics or gate_report.get("decision")!="PASS" else quality_pass_count,
+            "all_21_target_task_coverage":"NOT_ESTABLISHED",
+            "g24_job_conclusion":os.environ.get("G24_JOB_CONCLUSION","unknown"),
+            "functional_gate_decision":gate_report.get("decision","NOT_ESTABLISHED"),
+            "functional_gate_subject_binding":"PASS" if gate_subject_bound else "HOLD",
+            "g24_decision_status":g24_report.get("decision","NOT_GRANTED"),
+            "g24_subject_binding":"PASS" if g24_subject_bound else "HOLD",
+            "diagnostic_only":True,
+            "reason":"Synthetic fixed-fixture diagnostics are not product proof; the last G24 run observed quality failures and did not establish all 21 real target adapters.",
+            "global_certification":"NOT_GRANTED"
+          }
+          fp=Path("candidate/LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json")
+          fp.write_text(json.dumps(functional_absence,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          functional_sha=hashlib.sha256(fp.read_bytes()).hexdigest()
+          g23_absence={"schema":"LOUKSNAPG_G23_ATTESTATION_STATUS/1.0","status":"NOT_PERFORMED","source_commit":os.environ["SOURCE_COMMIT"],"bundle_sha256":bundle_sha,"reason":"No trusted independent G23 signed attestation was provided.","global_certification":"NOT_GRANTED"}
+          gp=Path("candidate/LOUKSNAPG_G23_ATTESTATION_NOT_PERFORMED.json")
+          gp.write_text(json.dumps(g23_absence,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          g23_sha=hashlib.sha256(gp.read_bytes()).hexdigest()
+          g24_absence={"schema":"LOUKSNAPG_G24_DECISION_STATUS/1.0","status":"NOT_GRANTED","source_commit":os.environ["SOURCE_COMMIT"],"bundle_sha256":bundle_sha,"reason":"No separate authorized G24 signed decision was provided.","global_certification":"NOT_GRANTED"}
+          g24p=Path("candidate/LOUKSNAPG_G24_DECISION_NOT_GRANTED.json")
+          g24p.write_text(json.dumps(g24_absence,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          g24_sha=hashlib.sha256(g24p.read_bytes()).hexdigest()
+          rows=[
+            ("SOURCE","HOLD_REVISION_PIN_PENDING","Official source documentation reviewed; exact upstream revision and model weight hashes not established."),
+            ("INPUT","PASS","Candidate and source-bound reports hashed."),
+            ("OPERATION","PASS" if worker.get("worker_status")=="PASS" else "HOLD","Bounded CUSTOSZ V9 package build receipt; not model inference evidence."),
+            ("OUTPUT","PASS" if validation.get("container_integrity")=="PASS" and validation.get("bundle_sha256")==bundle_sha else "HOLD","Independent package integrity bound to exact candidate SHA-256."),
+            ("TEST","HOLD_NO_REAL_21_TARGET_EVIDENCE","No real non-synthetic result envelope for all 21 primitive targets is available."),
+            ("VALIDATION","PASS" if report.get("contract_status")=="PASS" and validation.get("container_integrity")=="PASS" else "HOLD","Static contract and package integrity only."),
+            ("INDEPENDENT_VALIDATION_G23","NOT_PERFORMED","No signed product-level G23 attestation claimed."),
+            ("KESTRA_AUDIT","PENDING_DISPATCH","Pre-audit telemetry snapshot is the audit input envelope; execution receipt is separately persisted."),
+            ("CERTIFICATION_DECISION_G24","NOT_GRANTED","Separate authorized G24 signature is absent."),
+            ("NON_REGRESSION","PENDING","Complete functional and no-regression evidence not established."),
+            ("ROLLBACK","NOT_RUNTIME_VERIFIED","Rollback restoration has not been runtime-tested.")
+          ]
+          events=[]
+          for i,(kind,status,detail) in enumerate(rows,1):
+            event={
+              "operation_id":"LOUKSNAPG-AUX-"+os.environ["SOURCE_COMMIT"][:12],
+              "sequence_id":i,
+              "timestamp_utc":now(),
+              "actor":"github-actions",
+              "tool_name":"LOUKSNAPG auxiliary audit",
+              "tool_version":"branch-revision-bound",
+              "source":"github://"+os.environ.get("GITHUB_REPOSITORY","unknown")+"/commit/"+os.environ["SOURCE_COMMIT"],
+              "source_commit":os.environ["SOURCE_COMMIT"],
+              "bundle_sha256":bundle_sha,
+              "contract_sha256":contract_sha,
+              "input_sha256":contract_sha if kind in ("SOURCE","VALIDATION") else worker_sha,
+              "input_bytes":len(contract_bytes) if kind in ("SOURCE","VALIDATION") else worker_path.stat().st_size,
+              "validation_status":status,
+              "rollback_reference":"PR 157 feature branch only; main unchanged; preserve inputs and revert branch commit if needed",
+              "status":status,
+              "event_type":kind,
+              "count":1,
+              "details":detail
+            }
+            raw=json.dumps(event,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+            event_sha=hashlib.sha256(raw).hexdigest()
+            event["output_bytes"]=len(raw)
+            event["output_sha256"]=event_sha
+            event["evidence_sha256"]=event_sha
+            events.append(event)
+          telem={
+            "schema":"LOUKSNAPG_PERSISTENT_TELEMETRY_SNAPSHOT/1.0",
+            "source_commit":os.environ["SOURCE_COMMIT"],
+            "bundle_sha256":bundle_sha,
+            "contract_sha256":contract_sha,
+            "generated_at_utc":now(),
+            "trace_integrity":"PASS_SHA256_BOUND_IMMUTABLE_PREAUDIT_SNAPSHOT",
+            "status":"INCOMPLETE_HOLD",
+            "release_telemetry_status":"INCOMPLETE_HOLD",
+            "events":events,
+            "safety":{"heavy_model_download_count":0,"remote_commander_used":False,"canonical_mutation":False,"synthetic_evidence_used_as_product_proof":False},
+            "missing_release_evidence":["exact pinned upstream revisions and model weight hashes","real inference for five model-backed targets","21 non-synthetic functional results","G23 signed attestation","separate signed G24 decision","host matrix","runtime rollback verification","full non-regression review"],
+            "global_certification":"NOT_GRANTED"
+          }
+          telem_canonical=json.dumps(telem,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          telem["evidence_sha256"]=hashlib.sha256(telem_canonical).hexdigest()
+          tp=Path("candidate/LOUKSNAPG_TELEMETRY_PREAUDIT.json")
+          tp.write_text(json.dumps(telem,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          telemetry_sha=hashlib.sha256(tp.read_bytes()).hexdigest()
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as h:
+            h.write("sha256="+contract_sha+"\n")
+            h.write("telemetry_sha256="+telemetry_sha+"\n")
+            h.write("worker_sha256="+worker_sha+"\n")
+            h.write("functional_sha256="+functional_sha+"\n")
+            h.write("g23_sha256="+g23_sha+"\n")
+            h.write("g24_sha256="+g24_sha+"\n")
+            h.write("contract_status="+("PASS_CONTRACT_INTEGRITY" if report.get("contract_status")=="PASS" else "HOLD")+"\n")
+          print(json.dumps({"contract_sha256":contract_sha,"contract_status":report.get("contract_status"),"telemetry_sha256":telemetry_sha,"telemetry_events":len(events),"release_telemetry_status":"INCOMPLETE_HOLD","global_certification":"NOT_GRANTED"},indent=2))
           PY
 
       - name: Upload the single product file as its own download artifact
@@ -224,6 +447,13 @@ jobs:
           KESTRA_URL: ${{ vars.KESTRA_URL || secrets.KESTRA_URL }}
           KESTRA_API_TOKEN: ${{ secrets.KESTRA_API_TOKEN }}
           SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+          CONTRACT_SHA256: ${{ steps.contract.outputs.sha256 }}
+          CONTRACT_STATUS: ${{ steps.contract.outputs.contract_status }}
+          TELEMETRY_SHA256: ${{ steps.contract.outputs.telemetry_sha256 }}
+          CUSTOSZ_RECEIPT_SHA256: ${{ steps.contract.outputs.worker_sha256 }}
+          FUNCTIONAL_EVIDENCE_SHA256: ${{ steps.contract.outputs.functional_sha256 }}
+          G23_ABSENCE_SHA256: ${{ steps.contract.outputs.g23_sha256 }}
+          G24_ABSENCE_SHA256: ${{ steps.contract.outputs.g24_sha256 }}
         shell: bash
         run: |
           set -euo pipefail
@@ -231,9 +461,31 @@ jobs:
           import hashlib,json,os
           from pathlib import Path
           build=json.loads(Path("candidate/LOUKSNAPG_BUILD_REPORT.json").read_text(encoding="utf-8"))
-          worker=json.loads(Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json").read_text(encoding="utf-8"))
+          worker_path=Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json")
+          worker=json.loads(worker_path.read_text(encoding="utf-8"))
           validation=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
+          functional=json.loads(Path("candidate/LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json").read_text(encoding="utf-8"))
           bundle=Path("candidate/LOUKSNAPG.md")
+          primitive_path=Path("candidate/LOUKSNAPG_CUSTOSZV9_PRIMITIVE_REPAIR_EVIDENCE.json")
+          primitive=json.loads(primitive_path.read_text(encoding="utf-8")) if primitive_path.is_file() and not primitive_path.is_symlink() else {}
+          repair=worker.get("repair_mission",{}) if isinstance(worker.get("repair_mission"),dict) else {}
+          repair_target_status={row.get("target_id"):row.get("status") for row in primitive.get("targets",[]) if isinstance(row,dict)}
+          repair_sha=hashlib.sha256(primitive_path.read_bytes()).hexdigest() if primitive_path.is_file() and not primitive_path.is_symlink() else ""
+          if not repair_sha or len(repair_sha) != 64:
+              raise RuntimeError("CUSTOSZ_PRIMITIVE_REPAIR_REPORT_MISSING_OR_INVALID_SHA256")
+          repair_targets_expected={"D04_HERMENEUTICA_HG","D04_TRADUCCION_LENGUAS_ANTIGUAS","D06_MIGRACION_PERSISTENCIA"}
+          repair_pass_count=sum(1 for target in repair_targets_expected if repair_target_status.get(target)=="PASS_PRIMITIVE_SMOKE")
+          repair_hash_verified=bool(repair_sha) and repair_sha==repair.get("primitive_report_sha256") and repair.get("primitive_report_hash_verified") is True
+          repair_subject_bound=repair.get("source_commit")==os.environ["SOURCE_COMMIT"] and repair.get("bundle_sha256")==hashlib.sha256(bundle.read_bytes()).hexdigest() and repair.get("contract_sha256")==os.environ.get("CONTRACT_SHA256","")
+          repair_evidence_valid=(
+            repair.get("schema")=="LOUKSNAPG_CUSTOSZ_REPAIR_MISSION_RECEIPT/1.0"
+            and repair_subject_bound
+            and repair_hash_verified
+            and repair.get("repair_preflight_status")=="PASS"
+            and repair.get("candidate_integrity_status")=="PASS"
+            and set(repair_target_status)==repair_targets_expected
+            and repair_pass_count==3
+          )
           token=os.environ.get("KESTRA_API_TOKEN","")
           base=os.environ.get("KESTRA_URL","").rstrip("/")
           receipt={
@@ -243,6 +495,22 @@ jobs:
             "bundle_bytes":bundle.stat().st_size,
             "bundle_sha256":hashlib.sha256(bundle.read_bytes()).hexdigest(),
             "integrity_status":"PASS",
+            "custosz_repair_status":repair.get("status","NOT_ESTABLISHED"),
+            "custosz_repair_preflight_status":repair.get("repair_preflight_status","NOT_ESTABLISHED"),
+            "custosz_candidate_integrity_status":repair.get("candidate_integrity_status","NOT_ESTABLISHED"),
+            "custosz_repair_report_sha256":repair_sha or None,
+            "custosz_repair_hash_verified":repair_hash_verified,
+            "custosz_repair_target_pass_count":repair_pass_count,
+            "custosz_repair_target_expected_count":len(repair_targets_expected),
+            "custosz_repair_subject_binding_status":"PASS" if repair_subject_bound else "HOLD",
+            "functional_evidence_status":functional.get("status","NOT_ESTABLISHED"),
+            "g23_signature_verification_status":"NOT_ESTABLISHED",
+              "g23_producer_id":"NOT_ESTABLISHED",
+              "g23_validator_id":"NOT_ESTABLISHED",
+              "g24_decision_sha256":os.environ.get("G24_ABSENCE_SHA256",""),
+              "g24_decision_status":"NOT_GRANTED",
+              "g24_signature_verification_status":"NOT_ESTABLISHED",
+              "g24_signer_id":"NOT_GRANTED_NO_SIGNER",
             "global_certification":"NOT_GRANTED",
           }
           if not base or not token:
@@ -256,15 +524,49 @@ jobs:
               "source_commit":os.environ["SOURCE_COMMIT"],
               "bundle_sha256":validation["bundle_sha256"],
               "bundle_bytes":str(validation["bundle_bytes"]),
-              "max_bytes":"490000000",
+              "max_bytes":"479000000",
               "document_sha256":build["source_document_sha256"],
               "runtime_source_sha256":build["source_runtime_archive_sha256"],
               "worker_status":worker["worker_status"],
               "independent_integrity_status":"PASS",
               "identity_binding_status":validation["identity_preservation_status"],
               "engine_replacement_status":validation["engine_replacement"],
-              "functional_status":"NOT_ESTABLISHED",
-              "semantic_quality_status":"NOT_ESTABLISHED",
+              "functional_evidence_sha256":os.environ.get("FUNCTIONAL_EVIDENCE_SHA256",""),
+              "functional_evidence_source_commit":os.environ["SOURCE_COMMIT"],
+              "functional_evidence_status":"NOT_ESTABLISHED",
+              "functional_target_pass_count":str(functional.get("target_pass_count",0)),
+              "functional_target_expected_count":"21",
+              "functional_evidence_mode":functional.get("execution_mode","NOT_PERFORMED"),
+              "g23_attestation_sha256":os.environ.get("G23_ABSENCE_SHA256",""),
+              "g23_signature_verification_status":"NOT_ESTABLISHED",
+              "g23_producer_id":"NOT_ESTABLISHED",
+              "g23_validator_id":"NOT_ESTABLISHED",
+              "g24_decision_sha256":os.environ.get("G24_ABSENCE_SHA256",""),
+              "g24_decision_status":"NOT_GRANTED",
+              "g24_signature_verification_status":"NOT_ESTABLISHED",
+              "g24_signer_id":"NOT_GRANTED_NO_SIGNER",
+              "architecture_contract_sha256":os.environ.get("CONTRACT_SHA256",""),
+              "architecture_contract_status":os.environ.get("CONTRACT_STATUS","HOLD"),
+              "primary_worker_id":"CUSTOSZ_V9",
+              "secondary_worker_id":"KESTRA",
+              "custosz_worker_evidence_sha256":os.environ.get("CUSTOSZ_RECEIPT_SHA256",""),
+              "custosz_repair_report_sha256":repair_sha,
+              "custosz_repair_status":repair.get("status","NOT_ESTABLISHED"),
+              "custosz_repair_preflight_status":repair.get("repair_preflight_status","NOT_ESTABLISHED"),
+              "custosz_candidate_integrity_status":repair.get("candidate_integrity_status","NOT_ESTABLISHED"),
+              "custosz_repair_target_pass_count":str(repair_pass_count),
+              "custosz_repair_target_expected_count":str(len(repair_targets_expected)),
+              "custosz_repair_source_commit":repair.get("source_commit",""),
+              "custosz_repair_bundle_sha256":repair.get("bundle_sha256",""),
+              "custosz_repair_contract_sha256":repair.get("contract_sha256",""),
+              "custosz_repair_hash_verified":"true" if repair_evidence_valid else "false",
+              "official_source_review_status":"NOT_ESTABLISHED",
+              "telemetry_evidence_sha256":os.environ.get("TELEMETRY_SHA256",""),
+              "telemetry_status":"INCOMPLETE_HOLD",
+              "heavy_model_download_count":"0",
+              "remote_commander_used":"false",
+              "functional_status":"FAIL" if functional.get("status")=="FAIL" else "NOT_ESTABLISHED",
+              "semantic_quality_status":"FAIL" if int(functional.get("quality_fail_count",0))>0 else "NOT_ESTABLISHED",
               "host_matrix_status":"NOT_ESTABLISHED",
               "rollback_status":"NOT_ESTABLISHED",
               "axiom_binding_status":"NOT_ESTABLISHED",
@@ -276,9 +578,10 @@ jobs:
             for key,value in fields.items():
               cmd.extend(["-F",key+"="+value])
             proc=subprocess.run(cmd,capture_output=True,text=True,check=False)
-            receipt["status"]="SUBMITTED_FAIL_CLOSED_AUDIT" if proc.returncode==0 else "SUBMISSION_FAILED"
+            receipt["status"]="DISPATCHED_AWAITING_TERMINAL_STATE" if proc.returncode==0 else "SUBMISSION_FAILED"
             receipt["http_response_sha256"]=hashlib.sha256(proc.stdout.encode()).hexdigest()
             receipt["curl_return_code"]=proc.returncode
+            receipt["dispatch_observed_at_utc"]=__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
             try:
               response=json.loads(proc.stdout)
               receipt["execution_id"]=response.get("id")
@@ -287,11 +590,462 @@ jobs:
               receipt["response_tail"]=proc.stdout[-800:]
             if proc.returncode!=0:
               receipt["error_tail"]=proc.stderr[-800:]
+            if proc.returncode==0 and receipt.get("execution_id"):
+              import time,urllib.error,urllib.parse,urllib.request
+              execution_id=urllib.parse.quote(str(receipt["execution_id"]),safe="")
+              terminal={"SUCCESS","FAILED","WARNING","KILLED","CANCELLED","SKIPPED","RESTARTED"}
+              poll_log=[]
+              for attempt in range(45):
+                req=urllib.request.Request(base+"/api/v1/main/executions/"+execution_id,headers={"Accept":"application/json","Authorization":"Bearer "+token})
+                try:
+                  with urllib.request.urlopen(req,timeout=15) as resp:
+                    body=resp.read()
+                  obj=json.loads(body.decode("utf-8"))
+                  state=(obj.get("state") or {}).get("current","UNKNOWN")
+                  poll_log.append({"attempt":attempt+1,"http_status":200,"state":state,"body_sha256":hashlib.sha256(body).hexdigest()})
+                  if state in terminal:
+                    receipt["kestra_terminal_state"]=state
+                    receipt["kestra_execution_evidence_sha256"]=hashlib.sha256(body).hexdigest()
+                    receipt["kestra_state_observed_at_utc"]=__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+                    if state=="SUCCESS":
+                      receipt["status"]="FLOW_EXECUTION_SUCCESS_RELEASE_STILL_HOLD"
+                    elif state=="FAILED":
+                      receipt["status"]="AUDIT_FAILED_OR_FAIL_CLOSED_HOLD"
+                    else:
+                      receipt["status"]="AUDIT_TERMINATED_WITHOUT_SUCCESS"
+                    # Retain only task state/status fields, never request credentials.
+                    task_states=[]
+                    for task in obj.get("taskRunList",[]) or []:
+                      task_states.append({"task_id":task.get("taskId"),"state":((task.get("state") or {}).get("current","UNKNOWN"))})
+                    receipt["task_states"]=task_states
+                    break
+                except urllib.error.HTTPError as err:
+                  poll_log.append({"attempt":attempt+1,"http_status":err.code,"state":"POLL_HTTP_ERROR"})
+                except Exception as err:
+                  poll_log.append({"attempt":attempt+1,"state":"POLL_ERROR","error_type":type(err).__name__})
+                time.sleep(2)
+              else:
+                receipt["status"]="POLL_TIMEOUT_TERMINAL_STATE_UNCONFIRMED"
+              receipt["poll_observations"]=poll_log
+            elif proc.returncode==0:
+              receipt["status"]="DISPATCH_RESPONSE_MISSING_EXECUTION_ID"
             Path("candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json").write_text(json.dumps(receipt,indent=2)+"\n",encoding="utf-8")
             print(json.dumps(receipt,indent=2))
             sys_exit=0
           raise SystemExit(sys_exit)
           PY
+
+      - name: Run the secondary Kestra audit locally if the hosted endpoint is unavailable
+        id: local_kestra
+        if: steps.verify.outcome == 'success'
+        shell: bash
+        env:
+          SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+          CONTRACT_SHA256: ${{ steps.contract.outputs.sha256 }}
+          CONTRACT_STATUS: ${{ steps.contract.outputs.contract_status }}
+          TELEMETRY_SHA256: ${{ steps.contract.outputs.telemetry_sha256 }}
+          CUSTOSZ_RECEIPT_SHA256: ${{ steps.contract.outputs.worker_sha256 }}
+          FUNCTIONAL_EVIDENCE_SHA256: ${{ steps.contract.outputs.functional_sha256 }}
+          G23_ABSENCE_SHA256: ${{ steps.contract.outputs.g23_sha256 }}
+          G24_ABSENCE_SHA256: ${{ steps.contract.outputs.g24_sha256 }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import base64, hashlib, json, os, secrets, string, subprocess, time, urllib.error, urllib.parse, urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          receipt_path = Path("candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json")
+          image = "kestra/kestra:v2.0.3-slim"
+          base = "http://127.0.0.1:18080"
+          # Kestra OSS requires Basic Auth (since 0.24). Generate a one-run
+          # credential and inject it only into the isolated local container/processes;
+          # never write the password to artifacts, telemetry, or logs.
+          local_user = "louksnapg-audit@example.com"
+          alphabet = string.ascii_letters + string.digits
+          local_password = "".join(secrets.choice(alphabet) for _ in range(32))
+          while not (any(ch.isupper() for ch in local_password) and any(ch.islower() for ch in local_password) and any(ch.isdigit() for ch in local_password)):
+              local_password = "".join(secrets.choice(alphabet) for _ in range(32))
+          local_auth = base64.b64encode((local_user + ":" + local_password).encode()).decode()
+          kestra_configuration = (
+              "kestra:\n"
+              "  server:\n"
+              "    basic-auth:\n"
+              "      username: " + local_user + "\n"
+              "      password: " + local_password + "\n"
+          )
+          def sha(data): return hashlib.sha256(data).hexdigest()
+          def now(): return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+          def save_receipt(value):
+              receipt_path.write_text(json.dumps(value, sort_keys=True, ensure_ascii=False, indent=2)+"\n",encoding="utf-8")
+          receipt = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() and not receipt_path.is_symlink() else {}
+          fallback_states = {
+              "NOT_CONFIGURED", "SUBMISSION_FAILED", "DISPATCH_RESPONSE_MISSING_EXECUTION_ID",
+              "POLL_TIMEOUT_TERMINAL_STATE_UNCONFIRMED", "AUDIT_TERMINATED_WITHOUT_SUCCESS"
+          }
+          if receipt.get("status") not in fallback_states:
+              print(json.dumps({"local_kestra_fallback":"NOT_REQUIRED","existing_receipt_status":receipt.get("status"),"global_certification":"NOT_GRANTED"},indent=2))
+              raise SystemExit(0)
+
+          receipt.update({
+              "schema":"LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT/1.0",
+              "local_kestra_attempted":True,
+              "local_kestra_image":image,
+              "local_kestra_authentication":"EPHEMERAL_BASIC_AUTH_CONFIGURED",
+              "local_kestra_username":local_user,
+              "local_kestra_state":"STARTING",
+              "source_commit":os.environ["SOURCE_COMMIT"],
+              "global_certification":"NOT_GRANTED"
+          })
+          try:
+              pull = subprocess.run(["docker","pull",image],capture_output=True,text=True,timeout=420,check=False)
+              receipt["local_kestra_image_pull_return_code"] = pull.returncode
+              receipt["local_kestra_image_pull_output_sha256"] = sha((pull.stdout+pull.stderr).encode())
+              if pull.returncode != 0:
+                  raise RuntimeError("KESTRA_LOCAL_IMAGE_PULL_FAILED:"+pull.stderr[-700:])
+              image_meta=json.loads(subprocess.run(["docker","image","inspect",image],capture_output=True,text=True,check=True,timeout=30).stdout)[0]
+              receipt["local_kestra_image_digest"]=(image_meta.get("RepoDigests") or [""])[0]
+              start=subprocess.run([
+                  "docker","run","--detach","--name","louksnapg-kestra-local",
+                  "--publish","127.0.0.1:18080:8080",
+                  "--env","KESTRA_CONFIGURATION="+kestra_configuration,
+                  image,"server","local"
+              ],capture_output=True,text=True,check=False,timeout=60)
+              receipt["local_kestra_container_start_return_code"]=start.returncode
+              if start.returncode != 0:
+                  raise RuntimeError("KESTRA_LOCAL_CONTAINER_START_FAILED:"+start.stderr[-700:])
+              receipt["local_kestra_container_id"]=start.stdout.strip()[:80]
+              last_http="NOT_OBSERVED"
+              for attempt in range(120):
+                  req=urllib.request.Request(base+"/api/v1/main/flows/search?size=1",headers={"Accept":"application/json","Authorization":"Basic "+local_auth})
+                  try:
+                      with urllib.request.urlopen(req,timeout=5) as response:
+                          body=response.read()
+                          last_http=str(response.status)
+                          if 200 <= response.status < 300:
+                              break
+                  except urllib.error.HTTPError as err:
+                      last_http=str(err.code)
+                      if err.code in (401,403):
+                          raise RuntimeError("KESTRA_LOCAL_API_AUTH_REQUIRED:"+last_http)
+                  except Exception as err:
+                      last_http=type(err).__name__
+                  time.sleep(2)
+              else:
+                  raise RuntimeError("KESTRA_LOCAL_SERVER_NOT_READY:"+last_http)
+
+              flow_path=Path("integrations/kestra/flows/24-louksnapg-bundle-audit.yml")
+              flow_bytes=flow_path.read_bytes()
+              upload=subprocess.run([
+                  "curl","--fail-with-body","--silent","--show-error","--max-time","60","-X","POST",
+                  "-H","Content-Type: application/x-yaml","-H","Authorization: Basic "+local_auth,
+                  "--data-binary","@"+str(flow_path),base+"/api/v1/main/flows"
+              ],capture_output=True,text=True,check=False,timeout=75)
+              receipt["local_kestra_flow_upload_return_code"]=upload.returncode
+              receipt["local_kestra_flow_yaml_sha256"]=sha(flow_bytes)
+              receipt["local_kestra_flow_upload_response_sha256"]=sha(upload.stdout.encode())
+              if upload.returncode != 0:
+                  raise RuntimeError("KESTRA_LOCAL_FLOW_IMPORT_FAILED:"+upload.stderr[-900:]+upload.stdout[-500:])
+
+              build=json.loads(Path("candidate/LOUKSNAPG_BUILD_REPORT.json").read_text(encoding="utf-8"))
+              worker_path=Path("candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json")
+              worker=json.loads(worker_path.read_text(encoding="utf-8"))
+              validation=json.loads(Path("candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json").read_text(encoding="utf-8"))
+              functional=json.loads(Path("candidate/LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json").read_text(encoding="utf-8"))
+              primitive_path=Path("candidate/LOUKSNAPG_CUSTOSZV9_PRIMITIVE_REPAIR_EVIDENCE.json")
+              primitive=json.loads(primitive_path.read_text(encoding="utf-8")) if primitive_path.is_file() and not primitive_path.is_symlink() else {}
+              repair=worker.get("repair_mission",{}) if isinstance(worker.get("repair_mission"),dict) else {}
+              bundle=Path("candidate/LOUKSNAPG.md")
+              bundle_sha=sha(bundle.read_bytes())
+              repair_sha=sha(primitive_path.read_bytes()) if primitive_path.is_file() and not primitive_path.is_symlink() else ""
+              if not repair_sha or len(repair_sha) != 64:
+                  raise RuntimeError("CUSTOSZ_PRIMITIVE_REPAIR_REPORT_MISSING_OR_INVALID_SHA256")
+              fields={
+                  "source_commit":os.environ["SOURCE_COMMIT"],
+                  "bundle_sha256":bundle_sha,
+                  "bundle_bytes":str(bundle.stat().st_size),
+                  "max_bytes":"479000000",
+                  "document_sha256":build["source_document_sha256"],
+                  "runtime_source_sha256":build["source_runtime_archive_sha256"],
+                  "worker_status":worker.get("worker_status","NOT_ESTABLISHED"),
+                  "independent_integrity_status":"PASS",
+                  "identity_binding_status":validation.get("identity_preservation_status","NOT_ESTABLISHED"),
+                  "engine_replacement_status":validation.get("engine_replacement","NOT_ESTABLISHED"),
+                  "functional_evidence_sha256":os.environ.get("FUNCTIONAL_EVIDENCE_SHA256",""),
+                  "functional_evidence_source_commit":os.environ["SOURCE_COMMIT"],
+                  "functional_evidence_status":"NOT_ESTABLISHED",
+                  "functional_target_pass_count":str(functional.get("target_pass_count",0)),
+                  "functional_target_expected_count":"21",
+                  "functional_evidence_mode":functional.get("execution_mode","NOT_PERFORMED"),
+                  "g23_attestation_sha256":os.environ.get("G23_ABSENCE_SHA256",""),
+                  "g23_signature_verification_status":"NOT_ESTABLISHED",
+                  "g23_producer_id":"NOT_ESTABLISHED",
+                  "g23_validator_id":"NOT_ESTABLISHED",
+                  "g24_decision_sha256":os.environ.get("G24_ABSENCE_SHA256",""),
+                  "g24_decision_status":"NOT_GRANTED",
+                  "g24_signature_verification_status":"NOT_ESTABLISHED",
+                  "g24_signer_id":"NOT_GRANTED_NO_SIGNER",
+                  "architecture_contract_sha256":os.environ.get("CONTRACT_SHA256",""),
+                  "architecture_contract_status":os.environ.get("CONTRACT_STATUS","HOLD"),
+                  "primary_worker_id":"CUSTOSZ_V9",
+                  "secondary_worker_id":"KESTRA",
+                  "custosz_worker_evidence_sha256":os.environ.get("CUSTOSZ_RECEIPT_SHA256",""),
+                  "custosz_repair_report_sha256":repair_sha,
+                  "custosz_repair_status":repair.get("status","NOT_ESTABLISHED"),
+                  "custosz_repair_preflight_status":repair.get("repair_preflight_status","NOT_ESTABLISHED"),
+                  "custosz_candidate_integrity_status":repair.get("candidate_integrity_status","NOT_ESTABLISHED"),
+                  "custosz_repair_target_pass_count":str(sum(1 for row in primitive.get("targets",[]) if isinstance(row,dict) and row.get("status")=="PASS_PRIMITIVE_SMOKE")),
+                  "custosz_repair_target_expected_count":"3",
+                  "custosz_repair_source_commit":repair.get("source_commit",""),
+                  "custosz_repair_bundle_sha256":repair.get("bundle_sha256",""),
+                  "custosz_repair_contract_sha256":repair.get("contract_sha256",""),
+                  "custosz_repair_hash_verified":"true" if repair_sha and repair_sha==repair.get("primitive_report_sha256") and repair.get("primitive_report_hash_verified") is True else "false",
+                  "official_source_review_status":"NOT_ESTABLISHED",
+                  "telemetry_evidence_sha256":os.environ.get("TELEMETRY_SHA256",""),
+                  "telemetry_status":"INCOMPLETE_HOLD",
+                  "heavy_model_download_count":"0",
+                  "remote_commander_used":"false",
+                  "functional_status":"FAIL" if functional.get("status")=="FAIL" else "NOT_ESTABLISHED",
+                  "semantic_quality_status":"FAIL" if int(functional.get("quality_fail_count",0))>0 else "NOT_ESTABLISHED",
+                  "host_matrix_status":"NOT_ESTABLISHED",
+                  "rollback_status":"NOT_ESTABLISHED",
+                  "axiom_binding_status":"NOT_ESTABLISHED",
+                  "block_binding_status":"NOT_ESTABLISHED"
+              }
+              cmd=["curl","--fail-with-body","--silent","--show-error","--max-time","60","-X","POST",
+                   "-H","Authorization: Basic "+local_auth,
+                   base+"/api/v1/main/executions/louksna.kestra/louksnapg_bundle_audit"]
+              for key,value in fields.items():
+                  cmd.extend(["-F",key+"="+str(value)])
+              execution=subprocess.run(cmd,capture_output=True,text=True,check=False,timeout=75)
+              receipt["local_kestra_execution_submit_return_code"]=execution.returncode
+              receipt["local_kestra_execution_submit_response_sha256"]=sha(execution.stdout.encode())
+              if execution.returncode != 0:
+                  raise RuntimeError("KESTRA_LOCAL_FLOW_DISPATCH_FAILED:"+execution.stderr[-900:]+execution.stdout[-500:])
+              try:
+                  response=json.loads(execution.stdout)
+              except json.JSONDecodeError as err:
+                  raise RuntimeError("KESTRA_LOCAL_EXECUTION_RESPONSE_INVALID") from err
+              execution_id=response.get("id")
+              if not execution_id:
+                  raise RuntimeError("KESTRA_LOCAL_EXECUTION_ID_MISSING")
+              receipt["execution_id"]=execution_id
+              receipt["execution_url"]=base+"/ui/executions/"+urllib.parse.quote(str(execution_id),safe="")
+              terminal_states={"SUCCESS","FAILED","WARNING","KILLED","CANCELLED","SKIPPED","RESTARTED"}
+              observations=[]
+              terminal_obj=None
+              for attempt in range(90):
+                  url=base+"/api/v1/main/executions/"+urllib.parse.quote(str(execution_id),safe="")
+                  try:
+                      with urllib.request.urlopen(urllib.request.Request(url,headers={"Accept":"application/json","Authorization":"Basic "+local_auth}),timeout=10) as response:
+                          body=response.read()
+                      execution_obj=json.loads(body.decode("utf-8"))
+                      current=((execution_obj.get("state") or {}).get("current") or "UNKNOWN")
+                      observations.append({"attempt":attempt+1,"http_status":200,"state":current,"response_sha256":sha(body)})
+                      if current in terminal_states:
+                          terminal_obj=execution_obj
+                          receipt["kestra_execution_evidence_sha256"]=sha(body)
+                          receipt["kestra_terminal_state"]=current
+                          receipt["kestra_state_observed_at_utc"]=now()
+                          break
+                  except urllib.error.HTTPError as err:
+                      observations.append({"attempt":attempt+1,"http_status":err.code,"state":"POLL_HTTP_ERROR"})
+                  except Exception as err:
+                      observations.append({"attempt":attempt+1,"state":"POLL_ERROR","error_type":type(err).__name__})
+                  time.sleep(2)
+              receipt["poll_observations"]=observations
+              receipt["local_kestra_state"]="TERMINAL" if terminal_obj else "POLL_TIMEOUT"
+              if not terminal_obj:
+                  receipt["status"]="POLL_TIMEOUT_TERMINAL_STATE_UNCONFIRMED"
+              else:
+                  tasks=[]
+                  for row in terminal_obj.get("taskRunList",[]) or []:
+                      tasks.append({"task_id":row.get("taskId"),"state":((row.get("state") or {}).get("current") or "UNKNOWN")})
+                  receipt["task_states"]=tasks
+                  hold_seen=any("auxiliary_hold" in str(row.get("task_id","")) and row.get("state")=="FAILED" for row in tasks)
+                  if receipt["kestra_terminal_state"]=="FAILED" and hold_seen:
+                      receipt["status"]="AUDIT_FAILED_OR_FAIL_CLOSED_HOLD"
+                  elif receipt["kestra_terminal_state"]=="SUCCESS":
+                      receipt["status"]="FLOW_EXECUTION_SUCCESS_RELEASE_STILL_HOLD"
+                  elif receipt["kestra_terminal_state"]=="FAILED":
+                      receipt["status"]="LOCAL_AUDIT_FAILED_NOT_VERIFIED_HOLD"
+                  else:
+                      receipt["status"]="AUDIT_TERMINATED_WITHOUT_SUCCESS"
+              receipt["execution_mode"]="LOCAL_EPHEMERAL_KESTRA"
+              receipt["local_kestra_image"]=image
+              receipt["local_kestra_flow_sha256"]=sha(flow_bytes)
+              receipt["local_kestra_evidence_bound_to"]={"source_commit":os.environ["SOURCE_COMMIT"],"bundle_sha256":bundle_sha,"contract_sha256":os.environ.get("CONTRACT_SHA256","")}
+          except Exception as exc:
+              receipt.update({"status":"LOCAL_AUDIT_FAILED","local_kestra_state":"FAILED","error_type":type(exc).__name__,"error":str(exc)[:1200]})
+          save_receipt(receipt)
+          try:
+              logs=subprocess.run(["docker","logs","louksnapg-kestra-local"],capture_output=True,text=True,timeout=20,check=False)
+              Path("candidate/LOUKSNAPG_KESTRA_LOCAL_SERVER.log").write_text((logs.stdout+"\n"+logs.stderr)[-20000:],encoding="utf-8")
+              receipt["local_kestra_server_log_sha256"]=sha(Path("candidate/LOUKSNAPG_KESTRA_LOCAL_SERVER.log").read_bytes())
+              save_receipt(receipt)
+          except Exception:
+              pass
+          print(json.dumps({k:receipt.get(k) for k in ("status","execution_mode","execution_id","kestra_terminal_state","local_kestra_image","local_kestra_image_digest","local_kestra_flow_sha256","bundle_sha256","source_commit","error_type","error","global_certification")},indent=2))
+          PY
+
+      - name: Cleanup isolated local Kestra runtime
+        if: always()
+        shell: bash
+        run: docker rm --force louksnapg-kestra-local >/dev/null 2>&1 || true
+
+      - name: Append the exact Kestra receipt to final C4 telemetry
+        id: final_telemetry
+        if: always() && steps.verify.outcome == 'success' && steps.contract.outcome == 'success'
+        shell: bash
+        env:
+          SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from datetime import datetime,timezone
+          from pathlib import Path
+
+          pre_path=Path("candidate/LOUKSNAPG_TELEMETRY_PREAUDIT.json")
+          receipt_path=Path("candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json")
+          bundle=Path("candidate/LOUKSNAPG.md")
+          contract_path=Path("contracts/louksnapg/architecture-contract.v1.json")
+          if not pre_path.is_file() or pre_path.is_symlink():
+              raise SystemExit("C4_PREAUDIT_TELEMETRY_MISSING_OR_UNSAFE")
+          if not bundle.is_file() or bundle.is_symlink() or not contract_path.is_file() or contract_path.is_symlink():
+              raise SystemExit("C4_SOURCE_BINDING_INPUT_MISSING_OR_UNSAFE")
+          if not receipt_path.is_file() or receipt_path.is_symlink():
+              failure={
+                  "schema":"LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT/1.0",
+                  "status":"RECEIPT_MISSING",
+                  "reason":"KESTRA_RECEIPT_FILE_MISSING_AFTER_DISPATCH",
+                  "source_commit":os.environ["SOURCE_COMMIT"],
+                  "bundle_sha256":hashlib.sha256(bundle.read_bytes()).hexdigest(),
+                  "integrity_status":"NOT_ESTABLISHED",
+                  "global_certification":"NOT_GRANTED"
+              }
+              receipt_path.write_text(json.dumps(failure,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          receipt_bytes=receipt_path.read_bytes()
+          receipt=json.loads(receipt_bytes.decode("utf-8"))
+          if not isinstance(receipt,dict):
+              raise SystemExit("C4_KESTRA_RECEIPT_ROOT_NOT_OBJECT")
+          receipt_sha=hashlib.sha256(receipt_bytes).hexdigest()
+          bundle_sha=hashlib.sha256(bundle.read_bytes()).hexdigest()
+          contract_sha=hashlib.sha256(contract_path.read_bytes()).hexdigest()
+          telemetry=json.loads(pre_path.read_text(encoding="utf-8"))
+          if not isinstance(telemetry,dict) or not isinstance(telemetry.get("events"),list):
+              raise SystemExit("C4_PREAUDIT_TELEMETRY_SCHEMA_INVALID")
+          if telemetry.get("source_commit")!=os.environ["SOURCE_COMMIT"] or telemetry.get("bundle_sha256")!=bundle_sha or telemetry.get("contract_sha256")!=contract_sha:
+              raise SystemExit("C4_PREAUDIT_SUBJECT_BINDING_MISMATCH")
+          events=telemetry["events"]
+          if any(not isinstance(row,dict) for row in events):
+              raise SystemExit("C4_PREAUDIT_EVENT_ROW_INVALID")
+          if any(row.get("event_type")=="KESTRA_AUDIT_RESULT" for row in events):
+              raise SystemExit("C4_KESTRA_RESULT_ALREADY_APPENDED_TO_PREAUDIT")
+          if [row.get("sequence_id") for row in events]!=list(range(1,len(events)+1)):
+              raise SystemExit("C4_PREAUDIT_SEQUENCE_GAP_OR_REORDER")
+          status=receipt.get("status","NOT_ESTABLISHED")
+          terminal=receipt.get("kestra_terminal_state")
+          execution_present=bool(receipt.get("execution_id"))
+          receipt_details={
+              "receipt_sha256":receipt_sha,
+              "receipt_status":status,
+              "execution_id_present":execution_present,
+              "terminal_state":terminal,
+              "reason":receipt.get("reason") or receipt.get("error_tail") or receipt.get("status"),
+              "http_response_sha256":receipt.get("http_response_sha256"),
+              "kestra_execution_evidence_sha256":receipt.get("kestra_execution_evidence_sha256"),
+              "preaudit_telemetry_sha256":hashlib.sha256(pre_path.read_bytes()).hexdigest()
+          }
+          if execution_present and terminal:
+              event_status="PASS_EXECUTION_RECEIPT_BOUND"
+          else:
+              event_status="HOLD_KESTRA_EXECUTION_NOT_ESTABLISHED"
+          event={
+              "operation_id":"LOUKSNAPG-AUX-"+os.environ["SOURCE_COMMIT"][:12],
+              "sequence_id":len(events)+1,
+              "timestamp_utc":datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z"),
+              "actor":"github-actions",
+              "tool_name":"Kestra audit receipt materializer",
+              "tool_version":"1.0",
+              "source":"github://"+os.environ.get("GITHUB_REPOSITORY","unknown")+"/actions/runs/"+os.environ.get("GITHUB_RUN_ID","unknown"),
+              "source_commit":os.environ["SOURCE_COMMIT"],
+              "bundle_sha256":bundle_sha,
+              "contract_sha256":contract_sha,
+              "input_sha256":receipt_sha,
+              "input_bytes":len(receipt_bytes),
+              "validation_status":event_status,
+              "rollback_reference":"PR 157 feature branch only; main unchanged; preserve immutable preaudit and candidate; revert branch commit if required",
+              "status":event_status,
+              "event_type":"KESTRA_AUDIT_RESULT",
+              "count":1,
+              "details":receipt_details
+          }
+          raw=json.dumps(event,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")
+          event_digest=hashlib.sha256(raw).hexdigest()
+          event["output_bytes"]=len(raw)
+          event["output_sha256"]=event_digest
+          event["evidence_sha256"]=event_digest
+          telemetry.pop("evidence_sha256",None)
+          telemetry["events"]=events+[event]
+          telemetry["generated_at_utc"]=datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+          telemetry["trace_integrity"]="PASS_SHA256_BOUND_POSTDISPATCH_APPEND"
+          telemetry["post_dispatch_receipt_status"]=status
+          telemetry["post_dispatch_receipt_sha256"]=receipt_sha
+          telemetry["post_dispatch_receipt_bound"]=(receipt.get("source_commit")==os.environ["SOURCE_COMMIT"] and receipt.get("bundle_sha256")==bundle_sha)
+          telemetry["status"]="INCOMPLETE_HOLD"
+          telemetry["release_telemetry_status"]="INCOMPLETE_HOLD"
+          telemetry["global_certification"]="NOT_GRANTED"
+          canonical=json.dumps(telemetry,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")
+          telemetry["evidence_sha256"]=hashlib.sha256(canonical).hexdigest()
+          final_path=Path("candidate/LOUKSNAPG_TELEMETRY_FINAL.json")
+          final_path.write_text(json.dumps(telemetry,sort_keys=True,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as handle:
+              handle.write("receipt_sha256="+receipt_sha+"\n")
+              handle.write("final_telemetry_sha256="+hashlib.sha256(final_path.read_bytes()).hexdigest()+"\n")
+          print(json.dumps({
+              "schema":telemetry.get("schema"),
+              "source_commit":telemetry.get("source_commit"),
+              "bundle_sha256":bundle_sha,
+              "contract_sha256":contract_sha,
+              "preaudit_event_count":len(events),
+              "final_event_count":len(telemetry["events"]),
+              "post_dispatch_event_type":"KESTRA_AUDIT_RESULT",
+              "kestra_receipt_status":status,
+              "execution_id_present":execution_present,
+              "terminal_state":terminal,
+              "receipt_sha256":receipt_sha,
+              "final_telemetry_sha256":hashlib.sha256(final_path.read_bytes()).hexdigest(),
+              "release_telemetry_status":"INCOMPLETE_HOLD",
+              "global_certification":"NOT_GRANTED"
+          },indent=2))
+          PY
+
+      - name: Evaluate the six architectural obligations against exact run-bound evidence
+        id: six_obligations
+        if: always() && steps.verify.outcome == 'success' && steps.contract.outcome == 'success'
+        continue-on-error: true
+        env:
+          SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          G23_ARGS=()
+          if [ -s candidate/LOUKSNAPG_G23_INTEGRITY_EVIDENCE.json ]; then
+            G23_ARGS=(--g23-integrity candidate/LOUKSNAPG_G23_INTEGRITY_EVIDENCE.json)
+          fi
+          python tools/louksnapg_six_obligation_audit.py \
+            --contract contracts/louksnapg/architecture-contract.v1.json \
+            --source-commit "$SOURCE_COMMIT" \
+            --bundle candidate/LOUKSNAPG.md \
+            --worker-evidence candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json \
+            --task-report candidate/LOUKSNAPG_G24_TASK_DIAGNOSTICS.json \
+            --functional-gate candidate/LOUKSNAPG_G24_FUNCTIONAL_GATE.json \
+            --g24-evidence candidate/LOUKSNAPG_G24_DECISION.json \
+            --telemetry candidate/LOUKSNAPG_TELEMETRY_FINAL.json \
+            --kestra-receipt candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json \
+            "${G23_ARGS[@]}" \
+            --report candidate/LOUKSNAPG_SIX_OBLIGATION_AUDIT.json
 
       - name: Upload candidate validation and Kestra receipt
         if: always()
@@ -303,8 +1057,40 @@ jobs:
             candidate/LOUKSNAPG_CUSTOSZV9_WORKER_EVIDENCE.json
             candidate/LOUKSNAPG_AUXILIARY_VALIDATION.json
             candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json
+            candidate/LOUKSNAPG_ARCHITECTURE_CONTRACT.json
+            candidate/LOUKSNAPG_TELEMETRY_PREAUDIT.json
+            candidate/LOUKSNAPG_TELEMETRY_FINAL.json
+            candidate/LOUKSNAPG_FUNCTIONAL_EVIDENCE_NOT_ESTABLISHED.json
+            candidate/LOUKSNAPG_G23_ATTESTATION_NOT_PERFORMED.json
+            candidate/LOUKSNAPG_G24_DECISION_NOT_GRANTED.json
+            candidate/LOUKSNAPG_G23_INTEGRITY_EVIDENCE.json
+            candidate/LOUKSNAPG_SIX_OBLIGATION_AUDIT.json
+            docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.json
+            docs/cajita-luna/LOUKSNAPG_INTEGRAL_REPAIR_BLOCKERS_20261026_RUN40309113060.md
           if-no-files-found: warn
           retention-days: 90
+
+      - name: Enforce the required secondary-worker execution receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("candidate/LOUKSNAPG_KESTRA_AUXILIARY_RECEIPT.json")
+          if not p.is_file():
+              raise SystemExit("KESTRA_RECEIPT_MISSING; SECONDARY_WORKER_GATE=HOLD")
+          r=json.loads(p.read_text(encoding="utf-8"))
+          status=r.get("status")
+          terminal=r.get("kestra_terminal_state")
+          print(json.dumps({"receipt_status":status,"terminal_state":terminal,"execution_id_present":bool(r.get("execution_id")),"global_certification":"NOT_GRANTED"},indent=2))
+          if status in {"NOT_CONFIGURED","SUBMISSION_FAILED","DISPATCH_RESPONSE_MISSING_EXECUTION_ID","POLL_TIMEOUT_TERMINAL_STATE_UNCONFIRMED","AUDIT_TERMINATED_WITHOUT_SUCCESS"}:
+              raise SystemExit("KESTRA_SECONDARY_WORKER_NOT_VERIFIED:"+str(status))
+          if status != "AUDIT_FAILED_OR_FAIL_CLOSED_HOLD" or terminal != "FAILED":
+              raise SystemExit("KESTRA_AUDIT_DID_NOT_PRODUCE_THE_EXPECTED_FAIL_CLOSED_HOLD; SECONDARY_WORKER_GATE=HOLD")
+          print("KESTRA_SECONDARY_WORKER=EXECUTED; AUDIT_RESULT=FAIL_CLOSED_HOLD; PRODUCT_CERTIFICATION=NOT_GRANTED")
+          PY
 
       - name: Fail closed if the exact product fails independent validation
         if: steps.verify.outcome != 'success'

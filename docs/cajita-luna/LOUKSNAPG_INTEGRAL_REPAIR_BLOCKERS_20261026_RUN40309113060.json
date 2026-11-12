@@ -1,0 +1,239 @@
+{
+  "schema": "LOUKSNAPG_INTEGRAL_REPAIR_BLOCKER_AUDIT/1.0",
+  "audit_id": "LOUKSNAPG-REPAIR-HOLD-20261026-RUN40309113060",
+  "observed_at_utc": "2026-10-26T10:50:00Z",
+  "evidence_scope": {
+    "source_commit": "5fab498b6faae08f59962861503b1a1202fcc83c",
+    "factory_run_id": 40309113060,
+    "factory_run_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40309113060",
+    "g23_job_id": 121526748085,
+    "g24_job_id": 121527497393,
+    "kestra_run_id": 40309113048,
+    "kestra_run_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/40309113048",
+    "kestra_job_id": 121525541390,
+    "artifact": "LOUKSNAPG.md",
+    "candidate_bytes": 371947713,
+    "candidate_sha256": "3337c635d77d509e061768d573330345ff6673bafa8de828ad8b0bd3b1d52f7c",
+    "runtime_archive_bytes": 370889623,
+    "runtime_archive_sha256": "f6002bec4284265e74e680b3acf70954de74a3b7d5fb5cbd93bda4ba861981ec",
+    "architecture_document_sha256": "f64e6925ff6a22b009fe592da3eda5c373ec788127a5b2dc9b824548bdf1e798",
+    "architecture_contract_sha256": "45ca9f13edda4df26755e8cc91db9784f2652fdcc1e82a7722e6381351579064",
+    "report_is_append_only_historical_snapshot": true
+  },
+  "size_integrity": {
+    "global_luna_hard_max_bytes": 479000000,
+    "candidate_distribution_cap_bytes": 479000000,
+    "candidate_bytes_remaining": 107052287,
+    "candidate_size_gate": "PASS",
+    "cajita_runtime_archive_max_bytes": 470000000,
+    "runtime_bytes_remaining": 99110377,
+    "runtime_size_gate": "PASS",
+    "independent_package_integrity": "PASS",
+    "protected_architecture_prefix_integrity": "PASS",
+    "embedded_document_integrity": "PASS",
+    "runtime_member_integrity": "PASS",
+    "canonical_identity_preservation": "PASS_SOURCE_IDENTITY_PRESERVED",
+    "declared_domains": 6,
+    "declared_engines": 15,
+    "declared_commands": 14,
+    "declared_targets": 21,
+    "declarations_are_not_task_certification": true
+  },
+  "six_obligations": {
+    "C1_COORDINATED_WORKERS": {
+      "status": "HOLD",
+      "custosz_v9": "BOUNDED_PACKAGE_BUILD_PASSED; MODEL_REPAIR_MISSION_NOT_ESTABLISHED",
+      "kestra": "NOT_CONFIGURED",
+      "reason": "KESTRA_URL_OR_KESTRA_API_TOKEN_MISSING",
+      "execution_id": null,
+      "real_secondary_worker_receipt": "MISSING"
+    },
+    "C2_OFFICIAL_SOURCE_REPAIR": {
+      "status": "HOLD",
+      "official_source_and_model_revisions_pinned": 5,
+      "material_identity_bound_model_repairs_verified": 0,
+      "before_after_candidate_weight_hash_pairs": 0,
+      "heavy_model_weight_download_count": 0,
+      "source_pin_is_not_model_repair_evidence": true
+    },
+    "C3_PRIMITIVE_FUNCTIONS": {
+      "status": "FAIL",
+      "required_target_count": 21,
+      "demonstrated_non_synthetic_target_task_count": 0,
+      "model_task_execution_count": 5,
+      "model_task_execution_pass_count": 5,
+      "model_task_quality_pass_count": 0,
+      "model_task_quality_fail_count": 5,
+      "limited_source_bound_engine_smokes_pass_count": 6,
+      "limited_source_bound_engine_smokes_expected": 6,
+      "all_21_target_task_coverage": "NOT_ESTABLISHED",
+      "integral_gate_decision": "HOLD",
+      "integral_gate_failure_count": 34
+    },
+    "C4_TELEMETRY_AND_AUDIT": {
+      "status": "PASS_PARTIAL",
+      "source_commit_and_candidate_hash_bound": true,
+      "g23_artifact_id": 12644645898,
+      "g24_evidence_artifact_id": 12644791261,
+      "g24_telemetry_artifact_id": 12643663783,
+      "kestra_auxiliary_evidence_artifact_id": 12644851027,
+      "kestra_execution_telemetry": "UNAVAILABLE_NO_EXECUTION_ID"
+    },
+    "C5_GOVERNED_RELEASE_CHAIN": {
+      "status": "HOLD",
+      "g23_package_integrity": "PASS",
+      "independent_product_functional_g23": "NOT_ESTABLISHED",
+      "kestra_audit": "NOT_EXECUTED",
+      "separate_g24": "NOT_GRANTED",
+      "integral_non_regression": "NOT_ESTABLISHED",
+      "rollback_artifact_preserved": true,
+      "publication_job": "SKIPPED"
+    },
+    "C6_PROHIBITIONS_AND_RECOVERY": {
+      "status": "PASS_FOR_OBSERVED_RUN",
+      "heavy_model_weight_download_count": 0,
+      "remote_commander_used": false,
+      "canonical_identity_mutation": false,
+      "silent_model_substitution": false,
+      "certification_from_synthetic_tests": false,
+      "promotion_without_complete_evidence": false,
+      "fail_closed_on_incomplete_evidence": true
+    }
+  },
+  "model_task_results": [
+    {
+      "target_id": "D01_CEREBRO_ROOT",
+      "operation": "generate_text",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "exit_code": 0,
+      "weight_sha256": "e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0",
+      "task_output_sha256": "56df824232581ebf231c6c5e6ad343aef47132fe4d60f04ae971c128cebbf921",
+      "quality_check": "repository-storage",
+      "quality_status": "FAIL",
+      "output_excerpt": "ron amongronronron among amongron amongssronron",
+      "output_text_sha256": "9308bc822ed96f27b929493bd15837d4c54852d27ee851e6e004e57533ebfa7d",
+      "peak_rss_bytes": 1094918144,
+      "peak_rss_limit_bytes": 1073741824,
+      "over_memory_limit_bytes": 21176320,
+      "fixture_kind": "FIXED_SYNTHETIC_EXPECTATION"
+    },
+    {
+      "target_id": "D03_TRANSCRIPCION_ROOT",
+      "operation": "transcribe_audio",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "exit_code": 0,
+      "weight_sha256": "67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f",
+      "task_output_sha256": "831a578c2cd8d64da8ee25bb99a1e60805266b6c7b06d5b6f5bf4fe2bcd97800",
+      "quality_check": "known-speech-hello-world",
+      "quality_status": "FAIL",
+      "output_excerpt": "daughterziest manuscript ele",
+      "output_text_sha256": "c2dcf834728a60f2b53b3f8668969b7b98c926d2b77a97905e5f8e3031720a6d",
+      "peak_rss_bytes": 756387840,
+      "peak_rss_limit_bytes": 1073741824,
+      "fixture_kind": "FIXED_SYNTHETIC_EXPECTATION"
+    },
+    {
+      "target_id": "D04_TRADUCCION_GENERAL",
+      "operation": "translate_text",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "exit_code": 0,
+      "weight_sha256": "630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f",
+      "task_output_sha256": "590817799eabb583b9dd516bdccf81ab6537da830e0718919ef562986f5a8950",
+      "quality_check": "english-to-spanish-greeting",
+      "quality_status": "FAIL",
+      "output_excerpt": "te te te apres te te te te who te te",
+      "output_text_sha256": "10e494e1adfd2b16103009d2d5fe97aba97e7fb88f7447d3405e519d3159836a",
+      "peak_rss_bytes": 809070592,
+      "peak_rss_limit_bytes": 1073741824,
+      "fixture_kind": "FIXED_SYNTHETIC_EXPECTATION"
+    },
+    {
+      "target_id": "D05_DOCLING",
+      "operation": "extract_document_image",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "exit_code": 0,
+      "weight_sha256": "4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88",
+      "task_output_sha256": "be91edec527287bccf957383d76d18571675f8caf50a503c58325f00008e571d",
+      "quality_check": "invoice-total-133-45",
+      "quality_status": "FAIL",
+      "output_excerpt": "onationonationonation underrated underrated underrated shitty underrated",
+      "output_text_sha256": "acee8e9dded82726b2f0cf977b4980e042c050a5d1adcc8ef40d4dd453dcd25d",
+      "peak_rss_bytes": 983965696,
+      "peak_rss_limit_bytes": 1073741824,
+      "fixture_kind": "FIXED_SYNTHETIC_EXPECTATION"
+    },
+    {
+      "target_id": "D06_ANALISIS_AVANZADO",
+      "operation": "analyze_reasoning",
+      "execution_status": "PASS_FUNCTIONAL_EXECUTION",
+      "exit_code": 0,
+      "weight_sha256": "01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56",
+      "task_output_sha256": "0132139c76c5c0f0e00ec5015f11d4ca81cb622bb395ec94ed47c31bdc7a127a",
+      "quality_check": "arithmetic-2-plus-2",
+      "quality_status": "FAIL",
+      "output_excerpt": "irts airways",
+      "output_text_sha256": "b1a75ce6640d3d5f39e985ad1e0d4d54e76861b8294f6d997fba2f5e66743a67",
+      "peak_rss_bytes": 692490240,
+      "peak_rss_limit_bytes": 1073741824,
+      "fixture_kind": "FIXED_SYNTHETIC_EXPECTATION"
+    }
+  ],
+  "compression_evidence": [
+    {
+      "target_id": "D01_CEREBRO_ROOT",
+      "rank": 1,
+      "aggregate_relative_frobenius_error_after_int8": 0.9983363410727844
+    },
+    {
+      "target_id": "D06_ANALISIS_AVANZADO",
+      "rank": 12,
+      "aggregate_relative_residual_before_factor_int8": 0.9964067735222465,
+      "aggregate_relative_frobenius_error_after_int8": 0.9964088220513415
+    },
+    {
+      "target_id": "D03_TRANSCRIPCION_ROOT",
+      "rank": 29
+    },
+    {
+      "target_id": "D04_TRADUCCION_GENERAL",
+      "rank": 4
+    },
+    {
+      "target_id": "D05_DOCLING",
+      "method": "custom NanoQuant-family low-rank binary factorization",
+      "embedding_rank_fraction": 0.025,
+      "text_rank_fraction": 0.02,
+      "vision_outlier_fraction": 0.000005
+    }
+  ],
+  "exact_gate_results": {
+    "task_harness": "FAIL",
+    "task_harness_exit_code": 3,
+    "g23_integrity": "PASS",
+    "g23_functional_attestation": "NOT_ESTABLISHED",
+    "functional_gate": "HOLD",
+    "functional_gate_failures": 34,
+    "g24": "HOLD_INTEGRAL_FUNCTIONAL_EVIDENCE_INCOMPLETE",
+    "g24_decision": "NOT_GRANTED",
+    "kestra_receipt": "NOT_CONFIGURED",
+    "kestra_reason": "KESTRA_URL_OR_KESTRA_API_TOKEN_MISSING",
+    "kestra_execution_id": null
+  },
+  "blockers": [
+    "The five model-backed processes execute but every known-answer quality assertion fails.",
+    "The Cerebro execution additionally exceeds the 1 GiB RSS limit by 21,176,320 bytes.",
+    "No non-synthetic primitive-function results exist for all 21 registered target IDs.",
+    "The compact factors show severe reconstruction loss; original heavy checkpoints were not fetched, and no material model-weight repair is evidenced.",
+    "Kestra did not execute because KESTRA_URL and KESTRA_API_TOKEN are missing from GitHub Actions variables/secrets.",
+    "G23 passed package integrity only; no product-functional G23, separate G24, or release authorization exists."
+  ],
+  "final_decision": "HOLD_NOT_CERTIFIED",
+  "safety_observations": {
+    "heavy_model_weights_downloaded": false,
+    "remote_commander_used": false,
+    "canonical_identity_mutated": false,
+    "model_substitution_performed": false,
+    "uncertified_candidate_published": false
+  },
+  "interpretation": "This is a run-bound snapshot for source commit 5fab498b6faae08f59962861503b1a1202fcc83c. Hash/cap/identity checks establish distribution integrity only. The model quality checks use fixed synthetic diagnostic fixtures and are not product certification."
+}
