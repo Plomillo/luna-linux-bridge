@@ -1,0 +1,167 @@
+{
+  "schema_version": "1.0.0",
+  "registry_id": "CUSTOSZV8-CAPABILITY-OWNERSHIP-1",
+  "ownership_rule": "EXACTLY_ONE_PRIMARY_OWNER; NO_SILENT_REASSIGNMENT",
+  "capabilities": [
+    {
+      "capability_id": "V8.IDENTITY.SHA256",
+      "domain": "TAX.01",
+      "owner_component": "CUSTOSZV8",
+      "status": "VERIFIED",
+      "native_operation": "sha256_file",
+      "idempotency_class": "READ_ONLY",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.MANIFEST.VALIDATE",
+      "domain": "TAX.02",
+      "owner_component": "CUSTOSZV8",
+      "status": "VERIFIED",
+      "native_operation": "validate_manifest",
+      "idempotency_class": "READ_ONLY",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.TAXONOMY.OWNER_RESOLUTION",
+      "domain": "TAX.03",
+      "owner_component": "CUSTOSZV8",
+      "status": "VERIFIED",
+      "native_operation": "CapabilityRegistry.resolve",
+      "idempotency_class": "READ_ONLY",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.MISSION.STATE_MACHINE",
+      "domain": "TAX.04",
+      "owner_component": "CUSTOSZV8",
+      "status": "VERIFIED",
+      "native_operation": "MissionStateMachine.transition",
+      "idempotency_class": "IDEMPOTENT",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.EVIDENCE.APPEND_ONLY_JOURNAL",
+      "domain": "TAX.10",
+      "owner_component": "CUSTOSZV8",
+      "status": "VERIFIED",
+      "native_operation": "EvidenceJournal.append/verify",
+      "idempotency_class": "NON_IDEMPOTENT",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.TRANSLATION.PHRASE_PROFILE",
+      "domain": "TAX.07",
+      "owner_component": "CUSTOSZV8",
+      "status": "VERIFIED",
+      "native_operation": "TranslationEngine.translate",
+      "idempotency_class": "READ_ONLY",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.CODE.STATIC_ANALYSIS",
+      "domain": "TAX.07",
+      "owner_component": "CUSTOSZV8",
+      "status": "VERIFIED",
+      "native_operation": "TranslationEngine.code_to_english",
+      "idempotency_class": "READ_ONLY",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.WASM.STATIC_INSPECTION",
+      "domain": "TAX.06",
+      "owner_component": "CUSTOSZV8",
+      "status": "VERIFIED",
+      "native_operation": "inspect_wasm",
+      "idempotency_class": "READ_ONLY",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.BRIDGE.GITHUB_READ",
+      "domain": "TAX.09",
+      "owner_component": "CUSTOSZV8",
+      "status": "IMPLEMENTED_NOT_INDEPENDENTLY_VALIDATED",
+      "native_operation": "GitHubBridge._request_GET",
+      "idempotency_class": "READ_ONLY",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.BRIDGE.WORKFLOW_DISPATCH",
+      "domain": "TAX.09",
+      "owner_component": "CUSTOSZV8",
+      "status": "IMPLEMENTED_AUTHORIZATION_REQUIRED",
+      "native_operation": "GitHubBridge.dispatch_workflow",
+      "idempotency_class": "NON_IDEMPOTENT",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.WATCHDOG.MISSION_LIVENESS",
+      "domain": "TAX.13",
+      "owner_component": "CUSTOSZV8",
+      "status": "VERIFIED",
+      "native_operation": "MissionWatchdog.observe",
+      "idempotency_class": "READ_ONLY",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.RETRY.BOUNDED_POLICY",
+      "domain": "TAX.13",
+      "owner_component": "CUSTOSZV8",
+      "status": "VERIFIED",
+      "native_operation": "RetryController.decide",
+      "idempotency_class": "READ_ONLY",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.RECOVERY.CHECKPOINT_IDENTITY",
+      "domain": "TAX.11",
+      "owner_component": "CUSTOSZV8",
+      "status": "VERIFIED",
+      "native_operation": "RecoveryCoordinator.verify_checkpoint",
+      "idempotency_class": "READ_ONLY",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V8.ASSURANCE.CHANGE_IMPACT",
+      "domain": "TAX.08",
+      "owner_component": "CUSTOSZV8",
+      "status": "VERIFIED",
+      "native_operation": "ChangeImpactAnalyzer.analyze",
+      "idempotency_class": "READ_ONLY",
+      "overlaps": []
+    },
+    {
+      "capability_id": "V7.CLI.READ_ONLY",
+      "domain": "TAX.04",
+      "owner_component": "CUSTOSZ_V7",
+      "status": "BLOCKED_PENDING_CI_RESULT",
+      "native_operation": "v07-status;v07-selftest",
+      "idempotency_class": "READ_ONLY",
+      "overlaps": []
+    },
+    {
+      "capability_id": "RUNTIME_V1.EXECUTION",
+      "domain": "TAX.05",
+      "owner_component": "RUNTIME_V1_SELECTED_STAGING",
+      "status": "BLOCKED_NATIVE_INTERFACE_UNVERIFIED",
+      "native_operation": null,
+      "idempotency_class": "UNKNOWN",
+      "overlaps": []
+    },
+    {
+      "capability_id": "METAOS_WASM.COMPONENT_EXPORT",
+      "domain": "TAX.06",
+      "owner_component": "METAOS_WASM",
+      "status": "BLOCKED_COMPONENT_ABI_INCOMPLETE",
+      "native_operation": null,
+      "idempotency_class": "UNKNOWN",
+      "overlaps": []
+    }
+  ],
+  "rules": [
+    "Every capability has one owner_component.",
+    "Consumers do not become owners by calling a capability.",
+    "Unknown native operations remain unavailable.",
+    "Conflicting ownership blocks affected execution.",
+    "The registry does not confer G23, G24 or canonical authority."
+  ]
+}

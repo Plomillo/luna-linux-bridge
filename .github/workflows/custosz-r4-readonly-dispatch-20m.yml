@@ -1,0 +1,89 @@
+name: "CUSTOSZ V7: despacho real de investigación R4 (máximo 20 minutos)"
+on:
+  push:
+    branches:
+      - staging/custosz-v7-metaos-20260927
+    paths:
+      - .github/workflows/custosz-r4-readonly-dispatch-20m.yml
+permissions:
+  contents: write
+concurrency:
+  group: custosz-v7-r4-research-20m
+  cancel-in-progress: false
+jobs:
+  dispatch-research:
+    if: github.repository == 'Plomillo/luna-linux-bridge' && github.actor == 'Plomillo'
+    runs-on: [self-hosted, Linux, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Adquirir solo el commit aprobado para investigación
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Preflight estático; sin privilegios ni instalación
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I - <<'PY'
+          import ast
+          from pathlib import Path
+          p=Path('scripts/missions/custosz_r4_readonly_20m.py')
+          ast.parse(p.read_text(encoding='utf-8'))
+          assert Path('docs/missions/LUNA_R4_CUSTOSZ_V7/MISION_MAESTRA_DEFINITIVA.md').is_file()
+          print('ADDITIVE_RESEARCH_ADAPTER_SYNTAX=PASS; SCOPE=READONLY')
+          PY
+      - name: Entregar la misión al CUSTOSZ real y a su runtime; auditar resultados
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I scripts/missions/custosz_r4_readonly_20m.py
+      - name: Conservar evidencia íntegra independientemente de publicación GitHub
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-v7-r4-readonly-research-evidence
+          path: |
+            docs/missions/LUNA_R4_CUSTOSZ_V7/README_CONCLUSIONES_CUSTOSZ_V7.md
+            docs/missions/LUNA_R4_CUSTOSZ_V7/RESEARCH_EVIDENCE.json
+            ${{ runner.temp }}/custosz-r4-research-evidence/runtime/09_EVIDENCE.jsonl
+          if-no-files-found: warn
+      - name: Publicar README exacto y evidencia en GitHub sin ejecutar contenido no confiable
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I - <<'PY'
+          import base64,json,os
+          from pathlib import Path
+          from urllib.request import Request,urlopen
+          from urllib.error import HTTPError
+          assert os.environ['GITHUB_REPOSITORY']=='Plomillo/luna-linux-bridge'
+          assert os.environ['GITHUB_REF_NAME']=='staging/custosz-v7-metaos-20260927'
+          root=Path('docs/missions/LUNA_R4_CUSTOSZ_V7')
+          token=os.environ['GITHUB_TOKEN']
+          for name in ('README_CONCLUSIONES_CUSTOSZ_V7.md','RESEARCH_EVIDENCE.json'):
+              p=root/name
+              if not p.is_file():
+                  raise SystemExit('REPORT_NOT_PRODUCED:'+name)
+              url='https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/docs/missions/LUNA_R4_CUSTOSZ_V7/'+name
+              headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json',
+                       'X-GitHub-Api-Version':'2022-11-28','User-Agent':'CUSTOSZ-V7-R4-report-only'}
+              sha=None
+              try:
+                  with urlopen(Request(url+'?ref=staging/custosz-v7-metaos-20260927',headers=headers),timeout=20) as r:
+                      sha=json.load(r)['sha']
+              except HTTPError as e:
+                  if e.code!=404:raise
+              payload={'message':'docs(custosz): resultados REALES de investigación R4 en 20 minutos',
+                       'content':base64.b64encode(p.read_bytes()).decode('ascii'),
+                       'branch':'staging/custosz-v7-metaos-20260927'}
+              if sha:payload['sha']=sha
+              req=Request(url,data=json.dumps(payload).encode('utf-8'),
+                          headers={**headers,'Content-Type':'application/json'},method='PUT')
+              with urlopen(req,timeout=50) as r:
+                  j=json.load(r)
+                  print('GITHUB_REPORT_PUBLISHED',name,j['commit']['sha'])
+          PY

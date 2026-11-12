@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0.0",
+  "registry_id": "CUSTOSZV8-CONTRACT-REGISTRY-1",
+  "contracts": [
+    {
+      "contract_id": "V8.CONTRACT.COMPONENT_IDENTITY.1",
+      "status": "IMPLEMENTED",
+      "required": [
+        "component_id",
+        "artifact_path",
+        "sha256",
+        "native_interface_id",
+        "provenance_ref"
+      ]
+    },
+    {
+      "contract_id": "V8.CONTRACT.MESSAGE_ENVELOPE.1",
+      "status": "SPECIFIED",
+      "required": [
+        "message_id",
+        "mission_id",
+        "correlation_id",
+        "trace_id",
+        "source_component",
+        "target_component",
+        "operation_id",
+        "authorization_ref",
+        "deadline_utc"
+      ]
+    },
+    {
+      "contract_id": "V8.CONTRACT.MISSION.1",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "required": [
+        "mission_id",
+        "scope",
+        "capability_plan",
+        "deadline_utc",
+        "authorization_ref",
+        "acceptance_criteria",
+        "target_candidate"
+      ]
+    },
+    {
+      "contract_id": "V8.CONTRACT.OPERATION_RESULT.1",
+      "status": "SPECIFIED",
+      "required": [
+        "result_id",
+        "mission_id",
+        "component_id",
+        "component_sha256",
+        "status",
+        "evidence_refs"
+      ]
+    },
+    {
+      "contract_id": "V8.CONTRACT.EVIDENCE_EVENT.1",
+      "status": "IMPLEMENTED",
+      "required": [
+        "event_id",
+        "sequence_number",
+        "event_type",
+        "recorded_at_utc",
+        "previous_event_hash",
+        "current_event_hash"
+      ]
+    },
+    {
+      "contract_id": "V8.CONTRACT.AUTHORITY_BINDING.1",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "required": [
+        "actor_id",
+        "issuer_id",
+        "action",
+        "object_id",
+        "scope_id",
+        "valid_from_utc",
+        "authorization_evidence"
+      ]
+    },
+    {
+      "contract_id": "V8.CONTRACT.RECOVERY.1",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "required": [
+        "incident_id",
+        "authorized_actor",
+        "checkpoint_sha256",
+        "restoration_oracles",
+        "authority_ref",
+        "deadline_utc"
+      ]
+    },
+    {
+      "contract_id": "V8.CONTRACT.TRANSLATION.1",
+      "status": "IMPLEMENTED_DETERMINISTIC_PROFILE",
+      "required": [
+        "translation_id",
+        "source_language",
+        "target_language",
+        "source_text_ref",
+        "protected_tokens",
+        "validation_state"
+      ]
+    }
+  ],
+  "note": "Statuses distinguish implemented code from contracts still requiring native or end-to-end integration tests."
+}

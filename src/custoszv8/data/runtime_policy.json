@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0.0",
+  "policy_id": "CUSTOSZV8-RUNTIME-POLICY-1",
+  "default_active": false,
+  "mission_deadline": "REQUIRED_PER_MISSION",
+  "stage_deadline": "REQUIRED_PER_STAGE",
+  "default_no_progress_seconds": 60,
+  "default_max_recovery_attempts": 1,
+  "max_backoff_seconds": 30,
+  "retry_rules": {
+    "READ_ONLY": "RETRY_WITHIN_FINITE_BUDGET_AFTER_EVIDENCE_APPEND",
+    "IDEMPOTENT": "RETRY_WITH_STABLE_IDEMPOTENCY_KEY",
+    "NON_IDEMPOTENT": "DENY_UNLESS_SIDE_EFFECT_RECONCILIATION_IS_EXPLICITLY_AUTHORIZED",
+    "UNKNOWN": "DENY_RETRY"
+  },
+  "terminal_states": [
+    "COMPLETED",
+    "FAILED_WITH_EVIDENCE",
+    "CANCELLED_AUTHORIZED"
+  ],
+  "hold_requirements": [
+    "reason",
+    "owner",
+    "evidence_refs",
+    "resume_condition"
+  ],
+  "monitoring_loss": "FAIL_CLOSED_FOR_AFFECTED_PROPERTIES",
+  "recovery_requires": [
+    "verified_checkpoint",
+    "authorized_plan",
+    "restoration_oracles",
+    "post_recovery_nonregression"
+  ],
+  "limits_are_proposals_not_certified_values": true
+}

@@ -1,0 +1,71 @@
+name: "CUSTOSZ V7 — inspección estática de runtime, SIN EJECUCIÓN"
+on:
+  push:
+    branches:
+      - staging/custosz-v7-metaos-20260927
+    paths:
+      - .github/workflows/custosz-r4-runtime-probe.yml
+permissions:
+  contents: read
+jobs:
+  inspect-only:
+    if: github.repository == 'Plomillo/luna-linux-bridge' && github.actor == 'Plomillo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Leer exclusivamente el commit exacto sin credenciales persistentes
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Identificar las interfaces públicas de CUSTOSZ y Runtime sin ejecutarlos
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I - <<'PY'
+          from pathlib import Path
+          import zipfile,hashlib,os
+          root=Path("artifacts/custosz-v7")
+          for filename in ("CUSTOSZ.v07.f04_b.pyz","CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz"):
+              p=root/filename
+              data=p.read_bytes()
+              print("ARTIFACT="+filename)
+              print("SIZE_BYTES="+str(len(data)))
+              print("SHA256="+hashlib.sha256(data).hexdigest())
+              with zipfile.ZipFile(p) as z:
+                  print("ARCHIVE_MEMBERS="+",".join(z.namelist()))
+                  main=z.read("__main__.py").decode("utf-8")
+                  print("MAIN_STATIC_SOURCE_BEGIN")
+                  print(main)
+                  print("MAIN_STATIC_SOURCE_END")
+          PY
+
+      - name: Inspeccionar estaticamente comandos de misión y funciones de runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I - <<'PY'
+          import zipfile,ast
+          root="artifacts/custosz-v7/"
+          files={
+            "CUSTOSZ.v07.f04_b.pyz":("custosz_v05_legacy.py","custosz_v07_native.py","custosz_bootstrap_control.py"),
+            "CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz":("runtime_core.py","sr_exec_bound_fme_01.py"),
+          }
+          for archive,members in files.items():
+              with zipfile.ZipFile(root+archive) as z:
+                  for member in members:
+                      src=z.read(member).decode("utf-8")
+                      tree=ast.parse(src)
+                      print("MODULE",archive,member,"LINES",len(src.splitlines()))
+                      print("FUNCTIONS",[(n.name,n.lineno,n.end_lineno) for n in tree.body if isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef,ast.ClassDef))])
+                      lines=src.splitlines()
+                      for node in tree.body:
+                          if isinstance(node,ast.FunctionDef) and node.name=="main":
+                              print("LEGACY_MAIN_BEGIN")
+                              for line in lines[node.lineno-1:node.end_lineno]:
+                                  print(line)
+                              print("LEGACY_MAIN_END")
+                      for i,line in enumerate(lines):
+                          if "argparse" in line or "add_parser(" in line or "mission" in line.lower() or "def dispatch" in line or "def execute" in line:
+                              if len(line)<280:
+                                  print("INTERFACE_LINE",i+1,line)
+          PY
