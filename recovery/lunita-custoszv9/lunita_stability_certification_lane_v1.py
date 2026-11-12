@@ -418,7 +418,10 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
                     "type": type(parse_exc).__name__, "message": str(parse_exc)[:800]
                 }
             reference_mismatch = rc == 1 and "The results are different" in output
-            if capture_status != "PASS":
+            runtime_identity = inspect_jasp_runtime_identity(output)
+            if runtime_identity.get("status") != "PASS":
+                status = "BLOCKED_JASP_RUNTIME_IDENTITY"
+            elif capture_status != "PASS":
                 status = capture_status
             elif rc == 0:
                 status = "PASS_REFERENCE_AND_REPLAY"
@@ -443,6 +446,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
                 "actual_result_rows": rows,
                 "actual_result_rows_sha256": rows_sha,
                 "result_capture_status": capture_status,
+                "runtime_identity": runtime_identity,
                 "stored_reference_mismatch": reference_mismatch,
             }
         except subprocess.TimeoutExpired as exc:
@@ -458,6 +462,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
                 "log_sha256": sha_file(log_path),
                 "actual_result_rows": [],
                 "actual_result_rows_sha256": None,
+                "runtime_identity": {"status": "BLOCKED_TIMEOUT"},
                 "stored_reference_mismatch": False,
             }
 
@@ -523,9 +528,13 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         "BLOCKED"
     )
     replay_status = "PASS_DETERMINISTIC_REPLAY" if actual_rows_equal else "BLOCKED_DETERMINISTIC_REPLAY"
+    runtime_identity_pass = (
+        (save_run.get("runtime_identity") or {}).get("status") == "PASS"
+        and (rerun.get("runtime_identity") or {}).get("status") == "PASS"
+    )
     final_status = (
         "PASS"
-        if actual_rows_equal and fixture_receipt_valid and unchanged and roundtrip_reproducible
+        if actual_rows_equal and runtime_identity_pass and fixture_receipt_valid and unchanged and roundtrip_reproducible
         else "FAIL"
     )
     result = {
@@ -535,6 +544,9 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         "deterministic_replay_status": replay_status,
         "reference_comparison_status": reference_status,
         "actual_result_rows_equal": actual_rows_equal,
+        "runtime_identity_status": "PASS" if runtime_identity_pass else "BLOCKED",
+        "save_runtime_identity": save_run.get("runtime_identity"),
+        "rerun_runtime_identity": rerun.get("runtime_identity"),
         "save_actual_result_rows_sha256": save_rows_sha,
         "rerun_actual_result_rows_sha256": rerun_rows_sha,
         "expected_original_sample_sha256": DEATH_PENALTY_SOURCE_SHA256,
@@ -632,8 +644,11 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         text=True, timeout=300, check=False,
                     )
                     rc = int(run.returncode)
+                    runtime_identity = inspect_jasp_runtime_identity(run.stdout or "")
                     fixture_integrity = original_alias_valid if case_id == "flatpak_launch" else True
-                    case_status = "PASS" if rc == 0 and fixture_integrity else "BLOCKED"
+                    case_status = "PASS" if (
+                        rc == 0 and fixture_integrity and runtime_identity.get("status") == "PASS"
+                    ) else "BLOCKED"
                     payload = (
                         header + run.stdout + ("" if run.stdout.endswith("\n") else "\n")
                         + f"\n{marker}={rc}\nFINISHED_UTC={utc()}\n"
@@ -652,6 +667,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "original_fixture_path": str(original_source) if case_id == "flatpak_launch" else None,
                         "original_fixture_sha256": original_source_sha if case_id == "flatpak_launch" else None,
                         "original_fixture_alias_valid": fixture_integrity if case_id == "flatpak_launch" else None,
+                        "runtime_identity": runtime_identity,
                     }
                 except subprocess.TimeoutExpired as exc:
                     output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
