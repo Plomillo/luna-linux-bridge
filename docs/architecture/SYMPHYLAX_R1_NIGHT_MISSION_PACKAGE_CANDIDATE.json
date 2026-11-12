@@ -1,0 +1,441 @@
+{
+  "schema_id": "SYMPHYLAX_R1_R4_NIGHT_MISSION_PACKAGE_CANDIDATE_V1",
+  "type": "DECLARATIVE_PREAUTHORIZATION_MISSION_PACKAGE_NOT_EXECUTABLE",
+  "state": "DESIGN_PACKAGE_MATERIALIZED_INERT",
+  "canonical_authority": "Louksna.md",
+  "owner": "Diego",
+  "orchestrator": "SYMPHYLAX_R1",
+  "worker": "CUSTOSZ_V7",
+  "runtime": "CUSTOSZ_RUNTIME_V1",
+  "governor": "MetaOS",
+  "assistant_role": "AUXILIAR_ONLY",
+  "scope": "R4_REVERSIBLE_NON_DESTRUCTIVE_INSTALLATION_ONLY",
+  "f3_disk_scope": "EXCLUDED_AND_SEPARATELY_AUTHORIZED",
+  "user_authorized": false,
+  "automation_armed": false,
+  "dispatch_enabled": false,
+  "live_server_ready": false,
+  "certified_for_host_scope": false,
+  "candidate_baseline_commit": "b292bccc5f66e0b3b9e1e85880eae2284886ea78",
+  "pinned_inputs": {
+    "A0": {
+      "path": "Louksna.md",
+      "ref": "main",
+      "commit": "d7c06ef40141d8865815c18493604655280c2f2a",
+      "git_blob_sha": "1a399ab7494d6df5582436819eee557083e753ed",
+      "size_bytes": 11536067,
+      "sha256": "5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
+      "role": "CANONICAL_AUTHORITY"
+    },
+    "A1": {
+      "path": "LOUKSNAMEJORADA.md",
+      "ref": "staging/architecture-louksnamejorada-20260927",
+      "git_blob_sha": "8cdefe026de748bf924f14a9b6efc6308079c2c2",
+      "size_bytes": 11542631,
+      "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+      "role": "DERIVATIVE_REFERENCE_NOT_AUTHORITY"
+    },
+    "PUAC2": {
+      "path": "PUAC2.md",
+      "ref": "main",
+      "commit": "d7c06ef40141d8865815c18493604655280c2f2a",
+      "git_blob_sha": "da3b216888c86e588685d384c34dd3c481414b22",
+      "size_bytes": 62950,
+      "role": "ASSURANCE_CANDIDATE_G23_G24_NOT_GRANTED"
+    },
+    "SKELETON_R4": {
+      "path": "docs/luna-r4/source/SKELETON_CANONICO_REFERENCIA.txt",
+      "ref": "staging/luna-r4-context-recovery-20260927",
+      "commit": "4484958717fd65b702847d61706014fd3f7afbec",
+      "git_blob_sha": "f8da6af8bffd325122ea83a20e686fbb95f7f578",
+      "size_bytes": 24964,
+      "sha256": "fb9fad37994e684ad54b1ffc2762660eebcb8e41bd9c4ba685ffac55217d5b0f",
+      "role": "REQUIREMENTS_REFERENCE"
+    },
+    "CAS_MANIFEST": {
+      "path": "artifacts/semantic-container/18_HASH_INDEX/CAS_MANIFEST.json",
+      "ref": "staging/contenedor-semantico-e826-20260927",
+      "commit": "4223640722e4985cafe1f9ea48cbc089e1024adf",
+      "git_blob_sha": "c1f1166e0f3256ec75f6c2de5b4912a99c3345f3",
+      "size_bytes": 142876,
+      "role": "SEMANTIC_OBJECT_MANIFEST_252_OBJECTS_PREVIOUSLY_HASH_VERIFIED"
+    },
+    "SYMPHYLAX_INVENTORY": {
+      "ref": "forensics/symphylax-r1-inventory-20260927",
+      "commit": "ba8a73977b468a7ec31bf166f0e0826a31d48eb7",
+      "workflow": ".github/workflows/symphylax-r1-inventory.yml",
+      "workflow_blob_sha": "295196765268d21711a3a55ea156bac9347b07f2",
+      "inventory_script": "scripts/forensics/symphylax_r1_inventory.py",
+      "inventory_script_blob_sha": "e16fb4a9fce96a06928f94ccf79ede2f872d7b43",
+      "role": "SCOPED_READONLY_INVENTORY_EVIDENCE_ONLY"
+    },
+    "F2_RESEARCH": {
+      "path": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "git_blob_sha": "53afe3aca83d91efcefb03f79f19e1127af4713d"
+    },
+    "F2_2_HANDOFF": {
+      "path": "docs/architecture/ADITIVO_F2_2_TRASPASO_AUDITORIA_PREAUTORIZO.md",
+      "git_blob_sha": "cdfe6ad5fdd123d5f9113539344d9ad4dcfc8977"
+    },
+    "INERT_LOCK": {
+      "path": "docs/architecture/SYMPHYLAX_R1_NIGHT_MISSION_LOCK_CANDIDATE.json",
+      "git_blob_sha": "0da376676433d01a0a38330b8a9ab5dbc0b0a847"
+    }
+  },
+  "external_patterns": [
+    {
+      "id": "NIST_SSDF",
+      "use": "secure development and evidence discipline",
+      "status": "REFERENCE_NOT_CERTIFICATION"
+    },
+    {
+      "id": "SLSA",
+      "use": "provenance model and build integrity",
+      "status": "REFERENCE_NOT_LEVEL_CLAIM"
+    },
+    {
+      "id": "IN_TOTO",
+      "use": "signed/attributed step layout and link evidence",
+      "status": "REFERENCE_PATTERN"
+    },
+    {
+      "id": "TUF",
+      "use": "update integrity and compromise resilience",
+      "status": "REFERENCE_PATTERN"
+    },
+    {
+      "id": "SIGSTORE",
+      "use": "candidate identity-bound artifact signing/transparency; backend not yet selected",
+      "status": "OPTIONAL_PENDING_REVIEW"
+    },
+    {
+      "id": "ANSIBLE",
+      "use": "idempotent desired-state execution plus check/diff mode where supported",
+      "status": "CANDIDATE_IMPLEMENTATION_PATTERN"
+    },
+    {
+      "id": "SYSTEMD_RESOURCE_CONTROL",
+      "use": "candidate CPU/memory/IO containment for host execution",
+      "status": "CANDIDATE_IMPLEMENTATION_PATTERN"
+    },
+    {
+      "id": "GITHUB_ACTIONS",
+      "use": "GitHub-hosted static verification only before authorization; self-hosted runner is not a sandbox",
+      "status": "BOUNDARY"
+    },
+    {
+      "id": "HF_SAFE_SERIALIZATION",
+      "use": "prefer safetensors and reject untrusted pickle execution paths",
+      "status": "MODEL_INGESTION_POLICY_PATTERN"
+    }
+  ],
+  "authorization_contract": {
+    "trusted_adapter_status": "ABSENT_OR_UNVERIFIED",
+    "authorization_envelope_required": true,
+    "literal_keyword_alone_is_authorization": false,
+    "required_fields": [
+      "mission_id",
+      "mission_package_digest",
+      "approved_git_commit",
+      "principal_identity",
+      "one_time_nonce",
+      "issued_at_utc",
+      "expires_at_utc",
+      "scope",
+      "signature_or_equivalent_authenticated_binding"
+    ],
+    "nonce_bits_min": 256,
+    "max_authorization_ttl_minutes": 15,
+    "single_use": true,
+    "replay_protection_required": true,
+    "explicit_revocation_required": true,
+    "owner_must_see_exact_scope": true,
+    "general_authorization_may_include_f3_disk": false,
+    "f3_disk_requires_second_separate_authorization": true,
+    "secret_material_in_repository_forbidden": true
+  },
+  "resource_policy": {
+    "status": "PROVISIONAL_REQUIRES_SANDBOX_AND_LIVE_PREFLIGHT",
+    "heavy_parallelism_max": 1,
+    "owner_desktop_memory_reserve_mib": 2048,
+    "worker_memory_cap_mib_formula": "min(2048, max(0, MemAvailableMiB-2048))",
+    "hold_if_worker_memory_cap_below_mib": 768,
+    "provisional_cpu_quota_percent": 60,
+    "root_free_space_hold_below_gib": 8,
+    "interactive_desktop_priority": "OWNER_FIRST",
+    "unattended_reboot": false,
+    "academic_availability": "MANDATORY",
+    "exact_night_window": "UNSET_UNTIL_OWNER_AUTHORIZATION",
+    "deadline_prediction": "FORBIDDEN_UNTIL_SANDBOX_DURATION_BENCHMARKS"
+  },
+  "evidence_contract": {
+    "mandatory_per_step": [
+      "evidence_id",
+      "mission_id",
+      "lot_id",
+      "actor",
+      "authority",
+      "environment",
+      "timestamp_utc",
+      "source_commit",
+      "input_hashes",
+      "command_or_action",
+      "parameters_redacted",
+      "expected_result",
+      "actual_result",
+      "exit_status",
+      "output_hashes",
+      "tests",
+      "checkpoint",
+      "rollback_reference",
+      "resource_observation",
+      "log_hash",
+      "review_state"
+    ],
+    "external_copy_required": true,
+    "secrets_must_be_redacted": true,
+    "absence_of_evidence": "HOLD_NOT_PASS"
+  },
+  "lots": [
+    {
+      "id": "L00",
+      "name": "AUTHORIZATION_GATE",
+      "depends_on": [],
+      "mode": "GATE_ONLY",
+      "status": "BLOCKED_NO_AUTHORIZATION",
+      "destructive": false,
+      "evidence": [
+        "authenticated_authorization_envelope",
+        "package_integrity_check"
+      ]
+    },
+    {
+      "id": "L01",
+      "name": "READONLY_HOST_PREFLIGHT",
+      "depends_on": [
+        "L00"
+      ],
+      "mode": "READ_ONLY",
+      "status": "NOT_EXECUTED",
+      "destructive": false,
+      "evidence": [
+        "host_inventory",
+        "mounts",
+        "packages",
+        "disk_space",
+        "memory",
+        "runner_identity",
+        "custosz_metaos_runtime_identity"
+      ]
+    },
+    {
+      "id": "L02",
+      "name": "CHECKPOINT_AND_EVIDENCE_ROOT",
+      "depends_on": [
+        "L01"
+      ],
+      "mode": "REVERSIBLE",
+      "status": "NOT_EXECUTED",
+      "destructive": false,
+      "evidence": [
+        "checkpoint_manifest",
+        "restore_probe",
+        "external_evidence_sink"
+      ]
+    },
+    {
+      "id": "L03",
+      "name": "DEPENDENCY_AND_SOURCE_CLOSURE",
+      "depends_on": [
+        "L02"
+      ],
+      "mode": "NO_INSTALL_DOWNLOAD_VERIFY_SIMULATE",
+      "status": "NOT_EXECUTED",
+      "destructive": false,
+      "evidence": [
+        "source_provenance",
+        "versions",
+        "hashes",
+        "licenses",
+        "apt_simulation",
+        "dependency_dag"
+      ]
+    },
+    {
+      "id": "L04",
+      "name": "BASE_DEVELOPMENT_TOOLING",
+      "depends_on": [
+        "L03"
+      ],
+      "mode": "REVERSIBLE_INSTALL",
+      "status": "NOT_EXECUTED",
+      "destructive": false,
+      "evidence": [
+        "package_transaction",
+        "versions",
+        "functional_smoke",
+        "rollback"
+      ]
+    },
+    {
+      "id": "L05",
+      "name": "BROWSER_AND_UNIVERSITY_COMPATIBILITY",
+      "depends_on": [
+        "L03"
+      ],
+      "mode": "REVERSIBLE_INSTALL_CONFIG",
+      "status": "NOT_EXECUTED",
+      "destructive": false,
+      "evidence": [
+        "browser_integrity",
+        "sandbox_check",
+        "default_browser",
+        "university_access_smoke",
+        "rollback"
+      ]
+    },
+    {
+      "id": "L06",
+      "name": "CUSTOSZ_METAOS_RUNTIME_INTEGRATION",
+      "depends_on": [
+        "L04"
+      ],
+      "mode": "REVERSIBLE_CONFIG",
+      "status": "NOT_EXECUTED",
+      "destructive": false,
+      "evidence": [
+        "component_hashes",
+        "routing",
+        "checkpoint",
+        "failure_injection",
+        "recovery"
+      ]
+    },
+    {
+      "id": "L07",
+      "name": "PROJECTS_CENTER_AND_LOCAL_APPS",
+      "depends_on": [
+        "L06"
+      ],
+      "mode": "REVERSIBLE_INSTALL_CONFIG",
+      "status": "NOT_EXECUTED",
+      "destructive": false,
+      "evidence": [
+        "application_launch",
+        "functional_tests",
+        "data_boundary",
+        "rollback"
+      ]
+    },
+    {
+      "id": "L08",
+      "name": "KDE_UI_AND_VISUAL_REFERENCE",
+      "depends_on": [
+        "L05",
+        "L07"
+      ],
+      "mode": "USER_CONFIG_WITH_BACKUP",
+      "status": "NOT_EXECUTED",
+      "destructive": false,
+      "evidence": [
+        "config_backup",
+        "visual_reference_check",
+        "launchers",
+        "wallpaper",
+        "accessibility",
+        "rollback"
+      ]
+    },
+    {
+      "id": "L09",
+      "name": "SEMANTIC_RUNTIME_INTEGRATION",
+      "depends_on": [
+        "L06"
+      ],
+      "mode": "READ_VERIFY_THEN_REVERSIBLE_BINDING",
+      "status": "NOT_EXECUTED",
+      "destructive": false,
+      "evidence": [
+        "cas_manifest_match",
+        "query_retrieval_tests",
+        "provenance",
+        "memory_budget",
+        "rollback"
+      ]
+    },
+    {
+      "id": "L10",
+      "name": "SYSTEM_REGRESSION_AND_ROLLBACK_DRILL",
+      "depends_on": [
+        "L04",
+        "L05",
+        "L06",
+        "L07",
+        "L08",
+        "L09"
+      ],
+      "mode": "TEST_ONLY",
+      "status": "NOT_EXECUTED",
+      "destructive": false,
+      "evidence": [
+        "positive_tests",
+        "negative_tests",
+        "boundary_tests",
+        "rollback_replay",
+        "non_regression_report"
+      ]
+    },
+    {
+      "id": "L11",
+      "name": "MORNING_REPORT_AND_HOLD_OR_RELEASE",
+      "depends_on": [
+        "L10"
+      ],
+      "mode": "REPORT_ONLY",
+      "status": "NOT_EXECUTED",
+      "destructive": false,
+      "evidence": [
+        "executed_lots",
+        "failed_lots",
+        "remaining_work",
+        "evidence_index",
+        "resource_report",
+        "next_authorized_state"
+      ]
+    }
+  ],
+  "forbidden_operations": [
+    "DELETE_WINDOWS_11",
+    "FORMAT",
+    "REPARTITION",
+    "GPT_MUTATION",
+    "EFI_MUTATION",
+    "PROYECTOS_MIGRATION",
+    "DELETE_UNRELATED_USER_DATA",
+    "UNATTENDED_REBOOT",
+    "DISABLE_SECURITY_CONTROLS",
+    "EXPOSE_BITLOCKER_OR_OTHER_SECRETS"
+  ],
+  "gates": {
+    "design_package_static_validation": "PENDING",
+    "sandbox_replica_authorized": "NOT_PROVISIONED",
+    "sandbox_T01_T20": "NOT_EXECUTED",
+    "duration_benchmark": "NOT_EXECUTED",
+    "authorization_adapter_review": "HOLD",
+    "G23_design_independent": "HOLD",
+    "G24_design_decision": "HOLD",
+    "host_scope_G23": "HOLD",
+    "host_scope_G24": "HOLD",
+    "owner_authorization": "NOT_RECEIVED",
+    "f3_disk": "DENIED"
+  },
+  "release_state": {
+    "design_capsule_materialized": true,
+    "static_validation_pass": false,
+    "sandbox_validated": false,
+    "independently_validated": false,
+    "certified": false,
+    "server_ready_waiting_for_authorizo": false,
+    "execution_permitted": false
+  }
+}
