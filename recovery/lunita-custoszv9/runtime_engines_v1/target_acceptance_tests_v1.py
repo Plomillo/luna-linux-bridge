@@ -47,6 +47,64 @@ def tree_receipt(root: pathlib.Path) -> dict:
     }
 
 
+class TargetJaspSourceReleaseIdentityTests(unittest.TestCase):
+    def setUp(self):
+        self.manifest = json.dumps(
+            {
+                "app-id": "org.jaspstats.JASP",
+                "modules": [{
+                    "name": "jasp",
+                    "sources": [{
+                        "type": "git",
+                        "url": "https://github.com/jasp-stats/jasp-desktop.git",
+                        "commit": "a" * 40,
+                    }],
+                }],
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        self.cmake = b"project(JASP VERSION 0.98.8.0 LANGUAGES CXX C)\\n"
+
+    def _verify(self, manifest=None, cmake=None, source_commit="a" * 40, version="0.98.8"):
+        manifest = self.manifest if manifest is None else manifest
+        cmake = self.cmake if cmake is None else cmake
+        return target.inspect_jasp_release_sources(
+            manifest,
+            cmake,
+            expected_manifest_blob_sha1=target.git_blob_sha1(manifest),
+            expected_cmake_blob_sha1=target.git_blob_sha1(cmake),
+            expected_source_commit=source_commit,
+            expected_version=version,
+        )
+
+    def test_pinned_source_manifest_and_cmake_version_pass(self):
+        result = self._verify()
+        self.assertEqual("PASS_JASP_SOURCE_RELEASE_IDENTITY", result["status"])
+        self.assertEqual("0.98.8", result["version"])
+        self.assertEqual("0.98.8.0", result["cmake_project_version"])
+        self.assertTrue(result["manifest_jasp_source_commit_matches_pin"])
+
+    def test_manifest_source_commit_drift_is_rejected(self):
+        with self.assertRaisesRegex(target.TargetGateError, "does not uniquely bind"):
+            self._verify(source_commit="b" * 40)
+
+    def test_cmake_version_drift_is_rejected(self):
+        changed = self.cmake.replace(b"0.98.8.0", b"0.98.7.0")
+        with self.assertRaisesRegex(target.TargetGateError, "source version mismatch"):
+            self._verify(cmake=changed)
+
+    def test_nonzero_fourth_cmake_component_is_rejected(self):
+        changed = self.cmake.replace(b"0.98.8.0", b"0.98.8.1")
+        with self.assertRaisesRegex(target.TargetGateError, "unsupported nonzero fourth"):
+            self._verify(cmake=changed)
+
+    def test_app_id_mismatch_is_rejected(self):
+        changed = self.manifest.replace(b"org.jaspstats.JASP", b"org.example.JASP")
+        with self.assertRaisesRegex(target.TargetGateError, "application identity mismatch"):
+            self._verify(manifest=changed)
+
+
 class TargetPivotRootCommandTests(unittest.TestCase):
     def test_pivot_root_user_command_uses_setpriv_and_no_chroot(self):
         with mock.patch.dict(target.os.environ, {"LUNITA_IN_PIVOT_ROOT": "1"}), \
@@ -294,6 +352,10 @@ class TargetLabelHierarchyAcceptanceTests(unittest.TestCase):
         self.assertIn("LUNITA LA INVESTIGADORA", result["labels"])
         self.assertIn("SACAPUNTAS", result["labels"])
         self.assertIn("LUPA", result["labels"])
+
+    def test_jasp_runtime_label_matches_the_pinned_release(self):
+        self.assertIn("JASP 0.98.8", target.EXPECTED_LABEL_HIERARCHY_TEXT)
+        self.assertNotIn("JASP 0.98.1", target.EXPECTED_LABEL_HIERARCHY_TEXT)
 
     def test_missing_sacapuntas_label_is_rejected(self):
         document = self._document()
