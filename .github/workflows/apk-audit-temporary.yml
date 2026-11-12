@@ -114,11 +114,17 @@ jobs:
                       try:
                           if hasattr(a,key): emit(key.upper(),getattr(a,key)())
                       except Exception as e: emit(key.upper(),'UNAVAILABLE:'+type(e).__name__)
-                  try:
-                      from cryptography.hazmat.primitives import hashes
-                      certs=a.get_certificates_v2()
-                      emit('V2_CERTIFICATE_SHA256',[c.fingerprint(hashes.SHA256()).hex() for c in certs])
-                  except Exception as e: emit('V2_CERTIFICATE_SHA256','UNAVAILABLE:'+type(e).__name__)
+                  emit('SIGNATURE_API_METHODS',[m for m in dir(a) if 'cert' in m.lower() or 'sign' in m.lower()])
+                  for label, method in [('V2','get_certificates_der_v2'),('V3','get_certificates_der_v3'),('V1','get_certificates_der')]:
+                      try:
+                          from asn1crypto import x509
+                          raw_certs=getattr(a,method)()
+                          rows=[]
+                          for raw in raw_certs:
+                              cert=x509.Certificate.load(raw)
+                              rows.append({'sha256':cert.sha256_fingerprint.replace(' ','').lower(),'subject':cert.subject.human_friendly,'issuer':cert.issuer.human_friendly})
+                          emit(label+'_SIGNER_CERTIFICATES',rows)
+                      except Exception as e: emit(label+'_SIGNER_CERTIFICATES','UNAVAILABLE:'+type(e).__name__+':'+str(e)[:160])
                   print('AUDIT_PARSE=COMPLETED')
           print('REPORT_BYTES=',__import__('os').path.getsize(report_path))
           PY
