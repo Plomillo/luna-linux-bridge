@@ -169,7 +169,7 @@ El recibo `L` solo puede emitirse tras S32 válido. MUST enlazar el mismo inform
 
 La función de certificación es:
 
-`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-014 ∧ AX-LUN-016 … AX-LUN-019 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
+`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-020 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
 
 y además el certificado `C` MUST:
 
@@ -210,6 +210,13 @@ Los resultados fallidos se conservan como evidencia histórica inmutable. Se pre
 Los timestamps de inode se comparan en la resolución realmente representable por SquashFS: segundos Unix enteros. El manifiesto MUST derivar esos segundos mediante aritmética entera `st_mtime_ns // 1_000_000_000`, nunca mediante conversión float `int(st_mtime)`. La extracción MUST reproducir exactamente los segundos enteros, sin tolerancias ni normalización retrospectiva.
 
 La regresión MUST incluir un timestamp de frontera como `1794523803.999999999`, cuyo valor esperado en SquashFS es `1794523803`. La prueba MUST empaquetar y extraer el archivo y demostrar igualdad del manifiesto. Un desfase de un segundo mantiene el paquete en BLOCKED y exige causa raíz/corrección/revalidación.
+
+
+### AX-LUN-020 — Procedencia de versión JASP sin dependencia AppStream
+
+La versión JASP no se obtiene por inferencia desde una etiqueta, un campo opcional ni una variable que repita el valor esperado. El constructor MUST enlazar criptográficamente: (1) el commit inmutable del manifiesto Flathub; (2) el Git blob SHA-1 y SHA-256 de ese manifiesto; (3) el commit fuente `jasp-desktop` que ese manifiesto declara; (4) el Git blob SHA-1 y SHA-256 del `CMakeLists.txt` en ese commit; y (5) la versión `project(JASP VERSION ...)` derivada de ese archivo. La versión resultante MUST coincidir con la versión aprobada del candidato.
+
+El recibo del rootfs MUST conservar el manifiesto, el CMakeLists y el recibo de identidad; registrar además el deployment commit Flatpak instalado y sus hashes. La validación independiente MUST iniciar el proceso JASP real y exigir el banner de versión y source commit fijados. El campo amigable `Version` de `flatpak info` y las versiones declaradas únicamente en AppStream/appdata NO son evidencia suficiente ni fuente de autoridad: pueden estar ausentes o rezagadas respecto del código de la aplicación.
 
 ## 3. Predicado terminal y orden de admisión
 
@@ -264,6 +271,26 @@ La auditoría atribuye como causa raíz probable la conversión `int(st_mtime)` 
 
 Implementación en revisión: PR [#171](https://github.com/Plomillo/luna-linux-bridge/pull/171), commit `3aac9f57efadf19194c9e411088095f173911b0b`. Al registrar esta revisión, la corrección estaba implementada en rama separada, pero aún no ejecutada contra el workflow completo ni integrada en la rama operativa. Por ello se clasifica como `IMPLEMENTED_NOT_YET_VALIDATED`, no como cerrado.
 
+
+## 5.2 — Bloqueo de identidad de versión JASP en construcción rootfs
+
+El workflow `43326401590`, HEAD `08f932874ae38daf1deade88b201da7562078fe7`, falló durante `scripts/lunita/build_rootfs_candidate_v1.sh` con `ROOTFS_BUILD_BLOCKED: JASP Flatpak metadata did not expose an installed version.` El builder ejecutaba `flatpak info --system org.jaspstats.JASP` y extraía la línea de texto `Version`; su ausencia detuvo la construcción antes del overlay final, los tests funcionales, la imagen y la certificación.
+
+La auditoría identificó que `flatpak info` genera una salida amigable en la que el campo Version depende de metadatos AppStream; no debe tratarse como fuente necesaria ni como garantía de versión real. Además, en el commit fuente JASP fijado `b6cd3b0310be4e18e1b673ac11f14e55615c8fa1`, `CMakeLists.txt` declara `project(JASP VERSION 0.98.8.0)`, mientras `Tools/flatpak/org.jaspstats.JASP.appdata.xml` conserva como primer release `0.98.1`. El manifiesto Flathub del commit `95e467d83089fb292e5d0746e98e188fef6f9113` fija ese mismo commit fuente. El sitio oficial de JASP registra 0.98.8 con fecha 12 de octubre de 2026 y 0.98.1 con fecha 7 de julio de 2026.
+
+Corrección implementada en el candidato de integración:
+
+- Nuevo `scripts/lunita/verify_jasp_release_identity_v1.py`: compara los Git blob SHA-1 esperados, calcula SHA-256, valida app-id, source commit único y versión de CMake normalizada; sus pruebas negativas rechazan cambios de blob, versión y source commit.
+- El builder descarga las dos fuentes mediante sus commits inmutables, invoca el verificador, elimina la dependencia del campo `Version` de `flatpak info` y guarda las fuentes y recibo en `/opt/lunita/metadata`.
+- `ROOTFS_BUILD_RECEIPT.json` registra el deployment commit Flatpak, manifest commit/blob/hash, CMake blob/hash, source commit y la procedencia exacta de la versión.
+- El gate independiente conserva la obligación de verificar el banner de ejecución real de JASP; el mapeo de fuente no reemplaza el test de runtime.
+- El workflow contractual compila el verificador y ejecuta sus self-tests y unit tests.
+
+La fuente de versión declarada como 0.98.8 no se autoriza por el valor codificado. Se demuestra por el contenido de los objetos upstream fijados y, posteriormente, por la salida del ejecutable real. La documentación de Flatpak distingue los metadatos de instalación y la presentación de información de aplicación; los metadatos AppStream son otra capa de catálogo.
+
+Implementación actual en la rama de integración `audit/lunita-zero-trust-certification-axioms-20261112`; pendiente de revisión por CI y de integración con el constructor operativo. Estado: `IMPLEMENTED_NOT_YET_VALIDATED`.
+
+
 ## 6. Estado de certificación al emitir esta especificación
 
 `SPECIFICATION=RECORDED_ON_AUDIT_BRANCH`  
@@ -277,4 +304,4 @@ Implementación en revisión: PR [#171](https://github.com/Plomillo/luna-linux-b
 `SQUASHFS_TIMESTAMP_CORRECTION=IMPLEMENTED_NOT_YET_VALIDATED`  
 `FUNCTIONAL_CERTIFICATE=NOT_GRANTED`
 
-**No se autoriza una transición a CERTIFIED hasta la demostración completa de AX-LUN-001 a AX-LUN-019 sobre un único SHA-256 de `LUNITA.squashfs`.**
+**No se autoriza una transición a CERTIFIED hasta la demostración completa de AX-LUN-001 a AX-LUN-020 sobre un único SHA-256 de `LUNITA.squashfs`.**
