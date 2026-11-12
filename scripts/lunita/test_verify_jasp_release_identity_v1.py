@@ -11,7 +11,7 @@ class JaspReleaseIdentityTests(unittest.TestCase):
 
     def test_git_blob_identity_uses_git_object_header(self):
         self.assertEqual(
-            "f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f",
+            "9daeafb9864cf43055ae93beb0afd6c7d144bfa4",
             identity.git_blob_sha1(b"test\n"),
         )
 
