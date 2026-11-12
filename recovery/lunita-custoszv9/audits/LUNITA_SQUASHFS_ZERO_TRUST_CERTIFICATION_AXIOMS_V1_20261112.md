@@ -204,6 +204,13 @@ Ante cualquier hash faltante o distinto, identidad ambigua, recibo ausente, prue
 
 Los resultados fallidos se conservan como evidencia histórica inmutable. Se preservan el fixture original, los resultados de referencia, el manifiesto congelado, G06/G08, el checkpoint y la capacidad de rollback.
 
+
+### AX-LUN-019 — Representación fiel de timestamps SquashFS
+
+Los timestamps de inode se comparan en la resolución realmente representable por SquashFS: segundos Unix enteros. El manifiesto MUST derivar esos segundos mediante aritmética entera `st_mtime_ns // 1_000_000_000`, nunca mediante conversión float `int(st_mtime)`. La extracción MUST reproducir exactamente los segundos enteros, sin tolerancias ni normalización retrospectiva.
+
+La regresión MUST incluir un timestamp de frontera como `1794523803.999999999`, cuyo valor esperado en SquashFS es `1794523803`. La prueba MUST empaquetar y extraer el archivo y demostrar igualdad del manifiesto. Un desfase de un segundo mantiene el paquete en BLOCKED y exige causa raíz/corrección/revalidación.
+
 ## 3. Predicado terminal y orden de admisión
 
 La decisión terminal no es una suma de porcentajes ni una votación de jobs. Es una conjunción estricta:
@@ -249,6 +256,14 @@ Este contrato se deriva de las rutas operativas observadas en HEAD `08f932874ae3
 
 El informe `FAILURE_AUDIT_RUN_151_20261112.txt` documenta el fallo real del método de prueba anterior: una copia con seed alterado conservaba resultados de referencia producidos bajo configuración distinta; también documenta la divergencia de versión entre el JASP realmente ejecutado (0.98.8) y la antigua etiqueta 0.98.1. Los cambios posteriores incorporaron la separación entre fixture original y replay, metadatos runtime observados y validación de versión/source commit. Esas correcciones son cambios implementados, no evidencia de que la nueva ejecución completa haya terminado PASS.
 
+## 5.1 — Bloqueo SquashFS por precisión temporal y corrección propuesta
+
+La ejecución `43322862456` demostró que el empaquetador falló el round-trip en `opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages/charset_normalizer/__pycache__/constant.cpython-312.pyc`: el manifiesto fuente declaró `mtime_seconds=1794523804` y la extracción `1794523803`. La comparación estricta identificó el único campo diferente. No se rebaja ese control.
+
+La auditoría atribuye como causa raíz probable la conversión `int(st_mtime)` desde float de doble precisión, que puede redondear hacia el segundo siguiente un timestamp nanosegundo situado justo bajo el límite. La solución propuesta usa segundos enteros derivados de `st_mtime_ns` y agrega una prueba de frontera que empaqueta/extrae un archivo con `1794523803.999999999`.
+
+Implementación en revisión: PR [#171](https://github.com/Plomillo/luna-linux-bridge/pull/171), commit `3aac9f57efadf19194c9e411088095f173911b0b`. Al registrar esta revisión, la corrección estaba implementada en rama separada, pero aún no ejecutada contra el workflow completo ni integrada en la rama operativa. Por ello se clasifica como `IMPLEMENTED_NOT_YET_VALIDATED`, no como cerrado.
+
 ## 6. Estado de certificación al emitir esta especificación
 
 `SPECIFICATION=RECORDED_ON_AUDIT_BRANCH`  
@@ -259,6 +274,7 @@ El informe `FAILURE_AUDIT_RUN_151_20261112.txt` documenta el fallo real del mét
 `INDEPENDENT_VALIDATION=NOT_YET_DEMONSTRATED`  
 `S32=NOT_YET_DEMONSTRATED`  
 `STABLE_RELEASE=NOT_YET_DEMONSTRATED`  
+`SQUASHFS_TIMESTAMP_CORRECTION=IMPLEMENTED_NOT_YET_VALIDATED`  
 `FUNCTIONAL_CERTIFICATE=NOT_GRANTED`
 
-**No se autoriza una transición a CERTIFIED hasta la demostración completa de AX-LUN-001 a AX-LUN-018 sobre un único SHA-256 de `LUNITA.squashfs`.**
+**No se autoriza una transición a CERTIFIED hasta la demostración completa de AX-LUN-001 a AX-LUN-019 sobre un único SHA-256 de `LUNITA.squashfs`.**
