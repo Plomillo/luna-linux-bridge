@@ -442,6 +442,55 @@ class JaspDeterministicFixtureTests(unittest.TestCase):
             receipt["receipt_sha256"] = "0" * 64
             self.assertFalse(lane.verify_deterministic_fixture_receipt(receipt, source_sha))
 
+    def test_ignores_seed_copies_in_saved_results_and_changes_only_active_analysis(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            source = base / "Death Penalty.jasp"
+            clone = base / "Death Penalty_seeded.jasp"
+            receipt_path = base / "evidence" / "fixture_receipt.json"
+            active = {
+                "analyses": [{
+                    "id": 2,
+                    "name": "RegressionLogLinearBayesian",
+                    "dynamicModule": {"moduleName": "jaspFrequencies"},
+                    "options": {"setSeed": False, "seed": 1, "other": "preserved"},
+                }]
+            }
+            saved_results = {
+                "options": [
+                    {"setSeed": False, "seed": 1},
+                    {"nested": {"setSeed": False, "seed": 1}},
+                    {"another": [{"setSeed": False, "seed": 1}]},
+                ],
+                "results": {"modelsVisited": 4},
+            }
+            results_bytes = json.dumps(saved_results, sort_keys=True).encode("utf-8")
+            with zipfile.ZipFile(source, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+                archive.writestr("analyses.json", json.dumps(active).encode("utf-8"))
+                archive.writestr("resources/2/jaspResults.json", results_bytes)
+                archive.writestr("data/data.bin", b"immutable data payload")
+
+            source_sha = lane.sha_file(source)
+            inspection = lane.inspect_seed_option(source)
+            self.assertEqual("analyses.json", inspection["active_configuration_member"])
+            self.assertEqual(1, inspection["seed_option_match_count"])
+            self.assertEqual("/analyses/0/options", inspection["matches"][0]["json_pointer"])
+
+            receipt = lane.prepare_deterministic_fixture(source, clone, receipt_path, source_sha)
+            self.assertTrue(lane.verify_deterministic_fixture_receipt(receipt, source_sha))
+            self.assertEqual("analyses.json", receipt["changed_archive_member"])
+            self.assertEqual(2, receipt["unchanged_non_active_member_count"])
+            self.assertFalse(receipt["result_output_members_changed"])
+            with zipfile.ZipFile(source, "r") as original, zipfile.ZipFile(clone, "r") as seeded:
+                self.assertEqual(results_bytes, seeded.read("resources/2/jaspResults.json"))
+                self.assertEqual(original.read("resources/2/jaspResults.json"),
+                                 seeded.read("resources/2/jaspResults.json"))
+                self.assertEqual(original.read("data/data.bin"), seeded.read("data/data.bin"))
+                seeded_active = json.loads(seeded.read("analyses.json"))
+                self.assertIs(seeded_active["analyses"][0]["options"]["setSeed"], True)
+                self.assertEqual(1, seeded_active["analyses"][0]["options"]["seed"])
+                self.assertEqual("preserved", seeded_active["analyses"][0]["options"]["other"])
+
     def test_ambiguous_or_missing_seed_options_fail_closed(self):
         for options in (
             [{"setSeed": False, "seed": 1}, {"setSeed": False, "seed": 1}],
