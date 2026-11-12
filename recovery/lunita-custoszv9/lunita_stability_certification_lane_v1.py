@@ -77,6 +77,8 @@ JASP_CASES = {
     "death_penalty_roundtrip": ("JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_", "*.json", None),
 }
 DEATH_PENALTY_SOURCE_SHA256 = "fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895"
+EXPECTED_JASP_RUNTIME_VERSION = "0.98.8"
+EXPECTED_JASP_SOURCE_COMMIT = "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1"
 
 
 def utc() -> str:
@@ -290,6 +292,26 @@ def jasp_process_env(base: dict[str, str]) -> dict[str, str]:
     env.pop("LD_PRELOAD", None)
     env["QT_QPA_PLATFORM"] = "offscreen"
     return env
+
+
+def inspect_jasp_runtime_identity(output: str) -> dict:
+    """Require the JASP banner version and embedded source commit to match the pinned build."""
+    matches = re.findall(
+        r"Starting JASP ([0-9]+(?:\\.[0-9]+)+) from commit ([0-9a-f]{40})",
+        output or "",
+    )
+    observed = [{"version": version, "source_commit": commit} for version, commit in matches]
+    valid = bool(observed) and all(
+        item["version"] == EXPECTED_JASP_RUNTIME_VERSION
+        and item["source_commit"] == EXPECTED_JASP_SOURCE_COMMIT
+        for item in observed
+    )
+    return {
+        "status": "PASS" if valid else "BLOCKED_JASP_RUNTIME_IDENTITY_MISMATCH",
+        "expected_version": EXPECTED_JASP_RUNTIME_VERSION,
+        "expected_source_commit": EXPECTED_JASP_SOURCE_COMMIT,
+        "observed": observed,
+    }
 
 
 def extract_actual_jasp_unit_test_rows(output: str) -> list[str]:
