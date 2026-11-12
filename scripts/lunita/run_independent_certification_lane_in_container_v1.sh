@@ -85,6 +85,26 @@ for attempt in range(180):
     jasp_done = str(tick.get("jasp_status", "")).startswith(("PASS_", "BLOCKED_"))
     inventory_done = str(tick.get("inventory_status", "")).startswith(("PASS_", "BLOCKED_"))
     if not active and jasp_done and inventory_done:
+        print("BEGIN_BOUNDED_JASP_FAILURE_DIAGNOSTICS", flush=True)
+        output_dir = pathlib.Path(os.environ["LUNITA_OUTPUT_DIR"])
+        patterns = (
+            "JASP_UNITTEST_FLATPAK_*.log",
+            "JASP_UNITTEST_RELIABILITY_*.log",
+            "JASP_UNITTEST_WEIGHT_GAIN_*.log",
+            "JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_*.json",
+            "JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_*_save.log",
+            "JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_*_rerun.log",
+        )
+        for pattern in patterns:
+            for evidence in sorted(output_dir.glob(pattern)):
+                try:
+                    content = evidence.read_text(encoding="utf-8", errors="replace").splitlines()
+                    excerpt = content[-180:]
+                    print(f"\n===== {evidence.name} ({len(content)} lines; last {len(excerpt)}) =====", flush=True)
+                    print("\n".join(excerpt), flush=True)
+                except OSError as exc:
+                    print(f"DIAGNOSTIC_READ_FAILED {evidence}: {type(exc).__name__}: {exc}", flush=True)
+        print("END_BOUNDED_JASP_FAILURE_DIAGNOSTICS", flush=True)
         raise SystemExit("BLOCKED: the independent JASP/rootfs lane completed with one or more failed checks.")
     print(f"WAITING_FOR_INDEPENDENT_EVIDENCE attempt={attempt + 1}/180", flush=True)
     time.sleep(30)
