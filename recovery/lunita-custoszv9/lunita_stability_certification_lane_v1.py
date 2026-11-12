@@ -69,6 +69,7 @@ JASP_CASES = {
     "weight_gain": ("JASP_UNITTEST_WEIGHT_GAIN_", "*.log", "JASP_WEIGHT_GAIN_UNITTEST_RC"),
     "death_penalty_roundtrip": ("JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_", "*.json", None),
 }
+JASP_SEED_HOOK_DIR = pathlib.Path(os.environ.get("LUNITA_JASP_SEED_HOOK_DIR", "/tmp/lunita-dbus")).expanduser()
 
 
 def utc() -> str:
@@ -252,12 +253,13 @@ def parse_dpkg_status(status_path: pathlib.Path) -> dict:
     }
 
 
-def flatpak_jasp_launch(flatpak_options: list[str], app_args: list[str]) -> list[str]:
-    """Run /app/bin/JASP. org.jaspstats.JASP is a shell wrapper that forwards only $1,
-    so --unitTest never receives the fixture path and JASP prints help.
-    Keep the runtime QML import path: replacing it with /app/qml hides QtWebEngine
-    and MainWindow.qml fails to instantiate. LD_LIBRARY_PATH matches the wrapper."""
-    return [
+def flatpak_jasp_launch(
+    flatpak_options: list[str],
+    app_args: list[str],
+    seed_hook_receipt: pathlib.Path | None = None,
+) -> list[str]:
+    """Run /app/bin/JASP with only the explicitly requested certification seed receipt."""
+    command = [
         "/usr/bin/flatpak", "--system", "run", "--unshare=network",
         "--command=/app/bin/JASP",
         "--socket=x11",
@@ -268,9 +270,74 @@ def flatpak_jasp_launch(flatpak_options: list[str], app_args: list[str]) -> list
         "--env=LIBGL_ALWAYS_SOFTWARE=1",
         "--env=QTWEBENGINE_DISABLE_SANDBOX=1",
         "--env=LD_LIBRARY_PATH=/app/lib/x86_64-linux-gnu/:/app/lib/aarch64-linux-gnu/",
-        *flatpak_options, "org.jaspstats.JASP", *app_args,
     ]
+    if seed_hook_receipt is not None:
+        command.extend([
+            "--env=LUNITA_JASP_CERTIFICATION_DETERMINISTIC_SEED=1",
+            f"--env=LUNITA_JASP_SEED_HOOK_RECEIPT={seed_hook_receipt}",
+        ])
+    command.extend([*flatpak_options, "org.jaspstats.JASP", *app_args])
+    return command
 
+
+def _seed_hook_records(path: pathlib.Path) -> list[dict]:
+    records = []
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return records
+    for line in lines:
+        parts = line.split("\t")
+        if len(parts) != 4 or parts[0] != "SEED_APPLIED":
+            continue
+        try:
+            pid = int(parts[1])
+            seed = int(parts[2])
+        except ValueError:
+            continue
+        records.append({"pid": pid, "seed": seed, "set_seed": parts[3]})
+    return records
+
+
+def capture_jasp_seed_hook_receipt(source: pathlib.Path, evidence_name: str) -> dict:
+    records = _seed_hook_records(source)
+    valid = any(
+        row["pid"] > 1 and row["seed"] == 1 and row["set_seed"] == "FALSE"
+        for row in records
+    )
+    evidence_path = None
+    evidence_sha256 = None
+    if source.is_file():
+        evidence_path = OUT / evidence_name
+        evidence_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, evidence_path)
+        evidence_sha256 = sha_file(evidence_path)
+    return {
+        "status": "PASS" if valid and evidence_path is not None else "BLOCKED",
+        "returncode": 0 if valid and evidence_path is not None else 1,
+        "source_path": str(source),
+        "evidence_path": str(evidence_path) if evidence_path else None,
+        "evidence_sha256": evidence_sha256,
+        "records": records,
+        "expected_seed": 1,
+        "expected_set_seed": False,
+    }
+
+
+def seed_hook_evidence_valid(receipt: dict | None) -> bool:
+    if not isinstance(receipt, dict) or receipt.get("status") != "PASS" or receipt.get("returncode") != 0:
+        return False
+    path_text = receipt.get("evidence_path")
+    digest = receipt.get("evidence_sha256")
+    if not path_text or not digest:
+        return False
+    path = pathlib.Path(path_text)
+    if not path.is_file() or sha_file(path) != digest:
+        return False
+    return any(
+        row["pid"] > 1 and row["seed"] == 1 and row["set_seed"] == "FALSE"
+        for row in _seed_hook_records(path)
+    )
 
 def jasp_process_env(base: dict[str, str]) -> dict[str, str]:
     env = dict(base)
@@ -283,7 +350,7 @@ def jasp_process_env(base: dict[str, str]) -> dict[str, str]:
 
 
 def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: str) -> dict:
-    """Run the strict JASP save-and-rerun test on a temporary copy, not the packaged source."""
+    """Run strict JASP save-and-rerun on an isolated copy with an observed seed-hook receipt."""
     source = ROOTFS / "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
     report_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}.json"
     base = {"schema": "CUSTOSZ_LUNITA_JASP_UNITTEST_ROUNDTRIP/1.0",
@@ -309,57 +376,116 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     temp_fixture = None
     temp_root = None
     try:
+        JASP_SEED_HOOK_DIR.mkdir(parents=True, exist_ok=True)
         with __import__("tempfile").TemporaryDirectory(prefix="lunita-jasp-death-roundtrip-") as tmp:
             temp_root = pathlib.Path(tmp)
             temp_fixture = temp_root / "DeathPenalty.jasp"
             shutil.copy2(source, temp_fixture)
             temp_before = sha_file(temp_fixture)
-            cmd = flatpak_jasp_launch([f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)])
+            save_marker = JASP_SEED_HOOK_DIR / f"JASP_SEED_HOOK_ROUNDTRIP_SAVE_{stamp}.log"
+            rerun_marker = JASP_SEED_HOOK_DIR / f"JASP_SEED_HOOK_ROUNDTRIP_RERUN_{stamp}.log"
+            save_marker.unlink(missing_ok=True)
+            rerun_marker.unlink(missing_ok=True)
+            cmd_save = flatpak_jasp_launch(
+                [f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)], save_marker
+            )
+            cmd_rerun = flatpak_jasp_launch(
+                [f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)], rerun_marker
+            )
             save_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_save.log"
             rerun_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_rerun.log"
             save_started = utc()
             try:
-                save_proc = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                save_proc = subprocess.run(cmd_save, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                            text=True, timeout=300, check=False)
                 save_rc = int(save_proc.returncode)
-                save_log_path.write_text(f"START_UTC={save_started}\nCOMMAND={json.dumps(cmd)}\nAPP_COMMIT={actual_commit}\n"
-                                         + save_proc.stdout + ("" if save_proc.stdout.endswith("\n") else "\n")
-                                         + f"SAVE_RUN_RC={save_rc}\nFINISHED_UTC={utc()}\n",
-                                         encoding="utf-8", errors="replace")
-                save_run = {"status": "PASS" if save_rc == 0 else "FAIL", "returncode": save_rc,
-                            "log_path": str(save_log_path), "log_sha256": sha_file(save_log_path)}
+                save_hook = capture_jasp_seed_hook_receipt(
+                    save_marker, f"JASP_SEED_HOOK_ROUNDTRIP_SAVE_{stamp}.log"
+                )
+                save_log_path.write_text(
+                    f"START_UTC={save_started}\nCOMMAND={json.dumps(cmd_save)}\nAPP_COMMIT={actual_commit}\n"
+                    + save_proc.stdout + ("" if save_proc.stdout.endswith("\n") else "\n")
+                    + f"SEED_HOOK_STATUS={save_hook['status']}\n"
+                    + f"SEED_HOOK_EVIDENCE_PATH={save_hook.get('evidence_path') or ''}\n"
+                    + f"SEED_HOOK_EVIDENCE_SHA256={save_hook.get('evidence_sha256') or ''}\n"
+                    + f"SAVE_RUN_RC={save_rc}\nFINISHED_UTC={utc()}\n",
+                    encoding="utf-8", errors="replace",
+                )
+                save_run = {
+                    "status": "PASS" if save_rc == 0 and seed_hook_evidence_valid(save_hook) else "BLOCKED",
+                    "returncode": save_rc, "log_path": str(save_log_path),
+                    "log_sha256": sha_file(save_log_path), "seed_hook_receipt": save_hook,
+                }
             except subprocess.TimeoutExpired as exc:
                 output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-                save_log_path.write_text(f"START_UTC={save_started}\nCOMMAND={json.dumps(cmd)}\n{output}\nSAVE_RUN_RC=124\nTIMEOUT=300\n",
-                                         encoding="utf-8", errors="replace")
+                save_hook = capture_jasp_seed_hook_receipt(
+                    save_marker, f"JASP_SEED_HOOK_ROUNDTRIP_SAVE_{stamp}.log"
+                )
+                save_log_path.write_text(
+                    f"START_UTC={save_started}\nCOMMAND={json.dumps(cmd_save)}\n{output}\n"
+                    + f"SEED_HOOK_STATUS={save_hook['status']}\nSAVE_RUN_RC=124\nTIMEOUT=300\n",
+                    encoding="utf-8", errors="replace",
+                )
                 save_run = {"status": "BLOCKED_TIMEOUT", "returncode": 124,
-                            "log_path": str(save_log_path), "log_sha256": sha_file(save_log_path)}
+                            "log_path": str(save_log_path), "log_sha256": sha_file(save_log_path),
+                            "seed_hook_receipt": save_hook}
             temp_after = sha_file(temp_fixture) if temp_fixture.is_file() else None
+
             rerun_started = utc()
             try:
-                rerun_proc = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                rerun_proc = subprocess.run(cmd_rerun, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                             text=True, timeout=300, check=False)
                 rerun_rc = int(rerun_proc.returncode)
-                rerun_log_path.write_text(f"START_UTC={rerun_started}\nCOMMAND={json.dumps(cmd)}\nAPP_COMMIT={actual_commit}\n"
-                                          + rerun_proc.stdout + ("" if rerun_proc.stdout.endswith("\n") else "\n")
-                                          + f"STRICT_RERUN_RC={rerun_rc}\nFINISHED_UTC={utc()}\n",
-                                          encoding="utf-8", errors="replace")
-                rerun = {"status": "PASS" if rerun_rc == 0 else "FAIL", "returncode": rerun_rc,
-                         "log_path": str(rerun_log_path), "log_sha256": sha_file(rerun_log_path)}
+                rerun_hook = capture_jasp_seed_hook_receipt(
+                    rerun_marker, f"JASP_SEED_HOOK_ROUNDTRIP_RERUN_{stamp}.log"
+                )
+                rerun_log_path.write_text(
+                    f"START_UTC={rerun_started}\nCOMMAND={json.dumps(cmd_rerun)}\nAPP_COMMIT={actual_commit}\n"
+                    + rerun_proc.stdout + ("" if rerun_proc.stdout.endswith("\n") else "\n")
+                    + f"SEED_HOOK_STATUS={rerun_hook['status']}\n"
+                    + f"SEED_HOOK_EVIDENCE_PATH={rerun_hook.get('evidence_path') or ''}\n"
+                    + f"SEED_HOOK_EVIDENCE_SHA256={rerun_hook.get('evidence_sha256') or ''}\n"
+                    + f"STRICT_RERUN_RC={rerun_rc}\nFINISHED_UTC={utc()}\n",
+                    encoding="utf-8", errors="replace",
+                )
+                rerun = {
+                    "status": "PASS" if rerun_rc == 0 and seed_hook_evidence_valid(rerun_hook) else "BLOCKED",
+                    "returncode": rerun_rc, "log_path": str(rerun_log_path),
+                    "log_sha256": sha_file(rerun_log_path), "seed_hook_receipt": rerun_hook,
+                }
             except subprocess.TimeoutExpired as exc:
                 output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-                rerun_log_path.write_text(f"START_UTC={rerun_started}\nCOMMAND={json.dumps(cmd)}\n{output}\nSTRICT_RERUN_RC=124\nTIMEOUT=300\n",
-                                          encoding="utf-8", errors="replace")
+                rerun_hook = capture_jasp_seed_hook_receipt(
+                    rerun_marker, f"JASP_SEED_HOOK_ROUNDTRIP_RERUN_{stamp}.log"
+                )
+                rerun_log_path.write_text(
+                    f"START_UTC={rerun_started}\nCOMMAND={json.dumps(cmd_rerun)}\n{output}\n"
+                    + f"SEED_HOOK_STATUS={rerun_hook['status']}\nSTRICT_RERUN_RC=124\nTIMEOUT=300\n",
+                    encoding="utf-8", errors="replace",
+                )
                 rerun = {"status": "BLOCKED_TIMEOUT", "returncode": 124,
-                         "log_path": str(rerun_log_path), "log_sha256": sha_file(rerun_log_path)}
+                         "log_path": str(rerun_log_path), "log_sha256": sha_file(rerun_log_path),
+                         "seed_hook_receipt": rerun_hook}
             temp_after_rerun = sha_file(temp_fixture) if temp_fixture.is_file() else None
     except Exception as exc:
         base["executor_error"] = {"type": type(exc).__name__, "message": str(exc)[:1200]}
     original_after = sha_file(source) if source.is_file() else None
     unchanged = bool(original_before == expected_original_sha and original_after == expected_original_sha)
-    roundtrip_reproducible = bool(temp_before == expected_original_sha and temp_after and temp_after == temp_after_rerun and temp_root and not temp_root.exists())
-    final_status = "PASS" if save_run.get("returncode") == 0 and rerun.get("returncode") == 0 and unchanged and roundtrip_reproducible else "FAIL"
-    result = {**base, "captured_at_utc": utc(), "status": "PASS_JASP_STRICT_ROUNDTRIP" if final_status == "PASS" else "BLOCKED_JASP_STRICT_ROUNDTRIP",
+    roundtrip_reproducible = bool(
+        temp_before == expected_original_sha and temp_after and temp_after == temp_after_rerun
+        and temp_root and not temp_root.exists()
+    )
+    final_status = (
+        "PASS"
+        if save_run.get("returncode") == 0 and rerun.get("returncode") == 0
+        and save_run.get("status") == "PASS" and rerun.get("status") == "PASS"
+        and seed_hook_evidence_valid(save_run.get("seed_hook_receipt"))
+        and seed_hook_evidence_valid(rerun.get("seed_hook_receipt"))
+        and unchanged and roundtrip_reproducible
+        else "FAIL"
+    )
+    result = {**base, "captured_at_utc": utc(),
+              "status": "PASS_JASP_STRICT_ROUNDTRIP" if final_status == "PASS" else "BLOCKED_JASP_STRICT_ROUNDTRIP",
               "expected_original_sample_sha256": expected_original_sha,
               "original_sample_sha256_before": original_before, "original_sample_sha256_after": original_after,
               "original_sample_identity_matches_pin": original_before == expected_original_sha,
@@ -377,11 +503,11 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     result["report_sha256"] = sha_file(report_path)
     return result
 
-
 def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
-    """Rerun the registered JASP packaged-data unit tests in the pinned sandbox."""
+    """Rerun the registered JASP packaged-data tests in the pinned sandbox."""
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     OUT.mkdir(parents=True, exist_ok=True)
+    JASP_SEED_HOOK_DIR.mkdir(parents=True, exist_ok=True)
     expected_commit = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
     fixtures = {
         "flatpak_launch": ("JASP_UNITTEST_FLATPAK", "/app/lunita-fixtures/DeathPenalty.jasp", "JASP_UNITTEST_RC"),
@@ -413,28 +539,62 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
             for case_id, (prefix, fixture, marker) in fixtures.items():
                 log_path = OUT / f"{prefix}_{stamp}.log"
                 started = utc()
+                seed_marker = None
+                if case_id == "flatpak_launch":
+                    seed_marker = JASP_SEED_HOOK_DIR / f"JASP_SEED_HOOK_FLATPAK_{stamp}.log"
+                    seed_marker.unlink(missing_ok=True)
+                command = flatpak_jasp_launch([], ["--unitTest", fixture], seed_marker)
                 header = (f"START_UTC={started}\nAPP_COMMIT={actual_commit}\nTEST_FILE={fixture}\n"
                           "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED\n")
                 try:
-                    run = subprocess.run(flatpak_jasp_launch([], ["--unitTest", fixture]),
-                                         env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    run = subprocess.run(command, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                          text=True, timeout=300, check=False)
                     rc = int(run.returncode)
-                    payload = header + run.stdout + ("\n" if not run.stdout.endswith("\n") else "") + f"\n{marker}={rc}\nFINISHED_UTC={utc()}\n"
+                    seed_receipt = (
+                        capture_jasp_seed_hook_receipt(seed_marker, f"JASP_SEED_HOOK_FLATPAK_{stamp}.log")
+                        if seed_marker is not None else None
+                    )
+                    seed_ok = seed_marker is None or seed_hook_evidence_valid(seed_receipt)
+                    case_status = "PASS" if rc == 0 and seed_ok else "BLOCKED"
+                    payload = (
+                        header + run.stdout + ("" if run.stdout.endswith("\n") else "\n")
+                        + (f"SEED_HOOK_STATUS={seed_receipt['status']}\n"
+                           f"SEED_HOOK_EVIDENCE_PATH={seed_receipt.get('evidence_path') or ''}\n"
+                           f"SEED_HOOK_EVIDENCE_SHA256={seed_receipt.get('evidence_sha256') or ''}\n"
+                           if seed_receipt is not None else "")
+                        + f"\n{marker}={rc}\nFINISHED_UTC={utc()}\n"
+                    )
                     log_path.write_text(payload, encoding="utf-8", errors="replace")
-                    results["tests"][case_id] = {"status": "PASS" if rc == 0 else "BLOCKED", "returncode": rc,
-                        "fixture": fixture, "log_path": str(log_path), "log_sha256": sha_file(log_path),
-                        "command": flatpak_jasp_launch([], ["--unitTest", fixture]),
-                        "started_at_utc": started, "finished_at_utc": utc()}
+                    results["tests"][case_id] = {
+                        "status": case_status, "returncode": rc, "fixture": fixture,
+                        "log_path": str(log_path), "log_sha256": sha_file(log_path),
+                        "command": command, "started_at_utc": started, "finished_at_utc": utc(),
+                        "seed_hook_receipt": seed_receipt,
+                    }
                 except subprocess.TimeoutExpired as exc:
                     out = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-                    log_path.write_text(header + out + f"\n{marker}=124\nTIMEOUT=300\n", encoding="utf-8")
-                    results["tests"][case_id] = {"status": "BLOCKED_TIMEOUT", "returncode": 124,
-                        "fixture": fixture, "log_path": str(log_path), "log_sha256": sha_file(log_path)}
+                    seed_receipt = (
+                        capture_jasp_seed_hook_receipt(seed_marker, f"JASP_SEED_HOOK_FLATPAK_{stamp}.log")
+                        if seed_marker is not None else None
+                    )
+                    log_path.write_text(
+                        header + out + (f"\nSEED_HOOK_STATUS={seed_receipt['status']}\n" if seed_receipt else "")
+                        + f"\n{marker}=124\nTIMEOUT=300\n", encoding="utf-8"
+                    )
+                    results["tests"][case_id] = {
+                        "status": "BLOCKED_TIMEOUT", "returncode": 124, "fixture": fixture,
+                        "log_path": str(log_path), "log_sha256": sha_file(log_path),
+                        "seed_hook_receipt": seed_receipt,
+                    }
                 except Exception as exc:
-                    log_path.write_text(header + f"EXECUTION_ERROR={type(exc).__name__}:{str(exc)[:1000]}\n{marker}=125\n", encoding="utf-8")
-                    results["tests"][case_id] = {"status": "BLOCKED_EXECUTION_ERROR", "returncode": 125,
-                        "fixture": fixture, "log_path": str(log_path), "log_sha256": sha_file(log_path)}
+                    log_path.write_text(
+                        header + f"EXECUTION_ERROR={type(exc).__name__}:{str(exc)[:1000]}\n{marker}=125\n",
+                        encoding="utf-8",
+                    )
+                    results["tests"][case_id] = {
+                        "status": "BLOCKED_EXECUTION_ERROR", "returncode": 125, "fixture": fixture,
+                        "log_path": str(log_path), "log_sha256": sha_file(log_path),
+                    }
             results["roundtrip_gate"] = run_death_penalty_roundtrip(actual_commit, env, stamp)
     except Exception as exc:
         results["status"] = "BLOCKED_JASP_TEST_EXECUTOR"
@@ -442,9 +602,13 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
         atomic_json(result_path, results)
         return results
     roundtrip = results.get("roundtrip_gate") or {"status": "BLOCKED_ROUNDTRIP_NOT_RUN"}
-    roundtrip_ok = (roundtrip.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
-                    and (roundtrip.get("strict_rerun_after_save") or {}).get("returncode") == 0
-                    and roundtrip.get("original_sample_unchanged") is True)
+    roundtrip_ok = (
+        roundtrip.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
+        and (roundtrip.get("strict_rerun_after_save") or {}).get("returncode") == 0
+        and roundtrip.get("original_sample_unchanged") is True
+        and seed_hook_evidence_valid((roundtrip.get("save_run") or {}).get("seed_hook_receipt"))
+        and seed_hook_evidence_valid((roundtrip.get("strict_rerun_after_save") or {}).get("seed_hook_receipt"))
+    )
     results["status"] = "PASS_REGISTERED_JASP_TESTS" if (
         results["tests"] and all(x.get("status") == "PASS" and x.get("returncode") == 0
                                  for x in results["tests"].values()) and roundtrip_ok
@@ -452,226 +616,6 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
     results["roundtrip_gate"] = roundtrip
     atomic_json(result_path, results)
     return results
-
-
-INVENTORY_PRIVILEGED_ENV = (
-    "LUNITA_ROOTFS",
-    "LUNITA_STATE_DIR",
-    "LUNITA_OUTPUT_DIR",
-    "LUNITA_EVIDENCE_DIR",
-    "LUNITA_CANDIDATE_DIR",
-    "LUNITA_TARGET_RUNTIME_RECEIPT_DIR",
-    "LUNITA_CANDIDATE_MANIFEST",
-    "LUNITA_CERTIFICATION_PROFILE",
-)
-
-
-def inventory_worker_command(result_path: pathlib.Path) -> list[str]:
-    """Run only the read-only rootfs inventory with root traversal rights.
-
-    Candidate directories remain 0700/0600. The worker uses sudo read-only
-    access; it does not chown/chmod or otherwise alter rootfs content.
-    """
-    script = str(pathlib.Path(__file__).resolve())
-    worker = [sys.executable, "-B", script, "--inventory-worker", str(result_path)]
-    if os.geteuid() == 0:
-        return worker
-    sudo = shutil.which("sudo")
-    if not sudo:
-        raise PermissionError("Rootfs inventory requires read-only privileged traversal; sudo is unavailable")
-    preserved = ",".join(INVENTORY_PRIVILEGED_ENV)
-    return [sudo, "-n", f"--preserve-env={preserved}", *worker]
-
-
-def restore_inventory_artifact_owner(path: pathlib.Path) -> None:
-    """Return root-created evidence files to the invoking workflow user, mode 0600."""
-    if os.geteuid() != 0:
-        return
-    uid_text, gid_text = os.environ.get("SUDO_UID"), os.environ.get("SUDO_GID")
-    if uid_text is None and gid_text is None:
-        return
-    if not (uid_text and gid_text and uid_text.isdigit() and gid_text.isdigit()):
-        raise PermissionError("Cannot restore inventory evidence ownership from incomplete sudo identity")
-    os.chown(path, int(uid_text), int(gid_text), follow_symlinks=False)
-    os.chmod(path, 0o600)
-
-
-def _entry_rows(root: pathlib.Path):
-    """Yield non-following filesystem entries in stable order."""
-    def deny_walk_error(error: OSError) -> None:
-        raise error
-
-    for base, dirs, files in os.walk(
-        root, topdown=True, followlinks=False, onerror=deny_walk_error
-    ):
-        dirs.sort()
-        files.sort()
-        bp = pathlib.Path(base)
-        # Include the base directory itself, then children. Symlinked dirs are not traversed.
-        if bp != root:
-            yield bp
-        for name in list(dirs):
-            p = bp / name
-            if p.is_symlink():
-                yield p
-                dirs.remove(name)
-        for name in files:
-            yield bp / name
-
-
-def _meta_digest(root: pathlib.Path) -> tuple[str, int]:
-    h = hashlib.sha256()
-    count = 0
-    for path in _entry_rows(root):
-        try:
-            st = path.lstat()
-            if pathlib.Path(path).is_symlink():
-                kind, extra = "symlink", os.readlink(path)
-            elif pathlib.Path(path).is_dir():
-                kind, extra = "dir", ""
-            elif pathlib.Path(path).is_file():
-                kind, extra = "file", ""
-            else:
-                kind, extra = "special", str(st.st_rdev)
-            row = [path.relative_to(root).as_posix(), kind, st.st_mode, st.st_uid,
-                   st.st_gid, st.st_size, st.st_mtime_ns, extra]
-            h.update((json.dumps(row, separators=(",", ":"), ensure_ascii=False) + "\n").encode())
-            count += 1
-        except OSError as exc:
-            h.update((f"ERROR\t{path}\t{type(exc).__name__}\n").encode())
-            count += 1
-    return h.hexdigest(), count
-
-
-def hash_regular_file_read_only(path: pathlib.Path) -> tuple[str, str]:
-    """Hash as the current user; on EACCES, use non-interactive sudo for read-only sha256sum.
-
-    This does not chmod, chown, copy, or otherwise mutate the candidate rootfs.
-    If passwordless sudo is unavailable, the inventory remains blocked.
-    """
-    try:
-        h = hashlib.sha256()
-        with path.open("rb") as stream:
-            for block in iter(lambda: stream.read(1024 * 1024), b""):
-                h.update(block)
-        return h.hexdigest(), "CURRENT_USER_READ"
-    except PermissionError as original:
-        try:
-            path.relative_to(ROOTFS)
-        except ValueError as exc:
-            raise PermissionError("Privileged hash path escapes candidate rootfs") from exc
-        sudo = shutil.which("sudo")
-        sha256sum = shutil.which("sha256sum")
-        if not sudo or not sha256sum:
-            raise PermissionError("Read denied and sudo/sha256sum is unavailable") from original
-        result = subprocess.run(
-            [sudo, "-n", sha256sum, "--", str(path)],
-            stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=600, check=False,
-        )
-        if result.returncode != 0:
-            detail = (result.stderr or result.stdout or "sudo read-only hash failed").strip()[-600:]
-            raise PermissionError("Passwordless sudo read-only hash failed: " + detail) from original
-        token = result.stdout.split(maxsplit=1)[0] if result.stdout.split() else ""
-        if not re.fullmatch(r"[0-9a-fA-F]{64}", token):
-            raise RuntimeError("Privileged sha256sum returned an invalid digest")
-        return token.lower(), "SUDO_NONINTERACTIVE_READ_ONLY_SHA256SUM"
-
-
-def build_rootfs_inventory(report_path: pathlib.Path | None = None) -> dict:
-    """Hash every regular file without following symlinks; retain a JSONL manifest."""
-    EVIDENCE.mkdir(parents=True, exist_ok=True, mode=0o700)
-    stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    manifest = EVIDENCE / f"rootfs_inventory_{stamp}.jsonl"
-    report_path = report_path or (EVIDENCE / f"rootfs_inventory_{stamp}.json")
-    if not ROOTFS.is_dir():
-        result = {"schema": "CUSTOSZ_LUNITA_ROOTFS_INVENTORY/1.0", "status": "BLOCKED_ROOTFS_MISSING",
-                  "timestamp_utc": utc(), "rootfs_path": str(ROOTFS), "certification": "NOT_GRANTED"}
-        atomic_json(report_path, result)
-        restore_inventory_artifact_owner(report_path)
-        return result
-
-    status_path = ROOTFS / "var/lib/dpkg/status"
-    os_release = ROOTFS / "etc/os-release"
-    launcher = ROOTFS / "opt/lunita/agent/lunita.py"
-    before_digest, before_count = _meta_digest(ROOTFS)
-    tmp_manifest = manifest.with_suffix(".jsonl.partial")
-    count = total_bytes = errors_count = symlink_count = regular_count = privileged_hash_count = 0
-    errors = []
-    digest = hashlib.sha256()
-    with tmp_manifest.open("x", encoding="utf-8") as out:
-        for path in _entry_rows(ROOTFS):
-            rel = path.relative_to(ROOTFS).as_posix()
-            try:
-                st0 = path.lstat()
-                if path.is_symlink():
-                    kind, link, file_hash = "symlink", os.readlink(path), None
-                    symlink_count += 1
-                elif path.is_dir():
-                    kind, link, file_hash = "directory", None, None
-                elif path.is_file():
-                    kind, link = "file", None
-                    file_hash, hash_method = hash_regular_file_read_only(path)
-                    if hash_method == "SUDO_NONINTERACTIVE_READ_ONLY_SHA256SUM":
-                        privileged_hash_count += 1
-                    st1 = path.lstat()
-                    if (st0.st_size, st0.st_mtime_ns, st0.st_mode) != (st1.st_size, st1.st_mtime_ns, st1.st_mode):
-                        raise RuntimeError("FILE_CHANGED_DURING_INVENTORY")
-                    regular_count += 1
-                    total_bytes += st0.st_size
-                else:
-                    kind, link, file_hash = "special", None, None
-                    hash_method = None
-                if kind != "file":
-                    hash_method = None
-                row = {"path": rel, "type": kind, "mode": st0.st_mode & 0o7777,
-                       "uid": st0.st_uid, "gid": st0.st_gid, "size_bytes": st0.st_size,
-                       "mtime_ns": st0.st_mtime_ns, "sha256": file_hash,
-                       "hash_method": hash_method, "symlink_target": link}
-            except Exception as exc:
-                errors_count += 1
-                if len(errors) < 200:
-                    errors.append({"path": rel, "error_type": type(exc).__name__, "error": str(exc)[:400]})
-                row = {"path": rel, "type": "ERROR", "error_type": type(exc).__name__, "error": str(exc)[:400]}
-            line = json.dumps(row, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n"
-            out.write(line)
-            digest.update(line.encode())
-            count += 1
-        out.flush()
-        os.fsync(out.fileno())
-    after_digest, after_count = _meta_digest(ROOTFS)
-    stable_tree = before_digest == after_digest and before_count == after_count
-    os.replace(tmp_manifest, manifest)
-    restore_inventory_artifact_owner(manifest)
-    dep = parse_dpkg_status(status_path)
-    launcher_sha = sha_file(launcher) if launcher.is_file() else None
-    basics_pass = status_path.is_file() and os_release.is_file() and launcher_sha is not None
-    pass_all = basics_pass and stable_tree and errors_count == 0 and dep["status"] == "PASS_DECLARED_PACKAGE_DEPENDENCIES_RESOLVED"
-    result = {
-        "schema": "CUSTOSZ_LUNITA_ROOTFS_INVENTORY/1.0",
-        "timestamp_utc": utc(),
-        "candidate_id": "G06_REBUILD_CANDIDATE_R1",
-        "rootfs_path": str(ROOTFS),
-        "rootfs_inventory_status": "PASS" if pass_all else "BLOCKED",
-        "status": "PASS_ROOTFS_INVENTORY_AND_DEPENDENCY_CLOSURE" if pass_all else "BLOCKED_ROOTFS_INVENTORY_OR_DEPENDENCY_CLOSURE",
-        "metadata_tree_sha256_before": before_digest, "metadata_tree_sha256_after": after_digest,
-        "tree_stable_during_scan": stable_tree, "metadata_entry_count_before": before_count,
-        "metadata_entry_count_after": after_count, "inventory_entry_count": count,
-        "regular_file_count": regular_count, "symlink_count": symlink_count,
-        "regular_file_total_bytes": total_bytes, "inventory_errors_count": errors_count,
-        "privileged_read_only_hash_count": privileged_hash_count,
-        "privileged_hashing_policy": "SUDO_NONINTERACTIVE_READ_ONLY_SHA256SUM_OR_FAIL_CLOSED",
-        "inventory_errors": errors, "manifest_path": str(manifest), "manifest_sha256": sha_file(manifest),
-        "manifest_stream_sha256": digest.hexdigest(), "manifest_bytes": manifest.stat().st_size,
-        "dpkg_dependency_closure": dep, "dpkg_status_path": str(status_path),
-        "os_release_sha256": sha_file(os_release) if os_release.is_file() else None,
-        "launcher_sha256": launcher_sha,
-        "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
-        "certification": "NOT_GRANTED",
-    }
-    atomic_json(report_path, result)
-    restore_inventory_artifact_owner(report_path)
-    return result
-
 
 def latest_jasp_evidence() -> dict:
     rows = {}
@@ -691,26 +635,35 @@ def latest_jasp_evidence() -> dict:
             temp_before = data.get("temporary_fixture_sha256_before")
             temp_after_save = data.get("temporary_fixture_sha256_after_save")
             temp_after_rerun = data.get("temporary_fixture_sha256_after_rerun")
+            save_seed = save_run.get("seed_hook_receipt")
+            rerun_seed = rerun.get("seed_hook_receipt")
+            seed_evidence_ok = seed_hook_evidence_valid(save_seed) and seed_hook_evidence_valid(rerun_seed)
             passed = (
                 data.get("schema") == "CUSTOSZ_LUNITA_JASP_UNITTEST_ROUNDTRIP/1.0"
                 and data.get("app_commit") == "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
                 and data.get("network_unshared") is True and data.get("flatpak_sandbox") is True
                 and data.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
                 and rerun.get("status") == "PASS" and rc == 0
-                and save_run.get("returncode") == 0
+                and save_run.get("returncode") == 0 and save_run.get("status") == "PASS"
+                and seed_evidence_ok
                 and data.get("original_sample_identity_matches_pin") is True
                 and data.get("original_sample_unchanged") is True
                 and data.get("temporary_fixture_removed_after_test") is True
                 and bool(temp_before) and temp_before == data.get("expected_original_sample_sha256")
                 and bool(temp_after_save) and temp_after_save == temp_after_rerun
             )
-            item.update({"returncode": rc, "save_returncode": save_run.get("returncode"),
-                         "status": "PASS" if passed else "BLOCKED",
-                         "case_status": data.get("status"), "rerun_status": rerun.get("status"),
-                         "original_sample_unchanged": data.get("original_sample_unchanged"),
-                         "original_sample_identity_matches_pin": data.get("original_sample_identity_matches_pin"),
-                         "temporary_fixture_removed_after_test": data.get("temporary_fixture_removed_after_test"),
-                         "temporary_fixture_stable_after_save_and_rerun": bool(temp_after_save and temp_after_save == temp_after_rerun)})
+            item.update({
+                "returncode": rc, "save_returncode": save_run.get("returncode"),
+                "status": "PASS" if passed else "BLOCKED",
+                "case_status": data.get("status"), "rerun_status": rerun.get("status"),
+                "original_sample_unchanged": data.get("original_sample_unchanged"),
+                "original_sample_identity_matches_pin": data.get("original_sample_identity_matches_pin"),
+                "temporary_fixture_removed_after_test": data.get("temporary_fixture_removed_after_test"),
+                "temporary_fixture_stable_after_save_and_rerun": bool(temp_after_save and temp_after_save == temp_after_rerun),
+                "seed_hook_evidence_valid": seed_evidence_ok,
+                "save_seed_hook_receipt": save_seed,
+                "rerun_seed_hook_receipt": rerun_seed,
+            })
         else:
             try:
                 text = p.read_text(encoding="utf-8", errors="replace")
@@ -722,18 +675,32 @@ def latest_jasp_evidence() -> dict:
             commits = re.findall(r"^APP_COMMIT=([0-9a-f]{64})$", text, re.M)
             pinned_commit = bool(commits) and all(x == expected_commit for x in commits)
             sandbox_bound = "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED" in text
-            passed = rc == 0 and pinned_commit and sandbox_bound
-            item.update({"returncode": rc, "status": "PASS" if passed else "BLOCKED",
-                         "observed_app_commits": commits, "pinned_commit_match": pinned_commit,
-                         "sandbox_execution_marker_present": sandbox_bound,
-                         "semantic_shape_mismatch": bool(re.search(r"Row is missing|Total number of models visited\s*=\s*\d+\s*!=|results are different", text, re.I)),
-                         "log_has_numeric_deltas": bool(re.search(r"\d+(?:\.\d+)?\s*!=\s*\d+(?:\.\d+)?", text))})
+            seed_status = re.findall(r"^SEED_HOOK_STATUS=(.+)$", text, re.M)
+            seed_paths = re.findall(r"^SEED_HOOK_EVIDENCE_PATH=(.+)$", text, re.M)
+            seed_hashes = re.findall(r"^SEED_HOOK_EVIDENCE_SHA256=([0-9a-f]{64})$", text, re.M)
+            seed_ok = False
+            if case == "flatpak_launch" and seed_status and seed_paths and seed_hashes:
+                seed_path = pathlib.Path(seed_paths[-1])
+                seed_ok = (
+                    seed_status[-1] == "PASS" and seed_path.is_file()
+                    and sha_file(seed_path) == seed_hashes[-1]
+                    and any(row["pid"] > 1 and row["seed"] == 1 and row["set_seed"] == "FALSE"
+                            for row in _seed_hook_records(seed_path))
+                )
+            passed = rc == 0 and pinned_commit and sandbox_bound and (case != "flatpak_launch" or seed_ok)
+            item.update({
+                "returncode": rc, "status": "PASS" if passed else "BLOCKED",
+                "observed_app_commits": commits, "pinned_commit_match": pinned_commit,
+                "sandbox_execution_marker_present": sandbox_bound,
+                "seed_hook_evidence_valid": seed_ok if case == "flatpak_launch" else None,
+                "semantic_shape_mismatch": bool(re.search(r"Row is missing|Total number of models visited\s*=\s*\d+\s*!=|results are different", text, re.I)),
+                "log_has_numeric_deltas": bool(re.search(r"\d+(?:\.\d+)?\s*!=\s*\d+(?:\.\d+)?", text)),
+            })
         rows[case] = item
     all_pass = all(x.get("status") == "PASS" and x.get("returncode") == 0 for x in rows.values())
     return {"status": "PASS_JASP_PACKAGED_FIXTURE_NONREGRESSION" if all_pass else "BLOCKED_JASP_PACKAGED_FIXTURE_NONREGRESSION",
             "all_required_jasp_cases_pass": all_pass, "cases": rows,
-            "next_action": "Use the pinned candidate JASP runner on isolated fixture copies; diagnose model-count/result differences and precision deltas separately. Do not rewrite reference fixtures or relax thresholds to force a pass."}
-
+            "next_action": "Verify that the actual Flatpak R_HOME loaded Rprofile.site and applied the stored seed on isolated Death Penalty copies; compare model count and posterior/BF output only after the hash-bound hook receipt passes. Do not rewrite reference fixtures or relax thresholds."}
 
 def persist_jasp_remediation_queue(jasp: dict) -> dict:
     """Keep a hash-bound, append-only queue for each unresolved packaged JASP case."""
@@ -757,10 +724,10 @@ def persist_jasp_remediation_queue(jasp: dict) -> dict:
             continue
         path_text = result.get("evidence_path")
         reason = {
-            "flatpak_launch": "Verify pinned JASP startup/runner and capture an exact successful return code.",
+            "flatpak_launch": "Verify pinned JASP startup and prove the correct Flatpak R_HOME seed hook executed with a hash-bound receipt.",
             "reliability": "Diagnose full-precision output differences versus packaged reference; distinguish harmless display formatting from semantic/statistical deltas with a documented independent tolerance policy.",
             "weight_gain": "Diagnose numeric display/precision deltas against the packaged reference without mutating the original fixture.",
-            "death_penalty_roundtrip": "Diagnose changed model count and posterior/BF values on an isolated fixture copy; preserve original bytes and determine whether the candidate build has a genuine non-regression issue.",
+            "death_penalty_roundtrip": "Verify the actual Flatpak R_HOME and deterministic seed-hook receipt before diagnosing model-count/posterior/BF differences; preserve original fixture bytes.",
         }.get(case_id, "Rerun the exact pinned JASP case on an isolated copy and retain hash-bound logs.")
         items.append({"case_id": case_id, "evidence_path": path_text, "evidence_sha256": digest,
             "observed_status": result.get("status"), "returncode": result.get("returncode"),

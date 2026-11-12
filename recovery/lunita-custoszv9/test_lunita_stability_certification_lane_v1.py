@@ -352,6 +352,40 @@ if __name__ == "__main__":
     unittest.main()
 
 
+class JaspSeedHookReceiptTests(unittest.TestCase):
+    def test_seed_hook_receipt_is_hash_bound_and_rejects_wrong_seed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            out = base / "out"
+            out.mkdir()
+            marker = base / "seed-hook.log"
+            marker.write_text("SEED_APPLIED\t123\t1\tFALSE\n", encoding="utf-8")
+            with mock.patch.object(lane, "OUT", out):
+                receipt = lane.capture_jasp_seed_hook_receipt(marker, "seed-hook-evidence.log")
+            self.assertEqual("PASS", receipt["status"])
+            self.assertTrue(lane.seed_hook_evidence_valid(receipt))
+            marker.write_text("SEED_APPLIED\t123\t2\tFALSE\n", encoding="utf-8")
+            with mock.patch.object(lane, "OUT", out):
+                invalid = lane.capture_jasp_seed_hook_receipt(marker, "seed-hook-invalid.log")
+            self.assertEqual("BLOCKED", invalid["status"])
+            self.assertFalse(lane.seed_hook_evidence_valid(invalid))
+
+    def test_flatpak_jasp_pass_is_blocked_without_executed_seed_hook_receipt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = pathlib.Path(tmp)
+            log = out / "JASP_UNITTEST_FLATPAK_20261112.log"
+            log.write_text(
+                "APP_COMMIT=83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7\n"
+                "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED\n"
+                "JASP_UNITTEST_RC=0\n",
+                encoding="utf-8",
+            )
+            with mock.patch.object(lane, "OUT", out):
+                result = lane.latest_jasp_evidence()
+            self.assertEqual("BLOCKED", result["cases"]["flatpak_launch"]["status"])
+            self.assertFalse(result["cases"]["flatpak_launch"]["seed_hook_evidence_valid"])
+
+
 class JaspRunnerTests(unittest.TestCase):
     def test_runner_pins_commit_and_records_each_real_return_code(self):
         from types import SimpleNamespace
@@ -364,31 +398,43 @@ class JaspRunnerTests(unittest.TestCase):
             source_fixture = rootfs / "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
             source_fixture.parent.mkdir(parents=True)
             source_fixture.write_bytes(b"fake jasp fixture - immutable source")
+            seed_dir = base / "seed-hooks"
             responses = [
                 SimpleNamespace(returncode=0, stdout="83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="flatpak test pass\\n", stderr=""),
-                SimpleNamespace(returncode=1, stdout="numeric delta\\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="flatpak test pass\\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="roundtrip save passed\\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="roundtrip strict rerun passed\\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="flatpak test pass\n", stderr=""),
+                SimpleNamespace(returncode=1, stdout="numeric delta\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="flatpak test pass\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="roundtrip save passed\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="roundtrip strict rerun passed\n", stderr=""),
             ]
-            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "ROOTFS", rootfs), mock.patch.object(lane.subprocess, "run", side_effect=responses) as runner:
+            response_iter = iter(responses)
+            def fake_run(*args, **kwargs):
+                command = args[0]
+                for part in command:
+                    if part.startswith("--env=LUNITA_JASP_SEED_HOOK_RECEIPT="):
+                        marker = pathlib.Path(part.split("=", 1)[1])
+                        marker.parent.mkdir(parents=True, exist_ok=True)
+                        marker.write_text("SEED_APPLIED\t123\t1\tFALSE\n", encoding="utf-8")
+                return next(response_iter)
+            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "ROOTFS", rootfs), \
+                 mock.patch.object(lane, "JASP_SEED_HOOK_DIR", seed_dir), \
+                 mock.patch.object(lane.subprocess, "run", side_effect=fake_run) as runner:
                 result = lane.run_jasp_regression_suite(report)
             self.assertEqual("BLOCKED_JASP_REGRESSION", result["status"])
             self.assertEqual(6, runner.call_count)
-            # Unknown JASP CLI arguments print help and return RC=1.
-            # Qt's offscreen backend is selected through the environment.
             for call in runner.call_args_list:
                 self.assertEqual("offscreen", call.kwargs["env"].get("QT_QPA_PLATFORM"))
                 self.assertNotIn("-platform", call.args[0])
                 self.assertNotIn("--timeOut=2", call.args[0])
-            jasp_calls = [call.args[0] for call in runner.call_args_list
-                          if "--unitTest" in call.args[0]]
+            jasp_calls = [call.args[0] for call in runner.call_args_list if "--unitTest" in call.args[0]]
             self.assertEqual(5, len(jasp_calls))
             self.assertTrue(all(command[command.index("org.jaspstats.JASP") + 1] == "--unitTest"
                                 for command in jasp_calls))
             self.assertTrue(all("--hide" not in command for command in jasp_calls))
+            flatpak_command = result["tests"]["flatpak_launch"]["command"]
+            self.assertIn("--env=LUNITA_JASP_CERTIFICATION_DETERMINISTIC_SEED=1", flatpak_command)
             self.assertEqual("PASS", result["tests"]["flatpak_launch"]["status"])
+            self.assertTrue(lane.seed_hook_evidence_valid(result["tests"]["flatpak_launch"]["seed_hook_receipt"]))
             self.assertEqual(1, result["tests"]["reliability"]["returncode"])
             self.assertEqual("BLOCKED", result["tests"]["reliability"]["status"])
             self.assertIn("JASP_RELIABILITY_UNITTEST_RC=1", pathlib.Path(result["tests"]["reliability"]["log_path"]).read_text())
@@ -413,26 +459,38 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
             )
             source.parent.mkdir(parents=True)
             source.write_bytes(b"fixture bytes for positive mocked roundtrip")
+            seed_dir = base / "seed-hooks"
             responses = [
-                SimpleNamespace(returncode=0, stdout="save successful\\n", stderr=""),
-                SimpleNamespace(returncode=0, stdout="strict reopen successful\\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="save successful\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout="strict reopen successful\n", stderr=""),
             ]
+            response_iter = iter(responses)
+            def fake_run(*args, **kwargs):
+                command = args[0]
+                for part in command:
+                    if part.startswith("--env=LUNITA_JASP_SEED_HOOK_RECEIPT="):
+                        marker = pathlib.Path(part.split("=", 1)[1])
+                        marker.parent.mkdir(parents=True, exist_ok=True)
+                        marker.write_text("SEED_APPLIED\t123\t1\tFALSE\n", encoding="utf-8")
+                return next(response_iter)
             with mock.patch.object(lane, "OUT", out):
                 with mock.patch.object(lane, "ROOTFS", rootfs):
-                    with mock.patch.object(lane, "sha_file", return_value=expected):
-                        with mock.patch.object(lane.subprocess, "run", side_effect=responses) as runner:
-                            result = lane.run_death_penalty_roundtrip(
-                                "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
-                                {"QT_QPA_PLATFORM": "offscreen"},
-                                "POSITIVE_TEST",
-                            )
+                    with mock.patch.object(lane, "JASP_SEED_HOOK_DIR", seed_dir):
+                        with mock.patch.object(lane, "sha_file", return_value=expected):
+                            with mock.patch.object(lane.subprocess, "run", side_effect=fake_run) as runner:
+                                result = lane.run_death_penalty_roundtrip(
+                                    "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
+                                    {"QT_QPA_PLATFORM": "offscreen"},
+                                    "POSITIVE_TEST",
+                                )
             self.assertEqual(2, runner.call_count)
             self.assertEqual("PASS_JASP_STRICT_ROUNDTRIP", result["status"])
             self.assertEqual("PASS", result["save_run"]["status"])
             self.assertEqual("PASS", result["strict_rerun_after_save"]["status"])
+            self.assertTrue(lane.seed_hook_evidence_valid(result["save_run"]["seed_hook_receipt"]))
+            self.assertTrue(lane.seed_hook_evidence_valid(result["strict_rerun_after_save"]["seed_hook_receipt"]))
             self.assertTrue(result["original_sample_unchanged"])
             self.assertTrue(result["temporary_fixture_removed_after_test"])
-
 
 class TargetRuntimeEvidenceGateTests(unittest.TestCase):
     @staticmethod

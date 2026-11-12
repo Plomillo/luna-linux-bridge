@@ -65,4 +65,5 @@ link_fixture "Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp
 link_fixture "Resources/Data Sets/Data Library/13. Reliability/Interrater Data from Shrout and Fleiss (1979).jasp" Reliability.jasp
 link_fixture "Resources/Data Sets/Data Library/2. T-Tests/Weight Gain.jasp" WeightGain.jasp
 
+python3.12 "$(dirname "$0")/patch_jasp_certification_runtime_v1.py" --self-test
 python3.12 "$(dirname "$0")/patch_jasp_certification_runtime_v1.py" --jasp-files "$files"
