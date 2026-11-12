@@ -1,0 +1,52 @@
+{
+  "schema": "CAJITA_PDF_EPUB_MICRO_DEPENDENCIES/1.0",
+  "candidate": "CAJITA_PDF_EPUB_MICRO_V1",
+  "dependencies": [
+    {
+      "name": "pypdf",
+      "version": "6.21.2",
+      "source": "https://pypi.org/project/pypdf/6.21.2/",
+      "filename": "pypdf-6.21.2-py3-none-any.whl",
+      "sha256": "1d44d1a3a200f25062adff0085b02040e4646431ac2ccac22e42679e91466084",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "name": "reportlab",
+      "version": "5.1.0",
+      "source": "https://pypi.org/project/reportlab/5.1.0/",
+      "filename": "reportlab-5.1.0-py3-none-any.whl",
+      "sha256": "59fdbaec5efe437095ad1d7292ec9a271c8ca2d3ec75e889c6e61400929b90df",
+      "license": "BSD"
+    },
+    {
+      "name": "Pillow",
+      "version": "12.0.0",
+      "source": "https://pypi.org/project/pillow/12.0.0/",
+      "filename": "pillow-12.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "b87843e225e74576437fd5b6a4c2205d422754f84a06942cfaf1dc32243e45a8",
+      "license": "HPND"
+    }
+  ],
+  "runtime": {
+    "python": "CPython >= 3.9",
+    "platform": "Linux x86-64 / glibc host",
+    "embedded_python_interpreter": false,
+    "embedded_dependencies": true
+  },
+  "dependency_note": "Pillow is present because the pinned ReportLab release imports PIL utilities on its text-rendering path; the application does not expose image conversion as a feature.",
+  "scope": [
+    "PDF -> EPUB",
+    "EPUB -> PDF",
+    "TXT -> PDF",
+    "TXT -> EPUB"
+  ],
+  "non_goals": [
+    "HTML",
+    "DOCX",
+    "OCR",
+    "GUI",
+    "store/catalog integration",
+    "device drivers",
+    "translation catalogs"
+  ]
+}
