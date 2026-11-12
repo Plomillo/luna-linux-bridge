@@ -6,7 +6,7 @@ set -euo pipefail
 : "${FLATPAK_SYSTEM_DIR:?FLATPAK_SYSTEM_DIR is required}"
 PINNED_APP_COMMIT="83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
 flatpak info --system org.jaspstats.JASP
-runtime="$(flatpak info --system org.jaspstats.JASP | awk -F': ' '/^Runtime:/ {print $2; exit}')"
+runtime="$(flatpak info --system org.jaspstats.JASP | sed -n 's/^[[:space:]]*Runtime:[[:space:]]*//p' | head -n 1)"
 if [ -z "$runtime" ]; then
   echo "JASP runtime id is missing" >&2
   exit 2
