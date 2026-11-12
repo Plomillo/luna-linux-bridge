@@ -23,7 +23,19 @@ export LUNITA_SQUASHFS_CHECKSUM="$RUNNER_TEMP/lunita-squashfs/LUNITA.squashfs.sh
 export LUNITA_SQUASHFS_PACKAGE_RECEIPT="$RUNNER_TEMP/lunita-squashfs/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json"
 export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$LUNITA_XDG_STATE_HOME/lunita/runtime_validation"
 export FLATPAK_SYSTEM_DIR="$LUNITA_ROOTFS_REAL/var/lib/flatpak"
-export QT_QPA_PLATFORM=offscreen
+export QT_QPA_PLATFORM=xcb
+export DISPLAY="${DISPLAY:-:99}"
+if [ ! -S "/tmp/.X11-unix/X${DISPLAY#:}" ]; then
+  if [ "$(id -u)" -eq 0 ]; then
+    apt-get update
+    apt-get install -y --no-install-recommends xvfb
+  fi
+  Xvfb "$DISPLAY" -screen 0 1280x800x24 -nolisten tcp >/tmp/lunita-xvfb.log 2>&1 &
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+    [ -S "/tmp/.X11-unix/X${DISPLAY#:}" ] && break
+    sleep 0.25
+  done
+fi
 
 LANE="$GITHUB_WORKSPACE/recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py"
 test -f "$LANE"
