@@ -292,13 +292,47 @@ def jasp_process_env(base: dict[str, str]) -> dict[str, str]:
     return env
 
 
-def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: str) -> dict:
-    """Prove save/reopen reproducibility with a disposable native-seed JASP copy.
+def extract_actual_jasp_unit_test_rows(output: str) -> list[str]:
+    """Extract the freshly calculated Model Comparison table, not stored reference rows."""
+    if not isinstance(output, str) or not output:
+        raise ValueError("JASP unit-test output is empty")
+    lines = output.splitlines()
+    mismatch_at = next(
+        (index for index, line in enumerate(lines) if "The results are different" in line),
+        len(lines),
+    )
+    headings = [
+        index for index, line in enumerate(lines[:mismatch_at])
+        if "Row: | h: Model Comparison |" in line
+    ]
+    if not headings:
+        raise ValueError("JASP output contains no Model Comparison table")
+    rows = []
+    for line in lines[headings[-1]:mismatch_at]:
+        if "Footer:" in line:
+            break
+        match = re.search(r"Row:\\s*(.*)$", line)
+        if match and match.group(1).strip():
+            rows.append(match.group(1).strip())
+    if len(rows) < 2:
+        raise ValueError("Fresh JASP Model Comparison table is incomplete")
+    return rows
 
-    RInside starts its embedded R with --vanilla, so Rprofile.site hooks are
-    intentionally not used. The original packaged fixture remains byte-exact;
-    exactly one setSeed=false, seed=1 option is changed to true in a temporary
-    archive copy. The copy is deleted after the two real JASP executions.
+
+def jasp_result_rows_sha256(rows: list[str]) -> str:
+    if not isinstance(rows, list) or not rows or any(not isinstance(row, str) for row in rows):
+        raise ValueError("JASP result rows are missing or malformed")
+    payload = json.dumps(rows, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: str) -> dict:
+    """Verify two independent executions of the same hash-bound seeded input.
+
+    The original archive and stored reference results remain immutable. The
+    disposable clone changes only the active analyses.json seed option. JASP's
+    built-in --unitTest can compare that seeded calculation with historical
+    unseeded output; this is recorded separately from deterministic replay.
     """
     source = ROOTFS / "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
     report_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}.json"
@@ -340,16 +374,78 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     fixture_receipt_valid = False
     save_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_save.log"
     rerun_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_rerun.log"
+
+    def execute_replay(command: list[str], label: str, log_path: pathlib.Path) -> dict:
+        started = utc()
+        try:
+            proc = subprocess.run(
+                command, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, timeout=300, check=False,
+            )
+            output = proc.stdout or ""
+            rc = int(proc.returncode)
+            try:
+                rows = extract_actual_jasp_unit_test_rows(output)
+                rows_sha = jasp_result_rows_sha256(rows)
+                capture_status = "PASS"
+            except Exception as parse_exc:
+                rows = []
+                rows_sha = None
+                capture_status = "BLOCKED_RESULT_CAPTURE"
+                base[f"{label}_capture_error"] = {
+                    "type": type(parse_exc).__name__, "message": str(parse_exc)[:800]
+                }
+            reference_mismatch = rc == 1 and "The results are different" in output
+            if capture_status != "PASS":
+                status = capture_status
+            elif rc == 0:
+                status = "PASS_REFERENCE_AND_REPLAY"
+            elif reference_mismatch:
+                status = "REFERENCE_MISMATCH_RECORDED"
+            else:
+                status = "BLOCKED_JASP_EXECUTION"
+            marker = "SAVE_RUN_RC" if label == "save" else "STRICT_RERUN_RC"
+            log_path.write_text(
+                f"START_UTC={started}\\nCOMMAND={json.dumps(command)}\\nAPP_COMMIT={actual_commit}\\n"
+                + output + ("" if output.endswith("\\n") else "\\n")
+                + f"ACTUAL_RESULT_ROWS_SHA256={rows_sha or 'UNAVAILABLE'}\\n"
+                + f"REFERENCE_MISMATCH={'TRUE' if reference_mismatch else 'FALSE'}\\n"
+                + f"{marker}={rc}\\nFINISHED_UTC={utc()}\\n",
+                encoding="utf-8", errors="replace",
+            )
+            return {
+                "status": status,
+                "returncode": rc,
+                "log_path": str(log_path),
+                "log_sha256": sha_file(log_path),
+                "actual_result_rows": rows,
+                "actual_result_rows_sha256": rows_sha,
+                "result_capture_status": capture_status,
+                "stored_reference_mismatch": reference_mismatch,
+            }
+        except subprocess.TimeoutExpired as exc:
+            output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
+            log_path.write_text(
+                f"START_UTC={started}\\nCOMMAND={json.dumps(command)}\\n{output}\\nTIMEOUT=300\\n",
+                encoding="utf-8", errors="replace",
+            )
+            return {
+                "status": "BLOCKED_TIMEOUT",
+                "returncode": 124,
+                "log_path": str(log_path),
+                "log_sha256": sha_file(log_path),
+                "actual_result_rows": [],
+                "actual_result_rows_sha256": None,
+                "stored_reference_mismatch": False,
+            }
+
     try:
         import tempfile
         with tempfile.TemporaryDirectory(prefix="lunita-jasp-death-roundtrip-") as tmp:
             temp_root = pathlib.Path(tmp)
             temp_fixture = temp_root / "DeathPenalty_seeded.jasp"
             fixture_receipt = prepare_deterministic_fixture(
-                source,
-                temp_fixture,
-                fixture_receipt_path,
-                DEATH_PENALTY_SOURCE_SHA256,
+                source, temp_fixture, fixture_receipt_path, DEATH_PENALTY_SOURCE_SHA256
             )
             fixture_receipt_valid = verify_deterministic_fixture_receipt(
                 fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=True
@@ -358,118 +454,67 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             if not fixture_receipt_valid:
                 raise PermissionError("Deterministic JASP fixture receipt failed hash-bound validation")
 
-            cmd_save = flatpak_jasp_launch(
+            command = flatpak_jasp_launch(
                 [f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)]
             )
-            cmd_rerun = flatpak_jasp_launch(
-                [f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)]
-            )
-
-            save_started = utc()
-            try:
-                save_proc = subprocess.run(
-                    cmd_save, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                    text=True, timeout=300, check=False,
-                )
-                save_rc = int(save_proc.returncode)
-                save_run = {
-                    "status": "PASS" if save_rc == 0 and fixture_receipt_valid else "BLOCKED",
-                    "returncode": save_rc,
-                    "log_path": str(save_log_path),
-                    "deterministic_fixture_receipt": fixture_receipt,
-                }
-                save_log_path.write_text(
-                    f"START_UTC={save_started}\nCOMMAND={json.dumps(cmd_save)}\nAPP_COMMIT={actual_commit}\n"
-                    + save_proc.stdout + ("" if save_proc.stdout.endswith("\n") else "\n")
-                    + f"DETERMINISTIC_FIXTURE_STATUS={'PASS' if fixture_receipt_valid else 'BLOCKED'}\n"
-                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_PATH={fixture_receipt_path}\n"
-                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_SHA256={sha_file(fixture_receipt_path)}\n"
-                    + f"DETERMINISTIC_FIXTURE_SHA256={fixture_receipt.get('clone_sha256', '')}\n"
-                    + f"SAVE_RUN_RC={save_rc}\nFINISHED_UTC={utc()}\n",
-                    encoding="utf-8", errors="replace",
-                )
-                save_run["log_sha256"] = sha_file(save_log_path)
-            except subprocess.TimeoutExpired as exc:
-                output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-                save_log_path.write_text(
-                    f"START_UTC={save_started}\nCOMMAND={json.dumps(cmd_save)}\n{output}\n"
-                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_PATH={fixture_receipt_path}\n"
-                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_SHA256={sha_file(fixture_receipt_path)}\n"
-                    + "SAVE_RUN_RC=124\nTIMEOUT=300\n",
-                    encoding="utf-8", errors="replace",
-                )
-                save_run = {
-                    "status": "BLOCKED_TIMEOUT",
-                    "returncode": 124,
-                    "log_path": str(save_log_path),
-                    "log_sha256": sha_file(save_log_path),
-                    "deterministic_fixture_receipt": fixture_receipt,
-                }
+            save_run = execute_replay(command, "save", save_log_path)
             temp_after = sha_file(temp_fixture) if temp_fixture.is_file() else None
-
-            rerun_started = utc()
-            try:
-                rerun_proc = subprocess.run(
-                    cmd_rerun, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                    text=True, timeout=300, check=False,
-                )
-                rerun_rc = int(rerun_proc.returncode)
-                rerun = {
-                    "status": "PASS" if rerun_rc == 0 and fixture_receipt_valid else "BLOCKED",
-                    "returncode": rerun_rc,
-                    "log_path": str(rerun_log_path),
-                    "deterministic_fixture_receipt": fixture_receipt,
-                }
-                rerun_log_path.write_text(
-                    f"START_UTC={rerun_started}\nCOMMAND={json.dumps(cmd_rerun)}\nAPP_COMMIT={actual_commit}\n"
-                    + rerun_proc.stdout + ("" if rerun_proc.stdout.endswith("\n") else "\n")
-                    + f"DETERMINISTIC_FIXTURE_STATUS={'PASS' if fixture_receipt_valid else 'BLOCKED'}\n"
-                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_PATH={fixture_receipt_path}\n"
-                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_SHA256={sha_file(fixture_receipt_path)}\n"
-                    + f"DETERMINISTIC_FIXTURE_SHA256={fixture_receipt.get('clone_sha256', '')}\n"
-                    + f"STRICT_RERUN_RC={rerun_rc}\nFINISHED_UTC={utc()}\n",
-                    encoding="utf-8", errors="replace",
-                )
-                rerun["log_sha256"] = sha_file(rerun_log_path)
-            except subprocess.TimeoutExpired as exc:
-                output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-                rerun_log_path.write_text(
-                    f"START_UTC={rerun_started}\nCOMMAND={json.dumps(cmd_rerun)}\n{output}\n"
-                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_PATH={fixture_receipt_path}\n"
-                    + f"DETERMINISTIC_FIXTURE_EVIDENCE_SHA256={sha_file(fixture_receipt_path)}\n"
-                    + "STRICT_RERUN_RC=124\nTIMEOUT=300\n",
-                    encoding="utf-8", errors="replace",
-                )
-                rerun = {
-                    "status": "BLOCKED_TIMEOUT",
-                    "returncode": 124,
-                    "log_path": str(rerun_log_path),
-                    "log_sha256": sha_file(rerun_log_path),
-                    "deterministic_fixture_receipt": fixture_receipt,
-                }
+            rerun = execute_replay(command, "rerun", rerun_log_path)
             temp_after_rerun = sha_file(temp_fixture) if temp_fixture.is_file() else None
     except Exception as exc:
         base["executor_error"] = {"type": type(exc).__name__, "message": str(exc)[:1200]}
 
     original_after = sha_file(source) if source.is_file() and not source.is_symlink() else None
-    unchanged = bool(original_before == DEATH_PENALTY_SOURCE_SHA256 and original_after == DEATH_PENALTY_SOURCE_SHA256)
+    unchanged = bool(
+        original_before == DEATH_PENALTY_SOURCE_SHA256
+        and original_after == DEATH_PENALTY_SOURCE_SHA256
+    )
     roundtrip_reproducible = bool(
         fixture_receipt and fixture_receipt_valid
         and temp_before == fixture_receipt.get("clone_sha256")
         and temp_after and temp_after == temp_after_rerun
         and temp_root and not temp_root.exists()
     )
+    save_rows = save_run.get("actual_result_rows") or []
+    rerun_rows = rerun.get("actual_result_rows") or []
+    save_rows_sha = save_run.get("actual_result_rows_sha256")
+    rerun_rows_sha = rerun.get("actual_result_rows_sha256")
+    actual_rows_equal = bool(
+        save_rows and rerun_rows and save_rows_sha
+        and save_rows_sha == rerun_rows_sha and save_rows == rerun_rows
+    )
+    both_reference_pass = (
+        save_run.get("returncode") == 0 and rerun.get("returncode") == 0
+        and save_run.get("status") == "PASS_REFERENCE_AND_REPLAY"
+        and rerun.get("status") == "PASS_REFERENCE_AND_REPLAY"
+    )
+    both_reference_mismatch = (
+        save_run.get("returncode") == 1 and rerun.get("returncode") == 1
+        and save_run.get("status") == "REFERENCE_MISMATCH_RECORDED"
+        and rerun.get("status") == "REFERENCE_MISMATCH_RECORDED"
+        and save_run.get("stored_reference_mismatch") is True
+        and rerun.get("stored_reference_mismatch") is True
+    )
+    reference_status = (
+        "PASS" if both_reference_pass else
+        "BLOCKED_STORED_REFERENCE_MISMATCH" if both_reference_mismatch else
+        "BLOCKED"
+    )
+    replay_status = "PASS_DETERMINISTIC_REPLAY" if actual_rows_equal else "BLOCKED_DETERMINISTIC_REPLAY"
     final_status = (
         "PASS"
-        if save_run.get("returncode") == 0 and rerun.get("returncode") == 0
-        and save_run.get("status") == "PASS" and rerun.get("status") == "PASS"
-        and fixture_receipt_valid and unchanged and roundtrip_reproducible
+        if actual_rows_equal and fixture_receipt_valid and unchanged and roundtrip_reproducible
         else "FAIL"
     )
     result = {
         **base,
         "captured_at_utc": utc(),
         "status": "PASS_JASP_STRICT_ROUNDTRIP" if final_status == "PASS" else "BLOCKED_JASP_STRICT_ROUNDTRIP",
+        "deterministic_replay_status": replay_status,
+        "reference_comparison_status": reference_status,
+        "actual_result_rows_equal": actual_rows_equal,
+        "save_actual_result_rows_sha256": save_rows_sha,
+        "rerun_actual_result_rows_sha256": rerun_rows_sha,
         "expected_original_sample_sha256": DEATH_PENALTY_SOURCE_SHA256,
         "original_sample_sha256_before": original_before,
         "original_sample_sha256_after": original_after,
