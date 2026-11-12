@@ -1,0 +1,75 @@
+name: "CAS: instalar git-lfs y rclone en LOUKSNA"
+on:
+  push:
+    branches:
+      - staging/contenedor-semantico-e826-20260927
+    paths:
+      - .github/workflows/instalar-herramientas-cas.yml
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Escribir INSTALL_CAS_TOOLS para reintentar"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "louksna-cas-tools-install"
+  cancel-in-progress: false
+
+jobs:
+  install-tools:
+    if: >-
+      (github.event_name == 'push' &&
+       github.event.head_commit.message == 'ci(CAS): ejecutar instalación auditada de git-lfs y rclone') ||
+      (github.event_name == 'workflow_dispatch' &&
+       inputs.confirm == 'INSTALL_CAS_TOOLS')
+    runs-on: [self-hosted, linux, x64, luna-aux]
+    timeout-minutes: 25
+    steps:
+      - name: Obtener scripts de rama aislada
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          lfs: false
+
+      - name: Comprobar sintaxis y contexto autorizado
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_REPOSITORY" = "Plomillo/luna-linux-bridge"
+          test "$GITHUB_REF" = "refs/heads/staging/contenedor-semantico-e826-20260927"
+          bash -n scripts/semantic_container/install_transfer_tools.sh
+          command -v apt-get
+          command -v dpkg-deb
+
+      - name: Instalar binarios locales desde repositorios Debian firmados
+        shell: bash
+        run: bash scripts/semantic_container/install_transfer_tools.sh
+
+      - name: Verificar versiones y generar resumen
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          git-lfs version
+          rclone version | head -1
+          {
+            echo "## Instalación de herramientas CAS"
+            echo "Origen: repositorios Debian firmados mediante APT."
+            echo "Destino: binarios de usuario en ~/.local/bin (sin sudo)."
+            echo "git-lfs: $(git-lfs version)"
+            echo "rclone: $(rclone version | head -1)"
+            echo "Sin autenticación de Drive ni transferencia de objetos."
+            echo "G23/G24: no ejecutados."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar evidencia de instalación
+        uses: actions/upload-artifact@v4
+        with:
+          name: cas-tools-install-evidence
+          path: ~/.local/state/louksna/installations/cas-tools-*.txt
+          if-no-files-found: error
+          retention-days: 30

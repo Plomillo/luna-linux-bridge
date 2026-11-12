@@ -1,0 +1,152 @@
+{
+  "schema": "louksna.semantic-container.cas-source-index/v1",
+  "prefixes": [
+    "14",
+    "15",
+    "16",
+    "17",
+    "19",
+    "1c",
+    "1e",
+    "21",
+    "24",
+    "25",
+    "26",
+    "27",
+    "28"
+  ],
+  "items": [
+    {
+      "sha256": "148003f2c92f680e79dbc2438e5a7222ef811cb8a21754c90cb2e6b4d5a9011b",
+      "drive_file_id": "1T-lcURq0dM_GgDw0uDgGvZeI4d2U-j__",
+      "size_bytes": 86894,
+      "prefix": "14"
+    },
+    {
+      "sha256": "15392efed215a3b84e41e620972775f994c00ca4de173c0a5a941dd5337774d1",
+      "drive_file_id": "1ePyPpGd0aPHzaGPoEftK5ZctAioDFYj7",
+      "size_bytes": 40266,
+      "prefix": "15"
+    },
+    {
+      "sha256": "15417d219422e409a707a31c50799da80dd42cb8c7365b418bc40c6a0033b164",
+      "drive_file_id": "1-xqrUl-r1sTueJR8kcTxNSa74M6FmBMh",
+      "size_bytes": 20112,
+      "prefix": "15"
+    },
+    {
+      "sha256": "15fb694d4f478fd2c694900d33f0fe97eaf3fee6e0b32cb6f7882508504e49f5",
+      "drive_file_id": "1J2389NMMhcruNELu6XBvWpNSIJQ7MwB_",
+      "size_bytes": 25357,
+      "prefix": "15"
+    },
+    {
+      "sha256": "16f4ec123865450c0e651238bcad60392b5130d75fbef02f75df08e4b699d8c1",
+      "drive_file_id": "1ykHMMS1yAcANPVHQWHJsG5J2Oy9EY8AU",
+      "size_bytes": 46199,
+      "prefix": "16"
+    },
+    {
+      "sha256": "17c6d089a501cd2cfcd81881dbe540afac1a58ce10483d47939a2688bf99984e",
+      "drive_file_id": "1h7E42gG4etlihMDt0zuxhVQDKFuBNez-",
+      "size_bytes": 933,
+      "prefix": "17"
+    },
+    {
+      "sha256": "17a9aaddc34e1da1c0b3f2755cafb8690f721579707d806fc576667891674dd7",
+      "drive_file_id": "1zaGDrJqzKKri3s-V7byby6Y3OZK2mNKw",
+      "size_bytes": 74372,
+      "prefix": "17"
+    },
+    {
+      "sha256": "1987d74c929a2c573bc1289685dd2eccd5728088f59ac07249f3bb87c662fea1",
+      "drive_file_id": "1jxJ82o0wJDRYK3C9sEsvNFpNx5LJUrvj",
+      "size_bytes": 28937,
+      "prefix": "19"
+    },
+    {
+      "sha256": "193817002ecc02b71410d93cb1134ef681c55f127ac3988ec676f0fb7f1bfa98",
+      "drive_file_id": "17RPZLin6gEQcOrjBe7UmmLOvk9x9a2VA",
+      "size_bytes": 8845581,
+      "prefix": "19"
+    },
+    {
+      "sha256": "1cd6930ac6a4c8018355c4d24d879a76672df81f6245753f821b00099c2c39a8",
+      "drive_file_id": "1BLcNZpnKYp8YDb3VNXHM1YJwRidUtuU2",
+      "size_bytes": 2699,
+      "prefix": "1c"
+    },
+    {
+      "sha256": "1e6cb4fc6a61ed08a3d9f7a5ffa2ff5685ee2565f54cfa9515da58e77ed2c688",
+      "drive_file_id": "13Ii0LE-QKAYLZR_Es0zCNiUPvD5xpGDM",
+      "size_bytes": 134007,
+      "prefix": "1e"
+    },
+    {
+      "sha256": "1e6b368e135b0488a051c0737900d8e44f154d949214002182928be61cbc6111",
+      "drive_file_id": "1OVumqx3t43Qlf8sMGoy8ocNOSCmrEtU9",
+      "size_bytes": 25636,
+      "prefix": "1e"
+    },
+    {
+      "sha256": "21fd9f0b5046869b2795692c4ad707179cc65120b3aba44b55271139bc34a068",
+      "drive_file_id": "1fP5oJugZeQn49i3eZ2hPeaoB5OYqXjxt",
+      "size_bytes": 28411,
+      "prefix": "21"
+    },
+    {
+      "sha256": "2157ebe0d7ca46db0a9f9f9d77f7b915ff8f4d5e685e38933f98b8a5625a8d92",
+      "drive_file_id": "1cCF__Z22kR2dsc3veB1ugxRs6qWSWifr",
+      "size_bytes": 508779,
+      "prefix": "21"
+    },
+    {
+      "sha256": "24ea99faec7f3c539e21c181ea7e30093e6f7baa5311b22c1e70c47f70bb1fe9",
+      "drive_file_id": "1gQgDS7iMbGQk2QtMOSUHpqhiM1ToZ5NO",
+      "size_bytes": 1904,
+      "prefix": "24"
+    },
+    {
+      "sha256": "24a8bf34c03fdeab872c7b46dc56e104b49d7710f12d2c4c6095f8e30879bb95",
+      "drive_file_id": "1vxfBO9nxoXX1aalfyaQ0k6Vg77KYP1sU",
+      "size_bytes": 1999,
+      "prefix": "24"
+    },
+    {
+      "sha256": "25368d9b8c77da82021467d3f378ff3b5f885c3d55cddcf389b8f9e5b4ba2dab",
+      "drive_file_id": "1cJ3wD-naE89oeQxFNOaN03pUwUEx7QqO",
+      "size_bytes": 71285,
+      "prefix": "25"
+    },
+    {
+      "sha256": "26ac5014475c69fdf19676f7b28935fb44df07bed5b27832968da8bcf018df19",
+      "drive_file_id": "1y8EifbJ-G0foL9lJbvkIURiv_X9idFot",
+      "size_bytes": 38188,
+      "prefix": "26"
+    },
+    {
+      "sha256": "274b0d6f055bde14b5f871ab58230c60ec158936559b0436bda50bdcbb6a1537",
+      "drive_file_id": "11ctT61c3o_HMYEq3uLuqNiDEJ-PKnYmi",
+      "size_bytes": 2092,
+      "prefix": "27"
+    },
+    {
+      "sha256": "27921a511a261cc572fc8571adc5230f914787e9ebdac100623a3e8e86c464c7",
+      "drive_file_id": "1aFBb4LJF0U0bhkbos4YI6nGuf79a9D5h",
+      "size_bytes": 4715737,
+      "prefix": "27"
+    },
+    {
+      "sha256": "27778f46a0a9626ee096ae3756e03d745448e81d1af8666c4055bbe05e4e8ce9",
+      "drive_file_id": "1zqqNJdZkgBseZCsR_pSSGmPnKAbEHiPP",
+      "size_bytes": 77612,
+      "prefix": "27"
+    },
+    {
+      "sha256": "280bbe13748635c40ac73cff445818874255f898fdab25287dea715044a388c1",
+      "drive_file_id": "1_9gTrzON6fjfRiTPgE-E-8AB7g5I2SDy",
+      "size_bytes": 14558,
+      "prefix": "28"
+    }
+  ]
+}

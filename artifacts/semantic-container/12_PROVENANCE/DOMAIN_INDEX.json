@@ -1,0 +1,34 @@
+{
+  "entries": [
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\METAOS_S08_E822_VALIDATION_R2.json",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/37/371d24b72a3d866d6fb037061b172a6ddb9955479d6a91acd3d3e0e25fce20fc",
+      "sha256": "371d24b72a3d866d6fb037061b172a6ddb9955479d6a91acd3d3e0e25fce20fc",
+      "validation_state": "PASS"
+    },
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\METAOS_E822_PROVENANCE_REGISTRY_R2.json",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/55/5519a5ba594eec9beb62dfb92483f7827b9ad4cd41be26f8db741e795f161157",
+      "sha256": "5519a5ba594eec9beb62dfb92483f7827b9ad4cd41be26f8db741e795f161157",
+      "validation_state": "CURRENT_VALIDATED_DERIVED"
+    },
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E822_PROVENANCE_R2\\PROVENANCE_LINKS.jsonl.gz",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/5e/5e3f5e91a860a7ba3b09c0fe859d52aa7fe3116a12eccb03573e895a80f4c54a",
+      "sha256": "5e3f5e91a860a7ba3b09c0fe859d52aa7fe3116a12eccb03573e895a80f4c54a",
+      "validation_state": "CURRENT_VALIDATED_DERIVED"
+    },
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E822_PROVENANCE_R2\\PROVENANCE_INDEX.json",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/67/67b230cc06fa6992c45b535c203899937c7445e210f27ed09a576181d7c31cc0",
+      "sha256": "67b230cc06fa6992c45b535c203899937c7445e210f27ed09a576181d7c31cc0",
+      "validation_state": "CURRENT_VALIDATED_DERIVED"
+    }
+  ],
+  "entry_count": 4,
+  "index_digest": "90385c136b74e7f5344eedadf13ecd73c9e44490b3235bccd7a55ebc234eacfc",
+  "no_semantic_promotion": true,
+  "payload_store_relative": "../../18_HASH_INDEX/OBJECTS",
+  "schema": "metaos.semantic-container.domain-index/v1",
+  "section": "12_PROVENANCE"
+}

@@ -1,0 +1,33 @@
+{
+  "schema": "louksna.semantic-container.cas-transfer-reconciliation/v1",
+  "source_object_count": 252,
+  "source_bytes": 327745213,
+  "manifest_object_count": 252,
+  "manifest_bytes": 327745213,
+  "unique_source_names": 252,
+  "all_sha256_filenames_match_manifest": true,
+  "all_declared_sizes_match_manifest": true,
+  "scope": "METADATA_RECONCILED_ONLY; file contents not yet transferred or independently hashed; no certification",
+  "largest": [
+    {
+      "sha256": "61e59cd0040b019dbeddd3768b1bcf8376c332a9dbb1955079d9f835480143e9",
+      "bytes": 63879595,
+      "drive_file_id": "1jVjNBzcIcG7MeQv1sgdcx8lo_qf9FUD9"
+    },
+    {
+      "sha256": "5e3f5e91a860a7ba3b09c0fe859d52aa7fe3116a12eccb03573e895a80f4c54a",
+      "bytes": 33244562,
+      "drive_file_id": "1tJBoTtvvv6zmVx-wbtrRuvnu-Rv1zhZl"
+    },
+    {
+      "sha256": "88e37d4356000e970b0bd6abefdfabf3f21a553a81d8c6fa4841c06f2cbfeeaf",
+      "bytes": 32472201,
+      "drive_file_id": "17RNIuPC5JU4tjhyrDVV9x44EWxeClk30"
+    },
+    {
+      "sha256": "f87fc4ebd3dc3e5e473c63d1a7ac9babe770987a0f52837ba537743956ccc3c0",
+      "bytes": 32036452,
+      "drive_file_id": "1FLVvASd9r1sJlm8BHd6Qk-sC4X27cTBg"
+    }
+  ]
+}

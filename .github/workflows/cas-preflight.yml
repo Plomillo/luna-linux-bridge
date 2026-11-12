@@ -1,0 +1,60 @@
+name: "CAS: preflight local sin cambios"
+on:
+  push:
+    branches:
+      - staging/contenedor-semantico-e826-20260927
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: [self-hosted, linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout read-only
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+          persist-credentials: false
+      - name: Confirmar manifiesto y cuatro blobs CAS conservados
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          root=artifacts/semantic-container
+          expected=c2daca06496353de517fc458b84ce6b41dedb0c486629419f149f7b676daad39
+          actual="$(sha256sum "$root/18_HASH_INDEX/CAS_MANIFEST.json" | cut -d' ' -f1)"
+          printf 'CAS_MANIFEST_SHA256=%s\n' "$actual"
+          test "$actual" = "$expected"
+          for hash in 00e48eb988e1dc2a75612cbf496c513b35400ad3185ced147153ff328c207d0d 03a4072f4e387b02e3f530c5b6759e5e93ed86d81fd31db657597ffb4bb2a486 03c5476218c68f8ee3bf0ef9aab95d1946003a768c895a7876642271073ff90b 03ff2d2f3ea8fcdf465fe68b684ce254058b242430fecb912ae3eee743f51da4; do
+            f="$root/18_HASH_INDEX/OBJECTS/${hash:0:2}/$hash"
+            test "$(sha256sum "$f" | cut -d' ' -f1)" = "$hash"
+          done
+          echo 'GIT_BLOB_CAS_4_SHA256_VERIFIED=PASS'
+      - name: Diagnosticar disponibilidad de fuente y herramientas sin leer credenciales
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          printf 'DEVICE=%s\n' "$(hostname)"
+          for name in python3 git git-lfs rclone; do
+            if command -v "$name" >/dev/null; then
+              printf 'TOOL_%s=AVAILABLE\n' "$name"
+            else
+              printf 'TOOL_%s=MISSING\n' "$name"
+            fi
+          done
+          if command -v rclone >/dev/null; then
+            count="$(rclone listremotes 2>/dev/null | wc -l)"
+            printf 'RCLONE_CONFIGURED_REMOTE_COUNT=%s\n' "$count"
+          fi
+          for dir in "$HOME/CONTENEDOR SEMANTICO" "$HOME/Google Drive/CONTENEDOR SEMANTICO" "$HOME/Drive/CONTENEDOR SEMANTICO" "$HOME/Downloads/CONTENEDOR SEMANTICO"; do
+            if [[ -d "$dir/18_HASH_INDEX/OBJECTS" ]]; then
+              printf 'SOURCE_OBJECTS_FOUND=%s\n' "$dir"
+            fi
+          done
+          if [[ -n "${DISPLAY:-}" ]]; then echo "DISPLAY_PRESENT=yes"; else echo "DISPLAY_PRESENT=no"; fi
+          if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then echo "WAYLAND_DISPLAY_PRESENT=yes"; else echo "WAYLAND_DISPLAY_PRESENT=no"; fi
+          if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then echo "DBUS_SESSION_BUS_PRESENT=yes"; else echo "DBUS_SESSION_BUS_PRESENT=no"; fi
+          if command -v xdg-open >/dev/null; then echo "XDG_OPEN_AVAILABLE=yes"; else echo "XDG_OPEN_AVAILABLE=no"; fi
+          printf 'ROOT_DISK_AVAILABLE_BYTES=%s\n' "$(df -B1 "$HOME" | awk 'NR==2{print $4}')"
+          echo 'READ_ONLY_PREFLIGHT_COMPLETE_NO_AUTHORIZATION_GRANTED'

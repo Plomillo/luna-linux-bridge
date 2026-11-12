@@ -1,0 +1,9 @@
+{
+  "entries": [],
+  "entry_count": 0,
+  "index_digest": "800375df7d8ed951899126612d987d14e58b8d78dd58d448fd5786b0cef2a479",
+  "no_semantic_promotion": true,
+  "payload_store_relative": "../../18_HASH_INDEX/OBJECTS",
+  "schema": "metaos.semantic-container.domain-index/v1",
+  "section": "20_ASSURANCE"
+}

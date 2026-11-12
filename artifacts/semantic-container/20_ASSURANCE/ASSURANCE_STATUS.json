@@ -1,0 +1,12 @@
+{
+  "g23": "NOT_EXECUTED",
+  "g24": "NOT_EXECUTED",
+  "graph_constructed": true,
+  "historical_evidence_preserved": true,
+  "human_machine_binary_roundtrip": "PENDING_E825",
+  "knowledge_gate": "PENDING_E826",
+  "metaos_done": 0,
+  "schema": "metaos.semantic-container.assurance-status/v1",
+  "semantic_registry_validated": true,
+  "status_digest": "133daa95088ae39b060a9e7f1562d4d0ed704cf89a4452c9f0e1f487829a83d1"
+}

@@ -1,0 +1,2798 @@
+{
+  "authority_transfer": false,
+  "cas_manifest_sha256": "c2daca06496353de517fc458b84ce6b41dedb0c486629419f149f7b676daad39",
+  "certification_state": "NOT_CERTIFIED",
+  "container_manifest_sha256": "74e6d3f616ff0460b995b183ffde73ae6728d7339afe8c23ce19dd61df2a304f",
+  "epistemic_promotion": false,
+  "graph_edge_count": 501426,
+  "graph_node_count": 199192,
+  "mission_id": "MIS-a8818ca7f6444b469d95",
+  "parsed_semantic_records": 2207823,
+  "payload_total_bytes": 327745213,
+  "payloads": [
+    {
+      "bytes": 4380,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "00e48eb988e1dc2a75612cbf496c513b35400ad3185ced147153ff328c207d0d",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 37795,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 691,
+      "sha256": "03a4072f4e387b02e3f530c5b6759e5e93ed86d81fd31db657597ffb4bb2a486",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 28182,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "08_METACOGNITION/MACRO"
+      ],
+      "semantic_record_roundtrips": 66,
+      "sha256": "03c5476218c68f8ee3bf0ef9aab95d1946003a768c895a7876642271073ff90b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 3968,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "03_OBSERVATIONS/MACRO"
+      ],
+      "semantic_record_roundtrips": 343,
+      "sha256": "03ff2d2f3ea8fcdf465fe68b684ce254058b242430fecb912ae3eee743f51da4",
+      "source_reference_count": 2
+    },
+    {
+      "bytes": 44114,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 782,
+      "sha256": "047bb3efc6d0ebe8711ce367bc6b53289ba47481a0f9c0a8af3a99a8c852d2fa",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 36359,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "05_INFERENCES/MICRO"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "0545d1927f5532134d84b486ce1de0eabf4c43e7d620a86df7ff73ee50a8a700",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 30112,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 559,
+      "sha256": "06f79978d7bec00a3f571c75f617cce1ea29fe7df2664eb319a65a47ffd2d56c",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 27939,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 482,
+      "sha256": "08aae585b034327c93894da00525c5a330c3c88ba0b3bcbb08a24f38a4b0e71c",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 9931383,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 115774,
+      "sha256": "09f243ffb21533aa8836b0cb636f128c1bf6052f8677a3f9dcc66d0422bf535b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 4054,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "06_CONCLUSIONS/UNIVERSAL"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "0a7a7ede300627aa50880021d575cf875c9f35f8c06143226c442441d0ef6089",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 25034,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 443,
+      "sha256": "0b21f5ac5e211793b18df4b812992ce0911d952b56167f37349d68c96ed620e0",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 29561,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "06_CONCLUSIONS/UNIVERSAL"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "0ca61b571ecf6c8e24713d4d0d4ed61efbdfad30f1a15f637659f3c2d9e32203",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 367,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "15_HISTORY/SUPERSEDED"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "0d7de9cb1f16169daba06bf66cff8e247507ba9b2705049700d04ef47d69f7e1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2793,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "0db75d8b7853fde53954409fd31aa0095c08277443e90770cf393cc8dd13a89b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 23083,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 369,
+      "sha256": "106901f6d6ece634b82a873e589d65592ebfbaf1b8c9399e0d5d5a7b898f89dc",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 149376,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "10_ASSUMPTIONS"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "133136f761c2e370d42190699bf315ce5f59411faa4b339b4c78909d437e805c",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 41705,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 774,
+      "sha256": "137bb54f823a00f94cc2f6fbf7343a347bbb564df9be39e8eae8bbd83a46e610",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 86894,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1556,
+      "sha256": "148003f2c92f680e79dbc2438e5a7222ef811cb8a21754c90cb2e6b4d5a9011b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 40266,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 707,
+      "sha256": "15392efed215a3b84e41e620972775f994c00ca4de173c0a5a941dd5337774d1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 20112,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 361,
+      "sha256": "15417d219422e409a707a31c50799da80dd42cb8c7365b418bc40c6a0033b164",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 25357,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 455,
+      "sha256": "15fb694d4f478fd2c694900d33f0fe97eaf3fee6e0b32cb6f7882508504e49f5",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 46199,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "16f4ec123865450c0e651238bcad60392b5130d75fbef02f75df08e4b699d8c1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 74372,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1366,
+      "sha256": "17a9aaddc34e1da1c0b3f2755cafb8690f721579707d806fc576667891674dd7",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 933,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "07_RELATIONS"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "17c6d089a501cd2cfcd81881dbe540afac1a58ce10483d47939a2688bf99984e",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 8845581,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "04_HYPOTHESES"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "193817002ecc02b71410d93cb1134ef681c55f127ac3988ec676f0fb7f1bfa98",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 28937,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "1987d74c929a2c573bc1289685dd2eccd5728088f59ac07249f3bb87c662fea1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2699,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "1cd6930ac6a4c8018355c4d24d879a76672df81f6245753f821b00099c2c39a8",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 25636,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 413,
+      "sha256": "1e6b368e135b0488a051c0737900d8e44f154d949214002182928be61cbc6111",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 134007,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 2344,
+      "sha256": "1e6cb4fc6a61ed08a3d9f7a5ffa2ff5685ee2565f54cfa9515da58e77ed2c688",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 508779,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 8357,
+      "sha256": "2157ebe0d7ca46db0a9f9f9d77f7b915ff8f4d5e685e38933f98b8a5625a8d92",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 28411,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 487,
+      "sha256": "21fd9f0b5046869b2795692c4ad707179cc65120b3aba44b55271139bc34a068",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1999,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "20_ASSURANCE/LIMITATIONS"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "24a8bf34c03fdeab872c7b46dc56e104b49d7710f12d2c4c6095f8e30879bb95",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1904,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "24ea99faec7f3c539e21c181ea7e30093e6f7baa5311b22c1e70c47f70bb1fe9",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 71285,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1278,
+      "sha256": "25368d9b8c77da82021467d3f378ff3b5f885c3d55cddcf389b8f9e5b4ba2dab",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 38188,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "03_OBSERVATIONS/MACRO"
+      ],
+      "semantic_record_roundtrips": 66,
+      "sha256": "26ac5014475c69fdf19676f7b28935fb44df07bed5b27832968da8bcf018df19",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2092,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "09_CONTRADICTIONS"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "274b0d6f055bde14b5f871ab58230c60ec158936559b0436bda50bdcbb6a1537",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 77612,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1398,
+      "sha256": "27778f46a0a9626ee096ae3756e03d745448e81d1af8666c4055bbe05e4e8ce9",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 4715737,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "05_INFERENCES/MICRO"
+      ],
+      "semantic_record_roundtrips": 115774,
+      "sha256": "27921a511a261cc572fc8571adc5230f914787e9ebdac100623a3e8e86c464c7",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 14558,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "07_RELATIONS/QUANTITATIVE"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "280bbe13748635c40ac73cff445818874255f898fdab25287dea715044a388c1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 24836,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "2a9cc54c622c44fc81d4d97c097e66dd6a58539369b6ee4fb4bb4420b02f8142",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 45765,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 802,
+      "sha256": "2bbc9dea8cc4ef3af6e0498e3ed59701f8d801a423e4d5fb36a580805b60afb1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2077,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "2c97693d57857f3ef37b637a0c4541cb8da9b2f149f784752880f56db2dc8aed",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 20794,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MACRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "2d1e5cda47655cae08e78148cc0564401ac62324ffb6bebdd497edb2bd2b5315",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1234,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "08_METACOGNITION/MACRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "2d2f8862c811d038a5a53005669590311e1caa6f8bc6f52aea16d7ff66ac6072",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2559,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "05_INFERENCES/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "2dff285939345d20faa561528eb881c92e8eeb373e0a76c74c2d851419136eb1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 63180,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1137,
+      "sha256": "2f5d2a7510e7d28d0755ef74a2ffeb3b7b22cf3393bf4074503b86e0de91a6eb",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 38188,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "03_OBSERVATIONS/MACRO"
+      ],
+      "semantic_record_roundtrips": 66,
+      "sha256": "2fba4f24ea4620b7542c1e9cc53afe1e3a366a6e9ea9092300b0ff4b9ac105cb",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 76325,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1398,
+      "sha256": "314ddd56280ad51581a1b15e535317f960a0177aa2bd3ed5052813e381d870e7",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 34062,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 644,
+      "sha256": "3225d2399ad58f0aeb2fd5e92ed2eeebdb3b9d3ffa78c868a4bfd0d02c6cdc16",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1303,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "334a70e66d5f227eea773d946223bdb87eae9a2d08bd6449e21f2d2ff77a2b46",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 3123,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "08_METACOGNITION/MACRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "34aed28ac85164a3ec70182daf6f29712dc2ec643d438e8bb7e07fdb98dfafc2",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1937,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "07_RELATIONS"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "34bfbb6eaf26c031031c6379cf170b4d063431e2422e897990f8dcd147c0a967",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 23654,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "09_CONTRADICTIONS"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "353d7001f4e5a53f391485b05a7184736f3df5be8cd83d9bc7b1294a0bea1896",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1646,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "20_ASSURANCE/LIMITATIONS"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "36c04e0b6223d6ea5e013532956effca45c115ee5f15d1bb07fc154ec8215a0a",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1836,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "12_PROVENANCE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "371d24b72a3d866d6fb037061b172a6ddb9955479d6a91acd3d3e0e25fce20fc",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 55111,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 952,
+      "sha256": "3769491858a63523e5f11b03fc4f06b5ded1c33239b4b7cc690005299edf9824",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 279315,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "07_RELATIONS/QUANTITATIVE"
+      ],
+      "semantic_record_roundtrips": 1176,
+      "sha256": "38a292d5aefdb0ea0c1e8aaf3ae6622830233c260313a1a0294ba3eb478475dc",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 26966,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 487,
+      "sha256": "38e160ec3b14c1a236873330dda79c648664eacc0d0fb4abd77e5a52f764b820",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 156705,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "09_CONTRADICTIONS"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "3a04681dd13866f04b5ef4de5c94ba292823037aed6f9e2c54c82ac14e39ad63",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 21069,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "3a3d39610f97cb470257ae1eb39f54f6774ebe25f7a22a7e6b966e3202f5dd16",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 31863,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 587,
+      "sha256": "3a95f3683784d8e80cd5b32084fe1ff80f0281ecfc9e12a729cc76007dc413f1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 15666,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 257,
+      "sha256": "3a982a574b4aed793bba95d28a62a626b2d8b22d0919bce6aefc0ee33151b6a8",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2125,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 3,
+      "sha256": "3f564ec02d5fe3cba484d7369214ba1b18001037a70a7615895634e429a6dd16",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 42268,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 774,
+      "sha256": "3f8559314be58f615fceb1671ad489ef93d8c23ad2a72a43879c35fa25c579b4",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 69513,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "3f9a6fe50bb60a051cf28235fb06806e00f2ad0adf2d7af4ebb3bc6f8eb91f64",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1798,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "4057da6db6a86649e6d7d08c558154e595419fc128c27b77ab85bf807dacf883",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 216528,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1360,
+      "sha256": "410a482765d797d4419c60a1681570bd99a5b29c350cca21191840503ce8917d",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 21454,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 361,
+      "sha256": "425e832b27a339ddf568ce1a74b2cb8b4f8a01a3a62e95b5336873f2de9b976a",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 23850,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "11_FAILURE_KNOWLEDGE"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "430851f446aa3f19cf911d9730db89ccd16194e14313f9e665304fd4e0742517",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 36961,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 674,
+      "sha256": "4395d7385a11e0907653c929aa639a0762088afbfda10ebdb77172500350a8b0",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 48897,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1120,
+      "sha256": "4710029555ed11178d27aa2b262e1b76101f3c8a632e9debfe69b8e9126c4ded",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 20043,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 352,
+      "sha256": "48c2724c601e85733d857a5284e4de361ae02579ce60ca78cf7bccdbb5509ece",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 53843,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 864,
+      "sha256": "48ff6d521d3fda3820bcb96a93ffa4e26eff5db053b7367184870ef777601df2",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2677,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "04_HYPOTHESES"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "4a3983130240ca15bf7dc1acca4b1523eac7dae5bc228a35157fff46e6fd987c",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2667,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MACRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "4a8b3025a54ecb026c99f91d7c35c9d939a9d4ba106f6875734655525c95df60",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1427,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "08_METACOGNITION/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "4ae9a84c5bd93868bcf2f0cfbedefe7d37535296335cadfec02dd6dc3ac4526f",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2352,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "4b033e33b63a8326a259d44b39a05f1b8e5a08fdbc8ea304b564ef024c5e190a",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 32686,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "08_METACOGNITION/MICRO"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "4d66c180979eadef134874f96eacc9ef9eee6cb61d59ad0014b7442cdfdbcab8",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 73586,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1278,
+      "sha256": "529423b464d17d18d07c32dde81c7fc1715eb91c239ea7a291904556fe44bc96",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 35184,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "532fd106a85358595e0a614886c255bde1ecc5fd758ad089dc175b4ef5cc1a0f",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 3477,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "08_METACOGNITION/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "5376b6b18b91d29c71e18a276cc3a1c081088aaa21a8fbd6a80a02c02380f6d4",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 356,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "10_ASSUMPTIONS"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "54153e01221d665487338fd65310e041b2c5e945a208738ed69b6ca5e19bbd04",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1179,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "54b5690fbfd5c2ab7849cf0d92b177612f138e5ede25611f29f76b9ca7dbb808",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1898,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "08_METACOGNITION/MACRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "54d35bc2c043e40103cad9b681df57f97d61bdab338bff672f43511e79489aeb",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 20506,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 352,
+      "sha256": "5518e259e25fb49582f9a9c1e112b75683ad95476fee3a8425b9f41cf8317a04",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1467,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "12_PROVENANCE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "5519a5ba594eec9beb62dfb92483f7827b9ad4cd41be26f8db741e795f161157",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 3338,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "55310be7f5a7d09db5430fdac92d89d35e6e2ff53147d9982d4503e92973187f",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1776,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "575a01ee5ed1ad87ac59382bb022e61d547f021ada1cd908b2aa6fb6e2a35d0b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 22618,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 369,
+      "sha256": "57708be8627ab13cf0fea90d6543ea15cddc407c7bfc25bfa80fa81fb000fa5e",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 8864,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "58d3338efd5161e3e800a95132abac7d3fa3bb7ea0bf50d9ea6dbb90ef3fe0eb",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 8280323,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 98126,
+      "sha256": "58fc54283ead384689317644ec24323b45357895e3e0ed09580988b343ff6c5d",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2209,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "5940b3660b6258113ae3f977ee430961f9b7cb506737cec44b7f8f86a2ba0e76",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 43472,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 707,
+      "sha256": "5c69da29ddd8ce12ce700741857c056b372adaee86059c669056e13f432aacb0",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1648,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "10_ASSUMPTIONS"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "5d5fb8c74272a18e7d56cbec6b4e06d3bc287ba41310d18976bd39ec761fe940",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 14264065,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "08_METACOGNITION/MICRO"
+      ],
+      "semantic_record_roundtrips": 98126,
+      "sha256": "5df8b0f13d33551fa144504c52818ea09f82a3b1481e54719e6ec7d6bc9563dd",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 33244562,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "12_PROVENANCE"
+      ],
+      "semantic_record_roundtrips": 198898,
+      "sha256": "5e3f5e91a860a7ba3b09c0fe859d52aa7fe3116a12eccb03573e895a80f4c54a",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 39849,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "05_INFERENCES/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "60c09ccee466e2b7fed1b1c16fd96dd6d003a2dd742f3cb4bc2d2ed04c4f692c",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 4538662,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "06_CONCLUSIONS/UNIVERSAL"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "60ced5ffe4a424fd104d4b0cbcb1eb3d01df94d8b6bce786fe3202afbc5d2f92",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 43333,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 802,
+      "sha256": "610b98bccc0edd8dd1ffcebfecc0ce39fc41a3359902de7bd4e5a718bd760f0b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 116706,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 2268,
+      "sha256": "61749f5e84dbe7f29e0c41a2272ac02392df6a8119746845b9d7168110001b4b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 42883,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 775,
+      "sha256": "61b7a50577762dafcd5479c3e56c79e98e7b2b9a84c6b8a6842c661f603c1723",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 23507,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "10_ASSUMPTIONS"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "61b7dc75e9754ea1f66df73889cde7ba8d01519d3b60a2aff83ca53049d0b828",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 63879595,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "07_RELATIONS"
+      ],
+      "semantic_record_roundtrips": 501426,
+      "sha256": "61e59cd0040b019dbeddd3768b1bcf8376c332a9dbb1955079d9f835480143e9",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 26297,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 461,
+      "sha256": "624bc1e7d5b48d0886d169036355e54a90462d55b5359b8d6f114a998b3df3b0",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 27872,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 461,
+      "sha256": "62c8a9de1bb7b8409d1d514d5cadcc0476ec908e7fe968ccad34fb614ca680ef",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 62995,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1118,
+      "sha256": "63bd8535e2b62469216b5979f9a4fb7d73d61346510ec7f994f4057732cdb55f",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2706,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "02_EVIDENCE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "64d69b06f008d45d1ab5604b369ba99698c706e551060fc14c236163ac292b70",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 13742,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "08_METACOGNITION/MACRO"
+      ],
+      "semantic_record_roundtrips": 66,
+      "sha256": "65d994b836b8fb99e7656ab7a1171f2c1f96a857f66ae88d3a228a5d84cb5061",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 88209,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1628,
+      "sha256": "65fcb7e3afb49012e890153ca636c1dbb5cc2a655f2c48ad67365dd5adea09af",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 110646,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "12_PROVENANCE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "67b230cc06fa6992c45b535c203899937c7445e210f27ed09a576181d7c31cc0",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 61541,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1024,
+      "sha256": "68fe1c4d4be738ff7c7760696f3a4cdb7456e8748bce68eb046828c6fafc6fdf",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 35037,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 636,
+      "sha256": "69164d75a71a24ded64d362f7c3cbbc71bf982dd1e37424f1f7077c7280c6534",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1293,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "6a8fd13fb4032c7a1984f28215e0bf40fb7d12582f4c35da8c43c1a31dc30ed6",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 32065,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 506,
+      "sha256": "6c778a1e6be478e31ed62729f6966490a1ae192576b8922bcbe207ab073dbbad",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 430063,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "03_OBSERVATIONS/MACRO"
+      ],
+      "semantic_record_roundtrips": 66,
+      "sha256": "6ce60b344861ca216cb8501761cf10ac830b9f4ed23d9b95103c818bd3ef048f",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1800,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "11_FAILURE_KNOWLEDGE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "6ed629de28c5464f9bc6940ed12d1014d730e6613a92a3947b1975ad13d19bb7",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 45859,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 853,
+      "sha256": "710b93195a2e3d6cb77935205db88cbacae06ee5864f5597f7310566ab8df241",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 31425,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "72e4a2956d1efddc47e87dadf0bae177c19b96b68d3463cb34814a0993710274",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 24990,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 455,
+      "sha256": "72e8c35a759fad439d3ef16bed7c26978aae6026e715886cdca5b34e07866c3b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 26931,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 482,
+      "sha256": "731f535f5d2f9e50076accfde7dee300a01632195a181c002ccbfc6118c7fdf4",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2002,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "10_ASSUMPTIONS"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "73e083b0438a9f8bce77112db43b51fa90e383b8ab3409410a7cf54942da4557",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 50307,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 920,
+      "sha256": "73ebf97ce3f802b6003151eb13406fff396632bd6e4d2b463ef026ff9f8615e4",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 21121,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 369,
+      "sha256": "75873e0820fbcd7ea6b58f6e6b5fa2a85c7a1e88ffbacde555806556aa942530",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 3298,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 52,
+      "sha256": "76a58c28b9ee204a3b17b812ffe29f379a88de488ebbffa8dfcf7fbeabb5ddbd",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 4714860,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "04_HYPOTHESES"
+      ],
+      "semantic_record_roundtrips": 115774,
+      "sha256": "7711253d21e05f27bf87f81a59e55e9f19c7b4b77fd5051c251ad5f3f454f56b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 20794,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MACRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "780275ebeded556cdc122717beb83216ef805fdff900190bc1df8438668db7ca",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 56957,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1024,
+      "sha256": "799e95fdc0931c7b92b54d1dbef4db60511127a1bdc91744b4ca03cb2bc7b87d",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 24124,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 440,
+      "sha256": "7c9ebdfbaa58bc79ab33a121c91ade20fe5303688443540241c3b70b15ef5316",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 34817,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 628,
+      "sha256": "7d45bae6fe4fb29971d54307ef70ba9bbe338662c20b84f6b989ee006029f378",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2577,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "7d7ce567bb93af34ca754a9c13892259692c5a90a1c7b07af3c310a03b9ca248",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 18749,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 338,
+      "sha256": "7ea1b8c277eabd430965ef7488baec991548c778032310c7ac28c1800aec4505",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2198,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "11_FAILURE_KNOWLEDGE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "8015726c2d74a73d79ef1d89f1c42c26c49708be563d70db1fdd5d645ca025e4",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 4335,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "04_HYPOTHESES"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "813eddbcb5fa44fd1c1cebfaf4c23495f54eb852a73bd57bf0dbd832e01bc3a1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1944,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "15_HISTORY/SUPERSEDED"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "819985518830f4b57569c35186d9b3ba8e5b5da02a33a23c64868dcb1bad5717",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 28411,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 487,
+      "sha256": "82def08b769d58b5d02efc18fb6c3581e2a3483e3a4466510905894024d03d65",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1438625,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 26734,
+      "sha256": "838ddb09ec92804ac835022eae7346a027b7af6a1b71c0bec524ff26c4c48069",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 512710,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "15_HISTORY/SUPERSEDED"
+      ],
+      "semantic_record_roundtrips": 1038,
+      "sha256": "839080748f3c278e1a9b2c3bf42e0dcea90b92fa245ba11dcdfef6dad6959423",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 20475330,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 98126,
+      "sha256": "83e0ae0c247b2e2a8cb3891f9bce97db887b5aa382a2ee887914a46483ecd16e",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 14584,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 257,
+      "sha256": "8619bb54d17a2d52f56a67f2e0509b1419942f5ec5ac2b03546a5aa6ca4687e1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 3901,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "05_INFERENCES/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "8896e1fb17c43314675a00d91d24d774cf0a26905ad7c6eab37d1aad264a70ce",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 5178,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "07_RELATIONS/QUANTITATIVE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "88ba78bbfd36b963c2187e25ee09766d012ab715677957b8c5a5cb2f475b7ef4",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 976,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "02_EVIDENCE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "88c2ee92dccb0261bcee0177f1dff195835588cb2da817f45358aed140da2b29",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 32472201,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "07_RELATIONS"
+      ],
+      "semantic_record_roundtrips": 199192,
+      "sha256": "88e37d4356000e970b0bd6abefdfabf3f21a553a81d8c6fa4841c06f2cbfeeaf",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 66325,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "8940efa50392c456405c2c0b2c261b2c62de385532d24d17944a9966496f8652",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 5311123,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 48321,
+      "sha256": "8a57e80e3998be5ee416edbb0b34996575ca229a9b296e94b9a3aa935bc70a4b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 3151975,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "8abac6aa63b622345f3bccf9b0578747c4aa4f64523fffe7b916d03acba72186",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 34684,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 636,
+      "sha256": "8ae10ade8427d73ab2f4838e79f9130c1a3b6e5ab05f9c224ca5c3013190a6ad",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 38358,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 691,
+      "sha256": "8b6d7158e3e3bdb2b5118c59805afdb1455eeb6ae64dff73f84996dae9c1dc3a",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2329,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "07_RELATIONS"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "908fca092f14989f6d6d3b7c632d56692f178c6e426d812666e03280d5060d96",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 131909,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "90bad696a735eecd8e56d3d46b588fde08cba9ec7aff854e4f2f6d4ab42beae1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 23689,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 413,
+      "sha256": "90f11d01dacf0f50009bf344a08e45b0bfab16183f20b443e2c2ea7a58f2bdec",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 29266,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 506,
+      "sha256": "90f9bb988965ad896f791f7af1f1e4ee0e703831f2fefa85f18bce5914afb4ff",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 3879451,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "9276bf48c96722bb4146a80f68217c20fa6647b24bd6258a9b5ec80a641114f5",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1825,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "9308e016e6648c61d4bef4802fd01445345cc96bc02fc27ae48eda9180505fe7",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1854,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "980e9df6dad3abf279f7cced65c31095fbf3ad12e697e95d21e87cdc2df21f0d",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 19101,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 343,
+      "sha256": "98f6c8e605b0baf543e7ccc2f17b2d51317df844b655e30323af132b8f2da862",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 127725,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "20_ASSURANCE/LIMITATIONS"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "9a0f5789d416cadbe71bf998e5205266ea7c06c30214258b8161d40b3554692b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 363,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "11_FAILURE_KNOWLEDGE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "9a793d0e5c3e40baa7dc2634c2d03f738a964918f8e95ce489e0ee9cf8f91722",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 430082,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "03_OBSERVATIONS/MACRO"
+      ],
+      "semantic_record_roundtrips": 66,
+      "sha256": "9aa52175bbdee4bdd7f5293d5749d44ee82836d132ab07d354930b8b21f650d2",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2770,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "07_RELATIONS/QUANTITATIVE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "9bb2fc222eb43842c441e0fc593096fcb07d07e1f4f581f0def45f7e1954db6c",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 48777,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 864,
+      "sha256": "9c6b68b3f3225b105c82570c0465f04720c2b6ac166132e02bd0dd40c88b0bd6",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 59588,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "07_RELATIONS/QUANTITATIVE"
+      ],
+      "semantic_record_roundtrips": 104,
+      "sha256": "9cb359515cb314b14a523a6a3cac8046f469c794d2887e0fcd624fd1174b5f6a",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 3884,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MACRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "9cc6054e3c8bb19fd9a6cc361c911778b56fdd180f9f0e93d77873dce936ee7e",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 20,
+      "payload_kind_verified": "EMPTY_STRUCTURE_ONLY",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "09_CONTRADICTIONS",
+        "15_HISTORY/EVOLUTION_CHAINS"
+      ],
+      "semantic_record_roundtrips": 0,
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "source_reference_count": 2
+    },
+    {
+      "bytes": 56608,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1035,
+      "sha256": "9df63e9015c9c775e2c66ced33ac8af3f117d6063970e7dc8b2b95c2b01726bf",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 67489,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1137,
+      "sha256": "9f862ffbb12d7840db0582add08a2ebe712b20b8522cb660b4d8cc53026f8f85",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 31263,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "02_EVIDENCE"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "a2e233564555041051bd53dc4ae9ffd48cf38539ac9243fa977ec8670f518081",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 15784,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "08_METACOGNITION/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "a3f7cb81e38d49a12d8fc4e01a331813d92c503c1d55adf9742076e0f7a9958d",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 467200,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 8357,
+      "sha256": "a4a0b1eec78fcd6121e5a2c88d47fe101d833570bcfb9f0a60f8824ed8174bb9",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 58281,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1011,
+      "sha256": "a4c2468a409cc507b5574b74958333b49d61a141ff44f080fe049c3629bf1a30",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 67135,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1118,
+      "sha256": "a4e2b6cb4cbb2c370e16af85f8b2275121ed38b1c2acddda741bf0555c04ae2c",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 5929,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "06_CONCLUSIONS/UNIVERSAL"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "a653f3ab4bb7730915b6fa362e83ace87e9d455ebeca3ad3f260668261936611",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 60692,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1105,
+      "sha256": "ab67e386057d2ff6edd59a9c4f29212a430d2aff0b9292b56f7deb4d76777090",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1081696,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "ab85fccb15f52b5fcc30c8d24a083b4c28baa17cefbccd46acbbb98f676af2b5",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 49769,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 920,
+      "sha256": "acd8ade6d601e28bf07bb70fd292427749e32e2f152e5d04b94da51f776431e1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 20467,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 369,
+      "sha256": "ad29f7b7200615b6397a733ef440ecc854ecab5c4d17f071d02bb8c056697d62",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1686,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "15_HISTORY/SUPERSEDED"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "adf6bafe1685121ec7c7cff1e99acf994bf8ddb4a47178f993752eeb35851004",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 3875,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MACRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "aea15fc0b649ba53e51de52a0da8e9dcd981d65a0304e477439a9284008aba30",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 20475801,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 98126,
+      "sha256": "aed123494f6a05803a5d99d34b6c2e7b0a0c53d0e88cae39d264a7cb55f01172",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 65151,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1105,
+      "sha256": "af57d08743b659c1939ed65dd5e8f5f87e03fc382f9ab9ad45256995a6d1605c",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 56707,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "02_EVIDENCE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "afbe23fec8d621936b41c5da051e044d418a95977b3e5d788fb3828f68123dfc",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 35179,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 645,
+      "sha256": "b012480b6b0edd9956cc77ac434cfafa4c290f136456c72c45e1869294f0351e",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 27630,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 497,
+      "sha256": "b0633f4d0fe8072e45de6119f45925aa7675525623b46a34bf602acee174bf6a",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 38741,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 648,
+      "sha256": "b09c26afabc3a2418fea793cf306427c2197b95d09abc3ef13d02ba0c77f9d8d",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 33597,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 587,
+      "sha256": "b164fd198a7c25f2a8ea8af92128eea4d7eba682e864a08274b3a78eb66673c6",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 28937,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "b46b1b736f7ab267d07f854eebcf3639471b37553fd2ff502580ec6fd38007ef",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 59746,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1059,
+      "sha256": "b5fa6deec367107e9deb7f250ac8a5cc0c5087cd46457fc53e972e7d8e10747f",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 24089,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 402,
+      "sha256": "b80db4be59944afb3b22b5544321ec32ee951d9c8b952416a50fcf049816e70b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 3208,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 52,
+      "sha256": "baafd03acdd1f17bd2047e5f212b55601cb61f27cac80826c4d54c028abc2b0e",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 72567,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1340,
+      "sha256": "bb0a1dc1a608cc901e91be0b3558df80d3c61dff8bf3c343a334f6ec5cc82109",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 35085,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "04_HYPOTHESES"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "bc14fee244a188efd198e10f1a5cb16507327eb02afbe49ce758b424df27ff5f",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 359,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "09_CONTRADICTIONS"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "bc318e452b07b0fb6a49b93c4be361f68c19d79f5e215173a60b2e1aa760dc5b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 143775,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "11_FAILURE_KNOWLEDGE"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "bca449eca629b227424d02dcea69932548348fd3b09d16fc38eb905019469bbe",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 37890,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 648,
+      "sha256": "bdd1bfcac648c8d76078820f558732d08f11c18ac45edd613934f4e18da05372",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 8848518,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "05_INFERENCES/MICRO"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "be0057b37b608da845b93f15166adfc577db05c2edf07a9562d02325d0132395",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2713,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "c00f3312ce5163d5ce3f84f140ed4ae5ee1b066b1e44393ef4d1b60d5e9af1c1",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 29013,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "c09c786e6053a04e9be04b5b226ee8b2aee56330d63c301434fe549ed36b9a83",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 34952,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 674,
+      "sha256": "c1a0900befba52dc0a7dc554e18ddd1646f496199a5d42a7bceb90b12a5e12c5",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 35787,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 645,
+      "sha256": "c1f85f625714402cd51b8d619257d71c4951c084f4625c5540920b95744d731a",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 2761,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "06_CONCLUSIONS/UNIVERSAL"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "c20ffdc6542c7cd0b096389385c96db1970c73bf42c16105007008665efa6f6c",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 72996,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1313,
+      "sha256": "c22187c02e168e7ad568264a1d5ec319b5c682efd69bb6f6bc07cff2fce46bfd",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 26926,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 443,
+      "sha256": "c38653e1c849758aa88ce7b8f33b3d17b07bff1fbf17ef5f96fda3727705d4eb",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 76889,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1313,
+      "sha256": "c3c38bf48b0717d41f59768ab07bb5d49f5fe95ca8f6f30456512b164fe89ecd",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 53283,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 962,
+      "sha256": "c3d021ba565bc549982e312a6584b60777868796ce3a5a4144fa9ff16ab70af8",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 78000,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1374,
+      "sha256": "c4a7f9461f3a36af2ff40a9103c58bf8e128e5a0d22c00680f6fb155b4fd3242",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 32033,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 559,
+      "sha256": "c5d1d793cd731b06edf65b185de14e61c385a33b1629e119d09b039d7dfc1035",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 7379,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 132,
+      "sha256": "c797e8f6261e217b719e98b91bccf1e1cb387b94af864540cf8589a97a34abdd",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 14895,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "07_RELATIONS/QUANTITATIVE"
+      ],
+      "semantic_record_roundtrips": 55,
+      "sha256": "c7c48fd0b8db1ce4f3f54f11a7e4d8df7e2b8c43641a0b15455e021bd53f5221",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 35134,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "06_CONCLUSIONS/UNIVERSAL"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "c8a8ea43c9cf92e5d74f688ce8922fc7959181ebd2a9f03b630f792c3caf3b77",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 311375,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 98126,
+      "sha256": "cb2ddf70a1ba3a29849f457ee3506fbd758e9047b6dabef797103e06277ef028",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 96239,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "02_EVIDENCE"
+      ],
+      "semantic_record_roundtrips": 487,
+      "sha256": "cb818a03972e92c265b4f31910e22e394cabad1cb4c3cdf26b9e90ce1ef023c2",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 30553,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "04_HYPOTHESES"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "d0be29626c43b97fa75d5d694670a49a64c60bb7c5041cdbdbb5e717243d052f",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 53170,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 975,
+      "sha256": "d24bc96c45a47aa35290e5f042ef31b03b55cd94d89410f01e09ed04c112e280",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 56729,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 962,
+      "sha256": "d4de99ea9189bbf911b77def60671f08a1bd94a17858eff7b1d9e3c39d2423c2",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 25679,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 456,
+      "sha256": "d61c0ad1b62a7ec7deb3218dc8c24aa72914a9b9813606d04bae49741ebb5880",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 53906,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 975,
+      "sha256": "d6e8d289b16576afdd5aab08680526bfb2ef60a75672bcfb3e571e0b66739941",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 355,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "20_ASSURANCE/LIMITATIONS"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "d849ab1bfbbb6bde2a965983f701ffb03e1f5e76f64edfa6914c022e3b40c22f",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 46325,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 775,
+      "sha256": "d9b78c4d0e6d3fa74e2b1996adab462ebb6c0fd65cb6aead8700b8b46d445fa6",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 18853,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 343,
+      "sha256": "d9e787d9a9777609a71d3c8d2146690283854f811e5a0ae3f3e6b98654021ae2",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 42270,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 782,
+      "sha256": "dbd853e8c7f1105a9374fa6f5fe2d82d2945ff1db9badd46eae0460cd30a1d77",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 26998,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 462,
+      "sha256": "dc120a0e392a50fff93b30ccd8428ec30697d36886fc2ca67b040bde75a539e5",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 78353,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1366,
+      "sha256": "dec5feb3e80c224521fb49d24b5663fada23a53ced7323b65604549a4b9f84ab",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 50581,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 912,
+      "sha256": "ded4019687cf3a1f867387a35029d3d1238180e5f098b49cea1de90818972a71",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 23507,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "20_ASSURANCE/LIMITATIONS"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "dfb016ab113493b17750177e8cbefabe494866b381d35bfbb842518741e53988",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 11982116,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 48321,
+      "sha256": "e05850ed7f283ec9e66dcf97683e2ff95da77f176ce7db6c8460136b0dd58779",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1808,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "09_CONTRADICTIONS"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "e10b93e8c56309c6dde99791b60fde2c1c305d884fdbe76830362b69ad049385",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 6199,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 109,
+      "sha256": "e194e90179662b7c302a34d5d9fb5d6f12354bf9faf1fac2502bd87ce0b2e950",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 52713,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 952,
+      "sha256": "e2218d0a58bb00bcb11aa1873277311a2fe376b2f3a67662847e95c0686d7899",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 47227,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 802,
+      "sha256": "e287ad5050f2af887b05169e7f847fff793ef121bc2210dbd5ef577c6962b62a",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 4388,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "e7c2b60ab281e5e21eea98d804246cab465577c7e7545554669e725786410de6",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 55610,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1011,
+      "sha256": "e96212dd781aa2bd60d33455e841f2530af4688bb8bc2536d2091a19e408f465",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 4078,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "02_EVIDENCE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "e9875e313235c1abf6e5d8afb338503f7abc8a9ff37fb6c8a4fd9638117e595b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 18411,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 332,
+      "sha256": "ea7229f6dfeea1df9d1342b8ee6fe9a4486a261cacf2bc67f99bafbc2856bcdb",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 73337,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1360,
+      "sha256": "ea97101e4c6b68e678c16425d8611c6c149bd035e9aab97e6f38a58a018f6a98",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 25510,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 462,
+      "sha256": "ed29eb45b9c379c78db9e9efb64f07b9b0210933abd54cbfab29f2f98a977b05",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 53176,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 969,
+      "sha256": "ed8bdafe914245dce4db645bf0f12eee03fc935e4366e6a7e9cb8f64673170be",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 37994,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 644,
+      "sha256": "f013b4364fd500322db2de32299140b11061855a57b5c6bc5548df6f42a4d744",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 33992,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "07_RELATIONS/QUANTITATIVE"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "f05a476e57349cba2170c5bb3e938a6199e6e7b5494f731a7eb3360bb058909b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 276431,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "15_HISTORY/SUPERSEDED"
+      ],
+      "semantic_record_roundtrips": 1038,
+      "sha256": "f0781f52ac4bb79718343d6788dff043cc921e9e6f34a71630ceb5e6b884038e",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 1682,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "f1f0cf0e027e2ea28fba4ba2911ea953df88fce81be91483b005513a01d42206",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 29919,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "f2459100dad83347017405db9f162df5557d168c9a12a944bca6c15a60aaf7c7",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 28470,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 49,
+      "sha256": "f8262e79af3c54fb9c5bc292dfde246f5c2ad6a6ece1ddd0ba75a9f0144eb078",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 32036452,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 115774,
+      "sha256": "f87fc4ebd3dc3e5e473c63d1a7ac9babe770987a0f52837ba537743956ccc3c0",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 5971,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 109,
+      "sha256": "f969c4111ed62a2350fad066ccfac1a07ac1162a1def74ed63797d910a333946",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 19299,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 332,
+      "sha256": "f9ae61e22cac2c5d4b5636add46a5a7b6ff9bf3b9253c9470baf996e76520b45",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 855,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "fa2252188c5c47e4ce3484791f05e9e73f2a71e3318771deb4b063efdd9e4d9c",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 34137,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "fd3768a30b3f6f0cd778f1bc92c4b1873d9d8579bbae8d0e46b02e27b87a27cf",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 33472,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 46,
+      "sha256": "fd5a231e47c84640466488d9488537d4d69b1488d3cb04c2b9d5a92cf01c2a1b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 961519,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 8357,
+      "sha256": "fe8586443a1a3a2243c6ec8da78b3a666abd09be8f9fa99c252a1192606f2b0b",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 27235,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "01_SOURCE_REGISTRY"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "fea6a77ebf758400f1d4d113d9b4b94b843f91e3db11d93317f0e88ba59ea80f",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 66325,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSON",
+      "sections": [
+        "03_OBSERVATIONS/MICRO"
+      ],
+      "semantic_record_roundtrips": 1,
+      "sha256": "ff4966e60ef09c1c20d4eaa8665154123de6aac576f1241e7d96ea03f0bbc2c7",
+      "source_reference_count": 1
+    },
+    {
+      "bytes": 22720682,
+      "payload_kind_verified": "SEMANTIC",
+      "representation": "JSONL_GZIP",
+      "sections": [
+        "02_EVIDENCE"
+      ],
+      "semantic_record_roundtrips": 115774,
+      "sha256": "ff4c9b3aa559140e42836b2c478eb2876704e3e4fdd4a95c9ec407df037999b3",
+      "source_reference_count": 1
+    }
+  ],
+  "representation_counts": {
+    "JSON": 85,
+    "JSONL": 19,
+    "JSONL_GZIP": 148
+  },
+  "schema": "metaos.semantic-state-machine/v1",
+  "semantic_digest": "2bf4f99028c2fab70585d31e0440ee886d3dc71b04be50c7801aaeb82b42f0d2",
+  "semantic_object_count": 198898,
+  "source_count": 49,
+  "source_references": 254,
+  "unique_payloads": 252
+}
