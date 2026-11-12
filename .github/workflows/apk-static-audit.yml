@@ -1,0 +1,241 @@
+name: APK static audit (isolated)
+
+on:
+  push:
+    branches:
+      - audit/apk-base-1-20261112
+    paths:
+      - ".github/workflows/apk-static-audit.yml"
+      - "base (1).apk"
+
+permissions:
+  contents: read
+
+jobs:
+  static-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout only the APK from the audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit/apk-base-1-20261112
+          fetch-depth: 1
+          sparse-checkout: |
+            base (1).apk
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Androguard
+        run: python -m pip install --disable-pip-version-check androguard==4.1.3
+
+      - name: Parse APK, Android manifest and DEX files without executing the app
+        shell: bash
+        run: |
+          python - <<'PY'
+          import collections, hashlib, json, re, zipfile
+          from pathlib import Path
+          from androguard.misc import AnalyzeAPK
+
+          p = Path("base (1).apk")
+          expected = "5b20cf46a6b9b2692d9490934fbf1bf4689c0c5573220d7ff8d3d92ac1a43eb9"
+          if not p.is_file():
+              raise SystemExit("APK not present in checkout")
+          raw = p.read_bytes()
+          digest = hashlib.sha256(raw).hexdigest()
+          if digest != expected:
+              raise SystemExit("SHA-256 mismatch; refusing to analyze unexpected bytes")
+          if not zipfile.is_zipfile(p):
+              raise SystemExit("Invalid APK ZIP container")
+
+          with zipfile.ZipFile(p) as z:
+              items = z.infolist()
+              names = [x.filename for x in items]
+              dex_names = [n for n in names if re.fullmatch(r"classes(?:[2-9][0-9]*)?\.dex", n)]
+              native = [n for n in names if n.startswith("lib/") and n.endswith(".so")]
+              assets = [x for x in items if x.filename.startswith("assets/")]
+              largest = [{"path": x.filename, "bytes": x.file_size} for x in sorted(items, key=lambda y: y.file_size, reverse=True)[:30]]
+              signature_files = [n for n in names if n.startswith("META-INF/") and n.upper().endswith((".RSA", ".DSA", ".EC", ".SF"))]
+              uncompressed = sum(x.file_size for x in items)
+
+          apk, dexes, analysis = AnalyzeAPK(str(p))
+          def get(obj, method, default=None):
+              try:
+                  value = getattr(obj, method)
+                  return value() if callable(value) else value
+              except Exception as e:
+                  return {"error": type(e).__name__ + ": " + str(e)}
+
+          perms = sorted(set(get(apk, "get_permissions", []) or []))
+          activities = get(apk, "get_activities", []) or []
+          services = get(apk, "get_services", []) or []
+          receivers = get(apk, "get_receivers", []) or []
+          providers = get(apk, "get_providers", []) or []
+          manifest = get(apk, "get_android_manifest_xml")
+          ns = "{http://schemas.android.com/apk/res/android}"
+          def attr(node, key):
+              return node.get(ns + key) if node is not None else None
+
+          app_attrs, service_details, receiver_details = {}, [], []
+          actions = []
+          if manifest is not None:
+              application = manifest.find("application")
+              app_attrs = {k: attr(application, k) for k in (
+                  "name", "process", "persistent", "debuggable", "allowBackup",
+                  "usesCleartextTraffic", "networkSecurityConfig", "largeHeap", "theme"
+              )}
+              if application is not None:
+                  for tag, dest in (("service", service_details), ("receiver", receiver_details)):
+                      for node in application.findall(tag):
+                          acts = []
+                          for intent in node.findall("intent-filter"):
+                              acts.extend([x.get(ns + "name") for x in intent.findall("action")])
+                          actions.extend(acts)
+                          row = {
+                              "name": attr(node, "name"),
+                              "exported": attr(node, "exported"),
+                              "permission": attr(node, "permission"),
+                              "process": attr(node, "process"),
+                              "actions": acts
+                          }
+                          if tag == "service":
+                              row["foregroundServiceType"] = attr(node, "foregroundServiceType")
+                          dest.append(row)
+
+          classes, methods, strings = [], [], []
+          for d in dexes:
+              for c in d.get_classes():
+                  try:
+                      name = c.get_name()
+                  except Exception:
+                      name = str(c)
+                  classes.append(name)
+                  try:
+                      methods.extend(name + "->" + m.get_name() for m in c.get_methods())
+                  except Exception:
+                      pass
+              try:
+                  for s in d.get_strings():
+                      value = s.get_value() if hasattr(s, "get_value") else str(s)
+                      if value and len(value) < 1000:
+                          strings.append(value)
+              except Exception:
+                  pass
+
+          classes = sorted(set(classes))
+          methods = sorted(set(methods))
+          lower = ("\n".join(classes + names)).lower()
+          framework_rules = {
+              "Unity": ["com/unity3d/player/", "libunity.so", "libil2cpp.so", "assets/bin/data/"],
+              "Unreal Engine": ["com/epicgames/unreal/", "libue4.so", "libunreal.so"],
+              "Flutter": ["io/flutter/embedding/", "libflutter.so", "assets/flutter_assets/"],
+              "React Native": ["com/facebook/react/", "assets/index.android.bundle"],
+              "Cordova": ["org/apache/cordova/", "assets/www/cordova.js"],
+              "Capacitor": ["com/getcapacitor/"],
+              "Xamarin/.NET": ["assemblies/", "libmonodroid.so"],
+              "LibGDX": ["com/badlogic/gdx/"],
+              "Kotlin": ["kotlin/"]
+          }
+          frameworks = [label for label, needles in framework_rules.items() if any(n.lower() in lower for n in needles)]
+          class_roots = collections.Counter()
+          for c in classes:
+              if c.startswith("L"):
+                  parts = c[1:].split("/")
+                  if len(parts) >= 3:
+                      class_roots[".".join(parts[:3])] += 1
+
+          flags = {
+              "RECEIVE_BOOT_COMPLETED": "android.permission.RECEIVE_BOOT_COMPLETED" in perms,
+              "FOREGROUND_SERVICE": any(x == "android.permission.FOREGROUND_SERVICE" or x.startswith("android.permission.FOREGROUND_SERVICE_") for x in perms),
+              "WAKE_LOCK": "android.permission.WAKE_LOCK" in perms,
+              "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS": "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" in perms,
+              "SCHEDULE_EXACT_ALARM_or_USE_EXACT_ALARM": any(x in perms for x in ("android.permission.SCHEDULE_EXACT_ALARM", "android.permission.USE_EXACT_ALARM")),
+              "ACCESS_BACKGROUND_LOCATION": "android.permission.ACCESS_BACKGROUND_LOCATION" in perms,
+              "ACCESS_FINE_or_COARSE_LOCATION": any(x in perms for x in ("android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION")),
+              "RECORD_AUDIO": "android.permission.RECORD_AUDIO" in perms,
+              "CAMERA": "android.permission.CAMERA" in perms,
+              "SMS_or_MMS": any("SMS" in x or "MMS" in x for x in perms),
+              "CONTACTS": any("CONTACTS" in x for x in perms),
+              "CALL_LOG_or_PHONE": any(any(y in x for y in ("CALL_LOG", "READ_PHONE", "CALL_PHONE")) for x in perms),
+              "SYSTEM_ALERT_WINDOW": "android.permission.SYSTEM_ALERT_WINDOW" in perms,
+              "BIND_ACCESSIBILITY_SERVICE": "android.permission.BIND_ACCESSIBILITY_SERVICE" in perms,
+              "BIND_NOTIFICATION_LISTENER_SERVICE": "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" in perms,
+              "BIND_VPN_SERVICE": "android.permission.BIND_VPN_SERVICE" in perms,
+              "MANAGE_EXTERNAL_STORAGE": "android.permission.MANAGE_EXTERNAL_STORAGE" in perms,
+              "REQUEST_INSTALL_PACKAGES": "android.permission.REQUEST_INSTALL_PACKAGES" in perms,
+              "QUERY_ALL_PACKAGES": "android.permission.QUERY_ALL_PACKAGES" in perms
+          }
+          work_markers = [c for c in classes if "androidx/work/" in c or "androidx.work." in c]
+          app_actions = [x.lower() for x in actions if x]
+          boot_action = any(x == "android.intent.action.boot_completed" for x in app_actions)
+          fgs = [x for x in service_details if x.get("foregroundServiceType")]
+          relevant = ["DexClassLoader", "PathClassLoader", "Runtime.exec", "ProcessBuilder",
+                      "AccessibilityService", "NotificationListenerService", "VpnService",
+                      "DeviceAdminReceiver", "MediaProjection", "BOOT_COMPLETED",
+                      "WebView", "loadLibrary", "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"]
+          text = "\n".join(strings).lower()
+          string_markers = {term: text.count(term.lower()) for term in relevant if text.count(term.lower())}
+          hosts = sorted(set(re.findall(r"https?://([A-Za-z0-9.-]+)", "\n".join(strings))))[:150]
+
+          report = {
+            "audit_scope": "Static and non-executing inspection of the exact APK object stored in the specified GitHub repository.",
+            "source": {"repository": "Plomillo/luna-linux-bridge", "branch": "audit/apk-base-1-20261112",
+                       "file": "base (1).apk", "size_bytes": len(raw), "sha256": digest},
+            "identity": {"package": get(apk, "get_package"), "app_label": get(apk, "get_app_name"),
+                         "version_name": get(apk, "get_androidversion_name"), "version_code": get(apk, "get_androidversion_code"),
+                         "min_sdk": get(apk, "get_min_sdk_version"), "target_sdk": get(apk, "get_target_sdk_version"),
+                         "main_activities": get(apk, "get_main_activities")},
+            "manifest": {"application": app_attrs, "activities": activities, "services": service_details,
+                         "receivers": receiver_details, "providers": providers,
+                         "manifest_actions": sorted(set(actions))},
+            "permissions": perms,
+            "permission_indicators": flags,
+            "background_execution": {
+                "boot_completed_action_present": boot_action,
+                "foreground_services_with_manifest_type": fgs,
+                "workmanager_class_marker_count": len(work_markers),
+                "workmanager_class_markers_sample": work_markers[:80],
+                "service_count": len(services), "receiver_count": len(receivers)
+            },
+            "implementation": {"framework_markers": frameworks, "dex_files": dex_names,
+                               "dex_count": len(dex_names), "class_count": len(classes),
+                               "method_count": len(methods), "largest_class_roots": class_roots.most_common(80),
+                               "native_libraries": native},
+            "archive": {"entries": len(items), "uncompressed_bytes": uncompressed,
+                        "asset_entries": len(assets), "asset_uncompressed_bytes": sum(x.file_size for x in assets),
+                        "native_uncompressed_bytes": sum(x.file_size for x in items if x.filename in native),
+                        "META-INF_signature_files": signature_files, "largest_entries": largest},
+            "static_indicators": {"string_marker_counts": string_markers, "embedded_http_hosts_sample": hosts},
+            "limitations": ["Static analysis only; APK was not installed or executed.",
+                            "A manifest permission or string is not proof that a behavior executes.",
+                            "No runtime RAM/PSS, battery, network, or dynamic behavior measurements.",
+                            "Native .so files are inventoried, not decompiled."]
+          }
+          Path("apk-audit-report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+          summary = {
+            "package": report["identity"]["package"], "app_label": report["identity"]["app_label"],
+            "version": report["identity"]["version_name"], "version_code": report["identity"]["version_code"],
+            "min_sdk": report["identity"]["min_sdk"], "target_sdk": report["identity"]["target_sdk"],
+            "frameworks": frameworks, "permissions_count": len(perms), "activities": len(activities),
+            "services": len(services), "receivers": len(receivers), "dex_count": len(dex_names),
+            "class_count": len(classes), "method_count": len(methods), "permissions": perms,
+            "background_flags": flags, "service_components": service_details,
+            "receiver_components": receiver_details, "sha256": digest
+          }
+          Path("apk-audit-summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+          print(json.dumps(summary, indent=2, ensure_ascii=False, default=str))
+          PY
+
+      - name: Upload static audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-static-audit
+          path: |
+            apk-audit-report.json
+            apk-audit-summary.json
+          if-no-files-found: error
+          retention-days: 14
