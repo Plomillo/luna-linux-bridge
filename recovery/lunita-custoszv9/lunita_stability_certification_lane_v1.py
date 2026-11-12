@@ -253,11 +253,12 @@ def parse_dpkg_status(status_path: pathlib.Path) -> dict:
 
 
 def flatpak_jasp_launch(flatpak_options: list[str], app_args: list[str]) -> list[str]:
-    """Launch the pinned app with its own Qt ahead of an older runtime copy."""
+    """Run the JASP binary directly. The Flatpak command is exec_shim, which
+    word-splits paths and always exits 1 even when the binary succeeds."""
     return [
         "/usr/bin/flatpak", "--system", "run", "--unshare=network",
+        "--command=/app/bin/org.jaspstats.JASP",
         "--env=QT_QPA_PLATFORM=offscreen",
-        "--env=LD_LIBRARY_PATH=/app/lib/x86_64-linux-gnu",
         *flatpak_options, "org.jaspstats.JASP", *app_args,
     ]
 
