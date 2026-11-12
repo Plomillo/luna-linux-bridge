@@ -114,7 +114,7 @@ class RootfsInventoryTests(unittest.TestCase):
     def test_missing_rootfs_never_passes(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)
-            with mock.patch.object(lane, "ROOTFS", base / "missing"), mock.patch.object(lane, "EVIDENCE", base / "evidence"):
+            with mock.patch.object(lane, "ROOTFS", base / "missing"), mock.patch.object(lane, "EVIDENCE", evidence):
                 result = lane.build_rootfs_inventory()
         self.assertEqual("BLOCKED_ROOTFS_MISSING", result["status"])
 
@@ -123,6 +123,8 @@ class CertificationGateTests(unittest.TestCase):
     def test_failed_jasp_artifacts_remain_blocked(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = pathlib.Path(tmp)
+            evidence = out / "evidence"
+            evidence.mkdir()
             (out / "JASP_UNITTEST_FLATPAK_20261020.log").write_text("JASP_UNITTEST_RC=1\n", encoding="utf-8")
             (out / "JASP_UNITTEST_RELIABILITY_20261020.log").write_text("JASP_RELIABILITY_UNITTEST_RC=1\n", encoding="utf-8")
             (out / "JASP_UNITTEST_WEIGHT_GAIN_20261020.log").write_text("JASP_WEIGHT_GAIN_UNITTEST_RC=1\n", encoding="utf-8")
