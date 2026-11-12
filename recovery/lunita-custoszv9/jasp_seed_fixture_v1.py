@@ -223,6 +223,7 @@ def prepare_deterministic_fixture(
 def verify_deterministic_fixture_receipt(
     receipt: dict | None,
     expected_source_sha256: str,
+    require_clone: bool = True,
 ) -> bool:
     if not isinstance(receipt, dict):
         return False
@@ -231,7 +232,9 @@ def verify_deterministic_fixture_receipt(
     source = pathlib.Path(str(receipt.get("source_path") or ""))
     clone = pathlib.Path(str(receipt.get("clone_path") or ""))
     receipt_path = pathlib.Path(str(receipt.get("receipt_path") or ""))
-    if not source.is_file() or source.is_symlink() or not clone.is_file() or clone.is_symlink():
+    if not source.is_file() or source.is_symlink():
+        return False
+    if require_clone and (not clone.is_file() or clone.is_symlink()):
         return False
     if not receipt_path.is_file() or receipt_path.is_symlink():
         return False
@@ -244,7 +247,7 @@ def verify_deterministic_fixture_receipt(
         and receipt.get("source_sha256_after") == expected_source_sha256
         and receipt.get("source_unchanged") is True
         and sha_file(source) == expected_source_sha256
-        and sha_file(clone) == receipt.get("clone_sha256")
+        and (not require_clone or sha_file(clone) == receipt.get("clone_sha256"))
         and receipt.get("clone_is_distinct") is True
         and receipt.get("changed_archive_member_count") == 1
         and receipt.get("before") == {"setSeed": False, "seed": EXPECTED_SEED}
