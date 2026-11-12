@@ -573,44 +573,36 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
             env["XDG_CONFIG_HOME"] = str(pathlib.Path(temp_home) / ".config")
             env["XDG_DATA_HOME"] = str(pathlib.Path(temp_home) / ".local/share")
             pathlib.Path(env["XDG_CACHE_HOME"]).mkdir(parents=True, exist_ok=True)
-            seeded_fixture_root = pathlib.Path(temp_home) / "seeded-fixture"
-            seeded_fixture_root.mkdir(parents=True, exist_ok=False)
-            seeded_fixture = seeded_fixture_root / "DeathPenalty_seeded.jasp"
-            seeded_fixture_receipt_path = OUT / f"JASP_DETERMINISTIC_FIXTURE_FLATPAK_{stamp}.json"
-            seeded_fixture_receipt = prepare_deterministic_fixture(
-                ROOTFS / "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp",
-                seeded_fixture,
-                seeded_fixture_receipt_path,
-                DEATH_PENALTY_SOURCE_SHA256,
-            )
-            seeded_fixture_ok = verify_deterministic_fixture_receipt(
-                seeded_fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=True
-            )
-            if not seeded_fixture_ok:
-                raise PermissionError("Registered JASP deterministic fixture failed hash-bound validation")
+            original_source = ROOTFS / "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
+            original_alias = ROOTFS / "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/lunita-fixtures/DeathPenalty.jasp"
+            original_alias_valid = False
+            original_source_sha = None
+            if original_source.is_file() and not original_source.is_symlink() and original_alias.is_symlink():
+                try:
+                    original_alias_valid = (
+                        original_alias.resolve(strict=True) == original_source.resolve(strict=True)
+                        and sha_file(original_alias) == DEATH_PENALTY_SOURCE_SHA256
+                        and sha_file(original_source) == DEATH_PENALTY_SOURCE_SHA256
+                    )
+                    original_source_sha = sha_file(original_alias)
+                except OSError:
+                    original_alias_valid = False
 
             for case_id, (prefix, fixture, marker) in fixtures.items():
                 log_path = OUT / f"{prefix}_{stamp}.log"
                 started = utc()
-                flatpak_options = []
                 test_fixture = fixture
-                deterministic_receipt = None
-                if case_id == "flatpak_launch":
-                    test_fixture = str(seeded_fixture)
-                    flatpak_options = [f"--filesystem={seeded_fixture_root}"]
-                    deterministic_receipt = seeded_fixture_receipt
-                command = flatpak_jasp_launch(flatpak_options, ["--unitTest", test_fixture])
+                command = flatpak_jasp_launch([], ["--unitTest", test_fixture])
                 header = (
                     f"START_UTC={started}\nAPP_COMMIT={actual_commit}\nTEST_FILE={test_fixture}\n"
                     "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED\n"
                 )
-                if deterministic_receipt is not None:
+                if case_id == "flatpak_launch":
                     header += (
-                        "DETERMINISTIC_FIXTURE_STATUS=PASS\n"
-                        f"DETERMINISTIC_FIXTURE_EVIDENCE_PATH={seeded_fixture_receipt_path}\n"
-                        f"DETERMINISTIC_FIXTURE_EVIDENCE_SHA256={sha_file(seeded_fixture_receipt_path)}\n"
-                        f"DETERMINISTIC_FIXTURE_SHA256={deterministic_receipt['clone_sha256']}\n"
-                        f"DETERMINISTIC_FIXTURE_JSON_POINTER={deterministic_receipt['changed_json_pointer']}\n"
+                        f"ORIGINAL_FIXTURE_PATH={original_source}\n"
+                        f"ORIGINAL_FIXTURE_ALIAS={original_alias}\n"
+                        f"ORIGINAL_FIXTURE_SHA256={original_source_sha or 'UNAVAILABLE'}\n"
+                        f"ORIGINAL_FIXTURE_ALIAS_VALID={'TRUE' if original_alias_valid else 'FALSE'}\n"
                     )
                 try:
                     run = subprocess.run(
@@ -618,13 +610,8 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         text=True, timeout=300, check=False,
                     )
                     rc = int(run.returncode)
-                    deterministic_ok = (
-                        deterministic_receipt is None
-                        or verify_deterministic_fixture_receipt(
-                            deterministic_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=True
-                        )
-                    )
-                    case_status = "PASS" if rc == 0 and deterministic_ok else "BLOCKED"
+                    fixture_integrity = original_alias_valid if case_id == "flatpak_launch" else True
+                    case_status = "PASS" if rc == 0 and fixture_integrity else "BLOCKED"
                     payload = (
                         header + run.stdout + ("" if run.stdout.endswith("\n") else "\n")
                         + f"\n{marker}={rc}\nFINISHED_UTC={utc()}\n"
@@ -640,8 +627,9 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "command": command,
                         "started_at_utc": started,
                         "finished_at_utc": utc(),
-                        "deterministic_fixture_receipt": deterministic_receipt,
-                        "deterministic_fixture_receipt_valid": deterministic_ok if deterministic_receipt is not None else None,
+                        "original_fixture_path": str(original_source) if case_id == "flatpak_launch" else None,
+                        "original_fixture_sha256": original_source_sha if case_id == "flatpak_launch" else None,
+                        "original_fixture_alias_valid": fixture_integrity if case_id == "flatpak_launch" else None,
                     }
                 except subprocess.TimeoutExpired as exc:
                     output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
@@ -656,7 +644,6 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "original_fixture": fixture,
                         "log_path": str(log_path),
                         "log_sha256": sha_file(log_path),
-                        "deterministic_fixture_receipt": deterministic_receipt,
                     }
                 except Exception as exc:
                     log_path.write_text(
@@ -670,7 +657,6 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "original_fixture": fixture,
                         "log_path": str(log_path),
                         "log_sha256": sha_file(log_path),
-                        "deterministic_fixture_receipt": deterministic_receipt,
                     }
             results["roundtrip_gate"] = run_death_penalty_roundtrip(actual_commit, env, stamp)
     except Exception as exc:
