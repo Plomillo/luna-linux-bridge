@@ -169,7 +169,7 @@ El recibo `L` solo puede emitirse tras S32 válido. MUST enlazar el mismo inform
 
 La función de certificación es:
 
-`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-014`
+`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-014 ∧ AX-LUN-016 … AX-LUN-019 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
 
 y además el certificado `C` MUST:
 
@@ -234,7 +234,7 @@ No se permite saltar, invertir, fusionar silenciosamente ni heredar el resultado
 | Inventario | informe y manifiesto completo | árbol estable, cero errores, dependencias cerradas |
 | JASP referencia | log original + alias + hash fuente | fixture intacto, versión/commit correctos, RC 0 |
 | JASP replay | dos logs, filas, dos hashes y recibo del clon | misma entrada hash-bound y salidas exactas iguales |
-| Paquete | imagen + checksum + package receipt + extracción | superblock y round-trip PASS; fuente sin cambios |
+| Paquete | imagen + checksum + package receipt + extracción + timestamps enteros | superblock y round-trip PASS; fuente sin cambios; `st_mtime_ns // 1_000_000_000` exacto |
 | Independiente | informe `N` | todos los checks requeridos PASS y hashes íntegros |
 | S32 | recibo `S` | mismo `H(I)`, `H(P)`, `H(Q)`, `H(M)`, `H(T)`, `H(N)` |
 | Stable release | recibo `L` | enlace exacto a S32 e identidades anteriores |
