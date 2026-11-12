@@ -238,6 +238,8 @@ def verify_deterministic_fixture_receipt(
         return False
     if not receipt_path.is_file() or receipt_path.is_symlink():
         return False
+    if receipt.get("receipt_sha256") != sha_file(receipt_path):
+        return False
     on_disk = json.loads(receipt_path.read_text(encoding="utf-8"))
     if on_disk.get("clone_path") != str(clone) or on_disk.get("clone_sha256") != receipt.get("clone_sha256"):
         return False
