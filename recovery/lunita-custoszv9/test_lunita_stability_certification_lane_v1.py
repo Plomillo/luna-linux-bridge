@@ -476,7 +476,15 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
             with mock.patch.object(lane, "OUT", out):
                 with mock.patch.object(lane, "ROOTFS", rootfs):
                     with mock.patch.object(lane, "JASP_SEED_HOOK_DIR", seed_dir):
-                        with mock.patch.object(lane, "sha_file", return_value=expected):
+                        real_sha_file = lane.sha_file
+                        def path_aware_sha_file(path):
+                            # Pin only the packaged fixture copies to the known fixture digest.
+                            # Evidence artifacts must retain their real, independently checked SHA-256.
+                            candidate = pathlib.Path(path)
+                            if candidate == source or candidate.name == "DeathPenalty.jasp":
+                                return expected
+                            return real_sha_file(candidate)
+                        with mock.patch.object(lane, "sha_file", side_effect=path_aware_sha_file):
                             with mock.patch.object(lane.subprocess, "run", side_effect=fake_run) as runner:
                                 result = lane.run_death_penalty_roundtrip(
                                     "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
