@@ -297,7 +297,7 @@ def jasp_process_env(base: dict[str, str]) -> dict[str, str]:
 def inspect_jasp_runtime_identity(output: str) -> dict:
     """Require the JASP banner version and embedded source commit to match the pinned build."""
     matches = re.findall(
-        r"Starting JASP ([0-9]+(?:\\.[0-9]+)+) from commit ([0-9a-f]{40})",
+        r"Starting JASP ([0-9]+(?:\.[0-9]+)+) from commit ([0-9a-f]{40})",
         output or "",
     )
     observed = [{"version": version, "source_commit": commit} for version, commit in matches]
