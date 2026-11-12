@@ -353,6 +353,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
 def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
     """Rerun the registered JASP packaged-data unit tests in the pinned sandbox."""
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    OUT.mkdir(parents=True, exist_ok=True)
     expected_commit = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
     fixtures = {
         "flatpak_launch": ("JASP_UNITTEST_FLATPAK", "/app/Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp", "JASP_UNITTEST_RC"),

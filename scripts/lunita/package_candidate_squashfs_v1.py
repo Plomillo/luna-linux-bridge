@@ -353,7 +353,7 @@ def package_rootfs(
         extra_args, repro_env, repro_meta = reproducible_mksquashfs(source_before)
         build_log = run_tool([
             "mksquashfs", str(rootfs), str(temporary_image),
-            "-noappend", "-no-duplicates", "-comp", "zstd", "-Xcompression-level", "15",
+            "-noappend", "-comp", "zstd", "-Xcompression-level", "15",
             "-no-progress", *extra_args,
         ], env=repro_env)
         if not temporary_image.is_file() or temporary_image.stat().st_size <= 0:

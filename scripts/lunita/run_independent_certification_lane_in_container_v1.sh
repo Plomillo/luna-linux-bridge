@@ -8,7 +8,7 @@ set -Eeuo pipefail
 
 CERT_STATE="$RUNNER_TEMP/lunita-stability-state"
 CERT_CANDIDATE="$RUNNER_TEMP/lunita-stability-candidate"
-mkdir -p "$CERT_STATE" "$CERT_CANDIDATE"
+mkdir -p "$CERT_STATE" "$CERT_CANDIDATE" "$CERT_STATE/worker_outputs" "$CERT_STATE/lunita_certification_evidence"
 
 export XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME"
 export LUNITA_CERTIFICATION_PROFILE=V1_8_DIRECT
