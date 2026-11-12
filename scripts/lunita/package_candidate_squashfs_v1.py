@@ -120,7 +120,7 @@ def tree_manifest(root: pathlib.Path) -> dict[str, Any]:
             "mode": stat.S_IMODE(directory_stat.st_mode),
             "uid": directory_stat.st_uid,
             "gid": directory_stat.st_gid,
-            "mtime_seconds": int(directory_stat.st_mtime),
+            "mtime_seconds": directory_stat.st_mtime_ns // 1_000_000_000,
             "xattrs": xattr_manifest(directory, is_symlink=False),
         })
         try:
@@ -138,7 +138,7 @@ def tree_manifest(root: pathlib.Path) -> dict[str, Any]:
                 "path": relative,
                 "uid": before.st_uid,
                 "gid": before.st_gid,
-                "mtime_seconds": int(before.st_mtime),
+                "mtime_seconds": before.st_mtime_ns // 1_000_000_000,
             }
             if stat.S_ISDIR(before.st_mode):
                 pending.append((path, relative))
@@ -448,6 +448,18 @@ def self_test() -> dict[str, Any]:
         second_copy.write_bytes(same)
         os.utime(first_copy, (111, 111))
         os.utime(second_copy, (222, 222))
+        # SquashFS stores inode mtimes at whole-second precision. Avoid a
+        # float-rounding boundary that can turn 1794523803.999999999 into
+        # 1794523804.0 and make the manifest disagree with the stored inode.
+        boundary_file = root / "etc/mtime-boundary.bin"
+        boundary_file.write_bytes(b"LUNITA_MTIME_BOUNDARY")
+        boundary_mtime_ns = 1_794_523_803_999_999_999
+        os.utime(boundary_file, ns=(boundary_mtime_ns, boundary_mtime_ns))
+        boundary_rows = tree_manifest(root)["entries"]
+        boundary_entry = next(row for row in boundary_rows if row["path"] == "etc/mtime-boundary.bin")
+        checks["mtime_seconds_use_exact_integer_floor"] = (
+            boundary_entry["mtime_seconds"] == boundary_mtime_ns // 1_000_000_000
+        )
         first_copy.chmod(0o644)
         second_copy.chmod(0o755)
         app = root / "opt/lunita/agent"
