@@ -42,7 +42,7 @@ def _walk_seed_options(value, path=()):
         if (
             isinstance(value.get("setSeed"), bool)
             and value.get("setSeed") is False
-            and isinstance(value.get("seed"), int)
+            and isinstance(value.get("seed"), (int, float))
             and not isinstance(value.get("seed"), bool)
             and value.get("seed") == EXPECTED_SEED
         ):
