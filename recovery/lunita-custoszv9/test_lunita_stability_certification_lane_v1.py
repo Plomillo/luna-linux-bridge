@@ -69,7 +69,7 @@ class RootfsInventoryTests(unittest.TestCase):
             (rootfs / "usr/bin/probe").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
             (rootfs / "bin").symlink_to("usr/bin", target_is_directory=True)
             evidence = base / "evidence"
-            with mock.patch.object(lane, "ROOTFS", rootfs), mock.patch.object(lane, "EVIDENCE", evidence):
+            with mock.patch.object(lane, "ROOTFS", rootfs), mock.patch.object(lane, "EVIDENCE", base / "evidence"):
                 result = lane.build_rootfs_inventory()
             self.assertEqual("PASS_ROOTFS_INVENTORY_AND_DEPENDENCY_CLOSURE", result["status"])
             self.assertTrue(result["tree_stable_during_scan"])
@@ -132,7 +132,7 @@ class CertificationGateTests(unittest.TestCase):
                 "strict_rerun_after_save": {"status": "FAIL", "returncode": 1},
                 "original_sample_unchanged": True,
             }), encoding="utf-8")
-            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "EVIDENCE", base / "evidence"):
+            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "EVIDENCE", evidence):
                 result = lane.latest_jasp_evidence()
         self.assertEqual("BLOCKED_JASP_PACKAGED_FIXTURE_NONREGRESSION", result["status"])
         self.assertTrue(all(x["status"] == "BLOCKED" and x["returncode"] == 1 for x in result["cases"].values()))
