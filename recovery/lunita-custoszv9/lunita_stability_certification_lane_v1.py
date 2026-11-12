@@ -708,6 +708,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
         roundtrip.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
         and roundtrip.get("deterministic_replay_status") == "PASS_DETERMINISTIC_REPLAY"
         and roundtrip.get("actual_result_rows_equal") is True
+        and roundtrip.get("runtime_identity_status") == "PASS"
         and isinstance(roundtrip.get("save_actual_result_rows_sha256"), str)
         and roundtrip.get("save_actual_result_rows_sha256") == roundtrip.get("rerun_actual_result_rows_sha256")
         and roundtrip.get("original_sample_unchanged") is True
@@ -2077,6 +2078,24 @@ def selftest() -> dict:
     except Exception:
         checks["jasp_replay_parser_selects_fresh_table"] = False
         checks["jasp_replay_digest_is_deterministic"] = False
+    expected_banner = (
+        "Starting JASP 0.98.8 from commit "
+        "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1\\n"
+    )
+    checks["jasp_runtime_identity_accepts_exact_pinned_banner"] = (
+        inspect_jasp_runtime_identity(expected_banner).get("status") == "PASS"
+    )
+    checks["jasp_runtime_identity_rejects_version_drift"] = (
+        inspect_jasp_runtime_identity(
+            expected_banner.replace("0.98.8", "0.98.1")
+        ).get("status") == "BLOCKED_JASP_RUNTIME_IDENTITY_MISMATCH"
+    )
+    checks["jasp_runtime_identity_rejects_source_commit_drift"] = (
+        inspect_jasp_runtime_identity(
+            expected_banner.replace("b6cd3b0310be4e18e1b673ac11f14e55615c8fa1",
+                                    "8fe3677d2e6aeea71f7135f48281e92aa88f38ba")
+        ).get("status") == "BLOCKED_JASP_RUNTIME_IDENTITY_MISMATCH"
+    )
     checks["inventory_does_not_follow_symlinks"] = True
     return {"schema": "CUSTOSZ_LUNITA_STABILITY_CERT_LANE_SELFTEST/1.0",
             "status": "PASS" if all(checks.values()) else "FAIL", "checks": checks,
