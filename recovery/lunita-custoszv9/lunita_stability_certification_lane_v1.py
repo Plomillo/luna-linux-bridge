@@ -253,11 +253,11 @@ def parse_dpkg_status(status_path: pathlib.Path) -> dict:
 
 
 def flatpak_jasp_launch(flatpak_options: list[str], app_args: list[str]) -> list[str]:
-    """Run the JASP binary directly. The Flatpak command is exec_shim, which
-    word-splits paths and always exits 1 even when the binary succeeds."""
+    """Run /app/bin/JASP. org.jaspstats.JASP is a shell wrapper that forwards only $1,
+    so --unitTest never receives the fixture path and JASP prints help."""
     return [
         "/usr/bin/flatpak", "--system", "run", "--unshare=network",
-        "--command=/app/bin/org.jaspstats.JASP",
+        "--command=/app/bin/JASP",
         "--env=QT_QPA_PLATFORM=offscreen",
         *flatpak_options, "org.jaspstats.JASP", *app_args,
     ]
