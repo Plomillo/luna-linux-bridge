@@ -254,7 +254,9 @@ def parse_dpkg_status(status_path: pathlib.Path) -> dict:
 
 def flatpak_jasp_launch(flatpak_options: list[str], app_args: list[str]) -> list[str]:
     """Run /app/bin/JASP. org.jaspstats.JASP is a shell wrapper that forwards only $1,
-    so --unitTest never receives the fixture path and JASP prints help."""
+    so --unitTest never receives the fixture path and JASP prints help.
+    Keep the runtime QML import path: replacing it with /app/qml hides QtWebEngine
+    and MainWindow.qml fails to instantiate. LD_LIBRARY_PATH matches the wrapper."""
     return [
         "/usr/bin/flatpak", "--system", "run", "--unshare=network",
         "--command=/app/bin/JASP",
@@ -265,7 +267,7 @@ def flatpak_jasp_launch(flatpak_options: list[str], app_args: list[str]) -> list
         "--env=QT_QPA_PLATFORM=xcb",
         "--env=LIBGL_ALWAYS_SOFTWARE=1",
         "--env=QTWEBENGINE_DISABLE_SANDBOX=1",
-        "--env=QML2_IMPORT_PATH=/app/qml",
+        "--env=LD_LIBRARY_PATH=/app/lib/x86_64-linux-gnu/:/app/lib/aarch64-linux-gnu/",
         *flatpak_options, "org.jaspstats.JASP", *app_args,
     ]
 
