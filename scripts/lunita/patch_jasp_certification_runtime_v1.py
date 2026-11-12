@@ -38,12 +38,16 @@ _NEW_WINDOW = base64.b64decode(
 assert len(_OLD_WINDOW) == len(_NEW_WINDOW)
 
 # Equal-length body of formatPrecisionWithRespectForFixedDecimals. The stock
-# body is the mixed Intl constructor this WebEngine rejects.
+# body builds one Intl.NumberFormat with both significant and fraction digits;
+# this WebEngine throws, and the export then contains 0 tables. The replacement
+# keeps the less-precise rendering by choosing the shorter of formatPrecision
+# and formatFixed. It has to recompress into the existing zstd slot, so the
+# body stays short and the rest of the slot is spaces.
 _OLD_FN = base64.b64decode(
     "ZnVuY3Rpb24gZm9ybWF0UHJlY2lzaW9uV2l0aFJlc3BlY3RGb3JGaXhlZERlY2ltYWxzKG51bWJlciwgc2YsIGRwLCBub1plcm9MZWFkPWZhbHNlLCB0aG91c2FuZHM9ZmFsc2UpIHsKCWlmKGlzTmFOKGRwKSkKCQlyZXR1cm4gZm9ybWF0UHJlY2lzaW9uKG51bWJlciwgc2YsIG5vWmVyb0xlYWQpOwoJCgljb25zdCBmb3JtYXR0ZXIgPSBuZXcgSW50bC5OdW1iZXJGb3JtYXQoY3VycmVudExvY2FsZUlkLCB7IAoJCW1pbmltdW1TaWduaWZpY2FudERpZ2l0czoJc2YsIG1heGltdW1TaWduaWZpY2FudERpZ2l0czoJc2YsIAoJCW1pbmltdW1GcmFjdGlvbkRpZ2l0czoJCWRwLCBtYXhpbXVtRnJhY3Rpb25EaWdpdHM6CQlkcCwgCgkJcm91bmRpbmdQcmlvcml0eToJCQkibGVzc1ByZWNpc2lvbiIsIAoJCXVzZUdyb3VwaW5nOgkJCQl0aG91c2FuZHMgCgl9KTsKCQoJdmFyIHJlc3VsdCA9IGZvcm1hdHRlci5mb3JtYXQobnVtYmVyKQoJCglyZXR1cm4gaGFuZGxlTm9aZXJvTGVhZChudW1iZXIsIHJlc3VsdCwgbm9aZXJvTGVhZCk7Cn0K"
 )
 _NEW_FN = base64.b64decode(
-    "ZnVuY3Rpb24gZm9ybWF0UHJlY2lzaW9uV2l0aFJlc3BlY3RGb3JGaXhlZERlY2ltYWxzKG51bWJlciwgc2YsIGRwLCBub1plcm9MZWFkPWZhbHNlLCB0aG91c2FuZHM9ZmFsc2UpIHsKCWlmKGlzTmFOKGRwKSkKCQlyZXR1cm4gZm9ybWF0UHJlY2lzaW9uKG51bWJlciwgc2YsIG5vWmVyb0xlYWQpOwoJdmFyIGJ5U2YgPSBmb3JtYXRQcmVjaXNpb24obnVtYmVyLCBzZiwgbm9aZXJvTGVhZCwgdGhvdXNhbmRzKTsKCXZhciBieURwID0gZm9ybWF0Rml4ZWQobnVtYmVyLCBkcCwgbm9aZXJvTGVhZCwgdGhvdXNhbmRzKTsKCWZ1bmN0aW9uIHVscChzKXt2YXIgdD1TdHJpbmcocykucmVwbGFjZSgvW14wLTllRS5cLV0vZywiIik7dmFyIGU9dC50b0xvd2VyQ2FzZSgpLmluZGV4T2YoImUiKTtpZihlPj0wKXJldHVybiBJbmZpbml0eTt2YXIgZD10LmluZGV4T2YoIi4iKTtyZXR1cm4gTWF0aC5wb3coMTAsZDwwPzA6LSh0Lmxlbmd0aC1kLTEpKTt9CglyZXR1cm4gKHVscChieVNmKSA+PSB1bHAoYnlEcCkpID8gYnlTZiA6IGJ5RHA7Cn0K"
+    "ZnVuY3Rpb24gZm9ybWF0UHJlY2lzaW9uV2l0aFJlc3BlY3RGb3JGaXhlZERlY2ltYWxzKG51bWJlciwgc2YsIGRwLCBub1plcm9MZWFkPWZhbHNlLCB0aG91c2FuZHM9ZmFsc2UpIHsKCWlmKGlzTmFOKGRwKSlyZXR1cm4gZm9ybWF0UHJlY2lzaW9uKG51bWJlciwgc2YsIG5vWmVyb0xlYWQpOwoJdmFyIGE9Zm9ybWF0UHJlY2lzaW9uKG51bWJlcixzZixub1plcm9MZWFkLHRob3VzYW5kcyksYj1mb3JtYXRGaXhlZChudW1iZXIsZHAsbm9aZXJvTGVhZCx0aG91c2FuZHMpOwoJcmV0dXJuIGEubGVuZ3RoPD1iLmxlbmd0aD9hOmI7Cn0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg"
 )
 assert len(_OLD_FN) == len(_NEW_FN)
 
@@ -120,19 +124,29 @@ def _zstd_decompress(frame: bytes) -> bytes | None:
 
 
 def _zstd_compress(payload: bytes) -> bytes | None:
-    try:
-        proc = subprocess.run(
-            ["zstd", "-19", "--ultra", "-c"],
-            input=payload,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
-    except FileNotFoundError:
-        return None
-    if proc.returncode != 0 or not proc.stdout:
-        return None
-    return proc.stdout
+    best = None
+    attempts = (
+        ["zstd", "-19", "--ultra", "-c"],
+        ["zstd", "-22", "--ultra", "-c"],
+        ["zstd", "-19", "--ultra", "--no-check", "-c"],
+        ["zstd", "-22", "--ultra", "--no-check", "-c"],
+    )
+    for cmd in attempts:
+        try:
+            proc = subprocess.run(
+                cmd,
+                input=payload,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+        except FileNotFoundError:
+            return None
+        if proc.returncode != 0 or not proc.stdout:
+            continue
+        if best is None or len(proc.stdout) < len(best):
+            best = proc.stdout
+    return best
 
 
 def _patch_zstd_blob(blob: bytearray) -> tuple[int, int]:
@@ -155,9 +169,8 @@ def _patch_zstd_blob(blob: bytearray) -> tuple[int, int]:
             )
         blob[length_at:frame_at] = len(compressed).to_bytes(4, "big")
         blob[frame_at:frame_at + len(compressed)] = compressed
-        extra = declared - len(compressed)
-        if extra:
-            del blob[frame_at + len(compressed):frame_at + declared]
+        # Leave the unused tail in place. Qt resource offsets are absolute; shrinking
+        # the file would move every later entry. The length prefix is what the reader uses.
         calls += call_count
         fns += fn_count
     return calls, fns
@@ -217,6 +230,7 @@ def self_test() -> None:
     assert len(_OLD_WINDOW) == len(_NEW_WINDOW)
     assert len(_OLD_FN) == len(_NEW_FN)
     assert b"roundingPriority" in _OLD_FN and b"roundingPriority" not in _NEW_FN
+    assert b"a.length<=b.length?a:b" in _NEW_FN
     assert b"formatPrecision(content, sf, false, thousands)" in _OLD_WINDOW
     assert b"formatPrecision(content, sf, false, thousands)" not in _NEW_WINDOW
     assert _NEW_WINDOW.count(b"formatPrecisionWithRespectForFixedDecimals(content, sf, dp, noZeroLead, thousands)") == 2
