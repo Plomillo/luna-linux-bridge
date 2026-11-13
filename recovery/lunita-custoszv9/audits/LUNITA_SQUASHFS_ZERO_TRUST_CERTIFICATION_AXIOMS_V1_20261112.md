@@ -814,3 +814,17 @@ Esta axiomatización no cambia el umbral estadístico, no sustituye resultados h
 ### Extensión del predicado terminal — AX-LUN-035
 
 ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-035. El certificado funcional queda denegado si el caso flatpak_launch no prueba ejecución del clon determinista derivado del fixture pinneado, preservación del origen y de los resultados de referencia, y coincidencia completa de sus recibos y hashes.
+
+### AX-LUN-036 — Integridad criptográfica del fixture JASP después de cada invocación
+
+**Registro de causa raíz:** 2026-11-13 UTC. La verificación previa de AX-LUN-035 comprobaba el hash del clon antes de ejecutar JASP, pero la validación posterior utilizaba `require_clone=false`. Dado que el clon residía en un directorio temporal posteriormente eliminado, la evidencia independiente no demostraba que el archivo permaneciera byte-exacto durante la invocación real.
+
+La ejecución de `flatpak_launch` MUST esperar el cierre verificado del árbol de procesos y, antes de abandonar el ámbito temporal, volver a comprobar que el clon existe como archivo regular no-symlink. El SHA-256 posterior a la ejecución MUST coincidir exactamente con el `clone_sha256` del recibo generado antes de la invocación. La verificación MUST utilizar `require_clone=true`; la mera presencia del recibo, la ruta ejecutada o el hash anterior no sustituye esta comparación posterior.
+
+El recibo de la invocación y el log MUST conservar `deterministic_fixture_clone_sha256_after_execution`, `deterministic_fixture_clone_unchanged_after_execution=true`, `DETERMINISTIC_FIXTURE_CLONE_SHA256_AFTER_EXECUTION` y `DETERMINISTIC_FIXTURE_CLONE_UNCHANGED_AFTER_EXECUTION=TRUE`. La validación independiente MUST volver a enlazar ambos campos con el hash original del clon y con el log hash-bound. El certificador final MUST denegar la admisión ante hash ausente, diferente, recibo no verificable, marcador ausente o cualquier señal distinta de TRUE.
+
+La eliminación del directorio temporal continúa siendo obligatoria después de conservar y verificar la evidencia. La eliminación no puede preceder a la comprobación del hash posterior. Este axioma no modifica el fixture fuente, resultados estadísticos, tablas de referencia ni umbrales JASP; tampoco convierte el replay determinista en aceptación estricta.
+
+### Extensión del predicado terminal — AX-LUN-036
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-036`. Ninguna imagen podrá certificarse funcionalmente si el hash del fixture JASP derivado no se demuestra idéntico antes y después de la invocación real, antes de su eliminación temporal.
