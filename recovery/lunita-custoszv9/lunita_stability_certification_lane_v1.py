@@ -1817,11 +1817,16 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 )
             )
             fixture_ok = True
+            deterministic_fixture_ok = True
+            deterministic_fixture_receipt = None
             if case == "flatpak_launch":
                 original_paths = re.findall(r"^ORIGINAL_FIXTURE_PATH=(.+)$", text, re.M)
                 alias_paths = re.findall(r"^ORIGINAL_FIXTURE_ALIAS=(.+)$", text, re.M)
                 original_hashes = re.findall(r"^ORIGINAL_FIXTURE_SHA256=([0-9a-f]{64})$", text, re.M)
                 alias_markers = re.findall(r"^ORIGINAL_FIXTURE_ALIAS_VALID=(TRUE|FALSE)$", text, re.M)
+                seeded_receipt_hashes = re.findall(r"^DETERMINISTIC_FIXTURE_RECEIPT_SHA256=([0-9a-f]{64})$", text, re.M)
+                seeded_clone_hashes = re.findall(r"^DETERMINISTIC_FIXTURE_CLONE_SHA256=([0-9a-f]{64})$", text, re.M)
+                seeded_markers = re.findall(r"^DETERMINISTIC_FIXTURE_SEED_ENABLED=(TRUE|FALSE)$", text, re.M)
                 expected_source = ROOTFS / "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
                 try:
                     original_path = pathlib.Path(original_paths[-1]) if original_paths else None
@@ -1836,10 +1841,29 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                         and sha_file(alias_path) == DEATH_PENALTY_SOURCE_SHA256
                         and alias_markers and alias_markers[-1] == "TRUE"
                     )
-                except (OSError, ValueError):
+                    deterministic_fixture_receipt = (
+                        worker_case_result.get("deterministic_fixture_receipt")
+                        if isinstance(worker_case_result, dict) else None
+                    )
+                    deterministic_fixture_ok = bool(
+                        isinstance(deterministic_fixture_receipt, dict)
+                        and isinstance(worker_case_result, dict)
+                        and worker_case_result.get("deterministic_fixture_receipt_valid") is True
+                        and worker_case_result.get("fixture") == deterministic_fixture_receipt.get("clone_path")
+                        and seeded_receipt_hashes
+                        and seeded_receipt_hashes[-1] == deterministic_fixture_receipt.get("receipt_sha256")
+                        and seeded_clone_hashes
+                        and seeded_clone_hashes[-1] == deterministic_fixture_receipt.get("clone_sha256")
+                        and seeded_markers and seeded_markers[-1] == "TRUE"
+                        and verify_deterministic_fixture_receipt(
+                            deterministic_fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=False
+                        )
+                    )
+                except (OSError, ValueError, TypeError):
                     fixture_ok = False
+                    deterministic_fixture_ok = False
             passed = (
-                rc == 0 and pinned_commit and sandbox_bound and fixture_ok
+                rc == 0 and pinned_commit and sandbox_bound and fixture_ok and deterministic_fixture_ok
                 and runtime_identity.get("status") == "PASS" and process_receipt_valid
             )
             runtime_versions = [item["version"] for item in runtime_identity.get("observed", [])]
@@ -1870,6 +1894,8 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "pinned_commit_match": pinned_commit,
                 "sandbox_execution_marker_present": sandbox_bound,
                 "original_packaged_fixture_identity_valid": fixture_ok if case == "flatpak_launch" else None,
+                "deterministic_fixture_evidence_valid": deterministic_fixture_ok if case == "flatpak_launch" else None,
+                "deterministic_fixture_receipt": deterministic_fixture_receipt if case == "flatpak_launch" else None,
                 "observed_runtime_versions": runtime_versions,
                 "observed_runtime_source_commits": runtime_source_commits,
                 "runtime_identity": runtime_identity,
