@@ -1180,8 +1180,11 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
             base = pathlib.Path(tmp)
             receipts = base / "target-receipts"
             receipts.mkdir()
+            target_data = TargetRuntimeEvidenceGateTests.valid_target_receipt()
+            run_id = target_data["workflow_identity"]["run_id"]
+            run_attempt = target_data["workflow_identity"]["run_attempt"]
             receipt = receipts / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_test.json"
-            receipt.write_text(json.dumps(TargetRuntimeEvidenceGateTests.valid_target_receipt()), encoding="utf-8")
+            receipt.write_text(json.dumps(target_data), encoding="utf-8")
             manifest = base / "LUNITA_V1_8_CANDIDATE_FREEZE.json"
             manifest.write_text(json.dumps(self.frozen_manifest()), encoding="utf-8")
             image = base / "LUNITA.squashfs"
@@ -1213,6 +1216,38 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
                 "evidence": {str(image): image_sha, str(checksum): checksum_sha,
                              str(package): package_sha, str(manifest): manifest_sha},
             }
+            executable_sha = "a" * 64
+            runtime_commit = "b" * 64
+            process_cases = [
+                "flatpak_launch", "reliability", "weight_gain",
+                "death_penalty_save", "death_penalty_rerun",
+            ]
+            process_invocations = [
+                {
+                    "schema": "LUNITA_JASP_PROCESS_TREE_RECEIPT/1.0",
+                    "status": "PASS_PROCESS_GROUP_CLOSED",
+                    "run_id": run_id,
+                    "run_attempt": run_attempt,
+                    "case_id": case_id,
+                    "invocation_id": f"{index:032x}",
+                    "process_group_id": 400 + index,
+                    "session_id": 400 + index,
+                    "executable_sha256": executable_sha,
+                    "runtime_ostree_commit": runtime_commit,
+                    "command_sha256": "c" * 64,
+                    "timeout_seconds": 180,
+                    "started_at_utc": "2026-11-13T00:00:00Z",
+                    "finished_at_utc": "2026-11-13T00:00:01Z",
+                    "returncode": 0,
+                    "timeout_triggered": False,
+                    "termination_signals": [],
+                    "remaining_live_pids": [],
+                    "process_group_closed": True,
+                    "captured_output_sha256": "d" * 64,
+                    "captured_output_bytes": 0,
+                }
+                for index, case_id in enumerate(process_cases, start=1)
+            ]
             independent = base / "independent.json"
             independent.write_text(json.dumps({
                 "schema": "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0",
@@ -1232,13 +1267,29 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
                     },
                     "rootfs": {"status": "PASS", "returncode": 0},
                     "jasp": {"status": "PASS", "returncode": 0},
+                    "jasp_packaged_fixture_nonregression": {"status": "PASS", "returncode": 0},
+                    "jasp_post_mutation_runtime_identity": {
+                        "status": "PASS", "returncode": 0,
+                        "jasp_binary_sha256": executable_sha,
+                        "flatpak_runtime_commit": runtime_commit,
+                    },
+                    "jasp_process_tree_lifecycle": {
+                        "status": "PASS", "returncode": 0,
+                        "invocation_count": 5, "expected_invocation_count": 5,
+                        "unique_invocation_id_count": 5,
+                        "workflow_identity": {"run_id": run_id, "run_attempt": run_attempt},
+                        "jasp_binary_sha256": executable_sha,
+                        "flatpak_runtime_ostree_commit": runtime_commit,
+                        "invocations": process_invocations,
+                    },
                     "squashfs_image_and_package_binding": image_check,
                 },
                 "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
             }), encoding="utf-8")
             out = base / "outputs"
             out.mkdir()
-            with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
+            with mock.patch.dict(lane.os.environ, {"GITHUB_RUN_ID": run_id, "GITHUB_RUN_ATTEMPT": run_attempt}), \
+                 mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
                  mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
                  mock.patch.object(lane, "SQUASHFS_IMAGE", image), \
                  mock.patch.object(lane, "SQUASHFS_CHECKSUM", checksum), \
