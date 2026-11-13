@@ -262,7 +262,19 @@ class TargetRuntimeMountIsolationContractTests(unittest.TestCase):
         self.assertIn('RUNTIME_BIND_TARGET="/run/${HOST_BIND_NAME}-runtime-1000"', content)
         self.assertIn('export XDG_RUNTIME_DIR="$RUNTIME_BIND_TARGET"', content)
         self.assertIn(r"^lunita-host-[A-Za-z0-9-]+$", content)
+        self.assertIn('RUN_ID="${GITHUB_RUN_ID:-}"', content)
+        self.assertIn('RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT:-}"', content)
+        self.assertIn('if [[ ! "$RUN_ID" =~ ^[0-9]+$ || ! "$RUN_ATTEMPT" =~ ^[0-9]+$ ]]; then', content)
+        self.assertNotIn("GITHUB_RUN_ID:-local", content)
         self.assertNotIn("RUNTIME_BIND_TARGET=/run/lunita-runtime-1000", content)
+
+        workflow = repository / ".github/workflows/lunita-v18-direct-functional-validation.yml"
+        workflow_content = workflow.read_text(encoding="utf-8")
+        start = workflow_content.index("      - name: Execute actual E01 inference and E02-E15 plus legacy application smoke tests")
+        end = workflow_content.index("      - name: Verify target virtual filesystems were unmounted before image materialization", start)
+        target_step = workflow_content[start:end]
+        self.assertIn('GITHUB_RUN_ID="$GITHUB_RUN_ID"', target_step)
+        self.assertIn('GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT"', target_step)
 
 
 class TargetHostFlatpakInstallWorkflowTests(unittest.TestCase):
@@ -286,7 +298,9 @@ class TargetLegacyFlatpakDiagnosticTests(unittest.TestCase):
             mock.Mock(returncode=3, stdout="", stderr="inherited dbus failure"),
             mock.Mock(returncode=0, stdout="", stderr=""),
         ]
-        with mock.patch.object(target.subprocess, "run", side_effect=calls) as run:
+        host_bind_name = "lunita-host-43337415331-1"
+        with mock.patch.dict(target.os.environ, {"HOST_BIND_NAME": host_bind_name}), \
+             mock.patch.object(target.subprocess, "run", side_effect=calls) as run:
             result = target.diagnose_flatpak_smoke("org.jamovi.jamovi")
         self.assertTrue(result["diagnostic_only"])
         self.assertEqual(1000, int(result["execution_user"].split(":")[0]))
@@ -299,6 +313,14 @@ class TargetLegacyFlatpakDiagnosticTests(unittest.TestCase):
         self.assertIn("-i", clean_command)
         self.assertIn("/usr/bin/flatpak", clean_command)
         self.assertIn("--system", clean_command)
+        expected_runtime = f"XDG_RUNTIME_DIR=/run/{host_bind_name}-runtime-1000"
+        self.assertIn(expected_runtime, inherited_command)
+        self.assertIn(expected_runtime, clean_command)
+
+    def test_flatpak_diagnostic_requires_workflow_attempt_identity(self):
+        with mock.patch.dict(target.os.environ, {}, clear=True):
+            with self.assertRaisesRegex(target.TargetGateError, "HOST_BIND_NAME is missing or unsafe"):
+                target.diagnose_flatpak_smoke("org.jamovi.jamovi")
 
     def test_flatpak_diagnostic_rejects_unregistered_application(self):
         with mock.patch.object(target.subprocess, "run") as run:
