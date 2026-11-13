@@ -1211,7 +1211,27 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                 log_path = OUT / f"{prefix}_{stamp}.log"
                 started = utc()
                 test_fixture = fixture
-                command = flatpak_jasp_launch([], ["--unitTest", test_fixture])
+                flatpak_options = []
+                deterministic_fixture_receipt = None
+                deterministic_fixture_receipt_valid = False
+                if case_id == "flatpak_launch":
+                    if not original_alias_valid or original_source_sha != DEATH_PENALTY_SOURCE_SHA256:
+                        raise FixtureError("Original packaged Death Penalty fixture is not hash-bound to its immutable pin")
+                    seeded_root = pathlib.Path(temp_home) / "flatpak-launch-seeded-fixture"
+                    seeded_root.mkdir(mode=0o700)
+                    seeded_fixture = seeded_root / "DeathPenalty_seeded.jasp"
+                    seeded_receipt_path = OUT / f"JASP_FLATPAK_SEEDED_FIXTURE_{stamp}.json"
+                    deterministic_fixture_receipt = prepare_deterministic_fixture(
+                        original_source, seeded_fixture, seeded_receipt_path, DEATH_PENALTY_SOURCE_SHA256
+                    )
+                    deterministic_fixture_receipt_valid = verify_deterministic_fixture_receipt(
+                        deterministic_fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=True
+                    )
+                    if not deterministic_fixture_receipt_valid:
+                        raise FixtureError("Seeded Flatpak-launch fixture receipt failed hash-bound validation")
+                    test_fixture = str(seeded_fixture)
+                    flatpak_options = [f"--filesystem={seeded_root}"]
+                command = flatpak_jasp_launch(flatpak_options, ["--unitTest", test_fixture])
                 header = (
                     f"START_UTC={started}\nAPP_COMMIT={actual_commit}\nTEST_FILE={test_fixture}\n"
                     f"JASP_RUNTIME_MUTATION_RECEIPT_SHA256={mutation_identity.get('receipt_sha256')}\n"
@@ -1226,6 +1246,10 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         f"ORIGINAL_FIXTURE_ALIAS={original_alias}\n"
                         f"ORIGINAL_FIXTURE_SHA256={original_source_sha or 'UNAVAILABLE'}\n"
                         f"ORIGINAL_FIXTURE_ALIAS_VALID={'TRUE' if original_alias_valid else 'FALSE'}\n"
+                        f"DETERMINISTIC_FIXTURE_RECEIPT_PATH={deterministic_fixture_receipt.get('receipt_path')}\n"
+                        f"DETERMINISTIC_FIXTURE_RECEIPT_SHA256={deterministic_fixture_receipt.get('receipt_sha256')}\n"
+                        f"DETERMINISTIC_FIXTURE_CLONE_SHA256={deterministic_fixture_receipt.get('clone_sha256')}\n"
+                        "DETERMINISTIC_FIXTURE_SEED_ENABLED=TRUE\n"
                     )
                 try:
                     executable_sha256 = mutation_identity.get("jasp_binary_sha256", "")
@@ -1244,10 +1268,21 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         stdout=run.stdout or "", returncode=rc,
                     )
                     runtime_identity = inspect_jasp_runtime_identity(run.stdout or "")
-                    fixture_integrity = original_alias_valid if case_id == "flatpak_launch" else True
+                    fixture_integrity = (
+                        original_alias_valid
+                        and original_source_sha == DEATH_PENALTY_SOURCE_SHA256
+                        and original_source.is_file()
+                        and sha_file(original_source) == DEATH_PENALTY_SOURCE_SHA256
+                        and sha_file(original_alias) == DEATH_PENALTY_SOURCE_SHA256
+                    ) if case_id == "flatpak_launch" else True
+                    if case_id == "flatpak_launch":
+                        deterministic_fixture_receipt_valid = verify_deterministic_fixture_receipt(
+                            deterministic_fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=False
+                        )
                     case_status = "PASS" if (
                         rc == 0 and fixture_integrity and runtime_identity.get("status") == "PASS"
                         and process_receipt_valid
+                        and (case_id != "flatpak_launch" or deterministic_fixture_receipt_valid)
                     ) else "BLOCKED"
                     payload = (
                         header + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\n"
@@ -1268,7 +1303,13 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "original_fixture_path": str(original_source) if case_id == "flatpak_launch" else None,
                         "original_fixture_sha256": original_source_sha if case_id == "flatpak_launch" else None,
                         "original_fixture_alias_valid": fixture_integrity if case_id == "flatpak_launch" else None,
+                        "deterministic_fixture_receipt": deterministic_fixture_receipt,
+                        "deterministic_fixture_receipt_valid": deterministic_fixture_receipt_valid,
+                        "deterministic_fixture_path": test_fixture if case_id == "flatpak_launch" else None,
                         "runtime_identity": runtime_identity,
+                        "deterministic_fixture_receipt": deterministic_fixture_receipt,
+                        "deterministic_fixture_receipt_valid": deterministic_fixture_receipt_valid,
+                        "deterministic_fixture_path": test_fixture if case_id == "flatpak_launch" else None,
                         "process_tree_receipt": process_receipt,
                         "process_tree_receipt_valid": process_receipt_valid,
                     }
@@ -1311,6 +1352,9 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "original_fixture": fixture,
                         "log_path": str(log_path),
                         "log_sha256": sha_file(log_path),
+                        "deterministic_fixture_receipt": deterministic_fixture_receipt,
+                        "deterministic_fixture_receipt_valid": deterministic_fixture_receipt_valid,
+                        "deterministic_fixture_path": test_fixture if case_id == "flatpak_launch" else None,
                         "process_tree_receipt": process_receipt,
                         "process_tree_receipt_valid": False,
                     }
