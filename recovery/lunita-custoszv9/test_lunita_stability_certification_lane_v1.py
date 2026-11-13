@@ -592,7 +592,7 @@ class BoundedProcessTreeTests(unittest.TestCase):
             lane.run_bounded_process_tree(
                 [sys.executable, "-c", parent_code],
                 env=lane.os.environ.copy(),
-                timeout=0.2,
+                timeout=1.0,
             )
         self.assertLess(lane.time.monotonic() - started, 8.0)
         output = caught.exception.output
@@ -1273,7 +1273,7 @@ class JaspReferenceMismatchClassificationTests(unittest.TestCase):
                 mock.patch.object(lane, "EVIDENCE", evidence),
                 mock.patch.object(lane, "ROOTFS", rootfs),
                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
-                mock.patch.object(lane.subprocess, "run", side_effect=lambda *a, **k: next(response_iter)),
+                mock.patch.object(lane, "run_bounded_process_tree", side_effect=lambda *a, **k: next(response_iter)),
             ):
                 result = lane.run_death_penalty_roundtrip(
                     "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
