@@ -796,6 +796,32 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                 except OSError:
                     original_alias_valid = False
 
+            original_seed_inspection = {}
+            original_stored_results = {}
+            original_seed_matches = []
+            historical_provenance_status = "BLOCKED"
+            try:
+                original_seed_inspection = inspect_seed_option(original_source)
+                original_stored_results = original_seed_inspection.get("stored_results", {})
+                original_seed_matches = original_seed_inspection.get("matches", [])
+                historical_provenance_status = "PASS" if (
+                    original_source_sha == DEATH_PENALTY_SOURCE_SHA256
+                    and original_stored_results.get("jasp_version") == "0.97.1"
+                    and len(original_seed_matches) == 1
+                    and original_seed_matches[0].get("module_name") == "jaspFrequencies"
+                    and original_seed_matches[0].get("setSeed") is False
+                    and original_seed_matches[0].get("seed") == 1
+                ) else "BLOCKED"
+            except Exception as provenance_exc:
+                results["historical_reference_provenance_error"] = {
+                    "type": type(provenance_exc).__name__, "message": str(provenance_exc)[:800]
+                }
+            results["historical_reference_provenance"] = {
+                "status": historical_provenance_status,
+                "stored_results": original_stored_results,
+                "active_seed_option": original_seed_matches,
+            }
+
             for case_id, (prefix, fixture, marker) in fixtures.items():
                 log_path = OUT / f"{prefix}_{stamp}.log"
                 started = utc()
