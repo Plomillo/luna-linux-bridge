@@ -240,7 +240,7 @@ El wrapper MUST exigir ambos valores, no vacíos y numéricos, antes de crear ar
 
 Las pruebas contractuales MUST inspeccionar el step de GitHub Actions para acreditar que ambos valores son transmitidos explícitamente a sudo/env, y deben demostrar que el wrapper no contiene fallback fijo. Las pruebas del helper MUST demostrar que una identidad ausente o insegura se rechaza y que el diagnóstico de Flatpak usa exactamente el XDG_RUNTIME_DIR del intento actual. Un fallo de propagación mantiene TARGET_RUNTIME=BLOCKED, aunque los demás tests unitarios pasen.
 
-La validación de este axioma debe ocurrir en el workflow completo sobre el commit integrado: el run ID y attempt registrados en los logs y recibos MUST coincidir con el nombre de runtime mountpoint realmente creado, con el XDG_RUNTIME_DIR observado por el proceso y con el cleanup realizado.
+La validación de este axioma debe ocurrir en el workflow completo sobre el commit integrado: el run ID y attempt registrados en los logs y recibos MUST coincidir con el nombre de runtime mountpoint realmente creado, con el XDG_RUNTIME_DIR observado por el proceso y con el cleanup realizado. El verificador independiente MUST rechazar el recibo target cuando falte workflow_identity, el run ID/attempt no sea numérico, HOST_BIND_NAME no sea la composición exacta de ambos valores o el XDG_RUNTIME_DIR registrado no coincida con el mountpoint validado; el informe independiente conserva esta identidad junto con el hash del recibo.
 
 ## 3. Predicado terminal y orden de admisión
 
@@ -405,3 +405,18 @@ La nueva rama fix/lunita-flatpak-runtime-env-propagation-20261113 incorpora:
 - ejecución del job contractual para pull requests cuya base sea la rama operativa, sin habilitar el job target en PR.
 
 El contrato se amplía con AX-LUN-022. Estado de esta corrección en el momento de documentar: IMPLEMENTED_NOT_YET_VALIDATED_BY_CI. Requiere que la PR ejecute el job contractual en PASS y que después un push a la rama operativa ejecute de extremo a extremo el target runtime, el empaquetado SquashFS, la validación independiente, S32, stable release y certificado final sobre un único HEAD e imagen exacta.
+
+## 9. Aseguramiento del recibo de identidad y gate independiente — rama correctiva
+
+La rama fix/lunita-flatpak-runtime-env-propagation-20261113 añade una verificación de identidad al lector independiente latest_target_runtime_acceptance(). Antes de aceptar el recibo como target PASS, exige:
+
+- workflow_identity con run_id y run_attempt numéricos;
+- host_bind_name exactamente igual a lunita-host-<run_id>-<run_attempt>;
+- workflow_identity.xdg_runtime_dir exactamente igual a /run/<host_bind_name>-runtime-1000;
+- bloque xdg_runtime_dir con estado PASS_XDG_RUNTIME_DIR_UID1000_PRIVATE y la misma ruta.
+
+El lector devuelve workflow_identity y xdg_runtime_dir junto con el receipt_sha256; por tanto el informe independiente conserva la procedencia que se validó. Se agregan pruebas negativas para identidad ausente e intento discordante, más prueba positiva para el recibo válido.
+
+El step contractual de pull requests cuyo destino es la rama operativa se habilita para validar esta lógica antes del merge. El job target/independent sigue limitado a push o workflow_dispatch sobre la rama operativa; no se habilita una aceptación target parcial ni se reutilizan recibos históricos.
+
+Estado de esta ampliación: IMPLEMENTED_NOT_YET_VALIDATED_BY_CI. El run #211 permanece FAILURE y no se altera.
