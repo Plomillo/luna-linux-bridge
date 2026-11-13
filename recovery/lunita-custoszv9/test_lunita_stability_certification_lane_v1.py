@@ -822,6 +822,17 @@ class JaspRunnerTests(unittest.TestCase):
             self.assertTrue(any("DeathPenalty_seeded.jasp" in arg for arg in flatpak_command))
             seeded_receipt = result["tests"]["flatpak_launch"]["deterministic_fixture_receipt"]
             self.assertTrue(result["tests"]["flatpak_launch"]["deterministic_fixture_receipt_valid"])
+            self.assertEqual(
+                seeded_receipt["clone_sha256"],
+                result["tests"]["flatpak_launch"]["deterministic_fixture_clone_sha256_after_execution"],
+            )
+            self.assertTrue(result["tests"]["flatpak_launch"]["deterministic_fixture_clone_unchanged_after_execution"])
+            flatpak_log = pathlib.Path(result["tests"]["flatpak_launch"]["log_path"]).read_text()
+            self.assertIn(
+                f"DETERMINISTIC_FIXTURE_CLONE_SHA256_AFTER_EXECUTION={seeded_receipt['clone_sha256']}",
+                flatpak_log.splitlines(),
+            )
+            self.assertIn("DETERMINISTIC_FIXTURE_CLONE_UNCHANGED_AFTER_EXECUTION=TRUE", flatpak_log.splitlines())
             self.assertEqual({"setSeed": False, "seed": 1}, seeded_receipt["before"])
             self.assertEqual({"setSeed": True, "seed": 1}, seeded_receipt["after"])
             self.assertEqual("analyses.json", seeded_receipt["changed_archive_member"])
@@ -847,6 +858,86 @@ class JaspRunnerTests(unittest.TestCase):
             self.assertTrue(result["roundtrip_gate"]["original_sample_unchanged"])
             self.assertTrue(result["roundtrip_gate"]["temporary_fixture_removed_after_test"])
             self.assertTrue(report.is_file())
+
+
+
+
+    def test_post_execution_seeded_clone_mutation_blocks_flatpak_launch(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            out = base / "out"
+            out.mkdir()
+            report = base / "evidence" / "jasp-suite.json"
+            rootfs = base / "rootfs"
+            source_fixture = rootfs / (
+                "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/"
+                "Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
+            )
+            JaspDeterministicFixtureTests.write_fixture(
+                source_fixture, [{"setSeed": False, "seed": 1}]
+            )
+            source_sha = lane.sha_file(source_fixture)
+            original_alias = rootfs / (
+                "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/"
+                "lunita-fixtures/DeathPenalty.jasp"
+            )
+            original_alias.parent.mkdir(parents=True, exist_ok=True)
+            original_alias.symlink_to(source_fixture)
+
+            banner = (
+                "Starting JASP 0.98.8 from commit "
+                "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1\n"
+            )
+            fresh_rows = (
+                "Row: | h: Model Comparison | \n"
+                "Row: | h: Models | \n"
+                "Row: | Model A | 0.500 | 1.000 | \n"
+                "Row: | Note.Total number of models visited = 1 | \n"
+                "Footer:\n"
+            )
+            responses = iter([
+                SimpleNamespace(returncode=0, stdout="83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7\n", stderr=""),
+                SimpleNamespace(returncode=0, stdout=banner + fresh_rows, stderr=""),
+                SimpleNamespace(returncode=0, stdout=banner + fresh_rows, stderr=""),
+                SimpleNamespace(returncode=0, stdout=banner + fresh_rows, stderr=""),
+                SimpleNamespace(returncode=0, stdout=banner + fresh_rows, stderr=""),
+                SimpleNamespace(returncode=0, stdout=banner + fresh_rows, stderr=""),
+            ])
+
+            def fake_bounded(command, **kwargs):
+                completed = next(responses)
+                if kwargs.get("case_id") == "flatpak_launch":
+                    clone = pathlib.Path(command[command.index("--unitTest") + 1])
+                    clone.write_bytes(clone.read_bytes() + b"\nmutated after process exit")
+                return completed
+
+            with (
+                mock.patch.object(lane, "OUT", out),
+                mock.patch.object(lane, "ROOTFS", rootfs),
+                mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
+                mock.patch.object(lane, "verify_jasp_runtime_mutation_receipt", return_value={
+                    "status": "PASS", "returncode": 0, "receipt_sha256": "a" * 64,
+                    "jasp_binary_sha256": "b" * 64, "flatpak_runtime_commit": "c" * 64,
+                    "flatpak_sdk_commit": "d" * 64, "evidence": {},
+                }),
+                mock.patch.object(lane.subprocess, "run", return_value=next(responses)),
+                mock.patch.object(lane, "run_bounded_process_tree", side_effect=fake_bounded),
+                mock.patch.object(lane, "validate_process_tree_receipt", return_value=True),
+            ):
+                result = lane.run_jasp_regression_suite(report)
+
+            flatpak = result["tests"]["flatpak_launch"]
+            receipt = flatpak["deterministic_fixture_receipt"]
+            self.assertEqual("BLOCKED", flatpak["status"])
+            self.assertFalse(flatpak["deterministic_fixture_clone_unchanged_after_execution"])
+            self.assertNotEqual(
+                receipt["clone_sha256"],
+                flatpak["deterministic_fixture_clone_sha256_after_execution"],
+            )
+            log = pathlib.Path(flatpak["log_path"]).read_text()
+            self.assertIn("DETERMINISTIC_FIXTURE_CLONE_UNCHANGED_AFTER_EXECUTION=FALSE", log.splitlines())
+            self.assertEqual("BLOCKED_JASP_REGRESSION", result["status"])
 
 
 class JaspStrictRoundtripPositiveTests(unittest.TestCase):
