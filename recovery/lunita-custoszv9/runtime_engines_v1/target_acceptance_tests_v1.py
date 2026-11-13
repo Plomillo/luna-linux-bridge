@@ -47,6 +47,37 @@ def tree_receipt(root: pathlib.Path) -> dict:
     }
 
 
+class TargetJaspBuilderConsumerContractTests(unittest.TestCase):
+    def test_rootfs_builder_emits_the_exact_jasp_schema_consumed_by_target(self):
+        repository = pathlib.Path(__file__).resolve().parents[3]
+        builder_path = repository / "scripts/lunita/build_rootfs_candidate_v1.sh"
+        builder = builder_path.read_text(encoding="utf-8")
+        start = builder.index('  "lupa": {')
+        end = builder.index("\\n  },", start)
+        lupa_block = builder[start:end]
+        for field in (
+            '"version": "$JASP_OBSERVED_VERSION"',
+            '"version_source": "$JASP_OBSERVED_VERSION_SOURCE"',
+            '"application_id": "org.jaspstats.JASP"',
+            '"flatpak_deployment_commit": "$JASP_OBSERVED_COMMIT"',
+            '"flathub_manifest_commit": "$JASP_FLATHUB_MANIFEST_COMMIT"',
+            '"flathub_manifest_git_blob_sha1": "$JASP_FLATHUB_MANIFEST_BLOB_SHA1"',
+            '"flathub_manifest_sha256": "$JASP_FLATHUB_MANIFEST_SHA256"',
+            '"jasp_source_commit": "$JASP_SOURCE_COMMIT"',
+            '"jasp_source_cmake_git_blob_sha1": "$JASP_SOURCE_CMAKE_BLOB_SHA1"',
+            '"jasp_source_cmake_sha256": "$JASP_SOURCE_CMAKE_SHA256"',
+            '"source_release_identity_receipt_sha256": "$JASP_SOURCE_IDENTITY_RECEIPT_SHA256"',
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, lupa_block)
+        self.assertIn(
+            'JASP_OBSERVED_VERSION_SOURCE="PINNED_FLATHUB_MANIFEST_AND_JASP_CMAKE_SOURCE_VERIFIED"',
+            builder,
+        )
+        self.assertNotIn('JASP_INFO="$(flatpak info --system org.jaspstats.JASP)"', builder)
+        self.assertIn("JASP 0.98.8", target.EXPECTED_LABEL_HIERARCHY_TEXT)
+
+
 class TargetJaspSourceReleaseIdentityTests(unittest.TestCase):
     def setUp(self):
         self.manifest = json.dumps(
