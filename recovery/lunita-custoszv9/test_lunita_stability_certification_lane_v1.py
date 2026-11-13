@@ -479,7 +479,8 @@ class DirectV18S32IssuerTests(unittest.TestCase):
                  mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", target.parent), \
                  mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
                  mock.patch.object(lane, "OUT", out), \
-                 mock.patch.object(lane, "latest_target_runtime_acceptance", return_value=acceptance):
+                 mock.patch.object(lane, "latest_target_runtime_acceptance", return_value=acceptance), \
+                 mock.patch.object(lane, "jasp_roundtrip_functional_evidence_valid", return_value=True):
                 first = lane.issue_s32_independent_beta_validation_receipt()
                 second = lane.issue_s32_independent_beta_validation_receipt()
                 gate = lane.stable_release_gate()
@@ -1403,7 +1404,8 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
                  mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", receipts), \
                  mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
                  mock.patch.object(lane, "RUNTIME_REPORT", base / "missing-v17-runtime.json"), \
-                 mock.patch.object(lane, "OUT", out):
+                 mock.patch.object(lane, "OUT", out), \
+                 mock.patch.object(lane, "jasp_roundtrip_functional_evidence_valid", return_value=True):
                 result = lane.stable_release_gate()
             self.assertEqual("WAITING_FOR_S32_BOUND_CERTIFICATION_RECEIPT", result["status"])
             self.assertEqual("NOT_GRANTED", result["certification"])
@@ -1705,3 +1707,118 @@ class PostvalidationManifestClosureRegressionTests(unittest.TestCase):
         self.assertEqual("BLOCKED", result["status"])
         self.assertEqual(1, result["returncode"])
         self.assertIn("waits for completed JASP worker and valid independent inventory", result["details"])
+
+
+class SeededFixturePostExecutionHashIntegrityTests(unittest.TestCase):
+    def test_exact_original_clone_hash_must_survive_save_and_rerun(self):
+        expected = "a" * 64
+        receipt = {"clone_sha256": expected, "clone_path": "/tmp/DeathPenalty_seeded.jasp"}
+        self.assertTrue(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, expected, expected,
+            True, True, True,
+        ))
+
+    def test_identical_mutation_in_both_invocations_is_still_rejected(self):
+        expected = "a" * 64
+        mutated = "b" * 64
+        receipt = {"clone_sha256": expected, "clone_path": "/tmp/DeathPenalty_seeded.jasp"}
+        self.assertFalse(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, mutated, mutated,
+            True, True, True,
+        ))
+
+    def test_mutation_after_either_save_or_rerun_is_rejected(self):
+        expected = "a" * 64
+        mutated = "b" * 64
+        receipt = {"clone_sha256": expected, "clone_path": "/tmp/DeathPenalty_seeded.jasp"}
+        self.assertFalse(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, mutated, expected,
+            True, True, True,
+        ))
+        self.assertFalse(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, expected, mutated,
+            True, True, True,
+        ))
+
+    def test_missing_hash_unsafe_file_or_missing_cleanup_fails_closed(self):
+        expected = "a" * 64
+        receipt = {"clone_sha256": expected, "clone_path": "/tmp/DeathPenalty_seeded.jasp"}
+        self.assertFalse(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, None, expected,
+            True, True, True,
+        ))
+        self.assertFalse(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, expected, expected,
+            False, True, True,
+        ))
+        self.assertFalse(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, expected, expected,
+            True, True, False,
+        ))
+
+
+class S32JaspRoundtripFailClosedRegressionTests(unittest.TestCase):
+    def _checks(self):
+        expected = "a" * 64
+        row = {
+            "status": "PASS",
+            "returncode": 0,
+            "acceptance_scope": "STRICT_REFERENCE_AND_REPLAY",
+            "reference_comparison_status": "PASS",
+            "deterministic_replay_status": "PASS_DETERMINISTIC_REPLAY",
+            "deterministic_fixture_receipt_valid": True,
+            "temporary_fixture_hash_invariant_passed": True,
+            "temporary_fixture_regular_after_save": True,
+            "temporary_fixture_regular_after_rerun": True,
+            "temporary_fixture_changed": False,
+            "temporary_fixture_removed_after_test": True,
+            "temporary_fixture_stable_after_save_and_rerun": True,
+            "save_fixture_unchanged_after_execution": True,
+            "rerun_fixture_unchanged_after_execution": True,
+            "original_sample_unchanged": True,
+            "original_sample_identity_matches_pin": True,
+            "original_sample_sha256_before": lane.DEATH_PENALTY_SOURCE_SHA256,
+            "original_sample_sha256_after": lane.DEATH_PENALTY_SOURCE_SHA256,
+            "temporary_fixture_sha256_expected": expected,
+            "temporary_fixture_sha256_before": expected,
+            "temporary_fixture_sha256_after_save": expected,
+            "temporary_fixture_sha256_after_rerun": expected,
+            "save_fixture_sha256_after_execution": expected,
+            "rerun_fixture_sha256_after_execution": expected,
+        }
+        return {
+            "jasp_packaged_fixture_nonregression": {
+                "status": "PASS",
+                "returncode": 0,
+                "cases": {
+                    "flatpak_launch": {"status": "PASS", "returncode": 0},
+                    "reliability": {"status": "PASS", "returncode": 0},
+                    "weight_gain": {"status": "PASS", "returncode": 0},
+                    "death_penalty_roundtrip": row,
+                },
+                "evidence": {},
+            }
+        }, row
+
+    def test_s32_gate_rejects_replay_only_historical_reference_mismatch(self):
+        checks, row = self._checks()
+        row["status"] = "PASS_DETERMINISTIC_REPLAY"
+        row["acceptance_scope"] = "DETERMINISTIC_REPLAY_ONLY"
+        row["reference_comparison_status"] = "BLOCKED_STORED_REFERENCE_MISMATCH"
+        self.assertFalse(lane.jasp_roundtrip_functional_evidence_valid(checks))
+
+    def test_s32_gate_rejects_identical_post_execution_mutation(self):
+        checks, row = self._checks()
+        row["temporary_fixture_sha256_after_save"] = "b" * 64
+        row["temporary_fixture_sha256_after_rerun"] = "b" * 64
+        row["save_fixture_sha256_after_execution"] = "b" * 64
+        row["rerun_fixture_sha256_after_execution"] = "b" * 64
+        self.assertFalse(lane.jasp_roundtrip_functional_evidence_valid(checks))
+
+    def test_s32_gate_requires_all_jasp_cases_and_returncodes(self):
+        checks, row = self._checks()
+        checks["jasp_packaged_fixture_nonregression"]["cases"].pop("weight_gain")
+        self.assertFalse(lane.jasp_roundtrip_functional_evidence_valid(checks))
+        checks, row = self._checks()
+        checks["jasp_packaged_fixture_nonregression"]["cases"]["reliability"]["returncode"] = 125
+        self.assertFalse(lane.jasp_roundtrip_functional_evidence_valid(checks))
