@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import base64
 import ctypes
+import hashlib
 import pathlib
 import subprocess
 import sys
@@ -177,10 +178,17 @@ def patch_tree(root: pathlib.Path) -> tuple[int, int]:
             updated = bytes(mutable)
         if call_count == 0 and latex_count == 0:
             continue
+        before_sha256 = hashlib.sha256(blob).hexdigest()
+        after_sha256 = hashlib.sha256(updated).hexdigest()
+        if before_sha256 == after_sha256:
+            raise SystemExit(f"Formatter patch reported a change without changing bytes: {path}")
         path.write_bytes(updated)
+        if hashlib.sha256(path.read_bytes()).hexdigest() != after_sha256:
+            raise SystemExit(f"Formatter patch post-write hash mismatch: {path}")
         print(
             f"Patched JASP result formatter in {path} "
-            f"(call sites={call_count}, latex sites={latex_count})",
+            f"(call sites={call_count}, latex sites={latex_count}, "
+            f"before_sha256={before_sha256}, after_sha256={after_sha256})",
             flush=True,
         )
         calls += call_count
