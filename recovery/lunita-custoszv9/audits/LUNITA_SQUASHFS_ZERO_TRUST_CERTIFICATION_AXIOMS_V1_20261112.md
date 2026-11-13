@@ -1,7 +1,7 @@
 # LUNITA v1.8 — Axiomas verificables de certificación funcional SquashFS
 
 **Documento:** `LUNITA_SQUASHFS_ZERO_TRUST_CERTIFICATION_AXIOMS_V1`  
-**Versión:** `1.2.0`  
+**Versión:** `1.3.0`  
 **Estado normativo:** `MANDATORY_PRECONDITION_FOR_FUNCTIONAL_CERTIFICATION`  
 **Doctrina:** `APPEND_ONLY; EXTEND_DO_NOT_REPLACE; FAIL_CLOSED`  
 **Objetivo único:** `LUNITA.squashfs`  
@@ -169,7 +169,7 @@ El recibo `L` solo puede emitirse tras S32 válido. MUST enlazar el mismo inform
 
 La función de certificación es:
 
-`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-022 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
+`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-023 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
 
 y además el certificado `C` MUST:
 
@@ -241,6 +241,19 @@ El wrapper MUST exigir ambos valores, no vacíos y numéricos, antes de crear ar
 Las pruebas contractuales MUST inspeccionar el step de GitHub Actions para acreditar que ambos valores son transmitidos explícitamente a sudo/env, y deben demostrar que el wrapper no contiene fallback fijo. Las pruebas del helper MUST demostrar que una identidad ausente o insegura se rechaza y que el diagnóstico de Flatpak usa exactamente el XDG_RUNTIME_DIR del intento actual. Un fallo de propagación mantiene TARGET_RUNTIME=BLOCKED, aunque los demás tests unitarios pasen.
 
 La validación de este axioma debe ocurrir en el workflow completo sobre el commit integrado: el run ID y attempt registrados en los logs y recibos MUST coincidir con el nombre de runtime mountpoint realmente creado, con el XDG_RUNTIME_DIR observado por el proceso y con el cleanup realizado. El verificador independiente MUST rechazar el recibo target cuando falte workflow_identity, el run ID/attempt no sea numérico, HOST_BIND_NAME no sea la composición exacta de ambos valores o el XDG_RUNTIME_DIR registrado no coincida con el mountpoint validado; el informe independiente conserva esta identidad junto con el hash del recibo.
+
+### AX-LUN-023 — Coherencia multi-capa de identidad de release JASP y esquema de recibo
+
+La identidad del release JASP MUST ser idéntica y verificable a través del constructor del rootfs, la verificación de fuente, el recibo del builder, la aceptación del target, la jerarquía de etiquetas y la validación independiente del binario ejecutado. La versión canónica del candidato en este baseline es `0.98.8`, derivada del proyecto CMake fijado (`0.98.8.0`) y de la combinación exacta del manifiesto Flathub y el commit de fuente JASP registrados; no se toma AppStream como autoridad ni se permite sustituir la versión por una etiqueta descriptiva.
+
+Para JASP, la aceptación MUST validar conjuntamente: application ID `org.jaspstats.JASP`; versión `0.98.8`; commit de despliegue Flatpak fijado; `version_source=PINNED_FLATHUB_MANIFEST_AND_JASP_CMAKE_SOURCE_VERIFIED`; campo de recibo `flatpak_deployment_commit`; commit del manifiesto Flathub; SHA-1 Git blob del manifiesto; commit fuente JASP; SHA-1 Git blob de `CMakeLists.txt`; SHA-256 de ambos archivos y del recibo de identidad fuente; app ID y commit fuente extraídos del manifiesto; versión de proyecto CMake; y flags de identidad del recibo fuente. Cada archivo de metadatos MUST ser regular, no symlink, y concordar byte a byte con su SHA-256 registrado.
+
+El contrato MUST ser específico por aplicación y no aplicar a JASP los campos de Jamovi: Jamovi usa `flatpak_commit` y `EXACT_PINNED_FLATPAK_COMMIT_MAPPING`; JASP usa `flatpak_deployment_commit` y la procedencia de versión verificada contra Flathub/CMake. La aceptación MUST comparar el commit observado por `flatpak info --system --show-commit` contra el commit exacto fijado de la aplicación; un recibo con el nombre de campo, origen, versión o commit incorrecto produce BLOCKED.
+
+La suite contractual MUST probar coherencia entre el builder, el verificador de identidad fuente, el target helper, el workflow/jerarquía y la versión/commit fijados por el validador independiente. La aceptación target MUST producir evidencia de la verificación de manifiesto, fuente CMake y recibo de identidad; el validador independiente MUST comprobar posteriormente el banner de la aplicación realmente ejecutada con la versión y commit fuente exactos. Una prueba de código o de metadatos no sustituye la ejecución real de JASP.
+
+Cualquier divergencia entre estas capas exige corrección append-only y una ejecución completa nueva. Está prohibido rebajar la versión esperada, omitir campos de recibo, convertir el campo faltante en opcional, aceptar AppStream ambiguo o reciclar la evidencia de una ejecución distinta.
+
 
 ## 3. Predicado terminal y orden de admisión
 
@@ -420,3 +433,32 @@ El lector devuelve workflow_identity y xdg_runtime_dir junto con el receipt_sha2
 El step contractual de pull requests cuyo destino es la rama operativa se habilita para validar esta lógica antes del merge. El job target/independent sigue limitado a push o workflow_dispatch sobre la rama operativa; no se habilita una aceptación target parcial ni se reutilizan recibos históricos.
 
 Estado de esta ampliación: IMPLEMENTED_NOT_YET_VALIDATED_BY_CI. El run #211 permanece FAILURE y no se altera.
+
+
+
+## 10. Run #215 — discrepancia real entre release JASP y contrato target (13-11-2026)
+
+Esta sección es una adición al historial; mantiene inalterado el resultado de #211, los fallos anteriores y la evidencia ya registrada.
+
+RUN=43339097069 (#215)  
+HEAD=2d66baf8f52ba90070a42ae6bec5f4794b8c745d  
+TARGET_JOB=131603445497  
+TARGET_STEP=15 / Execute actual E01 inference and E02-E15 plus legacy application smoke tests  
+TARGET_RESULT=FAILURE  
+WORKFLOW_RESULT=FAILURE  
+FUNCTIONAL_CERTIFICATE=NOT_GRANTED  
+SQUASHFS_IMAGE=NOT_EMITTED
+
+El propio wrapper acreditó la identidad de ejecución: `run_id=43339097069`, `attempt=1`, `HOST_BIND_NAME=lunita-host-43339097069-1`. El montaje XDG devolvió `PASS_XDG_RUNTIME_DIR_UID1000_BIND`; la inspección del directorio confirmó UID/GID 1000 y modo 0700. El proceso creó el user namespace desde el mount root candidato y declaró `PASS_TARGET_ROOTFS_EXECUTION_CONTEXT: private mount namespace + pivot_root`. Los pasos de verificación de desmontaje, recopilación de evidencia, cleanup final y subida de evidencia terminaron SUCCESS.
+
+La aceptación se bloqueó antes de completar la batería target por `TargetGateError: Flatpak app identity/version mismatch: org.jaspstats.JASP`. El recibo target bloqueado registra SHA-256 `839a58404497c72372fe04b5972a15bd972f1fafa3ee80db9c2d4b2c46376d62`, con `certification=NOT_GRANTED` y la identidad exacta del workflow antes mencionada. Este error ocurre al validar el recibo de construcción; no constituye evidencia de que JASP se haya iniciado o que su funcionalidad haya fallado. La verificación target no llegó a la prueba real de JASP ni a la suite completa E01–E15/legacy.
+
+La inspección comparada de los archivos fijados reveló tres incoherencias en `target_runtime_acceptance_v1.py`:
+1. el helper target esperaba JASP `0.98.1`, pero el constructor, el manifiesto/CMake source verifier, la jerarquía y el lane independiente fijan `0.98.8`;
+2. exigía para ambos Flatpak `version_source=EXACT_PINNED_FLATPAK_COMMIT_MAPPING`, pero el builder registra para JASP `PINNED_FLATHUB_MANIFEST_AND_JASP_CMAKE_SOURCE_VERIFIED`, mientras Jamovi sí usa la primera;
+3. leía `flatpak_commit` para toda aplicación, pero el recibo de JASP registra `flatpak_deployment_commit`; Jamovi usa `flatpak_commit`.
+
+La corrección en la rama `fix/lunita-jasp-version-contract-coherence-20261113` alinea la versión de target con `0.98.8`, diferencia los dos esquemas de recibo según la aplicación y añade revalidación de los bytes/sha256 de manifiesto Flathub, fuente CMake y recibo de identidad; valida Git blob SHA-1, app ID, commit fuente, versión CMake, commits de despliegue y flags de procedencia. Se agregan tests de coherencia cross-layer y tests positivos/negativos de la verificación del source release.
+
+La corrección amplía el contrato con AX-LUN-023. Estado al documentar: `IMPLEMENTED_NOT_YET_CI_VALIDATED`. Requiere PASS contractual, nuevo full run sobre el HEAD integrado, aceptación real de JASP, ejecución de la suite target completa, round-trip SquashFS estricto y validación independiente/S32/stable/certificador sobre el SHA-256 exacto de la imagen.
+
