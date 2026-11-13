@@ -779,6 +779,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             return {
                 "status": status,
                 "returncode": rc,
+                "command": command,
                 "log_path": str(log_path),
                 "log_sha256": sha_file(log_path),
                 "actual_result_rows": rows,
@@ -808,6 +809,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             return {
                 "status": "BLOCKED_TIMEOUT",
                 "returncode": 124,
+                "command": command,
                 "log_path": str(log_path),
                 "log_sha256": sha_file(log_path),
                 "actual_result_rows": [],
@@ -828,6 +830,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             return {
                 "status": "BLOCKED_PROCESS_TREE_CLEANUP",
                 "returncode": 125,
+                "command": command,
                 "log_path": str(log_path),
                 "log_sha256": sha_file(log_path),
                 "actual_result_rows": [],
@@ -1598,6 +1601,15 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
         if isinstance(roundtrip, dict):
             worker_cases["death_penalty_roundtrip"] = roundtrip
     worker_status = worker_data.get("status") if isinstance(worker_data, dict) else None
+    mutation_identity = (
+        worker_data.get("runtime_mutation_identity")
+        if isinstance(worker_data, dict) and isinstance(worker_data.get("runtime_mutation_identity"), dict)
+        else {}
+    )
+    expected_process_run_id = str(os.environ.get("GITHUB_RUN_ID", ""))
+    expected_process_attempt = str(os.environ.get("GITHUB_RUN_ATTEMPT", ""))
+    expected_process_executable = mutation_identity.get("jasp_binary_sha256", "")
+    expected_process_runtime = mutation_identity.get("flatpak_runtime_commit", "")
     worker_failure = None
     if isinstance(worker_data, dict):
         worker_failure = (
@@ -1651,6 +1663,22 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                     fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=False
                 )
             )
+            save_process_receipt = save_run.get("process_tree_receipt")
+            rerun_process_receipt = rerun.get("process_tree_receipt")
+            process_tree_receipts_valid = bool(
+                save_run.get("process_tree_receipt_valid") is True
+                and rerun.get("process_tree_receipt_valid") is True
+                and process_tree_receipt_identity_matches(
+                    save_process_receipt, case_id="death_penalty_save", env=os.environ,
+                    executable_sha256=expected_process_executable,
+                    runtime_ostree_commit=expected_process_runtime,
+                )
+                and process_tree_receipt_identity_matches(
+                    rerun_process_receipt, case_id="death_penalty_rerun", env=os.environ,
+                    executable_sha256=expected_process_executable,
+                    runtime_ostree_commit=expected_process_runtime,
+                )
+            )
             save_rows_sha = save_run.get("actual_result_rows_sha256")
             rerun_rows_sha = rerun.get("actual_result_rows_sha256")
             replay_pass = (
@@ -1671,6 +1699,7 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                         and data.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH")
                 )
                 and replay_pass
+                and process_tree_receipts_valid
                 and data.get("runtime_identity_status") == "PASS"
                 and (save_run.get("runtime_identity") or {}).get("status") == "PASS"
                 and (rerun.get("runtime_identity") or {}).get("status") == "PASS"
@@ -1708,6 +1737,8 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "temporary_fixture_stable_after_save_and_rerun": bool(temp_after_save and temp_after_save == temp_after_rerun),
                 "deterministic_fixture_evidence_valid": fixture_evidence_ok,
                 "deterministic_fixture_receipt": fixture_receipt,
+                "process_tree_receipt_valid": process_tree_receipts_valid,
+                "process_tree_receipts": [save_process_receipt, rerun_process_receipt],
             })
         else:
             try:
@@ -1721,6 +1752,26 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
             pinned_commit = bool(commits) and all(x == expected_commit for x in commits)
             sandbox_bound = "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED" in text
             runtime_identity = inspect_jasp_runtime_identity(text)
+            worker_case_result = worker_cases.get(case) if isinstance(worker_cases, dict) else None
+            process_receipt = (
+                worker_case_result.get("process_tree_receipt")
+                if isinstance(worker_case_result, dict) else None
+            )
+            receipt_lines = re.findall(r"^PROCESS_TREE_RECEIPT_JSON=(.+)$", text, re.M)
+            try:
+                logged_process_receipt = json.loads(receipt_lines[-1]) if receipt_lines else None
+            except (ValueError, TypeError):
+                logged_process_receipt = None
+            process_receipt_valid = bool(
+                isinstance(worker_case_result, dict)
+                and worker_case_result.get("process_tree_receipt_valid") is True
+                and logged_process_receipt == process_receipt
+                and process_tree_receipt_identity_matches(
+                    process_receipt, case_id=case, env=os.environ,
+                    executable_sha256=expected_process_executable,
+                    runtime_ostree_commit=expected_process_runtime,
+                )
+            )
             fixture_ok = True
             if case == "flatpak_launch":
                 original_paths = re.findall(r"^ORIGINAL_FIXTURE_PATH=(.+)$", text, re.M)
@@ -1745,7 +1796,7 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                     fixture_ok = False
             passed = (
                 rc == 0 and pinned_commit and sandbox_bound and fixture_ok
-                and runtime_identity.get("status") == "PASS"
+                and runtime_identity.get("status") == "PASS" and process_receipt_valid
             )
             runtime_versions = [item["version"] for item in runtime_identity.get("observed", [])]
             runtime_source_commits = [item["source_commit"] for item in runtime_identity.get("observed", [])]
@@ -1759,6 +1810,8 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "observed_runtime_versions": runtime_versions,
                 "observed_runtime_source_commits": runtime_source_commits,
                 "runtime_identity": runtime_identity,
+                "process_tree_receipt": process_receipt,
+                "process_tree_receipt_valid": process_receipt_valid,
                 "semantic_shape_mismatch": bool(re.search(r"Row is missing|Total number of models visited\s*=\s*\d+\s*!=|results are different", text, re.I)),
                 "log_has_numeric_deltas": bool(re.search(r"\d+(?:\.\d+)?\s*!=\s*\d+(?:\.\d+)?", text)),
             })
@@ -2250,6 +2303,7 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         return bool(
             (strict_pass or replay_only)
             and row.get("returncode") == 0
+            and row.get("process_tree_receipt_valid") is True
             and observed_sha256 == row.get("evidence_sha256")
         )
     jasp_case_evidence_valid = (
