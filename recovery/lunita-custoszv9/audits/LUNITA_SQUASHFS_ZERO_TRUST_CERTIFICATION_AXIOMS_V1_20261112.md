@@ -794,3 +794,23 @@ Las referencias JASP históricas, los valores estadísticos originales y los res
 ### Extensión del predicado terminal — AX-LUN-034
 
 `ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-034`. Ninguna imagen podrá recibir certificación funcional si los cinco recibos de invocación JASP no están presentes, son únicos, verificables y ligados al mismo runtime, ejecutable, run y evidencia independiente.
+
+## 13. Addendum append-only — AX-LUN-035: ejecución JASP determinista sobre fixture derivado e inmutable
+
+**Registro de evidencia:** 2026-11-13 UTC. La auditoría de la ejecución real de JASP separó la identidad del archivo empaquetado de su configuración estocástica activa. El archivo fuente Death Penalty conserva seed=1, pero la opción activa setSeed=false; el replay determinista previo ya utilizaba una copia desechable con setSeed=true. La prueba flatpak_launch ejecutaba el original sin esa activación, haciendo que la comparación estadística quedara expuesta a variación aleatoria.
+
+### AX-LUN-035 — Toda comparación funcional JASP debe controlar explícitamente la semilla sin modificar el original ni sus referencias
+
+La aceptación de flatpak_launch MUST ejecutar una copia desechable, aislada y derivada del fixture original, nunca alterar el archivo fuente empaquetado. Antes de crear la copia, el origen MUST coincidir con el SHA-256 inmutable registrado para Death Penalty. El cambio permitido se limita a exactamente una opción activa dentro de analyses.json: setSeed=false a setSeed=true, conservando seed=1.
+
+La copia MUST producir un recibo LUNITA_JASP_DETERMINISTIC_FIXTURE/1.0 que enlace el hash del origen antes y después, el hash del clon, la ruta del origen, la ruta del clon, el miembro modificado, el JSON pointer, el estado anterior y posterior, el conteo de miembros no activos preservados y la identidad/hash del propio recibo. Los miembros de resultados serializados y los resultados de referencia MUST permanecer byte-exactos; result_output_members_changed=false y reference_results_modified=false son invariantes obligatorios.
+
+El supervisor MUST pasar a Flatpak la ruta exacta del clon y habilitar solamente el acceso de filesystem necesario para esa copia. El informe independiente MUST verificar el archivo de origen contra su hash pin, comprobar el recibo en disco, enlazar el hash del recibo con el log de la ejecución, comprobar el hash del clon y exigir que el path realmente ejecutado sea el mismo clone_path registrado. La eliminación de la copia temporal después de la prueba es obligatoria y no elimina el valor probatorio del recibo/hash conservado.
+
+El certificador final MUST volver a validar el origen, el recibo en disco, la transición única de semilla y los invariantes de preservación antes de emitir CERTIFIED_FUNCTIONAL_CANDIDATE. Una ejecución sobre el original no sembrado, un clon no hash-bound, más de un miembro cambiado, un resultado de referencia mutado, un recibo ausente o una discordancia entre path/hash bloquean la certificación.
+
+Esta axiomatización no cambia el umbral estadístico, no sustituye resultados históricos, no reconstruye referencias ni transforma un replay reproducible que no coincide con la referencia almacenada en un PASS estricto. La aceptación estricta exige que la ejecución real del clon sembrado termine con código cero y coincida con el criterio de referencia preexistente; el replay determinista por sí solo permanece insuficiente.
+
+### Extensión del predicado terminal — AX-LUN-035
+
+ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-035. El certificado funcional queda denegado si el caso flatpak_launch no prueba ejecución del clon determinista derivado del fixture pinneado, preservación del origen y de los resultados de referencia, y coincidencia completa de sus recibos y hashes.
