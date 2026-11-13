@@ -939,6 +939,8 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
             self.assertEqual("PASS", checks["candidate_manifest_identity_sha256"]["status"])
             self.assertEqual("PASS", checks["runtime_report_and_launcher_identity"]["status"])
             self.assertEqual("PASS", checks["target_v1_8_runtime_acceptance_e01_e15_int8"]["status"])
+            self.assertEqual("PASS_JASP_SOURCE_RELEASE_IDENTITY",
+                             checks["target_v1_8_runtime_acceptance_e01_e15_int8"]["jasp_source_release_identity_status"])
             self.assertNotIn("MISION1_identity_sha256", checks)
             self.assertNotIn("legacy_v17_unbound_pass", checks)
             self.assertEqual(str(receipt), report["runtime_report_path"])
