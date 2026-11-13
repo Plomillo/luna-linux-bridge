@@ -127,12 +127,31 @@ def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
     jasp_binary = file_record(args.jasp_binary)
     if not re.fullmatch(r"[0-9a-f]{64}", args.jasp_binary_before_sha256 or ""):
         raise ValueError("Pre-mutation JASP executable hash is missing or malformed")
-    binary_unchanged = jasp_binary["sha256"] == args.jasp_binary_before_sha256
-
     patch_script = file_record(args.patch_script)
     patch_log = file_record(args.patch_log)
     files_root = args.jasp_binary.resolve(strict=True).parent.parent
     patched_resources, call_sites, latex_sites = parse_patch_log(args.patch_log, files_root)
+    jasp_binary_path = pathlib.Path(jasp_binary["path"]).resolve(strict=True)
+    binary_patch_rows = [
+        row for row in patched_resources
+        if pathlib.Path(row["path"]).resolve(strict=True) == jasp_binary_path
+    ]
+    if len(binary_patch_rows) > 1:
+        raise ValueError("JASP executable appears more than once in formatter patch evidence")
+    if binary_patch_rows:
+        binary_patch = binary_patch_rows[0]
+        if (
+            binary_patch["before_sha256"] != args.jasp_binary_before_sha256
+            or binary_patch["after_sha256"] != jasp_binary["sha256"]
+            or binary_patch["observed_after_sha256"] != jasp_binary["sha256"]
+        ):
+            raise ValueError("Embedded formatter patch hashes do not close over the JASP executable transition")
+        binary_changed = True
+    else:
+        if args.jasp_binary_before_sha256 != jasp_binary["sha256"]:
+            raise ValueError("JASP executable changed without a matching formatter patch log row")
+        binary_changed = False
+    binary_unchanged = not binary_changed
     pre_qt_snapshot = parse_sha256sum_snapshot(args.pre_qt_snapshot)
     pre_qt_snapshot_record = file_record(args.pre_qt_snapshot)
 
@@ -151,6 +170,14 @@ def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
             "binary_before_sha256": args.jasp_binary_before_sha256,
             "binary_after": jasp_binary,
             "binary_unchanged_by_formatter_patch": binary_unchanged,
+            "binary_transition": {
+                "path": jasp_binary["path"],
+                "before_sha256": args.jasp_binary_before_sha256,
+                "after_sha256": jasp_binary["sha256"],
+                "changed": binary_changed,
+                "scope": "EMBEDDED_FORMATTER_RESOURCE_IN_APPLICATION_BINARY" if binary_changed
+                         else "APPLICATION_BINARY_UNCHANGED",
+            },
         },
         "runtime": {
             "flatpak_ref": args.runtime_ref,
@@ -175,7 +202,7 @@ def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
             "call_sites": call_sites,
             "latex_sites": latex_sites,
             "patched_resources": patched_resources,
-            "changed_jasp_binary": False,
+            "changed_jasp_binary": binary_changed,
             "r_startup_profile_mutated": False,
         },
         "certification": "NOT_GRANTED",
@@ -239,23 +266,22 @@ def self_test() -> None:
         installed = base / "installed"
         installed.mkdir()
         (installed / "libQt6HttpServer.so.6").write_bytes(b"built Qt server")
-        jasp = base / "JASP"
-        jasp.write_bytes(b"post-patch JASP")
+        files = base / "files"
+        (files / "bin").mkdir(parents=True)
+        jasp = files / "bin" / "JASP"
+        before_binary = b"pre-patch JASP executable with embedded Qt formatter"
+        after_binary = b"post-patch JASP executable with embedded Qt formatter"
+        jasp.write_bytes(after_binary)
         before = base / "qt-before.sha256"
         before.write_text("", encoding="utf-8")
         patch_script = base / "patch.py"
         patch_script.write_text("# patcher\n", encoding="utf-8")
-        resource = base / "resources" / "formatter.bin"
-        resource.parent.mkdir()
-        before_resource = b"unpatched formatter bytes"
-        after_resource = b"patched formatter bytes"
-        resource.write_bytes(after_resource)
         patch_log = base / "patch.log"
         patch_log.write_text(
-            f"Patched JASP result formatter in {resource} "
+            f"Patched JASP result formatter in {jasp} "
             f"(call sites=1, latex sites=1, "
-            f"before_sha256={hashlib.sha256(before_resource).hexdigest()}, "
-            f"after_sha256={hashlib.sha256(after_resource).hexdigest()})\n",
+            f"before_sha256={hashlib.sha256(before_binary).hexdigest()}, "
+            f"after_sha256={hashlib.sha256(after_binary).hexdigest()})\n",
             encoding="utf-8",
         )
         args = argparse.Namespace(
@@ -265,13 +291,16 @@ def self_test() -> None:
             sdk_ref="org.kde.Sdk//6.11", sdk_commit="c" * 64, qt_version="6.11.3",
             source_url="https://example.invalid/qt/archive/v6.11.3.tar.gz",
             source_archive=archive, build_dir=build, qt_library_dir=installed,
-            jasp_binary=jasp, jasp_binary_before_sha256=hashlib.sha256(b"post-patch JASP").hexdigest(),
+            jasp_binary=jasp, jasp_binary_before_sha256=hashlib.sha256(before_binary).hexdigest(),
             pre_qt_snapshot=before, patch_script=patch_script, patch_log=patch_log,
         )
         receipt = build_receipt(args)
         assert receipt["status"] == "PASS"
         assert receipt["formatter_patch"]["call_sites"] == 1
-        assert receipt["application"]["binary_unchanged_by_formatter_patch"] is True
+        assert receipt["application"]["binary_unchanged_by_formatter_patch"] is False
+        assert receipt["application"]["binary_transition"]["changed"] is True
+        assert receipt["application"]["binary_transition"]["path"] == str(jasp.resolve())
+        assert receipt["formatter_patch"]["changed_jasp_binary"] is True
         assert receipt["formatter_patch"]["patched_resources"][0]["before_sha256"] != receipt["formatter_patch"]["patched_resources"][0]["after_sha256"]
     print("record_jasp_runtime_mutation_receipt_v1 self-test PASS", flush=True)
 
