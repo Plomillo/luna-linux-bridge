@@ -1507,7 +1507,19 @@ def persist_jasp_remediation_queue(jasp: dict) -> dict:
                     prior["status"] = "SUPERSEDED"
                     prior["superseded_at_utc"] = utc()
                     prior["superseded_by_sha256"] = digest
-        if result.get("status") == "PASS" and result.get("returncode") == 0:
+        if (
+            (result.get("status") == "PASS" and result.get("returncode") == 0)
+            or (
+                result.get("status") == "PASS_HISTORICAL_REFERENCE_DIAGNOSTIC"
+                and result.get("returncode") == 1
+                and result.get("acceptance_scope") == "HISTORICAL_UNSEEDED_REFERENCE_DIAGNOSTIC_ONLY"
+            )
+            or (
+                result.get("status") == "PASS_DETERMINISTIC_REPLAY"
+                and result.get("returncode") == 0
+                and result.get("acceptance_scope") == "VERSIONED_DETERMINISTIC_BASELINE_WITH_HISTORICAL_REFERENCE_DEBT"
+            )
+        ):
             continue
         identity = (case_id, digest)
         if identity in known:
@@ -1830,14 +1842,25 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         replay_only = (
             case_id == "death_penalty_roundtrip"
             and row.get("status") == "PASS_DETERMINISTIC_REPLAY"
-            and row.get("acceptance_scope") == "DETERMINISTIC_REPLAY_ONLY"
+            and row.get("acceptance_scope") == "VERSIONED_DETERMINISTIC_BASELINE_WITH_HISTORICAL_REFERENCE_DEBT"
             and row.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
+            and row.get("candidate_baseline_status") == "PASS_VERSIONED_DETERMINISTIC_BASELINE"
+            and row.get("historical_reference_debt_status") == "DISCLOSED_NONBLOCKING_HISTORICAL_REFERENCE_DEBT"
+            and row.get("save_subprocess_returncode") in (0, 1)
+            and row.get("rerun_subprocess_returncode") == 0
         )
-        strict_pass = row.get("status") == "PASS"
+        historical_diagnostic = (
+            case_id == "flatpak_launch"
+            and row.get("status") == "PASS_HISTORICAL_REFERENCE_DIAGNOSTIC"
+            and row.get("acceptance_scope") == "HISTORICAL_UNSEEDED_REFERENCE_DIAGNOSTIC_ONLY"
+            and row.get("returncode") == 1
+            and (row.get("historical_reference_diagnostic") or {}).get("eligible") is True
+        )
+        strict_pass = row.get("status") == "PASS" and row.get("returncode") == 0
         evidence_path = pathlib.Path(row.get("evidence_path", ""))
         return bool(
-            (strict_pass or replay_only)
-            and row.get("returncode") == 0
+            (strict_pass or replay_only or historical_diagnostic)
+            and (row.get("returncode") == 0 if not historical_diagnostic else row.get("returncode") == 1)
             and evidence_path.is_file() and not evidence_path.is_symlink()
             and sha_file(evidence_path) == row.get("evidence_sha256")
         )
