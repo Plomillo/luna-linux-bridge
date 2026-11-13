@@ -672,6 +672,34 @@ def jasp_result_rows_sha256(rows: list[str]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def seeded_fixture_post_execution_hashes_unchanged(
+    receipt: dict | None,
+    clone_path: str | None,
+    sha_before: str | None,
+    sha_after_save: str | None,
+    sha_after_rerun: str | None,
+    regular_after_save: bool,
+    regular_after_rerun: bool,
+    removed_after_test: bool,
+) -> bool:
+    """Require the exact seeded archive bytes to survive both JASP invocations."""
+    if not isinstance(receipt, dict):
+        return False
+    expected = receipt.get("clone_sha256")
+    return bool(
+        isinstance(expected, str)
+        and re.fullmatch(r"[0-9a-f]{64}", expected)
+        and isinstance(clone_path, str)
+        and clone_path == receipt.get("clone_path")
+        and sha_before == expected
+        and sha_after_save == expected
+        and sha_after_rerun == expected
+        and regular_after_save is True
+        and regular_after_rerun is True
+        and removed_after_test is True
+    )
+
+
 def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: str, mutation_identity: dict | None = None) -> dict:
     """Verify two independent executions of the same hash-bound seeded input.
 
@@ -714,12 +742,46 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     save_run = {"status": "BLOCKED", "returncode": 125}
     rerun = {"status": "BLOCKED", "returncode": 125}
     temp_before = temp_after = temp_after_rerun = None
+    temp_after_save_regular = False
+    temp_after_rerun_regular = False
+    save_log_integrity_bound = False
+    rerun_log_integrity_bound = False
     temp_fixture = None
     temp_root = None
     fixture_receipt = None
     fixture_receipt_valid = False
     save_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_save.log"
     rerun_log_path = OUT / f"JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_{stamp}_rerun.log"
+
+    def bind_fixture_hash_to_run_log(
+        run_result: dict, label: str, expected_sha256: str | None,
+        observed_sha256: str | None, regular_file: bool,
+    ) -> bool:
+        log_text = run_result.get("log_path")
+        if not isinstance(log_text, str) or not log_text:
+            return False
+        log_path = pathlib.Path(log_text)
+        if log_path.is_symlink() or not log_path.is_file():
+            return False
+        unchanged = bool(
+            regular_file is True
+            and isinstance(expected_sha256, str)
+            and observed_sha256 == expected_sha256
+        )
+        with log_path.open("a", encoding="utf-8") as stream:
+            stream.write("\n")
+            stream.write(f"JASP_ROUNDTRIP_FIXTURE_SHA256_EXPECTED={expected_sha256 or 'UNAVAILABLE'}\n")
+            stream.write(f"JASP_ROUNDTRIP_FIXTURE_SHA256_AFTER_{label.upper()}={observed_sha256 or 'UNAVAILABLE'}\n")
+            stream.write(
+                f"JASP_ROUNDTRIP_FIXTURE_UNCHANGED_AFTER_{label.upper()}="
+                f"{'TRUE' if unchanged else 'FALSE'}\n"
+            )
+        run_result["log_sha256"] = sha_file(log_path)
+        run_result["fixture_sha256_expected"] = expected_sha256
+        run_result["fixture_sha256_after_execution"] = observed_sha256
+        run_result["fixture_unchanged_after_execution"] = unchanged
+        run_result["fixture_regular_file_after_execution"] = regular_file is True
+        return unchanged
 
     def execute_replay(command: list[str], label: str, log_path: pathlib.Path) -> dict:
         started = utc()
@@ -852,17 +914,31 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             fixture_receipt_valid = verify_deterministic_fixture_receipt(
                 fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=True
             )
-            temp_before = sha_file(temp_fixture)
-            if not fixture_receipt_valid:
-                raise PermissionError("Deterministic JASP fixture receipt failed hash-bound validation")
+            temp_before = (
+                sha_file(temp_fixture)
+                if temp_fixture.is_file() and not temp_fixture.is_symlink()
+                else None
+            )
+            if not fixture_receipt_valid or temp_before != fixture_receipt.get("clone_sha256"):
+                raise PermissionError("Deterministic JASP fixture receipt or initial clone hash failed validation")
 
             command = flatpak_jasp_launch(
                 [f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)]
             )
             save_run = execute_replay(command, "save", save_log_path)
-            temp_after = sha_file(temp_fixture) if temp_fixture.is_file() else None
+            temp_after_save_regular = bool(temp_fixture.is_file() and not temp_fixture.is_symlink())
+            temp_after = sha_file(temp_fixture) if temp_after_save_regular else None
+            save_log_integrity_bound = bind_fixture_hash_to_run_log(
+                save_run, "save", fixture_receipt.get("clone_sha256"),
+                temp_after, temp_after_save_regular,
+            )
             rerun = execute_replay(command, "rerun", rerun_log_path)
-            temp_after_rerun = sha_file(temp_fixture) if temp_fixture.is_file() else None
+            temp_after_rerun_regular = bool(temp_fixture.is_file() and not temp_fixture.is_symlink())
+            temp_after_rerun = sha_file(temp_fixture) if temp_after_rerun_regular else None
+            rerun_log_integrity_bound = bind_fixture_hash_to_run_log(
+                rerun, "rerun", fixture_receipt.get("clone_sha256"),
+                temp_after_rerun, temp_after_rerun_regular,
+            )
     except Exception as exc:
         base["executor_error"] = {"type": type(exc).__name__, "message": str(exc)[:1200]}
 
@@ -871,11 +947,21 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         original_before == DEATH_PENALTY_SOURCE_SHA256
         and original_after == DEATH_PENALTY_SOURCE_SHA256
     )
+    temporary_fixture_removed = bool(temp_root and not temp_root.exists())
+    roundtrip_hash_invariant = seeded_fixture_post_execution_hashes_unchanged(
+        fixture_receipt,
+        str(temp_fixture) if temp_fixture else None,
+        temp_before,
+        temp_after,
+        temp_after_rerun,
+        temp_after_save_regular,
+        temp_after_rerun_regular,
+        temporary_fixture_removed,
+    )
     roundtrip_reproducible = bool(
         fixture_receipt and fixture_receipt_valid
-        and temp_before == fixture_receipt.get("clone_sha256")
-        and temp_after and temp_after == temp_after_rerun
-        and temp_root and not temp_root.exists()
+        and roundtrip_hash_invariant
+        and save_log_integrity_bound and rerun_log_integrity_bound
     )
     save_rows = save_run.get("actual_result_rows") or []
     rerun_rows = rerun.get("actual_result_rows") or []
@@ -944,13 +1030,23 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             save_run.get("process_tree_receipt_valid") is True
             and rerun.get("process_tree_receipt_valid") is True
         ),
+        "temporary_fixture_sha256_expected": fixture_receipt.get("clone_sha256") if isinstance(fixture_receipt, dict) else None,
         "temporary_fixture_sha256_before": temp_before,
         "temporary_fixture_sha256_after_save": temp_after,
         "temporary_fixture_sha256_after_rerun": temp_after_rerun,
-        "temporary_fixture_changed": bool(temp_before and temp_after and temp_before != temp_after),
+        "temporary_fixture_hash_invariant_passed": roundtrip_hash_invariant,
+        "temporary_fixture_regular_after_save": temp_after_save_regular,
+        "temporary_fixture_regular_after_rerun": temp_after_rerun_regular,
+        "temporary_fixture_changed": bool(
+            temp_before and (temp_after != temp_before or temp_after_rerun != temp_before)
+        ),
         "temporary_fixture_path": str(temp_fixture) if temp_fixture else None,
-        "temporary_fixture_removed_after_test": bool(temp_root and not temp_root.exists()),
-        "temporary_fixture_stable_after_save_and_rerun": bool(temp_after and temp_after == temp_after_rerun),
+        "temporary_fixture_removed_after_test": temporary_fixture_removed,
+        "temporary_fixture_stable_after_save_and_rerun": bool(
+            temp_after and temp_after == temp_after_rerun
+        ),
+        "save_log_integrity_bound": save_log_integrity_bound,
+        "rerun_log_integrity_bound": rerun_log_integrity_bound,
         "reference_results_modified": False,
         "downloaded": False,
     }
@@ -1424,6 +1520,13 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
         and isinstance(roundtrip.get("save_actual_result_rows_sha256"), str)
         and roundtrip.get("save_actual_result_rows_sha256") == roundtrip.get("rerun_actual_result_rows_sha256")
         and roundtrip.get("original_sample_unchanged") is True
+        and roundtrip.get("temporary_fixture_hash_invariant_passed") is True
+        and roundtrip.get("temporary_fixture_sha256_expected") == roundtrip_fixture_receipt.get("clone_sha256")
+        and roundtrip.get("temporary_fixture_sha256_before") == roundtrip_fixture_receipt.get("clone_sha256")
+        and roundtrip.get("temporary_fixture_sha256_after_save") == roundtrip_fixture_receipt.get("clone_sha256")
+        and roundtrip.get("temporary_fixture_sha256_after_rerun") == roundtrip_fixture_receipt.get("clone_sha256")
+        and roundtrip.get("save_log_integrity_bound") is True
+        and roundtrip.get("rerun_log_integrity_bound") is True
         and roundtrip.get("deterministic_fixture_receipt_valid") is True
         and (roundtrip.get("save_run") or {}).get("process_tree_receipt_valid") is True
         and (roundtrip.get("strict_rerun_after_save") or {}).get("process_tree_receipt_valid") is True
@@ -1796,8 +1899,13 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 and data.get("original_sample_unchanged") is True
                 and data.get("temporary_fixture_removed_after_test") is True
                 and data.get("temporary_fixture_stable_after_save_and_rerun") is True
+                and data.get("temporary_fixture_hash_invariant_passed") is True
+                and data.get("temporary_fixture_sha256_expected") == fixture_receipt.get("clone_sha256")
                 and bool(temp_before) and temp_before == fixture_receipt.get("clone_sha256")
-                and bool(temp_after_save) and temp_after_save == temp_after_rerun
+                and temp_after_save == fixture_receipt.get("clone_sha256")
+                and temp_after_rerun == fixture_receipt.get("clone_sha256")
+                and data.get("save_log_integrity_bound") is True
+                and data.get("rerun_log_integrity_bound") is True
             )
             item.update({
                 # Effective returncode denotes the deterministic-replay acceptance.
@@ -1821,8 +1929,27 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "actual_result_rows_equal": data.get("actual_result_rows_equal"),
                 "original_sample_unchanged": data.get("original_sample_unchanged"),
                 "original_sample_identity_matches_pin": data.get("original_sample_identity_matches_pin"),
+                "temporary_fixture_sha256_expected": data.get("temporary_fixture_sha256_expected"),
+                "temporary_fixture_sha256_before": temp_before,
+                "temporary_fixture_sha256_after_save": temp_after_save,
+                "temporary_fixture_sha256_after_rerun": temp_after_rerun,
+                "temporary_fixture_hash_invariant_passed": data.get("temporary_fixture_hash_invariant_passed") is True,
+                "temporary_fixture_regular_after_save": data.get("temporary_fixture_regular_after_save") is True,
+                "temporary_fixture_regular_after_rerun": data.get("temporary_fixture_regular_after_rerun") is True,
+                "temporary_fixture_changed": data.get("temporary_fixture_changed"),
                 "temporary_fixture_removed_after_test": data.get("temporary_fixture_removed_after_test"),
                 "temporary_fixture_stable_after_save_and_rerun": bool(temp_after_save and temp_after_save == temp_after_rerun),
+                "temporary_fixture_path": data.get("temporary_fixture_path"),
+                "save_log_path": save_run.get("log_path"),
+                "save_log_sha256": save_run.get("log_sha256"),
+                "save_fixture_sha256_after_execution": save_run.get("fixture_sha256_after_execution"),
+                "save_fixture_unchanged_after_execution": save_run.get("fixture_unchanged_after_execution") is True,
+                "rerun_log_path": rerun.get("log_path"),
+                "rerun_log_sha256": rerun.get("log_sha256"),
+                "rerun_fixture_sha256_after_execution": rerun.get("fixture_sha256_after_execution"),
+                "rerun_fixture_unchanged_after_execution": rerun.get("fixture_unchanged_after_execution") is True,
+                "original_sample_sha256_before": data.get("original_sample_sha256_before"),
+                "original_sample_sha256_after": data.get("original_sample_sha256_after"),
                 "deterministic_fixture_evidence_valid": fixture_evidence_ok,
                 "deterministic_fixture_receipt": fixture_receipt,
                 "process_tree_receipt_valid": process_tree_receipts_valid,
@@ -1970,14 +2097,15 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "semantic_diagnostic_excerpt": diagnostic_excerpt,
             })
         rows[case] = item
-    all_pass = all(
-        (row.get("status") == "PASS" and row.get("returncode") == 0)
-        or (
-            case == "death_penalty_roundtrip"
-            and row.get("status") == "PASS_DETERMINISTIC_REPLAY"
-            and row.get("returncode") == 0
-            and row.get("acceptance_scope") == "DETERMINISTIC_REPLAY_ONLY"
-            and row.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
+    # Replay-only is terminal for diagnostics, never a functional non-regression PASS.
+    all_pass = bool(rows) and all(
+        row.get("status") == "PASS" and row.get("returncode") == 0
+        and (
+            case != "death_penalty_roundtrip"
+            or (
+                row.get("acceptance_scope") == "STRICT_REFERENCE_AND_REPLAY"
+                and row.get("reference_comparison_status") == "PASS"
+            )
         )
         for case, row in rows.items()
     )
@@ -2475,13 +2603,17 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
     def jasp_case_accepted(case_id: str, row: dict) -> bool:
         if not isinstance(row, dict):
             return False
-        replay_only = (
-            case_id == "death_penalty_roundtrip"
-            and row.get("status") == "PASS_DETERMINISTIC_REPLAY"
-            and row.get("acceptance_scope") == "DETERMINISTIC_REPLAY_ONLY"
-            and row.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
+        strict_pass = (
+            row.get("status") == "PASS"
+            and row.get("returncode") == 0
+            and (
+                case_id != "death_penalty_roundtrip"
+                or (
+                    row.get("acceptance_scope") == "STRICT_REFERENCE_AND_REPLAY"
+                    and row.get("reference_comparison_status") == "PASS"
+                )
+            )
         )
-        strict_pass = row.get("status") == "PASS"
         evidence_value = row.get("evidence_path")
         if not isinstance(evidence_value, str) or not evidence_value.strip():
             return False
@@ -2493,8 +2625,7 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         except (OSError, RuntimeError, TypeError, ValueError):
             return False
         return bool(
-            (strict_pass or replay_only)
-            and row.get("returncode") == 0
+            strict_pass
             and row.get("process_tree_receipt_valid") is True
             and observed_sha256 == row.get("evidence_sha256")
         )
@@ -2503,19 +2634,37 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         and all(jasp_case_accepted(case_id, row) for case_id, row in jasp_cases.items())
     )
     jasp_pass = jasp.get("status") == "PASS_JASP_PACKAGED_FIXTURE_NONREGRESSION" and jasp_case_evidence_valid
+    jasp_evidence_map = {
+        row["evidence_path"]: row["evidence_sha256"]
+        for row in jasp_cases.values()
+        if isinstance(row, dict)
+        and isinstance(row.get("evidence_path"), str)
+        and row.get("evidence_path").strip()
+        and isinstance(row.get("evidence_sha256"), str)
+    }
+    for case_row in jasp_cases.values():
+        if not isinstance(case_row, dict):
+            continue
+        for path_key, sha_key in (
+            ("save_log_path", "save_log_sha256"),
+            ("rerun_log_path", "rerun_log_sha256"),
+        ):
+            evidence_path = case_row.get(path_key)
+            evidence_sha = case_row.get(sha_key)
+            if isinstance(evidence_path, str) and isinstance(evidence_sha, str):
+                jasp_evidence_map[evidence_path] = evidence_sha
+        receipt = case_row.get("deterministic_fixture_receipt")
+        if isinstance(receipt, dict):
+            receipt_path = receipt.get("receipt_path")
+            receipt_sha = receipt.get("receipt_sha256")
+            if isinstance(receipt_path, str) and isinstance(receipt_sha, str):
+                jasp_evidence_map[receipt_path] = receipt_sha
     checks["jasp_packaged_fixture_nonregression"] = {
         "status": "PASS" if jasp_pass else "BLOCKED",
         "returncode": 0 if jasp_pass else 1,
         "cases": jasp_cases, "next_action": jasp.get("next_action"),
         "all_case_evidence_hashes_current": jasp_case_evidence_valid,
-        "evidence": {
-            row["evidence_path"]: row["evidence_sha256"]
-            for row in jasp_cases.values()
-            if isinstance(row, dict)
-            and isinstance(row.get("evidence_path"), str)
-            and row.get("evidence_path").strip()
-            and isinstance(row.get("evidence_sha256"), str)
-        },
+        "evidence": jasp_evidence_map,
     }
     jasp_runtime_identity = verify_jasp_runtime_mutation_receipt() if direct else {}
     target_workflow_identity = (

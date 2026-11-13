@@ -426,6 +426,142 @@ def validate_jasp_seeded_fixture_evidence(check: dict) -> dict[str, Any]:
     }
 
 
+def validate_jasp_roundtrip_fixture_evidence(check: dict) -> dict:
+    """Independently bind both JASP roundtrip invocations to the original seeded clone bytes."""
+    if not isinstance(check, dict) or check.get("status") != "PASS" or check.get("returncode") != 0:
+        raise CertificationError("JASP packaged fixture gate is not a strict PASS")
+    cases = check.get("cases")
+    row = cases.get("death_penalty_roundtrip") if isinstance(cases, dict) else None
+    if not isinstance(row, dict):
+        raise CertificationError("JASP Death Penalty save/rerun evidence is missing")
+    if (
+        row.get("status") != "PASS"
+        or row.get("returncode") != 0
+        or row.get("acceptance_scope") != "STRICT_REFERENCE_AND_REPLAY"
+        or row.get("reference_comparison_status") != "PASS"
+        or row.get("deterministic_replay_status") != "PASS_DETERMINISTIC_REPLAY"
+    ):
+        raise CertificationError("JASP Death Penalty stored-reference comparison is not a strict PASS")
+
+    expected = row.get("temporary_fixture_sha256_expected")
+    if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
+        raise CertificationError("JASP roundtrip expected seeded-clone SHA-256 is missing or malformed")
+    for field in (
+        "temporary_fixture_sha256_before",
+        "temporary_fixture_sha256_after_save",
+        "temporary_fixture_sha256_after_rerun",
+        "save_fixture_sha256_after_execution",
+        "rerun_fixture_sha256_after_execution",
+    ):
+        if row.get(field) != expected:
+            raise CertificationError(f"JASP roundtrip clone hash mismatch: {field}")
+    if (
+        row.get("temporary_fixture_hash_invariant_passed") is not True
+        or row.get("temporary_fixture_regular_after_save") is not True
+        or row.get("temporary_fixture_regular_after_rerun") is not True
+        or row.get("temporary_fixture_changed") is not False
+        or row.get("temporary_fixture_removed_after_test") is not True
+        or row.get("temporary_fixture_stable_after_save_and_rerun") is not True
+        or row.get("save_fixture_unchanged_after_execution") is not True
+        or row.get("rerun_fixture_unchanged_after_execution") is not True
+    ):
+        raise CertificationError("JASP roundtrip clone immutability or cleanup predicates are incomplete")
+
+    receipt = row.get("deterministic_fixture_receipt")
+    if not isinstance(receipt, dict):
+        raise CertificationError("JASP roundtrip deterministic fixture receipt is missing")
+    receipt_path_text = receipt.get("receipt_path")
+    receipt_sha = receipt.get("receipt_sha256")
+    if not isinstance(receipt_path_text, str) or not isinstance(receipt_sha, str):
+        raise CertificationError("JASP roundtrip fixture receipt path/hash binding is missing")
+    receipt_path = pathlib.Path(receipt_path_text)
+    if receipt_path.is_symlink() or not receipt_path.is_file() or sha256_file(receipt_path) != receipt_sha:
+        raise CertificationError("JASP roundtrip fixture receipt SHA-256 is stale or unsafe")
+    on_disk = load_json(receipt_path, "JASP roundtrip deterministic fixture receipt")
+    receipt_fields = (
+        "schema", "status", "purpose", "source_path", "source_sha256",
+        "expected_source_sha256", "source_sha256_after", "source_unchanged",
+        "clone_path", "clone_sha256", "clone_is_distinct", "active_configuration_member",
+        "changed_archive_member", "changed_json_pointer", "analysis_index",
+        "analysis_id", "analysis_name", "module_name", "archive_member_count",
+        "changed_archive_member_count", "unchanged_non_active_member_count",
+        "before", "after", "result_output_members_changed", "reference_results_modified",
+    )
+    if any(on_disk.get(field) != receipt.get(field) for field in receipt_fields):
+        raise CertificationError("Embedded and on-disk JASP roundtrip fixture receipts disagree")
+    clone_path_text = receipt.get("clone_path")
+    if (
+        receipt.get("schema") != "LUNITA_JASP_DETERMINISTIC_FIXTURE/1.0"
+        or receipt.get("status") != "PASS_DETERMINISTIC_FIXTURE_COPY_CREATED"
+        or receipt.get("source_sha256") != JASP_DEATH_PENALTY_SOURCE_SHA256
+        or receipt.get("expected_source_sha256") != JASP_DEATH_PENALTY_SOURCE_SHA256
+        or receipt.get("source_sha256_after") != JASP_DEATH_PENALTY_SOURCE_SHA256
+        or receipt.get("source_unchanged") is not True
+        or receipt.get("clone_sha256") != expected
+        or receipt.get("clone_is_distinct") is not True
+        or receipt.get("reference_results_modified") is not False
+        or receipt.get("result_output_members_changed") is not False
+        or row.get("temporary_fixture_path") != clone_path_text
+        or not isinstance(clone_path_text, str)
+        or row.get("deterministic_fixture_receipt_valid") is not True
+    ):
+        raise CertificationError("JASP roundtrip receipt does not bind the expected immutable seeded clone")
+    clone_path = pathlib.Path(clone_path_text)
+    if clone_path.exists() or clone_path.is_symlink():
+        raise CertificationError("JASP roundtrip temporary clone was not removed after evidence capture")
+    source_path_text = receipt.get("source_path")
+    if not isinstance(source_path_text, str):
+        raise CertificationError("JASP original source fixture path is missing")
+    source_path = pathlib.Path(source_path_text)
+    if (
+        source_path.is_symlink()
+        or not source_path.is_file()
+        or sha256_file(source_path) != JASP_DEATH_PENALTY_SOURCE_SHA256
+        or row.get("original_sample_unchanged") is not True
+        or row.get("original_sample_identity_matches_pin") is not True
+        or row.get("original_sample_sha256_before") != JASP_DEATH_PENALTY_SOURCE_SHA256
+        or row.get("original_sample_sha256_after") != JASP_DEATH_PENALTY_SOURCE_SHA256
+    ):
+        raise CertificationError("JASP original historical fixture changed or lost its pinned identity")
+
+    for label, path_key, sha_key, digest_key, unchanged_key in (
+        ("SAVE", "save_log_path", "save_log_sha256", "save_fixture_sha256_after_execution", "save_fixture_unchanged_after_execution"),
+        ("RERUN", "rerun_log_path", "rerun_log_sha256", "rerun_fixture_sha256_after_execution", "rerun_fixture_unchanged_after_execution"),
+    ):
+        log_text = row.get(path_key)
+        log_sha = row.get(sha_key)
+        if not isinstance(log_text, str) or not isinstance(log_sha, str):
+            raise CertificationError(f"JASP {label.lower()} invocation log binding is missing")
+        log_path = pathlib.Path(log_text)
+        if log_path.is_symlink() or not log_path.is_file() or sha256_file(log_path) != log_sha:
+            raise CertificationError(f"JASP {label.lower()} invocation log hash is stale or unsafe")
+        if row.get(digest_key) != expected or row.get(unchanged_key) is not True:
+            raise CertificationError(f"JASP {label.lower()} invocation did not preserve the original clone hash")
+        log_lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+        required = (
+            f"JASP_ROUNDTRIP_FIXTURE_SHA256_EXPECTED={expected}",
+            f"JASP_ROUNDTRIP_FIXTURE_SHA256_AFTER_{label}={expected}",
+            f"JASP_ROUNDTRIP_FIXTURE_UNCHANGED_AFTER_{label}=TRUE",
+        )
+        if any(marker not in log_lines for marker in required):
+            raise CertificationError(f"JASP {label.lower()} log does not contain the post-execution clone hash proof")
+
+    return {
+        "status": "PASS",
+        "reference_comparison_status": "PASS",
+        "expected_seeded_clone_sha256": expected,
+        "clone_sha256_before": row.get("temporary_fixture_sha256_before"),
+        "clone_sha256_after_save": row.get("temporary_fixture_sha256_after_save"),
+        "clone_sha256_after_rerun": row.get("temporary_fixture_sha256_after_rerun"),
+        "clone_unchanged_after_both_invocations": True,
+        "clone_removed_after_test": True,
+        "save_log_sha256": row.get("save_log_sha256"),
+        "rerun_log_sha256": row.get("rerun_log_sha256"),
+        "fixture_receipt_sha256": receipt_sha,
+        "original_source_sha256": JASP_DEATH_PENALTY_SOURCE_SHA256,
+    }
+
+
 def build_certificate(
     image: pathlib.Path,
     checksum: pathlib.Path,
@@ -524,6 +660,9 @@ def build_certificate(
     jasp_seeded_fixture_summary = validate_jasp_seeded_fixture_evidence(
         checks["jasp_packaged_fixture_nonregression"],
     )
+    jasp_roundtrip_fixture_summary = validate_jasp_roundtrip_fixture_evidence(
+        checks["jasp_packaged_fixture_nonregression"],
+    )
     rootfs_manifest_closure = validate_rootfs_manifest_closure(
         package, package_receipt_path, sha256_file(package_receipt_path),
         checks["squashfs_rootfs_postvalidation_manifest_closure"],
@@ -601,6 +740,7 @@ def build_certificate(
         "post_validation_rootfs_manifest_closure": rootfs_manifest_closure,
         "jasp_process_tree_lifecycle": jasp_process_tree_summary,
         "jasp_seeded_fixture": jasp_seeded_fixture_summary,
+        "jasp_roundtrip_fixture": jasp_roundtrip_fixture_summary,
         "target_runtime_receipt": {"path": str(target_path), "sha256": target_sha_expected},
         "independent_validation": {"path": str(independent_report_path), "sha256": independent_sha, "status": "PASS"},
         "s32_operational_certificate": {"path": str(s32_path), "sha256": s32_sha, "status": PASS_S32},
