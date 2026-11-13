@@ -479,7 +479,8 @@ class DirectV18S32IssuerTests(unittest.TestCase):
                  mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", target.parent), \
                  mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
                  mock.patch.object(lane, "OUT", out), \
-                 mock.patch.object(lane, "latest_target_runtime_acceptance", return_value=acceptance):
+                 mock.patch.object(lane, "latest_target_runtime_acceptance", return_value=acceptance), \
+                 mock.patch.object(lane, "jasp_roundtrip_functional_evidence_valid", return_value=True):
                 first = lane.issue_s32_independent_beta_validation_receipt()
                 second = lane.issue_s32_independent_beta_validation_receipt()
                 gate = lane.stable_release_gate()
@@ -1403,7 +1404,8 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
                  mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", receipts), \
                  mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
                  mock.patch.object(lane, "RUNTIME_REPORT", base / "missing-v17-runtime.json"), \
-                 mock.patch.object(lane, "OUT", out):
+                 mock.patch.object(lane, "OUT", out), \
+                 mock.patch.object(lane, "jasp_roundtrip_functional_evidence_valid", return_value=True):
                 result = lane.stable_release_gate()
             self.assertEqual("WAITING_FOR_S32_BOUND_CERTIFICATION_RECEIPT", result["status"])
             self.assertEqual("NOT_GRANTED", result["certification"])

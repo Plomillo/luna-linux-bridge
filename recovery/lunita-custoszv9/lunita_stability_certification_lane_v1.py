@@ -3031,8 +3031,6 @@ def issue_s32_independent_beta_validation_receipt() -> dict:
         return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS_MISSING", "certification": "NOT_GRANTED"}
     if any(not _stable_check(check) for check in checks.values()):
         return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS", "certification": "NOT_GRANTED"}
-    if not jasp_roundtrip_functional_evidence_valid(checks):
-        return {"status": "BLOCKED_JASP_ROUNDTRIP_OR_STORED_REFERENCE", "certification": "NOT_GRANTED"}
     process_tree_check = checks["jasp_process_tree_lifecycle"]
     process_tree_workflow = process_tree_check.get("workflow_identity") or {}
     target_workflow = target.get("workflow_identity") or {}
@@ -3077,6 +3075,8 @@ def issue_s32_independent_beta_validation_receipt() -> dict:
         or process_tree_check.get("invocation_count") != 5
     ):
         return {"status": "BLOCKED_JASP_PROCESS_TREE_IDENTITY_BINDING", "certification": "NOT_GRANTED"}
+    if not jasp_roundtrip_functional_evidence_valid(checks):
+        return {"status": "BLOCKED_JASP_ROUNDTRIP_OR_STORED_REFERENCE", "certification": "NOT_GRANTED"}
     target_check = checks["target_v1_8_runtime_acceptance_e01_e15_int8"]
     if (target_check.get("receipt_path") != str(target_path)
         or target_check.get("receipt_sha256") != target_sha):
