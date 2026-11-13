@@ -2079,6 +2079,11 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "pinned_commit_match": pinned_commit,
                 "sandbox_execution_marker_present": sandbox_bound,
                 "original_packaged_fixture_identity_valid": fixture_ok if case == "flatpak_launch" else None,
+                "deterministic_fixture_path": (
+                    worker_case_result.get("deterministic_fixture_path")
+                    if case == "flatpak_launch" and isinstance(worker_case_result, dict)
+                    else None
+                ),
                 "deterministic_fixture_evidence_valid": deterministic_fixture_ok if case == "flatpak_launch" else None,
                 "deterministic_fixture_receipt": deterministic_fixture_receipt if case == "flatpak_launch" else None,
                 "deterministic_fixture_clone_sha256_after_execution": (

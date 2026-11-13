@@ -166,6 +166,43 @@ class CertificationGateTests(unittest.TestCase):
                 self.assertEqual(str(suite), case["evidence_path"])
                 self.assertEqual(lane.sha_file(suite), case["evidence_sha256"])
 
+    def test_flatpak_case_publishes_the_executed_seeded_clone_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            out, evidence = base / "out", base / "evidence"
+            out.mkdir()
+            evidence.mkdir()
+            clone = "/tmp/lunita-jasp-cert-lane-test/DeathPenalty_seeded.jasp"
+            suite = evidence / "jasp_suite_20261113T000000Z.json"
+            suite.write_text(json.dumps({
+                "status": "BLOCKED_JASP_REGRESSION",
+                "tests": {
+                    "flatpak_launch": {
+                        "fixture": clone,
+                        "deterministic_fixture_path": clone,
+                    }
+                },
+            }), encoding="utf-8")
+            (out / "JASP_UNITTEST_FLATPAK_20261113.log").write_text(
+                "JASP_UNITTEST_RC=1\n", encoding="utf-8"
+            )
+            (out / "JASP_UNITTEST_RELIABILITY_20261113.log").write_text(
+                "JASP_RELIABILITY_UNITTEST_RC=1\n", encoding="utf-8"
+            )
+            (out / "JASP_UNITTEST_WEIGHT_GAIN_20261113.log").write_text(
+                "JASP_WEIGHT_GAIN_UNITTEST_RC=1\n", encoding="utf-8"
+            )
+            (out / "JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_20261113.json").write_text(
+                "{}", encoding="utf-8"
+            )
+            with mock.patch.object(lane, "OUT", out), mock.patch.object(lane, "EVIDENCE", evidence):
+                result = lane.latest_jasp_evidence()
+            self.assertEqual(
+                clone,
+                result["cases"]["flatpak_launch"]["deterministic_fixture_path"],
+            )
+            self.assertIsNone(result["cases"]["reliability"]["deterministic_fixture_path"])
+
     def test_worker_exit_without_receipt_is_explicitly_blocked(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)
