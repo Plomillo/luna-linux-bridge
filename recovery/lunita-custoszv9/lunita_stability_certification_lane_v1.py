@@ -12,6 +12,7 @@ from __future__ import annotations
 import datetime as dt
 import email
 import functools
+import importlib.util
 import hashlib
 import json
 import os
@@ -1410,6 +1411,106 @@ def direct_candidate_squashfs_identity() -> dict:
         return {"status": "BLOCKED", "reason": f"IMAGE_EVIDENCE_INVALID:{type(exc).__name__}:{exc}"}
 
 
+def direct_candidate_rootfs_manifest_closure(jasp: dict, inventory_hashes_valid: bool) -> dict:
+    """Recompute the packager's exact canonical tree manifest after independent tests."""
+    if CERTIFICATION_PROFILE != "V1_8_DIRECT":
+        return {"status": "NOT_APPLICABLE", "returncode": 0}
+    worker_evidence = jasp.get("worker_evidence") if isinstance(jasp, dict) else None
+    if not inventory_hashes_valid or not isinstance(worker_evidence, dict):
+        return {
+            "status": "BLOCKED",
+            "returncode": 1,
+            "details": "Post-validation rootfs closure waits for completed JASP worker and valid independent inventory.",
+        }
+    package_path = SQUASHFS_PACKAGE_RECEIPT
+    packager_path = ROOT.parent.parent / "scripts" / "lunita" / "package_candidate_squashfs_v1.py"
+    try:
+        if package_path.is_symlink() or not package_path.is_file():
+            raise RuntimeError("SquashFS package receipt is missing or unsafe")
+        if packager_path.is_symlink() or not packager_path.is_file():
+            raise RuntimeError("Canonical SquashFS packager source is missing or unsafe")
+        package = load_json(package_path, {}) or {}
+        package_sha = sha_file(package_path)
+        if (
+            package.get("schema") != "LUNITA_SQUASHFS_PACKAGE_RECEIPT/1.0"
+            or package.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1"
+            or package.get("version") != "1.8.0"
+            or package.get("source_rootfs") != str(ROOTFS)
+            or package.get("roundtrip_manifest_match") is not True
+            or package.get("source_rootfs_unchanged") is not True
+        ):
+            raise RuntimeError("Package receipt identity/source-rootfs contract is invalid")
+        spec = importlib.util.spec_from_file_location("lunita_packager_manifest_runtime", packager_path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError("Cannot load the canonical SquashFS packager module")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        manifest = module.tree_manifest(ROOTFS)
+        expected_sha = package.get("source_rootfs_manifest_sha256")
+        observed_sha = manifest.get("entries_sha256")
+        expected_count = package.get("source_rootfs_entry_count")
+        observed_count = manifest.get("entry_count")
+        equal = bool(
+            isinstance(expected_sha, str) and re.fullmatch(r"[0-9a-f]{64}", expected_sha)
+            and observed_sha == expected_sha
+            and isinstance(expected_count, int) and observed_count == expected_count
+        )
+        stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        receipt_path = EVIDENCE / f"rootfs_package_manifest_closure_{stamp}.json"
+        payload = {
+            "schema": "LUNITA_POSTVALIDATION_ROOTFS_PACKAGE_MANIFEST_CLOSURE/1.0",
+            "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+            "status": "PASS" if equal else "BLOCKED_MANIFEST_MISMATCH",
+            "rootfs_path": str(ROOTFS),
+            "package_receipt_path": str(package_path),
+            "package_receipt_sha256": package_sha,
+            "packager_source_path": str(packager_path),
+            "packager_source_sha256": sha_file(packager_path),
+            "package_source_rootfs_manifest_sha256": expected_sha,
+            "observed_post_validation_rootfs_manifest_sha256": observed_sha,
+            "package_source_rootfs_entry_count": expected_count,
+            "observed_post_validation_rootfs_entry_count": observed_count,
+            "independent_inventory_report_sha256": inventory.get("report_sha256") if isinstance(inventory, dict) else None,
+            "independent_inventory_manifest_sha256": inventory.get("manifest_sha256") if isinstance(inventory, dict) else None,
+            "jasp_worker_report_sha256": worker_evidence.get("sha256"),
+            "same_canonical_algorithm": True,
+            "exact_manifest_equality": equal,
+            "certification": "NOT_GRANTED",
+            "created_at_utc": utc(),
+        }
+        atomic_json(receipt_path, payload)
+        receipt_sha = sha_file(receipt_path)
+        status = "PASS" if equal else "BLOCKED"
+        return {
+            "status": status,
+            "returncode": 0 if equal else 1,
+            "rootfs_path": str(ROOTFS),
+            "package_source_rootfs_manifest_sha256": expected_sha,
+            "observed_post_validation_rootfs_manifest_sha256": observed_sha,
+            "package_source_rootfs_entry_count": expected_count,
+            "observed_post_validation_rootfs_entry_count": observed_count,
+            "package_receipt_path": str(package_path),
+            "package_receipt_sha256": package_sha,
+            "packager_source_path": str(packager_path),
+            "packager_source_sha256": payload["packager_source_sha256"],
+            "manifest_closure_receipt_path": str(receipt_path),
+            "manifest_closure_receipt_sha256": receipt_sha,
+            "evidence": {
+                str(receipt_path): receipt_sha,
+                str(package_path): package_sha,
+                str(packager_path): payload["packager_source_sha256"],
+            },
+            "details": "Exact post-validation tree manifest equality." if equal else
+                "The post-validation rootfs does not equal the packaged source manifest.",
+        }
+    except Exception as exc:
+        return {
+            "status": "BLOCKED",
+            "returncode": 1,
+            "details": f"POSTVALIDATION_ROOTFS_MANIFEST_CLOSURE_ERROR:{type(exc).__name__}:{exc}",
+        }
+
+
 def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
     direct = CERTIFICATION_PROFILE == "V1_8_DIRECT"
     old = load_json(INDEPENDENT_REPORT, {}) or {}
@@ -1586,6 +1687,10 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
             },
             "details": squashfs_identity.get("reason"),
         }
+    if direct:
+        checks["squashfs_rootfs_postvalidation_manifest_closure"] = direct_candidate_rootfs_manifest_closure(
+            jasp, inventory_hashes_valid
+        )
     # Re-validate pre-existing source-bound checks instead of overwriting their history.
     for name, check in list(checks.items()):
         if name in {"MISION1_identity_sha256", "runtime_report_and_launcher_identity"}:
