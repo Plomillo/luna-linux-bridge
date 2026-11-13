@@ -709,6 +709,35 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
                 "Row: | Note.Total number of models visited = 1 | \n"
                 "Footer:\n"
             )
+            expected_rows = lane.extract_actual_jasp_unit_test_rows(banner + fresh_rows)
+            baseline_path = base / "candidate-baseline.json"
+            baseline = {
+                "schema": "LUNITA_JASP_VERSIONED_BASELINE/1.0",
+                "baseline_id": "LUNITA_JASP_0_98_8_DEATH_PENALTY_SEEDED_R2",
+                "state": "PRE_REGISTERED_PENDING_INDEPENDENT_REEXECUTION",
+                "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+                "candidate_version": "1.8.0",
+                "scope": "CANDIDATE_JASP_0_98_8_SEEDED_DEATH_PENALTY_REPLAY_ONLY",
+                "source_fixture": {"sha256": source_sha},
+                "target_runtime": {
+                    "application_id": "org.jaspstats.JASP",
+                    "version": lane.EXPECTED_JASP_RUNTIME_VERSION,
+                    "source_commit": lane.EXPECTED_JASP_SOURCE_COMMIT,
+                    "flatpak_app_ostree_commit": lane.EXPECTED_JASP_APP_COMMIT,
+                },
+                "analysis_configuration": {
+                    "original_setSeed": False, "replay_setSeed": True, "seed": 1,
+                    "samplingMethod": "auto", "samplingMethodManualSamples": 10000,
+                },
+                "expected_result_rows": expected_rows,
+                "expected_result_rows_sha256": lane.jasp_result_rows_sha256(expected_rows),
+                "acceptance": {
+                    "independent_validation": "REQUIRED",
+                    "automatic_baseline_replacement_allowed": False,
+                    "dynamic_autobaselining_allowed": False,
+                },
+            }
+            baseline_path.write_text(json.dumps(baseline), encoding="utf-8")
             responses = [
                 SimpleNamespace(returncode=0, stdout=banner + fresh_rows, stderr=""),
                 SimpleNamespace(returncode=0, stdout=banner + fresh_rows, stderr=""),
@@ -718,6 +747,7 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
                 mock.patch.object(lane, "OUT", out),
                 mock.patch.object(lane, "ROOTFS", rootfs),
                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
+                mock.patch.object(lane, "JASP_CANDIDATE_BASELINE", baseline_path),
                 mock.patch.object(lane.subprocess, "run", side_effect=lambda *a, **k: next(response_iter)) as runner,
             ):
                 result = lane.run_death_penalty_roundtrip(
@@ -727,6 +757,9 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
                 )
             self.assertEqual(2, runner.call_count)
             self.assertEqual("PASS_JASP_STRICT_ROUNDTRIP", result["status"])
+            self.assertTrue(result["candidate_baseline_match"])
+            self.assertEqual("LUNITA_JASP_0_98_8_DEATH_PENALTY_SEEDED_R2",
+                             result["candidate_baseline"]["baseline_id"])
             self.assertEqual("PASS_DETERMINISTIC_REPLAY", result["deterministic_replay_status"])
             self.assertEqual("PASS", result["runtime_identity_status"])
             self.assertEqual("PASS_REFERENCE_AND_REPLAY", result["save_run"]["status"])
@@ -1240,14 +1273,15 @@ class JaspReferenceMismatchClassificationTests(unittest.TestCase):
                 )
                 aggregate = lane.latest_jasp_evidence()
 
-            self.assertEqual("PASS_DETERMINISTIC_REPLAY_REFERENCE_MISMATCH_RECORDED", result["status"])
+            self.assertEqual("BLOCKED_JASP_STRICT_ROUNDTRIP", result["status"])
+            self.assertFalse(result["candidate_baseline_match"])
             self.assertEqual("BLOCKED_STORED_REFERENCE_MISMATCH", result["reference_comparison_status"])
             self.assertEqual("PASS_DETERMINISTIC_REPLAY", result["deterministic_replay_status"])
             self.assertEqual(1, result["save_run"]["returncode"])
             self.assertEqual(1, result["strict_rerun_after_save"]["returncode"])
             self.assertTrue(result["original_sample_unchanged"])
             replay = aggregate["cases"]["death_penalty_roundtrip"]
-            self.assertEqual("PASS_DETERMINISTIC_REPLAY", replay["status"])
-            self.assertEqual("DETERMINISTIC_REPLAY_ONLY", replay["acceptance_scope"])
+            self.assertEqual("BLOCKED", replay["status"])
+            self.assertEqual("BLOCKED", replay["acceptance_scope"])
             self.assertEqual("BLOCKED_STORED_REFERENCE_MISMATCH", replay["reference_comparison_status"])
             self.assertFalse(aggregate["all_required_jasp_cases_pass"])
