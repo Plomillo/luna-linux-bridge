@@ -1378,6 +1378,17 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 and save_rows_sha == rerun_rows_sha
                 and save_run.get("actual_result_rows") == rerun.get("actual_result_rows")
             )
+            baseline = load_pre_registered_jasp_candidate_baseline()
+            candidate_baseline_match = bool(
+                data.get("candidate_baseline_match") is True
+                and baseline.get("status") == "PASS_PRE_REGISTERED_BASELINE_VALID"
+                and (data.get("candidate_baseline") or {}).get("baseline_id") == baseline.get("baseline_id")
+                and (data.get("candidate_baseline") or {}).get("sha256") == baseline.get("sha256")
+                and save_rows_sha == baseline.get("expected_result_rows_sha256")
+                and rerun_rows_sha == baseline.get("expected_result_rows_sha256")
+                and save_run.get("actual_result_rows") == baseline.get("expected_result_rows")
+                and rerun.get("actual_result_rows") == baseline.get("expected_result_rows")
+            )
             passed = (
                 data.get("schema") == "CUSTOSZ_LUNITA_JASP_UNITTEST_ROUNDTRIP/1.0"
                 and data.get("app_commit") == "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
@@ -1385,10 +1396,11 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 and (
                     (data.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
                      and data.get("reference_comparison_status") == "PASS")
-                    or (data.get("status") == "PASS_DETERMINISTIC_REPLAY_REFERENCE_MISMATCH_RECORDED"
+                    or (data.get("status") == "PASS_CANDIDATE_VERSIONED_BASELINE_HISTORICAL_MISMATCH_RECORDED"
                         and data.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH")
                 )
                 and replay_pass
+                and candidate_baseline_match
                 and data.get("runtime_identity_status") == "PASS"
                 and (save_run.get("runtime_identity") or {}).get("status") == "PASS"
                 and (rerun.get("runtime_identity") or {}).get("status") == "PASS"
@@ -1408,12 +1420,17 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "rerun_subprocess_returncode": rerun.get("returncode"),
                 "status": (
                     "PASS" if passed and data.get("reference_comparison_status") == "PASS" else
-                    "PASS_DETERMINISTIC_REPLAY" if passed else "BLOCKED"
+                    "PASS_CANDIDATE_VERSIONED_BASELINE" if passed else "BLOCKED"
                 ),
                 "acceptance_scope": (
                     "STRICT_REFERENCE_AND_REPLAY" if passed and data.get("reference_comparison_status") == "PASS" else
-                    "DETERMINISTIC_REPLAY_ONLY" if passed else "BLOCKED"
+                    "CANDIDATE_VERSIONED_BASELINE_ONLY" if passed else "BLOCKED"
                 ),
+                "candidate_baseline_match": candidate_baseline_match,
+                "candidate_baseline_id": baseline.get("baseline_id"),
+                "candidate_baseline_sha256": baseline.get("sha256"),
+                "candidate_baseline_rows_sha256": baseline.get("expected_result_rows_sha256"),
+                "historical_reference_status": data.get("reference_comparison_status"),
                 "case_status": data.get("status"),
                 "deterministic_replay_status": data.get("deterministic_replay_status"),
                 "reference_comparison_status": data.get("reference_comparison_status"),
@@ -1465,11 +1482,30 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 rc == 0 and pinned_commit and sandbox_bound and fixture_ok
                 and runtime_identity.get("status") == "PASS"
             )
+            historical_diagnostic = bool(
+                case == "flatpak_launch" and rc == 1
+                and "The results are different" in text
+                and pinned_commit and sandbox_bound and fixture_ok
+                and runtime_identity.get("status") == "PASS"
+            )
             runtime_versions = [item["version"] for item in runtime_identity.get("observed", [])]
             runtime_source_commits = [item["source_commit"] for item in runtime_identity.get("observed", [])]
             item.update({
                 "returncode": rc,
-                "status": "PASS" if passed else "BLOCKED",
+                "status": (
+                    "PASS" if passed else
+                    "RECORDED_HISTORICAL_REFERENCE_MISMATCH" if historical_diagnostic else
+                    "BLOCKED"
+                ),
+                "acceptance_scope": (
+                    "STRICT_CASE" if passed else
+                    "HISTORICAL_DIAGNOSTIC_ONLY" if historical_diagnostic else "BLOCKED"
+                ),
+                "historical_reference_mismatch": historical_diagnostic,
+                "historical_reference_status": (
+                    "BLOCKED_STORED_REFERENCE_MISMATCH" if historical_diagnostic else
+                    "PASS" if passed else "BLOCKED"
+                ),
                 "observed_app_commits": commits,
                 "pinned_commit_match": pinned_commit,
                 "sandbox_execution_marker_present": sandbox_bound,
@@ -1484,10 +1520,20 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
     all_pass = all(
         (row.get("status") == "PASS" and row.get("returncode") == 0)
         or (
+            case == "flatpak_launch"
+            and row.get("status") == "RECORDED_HISTORICAL_REFERENCE_MISMATCH"
+            and row.get("returncode") == 1
+            and row.get("acceptance_scope") == "HISTORICAL_DIAGNOSTIC_ONLY"
+            and row.get("historical_reference_mismatch") is True
+            and row.get("original_packaged_fixture_identity_valid") is True
+            and (row.get("runtime_identity") or {}).get("status") == "PASS"
+        )
+        or (
             case == "death_penalty_roundtrip"
-            and row.get("status") == "PASS_DETERMINISTIC_REPLAY"
+            and row.get("status") == "PASS_CANDIDATE_VERSIONED_BASELINE"
             and row.get("returncode") == 0
-            and row.get("acceptance_scope") == "DETERMINISTIC_REPLAY_ONLY"
+            and row.get("acceptance_scope") == "CANDIDATE_VERSIONED_BASELINE_ONLY"
+            and row.get("candidate_baseline_match") is True
             and row.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
         )
         for case, row in rows.items()
@@ -1501,8 +1547,19 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
             "failure": worker_failure,
             "case_count": len(worker_cases),
         }
-    return {"status": "PASS_JASP_PACKAGED_FIXTURE_NONREGRESSION" if all_pass else "BLOCKED_JASP_PACKAGED_FIXTURE_NONREGRESSION",
-            "all_required_jasp_cases_pass": all_pass, "cases": rows,
+    return {"status": (
+                "PASS_JASP_CANDIDATE_BASELINE_NONREGRESSION_WITH_HISTORICAL_MISMATCH_RECORDED"
+                if all_pass else "BLOCKED_JASP_PACKAGED_FIXTURE_NONREGRESSION"
+            ),
+            "all_required_jasp_cases_pass": all_pass,
+            "historical_reference_disposition": (
+                "BLOCKED_STORED_REFERENCE_MISMATCH_PRESERVED_DIAGNOSTIC_ONLY"
+                if rows.get("flatpak_launch", {}).get("historical_reference_mismatch") else
+                "STRICT_REFERENCE_PASS"
+            ),
+            "candidate_baseline_id": rows.get("death_penalty_roundtrip", {}).get("candidate_baseline_id"),
+            "candidate_baseline_sha256": rows.get("death_penalty_roundtrip", {}).get("candidate_baseline_sha256"),
+            "cases": rows,
             "worker_evidence": worker_evidence,
             "next_action": (
                 "Resolve the explicit JASP worker preflight/executor failure recorded in worker_evidence; absence of per-case logs is not a PASS."
