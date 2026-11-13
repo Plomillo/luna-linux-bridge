@@ -55,7 +55,10 @@ def expected_target_runtime_directory(environment: dict[str, str] | None = None)
     env = os.environ if environment is None else environment
     run_id = env.get("GITHUB_RUN_ID", "")
     run_attempt = env.get("GITHUB_RUN_ATTEMPT", "")
-    if not run_id.isdecimal() or not run_attempt.isdecimal():
+    if (
+        not run_id.isascii() or not run_id.isdecimal()
+        or not run_attempt.isascii() or not run_attempt.isdecimal()
+    ):
         return None
     expected_bind_name = f"lunita-host-{run_id}-{run_attempt}"
     if env.get("HOST_BIND_NAME") != expected_bind_name:
