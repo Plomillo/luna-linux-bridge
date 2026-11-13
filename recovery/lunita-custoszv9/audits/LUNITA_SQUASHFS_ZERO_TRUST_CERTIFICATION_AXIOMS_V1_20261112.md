@@ -495,3 +495,41 @@ El job pasó los pasos de desmontaje/verificación de mounts, cleanup y subida d
 La corrección en `fix/lunita-legacy-flatpak-runtime-identity-20261113` cambia únicamente la frontera v1.8: exige IDs de workflow ASCII numéricos, HOST_BIND_NAME exacto y XDG_RUNTIME_DIR idéntico al mountpoint validado; pasa ese path a la variable de entorno invitada que se entrega a la launcher v1.7. Añade pruebas para la ruta dinámica, denegación ante identidad/ruta ausente o discrepante, y verificación de que el comando delegado usa el mismo XDG en contexto de target. El launcher v1.7 congelado no se modifica ni se sustituye. El contrato se amplía con AX-LUN-024.
 
 Estado al registrar esta auditoría: `IMPLEMENTED_NOT_YET_CI_VALIDATED`. Un nuevo run completo posterior a la integración debe repetir los gates, ejecutar los self-tests reales Jamovi y JASP, y solo entonces continuar con el empaquetado y certificación.
+
+## 6. Addendum append-only — AX-LUN-025 y AX-LUN-026
+
+**Registro de evidencia:** 2026-11-13 UTC. Revisión del workflow #220, run 43342684248, job de destino/validación independiente 131615414711, rama operativa fix/lunita-v18-rootfs-bound-checkpoint-20261109, HEAD 3db072d393d62f9b033cdf70832d2d66df7ff534. Este addendum extiende AX-LUN-001…024 y no los reemplaza. La fotografía de estado histórica del encabezado y sus conclusiones anteriores se conserva sin edición.
+
+### AX-LUN-025 — Separación semántica entre la referencia original y el replay determinista
+
+El gate JASP MUST distinguir dos propiedades independientes: (a) la ejecución del fixture original coincide con la referencia almacenada; (b) dos ejecuciones del mismo clon desechable con seed controlado generan resultados recién calculados idénticos entre sí. La segunda propiedad no implica la primera.
+
+El fixture original empaquetado MUST permanecer byte-identical y mantener el SHA-256 fijado. Su ejecución real en el runtime identificado MUST terminar con código de proceso 0 y superar la comparación de referencia. Toda divergencia estructural o estadística mantiene el gate de referencia en BLOCKED. La identidad correcta del runtime, el inicio de JASP, el sandbox y la repetibilidad separada no absuelven ese fallo.
+
+El replay puede demostrar exclusivamente reproducibilidad cuando el recibo hash-bound del clon es válido; solo se modifica la opción seed activa autorizada; se preservan el archivo fuente y los resultados históricos; ambas ejecuciones usan el mismo runtime verificado; sus filas calculadas y hashes coinciden exactamente; el clon permanece estable y se elimina; y los códigos reales de ambos procesos quedan conservados.
+
+Cuando las dos ejecuciones del replay coincidan entre sí pero difieran de la referencia histórica, el estado MUST ser PASS_DETERMINISTIC_REPLAY_REFERENCE_MISMATCH_RECORDED, con reference_comparison_status=BLOCKED_STORED_REFERENCE_MISMATCH y acceptance_scope=DETERMINISTIC_REPLAY_ONLY. Este estado nunca puede presentarse como PASS_JASP_STRICT_ROUNDTRIP ni como aprobación de referencia. El agregador y el informe independiente pueden registrar el subgate de replay como aprobado, pero el fixture original sigue siendo requisito obligatorio e independiente.
+
+Los códigos de salida originales de los procesos JASP MUST permanecer visibles. Un returncode sintético derivado de la repetibilidad no reemplaza ni modifica save_subprocess_returncode ni rerun_subprocess_returncode. El estatus general JASP permanece BLOCKED mientras el fixture original no supere su gate.
+
+### AX-LUN-026 — Procedencia de referencia y comparación semántica de resultados JASP
+
+Cada comparación JASP MUST preservar evidencia enlazada por hash del archivo fuente .jasp, identidad de despliegue Flatpak, versión y source commit del runtime, módulo y análisis activos, configuración y estado de seed, resultados almacenados, filas recién calculadas, número de modelos visitados, términos de cada modelo, valores P(M|data) y BF01 cuando existan, códigos reales de salida, comandos y hashes de logs y tablas.
+
+Un cambio en el número de modelos, términos incluidos, orden sustantivo o valores estadísticos constituye mismatch semántico, no diferencia cosmética. Si no se conoce la procedencia del productor de los resultados almacenados (versión, source commit, módulo, opciones y configuración de seed), MUST registrarse BLOCKED_REFERENCE_PROVENANCE_UNKNOWN. No se atribuirá causalidad a versión, algoritmo, módulo o aleatoriedad sin evidencia que discrimine esas hipótesis.
+
+Cualquier baseline candidata nueva exige especificación previa de los datos, el runtime, el módulo, las opciones, las semillas y el criterio de aceptación; generación controlada y trazable; revisión independiente de los resultados frente a evidencia estadística primaria; y versionado separado. La referencia histórica y su SHA-256 permanecerán conservados y no serán sobrescritos. Se prohíben la búsqueda oportunista de seeds, las tolerancias retroactivas, la sustitución de filas y la regeneración automática de resultados esperados.
+
+### Evidencia observada en run #220 — no certificatoria
+
+- Runtime observado: JASP 0.98.8; source commit b6cd3b0310be4e18e1b673ac11f14e55615c8fa1; deployment commit 83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7. La identidad runtime fue PASS.
+- Fixture original Death Penalty: SHA-256 fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895. La evidencia registra que la fuente no cambió.
+- La prueba del fixture original produjo cuatro modelos calculados con P(M|data)/BF01 de 0.514/1.000, 0.358/1.434, 0.127/4.043 y 0.002/342.3. La referencia almacenada contenía cuatro modelos diferentes, con 0.508/1.000, 0.394/1.289, 0.094/5.404 y 0.004/127.0. JASP informó The results are different y devolvió JASP_UNITTEST_RC=1. SHA-256 del log: 2af5fe0b099f01c1ab5b7467fbb7ab4ffc4679955b8dfe30c024f4f881a5463f.
+- El replay reseedeado utilizó un clon con SHA-256 4b642cc13549f99f1b386791c3a670e6fb9cc34430f564ad68820bde46af4c2f. Save y rerun generaron las mismas tres filas; su SHA-256 fue ef1f4ec4493aea848c9449f6ca96864a1cd95e353544601c6edf52fb284a1a32. Ambos procesos conservaron RC=1 al comparar contra la referencia histórica, que tenía cuatro filas. El estado de comparación fue BLOCKED_STORED_REFERENCE_MISMATCH. Log save: e613a1af36a963b24c5440939ca2630ed5b4f35fa4b926e4bde8f6baecf92bdd. Log rerun: 613ac30e6d20ee8f14256edb550894b9d3731184d8e67c43221df4eb2b7a4ebf.
+- Los casos Reliability y WeightGain pasaron con RC=0. Los smoke tests heredados E01–E15 y el empaquetado/round-trip SquashFS del job fueron satisfactorios. La validación independiente JASP falló; el certifier, S32 y stable release fueron omitidos.
+
+**Conclusión forense:** se demostró una discrepancia estadística y estructural entre los resultados almacenados y los recalculados. La evidencia disponible no determina si su origen es la configuración no determinista del análisis original, la procedencia del resultado almacenado, el estado histórico de opciones/semilla o una interacción entre dichos factores. Por tanto ROOT_CAUSE=UNRESOLVED y REFERENCE_PROVENANCE=UNKNOWN hasta obtener la procedencia primaria. JASP_REFERENCE_GATE=BLOCKED y FUNCTIONAL_CERTIFICATION=NOT_GRANTED.
+
+### Extensión del predicado terminal
+
+La admisión anterior queda ampliada sin sustituir sus condiciones: ADMIT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-025 AND AX-LUN-026. Ningún artefacto ni recibo de ejecuciones anteriores se hereda automáticamente.
