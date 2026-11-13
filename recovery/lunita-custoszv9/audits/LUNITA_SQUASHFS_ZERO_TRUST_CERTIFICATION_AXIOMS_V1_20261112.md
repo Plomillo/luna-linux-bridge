@@ -843,3 +843,36 @@ El control no modifica la identidad del candidato, el runtime JASP, los fixtures
 ### Extensión del predicado terminal — AX-LUN-037
 
 `ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-037`. Ninguna invocación JASP ni recibo de proceso podrá aceptarse si no está ligado al `GITHUB_RUN_ID` y `GITHUB_RUN_ATTEMPT` exactos del workflow que generó el artefacto.
+
+
+## 14. Addendum append-only — AX-LUN-038: sound workflow identity validation
+
+A workflow identity is valid only when both GITHUB_RUN_ID and GITHUB_RUN_ATTEMPT are non-empty, positive ASCII-decimal integers. The independent report MUST validate the exact same identifiers carried by the target receipt and all five JASP process-tree receipts. Validation MUST use a tested parser/predicate that accepts valid GitHub identifiers and rejects empty, zero, fractional, signed, Unicode-digit, or malformed values. A malformed validator MUST fail its unit test; it MUST NOT silently convert valid evidence into a blocked lifecycle state.
+
+The control validates identity only. It MUST NOT infer successful JASP execution, change a subprocess return code, or promote a process-closure receipt to functional acceptance.
+
+Terminal predicate: ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-038.
+
+## 15. Addendum append-only — AX-LUN-039: immutable package input during independent execution
+
+The rootfs whose canonical manifest is bound into LUNITA_SQUASHFS_PACKAGE_RECEIPT.json MUST remain immutable during independent validation. Runtime tools that require writable Flatpak installation state MUST use a verified external copy-on-write overlay whose lower directory is the exact packaged Flatpak installation and whose upper/work directories are outside the candidate rootfs. The overlay mount identity MUST be checked before JASP starts and unmounted before the workflow step exits.
+
+The canonical post-validation manifest MUST be recomputed over the original candidate rootfs using the same packager algorithm and MUST equal the package receipt's source manifest exactly in both SHA-256 and entry count. No timestamp tolerance, ignored paths, metadata stripping, or post-hoc restoration is permitted. Failure to mount or unmount the external overlay, or any difference in the packaged rootfs, is BLOCKED.
+
+Terminal predicate: ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-039.
+
+## 16. Addendum append-only — AX-LUN-040: terminal evidence and bounded failure termination
+
+A JASP case is terminal only when its case identity is present and its outcome is explicitly classified as PASS, BLOCKED, or the narrowly scoped PASS_DETERMINISTIC_REPLAY state with acceptance_scope=DETERMINISTIC_REPLAY_ONLY and reference_comparison_status=BLOCKED_STORED_REFERENCE_MISMATCH. This last state proves repeatability only; it is not a strict reference PASS and MUST remain blocking for functional certification.
+
+Once all JASP cases and the rootfs inventory are terminal and all associated processes have exited, the independent runner MUST emit bounded diagnostics and terminate with a nonzero result if any required gate remains blocked. It MUST NOT spend the remaining polling window waiting for evidence that has already reached a terminal blocked state.
+
+Terminal predicate: ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-040.
+
+## 17. Addendum append-only — AX-LUN-041: historical statistical reference provenance
+
+Historical JASP fixture bytes, saved result bytes, statistical tables, and their hashes MUST remain immutable. A deterministic replay MUST be reported separately from comparison with the historical stored result. Neither replay equality nor process-tree closure authorizes replacing, regenerating, tolerating, or relabeling the historical reference.
+
+A historical-reference mismatch remains BLOCKED until either (a) the exact historical producer runtime, module, dependencies, and effective analysis configuration are independently reconstructed and the original fixture is reproduced, or (b) a separately versioned replacement reference is specified before a fresh execution, generated from a pinned runtime and predeclared deterministic configuration, reproduced at least twice, and independently validated against primary statistical evidence. The historical baseline and all prior receipts MUST remain preserved. No replacement baseline may be created from the already observed failing replay and retroactively declared pre-specified.
+
+Terminal predicate: ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-041.
