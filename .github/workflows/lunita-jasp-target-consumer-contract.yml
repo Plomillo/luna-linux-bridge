@@ -1,0 +1,63 @@
+name: Lunita JASP target consumer contract
+
+on:
+  push:
+    branches:
+      - fix/lunita-target-jasp-source-identity-20261112
+    paths:
+      - "recovery/lunita-custoszv9/runtime_engines_v1/target_runtime_acceptance_v1.py"
+      - "recovery/lunita-custoszv9/runtime_engines_v1/target_acceptance_tests_v1.py"
+      - "scripts/lunita/build_rootfs_candidate_v1.sh"
+      - "scripts/lunita/verify_jasp_release_identity_v1.py"
+      - "scripts/lunita/test_verify_jasp_release_identity_v1.py"
+      - ".github/workflows/lunita-jasp-target-consumer-contract.yml"
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "recovery/lunita-custoszv9/runtime_engines_v1/target_runtime_acceptance_v1.py"
+      - "recovery/lunita-custoszv9/runtime_engines_v1/target_acceptance_tests_v1.py"
+      - "scripts/lunita/build_rootfs_candidate_v1.sh"
+      - "scripts/lunita/verify_jasp_release_identity_v1.py"
+      - "scripts/lunita/test_verify_jasp_release_identity_v1.py"
+      - ".github/workflows/lunita-jasp-target-consumer-contract.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  target-consumer-contract:
+    name: "Verify JASP source identity producer/consumer contract"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Compile source identity builder and target consumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            scripts/lunita/verify_jasp_release_identity_v1.py \
+            scripts/lunita/test_verify_jasp_release_identity_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/target_runtime_acceptance_v1.py \
+            recovery/lunita-custoszv9/runtime_engines_v1/target_acceptance_tests_v1.py
+          bash -n scripts/lunita/build_rootfs_candidate_v1.sh
+      - name: Verify immutable Flathub and JASP source pins
+        working-directory: scripts/lunita
+        run: |
+          set -euo pipefail
+          python verify_jasp_release_identity_v1.py --self-test
+          python -m unittest -v test_verify_jasp_release_identity_v1.py
+      - name: Verify rootfs builder and target receipt consumer agree
+        working-directory: recovery/lunita-custoszv9/runtime_engines_v1
+        run: |
+          set -euo pipefail
+          python -m unittest -v target_acceptance_tests_v1.TargetJaspBuilderConsumerContractTests
+          python -m unittest -v target_acceptance_tests_v1.TargetJaspSourceReleaseIdentityTests
+          python -m unittest -v target_acceptance_tests_v1.TargetLabelHierarchyAcceptanceTests
