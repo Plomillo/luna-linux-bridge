@@ -380,7 +380,7 @@ def validate_jasp_seeded_fixture_evidence(check: dict) -> dict[str, Any]:
         or receipt.get("unchanged_non_active_member_count") != receipt.get("archive_member_count") - 1
         or not isinstance(receipt.get("changed_json_pointer"), str)
         or not receipt.get("changed_json_pointer", "").startswith("/analyses/")
-        or not receipt.get("changed_json_pointer", "").endswith("/setSeed")
+        or not receipt.get("changed_json_pointer", "").endswith("/options")
         or receipt.get("before") != {"setSeed": False, "seed": 1}
         or receipt.get("after") != {"setSeed": True, "seed": 1}
         or receipt.get("result_output_members_changed") is not False
