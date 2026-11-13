@@ -12,6 +12,7 @@ import json
 import fcntl
 import os
 import pathlib
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -50,6 +51,25 @@ def runtime_environment(base: dict[str, str] | None = None) -> dict[str, str]:
     return env
 
 
+def validated_target_xdg_runtime_dir(environment: dict[str, str]) -> str:
+    """Require the delegated legacy launcher to use this attempt's validated runtime mount."""
+    run_id = environment.get("GITHUB_RUN_ID", "")
+    run_attempt = environment.get("GITHUB_RUN_ATTEMPT", "")
+    if re.fullmatch(r"[0-9]+", run_id) is None or re.fullmatch(r"[0-9]+", run_attempt) is None:
+        raise ValueError("GITHUB_RUN_ID and GITHUB_RUN_ATTEMPT are missing or unsafe")
+    expected_bind_name = f"lunita-host-{run_id}-{run_attempt}"
+    if environment.get("HOST_BIND_NAME") != expected_bind_name:
+        raise ValueError("HOST_BIND_NAME does not match the explicit GitHub run ID and attempt")
+    if re.fullmatch(r"lunita-host-[A-Za-z0-9-]+", expected_bind_name) is None:
+        raise ValueError("HOST_BIND_NAME is unsafe for a runtime mount path")
+    expected_runtime_dir = f"/run/{expected_bind_name}-runtime-1000"
+    if environment.get("XDG_RUNTIME_DIR") != expected_runtime_dir:
+        raise ValueError(
+            "XDG_RUNTIME_DIR does not match the runtime mount owned by this workflow attempt"
+        )
+    return expected_runtime_dir
+
+
 def run_legacy(arguments: Sequence[str]) -> int:
     if not LEGACY_LAUNCHER.is_file():
         print("DENIED: the preserved beta v1.7 launcher is missing", file=sys.stderr)
@@ -84,6 +104,11 @@ def run_legacy(arguments: Sequence[str]) -> int:
     target_rootfs_value = environment.get("LUNITA_TARGET_ROOTFS")
     if target_rootfs_value:
         try:
+            target_xdg_runtime_dir = validated_target_xdg_runtime_dir(environment)
+        except ValueError as exc:
+            print(f"DENIED: legacy target runtime identity is invalid: {exc}", file=sys.stderr)
+            return 5
+        try:
             target_rootfs = pathlib.Path(target_rootfs_value).resolve(strict=True)
             launcher_relative = LEGACY_LAUNCHER.resolve(strict=True).relative_to(target_rootfs)
         except (OSError, ValueError) as exc:
@@ -96,7 +121,7 @@ def run_legacy(arguments: Sequence[str]) -> int:
             "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
             "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
             "XDG_DATA_HOME=/tmp/lunita-xdg/data",
-            "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+            f"XDG_RUNTIME_DIR={target_xdg_runtime_dir}",
             "FLATPAK_SYSTEM_DIR=/var/lib/flatpak",
             "R_HOME=/opt/lunita/instruments/lapiz/R-4.6.1/lib/R",
         ]
