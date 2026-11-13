@@ -876,3 +876,20 @@ Historical JASP fixture bytes, saved result bytes, statistical tables, and their
 A historical-reference mismatch remains BLOCKED until either (a) the exact historical producer runtime, module, dependencies, and effective analysis configuration are independently reconstructed and the original fixture is reproduced, or (b) a separately versioned replacement reference is specified before a fresh execution, generated from a pinned runtime and predeclared deterministic configuration, reproduced at least twice, and independently validated against primary statistical evidence. The historical baseline and all prior receipts MUST remain preserved. No replacement baseline may be created from the already observed failing replay and retroactively declared pre-specified.
 
 Terminal predicate: ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-041.
+
+
+## 18. Addendum append-only — AX-LUN-042: exact JASP roundtrip fixture immutability
+
+The disposable seeded JASP fixture used by the Death Penalty save/rerun test MUST be bound to its original clone SHA-256 from the deterministic fixture receipt. The executor MUST hash the same regular, non-symlink fixture before execution, immediately after the save invocation, and immediately after the rerun invocation, before cleanup. All three hashes MUST equal the receipt's original clone SHA-256. Equality between the two post-execution hashes alone is insufficient because both executions could have made the same mutation.
+
+Each invocation's post-execution hash, expected hash, unchanged predicate, and log SHA-256 MUST be captured in its own evidence log. The final independent report MUST bind both logs, the fixture receipt, the expected clone hash, the two post-execution hashes, and proof that the temporary clone was removed. The final certifier MUST independently revalidate these fields. Any mismatch, missing hash, symlink/non-regular fixture, stale log digest, absent cleanup evidence, or missing invocation evidence is BLOCKED.
+
+Terminal predicate: ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-042.
+
+## 19. Addendum append-only — AX-LUN-043: replay-only evidence cannot satisfy functional certification
+
+A deterministic save/rerun replay with a mismatch against the preserved historical statistical reference is a terminal diagnostic result only. It MUST remain classified as PASS_DETERMINISTIC_REPLAY with acceptance_scope=DETERMINISTIC_REPLAY_ONLY and reference_comparison_status=BLOCKED_STORED_REFERENCE_MISMATCH; it MUST NOT be promoted to a strict JASP case PASS or an overall JASP non-regression PASS.
+
+Such replay-only evidence MUST block the independent functional-validation report, S32 issuance, stable-release receipt, and final LUNITA.squashfs functional certificate. Only a separately evidenced strict comparison against the immutable historical reference, or a replacement reference authorized and independently validated under AX-LUN-041 before fresh execution, can satisfy the functional gate. The historical baseline MUST NOT be rewritten or silently substituted.
+
+Terminal predicate: ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-043.

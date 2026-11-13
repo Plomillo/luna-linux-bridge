@@ -1685,3 +1685,51 @@ class PostvalidationManifestClosureRegressionTests(unittest.TestCase):
         self.assertEqual("BLOCKED", result["status"])
         self.assertEqual(1, result["returncode"])
         self.assertIn("waits for completed JASP worker and valid independent inventory", result["details"])
+
+
+class SeededFixturePostExecutionHashIntegrityTests(unittest.TestCase):
+    def test_exact_original_clone_hash_must_survive_save_and_rerun(self):
+        expected = "a" * 64
+        receipt = {"clone_sha256": expected, "clone_path": "/tmp/DeathPenalty_seeded.jasp"}
+        self.assertTrue(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, expected, expected,
+            True, True, True,
+        ))
+
+    def test_identical_mutation_in_both_invocations_is_still_rejected(self):
+        expected = "a" * 64
+        mutated = "b" * 64
+        receipt = {"clone_sha256": expected, "clone_path": "/tmp/DeathPenalty_seeded.jasp"}
+        self.assertFalse(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, mutated, mutated,
+            True, True, True,
+        ))
+
+    def test_mutation_after_either_save_or_rerun_is_rejected(self):
+        expected = "a" * 64
+        mutated = "b" * 64
+        receipt = {"clone_sha256": expected, "clone_path": "/tmp/DeathPenalty_seeded.jasp"}
+        self.assertFalse(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, mutated, expected,
+            True, True, True,
+        ))
+        self.assertFalse(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, expected, mutated,
+            True, True, True,
+        ))
+
+    def test_missing_hash_unsafe_file_or_missing_cleanup_fails_closed(self):
+        expected = "a" * 64
+        receipt = {"clone_sha256": expected, "clone_path": "/tmp/DeathPenalty_seeded.jasp"}
+        self.assertFalse(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, None, expected,
+            True, True, True,
+        ))
+        self.assertFalse(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, expected, expected,
+            False, True, True,
+        ))
+        self.assertFalse(lane.seeded_fixture_post_execution_hashes_unchanged(
+            receipt, receipt["clone_path"], expected, expected, expected,
+            True, True, False,
+        ))
