@@ -566,3 +566,40 @@ La ausencia o invalidez de una referencia no puede convertirse en PASS, en evide
 ### Extensión del predicado terminal — AX-LUN-028
 
 `ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-025 AND AX-LUN-026 AND AX-LUN-027 AND AX-LUN-028`. Este control de robustez de referencias no relaja ningún requisito de evidencia JASP, ni otorga PASS al resultado histórico discrepante.
+
+
+## 7. Addendum append-only — AX-LUN-029: separación entre receta pública de release y prueba de ejecución histórica
+
+**Registro de evidencia:** 2026-11-13 UTC. La revisión pública de fuentes oficiales permite reforzar la reconstrucción de procedencia del fixture Death Penalty, sin convertir metadatos de publicación en evidencia de ejecución productora.
+
+### AX-LUN-029 — Receta histórica verificable no equivale a ejecución productora verificada
+
+La procedencia de JASP MUST distinguir, como mínimo, cuatro identidades no intercambiables: (1) commit del repositorio de manifiestos Flathub; (2) commit fuente de `jasp-desktop` referenciado por ese manifiesto; (3) commit OSTree del despliegue Flatpak instalado; y (4) ejecución concreta que generó los resultados almacenados. Ninguna de estas identidades puede sustituir o inferir silenciosamente a otra.
+
+Para la línea histórica declarada como JASP 0.97.1 se verificó en los repositorios oficiales:
+
+- Commit de manifiesto Flathub: `9ed450fdd8abaf61139b2ff7271c6949e73ac9e4`, fechado 2026-06-05, con verificación criptográfica GitHub `verified=true`.
+- Blob del manifiesto `org.jaspstats.JASP.json`: `c77a5f158ab86b0a5be776768478984668d9f282`.
+- Commit de código fuente `jasp-desktop` fijado por la receta: `28be3fee5c7ce2119f1945acd0254eb4fb8cb6e2`; su `CMakeLists.txt` declara `project(JASP VERSION 0.97.1.0)`.
+- Receta de plataforma: KDE Platform/SDK 6.10 y Qt WebEngine BaseApp 6.10; R 4.5.2 con SHA-256 `0d71ff7106ec69cd7c67e1e95ed1a3cee355880931f2eb78c530014a9e379f20`.
+- Bundle de módulos x86_64 declarado en `deps/modules.json`: `Flatpak-x86_64-ModulesDir-04-05.tar.xz`, SHA-256 `26ca4801f8fa9bda6cc920c6009af129bb0f33e5d409a096d130bc761f308ce0`.
+
+Estos datos acreditan una **receta pública de construcción 0.97.1 con fuentes e insumos fijados**. No acreditan el commit OSTree del despliegue Flatpak histórico ni que esa receta exacta fuera la que ejecutó el análisis que produjo los resultados almacenados del fixture. Por tanto, `HISTORICAL_RELEASE_RECIPE=VERIFIED`; `HISTORICAL_SOURCE_COMMIT=VERIFIED`; `HISTORICAL_OSTREE_DEPLOYMENT_COMMIT=UNKNOWN`; `HISTORICAL_PRODUCER_EXECUTION=UNKNOWN` mientras no aparezca un recibo primario enlazado al cálculo original.
+
+La prueba diagnóstica admisible MUST reconstruir o instalar la receta histórica en un `FLATPAK_SYSTEM_DIR` y perfil de usuario aislados, registrar el hash de todos los manifiestos, archivos fuente, módulos, dependencias, artefactos construidos, runtime/base commits y recibos de despliegue; confirmar la versión desde el binario/fuente ejecutados; y ejecutar el fixture original byte-identical con red no compartida. El test MUST conservar el código real de salida y comparar estructura, número de modelos, términos y valores estadísticos contra la referencia almacenada, sin redondeo, tolerancias añadidas, búsquedas de seeds, parches de formato, hooks de arranque ni mutación de archivos.
+
+Si la receta histórica aislada reproduce exactamente la referencia, el resultado se clasifica `HISTORICAL_RECIPE_COMPATIBILITY=REPRODUCED`, no `HISTORICAL_PRODUCER_EXECUTION=PROVEN`. Si no reproduce, la compatibilidad permanece `BLOCKED` y la causa raíz sigue `UNRESOLVED`. En ambos casos la procedencia de la ejecución productora original solo se elevará a VERIFIED mediante evidencia primaria vinculada a aquella ejecución concreta.
+
+La prueba histórica es diagnóstica y separada: MUST NOT reemplazar, actualizar ni cambiar el JASP objetivo 0.98.8 del candidato; MUST NOT alterar el fixture original, los resultados guardados, el hash histórico, las tolerancias ni el predicado de aceptación; y MUST NOT convertir un replay determinista en una aprobación de la referencia almacenada. La alternativa de establecer un baseline nuevo continúa sujeta a AX-LUN-027 y exige especificación anticipada, revisión independiente y versionado separado, conservando intacta la referencia histórica.
+
+### Evidencia de fuente primaria incorporada a AX-LUN-029
+
+- Flathub 0.97.1 manifest commit: `https://github.com/flathub/org.jaspstats.JASP/commit/9ed450fdd8abaf61139b2ff7271c6949e73ac9e4`.
+- Upstream JASP source commit pinned by that manifest: `https://github.com/jasp-stats/jasp-desktop/commit/28be3fee5c7ce2119f1945acd0254eb4fb8cb6e2`.
+- Pinned source CMake file: `https://github.com/jasp-stats/jasp-desktop/blob/28be3fee5c7ce2119f1945acd0254eb4fb8cb6e2/CMakeLists.txt`.
+
+**Estado:** `SPECIFIED_WITH_PRIMARY_SOURCE_EVIDENCE; HISTORICAL_RUNTIME_REPLAY_NOT_YET_EXECUTED; CERTIFICATION_NOT_GRANTED`.
+
+### Extensión del predicado terminal — AX-LUN-029
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-029`. Esta extensión añade separación de procedencia y una prueba diagnóstica reproducible; no convierte la receta en ejecución histórica probada, no aprueba el mismatch ni altera los requisitos de los axiomas anteriores.
