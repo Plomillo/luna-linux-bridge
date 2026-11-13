@@ -104,7 +104,9 @@ class TargetJaspSourceReleaseIdentityTests(unittest.TestCase):
             manifest,
             cmake,
             expected_manifest_blob_sha1=target.git_blob_sha1(manifest),
+            expected_manifest_sha256=hashlib.sha256(manifest).hexdigest(),
             expected_cmake_blob_sha1=target.git_blob_sha1(cmake),
+            expected_cmake_sha256=hashlib.sha256(cmake).hexdigest(),
             expected_source_commit=source_commit,
             expected_version=version,
         )
@@ -121,6 +123,30 @@ class TargetJaspSourceReleaseIdentityTests(unittest.TestCase):
         self.assertEqual("0.98.8", result["version"])
         self.assertEqual("0.98.8.0", result["cmake_project_version"])
         self.assertTrue(result["manifest_jasp_source_commit_matches_pin"])
+
+    def test_manifest_sha256_drift_is_rejected(self):
+        with self.assertRaisesRegex(target.TargetGateError, "manifest SHA-256 mismatch"):
+            target.inspect_jasp_release_sources(
+                self.manifest,
+                self.cmake,
+                expected_manifest_blob_sha1=target.git_blob_sha1(self.manifest),
+                expected_manifest_sha256="0" * 64,
+                expected_cmake_blob_sha1=target.git_blob_sha1(self.cmake),
+                expected_cmake_sha256=hashlib.sha256(self.cmake).hexdigest(),
+                expected_source_commit="a" * 40,
+            )
+
+    def test_cmake_sha256_drift_is_rejected(self):
+        with self.assertRaisesRegex(target.TargetGateError, "CMake SHA-256 mismatch"):
+            target.inspect_jasp_release_sources(
+                self.manifest,
+                self.cmake,
+                expected_manifest_blob_sha1=target.git_blob_sha1(self.manifest),
+                expected_manifest_sha256=hashlib.sha256(self.manifest).hexdigest(),
+                expected_cmake_blob_sha1=target.git_blob_sha1(self.cmake),
+                expected_cmake_sha256="f" * 64,
+                expected_source_commit="a" * 40,
+            )
 
     def test_manifest_source_commit_drift_is_rejected(self):
         with self.assertRaisesRegex(target.TargetGateError, "does not uniquely bind"):
