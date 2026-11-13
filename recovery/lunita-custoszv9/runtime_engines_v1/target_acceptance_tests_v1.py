@@ -47,6 +47,157 @@ def tree_receipt(root: pathlib.Path) -> dict:
     }
 
 
+class TargetJaspBuilderConsumerContractTests(unittest.TestCase):
+    def test_rootfs_builder_emits_the_exact_jasp_schema_consumed_by_target(self):
+        repository = pathlib.Path(__file__).resolve().parents[3]
+        builder_path = repository / "scripts/lunita/build_rootfs_candidate_v1.sh"
+        builder = builder_path.read_text(encoding="utf-8")
+        start = builder.index('  "lupa": {')
+        end = builder.index("\n  },", start)
+        lupa_block = builder[start:end]
+        for field in (
+            '"version": "$JASP_OBSERVED_VERSION"',
+            '"version_source": "$JASP_OBSERVED_VERSION_SOURCE"',
+            '"application_id": "org.jaspstats.JASP"',
+            '"flatpak_deployment_commit": "$JASP_OBSERVED_COMMIT"',
+            '"flathub_manifest_commit": "$JASP_FLATHUB_MANIFEST_COMMIT"',
+            '"flathub_manifest_git_blob_sha1": "$JASP_FLATHUB_MANIFEST_BLOB_SHA1"',
+            '"flathub_manifest_sha256": "$JASP_FLATHUB_MANIFEST_SHA256"',
+            '"jasp_source_commit": "$JASP_SOURCE_COMMIT"',
+            '"jasp_source_cmake_git_blob_sha1": "$JASP_SOURCE_CMAKE_BLOB_SHA1"',
+            '"jasp_source_cmake_sha256": "$JASP_SOURCE_CMAKE_SHA256"',
+            '"source_release_identity_receipt_sha256": "$JASP_SOURCE_IDENTITY_RECEIPT_SHA256"',
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, lupa_block)
+        self.assertIn(
+            'JASP_OBSERVED_VERSION_SOURCE="PINNED_FLATHUB_MANIFEST_AND_JASP_CMAKE_SOURCE_VERIFIED"',
+            builder,
+        )
+        self.assertNotIn('JASP_INFO="$(flatpak info --system org.jaspstats.JASP)"', builder)
+        self.assertIn("JASP 0.98.8", target.EXPECTED_LABEL_HIERARCHY_TEXT)
+
+
+class TargetJaspSourceReleaseIdentityTests(unittest.TestCase):
+    def setUp(self):
+        self.manifest = json.dumps(
+            {
+                "app-id": "org.jaspstats.JASP",
+                "modules": [{
+                    "name": "jasp",
+                    "sources": [{
+                        "type": "git",
+                        "url": "https://github.com/jasp-stats/jasp-desktop.git",
+                        "commit": "a" * 40,
+                    }],
+                }],
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        self.cmake = b"project(JASP VERSION 0.98.8.0 LANGUAGES CXX C)"
+
+    def _verify(self, manifest=None, cmake=None, source_commit="a" * 40, version="0.98.8"):
+        manifest = self.manifest if manifest is None else manifest
+        cmake = self.cmake if cmake is None else cmake
+        return target.inspect_jasp_release_sources(
+            manifest,
+            cmake,
+            expected_manifest_blob_sha1=target.git_blob_sha1(manifest),
+            expected_manifest_sha256=hashlib.sha256(manifest).hexdigest(),
+            expected_cmake_blob_sha1=target.git_blob_sha1(cmake),
+            expected_cmake_sha256=hashlib.sha256(cmake).hexdigest(),
+            expected_source_commit=source_commit,
+            expected_version=version,
+        )
+
+    def test_git_blob_hash_uses_the_exact_git_object_header(self):
+        self.assertEqual(
+            "9daeafb9864cf43055ae93beb0afd6c7d144bfa4",
+            target.git_blob_sha1(b"test\n"),
+        )
+
+    def test_pinned_source_manifest_and_cmake_version_pass(self):
+        result = self._verify()
+        self.assertEqual("PASS_JASP_SOURCE_RELEASE_IDENTITY", result["status"])
+        self.assertEqual("0.98.8", result["version"])
+        self.assertEqual("0.98.8.0", result["cmake_project_version"])
+        self.assertTrue(result["manifest_jasp_source_commit_matches_pin"])
+
+    def test_manifest_sha256_drift_is_rejected(self):
+        with self.assertRaisesRegex(target.TargetGateError, "manifest SHA-256 mismatch"):
+            target.inspect_jasp_release_sources(
+                self.manifest,
+                self.cmake,
+                expected_manifest_blob_sha1=target.git_blob_sha1(self.manifest),
+                expected_manifest_sha256="0" * 64,
+                expected_cmake_blob_sha1=target.git_blob_sha1(self.cmake),
+                expected_cmake_sha256=hashlib.sha256(self.cmake).hexdigest(),
+                expected_source_commit="a" * 40,
+            )
+
+    def test_cmake_sha256_drift_is_rejected(self):
+        with self.assertRaisesRegex(target.TargetGateError, "CMake SHA-256 mismatch"):
+            target.inspect_jasp_release_sources(
+                self.manifest,
+                self.cmake,
+                expected_manifest_blob_sha1=target.git_blob_sha1(self.manifest),
+                expected_manifest_sha256=hashlib.sha256(self.manifest).hexdigest(),
+                expected_cmake_blob_sha1=target.git_blob_sha1(self.cmake),
+                expected_cmake_sha256="f" * 64,
+                expected_source_commit="a" * 40,
+            )
+
+    def test_manifest_source_commit_drift_is_rejected(self):
+        with self.assertRaisesRegex(target.TargetGateError, "does not uniquely bind"):
+            self._verify(source_commit="b" * 40)
+
+    def test_cmake_version_drift_is_rejected(self):
+        changed = self.cmake.replace(b"0.98.8.0", b"0.98.7.0")
+        with self.assertRaisesRegex(target.TargetGateError, "source version mismatch"):
+            self._verify(cmake=changed)
+
+    def test_nonzero_fourth_cmake_component_is_rejected(self):
+        changed = self.cmake.replace(b"0.98.8.0", b"0.98.8.1")
+        with self.assertRaisesRegex(target.TargetGateError, "unsupported nonzero fourth"):
+            self._verify(cmake=changed)
+
+    def test_target_rootfs_requires_source_verified_version_authority(self):
+        lupa = {
+            "version": "0.98.8",
+            "version_source": "EXACT_PINNED_FLATPAK_COMMIT_MAPPING",
+            "application_id": "org.jaspstats.JASP",
+            "flatpak_deployment_commit": target.EXPECTED_JASP_DEPLOYMENT_COMMIT,
+            "flathub_manifest_commit": target.EXPECTED_JASP_FLATHUB_MANIFEST_COMMIT,
+            "flathub_manifest_git_blob_sha1": target.EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+            "jasp_source_commit": target.EXPECTED_JASP_SOURCE_COMMIT,
+            "jasp_source_cmake_git_blob_sha1": target.EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+        }
+        with tempfile.TemporaryDirectory(prefix="lunita-jasp-rootfs-") as tmp:
+            with self.assertRaisesRegex(target.TargetGateError, "version_source"):
+                target.verify_jasp_source_release_identity(lupa, pathlib.Path(tmp))
+
+    def test_target_rootfs_requires_the_pinned_flatpak_deployment_commit(self):
+        lupa = {
+            "version": "0.98.8",
+            "version_source": target.EXPECTED_JASP_VERSION_SOURCE,
+            "application_id": "org.jaspstats.JASP",
+            "flatpak_deployment_commit": "0" * 64,
+            "flathub_manifest_commit": target.EXPECTED_JASP_FLATHUB_MANIFEST_COMMIT,
+            "flathub_manifest_git_blob_sha1": target.EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+            "jasp_source_commit": target.EXPECTED_JASP_SOURCE_COMMIT,
+            "jasp_source_cmake_git_blob_sha1": target.EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+        }
+        with tempfile.TemporaryDirectory(prefix="lunita-jasp-rootfs-") as tmp:
+            with self.assertRaisesRegex(target.TargetGateError, "flatpak_deployment_commit"):
+                target.verify_jasp_source_release_identity(lupa, pathlib.Path(tmp))
+
+    def test_app_id_mismatch_is_rejected(self):
+        changed = self.manifest.replace(b"org.jaspstats.JASP", b"org.example.JASP")
+        with self.assertRaisesRegex(target.TargetGateError, "application identity mismatch"):
+            self._verify(manifest=changed)
+
+
 class TargetPivotRootCommandTests(unittest.TestCase):
     def test_pivot_root_user_command_uses_setpriv_and_no_chroot(self):
         with mock.patch.dict(target.os.environ, {"LUNITA_IN_PIVOT_ROOT": "1"}), \
@@ -294,6 +445,10 @@ class TargetLabelHierarchyAcceptanceTests(unittest.TestCase):
         self.assertIn("LUNITA LA INVESTIGADORA", result["labels"])
         self.assertIn("SACAPUNTAS", result["labels"])
         self.assertIn("LUPA", result["labels"])
+
+    def test_jasp_runtime_label_matches_the_pinned_release(self):
+        self.assertIn("JASP 0.98.8", target.EXPECTED_LABEL_HIERARCHY_TEXT)
+        self.assertNotIn("JASP 0.98.1", target.EXPECTED_LABEL_HIERARCHY_TEXT)
 
     def test_missing_sacapuntas_label_is_rejected(self):
         document = self._document()

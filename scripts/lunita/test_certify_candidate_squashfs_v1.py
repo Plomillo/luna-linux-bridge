@@ -45,6 +45,23 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "certification": "NOT_GRANTED",
             "canonical_g06_certification": "NOT_GRANTED",
             "canonical_g08_binding_mutation": False,
+            "rootfs_build": {
+                "status": "PASS_ROOTFS_BUILD_IDENTITY",
+                "jasp_source_release_identity": {
+                    "status": "PASS_JASP_SOURCE_RELEASE_IDENTITY",
+                    "application_id": "org.jaspstats.JASP",
+                    "version": cert.EXPECTED_JASP_VERSION,
+                    "cmake_project_version": "0.98.8.0",
+                    "flathub_manifest_git_blob_sha1": cert.EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+                    "flathub_manifest_sha256": cert.EXPECTED_JASP_FLATHUB_MANIFEST_SHA256,
+                    "jasp_source_cmake_git_blob_sha1": cert.EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+                    "jasp_source_cmake_sha256": cert.EXPECTED_JASP_SOURCE_CMAKE_SHA256,
+                    "jasp_source_commit": cert.EXPECTED_JASP_SOURCE_COMMIT,
+                    "deployment_commit": cert.EXPECTED_JASP_DEPLOYMENT_COMMIT,
+                    "manifest_jasp_source_commit_matches_pin": True,
+                    "source_release_identity_receipt_sha256": "a" * 64,
+                },
+            },
         }), encoding="utf-8")
         target_sha = cert.sha256_file(target)
 
@@ -202,6 +219,56 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             self.assertEqual("NOT_GRANTED", result["g23"])
             self.assertEqual("NOT_GRANTED", result["g24"])
             self.assertFalse(result["automatic_canonical_promotion"])
+
+    def test_target_receipt_without_jasp_source_identity_is_rejected(self):
+        with self.assertRaisesRegex(cert.CertificationError, "lacks JASP source-release identity"):
+            cert.validate_jasp_source_identity({"status": "PASS_ROOTFS_BUILD_IDENTITY"})
+
+    def test_target_receipt_with_jasp_source_hash_drift_is_rejected(self):
+        identity = {
+            "status": "PASS_JASP_SOURCE_RELEASE_IDENTITY",
+            "application_id": "org.jaspstats.JASP",
+            "version": cert.EXPECTED_JASP_VERSION,
+            "cmake_project_version": "0.98.8.0",
+            "flathub_manifest_git_blob_sha1": cert.EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+            "flathub_manifest_sha256": "0" * 64,
+            "jasp_source_cmake_git_blob_sha1": cert.EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+            "jasp_source_cmake_sha256": cert.EXPECTED_JASP_SOURCE_CMAKE_SHA256,
+            "jasp_source_commit": cert.EXPECTED_JASP_SOURCE_COMMIT,
+            "deployment_commit": cert.EXPECTED_JASP_DEPLOYMENT_COMMIT,
+            "manifest_jasp_source_commit_matches_pin": True,
+            "source_release_identity_receipt_sha256": "a" * 64,
+        }
+        with self.assertRaisesRegex(cert.CertificationError, "identity mismatch: flathub_manifest_sha256"):
+            cert.validate_jasp_source_identity({
+                "status": "PASS_ROOTFS_BUILD_IDENTITY",
+                "jasp_source_release_identity": identity,
+            })
+
+    def test_target_receipt_without_jasp_source_identity_is_rejected(self):
+        with self.assertRaisesRegex(cert.CertificationError, "lacks JASP source-release identity"):
+            cert.validate_jasp_source_identity({"status": "PASS_ROOTFS_BUILD_IDENTITY"})
+
+    def test_target_receipt_jasp_source_hash_drift_is_rejected(self):
+        identity = {
+            "status": "PASS_JASP_SOURCE_RELEASE_IDENTITY",
+            "application_id": "org.jaspstats.JASP",
+            "version": cert.EXPECTED_JASP_VERSION,
+            "cmake_project_version": "0.98.8.0",
+            "flathub_manifest_git_blob_sha1": cert.EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+            "flathub_manifest_sha256": "0" * 64,
+            "jasp_source_cmake_git_blob_sha1": cert.EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+            "jasp_source_cmake_sha256": cert.EXPECTED_JASP_SOURCE_CMAKE_SHA256,
+            "jasp_source_commit": cert.EXPECTED_JASP_SOURCE_COMMIT,
+            "deployment_commit": cert.EXPECTED_JASP_DEPLOYMENT_COMMIT,
+            "manifest_jasp_source_commit_matches_pin": True,
+            "source_release_identity_receipt_sha256": "a" * 64,
+        }
+        with self.assertRaisesRegex(cert.CertificationError, "identity mismatch: flathub_manifest_sha256"):
+            cert.validate_jasp_source_identity({
+                "status": "PASS_ROOTFS_BUILD_IDENTITY",
+                "jasp_source_release_identity": identity,
+            })
 
     def test_s32_receipt_with_other_image_or_manifest_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -21,8 +21,10 @@ SCHEMA = "LUNITA_JASP_SOURCE_RELEASE_IDENTITY/1.0"
 APP_ID = "org.jaspstats.JASP"
 FLATHUB_MANIFEST_COMMIT = "95e467d83089fb292e5d0746e98e188fef6f9113"
 FLATHUB_MANIFEST_BLOB_SHA1 = "1aec5921883d56388c91627b09ba9cf6eb07c1d6"
+FLATHUB_MANIFEST_SHA256 = "f83fd086dffbf2ca64b6e10e1589693ddf6ddbfc93ca0156feb66473cd52022d"
 JASP_SOURCE_COMMIT = "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1"
 JASP_CMAKE_BLOB_SHA1 = "d57ba1e22d4cd00f3848034dc09737498b91346b"
+JASP_CMAKE_SHA256 = "5d60c82281a0329016245779dd7549807726c74f11a5b671cf95f192572deaac"
 EXPECTED_VERSION = "0.98.8"
 
 
@@ -57,7 +59,9 @@ def verify_jasp_release_identity(
     cmake_bytes: bytes,
     *,
     expected_manifest_blob_sha1: str = FLATHUB_MANIFEST_BLOB_SHA1,
+    expected_manifest_sha256: str = FLATHUB_MANIFEST_SHA256,
     expected_cmake_blob_sha1: str = JASP_CMAKE_BLOB_SHA1,
+    expected_cmake_sha256: str = JASP_CMAKE_SHA256,
     expected_source_commit: str = JASP_SOURCE_COMMIT,
     expected_version: str = EXPECTED_VERSION,
 ) -> dict[str, Any]:
@@ -70,6 +74,16 @@ def verify_jasp_release_identity(
     if observed_cmake_blob != expected_cmake_blob_sha1:
         raise IdentityError(
             f"JASP CMakeLists.txt Git blob SHA-1 mismatch: {observed_cmake_blob}"
+        )
+    observed_manifest_sha256 = sha256_bytes(manifest_bytes)
+    observed_cmake_sha256 = sha256_bytes(cmake_bytes)
+    if observed_manifest_sha256 != expected_manifest_sha256:
+        raise IdentityError(
+            f"Flathub manifest SHA-256 mismatch: {observed_manifest_sha256}"
+        )
+    if observed_cmake_sha256 != expected_cmake_sha256:
+        raise IdentityError(
+            f"JASP CMakeLists.txt SHA-256 mismatch: {observed_cmake_sha256}"
         )
 
     try:
@@ -128,10 +142,10 @@ def verify_jasp_release_identity(
         "version_source": "PINNED_JASP_CMAKE_PROJECT_VERSION",
         "flathub_manifest_commit": FLATHUB_MANIFEST_COMMIT,
         "flathub_manifest_git_blob_sha1": observed_manifest_blob,
-        "flathub_manifest_sha256": sha256_bytes(manifest_bytes),
+        "flathub_manifest_sha256": observed_manifest_sha256,
         "jasp_source_commit": expected_source_commit,
         "jasp_source_cmake_git_blob_sha1": observed_cmake_blob,
-        "jasp_source_cmake_sha256": sha256_bytes(cmake_bytes),
+        "jasp_source_cmake_sha256": observed_cmake_sha256,
         "manifest_jasp_source_commit_matches_pin": True,
         "source_cmake_version_matches_pin": True,
         "appstream_version_metadata_used": False,
@@ -167,7 +181,9 @@ def self_test() -> dict[str, Any]:
         manifest,
         cmake,
         expected_manifest_blob_sha1=manifest_sha,
+        expected_manifest_sha256=sha256_bytes(manifest),
         expected_cmake_blob_sha1=cmake_sha,
+        expected_cmake_sha256=sha256_bytes(cmake),
         expected_source_commit="a" * 40,
         expected_version="0.98.8",
     )
@@ -179,7 +195,9 @@ def self_test() -> dict[str, Any]:
             manifest + b" ",
             cmake,
             expected_manifest_blob_sha1=manifest_sha,
+            expected_manifest_sha256=sha256_bytes(manifest),
             expected_cmake_blob_sha1=cmake_sha,
+            expected_cmake_sha256=sha256_bytes(cmake),
             expected_source_commit="a" * 40,
             expected_version="0.98.8",
         )
@@ -192,7 +210,9 @@ def self_test() -> dict[str, Any]:
             manifest,
             cmake.replace(b"0.98.8.0", b"0.98.1.0"),
             expected_manifest_blob_sha1=manifest_sha,
+            expected_manifest_sha256=sha256_bytes(manifest),
             expected_cmake_blob_sha1=git_blob_sha1(cmake.replace(b"0.98.8.0", b"0.98.1.0")),
+            expected_cmake_sha256=sha256_bytes(cmake.replace(b"0.98.8.0", b"0.98.1.0")),
             expected_source_commit="a" * 40,
             expected_version="0.98.8",
         )
@@ -205,13 +225,45 @@ def self_test() -> dict[str, Any]:
             manifest,
             cmake,
             expected_manifest_blob_sha1=manifest_sha,
+            expected_manifest_sha256=sha256_bytes(manifest),
             expected_cmake_blob_sha1=cmake_sha,
+            expected_cmake_sha256=sha256_bytes(cmake),
             expected_source_commit="b" * 40,
             expected_version="0.98.8",
         )
         checks["rejects_manifest_source_commit_drift"] = False
     except IdentityError:
         checks["rejects_manifest_source_commit_drift"] = True
+
+    try:
+        verify_jasp_release_identity(
+            manifest,
+            cmake,
+            expected_manifest_blob_sha1=manifest_sha,
+            expected_manifest_sha256="0" * 64,
+            expected_cmake_blob_sha1=cmake_sha,
+            expected_cmake_sha256=sha256_bytes(cmake),
+            expected_source_commit="a" * 40,
+            expected_version="0.98.8",
+        )
+        checks["rejects_manifest_sha256_drift"] = False
+    except IdentityError:
+        checks["rejects_manifest_sha256_drift"] = True
+
+    try:
+        verify_jasp_release_identity(
+            manifest,
+            cmake,
+            expected_manifest_blob_sha1=manifest_sha,
+            expected_manifest_sha256=sha256_bytes(manifest),
+            expected_cmake_blob_sha1=cmake_sha,
+            expected_cmake_sha256="f" * 64,
+            expected_source_commit="a" * 40,
+            expected_version="0.98.8",
+        )
+        checks["rejects_cmake_sha256_drift"] = False
+    except IdentityError:
+        checks["rejects_cmake_sha256_drift"] = True
 
     return {
         "schema": "LUNITA_JASP_SOURCE_RELEASE_IDENTITY_SELF_TEST/1.0",

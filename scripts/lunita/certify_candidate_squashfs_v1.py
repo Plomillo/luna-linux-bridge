@@ -32,6 +32,13 @@ PASS_PACKAGE = "PASS_SQUASHFS_PACKAGE_AND_ROUNDTRIP_NOT_CERTIFIED"
 PASS_TARGET = "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED"
 PASS_S32 = "BETA_OPERATIONAL_CERTIFIED"
 PASS_STABLE = "CERTIFIED_STABLE_RELEASE"
+EXPECTED_JASP_VERSION = "0.98.8"
+EXPECTED_JASP_DEPLOYMENT_COMMIT = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
+EXPECTED_JASP_SOURCE_COMMIT = "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1"
+EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1 = "1aec5921883d56388c91627b09ba9cf6eb07c1d6"
+EXPECTED_JASP_FLATHUB_MANIFEST_SHA256 = "f83fd086dffbf2ca64b6e10e1589693ddf6ddbfc93ca0156feb66473cd52022d"
+EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1 = "d57ba1e22d4cd00f3848034dc09737498b91346b"
+EXPECTED_JASP_SOURCE_CMAKE_SHA256 = "5d60c82281a0329016245779dd7549807726c74f11a5b671cf95f192572deaac"
 
 
 class CertificationError(RuntimeError):
@@ -149,6 +156,34 @@ def find_bound_stable_release(stable_dir: pathlib.Path, s32_path: pathlib.Path, 
     raise CertificationError("No stable-release receipt is bound to the exact S32, independent, and target-runtime evidence")
 
 
+def validate_jasp_source_identity(rootfs_build: object) -> dict[str, Any]:
+    if not isinstance(rootfs_build, dict) or rootfs_build.get("status") != "PASS_ROOTFS_BUILD_IDENTITY":
+        raise CertificationError("Target receipt lacks a passing rootfs build identity")
+    identity = rootfs_build.get("jasp_source_release_identity")
+    expected = {
+        "status": "PASS_JASP_SOURCE_RELEASE_IDENTITY",
+        "application_id": "org.jaspstats.JASP",
+        "version": EXPECTED_JASP_VERSION,
+        "cmake_project_version": "0.98.8.0",
+        "flathub_manifest_git_blob_sha1": EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+        "flathub_manifest_sha256": EXPECTED_JASP_FLATHUB_MANIFEST_SHA256,
+        "jasp_source_cmake_git_blob_sha1": EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+        "jasp_source_cmake_sha256": EXPECTED_JASP_SOURCE_CMAKE_SHA256,
+        "jasp_source_commit": EXPECTED_JASP_SOURCE_COMMIT,
+        "deployment_commit": EXPECTED_JASP_DEPLOYMENT_COMMIT,
+        "manifest_jasp_source_commit_matches_pin": True,
+    }
+    if not isinstance(identity, dict):
+        raise CertificationError("Target receipt lacks JASP source-release identity evidence")
+    for key, expected_value in expected.items():
+        if identity.get(key) != expected_value:
+            raise CertificationError(f"Target receipt JASP source-release identity mismatch: {key}")
+    receipt_sha = identity.get("source_release_identity_receipt_sha256")
+    if not isinstance(receipt_sha, str) or len(receipt_sha) != 64 or any(ch not in "0123456789abcdef" for ch in receipt_sha):
+        raise CertificationError("Target receipt JASP source identity receipt SHA-256 is missing or malformed")
+    return identity
+
+
 def build_certificate(
     image: pathlib.Path,
     checksum: pathlib.Path,
@@ -210,6 +245,7 @@ def build_certificate(
         or target.get("canonical_g06_certification") != "NOT_GRANTED"
         or target.get("canonical_g08_binding_mutation") is not False):
         raise CertificationError("Target-runtime receipt candidate/scope invariants mismatch")
+    jasp_source_identity = validate_jasp_source_identity(target.get("rootfs_build"))
 
     report = load_json(independent_report_path, "Independent validation report")
     independent_sha = sha256_file(independent_report_path)
@@ -307,6 +343,7 @@ def build_certificate(
         "candidate_manifest": {"path": str(candidate_manifest_path), "sha256": manifest_sha},
         "source_rootfs_manifest_sha256": package["source_rootfs_manifest_sha256"],
         "target_runtime_receipt": {"path": str(target_path), "sha256": target_sha_expected},
+        "jasp_source_release_identity": jasp_source_identity,
         "independent_validation": {"path": str(independent_report_path), "sha256": independent_sha, "status": "PASS"},
         "s32_operational_certificate": {"path": str(s32_path), "sha256": s32_sha, "status": PASS_S32},
         "stable_release_receipt": {"path": str(stable_path), "sha256": stable_sha, "status": PASS_STABLE},

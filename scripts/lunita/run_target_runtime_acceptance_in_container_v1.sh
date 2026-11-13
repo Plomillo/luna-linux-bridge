@@ -133,7 +133,10 @@ cd /
 umount -l /.oldroot
 rmdir /.oldroot
 
-RUNTIME_BIND_TARGET=/run/lunita-runtime-1000
+# /run is the host's bind-mounted runtime filesystem inside pivot_root.
+# Never assume the global fixed name is free; namespace the target by the
+# workflow run and attempt that also names the isolated host-bind directory.
+RUNTIME_BIND_TARGET="/run/lunita-runtime-1000-${HOST_BIND_NAME#lunita-host-}"
 RUNTIME_BIND_CREATED=0
 RUNTIME_BIND_MOUNTED=0
 
@@ -183,7 +186,7 @@ export LUNITA_ROOTFS_REAL=/
 export LUNITA_TARGET_ROOTFS=/
 export LUNITA_ROOT=/opt/lunita
 export FLATPAK_SYSTEM_DIR=/var/lib/flatpak
-export XDG_RUNTIME_DIR=/run/lunita-runtime-1000
+export XDG_RUNTIME_DIR="$RUNTIME_BIND_TARGET"
 export XDG_STATE_HOME="/run/$HOST_BIND_NAME/lunita-xdg"
 export LUNITA_XDG_STATE_HOME="$XDG_STATE_HOME"
 export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$XDG_STATE_HOME/lunita/runtime_validation"

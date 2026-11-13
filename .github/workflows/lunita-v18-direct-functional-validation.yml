@@ -606,6 +606,8 @@ jobs:
         run: |
           set -euo pipefail
           sudo -n env PATH="$PATH" \
+            GITHUB_RUN_ID="$GITHUB_RUN_ID" \
+            GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" \
             LUNITA_ROOTFS_REAL="$LUNITA_ROOTFS_REAL" \
             LUNITA_ROOT="$LUNITA_ROOT" \
             LUNITA_XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME" \

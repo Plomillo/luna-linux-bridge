@@ -169,7 +169,7 @@ El recibo `L` solo puede emitirse tras S32 válido. MUST enlazar el mismo inform
 
 La función de certificación es:
 
-`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-020 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
+`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-022 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
 
 y además el certificado `C` MUST:
 
@@ -214,9 +214,21 @@ La regresión MUST incluir un timestamp de frontera como `1794523803.999999999`,
 
 ### AX-LUN-020 — Procedencia de versión JASP sin dependencia AppStream
 
-La versión JASP no se obtiene por inferencia desde una etiqueta, un campo opcional ni una variable que repita el valor esperado. El constructor MUST enlazar criptográficamente: (1) el commit inmutable del manifiesto Flathub; (2) el Git blob SHA-1 y SHA-256 de ese manifiesto; (3) el commit fuente `jasp-desktop` que ese manifiesto declara; (4) el Git blob SHA-1 y SHA-256 del `CMakeLists.txt` en ese commit; y (5) la versión `project(JASP VERSION ...)` derivada de ese archivo. La versión resultante MUST coincidir con la versión aprobada del candidato.
+La versión JASP no se obtiene por inferencia desde una etiqueta, un campo opcional ni una variable que repita el valor esperado. El constructor MUST enlazar criptográficamente: (1) el commit inmutable del manifiesto Flathub; (2) el Git blob SHA-1 y SHA-256 de ese manifiesto; (3) el commit fuente `jasp-desktop` que ese manifiesto declara; (4) el Git blob SHA-1 y SHA-256 del `CMakeLists.txt` en ese commit; y (5) la versión `project(JASP VERSION ...)` derivada de ese archivo.
+
+Los pins SHA-1 de Git blob y SHA-256 son ambos obligatorios y forman parte de la especificación: Flathub manifest `SHA1=1aec5921883d56388c91627b09ba9cf6eb07c1d6`, `SHA256=f83fd086dffbf2ca64b6e10e1589693ddf6ddbfc93ca0156feb66473cd52022d`; JASP CMakeLists `SHA1=d57ba1e22d4cd00f3848034dc09737498b91346b`, `SHA256=5d60c82281a0329016245779dd7549807726c74f11a5b671cf95f192572deaac`. La validación del target MUST recalcular las cuatro huellas y compararlas con estos pins inmutables, además de comparar los valores SHA-256 con el recibo del builder. La versión resultante MUST coincidir con la versión aprobada del candidato.
 
 El recibo del rootfs MUST conservar el manifiesto, el CMakeLists y el recibo de identidad; registrar además el deployment commit Flatpak instalado y sus hashes. La validación independiente MUST iniciar el proceso JASP real y exigir el banner de versión y source commit fijados. El campo amigable `Version` de `flatpak info` y las versiones declaradas únicamente en AppStream/appdata NO son evidencia suficiente ni fuente de autoridad: pueden estar ausentes o rezagadas respecto del código de la aplicación.
+
+
+### AX-LUN-021 — Consumo independiente de la procedencia JASP en el target runtime
+
+El validador de aceptación de destino MUST consumir el mismo contrato de identidad que produjo el builder. MUST comprobar la etiqueta y versión JASP fijadas (0.98.8), el marcador de procedencia Flathub/CMake, el deployment commit Flatpak real, el manifiesto Flathub, el CMakeLists del source commit y el recibo de identidad de fuente preservados dentro del rootfs. Debe volver a calcular SHA-256 y Git blob SHA-1, validar app-id, source commit y versión CMake; rechazar cualquier divergencia entre builder receipt, archivos preservados y deployment commit. No podrá usar el campo AppStream `Version` ni aceptar los antiguos campos/valores de esquema por compatibilidad implícita. La jerarquía representada y el validador deben concordar exactamente con JASP 0.98.8, conservando la etiqueta instrumental `Lupa`.
+
+
+### AX-LUN-022 — Conservación de procedencia JASP a través de todos los gates
+
+La identidad JASP verificada en el rootfs MUST permanecer explícita y validada en todas las fases posteriores. El recibo de aceptación de destino MUST transportar `rootfs_build.jasp_source_release_identity`; el empaquetador MUST exigir y cotejar sus SHA-1 de Git blob, SHA-256, versión, app-id, source commit, deployment commit y hash del recibo de identidad; la validación independiente MUST rechazar la ausencia o deriva; S32 MUST quedar ligado al informe independiente y al recibo de destino que contienen esa identidad; el certificador final MUST volver a comprobar los pins y publicar la identidad JASP en el certificado. Un PASS genérico del target, del paquete o de la validación independiente sin esa identidad completa no es admisible. Todos los stages MUST usar los mismos valores inmutables, no campos heredados ni referencias generadas en etapas anteriores sin comprobación.
 
 ## 3. Predicado terminal y orden de admisión
 
@@ -291,6 +303,16 @@ La fuente de versión declarada como 0.98.8 no se autoriza por el valor codifica
 Implementación actual en la rama de integración `audit/lunita-zero-trust-certification-axioms-20261112`; pendiente de revisión por CI y de integración con el constructor operativo. Estado: `IMPLEMENTED_NOT_YET_VALIDATED`.
 
 
+
+## 5.3 — Desfase entre builder y target consumer para identidad JASP
+
+La inspección del HEAD operativo `a41e7b9fdc000b1c95f08aa212082e23d28051ea` encontró que el nuevo builder emitía JASP 0.98.8 y el campo `flatpak_deployment_commit`, además del marcador `PINNED_FLATHUB_MANIFEST_AND_JASP_CMAKE_SOURCE_VERIFIED`. El consumidor `target_runtime_acceptance_v1.py` conservaba JASP 0.98.1, el marcador `EXACT_PINNED_FLATPAK_COMMIT_MAPPING` y esperaba `flatpak_commit`. También conservaba la jerarquía de presentación 0.98.1. Esto habría bloqueado la aceptación de destino aunque el constructor hubiese probado correctamente el origen.
+
+La corrección se implementó en rama separada `fix/lunita-target-jasp-source-identity-20261112`: actualiza la jerarquía a 0.98.8, armoniza el schema consumidor con el builder, revalida en el rootfs los archivos manifiesto/CMake/recibo de identidad usando Git blob SHA-1 y SHA-256, vuelve a inspeccionar app-id/source commit/version y compara el deployment commit real. Se añadieron pruebas negativas de drift de manifest, source commit, app-id, versión CMake, cuarto componente, version_source y deployment commit.
+
+La ejecución #43332281299 ya había construido y descargado el overlay anterior a esta corrección. Por ello sus pasos posteriores continuarán usando el consumidor previo; no puede incorporarse este cambio sin reconstruir el overlay y repetir el workflow completo. La corrección nueva está `IMPLEMENTED_NOT_YET_VALIDATED`, y su expediente está en `recovery/lunita-custoszv9/audits/TARGET_JASP_VERSION_CONSUMER_MISMATCH_20261112.md`.
+
+
 ## 6. Estado de certificación al fijar la integración
 
 `LAST_OPERATIONAL_HEAD=08f932874ae38daf1deade88b201da7562078fe7`  
@@ -309,6 +331,6 @@ Implementación actual en la rama de integración `audit/lunita-zero-trust-certi
 `SQUASHFS_TIMESTAMP_CORRECTION=INTEGRATED_NOT_YET_VALIDATED`  
 `JASP_SOURCE_VERSION_CORRECTION=INTEGRATED_NOT_YET_VALIDATED`  
 `JASP_SOURCE_IDENTITY_SELFTESTS=INTEGRATED_NOT_YET_EXECUTED_IN_CI`  
-`NEXT_REQUIRED_ACTION=MERGE_INTEGRATION_AND_RUN_FULL_VALIDATION`
+`NEXT_REQUIRED_ACTION=MERGE_TARGET_JASP_CONSUMER_FIX_AND_RUN_FULL_VALIDATION`
 
-**No se autoriza una transición a CERTIFIED hasta la demostración completa de AX-LUN-001 a AX-LUN-020 sobre un único SHA-256 de `LUNITA.squashfs`.**
+**No se autoriza una transición a CERTIFIED hasta la demostración completa de AX-LUN-001 a AX-LUN-022 sobre un único SHA-256 de `LUNITA.squashfs`.**

@@ -11,6 +11,7 @@ import importlib
 import json
 import os
 import pathlib
+import re
 import subprocess
 import stat
 import sys
@@ -27,6 +28,15 @@ REPORTS = pathlib.Path(os.environ.get("LUNITA_TARGET_RUNTIME_RECEIPT_DIR", str(S
 OVERLAY_RECEIPT = OVERLAY / "OVERLAY_APPLY_RECEIPT.json"
 LEGACY_LAUNCHER = ROOT / "agent/lunita.py"
 EXPECTED_LEGACY_SHA256 = "46efd711729c344e7efba9ce2503127c48f0b88207cc5a17311ff1d555b075b2"
+EXPECTED_JASP_VERSION = "0.98.8"
+EXPECTED_JASP_DEPLOYMENT_COMMIT = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
+EXPECTED_JASP_SOURCE_COMMIT = "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1"
+EXPECTED_JASP_FLATHUB_MANIFEST_COMMIT = "95e467d83089fb292e5d0746e98e188fef6f9113"
+EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1 = "1aec5921883d56388c91627b09ba9cf6eb07c1d6"
+EXPECTED_JASP_FLATHUB_MANIFEST_SHA256 = "f83fd086dffbf2ca64b6e10e1589693ddf6ddbfc93ca0156feb66473cd52022d"
+EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1 = "d57ba1e22d4cd00f3848034dc09737498b91346b"
+EXPECTED_JASP_SOURCE_CMAKE_SHA256 = "5d60c82281a0329016245779dd7549807726c74f11a5b671cf95f192572deaac"
+EXPECTED_JASP_VERSION_SOURCE = "PINNED_FLATHUB_MANIFEST_AND_JASP_CMAKE_SOURCE_VERIFIED"
 LEGACY_SMOKE_COMMANDS = (
     ("brujula-self-test",),
     ("r-self-test",),
@@ -77,7 +87,7 @@ EXPECTED_LABEL_HIERARCHY = {
                         {"label": "jamovi 2.7.27", "application_id": "org.jamovi.jamovi"}
                     ]},
                     {"label": "LUPA", "children": [
-                        {"label": "JASP 0.98.1", "application_id": "org.jaspstats.JASP"}
+                        {"label": "JASP 0.98.8", "application_id": "org.jaspstats.JASP"}
                     ]}
                 ]
             }]
@@ -105,7 +115,7 @@ EXPECTED_LABEL_HIERARCHY_TEXT = """LA PIEZA
             │   └── jamovi 2.7.27
             │
             └── LUPA
-                └── JASP 0.98.1
+                └── JASP 0.98.8
 """
 
 
@@ -455,6 +465,166 @@ def sha256_file(path: pathlib.Path) -> str:
     return digest.hexdigest()
 
 
+def git_blob_sha1(payload: bytes) -> str:
+    """Return Git's object SHA-1 for the exact blob bytes."""
+    header = b"blob " + str(len(payload)).encode("ascii") + bytes((0,))
+    return hashlib.sha1(header + payload).hexdigest()
+
+
+def inspect_jasp_release_sources(
+    manifest_bytes: bytes,
+    cmake_bytes: bytes,
+    *,
+    expected_manifest_blob_sha1: str = EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+    expected_manifest_sha256: str = EXPECTED_JASP_FLATHUB_MANIFEST_SHA256,
+    expected_cmake_blob_sha1: str = EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+    expected_cmake_sha256: str = EXPECTED_JASP_SOURCE_CMAKE_SHA256,
+    expected_source_commit: str = EXPECTED_JASP_SOURCE_COMMIT,
+    expected_version: str = EXPECTED_JASP_VERSION,
+) -> dict[str, Any]:
+    """Validate the immutable Flathub manifest, source commit and CMake release version."""
+    manifest_blob = git_blob_sha1(manifest_bytes)
+    cmake_blob = git_blob_sha1(cmake_bytes)
+    if manifest_blob != expected_manifest_blob_sha1:
+        raise TargetGateError(f"JASP Flathub manifest Git blob SHA-1 mismatch: {manifest_blob}")
+    if cmake_blob != expected_cmake_blob_sha1:
+        raise TargetGateError(f"JASP source CMake Git blob SHA-1 mismatch: {cmake_blob}")
+    manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
+    cmake_sha256 = hashlib.sha256(cmake_bytes).hexdigest()
+    if manifest_sha256 != expected_manifest_sha256:
+        raise TargetGateError(f"JASP Flathub manifest SHA-256 mismatch: {manifest_sha256}")
+    if cmake_sha256 != expected_cmake_sha256:
+        raise TargetGateError(f"JASP source CMake SHA-256 mismatch: {cmake_sha256}")
+    try:
+        manifest = json.loads(manifest_bytes)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise TargetGateError(f"JASP Flathub manifest is not valid JSON: {exc}") from exc
+    if not isinstance(manifest, dict) or manifest.get("app-id") != "org.jaspstats.JASP":
+        raise TargetGateError("JASP Flathub manifest application identity mismatch")
+    source_commits = []
+    modules = manifest.get("modules")
+    if not isinstance(modules, list):
+        raise TargetGateError("JASP Flathub manifest modules array is missing")
+    for module in modules:
+        if not isinstance(module, dict) or module.get("name") != "jasp":
+            continue
+        for source in module.get("sources", []) if isinstance(module.get("sources"), list) else []:
+            if (isinstance(source, dict)
+                    and source.get("type") == "git"
+                    and source.get("url") == "https://github.com/jasp-stats/jasp-desktop.git"):
+                source_commits.append(source.get("commit"))
+    if source_commits != [expected_source_commit]:
+        raise TargetGateError("JASP Flathub manifest does not uniquely bind the pinned desktop source commit")
+    try:
+        cmake_text = cmake_bytes.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise TargetGateError("Pinned JASP CMakeLists.txt is not UTF-8") from exc
+    match = re.search(
+        r"project\s*\(\s*JASP\s+VERSION\s+([0-9]+(?:\.[0-9]+){2,3})",
+        cmake_text,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        raise TargetGateError("Pinned JASP CMakeLists.txt has no project(JASP VERSION ...) declaration")
+    cmake_version = match.group(1)
+    parts = cmake_version.split(".")
+    if len(parts) == 4:
+        if parts[3] != "0":
+            raise TargetGateError("JASP CMake version has an unsupported nonzero fourth component")
+        parts = parts[:3]
+    if any(not part.isdigit() for part in parts):
+        raise TargetGateError("JASP CMake version has malformed numeric components")
+    version = ".".join(parts)
+    if version != expected_version:
+        raise TargetGateError(f"Pinned JASP source version mismatch: expected {expected_version}, observed {version}")
+    return {
+        "status": "PASS_JASP_SOURCE_RELEASE_IDENTITY",
+        "application_id": "org.jaspstats.JASP",
+        "version": version,
+        "cmake_project_version": cmake_version,
+        "flathub_manifest_git_blob_sha1": manifest_blob,
+        "flathub_manifest_sha256": manifest_sha256,
+        "jasp_source_cmake_git_blob_sha1": cmake_blob,
+        "jasp_source_cmake_sha256": cmake_sha256,
+        "jasp_source_commit": expected_source_commit,
+        "manifest_jasp_source_commit_matches_pin": True,
+    }
+
+
+def verify_jasp_source_release_identity(lupa: dict[str, Any], metadata_dir: pathlib.Path) -> dict[str, Any]:
+    """Independently verify all JASP source-provenance files preserved in the candidate rootfs."""
+    expected_receipt_values = {
+        "version": EXPECTED_JASP_VERSION,
+        "version_source": EXPECTED_JASP_VERSION_SOURCE,
+        "application_id": "org.jaspstats.JASP",
+        "flatpak_deployment_commit": EXPECTED_JASP_DEPLOYMENT_COMMIT,
+        "flathub_manifest_commit": EXPECTED_JASP_FLATHUB_MANIFEST_COMMIT,
+        "flathub_manifest_git_blob_sha1": EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+        "jasp_source_commit": EXPECTED_JASP_SOURCE_COMMIT,
+        "jasp_source_cmake_git_blob_sha1": EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+    }
+    for key, expected in expected_receipt_values.items():
+        if lupa.get(key) != expected:
+            raise TargetGateError(f"JASP rootfs receipt provenance mismatch: {key}")
+    manifest_path = metadata_dir / "JASP_FLATHUB_MANIFEST.json"
+    cmake_path = metadata_dir / "JASP_SOURCE_CMAKE_LISTS.txt"
+    identity_path = metadata_dir / "JASP_SOURCE_RELEASE_IDENTITY.json"
+    for path, label in (
+        (manifest_path, "Flathub manifest"),
+        (cmake_path, "JASP source CMakeLists"),
+        (identity_path, "JASP source release identity receipt"),
+    ):
+        if path.is_symlink() or not path.is_file():
+            raise TargetGateError(f"JASP source provenance file missing or unsafe: {label}")
+    manifest_bytes = manifest_path.read_bytes()
+    cmake_bytes = cmake_path.read_bytes()
+    manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
+    cmake_sha256 = hashlib.sha256(cmake_bytes).hexdigest()
+    if manifest_sha256 != EXPECTED_JASP_FLATHUB_MANIFEST_SHA256:
+        raise TargetGateError("JASP Flathub manifest SHA-256 differs from immutable source pin")
+    if manifest_sha256 != lupa.get("flathub_manifest_sha256"):
+        raise TargetGateError("JASP Flathub manifest SHA-256 differs from rootfs build receipt")
+    if cmake_sha256 != EXPECTED_JASP_SOURCE_CMAKE_SHA256:
+        raise TargetGateError("JASP source CMakeLists SHA-256 differs from immutable source pin")
+    if cmake_sha256 != lupa.get("jasp_source_cmake_sha256"):
+        raise TargetGateError("JASP source CMakeLists SHA-256 differs from rootfs build receipt")
+    identity_sha256 = sha256_file(identity_path)
+    if identity_sha256 != lupa.get("source_release_identity_receipt_sha256"):
+        raise TargetGateError("JASP source identity receipt SHA-256 differs from rootfs build receipt")
+    source_check = inspect_jasp_release_sources(manifest_bytes, cmake_bytes)
+    try:
+        identity = json.loads(identity_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise TargetGateError(f"JASP source release identity receipt is unreadable: {exc}") from exc
+    expected_identity = {
+        "schema": "LUNITA_JASP_SOURCE_RELEASE_IDENTITY/1.0",
+        "status": "PASS_JASP_SOURCE_RELEASE_IDENTITY",
+        "application_id": "org.jaspstats.JASP",
+        "version": EXPECTED_JASP_VERSION,
+        "version_source": "PINNED_JASP_CMAKE_PROJECT_VERSION",
+        "cmake_project_version": "0.98.8.0",
+        "flathub_manifest_commit": EXPECTED_JASP_FLATHUB_MANIFEST_COMMIT,
+        "flathub_manifest_git_blob_sha1": source_check["flathub_manifest_git_blob_sha1"],
+        "flathub_manifest_sha256": manifest_sha256,
+        "jasp_source_commit": EXPECTED_JASP_SOURCE_COMMIT,
+        "jasp_source_cmake_git_blob_sha1": source_check["jasp_source_cmake_git_blob_sha1"],
+        "jasp_source_cmake_sha256": cmake_sha256,
+        "manifest_jasp_source_commit_matches_pin": True,
+        "source_cmake_version_matches_pin": True,
+        "appstream_version_metadata_used": False,
+    }
+    for key, expected in expected_identity.items():
+        if identity.get(key) != expected:
+            raise TargetGateError(f"JASP source identity receipt mismatch: {key}")
+    return {
+        **source_check,
+        "flathub_manifest_sha256": manifest_sha256,
+        "jasp_source_cmake_sha256": cmake_sha256,
+        "source_release_identity_receipt_sha256": identity_sha256,
+        "deployment_commit": lupa["flatpak_deployment_commit"],
+    }
+
+
 def hash_directory(path: pathlib.Path) -> dict[str, Any]:
     if path.is_symlink() or not path.is_dir():
         raise TargetGateError(f"Required overlay directory is missing or symlinked: {path}")
@@ -684,27 +854,36 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
     if r.returncode != 0:
         raise TargetGateError("Lápiz R 4.6.1 execution failed: " + (r.stderr or r.stdout)[-1200:])
 
+    lupa = receipt.get("lupa", {})
+    jasp_source_identity = verify_jasp_source_release_identity(lupa, ROOT / "metadata")
     apps = (
-        ("org.jamovi.jamovi", "sacapuntas", "2.7.27"),
-        ("org.jaspstats.JASP", "lupa", "0.98.1"),
+        ("org.jamovi.jamovi", "sacapuntas", "2.7.27",
+         "EXACT_PINNED_FLATPAK_COMMIT_MAPPING", "flatpak_commit"),
+        ("org.jaspstats.JASP", "lupa", EXPECTED_JASP_VERSION,
+         EXPECTED_JASP_VERSION_SOURCE, "flatpak_deployment_commit"),
     )
     observed_apps = {}
-    for app_id, key, expected_version in apps:
+    for app_id, key, expected_version, expected_source, commit_key in apps:
         value = receipt.get(key, {})
         if value.get("application_id") != app_id or value.get("version") != expected_version:
             raise TargetGateError(f"Flatpak app identity/version mismatch: {app_id}")
         if not (pathlib.Path(os.environ.get("FLATPAK_SYSTEM_DIR", "/var/lib/flatpak")) / "app" / app_id).is_dir():
             raise TargetGateError(f"Flatpak system deployment is missing: {app_id}")
-        if value.get("version_source") != "EXACT_PINNED_FLATPAK_COMMIT_MAPPING":
-            raise TargetGateError(f"Flatpak version is not bound to its recorded commit mapping: {app_id}")
+        if value.get("version_source") != expected_source:
+            raise TargetGateError(f"Flatpak version provenance mismatch: {app_id}")
+        recorded_commit = value.get(commit_key)
+        if not isinstance(recorded_commit, str) or len(recorded_commit) != 64:
+            raise TargetGateError(f"Flatpak installed commit binding is malformed: {app_id}")
         info = subprocess.run(
             ["/usr/bin/flatpak", "info", "--system", "--show-commit", app_id],
             capture_output=True, text=True, check=False,
         )
         if info.returncode != 0:
             raise TargetGateError(f"Flatpak could not inspect the target system app: {app_id}")
-        if info.stdout.strip() != value.get("flatpak_commit"):
+        if info.stdout.strip() != recorded_commit:
             raise TargetGateError(f"Flatpak installed commit mismatch: {app_id}")
+        if app_id == "org.jaspstats.JASP" and recorded_commit != EXPECTED_JASP_DEPLOYMENT_COMMIT:
+            raise TargetGateError("JASP deployment commit differs from the immutable registered pin")
         observed_apps[app_id] = {
             "version": expected_version,
             "version_source": value.get("version_source"),
@@ -725,6 +904,7 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
         "source_rootfs_recovered": False,
         "system_python": system_python,
         "ubuntu": ubuntu,
+        "jasp_source_release_identity": jasp_source_identity,
         "qwen_model_sha256": sha256_file(model),
         "llama_cli_sha256": sha256_file(llama_candidates[0]),
         "node_version": brujula.get("node"),

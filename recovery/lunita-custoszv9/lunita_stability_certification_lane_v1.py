@@ -79,6 +79,11 @@ JASP_CASES = {
 DEATH_PENALTY_SOURCE_SHA256 = "fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895"
 EXPECTED_JASP_RUNTIME_VERSION = "0.98.8"
 EXPECTED_JASP_SOURCE_COMMIT = "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1"
+EXPECTED_JASP_DEPLOYMENT_COMMIT = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
+EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1 = "1aec5921883d56388c91627b09ba9cf6eb07c1d6"
+EXPECTED_JASP_FLATHUB_MANIFEST_SHA256 = "f83fd086dffbf2ca64b6e10e1589693ddf6ddbfc93ca0156feb66473cd52022d"
+EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1 = "d57ba1e22d4cd00f3848034dc09737498b91346b"
+EXPECTED_JASP_SOURCE_CMAKE_SHA256 = "5d60c82281a0329016245779dd7549807726c74f11a5b671cf95f192572deaac"
 
 
 def utc() -> str:
@@ -1215,6 +1220,28 @@ def latest_target_runtime_acceptance() -> dict:
         return blocked("CANDIDATE_IDENTITY_MISMATCH")
     if row.get("certification") != "NOT_GRANTED" or row.get("canonical_g06_certification") != "NOT_GRANTED":
         return blocked("CERTIFICATION_SCOPE_MISMATCH")
+    rootfs_build = row.get("rootfs_build", {})
+    jasp_identity = rootfs_build.get("jasp_source_release_identity") if isinstance(rootfs_build, dict) else None
+    required_jasp_identity = {
+        "status": "PASS_JASP_SOURCE_RELEASE_IDENTITY",
+        "application_id": "org.jaspstats.JASP",
+        "version": EXPECTED_JASP_RUNTIME_VERSION,
+        "cmake_project_version": "0.98.8.0",
+        "flathub_manifest_git_blob_sha1": EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+        "flathub_manifest_sha256": EXPECTED_JASP_FLATHUB_MANIFEST_SHA256,
+        "jasp_source_cmake_git_blob_sha1": EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+        "jasp_source_cmake_sha256": EXPECTED_JASP_SOURCE_CMAKE_SHA256,
+        "jasp_source_commit": EXPECTED_JASP_SOURCE_COMMIT,
+        "deployment_commit": EXPECTED_JASP_DEPLOYMENT_COMMIT,
+        "manifest_jasp_source_commit_matches_pin": True,
+    }
+    if not isinstance(jasp_identity, dict):
+        return blocked("JASP_SOURCE_RELEASE_IDENTITY_MISSING")
+    if any(jasp_identity.get(key) != expected for key, expected in required_jasp_identity.items()):
+        return blocked("JASP_SOURCE_RELEASE_IDENTITY_PIN_MISMATCH")
+    identity_receipt_sha = jasp_identity.get("source_release_identity_receipt_sha256")
+    if not isinstance(identity_receipt_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", identity_receipt_sha):
+        return blocked("JASP_SOURCE_RELEASE_IDENTITY_RECEIPT_HASH_INVALID")
     overlay = row.get("overlay_integrity", {})
     if overlay.get("status") != "PASS_OVERLAY_INTEGRITY":
         return blocked("OVERLAY_INTEGRITY_NOT_PASS")
@@ -1258,6 +1285,7 @@ def latest_target_runtime_acceptance() -> dict:
         "receipt_path": str(path),
         "receipt_sha256": digest,
         "candidate_id": row.get("candidate_id"),
+        "jasp_source_release_identity": jasp_identity,
         "overlay_integrity": overlay,
         "e04_quantization": quantization,
         "qwen_e01": qwen,
@@ -1428,6 +1456,8 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         "e01_status": (target_runtime.get("qwen_e01") or {}).get("status"),
         "e04_status": (target_runtime.get("e04_quantization") or {}).get("status"),
         "legacy_smokes_status": (target_runtime.get("legacy_application_smokes") or {}).get("status"),
+        "jasp_source_release_identity": target_runtime.get("jasp_source_release_identity"),
+        "jasp_source_release_identity_status": (target_runtime.get("jasp_source_release_identity") or {}).get("status"),
         "evidence": {str(target_receipt_path): target_runtime.get("receipt_sha256")} if target_receipt_path else {},
         "details": target_runtime.get("status"),
     }
