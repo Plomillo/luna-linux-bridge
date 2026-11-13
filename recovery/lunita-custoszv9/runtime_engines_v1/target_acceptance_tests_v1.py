@@ -461,6 +461,7 @@ class TargetJaspReleaseIdentityContractTests(unittest.TestCase):
                 "application_id": "org.jaspstats.JASP",
                 "version": "0.98.8",
                 "version_source": "PINNED_FLATHUB_MANIFEST_AND_JASP_CMAKE_SOURCE_VERIFIED",
+                "flatpak_deployment_commit": target.EXPECTED_JASP_FLATPAK_COMMIT,
                 "flathub_manifest_commit": manifest_commit,
                 "flathub_manifest_git_blob_sha1": manifest_blob,
                 "flathub_manifest_sha256": manifest_sha,
