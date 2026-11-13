@@ -213,6 +213,50 @@ class CertificationGateTests(unittest.TestCase):
         self.assertIn("jasp_packaged_fixture_nonregression", result["open_items"])
         self.assertFalse(result["mission_completion_claim"])
 
+    def test_independent_report_fails_closed_when_jasp_evidence_path_is_none(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            candidate = base / "candidate"
+            rootfs = candidate / "rootfs"
+            (rootfs / "opt/lunita/agent").mkdir(parents=True)
+            launcher = rootfs / "opt/lunita/agent/lunita.py"
+            launcher.write_text("candidate", encoding="utf-8")
+            runtime = candidate / "BETA_RUNTIME_FUNCTIONAL_TESTS.json"
+            runtime.write_text(json.dumps({
+                "schema": "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0",
+                "candidate_id": "G06_REBUILD_CANDIDATE_R1", "status": "PASS_RUNTIME_TESTS",
+                "all_tests_pass": True, "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
+                "candidate": {"beta_launcher_sha256": lane.sha_file(launcher)},
+            }), encoding="utf-8")
+            independent = candidate / "BETA_INDEPENDENT_VALIDATION.json"
+            independent.write_text("{}", encoding="utf-8")
+            mission = base / "MISION1.txt"
+            mission.write_text("test mission identity", encoding="utf-8")
+            mission_sha = hashlib.sha256(mission.read_bytes()).hexdigest()
+            cases = {
+                "flatpak_launch": {
+                    "status": "PASS", "returncode": 0, "evidence_path": None,
+                    "evidence_sha256": "0" * 64,
+                },
+                "reliability": {"status": "BLOCKED", "returncode": 1, "evidence_path": None},
+                "weight_gain": {"status": "BLOCKED", "returncode": 1, "evidence_path": None},
+                "death_penalty_roundtrip": {"status": "BLOCKED", "returncode": 1, "evidence_path": None},
+            }
+            jasp = {
+                "status": "PASS_JASP_PACKAGED_FIXTURE_NONREGRESSION",
+                "cases": cases,
+                "next_action": "invalid evidence path must block",
+            }
+            with mock.patch.object(lane, "CANDIDATE", candidate), mock.patch.object(lane, "ROOTFS", rootfs), \
+                 mock.patch.object(lane, "RUNTIME_REPORT", runtime), mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
+                 mock.patch.object(lane, "MISSION_PATH", mission), mock.patch.object(lane, "MISSION_SHA", mission_sha):
+                result = lane.update_independent_report(None, jasp)
+        check = result["checks"]["jasp_packaged_fixture_nonregression"]
+        self.assertEqual("BLOCKED", check["status"])
+        self.assertFalse(check["all_case_evidence_hashes_current"])
+        self.assertIn("jasp_packaged_fixture_nonregression", result["open_items"])
+        self.assertFalse(result["mission_completion_claim"])
+
     def test_stable_release_waits_for_hash_bound_s32_receipt(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)
