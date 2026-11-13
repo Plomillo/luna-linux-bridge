@@ -407,7 +407,7 @@ class TargetJaspReleaseIdentityContractTests(unittest.TestCase):
     def test_git_blob_sha1_uses_git_object_header(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = pathlib.Path(temporary) / "blob"
-            path.write_bytes(b"hello\\n")
+            path.write_bytes(b"hello\n")
             self.assertEqual("ce013625030ba8dba906f756967f9e9ca394464a", target.git_blob_sha1(path))
 
     def test_jasp_source_release_provenance_binds_exact_manifest_source_and_receipt(self):
@@ -428,7 +428,7 @@ class TargetJaspReleaseIdentityContractTests(unittest.TestCase):
                     }],
                 }],
             }, sort_keys=True, separators=(",", ":")).encode("utf-8")
-            cmake_bytes = b"project(JASP VERSION 0.98.8.0 LANGUAGES CXX C)\\n"
+            cmake_bytes = b"project(JASP VERSION 0.98.8.0 LANGUAGES CXX C)\n"
             manifest_path = metadata / "JASP_FLATHUB_MANIFEST.json"
             cmake_path = metadata / "JASP_SOURCE_CMAKE_LISTS.txt"
             identity_path = metadata / "JASP_SOURCE_RELEASE_IDENTITY.json"
