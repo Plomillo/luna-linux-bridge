@@ -2325,6 +2325,69 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
             and isinstance(row.get("evidence_sha256"), str)
         },
     }
+    process_tree_invocations = []
+    expected_process_cases = {
+        "flatpak_launch": ["flatpak_launch"],
+        "reliability": ["reliability"],
+        "weight_gain": ["weight_gain"],
+        "death_penalty_roundtrip": ["death_penalty_save", "death_penalty_rerun"],
+    }
+    for case_id, expected_ids in expected_process_cases.items():
+        row = jasp_cases.get(case_id) if isinstance(jasp_cases, dict) else None
+        if not isinstance(row, dict):
+            continue
+        receipts = (
+            row.get("process_tree_receipts")
+            if case_id == "death_penalty_roundtrip"
+            else [row.get("process_tree_receipt")]
+        )
+        if not isinstance(receipts, list):
+            continue
+        for receipt, expected_case_id in zip(receipts, expected_ids):
+            if process_tree_receipt_identity_matches(
+                receipt, case_id=expected_case_id, env=os.environ,
+                executable_sha256=expected_process_executable,
+                runtime_ostree_commit=expected_process_runtime,
+            ):
+                process_tree_invocations.append(receipt)
+    unique_invocation_ids = {
+        row.get("invocation_id") for row in process_tree_invocations
+        if isinstance(row, dict) and isinstance(row.get("invocation_id"), str)
+    }
+    process_tree_evidence = {
+        row["evidence_path"]: row["evidence_sha256"]
+        for row in jasp_cases.values()
+        if isinstance(row, dict)
+        and isinstance(row.get("evidence_path"), str)
+        and row.get("evidence_path").strip()
+        and isinstance(row.get("evidence_sha256"), str)
+    }
+    process_tree_complete = (
+        set(jasp_cases) == set(expected_process_cases)
+        and len(process_tree_invocations) == 5
+        and len(unique_invocation_ids) == 5
+        and all(
+            row.get("process_group_closed") is True
+            and row.get("remaining_live_pids") == []
+            and row.get("timeout_triggered") is False
+            for row in process_tree_invocations
+        )
+    )
+    checks["jasp_process_tree_lifecycle"] = {
+        "status": "PASS" if process_tree_complete else "BLOCKED",
+        "returncode": 0 if process_tree_complete else 1,
+        "invocation_count": len(process_tree_invocations),
+        "expected_invocation_count": 5,
+        "unique_invocation_id_count": len(unique_invocation_ids),
+        "workflow_identity": {
+            "run_id": expected_process_run_id,
+            "run_attempt": expected_process_attempt,
+        },
+        "jasp_binary_sha256": expected_process_executable,
+        "flatpak_runtime_ostree_commit": expected_process_runtime,
+        "invocations": process_tree_invocations,
+        "evidence": process_tree_evidence,
+    }
     squashfs_identity = direct_candidate_squashfs_identity() if direct else {}
     if direct:
         checks["squashfs_image_and_package_binding"] = {
