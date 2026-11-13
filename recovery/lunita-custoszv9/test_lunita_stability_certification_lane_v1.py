@@ -379,9 +379,57 @@ class DirectV18S32IssuerTests(unittest.TestCase):
             "target_v1_8_runtime_acceptance_e01_e15_int8",
             "candidate_rootfs_inventory_and_dependency_manifest",
             "jasp_packaged_fixture_nonregression",
+            "jasp_process_tree_lifecycle",
+            "jasp_post_mutation_runtime_identity",
             "squashfs_image_and_package_binding",
         }
         checks = {name: {"status": "PASS", "returncode": 0} for name in required}
+        jasp_binary_sha = "a" * 64
+        flatpak_runtime_commit = "b" * 64
+        invocation_cases = [
+            "flatpak_launch", "reliability", "weight_gain",
+            "death_penalty_save", "death_penalty_rerun",
+        ]
+        process_invocations = [
+            {
+                "schema": "LUNITA_JASP_PROCESS_TREE_RECEIPT/1.0",
+                "status": "PASS_PROCESS_GROUP_CLOSED",
+                "run_id": "43337415331",
+                "run_attempt": "1",
+                "case_id": case_id,
+                "invocation_id": f"{index:032x}",
+                "process_group_id": 300 + index,
+                "session_id": 300 + index,
+                "executable_sha256": jasp_binary_sha,
+                "runtime_ostree_commit": flatpak_runtime_commit,
+                "command_sha256": "c" * 64,
+                "timeout_seconds": 180,
+                "started_at_utc": "2026-11-13T00:00:00Z",
+                "finished_at_utc": "2026-11-13T00:00:01Z",
+                "returncode": 0,
+                "timeout_triggered": False,
+                "termination_signals": [],
+                "remaining_live_pids": [],
+                "process_group_closed": True,
+                "captured_output_sha256": "d" * 64,
+                "captured_output_bytes": 0,
+            }
+            for index, case_id in enumerate(invocation_cases, start=1)
+        ]
+        checks["jasp_post_mutation_runtime_identity"] = {
+            "status": "PASS", "returncode": 0,
+            "jasp_binary_sha256": jasp_binary_sha,
+            "flatpak_runtime_commit": flatpak_runtime_commit,
+        }
+        checks["jasp_process_tree_lifecycle"] = {
+            "status": "PASS", "returncode": 0,
+            "invocation_count": 5, "expected_invocation_count": 5,
+            "unique_invocation_id_count": 5,
+            "workflow_identity": {"run_id": "43337415331", "run_attempt": "1"},
+            "jasp_binary_sha256": jasp_binary_sha,
+            "flatpak_runtime_ostree_commit": flatpak_runtime_commit,
+            "invocations": process_invocations,
+        }
         checks["candidate_manifest_identity_sha256"]["sha256"] = manifest_sha
         checks["target_v1_8_runtime_acceptance_e01_e15_int8"].update({
             "receipt_path": str(target), "receipt_sha256": target_sha,
@@ -413,6 +461,7 @@ class DirectV18S32IssuerTests(unittest.TestCase):
             "receipt_path": str(target),
             "receipt_sha256": target_sha,
             "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+            "workflow_identity": {"run_id": "43337415331", "run_attempt": "1"},
             "canonical_g08_binding_mutation": False,
         }
         return out, manifest, target, independent, target_acceptance, image, checksum, package
@@ -421,6 +470,7 @@ class DirectV18S32IssuerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)
             out, manifest, target, independent, acceptance, image, checksum, package = self.prepare_valid_evidence(base)
+            with mock.patch.dict(lane.os.environ, {"GITHUB_RUN_ID": "43337415331", "GITHUB_RUN_ATTEMPT": "1"}), \\
             with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
                  mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
                  mock.patch.object(lane, "SQUASHFS_IMAGE", image), \
@@ -445,6 +495,29 @@ class DirectV18S32IssuerTests(unittest.TestCase):
             self.assertEqual("NOT_GRANTED", receipt["g24_status"])
             self.assertEqual("STABLE_RELEASE_ELIGIBLE", gate["status"])
 
+    def test_s32_blocks_when_a_jasp_process_tree_receipt_is_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            out, manifest, target, independent, acceptance, image, checksum, package = self.prepare_valid_evidence(base)
+            report = json.loads(independent.read_text(encoding="utf-8"))
+            process_check = report["checks"]["jasp_process_tree_lifecycle"]
+            process_check["invocations"].pop()
+            process_check["invocation_count"] = 4
+            process_check["unique_invocation_id_count"] = 4
+            independent.write_text(json.dumps(report), encoding="utf-8")
+            with mock.patch.dict(lane.os.environ, {"GITHUB_RUN_ID": "43337415331", "GITHUB_RUN_ATTEMPT": "1"}), \\
+                 mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \\
+                 mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \\
+                 mock.patch.object(lane, "SQUASHFS_IMAGE", image), \\
+                 mock.patch.object(lane, "SQUASHFS_CHECKSUM", checksum), \\
+                 mock.patch.object(lane, "SQUASHFS_PACKAGE_RECEIPT", package), \\
+                 mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", target.parent), \\
+                 mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \\
+                 mock.patch.object(lane, "OUT", out), \\
+                 mock.patch.object(lane, "latest_target_runtime_acceptance", return_value=acceptance):
+                result = lane.issue_s32_independent_beta_validation_receipt()
+            self.assertEqual("BLOCKED_JASP_PROCESS_TREE_RECEIPTS", result["status"])
+            self.assertEqual("NOT_GRANTED", result["certification"])
     def test_s32_never_issues_when_independent_report_is_blocked(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)
@@ -642,7 +715,7 @@ class BoundedProcessTreeTests(unittest.TestCase):
             runtime_ostree_commit="e" * 64,
         )
         self.assertEqual(0, completed.returncode)
-        self.assertEqual("jasp-clean-exit\\n", completed.stdout)
+        self.assertEqual("jasp-clean-exit\n", completed.stdout)
         receipt = completed.process_tree_receipt
         self.assertEqual("PASS_PROCESS_GROUP_CLOSED", receipt["status"])
         self.assertTrue(lane.validate_process_tree_receipt(
