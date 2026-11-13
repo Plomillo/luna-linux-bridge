@@ -169,7 +169,7 @@ El recibo `L` solo puede emitirse tras S32 válido. MUST enlazar el mismo inform
 
 La función de certificación es:
 
-`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-021 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
+`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-022 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
 
 y además el certificado `C` MUST:
 
@@ -224,6 +224,11 @@ El recibo del rootfs MUST conservar el manifiesto, el CMakeLists y el recibo de 
 ### AX-LUN-021 — Consumo independiente de la procedencia JASP en el target runtime
 
 El validador de aceptación de destino MUST consumir el mismo contrato de identidad que produjo el builder. MUST comprobar la etiqueta y versión JASP fijadas (0.98.8), el marcador de procedencia Flathub/CMake, el deployment commit Flatpak real, el manifiesto Flathub, el CMakeLists del source commit y el recibo de identidad de fuente preservados dentro del rootfs. Debe volver a calcular SHA-256 y Git blob SHA-1, validar app-id, source commit y versión CMake; rechazar cualquier divergencia entre builder receipt, archivos preservados y deployment commit. No podrá usar el campo AppStream `Version` ni aceptar los antiguos campos/valores de esquema por compatibilidad implícita. La jerarquía representada y el validador deben concordar exactamente con JASP 0.98.8, conservando la etiqueta instrumental `Lupa`.
+
+
+### AX-LUN-022 — Conservación de procedencia JASP a través de todos los gates
+
+La identidad JASP verificada en el rootfs MUST permanecer explícita y validada en todas las fases posteriores. El recibo de aceptación de destino MUST transportar `rootfs_build.jasp_source_release_identity`; el empaquetador MUST exigir y cotejar sus SHA-1 de Git blob, SHA-256, versión, app-id, source commit, deployment commit y hash del recibo de identidad; la validación independiente MUST rechazar la ausencia o deriva; S32 MUST quedar ligado al informe independiente y al recibo de destino que contienen esa identidad; el certificador final MUST volver a comprobar los pins y publicar la identidad JASP en el certificado. Un PASS genérico del target, del paquete o de la validación independiente sin esa identidad completa no es admisible. Todos los stages MUST usar los mismos valores inmutables, no campos heredados ni referencias generadas en etapas anteriores sin comprobación.
 
 ## 3. Predicado terminal y orden de admisión
 
@@ -328,4 +333,4 @@ La ejecución #43332281299 ya había construido y descargado el overlay anterior
 `JASP_SOURCE_IDENTITY_SELFTESTS=INTEGRATED_NOT_YET_EXECUTED_IN_CI`  
 `NEXT_REQUIRED_ACTION=MERGE_TARGET_JASP_CONSUMER_FIX_AND_RUN_FULL_VALIDATION`
 
-**No se autoriza una transición a CERTIFIED hasta la demostración completa de AX-LUN-001 a AX-LUN-021 sobre un único SHA-256 de `LUNITA.squashfs`.**
+**No se autoriza una transición a CERTIFIED hasta la demostración completa de AX-LUN-001 a AX-LUN-022 sobre un único SHA-256 de `LUNITA.squashfs`.**
