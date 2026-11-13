@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   contract-tests:
-    if: ${{ (github.event_name == 'push' && github.ref_name == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109') || (github.event_name == 'workflow_dispatch' && github.ref_name == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109') || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109' && github.event.pull_request.base.ref == 'fix/lunita-v18-certification-path-20261109') }}
+    if: ${{ (github.event_name == 'push' && github.ref_name == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109') || (github.event_name == 'workflow_dispatch' && github.ref_name == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109') || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109' && github.event.pull_request.base.ref == 'fix/lunita-v18-certification-path-20261109') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109') }}
     name: "Lunita v1.8 contract and overlay acceptance"
     concurrency:
       group: lunita-v1-8-contract-${{ github.ref }}
@@ -606,6 +606,8 @@ jobs:
         run: |
           set -euo pipefail
           sudo -n env PATH="$PATH" \
+            GITHUB_RUN_ID="$GITHUB_RUN_ID" \
+            GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" \
             LUNITA_ROOTFS_REAL="$LUNITA_ROOTFS_REAL" \
             LUNITA_ROOT="$LUNITA_ROOT" \
             LUNITA_XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME" \

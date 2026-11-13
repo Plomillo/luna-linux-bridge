@@ -8,6 +8,23 @@ set -Eeuo pipefail
 
 ROOTFS="$(realpath -e "$LUNITA_ROOTFS_REAL")"
 RUNNER_TEMP="$(realpath -e "$RUNNER_TEMP")"
+
+RUN_ID="${GITHUB_RUN_ID:-}"
+RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT:-}"
+if [[ ! "$RUN_ID" =~ ^[0-9]+$ || ! "$RUN_ATTEMPT" =~ ^[0-9]+$ ]]; then
+    echo "BLOCKED: explicit numeric GITHUB_RUN_ID and GITHUB_RUN_ATTEMPT are required for an isolated runtime mount." >&2
+    exit 2
+fi
+HOST_BIND_NAME="lunita-host-${RUN_ID}-${RUN_ATTEMPT}"
+if [[ ! "$HOST_BIND_NAME" =~ ^lunita-host-[A-Za-z0-9-]+$ ]]; then
+    echo "BLOCKED: workflow run identity is unsafe for a mount path." >&2
+    exit 2
+fi
+export GITHUB_RUN_ID="$RUN_ID"
+export GITHUB_RUN_ATTEMPT="$RUN_ATTEMPT"
+export HOST_BIND_NAME
+printf 'LUNITA_WORKFLOW_IDENTITY run_id=%s attempt=%s host_bind_name=%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$HOST_BIND_NAME"
+
 OVERLAY="$LUNITA_ROOT/engines/runtime_engines_v1"
 test -d "$OVERLAY"
 test -f "$OVERLAY/target_runtime_acceptance_v1.py"
@@ -51,12 +68,6 @@ if [ -e "$RESTORE_FILE" ] || [ -L "$RESTORE_FILE" ]; then
     exit 2
 fi
 (set -o noclobber; : > "$RESTORE_FILE")
-HOST_BIND_NAME="lunita-host-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}"
-if [[ ! "$HOST_BIND_NAME" =~ ^lunita-host-[A-Za-z0-9-]+$ ]]; then
-    echo "BLOCKED: workflow run identity is unsafe for a mount path." >&2
-    exit 2
-fi
-export HOST_BIND_NAME
 
 sysctl_path() {
     case "$1" in

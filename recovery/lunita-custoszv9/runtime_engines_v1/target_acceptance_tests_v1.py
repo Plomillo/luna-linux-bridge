@@ -203,11 +203,13 @@ class TargetSystemPythonAliasTests(unittest.TestCase):
 
 class TargetXdgRuntimeDirectoryTests(unittest.TestCase):
     HOST_BIND_NAME = "lunita-host-43332281299-1"
+    RUN_ID = "43332281299"
+    RUN_ATTEMPT = "1"
     RUNTIME_DIR = f"/run/{HOST_BIND_NAME}-runtime-1000"
 
     def test_private_uid1000_runtime_directory_passes(self):
         metadata = mock.Mock(st_mode=0o40700, st_uid=1000, st_gid=1000)
-        environment = {"HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
+        environment = {"GITHUB_RUN_ID": self.RUN_ID, "GITHUB_RUN_ATTEMPT": self.RUN_ATTEMPT, "HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
         with mock.patch.dict(target.os.environ, environment), mock.patch.object(target.os, "lstat", return_value=metadata):
             result = target.verify_xdg_runtime_dir()
         self.assertEqual("PASS_XDG_RUNTIME_DIR_UID1000_PRIVATE", result["status"])
@@ -215,27 +217,42 @@ class TargetXdgRuntimeDirectoryTests(unittest.TestCase):
         self.assertEqual("0o700", result["mode_octal"])
 
     def test_different_workflow_attempts_get_distinct_runtime_paths(self):
-        with mock.patch.dict(target.os.environ, {"HOST_BIND_NAME": "lunita-host-1001-1"}):
+        with mock.patch.dict(target.os.environ, {"GITHUB_RUN_ID": "1001", "GITHUB_RUN_ATTEMPT": "1", "HOST_BIND_NAME": "lunita-host-1001-1"}):
             first_path = target.expected_xdg_runtime_dir()
-        with mock.patch.dict(target.os.environ, {"HOST_BIND_NAME": "lunita-host-1001-2"}):
+        with mock.patch.dict(target.os.environ, {"GITHUB_RUN_ID": "1001", "GITHUB_RUN_ATTEMPT": "2", "HOST_BIND_NAME": "lunita-host-1001-2"}):
             second_path = target.expected_xdg_runtime_dir()
         self.assertNotEqual(first_path, second_path)
 
+    def test_github_run_identity_is_mandatory(self):
+        with mock.patch.dict(target.os.environ, {"HOST_BIND_NAME": self.HOST_BIND_NAME}, clear=True):
+            with self.assertRaisesRegex(target.TargetGateError, "GITHUB_RUN_ID and GITHUB_RUN_ATTEMPT"):
+                target.expected_xdg_runtime_dir()
+
+    def test_host_bind_name_must_match_run_and_attempt(self):
+        environment = {
+            "GITHUB_RUN_ID": self.RUN_ID,
+            "GITHUB_RUN_ATTEMPT": "2",
+            "HOST_BIND_NAME": self.HOST_BIND_NAME,
+        }
+        with mock.patch.dict(target.os.environ, environment):
+            with self.assertRaisesRegex(target.TargetGateError, "does not match"):
+                target.expected_xdg_runtime_dir()
+
     def test_runtime_directory_path_must_match_run_scoped_contract(self):
-        environment = {"HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": "/tmp/runtime"}
+        environment = {"GITHUB_RUN_ID": self.RUN_ID, "GITHUB_RUN_ATTEMPT": self.RUN_ATTEMPT, "HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": "/tmp/runtime"}
         with mock.patch.dict(target.os.environ, environment):
             with self.assertRaisesRegex(target.TargetGateError, "must be exactly"):
                 target.verify_xdg_runtime_dir()
 
     def test_unsafe_run_identity_is_denied(self):
-        environment = {"HOST_BIND_NAME": "../shared", "XDG_RUNTIME_DIR": "/run/../shared-runtime-1000"}
+        environment = {"GITHUB_RUN_ID": "1001", "GITHUB_RUN_ATTEMPT": "1", "HOST_BIND_NAME": "../shared", "XDG_RUNTIME_DIR": "/run/../shared-runtime-1000"}
         with mock.patch.dict(target.os.environ, environment):
-            with self.assertRaisesRegex(target.TargetGateError, "missing or unsafe"):
+            with self.assertRaisesRegex(target.TargetGateError, "does not match"):
                 target.verify_xdg_runtime_dir()
 
     def test_runtime_directory_must_exist_as_a_real_directory(self):
         metadata = mock.Mock(st_mode=0o120700, st_uid=1000, st_gid=1000)
-        environment = {"HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
+        environment = {"GITHUB_RUN_ID": self.RUN_ID, "GITHUB_RUN_ATTEMPT": self.RUN_ATTEMPT, "HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
         with mock.patch.dict(target.os.environ, environment), mock.patch.object(target.os, "lstat", return_value=metadata):
             with self.assertRaisesRegex(target.TargetGateError, "real directory"):
                 target.verify_xdg_runtime_dir()
@@ -246,7 +263,7 @@ class TargetXdgRuntimeDirectoryTests(unittest.TestCase):
             mock.Mock(st_mode=0o40700, st_uid=1000, st_gid=0),
             mock.Mock(st_mode=0o40755, st_uid=1000, st_gid=1000),
         )
-        environment = {"HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
+        environment = {"GITHUB_RUN_ID": self.RUN_ID, "GITHUB_RUN_ATTEMPT": self.RUN_ATTEMPT, "HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
         for metadata in invalid_metadata:
             with self.subTest(uid=metadata.st_uid, gid=metadata.st_gid, mode=oct(metadata.st_mode)):
                 with mock.patch.dict(target.os.environ, environment), mock.patch.object(target.os, "lstat", return_value=metadata):
@@ -262,7 +279,31 @@ class TargetRuntimeMountIsolationContractTests(unittest.TestCase):
         self.assertIn('RUNTIME_BIND_TARGET="/run/${HOST_BIND_NAME}-runtime-1000"', content)
         self.assertIn('export XDG_RUNTIME_DIR="$RUNTIME_BIND_TARGET"', content)
         self.assertIn(r"^lunita-host-[A-Za-z0-9-]+$", content)
+        self.assertIn('RUN_ID="${GITHUB_RUN_ID:-}"', content)
+        self.assertIn('RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT:-}"', content)
+        self.assertIn('if [[ ! "$RUN_ID" =~ ^[0-9]+$ || ! "$RUN_ATTEMPT" =~ ^[0-9]+$ ]]; then', content)
+        self.assertIn('export GITHUB_RUN_ID="$RUN_ID"', content)
+        self.assertIn('export GITHUB_RUN_ATTEMPT="$RUN_ATTEMPT"', content)
+        self.assertIn("LUNITA_WORKFLOW_IDENTITY", content)
+        self.assertNotIn("GITHUB_RUN_ID:-local", content)
         self.assertNotIn("RUNTIME_BIND_TARGET=/run/lunita-runtime-1000", content)
+        identity_validation = content.index('RUN_ID="${GITHUB_RUN_ID:-}"')
+        evidence_creation = content.index('mkdir -p "$path"')
+        runtime_source_creation = content.index('install -d -o 1000 -g 1000 -m 0700 "$RUNTIME_SOURCE"')
+        self.assertLess(identity_validation, evidence_creation)
+        self.assertLess(identity_validation, runtime_source_creation)
+
+        workflow = repository / ".github/workflows/lunita-v18-direct-functional-validation.yml"
+        workflow_content = workflow.read_text(encoding="utf-8")
+        start = workflow_content.index("      - name: Execute actual E01 inference and E02-E15 plus legacy application smoke tests")
+        end = workflow_content.index("      - name: Verify target virtual filesystems were unmounted before image materialization", start)
+        target_step = workflow_content[start:end]
+        self.assertIn('GITHUB_RUN_ID="$GITHUB_RUN_ID"', target_step)
+        self.assertIn('GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT"', target_step)
+        self.assertIn("github.event.pull_request.base.ref == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109'", workflow_content)
+        runtime_source = (repository / "recovery/lunita-custoszv9/runtime_engines_v1/target_runtime_acceptance_v1.py").read_text(encoding="utf-8")
+        self.assertIn('"workflow_identity": workflow_identity_receipt()', runtime_source)
+        self.assertIn('"run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT")', runtime_source)
 
 
 class TargetHostFlatpakInstallWorkflowTests(unittest.TestCase):
@@ -280,13 +321,33 @@ class TargetHostFlatpakInstallWorkflowTests(unittest.TestCase):
         self.assertIn("BLOCKED: host Flatpak installation failed", step)
         self.assertIn("flatpak --version", step)
 
+class TargetRuntimeWorkflowIdentityReceiptTests(unittest.TestCase):
+    def test_receipt_captures_exact_run_attempt_and_runtime_path(self):
+        environment = {
+            "GITHUB_RUN_ID": "43337415331",
+            "GITHUB_RUN_ATTEMPT": "2",
+            "HOST_BIND_NAME": "lunita-host-43337415331-2",
+            "XDG_RUNTIME_DIR": "/run/lunita-host-43337415331-2-runtime-1000",
+        }
+        with mock.patch.dict(target.os.environ, environment, clear=True):
+            receipt = target.workflow_identity_receipt()
+        self.assertEqual({
+            "run_id": "43337415331",
+            "run_attempt": "2",
+            "host_bind_name": "lunita-host-43337415331-2",
+            "xdg_runtime_dir": "/run/lunita-host-43337415331-2-runtime-1000",
+        }, receipt)
+
+
 class TargetLegacyFlatpakDiagnosticTests(unittest.TestCase):
     def test_flatpak_diagnostic_compares_inherited_and_clean_guest_environments(self):
         calls = [
             mock.Mock(returncode=3, stdout="", stderr="inherited dbus failure"),
             mock.Mock(returncode=0, stdout="", stderr=""),
         ]
-        with mock.patch.object(target.subprocess, "run", side_effect=calls) as run:
+        host_bind_name = "lunita-host-43337415331-1"
+        with mock.patch.dict(target.os.environ, {"GITHUB_RUN_ID": "43337415331", "GITHUB_RUN_ATTEMPT": "1", "HOST_BIND_NAME": host_bind_name}), \
+             mock.patch.object(target.subprocess, "run", side_effect=calls) as run:
             result = target.diagnose_flatpak_smoke("org.jamovi.jamovi")
         self.assertTrue(result["diagnostic_only"])
         self.assertEqual(1000, int(result["execution_user"].split(":")[0]))
@@ -299,6 +360,14 @@ class TargetLegacyFlatpakDiagnosticTests(unittest.TestCase):
         self.assertIn("-i", clean_command)
         self.assertIn("/usr/bin/flatpak", clean_command)
         self.assertIn("--system", clean_command)
+        expected_runtime = f"XDG_RUNTIME_DIR=/run/{host_bind_name}-runtime-1000"
+        self.assertIn(expected_runtime, inherited_command)
+        self.assertIn(expected_runtime, clean_command)
+
+    def test_flatpak_diagnostic_requires_workflow_attempt_identity(self):
+        with mock.patch.dict(target.os.environ, {}, clear=True):
+            with self.assertRaisesRegex(target.TargetGateError, "GITHUB_RUN_ID and GITHUB_RUN_ATTEMPT"):
+                target.diagnose_flatpak_smoke("org.jamovi.jamovi")
 
     def test_flatpak_diagnostic_rejects_unregistered_application(self):
         with mock.patch.object(target.subprocess, "run") as run:

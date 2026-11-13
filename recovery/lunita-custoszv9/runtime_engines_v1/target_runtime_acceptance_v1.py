@@ -115,11 +115,28 @@ class TargetGateError(RuntimeError):
 
 
 def expected_xdg_runtime_dir() -> str:
-    """Derive an isolated Flatpak runtime path from this workflow attempt identity."""
+    """Derive and cross-check an isolated Flatpak runtime path from GitHub's run identity."""
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "")
+    if re.fullmatch(r"[0-9]+", run_id) is None or re.fullmatch(r"[0-9]+", run_attempt) is None:
+        raise TargetGateError("GITHUB_RUN_ID and GITHUB_RUN_ATTEMPT are missing or unsafe")
+    expected_bind_name = f"lunita-host-{run_id}-{run_attempt}"
     host_bind_name = os.environ.get("HOST_BIND_NAME", "")
+    if host_bind_name != expected_bind_name:
+        raise TargetGateError("HOST_BIND_NAME does not match the explicit GitHub run ID and attempt")
     if re.fullmatch(r"lunita-host-[A-Za-z0-9-]+", host_bind_name) is None:
-        raise TargetGateError("HOST_BIND_NAME is missing or unsafe for a runtime mount path")
-    return f"/run/{host_bind_name}-runtime-1000"
+        raise TargetGateError("HOST_BIND_NAME is unsafe for a runtime mount path")
+    return f"/run/{expected_bind_name}-runtime-1000"
+
+
+def workflow_identity_receipt() -> dict[str, str | None]:
+    """Record the exact GitHub workflow attempt that owns this target runtime."""
+    return {
+        "run_id": os.environ.get("GITHUB_RUN_ID"),
+        "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+        "host_bind_name": os.environ.get("HOST_BIND_NAME"),
+        "xdg_runtime_dir": os.environ.get("XDG_RUNTIME_DIR"),
+    }
 
 
 def verify_xdg_runtime_dir() -> dict[str, Any]:
@@ -1144,6 +1161,7 @@ def main() -> int:
         "captured_at_utc": datetime.now(timezone.utc).isoformat(),
         "candidate_id": "G06_REBUILD_CANDIDATE_R1",
         "target": str(ROOT),
+        "workflow_identity": workflow_identity_receipt(),
         "status": "BLOCKED",
         "certification": "NOT_GRANTED",
         "canonical_g06_certification": "NOT_GRANTED",
