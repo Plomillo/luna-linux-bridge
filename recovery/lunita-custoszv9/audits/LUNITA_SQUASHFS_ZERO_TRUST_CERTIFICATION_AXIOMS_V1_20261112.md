@@ -686,3 +686,34 @@ Si una prueba JASP conserva `BLOCKED_STORED_REFERENCE_MISMATCH`, el replay deter
 ### Extensión del predicado terminal — AX-LUN-031
 
 `ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-031`. Ningún certificado puede ser emitido a partir de aceptación contractual aislada, artefactos de una revisión distinta o evidencia que no cierre criptográficamente sobre la misma imagen candidata.
+
+## 10. Addendum append-only — AX-LUN-032: coherencia de mutación del recurso formatter embebido en el ejecutable JASP
+
+**Registro de evidencia:** 2026-11-13 UTC. Auditoría del job real `131674850383` del workflow `43361008267`, ejecutado sobre HEAD `b4eb2b7324e5befc4c893de44895ebbb97a3645a`.
+
+### AX-LUN-032 — La identidad de una mutación binaria debe describir el objeto realmente modificado
+
+El parcheador de formato JASP inspecciona recursos Qt comprimidos que pueden residir dentro del propio ejecutable `files/bin/JASP`. Cuando el log identifica ese ejecutable como ruta modificada, el recibo MUST registrar la transición real de su SHA-256 anterior a posterior. La declaración `binary_unchanged_by_formatter_patch` MUST ser equivalente a `before_sha256 == after_sha256`; `formatter_patch.changed_jasp_binary` MUST ser equivalente a `before_sha256 != after_sha256`. Ambas declaraciones MUST concordar con un único registro de recurso parcheado cuya ruta canónica sea exactamente la del ejecutable y cuyos hashes anterior, posterior y observado coincidan. Una mutación fuera del ejecutable MUST quedar respaldada por los registros exactos de esos otros recursos; ningún campo podrá fijarse en `False` con independencia de los bytes reales.
+
+La ausencia de fila, filas duplicadas, hash inconsistente, ruta distinta, indicador contradictorio o transición no explicada MUST producir BLOCKED. El recibo MUST conservar tanto la identidad OSTree de la aplicación/runtime como la identidad byte-level post-mutación; el commit Flatpak no sustituye a la segunda. Las pruebas funcionales MUST operar sobre el ejecutable y runtime resultantes que quedan incluidos en la imagen.
+
+### Evidencia de causa raíz — run #253
+
+El job `131674850383` registró que el parcheador modificó exactamente:
+
+- Ruta: `/home/runner/work/_temp/lunita-rootfs/var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/bin/JASP`.
+- SHA-256 antes: `8f57a4b80b3853fb454bbce3cd42c4844d3fb56e37f98a6833df02e25853fef7`.
+- SHA-256 después: `3ece91409e1a726661c9a26075e9160858a4cd6f759514d1349d63521341b9a4`.
+- Sitios: `call_sites=1`, `latex_sites=1`.
+- El emisor del recibo declaraba `formatter_patch.changed_jasp_binary=false` y el verificador exigía simultáneamente `application.binary_unchanged_by_formatter_patch=true`. Esa contradicción fija bloqueó el recibo aunque el log, los hashes pre/post y el cambio real estuvieran presentes.
+- Consecuencia observada: `BLOCKED_JASP_POST_MUTATION_RUNTIME_IDENTITY`; los cuatro casos de regresión no se ejecutaron (`case_count=0`). No es válido clasificar esos casos como fallos funcionales JASP ni como PASS.
+
+### Condición de validación
+
+El contrato debe aceptar tanto (a) una mutación embebida en `bin/JASP`, demostrada por una única fila de parche con hashes coincidentes, como (b) una mutación externa de un recurso Qt con el ejecutable sin cambios. Debe rechazar una transición binaria que no tenga la fila correspondiente. El self-test del emisor y las pruebas unitarias del verificador MUST reproducir estos tres escenarios. Después, una nueva ejecución íntegra en HEAD posterior debe demostrar: recibo válido; ejecución real de los cuatro casos JASP; informe independiente PASS; cierre exacto del manifiesto post-validación; recibo S32; y certificado final unido al SHA-256 interno de la misma imagen.
+
+**Estado al registrar:** `ROOT_CAUSE_IDENTIFIED_FROM_REAL_LOGS; IMPLEMENTATION_PATCHED_IN_BRANCH; CONTRACT_TESTS_PENDING; REAL_TARGET_RERUN_PENDING; CERTIFICATION_NOT_GRANTED`.
+
+### Extensión del predicado terminal — AX-LUN-032
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-032`. Este axioma no debilita ningún control de integridad: convierte los indicadores estáticos contradictorios en una comprobación derivada de hashes reales y mantiene fail-closed cualquier discrepancia.
