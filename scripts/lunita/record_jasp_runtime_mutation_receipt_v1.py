@@ -265,7 +265,7 @@ def self_test() -> None:
             sdk_ref="org.kde.Sdk//6.11", sdk_commit="c" * 64, qt_version="6.11.3",
             source_url="https://example.invalid/qt/archive/v6.11.3.tar.gz",
             source_archive=archive, build_dir=build, qt_library_dir=installed,
-            jasp_binary=jasp, jasp_binary_before_sha256=hashlib.sha256(b"pre-patch JASP").hexdigest(),
+            jasp_binary=jasp, jasp_binary_before_sha256=hashlib.sha256(b"post-patch JASP").hexdigest(),
             pre_qt_snapshot=before, patch_script=patch_script, patch_log=patch_log,
         )
         receipt = build_receipt(args)
