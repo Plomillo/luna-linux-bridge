@@ -1190,15 +1190,30 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         f"ORIGINAL_FIXTURE_ALIAS_VALID={'TRUE' if original_alias_valid else 'FALSE'}\n"
                     )
                 try:
-                    run = run_bounded_process_tree(command, env=env, timeout=300)
+                    executable_sha256 = mutation_identity.get("jasp_binary_sha256", "")
+                    runtime_ostree_commit = mutation_identity.get("flatpak_runtime_commit", "")
+                    run = run_bounded_process_tree(
+                        command, env=env, timeout=300, case_id=case_id,
+                        executable_sha256=executable_sha256,
+                        runtime_ostree_commit=runtime_ostree_commit,
+                    )
                     rc = int(run.returncode)
+                    process_receipt = getattr(run, "process_tree_receipt", None)
+                    process_receipt_valid = validate_process_tree_receipt(
+                        process_receipt, command=command, env=env, timeout=300,
+                        case_id=case_id, executable_sha256=executable_sha256,
+                        runtime_ostree_commit=runtime_ostree_commit,
+                        stdout=run.stdout or "", returncode=rc,
+                    )
                     runtime_identity = inspect_jasp_runtime_identity(run.stdout or "")
                     fixture_integrity = original_alias_valid if case_id == "flatpak_launch" else True
                     case_status = "PASS" if (
                         rc == 0 and fixture_integrity and runtime_identity.get("status") == "PASS"
+                        and process_receipt_valid
                     ) else "BLOCKED"
                     payload = (
-                        header + run.stdout + ("" if run.stdout.endswith("\n") else "\n")
+                        header + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\n"
+                        + run.stdout + ("" if run.stdout.endswith("\n") else "\n")
                         + f"\n{marker}={rc}\nFINISHED_UTC={utc()}\n"
                     )
                     log_path.write_text(payload, encoding="utf-8", errors="replace")
@@ -1216,11 +1231,22 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "original_fixture_sha256": original_source_sha if case_id == "flatpak_launch" else None,
                         "original_fixture_alias_valid": fixture_integrity if case_id == "flatpak_launch" else None,
                         "runtime_identity": runtime_identity,
+                        "process_tree_receipt": process_receipt,
+                        "process_tree_receipt_valid": process_receipt_valid,
                     }
                 except subprocess.TimeoutExpired as exc:
                     output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
+                    process_receipt = getattr(exc, "process_tree_receipt", None)
+                    process_receipt_valid = validate_process_tree_receipt(
+                        process_receipt, command=command, env=env, timeout=300,
+                        case_id=case_id,
+                        executable_sha256=mutation_identity.get("jasp_binary_sha256", ""),
+                        runtime_ostree_commit=mutation_identity.get("flatpak_runtime_commit", ""),
+                        stdout=output, returncode=124, timeout_triggered=True,
+                    )
                     log_path.write_text(
-                        header + output + f"\n{marker}=124\nTIMEOUT=300\n",
+                        header + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\n"
+                        + output + f"\n{marker}=124\nTIMEOUT=300\n",
                         encoding="utf-8",
                     )
                     results["tests"][case_id] = {
@@ -1230,10 +1256,14 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "original_fixture": fixture,
                         "log_path": str(log_path),
                         "log_sha256": sha_file(log_path),
+                        "process_tree_receipt": process_receipt,
+                        "process_tree_receipt_valid": process_receipt_valid,
                     }
                 except Exception as exc:
+                    process_receipt = getattr(exc, "process_tree_receipt", None)
                     log_path.write_text(
-                        header + f"EXECUTION_ERROR={type(exc).__name__}:{str(exc)[:1000]}\n{marker}=125\n",
+                        header + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\n"
+                        + f"EXECUTION_ERROR={type(exc).__name__}:{str(exc)[:1000]}\n{marker}=125\n",
                         encoding="utf-8",
                     )
                     results["tests"][case_id] = {
@@ -1243,6 +1273,8 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "original_fixture": fixture,
                         "log_path": str(log_path),
                         "log_sha256": sha_file(log_path),
+                        "process_tree_receipt": process_receipt,
+                        "process_tree_receipt_valid": False,
                     }
             results["roundtrip_gate"] = run_death_penalty_roundtrip(actual_commit, env, stamp, mutation_identity)
     except Exception as exc:
