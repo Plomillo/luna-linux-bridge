@@ -53,7 +53,7 @@ class TargetJaspBuilderConsumerContractTests(unittest.TestCase):
         builder_path = repository / "scripts/lunita/build_rootfs_candidate_v1.sh"
         builder = builder_path.read_text(encoding="utf-8")
         start = builder.index('  "lupa": {')
-        end = builder.index("\\n  },", start)
+        end = builder.index("\n  },", start)
         lupa_block = builder[start:end]
         for field in (
             '"version": "$JASP_OBSERVED_VERSION"',
