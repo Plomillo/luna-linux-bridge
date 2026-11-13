@@ -2455,6 +2455,8 @@ def direct_candidate_rootfs_manifest_closure(
             "packager_source_sha256": payload["packager_source_sha256"],
             "manifest_closure_receipt_path": str(receipt_path),
             "manifest_closure_receipt_sha256": receipt_sha,
+            "same_canonical_algorithm": True,
+            "exact_manifest_equality": equal,
             "evidence": {
                 str(receipt_path): receipt_sha,
                 str(package_path): package_sha,

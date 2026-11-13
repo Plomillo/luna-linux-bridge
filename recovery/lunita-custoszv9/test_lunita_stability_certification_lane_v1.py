@@ -1728,6 +1728,8 @@ class PostvalidationManifestClosureRegressionTests(unittest.TestCase):
         self.assertEqual("c" * 64, receipt["independent_inventory_report_sha256"])
         self.assertEqual("d" * 64, receipt["independent_inventory_manifest_sha256"])
         self.assertTrue(receipt["exact_manifest_equality"])
+        self.assertIs(True, result["same_canonical_algorithm"])
+        self.assertIs(True, result["exact_manifest_equality"])
 
     def test_receipt_snapshot_is_hash_bound_before_tempdir_cleanup(self):
         result = self._run_closure("a" * 64)
@@ -1742,6 +1744,7 @@ class PostvalidationManifestClosureRegressionTests(unittest.TestCase):
         result = self._run_closure("e" * 64)
         self.assertEqual("BLOCKED", result["status"])
         self.assertEqual(1, result["returncode"])
+        self.assertIs(False, result["exact_manifest_equality"])
         self.assertIn("does not equal the packaged source manifest", result["details"])
 
     def test_postvalidation_closure_fails_closed_when_inventory_or_worker_is_missing(self):
