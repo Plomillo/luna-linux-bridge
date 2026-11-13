@@ -630,6 +630,11 @@ class JaspRunnerTests(unittest.TestCase):
                 mock.patch.object(lane, "OUT", out),
                 mock.patch.object(lane, "ROOTFS", rootfs),
                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
+                mock.patch.object(lane, "verify_jasp_runtime_mutation_receipt", return_value={
+                    "status": "PASS", "returncode": 0, "receipt_sha256": "a" * 64,
+                    "jasp_binary_sha256": "b" * 64, "flatpak_runtime_commit": "c" * 64,
+                    "flatpak_sdk_commit": "d" * 64, "evidence": {},
+                }),
                 mock.patch.object(lane.subprocess, "run", side_effect=fake_run) as runner,
             ):
                 result = lane.run_jasp_regression_suite(report)
