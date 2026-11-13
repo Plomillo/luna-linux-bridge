@@ -24,6 +24,13 @@ from typing import Any
 CANDIDATE_ID = "G06_REBUILD_CANDIDATE_R1"
 TARGET_PASS = "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED"
 PACKAGE_PASS = "PASS_SQUASHFS_PACKAGE_AND_ROUNDTRIP_NOT_CERTIFIED"
+EXPECTED_JASP_VERSION = "0.98.8"
+EXPECTED_JASP_DEPLOYMENT_COMMIT = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
+EXPECTED_JASP_SOURCE_COMMIT = "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1"
+EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1 = "1aec5921883d56388c91627b09ba9cf6eb07c1d6"
+EXPECTED_JASP_FLATHUB_MANIFEST_SHA256 = "f83fd086dffbf2ca64b6e10e1589693ddf6ddbfc93ca0156feb66473cd52022d"
+EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1 = "d57ba1e22d4cd00f3848034dc09737498b91346b"
+EXPECTED_JASP_SOURCE_CMAKE_SHA256 = "5d60c82281a0329016245779dd7549807726c74f11a5b671cf95f192572deaac"
 
 
 class PackageError(RuntimeError):
@@ -198,6 +205,35 @@ def tree_manifest(root: pathlib.Path) -> dict[str, Any]:
         "entries": rows,
     }
 
+def validate_jasp_source_identity(rootfs_build: object) -> dict[str, Any]:
+    """Require target acceptance to carry the independently verified JASP source identity."""
+    if not isinstance(rootfs_build, dict) or rootfs_build.get("status") != "PASS_ROOTFS_BUILD_IDENTITY":
+        raise PackageError("Target receipt lacks a passing rootfs identity section")
+    identity = rootfs_build.get("jasp_source_release_identity")
+    expected = {
+        "status": "PASS_JASP_SOURCE_RELEASE_IDENTITY",
+        "application_id": "org.jaspstats.JASP",
+        "version": EXPECTED_JASP_VERSION,
+        "cmake_project_version": "0.98.8.0",
+        "flathub_manifest_git_blob_sha1": EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+        "flathub_manifest_sha256": EXPECTED_JASP_FLATHUB_MANIFEST_SHA256,
+        "jasp_source_cmake_git_blob_sha1": EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+        "jasp_source_cmake_sha256": EXPECTED_JASP_SOURCE_CMAKE_SHA256,
+        "jasp_source_commit": EXPECTED_JASP_SOURCE_COMMIT,
+        "deployment_commit": EXPECTED_JASP_DEPLOYMENT_COMMIT,
+        "manifest_jasp_source_commit_matches_pin": True,
+    }
+    if not isinstance(identity, dict):
+        raise PackageError("Target receipt lacks JASP source-release identity evidence")
+    for key, expected_value in expected.items():
+        if identity.get(key) != expected_value:
+            raise PackageError(f"Target receipt JASP source-release identity mismatch: {key}")
+    receipt_sha = identity.get("source_release_identity_receipt_sha256")
+    if not isinstance(receipt_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", receipt_sha):
+        raise PackageError("Target receipt JASP source identity receipt SHA-256 is missing or malformed")
+    return identity
+
+
 def validate_target_receipt(path: pathlib.Path) -> dict[str, Any]:
     reject_symlink_components(path)
     path = path.resolve(strict=True)
@@ -226,6 +262,7 @@ def validate_target_receipt(path: pathlib.Path) -> dict[str, Any]:
         value = receipt.get(field)
         if not isinstance(value, dict) or value.get("status") != status:
             raise PackageError(f"Target receipt lacks required passing evidence: {field}")
+    validate_jasp_source_identity(receipt.get("rootfs_build"))
     tests = receipt.get("engine_acceptance_tests")
     if not isinstance(tests, dict) or tests.get("status") != "PASS" or tests.get("skipped") != 0:
         raise PackageError("Target receipt does not prove a complete, zero-skip engine suite")
@@ -481,7 +518,23 @@ def self_test() -> dict[str, Any]:
             "candidate_id": CANDIDATE_ID,
             "status": TARGET_PASS,
             "certification": "NOT_GRANTED",
-            "rootfs_build": {"status": "PASS_ROOTFS_BUILD_IDENTITY"},
+            "rootfs_build": {
+                "status": "PASS_ROOTFS_BUILD_IDENTITY",
+                "jasp_source_release_identity": {
+                    "status": "PASS_JASP_SOURCE_RELEASE_IDENTITY",
+                    "application_id": "org.jaspstats.JASP",
+                    "version": EXPECTED_JASP_VERSION,
+                    "cmake_project_version": "0.98.8.0",
+                    "flathub_manifest_git_blob_sha1": EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+                    "flathub_manifest_sha256": EXPECTED_JASP_FLATHUB_MANIFEST_SHA256,
+                    "jasp_source_cmake_git_blob_sha1": EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+                    "jasp_source_cmake_sha256": EXPECTED_JASP_SOURCE_CMAKE_SHA256,
+                    "jasp_source_commit": EXPECTED_JASP_SOURCE_COMMIT,
+                    "deployment_commit": EXPECTED_JASP_DEPLOYMENT_COMMIT,
+                    "manifest_jasp_source_commit_matches_pin": True,
+                    "source_release_identity_receipt_sha256": "a" * 64,
+                },
+            },
             "overlay_integrity": {"status": "PASS_OVERLAY_INTEGRITY"},
             "e04_quantization": {"status": "PASS_E04_INT8_QUALITY_GATE"},
             "qwen_e01": {"status": "PASS_E01_QWEN_INFERENCE"},
@@ -490,6 +543,17 @@ def self_test() -> dict[str, Any]:
         }
         receipt_file = base / "target-receipt.json"
         receipt_file.write_text(json.dumps(receipt), encoding="utf-8")
+        invalid_receipt = dict(receipt)
+        invalid_rootfs_build = dict(receipt["rootfs_build"])
+        invalid_rootfs_build.pop("jasp_source_release_identity")
+        invalid_receipt["rootfs_build"] = invalid_rootfs_build
+        invalid_receipt_path = base / "target-receipt-without-jasp-source.json"
+        invalid_receipt_path.write_text(json.dumps(invalid_receipt), encoding="utf-8")
+        try:
+            validate_target_receipt(invalid_receipt_path)
+            checks["missing_jasp_source_identity_blocks_package"] = False
+        except PackageError:
+            checks["missing_jasp_source_identity_blocks_package"] = True
         first = package_rootfs(root, base / "first" / "LUNITA.squashfs", receipt_file, require_root=False)
         second = package_rootfs(root, base / "second" / "LUNITA.squashfs", receipt_file, require_root=False)
         checks["source_tree_roundtrip_verified"] = first["roundtrip_manifest_match"] is True
