@@ -45,6 +45,7 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "certification": "NOT_GRANTED",
             "canonical_g06_certification": "NOT_GRANTED",
             "canonical_g08_binding_mutation": False,
+            "workflow_identity": {"run_id": "777", "run_attempt": "1"},
         }), encoding="utf-8")
         target_sha = cert.sha256_file(target)
 
@@ -55,6 +56,8 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "candidate_id": cert.CANDIDATE_ID,
             "candidate_version": cert.VERSION,
             "certification": "NOT_GRANTED",
+            "jasp_binary_sha256": "b" * 64,
+            "flatpak_runtime_commit": "c" * 64,
         }), encoding="utf-8")
         jasp_mutation_sha = cert.sha256_file(jasp_mutation_receipt)
 
@@ -70,6 +73,7 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "target_v1_8_runtime_acceptance_e01_e15_int8",
             "candidate_rootfs_inventory_and_dependency_manifest",
             "jasp_packaged_fixture_nonregression",
+            "jasp_process_tree_lifecycle",
             "jasp_post_mutation_runtime_identity",
             "squashfs_rootfs_postvalidation_manifest_closure",
         }
@@ -78,7 +82,46 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "status": "PASS", "returncode": 0,
             "receipt_path": str(jasp_mutation_receipt),
             "receipt_sha256": jasp_mutation_sha,
+            "jasp_binary_sha256": "b" * 64,
+            "flatpak_runtime_commit": "c" * 64,
             "evidence": {str(jasp_mutation_receipt): jasp_mutation_sha},
+        }
+        case_ids = [
+            "flatpak_launch", "reliability", "weight_gain",
+            "death_penalty_save", "death_penalty_rerun",
+        ]
+        process_invocations = [{
+            "schema": "LUNITA_JASP_PROCESS_TREE_RECEIPT/1.0",
+            "status": "PASS_PROCESS_GROUP_CLOSED",
+            "run_id": "777",
+            "run_attempt": "1",
+            "case_id": case_id,
+            "invocation_id": f"{index + 1:032x}",
+            "process_group_id": 4000 + index,
+            "session_id": 4000 + index,
+            "executable_sha256": "b" * 64,
+            "runtime_ostree_commit": "c" * 64,
+            "command_sha256": "d" * 64,
+            "timeout_seconds": 300,
+            "started_at_utc": "2026-11-13T07:00:00Z",
+            "finished_at_utc": "2026-11-13T07:00:01Z",
+            "returncode": 0,
+            "timeout_triggered": False,
+            "termination_signals": [],
+            "remaining_live_pids": [],
+            "process_group_closed": True,
+            "captured_output_sha256": "e" * 64,
+            "captured_output_bytes": 12,
+        } for index, case_id in enumerate(case_ids)]
+        checks["jasp_process_tree_lifecycle"] = {
+            "status": "PASS", "returncode": 0,
+            "invocation_count": 5, "expected_invocation_count": 5,
+            "unique_invocation_id_count": 5,
+            "workflow_identity": {"run_id": "777", "run_attempt": "1"},
+            "jasp_binary_sha256": "b" * 64,
+            "flatpak_runtime_ostree_commit": "c" * 64,
+            "invocations": process_invocations,
+            "evidence": {},
         }
         checks["candidate_manifest_identity_sha256"]["sha256"] = manifest_sha
         checks["target_v1_8_runtime_acceptance_e01_e15_int8"].update({
