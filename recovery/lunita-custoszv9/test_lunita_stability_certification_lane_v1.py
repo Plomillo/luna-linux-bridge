@@ -1097,8 +1097,10 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
 
 class JaspPostMutationRuntimeIdentityTests(unittest.TestCase):
     def test_missing_mutation_receipt_fails_closed(self):
-        with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \\
-             mock.patch.dict(lane.os.environ, {}, clear=True):
+        with (
+            mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"),
+            mock.patch.dict(lane.os.environ, {}, clear=True),
+        ):
             result = lane.verify_jasp_runtime_mutation_receipt()
         self.assertEqual("BLOCKED", result["status"])
         self.assertEqual(1, result["returncode"])
