@@ -52,6 +52,57 @@ def collect_library_records(root: pathlib.Path) -> list[dict[str, Any]]:
     return [file_record(path) for path in files]
 
 
+def parse_patch_log(path: pathlib.Path, files_root: pathlib.Path) -> tuple[list[dict[str, Any]], int, int]:
+    """Require explicit before/after hashes for each formatter resource actually modified."""
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("JASP formatter patch log is missing or unsafe")
+    pattern = re.compile(
+        r"^Patched JASP result formatter in (.+) "
+        r"\(call sites=(\d+), latex sites=(\d+), "
+        r"before_sha256=([0-9a-f]{64}), after_sha256=([0-9a-f]{64})\)$"
+    )
+    resources = []
+    total_calls = 0
+    total_latex = 0
+    root = files_root.resolve(strict=True)
+    for line in path.read_text(encoding="utf-8", errors="strict").splitlines():
+        if not line.startswith("Patched JASP result formatter in "):
+            continue
+        match = pattern.fullmatch(line)
+        if not match:
+            raise ValueError("Formatter patch log row lacks exact path and pre/post SHA-256 values")
+        path_text, calls_text, latex_text, before_sha, after_sha = match.groups()
+        resource_path = pathlib.Path(path_text).resolve(strict=True)
+        if resource_path.is_symlink() or not resource_path.is_file():
+            raise ValueError("Patched formatter resource is missing or unsafe")
+        try:
+            resource_path.relative_to(root)
+        except ValueError as exc:
+            raise ValueError("Patched formatter resource escapes the pinned JASP Flatpak files tree") from exc
+        observed_sha = sha256_file(resource_path)
+        if before_sha == after_sha or observed_sha != after_sha:
+            raise ValueError("Formatter resource pre/post hash transition is invalid")
+        calls, latex = int(calls_text), int(latex_text)
+        if calls < 1 or latex < 1:
+            raise ValueError("Formatter resource lacks required patch sites")
+        resources.append({
+            "path": str(resource_path),
+            "before_sha256": before_sha,
+            "after_sha256": after_sha,
+            "observed_after_sha256": observed_sha,
+            "call_sites": calls,
+            "latex_sites": latex,
+            "size_bytes": resource_path.stat().st_size,
+        })
+        total_calls += calls
+        total_latex += latex
+    if not resources or total_calls < 1 or total_latex < 1:
+        raise ValueError("No fully hash-verified JASP formatter resource mutation was observed")
+    if len({row["path"] for row in resources}) != len(resources):
+        raise ValueError("Duplicate formatter resource paths were reported")
+    return resources, total_calls, total_latex
+
+
 def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
     if args.app_commit_before != PINNED_APP_COMMIT or args.app_commit_after != PINNED_APP_COMMIT:
         raise ValueError("JASP application Flatpak commit moved from the pinned candidate")
@@ -76,18 +127,12 @@ def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
     jasp_binary = file_record(args.jasp_binary)
     if not re.fullmatch(r"[0-9a-f]{64}", args.jasp_binary_before_sha256 or ""):
         raise ValueError("Pre-mutation JASP executable hash is missing or malformed")
-    if jasp_binary["sha256"] == args.jasp_binary_before_sha256:
-        raise ValueError("JASP executable bytes were not changed by the declared formatter patch")
+    binary_unchanged = jasp_binary["sha256"] == args.jasp_binary_before_sha256
 
     patch_script = file_record(args.patch_script)
     patch_log = file_record(args.patch_log)
-    patch_text = args.patch_log.read_text(encoding="utf-8", errors="replace")
-    call_match = re.search(r"call sites=(\d+),\s*latex sites=(\d+)", patch_text)
-    if not call_match:
-        raise ValueError("Patch log has no verifiable formatter call-site counts")
-    call_sites, latex_sites = map(int, call_match.groups())
-    if call_sites < 1 or latex_sites < 1:
-        raise ValueError("Required formatter patch sites were not all observed")
+    files_root = args.jasp_binary.resolve(strict=True).parent.parent
+    patched_resources, call_sites, latex_sites = parse_patch_log(args.patch_log, files_root)
     pre_qt_snapshot = parse_sha256sum_snapshot(args.pre_qt_snapshot)
     pre_qt_snapshot_record = file_record(args.pre_qt_snapshot)
 
@@ -105,6 +150,7 @@ def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
             "commit_after": args.app_commit_after,
             "binary_before_sha256": args.jasp_binary_before_sha256,
             "binary_after": jasp_binary,
+            "binary_unchanged_by_formatter_patch": binary_unchanged,
         },
         "runtime": {
             "flatpak_ref": args.runtime_ref,
@@ -128,7 +174,8 @@ def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
             "log": patch_log,
             "call_sites": call_sites,
             "latex_sites": latex_sites,
-            "changed_jasp_binary": True,
+            "patched_resources": patched_resources,
+            "changed_jasp_binary": False,
             "r_startup_profile_mutated": False,
         },
         "certification": "NOT_GRANTED",
