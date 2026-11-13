@@ -134,6 +134,8 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             f"DETERMINISTIC_FIXTURE_RECEIPT_PATH={seeded_receipt_path}\n"
             f"DETERMINISTIC_FIXTURE_RECEIPT_SHA256={seeded_receipt['receipt_sha256']}\n"
             f"DETERMINISTIC_FIXTURE_CLONE_SHA256={seeded_receipt['clone_sha256']}\n"
+            f"DETERMINISTIC_FIXTURE_CLONE_SHA256_AFTER_EXECUTION={seeded_receipt['clone_sha256']}\n"
+            "DETERMINISTIC_FIXTURE_CLONE_UNCHANGED_AFTER_EXECUTION=TRUE\n"
             "DETERMINISTIC_FIXTURE_SEED_ENABLED=TRUE\n",
             encoding="utf-8",
         )
@@ -174,6 +176,8 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
                     "original_packaged_fixture_identity_valid": True,
                     "deterministic_fixture_evidence_valid": True,
                     "deterministic_fixture_receipt_valid": True,
+                    "deterministic_fixture_clone_sha256_after_execution": seeded_receipt["clone_sha256"],
+                    "deterministic_fixture_clone_unchanged_after_execution": True,
                     "deterministic_fixture_receipt": seeded_receipt,
                     "deterministic_fixture_path": seeded_receipt["clone_path"],
                     "evidence_path": str(seeded_log_path),
@@ -454,6 +458,23 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
                 with self.assertRaisesRegex(cert.CertificationError, "seed transition"):
                     cert.validate_jasp_seeded_fixture_evidence(check)
 
+
+
+
+    def test_seeded_fixture_must_match_post_execution_clone_hash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = self.prepare(pathlib.Path(tmp))
+            report = json.loads(paths["independent"].read_text(encoding="utf-8"))
+            check = report["checks"]["jasp_packaged_fixture_nonregression"]
+            row = check["cases"]["flatpak_launch"]
+            with mock.patch.object(cert, "JASP_DEATH_PENALTY_SOURCE_SHA256", paths["source_sha"]):
+                row["deterministic_fixture_clone_unchanged_after_execution"] = False
+                with self.assertRaisesRegex(cert.CertificationError, "post-execution"):
+                    cert.validate_jasp_seeded_fixture_evidence(check)
+                row["deterministic_fixture_clone_unchanged_after_execution"] = True
+                row["deterministic_fixture_clone_sha256_after_execution"] = "0" * 64
+                with self.assertRaisesRegex(cert.CertificationError, "post-execution"):
+                    cert.validate_jasp_seeded_fixture_evidence(check)
 
     def test_seeded_fixture_clone_must_be_removed_after_execution(self):
         with tempfile.TemporaryDirectory() as tmp:
