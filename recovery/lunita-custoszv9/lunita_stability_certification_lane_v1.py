@@ -637,7 +637,7 @@ def jasp_result_rows_sha256(rows: list[str]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: str) -> dict:
+def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: str, mutation_identity: dict | None = None) -> dict:
     """Verify two independent executions of the same hash-bound seeded input.
 
     The original archive and stored reference results remain immutable. The
@@ -689,9 +689,23 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     def execute_replay(command: list[str], label: str, log_path: pathlib.Path) -> dict:
         started = utc()
         try:
-            proc = run_bounded_process_tree(command, env=env, timeout=300)
+            identity = mutation_identity if isinstance(mutation_identity, dict) else {}
+            executable_sha256 = identity.get("jasp_binary_sha256", "")
+            runtime_ostree_commit = identity.get("flatpak_runtime_commit", "")
+            invocation_case_id = f"death_penalty_{label}"
+            proc = run_bounded_process_tree(
+                command, env=env, timeout=300, case_id=invocation_case_id,
+                executable_sha256=executable_sha256,
+                runtime_ostree_commit=runtime_ostree_commit,
+            )
             output = proc.stdout or ""
             rc = int(proc.returncode)
+            process_receipt = getattr(proc, "process_tree_receipt", None)
+            process_receipt_valid = validate_process_tree_receipt(
+                process_receipt, command=command, env=env, timeout=300,
+                case_id=invocation_case_id, executable_sha256=executable_sha256,
+                runtime_ostree_commit=runtime_ostree_commit, stdout=output, returncode=rc,
+            )
             try:
                 rows = extract_actual_jasp_unit_test_rows(output)
                 rows_sha = jasp_result_rows_sha256(rows)
@@ -705,7 +719,9 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
                 }
             reference_mismatch = rc == 1 and "The results are different" in output
             runtime_identity = inspect_jasp_runtime_identity(output)
-            if runtime_identity.get("status") != "PASS":
+            if not process_receipt_valid:
+                status = "BLOCKED_PROCESS_TREE_RECEIPT"
+            elif runtime_identity.get("status") != "PASS":
                 status = "BLOCKED_JASP_RUNTIME_IDENTITY"
             elif capture_status != "PASS":
                 status = capture_status
@@ -718,6 +734,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             marker = "SAVE_RUN_RC" if label == "save" else "STRICT_RERUN_RC"
             log_path.write_text(
                 f"START_UTC={started}\\nCOMMAND={json.dumps(command)}\\nAPP_COMMIT={actual_commit}\\n"
+                + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\\n"
                 + output + ("" if output.endswith("\\n") else "\\n")
                 + f"ACTUAL_RESULT_ROWS_SHA256={rows_sha or 'UNAVAILABLE'}\\n"
                 + f"REFERENCE_MISMATCH={'TRUE' if reference_mismatch else 'FALSE'}\\n"
@@ -733,12 +750,24 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
                 "actual_result_rows_sha256": rows_sha,
                 "result_capture_status": capture_status,
                 "runtime_identity": runtime_identity,
+                "process_tree_receipt": process_receipt,
+                "process_tree_receipt_valid": process_receipt_valid,
                 "stored_reference_mismatch": reference_mismatch,
             }
         except subprocess.TimeoutExpired as exc:
             output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
+            process_receipt = getattr(exc, "process_tree_receipt", None)
+            process_receipt_valid = validate_process_tree_receipt(
+                process_receipt, command=command, env=env, timeout=300,
+                case_id=f"death_penalty_{label}",
+                executable_sha256=(mutation_identity or {}).get("jasp_binary_sha256", ""),
+                runtime_ostree_commit=(mutation_identity or {}).get("flatpak_runtime_commit", ""),
+                stdout=output, returncode=124, timeout_triggered=True,
+            )
             log_path.write_text(
-                f"START_UTC={started}\\nCOMMAND={json.dumps(command)}\\n{output}\\nTIMEOUT=300\\n",
+                f"START_UTC={started}\\nCOMMAND={json.dumps(command)}\\n"
+                + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\\n"
+                + f"{output}\\nTIMEOUT=300\\n",
                 encoding="utf-8", errors="replace",
             )
             return {
@@ -749,6 +778,28 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
                 "actual_result_rows": [],
                 "actual_result_rows_sha256": None,
                 "runtime_identity": {"status": "BLOCKED_TIMEOUT"},
+                "process_tree_receipt": process_receipt,
+                "process_tree_receipt_valid": process_receipt_valid,
+                "stored_reference_mismatch": False,
+            }
+        except ProcessTreeCleanupError as exc:
+            process_receipt = exc.process_tree_receipt
+            log_path.write_text(
+                f"START_UTC={started}\\nCOMMAND={json.dumps(command)}\\n"
+                + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\\n"
+                + f"PROCESS_TREE_CLEANUP_ERROR={str(exc)[:800]}\\n",
+                encoding="utf-8", errors="replace",
+            )
+            return {
+                "status": "BLOCKED_PROCESS_TREE_CLEANUP",
+                "returncode": 125,
+                "log_path": str(log_path),
+                "log_sha256": sha_file(log_path),
+                "actual_result_rows": [],
+                "actual_result_rows_sha256": None,
+                "runtime_identity": {"status": "BLOCKED_PROCESS_TREE_CLEANUP"},
+                "process_tree_receipt": process_receipt,
+                "process_tree_receipt_valid": False,
                 "stored_reference_mismatch": False,
             }
 
@@ -851,6 +902,10 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         "deterministic_fixture_receipt_valid": fixture_receipt_valid,
         "save_run": save_run,
         "strict_rerun_after_save": rerun,
+        "process_tree_receipt_valid": (
+            save_run.get("process_tree_receipt_valid") is True
+            and rerun.get("process_tree_receipt_valid") is True
+        ),
         "temporary_fixture_sha256_before": temp_before,
         "temporary_fixture_sha256_after_save": temp_after,
         "temporary_fixture_sha256_after_rerun": temp_after_rerun,
@@ -1189,7 +1244,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "log_path": str(log_path),
                         "log_sha256": sha_file(log_path),
                     }
-            results["roundtrip_gate"] = run_death_penalty_roundtrip(actual_commit, env, stamp)
+            results["roundtrip_gate"] = run_death_penalty_roundtrip(actual_commit, env, stamp, mutation_identity)
     except Exception as exc:
         results["status"] = "BLOCKED_JASP_TEST_EXECUTOR"
         results["executor_error"] = {"type": type(exc).__name__, "message": str(exc)[:1200]}
@@ -1212,6 +1267,8 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
         and roundtrip.get("save_actual_result_rows_sha256") == roundtrip.get("rerun_actual_result_rows_sha256")
         and roundtrip.get("original_sample_unchanged") is True
         and roundtrip.get("deterministic_fixture_receipt_valid") is True
+        and (roundtrip.get("save_run") or {}).get("process_tree_receipt_valid") is True
+        and (roundtrip.get("strict_rerun_after_save") or {}).get("process_tree_receipt_valid") is True
         and verify_deterministic_fixture_receipt(
             roundtrip_fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=False
         )
