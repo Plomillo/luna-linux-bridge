@@ -1523,13 +1523,23 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
             and row.get("acceptance_scope") == "DETERMINISTIC_REPLAY_ONLY"
             and row.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
         )
+        if not isinstance(row, dict):
+            return False
         strict_pass = row.get("status") == "PASS"
-        evidence_path = pathlib.Path(row.get("evidence_path", ""))
+        evidence_value = row.get("evidence_path")
+        if not isinstance(evidence_value, str) or not evidence_value.strip():
+            return False
+        try:
+            evidence_path = pathlib.Path(evidence_value)
+            if not evidence_path.is_file() or evidence_path.is_symlink():
+                return False
+            observed_sha256 = sha_file(evidence_path)
+        except (OSError, RuntimeError, TypeError, ValueError):
+            return False
         return bool(
             (strict_pass or replay_only)
             and row.get("returncode") == 0
-            and evidence_path.is_file() and not evidence_path.is_symlink()
-            and sha_file(evidence_path) == row.get("evidence_sha256")
+            and observed_sha256 == row.get("evidence_sha256")
         )
     jasp_case_evidence_valid = (
         set(jasp_cases) == set(JASP_CASES)
