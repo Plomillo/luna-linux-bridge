@@ -1213,6 +1213,29 @@ def latest_target_runtime_acceptance() -> dict:
         return blocked("LATEST_RECEIPT_NOT_PASS")
     if row.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1":
         return blocked("CANDIDATE_IDENTITY_MISMATCH")
+    identity = row.get("workflow_identity")
+    if not isinstance(identity, dict):
+        return blocked("WORKFLOW_IDENTITY_MISSING_OR_INVALID")
+    run_id = identity.get("run_id")
+    run_attempt = identity.get("run_attempt")
+    host_bind_name = identity.get("host_bind_name")
+    runtime_path = identity.get("xdg_runtime_dir")
+    if (
+        not isinstance(run_id, str) or re.fullmatch(r"[0-9]+", run_id) is None
+        or not isinstance(run_attempt, str) or re.fullmatch(r"[0-9]+", run_attempt) is None
+    ):
+        return blocked("WORKFLOW_RUN_IDENTITY_MISSING_OR_INVALID")
+    expected_bind_name = f"lunita-host-{run_id}-{run_attempt}"
+    expected_runtime_path = f"/run/{expected_bind_name}-runtime-1000"
+    runtime_check = row.get("xdg_runtime_dir")
+    if (
+        host_bind_name != expected_bind_name
+        or runtime_path != expected_runtime_path
+        or not isinstance(runtime_check, dict)
+        or runtime_check.get("status") != "PASS_XDG_RUNTIME_DIR_UID1000_PRIVATE"
+        or runtime_check.get("path") != expected_runtime_path
+    ):
+        return blocked("WORKFLOW_IDENTITY_RUNTIME_BINDING_MISMATCH")
     if row.get("certification") != "NOT_GRANTED" or row.get("canonical_g06_certification") != "NOT_GRANTED":
         return blocked("CERTIFICATION_SCOPE_MISMATCH")
     overlay = row.get("overlay_integrity", {})
@@ -1258,6 +1281,8 @@ def latest_target_runtime_acceptance() -> dict:
         "receipt_path": str(path),
         "receipt_sha256": digest,
         "candidate_id": row.get("candidate_id"),
+        "workflow_identity": identity,
+        "xdg_runtime_dir": runtime_check,
         "overlay_integrity": overlay,
         "e04_quantization": quantization,
         "qwen_e01": qwen,
