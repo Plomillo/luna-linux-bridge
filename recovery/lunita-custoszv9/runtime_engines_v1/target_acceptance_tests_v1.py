@@ -282,6 +282,9 @@ class TargetRuntimeMountIsolationContractTests(unittest.TestCase):
         self.assertIn('RUN_ID="${GITHUB_RUN_ID:-}"', content)
         self.assertIn('RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT:-}"', content)
         self.assertIn('if [[ ! "$RUN_ID" =~ ^[0-9]+$ || ! "$RUN_ATTEMPT" =~ ^[0-9]+$ ]]; then', content)
+        self.assertIn('export GITHUB_RUN_ID="$RUN_ID"', content)
+        self.assertIn('export GITHUB_RUN_ATTEMPT="$RUN_ATTEMPT"', content)
+        self.assertIn("LUNITA_WORKFLOW_IDENTITY", content)
         self.assertNotIn("GITHUB_RUN_ID:-local", content)
         self.assertNotIn("RUNTIME_BIND_TARGET=/run/lunita-runtime-1000", content)
         identity_validation = content.index('RUN_ID="${GITHUB_RUN_ID:-}"')
@@ -297,6 +300,10 @@ class TargetRuntimeMountIsolationContractTests(unittest.TestCase):
         target_step = workflow_content[start:end]
         self.assertIn('GITHUB_RUN_ID="$GITHUB_RUN_ID"', target_step)
         self.assertIn('GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT"', target_step)
+        self.assertIn("github.event.pull_request.base.ref == 'fix/lunita-v18-rootfs-bound-checkpoint-20261109'", workflow_content)
+        runtime_source = (repository / "recovery/lunita-custoszv9/runtime_engines_v1/target_runtime_acceptance_v1.py").read_text(encoding="utf-8")
+        self.assertIn('"workflow_identity": workflow_identity_receipt()', runtime_source)
+        self.assertIn('"run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT")', runtime_source)
 
 
 class TargetHostFlatpakInstallWorkflowTests(unittest.TestCase):
