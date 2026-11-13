@@ -453,7 +453,9 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     rerun = {"status": "BLOCKED", "returncode": 125}
     temp_before = temp_after = temp_after_rerun = None
     result_member_before = result_member_after_save = result_member_after_rerun = None
+    saved_results_after_save = saved_results_after_rerun = None
     save_command = None
+    save_command_order_valid = False
     temp_fixture = None
     temp_root = None
     fixture_receipt = None
@@ -564,6 +566,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             save_run["command"] = save_command
             temp_after = sha_file(temp_fixture) if temp_fixture.is_file() else None
             result_member_after_save = inspect_archive_member(temp_fixture, result_member_name) if temp_fixture.is_file() else None
+            saved_results_after_save = inspect_stored_results_member(temp_fixture) if temp_fixture.is_file() else None
             save_persisted_results = bool(
                 result_member_after_save
                 and result_member_after_save.get("member_sha256") != result_member_before.get("member_sha256")
@@ -576,6 +579,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
                 rerun = execute_replay(rerun_command, "rerun", rerun_log_path)
                 temp_after_rerun = sha_file(temp_fixture) if temp_fixture.is_file() else None
                 result_member_after_rerun = inspect_archive_member(temp_fixture, result_member_name)
+                saved_results_after_rerun = inspect_stored_results_member(temp_fixture)
             else:
                 rerun = {
                     "status": "BLOCKED_NATIVE_SAVE_NOT_PERSISTED",
@@ -708,6 +712,10 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         "saved_results_member_sha256_after_rerun": (result_member_after_rerun or {}).get("member_sha256"),
         "saved_results_member_stable_after_rerun": member_stable_after_rerun,
         "saved_results_member_archive_integrity": (result_member_after_rerun or {}).get("archive_testzip"),
+        "saved_results_jasp_version_after_save": (saved_results_after_save or {}).get("jasp_version"),
+        "saved_results_jasp_citation_after_save": (saved_results_after_save or {}).get("citation"),
+        "saved_results_jasp_version_after_rerun": (saved_results_after_rerun or {}).get("jasp_version"),
+        "saved_results_jasp_citation_after_rerun": (saved_results_after_rerun or {}).get("citation"),
         "candidate_baseline_status": candidate_baseline_status,
         "historical_reference_debt_status": historical_debt_status,
         "historical_reference_provenance": historical_results,
