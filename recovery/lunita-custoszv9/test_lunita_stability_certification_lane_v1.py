@@ -1097,12 +1097,97 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
 
 class JaspPostMutationRuntimeIdentityTests(unittest.TestCase):
     def test_missing_mutation_receipt_fails_closed(self):
-        with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
+        with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \\
              mock.patch.dict(lane.os.environ, {}, clear=True):
             result = lane.verify_jasp_runtime_mutation_receipt()
         self.assertEqual("BLOCKED", result["status"])
         self.assertEqual(1, result["returncode"])
         self.assertIn("LUNITA_JASP_MUTATION_RECEIPT is unset", result["details"])
+
+    def test_embedded_formatter_patch_accepts_hash_bound_jasp_binary_change(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = pathlib.Path(tmp) / "files/bin/JASP"
+            binary.parent.mkdir(parents=True)
+            before = b"JASP before embedded formatter patch"
+            after = b"JASP after embedded formatter patch"
+            binary.write_bytes(after)
+            before_sha = hashlib.sha256(before).hexdigest()
+            after_sha = hashlib.sha256(after).hexdigest()
+            path = str(binary.resolve())
+            app = {
+                "binary_before_sha256": before_sha,
+                "binary_after": {"path": path, "sha256": after_sha},
+                "binary_unchanged_by_formatter_patch": False,
+                "binary_transition": {
+                    "path": path, "before_sha256": before_sha,
+                    "after_sha256": after_sha, "changed": True,
+                    "scope": "EMBEDDED_FORMATTER_RESOURCE_IN_APPLICATION_BINARY",
+                },
+            }
+            patch = {
+                "changed_jasp_binary": True,
+                "patched_resources": [{
+                    "path": path, "before_sha256": before_sha,
+                    "after_sha256": after_sha, "observed_after_sha256": after_sha,
+                }],
+            }
+            lane.validate_jasp_binary_patch_binding(app, patch)
+
+    def test_unchanged_executable_allows_patch_in_separate_qt_resource(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "files"
+            (root / "bin").mkdir(parents=True)
+            (root / "resources").mkdir()
+            binary = root / "bin/JASP"
+            resource = root / "resources/formatter.js"
+            binary.write_bytes(b"unchanged executable")
+            before = b"old Qt resource"
+            after = b"new Qt resource"
+            resource.write_bytes(after)
+            binary_sha = hashlib.sha256(binary.read_bytes()).hexdigest()
+            before_sha = hashlib.sha256(before).hexdigest()
+            after_sha = hashlib.sha256(after).hexdigest()
+            path = str(binary.resolve())
+            app = {
+                "binary_before_sha256": binary_sha,
+                "binary_after": {"path": path, "sha256": binary_sha},
+                "binary_unchanged_by_formatter_patch": True,
+                "binary_transition": {
+                    "path": path, "before_sha256": binary_sha,
+                    "after_sha256": binary_sha, "changed": False,
+                    "scope": "APPLICATION_BINARY_UNCHANGED",
+                },
+            }
+            patch = {
+                "changed_jasp_binary": False,
+                "patched_resources": [{
+                    "path": str(resource.resolve()), "before_sha256": before_sha,
+                    "after_sha256": after_sha, "observed_after_sha256": after_sha,
+                }],
+            }
+            lane.validate_jasp_binary_patch_binding(app, patch)
+
+    def test_binary_change_without_matching_patch_row_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = pathlib.Path(tmp) / "files/bin/JASP"
+            binary.parent.mkdir(parents=True)
+            binary.write_bytes(b"post-patch")
+            before_sha = hashlib.sha256(b"pre-patch").hexdigest()
+            after_sha = hashlib.sha256(b"post-patch").hexdigest()
+            path = str(binary.resolve())
+            app = {
+                "binary_before_sha256": before_sha,
+                "binary_after": {"path": path, "sha256": after_sha},
+                "binary_unchanged_by_formatter_patch": False,
+                "binary_transition": {
+                    "path": path, "before_sha256": before_sha,
+                    "after_sha256": after_sha, "changed": True,
+                    "scope": "EMBEDDED_FORMATTER_RESOURCE_IN_APPLICATION_BINARY",
+                },
+            }
+            patch = {"changed_jasp_binary": True, "patched_resources": []}
+            with self.assertRaisesRegex(RuntimeError, "exactly one embedded formatter patch record"):
+                lane.validate_jasp_binary_patch_binding(app, patch)
 
 
 class JaspReferenceMismatchClassificationTests(unittest.TestCase):
