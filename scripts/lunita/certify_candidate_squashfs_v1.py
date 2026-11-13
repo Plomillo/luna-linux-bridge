@@ -382,7 +382,7 @@ def validate_jasp_seeded_fixture_evidence(check: dict) -> dict[str, Any]:
         or not receipt.get("changed_json_pointer", "").startswith("/analyses/")
         or not receipt.get("changed_json_pointer", "").endswith("/options")
         or receipt.get("before") != {"setSeed": False, "seed": 1}
-        or receipt.get("after") != {"setSeed": True, "seed": 1}
+        or receipt.get("after") != {"setSeed": True, "seed": 255116}
         or receipt.get("result_output_members_changed") is not False
         or receipt.get("reference_results_modified") is not False):
         raise CertificationError("JASP deterministic seed transition or archive-preservation evidence is invalid")

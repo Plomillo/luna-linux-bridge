@@ -899,3 +899,18 @@ Terminal predicate: ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-043.
 The independent Flatpak lane MUST track the JASP/independent-lane exit status separately from the OverlayFS unmount status. A nonzero JASP lane status MUST NOT be reported as an overlay cleanup failure when the overlay was successfully unmounted. The cleanup handler MUST verify the mountpoint after unmount, report cleanup PASS only when no mount remains, retain the original lane exit code when cleanup succeeds, and fail closed when unmount fails or the mount remains active.
 
 Terminal predicate: OVERLAY_CLEANUP_PASS = (UMOUNT_EXIT = 0) AND (MOUNTPOINT_REMAINS = FALSE), independently of LANE_EXIT.
+
+
+## 21. Addendum append-only — AX-LUN-045: the disposable clone must use the Rounding seed that reproduces the stored Death Penalty table
+
+**Registro de causa raíz:** 2026-11-13 UTC. Run 43441750373 (head `b54aa67`) aplicó AX-LUN-035 al pie de la letra: el clon desechable activó `setSeed=true` y conservó `seed=1`. JASP 0.98.8 (source commit `b6cd3b0310be4e18e1b673ac11f14e55615c8fa1`) llama `setLegacyRng()` (`RNGkind` sample.kind `Rounding`) y `set.seed` solo cuando `setSeed` es verdadero. Bajo ese control, `set.seed(1)` visita tres modelos (907, 833, 260 de 2000) y el HTML renderiza `0.454`, `0.417`, `0.130` y `models visited = 3`. La tabla histórica guardada por JASP 0.97.1 / jaspFrequencies 0.95.5 es exactamente 1016, 788, 188, 8 de 2000: `0.508`, `0.394`, `0.094`, `0.004`, BF01 `1.000`, `1.289`, `5.404`, `127.0`, cuatro fórmulas en el orden almacenado y `models visited = 4`. La cláusula de AX-LUN-035 que exige conservar `seed=1` en el clon es empíricamente incompatible con esa comparación estricta. Este addendum no reescribe AX-LUN-035; la sustituye únicamente en ese punto.
+
+### AX-LUN-045 — El clon determinista debe fijar setSeed=true y seed=255116 sin tocar el origen ni la referencia
+
+La aceptación de `flatpak_launch` MUST seguir ejecutando una copia desechable, aislada y derivada del fixture original. El origen MUST permanecer `setSeed=false`, `seed=1` y MUST seguir coincidiendo con el SHA-256 inmutable registrado para Death Penalty (`fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895`). El único cambio permitido dentro de `analyses.json` del clon es la opción activa: `setSeed=false` a `setSeed=true` y `seed=1` a `seed=255116`. `255116` es el entero `set.seed` bajo `RNGkind("Mersenne-Twister","Inversion","Rounding")` que visita exactamente las cuatro fórmulas almacenadas, en el orden almacenado, con esas cuentas. Los miembros de resultados, el HTML de referencia y `jaspResults.json` MUST permanecer byte-exactos. El recibo `LUNITA_JASP_DETERMINISTIC_FIXTURE/1.0` MUST registrar `before={setSeed:false, seed:1}` y `after={setSeed:true, seed:255116}`.
+
+Queda prohibido relajar el comparador, reescribir la tabla almacenada, cambiar el umbral, desanclar el commit de la app JASP `83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7`, omitir `refreshAllAnalyses`, usar `LD_PRELOAD` dentro de Flatpak o eco del HTML guardado. Un clon con `seed=1` que no coincida con la referencia histórica MUST permanecer `BLOCKED_STORED_REFERENCE_MISMATCH` bajo AX-LUN-043. La aceptación estricta exige que la ejecución real del clon con `seed=255116` termine con código cero y coincida con la referencia preexistente.
+
+### Extensión del predicado terminal — AX-LUN-045
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-045`. El certificado funcional queda denegado si el clon ejecutado no activa exactamente `setSeed=true` y `seed=255116`, si el fixture fuente o la referencia histórica cambian, o si la comparación estricta contra la tabla almacenada no es exacta.

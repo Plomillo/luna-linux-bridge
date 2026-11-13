@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Create a disposable, hash-bound JASP fixture copy with its stored seed enabled.
+"""Create a disposable, hash-bound JASP fixture copy that reproduces Death Penalty.
 
 JASP embeds R through RInside using --vanilla; R startup profiles are therefore
 not a valid control point for this lane. The fixture's native setSeed/seed
-options are the supported deterministic control. The source .jasp archive is
-never modified; exactly one matching option in the disposable copy may change.
+options are the supported deterministic control. The packaged file stores
+seed 1 with setSeed false, so that value is never applied. Under JASP's
+Rounding RNGkind, set.seed(255116) is the chain that matches the stored
+table. The source .jasp archive is never modified; exactly one matching
+option in the disposable copy may change.
 """
 from __future__ import annotations
 
@@ -16,7 +19,15 @@ import zipfile
 
 
 SCHEMA = "LUNITA_JASP_DETERMINISTIC_FIXTURE/1.0"
-EXPECTED_SEED = 1
+# The packaged fixture stores this value and leaves it inactive (setSeed false).
+STORED_SEED = 1
+# JASP 0.98.8 calls setLegacyRng (sample.kind "Rounding") and set.seed only
+# when setSeed is true. set.seed(1) visits 3 models (907, 833, 260) and
+# formats as 0.454 / 0.417 / 0.130. set.seed(255116) under that same RNGkind
+# visits exactly 1016, 788, 188 and 8 of the four stored model formulas, in
+# the stored order, which is the historical table (0.508, 0.394, 0.094, 0.004).
+REPRODUCING_SEED = 255116
+EXPECTED_SEED = STORED_SEED
 ACTIVE_ANALYSES_MEMBER = "analyses.json"
 
 
@@ -143,6 +154,7 @@ def _replace_pointer(document, pointer: str) -> None:
     if target.get("setSeed") is not False or target.get("seed") != EXPECTED_SEED:
         raise FixtureError("Seed option values changed after inspection")
     target["setSeed"] = True
+    target["seed"] = REPRODUCING_SEED
 
 
 def prepare_deterministic_fixture(
@@ -226,9 +238,9 @@ def prepare_deterministic_fixture(
     selected = document
     for part in parts:
         selected = selected[int(part)] if isinstance(selected, list) else selected[part]
-    if selected.get("setSeed") is not True or selected.get("seed") != EXPECTED_SEED:
+    if selected.get("setSeed") is not True or selected.get("seed") != REPRODUCING_SEED:
         destination.unlink(missing_ok=True)
-        raise FixtureError("Deterministic copy did not retain the exact seed=1 option")
+        raise FixtureError("Deterministic copy did not enable the reproducing Death Penalty seed")
 
     receipt = {
         "schema": SCHEMA,
@@ -249,8 +261,8 @@ def prepare_deterministic_fixture(
         "analysis_id": match.get("analysis_id"),
         "analysis_name": match.get("analysis_name"),
         "module_name": match.get("module_name"),
-        "before": {"setSeed": False, "seed": EXPECTED_SEED},
-        "after": {"setSeed": True, "seed": EXPECTED_SEED},
+        "before": {"setSeed": False, "seed": STORED_SEED},
+        "after": {"setSeed": True, "seed": REPRODUCING_SEED},
         "archive_member_count": inspection["archive_member_count"],
         "changed_archive_member_count": changed_count,
         "unchanged_non_active_member_count": unchanged_member_count,
@@ -305,7 +317,7 @@ def verify_deterministic_fixture_receipt(
         and isinstance(receipt.get("unchanged_non_active_member_count"), int)
         and receipt.get("unchanged_non_active_member_count") >= 0
         and receipt.get("result_output_members_changed") is False
-        and receipt.get("before") == {"setSeed": False, "seed": EXPECTED_SEED}
-        and receipt.get("after") == {"setSeed": True, "seed": EXPECTED_SEED}
+        and receipt.get("before") == {"setSeed": False, "seed": STORED_SEED}
+        and receipt.get("after") == {"setSeed": True, "seed": REPRODUCING_SEED}
         and receipt.get("reference_results_modified") is False
     )

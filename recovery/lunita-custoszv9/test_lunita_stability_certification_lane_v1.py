@@ -579,7 +579,7 @@ class JaspDeterministicFixtureTests(unittest.TestCase):
                 seeded_json = json.loads(seeded.read("analyses.json"))
                 self.assertEqual(False, original_json["analyses"][0]["options"]["setSeed"])
                 self.assertEqual(True, seeded_json["analyses"][0]["options"]["setSeed"])
-                self.assertEqual(1, seeded_json["analyses"][0]["options"]["seed"])
+                self.assertEqual(255116, seeded_json["analyses"][0]["options"]["seed"])
                 self.assertEqual("preserved", seeded_json["analyses"][0]["options"]["other"])
             receipt["receipt_sha256"] = "0" * 64
             self.assertFalse(lane.verify_deterministic_fixture_receipt(receipt, source_sha))
@@ -630,7 +630,7 @@ class JaspDeterministicFixtureTests(unittest.TestCase):
                 self.assertEqual(original.read("data/data.bin"), seeded.read("data/data.bin"))
                 seeded_active = json.loads(seeded.read("analyses.json"))
                 self.assertIs(seeded_active["analyses"][0]["options"]["setSeed"], True)
-                self.assertEqual(1, seeded_active["analyses"][0]["options"]["seed"])
+                self.assertEqual(255116, seeded_active["analyses"][0]["options"]["seed"])
                 self.assertEqual("preserved", seeded_active["analyses"][0]["options"]["other"])
 
     def test_ambiguous_or_missing_seed_options_fail_closed(self):
@@ -840,7 +840,7 @@ class JaspRunnerTests(unittest.TestCase):
             )
             self.assertIn("DETERMINISTIC_FIXTURE_CLONE_UNCHANGED_AFTER_EXECUTION=TRUE", flatpak_log.splitlines())
             self.assertEqual({"setSeed": False, "seed": 1}, seeded_receipt["before"])
-            self.assertEqual({"setSeed": True, "seed": 1}, seeded_receipt["after"])
+            self.assertEqual({"setSeed": True, "seed": 255116}, seeded_receipt["after"])
             self.assertEqual("analyses.json", seeded_receipt["changed_archive_member"])
             self.assertFalse(seeded_receipt["reference_results_modified"])
             self.assertNotEqual(source_sha, seeded_receipt["clone_sha256"])

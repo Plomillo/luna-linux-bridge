@@ -118,7 +118,7 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "changed_archive_member_count": 1,
             "unchanged_non_active_member_count": 7,
             "before": {"setSeed": False, "seed": 1},
-            "after": {"setSeed": True, "seed": 1},
+            "after": {"setSeed": True, "seed": 255116},
             "result_output_members_changed": False,
             "reference_results_modified": False,
         }

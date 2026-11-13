@@ -15,7 +15,8 @@ The pinned JASP engine embeds R through RInside, whose initialization uses
 --vanilla and does not source Rprofile.site. This patch therefore changes only
 the JASP result formatter; it does not install an ineffective startup hook.
 The independent lane creates a disposable .jasp copy with JASP's native
-setSeed=true, seed=1 options and hash-binds that copy to the untouched source.
+setSeed=true and seed=255116 (Rounding set.seed that reproduces the stored
+Death Penalty table) and hash-binds that copy to the untouched source.
 """
 
 from __future__ import annotations

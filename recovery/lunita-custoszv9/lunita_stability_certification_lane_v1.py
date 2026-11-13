@@ -2152,7 +2152,7 @@ def persist_jasp_remediation_queue(jasp: dict) -> dict:
             continue
         path_text = result.get("evidence_path")
         reason = {
-            "flatpak_launch": "Run the pinned JASP startup regression on a disposable clone of the exact original Death Penalty fixture with native setSeed=true, seed=1; independently verify the clone/receipt/log hashes and prove the original fixture and stored references remain unchanged.",
+            "flatpak_launch": "Run the pinned JASP startup regression on a disposable clone of the exact original Death Penalty fixture with native setSeed=true and the Rounding set.seed value that reproduces the stored four-model table; independently verify the clone/receipt/log hashes and prove the original fixture and stored references remain unchanged.",
             "reliability": "Diagnose full-precision output differences versus packaged reference; distinguish harmless display formatting from semantic/statistical deltas with a documented independent tolerance policy.",
             "weight_gain": "Diagnose numeric display/precision deltas against the packaged reference without mutating the original fixture.",
             "death_penalty_roundtrip": "Verify the exact pinned original fixture and disposable deterministic clone receipts, then compare newly calculated save/replay tables without modifying reference results.",
