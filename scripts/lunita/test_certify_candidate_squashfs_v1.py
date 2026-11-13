@@ -122,6 +122,16 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "receipt_path": str(seeded_receipt_path),
             "receipt_sha256": cert.sha256_file(seeded_receipt_path),
         }
+        seeded_log_path = independent_dir / "JASP_UNITTEST_FLATPAK_test.log"
+        seeded_log_path.write_text(
+            f"TEST_FILE={seeded_receipt['clone_path']}\\n"
+            f"DETERMINISTIC_FIXTURE_RECEIPT_PATH={seeded_receipt_path}\\n"
+            f"DETERMINISTIC_FIXTURE_RECEIPT_SHA256={seeded_receipt['receipt_sha256']}\\n"
+            f"DETERMINISTIC_FIXTURE_CLONE_SHA256={seeded_receipt['clone_sha256']}\\n"
+            "DETERMINISTIC_FIXTURE_SEED_ENABLED=TRUE\\n",
+            encoding="utf-8",
+        )
+        seeded_log_sha = cert.sha256_file(seeded_log_path)
 
         case_ids = [
             "flatpak_launch", "reliability", "weight_gain",
@@ -160,11 +170,14 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
                     "deterministic_fixture_receipt_valid": True,
                     "deterministic_fixture_receipt": seeded_receipt,
                     "deterministic_fixture_path": seeded_receipt["clone_path"],
+                    "evidence_path": str(seeded_log_path),
+                    "evidence_sha256": seeded_log_sha,
                 },
             },
             "evidence": {
                 str(source_fixture): source_sha,
                 str(seeded_receipt_path): seeded_receipt["receipt_sha256"],
+                str(seeded_log_path): seeded_log_sha,
             },
         }
         checks["jasp_process_tree_lifecycle"] = {
