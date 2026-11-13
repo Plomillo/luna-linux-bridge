@@ -141,6 +141,79 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
         )
         seeded_log_sha = cert.sha256_file(seeded_log_path)
 
+        roundtrip_clone_sha = "f" * 64
+        roundtrip_clone_path = base / "temporary" / "DeathPenalty_roundtrip_seeded.jasp"
+        roundtrip_receipt_path = independent_dir / "jasp-roundtrip-fixture-receipt.json"
+        roundtrip_receipt_payload = {
+            **seeded_receipt_payload,
+            "clone_path": str(roundtrip_clone_path),
+            "clone_sha256": roundtrip_clone_sha,
+        }
+        roundtrip_receipt_path.write_text(json.dumps(roundtrip_receipt_payload), encoding="utf-8")
+        roundtrip_receipt = {
+            **roundtrip_receipt_payload,
+            "receipt_path": str(roundtrip_receipt_path),
+            "receipt_sha256": cert.sha256_file(roundtrip_receipt_path),
+        }
+        roundtrip_save_log = independent_dir / "JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_save.log"
+        roundtrip_save_log.write_text(
+            f"JASP_ROUNDTRIP_FIXTURE_SHA256_EXPECTED={roundtrip_clone_sha}\n"
+            f"JASP_ROUNDTRIP_FIXTURE_SHA256_AFTER_SAVE={roundtrip_clone_sha}\n"
+            "JASP_ROUNDTRIP_FIXTURE_UNCHANGED_AFTER_SAVE=TRUE\n",
+            encoding="utf-8",
+        )
+        roundtrip_rerun_log = independent_dir / "JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_rerun.log"
+        roundtrip_rerun_log.write_text(
+            f"JASP_ROUNDTRIP_FIXTURE_SHA256_EXPECTED={roundtrip_clone_sha}\n"
+            f"JASP_ROUNDTRIP_FIXTURE_SHA256_AFTER_RERUN={roundtrip_clone_sha}\n"
+            "JASP_ROUNDTRIP_FIXTURE_UNCHANGED_AFTER_RERUN=TRUE\n",
+            encoding="utf-8",
+        )
+        roundtrip_case_evidence_path = independent_dir / "JASP_UNITTEST_ROUNDTRIP_DEATH_PENALTY_test.json"
+        roundtrip_case_evidence_path.write_text(json.dumps({
+            "expected_clone_sha256": roundtrip_clone_sha,
+            "sha256_before": roundtrip_clone_sha,
+            "sha256_after_save": roundtrip_clone_sha,
+            "sha256_after_rerun": roundtrip_clone_sha,
+            "reference_comparison_status": "PASS",
+        }), encoding="utf-8")
+        roundtrip_case = {
+            "status": "PASS",
+            "returncode": 0,
+            "acceptance_scope": "STRICT_REFERENCE_AND_REPLAY",
+            "reference_comparison_status": "PASS",
+            "deterministic_replay_status": "PASS_DETERMINISTIC_REPLAY",
+            "deterministic_fixture_receipt_valid": True,
+            "deterministic_fixture_receipt": roundtrip_receipt,
+            "temporary_fixture_path": str(roundtrip_clone_path),
+            "temporary_fixture_sha256_expected": roundtrip_clone_sha,
+            "temporary_fixture_sha256_before": roundtrip_clone_sha,
+            "temporary_fixture_sha256_after_save": roundtrip_clone_sha,
+            "temporary_fixture_sha256_after_rerun": roundtrip_clone_sha,
+            "temporary_fixture_hash_invariant_passed": True,
+            "temporary_fixture_regular_after_save": True,
+            "temporary_fixture_regular_after_rerun": True,
+            "temporary_fixture_changed": False,
+            "temporary_fixture_removed_after_test": True,
+            "temporary_fixture_stable_after_save_and_rerun": True,
+            "save_log_path": str(roundtrip_save_log),
+            "save_log_sha256": cert.sha256_file(roundtrip_save_log),
+            "save_fixture_sha256_after_execution": roundtrip_clone_sha,
+            "save_fixture_unchanged_after_execution": True,
+            "rerun_log_path": str(roundtrip_rerun_log),
+            "rerun_log_sha256": cert.sha256_file(roundtrip_rerun_log),
+            "rerun_fixture_sha256_after_execution": roundtrip_clone_sha,
+            "rerun_fixture_unchanged_after_execution": True,
+            "original_sample_unchanged": True,
+            "original_sample_identity_matches_pin": True,
+            "original_sample_sha256_before": source_sha,
+            "original_sample_sha256_after": source_sha,
+            "process_tree_receipt_valid": True,
+            "process_tree_receipts": [],
+            "evidence_path": str(roundtrip_case_evidence_path),
+            "evidence_sha256": cert.sha256_file(roundtrip_case_evidence_path),
+        }
+
         case_ids = [
             "flatpak_launch", "reliability", "weight_gain",
             "death_penalty_save", "death_penalty_rerun",
@@ -183,11 +256,16 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
                     "evidence_path": str(seeded_log_path),
                     "evidence_sha256": seeded_log_sha,
                 },
+                "death_penalty_roundtrip": roundtrip_case,
             },
             "evidence": {
                 str(source_fixture): source_sha,
                 str(seeded_receipt_path): seeded_receipt["receipt_sha256"],
                 str(seeded_log_path): seeded_log_sha,
+                str(roundtrip_receipt_path): roundtrip_receipt["receipt_sha256"],
+                str(roundtrip_save_log): cert.sha256_file(roundtrip_save_log),
+                str(roundtrip_rerun_log): cert.sha256_file(roundtrip_rerun_log),
+                str(roundtrip_case_evidence_path): cert.sha256_file(roundtrip_case_evidence_path),
             },
         }
         checks["jasp_process_tree_lifecycle"] = {
@@ -397,6 +475,8 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             self.assertEqual("NOT_GRANTED", result["g23"])
             self.assertEqual("NOT_GRANTED", result["g24"])
             self.assertFalse(result["automatic_canonical_promotion"])
+            self.assertEqual("PASS", result["jasp_roundtrip_fixture"]["status"])
+            self.assertEqual("f" * 64, result["jasp_roundtrip_fixture"]["expected_seeded_clone_sha256"])
 
     def test_s32_receipt_with_other_image_or_manifest_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -488,6 +568,34 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             with mock.patch.object(cert, "JASP_DEATH_PENALTY_SOURCE_SHA256", paths["source_sha"]):
                 with self.assertRaisesRegex(cert.CertificationError, "seed transition"):
                     cert.validate_jasp_seeded_fixture_evidence(check)
+
+    def test_roundtrip_fixture_must_match_original_hash_after_both_invocations(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = self.prepare(pathlib.Path(tmp))
+            report = json.loads(paths["independent"].read_text(encoding="utf-8"))
+            check = report["checks"]["jasp_packaged_fixture_nonregression"]
+            row = check["cases"]["death_penalty_roundtrip"]
+            # Even two identical post-execution hashes are invalid when both differ from the receipt.
+            row["temporary_fixture_sha256_after_save"] = "0" * 64
+            row["temporary_fixture_sha256_after_rerun"] = "0" * 64
+            row["save_fixture_sha256_after_execution"] = "0" * 64
+            row["rerun_fixture_sha256_after_execution"] = "0" * 64
+            with mock.patch.object(cert, "JASP_DEATH_PENALTY_SOURCE_SHA256", paths["source_sha"]):
+                with self.assertRaisesRegex(cert.CertificationError, "clone hash mismatch"):
+                    cert.validate_jasp_roundtrip_fixture_evidence(check)
+
+    def test_replay_only_historical_reference_mismatch_blocks_roundtrip_certification(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = self.prepare(pathlib.Path(tmp))
+            report = json.loads(paths["independent"].read_text(encoding="utf-8"))
+            check = report["checks"]["jasp_packaged_fixture_nonregression"]
+            row = check["cases"]["death_penalty_roundtrip"]
+            row["status"] = "PASS_DETERMINISTIC_REPLAY"
+            row["acceptance_scope"] = "DETERMINISTIC_REPLAY_ONLY"
+            row["reference_comparison_status"] = "BLOCKED_STORED_REFERENCE_MISMATCH"
+            with mock.patch.object(cert, "JASP_DEATH_PENALTY_SOURCE_SHA256", paths["source_sha"]):
+                with self.assertRaisesRegex(cert.CertificationError, "stored-reference comparison"):
+                    cert.validate_jasp_roundtrip_fixture_evidence(check)
 
     def test_nonzero_jasp_exit_receipt_blocks_lifecycle_validation(self):
         with tempfile.TemporaryDirectory() as tmp:
