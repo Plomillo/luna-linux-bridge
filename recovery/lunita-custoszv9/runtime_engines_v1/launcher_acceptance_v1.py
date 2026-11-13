@@ -143,6 +143,10 @@ class LunitaBetaV18Tests(unittest.TestCase):
                  mock.patch.dict(os.environ, {
                      "LUNITA_TARGET_ROOTFS": str(rootfs),
                      "LUNITA_IN_PIVOT_ROOT": "0",
+                     "GITHUB_RUN_ID": "1001",
+                     "GITHUB_RUN_ATTEMPT": "2",
+                     "HOST_BIND_NAME": "lunita-host-1001-2",
+                     "XDG_RUNTIME_DIR": "/run/lunita-host-1001-2-runtime-1000",
                      "PYTHONPATH": inherited_pythonpath,
                  }), \
                  mock.patch.object(
@@ -175,6 +179,10 @@ class LunitaBetaV18Tests(unittest.TestCase):
                  mock.patch.dict(os.environ, {
                      "LUNITA_TARGET_ROOTFS": "/",
                      "LUNITA_IN_PIVOT_ROOT": "1",
+                     "GITHUB_RUN_ID": "1001",
+                     "GITHUB_RUN_ATTEMPT": "2",
+                     "HOST_BIND_NAME": "lunita-host-1001-2",
+                     "XDG_RUNTIME_DIR": "/run/lunita-host-1001-2-runtime-1000",
                      "PYTHONPATH": "",
                  }), \
                  mock.patch.object(launcher.os, "geteuid", return_value=0), \
@@ -194,6 +202,91 @@ class LunitaBetaV18Tests(unittest.TestCase):
             self.assertEqual(["jamovi-self-test"], command[python_index + 2:])
             self.assertNotIn("PYTHONPATH", run.call_args.kwargs["env"])
 
+    def test_target_legacy_runtime_directory_is_derived_from_exact_run_attempt(self):
+        environment = {
+            "GITHUB_RUN_ID": "43341112917",
+            "GITHUB_RUN_ATTEMPT": "3",
+            "HOST_BIND_NAME": "lunita-host-43341112917-3",
+            "XDG_RUNTIME_DIR": "/run/lunita-host-43341112917-3-runtime-1000",
+        }
+        self.assertEqual(
+            "/run/lunita-host-43341112917-3-runtime-1000",
+            launcher.expected_target_runtime_directory(environment),
+        )
+
+    def test_target_legacy_runtime_directory_rejects_missing_or_mismatched_identity(self):
+        cases = (
+            {},
+            {
+                "GITHUB_RUN_ID": "43341112917",
+                "GITHUB_RUN_ATTEMPT": "3",
+                "HOST_BIND_NAME": "lunita-host-43341112917-2",
+                "XDG_RUNTIME_DIR": "/run/lunita-host-43341112917-3-runtime-1000",
+            },
+            {
+                "GITHUB_RUN_ID": "43341112917",
+                "GITHUB_RUN_ATTEMPT": "3",
+                "HOST_BIND_NAME": "lunita-host-43341112917-3",
+                "XDG_RUNTIME_DIR": "/run/lunita-runtime-1000",
+            },
+            {
+                "GITHUB_RUN_ID": "../43341112917",
+                "GITHUB_RUN_ATTEMPT": "3",
+                "HOST_BIND_NAME": "lunita-host-43341112917-3",
+                "XDG_RUNTIME_DIR": "/run/lunita-host-43341112917-3-runtime-1000",
+            },
+        )
+        for environment in cases:
+            with self.subTest(environment=environment):
+                self.assertIsNone(launcher.expected_target_runtime_directory(environment))
+
+    def test_target_legacy_delegation_exports_same_validated_runtime_directory(self):
+        with tempfile.TemporaryDirectory(prefix="lunita-legacy-runtime-") as temporary:
+            rootfs = pathlib.Path(temporary)
+            legacy = rootfs / "opt/lunita/agent/lunita.py"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_bytes(b"immutable beta v1.7 runtime fixture")
+            legacy_sha = hashlib.sha256(legacy.read_bytes()).hexdigest()
+            runtime_dir = "/run/lunita-host-1001-2-runtime-1000"
+            with mock.patch.object(launcher, "LEGACY_LAUNCHER", legacy), \
+                 mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha), \
+                 mock.patch.dict(os.environ, {
+                     "LUNITA_TARGET_ROOTFS": str(rootfs),
+                     "LUNITA_IN_PIVOT_ROOT": "0",
+                     "GITHUB_RUN_ID": "1001",
+                     "GITHUB_RUN_ATTEMPT": "2",
+                     "HOST_BIND_NAME": "lunita-host-1001-2",
+                     "XDG_RUNTIME_DIR": runtime_dir,
+                 }), \
+                 mock.patch.object(
+                     launcher.subprocess, "run",
+                     return_value=type("R", (), {"returncode": 0})(),
+                 ) as run:
+                self.assertEqual(0, launcher.run_legacy(["jamovi-self-test"]))
+            command = run.call_args.args[0]
+            self.assertIn(f"XDG_RUNTIME_DIR={runtime_dir}", command)
+            self.assertNotIn("XDG_RUNTIME_DIR=/run/lunita-runtime-1000", command)
+
+    def test_target_legacy_delegation_denies_runtime_identity_mismatch(self):
+        with tempfile.TemporaryDirectory(prefix="lunita-legacy-runtime-deny-") as temporary:
+            rootfs = pathlib.Path(temporary)
+            legacy = rootfs / "opt/lunita/agent/lunita.py"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_bytes(b"immutable beta v1.7 runtime deny fixture")
+            legacy_sha = hashlib.sha256(legacy.read_bytes()).hexdigest()
+            with mock.patch.object(launcher, "LEGACY_LAUNCHER", legacy), \
+                 mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha), \
+                 mock.patch.dict(os.environ, {
+                     "LUNITA_TARGET_ROOTFS": str(rootfs),
+                     "GITHUB_RUN_ID": "1001",
+                     "GITHUB_RUN_ATTEMPT": "2",
+                     "HOST_BIND_NAME": "lunita-host-1001-2",
+                     "XDG_RUNTIME_DIR": "/run/lunita-runtime-1000",
+                 }), \
+                 mock.patch.object(launcher.subprocess, "run") as run:
+                self.assertEqual(5, launcher.run_legacy(["jamovi-self-test"]))
+            run.assert_not_called()
+
     def test_legacy_delegation_outside_declared_target_rootfs_is_denied(self):
         with tempfile.TemporaryDirectory(prefix="lunita-rootfs-") as rootfs_dir, \
              tempfile.TemporaryDirectory(prefix="lunita-outside-") as outside_dir:
@@ -203,7 +296,13 @@ class LunitaBetaV18Tests(unittest.TestCase):
             legacy_sha = hashlib.sha256(legacy.read_bytes()).hexdigest()
             with mock.patch.object(launcher, "LEGACY_LAUNCHER", legacy), \
                  mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha), \
-                 mock.patch.dict(os.environ, {"LUNITA_TARGET_ROOTFS": str(rootfs)}), \
+                 mock.patch.dict(os.environ, {
+                     "LUNITA_TARGET_ROOTFS": str(rootfs),
+                     "GITHUB_RUN_ID": "1001",
+                     "GITHUB_RUN_ATTEMPT": "2",
+                     "HOST_BIND_NAME": "lunita-host-1001-2",
+                     "XDG_RUNTIME_DIR": "/run/lunita-host-1001-2-runtime-1000",
+                 }), \
                  mock.patch.object(launcher.subprocess, "run") as run:
                 self.assertEqual(5, launcher.run_legacy(["r-self-test"]))
             run.assert_not_called()
