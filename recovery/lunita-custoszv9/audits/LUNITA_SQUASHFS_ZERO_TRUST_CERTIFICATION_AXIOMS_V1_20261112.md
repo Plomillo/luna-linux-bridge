@@ -462,3 +462,34 @@ La corrección en la rama `fix/lunita-jasp-version-contract-coherence-20261113` 
 
 La corrección amplía el contrato con AX-LUN-023. Estado al documentar: `IMPLEMENTED_NOT_YET_CI_VALIDATED`. Requiere PASS contractual, nuevo full run sobre el HEAD integrado, aceptación real de JASP, ejecución de la suite target completa, round-trip SquashFS estricto y validación independiente/S32/stable/certificador sobre el SHA-256 exacto de la imagen.
 
+
+
+---
+
+## 5.3 — Registro forense del fallo de aceptación target #217 y ampliación normativa
+
+**Ejecución:** 43341112917 (run 217, attempt 1)  
+**HEAD:** eff579756bd905930de9b22dcf7642c2c8e14a06  
+**Job de destino:** 131609898416  
+**Recibo target:** SHA-256 92d9056788baa4f3f4cf5bcadc31bb23d27bfffc1c87e0cefa6931a628351d36  
+**Resultado:** BLOCKED_TARGET_RUNTIME_ACCEPTANCE; no se materializó imagen SquashFS ni se ejecutaron los gates posteriores.
+
+La ejecución real demostró E01 y la suite funcional de motores/rutas/overlay (59 tests, cero fallos o errores). La aceptación se detuvo al ejecutar el conjunto heredado en jamovi-self-test, con código real 3. El diagnóstico Flatpak posterior, ejecutado como UID 1000, obtuvo returncode 0 tanto con entorno heredado como limpio al comprobar el sandbox de org.jamovi.jamovi.
+
+La comparación de implementación estableció una divergencia determinista entre productor y consumidor del runtime: el wrapper run_target_runtime_acceptance_in_container_v1.sh monta y exporta /run/lunita-host-43341112917-1-runtime-1000, mientras lunita_beta_v1_8.py inyectaba al proceso legado el nombre global obsoleto /run/lunita-runtime-1000. El diagnóstico usaba la ruta derivada correctamente por expected_xdg_runtime_dir(); el smoke test legado no. Este hallazgo explica el fallo de Jamovi sin alterar el commit Flatpak, sus permisos, el launcher histórico ni el criterio de aceptación.
+
+### AX-LUN-024 — Continuidad de identidad XDG_RUNTIME_DIR en la delegación heredada
+
+Cuando la aceptación ejecuta el launcher v1.7 preservado desde el wrapper v1.8 dentro del rootfs candidato, la variable XDG_RUNTIME_DIR entregada al proceso delegado MUST ser exactamente el mountpoint privado creado por el workflow y attempt actuales.
+
+El wrapper MUST derivar la identidad exclusivamente de GITHUB_RUN_ID y GITHUB_RUN_ATTEMPT, exigir valores numéricos no vacíos, comprobar HOST_BIND_NAME = lunita-host-<run_id>-<attempt> y exigir XDG_RUNTIME_DIR = /run/<HOST_BIND_NAME>-runtime-1000. MUST transmitir ese valor exacto mediante el entorno guest de la llamada a setpriv o chroot. Queda prohibida cualquier ruta global fija, fallback, reconstrucción con valores constantes o reutilización de un mountpoint de otra ejecución.
+
+La ausencia, formato inseguro o discrepancia de cualquiera de esos cuatro elementos MUST producir denegación previa a la ejecución del launcher heredado. No se modifica el contenido ni el SHA-256 del launcher v1.7; se corrige únicamente el adaptador de entorno v1.8.
+
+La suite contractual MUST probar los dos caminos de delegación (pivot-root/setpriv y chroot), verificar la transmisión literal del runtime path derivado, y demostrar que la identidad ausente o el path de otra ejecución se rechazan sin invocar al proceso. La aceptación funcional completa MUST ejecutar realmente tanto jamovi-self-test como jasp-self-test y conservar sus códigos de salida originales. Solo ambos códigos 0 permiten superar esta porción del gate.
+
+Esta ampliación no rebaja ni sustituye AX-LUN-021/022: añade continuidad al límite de delegación y queda sujeta a la misma identidad de run/attempt. El predicado normativo efectivo de esta revisión es:
+
+FUNCTIONAL_CERTIFIED_V1.4(I) ⇔ AX-LUN-001 … AX-LUN-024 ∧ CERTIFICATE_BINDINGS_VALID(C,I)
+
+**Estado al registrar la corrección:** IMPLEMENTED_IN_BRANCH / CONTRACT_AND_FULL_RUNTIME_REVALIDATION_PENDING. El run #217 y su recibo BLOCKED se preservan como evidencia histórica; ninguna imagen o evidencia anterior puede heredarse para certificar el nuevo HEAD.
