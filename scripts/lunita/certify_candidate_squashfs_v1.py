@@ -34,6 +34,7 @@ PASS_PACKAGE = "PASS_SQUASHFS_PACKAGE_AND_ROUNDTRIP_NOT_CERTIFIED"
 PASS_TARGET = "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED"
 PASS_S32 = "BETA_OPERATIONAL_CERTIFIED"
 PASS_STABLE = "CERTIFIED_STABLE_RELEASE"
+JASP_DEATH_PENALTY_SOURCE_SHA256 = "fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895"
 
 
 class CertificationError(RuntimeError):
@@ -289,7 +290,8 @@ def validate_jasp_process_tree_lifecycle(
             or receipt.get("executable_sha256") != expected_binary_sha
             or receipt.get("runtime_ostree_commit") != expected_runtime_commit
             or receipt.get("timeout_seconds") != 300
-            or not isinstance(receipt.get("returncode"), int)
+            or type(receipt.get("returncode")) is not int
+            or receipt.get("returncode") != 0
             or not re.fullmatch(r"[0-9a-f]{64}", str(receipt.get("command_sha256", "")))
             or not re.fullmatch(r"[0-9a-f]{64}", str(receipt.get("captured_output_sha256", "")))
             or not isinstance(receipt.get("captured_output_bytes"), int)
@@ -312,6 +314,83 @@ def validate_jasp_process_tree_lifecycle(
         "workflow_run_attempt": expected_attempt,
         "jasp_binary_sha256": expected_binary_sha,
         "flatpak_runtime_ostree_commit": expected_runtime_commit,
+    }
+
+
+
+def validate_jasp_seeded_fixture_evidence(check: dict) -> dict[str, Any]:
+    """Independently verify flatpak_launch used a seeded disposable copy of the pinned source."""
+    if not isinstance(check, dict) or check.get("status") != "PASS" or check.get("returncode") != 0:
+        raise CertificationError("JASP packaged-fixture non-regression gate is not PASS")
+    cases = check.get("cases") if isinstance(check.get("cases"), dict) else {}
+    row = cases.get("flatpak_launch") if isinstance(cases.get("flatpak_launch"), dict) else {}
+    if (row.get("status") != "PASS" or row.get("returncode") != 0
+        or row.get("original_packaged_fixture_identity_valid") is not True
+        or row.get("deterministic_fixture_evidence_valid") is not True):
+        raise CertificationError("JASP flatpak_launch lacks a verified deterministic fixture result")
+    receipt = row.get("deterministic_fixture_receipt")
+    if not isinstance(receipt, dict):
+        raise CertificationError("JASP seeded fixture receipt is missing")
+    receipt_path_text = receipt.get("receipt_path")
+    source_path_text = receipt.get("source_path")
+    if not isinstance(receipt_path_text, str) or not receipt_path_text.strip():
+        raise CertificationError("JASP seeded fixture receipt path is missing")
+    if not isinstance(source_path_text, str) or not source_path_text.strip():
+        raise CertificationError("JASP original fixture path is missing")
+    receipt_path = pathlib.Path(receipt_path_text)
+    source_path = pathlib.Path(source_path_text)
+    if (receipt_path.is_symlink() or not receipt_path.is_file()
+        or source_path.is_symlink() or not source_path.is_file()):
+        raise CertificationError("JASP source or deterministic fixture receipt is missing/unsafe")
+    source_sha = sha256_file(source_path)
+    receipt_sha = sha256_file(receipt_path)
+    if (source_sha != JASP_DEATH_PENALTY_SOURCE_SHA256
+        or receipt.get("source_sha256") != JASP_DEATH_PENALTY_SOURCE_SHA256
+        or receipt.get("expected_source_sha256") != JASP_DEATH_PENALTY_SOURCE_SHA256
+        or receipt.get("source_sha256_after") != JASP_DEATH_PENALTY_SOURCE_SHA256
+        or receipt.get("source_unchanged") is not True):
+        raise CertificationError("JASP original packaged fixture no longer matches its immutable SHA-256 pin")
+    if receipt.get("receipt_sha256") != receipt_sha:
+        raise CertificationError("JASP deterministic fixture receipt SHA-256 mismatch")
+    on_disk = load_json(receipt_path, "JASP deterministic fixture receipt")
+    fields = (
+        "schema", "status", "source_path", "source_sha256", "expected_source_sha256",
+        "source_sha256_after", "source_unchanged", "clone_path", "clone_sha256",
+        "clone_is_distinct", "active_configuration_member", "changed_archive_member",
+        "changed_json_pointer", "changed_archive_member_count",
+        "unchanged_non_active_member_count", "before", "after",
+        "result_output_members_changed", "reference_results_modified",
+    )
+    if any(on_disk.get(field) != receipt.get(field) for field in fields):
+        raise CertificationError("Embedded and on-disk JASP deterministic fixture receipts disagree")
+    if (receipt.get("schema") != "LUNITA_JASP_DETERMINISTIC_FIXTURE/1.0"
+        or receipt.get("status") != "PASS_DETERMINISTIC_FIXTURE_COPY_CREATED"
+        or receipt.get("clone_is_distinct") is not True
+        or not re.fullmatch(r"[0-9a-f]{64}", str(receipt.get("clone_sha256", "")))
+        or receipt.get("clone_sha256") == JASP_DEATH_PENALTY_SOURCE_SHA256
+        or receipt.get("active_configuration_member") != "analyses.json"
+        or receipt.get("changed_archive_member") != "analyses.json"
+        or receipt.get("changed_archive_member_count") != 1
+        or not isinstance(receipt.get("changed_json_pointer"), str)
+        or not receipt.get("changed_json_pointer", "").startswith("/analyses/")
+        or receipt.get("before") != {"setSeed": False, "seed": 1}
+        or receipt.get("after") != {"setSeed": True, "seed": 1}
+        or receipt.get("result_output_members_changed") is not False
+        or receipt.get("reference_results_modified") is not False
+        or not isinstance(receipt.get("unchanged_non_active_member_count"), int)
+        or receipt.get("unchanged_non_active_member_count", -1) < 0):
+        raise CertificationError("JASP deterministic seed transition or archive-preservation evidence is invalid")
+    if row.get("deterministic_fixture_path") != receipt.get("clone_path"):
+        raise CertificationError("JASP flatpak_launch did not execute the exact seeded clone in its receipt")
+    if row.get("deterministic_fixture_receipt_valid") is not True:
+        raise CertificationError("JASP seeded fixture receipt was not validated by the execution lane")
+    return {
+        "status": "PASS",
+        "original_source_sha256": source_sha,
+        "deterministic_fixture_receipt_sha256": receipt_sha,
+        "seeded_clone_sha256": receipt.get("clone_sha256"),
+        "changed_archive_member": "analyses.json",
+        "reference_results_modified": False,
     }
 
 
@@ -410,6 +489,9 @@ def build_certificate(
         target,
         checks["jasp_post_mutation_runtime_identity"],
     )
+    jasp_seeded_fixture_summary = validate_jasp_seeded_fixture_evidence(
+        checks["jasp_packaged_fixture_nonregression"],
+    )
     rootfs_manifest_closure = validate_rootfs_manifest_closure(
         package, package_receipt_path, sha256_file(package_receipt_path),
         checks["squashfs_rootfs_postvalidation_manifest_closure"],
@@ -486,6 +568,7 @@ def build_certificate(
         "source_rootfs_manifest_sha256": package["source_rootfs_manifest_sha256"],
         "post_validation_rootfs_manifest_closure": rootfs_manifest_closure,
         "jasp_process_tree_lifecycle": jasp_process_tree_summary,
+        "jasp_seeded_fixture": jasp_seeded_fixture_summary,
         "target_runtime_receipt": {"path": str(target_path), "sha256": target_sha_expected},
         "independent_validation": {"path": str(independent_report_path), "sha256": independent_sha, "status": "PASS"},
         "s32_operational_certificate": {"path": str(s32_path), "sha256": s32_sha, "status": PASS_S32},
