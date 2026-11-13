@@ -583,6 +583,52 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     return result
 
 
+def validate_jasp_binary_patch_binding(app: dict, patch: dict) -> None:
+    """Require the formatter patch log to prove the exact executable hash transition."""
+    app_after = app.get("binary_after") if isinstance(app.get("binary_after"), dict) else {}
+    before_sha = app.get("binary_before_sha256")
+    after_sha = app_after.get("sha256")
+    after_path = app_after.get("path")
+    if not re.fullmatch(r"[0-9a-f]{64}", str(before_sha or "")) or not re.fullmatch(r"[0-9a-f]{64}", str(after_sha or "")):
+        raise RuntimeError("JASP executable pre/post SHA-256 is missing or malformed")
+    if not isinstance(after_path, str) or not after_path:
+        raise RuntimeError("JASP executable post-mutation path is missing")
+    changed = before_sha != after_sha
+    if app.get("binary_unchanged_by_formatter_patch") is not (not changed):
+        raise RuntimeError("JASP executable unchanged flag contradicts its pre/post SHA-256 values")
+    if patch.get("changed_jasp_binary") is not changed:
+        raise RuntimeError("Formatter patch binary-change flag contradicts the executable SHA-256 transition")
+    transition = app.get("binary_transition")
+    if not isinstance(transition, dict) or (
+        transition.get("path") != after_path
+        or transition.get("before_sha256") != before_sha
+        or transition.get("after_sha256") != after_sha
+        or transition.get("changed") is not changed
+    ):
+        raise RuntimeError("JASP executable transition receipt is missing or inconsistent")
+    rows = patch.get("patched_resources")
+    if not isinstance(rows, list):
+        raise RuntimeError("Formatter patch resource inventory is missing")
+    canonical_path = str(pathlib.Path(after_path).resolve(strict=True))
+    matches = [
+        row for row in rows
+        if isinstance(row, dict)
+        and isinstance(row.get("path"), str)
+        and str(pathlib.Path(row["path"]).resolve(strict=True)) == canonical_path
+    ]
+    if changed:
+        if len(matches) != 1:
+            raise RuntimeError("Changed JASP executable lacks exactly one embedded formatter patch record")
+        row = matches[0]
+        if (
+            row.get("before_sha256") != before_sha
+            or row.get("after_sha256") != after_sha
+            or row.get("observed_after_sha256") != after_sha
+        ):
+            raise RuntimeError("Embedded formatter patch record does not match the JASP executable hash transition")
+    elif matches:
+        raise RuntimeError("Unchanged JASP executable is incorrectly listed as a patched formatter resource")
+
 def verify_jasp_runtime_mutation_receipt() -> dict:
     """Verify exact post-refresh JASP/Qt files and Flatpak deployments used by this run."""
     if CERTIFICATION_PROFILE != "V1_8_DIRECT":
@@ -602,6 +648,7 @@ def verify_jasp_runtime_mutation_receipt() -> dict:
         qt = receipt.get("qt_http_server") if isinstance(receipt.get("qt_http_server"), dict) else {}
         patch = receipt.get("formatter_patch") if isinstance(receipt.get("formatter_patch"), dict) else {}
         app_after = app.get("binary_after") if isinstance(app.get("binary_after"), dict) else {}
+        validate_jasp_binary_patch_binding(app, patch)
         if (
             receipt.get("schema") != "LUNITA_JASP_RUNTIME_POST_MUTATION_RECEIPT/1.0"
             or receipt.get("status") != "PASS"
@@ -611,12 +658,9 @@ def verify_jasp_runtime_mutation_receipt() -> dict:
             or app.get("commit_before") != EXPECTED_JASP_APP_COMMIT
             or app.get("commit_after") != EXPECTED_JASP_APP_COMMIT
             or app.get("pinned_commit") != EXPECTED_JASP_APP_COMMIT
-            or not isinstance(app.get("binary_before_sha256"), str)
-            or app.get("binary_unchanged_by_formatter_patch") is not True
             or not isinstance(runtime.get("flatpak_ref"), str)
             or not re.fullmatch(r"[0-9a-f]{64}", runtime.get("commit_after", ""))
             or not re.fullmatch(r"[0-9a-f]{64}", sdk.get("commit", ""))
-            or patch.get("changed_jasp_binary") is not False
             or patch.get("r_startup_profile_mutated") is not False
             or not isinstance(patch.get("call_sites"), int) or patch.get("call_sites") < 1
             or not isinstance(patch.get("latex_sites"), int) or patch.get("latex_sites") < 1
