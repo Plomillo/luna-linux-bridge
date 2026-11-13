@@ -801,10 +801,10 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                 )
                 if case_id == "flatpak_launch_smoke":
                     header += (
-                        f"ORIGINAL_FIXTURE_PATH={original_source}\n"
-                        f"ORIGINAL_FIXTURE_ALIAS={original_alias}\n"
-                        f"ORIGINAL_FIXTURE_SHA256={original_source_sha or 'UNAVAILABLE'}\n"
-                        f"ORIGINAL_FIXTURE_ALIAS_VALID={'TRUE' if original_alias_valid else 'FALSE'}\n"
+                        f"DEATH_PENALTY_SOURCE_PATH={original_source}\n"
+                        f"DEATH_PENALTY_SOURCE_ALIAS={original_alias}\n"
+                        f"DEATH_PENALTY_SOURCE_SHA256={original_source_sha or 'UNAVAILABLE'}\n"
+                        f"DEATH_PENALTY_SOURCE_ALIAS_VALID={'TRUE' if original_alias_valid else 'FALSE'}\n"
                     )
                 try:
                     run = subprocess.run(
@@ -832,9 +832,9 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "command": command,
                         "started_at_utc": started,
                         "finished_at_utc": utc(),
-                        "original_fixture_path": str(original_source) if case_id == "flatpak_launch_smoke" else None,
-                        "original_fixture_sha256": original_source_sha if case_id == "flatpak_launch_smoke" else None,
-                        "original_fixture_alias_valid": fixture_integrity if case_id == "flatpak_launch_smoke" else None,
+                        "death_penalty_source_path": str(original_source) if case_id == "flatpak_launch_smoke" else None,
+                        "death_penalty_source_sha256": original_source_sha if case_id == "flatpak_launch_smoke" else None,
+                        "death_penalty_source_alias_valid": fixture_integrity if case_id == "flatpak_launch_smoke" else None,
                         "runtime_identity": runtime_identity,
                     }
                 except subprocess.TimeoutExpired as exc:
@@ -1274,10 +1274,10 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
             runtime_identity = inspect_jasp_runtime_identity(text)
             fixture_ok = True
             if case == "flatpak_launch_smoke":
-                original_paths = re.findall(r"^ORIGINAL_FIXTURE_PATH=(.+)$", text, re.M)
-                alias_paths = re.findall(r"^ORIGINAL_FIXTURE_ALIAS=(.+)$", text, re.M)
-                original_hashes = re.findall(r"^ORIGINAL_FIXTURE_SHA256=([0-9a-f]{64})$", text, re.M)
-                alias_markers = re.findall(r"^ORIGINAL_FIXTURE_ALIAS_VALID=(TRUE|FALSE)$", text, re.M)
+                original_paths = re.findall(r"^DEATH_PENALTY_SOURCE_PATH=(.+)$", text, re.M)
+                alias_paths = re.findall(r"^DEATH_PENALTY_SOURCE_ALIAS=(.+)$", text, re.M)
+                original_hashes = re.findall(r"^DEATH_PENALTY_SOURCE_SHA256=([0-9a-f]{64})$", text, re.M)
+                alias_markers = re.findall(r"^DEATH_PENALTY_SOURCE_ALIAS_VALID=(TRUE|FALSE)$", text, re.M)
                 expected_source = ROOTFS / "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
                 try:
                     original_path = pathlib.Path(original_paths[-1]) if original_paths else None
