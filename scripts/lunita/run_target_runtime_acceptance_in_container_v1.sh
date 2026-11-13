@@ -20,7 +20,10 @@ if [[ ! "$HOST_BIND_NAME" =~ ^lunita-host-[A-Za-z0-9-]+$ ]]; then
     echo "BLOCKED: workflow run identity is unsafe for a mount path." >&2
     exit 2
 fi
+export GITHUB_RUN_ID="$RUN_ID"
+export GITHUB_RUN_ATTEMPT="$RUN_ATTEMPT"
 export HOST_BIND_NAME
+printf 'LUNITA_WORKFLOW_IDENTITY run_id=%s attempt=%s host_bind_name=%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$HOST_BIND_NAME"
 
 OVERLAY="$LUNITA_ROOT/engines/runtime_engines_v1"
 test -d "$OVERLAY"
