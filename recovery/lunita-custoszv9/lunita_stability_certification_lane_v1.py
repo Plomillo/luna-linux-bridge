@@ -37,72 +37,219 @@ from jasp_seed_fixture_v1 import (
 class ProcessTreeCleanupError(RuntimeError):
     """A bounded JASP command left descendants alive or could not clean them up."""
 
+    def __init__(self, message: str, process_tree_receipt: dict | None = None):
+        super().__init__(message)
+        self.process_tree_receipt = process_tree_receipt
+
+
+class ProcessTreeTimeoutExpired(subprocess.TimeoutExpired):
+    """Timeout carrying a verifiable process-group cleanup receipt."""
+
+    def __init__(self, command, timeout, output: str, process_tree_receipt: dict):
+        super().__init__(command, timeout, output=output)
+        self.process_tree_receipt = process_tree_receipt
+
+
+def _process_group_members(pgid: int) -> list[int] | None:
+    """Return live members, or None when membership cannot be proven."""
+    proc_root = pathlib.Path("/proc")
+    if not proc_root.is_dir():
+        try:
+            os.killpg(pgid, 0)
+            return None
+        except ProcessLookupError:
+            return []
+        except PermissionError:
+            return None
+
+    members = []
+    unreadable = False
+    for entry in proc_root.iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            fields = (entry / "stat").read_text(encoding="ascii").rsplit(")", 1)[1].split()
+            state = fields[0]
+            process_group = int(fields[2])
+        except FileNotFoundError:
+            continue
+        except (OSError, ValueError, IndexError):
+            unreadable = True
+            continue
+        if process_group == pgid and state not in {"Z", "X"}:
+            members.append(int(entry.name))
+    return None if unreadable else sorted(members)
+
 
 def _process_group_exists(pgid: int) -> bool:
-    """Return true only while a non-zombie member remains in the process group."""
-    proc_root = pathlib.Path("/proc")
-    if proc_root.is_dir():
-        for entry in proc_root.iterdir():
-            if not entry.name.isdigit():
-                continue
-            try:
-                fields = (entry / "stat").read_text(encoding="ascii").rsplit(")", 1)[1].split()
-                state = fields[0]
-                process_group = int(fields[2])
-            except (OSError, ValueError, IndexError):
-                continue
-            if process_group == pgid and state not in {"Z", "X"}:
-                return True
-        return False
-    try:
-        os.killpg(pgid, 0)
-        return True
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
+    members = _process_group_members(pgid)
+    return members is None or bool(members)
 
 
-def _terminate_process_group(process: subprocess.Popen, grace_seconds: float = 3.0) -> None:
-    """Terminate descendants and reap the direct process before checking the group."""
+def _terminate_process_group(process: subprocess.Popen, grace_seconds: float = 3.0) -> dict:
+    """Terminate the isolated process group and return its observed closure state."""
     pgid = process.pid
-    if _process_group_exists(pgid):
+    signals_sent = []
+    members = _process_group_members(pgid)
+    if members is None or members:
         try:
             os.killpg(pgid, signal.SIGTERM)
+            signals_sent.append("SIGTERM")
         except ProcessLookupError:
             pass
     try:
         process.wait(timeout=grace_seconds)
     except subprocess.TimeoutExpired:
         pass
-    if _process_group_exists(pgid):
+
+    members = _process_group_members(pgid)
+    if members is None or members:
         try:
             os.killpg(pgid, signal.SIGKILL)
+            signals_sent.append("SIGKILL")
         except ProcessLookupError:
             pass
     try:
         process.wait(timeout=grace_seconds)
-    except subprocess.TimeoutExpired as exc:
-        raise ProcessTreeCleanupError(
-            f"Direct process {pgid} survived SIGTERM and SIGKILL"
-        ) from exc
+    except subprocess.TimeoutExpired:
+        pass
 
     deadline = time.monotonic() + grace_seconds
-    while time.monotonic() < deadline and _process_group_exists(pgid):
+    members = _process_group_members(pgid)
+    while time.monotonic() < deadline and (members is None or members):
         time.sleep(0.05)
-    if _process_group_exists(pgid):
-        raise ProcessTreeCleanupError(
-            f"Process group {pgid} remained present after SIGTERM and SIGKILL"
-        )
+        members = _process_group_members(pgid)
+    return {
+        "termination_signals": signals_sent,
+        "remaining_live_pids": members,
+        "process_group_closed": members == [],
+    }
 
 
-def run_bounded_process_tree(command: list[str], *, env: dict, timeout: int) -> subprocess.CompletedProcess:
-    """Run a JASP command in its own process group with bounded tree cleanup.
+def _process_tree_receipt(
+    *,
+    env: dict,
+    case_id: str,
+    invocation_id: str,
+    process_group_id: int,
+    executable_sha256: str,
+    runtime_ostree_commit: str,
+    command: list[str],
+    timeout: float,
+    started_at_utc: str,
+    finished_at_utc: str,
+    returncode: int,
+    timeout_triggered: bool,
+    closure: dict,
+    stdout: str,
+    status: str,
+) -> dict:
+    output_bytes = stdout.encode("utf-8")
+    command_bytes = json.dumps(command, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return {
+        "schema": "LUNITA_JASP_PROCESS_TREE_RECEIPT/1.0",
+        "status": status,
+        "run_id": str(env["GITHUB_RUN_ID"]),
+        "run_attempt": str(env["GITHUB_RUN_ATTEMPT"]),
+        "case_id": case_id,
+        "invocation_id": invocation_id,
+        "process_group_id": process_group_id,
+        "session_id": process_group_id,
+        "executable_sha256": executable_sha256,
+        "runtime_ostree_commit": runtime_ostree_commit,
+        "command_sha256": hashlib.sha256(command_bytes).hexdigest(),
+        "timeout_seconds": timeout,
+        "started_at_utc": started_at_utc,
+        "finished_at_utc": finished_at_utc,
+        "returncode": returncode,
+        "timeout_triggered": timeout_triggered,
+        "termination_signals": closure["termination_signals"],
+        "remaining_live_pids": closure["remaining_live_pids"],
+        "process_group_closed": closure["process_group_closed"],
+        "captured_output_sha256": hashlib.sha256(output_bytes).hexdigest(),
+        "captured_output_bytes": len(output_bytes),
+    }
 
-    Output goes to a temporary file rather than a pipe. A Flatpak/JASP descendant
-    therefore cannot keep communicate() blocked by inheriting the pipe after the
-    direct launcher exits. Timeout and normal exit both check for orphaned members.
+
+def validate_process_tree_receipt(
+    receipt: dict | None,
+    *,
+    command: list[str],
+    env: dict,
+    timeout: float,
+    case_id: str,
+    executable_sha256: str,
+    runtime_ostree_commit: str,
+    stdout: str,
+    returncode: int,
+    timeout_triggered: bool = False,
+) -> bool:
+    """Independently validate the invocation identity tuple and process closure."""
+    if not isinstance(receipt, dict):
+        return False
+    output_bytes = stdout.encode("utf-8")
+    command_bytes = json.dumps(command, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    expected_status = (
+        "BLOCKED_TIMEOUT_PROCESS_GROUP_CLOSED" if timeout_triggered
+        else "PASS_PROCESS_GROUP_CLOSED"
+    )
+    invocation_id = receipt.get("invocation_id")
+    return bool(
+        receipt.get("schema") == "LUNITA_JASP_PROCESS_TREE_RECEIPT/1.0"
+        and receipt.get("status") == expected_status
+        and receipt.get("run_id") == str(env.get("GITHUB_RUN_ID", ""))
+        and receipt.get("run_attempt") == str(env.get("GITHUB_RUN_ATTEMPT", ""))
+        and re.fullmatch(r"[0-9a-f]{32}", str(invocation_id or ""))
+        and receipt.get("case_id") == case_id
+        and isinstance(receipt.get("process_group_id"), int)
+        and receipt.get("process_group_id", 0) > 1
+        and receipt.get("session_id") == receipt.get("process_group_id")
+        and receipt.get("executable_sha256") == executable_sha256
+        and receipt.get("runtime_ostree_commit") == runtime_ostree_commit
+        and receipt.get("command_sha256") == hashlib.sha256(command_bytes).hexdigest()
+        and receipt.get("timeout_seconds") == timeout
+        and isinstance(receipt.get("started_at_utc"), str)
+        and isinstance(receipt.get("finished_at_utc"), str)
+        and receipt.get("returncode") == returncode
+        and receipt.get("timeout_triggered") is timeout_triggered
+        and isinstance(receipt.get("termination_signals"), list)
+        and receipt.get("remaining_live_pids") == []
+        and receipt.get("process_group_closed") is True
+        and receipt.get("captured_output_sha256") == hashlib.sha256(output_bytes).hexdigest()
+        and receipt.get("captured_output_bytes") == len(output_bytes)
+    )
+
+
+def run_bounded_process_tree(
+    command: list[str],
+    *,
+    env: dict,
+    timeout: float,
+    case_id: str,
+    executable_sha256: str,
+    runtime_ostree_commit: str,
+) -> subprocess.CompletedProcess:
+    """Run JASP in a unique session and return only with a hash-bound closure receipt.
+
+    File-backed output prevents descendants from blocking timeout completion by
+    inheriting a pipe. Every invocation is bound to workflow run/attempt, case,
+    invocation UUID, PGID/SID, executable hash and OSTree runtime commit.
     """
+    run_id = str(env.get("GITHUB_RUN_ID", ""))
+    run_attempt = str(env.get("GITHUB_RUN_ATTEMPT", ""))
+    if not re.fullmatch(r"\d+", run_id) or not re.fullmatch(r"\d+", run_attempt):
+        raise RuntimeError("GitHub workflow run ID/attempt is missing or malformed")
+    if not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", case_id):
+        raise RuntimeError("JASP process-tree case ID is missing or malformed")
+    if not re.fullmatch(r"[0-9a-f]{64}", executable_sha256 or ""):
+        raise RuntimeError("JASP executable SHA-256 is missing or malformed")
+    if not re.fullmatch(r"[0-9a-f]{64}", runtime_ostree_commit or ""):
+        raise RuntimeError("JASP Flatpak runtime OSTree commit is missing or malformed")
+    if not isinstance(timeout, (int, float)) or timeout <= 0:
+        raise RuntimeError("JASP process-tree timeout must be positive")
+
+    started_at_utc = utc()
+    invocation_id = uuid.uuid4().hex
     with tempfile.TemporaryFile(mode="w+b") as output:
         process = subprocess.Popen(
             command,
@@ -112,23 +259,63 @@ def run_bounded_process_tree(command: list[str], *, env: dict, timeout: int) -> 
             stderr=subprocess.STDOUT,
             start_new_session=True,
         )
+        process_group_id = process.pid
         try:
             returncode = process.wait(timeout=timeout)
         except subprocess.TimeoutExpired as exc:
-            _terminate_process_group(process)
-            process.wait(timeout=5)
+            closure = _terminate_process_group(process)
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pass
             output.seek(0)
             captured = output.read().decode("utf-8", "replace")
-            raise subprocess.TimeoutExpired(command, timeout, output=captured) from exc
-
-        if _process_group_exists(process.pid):
-            _terminate_process_group(process)
-            raise ProcessTreeCleanupError(
-                f"JASP command exited with return code {returncode} while descendants remained"
+            receipt = _process_tree_receipt(
+                env=env, case_id=case_id, invocation_id=invocation_id,
+                process_group_id=process_group_id, executable_sha256=executable_sha256,
+                runtime_ostree_commit=runtime_ostree_commit, command=command, timeout=timeout,
+                started_at_utc=started_at_utc, finished_at_utc=utc(), returncode=124,
+                timeout_triggered=True, closure=closure, stdout=captured,
+                status=(
+                    "BLOCKED_TIMEOUT_PROCESS_GROUP_CLOSED"
+                    if closure["process_group_closed"] else "BLOCKED_PROCESS_GROUP_NOT_CLOSED"
+                ),
             )
+            raise ProcessTreeTimeoutExpired(command, timeout, captured, receipt) from exc
+
+        members_after_exit = _process_group_members(process_group_id)
+        if members_after_exit is None or members_after_exit:
+            closure = _terminate_process_group(process)
+            output.seek(0)
+            captured = output.read().decode("utf-8", "replace")
+            receipt = _process_tree_receipt(
+                env=env, case_id=case_id, invocation_id=invocation_id,
+                process_group_id=process_group_id, executable_sha256=executable_sha256,
+                runtime_ostree_commit=runtime_ostree_commit, command=command, timeout=timeout,
+                started_at_utc=started_at_utc, finished_at_utc=utc(), returncode=returncode,
+                timeout_triggered=False, closure=closure, stdout=captured,
+                status="BLOCKED_DESCENDANTS_AFTER_NORMAL_EXIT" if closure["process_group_closed"]
+                       else "BLOCKED_PROCESS_GROUP_NOT_CLOSED",
+            )
+            raise ProcessTreeCleanupError(
+                f"JASP launcher exited with return code {returncode} while process-group members remained",
+                receipt,
+            )
+
         output.seek(0)
         captured = output.read().decode("utf-8", "replace")
-        return subprocess.CompletedProcess(command, returncode, stdout=captured)
+        closure = {"termination_signals": [], "remaining_live_pids": [], "process_group_closed": True}
+        receipt = _process_tree_receipt(
+            env=env, case_id=case_id, invocation_id=invocation_id,
+            process_group_id=process_group_id, executable_sha256=executable_sha256,
+            runtime_ostree_commit=runtime_ostree_commit, command=command, timeout=timeout,
+            started_at_utc=started_at_utc, finished_at_utc=utc(), returncode=returncode,
+            timeout_triggered=False, closure=closure, stdout=captured,
+            status="PASS_PROCESS_GROUP_CLOSED",
+        )
+        completed = subprocess.CompletedProcess(command, returncode, stdout=captured)
+        completed.process_tree_receipt = receipt
+        return completed
 
 
 ROOT = pathlib.Path(__file__).resolve().parent
