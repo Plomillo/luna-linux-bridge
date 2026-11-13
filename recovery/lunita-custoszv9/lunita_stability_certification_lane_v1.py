@@ -1157,16 +1157,36 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 and save_rows_sha == rerun_rows_sha
                 and save_run.get("actual_result_rows") == rerun.get("actual_result_rows")
             )
+            strict_reference_pass = (
+                data.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
+                and data.get("reference_comparison_status") == "PASS"
+            )
+            historical_baseline_pass = (
+                data.get("status") == "PASS_CANDIDATE_BASELINE_WITH_HISTORICAL_REFERENCE_DEBT"
+                and data.get("candidate_baseline_status") == "PASS_VERSIONED_DETERMINISTIC_BASELINE"
+                and data.get("historical_reference_debt_status") == "DISCLOSED_NONBLOCKING_HISTORICAL_REFERENCE_DEBT"
+                and data.get("historical_reference_provenance_verified") is True
+            )
+            native_save_valid = (
+                data.get("native_save_transaction_status") == "PASS"
+                and data.get("save_command_argument_order_valid") is True
+                and data.get("save_results_member_changed") is True
+                and data.get("saved_results_member_sha256_before") != data.get("saved_results_member_sha256_after_save")
+                and data.get("saved_results_member_sha256_after_save") == data.get("saved_results_member_sha256_after_rerun")
+                and data.get("saved_results_member_stable_after_rerun") is True
+                and data.get("strict_rerun_exit_code_preserved") == 0
+                and (data.get("native_save_exit_code_preserved") == 0 or (
+                    data.get("native_save_exit_code_preserved") == 1
+                    and (save_run.get("stored_reference_mismatch") is True)
+                    and data.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
+                ))
+            )
             passed = (
                 data.get("schema") == "CUSTOSZ_LUNITA_JASP_UNITTEST_ROUNDTRIP/1.0"
                 and data.get("app_commit") == "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
                 and data.get("network_unshared") is True and data.get("flatpak_sandbox") is True
-                and (
-                    (data.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
-                     and data.get("reference_comparison_status") == "PASS")
-                    or (data.get("status") == "PASS_DETERMINISTIC_REPLAY_REFERENCE_MISMATCH_RECORDED"
-                        and data.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH")
-                )
+                and (strict_reference_pass or historical_baseline_pass)
+                and native_save_valid
                 and replay_pass
                 and data.get("runtime_identity_status") == "PASS"
                 and (save_run.get("runtime_identity") or {}).get("status") == "PASS"
@@ -1191,11 +1211,19 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 ),
                 "acceptance_scope": (
                     "STRICT_REFERENCE_AND_REPLAY" if passed and data.get("reference_comparison_status") == "PASS" else
-                    "DETERMINISTIC_REPLAY_ONLY" if passed else "BLOCKED"
+                    "VERSIONED_DETERMINISTIC_BASELINE_WITH_HISTORICAL_REFERENCE_DEBT" if passed else "BLOCKED"
                 ),
                 "case_status": data.get("status"),
                 "deterministic_replay_status": data.get("deterministic_replay_status"),
                 "reference_comparison_status": data.get("reference_comparison_status"),
+                "candidate_baseline_status": data.get("candidate_baseline_status"),
+                "historical_reference_debt_status": data.get("historical_reference_debt_status"),
+                "historical_reference_provenance": data.get("historical_reference_provenance"),
+                "saved_results_member_sha256_before": data.get("saved_results_member_sha256_before"),
+                "saved_results_member_sha256_after_save": data.get("saved_results_member_sha256_after_save"),
+                "saved_results_member_sha256_after_rerun": data.get("saved_results_member_sha256_after_rerun"),
+                "native_save_exit_code": data.get("native_save_exit_code_preserved"),
+                "strict_rerun_exit_code": data.get("strict_rerun_exit_code_preserved"),
                 "save_actual_result_rows_sha256": save_rows_sha,
                 "rerun_actual_result_rows_sha256": rerun_rows_sha,
                 "actual_result_rows_equal": data.get("actual_result_rows_equal"),
