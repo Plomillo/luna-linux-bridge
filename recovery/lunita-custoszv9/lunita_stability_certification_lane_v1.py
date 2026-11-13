@@ -2538,9 +2538,12 @@ def issue_s32_independent_beta_validation_receipt() -> dict:
     if any(not _stable_check(check) for check in checks.values()):
         return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS", "certification": "NOT_GRANTED"}
     process_tree_check = checks["jasp_process_tree_lifecycle"]
+    process_tree_workflow = process_tree_check.get("workflow_identity") or {}
+    target_workflow = target.get("workflow_identity") or {}
     jasp_identity_check = checks.get("jasp_post_mutation_runtime_identity") or {}
     if (
-        process_tree_check.get("workflow_identity") != target.get("workflow_identity")
+        process_tree_workflow.get("run_id") != str(target_workflow.get("run_id", ""))
+        or process_tree_workflow.get("run_attempt") != str(target_workflow.get("run_attempt", ""))
         or process_tree_check.get("jasp_binary_sha256") != jasp_identity_check.get("jasp_binary_sha256")
         or process_tree_check.get("flatpak_runtime_ostree_commit") != jasp_identity_check.get("flatpak_runtime_commit")
         or process_tree_check.get("invocation_count") != 5
