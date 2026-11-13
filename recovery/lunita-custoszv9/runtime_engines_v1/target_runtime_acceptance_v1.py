@@ -582,7 +582,6 @@ def verify_jasp_source_release_identity(lupa: dict[str, Any], metadata_dir: path
         raise TargetGateError(f"JASP source release identity receipt is unreadable: {exc}") from exc
     expected_identity = {
         "schema": "LUNITA_JASP_SOURCE_RELEASE_IDENTITY/1.0",
-        "schema": "LUNITA_JASP_SOURCE_RELEASE_IDENTITY/1.0",
         "status": "PASS_JASP_SOURCE_RELEASE_IDENTITY",
         "application_id": "org.jaspstats.JASP",
         "version": EXPECTED_JASP_VERSION,
