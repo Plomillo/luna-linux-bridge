@@ -1,0 +1,83 @@
+{
+  "schema": "LUNITA_JASP_VERSIONED_BASELINE/1.0",
+  "baseline_id": "LUNITA_JASP_0_98_8_DEATH_PENALTY_SEEDED_R1",
+  "baseline_revision": 1,
+  "state": "PRE_REGISTERED_PENDING_INDEPENDENT_REEXECUTION",
+  "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+  "candidate_version": "1.8.0",
+  "scope": "CANDIDATE_JASP_0_98_8_SEEDED_DEATH_PENALTY_REPLAY_ONLY",
+  "historical_reference": {
+    "status": "PRESERVED_HISTORICAL_REFERENCE_MISMATCH",
+    "declared_producer_version": "0.97.1",
+    "source_fixture_sha256": "fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895",
+    "stored_results_git_blob_sha": "f4ef4723cd4ecf001c8c0418e828570bbbb7856e",
+    "published_html_git_blob_sha": "aee7f2f220c88e791fa72ad4d8f8723488799e7f",
+    "historical_producer_execution": "UNKNOWN",
+    "compatibility_with_target_runtime": "BLOCKED_STORED_REFERENCE_MISMATCH"
+  },
+  "target_runtime": {
+    "application_id": "org.jaspstats.JASP",
+    "version": "0.98.8",
+    "source_commit": "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1",
+    "flatpak_app_ostree_commit": "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
+    "flatpak_runtime_and_sdk": "MUST_BE_BOUND_BY_CURRENT_RUNTIME_MUTATION_RECEIPT"
+  },
+  "source_fixture": {
+    "path": "Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp",
+    "sha256": "fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895",
+    "mutation_policy": "SOURCE_IMMUTABLE; ONLY_DISPOSABLE_CLONE_MAY_BE_MODIFIED"
+  },
+  "analysis_configuration": {
+    "operation": "DETERMINISTIC_REPLAY",
+    "changed_json_pointer": "/analyses/0/options",
+    "changed_option": "setSeed",
+    "original_setSeed": false,
+    "replay_setSeed": true,
+    "seed": 1,
+    "samplingMethod": "auto",
+    "samplingMethodManualSamples": 10000,
+    "other_analysis_options": "PRESERVE_BYTE_AND_SEMANTIC_CONTENT"
+  },
+  "expected_result_rows": [
+    "| 1 | RaceVictim + RaceDefendant + Death + RaceVictim✻RaceDefendant + RaceVictim✻Death + RaceDefendant✻Death | 0.454 | 1.000 |",
+    "| 2 | RaceVictim + RaceDefendant + Death + RaceVictim✻RaceDefendant + RaceVictim✻Death | 0.417 | 1.089 |",
+    "| 3 | RaceVictim + RaceDefendant + Death + RaceVictim✻RaceDefendant + RaceVictim✻Death + RaceDefendant✻Death + RaceVictim✻RaceDefendant✻Death | 0.130 | 3.488 |"
+  ],
+  "expected_result_rows_sha256": "ef1f4ec4493aea848c9449f6ca96864a1cd95e353544601c6edf52fb284a1a32",
+  "observed_pre_registration_runs": [
+    {
+      "run_id": 43354198710,
+      "role": "PRIOR_OBSERVATION_NOT_APPROVAL",
+      "result_rows_sha256": "ef1f4ec4493aea848c9449f6ca96864a1cd95e353544601c6edf52fb284a1a32"
+    },
+    {
+      "run_id": 43365648019,
+      "role": "CONCURRENT_PRE_REGISTRATION_BASELINE_RUN_NOT_APPROVAL",
+      "result_rows_sha256": null
+    }
+  ],
+  "acceptance": {
+    "required": "A_NEW_WORKFLOW_RUN_ON_A_COMMIT_CONTAINING_THIS_PRE_REGISTERED_MANIFEST_MUST_RECOMPUTE_TWO_FRESH_TABLES_AND_MATCH_THE_EXACT_ROWS_AND_SHA256",
+    "independent_validation": "REQUIRED",
+    "source_fixture_must_remain_unchanged": true,
+    "disposable_fixture_must_be_removed": true,
+    "runtime_identity_must_match_all_pins": true,
+    "both_actual_replay_outputs_must_match_each_other": true,
+    "both_actual_replay_outputs_must_match_this_manifest": true,
+    "reference_mismatch_must_remain_explicit": true,
+    "tolerances_allowed": false,
+    "automatic_baseline_replacement_allowed": false,
+    "dynamic_autobaselining_allowed": false
+  },
+  "nonclaims": [
+    "This is not a PASS for the historical 0.97.1 stored reference.",
+    "This does not prove which historical runtime generated the stored reference.",
+    "This does not assert statistical equivalence between the historical unseeded result and the seeded 0.98.8 candidate result.",
+    "This does not grant canonical G06/G08 certification, G23, G24, or automatic promotion."
+  ],
+  "provenance": {
+    "derived_from": "Observed identical fresh JASP 0.98.8 seeded replay rows in prior target runs; preserved as a proposal pending a new independent re-execution.",
+    "pre_registration_policy": "APPEND_ONLY; VERSIONED; HASH_BOUND; NEVER_OVERWRITE_HISTORICAL_REFERENCE",
+    "certification": "NOT_GRANTED"
+  }
+}
