@@ -55,6 +55,7 @@ jobs:
             scripts/lunita/rootfs_base_cache_v1.py \
             scripts/lunita/clean_transient_browser_tmp_v1.py \
             scripts/lunita/patch_jasp_certification_runtime_v1.py \
+            scripts/lunita/record_jasp_runtime_mutation_receipt_v1.py \
             scripts/lunita/verify_jasp_release_identity_v1.py \
             scripts/lunita/test_verify_jasp_release_identity_v1.py
           python scripts/lunita/verify_jasp_release_identity_v1.py --self-test
@@ -63,6 +64,7 @@ jobs:
           python scripts/lunita/rootfs_base_cache_v1.py self-test
           python scripts/lunita/clean_transient_browser_tmp_v1.py self-test
           python scripts/lunita/patch_jasp_certification_runtime_v1.py --self-test
+          python scripts/lunita/record_jasp_runtime_mutation_receipt_v1.py --self-test
           python scripts/lunita/certify_candidate_squashfs_v1.py --self-test
           python -m unittest discover -s scripts/lunita -p "test_certify_candidate_squashfs_v1.py" -v
       - name: Install pinned CPU-only PyTorch for SeamlessM4T tensor contracts
