@@ -612,14 +612,15 @@ def verify_jasp_runtime_mutation_receipt() -> dict:
             or app.get("commit_after") != EXPECTED_JASP_APP_COMMIT
             or app.get("pinned_commit") != EXPECTED_JASP_APP_COMMIT
             or not isinstance(app.get("binary_before_sha256"), str)
-            or app.get("binary_before_sha256") == app_after.get("sha256")
+            or app.get("binary_unchanged_by_formatter_patch") is not True
             or not isinstance(runtime.get("flatpak_ref"), str)
             or not re.fullmatch(r"[0-9a-f]{64}", runtime.get("commit_after", ""))
             or not re.fullmatch(r"[0-9a-f]{64}", sdk.get("commit", ""))
-            or patch.get("changed_jasp_binary") is not True
+            or patch.get("changed_jasp_binary") is not False
             or patch.get("r_startup_profile_mutated") is not False
             or not isinstance(patch.get("call_sites"), int) or patch.get("call_sites") < 1
             or not isinstance(patch.get("latex_sites"), int) or patch.get("latex_sites") < 1
+            or not isinstance(patch.get("patched_resources"), list) or not patch.get("patched_resources")
         ):
             raise RuntimeError("JASP runtime mutation receipt schema, candidate, commit or patch contract mismatch")
 
@@ -667,6 +668,28 @@ def verify_jasp_runtime_mutation_receipt() -> dict:
             evidence[str(file_path)] = digest
 
         verify_record(app_after, "JASP binary")
+        files_root = expected_jasp_binary.parent.parent.resolve(strict=True)
+        patch_rows = patch.get("patched_resources")
+        patch_calls = 0
+        patch_latex = 0
+        for row in patch_rows:
+            if not isinstance(row, dict):
+                raise RuntimeError("JASP patched resource row is malformed")
+            resource_path = pathlib.Path(row.get("path", "")).resolve(strict=True)
+            try:
+                resource_path.relative_to(files_root)
+            except ValueError as exc:
+                raise RuntimeError("Patched JASP resource escapes the Flatpak files tree") from exc
+            if row.get("before_sha256") == row.get("after_sha256") or row.get("observed_after_sha256") != row.get("after_sha256"):
+                raise RuntimeError("Patched JASP resource lacks a valid before/after hash transition")
+            verify_record({
+                "path": str(resource_path),
+                "sha256": row.get("after_sha256"),
+            }, "Patched JASP formatter resource")
+            patch_calls += row.get("call_sites", 0)
+            patch_latex += row.get("latex_sites", 0)
+        if patch_calls != patch.get("call_sites") or patch_latex != patch.get("latex_sites"):
+            raise RuntimeError("JASP patch resource totals differ from the aggregate patch receipt")
         verify_record(qt.get("source_archive") or {}, "QtHttpServer source archive")
         for key in ("built_libraries", "installed_libraries_after"):
             rows = qt.get(key)
