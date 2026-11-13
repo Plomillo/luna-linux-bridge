@@ -664,9 +664,9 @@ class JaspRunnerTests(unittest.TestCase):
                 arg.startswith("--filesystem=") and "seeded-fixture" in arg
                 for arg in flatpak_command
             ))
-            self.assertEqual(str(source_fixture), result["tests"]["flatpak_launch_smoke"]["original_fixture_path"])
-            self.assertEqual(source_sha, result["tests"]["flatpak_launch_smoke"]["original_fixture_sha256"])
-            self.assertTrue(result["tests"]["flatpak_launch_smoke"]["original_fixture_alias_valid"])
+            self.assertEqual(str(source_fixture), result["tests"]["flatpak_launch_smoke"]["death_penalty_source_path"])
+            self.assertEqual(source_sha, result["tests"]["flatpak_launch_smoke"]["death_penalty_source_sha256"])
+            self.assertTrue(result["tests"]["flatpak_launch_smoke"]["death_penalty_source_alias_valid"])
             self.assertEqual("PASS", result["tests"]["flatpak_launch_smoke"]["status"])
             self.assertEqual(1, result["tests"]["reliability"]["returncode"])
             self.assertEqual("BLOCKED", result["tests"]["reliability"]["status"])
