@@ -1161,7 +1161,7 @@ def main() -> int:
         "captured_at_utc": datetime.now(timezone.utc).isoformat(),
         "candidate_id": "G06_REBUILD_CANDIDATE_R1",
         "target": str(ROOT),
-"workflow_identity": workflow_identity_receipt(),
+        "workflow_identity": workflow_identity_receipt(),
         "status": "BLOCKED",
         "certification": "NOT_GRANTED",
         "canonical_g06_certification": "NOT_GRANTED",
