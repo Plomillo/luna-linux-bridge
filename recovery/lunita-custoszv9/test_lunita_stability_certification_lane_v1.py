@@ -470,7 +470,7 @@ class DirectV18S32IssuerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)
             out, manifest, target, independent, acceptance, image, checksum, package = self.prepare_valid_evidence(base)
-            with mock.patch.dict(lane.os.environ, {"GITHUB_RUN_ID": "43337415331", "GITHUB_RUN_ATTEMPT": "1"}), \\
+            with mock.patch.dict(lane.os.environ, {"GITHUB_RUN_ID": "43337415331", "GITHUB_RUN_ATTEMPT": "1"}), \
             with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
                  mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
                  mock.patch.object(lane, "SQUASHFS_IMAGE", image), \
@@ -505,15 +505,15 @@ class DirectV18S32IssuerTests(unittest.TestCase):
             process_check["invocation_count"] = 4
             process_check["unique_invocation_id_count"] = 4
             independent.write_text(json.dumps(report), encoding="utf-8")
-            with mock.patch.dict(lane.os.environ, {"GITHUB_RUN_ID": "43337415331", "GITHUB_RUN_ATTEMPT": "1"}), \\
-                 mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \\
-                 mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \\
-                 mock.patch.object(lane, "SQUASHFS_IMAGE", image), \\
-                 mock.patch.object(lane, "SQUASHFS_CHECKSUM", checksum), \\
-                 mock.patch.object(lane, "SQUASHFS_PACKAGE_RECEIPT", package), \\
-                 mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", target.parent), \\
-                 mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \\
-                 mock.patch.object(lane, "OUT", out), \\
+            with mock.patch.dict(lane.os.environ, {"GITHUB_RUN_ID": "43337415331", "GITHUB_RUN_ATTEMPT": "1"}), \
+                 mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
+                 mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
+                 mock.patch.object(lane, "SQUASHFS_IMAGE", image), \
+                 mock.patch.object(lane, "SQUASHFS_CHECKSUM", checksum), \
+                 mock.patch.object(lane, "SQUASHFS_PACKAGE_RECEIPT", package), \
+                 mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", target.parent), \
+                 mock.patch.object(lane, "INDEPENDENT_REPORT", independent), \
+                 mock.patch.object(lane, "OUT", out), \
                  mock.patch.object(lane, "latest_target_runtime_acceptance", return_value=acceptance):
                 result = lane.issue_s32_independent_beta_validation_receipt()
             self.assertEqual("BLOCKED_JASP_PROCESS_TREE_RECEIPTS", result["status"])
