@@ -150,6 +150,9 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
         }
         checksum_sha = cert.sha256_file(checksum)
         independent_data = json.loads(independent.read_text(encoding="utf-8"))
+        independent_data["checks"]["squashfs_rootfs_postvalidation_manifest_closure"] = checks[
+            "squashfs_rootfs_postvalidation_manifest_closure"
+        ]
         image_binding = {
             "status": "PASS", "returncode": 0,
             "image_path": str(image), "image_sha256": image_sha, "image_bytes": image.stat().st_size,
