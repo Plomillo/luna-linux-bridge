@@ -530,6 +530,10 @@ def verify_jasp_source_release_provenance(root: pathlib.Path, record: dict[str, 
             raise TargetGateError(f"JASP pinned provenance field mismatch: {field}")
 
     metadata = root / "metadata"
+    if metadata.is_symlink() or not metadata.is_dir():
+        raise TargetGateError("JASP source provenance metadata directory is missing or unsafe")
+    if record.get("flatpak_deployment_commit") != EXPECTED_JASP_FLATPAK_COMMIT:
+        raise TargetGateError("JASP Flatpak deployment commit differs from the frozen pin")
     files = {
         "manifest": ("JASP_FLATHUB_MANIFEST.json", "flathub_manifest_sha256"),
         "cmake": ("JASP_SOURCE_CMAKE_LISTS.txt", "jasp_source_cmake_sha256"),
@@ -553,11 +557,17 @@ def verify_jasp_source_release_provenance(root: pathlib.Path, record: dict[str, 
     manifest = json.loads(paths["manifest"].read_text(encoding="utf-8"))
     if not isinstance(manifest, dict) or manifest.get("app-id") != "org.jaspstats.JASP":
         raise TargetGateError("JASP Flathub manifest app-id mismatch")
+    modules = manifest.get("modules")
+    if not isinstance(modules, list):
+        raise TargetGateError("JASP Flathub manifest modules are missing or invalid")
     source_commits = []
-    for module in manifest.get("modules", []):
+    for module in modules:
         if not isinstance(module, dict) or module.get("name") != "jasp":
             continue
-        for source in module.get("sources", []):
+        sources = module.get("sources")
+        if not isinstance(sources, list):
+            raise TargetGateError("JASP Flathub jasp module sources are missing or invalid")
+        for source in sources:
             if (
                 isinstance(source, dict)
                 and source.get("type") == "git"
