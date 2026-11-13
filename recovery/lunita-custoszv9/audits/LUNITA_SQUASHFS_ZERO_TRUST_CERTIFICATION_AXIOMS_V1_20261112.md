@@ -761,3 +761,36 @@ La validación exige una nueva ejecución completa posterior a la integración q
 ### Extensión del predicado terminal — AX-LUN-033
 
 ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-033. El certificado queda denegado si cualquier invocación JASP no satisface el límite temporal, aislamiento, captura de salida y cierre verificable del grupo de procesos en el mismo candidato.
+
+
+## 12. Addendum append-only — AX-LUN-034: recibos hash-bound por invocación JASP y admisión independiente
+
+**Registro de evidencia:** 2026-11-13 UTC. Revisión de la implementación AX-LUN-033, del formato de informes de JASP, de la función que construye la validación independiente, de S32 y del certificador final de SquashFS.
+
+### AX-LUN-034 — La terminación de procesos debe quedar materializada en un recibo identificable y verificable
+
+Toda invocación JASP que pueda contribuir a la aceptación del candidato MUST producir un objeto estructurado `LUNITA_JASP_PROCESS_TREE_RECEIPT/1.0`. El recibo MUST ligar, como mínimo, el run ID, run attempt, case ID, UUID único de invocación, process-group ID, session ID, SHA-256 del ejecutable JASP post-mutación, commit OSTree del runtime Flatpak, hash del comando, timeout, marcas temporales de inicio/fin, código de salida, señales de limpieza, miembros vivos remanentes y hash/tamaño de la salida capturada.
+
+La validación de un recibo MUST comprobar el conjunto completo de la tupla `JASPInvocation` de AX-LUN-033. La identidad no puede reconstruirse por coincidencia de nombres ni transferirse entre runs, attempts, casos, invocaciones, ejecutables, runtimes o imágenes. Los UUID de invocación deben ser únicos dentro del conjunto admitido. El recibo debe conservarse dentro del informe o log cuya ruta y SHA-256 son incluidos en el mapa de evidencia independiente; no basta un indicador booleano desacoplado del recibo.
+
+El conjunto requerido para el candidato v1.8 consta de exactamente cinco invocaciones:
+
+1. `flatpak_launch`;
+2. `reliability`;
+3. `weight_gain`;
+4. `death_penalty_save`;
+5. `death_penalty_rerun`.
+
+El gate independiente `jasp_process_tree_lifecycle` MUST exigir los cinco recibos, UUID distintos, run ID y attempt coincidentes con el recibo del runtime objetivo, hashes idénticos al recibo de mutación JASP/Qt, process-group y session ID coherentes, timeout no activado, cero miembros vivos y estado `PASS_PROCESS_GROUP_CLOSED` para cada ejecución admitida. Las invocaciones que excedan el límite, incluso cuando la limpieza posterior cierre correctamente el grupo, conservan estado BLOCKED y no pueden convertirse en PASS funcional.
+
+La generación de la validación independiente, la emisión S32 y el certificador final MUST exigir explícitamente este gate. El certificador final MUST volver a comprobar la cantidad de recibos, su esquema, la identidad de workflow/runtime y el cierre de procesos antes de emitir `CERTIFIED_FUNCTIONAL_CANDIDATE`. La ausencia de un recibo, una referencia no legible, un hash distinto, un UUID duplicado, una identidad de runtime distinta o un proceso vivo remanente producen BLOCKED.
+
+### Condición de no regresión
+
+Las referencias JASP históricas, los valores estadísticos originales y los resultados de cada replay permanecen independientes de los recibos de ciclo de vida. Un recibo correcto solo acredita la identidad y terminación de esa invocación; no convierte un mismatch estadístico histórico en PASS estricto ni autoriza mutar fixtures, resultados guardados o tolerancias.
+
+**Estado al registrar:** `SPECIFIED_APPEND_ONLY; INVOCATION_RECEIPT_IMPLEMENTATION_ADDED; UNIT_AND_CONTRACT_VALIDATION_PENDING; REAL_TARGET_REVALIDATION_PENDING; CERTIFICATION_NOT_GRANTED`.
+
+### Extensión del predicado terminal — AX-LUN-034
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-034`. Ninguna imagen podrá recibir certificación funcional si los cinco recibos de invocación JASP no están presentes, son únicos, verificables y ligados al mismo runtime, ejecutable, run y evidencia independiente.

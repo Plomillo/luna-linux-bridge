@@ -37,72 +37,254 @@ from jasp_seed_fixture_v1 import (
 class ProcessTreeCleanupError(RuntimeError):
     """A bounded JASP command left descendants alive or could not clean them up."""
 
+    def __init__(self, message: str, process_tree_receipt: dict | None = None):
+        super().__init__(message)
+        self.process_tree_receipt = process_tree_receipt
+
+
+class ProcessTreeTimeoutExpired(subprocess.TimeoutExpired):
+    """Timeout carrying a verifiable process-group cleanup receipt."""
+
+    def __init__(self, command, timeout, output: str, process_tree_receipt: dict):
+        super().__init__(command, timeout, output=output)
+        self.process_tree_receipt = process_tree_receipt
+
+
+def _process_group_members(pgid: int) -> list[int] | None:
+    """Return live members, or None when membership cannot be proven."""
+    proc_root = pathlib.Path("/proc")
+    if not proc_root.is_dir():
+        try:
+            os.killpg(pgid, 0)
+            return None
+        except ProcessLookupError:
+            return []
+        except PermissionError:
+            return None
+
+    members = []
+    unreadable = False
+    for entry in proc_root.iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            fields = (entry / "stat").read_text(encoding="ascii").rsplit(")", 1)[1].split()
+            state = fields[0]
+            process_group = int(fields[2])
+        except FileNotFoundError:
+            continue
+        except (OSError, ValueError, IndexError):
+            unreadable = True
+            continue
+        if process_group == pgid and state not in {"Z", "X"}:
+            members.append(int(entry.name))
+    return None if unreadable else sorted(members)
+
 
 def _process_group_exists(pgid: int) -> bool:
-    """Return true only while a non-zombie member remains in the process group."""
-    proc_root = pathlib.Path("/proc")
-    if proc_root.is_dir():
-        for entry in proc_root.iterdir():
-            if not entry.name.isdigit():
-                continue
-            try:
-                fields = (entry / "stat").read_text(encoding="ascii").rsplit(")", 1)[1].split()
-                state = fields[0]
-                process_group = int(fields[2])
-            except (OSError, ValueError, IndexError):
-                continue
-            if process_group == pgid and state not in {"Z", "X"}:
-                return True
-        return False
-    try:
-        os.killpg(pgid, 0)
-        return True
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
+    members = _process_group_members(pgid)
+    return members is None or bool(members)
 
 
-def _terminate_process_group(process: subprocess.Popen, grace_seconds: float = 3.0) -> None:
-    """Terminate descendants and reap the direct process before checking the group."""
+def _terminate_process_group(process: subprocess.Popen, grace_seconds: float = 3.0) -> dict:
+    """Terminate the isolated process group and return its observed closure state."""
     pgid = process.pid
-    if _process_group_exists(pgid):
+    signals_sent = []
+    members = _process_group_members(pgid)
+    if members is None or members:
         try:
             os.killpg(pgid, signal.SIGTERM)
+            signals_sent.append("SIGTERM")
         except ProcessLookupError:
             pass
     try:
         process.wait(timeout=grace_seconds)
     except subprocess.TimeoutExpired:
         pass
-    if _process_group_exists(pgid):
+
+    members = _process_group_members(pgid)
+    if members is None or members:
         try:
             os.killpg(pgid, signal.SIGKILL)
+            signals_sent.append("SIGKILL")
         except ProcessLookupError:
             pass
     try:
         process.wait(timeout=grace_seconds)
-    except subprocess.TimeoutExpired as exc:
-        raise ProcessTreeCleanupError(
-            f"Direct process {pgid} survived SIGTERM and SIGKILL"
-        ) from exc
+    except subprocess.TimeoutExpired:
+        pass
 
     deadline = time.monotonic() + grace_seconds
-    while time.monotonic() < deadline and _process_group_exists(pgid):
+    members = _process_group_members(pgid)
+    while time.monotonic() < deadline and (members is None or members):
         time.sleep(0.05)
-    if _process_group_exists(pgid):
-        raise ProcessTreeCleanupError(
-            f"Process group {pgid} remained present after SIGTERM and SIGKILL"
-        )
+        members = _process_group_members(pgid)
+    return {
+        "termination_signals": signals_sent,
+        "remaining_live_pids": members,
+        "process_group_closed": members == [],
+    }
 
 
-def run_bounded_process_tree(command: list[str], *, env: dict, timeout: int) -> subprocess.CompletedProcess:
-    """Run a JASP command in its own process group with bounded tree cleanup.
+def _process_tree_receipt(
+    *,
+    env: dict,
+    case_id: str,
+    invocation_id: str,
+    process_group_id: int,
+    executable_sha256: str,
+    runtime_ostree_commit: str,
+    command: list[str],
+    timeout: float,
+    started_at_utc: str,
+    finished_at_utc: str,
+    returncode: int,
+    timeout_triggered: bool,
+    closure: dict,
+    stdout: str,
+    status: str,
+) -> dict:
+    output_bytes = stdout.encode("utf-8")
+    command_bytes = json.dumps(command, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return {
+        "schema": "LUNITA_JASP_PROCESS_TREE_RECEIPT/1.0",
+        "status": status,
+        "run_id": str(env["GITHUB_RUN_ID"]),
+        "run_attempt": str(env["GITHUB_RUN_ATTEMPT"]),
+        "case_id": case_id,
+        "invocation_id": invocation_id,
+        "process_group_id": process_group_id,
+        "session_id": process_group_id,
+        "executable_sha256": executable_sha256,
+        "runtime_ostree_commit": runtime_ostree_commit,
+        "command_sha256": hashlib.sha256(command_bytes).hexdigest(),
+        "timeout_seconds": timeout,
+        "started_at_utc": started_at_utc,
+        "finished_at_utc": finished_at_utc,
+        "returncode": returncode,
+        "timeout_triggered": timeout_triggered,
+        "termination_signals": closure["termination_signals"],
+        "remaining_live_pids": closure["remaining_live_pids"],
+        "process_group_closed": closure["process_group_closed"],
+        "captured_output_sha256": hashlib.sha256(output_bytes).hexdigest(),
+        "captured_output_bytes": len(output_bytes),
+    }
 
-    Output goes to a temporary file rather than a pipe. A Flatpak/JASP descendant
-    therefore cannot keep communicate() blocked by inheriting the pipe after the
-    direct launcher exits. Timeout and normal exit both check for orphaned members.
+
+def validate_process_tree_receipt(
+    receipt: dict | None,
+    *,
+    command: list[str],
+    env: dict,
+    timeout: float,
+    case_id: str,
+    executable_sha256: str,
+    runtime_ostree_commit: str,
+    stdout: str,
+    returncode: int,
+    timeout_triggered: bool = False,
+) -> bool:
+    """Independently validate the invocation identity tuple and process closure."""
+    if not isinstance(receipt, dict):
+        return False
+    output_bytes = stdout.encode("utf-8")
+    command_bytes = json.dumps(command, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    expected_status = (
+        "BLOCKED_TIMEOUT_PROCESS_GROUP_CLOSED" if timeout_triggered
+        else "PASS_PROCESS_GROUP_CLOSED"
+    )
+    invocation_id = receipt.get("invocation_id")
+    return bool(
+        receipt.get("schema") == "LUNITA_JASP_PROCESS_TREE_RECEIPT/1.0"
+        and receipt.get("status") == expected_status
+        and receipt.get("run_id") == str(env.get("GITHUB_RUN_ID", ""))
+        and receipt.get("run_attempt") == str(env.get("GITHUB_RUN_ATTEMPT", ""))
+        and re.fullmatch(r"[0-9a-f]{32}", str(invocation_id or ""))
+        and receipt.get("case_id") == case_id
+        and isinstance(receipt.get("process_group_id"), int)
+        and receipt.get("process_group_id", 0) > 1
+        and receipt.get("session_id") == receipt.get("process_group_id")
+        and receipt.get("executable_sha256") == executable_sha256
+        and receipt.get("runtime_ostree_commit") == runtime_ostree_commit
+        and receipt.get("command_sha256") == hashlib.sha256(command_bytes).hexdigest()
+        and receipt.get("timeout_seconds") == timeout
+        and isinstance(receipt.get("started_at_utc"), str)
+        and isinstance(receipt.get("finished_at_utc"), str)
+        and receipt.get("returncode") == returncode
+        and receipt.get("timeout_triggered") is timeout_triggered
+        and isinstance(receipt.get("termination_signals"), list)
+        and receipt.get("remaining_live_pids") == []
+        and receipt.get("process_group_closed") is True
+        and receipt.get("captured_output_sha256") == hashlib.sha256(output_bytes).hexdigest()
+        and receipt.get("captured_output_bytes") == len(output_bytes)
+    )
+
+
+def process_tree_receipt_identity_matches(
+    receipt: dict | None,
+    *,
+    case_id: str,
+    env: dict,
+    executable_sha256: str,
+    runtime_ostree_commit: str,
+) -> bool:
+    """Re-check the receipt identity and closure during independent report assembly."""
+    if not isinstance(receipt, dict):
+        return False
+    return bool(
+        receipt.get("schema") == "LUNITA_JASP_PROCESS_TREE_RECEIPT/1.0"
+        and receipt.get("status") == "PASS_PROCESS_GROUP_CLOSED"
+        and receipt.get("run_id") == str(env.get("GITHUB_RUN_ID", ""))
+        and receipt.get("run_attempt") == str(env.get("GITHUB_RUN_ATTEMPT", ""))
+        and receipt.get("case_id") == case_id
+        and re.fullmatch(r"[0-9a-f]{32}", str(receipt.get("invocation_id", "")))
+        and isinstance(receipt.get("process_group_id"), int)
+        and receipt.get("process_group_id", 0) > 1
+        and receipt.get("session_id") == receipt.get("process_group_id")
+        and receipt.get("executable_sha256") == executable_sha256
+        and receipt.get("runtime_ostree_commit") == runtime_ostree_commit
+        and re.fullmatch(r"[0-9a-f]{64}", str(receipt.get("command_sha256", "")))
+        and isinstance(receipt.get("timeout_seconds"), (int, float))
+        and receipt.get("timeout_triggered") is False
+        and receipt.get("termination_signals") == []
+        and receipt.get("remaining_live_pids") == []
+        and receipt.get("process_group_closed") is True
+        and re.fullmatch(r"[0-9a-f]{64}", str(receipt.get("captured_output_sha256", "")))
+        and isinstance(receipt.get("captured_output_bytes"), int)
+        and receipt.get("captured_output_bytes", -1) >= 0
+    )
+
+
+def run_bounded_process_tree(
+    command: list[str],
+    *,
+    env: dict,
+    timeout: float,
+    case_id: str,
+    executable_sha256: str,
+    runtime_ostree_commit: str,
+) -> subprocess.CompletedProcess:
+    """Run JASP in a unique session and return only with a hash-bound closure receipt.
+
+    File-backed output prevents descendants from blocking timeout completion by
+    inheriting a pipe. Every invocation is bound to workflow run/attempt, case,
+    invocation UUID, PGID/SID, executable hash and OSTree runtime commit.
     """
+    run_id = str(env.get("GITHUB_RUN_ID", ""))
+    run_attempt = str(env.get("GITHUB_RUN_ATTEMPT", ""))
+    if not re.fullmatch(r"\d+", run_id) or not re.fullmatch(r"\d+", run_attempt):
+        raise RuntimeError("GitHub workflow run ID/attempt is missing or malformed")
+    if not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", case_id):
+        raise RuntimeError("JASP process-tree case ID is missing or malformed")
+    if not re.fullmatch(r"[0-9a-f]{64}", executable_sha256 or ""):
+        raise RuntimeError("JASP executable SHA-256 is missing or malformed")
+    if not re.fullmatch(r"[0-9a-f]{64}", runtime_ostree_commit or ""):
+        raise RuntimeError("JASP Flatpak runtime OSTree commit is missing or malformed")
+    if not isinstance(timeout, (int, float)) or timeout <= 0:
+        raise RuntimeError("JASP process-tree timeout must be positive")
+
+    started_at_utc = utc()
+    invocation_id = uuid.uuid4().hex
     with tempfile.TemporaryFile(mode="w+b") as output:
         process = subprocess.Popen(
             command,
@@ -112,23 +294,63 @@ def run_bounded_process_tree(command: list[str], *, env: dict, timeout: int) -> 
             stderr=subprocess.STDOUT,
             start_new_session=True,
         )
+        process_group_id = process.pid
         try:
             returncode = process.wait(timeout=timeout)
         except subprocess.TimeoutExpired as exc:
-            _terminate_process_group(process)
-            process.wait(timeout=5)
+            closure = _terminate_process_group(process)
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pass
             output.seek(0)
             captured = output.read().decode("utf-8", "replace")
-            raise subprocess.TimeoutExpired(command, timeout, output=captured) from exc
-
-        if _process_group_exists(process.pid):
-            _terminate_process_group(process)
-            raise ProcessTreeCleanupError(
-                f"JASP command exited with return code {returncode} while descendants remained"
+            receipt = _process_tree_receipt(
+                env=env, case_id=case_id, invocation_id=invocation_id,
+                process_group_id=process_group_id, executable_sha256=executable_sha256,
+                runtime_ostree_commit=runtime_ostree_commit, command=command, timeout=timeout,
+                started_at_utc=started_at_utc, finished_at_utc=utc(), returncode=124,
+                timeout_triggered=True, closure=closure, stdout=captured,
+                status=(
+                    "BLOCKED_TIMEOUT_PROCESS_GROUP_CLOSED"
+                    if closure["process_group_closed"] else "BLOCKED_PROCESS_GROUP_NOT_CLOSED"
+                ),
             )
+            raise ProcessTreeTimeoutExpired(command, timeout, captured, receipt) from exc
+
+        members_after_exit = _process_group_members(process_group_id)
+        if members_after_exit is None or members_after_exit:
+            closure = _terminate_process_group(process)
+            output.seek(0)
+            captured = output.read().decode("utf-8", "replace")
+            receipt = _process_tree_receipt(
+                env=env, case_id=case_id, invocation_id=invocation_id,
+                process_group_id=process_group_id, executable_sha256=executable_sha256,
+                runtime_ostree_commit=runtime_ostree_commit, command=command, timeout=timeout,
+                started_at_utc=started_at_utc, finished_at_utc=utc(), returncode=returncode,
+                timeout_triggered=False, closure=closure, stdout=captured,
+                status="BLOCKED_DESCENDANTS_AFTER_NORMAL_EXIT" if closure["process_group_closed"]
+                       else "BLOCKED_PROCESS_GROUP_NOT_CLOSED",
+            )
+            raise ProcessTreeCleanupError(
+                f"JASP launcher exited with return code {returncode} while process-group members remained",
+                receipt,
+            )
+
         output.seek(0)
         captured = output.read().decode("utf-8", "replace")
-        return subprocess.CompletedProcess(command, returncode, stdout=captured)
+        closure = {"termination_signals": [], "remaining_live_pids": [], "process_group_closed": True}
+        receipt = _process_tree_receipt(
+            env=env, case_id=case_id, invocation_id=invocation_id,
+            process_group_id=process_group_id, executable_sha256=executable_sha256,
+            runtime_ostree_commit=runtime_ostree_commit, command=command, timeout=timeout,
+            started_at_utc=started_at_utc, finished_at_utc=utc(), returncode=returncode,
+            timeout_triggered=False, closure=closure, stdout=captured,
+            status="PASS_PROCESS_GROUP_CLOSED",
+        )
+        completed = subprocess.CompletedProcess(command, returncode, stdout=captured)
+        completed.process_tree_receipt = receipt
+        return completed
 
 
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -450,7 +672,7 @@ def jasp_result_rows_sha256(rows: list[str]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: str) -> dict:
+def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: str, mutation_identity: dict | None = None) -> dict:
     """Verify two independent executions of the same hash-bound seeded input.
 
     The original archive and stored reference results remain immutable. The
@@ -502,9 +724,23 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     def execute_replay(command: list[str], label: str, log_path: pathlib.Path) -> dict:
         started = utc()
         try:
-            proc = run_bounded_process_tree(command, env=env, timeout=300)
+            identity = mutation_identity if isinstance(mutation_identity, dict) else {}
+            executable_sha256 = identity.get("jasp_binary_sha256", "")
+            runtime_ostree_commit = identity.get("flatpak_runtime_commit", "")
+            invocation_case_id = f"death_penalty_{label}"
+            proc = run_bounded_process_tree(
+                command, env=env, timeout=300, case_id=invocation_case_id,
+                executable_sha256=executable_sha256,
+                runtime_ostree_commit=runtime_ostree_commit,
+            )
             output = proc.stdout or ""
             rc = int(proc.returncode)
+            process_receipt = getattr(proc, "process_tree_receipt", None)
+            process_receipt_valid = validate_process_tree_receipt(
+                process_receipt, command=command, env=env, timeout=300,
+                case_id=invocation_case_id, executable_sha256=executable_sha256,
+                runtime_ostree_commit=runtime_ostree_commit, stdout=output, returncode=rc,
+            )
             try:
                 rows = extract_actual_jasp_unit_test_rows(output)
                 rows_sha = jasp_result_rows_sha256(rows)
@@ -518,7 +754,9 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
                 }
             reference_mismatch = rc == 1 and "The results are different" in output
             runtime_identity = inspect_jasp_runtime_identity(output)
-            if runtime_identity.get("status") != "PASS":
+            if not process_receipt_valid:
+                status = "BLOCKED_PROCESS_TREE_RECEIPT"
+            elif runtime_identity.get("status") != "PASS":
                 status = "BLOCKED_JASP_RUNTIME_IDENTITY"
             elif capture_status != "PASS":
                 status = capture_status
@@ -531,6 +769,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             marker = "SAVE_RUN_RC" if label == "save" else "STRICT_RERUN_RC"
             log_path.write_text(
                 f"START_UTC={started}\\nCOMMAND={json.dumps(command)}\\nAPP_COMMIT={actual_commit}\\n"
+                + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\\n"
                 + output + ("" if output.endswith("\\n") else "\\n")
                 + f"ACTUAL_RESULT_ROWS_SHA256={rows_sha or 'UNAVAILABLE'}\\n"
                 + f"REFERENCE_MISMATCH={'TRUE' if reference_mismatch else 'FALSE'}\\n"
@@ -540,28 +779,65 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             return {
                 "status": status,
                 "returncode": rc,
+                "command": command,
                 "log_path": str(log_path),
                 "log_sha256": sha_file(log_path),
                 "actual_result_rows": rows,
                 "actual_result_rows_sha256": rows_sha,
                 "result_capture_status": capture_status,
                 "runtime_identity": runtime_identity,
+                "process_tree_receipt": process_receipt,
+                "process_tree_receipt_valid": process_receipt_valid,
                 "stored_reference_mismatch": reference_mismatch,
             }
         except subprocess.TimeoutExpired as exc:
             output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
+            process_receipt = getattr(exc, "process_tree_receipt", None)
+            process_receipt_valid = validate_process_tree_receipt(
+                process_receipt, command=command, env=env, timeout=300,
+                case_id=f"death_penalty_{label}",
+                executable_sha256=(mutation_identity or {}).get("jasp_binary_sha256", ""),
+                runtime_ostree_commit=(mutation_identity or {}).get("flatpak_runtime_commit", ""),
+                stdout=output, returncode=124, timeout_triggered=True,
+            )
             log_path.write_text(
-                f"START_UTC={started}\\nCOMMAND={json.dumps(command)}\\n{output}\\nTIMEOUT=300\\n",
+                f"START_UTC={started}\\nCOMMAND={json.dumps(command)}\\n"
+                + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\\n"
+                + f"{output}\\nTIMEOUT=300\\n",
                 encoding="utf-8", errors="replace",
             )
             return {
                 "status": "BLOCKED_TIMEOUT",
                 "returncode": 124,
+                "command": command,
                 "log_path": str(log_path),
                 "log_sha256": sha_file(log_path),
                 "actual_result_rows": [],
                 "actual_result_rows_sha256": None,
                 "runtime_identity": {"status": "BLOCKED_TIMEOUT"},
+                "process_tree_receipt": process_receipt,
+                "process_tree_receipt_valid": process_receipt_valid,
+                "stored_reference_mismatch": False,
+            }
+        except ProcessTreeCleanupError as exc:
+            process_receipt = exc.process_tree_receipt
+            log_path.write_text(
+                f"START_UTC={started}\\nCOMMAND={json.dumps(command)}\\n"
+                + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\\n"
+                + f"PROCESS_TREE_CLEANUP_ERROR={str(exc)[:800]}\\n",
+                encoding="utf-8", errors="replace",
+            )
+            return {
+                "status": "BLOCKED_PROCESS_TREE_CLEANUP",
+                "returncode": 125,
+                "command": command,
+                "log_path": str(log_path),
+                "log_sha256": sha_file(log_path),
+                "actual_result_rows": [],
+                "actual_result_rows_sha256": None,
+                "runtime_identity": {"status": "BLOCKED_PROCESS_TREE_CLEANUP"},
+                "process_tree_receipt": process_receipt,
+                "process_tree_receipt_valid": False,
                 "stored_reference_mismatch": False,
             }
 
@@ -664,6 +940,10 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         "deterministic_fixture_receipt_valid": fixture_receipt_valid,
         "save_run": save_run,
         "strict_rerun_after_save": rerun,
+        "process_tree_receipt_valid": (
+            save_run.get("process_tree_receipt_valid") is True
+            and rerun.get("process_tree_receipt_valid") is True
+        ),
         "temporary_fixture_sha256_before": temp_before,
         "temporary_fixture_sha256_after_save": temp_after,
         "temporary_fixture_sha256_after_rerun": temp_after_rerun,
@@ -948,15 +1228,30 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         f"ORIGINAL_FIXTURE_ALIAS_VALID={'TRUE' if original_alias_valid else 'FALSE'}\n"
                     )
                 try:
-                    run = run_bounded_process_tree(command, env=env, timeout=300)
+                    executable_sha256 = mutation_identity.get("jasp_binary_sha256", "")
+                    runtime_ostree_commit = mutation_identity.get("flatpak_runtime_commit", "")
+                    run = run_bounded_process_tree(
+                        command, env=env, timeout=300, case_id=case_id,
+                        executable_sha256=executable_sha256,
+                        runtime_ostree_commit=runtime_ostree_commit,
+                    )
                     rc = int(run.returncode)
+                    process_receipt = getattr(run, "process_tree_receipt", None)
+                    process_receipt_valid = validate_process_tree_receipt(
+                        process_receipt, command=command, env=env, timeout=300,
+                        case_id=case_id, executable_sha256=executable_sha256,
+                        runtime_ostree_commit=runtime_ostree_commit,
+                        stdout=run.stdout or "", returncode=rc,
+                    )
                     runtime_identity = inspect_jasp_runtime_identity(run.stdout or "")
                     fixture_integrity = original_alias_valid if case_id == "flatpak_launch" else True
                     case_status = "PASS" if (
                         rc == 0 and fixture_integrity and runtime_identity.get("status") == "PASS"
+                        and process_receipt_valid
                     ) else "BLOCKED"
                     payload = (
-                        header + run.stdout + ("" if run.stdout.endswith("\n") else "\n")
+                        header + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\n"
+                        + run.stdout + ("" if run.stdout.endswith("\n") else "\n")
                         + f"\n{marker}={rc}\nFINISHED_UTC={utc()}\n"
                     )
                     log_path.write_text(payload, encoding="utf-8", errors="replace")
@@ -974,11 +1269,22 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "original_fixture_sha256": original_source_sha if case_id == "flatpak_launch" else None,
                         "original_fixture_alias_valid": fixture_integrity if case_id == "flatpak_launch" else None,
                         "runtime_identity": runtime_identity,
+                        "process_tree_receipt": process_receipt,
+                        "process_tree_receipt_valid": process_receipt_valid,
                     }
                 except subprocess.TimeoutExpired as exc:
                     output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
+                    process_receipt = getattr(exc, "process_tree_receipt", None)
+                    process_receipt_valid = validate_process_tree_receipt(
+                        process_receipt, command=command, env=env, timeout=300,
+                        case_id=case_id,
+                        executable_sha256=mutation_identity.get("jasp_binary_sha256", ""),
+                        runtime_ostree_commit=mutation_identity.get("flatpak_runtime_commit", ""),
+                        stdout=output, returncode=124, timeout_triggered=True,
+                    )
                     log_path.write_text(
-                        header + output + f"\n{marker}=124\nTIMEOUT=300\n",
+                        header + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\n"
+                        + output + f"\n{marker}=124\nTIMEOUT=300\n",
                         encoding="utf-8",
                     )
                     results["tests"][case_id] = {
@@ -988,10 +1294,14 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "original_fixture": fixture,
                         "log_path": str(log_path),
                         "log_sha256": sha_file(log_path),
+                        "process_tree_receipt": process_receipt,
+                        "process_tree_receipt_valid": process_receipt_valid,
                     }
                 except Exception as exc:
+                    process_receipt = getattr(exc, "process_tree_receipt", None)
                     log_path.write_text(
-                        header + f"EXECUTION_ERROR={type(exc).__name__}:{str(exc)[:1000]}\n{marker}=125\n",
+                        header + "PROCESS_TREE_RECEIPT_JSON=" + json.dumps(process_receipt, sort_keys=True) + "\n"
+                        + f"EXECUTION_ERROR={type(exc).__name__}:{str(exc)[:1000]}\n{marker}=125\n",
                         encoding="utf-8",
                     )
                     results["tests"][case_id] = {
@@ -1001,8 +1311,10 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "original_fixture": fixture,
                         "log_path": str(log_path),
                         "log_sha256": sha_file(log_path),
+                        "process_tree_receipt": process_receipt,
+                        "process_tree_receipt_valid": False,
                     }
-            results["roundtrip_gate"] = run_death_penalty_roundtrip(actual_commit, env, stamp)
+            results["roundtrip_gate"] = run_death_penalty_roundtrip(actual_commit, env, stamp, mutation_identity)
     except Exception as exc:
         results["status"] = "BLOCKED_JASP_TEST_EXECUTOR"
         results["executor_error"] = {"type": type(exc).__name__, "message": str(exc)[:1200]}
@@ -1025,6 +1337,8 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
         and roundtrip.get("save_actual_result_rows_sha256") == roundtrip.get("rerun_actual_result_rows_sha256")
         and roundtrip.get("original_sample_unchanged") is True
         and roundtrip.get("deterministic_fixture_receipt_valid") is True
+        and (roundtrip.get("save_run") or {}).get("process_tree_receipt_valid") is True
+        and (roundtrip.get("strict_rerun_after_save") or {}).get("process_tree_receipt_valid") is True
         and verify_deterministic_fixture_receipt(
             roundtrip_fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=False
         )
@@ -1287,6 +1601,15 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
         if isinstance(roundtrip, dict):
             worker_cases["death_penalty_roundtrip"] = roundtrip
     worker_status = worker_data.get("status") if isinstance(worker_data, dict) else None
+    mutation_identity = (
+        worker_data.get("runtime_mutation_identity")
+        if isinstance(worker_data, dict) and isinstance(worker_data.get("runtime_mutation_identity"), dict)
+        else {}
+    )
+    expected_process_run_id = str(os.environ.get("GITHUB_RUN_ID", ""))
+    expected_process_attempt = str(os.environ.get("GITHUB_RUN_ATTEMPT", ""))
+    expected_process_executable = mutation_identity.get("jasp_binary_sha256", "")
+    expected_process_runtime = mutation_identity.get("flatpak_runtime_commit", "")
     worker_failure = None
     if isinstance(worker_data, dict):
         worker_failure = (
@@ -1340,6 +1663,22 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                     fixture_receipt, DEATH_PENALTY_SOURCE_SHA256, require_clone=False
                 )
             )
+            save_process_receipt = save_run.get("process_tree_receipt")
+            rerun_process_receipt = rerun.get("process_tree_receipt")
+            process_tree_receipts_valid = bool(
+                save_run.get("process_tree_receipt_valid") is True
+                and rerun.get("process_tree_receipt_valid") is True
+                and process_tree_receipt_identity_matches(
+                    save_process_receipt, case_id="death_penalty_save", env=os.environ,
+                    executable_sha256=expected_process_executable,
+                    runtime_ostree_commit=expected_process_runtime,
+                )
+                and process_tree_receipt_identity_matches(
+                    rerun_process_receipt, case_id="death_penalty_rerun", env=os.environ,
+                    executable_sha256=expected_process_executable,
+                    runtime_ostree_commit=expected_process_runtime,
+                )
+            )
             save_rows_sha = save_run.get("actual_result_rows_sha256")
             rerun_rows_sha = rerun.get("actual_result_rows_sha256")
             replay_pass = (
@@ -1360,6 +1699,7 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                         and data.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH")
                 )
                 and replay_pass
+                and process_tree_receipts_valid
                 and data.get("runtime_identity_status") == "PASS"
                 and (save_run.get("runtime_identity") or {}).get("status") == "PASS"
                 and (rerun.get("runtime_identity") or {}).get("status") == "PASS"
@@ -1397,6 +1737,8 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "temporary_fixture_stable_after_save_and_rerun": bool(temp_after_save and temp_after_save == temp_after_rerun),
                 "deterministic_fixture_evidence_valid": fixture_evidence_ok,
                 "deterministic_fixture_receipt": fixture_receipt,
+                "process_tree_receipt_valid": process_tree_receipts_valid,
+                "process_tree_receipts": [save_process_receipt, rerun_process_receipt],
             })
         else:
             try:
@@ -1410,6 +1752,26 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
             pinned_commit = bool(commits) and all(x == expected_commit for x in commits)
             sandbox_bound = "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED" in text
             runtime_identity = inspect_jasp_runtime_identity(text)
+            worker_case_result = worker_cases.get(case) if isinstance(worker_cases, dict) else None
+            process_receipt = (
+                worker_case_result.get("process_tree_receipt")
+                if isinstance(worker_case_result, dict) else None
+            )
+            receipt_lines = re.findall(r"^PROCESS_TREE_RECEIPT_JSON=(.+)$", text, re.M)
+            try:
+                logged_process_receipt = json.loads(receipt_lines[-1]) if receipt_lines else None
+            except (ValueError, TypeError):
+                logged_process_receipt = None
+            process_receipt_valid = bool(
+                isinstance(worker_case_result, dict)
+                and worker_case_result.get("process_tree_receipt_valid") is True
+                and logged_process_receipt == process_receipt
+                and process_tree_receipt_identity_matches(
+                    process_receipt, case_id=case, env=os.environ,
+                    executable_sha256=expected_process_executable,
+                    runtime_ostree_commit=expected_process_runtime,
+                )
+            )
             fixture_ok = True
             if case == "flatpak_launch":
                 original_paths = re.findall(r"^ORIGINAL_FIXTURE_PATH=(.+)$", text, re.M)
@@ -1434,10 +1796,29 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                     fixture_ok = False
             passed = (
                 rc == 0 and pinned_commit and sandbox_bound and fixture_ok
-                and runtime_identity.get("status") == "PASS"
+                and runtime_identity.get("status") == "PASS" and process_receipt_valid
             )
             runtime_versions = [item["version"] for item in runtime_identity.get("observed", [])]
             runtime_source_commits = [item["source_commit"] for item in runtime_identity.get("observed", [])]
+            diagnostic_lines = text.splitlines()
+            semantic_pattern = re.compile(
+                r"Row is missing|Total number of models visited\s*=\s*\d+\s*!=|results are different|\d+(?:\.\d+)?\s*!=\s*\d+(?:\.\d+)?",
+                re.I,
+            )
+            diagnostic_indexes = [
+                index for index, line in enumerate(diagnostic_lines)
+                if semantic_pattern.search(line)
+            ]
+            diagnostic_excerpt = []
+            for index in diagnostic_indexes:
+                for context_index in range(max(0, index - 1), min(len(diagnostic_lines), index + 3)):
+                    rendered = f"{context_index + 1}: {diagnostic_lines[context_index][:400]}"
+                    if rendered not in diagnostic_excerpt:
+                        diagnostic_excerpt.append(rendered)
+                    if len(diagnostic_excerpt) >= 32:
+                        break
+                if len(diagnostic_excerpt) >= 32:
+                    break
             item.update({
                 "returncode": rc,
                 "status": "PASS" if passed else "BLOCKED",
@@ -1448,8 +1829,11 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "observed_runtime_versions": runtime_versions,
                 "observed_runtime_source_commits": runtime_source_commits,
                 "runtime_identity": runtime_identity,
+                "process_tree_receipt": process_receipt,
+                "process_tree_receipt_valid": process_receipt_valid,
                 "semantic_shape_mismatch": bool(re.search(r"Row is missing|Total number of models visited\s*=\s*\d+\s*!=|results are different", text, re.I)),
                 "log_has_numeric_deltas": bool(re.search(r"\d+(?:\.\d+)?\s*!=\s*\d+(?:\.\d+)?", text)),
+                "semantic_diagnostic_excerpt": diagnostic_excerpt,
             })
         rows[case] = item
     all_pass = all(
@@ -1939,6 +2323,7 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         return bool(
             (strict_pass or replay_only)
             and row.get("returncode") == 0
+            and row.get("process_tree_receipt_valid") is True
             and observed_sha256 == row.get("evidence_sha256")
         )
     jasp_case_evidence_valid = (
@@ -1960,6 +2345,91 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
             and isinstance(row.get("evidence_sha256"), str)
         },
     }
+    jasp_runtime_identity = verify_jasp_runtime_mutation_receipt() if direct else {}
+    target_workflow_identity = (
+        target_runtime.get("workflow_identity")
+        if isinstance(target_runtime.get("workflow_identity"), dict) else {}
+    )
+    expected_process_run_id = str(os.environ.get("GITHUB_RUN_ID", ""))
+    expected_process_attempt = str(os.environ.get("GITHUB_RUN_ATTEMPT", ""))
+    expected_process_executable = str(jasp_runtime_identity.get("jasp_binary_sha256", ""))
+    expected_process_runtime = str(jasp_runtime_identity.get("flatpak_runtime_commit", ""))
+    process_identity_bound = bool(
+        not direct or (
+            jasp_runtime_identity.get("status") == "PASS"
+            and re.fullmatch(r"\\d+", expected_process_run_id)
+            and re.fullmatch(r"\\d+", expected_process_attempt)
+            and target_workflow_identity.get("run_id") == expected_process_run_id
+            and target_workflow_identity.get("run_attempt") == expected_process_attempt
+            and re.fullmatch(r"[0-9a-f]{64}", expected_process_executable)
+            and re.fullmatch(r"[0-9a-f]{64}", expected_process_runtime)
+        )
+    )
+    process_tree_invocations = []
+    expected_process_cases = {
+        "flatpak_launch": ["flatpak_launch"],
+        "reliability": ["reliability"],
+        "weight_gain": ["weight_gain"],
+        "death_penalty_roundtrip": ["death_penalty_save", "death_penalty_rerun"],
+    }
+    for case_id, expected_ids in expected_process_cases.items():
+        row = jasp_cases.get(case_id) if isinstance(jasp_cases, dict) else None
+        if not isinstance(row, dict):
+            continue
+        receipts = (
+            row.get("process_tree_receipts")
+            if case_id == "death_penalty_roundtrip"
+            else [row.get("process_tree_receipt")]
+        )
+        if not isinstance(receipts, list):
+            continue
+        for receipt, expected_case_id in zip(receipts, expected_ids):
+            if process_tree_receipt_identity_matches(
+                receipt, case_id=expected_case_id, env=os.environ,
+                executable_sha256=expected_process_executable,
+                runtime_ostree_commit=expected_process_runtime,
+            ):
+                process_tree_invocations.append(receipt)
+    unique_invocation_ids = {
+        row.get("invocation_id") for row in process_tree_invocations
+        if isinstance(row, dict) and isinstance(row.get("invocation_id"), str)
+    }
+    process_tree_evidence = {
+        row["evidence_path"]: row["evidence_sha256"]
+        for row in jasp_cases.values()
+        if isinstance(row, dict)
+        and isinstance(row.get("evidence_path"), str)
+        and row.get("evidence_path").strip()
+        and isinstance(row.get("evidence_sha256"), str)
+    }
+    process_tree_complete = (
+        process_identity_bound
+        and set(jasp_cases) == set(expected_process_cases)
+        and len(process_tree_invocations) == 5
+        and len(unique_invocation_ids) == 5
+        and all(
+            row.get("process_group_closed") is True
+            and row.get("remaining_live_pids") == []
+            and row.get("timeout_triggered") is False
+            for row in process_tree_invocations
+        )
+    )
+    if direct:
+        checks["jasp_process_tree_lifecycle"] = {
+            "status": "PASS" if process_tree_complete else "BLOCKED",
+            "returncode": 0 if process_tree_complete else 1,
+            "invocation_count": len(process_tree_invocations),
+            "expected_invocation_count": 5,
+            "unique_invocation_id_count": len(unique_invocation_ids),
+            "workflow_identity": {
+                "run_id": expected_process_run_id,
+                "run_attempt": expected_process_attempt,
+            },
+            "jasp_binary_sha256": expected_process_executable,
+            "flatpak_runtime_ostree_commit": expected_process_runtime,
+            "invocations": process_tree_invocations,
+            "evidence": process_tree_evidence,
+        }
     squashfs_identity = direct_candidate_squashfs_identity() if direct else {}
     if direct:
         checks["squashfs_image_and_package_binding"] = {
@@ -1991,7 +2461,7 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
             jasp, inventory_hashes_valid
         )
     if direct:
-        checks["jasp_post_mutation_runtime_identity"] = verify_jasp_runtime_mutation_receipt()
+        checks["jasp_post_mutation_runtime_identity"] = jasp_runtime_identity
     # Re-validate pre-existing source-bound checks instead of overwriting their history.
     for name, check in list(checks.items()):
         if name in {"MISION1_identity_sha256", "runtime_report_and_launcher_identity"}:
@@ -2102,12 +2572,58 @@ def issue_s32_independent_beta_validation_receipt() -> dict:
         "target_v1_8_runtime_acceptance_e01_e15_int8",
         "candidate_rootfs_inventory_and_dependency_manifest",
         "jasp_packaged_fixture_nonregression",
+        "jasp_process_tree_lifecycle",
+        "jasp_post_mutation_runtime_identity",
         "squashfs_image_and_package_binding",
     }
     if not isinstance(checks, dict) or not required_checks.issubset(checks):
         return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS_MISSING", "certification": "NOT_GRANTED"}
     if any(not _stable_check(check) for check in checks.values()):
         return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS", "certification": "NOT_GRANTED"}
+    process_tree_check = checks["jasp_process_tree_lifecycle"]
+    process_tree_workflow = process_tree_check.get("workflow_identity") or {}
+    target_workflow = target.get("workflow_identity") or {}
+    jasp_identity_check = checks.get("jasp_post_mutation_runtime_identity") or {}
+    expected_process_cases = {
+        "flatpak_launch", "reliability", "weight_gain",
+        "death_penalty_save", "death_penalty_rerun",
+    }
+    process_invocations = process_tree_check.get("invocations")
+    executable_sha = str(process_tree_check.get("jasp_binary_sha256", ""))
+    runtime_commit = str(process_tree_check.get("flatpak_runtime_ostree_commit", ""))
+    invocation_ids = {
+        row.get("invocation_id") for row in process_invocations
+        if isinstance(row, dict)
+    } if isinstance(process_invocations, list) else set()
+    observed_cases = {
+        row.get("case_id") for row in process_invocations
+        if isinstance(row, dict)
+    } if isinstance(process_invocations, list) else set()
+    process_receipts_valid = bool(
+        isinstance(process_invocations, list)
+        and len(process_invocations) == 5
+        and observed_cases == expected_process_cases
+        and len(invocation_ids) == 5
+        and process_tree_check.get("invocation_count") == 5
+        and process_tree_check.get("unique_invocation_id_count") == 5
+        and all(
+            process_tree_receipt_identity_matches(
+                row, case_id=str(row.get("case_id", "")), env=os.environ,
+                executable_sha256=executable_sha, runtime_ostree_commit=runtime_commit,
+            )
+            for row in process_invocations
+        )
+    )
+    if not process_receipts_valid:
+        return {"status": "BLOCKED_JASP_PROCESS_TREE_RECEIPTS", "certification": "NOT_GRANTED"}
+    if (
+        process_tree_workflow.get("run_id") != str(target_workflow.get("run_id", ""))
+        or process_tree_workflow.get("run_attempt") != str(target_workflow.get("run_attempt", ""))
+        or process_tree_check.get("jasp_binary_sha256") != jasp_identity_check.get("jasp_binary_sha256")
+        or process_tree_check.get("flatpak_runtime_ostree_commit") != jasp_identity_check.get("flatpak_runtime_commit")
+        or process_tree_check.get("invocation_count") != 5
+    ):
+        return {"status": "BLOCKED_JASP_PROCESS_TREE_IDENTITY_BINDING", "certification": "NOT_GRANTED"}
     target_check = checks["target_v1_8_runtime_acceptance_e01_e15_int8"]
     if (target_check.get("receipt_path") != str(target_path)
         or target_check.get("receipt_sha256") != target_sha):
@@ -2264,6 +2780,66 @@ def stable_release_gate() -> dict:
     checks = report.get("checks")
     if not isinstance(checks, dict) or not checks or not all(_stable_check(x) for x in checks.values()):
         return {"status": "BLOCKED_REQUIRED_CHECKS", "certification": "NOT_GRANTED"}
+    if direct:
+        required_direct_checks = {
+            "jasp_packaged_fixture_nonregression",
+            "jasp_process_tree_lifecycle",
+            "jasp_post_mutation_runtime_identity",
+            "squashfs_image_and_package_binding",
+        }
+        if not required_direct_checks.issubset(checks):
+            return {"status": "BLOCKED_REQUIRED_JASP_LIFECYCLE_CHECKS", "certification": "NOT_GRANTED"}
+        lifecycle = checks.get("jasp_process_tree_lifecycle") or {}
+        mutation_identity = checks.get("jasp_post_mutation_runtime_identity") or {}
+        target_workflow = runtime.get("workflow_identity") if isinstance(runtime.get("workflow_identity"), dict) else {}
+        lifecycle_workflow = lifecycle.get("workflow_identity") if isinstance(lifecycle.get("workflow_identity"), dict) else {}
+        invocations = lifecycle.get("invocations")
+        expected_cases = {
+            "flatpak_launch", "reliability", "weight_gain",
+            "death_penalty_save", "death_penalty_rerun",
+        }
+        invocation_ids = {
+            row.get("invocation_id") for row in invocations
+            if isinstance(row, dict)
+        } if isinstance(invocations, list) else set()
+        observed_cases = {
+            row.get("case_id") for row in invocations
+            if isinstance(row, dict)
+        } if isinstance(invocations, list) else set()
+        expected_run_id = str(os.environ.get("GITHUB_RUN_ID", ""))
+        expected_attempt = str(os.environ.get("GITHUB_RUN_ATTEMPT", ""))
+        executable_sha = str(mutation_identity.get("jasp_binary_sha256", ""))
+        runtime_commit = str(mutation_identity.get("flatpak_runtime_commit", ""))
+        final_process_tree_valid = bool(
+            lifecycle.get("status") == "PASS"
+            and lifecycle.get("returncode") == 0
+            and lifecycle.get("invocation_count") == 5
+            and lifecycle.get("expected_invocation_count") == 5
+            and lifecycle.get("unique_invocation_id_count") == 5
+            and mutation_identity.get("status") == "PASS"
+            and mutation_identity.get("returncode") == 0
+            and re.fullmatch(r"[0-9a-f]{64}", executable_sha)
+            and re.fullmatch(r"[0-9a-f]{64}", runtime_commit)
+            and expected_run_id == str(target_workflow.get("run_id", ""))
+            and expected_attempt == str(target_workflow.get("run_attempt", ""))
+            and lifecycle_workflow.get("run_id") == expected_run_id
+            and lifecycle_workflow.get("run_attempt") == expected_attempt
+            and lifecycle.get("jasp_binary_sha256") == executable_sha
+            and lifecycle.get("flatpak_runtime_ostree_commit") == runtime_commit
+            and isinstance(invocations, list)
+            and len(invocations) == 5
+            and observed_cases == expected_cases
+            and len(invocation_ids) == 5
+            and all(
+                process_tree_receipt_identity_matches(
+                    row, case_id=str(row.get("case_id", "")), env=os.environ,
+                    executable_sha256=executable_sha, runtime_ostree_commit=runtime_commit,
+                )
+                for row in invocations
+            )
+        )
+        if not final_process_tree_valid:
+            return {"status": "BLOCKED_JASP_PROCESS_TREE_FINAL_CERTIFICATION", "certification": "NOT_GRANTED"}
     if report.get("runtime_report_sha256") != runtime_sha:
         return {"status": "BLOCKED_RUNTIME_REPORT_BINDING_MISMATCH", "certification": "NOT_GRANTED"}
     if report.get("frozen_g06_mutated") is not False or report.get("canonical_g08_bindings_mutated") is not False:
