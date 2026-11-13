@@ -1662,16 +1662,36 @@ class PostvalidationManifestClosureRegressionTests(unittest.TestCase):
                  mock.patch.object(lane, "EVIDENCE", evidence), \
                  mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"):
                 result = lane.direct_candidate_rootfs_manifest_closure(jasp, inventory, True)
+            receipt_path = result.get("manifest_closure_receipt_path")
+            if isinstance(receipt_path, str):
+                receipt_file = pathlib.Path(receipt_path)
+                if receipt_file.is_file() and not receipt_file.is_symlink():
+                    receipt_bytes = receipt_file.read_bytes()
+                    result["manifest_closure_receipt_snapshot"] = json.loads(receipt_bytes)
+                    result["manifest_closure_receipt_snapshot_sha256"] = hashlib.sha256(receipt_bytes).hexdigest()
             return result
 
     def test_postvalidation_closure_binds_verified_inventory_and_exact_tree(self):
         result = self._run_closure("a" * 64)
         self.assertEqual("PASS", result["status"])
         self.assertEqual(0, result["returncode"])
-        receipt = json.loads(pathlib.Path(result["manifest_closure_receipt_path"]).read_text(encoding="utf-8"))
+        receipt = result["manifest_closure_receipt_snapshot"]
+        self.assertEqual(
+            result["manifest_closure_receipt_sha256"],
+            result["manifest_closure_receipt_snapshot_sha256"],
+        )
         self.assertEqual("c" * 64, receipt["independent_inventory_report_sha256"])
         self.assertEqual("d" * 64, receipt["independent_inventory_manifest_sha256"])
         self.assertTrue(receipt["exact_manifest_equality"])
+
+    def test_receipt_snapshot_is_hash_bound_before_tempdir_cleanup(self):
+        result = self._run_closure("a" * 64)
+        self.assertIn("manifest_closure_receipt_snapshot", result)
+        self.assertEqual(
+            result["manifest_closure_receipt_sha256"],
+            result["manifest_closure_receipt_snapshot_sha256"],
+        )
+        self.assertEqual("PASS", result["manifest_closure_receipt_snapshot"]["status"])
 
     def test_postvalidation_closure_keeps_tree_mismatch_blocked(self):
         result = self._run_closure("e" * 64)
