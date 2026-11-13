@@ -1934,6 +1934,8 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "temporary_fixture_sha256_after_save": temp_after_save,
                 "temporary_fixture_sha256_after_rerun": temp_after_rerun,
                 "temporary_fixture_hash_invariant_passed": data.get("temporary_fixture_hash_invariant_passed") is True,
+                "temporary_fixture_regular_after_save": data.get("temporary_fixture_regular_after_save") is True,
+                "temporary_fixture_regular_after_rerun": data.get("temporary_fixture_regular_after_rerun") is True,
                 "temporary_fixture_changed": data.get("temporary_fixture_changed"),
                 "temporary_fixture_removed_after_test": data.get("temporary_fixture_removed_after_test"),
                 "temporary_fixture_stable_after_save_and_rerun": bool(temp_after_save and temp_after_save == temp_after_rerun),
@@ -2095,14 +2097,15 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "semantic_diagnostic_excerpt": diagnostic_excerpt,
             })
         rows[case] = item
-    all_pass = all(
-        (row.get("status") == "PASS" and row.get("returncode") == 0)
-        or (
-            case == "death_penalty_roundtrip"
-            and row.get("status") == "PASS_DETERMINISTIC_REPLAY"
-            and row.get("returncode") == 0
-            and row.get("acceptance_scope") == "DETERMINISTIC_REPLAY_ONLY"
-            and row.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
+    # Replay-only is terminal for diagnostics, never a functional non-regression PASS.
+    all_pass = bool(rows) and all(
+        row.get("status") == "PASS" and row.get("returncode") == 0
+        and (
+            case != "death_penalty_roundtrip"
+            or (
+                row.get("acceptance_scope") == "STRICT_REFERENCE_AND_REPLAY"
+                and row.get("reference_comparison_status") == "PASS"
+            )
         )
         for case, row in rows.items()
     )
@@ -2600,13 +2603,17 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
     def jasp_case_accepted(case_id: str, row: dict) -> bool:
         if not isinstance(row, dict):
             return False
-        replay_only = (
-            case_id == "death_penalty_roundtrip"
-            and row.get("status") == "PASS_DETERMINISTIC_REPLAY"
-            and row.get("acceptance_scope") == "DETERMINISTIC_REPLAY_ONLY"
-            and row.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
+        strict_pass = (
+            row.get("status") == "PASS"
+            and row.get("returncode") == 0
+            and (
+                case_id != "death_penalty_roundtrip"
+                or (
+                    row.get("acceptance_scope") == "STRICT_REFERENCE_AND_REPLAY"
+                    and row.get("reference_comparison_status") == "PASS"
+                )
+            )
         )
-        strict_pass = row.get("status") == "PASS"
         evidence_value = row.get("evidence_path")
         if not isinstance(evidence_value, str) or not evidence_value.strip():
             return False
@@ -2618,8 +2625,7 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         except (OSError, RuntimeError, TypeError, ValueError):
             return False
         return bool(
-            (strict_pass or replay_only)
-            and row.get("returncode") == 0
+            strict_pass
             and row.get("process_tree_receipt_valid") is True
             and observed_sha256 == row.get("evidence_sha256")
         )
