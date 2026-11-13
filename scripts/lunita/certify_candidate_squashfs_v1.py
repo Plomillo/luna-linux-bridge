@@ -320,6 +320,7 @@ def build_certificate(
         "target_v1_8_runtime_acceptance_e01_e15_int8",
         "candidate_rootfs_inventory_and_dependency_manifest",
         "jasp_packaged_fixture_nonregression",
+        "jasp_post_mutation_runtime_identity",
         "squashfs_image_and_package_binding",
         "squashfs_rootfs_postvalidation_manifest_closure",
     }
