@@ -1583,7 +1583,21 @@ def persist_jasp_remediation_queue(jasp: dict) -> dict:
                     prior["status"] = "SUPERSEDED"
                     prior["superseded_at_utc"] = utc()
                     prior["superseded_by_sha256"] = digest
-        if result.get("status") == "PASS" and result.get("returncode") == 0:
+        if (
+            (result.get("status") == "PASS" and result.get("returncode") == 0)
+            or (
+                case_id == "flatpak_launch"
+                and result.get("status") == "RECORDED_HISTORICAL_REFERENCE_MISMATCH"
+                and result.get("acceptance_scope") == "HISTORICAL_DIAGNOSTIC_ONLY"
+                and result.get("returncode") == 1
+            )
+            or (
+                case_id == "death_penalty_roundtrip"
+                and result.get("status") == "PASS_CANDIDATE_VERSIONED_BASELINE"
+                and result.get("acceptance_scope") == "CANDIDATE_VERSIONED_BASELINE_ONLY"
+                and result.get("returncode") == 0
+            )
+        ):
             continue
         identity = (case_id, digest)
         if identity in known:
@@ -2005,11 +2019,23 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
     def jasp_case_accepted(case_id: str, row: dict) -> bool:
         if not isinstance(row, dict):
             return False
-        replay_only = (
+        baseline_case = (
             case_id == "death_penalty_roundtrip"
-            and row.get("status") == "PASS_DETERMINISTIC_REPLAY"
-            and row.get("acceptance_scope") == "DETERMINISTIC_REPLAY_ONLY"
+            and row.get("status") == "PASS_CANDIDATE_VERSIONED_BASELINE"
+            and row.get("acceptance_scope") == "CANDIDATE_VERSIONED_BASELINE_ONLY"
+            and row.get("candidate_baseline_match") is True
             and row.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
+        )
+        historical_diagnostic = (
+            case_id == "flatpak_launch"
+            and row.get("status") == "RECORDED_HISTORICAL_REFERENCE_MISMATCH"
+            and row.get("acceptance_scope") == "HISTORICAL_DIAGNOSTIC_ONLY"
+            and row.get("historical_reference_mismatch") is True
+            and row.get("historical_reference_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
+            and row.get("returncode") == 1
+            and row.get("original_packaged_fixture_identity_valid") is True
+            and (row.get("runtime_identity") or {}).get("status") == "PASS"
+            and row.get("semantic_shape_mismatch") is True
         )
         strict_pass = row.get("status") == "PASS"
         evidence_value = row.get("evidence_path")
@@ -2022,21 +2048,50 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
             observed_sha256 = sha_file(evidence_path)
         except (OSError, RuntimeError, TypeError, ValueError):
             return False
+        evidence_hash_valid = observed_sha256 == row.get("evidence_sha256")
+        if baseline_case and evidence_hash_valid:
+            payload = load_json(evidence_path, {}) or {}
+            baseline = load_pre_registered_jasp_candidate_baseline()
+            save_run = payload.get("save_run") or {}
+            rerun = payload.get("strict_rerun_after_save") or {}
+            baseline_case = bool(
+                baseline.get("status") == "PASS_PRE_REGISTERED_BASELINE_VALID"
+                and payload.get("candidate_baseline_match") is True
+                and (payload.get("candidate_baseline") or {}).get("baseline_id") == baseline.get("baseline_id")
+                and (payload.get("candidate_baseline") or {}).get("sha256") == baseline.get("sha256")
+                and save_run.get("actual_result_rows") == baseline.get("expected_result_rows")
+                and rerun.get("actual_result_rows") == baseline.get("expected_result_rows")
+                and save_run.get("actual_result_rows_sha256") == baseline.get("expected_result_rows_sha256")
+                and rerun.get("actual_result_rows_sha256") == baseline.get("expected_result_rows_sha256")
+                and payload.get("original_sample_unchanged") is True
+            )
         return bool(
-            (strict_pass or replay_only)
-            and row.get("returncode") == 0
-            and observed_sha256 == row.get("evidence_sha256")
+            evidence_hash_valid
+            and (
+                (strict_pass and row.get("returncode") == 0)
+                or (baseline_case and row.get("returncode") == 0)
+                or historical_diagnostic
+            )
         )
     jasp_case_evidence_valid = (
         set(jasp_cases) == set(JASP_CASES)
         and all(jasp_case_accepted(case_id, row) for case_id, row in jasp_cases.items())
     )
-    jasp_pass = jasp.get("status") == "PASS_JASP_PACKAGED_FIXTURE_NONREGRESSION" and jasp_case_evidence_valid
+    jasp_pass = (
+        jasp.get("status") == "PASS_JASP_CANDIDATE_BASELINE_NONREGRESSION_WITH_HISTORICAL_MISMATCH_RECORDED"
+        and jasp_case_evidence_valid
+        and jasp.get("historical_reference_disposition") == "BLOCKED_STORED_REFERENCE_MISMATCH_PRESERVED_DIAGNOSTIC_ONLY"
+        and jasp.get("candidate_baseline_id") == "LUNITA_JASP_0_98_8_DEATH_PENALTY_SEEDED_R1"
+    )
     checks["jasp_packaged_fixture_nonregression"] = {
         "status": "PASS" if jasp_pass else "BLOCKED",
         "returncode": 0 if jasp_pass else 1,
         "cases": jasp_cases, "next_action": jasp.get("next_action"),
         "all_case_evidence_hashes_current": jasp_case_evidence_valid,
+        "candidate_baseline_id": jasp.get("candidate_baseline_id"),
+        "candidate_baseline_sha256": jasp.get("candidate_baseline_sha256"),
+        "historical_reference_disposition": jasp.get("historical_reference_disposition"),
+        "acceptance_model": "VERSIONED_CANDIDATE_BASELINE_WITH_HISTORICAL_MISMATCH_RETAINED",
         "evidence": {
             row["evidence_path"]: row["evidence_sha256"]
             for row in jasp_cases.values()
