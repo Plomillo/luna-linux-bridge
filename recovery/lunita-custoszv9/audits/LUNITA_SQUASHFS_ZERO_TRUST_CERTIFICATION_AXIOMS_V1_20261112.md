@@ -686,3 +686,26 @@ Si una prueba JASP conserva `BLOCKED_STORED_REFERENCE_MISMATCH`, el replay deter
 ### Extensión del predicado terminal — AX-LUN-031
 
 `ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-031`. Ningún certificado puede ser emitido a partir de aceptación contractual aislada, artefactos de una revisión distinta o evidencia que no cierre criptográficamente sobre la misma imagen candidata.
+
+
+## 10. Addendum append-only — AX-LUN-032: separación del smoke de lanzamiento JASP y la regresión estadística histórica
+
+**Registro de evidencia:** 2026-11-13 UTC. La ejecución funcional #228 verificó el JASP 0.98.8 fijado y mostró dos capas distintas: las pruebas Reliability y WeightGain finalizaron PASS; la prueba genérica denominada `flatpak_launch` ejecutó `DeathPenalty.jasp` y quedó bloqueada por discrepancia semántica de resultados históricos. La prueba independiente `death_penalty_roundtrip` ya ejecuta una copia temporal del mismo Death Penalty con semilla explícita y comprueba igualdad exacta entre dos cálculos frescos, manteniendo intactos el original y los resultados guardados. La suite distingue el resultado `PASS_DETERMINISTIC_REPLAY` del estado histórico `BLOCKED_STORED_REFERENCE_MISMATCH`.
+
+### AX-LUN-032 — Una prueba de arranque no debe heredar la no determinación de una referencia histórica
+
+El smoke de lanzamiento de la aplicación y la regresión estadística de un archivo histórico son propiedades distintas y MUST probarse por separado. El smoke de lanzamiento MUST utilizar un fixture de ejecución ya probado como determinista y compatible con la versión candidata, para verificar el arranque real de JASP en Flatpak, la identidad de runtime y el retorno real del proceso, sin convertir una diferencia estadística histórica en una falsa falla de arranque.
+
+La prueba `flatpak_launch_smoke` usará el fixture empaquetado `/app/lunita-fixtures/WeightGain.jasp`, cuyo test registrado `weight_gain` ya constituye una comprobación independiente de ejecución analítica. La repetición como smoke es intencional y separa el resultado de lanzamiento de la comparación histórica Death Penalty. La evidencia del smoke MUST contener versión y commit fuente observados, commit Flatpak de aplicación/runtimes/SDK, SHA-256 del recibo de mutación JASP/Qt, SHA-256 del launcher y retorno original del proceso.
+
+La identidad e integridad de `Death Penalty.jasp` NO se elimina ni se sustituye. En el mismo recibo de smoke se mantiene una comprobación separada del archivo original instalado, de su alias Flatpak y del SHA-256 histórico `fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895`. La prueba `death_penalty_roundtrip` continúa usando el original como fuente inmutable, crea una copia temporal cuya única modificación autorizada es activar una semilla explícita en las opciones de análisis, ejecuta guardar/repetir, compara los datos recién calculados mediante igualdad exacta de filas y hashes, verifica que la fuente y referencia guardada no cambiaron y elimina la copia temporal.
+
+La discrepancia `BLOCKED_STORED_REFERENCE_MISMATCH` MUST permanecer visible como resultado histórico independiente. Un replay determinista puede aceptarse exclusivamente dentro del alcance `DETERMINISTIC_REPLAY_ONLY` establecido por los axiomas anteriores; MUST NOT cambiarse a `PASS_REFERENCE_AND_REPLAY`, MUST NOT reescribirse la referencia, MUST NOT añadirse tolerancia numérica, MUST NOT buscar seeds hasta coincidir ni MUST atribuirse a la ejecución histórica una versión no probada. Si el smoke con WeightGain falla, si su identidad o retorno no pasa, si el archivo Death Penalty original o alias cambian, o si el replay pierde determinismo, la suite permanece bloqueada.
+
+Este cambio de fixture del smoke no reduce ni reemplaza las pruebas analíticas. Mantiene las cuatro condiciones registradas: smoke de lanzamiento, Reliability, WeightGain y Death Penalty deterministic replay; la prueba específica de referencia histórica sigue emitiendo su estado explícito, distinto del smoke. El conjunto requerido de identidades de caso cambia de `flatpak_launch` a `flatpak_launch_smoke`, y todos los recibos/reportes deben usar de forma coherente la nueva clave.
+
+**Estado:** `IMPLEMENTED_ON_BRANCH; CONTRACT_CI_PENDING; TARGET_FUNCTIONAL_REVALIDATION_PENDING; HISTORICAL_STORED_REFERENCE_REMAINS_BLOCKED_AND_UNMODIFIED; CERTIFICATION_NOT_GRANTED`.
+
+### Extensión del predicado terminal — AX-LUN-032
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-032`. Ninguna evidencia de smoke puede atribuirse al fixture histórico si ese archivo no fue ejecutado, y ninguna discrepancia histórica puede ocultarse dentro de un test genérico de arranque.
