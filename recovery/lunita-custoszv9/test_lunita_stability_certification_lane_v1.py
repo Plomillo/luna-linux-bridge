@@ -751,7 +751,21 @@ class TargetRuntimeEvidenceGateTests(unittest.TestCase):
             self.assertEqual(25, result["engine_acceptance_tests"]["tests_run"])
             self.assertEqual("PASS_E01_QWEN_INFERENCE", result["qwen_e01"]["status"])
             self.assertEqual("PASS_E04_INT8_QUALITY_GATE", result["e04_quantization"]["status"])
+            self.assertEqual("PASS_JASP_SOURCE_RELEASE_IDENTITY", result["jasp_source_release_identity"]["status"])
             self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), result["receipt_sha256"])
+
+    def test_target_runtime_receipt_without_jasp_source_identity_is_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = pathlib.Path(tmp) / "target-receipts"
+            directory.mkdir()
+            receipt = self.valid_target_receipt()
+            receipt.pop("rootfs_build")
+            (directory / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_test.json").write_text(
+                json.dumps(receipt), encoding="utf-8")
+            with mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", directory):
+                result = lane.latest_target_runtime_acceptance()
+            self.assertEqual("BLOCKED_TARGET_RUNTIME_RECEIPT_INVALID", result["status"])
+            self.assertEqual("JASP_SOURCE_RELEASE_IDENTITY_MISSING", result["reason"])
 
     def test_newest_failed_target_receipt_cannot_fall_back_to_an_older_pass(self):
         with tempfile.TemporaryDirectory() as tmp:
