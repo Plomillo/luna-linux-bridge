@@ -220,6 +220,41 @@ def validate_process_tree_receipt(
     )
 
 
+def process_tree_receipt_identity_matches(
+    receipt: dict | None,
+    *,
+    case_id: str,
+    env: dict,
+    executable_sha256: str,
+    runtime_ostree_commit: str,
+) -> bool:
+    """Re-check the receipt identity and closure during independent report assembly."""
+    if not isinstance(receipt, dict):
+        return False
+    return bool(
+        receipt.get("schema") == "LUNITA_JASP_PROCESS_TREE_RECEIPT/1.0"
+        and receipt.get("status") == "PASS_PROCESS_GROUP_CLOSED"
+        and receipt.get("run_id") == str(env.get("GITHUB_RUN_ID", ""))
+        and receipt.get("run_attempt") == str(env.get("GITHUB_RUN_ATTEMPT", ""))
+        and receipt.get("case_id") == case_id
+        and re.fullmatch(r"[0-9a-f]{32}", str(receipt.get("invocation_id", "")))
+        and isinstance(receipt.get("process_group_id"), int)
+        and receipt.get("process_group_id", 0) > 1
+        and receipt.get("session_id") == receipt.get("process_group_id")
+        and receipt.get("executable_sha256") == executable_sha256
+        and receipt.get("runtime_ostree_commit") == runtime_ostree_commit
+        and re.fullmatch(r"[0-9a-f]{64}", str(receipt.get("command_sha256", "")))
+        and isinstance(receipt.get("timeout_seconds"), (int, float))
+        and receipt.get("timeout_triggered") is False
+        and receipt.get("termination_signals") == []
+        and receipt.get("remaining_live_pids") == []
+        and receipt.get("process_group_closed") is True
+        and re.fullmatch(r"[0-9a-f]{64}", str(receipt.get("captured_output_sha256", "")))
+        and isinstance(receipt.get("captured_output_bytes"), int)
+        and receipt.get("captured_output_bytes", -1) >= 0
+    )
+
+
 def run_bounded_process_tree(
     command: list[str],
     *,
