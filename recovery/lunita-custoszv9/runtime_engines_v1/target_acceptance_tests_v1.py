@@ -229,7 +229,7 @@ class TargetXdgRuntimeDirectoryTests(unittest.TestCase):
                 target.expected_xdg_runtime_dir()
 
     def test_runtime_directory_path_must_match_run_scoped_contract(self):
-        environment = {"HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": "/tmp/runtime"}
+        environment = {"GITHUB_RUN_ID": self.RUN_ID, "GITHUB_RUN_ATTEMPT": self.RUN_ATTEMPT, "HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": "/tmp/runtime"}
         with mock.patch.dict(target.os.environ, environment):
             with self.assertRaisesRegex(target.TargetGateError, "must be exactly"):
                 target.verify_xdg_runtime_dir()
@@ -242,7 +242,7 @@ class TargetXdgRuntimeDirectoryTests(unittest.TestCase):
 
     def test_runtime_directory_must_exist_as_a_real_directory(self):
         metadata = mock.Mock(st_mode=0o120700, st_uid=1000, st_gid=1000)
-        environment = {"HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
+        environment = {"GITHUB_RUN_ID": self.RUN_ID, "GITHUB_RUN_ATTEMPT": self.RUN_ATTEMPT, "HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
         with mock.patch.dict(target.os.environ, environment), mock.patch.object(target.os, "lstat", return_value=metadata):
             with self.assertRaisesRegex(target.TargetGateError, "real directory"):
                 target.verify_xdg_runtime_dir()
@@ -331,7 +331,7 @@ class TargetLegacyFlatpakDiagnosticTests(unittest.TestCase):
 
     def test_flatpak_diagnostic_requires_workflow_attempt_identity(self):
         with mock.patch.dict(target.os.environ, {}, clear=True):
-            with self.assertRaisesRegex(target.TargetGateError, "HOST_BIND_NAME is missing or unsafe"):
+            with self.assertRaisesRegex(target.TargetGateError, "GITHUB_RUN_ID and GITHUB_RUN_ATTEMPT"):
                 target.diagnose_flatpak_smoke("org.jamovi.jamovi")
 
     def test_flatpak_diagnostic_rejects_unregistered_application(self):
