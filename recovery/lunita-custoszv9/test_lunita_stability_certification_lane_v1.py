@@ -1058,6 +1058,51 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
 
 
 class JaspReferenceMismatchClassificationTests(unittest.TestCase):
+    def test_historical_diagnostic_requires_exact_legacy_seed_and_runtime_provenance(self):
+        runtime = {
+            "status": "PASS",
+            "observed": [{
+                "version": "0.98.8",
+                "source_commit": "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1",
+            }],
+        }
+        stored = {
+            "member": "resources/2/jaspResults.json",
+            "member_sha256": "a" * 64,
+            "jasp_version": "0.97.1",
+            "citation": "JASP Team (2026). JASP (Version 0.97.1) [Computer software].",
+        }
+        seed = [{
+            "module_name": "jaspFrequencies",
+            "setSeed": False,
+            "seed": 1,
+        }]
+        output = (
+            "Starting JASP 0.98.8 from commit b6cd3b0310be4e18e1b673ac11f14e55615c8fa1\\n"
+            "Row: | h: Model Comparison | \\n"
+            "Row: | h: Models | \\n"
+            "Row: | Model A | 0.500 | 1.000 | \\n"
+            "Footer:\\n"
+            "The results are different...\\n"
+        )
+        accepted = lane.classify_historical_reference_diagnostic(
+            1, output, runtime, lane.DEATH_PENALTY_SOURCE_SHA256, stored, seed
+        )
+        self.assertTrue(accepted["eligible"])
+        self.assertEqual("PASS_HISTORICAL_REFERENCE_DIAGNOSTIC", accepted["status"])
+        self.assertEqual("BLOCKED_STORED_REFERENCE_MISMATCH", accepted["historical_reference_comparison_status"])
+        wrong_seed = [dict(seed[0], setSeed=True)]
+        rejected = lane.classify_historical_reference_diagnostic(
+            1, output, runtime, lane.DEATH_PENALTY_SOURCE_SHA256, stored, wrong_seed
+        )
+        self.assertFalse(rejected["eligible"])
+        self.assertEqual("BLOCKED_HISTORICAL_REFERENCE_DIAGNOSTIC", rejected["status"])
+        wrong_version = dict(stored, jasp_version="0.98.8")
+        rejected_version = lane.classify_historical_reference_diagnostic(
+            1, output, runtime, lane.DEATH_PENALTY_SOURCE_SHA256, wrong_version, seed
+        )
+        self.assertFalse(rejected_version["eligible"])
+
     def test_native_save_persists_candidate_results_then_strict_rerun_passes(self):
         from types import SimpleNamespace
         with tempfile.TemporaryDirectory() as tmp:
