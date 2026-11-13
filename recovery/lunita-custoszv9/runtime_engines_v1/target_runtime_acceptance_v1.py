@@ -129,6 +129,16 @@ def expected_xdg_runtime_dir() -> str:
     return f"/run/{expected_bind_name}-runtime-1000"
 
 
+def workflow_identity_receipt() -> dict[str, str | None]:
+    """Record the exact GitHub workflow attempt that owns this target runtime."""
+    return {
+        "run_id": os.environ.get("GITHUB_RUN_ID"),
+        "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+        "host_bind_name": os.environ.get("HOST_BIND_NAME"),
+        "xdg_runtime_dir": os.environ.get("XDG_RUNTIME_DIR"),
+    }
+
+
 def verify_xdg_runtime_dir() -> dict[str, Any]:
     """Require the Flatpak runtime directory to be a real private UID 1000 directory."""
     expected = expected_xdg_runtime_dir()
@@ -1151,12 +1161,7 @@ def main() -> int:
         "captured_at_utc": datetime.now(timezone.utc).isoformat(),
         "candidate_id": "G06_REBUILD_CANDIDATE_R1",
         "target": str(ROOT),
-        "workflow_identity": {
-            "run_id": os.environ.get("GITHUB_RUN_ID"),
-            "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
-            "host_bind_name": os.environ.get("HOST_BIND_NAME"),
-            "xdg_runtime_dir": os.environ.get("XDG_RUNTIME_DIR"),
-        },
+"workflow_identity": workflow_identity_receipt(),
         "status": "BLOCKED",
         "certification": "NOT_GRANTED",
         "canonical_g06_certification": "NOT_GRANTED",
