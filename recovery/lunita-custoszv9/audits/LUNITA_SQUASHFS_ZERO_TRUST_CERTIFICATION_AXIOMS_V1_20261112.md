@@ -603,3 +603,43 @@ La prueba histórica es diagnóstica y separada: MUST NOT reemplazar, actualizar
 ### Extensión del predicado terminal — AX-LUN-029
 
 `ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-029`. Esta extensión añade separación de procedencia y una prueba diagnóstica reproducible; no convierte la receta en ejecución histórica probada, no aprueba el mismatch ni altera los requisitos de los axiomas anteriores.
+
+
+## 8. Addendum append-only — AX-LUN-030: identidad post-mutación y cierre entre la imagen y el rootfs sometido a validación independiente
+
+**Registro de evidencia:** 2026-11-13 UTC. Auditoría estática del orden de ejecución del workflow v1.8, del actual refresco Flatpak/JASP, del inventario independiente del rootfs y del certifier final.
+
+### AX-LUN-030 — La imagen empaquetada y el rootfs realmente validado deben ser el mismo estado material
+
+Sea `R_P` el árbol de rootfs cuya representación canónica se usó para construir `I=LUNITA.squashfs`, y sea `R_V` el árbol de rootfs presente cuando concluyen las pruebas de la validación independiente. La certificación MUST probar `Manifest(R_P)=Manifest(R_V)` mediante el mismo algoritmo canónico de inventario usado por el empaquetador, no por igualdad de nombres, rutas, tamaños totales o informes PASS independientes.
+
+El recibo de empaquetado MUST exponer la identidad y SHA-256 del manifiesto canónico `Manifest(R_P)`. El informe independiente MUST recalcular sobre el rootfs efectivamente sometido a pruebas el mismo manifiesto canónico y registrar su SHA-256 como `observed_post_validation_rootfs_manifest_sha256`. El certifier MUST exigir igualdad exacta de ambos hashes y MUST incluir ambas referencias en la cadena de evidencia. Si no se puede recomputar el manifiesto, si cualquier entrada o metadato difiere, si la comparación se refiere a otra ruta/rootfs o si los algoritmos/versiones no son los mismos, la validación independiente y la certificación MUST quedar BLOCKED.
+
+La comparación es necesaria porque el empaquetador verifica el estado del árbol al construir y extraer la imagen, mientras que la regresión independiente se ejecuta posteriormente sobre el rootfs de trabajo. Dos PASS separados no demuestran por sí solos que no hubo modificación entre esas etapas. La igualdad del manifiesto canónico cierra ese intervalo y demuestra que el rootfs sometido a las pruebas posteriores representa exactamente el árbol del que se construyó la imagen.
+
+### AX-LUN-030A — Identidad íntegra de runtimes y binarios modificados después de la aceptación inicial
+
+Toda actualización, reemplazo o parche ejecutado después del recibo de aceptación del runtime de destino y antes de construir la imagen MUST quedar identificado por un recibo de mutación hash-bound. En particular, el refresco del runtime JASP MUST registrar:
+
+- referencia Flatpak y commit OSTree exacto del runtime KDE finalmente desplegado, además del commit de la aplicación JASP;
+- referencia/commit del SDK usado para construir dependencias Qt; versión Qt observada; etiqueta o commit fuente de QtHttpServer; SHA-256 del archivo fuente descargado y de los binarios construidos;
+- SHA-256 antes y después de los binarios JASP y bibliotecas Qt reemplazadas; SHA-256 del script de parcheo; sitios de parche esperados y observados; y resultado post-escritura;
+- identidad completa del manifiesto Flathub, commit fuente JASP y versión CMake observada.
+
+La identidad del commit Flatpak de la aplicación no acredita, por sí sola, los bytes posteriores a un parche local o a un reemplazo de bibliotecas. Los hashes pre/post y el manifiesto final del rootfs MUST conservar esa distinción. La prueba funcional de JASP MUST ejecutarse contra los binarios post-mutación exactos que quedan incluidos en `I`; su recibo MUST referenciar los hashes de dichos binarios y el commit OSTree del runtime que realmente cargó. Un log de consola sin hash ligado al recibo no satisface este axioma.
+
+La aceptación inicial E01–E15 puede seguir vinculada a su propio recibo y estado temporal; no puede presentarse como prueba retrospectiva de una versión JASP/Qt modificada después. La regresión JASP posterior y la igualdad de manifiestos del AX-LUN-030 son los controles que verifican el estado final. Ningún parche o actualización posterior a esas pruebas puede ocurrir sin repetir las pruebas afectadas y revalidar la igualdad del manifiesto.
+
+Estos requisitos NO autorizan actualización flotante no registrada, mutación de fixture, modificación de resultados históricos, ajuste de tolerancias, parche estadístico ni reemplazo del JASP 0.98.8 objetivo por el runtime histórico 0.97.1. Los diagnósticos históricos del AX-LUN-029 permanecen aislados y separados.
+
+### Hallazgo estático que motiva AX-LUN-030 — no equivale a fallo de ejecución
+
+El flujo de validación actual construye y verifica `LUNITA.squashfs` antes de ejecutar el worker de validación independiente. El recibo de empaquetado conserva `source_rootfs_manifest_sha256`, y el informe independiente conserva un inventario del rootfs; sin embargo, el certifier inspeccionado exige por separado la validez del recibo de paquete y del inventario y no compara explícitamente el hash del manifiesto canónico de origen con un manifiesto recalculado post-validación bajo el mismo algoritmo. Esta brecha de vínculo estático debe cerrarse antes de conceder la certificación.
+
+Además, el paso de refresco JASP mantiene fijado el commit de aplicación, actualiza el runtime KDE al tip publicado y reemplaza bibliotecas Qt; luego aplica una modificación binaria al formatter JASP. Los logs observados muestran commits/versiones durante el paso, pero la evidencia estructurada consultada no exponía aún un único recibo que ligara los hashes pre/post de todos esos binarios y los commits OSTree finales al caso JASP ejecutado. La aceptación de este cambio exige implementar y comprobar ese recibo, no inferir que el commit de aplicación identifica el estado posterior.
+
+**Estado:** `STATIC_GAP_IDENTIFIED; SPECIFIED_NOT_IMPLEMENTED; CERTIFICATION_NOT_GRANTED`.
+
+### Extensión del predicado terminal — AX-LUN-030
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-030 AND AX-LUN-030A`. Una imagen con round-trip correcto no queda certificada mientras la identidad del rootfs validado después del empaquetado y los binarios/runtime efectivamente probados no estén cerrados criptográficamente contra los bytes de la imagen.
