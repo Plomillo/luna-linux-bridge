@@ -1,7 +1,7 @@
 # LUNITA v1.8 — Axiomas verificables de certificación funcional SquashFS
 
 **Documento:** `LUNITA_SQUASHFS_ZERO_TRUST_CERTIFICATION_AXIOMS_V1`  
-**Versión:** `1.1.0`  
+**Versión:** `1.2.0`  
 **Estado normativo:** `MANDATORY_PRECONDITION_FOR_FUNCTIONAL_CERTIFICATION`  
 **Doctrina:** `APPEND_ONLY; EXTEND_DO_NOT_REPLACE; FAIL_CLOSED`  
 **Objetivo único:** `LUNITA.squashfs`  
@@ -169,7 +169,7 @@ El recibo `L` solo puede emitirse tras S32 válido. MUST enlazar el mismo inform
 
 La función de certificación es:
 
-`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-021 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
+`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-022 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
 
 y además el certificado `C` MUST:
 
@@ -232,6 +232,16 @@ La limpieza MUST desmontar y retirar exclusivamente el destino creado por el int
 La existencia de una ruta fija previa en el /run del host es evidencia de colisión, no autorización para eliminarla. Tal colisión produce BLOCKED hasta una corrección que aísle el nombre por ejecución y una revalidación completa del candidato.
 
 
+### AX-LUN-022 — Propagación íntegra de la identidad de ejecución a través del límite de privilegios
+
+La unicidad del mountpoint no se considera demostrada solo porque el wrapper construya una cadena con formato de run/attempt. El origen de identidad MUST ser el contexto real de GitHub Actions que ejecuta el workflow actual. El step invocador MUST pasar explícitamente GITHUB_RUN_ID y GITHUB_RUN_ATTEMPT a través del comando sudo/env que cruza el límite de privilegios; no se permite confiar en una conservación implícita de variables filtradas por sudo.
+
+El wrapper MUST exigir ambos valores, no vacíos y numéricos, antes de crear archivos de estado, modificar sysctls o preparar mounts. MUST derivar HOST_BIND_NAME únicamente de esos dos valores y MUST abortar si cualquiera falta o no satisface el formato. Se prohíben valores fallback como local, 0, 1 o cualquier identidad constante que permita compartir mountpoints entre ejecuciones. No se permite inferir la identidad del branch, del nombre del job, del hostname del runner ni de la hora.
+
+Las pruebas contractuales MUST inspeccionar el step de GitHub Actions para acreditar que ambos valores son transmitidos explícitamente a sudo/env, y deben demostrar que el wrapper no contiene fallback fijo. Las pruebas del helper MUST demostrar que una identidad ausente o insegura se rechaza y que el diagnóstico de Flatpak usa exactamente el XDG_RUNTIME_DIR del intento actual. Un fallo de propagación mantiene TARGET_RUNTIME=BLOCKED, aunque los demás tests unitarios pasen.
+
+La validación de este axioma debe ocurrir en el workflow completo sobre el commit integrado: el run ID y attempt registrados en los logs y recibos MUST coincidir con el nombre de runtime mountpoint realmente creado, con el XDG_RUNTIME_DIR observado por el proceso y con el cleanup realizado.
+
 ## 3. Predicado terminal y orden de admisión
 
 La decisión terminal no es una suma de porcentajes ni una votación de jobs. Es una conjunción estricta:
@@ -251,7 +261,7 @@ No se permite saltar, invertir, fusionar silenciosamente ni heredar el resultado
 | Gate | Evidencia primaria requerida | Condición de aceptación |
 |---|---|---|
 | Identidad | manifiesto congelado + recibo rootfs + runtime banners | IDs, versiones, commits y hashes coincidentes |
-| Target runtime | recibo de destino + identidad HOST_BIND_NAME + mountpoint XDG_RUNTIME_DIR | E01–E15, INT8 E04, mountpoint por intento UID/GID 1000 modo 0700, ruta y smoke tests PASS |
+| Target runtime | recibo de destino + identidad HOST_BIND_NAME + GITHUB_RUN_ID/ATTEMPT propagados a través de sudo + mountpoint XDG_RUNTIME_DIR | E01–E15, INT8 E04, mountpoint único por intento UID/GID 1000 modo 0700, ruta y smoke tests PASS |
 | Inventario | informe y manifiesto completo | árbol estable, cero errores, dependencias cerradas |
 | JASP referencia | log original + alias + hash fuente | fixture intacto, versión/commit correctos, RC 0 |
 | JASP replay | dos logs, filas, dos hashes y recibo del clon | misma entrada hash-bound y salidas exactas iguales |
@@ -342,7 +352,7 @@ La corrección propuesta en la rama fix/lunita-flatpak-runtime-mount-collision-2
 `JASP_SOURCE_IDENTITY_SELFTESTS=INTEGRATED_NOT_YET_EXECUTED_IN_CI`  
 `NEXT_REQUIRED_ACTION=MERGE_INTEGRATION_AND_RUN_FULL_VALIDATION`
 
-**No se autoriza una transición a CERTIFIED hasta la demostración completa de AX-LUN-001 a AX-LUN-021 sobre un único SHA-256 de `LUNITA.squashfs`.**
+**No se autoriza una transición a CERTIFIED hasta la demostración completa de AX-LUN-001 a AX-LUN-022 sobre un único SHA-256 de `LUNITA.squashfs`.**
 
 
 ## 7. Estado actualizado — run #184 y remediación subsiguiente (13-11-2026)
@@ -366,3 +376,32 @@ FUNCTIONAL_CERTIFICATE=NOT_GRANTED
 La remediación está en la rama fix/lunita-flatpak-runtime-mount-collision-20261113. Su HEAD de trabajo al preparar esta revisión es cfe687753c0f6c2b43bbf019ad6229552dfcb9f6. Incluye cambios en el wrapper de namespace, en el verificador de runtime y en las pruebas contractuales. La incorporación de AX-LUN-021 y esta auditoría forma parte de la misma corrección documental. El estado sigue siendo IMPLEMENTED_NOT_YET_VALIDATED_BY_CI: aún no existe un nuevo run de extremo a extremo sobre el commit corregido.
 
 NEXT_REQUIRED_ACTION=REVIEW_AND_INTEGRATE_REMEDIATION_THEN_RUN_FULL_VALIDATION_ON_EXACT_HEAD
+
+## 8. Propagación de identidad no demostrada — run #211 (13-11-2026)
+
+Esta sección conserva el resultado del primer pipeline posterior al merge de AX-LUN-021 y registra la siguiente corrección requerida. No se modifica retroactivamente el resultado del run.
+
+RUN=43337415331 (#211)  
+HEAD=7cea08fd33e36f894f98103af9492bc07e1aed54  
+CONTRACT_JOB=131597010277  
+CONTRACT_RESULT=FAILURE_AT_STEP_24  
+TARGET_JOB=131597732193 / SKIPPED  
+SQUASHFS_IMAGE=NOT_EMITTED  
+INDEPENDENT_VALIDATION=NOT_REACHED  
+S32=NOT_REACHED  
+STABLE_RELEASE=NOT_REACHED  
+FUNCTIONAL_CERTIFICATE=NOT_GRANTED
+
+El log primario demuestra que la prueba test_runtime_mount_target_is_scoped_to_workflow_attempt PASS y que la prueba test_flatpak_diagnostic_compares_inherited_and_clean_guest_environments falló porque diagnose_flatpak_smoke() llamó a expected_xdg_runtime_dir() sin que el fixture de prueba definiera HOST_BIND_NAME. El resultado fue TargetGateError: HOST_BIND_NAME is missing or unsafe for a runtime mount path; la suite de 34 tests terminó FAILED (errors=1). No fue una prueba funcional de Flatpak/JASP real.
+
+La revisión del workflow reveló además una condición de despliegue que no quedaba cubierta: el step llama a sudo -n env PATH=... bash wrapper, pero no transmitía GITHUB_RUN_ID ni GITHUB_RUN_ATTEMPT. El wrapper anterior usaba fallback local y 1; por tanto, aun habiendo corregido el nombre fijo /run/lunita-runtime-1000, el nombre resultante podía repetirse entre ejecuciones. La inspección del step y del wrapper demuestra esta omisión de propagación; no se presenta como un fallo observado en una ejecución real de mountpoint porque el target job fue skipped.
+
+La nueva rama fix/lunita-flatpak-runtime-env-propagation-20261113 incorpora:
+- propagación explícita de GITHUB_RUN_ID y GITHUB_RUN_ATTEMPT a través de sudo/env;
+- rechazo fail-closed de ambas variables ausentes o no numéricas antes de crear estado;
+- eliminación del fallback local;
+- fixture válido para el test del diagnóstico y comprobación del XDG_RUNTIME_DIR derivado;
+- tests que verifican la transmisión de ambas variables en el workflow y prohíben el fallback;
+- ejecución del job contractual para pull requests cuya base sea la rama operativa, sin habilitar el job target en PR.
+
+El contrato se amplía con AX-LUN-022. Estado de esta corrección en el momento de documentar: IMPLEMENTED_NOT_YET_VALIDATED_BY_CI. Requiere que la PR ejecute el job contractual en PASS y que después un push a la rama operativa ejecute de extremo a extremo el target runtime, el empaquetado SquashFS, la validación independiente, S32, stable release y certificado final sobre un único HEAD e imagen exacta.
