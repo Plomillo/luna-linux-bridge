@@ -229,7 +229,20 @@ class CertificationGateTests(unittest.TestCase):
                 "schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0",
                 "status": "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED",
                 "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+                "workflow_identity": {
+                    "run_id": "43337415331",
+                    "run_attempt": "1",
+                    "host_bind_name": "lunita-host-43337415331-1",
+                    "xdg_runtime_dir": "/run/lunita-host-43337415331-1-runtime-1000",
+                },
+                "xdg_runtime_dir": {
+                    "status": "PASS_XDG_RUNTIME_DIR_UID1000_PRIVATE",
+                    "path": "/run/lunita-host-43337415331-1-runtime-1000",
+                    "mode_octal": "0o700",
+                },
                 "certification": "NOT_GRANTED",
+                "canonical_g06_certification": "NOT_GRANTED",
+                "canonical_g08_binding_mutation": False,
             }), encoding="utf-8")
             independent = candidate / "independent.json"
             independent.write_text(json.dumps({
