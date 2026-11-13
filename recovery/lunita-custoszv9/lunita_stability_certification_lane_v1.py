@@ -393,6 +393,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     rerun = {"status": "BLOCKED", "returncode": 125}
     temp_before = temp_after = temp_after_rerun = None
     result_member_before = result_member_after_save = result_member_after_rerun = None
+    save_command = None
     temp_fixture = None
     temp_root = None
     fixture_receipt = None
@@ -500,6 +501,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             if not save_argument_order_valid:
                 raise PermissionError("JASP native --save argument order is invalid")
             save_run = execute_replay(save_command, "save", save_log_path)
+            save_run["command"] = save_command
             temp_after = sha_file(temp_fixture) if temp_fixture.is_file() else None
             result_member_after_save = inspect_archive_member(temp_fixture, result_member_name) if temp_fixture.is_file() else None
             save_persisted_results = bool(
@@ -546,7 +548,6 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         save_rows and rerun_rows and save_rows_sha
         and save_rows_sha == rerun_rows_sha and save_rows == rerun_rows
     )
-    save_command = save_run.get("command")
     save_command_order_valid = bool(
         isinstance(save_command, list)
         and "--save" in save_command and "--unitTest" in save_command
