@@ -1800,6 +1800,25 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
             )
             runtime_versions = [item["version"] for item in runtime_identity.get("observed", [])]
             runtime_source_commits = [item["source_commit"] for item in runtime_identity.get("observed", [])]
+            diagnostic_lines = text.splitlines()
+            semantic_pattern = re.compile(
+                r"Row is missing|Total number of models visited\s*=\s*\d+\s*!=|results are different|\d+(?:\.\d+)?\s*!=\s*\d+(?:\.\d+)?",
+                re.I,
+            )
+            diagnostic_indexes = [
+                index for index, line in enumerate(diagnostic_lines)
+                if semantic_pattern.search(line)
+            ]
+            diagnostic_excerpt = []
+            for index in diagnostic_indexes:
+                for context_index in range(max(0, index - 1), min(len(diagnostic_lines), index + 3)):
+                    rendered = f"{context_index + 1}: {diagnostic_lines[context_index][:400]}"
+                    if rendered not in diagnostic_excerpt:
+                        diagnostic_excerpt.append(rendered)
+                    if len(diagnostic_excerpt) >= 32:
+                        break
+                if len(diagnostic_excerpt) >= 32:
+                    break
             item.update({
                 "returncode": rc,
                 "status": "PASS" if passed else "BLOCKED",
@@ -1814,6 +1833,7 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "process_tree_receipt_valid": process_receipt_valid,
                 "semantic_shape_mismatch": bool(re.search(r"Row is missing|Total number of models visited\s*=\s*\d+\s*!=|results are different", text, re.I)),
                 "log_has_numeric_deltas": bool(re.search(r"\d+(?:\.\d+)?\s*!=\s*\d+(?:\.\d+)?", text)),
+                "semantic_diagnostic_excerpt": diagnostic_excerpt,
             })
         rows[case] = item
     all_pass = all(
@@ -2760,6 +2780,66 @@ def stable_release_gate() -> dict:
     checks = report.get("checks")
     if not isinstance(checks, dict) or not checks or not all(_stable_check(x) for x in checks.values()):
         return {"status": "BLOCKED_REQUIRED_CHECKS", "certification": "NOT_GRANTED"}
+    if direct:
+        required_direct_checks = {
+            "jasp_packaged_fixture_nonregression",
+            "jasp_process_tree_lifecycle",
+            "jasp_post_mutation_runtime_identity",
+            "squashfs_image_and_package_binding",
+        }
+        if not required_direct_checks.issubset(checks):
+            return {"status": "BLOCKED_REQUIRED_JASP_LIFECYCLE_CHECKS", "certification": "NOT_GRANTED"}
+        lifecycle = checks.get("jasp_process_tree_lifecycle") or {}
+        mutation_identity = checks.get("jasp_post_mutation_runtime_identity") or {}
+        target_workflow = runtime.get("workflow_identity") if isinstance(runtime.get("workflow_identity"), dict) else {}
+        lifecycle_workflow = lifecycle.get("workflow_identity") if isinstance(lifecycle.get("workflow_identity"), dict) else {}
+        invocations = lifecycle.get("invocations")
+        expected_cases = {
+            "flatpak_launch", "reliability", "weight_gain",
+            "death_penalty_save", "death_penalty_rerun",
+        }
+        invocation_ids = {
+            row.get("invocation_id") for row in invocations
+            if isinstance(row, dict)
+        } if isinstance(invocations, list) else set()
+        observed_cases = {
+            row.get("case_id") for row in invocations
+            if isinstance(row, dict)
+        } if isinstance(invocations, list) else set()
+        expected_run_id = str(os.environ.get("GITHUB_RUN_ID", ""))
+        expected_attempt = str(os.environ.get("GITHUB_RUN_ATTEMPT", ""))
+        executable_sha = str(mutation_identity.get("jasp_binary_sha256", ""))
+        runtime_commit = str(mutation_identity.get("flatpak_runtime_commit", ""))
+        final_process_tree_valid = bool(
+            lifecycle.get("status") == "PASS"
+            and lifecycle.get("returncode") == 0
+            and lifecycle.get("invocation_count") == 5
+            and lifecycle.get("expected_invocation_count") == 5
+            and lifecycle.get("unique_invocation_id_count") == 5
+            and mutation_identity.get("status") == "PASS"
+            and mutation_identity.get("returncode") == 0
+            and re.fullmatch(r"[0-9a-f]{64}", executable_sha)
+            and re.fullmatch(r"[0-9a-f]{64}", runtime_commit)
+            and expected_run_id == str(target_workflow.get("run_id", ""))
+            and expected_attempt == str(target_workflow.get("run_attempt", ""))
+            and lifecycle_workflow.get("run_id") == expected_run_id
+            and lifecycle_workflow.get("run_attempt") == expected_attempt
+            and lifecycle.get("jasp_binary_sha256") == executable_sha
+            and lifecycle.get("flatpak_runtime_ostree_commit") == runtime_commit
+            and isinstance(invocations, list)
+            and len(invocations) == 5
+            and observed_cases == expected_cases
+            and len(invocation_ids) == 5
+            and all(
+                process_tree_receipt_identity_matches(
+                    row, case_id=str(row.get("case_id", "")), env=os.environ,
+                    executable_sha256=executable_sha, runtime_ostree_commit=runtime_commit,
+                )
+                for row in invocations
+            )
+        )
+        if not final_process_tree_valid:
+            return {"status": "BLOCKED_JASP_PROCESS_TREE_FINAL_CERTIFICATION", "certification": "NOT_GRANTED"}
     if report.get("runtime_report_sha256") != runtime_sha:
         return {"status": "BLOCKED_RUNTIME_REPORT_BINDING_MISMATCH", "certification": "NOT_GRANTED"}
     if report.get("frozen_g06_mutated") is not False or report.get("canonical_g08_bindings_mutated") is not False:
