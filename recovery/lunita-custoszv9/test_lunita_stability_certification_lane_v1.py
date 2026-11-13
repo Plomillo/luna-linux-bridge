@@ -180,6 +180,7 @@ class CertificationGateTests(unittest.TestCase):
                     "flatpak_launch": {
                         "fixture": clone,
                         "deterministic_fixture_path": clone,
+                        "deterministic_fixture_receipt_valid": True,
                     }
                 },
             }), encoding="utf-8")
@@ -201,6 +202,7 @@ class CertificationGateTests(unittest.TestCase):
                 clone,
                 result["cases"]["flatpak_launch"]["deterministic_fixture_path"],
             )
+            self.assertIs(True, result["cases"]["flatpak_launch"]["deterministic_fixture_receipt_valid"])
             self.assertIsNone(result["cases"]["reliability"]["deterministic_fixture_path"])
 
     def test_worker_exit_without_receipt_is_explicitly_blocked(self):
@@ -1604,6 +1606,10 @@ class JaspReferenceMismatchClassificationTests(unittest.TestCase):
             self.assertTrue(result["original_sample_unchanged"])
             replay = aggregate["cases"]["death_penalty_roundtrip"]
             self.assertEqual("PASS_DETERMINISTIC_REPLAY", replay["status"])
+            self.assertEqual(
+                result["deterministic_fixture_receipt_valid"] is True,
+                replay["deterministic_fixture_receipt_valid"],
+            )
             self.assertEqual("DETERMINISTIC_REPLAY_ONLY", replay["acceptance_scope"])
             self.assertEqual("BLOCKED_STORED_REFERENCE_MISMATCH", replay["reference_comparison_status"])
             self.assertFalse(aggregate["all_required_jasp_cases_pass"])

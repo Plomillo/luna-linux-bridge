@@ -1953,6 +1953,7 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 "original_sample_sha256_before": data.get("original_sample_sha256_before"),
                 "original_sample_sha256_after": data.get("original_sample_sha256_after"),
                 "deterministic_fixture_evidence_valid": fixture_evidence_ok,
+                "deterministic_fixture_receipt_valid": data.get("deterministic_fixture_receipt_valid") is True,
                 "deterministic_fixture_receipt": fixture_receipt,
                 "process_tree_receipt_valid": process_tree_receipts_valid,
                 "process_tree_receipts": [save_process_receipt, rerun_process_receipt],
@@ -2085,6 +2086,11 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                     else None
                 ),
                 "deterministic_fixture_evidence_valid": deterministic_fixture_ok if case == "flatpak_launch" else None,
+                "deterministic_fixture_receipt_valid": (
+                    worker_case_result.get("deterministic_fixture_receipt_valid") is True
+                    if case == "flatpak_launch" and isinstance(worker_case_result, dict)
+                    else None
+                ),
                 "deterministic_fixture_receipt": deterministic_fixture_receipt if case == "flatpak_launch" else None,
                 "deterministic_fixture_clone_sha256_after_execution": (
                     worker_case_result.get("deterministic_fixture_clone_sha256_after_execution")
