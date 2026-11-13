@@ -717,3 +717,41 @@ El contrato debe aceptar tanto (a) una mutación embebida en `bin/JASP`, demostr
 ### Extensión del predicado terminal — AX-LUN-032
 
 `ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-032`. Este axioma no debilita ningún control de integridad: convierte los indicadores estáticos contradictorios en una comprobación derivada de hashes reales y mantiene fail-closed cualquier discrepancia.
+
+
+## 11. Addendum append-only — AX-LUN-033: baseline versionado del candidato JASP 0.98.8 con preservación del baseline histórico
+
+**Registro:** 2026-11-13 UTC. Rama de implementación: `fix/lunita-jasp-versioned-baseline-ax033-20261113`. Este axioma implementa una alternativa explícitamente permitida por AX-LUN-025/027: una referencia nueva, separada, versionada y reproducible para el runtime candidato, sin reescribir la referencia histórica.
+
+### AX-LUN-033 — Separación de referencia histórica y baseline del runtime candidato
+
+1. La referencia histórica Death Penalty se conserva sin modificación. Su fixture original mantiene SHA-256 `fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895`; la referencia guardada y su publicación histórica permanecen identificadas por sus Git blob SHA. El runtime publicado en los datos históricos declara JASP 0.97.1, mientras que el candidato está fijado a JASP 0.98.8, source commit `b6cd3b0310be4e18e1b673ac11f14e55615c8fa1` y Flatpak app OSTree commit `83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7`.
+2. El resultado `BLOCKED_STORED_REFERENCE_MISMATCH` sigue siendo un hecho histórico registrado. No se convierte en PASS, no se oculta y no se usa como evidencia de equivalencia entre JASP 0.97.1 y 0.98.8. La ejecución original sobre el fixture empaquetado se conserva como diagnóstico `HISTORICAL_DIAGNOSTIC_ONLY`; su retorno 1 no es falsificado ni sustituido.
+3. El baseline de candidato es otro objeto de evidencia, con identidad `LUNITA_JASP_0_98_8_DEATH_PENALTY_SEEDED_R2`. Aplica únicamente al replay determinista sobre una copia desechable del fixture original, con el único cambio permitido `/analyses/0/options/setSeed: false -> true`, seed 1. El fixture fuente no puede modificarse; todos los miembros no activos deben conservarse y la copia temporal se elimina después de las dos ejecuciones.
+4. La revisión R1 del manifiesto se conserva íntegramente como artefacto histórico de propuesta, pero es inadmisible: omitió los dos encabezados del array de filas mientras conservaba el digest de la tabla completa. R2 registra las cinco líneas capturadas —ambos encabezados y las tres filas de modelos—; no existe sustitución silenciosa ni sobrescritura de R1.
+5. El digest esperado de la tabla completa es `ef1f4ec4493aea848c9449f6ca96864a1cd95e353544601c6edf52fb284a1a32`. La comparación es exacta: array de filas, orden, texto y SHA-256. No hay redondeo adicional, tolerancia numérica, omisión de filas ni auto-baselining.
+6. El manifiesto R2 está pre-registrado como `PRE_REGISTERED_PENDING_INDEPENDENT_REEXECUTION`; su existencia no implica aprobación. Solo una ejecución posterior, en un workflow nuevo y con el manifiesto ya presente en el commit de entrada, puede producir evidencia independiente de reproducción. Deben coincidir ambas tablas recién calculadas, el digest fijado, identidad del fixture, runtime, app, recibo post-mutación, recibo de clon y evidencia temporal. Cualquier dato ausente o distinto mantiene el gate en BLOCKED.
+7. El resultado agregado admisible, si y solo si pasan los controles anteriores, se denomina `PASS_JASP_CANDIDATE_BASELINE_NONREGRESSION_WITH_HISTORICAL_MISMATCH_RECORDED`. Ese estado certifica exclusivamente la reproducción exacta de la configuración versionada del candidato y preserva explícitamente la discrepancia histórica. No certifica la referencia antigua, la equivalencia estadística de ambas configuraciones ni la corrección de una ejecución histórica no demostrada.
+
+### Implementación portadora de código
+
+- Manifiesto pre-registrado: `recovery/lunita-custoszv9/baselines/LUNITA_JASP_0_98_8_DEATH_PENALTY_SEEDED_R2.json`.
+- El cargador valida esquema, identidad de candidato/runtime, hash del fixture, configuración fija, array completo de cinco líneas y digest calculado del array.
+- `run_death_penalty_roundtrip` solo acepta el replay si save y rerun coinciden entre sí y con R2, y además la identidad del runtime y la integridad del fixture pasan.
+- `latest_jasp_evidence` separa el diagnóstico histórico (retorno 1, scope diagnóstico) de la reproducción de baseline candidato (retorno efectivo de aceptación independiente igual a 0, con los retornos de subproceso originales conservados). No transforma el diagnóstico histórico en PASS.
+- El informe independiente verifica de nuevo el manifiesto, las filas y hashes reales, y la evidencia de cada caso; el informe no puede pasar por ausencia de logs, rutas, hashes ni casos.
+- La cola de remediación no reabre como defecto funcional el diagnóstico histórico ya clasificado; sigue abierta ante cualquier incumplimiento de la configuración candidata, identidad, hash o resultado.
+
+### Matriz de pruebas requerida
+
+1. Baseline R2 exacto + dos salidas iguales + runtime correcto + fixture original intacto: permite únicamente el estado de reproducción de baseline candidato con discrepancia histórica registrada.
+2. Una fila ausente, encabezado ausente, orden distinto, digest distinto, baseline ausente o estado de pre-registro incorrecto: BLOCKED.
+3. Mutación del fixture fuente, modificación de la copia durante save/rerun, copia no eliminada o recibo de clon inválido: BLOCKED.
+4. Commit/app/source/runtime distinto, recibo de mutación ausente o contradictorio, o logs incompletos: BLOCKED.
+5. La discrepancia del fixture histórico se informa siempre como `BLOCKED_STORED_REFERENCE_MISMATCH`; nunca como `PASS_REFERENCE_AND_REPLAY`.
+
+**Estado al registrar AX-LUN-033:** `BASELINE_R2_PRE_REGISTERED; R1_PRESERVED_AND_REJECTED_FOR_INCOMPLETE_ROW_ARRAY; CODE_AND_CONTRACT_TESTS_PENDING; FRESH_INDEPENDENT_REEXECUTION_PENDING; FUNCTIONAL_CERTIFICATION_NOT_GRANTED`.
+
+### Extensión del predicado terminal — AX-LUN-033
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-033`. La aceptación candidato-específica no elimina ni altera la deuda histórica; exige reproducción independiente posterior del baseline versionado y deja la referencia antigua explícitamente bloqueada.
