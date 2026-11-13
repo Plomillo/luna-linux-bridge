@@ -630,6 +630,11 @@ class JaspRunnerTests(unittest.TestCase):
                 mock.patch.object(lane, "OUT", out),
                 mock.patch.object(lane, "ROOTFS", rootfs),
                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
+                mock.patch.object(lane, "verify_jasp_runtime_mutation_receipt", return_value={
+                    "status": "PASS", "returncode": 0, "receipt_sha256": "a" * 64,
+                    "jasp_binary_sha256": "b" * 64, "flatpak_runtime_commit": "c" * 64,
+                    "flatpak_sdk_commit": "d" * 64, "evidence": {},
+                }),
                 mock.patch.object(lane.subprocess, "run", side_effect=fake_run) as runner,
             ):
                 result = lane.run_jasp_regression_suite(report)
@@ -1088,6 +1093,16 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
             self.assertEqual("WAITING_FOR_S32_BOUND_CERTIFICATION_RECEIPT", result["status"])
             self.assertEqual("NOT_GRANTED", result["certification"])
 
+
+
+class JaspPostMutationRuntimeIdentityTests(unittest.TestCase):
+    def test_missing_mutation_receipt_fails_closed(self):
+        with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
+             mock.patch.dict(lane.os.environ, {}, clear=True):
+            result = lane.verify_jasp_runtime_mutation_receipt()
+        self.assertEqual("BLOCKED", result["status"])
+        self.assertEqual(1, result["returncode"])
+        self.assertIn("LUNITA_JASP_MUTATION_RECEIPT is unset", result["details"])
 
 
 class JaspReferenceMismatchClassificationTests(unittest.TestCase):

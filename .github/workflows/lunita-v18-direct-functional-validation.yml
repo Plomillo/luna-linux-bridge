@@ -55,6 +55,7 @@ jobs:
             scripts/lunita/rootfs_base_cache_v1.py \
             scripts/lunita/clean_transient_browser_tmp_v1.py \
             scripts/lunita/patch_jasp_certification_runtime_v1.py \
+            scripts/lunita/record_jasp_runtime_mutation_receipt_v1.py \
             scripts/lunita/verify_jasp_release_identity_v1.py \
             scripts/lunita/test_verify_jasp_release_identity_v1.py
           python scripts/lunita/verify_jasp_release_identity_v1.py --self-test
@@ -63,6 +64,7 @@ jobs:
           python scripts/lunita/rootfs_base_cache_v1.py self-test
           python scripts/lunita/clean_transient_browser_tmp_v1.py self-test
           python scripts/lunita/patch_jasp_certification_runtime_v1.py --self-test
+          python scripts/lunita/record_jasp_runtime_mutation_receipt_v1.py --self-test
           python scripts/lunita/certify_candidate_squashfs_v1.py --self-test
           python -m unittest discover -s scripts/lunita -p "test_certify_candidate_squashfs_v1.py" -v
       - name: Install pinned CPU-only PyTorch for SeamlessM4T tensor contracts
@@ -642,6 +644,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo -n env FLATPAK_SYSTEM_DIR="$LUNITA_ROOTFS_REAL/var/lib/flatpak" \
+            LUNITA_JASP_MUTATION_RECEIPT="$RUNNER_TEMP/lunita-jasp-runtime-mutation-receipt.json" \
             bash scripts/lunita/refresh_jasp_runtime_v1.sh
       - name: Build and round-trip verify LUNITA.squashfs
         id: package-squashfs
@@ -686,6 +689,7 @@ jobs:
             GITHUB_WORKSPACE="$GITHUB_WORKSPACE" \
             LUNITA_XDG_STATE_HOME="$LUNITA_XDG_STATE_HOME" \
             LUNITA_ROOTFS_REAL="$LUNITA_ROOTFS_REAL" \
+            LUNITA_JASP_MUTATION_RECEIPT="$RUNNER_TEMP/lunita-jasp-runtime-mutation-receipt.json" \
             bash scripts/lunita/run_independent_certification_lane_in_container_v1.sh
       - name: Certify the exact SquashFS image from S32 and independent evidence
         shell: bash
@@ -732,7 +736,8 @@ jobs:
             "${LUNITA_ROOT:-}/engines/runtime_engines_v1/OVERLAY_APPLY_RECEIPT.json" \
             "${LUNITA_CHECKPOINT_DIR:-}" \
             "$RUNNER_TEMP/lunita-rootfs-temp-cleanup-receipt.json" \
-            "$RUNNER_TEMP/lunita-rootfs-base-cache/LUNITA_ROOTFS_BASE_CACHE_RECEIPT.json"; do
+            "$RUNNER_TEMP/lunita-rootfs-base-cache/LUNITA_ROOTFS_BASE_CACHE_RECEIPT.json" \
+            "$RUNNER_TEMP/lunita-jasp-runtime-mutation-receipt.json"; do
             if [ -n "$PATH_IN" ] && [ -e "$PATH_IN" ]; then
               run_root cp -a "$PATH_IN" "$OUT/"
             fi

@@ -566,3 +566,123 @@ La ausencia o invalidez de una referencia no puede convertirse en PASS, en evide
 ### Extensión del predicado terminal — AX-LUN-028
 
 `ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-025 AND AX-LUN-026 AND AX-LUN-027 AND AX-LUN-028`. Este control de robustez de referencias no relaja ningún requisito de evidencia JASP, ni otorga PASS al resultado histórico discrepante.
+
+
+## 7. Addendum append-only — AX-LUN-029: separación entre receta pública de release y prueba de ejecución histórica
+
+**Registro de evidencia:** 2026-11-13 UTC. La revisión pública de fuentes oficiales permite reforzar la reconstrucción de procedencia del fixture Death Penalty, sin convertir metadatos de publicación en evidencia de ejecución productora.
+
+### AX-LUN-029 — Receta histórica verificable no equivale a ejecución productora verificada
+
+La procedencia de JASP MUST distinguir, como mínimo, cuatro identidades no intercambiables: (1) commit del repositorio de manifiestos Flathub; (2) commit fuente de `jasp-desktop` referenciado por ese manifiesto; (3) commit OSTree del despliegue Flatpak instalado; y (4) ejecución concreta que generó los resultados almacenados. Ninguna de estas identidades puede sustituir o inferir silenciosamente a otra.
+
+Para la línea histórica declarada como JASP 0.97.1 se verificó en los repositorios oficiales:
+
+- Commit de manifiesto Flathub: `9ed450fdd8abaf61139b2ff7271c6949e73ac9e4`, fechado 2026-06-05, con verificación criptográfica GitHub `verified=true`.
+- Blob del manifiesto `org.jaspstats.JASP.json`: `c77a5f158ab86b0a5be776768478984668d9f282`.
+- Commit de código fuente `jasp-desktop` fijado por la receta: `28be3fee5c7ce2119f1945acd0254eb4fb8cb6e2`; su `CMakeLists.txt` declara `project(JASP VERSION 0.97.1.0)`.
+- Receta de plataforma: KDE Platform/SDK 6.10 y Qt WebEngine BaseApp 6.10; R 4.5.2 con SHA-256 `0d71ff7106ec69cd7c67e1e95ed1a3cee355880931f2eb78c530014a9e379f20`.
+- Bundle de módulos x86_64 declarado en `deps/modules.json`: `Flatpak-x86_64-ModulesDir-04-05.tar.xz`, SHA-256 `26ca4801f8fa9bda6cc920c6009af129bb0f33e5d409a096d130bc761f308ce0`.
+
+Estos datos acreditan una **receta pública de construcción 0.97.1 con fuentes e insumos fijados**. No acreditan el commit OSTree del despliegue Flatpak histórico ni que esa receta exacta fuera la que ejecutó el análisis que produjo los resultados almacenados del fixture. Por tanto, `HISTORICAL_RELEASE_RECIPE=VERIFIED`; `HISTORICAL_SOURCE_COMMIT=VERIFIED`; `HISTORICAL_OSTREE_DEPLOYMENT_COMMIT=UNKNOWN`; `HISTORICAL_PRODUCER_EXECUTION=UNKNOWN` mientras no aparezca un recibo primario enlazado al cálculo original.
+
+La prueba diagnóstica admisible MUST reconstruir o instalar la receta histórica en un `FLATPAK_SYSTEM_DIR` y perfil de usuario aislados, registrar el hash de todos los manifiestos, archivos fuente, módulos, dependencias, artefactos construidos, runtime/base commits y recibos de despliegue; confirmar la versión desde el binario/fuente ejecutados; y ejecutar el fixture original byte-identical con red no compartida. El test MUST conservar el código real de salida y comparar estructura, número de modelos, términos y valores estadísticos contra la referencia almacenada, sin redondeo, tolerancias añadidas, búsquedas de seeds, parches de formato, hooks de arranque ni mutación de archivos.
+
+Si la receta histórica aislada reproduce exactamente la referencia, el resultado se clasifica `HISTORICAL_RECIPE_COMPATIBILITY=REPRODUCED`, no `HISTORICAL_PRODUCER_EXECUTION=PROVEN`. Si no reproduce, la compatibilidad permanece `BLOCKED` y la causa raíz sigue `UNRESOLVED`. En ambos casos la procedencia de la ejecución productora original solo se elevará a VERIFIED mediante evidencia primaria vinculada a aquella ejecución concreta.
+
+La prueba histórica es diagnóstica y separada: MUST NOT reemplazar, actualizar ni cambiar el JASP objetivo 0.98.8 del candidato; MUST NOT alterar el fixture original, los resultados guardados, el hash histórico, las tolerancias ni el predicado de aceptación; y MUST NOT convertir un replay determinista en una aprobación de la referencia almacenada. La alternativa de establecer un baseline nuevo continúa sujeta a AX-LUN-027 y exige especificación anticipada, revisión independiente y versionado separado, conservando intacta la referencia histórica.
+
+### Evidencia de fuente primaria incorporada a AX-LUN-029
+
+- Flathub 0.97.1 manifest commit: `https://github.com/flathub/org.jaspstats.JASP/commit/9ed450fdd8abaf61139b2ff7271c6949e73ac9e4`.
+- Upstream JASP source commit pinned by that manifest: `https://github.com/jasp-stats/jasp-desktop/commit/28be3fee5c7ce2119f1945acd0254eb4fb8cb6e2`.
+- Pinned source CMake file: `https://github.com/jasp-stats/jasp-desktop/blob/28be3fee5c7ce2119f1945acd0254eb4fb8cb6e2/CMakeLists.txt`.
+
+**Estado:** `SPECIFIED_WITH_PRIMARY_SOURCE_EVIDENCE; HISTORICAL_RUNTIME_REPLAY_NOT_YET_EXECUTED; CERTIFICATION_NOT_GRANTED`.
+
+### Extensión del predicado terminal — AX-LUN-029
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-029`. Esta extensión añade separación de procedencia y una prueba diagnóstica reproducible; no convierte la receta en ejecución histórica probada, no aprueba el mismatch ni altera los requisitos de los axiomas anteriores.
+
+
+## 8. Addendum append-only — AX-LUN-030: identidad post-mutación y cierre entre la imagen y el rootfs sometido a validación independiente
+
+**Registro de evidencia:** 2026-11-13 UTC. Auditoría estática del orden de ejecución del workflow v1.8, del actual refresco Flatpak/JASP, del inventario independiente del rootfs y del certifier final.
+
+### AX-LUN-030 — La imagen empaquetada y el rootfs realmente validado deben ser el mismo estado material
+
+Sea `R_P` el árbol de rootfs cuya representación canónica se usó para construir `I=LUNITA.squashfs`, y sea `R_V` el árbol de rootfs presente cuando concluyen las pruebas de la validación independiente. La certificación MUST probar `Manifest(R_P)=Manifest(R_V)` mediante el mismo algoritmo canónico de inventario usado por el empaquetador, no por igualdad de nombres, rutas, tamaños totales o informes PASS independientes.
+
+El recibo de empaquetado MUST exponer la identidad y SHA-256 del manifiesto canónico `Manifest(R_P)`. El informe independiente MUST recalcular sobre el rootfs efectivamente sometido a pruebas el mismo manifiesto canónico y registrar su SHA-256 como `observed_post_validation_rootfs_manifest_sha256`. El certifier MUST exigir igualdad exacta de ambos hashes y MUST incluir ambas referencias en la cadena de evidencia. Si no se puede recomputar el manifiesto, si cualquier entrada o metadato difiere, si la comparación se refiere a otra ruta/rootfs o si los algoritmos/versiones no son los mismos, la validación independiente y la certificación MUST quedar BLOCKED.
+
+La comparación es necesaria porque el empaquetador verifica el estado del árbol al construir y extraer la imagen, mientras que la regresión independiente se ejecuta posteriormente sobre el rootfs de trabajo. Dos PASS separados no demuestran por sí solos que no hubo modificación entre esas etapas. La igualdad del manifiesto canónico cierra ese intervalo y demuestra que el rootfs sometido a las pruebas posteriores representa exactamente el árbol del que se construyó la imagen.
+
+### AX-LUN-030A — Identidad íntegra de runtimes y binarios modificados después de la aceptación inicial
+
+Toda actualización, reemplazo o parche ejecutado después del recibo de aceptación del runtime de destino y antes de construir la imagen MUST quedar identificado por un recibo de mutación hash-bound. En particular, el refresco del runtime JASP MUST registrar:
+
+- referencia Flatpak y commit OSTree exacto del runtime KDE finalmente desplegado, además del commit de la aplicación JASP;
+- referencia/commit del SDK usado para construir dependencias Qt; versión Qt observada; etiqueta o commit fuente de QtHttpServer; SHA-256 del archivo fuente descargado y de los binarios construidos;
+- SHA-256 antes y después de los binarios JASP y bibliotecas Qt reemplazadas; SHA-256 del script de parcheo; sitios de parche esperados y observados; y resultado post-escritura;
+- identidad completa del manifiesto Flathub, commit fuente JASP y versión CMake observada.
+
+La identidad del commit Flatpak de la aplicación no acredita, por sí sola, los bytes posteriores a un parche local o a un reemplazo de bibliotecas. Los hashes pre/post y el manifiesto final del rootfs MUST conservar esa distinción. La prueba funcional de JASP MUST ejecutarse contra los binarios post-mutación exactos que quedan incluidos en `I`; su recibo MUST referenciar los hashes de dichos binarios y el commit OSTree del runtime que realmente cargó. Un log de consola sin hash ligado al recibo no satisface este axioma.
+
+La aceptación inicial E01–E15 puede seguir vinculada a su propio recibo y estado temporal; no puede presentarse como prueba retrospectiva de una versión JASP/Qt modificada después. La regresión JASP posterior y la igualdad de manifiestos del AX-LUN-030 son los controles que verifican el estado final. Ningún parche o actualización posterior a esas pruebas puede ocurrir sin repetir las pruebas afectadas y revalidar la igualdad del manifiesto.
+
+Estos requisitos NO autorizan actualización flotante no registrada, mutación de fixture, modificación de resultados históricos, ajuste de tolerancias, parche estadístico ni reemplazo del JASP 0.98.8 objetivo por el runtime histórico 0.97.1. Los diagnósticos históricos del AX-LUN-029 permanecen aislados y separados.
+
+### Hallazgo estático que motiva AX-LUN-030 — no equivale a fallo de ejecución
+
+El flujo de validación actual construye y verifica `LUNITA.squashfs` antes de ejecutar el worker de validación independiente. El recibo de empaquetado conserva `source_rootfs_manifest_sha256`, y el informe independiente conserva un inventario del rootfs; sin embargo, el certifier inspeccionado exige por separado la validez del recibo de paquete y del inventario y no compara explícitamente el hash del manifiesto canónico de origen con un manifiesto recalculado post-validación bajo el mismo algoritmo. Esta brecha de vínculo estático debe cerrarse antes de conceder la certificación.
+
+Además, el paso de refresco JASP mantiene fijado el commit de aplicación, actualiza el runtime KDE al tip publicado y reemplaza bibliotecas Qt; luego aplica una modificación binaria al formatter JASP. Los logs observados muestran commits/versiones durante el paso, pero la evidencia estructurada consultada no exponía aún un único recibo que ligara los hashes pre/post de todos esos binarios y los commits OSTree finales al caso JASP ejecutado. La aceptación de este cambio exige implementar y comprobar ese recibo, no inferir que el commit de aplicación identifica el estado posterior.
+
+**Estado:** `STATIC_GAP_IDENTIFIED; SPECIFIED_NOT_IMPLEMENTED; CERTIFICATION_NOT_GRANTED`.
+
+### Extensión del predicado terminal — AX-LUN-030
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-030 AND AX-LUN-030A`. Una imagen con round-trip correcto no queda certificada mientras la identidad del rootfs validado después del empaquetado y los binarios/runtime efectivamente probados no estén cerrados criptográficamente contra los bytes de la imagen.
+
+
+## 9. Addendum append-only — AX-LUN-031: prueba de implementación no equivale a certificación funcional
+
+**Registro de evidencia:** 2026-11-13 UTC. Este axioma registra la implementación de los controles AX-LUN-030/030A y el resultado de su aceptación contractual. No modifica las declaraciones históricas contenidas en el addendum 8; complementa su estado con nueva evidencia.
+
+### AX-LUN-031 — Cierre de implementación, validación y certificación como estados distintos
+
+La implementación de un control, su aceptación contractual automatizada, su ejecución sobre el candidato real, la validación independiente y la emisión del certificado MUST mantenerse como estados epistémicos separados. Ningún estado inferior autoriza inferir uno superior.
+
+Para el cierre AX-LUN-030/030A quedan registrados los siguientes artefactos de implementación:
+
+- `recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py`: recálculo del manifiesto canónico del rootfs después de la validación independiente, generación del recibo de cierre y verificación del recibo de mutación JASP/Qt antes de ejecutar los casos.
+- `scripts/lunita/package_candidate_squashfs_v1.py`: implementación canónica de `tree_manifest`, reutilizada directamente por la validación post-pruebas y por el certificador final.
+- `scripts/lunita/certify_candidate_squashfs_v1.py`: comprobación independiente del recibo de cierre, verificación del hash del recibo y nueva recomputación del manifiesto vivo en el punto de emisión; exige además la comprobación de identidad JASP post-mutación.
+- `scripts/lunita/test_certify_candidate_squashfs_v1.py`: fixture de certificación con manifiesto canónico real y prueba negativa de mutación del rootfs posterior al empaquetado.
+- `scripts/lunita/record_jasp_runtime_mutation_receipt_v1.py`: emisión fail-closed del recibo `LUNITA_JASP_RUNTIME_POST_MUTATION_RECEIPT/1.0`; no exige falsamente que el ejecutable `bin/JASP` cambie si la modificación ocurre en un recurso Qt interno.
+- `scripts/lunita/patch_jasp_certification_runtime_v1.py`: registro de SHA-256 pre/post de cada recurso formatter realmente modificado, junto con la ruta y el número de sitios afectados.
+- `scripts/lunita/refresh_jasp_runtime_v1.sh` y `.github/workflows/lunita-v18-direct-functional-validation.yml`: propagación, conservación y entrega del recibo de mutación a la fase independiente y a la colección de evidencia.
+
+### Evidencia contractual registrada
+
+La revisión `535ad0107fe4935c212df8d0c4e219e9360b6338` completó correctamente el workflow contractual `43359676224` (job `131669941407`) con conclusión `success`. Esa ejecución verifica compilación, contratos y pruebas unitarias/negativas de la implementación, incluido el generador de recibos JASP/Qt, el cierre de manifiestos y el resto de contratos v1.8. La validación de destino fue omitida correctamente en el evento pull request; por ello, el resultado contractual no constituye una ejecución funcional sobre el rootfs candidato real.
+
+Los fallos de ejecuciones contractuales anteriores se conservan como historial de desarrollo y diagnóstico; no se presentan como aprobaciones. El resultado `success` citado corresponde únicamente a la revisión SHA exacta indicada arriba.
+
+### Condición de paso restante
+
+AX-LUN-030/030A solo podrán considerarse validados funcionalmente cuando una nueva ejecución completa, posterior a la integración de esta revisión en la rama operativa, pruebe sobre el mismo `G06_REBUILD_CANDIDATE_R1/1.8.0`:
+
+1. La regeneración y comparación exacta del manifiesto post-validación contra el manifiesto de origen del paquete, usando la misma implementación canónica.
+2. La verificación en vivo de los commits OSTree de aplicación/runtime/SDK y de los hashes post-mutación de cada recurso formatter, bibliotecas Qt, scripts y recibos.
+3. La ejecución JASP en el entorno realmente empaquetado, con logs, retornos y hashes ligados al recibo de mutación.
+4. La validación independiente completa, el recibo S32 y la elegibilidad de stable release ligados al SHA-256 de la misma imagen SquashFS, checksum, recibo de paquete y manifiesto candidato.
+5. La emisión por el certificador final de `CERTIFIED_FUNCTIONAL_CANDIDATE`, sin promociones canónicas ni concesión automática de G23/G24.
+
+Si una prueba JASP conserva `BLOCKED_STORED_REFERENCE_MISMATCH`, el replay determinista solo podrá registrarse como tal y NO podrá elevarse a aprobación de referencia estricta. La causa raíz de la discrepancia histórica deberá resolverse mediante evidencia reproducible y revisión independiente, o permanecer explícitamente bloqueada.
+
+**Estado al registrar este addendum:** `IMPLEMENTED; CONTRACT_CI_PASS_ON_SHA_535ad0107fe4935c212df8d0c4e219e9360b6338; REAL_TARGET_VALIDATION_PENDING; INDEPENDENT_VALIDATION_PENDING; S32_PENDING; FUNCTIONAL_CERTIFICATION_NOT_GRANTED`.
+
+### Extensión del predicado terminal — AX-LUN-031
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-031`. Ningún certificado puede ser emitido a partir de aceptación contractual aislada, artefactos de una revisión distinta o evidencia que no cierre criptográficamente sobre la misma imagen candidata.
