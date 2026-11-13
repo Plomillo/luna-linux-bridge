@@ -279,6 +279,17 @@ class DirectV18S32IssuerTests(unittest.TestCase):
             "schema": "LUNITA_TARGET_RUNTIME_ACCEPTANCE/1.0",
             "status": "PASS_TARGET_RUNTIME_ACCEPTANCE_NOT_CERTIFIED",
             "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+            "workflow_identity": {
+                "run_id": "43337415331",
+                "run_attempt": "1",
+                "host_bind_name": "lunita-host-43337415331-1",
+                "xdg_runtime_dir": "/run/lunita-host-43337415331-1-runtime-1000",
+            },
+            "xdg_runtime_dir": {
+                "status": "PASS_XDG_RUNTIME_DIR_UID1000_PRIVATE",
+                "path": "/run/lunita-host-43337415331-1-runtime-1000",
+                "mode_octal": "0o700",
+            },
             "certification": "NOT_GRANTED",
             "canonical_g06_certification": "NOT_GRANTED",
             "canonical_g08_binding_mutation": False,
@@ -721,10 +732,39 @@ class TargetRuntimeEvidenceGateTests(unittest.TestCase):
             with mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", directory):
                 result = lane.latest_target_runtime_acceptance()
             self.assertEqual("PASS_TARGET_RUNTIME_ACCEPTANCE", result["status"])
+            self.assertEqual("43337415331", result["workflow_identity"]["run_id"])
+            self.assertEqual("1", result["workflow_identity"]["run_attempt"])
+            self.assertEqual("PASS_XDG_RUNTIME_DIR_UID1000_PRIVATE", result["xdg_runtime_dir"]["status"])
             self.assertEqual(25, result["engine_acceptance_tests"]["tests_run"])
             self.assertEqual("PASS_E01_QWEN_INFERENCE", result["qwen_e01"]["status"])
             self.assertEqual("PASS_E04_INT8_QUALITY_GATE", result["e04_quantization"]["status"])
             self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), result["receipt_sha256"])
+
+    def test_target_runtime_receipt_rejects_missing_workflow_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = pathlib.Path(tmp) / "target-receipts"
+            directory.mkdir()
+            receipt = self.valid_target_receipt()
+            receipt.pop("workflow_identity")
+            (directory / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_test.json").write_text(
+                json.dumps(receipt), encoding="utf-8")
+            with mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", directory):
+                result = lane.latest_target_runtime_acceptance()
+            self.assertEqual("BLOCKED_TARGET_RUNTIME_RECEIPT_INVALID", result["status"])
+            self.assertEqual("WORKFLOW_IDENTITY_MISSING_OR_INVALID", result["reason"])
+
+    def test_target_runtime_receipt_rejects_identity_attempt_mismatch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = pathlib.Path(tmp) / "target-receipts"
+            directory.mkdir()
+            receipt = self.valid_target_receipt()
+            receipt["workflow_identity"]["run_attempt"] = "2"
+            (directory / "LUNITA_TARGET_RUNTIME_ACCEPTANCE_test.json").write_text(
+                json.dumps(receipt), encoding="utf-8")
+            with mock.patch.object(lane, "TARGET_RUNTIME_RECEIPT_DIR", directory):
+                result = lane.latest_target_runtime_acceptance()
+            self.assertEqual("BLOCKED_TARGET_RUNTIME_RECEIPT_INVALID", result["status"])
+            self.assertEqual("WORKFLOW_IDENTITY_RUNTIME_BINDING_MISMATCH", result["reason"])
 
     def test_newest_failed_target_receipt_cannot_fall_back_to_an_older_pass(self):
         with tempfile.TemporaryDirectory() as tmp:
