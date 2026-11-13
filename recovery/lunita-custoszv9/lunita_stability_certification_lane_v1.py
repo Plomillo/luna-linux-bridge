@@ -1167,12 +1167,30 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
     }
     env = jasp_process_env(os.environ)
     env["FLATPAK_SYSTEM_DIR"] = str(ROOTFS / "var/lib/flatpak")
+    workflow_identity = {
+        "run_id": str(env.get("GITHUB_RUN_ID", "")),
+        "run_attempt": str(env.get("GITHUB_RUN_ATTEMPT", "")),
+    }
+    workflow_identity_valid = all(
+        re.fullmatch(r"[0-9]+", workflow_identity[key])
+        for key in ("run_id", "run_attempt")
+    )
     results = {"schema": "CUSTOSZ_LUNITA_JASP_AUTOMATED_REGRESSION_SUITE/1.0", "timestamp_utc": utc(),
                "candidate_id": "G06_REBUILD_CANDIDATE_R1", "expected_app_commit": expected_commit,
                "flatpak_system_dir": env["FLATPAK_SYSTEM_DIR"], "network_unshared": True,
+               "workflow_identity": workflow_identity,
+               "workflow_identity_valid": workflow_identity_valid,
                "runtime_mutation_identity": mutation_identity,
                "tests": {}, "certification": "NOT_GRANTED", "mission_completion_claim": False}
     try:
+        if not workflow_identity_valid:
+            results["status"] = "BLOCKED_GITHUB_WORKFLOW_IDENTITY"
+            results["workflow_identity_error"] = (
+                "GITHUB_RUN_ID and GITHUB_RUN_ATTEMPT must be numeric and explicitly propagated "
+                "to the privileged independent certification lane"
+            )
+            atomic_json(result_path, results)
+            return results
         if mutation_identity.get("status") != "PASS":
             results["status"] = "BLOCKED_JASP_POST_MUTATION_RUNTIME_IDENTITY"
             atomic_json(result_path, results)
