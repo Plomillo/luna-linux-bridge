@@ -245,8 +245,19 @@ def self_test() -> None:
         before.write_text("", encoding="utf-8")
         patch_script = base / "patch.py"
         patch_script.write_text("# patcher\n", encoding="utf-8")
+        resource = base / "resources" / "formatter.bin"
+        resource.parent.mkdir()
+        before_resource = b"unpatched formatter bytes"
+        after_resource = b"patched formatter bytes"
+        resource.write_bytes(after_resource)
         patch_log = base / "patch.log"
-        patch_log.write_text("Patched JASP resource (call sites=1, latex sites=1)\n", encoding="utf-8")
+        patch_log.write_text(
+            f"Patched JASP result formatter in {resource} "
+            f"(call sites=1, latex sites=1, "
+            f"before_sha256={hashlib.sha256(before_resource).hexdigest()}, "
+            f"after_sha256={hashlib.sha256(after_resource).hexdigest()})\n",
+            encoding="utf-8",
+        )
         args = argparse.Namespace(
             app_commit_before=PINNED_APP_COMMIT, app_commit_after=PINNED_APP_COMMIT,
             runtime_ref="org.kde.Platform/x86_64/6.11",
@@ -260,7 +271,8 @@ def self_test() -> None:
         receipt = build_receipt(args)
         assert receipt["status"] == "PASS"
         assert receipt["formatter_patch"]["call_sites"] == 1
-        assert receipt["application"]["binary_after"]["sha256"] != receipt["application"]["binary_before_sha256"]
+        assert receipt["application"]["binary_unchanged_by_formatter_patch"] is True
+        assert receipt["formatter_patch"]["patched_resources"][0]["before_sha256"] != receipt["formatter_patch"]["patched_resources"][0]["after_sha256"]
     print("record_jasp_runtime_mutation_receipt_v1 self-test PASS", flush=True)
 
 
