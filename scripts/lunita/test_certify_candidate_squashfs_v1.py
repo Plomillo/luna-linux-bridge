@@ -48,6 +48,11 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
         }), encoding="utf-8")
         target_sha = cert.sha256_file(target)
 
+        rootfs = base / "packaged-rootfs"
+        (rootfs / "etc").mkdir(parents=True)
+        (rootfs / "etc" / "os-release").write_text("NAME=Test\n", encoding="utf-8")
+        rootfs_manifest = cert.canonical_rootfs_tree_manifest(rootfs)
+
         independent = independent_dir / "BETA_INDEPENDENT_VALIDATION.json"
         required = {
             "candidate_manifest_identity_sha256",
@@ -55,6 +60,7 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "target_v1_8_runtime_acceptance_e01_e15_int8",
             "candidate_rootfs_inventory_and_dependency_manifest",
             "jasp_packaged_fixture_nonregression",
+            "squashfs_rootfs_postvalidation_manifest_closure",
         }
         checks = {name: {"status": "PASS", "returncode": 0} for name in required}
         checks["candidate_manifest_identity_sha256"]["sha256"] = manifest_sha
@@ -84,7 +90,9 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "image_name": image.name,
             "image_sha256": image_sha,
             "image_bytes": image.stat().st_size,
-            "source_rootfs_manifest_sha256": hashlib.sha256(b"rootfs-manifest").hexdigest(),
+            "source_rootfs": str(rootfs),
+            "source_rootfs_manifest_sha256": rootfs_manifest["entries_sha256"],
+            "source_rootfs_entry_count": rootfs_manifest["entry_count"],
             "roundtrip_manifest_match": True,
             "source_rootfs_unchanged": True,
             "target_runtime_receipt_path": str(target),
@@ -99,6 +107,47 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "unsquashfs_roundtrip": "PASS",
         }), encoding="utf-8")
         package_sha = cert.sha256_file(package_path)
+        packager_path = pathlib.Path(cert.__file__).resolve().parent / "package_candidate_squashfs_v1.py"
+        closure_receipt = independent_dir / "rootfs_package_manifest_closure.json"
+        closure_payload = {
+            "schema": "LUNITA_POSTVALIDATION_ROOTFS_PACKAGE_MANIFEST_CLOSURE/1.0",
+            "candidate_id": cert.CANDIDATE_ID,
+            "status": "PASS",
+            "rootfs_path": str(rootfs),
+            "package_receipt_path": str(package_path),
+            "package_receipt_sha256": package_sha,
+            "packager_source_path": str(packager_path),
+            "packager_source_sha256": cert.sha256_file(packager_path),
+            "package_source_rootfs_manifest_sha256": rootfs_manifest["entries_sha256"],
+            "observed_post_validation_rootfs_manifest_sha256": rootfs_manifest["entries_sha256"],
+            "package_source_rootfs_entry_count": rootfs_manifest["entry_count"],
+            "observed_post_validation_rootfs_entry_count": rootfs_manifest["entry_count"],
+            "same_canonical_algorithm": True,
+            "exact_manifest_equality": True,
+        }
+        closure_receipt.write_text(json.dumps(closure_payload), encoding="utf-8")
+        closure_sha = cert.sha256_file(closure_receipt)
+        checks["squashfs_rootfs_postvalidation_manifest_closure"] = {
+            "status": "PASS", "returncode": 0,
+            "rootfs_path": str(rootfs),
+            "package_source_rootfs_manifest_sha256": rootfs_manifest["entries_sha256"],
+            "observed_post_validation_rootfs_manifest_sha256": rootfs_manifest["entries_sha256"],
+            "package_source_rootfs_entry_count": rootfs_manifest["entry_count"],
+            "observed_post_validation_rootfs_entry_count": rootfs_manifest["entry_count"],
+            "package_receipt_path": str(package_path),
+            "package_receipt_sha256": package_sha,
+            "packager_source_path": str(packager_path),
+            "packager_source_sha256": cert.sha256_file(packager_path),
+            "manifest_closure_receipt_path": str(closure_receipt),
+            "manifest_closure_receipt_sha256": closure_sha,
+            "same_canonical_algorithm": True,
+            "exact_manifest_equality": True,
+            "evidence": {
+                str(closure_receipt): closure_sha,
+                str(package_path): package_sha,
+                str(packager_path): cert.sha256_file(packager_path),
+            },
+        }
         checksum_sha = cert.sha256_file(checksum)
         independent_data = json.loads(independent.read_text(encoding="utf-8"))
         image_binding = {
