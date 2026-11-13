@@ -228,6 +228,16 @@ class TargetXdgRuntimeDirectoryTests(unittest.TestCase):
             with self.assertRaisesRegex(target.TargetGateError, "GITHUB_RUN_ID and GITHUB_RUN_ATTEMPT"):
                 target.expected_xdg_runtime_dir()
 
+    def test_host_bind_name_must_match_run_and_attempt(self):
+        environment = {
+            "GITHUB_RUN_ID": self.RUN_ID,
+            "GITHUB_RUN_ATTEMPT": "2",
+            "HOST_BIND_NAME": self.HOST_BIND_NAME,
+        }
+        with mock.patch.dict(target.os.environ, environment):
+            with self.assertRaisesRegex(target.TargetGateError, "does not match"):
+                target.expected_xdg_runtime_dir()
+
     def test_runtime_directory_path_must_match_run_scoped_contract(self):
         environment = {"GITHUB_RUN_ID": self.RUN_ID, "GITHUB_RUN_ATTEMPT": self.RUN_ATTEMPT, "HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": "/tmp/runtime"}
         with mock.patch.dict(target.os.environ, environment):
@@ -253,7 +263,7 @@ class TargetXdgRuntimeDirectoryTests(unittest.TestCase):
             mock.Mock(st_mode=0o40700, st_uid=1000, st_gid=0),
             mock.Mock(st_mode=0o40755, st_uid=1000, st_gid=1000),
         )
-        environment = {"HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
+        environment = {"GITHUB_RUN_ID": self.RUN_ID, "GITHUB_RUN_ATTEMPT": self.RUN_ATTEMPT, "HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
         for metadata in invalid_metadata:
             with self.subTest(uid=metadata.st_uid, gid=metadata.st_gid, mode=oct(metadata.st_mode)):
                 with mock.patch.dict(target.os.environ, environment), mock.patch.object(target.os, "lstat", return_value=metadata):
@@ -303,6 +313,24 @@ class TargetHostFlatpakInstallWorkflowTests(unittest.TestCase):
         self.assertIn("install -y --no-install-recommends flatpak", step)
         self.assertIn("BLOCKED: host Flatpak installation failed", step)
         self.assertIn("flatpak --version", step)
+
+class TargetRuntimeWorkflowIdentityReceiptTests(unittest.TestCase):
+    def test_receipt_captures_exact_run_attempt_and_runtime_path(self):
+        environment = {
+            "GITHUB_RUN_ID": "43337415331",
+            "GITHUB_RUN_ATTEMPT": "2",
+            "HOST_BIND_NAME": "lunita-host-43337415331-2",
+            "XDG_RUNTIME_DIR": "/run/lunita-host-43337415331-2-runtime-1000",
+        }
+        with mock.patch.dict(target.os.environ, environment, clear=True):
+            receipt = target.workflow_identity_receipt()
+        self.assertEqual({
+            "run_id": "43337415331",
+            "run_attempt": "2",
+            "host_bind_name": "lunita-host-43337415331-2",
+            "xdg_runtime_dir": "/run/lunita-host-43337415331-2-runtime-1000",
+        }, receipt)
+
 
 class TargetLegacyFlatpakDiagnosticTests(unittest.TestCase):
     def test_flatpak_diagnostic_compares_inherited_and_clean_guest_environments(self):
