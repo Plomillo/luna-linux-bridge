@@ -50,6 +50,25 @@ def runtime_environment(base: dict[str, str] | None = None) -> dict[str, str]:
     return env
 
 
+def expected_target_runtime_directory(environment: dict[str, str] | None = None) -> str | None:
+    """Return the run-scoped runtime directory only when every identity field agrees."""
+    env = os.environ if environment is None else environment
+    run_id = env.get("GITHUB_RUN_ID", "")
+    run_attempt = env.get("GITHUB_RUN_ATTEMPT", "")
+    if (
+        not run_id.isascii() or not run_id.isdecimal()
+        or not run_attempt.isascii() or not run_attempt.isdecimal()
+    ):
+        return None
+    expected_bind_name = f"lunita-host-{run_id}-{run_attempt}"
+    if env.get("HOST_BIND_NAME") != expected_bind_name:
+        return None
+    expected_runtime_dir = f"/run/{expected_bind_name}-runtime-1000"
+    if env.get("XDG_RUNTIME_DIR") != expected_runtime_dir:
+        return None
+    return expected_runtime_dir
+
+
 def run_legacy(arguments: Sequence[str]) -> int:
     if not LEGACY_LAUNCHER.is_file():
         print("DENIED: the preserved beta v1.7 launcher is missing", file=sys.stderr)
@@ -83,6 +102,14 @@ def run_legacy(arguments: Sequence[str]) -> int:
         environment.pop("PYTHONPATH", None)
     target_rootfs_value = environment.get("LUNITA_TARGET_ROOTFS")
     if target_rootfs_value:
+        runtime_directory = expected_target_runtime_directory(environment)
+        if runtime_directory is None:
+            print(
+                "DENIED: target legacy delegation requires matching GitHub run ID, attempt, "
+                "HOST_BIND_NAME and XDG_RUNTIME_DIR",
+                file=sys.stderr,
+            )
+            return 5
         try:
             target_rootfs = pathlib.Path(target_rootfs_value).resolve(strict=True)
             launcher_relative = LEGACY_LAUNCHER.resolve(strict=True).relative_to(target_rootfs)
@@ -96,7 +123,7 @@ def run_legacy(arguments: Sequence[str]) -> int:
             "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
             "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
             "XDG_DATA_HOME=/tmp/lunita-xdg/data",
-            "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+            f"XDG_RUNTIME_DIR={runtime_directory}",
             "FLATPAK_SYSTEM_DIR=/var/lib/flatpak",
             "R_HOME=/opt/lunita/instruments/lapiz/R-4.6.1/lib/R",
         ]
