@@ -356,29 +356,35 @@ def validate_jasp_seeded_fixture_evidence(check: dict) -> dict[str, Any]:
     fields = (
         "schema", "status", "source_path", "source_sha256", "expected_source_sha256",
         "source_sha256_after", "source_unchanged", "clone_path", "clone_sha256",
-        "clone_is_distinct", "active_configuration_member", "changed_archive_member",
-        "changed_json_pointer", "changed_archive_member_count",
+        "purpose", "clone_is_distinct", "active_configuration_member", "changed_archive_member",
+        "changed_json_pointer", "analysis_index", "analysis_id", "analysis_name", "module_name",
+        "archive_member_count", "changed_archive_member_count",
         "unchanged_non_active_member_count", "before", "after",
         "result_output_members_changed", "reference_results_modified",
     )
     if any(on_disk.get(field) != receipt.get(field) for field in fields):
         raise CertificationError("Embedded and on-disk JASP deterministic fixture receipts disagree")
+    clone_path = pathlib.Path(str(receipt.get("clone_path", "")))
     if (receipt.get("schema") != "LUNITA_JASP_DETERMINISTIC_FIXTURE/1.0"
         or receipt.get("status") != "PASS_DETERMINISTIC_FIXTURE_COPY_CREATED"
+        or receipt.get("purpose") != "TEST_ONLY_DISPOSABLE_COPY;SOURCE_FIXTURE_AND_REFERENCE_RESULTS_UNCHANGED"
         or receipt.get("clone_is_distinct") is not True
         or not re.fullmatch(r"[0-9a-f]{64}", str(receipt.get("clone_sha256", "")))
         or receipt.get("clone_sha256") == JASP_DEATH_PENALTY_SOURCE_SHA256
+        or clone_path.exists() or clone_path.is_symlink()
         or receipt.get("active_configuration_member") != "analyses.json"
         or receipt.get("changed_archive_member") != "analyses.json"
         or receipt.get("changed_archive_member_count") != 1
+        or not isinstance(receipt.get("archive_member_count"), int)
+        or receipt.get("archive_member_count", 0) < 2
+        or receipt.get("unchanged_non_active_member_count") != receipt.get("archive_member_count") - 1
         or not isinstance(receipt.get("changed_json_pointer"), str)
         or not receipt.get("changed_json_pointer", "").startswith("/analyses/")
+        or not receipt.get("changed_json_pointer", "").endswith("/setSeed")
         or receipt.get("before") != {"setSeed": False, "seed": 1}
         or receipt.get("after") != {"setSeed": True, "seed": 1}
         or receipt.get("result_output_members_changed") is not False
-        or receipt.get("reference_results_modified") is not False
-        or not isinstance(receipt.get("unchanged_non_active_member_count"), int)
-        or receipt.get("unchanged_non_active_member_count", -1) < 0):
+        or receipt.get("reference_results_modified") is not False):
         raise CertificationError("JASP deterministic seed transition or archive-preservation evidence is invalid")
     if row.get("deterministic_fixture_path") != receipt.get("clone_path"):
         raise CertificationError("JASP flatpak_launch did not execute the exact seeded clone in its receipt")
