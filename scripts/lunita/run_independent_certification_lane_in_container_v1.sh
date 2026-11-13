@@ -45,17 +45,36 @@ export FLATPAK_SYSTEM_DIR="$FLATPAK_OVERLAY_MERGED"
 export LUNITA_FLATPAK_SYSTEM_DIR_SOURCE="$FLATPAK_LOWER_DIR"
 export LUNITA_FLATPAK_SYSTEM_DIR_MODE="EXTERNAL_OVERLAYFS_COPY_ON_WRITE"
 cleanup_flatpak_overlay() {
-  local result=$?
+  local lane_exit=$?
+  local cleanup_exit=0
   trap - EXIT
+
   if mountpoint -q "$FLATPAK_OVERLAY_MERGED"; then
-    umount "$FLATPAK_OVERLAY_MERGED" || result=1
+    if umount "$FLATPAK_OVERLAY_MERGED"; then
+      echo "FLATPAK_OVERLAY_UMOUNT_COMMAND=PASS"
+    else
+      cleanup_exit=$?
+      echo "FLATPAK_OVERLAY_UMOUNT_COMMAND=FAIL exit_code=$cleanup_exit" >&2
+    fi
   fi
-  if [ "$result" -ne 0 ]; then
-    echo "BLOCKED: Flatpak candidate write overlay cleanup failed." >&2
-  else
+
+  if mountpoint -q "$FLATPAK_OVERLAY_MERGED"; then
+    cleanup_exit=1
+    echo "BLOCKED: Flatpak candidate write overlay remains mounted after cleanup." >&2
+  elif [ "$cleanup_exit" -eq 0 ]; then
     echo "PASS_FLATPAK_WRITES_ISOLATED_FROM_PACKAGED_ROOTFS"
+    echo "FLATPAK_OVERLAY_CLEANUP_STATUS=PASS"
+  else
+    echo "BLOCKED: Flatpak candidate write overlay cleanup failed." >&2
   fi
-  exit "$result"
+
+  if [ "$lane_exit" -ne 0 ]; then
+    echo "INDEPENDENT_LANE_EXIT_CODE=$lane_exit" >&2
+  fi
+  if [ "$cleanup_exit" -ne 0 ]; then
+    exit "$cleanup_exit"
+  fi
+  exit "$lane_exit"
 }
 trap cleanup_flatpak_overlay EXIT
 echo "FLATPAK_SYSTEM_DIR_SOURCE=$FLATPAK_LOWER_DIR"

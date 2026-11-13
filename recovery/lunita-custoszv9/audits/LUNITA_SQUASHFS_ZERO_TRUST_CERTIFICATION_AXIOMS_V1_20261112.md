@@ -893,3 +893,9 @@ A deterministic save/rerun replay with a mismatch against the preserved historic
 Such replay-only evidence MUST block the independent functional-validation report, S32 issuance, stable-release receipt, and final LUNITA.squashfs functional certificate. Only a separately evidenced strict comparison against the immutable historical reference, or a replacement reference authorized and independently validated under AX-LUN-041 before fresh execution, can satisfy the functional gate. The historical baseline MUST NOT be rewritten or silently substituted.
 
 Terminal predicate: ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-043.
+
+## 20. Addendum append-only — AX-LUN-044: separate analysis exit status from overlay cleanup status
+
+The independent Flatpak lane MUST track the JASP/independent-lane exit status separately from the OverlayFS unmount status. A nonzero JASP lane status MUST NOT be reported as an overlay cleanup failure when the overlay was successfully unmounted. The cleanup handler MUST verify the mountpoint after unmount, report cleanup PASS only when no mount remains, retain the original lane exit code when cleanup succeeds, and fail closed when unmount fails or the mount remains active.
+
+Terminal predicate: OVERLAY_CLEANUP_PASS = (UMOUNT_EXIT = 0) AND (MOUNTPOINT_REMAINS = FALSE), independently of LANE_EXIT.
