@@ -1044,3 +1044,64 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
             self.assertEqual("WAITING_FOR_S32_BOUND_CERTIFICATION_RECEIPT", result["status"])
             self.assertEqual("NOT_GRANTED", result["certification"])
 
+
+
+class JaspReferenceMismatchClassificationTests(unittest.TestCase):
+    def test_replay_pass_is_never_labelled_as_strict_reference_pass(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            out = base / "out"
+            evidence = base / "evidence"
+            out.mkdir()
+            evidence.mkdir()
+            rootfs = base / "rootfs"
+            source = rootfs / (
+                "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/"
+                "Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
+            )
+            JaspDeterministicFixtureTests.write_fixture(
+                source, [{"setSeed": False, "seed": 1}]
+            )
+            source_sha = lane.sha_file(source)
+            banner = (
+                "Starting JASP 0.98.8 from commit "
+                "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1\\n"
+            )
+            rows = (
+                "Row: | h: Model Comparison | \\n"
+                "Row: | h: Models | \\n"
+                "Row: | Model A | 0.500 | 1.000 | \\n"
+                "Footer:\\n"
+                "The results are different...\\n"
+            )
+            responses = [
+                SimpleNamespace(returncode=1, stdout=banner + rows, stderr=""),
+                SimpleNamespace(returncode=1, stdout=banner + rows, stderr=""),
+            ]
+            response_iter = iter(responses)
+            with (
+                mock.patch.object(lane, "OUT", out),
+                mock.patch.object(lane, "EVIDENCE", evidence),
+                mock.patch.object(lane, "ROOTFS", rootfs),
+                mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
+                mock.patch.object(lane.subprocess, "run", side_effect=lambda *a, **k: next(response_iter)),
+            ):
+                result = lane.run_death_penalty_roundtrip(
+                    "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
+                    {"QT_QPA_PLATFORM": "offscreen"},
+                    "REFERENCE_MISMATCH_TEST",
+                )
+                aggregate = lane.latest_jasp_evidence()
+
+            self.assertEqual("PASS_DETERMINISTIC_REPLAY_REFERENCE_MISMATCH_RECORDED", result["status"])
+            self.assertEqual("BLOCKED_STORED_REFERENCE_MISMATCH", result["reference_comparison_status"])
+            self.assertEqual("PASS_DETERMINISTIC_REPLAY", result["deterministic_replay_status"])
+            self.assertEqual(1, result["save_run"]["returncode"])
+            self.assertEqual(1, result["strict_rerun_after_save"]["returncode"])
+            self.assertTrue(result["original_sample_unchanged"])
+            replay = aggregate["cases"]["death_penalty_roundtrip"]
+            self.assertEqual("PASS_DETERMINISTIC_REPLAY", replay["status"])
+            self.assertEqual("DETERMINISTIC_REPLAY_ONLY", replay["acceptance_scope"])
+            self.assertEqual("BLOCKED_STORED_REFERENCE_MISMATCH", replay["reference_comparison_status"])
+            self.assertFalse(aggregate["all_required_jasp_cases_pass"])
