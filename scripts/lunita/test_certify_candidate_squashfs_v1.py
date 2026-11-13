@@ -98,6 +98,7 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
         seeded_receipt_payload = {
             "schema": "LUNITA_JASP_DETERMINISTIC_FIXTURE/1.0",
             "status": "PASS_DETERMINISTIC_FIXTURE_COPY_CREATED",
+            "purpose": "TEST_ONLY_DISPOSABLE_COPY;SOURCE_FIXTURE_AND_REFERENCE_RESULTS_UNCHANGED",
             "source_path": str(source_fixture),
             "source_sha256": source_sha,
             "expected_source_sha256": source_sha,
@@ -109,6 +110,11 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "active_configuration_member": "analyses.json",
             "changed_archive_member": "analyses.json",
             "changed_json_pointer": "/analyses/0/options/setSeed",
+            "analysis_index": 0,
+            "analysis_id": "BayesianLogLinear",
+            "analysis_name": "Bayesian Log-Linear",
+            "module_name": "BayesianLogLinear",
+            "archive_member_count": 8,
             "changed_archive_member_count": 1,
             "unchanged_non_active_member_count": 7,
             "before": {"setSeed": False, "seed": 1},
@@ -444,6 +450,20 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             receipt_on_disk["after"]["setSeed"] = False
             receipt_path.write_text(json.dumps(receipt_on_disk), encoding="utf-8")
             seeded_receipt["receipt_sha256"] = cert.sha256_file(receipt_path)
+            with mock.patch.object(cert, "JASP_DEATH_PENALTY_SOURCE_SHA256", paths["source_sha"]):
+                with self.assertRaisesRegex(cert.CertificationError, "seed transition"):
+                    cert.validate_jasp_seeded_fixture_evidence(check)
+
+
+    def test_seeded_fixture_clone_must_be_removed_after_execution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = self.prepare(pathlib.Path(tmp))
+            report = json.loads(paths["independent"].read_text(encoding="utf-8"))
+            check = report["checks"]["jasp_packaged_fixture_nonregression"]
+            receipt = check["cases"]["flatpak_launch"]["deterministic_fixture_receipt"]
+            clone_path = pathlib.Path(receipt["clone_path"])
+            clone_path.parent.mkdir(parents=True, exist_ok=True)
+            clone_path.write_bytes(b"unexpected persistent seeded clone")
             with mock.patch.object(cert, "JASP_DEATH_PENALTY_SOURCE_SHA256", paths["source_sha"]):
                 with self.assertRaisesRegex(cert.CertificationError, "seed transition"):
                     cert.validate_jasp_seeded_fixture_evidence(check)
