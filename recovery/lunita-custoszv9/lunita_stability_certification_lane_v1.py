@@ -2328,6 +2328,42 @@ def direct_candidate_rootfs_manifest_closure(jasp: dict, inventory_hashes_valid:
         }
 
 
+
+def valid_workflow_identity(run_id: str, run_attempt: str) -> bool:
+    """Accept only positive ASCII-decimal GitHub run and attempt identifiers."""
+    def positive_ascii_decimal(value: str) -> bool:
+        return (
+            isinstance(value, str)
+            and bool(value)
+            and value.isascii()
+            and value.isdecimal()
+            and int(value) > 0
+        )
+    return positive_ascii_decimal(run_id) and positive_ascii_decimal(run_attempt)
+
+
+def jasp_case_results_terminal(cases: dict) -> bool:
+    """Recognize terminal JASP outcomes without promoting replay-only evidence to strict PASS."""
+    if not isinstance(cases, dict) or set(cases) != set(JASP_CASES):
+        return False
+    for case_id, row in cases.items():
+        if not isinstance(row, dict):
+            return False
+        status = row.get("status")
+        if status in {"PASS", "BLOCKED"}:
+            continue
+        if (
+            case_id == "death_penalty_roundtrip"
+            and status == "PASS_DETERMINISTIC_REPLAY"
+            and row.get("acceptance_scope") == "DETERMINISTIC_REPLAY_ONLY"
+            and row.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
+            and row.get("returncode") == 0
+        ):
+            continue
+        return False
+    return True
+
+
 def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
     direct = CERTIFICATION_PROFILE == "V1_8_DIRECT"
     old = load_json(INDEPENDENT_REPORT, {}) or {}
@@ -2491,8 +2527,7 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
     process_identity_bound = bool(
         not direct or (
             jasp_runtime_identity.get("status") == "PASS"
-            and re.fullmatch(r"\\d+", expected_process_run_id)
-            and re.fullmatch(r"\\d+", expected_process_attempt)
+            and valid_workflow_identity(expected_process_run_id, expected_process_attempt)
             and target_workflow_identity.get("run_id") == expected_process_run_id
             and target_workflow_identity.get("run_attempt") == expected_process_attempt
             and re.fullmatch(r"[0-9a-f]{64}", expected_process_executable)

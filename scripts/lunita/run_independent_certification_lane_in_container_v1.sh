@@ -26,7 +26,41 @@ export LUNITA_SQUASHFS_IMAGE="$RUNNER_TEMP/lunita-squashfs/LUNITA.squashfs"
 export LUNITA_SQUASHFS_CHECKSUM="$RUNNER_TEMP/lunita-squashfs/LUNITA.squashfs.sha256"
 export LUNITA_SQUASHFS_PACKAGE_RECEIPT="$RUNNER_TEMP/lunita-squashfs/LUNITA_SQUASHFS_PACKAGE_RECEIPT.json"
 export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$LUNITA_XDG_STATE_HOME/lunita/runtime_validation"
-export FLATPAK_SYSTEM_DIR="$LUNITA_ROOTFS_REAL/var/lib/flatpak"
+FLATPAK_LOWER_DIR="$LUNITA_ROOTFS_REAL/var/lib/flatpak"
+test -d "$FLATPAK_LOWER_DIR" || { echo "BLOCKED: candidate Flatpak system installation is missing." >&2; exit 2; }
+FLATPAK_OVERLAY_ROOT="$RUNNER_TEMP/lunita-flatpak-write-overlay"
+FLATPAK_OVERLAY_UPPER="$FLATPAK_OVERLAY_ROOT/upper"
+FLATPAK_OVERLAY_WORK="$FLATPAK_OVERLAY_ROOT/work"
+FLATPAK_OVERLAY_MERGED="$FLATPAK_OVERLAY_ROOT/merged"
+mkdir -p "$FLATPAK_OVERLAY_UPPER" "$FLATPAK_OVERLAY_WORK" "$FLATPAK_OVERLAY_MERGED"
+mount -t overlay overlay \
+  -o "lowerdir=$FLATPAK_LOWER_DIR,upperdir=$FLATPAK_OVERLAY_UPPER,workdir=$FLATPAK_OVERLAY_WORK" \
+  "$FLATPAK_OVERLAY_MERGED"
+mountpoint -q "$FLATPAK_OVERLAY_MERGED" || { echo "BLOCKED: Flatpak writable overlay did not mount." >&2; exit 2; }
+[ "$(findmnt -n -o FSTYPE --target "$FLATPAK_OVERLAY_MERGED")" = "overlay" ] || {
+  echo "BLOCKED: Flatpak system directory is not backed by the required OverlayFS mount." >&2
+  exit 2
+}
+export FLATPAK_SYSTEM_DIR="$FLATPAK_OVERLAY_MERGED"
+export LUNITA_FLATPAK_SYSTEM_DIR_SOURCE="$FLATPAK_LOWER_DIR"
+export LUNITA_FLATPAK_SYSTEM_DIR_MODE="EXTERNAL_OVERLAYFS_COPY_ON_WRITE"
+cleanup_flatpak_overlay() {
+  local result=$?
+  trap - EXIT
+  if mountpoint -q "$FLATPAK_OVERLAY_MERGED"; then
+    umount "$FLATPAK_OVERLAY_MERGED" || result=1
+  fi
+  if [ "$result" -ne 0 ]; then
+    echo "BLOCKED: Flatpak candidate write overlay cleanup failed." >&2
+  else
+    echo "PASS_FLATPAK_WRITES_ISOLATED_FROM_PACKAGED_ROOTFS"
+  fi
+  exit "$result"
+}
+trap cleanup_flatpak_overlay EXIT
+echo "FLATPAK_SYSTEM_DIR_SOURCE=$FLATPAK_LOWER_DIR"
+echo "FLATPAK_SYSTEM_DIR_WRITABLE_OVERLAY=$FLATPAK_OVERLAY_MERGED"
+echo "FLATPAK_SYSTEM_DIR_WRITE_MODE=$LUNITA_FLATPAK_SYSTEM_DIR_MODE"
 export QT_QPA_PLATFORM=xcb
 export DISPLAY="${DISPLAY:-:99}"
 if [ ! -S "/tmp/.X11-unix/X${DISPLAY#:}" ]; then
@@ -58,6 +92,8 @@ test -f "$LANE"
 python3.12 - "$LANE" "$LUNITA_EVIDENCE_DIR/lane_state.json" <<'PY'
 import json, os, pathlib, signal, subprocess, sys, time
 lane = pathlib.Path(sys.argv[1])
+sys.path.insert(0, str(lane.parent))
+import lunita_stability_certification_lane_v1 as lane_module
 state_path = pathlib.Path(sys.argv[2])
 for attempt in range(180):
     run = subprocess.run([sys.executable, str(lane), "--once"], text=True,
@@ -87,12 +123,7 @@ for attempt in range(180):
     if (tick.get("cajita_heavy_lane") or {}).get("active"):
         active = True
     jasp_cases = tick.get("jasp_cases") if isinstance(tick.get("jasp_cases"), dict) else {}
-    jasp_done = set(jasp_cases) == {
-        "flatpak_launch", "reliability", "weight_gain", "death_penalty_roundtrip"
-    } and all(
-        isinstance(row, dict) and row.get("status") in {"PASS", "BLOCKED"}
-        for row in jasp_cases.values()
-    )
+    jasp_done = lane_module.jasp_case_results_terminal(jasp_cases)
     last_jasp_receipt = state.get("last_jasp_job_receipt") or {}
     worker_exited_without_receipt = last_jasp_receipt.get("status") == "BLOCKED_JASP_WORKER_EXIT_WITHOUT_RECEIPT"
     inventory_done = str(tick.get("inventory_status", "")).startswith(("PASS_", "BLOCKED_"))

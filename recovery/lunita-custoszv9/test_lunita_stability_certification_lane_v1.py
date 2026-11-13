@@ -1568,3 +1568,52 @@ class JaspReferenceMismatchClassificationTests(unittest.TestCase):
             self.assertEqual("DETERMINISTIC_REPLAY_ONLY", replay["acceptance_scope"])
             self.assertEqual("BLOCKED_STORED_REFERENCE_MISMATCH", replay["reference_comparison_status"])
             self.assertFalse(aggregate["all_required_jasp_cases_pass"])
+
+
+class WorkflowIdentityAndTerminalStateTests(unittest.TestCase):
+    def test_positive_ascii_workflow_identity_is_accepted(self):
+        self.assertTrue(lane.valid_workflow_identity("43408457985", "1"))
+        self.assertTrue(lane.valid_workflow_identity("1", "12"))
+
+    def test_malformed_or_non_positive_workflow_identity_is_rejected(self):
+        for run_id, attempt in (
+            ("", "1"), ("0", "1"), ("abc", "1"), ("43408457985", ""),
+            ("43408457985", "0"), ("43408457985", "1.0"), ("４３４", "1"),
+        ):
+            with self.subTest(run_id=run_id, attempt=attempt):
+                self.assertFalse(lane.valid_workflow_identity(run_id, attempt))
+
+    def test_replay_only_jasp_case_is_terminal_but_not_strict_reference_pass(self):
+        cases = {
+            "flatpak_launch": {"status": "PASS", "returncode": 0},
+            "reliability": {"status": "PASS", "returncode": 0},
+            "weight_gain": {"status": "PASS", "returncode": 0},
+            "death_penalty_roundtrip": {
+                "status": "PASS_DETERMINISTIC_REPLAY",
+                "returncode": 0,
+                "acceptance_scope": "DETERMINISTIC_REPLAY_ONLY",
+                "reference_comparison_status": "BLOCKED_STORED_REFERENCE_MISMATCH",
+            },
+        }
+        self.assertTrue(lane.jasp_case_results_terminal(cases))
+        self.assertEqual(
+            "BLOCKED_STORED_REFERENCE_MISMATCH",
+            cases["death_penalty_roundtrip"]["reference_comparison_status"],
+        )
+        self.assertNotEqual("PASS", cases["death_penalty_roundtrip"]["status"])
+
+    def test_invalid_replay_classification_is_not_terminal(self):
+        cases = {
+            "flatpak_launch": {"status": "PASS", "returncode": 0},
+            "reliability": {"status": "PASS", "returncode": 0},
+            "weight_gain": {"status": "PASS", "returncode": 0},
+            "death_penalty_roundtrip": {
+                "status": "PASS_DETERMINISTIC_REPLAY",
+                "returncode": 1,
+                "acceptance_scope": "STRICT_REFERENCE_AND_REPLAY",
+                "reference_comparison_status": "PASS",
+            },
+        }
+        self.assertFalse(lane.jasp_case_results_terminal(cases))
+        cases.pop("weight_gain")
+        self.assertFalse(lane.jasp_case_results_terminal(cases))
