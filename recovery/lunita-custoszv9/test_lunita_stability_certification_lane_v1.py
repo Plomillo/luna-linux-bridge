@@ -588,11 +588,16 @@ class BoundedProcessTreeTests(unittest.TestCase):
             "time.sleep(60)"
         )
         started = lane.time.monotonic()
+        test_env = lane.os.environ.copy()
+        test_env.update({"GITHUB_RUN_ID": "12345", "GITHUB_RUN_ATTEMPT": "1"})
         with self.assertRaises(lane.subprocess.TimeoutExpired) as caught:
             lane.run_bounded_process_tree(
                 [sys.executable, "-c", parent_code],
-                env=lane.os.environ.copy(),
+                env=test_env,
                 timeout=1.0,
+                case_id="process_tree_timeout",
+                executable_sha256="b" * 64,
+                runtime_ostree_commit="c" * 64,
             )
         self.assertLess(lane.time.monotonic() - started, 8.0)
         output = caught.exception.output
@@ -615,6 +620,42 @@ class BoundedProcessTreeTests(unittest.TestCase):
             lane.time.sleep(0.05)
         self.assertFalse(is_running(parent_pid))
         self.assertFalse(is_running(child_pid))
+        receipt = caught.exception.process_tree_receipt
+        self.assertEqual("LUNITA_JASP_PROCESS_TREE_RECEIPT/1.0", receipt["schema"])
+        self.assertEqual("BLOCKED_TIMEOUT_PROCESS_GROUP_CLOSED", receipt["status"])
+        self.assertEqual("12345", receipt["run_id"])
+        self.assertEqual("1", receipt["run_attempt"])
+        self.assertEqual("process_tree_timeout", receipt["case_id"])
+        self.assertTrue(receipt["process_group_closed"])
+        self.assertEqual([], receipt["remaining_live_pids"])
+
+    def test_normal_exit_returns_hash_bound_process_group_receipt(self):
+        test_env = lane.os.environ.copy()
+        test_env.update({"GITHUB_RUN_ID": "12346", "GITHUB_RUN_ATTEMPT": "2"})
+        command = [sys.executable, "-c", "print('jasp-clean-exit')"]
+        completed = lane.run_bounded_process_tree(
+            command,
+            env=test_env,
+            timeout=3,
+            case_id="clean_exit",
+            executable_sha256="d" * 64,
+            runtime_ostree_commit="e" * 64,
+        )
+        self.assertEqual(0, completed.returncode)
+        self.assertEqual("jasp-clean-exit\\n", completed.stdout)
+        receipt = completed.process_tree_receipt
+        self.assertEqual("PASS_PROCESS_GROUP_CLOSED", receipt["status"])
+        self.assertTrue(lane.validate_process_tree_receipt(
+            receipt,
+            command=command,
+            env=test_env,
+            timeout=3,
+            case_id="clean_exit",
+            executable_sha256="d" * 64,
+            runtime_ostree_commit="e" * 64,
+            stdout=completed.stdout,
+            returncode=0,
+        ))
 
 
 class JaspRunnerTests(unittest.TestCase):
@@ -676,6 +717,7 @@ class JaspRunnerTests(unittest.TestCase):
                 }),
                 mock.patch.object(lane.subprocess, "run", side_effect=fake_run) as runner,
                 mock.patch.object(lane, "run_bounded_process_tree", side_effect=fake_run) as bounded_runner,
+                mock.patch.object(lane, "validate_process_tree_receipt", return_value=True),
             ):
                 result = lane.run_jasp_regression_suite(report)
 
@@ -761,6 +803,7 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
                 mock.patch.object(lane, "ROOTFS", rootfs),
                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
                 mock.patch.object(lane, "run_bounded_process_tree", side_effect=lambda *a, **k: next(response_iter)) as runner,
+                mock.patch.object(lane, "validate_process_tree_receipt", return_value=True),
             ):
                 result = lane.run_death_penalty_roundtrip(
                     "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
@@ -1274,6 +1317,8 @@ class JaspReferenceMismatchClassificationTests(unittest.TestCase):
                 mock.patch.object(lane, "ROOTFS", rootfs),
                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
                 mock.patch.object(lane, "run_bounded_process_tree", side_effect=lambda *a, **k: next(response_iter)),
+                mock.patch.object(lane, "validate_process_tree_receipt", return_value=True),
+                mock.patch.object(lane, "process_tree_receipt_identity_matches", return_value=True),
             ):
                 result = lane.run_death_penalty_roundtrip(
                     "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
