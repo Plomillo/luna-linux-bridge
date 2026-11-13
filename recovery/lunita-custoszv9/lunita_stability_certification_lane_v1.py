@@ -1517,6 +1517,8 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         "details": inventory.get("status") if inventory else "Inventory not complete; wait for serialized inventory worker."}
     jasp_cases = jasp.get("cases") if isinstance(jasp.get("cases"), dict) else {}
     def jasp_case_accepted(case_id: str, row: dict) -> bool:
+        if not isinstance(row, dict):
+            return False
         replay_only = (
             case_id == "death_penalty_roundtrip"
             and row.get("status") == "PASS_DETERMINISTIC_REPLAY"
@@ -1524,12 +1526,20 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
             and row.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
         )
         strict_pass = row.get("status") == "PASS"
-        evidence_path = pathlib.Path(row.get("evidence_path", ""))
+        evidence_value = row.get("evidence_path")
+        if not isinstance(evidence_value, str) or not evidence_value.strip():
+            return False
+        try:
+            evidence_path = pathlib.Path(evidence_value)
+            if not evidence_path.is_file() or evidence_path.is_symlink():
+                return False
+            observed_sha256 = sha_file(evidence_path)
+        except (OSError, RuntimeError, TypeError, ValueError):
+            return False
         return bool(
             (strict_pass or replay_only)
             and row.get("returncode") == 0
-            and evidence_path.is_file() and not evidence_path.is_symlink()
-            and sha_file(evidence_path) == row.get("evidence_sha256")
+            and observed_sha256 == row.get("evidence_sha256")
         )
     jasp_case_evidence_valid = (
         set(jasp_cases) == set(JASP_CASES)
@@ -1541,8 +1551,14 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         "returncode": 0 if jasp_pass else 1,
         "cases": jasp_cases, "next_action": jasp.get("next_action"),
         "all_case_evidence_hashes_current": jasp_case_evidence_valid,
-        "evidence": {row["evidence_path"]: row["evidence_sha256"] for row in jasp_cases.values()
-                     if row.get("evidence_path") and row.get("evidence_sha256")},
+        "evidence": {
+            row["evidence_path"]: row["evidence_sha256"]
+            for row in jasp_cases.values()
+            if isinstance(row, dict)
+            and isinstance(row.get("evidence_path"), str)
+            and row.get("evidence_path").strip()
+            and isinstance(row.get("evidence_sha256"), str)
+        },
     }
     squashfs_identity = direct_candidate_squashfs_identity() if direct else {}
     if direct:
