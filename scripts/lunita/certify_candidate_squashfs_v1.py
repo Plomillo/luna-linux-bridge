@@ -384,6 +384,24 @@ def validate_jasp_seeded_fixture_evidence(check: dict) -> dict[str, Any]:
         raise CertificationError("JASP flatpak_launch did not execute the exact seeded clone in its receipt")
     if row.get("deterministic_fixture_receipt_valid") is not True:
         raise CertificationError("JASP seeded fixture receipt was not validated by the execution lane")
+    log_path_text = row.get("evidence_path")
+    log_sha_expected = row.get("evidence_sha256")
+    if not isinstance(log_path_text, str) or not isinstance(log_sha_expected, str):
+        raise CertificationError("JASP flatpak_launch log binding is missing")
+    log_path = pathlib.Path(log_path_text)
+    if (log_path.is_symlink() or not log_path.is_file()
+        or sha256_file(log_path) != log_sha_expected):
+        raise CertificationError("JASP flatpak_launch log hash does not match its independent evidence")
+    log_text = log_path.read_text(encoding="utf-8", errors="replace")
+    required_log_markers = (
+        f"TEST_FILE={receipt.get('clone_path')}",
+        f"DETERMINISTIC_FIXTURE_RECEIPT_PATH={receipt_path}",
+        f"DETERMINISTIC_FIXTURE_RECEIPT_SHA256={receipt_sha}",
+        f"DETERMINISTIC_FIXTURE_CLONE_SHA256={receipt.get('clone_sha256')}",
+        "DETERMINISTIC_FIXTURE_SEED_ENABLED=TRUE",
+    )
+    if any(marker not in log_text.splitlines() for marker in required_log_markers):
+        raise CertificationError("JASP flatpak_launch log does not bind the exact seeded fixture receipt")
     return {
         "status": "PASS",
         "original_source_sha256": source_sha,
