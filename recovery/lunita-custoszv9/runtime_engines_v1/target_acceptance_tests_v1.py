@@ -109,6 +109,12 @@ class TargetJaspSourceReleaseIdentityTests(unittest.TestCase):
             expected_version=version,
         )
 
+    def test_git_blob_hash_uses_the_exact_git_object_header(self):
+        self.assertEqual(
+            "9daeafb9864cf43055ae93beb0afd6c7d144bfa4",
+            target.git_blob_sha1(b"test\\n"),
+        )
+
     def test_pinned_source_manifest_and_cmake_version_pass(self):
         result = self._verify()
         self.assertEqual("PASS_JASP_SOURCE_RELEASE_IDENTITY", result["status"])
