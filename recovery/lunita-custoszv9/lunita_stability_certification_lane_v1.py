@@ -1958,10 +1958,10 @@ def persist_jasp_remediation_queue(jasp: dict) -> dict:
             continue
         path_text = result.get("evidence_path")
         reason = {
-            "flatpak_launch": "Verify pinned JASP startup and prove the correct Flatpak R_HOME seed hook executed with a hash-bound receipt.",
+            "flatpak_launch": "Run the pinned JASP startup regression on a disposable clone of the exact original Death Penalty fixture with native setSeed=true, seed=1; independently verify the clone/receipt/log hashes and prove the original fixture and stored references remain unchanged.",
             "reliability": "Diagnose full-precision output differences versus packaged reference; distinguish harmless display formatting from semantic/statistical deltas with a documented independent tolerance policy.",
             "weight_gain": "Diagnose numeric display/precision deltas against the packaged reference without mutating the original fixture.",
-            "death_penalty_roundtrip": "Verify the actual Flatpak R_HOME and deterministic seed-hook receipt before diagnosing model-count/posterior/BF differences; preserve original fixture bytes.",
+            "death_penalty_roundtrip": "Verify the exact pinned original fixture and disposable deterministic clone receipts, then compare newly calculated save/replay tables without modifying reference results.",
         }.get(case_id, "Rerun the exact pinned JASP case on an isolated copy and retain hash-bound logs.")
         items.append({"case_id": case_id, "evidence_path": path_text, "evidence_sha256": digest,
             "observed_status": result.get("status"), "returncode": result.get("returncode"),
