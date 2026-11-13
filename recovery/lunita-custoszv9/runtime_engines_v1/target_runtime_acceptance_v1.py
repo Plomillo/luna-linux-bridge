@@ -506,7 +506,7 @@ def sha256_file(path: pathlib.Path) -> str:
 
 def git_blob_sha1(path: pathlib.Path) -> str:
     payload = path.read_bytes()
-    header = b"blob " + str(len(payload)).encode("ascii") + b"\\0"
+    header = b"blob " + str(len(payload)).encode("ascii") + b"\0"
     return hashlib.sha1(header + payload).hexdigest()
 
 
@@ -569,7 +569,7 @@ def verify_jasp_source_release_provenance(root: pathlib.Path, record: dict[str, 
 
     cmake_text = paths["cmake"].read_text(encoding="utf-8")
     match = re.search(
-        r"project\\s*\\(\\s*JASP\\s+VERSION\\s+([0-9]+(?:\\.[0-9]+){2,3})",
+        r"project\s*\(\s*JASP\s+VERSION\s+([0-9]+(?:\.[0-9]+){2,3})",
         cmake_text,
         flags=re.IGNORECASE,
     )
