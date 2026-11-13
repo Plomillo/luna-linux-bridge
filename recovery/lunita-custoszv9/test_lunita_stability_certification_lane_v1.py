@@ -12,6 +12,24 @@ try:
 except ModuleNotFoundError:
     import lunita_stability_certification_lane_v1 as lane
 
+def valid_jasp_source_identity():
+    return {
+        "status": "PASS_JASP_SOURCE_RELEASE_IDENTITY",
+        "application_id": "org.jaspstats.JASP",
+        "version": "0.98.8",
+        "cmake_project_version": "0.98.8.0",
+        "flathub_manifest_git_blob_sha1": "1aec5921883d56388c91627b09ba9cf6eb07c1d6",
+        "flathub_manifest_sha256": "f83fd086dffbf2ca64b6e10e1589693ddf6ddbfc93ca0156feb66473cd52022d",
+        "jasp_source_cmake_git_blob_sha1": "d57ba1e22d4cd00f3848034dc09737498b91346b",
+        "jasp_source_cmake_sha256": "5d60c82281a0329016245779dd7549807726c74f11a5b671cf95f192572deaac",
+        "jasp_source_commit": "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1",
+        "deployment_commit": "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
+        "manifest_jasp_source_commit_matches_pin": True,
+        "source_release_identity_receipt_sha256": "a" * 64,
+    }
+
+
+
 
 class DpkgDependencyTests(unittest.TestCase):
     def test_declared_dependencies_resolve_to_installed_packages(self):
@@ -282,6 +300,10 @@ class DirectV18S32IssuerTests(unittest.TestCase):
             "certification": "NOT_GRANTED",
             "canonical_g06_certification": "NOT_GRANTED",
             "canonical_g08_binding_mutation": False,
+            "rootfs_build": {
+                "status": "PASS_ROOTFS_BUILD_IDENTITY",
+                "jasp_source_release_identity": valid_jasp_source_identity(),
+            },
         }), encoding="utf-8")
         independent = base / "BETA_INDEPENDENT_VALIDATION.json"
         target_sha = lane.sha_file(target)
@@ -346,6 +368,7 @@ class DirectV18S32IssuerTests(unittest.TestCase):
             "receipt_sha256": target_sha,
             "candidate_id": "G06_REBUILD_CANDIDATE_R1",
             "canonical_g08_binding_mutation": False,
+            "jasp_source_release_identity": valid_jasp_source_identity(),
         }
         return out, manifest, target, independent, target_acceptance, image, checksum, package
 
@@ -678,6 +701,10 @@ class TargetRuntimeEvidenceGateTests(unittest.TestCase):
             "certification": "NOT_GRANTED",
             "canonical_g06_certification": "NOT_GRANTED",
             "canonical_g08_binding_mutation": False,
+            "rootfs_build": {
+                "status": "PASS_ROOTFS_BUILD_IDENTITY",
+                "jasp_source_release_identity": valid_jasp_source_identity(),
+            },
             "overlay_integrity": {
                 "status": "PASS_OVERLAY_INTEGRITY",
                 "frozen_g06_mutated": False,
@@ -882,6 +909,7 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
                 "qwen_e01": {"status": "PASS_E01_QWEN_INFERENCE"},
                 "engine_acceptance_tests": {"tests_run": 25},
                 "legacy_application_smokes": {"status": "PASS_LEGACY_APPLICATION_SMOKES"},
+                "jasp_source_release_identity": valid_jasp_source_identity(),
             }
             with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
                  mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
