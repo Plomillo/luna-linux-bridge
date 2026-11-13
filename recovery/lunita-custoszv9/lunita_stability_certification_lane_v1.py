@@ -837,6 +837,13 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         f"ORIGINAL_FIXTURE_ALIAS={original_alias}\n"
                         f"ORIGINAL_FIXTURE_SHA256={original_source_sha or 'UNAVAILABLE'}\n"
                         f"ORIGINAL_FIXTURE_ALIAS_VALID={'TRUE' if original_alias_valid else 'FALSE'}\n"
+                        f"ORIGINAL_STORED_RESULTS_MEMBER_SHA256={original_stored_results.get('member_sha256', 'UNAVAILABLE')}\n"
+                        f"ORIGINAL_STORED_RESULTS_JASP_VERSION={original_stored_results.get('jasp_version', 'UNAVAILABLE')}\n"
+                        f"ORIGINAL_STORED_RESULTS_CITATION={original_stored_results.get('citation', 'UNAVAILABLE')}\n"
+                        f"ORIGINAL_ACTIVE_SETSEED={original_seed_matches[0].get('setSeed') if len(original_seed_matches) == 1 else 'UNAVAILABLE'}\n"
+                        f"ORIGINAL_ACTIVE_SEED={original_seed_matches[0].get('seed') if len(original_seed_matches) == 1 else 'UNAVAILABLE'}\n"
+                        f"ORIGINAL_ANALYSIS_MODULE={original_seed_matches[0].get('module_name') if len(original_seed_matches) == 1 else 'UNAVAILABLE'}\n"
+                        f"HISTORICAL_BASELINE_PROVENANCE={historical_provenance_status}\n"
                     )
                 try:
                     run = subprocess.run(
@@ -846,9 +853,17 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                     rc = int(run.returncode)
                     runtime_identity = inspect_jasp_runtime_identity(run.stdout or "")
                     fixture_integrity = original_alias_valid if case_id == "flatpak_launch" else True
-                    case_status = "PASS" if (
-                        rc == 0 and fixture_integrity and runtime_identity.get("status") == "PASS"
-                    ) else "BLOCKED"
+                    historical_diagnostic = (
+                        classify_historical_reference_diagnostic(
+                            rc, run.stdout or "", runtime_identity, original_source_sha,
+                            original_stored_results, original_seed_matches,
+                        ) if case_id == "flatpak_launch" else {"eligible": False, "status": "NOT_APPLICABLE"}
+                    )
+                    case_status = (
+                        "PASS" if rc == 0 and fixture_integrity and runtime_identity.get("status") == "PASS" else
+                        "PASS_HISTORICAL_REFERENCE_DIAGNOSTIC" if fixture_integrity and historical_diagnostic.get("eligible") else
+                        "BLOCKED"
+                    )
                     payload = (
                         header + run.stdout + ("" if run.stdout.endswith("\n") else "\n")
                         + f"\n{marker}={rc}\nFINISHED_UTC={utc()}\n"
@@ -868,6 +883,12 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         "original_fixture_sha256": original_source_sha if case_id == "flatpak_launch" else None,
                         "original_fixture_alias_valid": fixture_integrity if case_id == "flatpak_launch" else None,
                         "runtime_identity": runtime_identity,
+                        "acceptance_scope": (
+                            "HISTORICAL_UNSEEDED_REFERENCE_DIAGNOSTIC_ONLY"
+                            if historical_diagnostic.get("eligible") else "STRICT_CURRENT_REFERENCE"
+                        ) if case_id == "flatpak_launch" else "STRICT_CURRENT_REFERENCE",
+                        "historical_reference_diagnostic": historical_diagnostic,
+                        "subprocess_returncode": rc,
                     }
                 except subprocess.TimeoutExpired as exc:
                     output = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
