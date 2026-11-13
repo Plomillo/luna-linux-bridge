@@ -48,6 +48,16 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
         }), encoding="utf-8")
         target_sha = cert.sha256_file(target)
 
+        jasp_mutation_receipt = independent_dir / "jasp-runtime-mutation-receipt.json"
+        jasp_mutation_receipt.write_text(json.dumps({
+            "schema": "LUNITA_JASP_RUNTIME_POST_MUTATION_RECEIPT/1.0",
+            "status": "PASS",
+            "candidate_id": cert.CANDIDATE_ID,
+            "candidate_version": cert.VERSION,
+            "certification": "NOT_GRANTED",
+        }), encoding="utf-8")
+        jasp_mutation_sha = cert.sha256_file(jasp_mutation_receipt)
+
         rootfs = base / "packaged-rootfs"
         (rootfs / "etc").mkdir(parents=True)
         (rootfs / "etc" / "os-release").write_text("NAME=Test\n", encoding="utf-8")
@@ -60,9 +70,16 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "target_v1_8_runtime_acceptance_e01_e15_int8",
             "candidate_rootfs_inventory_and_dependency_manifest",
             "jasp_packaged_fixture_nonregression",
+            "jasp_post_mutation_runtime_identity",
             "squashfs_rootfs_postvalidation_manifest_closure",
         }
         checks = {name: {"status": "PASS", "returncode": 0} for name in required}
+        checks["jasp_post_mutation_runtime_identity"] = {
+            "status": "PASS", "returncode": 0,
+            "receipt_path": str(jasp_mutation_receipt),
+            "receipt_sha256": jasp_mutation_sha,
+            "evidence": {str(jasp_mutation_receipt): jasp_mutation_sha},
+        }
         checks["candidate_manifest_identity_sha256"]["sha256"] = manifest_sha
         checks["target_v1_8_runtime_acceptance_e01_e15_int8"].update({
             "receipt_path": str(target), "receipt_sha256": target_sha,
