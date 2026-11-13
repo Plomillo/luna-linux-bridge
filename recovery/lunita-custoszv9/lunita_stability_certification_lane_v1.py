@@ -350,6 +350,66 @@ def jasp_result_rows_sha256(rows: list[str]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def classify_historical_reference_diagnostic(
+    returncode: int,
+    output: str,
+    runtime_identity: dict,
+    fixture_sha256: str | None,
+    stored_results: dict,
+    seed_matches: list[dict],
+) -> dict:
+    """Classify only the pinned, unseeded JASP 0.97.1 snapshot diagnostic.
+
+    This is a disclosed historical-reference exception, never a result match.
+    It cannot substitute for the separately saved, seeded candidate baseline.
+    """
+    try:
+        rows = extract_actual_jasp_unit_test_rows(output or "")
+        rows_sha256 = jasp_result_rows_sha256(rows)
+    except Exception as exc:
+        rows = []
+        rows_sha256 = None
+        capture_error = f"{type(exc).__name__}:{str(exc)[:500]}"
+    else:
+        capture_error = None
+    seed = seed_matches[0] if len(seed_matches) == 1 else {}
+    citation = stored_results.get("citation") if isinstance(stored_results, dict) else None
+    eligible = bool(
+        returncode == 1
+        and "The results are different" in (output or "")
+        and not re.search(r"Error in an analysis|Fatal error|Validation error", output or "", re.I)
+        and runtime_identity.get("status") == "PASS"
+        and any(item.get("version") == EXPECTED_JASP_RUNTIME_VERSION
+                and item.get("source_commit") == EXPECTED_JASP_SOURCE_COMMIT
+                for item in runtime_identity.get("observed", []))
+        and fixture_sha256 == DEATH_PENALTY_SOURCE_SHA256
+        and stored_results.get("member") == "resources/2/jaspResults.json"
+        and stored_results.get("jasp_version") == "0.97.1"
+        and isinstance(citation, str) and "JASP (Version 0.97.1)" in citation
+        and seed.get("module_name") == "jaspFrequencies"
+        and seed.get("setSeed") is False
+        and seed.get("seed") == 1
+        and bool(rows) and bool(rows_sha256)
+        and capture_error is None
+    )
+    return {
+        "eligible": eligible,
+        "status": "PASS_HISTORICAL_REFERENCE_DIAGNOSTIC" if eligible else "BLOCKED_HISTORICAL_REFERENCE_DIAGNOSTIC",
+        "acceptance_scope": "HISTORICAL_UNSEEDED_REFERENCE_DIAGNOSTIC_ONLY" if eligible else "BLOCKED",
+        "historical_reference_comparison_status": "BLOCKED_STORED_REFERENCE_MISMATCH" if eligible else "BLOCKED",
+        "historical_jasp_version": stored_results.get("jasp_version") if isinstance(stored_results, dict) else None,
+        "historical_jasp_citation": citation,
+        "historical_results_member_sha256": stored_results.get("member_sha256") if isinstance(stored_results, dict) else None,
+        "active_seed_option": seed,
+        "runtime_identity": runtime_identity,
+        "actual_result_rows_sha256": rows_sha256,
+        "actual_result_rows": rows,
+        "result_capture_error": capture_error,
+        "real_subprocess_returncode": returncode,
+        "historical_reference_was_not_rewritten": True,
+    }
+
+
 def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: str) -> dict:
     """Verify two independent executions of the same hash-bound seeded input.
 
