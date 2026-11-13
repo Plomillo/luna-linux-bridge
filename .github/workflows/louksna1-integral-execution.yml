@@ -383,6 +383,7 @@ jobs:
           retention-days: 90
 
       - name: Publish the decision produced by this GitHub run
+        if: github.ref == 'refs/heads/main'
         shell: bash
         run: |
           set -euo pipefail
