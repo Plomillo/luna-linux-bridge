@@ -393,7 +393,7 @@ def validate_jasp_seeded_fixture_evidence(check: dict) -> dict[str, Any]:
     post_execution_clone_sha = row.get("deterministic_fixture_clone_sha256_after_execution")
     if (row.get("deterministic_fixture_clone_unchanged_after_execution") is not True
         or post_execution_clone_sha != receipt.get("clone_sha256")):
-        raise CertificationError("JASP seeded fixture clone was modified or not hash-verified after execution")
+        raise CertificationError("JASP seeded fixture post-execution SHA-256 verification failed or is missing")
     log_path_text = row.get("evidence_path")
     log_sha_expected = row.get("evidence_sha256")
     if not isinstance(log_path_text, str) or not isinstance(log_sha_expected, str):
