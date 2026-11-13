@@ -78,7 +78,7 @@ EXPECTED_LABEL_HIERARCHY = {
                         {"label": "jamovi 2.7.27", "application_id": "org.jamovi.jamovi"}
                     ]},
                     {"label": "LUPA", "children": [
-                        {"label": "JASP 0.98.1", "application_id": "org.jaspstats.JASP"}
+                        {"label": "JASP 0.98.8", "application_id": "org.jaspstats.JASP"}
                     ]}
                 ]
             }]
@@ -106,8 +106,11 @@ EXPECTED_LABEL_HIERARCHY_TEXT = """LA PIEZA
             │   └── jamovi 2.7.27
             │
             └── LUPA
-                └── JASP 0.98.1
+                └── JASP 0.98.8
 """
+
+
+EXPECTED_JASP_VERSION = "0.98.8"
 
 
 class TargetGateError(RuntimeError):
@@ -712,7 +715,7 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
 
     apps = (
         ("org.jamovi.jamovi", "sacapuntas", "2.7.27"),
-        ("org.jaspstats.JASP", "lupa", "0.98.1"),
+        ("org.jaspstats.JASP", "lupa", EXPECTED_JASP_VERSION),
     )
     observed_apps = {}
     for app_id, key, expected_version in apps:
