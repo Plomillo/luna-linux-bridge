@@ -390,6 +390,10 @@ def validate_jasp_seeded_fixture_evidence(check: dict) -> dict[str, Any]:
         raise CertificationError("JASP flatpak_launch did not execute the exact seeded clone in its receipt")
     if row.get("deterministic_fixture_receipt_valid") is not True:
         raise CertificationError("JASP seeded fixture receipt was not validated by the execution lane")
+    post_execution_clone_sha = row.get("deterministic_fixture_clone_sha256_after_execution")
+    if (row.get("deterministic_fixture_clone_unchanged_after_execution") is not True
+        or post_execution_clone_sha != receipt.get("clone_sha256")):
+        raise CertificationError("JASP seeded fixture clone was modified or not hash-verified after execution")
     log_path_text = row.get("evidence_path")
     log_sha_expected = row.get("evidence_sha256")
     if not isinstance(log_path_text, str) or not isinstance(log_sha_expected, str):
@@ -404,6 +408,8 @@ def validate_jasp_seeded_fixture_evidence(check: dict) -> dict[str, Any]:
         f"DETERMINISTIC_FIXTURE_RECEIPT_PATH={receipt_path}",
         f"DETERMINISTIC_FIXTURE_RECEIPT_SHA256={receipt_sha}",
         f"DETERMINISTIC_FIXTURE_CLONE_SHA256={receipt.get('clone_sha256')}",
+        f"DETERMINISTIC_FIXTURE_CLONE_SHA256_AFTER_EXECUTION={post_execution_clone_sha}",
+        "DETERMINISTIC_FIXTURE_CLONE_UNCHANGED_AFTER_EXECUTION=TRUE",
         "DETERMINISTIC_FIXTURE_SEED_ENABLED=TRUE",
     )
     if any(marker not in log_text.splitlines() for marker in required_log_markers):
@@ -413,6 +419,8 @@ def validate_jasp_seeded_fixture_evidence(check: dict) -> dict[str, Any]:
         "original_source_sha256": source_sha,
         "deterministic_fixture_receipt_sha256": receipt_sha,
         "seeded_clone_sha256": receipt.get("clone_sha256"),
+        "seeded_clone_sha256_after_execution": post_execution_clone_sha,
+        "seeded_clone_unchanged_after_execution": True,
         "changed_archive_member": "analyses.json",
         "reference_results_modified": False,
     }
