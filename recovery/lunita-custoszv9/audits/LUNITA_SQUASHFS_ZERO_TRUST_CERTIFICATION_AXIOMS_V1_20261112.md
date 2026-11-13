@@ -553,3 +553,16 @@ Se prohíbe inferir la versión productora solo a partir de la fecha de actualiz
 ### Extensión del predicado terminal — AX-LUN-027
 
 `ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-025 AND AX-LUN-026 AND AX-LUN-027`. Esta extensión no otorga PASS al fixture original, no autoriza el cambio del baseline histórico y no modifica el alcance candidate-only de la certificación.
+
+
+### AX-LUN-028 — Referencias de evidencia inválidas no deben abortar el informe independiente
+
+La validación de cada referencia de evidencia MUST ser fail-closed y contener los errores de datos de entrada. Un `evidence_path` ausente, `null`, vacío, de tipo distinto de string, mal formado, inexistente, simbólico, no legible o cuyo contenido no coincida con el SHA-256 declarado MUST producir exclusivamente un subgate BLOCKED para esa evidencia y, por consecuencia, impedir el PASS agregado. La validación MUST NOT lanzar una excepción no controlada que aborte la generación del informe independiente, la persistencia de evidencia o la fase de diagnóstico.
+
+La ausencia o invalidez de una referencia no puede convertirse en PASS, en evidencia no requerida, ni en un resultado sintético. Los códigos de salida de procesos, estados JASP originales, hashes y causas permanecen separados. El informe agregado MUST conservar el identificador del caso, motivo de bloqueo y referencia inválida, sin omitir el resto de controles ni alterar evidencia histórica. Una referencia inválida nunca puede satisfacer un predicado de certificación por el mero hecho de que el proceso principal haya terminado o de que otro subgate haya pasado.
+
+**Evidencia correctiva run #224:** el job independiente recibió un caso JASP con `evidence_path=null`; la conversión directa `pathlib.Path(None)` produjo `TypeError` en `jasp_case_accepted` y abortó la creación del informe. El arreglo valida el tipo y contenido del path, captura excepciones de acceso/lectura y devuelve BLOCKED; una prueba de regresión reproduce el caso null y verifica que el informe termina de forma bloqueada.
+
+### Extensión del predicado terminal — AX-LUN-028
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-025 AND AX-LUN-026 AND AX-LUN-027 AND AX-LUN-028`. Este control de robustez de referencias no relaja ningún requisito de evidencia JASP, ni otorga PASS al resultado histórico discrepante.
