@@ -1506,6 +1506,8 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
         return results
     roundtrip = results.get("roundtrip_gate") or {"status": "BLOCKED_ROUNDTRIP_NOT_RUN"}
     roundtrip_fixture_receipt = roundtrip.get("deterministic_fixture_receipt")
+    if not isinstance(roundtrip_fixture_receipt, dict):
+        roundtrip_fixture_receipt = {}
     roundtrip_status_consistent = (
         (roundtrip.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
          and roundtrip.get("reference_comparison_status") == "PASS")
@@ -2850,6 +2852,135 @@ def persist_independent_report(report: dict) -> dict:
             "status": report.get("status")}
 
 
+def jasp_roundtrip_functional_evidence_valid(checks: dict) -> bool:
+    """Fail closed unless JASP strict reference evidence and both clone hashes are independently bound."""
+    try:
+        jasp = checks.get("jasp_packaged_fixture_nonregression") if isinstance(checks, dict) else None
+        if not isinstance(jasp, dict) or jasp.get("status") != "PASS" or jasp.get("returncode") != 0:
+            return False
+        cases = jasp.get("cases")
+        required_cases = {"flatpak_launch", "reliability", "weight_gain", "death_penalty_roundtrip"}
+        if not isinstance(cases, dict) or set(cases) != required_cases:
+            return False
+        if any(not isinstance(row, dict) or row.get("status") != "PASS" or row.get("returncode") != 0
+               for row in cases.values()):
+            return False
+        row = cases["death_penalty_roundtrip"]
+        if (
+            row.get("acceptance_scope") != "STRICT_REFERENCE_AND_REPLAY"
+            or row.get("reference_comparison_status") != "PASS"
+            or row.get("deterministic_replay_status") != "PASS_DETERMINISTIC_REPLAY"
+            or row.get("deterministic_fixture_receipt_valid") is not True
+            or row.get("temporary_fixture_hash_invariant_passed") is not True
+            or row.get("temporary_fixture_regular_after_save") is not True
+            or row.get("temporary_fixture_regular_after_rerun") is not True
+            or row.get("temporary_fixture_changed") is not False
+            or row.get("temporary_fixture_removed_after_test") is not True
+            or row.get("temporary_fixture_stable_after_save_and_rerun") is not True
+            or row.get("save_fixture_unchanged_after_execution") is not True
+            or row.get("rerun_fixture_unchanged_after_execution") is not True
+            or row.get("original_sample_unchanged") is not True
+            or row.get("original_sample_identity_matches_pin") is not True
+            or row.get("original_sample_sha256_before") != DEATH_PENALTY_SOURCE_SHA256
+            or row.get("original_sample_sha256_after") != DEATH_PENALTY_SOURCE_SHA256
+        ):
+            return False
+        receipt = row.get("deterministic_fixture_receipt")
+        if not isinstance(receipt, dict):
+            return False
+        expected = row.get("temporary_fixture_sha256_expected")
+        if (
+            not isinstance(expected, str) or re.fullmatch(r"[0-9a-f]{64}", expected) is None
+            or receipt.get("clone_sha256") != expected
+            or row.get("temporary_fixture_sha256_before") != expected
+            or row.get("temporary_fixture_sha256_after_save") != expected
+            or row.get("temporary_fixture_sha256_after_rerun") != expected
+            or row.get("save_fixture_sha256_after_execution") != expected
+            or row.get("rerun_fixture_sha256_after_execution") != expected
+        ):
+            return False
+        evidence = jasp.get("evidence")
+        if not isinstance(evidence, dict):
+            return False
+        out_root = OUT.resolve()
+        def verified_evidence_file(path_text: object, expected_sha: object) -> pathlib.Path | None:
+            if not isinstance(path_text, str) or not path_text or not isinstance(expected_sha, str):
+                return None
+            path_obj = pathlib.Path(path_text)
+            if path_obj.is_symlink() or not path_obj.is_file():
+                return None
+            resolved = path_obj.resolve(strict=True)
+            try:
+                resolved.relative_to(out_root)
+            except ValueError:
+                return None
+            observed = sha_file(resolved)
+            if observed != expected_sha or evidence.get(str(path_obj)) != expected_sha:
+                return None
+            return resolved
+        roundtrip_report = verified_evidence_file(row.get("evidence_path"), row.get("evidence_sha256"))
+        if roundtrip_report is None:
+            return False
+        receipt_path = verified_evidence_file(receipt.get("receipt_path"), receipt.get("receipt_sha256"))
+        if receipt_path is None:
+            return False
+        on_disk_receipt = load_json(receipt_path, {}) or {}
+        for key in (
+            "schema", "status", "source_path", "source_sha256", "expected_source_sha256",
+            "source_sha256_after", "source_unchanged", "clone_path", "clone_sha256",
+            "clone_is_distinct", "active_configuration_member", "changed_archive_member",
+            "changed_json_pointer", "analysis_index", "analysis_id", "analysis_name",
+            "module_name", "archive_member_count", "changed_archive_member_count",
+            "unchanged_non_active_member_count", "before", "after",
+            "result_output_members_changed", "reference_results_modified",
+        ):
+            if on_disk_receipt.get(key) != receipt.get(key):
+                return False
+        if (
+            receipt.get("schema") != "LUNITA_JASP_DETERMINISTIC_FIXTURE/1.0"
+            or receipt.get("status") != "PASS_DETERMINISTIC_FIXTURE_COPY_CREATED"
+            or receipt.get("source_sha256") != DEATH_PENALTY_SOURCE_SHA256
+            or receipt.get("expected_source_sha256") != DEATH_PENALTY_SOURCE_SHA256
+            or receipt.get("source_sha256_after") != DEATH_PENALTY_SOURCE_SHA256
+            or receipt.get("source_unchanged") is not True
+            or receipt.get("clone_is_distinct") is not True
+            or receipt.get("reference_results_modified") is not False
+            or receipt.get("result_output_members_changed") is not False
+            or row.get("temporary_fixture_path") != receipt.get("clone_path")
+        ):
+            return False
+        clone_text = receipt.get("clone_path")
+        if not isinstance(clone_text, str):
+            return False
+        clone_path = pathlib.Path(clone_text)
+        if clone_path.exists() or clone_path.is_symlink():
+            return False
+        source_text = receipt.get("source_path")
+        if not isinstance(source_text, str):
+            return False
+        source_path = pathlib.Path(source_text)
+        if (source_path.is_symlink() or not source_path.is_file()
+            or sha_file(source_path) != DEATH_PENALTY_SOURCE_SHA256):
+            return False
+        for label, path_key, sha_key in (
+            ("SAVE", "save_log_path", "save_log_sha256"),
+            ("RERUN", "rerun_log_path", "rerun_log_sha256"),
+        ):
+            log_path = verified_evidence_file(row.get(path_key), row.get(sha_key))
+            if log_path is None:
+                return False
+            lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+            required = (
+                f"JASP_ROUNDTRIP_FIXTURE_SHA256_EXPECTED={expected}",
+                f"JASP_ROUNDTRIP_FIXTURE_SHA256_AFTER_{label}={expected}",
+                f"JASP_ROUNDTRIP_FIXTURE_UNCHANGED_AFTER_{label}=TRUE",
+            )
+            if any(marker not in lines for marker in required):
+                return False
+        return True
+    except (OSError, TypeError, ValueError, KeyError):
+        return False
+
 def issue_s32_independent_beta_validation_receipt() -> dict:
     """Issue S32 only for a fully hash-bound direct-v1.8 candidate PASS.
 
@@ -2900,6 +3031,8 @@ def issue_s32_independent_beta_validation_receipt() -> dict:
         return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS_MISSING", "certification": "NOT_GRANTED"}
     if any(not _stable_check(check) for check in checks.values()):
         return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS", "certification": "NOT_GRANTED"}
+    if not jasp_roundtrip_functional_evidence_valid(checks):
+        return {"status": "BLOCKED_JASP_ROUNDTRIP_OR_STORED_REFERENCE", "certification": "NOT_GRANTED"}
     process_tree_check = checks["jasp_process_tree_lifecycle"]
     process_tree_workflow = process_tree_check.get("workflow_identity") or {}
     target_workflow = target.get("workflow_identity") or {}
@@ -3100,6 +3233,8 @@ def stable_release_gate() -> dict:
     checks = report.get("checks")
     if not isinstance(checks, dict) or not checks or not all(_stable_check(x) for x in checks.values()):
         return {"status": "BLOCKED_REQUIRED_CHECKS", "certification": "NOT_GRANTED"}
+    if direct and not jasp_roundtrip_functional_evidence_valid(checks):
+        return {"status": "BLOCKED_JASP_ROUNDTRIP_OR_STORED_REFERENCE", "certification": "NOT_GRANTED"}
     if direct:
         required_direct_checks = {
             "jasp_packaged_fixture_nonregression",
