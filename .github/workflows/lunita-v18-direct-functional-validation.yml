@@ -39,6 +39,9 @@ jobs:
       - name: Validate pivot-root target execution script syntax
         shell: bash
         run: bash -n scripts/lunita/run_target_runtime_acceptance_in_container_v1.sh
+      - name: Validate independent JASP lane preflight script syntax
+        shell: bash
+        run: bash -n scripts/lunita/run_independent_certification_lane_in_container_v1.sh
       - name: Install SquashFS tooling for reproducible packaging acceptance
         shell: bash
         run: |
