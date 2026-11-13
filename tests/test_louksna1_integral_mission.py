@@ -283,5 +283,57 @@ class ExecutableGateTests(unittest.TestCase):
         self.assertNotEqual(written["louksna1"]["sha256"], "0" * 64)
 
 
+class WeightPayloadTests(unittest.TestCase):
+    REL = "1. Cerebro/model.safetensors"
+
+    def _repo(self, temp: Path, content: bytes) -> Path:
+        target = temp / "cajita-luna-runtime" / self.REL
+        target.parent.mkdir(parents=True)
+        target.write_bytes(content)
+        return temp
+
+    def _pins(self, content: bytes) -> dict:
+        return {self.REL: (MISSION.sha256_bytes(content), len(content))}
+
+    def test_exact_weight_file_passes(self):
+        content = b"real-weights" * 10
+        with tempfile.TemporaryDirectory() as raw:
+            repo = self._repo(Path(raw), content)
+            self.assertEqual(MISSION.weight_payload_problems(repo, self._pins(content)), [])
+
+    def test_lfs_pointer_stub_is_named_and_never_passes(self):
+        content = b"real-weights" * 10
+        stub = ("version https://git-lfs.github.com/spec/v1\noid sha256:" + MISSION.sha256_bytes(content) + "\nsize " + str(len(content)) + "\n").encode()
+        with tempfile.TemporaryDirectory() as raw:
+            repo = self._repo(Path(raw), stub)
+            problems = MISSION.weight_payload_problems(repo, self._pins(content))
+        self.assertEqual(problems, ["WEIGHT_PAYLOAD_IS_LFS_POINTER:" + self.REL])
+
+    def test_missing_wrong_size_and_wrong_bytes_are_reported(self):
+        content = b"real-weights" * 10
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw)
+            self.assertEqual(MISSION.weight_payload_problems(temp, self._pins(content)), ["WEIGHT_PAYLOAD_MISSING:" + self.REL])
+            repo = self._repo(temp, content + b"x")
+            self.assertEqual(MISSION.weight_payload_problems(repo, self._pins(content)), ["WEIGHT_PAYLOAD_SIZE_MISMATCH:" + self.REL])
+            (temp / "cajita-luna-runtime" / self.REL).write_bytes(b"y" * len(content))
+            self.assertEqual(MISSION.weight_payload_problems(repo, self._pins(content)), ["WEIGHT_PAYLOAD_HASH_MISMATCH:" + self.REL])
+
+    def test_identity_gate_fails_when_a_weight_is_a_pointer(self):
+        content = b"real-weights" * 10
+        stub = b"version https://git-lfs.github.com/spec/v1\noid sha256:" + MISSION.sha256_bytes(content).encode() + b"\nsize 120\n"
+        with tempfile.TemporaryDirectory() as raw:
+            repo = self._repo(Path(raw), stub)
+            report = MISSION.identity_report(repo, self._pins(content))
+        self.assertEqual(report["status"], "FAIL")
+        self.assertIn("WEIGHT_PAYLOAD_IS_LFS_POINTER:" + self.REL, report["problems"])
+
+    def test_pins_stay_equal_to_the_factory_workflow(self):
+        import re
+        workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "cajita-louksna1-factory.yml").read_text(encoding="utf-8")
+        found = {rel: (digest, int(size)) for rel, digest, size in re.findall(r'"cajita-luna-runtime/([^"]+)": \("([0-9a-f]{64})", (\d+)\)', workflow)}
+        self.assertEqual(found, dict(MISSION.PINNED_WEIGHT_PAYLOADS))
+
+
 if __name__ == "__main__":
     unittest.main()

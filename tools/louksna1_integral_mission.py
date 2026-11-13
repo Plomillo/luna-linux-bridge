@@ -1322,7 +1322,51 @@ def rollback_probe(runtime: Path) -> dict:
     }
 
 
-def identity_report(repo: Path) -> dict:
+LFS_POINTER_MAGIC = b"version https://git-lfs.github.com/spec/v1"
+
+# Same six payload pins the factory verifies before it builds the candidate
+# (cajita-louksna1-factory.yml, "Materialize and verify six exact model payloads").
+# Paths are relative to cajita-luna-runtime/. A test keeps this table equal to the workflow's.
+PINNED_WEIGHT_PAYLOADS = {
+    "1. Cerebro/model.safetensors": ("e2516453d09285581bd6f3bf45a4c3a9fa6431bdc3dff56e7249d30e4e294ae0", 40489120),
+    "3. Transcripción/model.safetensors": ("67ee70beb2fb3529270a8169fbb6bd0f538912a064a6a303bec238647b4a5f5f", 10399882),
+    "4. Traductor Inteligente/Traducción general/model.safetensors": ("630aad9958f9c78603852c29c382b0fe9d63e64772e21dc6367875a91dc6a28f", 11720882),
+    "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin": ("4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88", 13483380),
+    "6. Sistema Inteligente/Análisis Avanzado/model.safetensors": ("01eba827b9dd001a2352f0fd28a0bea229d3a5b3a78a41f3ea3e7c6c21995f56", 14956240),
+    "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx": (ONNX_OID, ONNX_BYTES),
+}
+
+
+def weight_payload_problems(repo: Path, payloads: dict | None = None) -> list[str]:
+    """Fail closed unless every pinned weight file is the real object.
+
+    A Git LFS pointer stub is a few hundred bytes of text. It must never stand in for weights,
+    so it is reported by name instead of surfacing later as a size or hash mismatch.
+    """
+    pins = PINNED_WEIGHT_PAYLOADS if payloads is None else payloads
+    problems: list[str] = []
+    for rel, (digest, size) in sorted(pins.items()):
+        path = repo / "cajita-luna-runtime" / rel
+        if path.is_symlink():
+            problems.append("WEIGHT_PAYLOAD_SYMLINK:" + rel)
+            continue
+        if not path.is_file():
+            problems.append("WEIGHT_PAYLOAD_MISSING:" + rel)
+            continue
+        with path.open("rb") as handle:
+            head = handle.read(len(LFS_POINTER_MAGIC))
+        if head == LFS_POINTER_MAGIC:
+            problems.append("WEIGHT_PAYLOAD_IS_LFS_POINTER:" + rel)
+            continue
+        if path.stat().st_size != size:
+            problems.append("WEIGHT_PAYLOAD_SIZE_MISMATCH:" + rel)
+            continue
+        if sha256_file(path) != digest:
+            problems.append("WEIGHT_PAYLOAD_HASH_MISMATCH:" + rel)
+    return problems
+
+
+def identity_report(repo: Path, payloads: dict | None = None) -> dict:
     manifest_path = repo / "cajita-luna-runtime" / "CAJITA_RUNTIME_V1" / "weights_manifest.json"
     workflow = repo / ".github" / "workflows" / "cajita-louksna1-factory.yml"
     adapter = repo / "cajita-luna-runtime" / "cajita_task_adapters.py"
@@ -1340,6 +1384,7 @@ def identity_report(repo: Path) -> dict:
     adapter_text = adapter.read_text(encoding="utf-8") if adapter.is_file() else ""
     if f'CANDIDATE_ID = "{CANDIDATE_ID}"' not in adapter_text:
         problems.append("ADAPTER_CANDIDATE_ID_MISMATCH")
+    problems.extend(weight_payload_problems(repo, payloads))
     return {"status": "PASS" if not problems else "FAIL", "candidate_id": candidate, "workflow_name": WORKFLOW_NAME, "problems": problems}
 
 
