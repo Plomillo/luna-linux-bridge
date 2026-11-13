@@ -267,6 +267,11 @@ class TargetRuntimeMountIsolationContractTests(unittest.TestCase):
         self.assertIn('if [[ ! "$RUN_ID" =~ ^[0-9]+$ || ! "$RUN_ATTEMPT" =~ ^[0-9]+$ ]]; then', content)
         self.assertNotIn("GITHUB_RUN_ID:-local", content)
         self.assertNotIn("RUNTIME_BIND_TARGET=/run/lunita-runtime-1000", content)
+        identity_validation = content.index('RUN_ID="${GITHUB_RUN_ID:-}"')
+        evidence_creation = content.index('mkdir -p "$path"')
+        runtime_source_creation = content.index('install -d -o 1000 -g 1000 -m 0700 "$RUNTIME_SOURCE"')
+        self.assertLess(identity_validation, evidence_creation)
+        self.assertLess(identity_validation, runtime_source_creation)
 
         workflow = repository / ".github/workflows/lunita-v18-direct-functional-validation.yml"
         workflow_content = workflow.read_text(encoding="utf-8")
