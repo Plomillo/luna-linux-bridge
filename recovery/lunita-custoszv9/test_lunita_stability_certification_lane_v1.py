@@ -1617,3 +1617,71 @@ class WorkflowIdentityAndTerminalStateTests(unittest.TestCase):
         self.assertFalse(lane.jasp_case_results_terminal(cases))
         cases.pop("weight_gain")
         self.assertFalse(lane.jasp_case_results_terminal(cases))
+
+
+
+class PostvalidationManifestClosureRegressionTests(unittest.TestCase):
+    def _run_closure(self, observed_sha):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp)
+            repo_root = base / "repo"
+            lane_root = repo_root / "recovery" / "lunita-custoszv9"
+            packager_dir = repo_root / "scripts" / "lunita"
+            lane_root.mkdir(parents=True)
+            packager_dir.mkdir(parents=True)
+            packager = packager_dir / "package_candidate_squashfs_v1.py"
+            packager.write_text(
+                "def tree_manifest(root):\n"
+                f"    return {{'entries_sha256': '{observed_sha}', 'entry_count': 3}}\n",
+                encoding="utf-8",
+            )
+            rootfs = base / "rootfs"
+            rootfs.mkdir()
+            evidence = base / "evidence"
+            evidence.mkdir()
+            package_path = base / "LUNITA_SQUASHFS_PACKAGE_RECEIPT.json"
+            expected_sha = "a" * 64
+            package_path.write_text(json.dumps({
+                "schema": "LUNITA_SQUASHFS_PACKAGE_RECEIPT/1.0",
+                "candidate_id": "G06_REBUILD_CANDIDATE_R1",
+                "version": "1.8.0",
+                "source_rootfs": str(rootfs),
+                "roundtrip_manifest_match": True,
+                "source_rootfs_unchanged": True,
+                "source_rootfs_manifest_sha256": expected_sha,
+                "source_rootfs_entry_count": 3,
+            }), encoding="utf-8")
+            inventory = {
+                "report_sha256": "c" * 64,
+                "manifest_sha256": "d" * 64,
+            }
+            jasp = {"worker_evidence": {"sha256": "b" * 64}}
+            with mock.patch.object(lane, "ROOT", lane_root), \
+                 mock.patch.object(lane, "ROOTFS", rootfs), \
+                 mock.patch.object(lane, "SQUASHFS_PACKAGE_RECEIPT", package_path), \
+                 mock.patch.object(lane, "EVIDENCE", evidence), \
+                 mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"):
+                result = lane.direct_candidate_rootfs_manifest_closure(jasp, inventory, True)
+            return result
+
+    def test_postvalidation_closure_binds_verified_inventory_and_exact_tree(self):
+        result = self._run_closure("a" * 64)
+        self.assertEqual("PASS", result["status"])
+        self.assertEqual(0, result["returncode"])
+        receipt = json.loads(pathlib.Path(result["manifest_closure_receipt_path"]).read_text(encoding="utf-8"))
+        self.assertEqual("c" * 64, receipt["independent_inventory_report_sha256"])
+        self.assertEqual("d" * 64, receipt["independent_inventory_manifest_sha256"])
+        self.assertTrue(receipt["exact_manifest_equality"])
+
+    def test_postvalidation_closure_keeps_tree_mismatch_blocked(self):
+        result = self._run_closure("e" * 64)
+        self.assertEqual("BLOCKED", result["status"])
+        self.assertEqual(1, result["returncode"])
+        self.assertIn("does not equal the packaged source manifest", result["details"])
+
+    def test_postvalidation_closure_fails_closed_when_inventory_or_worker_is_missing(self):
+        with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"):
+            result = lane.direct_candidate_rootfs_manifest_closure({}, None, False)
+        self.assertEqual("BLOCKED", result["status"])
+        self.assertEqual(1, result["returncode"])
+        self.assertIn("waits for completed JASP worker and valid independent inventory", result["details"])

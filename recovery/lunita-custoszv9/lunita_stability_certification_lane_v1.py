@@ -2228,7 +2228,9 @@ def direct_candidate_squashfs_identity() -> dict:
         return {"status": "BLOCKED", "reason": f"IMAGE_EVIDENCE_INVALID:{type(exc).__name__}:{exc}"}
 
 
-def direct_candidate_rootfs_manifest_closure(jasp: dict, inventory_hashes_valid: bool) -> dict:
+def direct_candidate_rootfs_manifest_closure(
+    jasp: dict, inventory: dict | None, inventory_hashes_valid: bool
+) -> dict:
     """Recompute the packager's exact canonical tree manifest after independent tests."""
     if CERTIFICATION_PROFILE != "V1_8_DIRECT":
         return {"status": "NOT_APPLICABLE", "returncode": 0}
@@ -2627,7 +2629,7 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         }
     if direct:
         checks["squashfs_rootfs_postvalidation_manifest_closure"] = direct_candidate_rootfs_manifest_closure(
-            jasp, inventory_hashes_valid
+            jasp, inventory, inventory_hashes_valid
         )
     if direct:
         checks["jasp_post_mutation_runtime_identity"] = jasp_runtime_identity
