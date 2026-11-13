@@ -1,7 +1,7 @@
 # LUNITA v1.8 — Axiomas verificables de certificación funcional SquashFS
 
 **Documento:** `LUNITA_SQUASHFS_ZERO_TRUST_CERTIFICATION_AXIOMS_V1`  
-**Versión:** `1.3.0`  
+**Versión:** `1.4.0`  
 **Estado normativo:** `MANDATORY_PRECONDITION_FOR_FUNCTIONAL_CERTIFICATION`  
 **Doctrina:** `APPEND_ONLY; EXTEND_DO_NOT_REPLACE; FAIL_CLOSED`  
 **Objetivo único:** `LUNITA.squashfs`  
@@ -169,7 +169,7 @@ El recibo `L` solo puede emitirse tras S32 válido. MUST enlazar el mismo inform
 
 La función de certificación es:
 
-`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-023 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
+`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-024 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
 
 y además el certificado `C` MUST:
 
@@ -254,6 +254,18 @@ La suite contractual MUST probar coherencia entre el builder, el verificador de 
 
 Cualquier divergencia entre estas capas exige corrección append-only y una ejecución completa nueva. Está prohibido rebajar la versión esperada, omitir campos de recibo, convertir el campo faltante en opcional, aceptar AppStream ambiguo o reciclar la evidencia de una ejecución distinta.
 
+
+### AX-LUN-024 — Propagación del runtime XDG validado a través de la delegación heredada
+
+El runtime Flatpak por intento que se crea dentro del namespace del candidato MUST ser exactamente el runtime usado por todos los procesos Flatpak que ejecuta la aceptación target, incluidos los comandos que la capa v1.8 delega al launcher heredado v1.7. La aceptación MUST demostrar continuidad de identidad y ruta desde GitHub Actions (`GITHUB_RUN_ID`, `GITHUB_RUN_ATTEMPT`) hasta `HOST_BIND_NAME`, el mountpoint XDG creado, el entorno del helper target, el entorno entregado al launcher heredado y los procesos de aplicación.
+
+Antes de delegar a v1.7, el wrapper v1.8 MUST validar que los IDs sean ASCII numéricos, que `HOST_BIND_NAME` sea exactamente `lunita-host-<run_id>-<attempt>` y que `XDG_RUNTIME_DIR` sea exactamente `/run/<HOST_BIND_NAME>-runtime-1000`. Cualquier ausencia o discrepancia MUST abortar con `BLOCKED` antes de ejecutar el launcher. El entorno invitado MUST recibir exactamente ese `XDG_RUNTIME_DIR`; queda prohibida toda ruta literal global o fallback como `/run/lunita-runtime-1000`.
+
+El launcher v1.7 congelado MUST permanecer byte-exacto, con hash y referencia inmutables. La corrección se realiza únicamente en la frontera de delegación v1.8 y sus recibos/pruebas. Las pruebas MUST demostrar que la delegación construye el comando para el launcher heredado con el mismo valor validado, que IDs ausentes/no ASCII/mismatch y una ruta XDG antigua se deniegan sin ejecutar el proceso, y que los caminos de chroot y pivot_root conservan la identidad. Los diagnósticos Flatpak con `subprocess` simulado o chequeos de archivos de paquete no sustituyen el self-test real.
+
+El recibo target MUST registrar la identidad de workflow, el runtime directory validado y los resultados de cada self-test Jamovi/JASP con sus códigos de retorno y logs/hashes. La aceptación y el validador independiente MUST rechazar un self-test bloqueado o un recibo cuya identidad del proceso delegado no concuerde con el mountpoint. La finalización del cleanup/unmount debe probar que se desmontó exclusivamente el runtime de ese intento.
+
+Una prueba de diagnóstico que devuelve PASS no permite inferir PASS de la aplicación; solo el self-test real bajo el runtime por intento satisface este axioma.
 
 ## 3. Predicado terminal y orden de admisión
 
@@ -462,3 +474,24 @@ La corrección en la rama `fix/lunita-jasp-version-contract-coherence-20261113` 
 
 La corrección amplía el contrato con AX-LUN-023. Estado al documentar: `IMPLEMENTED_NOT_YET_CI_VALIDATED`. Requiere PASS contractual, nuevo full run sobre el HEAD integrado, aceptación real de JASP, ejecución de la suite target completa, round-trip SquashFS estricto y validación independiente/S32/stable/certificador sobre el SHA-256 exacto de la imagen.
 
+## 11. Run #217 — desalineación XDG en delegación del launcher heredado (13-11-2026)
+
+RUN=43341112917 (#217)  
+HEAD=eff579756bd905930de9b22dcf7642c2c8e14a06  
+TARGET_JOB=131609898416  
+TARGET_STEP=15 / Execute actual E01 inference and E02-E15 plus legacy application smoke tests  
+TARGET_RESULT=FAILURE  
+FUNCTIONAL_CERTIFICATE=NOT_GRANTED  
+SQUASHFS_IMAGE=NOT_EMITTED
+
+El target pasó la identidad del rootfs JASP: el log registra `PASS_ROOTFS_BUILD_IDENTITY`; JASP quedó validado a `0.98.8`, deployment commit `83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7`, source commit `b6cd3b0310be4e18e1b673ac11f14e55615c8fa1`, metadatos del manifiesto y CMake. El recibo target también conservó run_id `43341112917`, attempt `1`, HOST_BIND_NAME `lunita-host-43341112917-1` y el XDG runtime por intento. No se observó una discrepancia JASP en este run.
+
+El self-test real de Jamovi fue bloqueado: `jamovi-self-test rc=3`. El diagnóstico Flatpak heredado y limpio devolvió `returncode=0` en ambos casos, pero es un diagnóstico con finalidad limitada y no sustituye el self-test.
+
+La inspección del código `recovery/lunita-custoszv9/runtime_engines_v1/lunita_beta_v1_8.py` demuestra que `run_legacy()` construía el entorno invitado con la ruta fija `XDG_RUNTIME_DIR=/run/lunita-runtime-1000`, mientras que el wrapper y el mountpoint real del run #217 usan `/run/lunita-host-43341112917-1-runtime-1000`. Por tanto, la aplicación heredada recibía una ruta distinta de la montada y validada. Esta discrepancia de código, más el rc=3 del self-test, constituye la causa técnica identificada; no prueba por sí sola una causa interna adicional dentro de Jamovi.
+
+El job pasó los pasos de desmontaje/verificación de mounts, cleanup y subida de evidencia. El gate anterior al empaquetado impidió emitir `LUNITA.squashfs`; por lo tanto no se ejecutaron el round-trip final, la validación independiente, S32, stable release ni el certifier.
+
+La corrección en `fix/lunita-legacy-flatpak-runtime-identity-20261113` cambia únicamente la frontera v1.8: exige IDs de workflow ASCII numéricos, HOST_BIND_NAME exacto y XDG_RUNTIME_DIR idéntico al mountpoint validado; pasa ese path a la variable de entorno invitada que se entrega a la launcher v1.7. Añade pruebas para la ruta dinámica, denegación ante identidad/ruta ausente o discrepante, y verificación de que el comando delegado usa el mismo XDG en contexto de target. El launcher v1.7 congelado no se modifica ni se sustituye. El contrato se amplía con AX-LUN-024.
+
+Estado al registrar esta auditoría: `IMPLEMENTED_NOT_YET_CI_VALIDATED`. Un nuevo run completo posterior a la integración debe repetir los gates, ejecutar los self-tests reales Jamovi y JASP, y solo entonces continuar con el empaquetado y certificación.
