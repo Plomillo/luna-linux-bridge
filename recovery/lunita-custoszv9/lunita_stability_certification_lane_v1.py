@@ -80,6 +80,7 @@ JASP_CASES = {
 DEATH_PENALTY_SOURCE_SHA256 = "fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895"
 EXPECTED_JASP_RUNTIME_VERSION = "0.98.8"
 EXPECTED_JASP_SOURCE_COMMIT = "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1"
+EXPECTED_JASP_APP_COMMIT = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
 
 
 def utc() -> str:
@@ -582,11 +583,139 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     return result
 
 
+def verify_jasp_runtime_mutation_receipt() -> dict:
+    """Verify exact post-refresh JASP/Qt files and Flatpak deployments used by this run."""
+    if CERTIFICATION_PROFILE != "V1_8_DIRECT":
+        return {"status": "NOT_APPLICABLE", "returncode": 0}
+    receipt_text = os.environ.get("LUNITA_JASP_MUTATION_RECEIPT", "")
+    if not receipt_text:
+        return {"status": "BLOCKED", "returncode": 1, "details": "LUNITA_JASP_MUTATION_RECEIPT is unset"}
+    receipt_path = pathlib.Path(receipt_text)
+    try:
+        if receipt_path.is_symlink() or not receipt_path.is_file():
+            raise RuntimeError("JASP runtime mutation receipt is missing or unsafe")
+        receipt = load_json(receipt_path, {}) or {}
+        receipt_sha = sha_file(receipt_path)
+        app = receipt.get("application") if isinstance(receipt.get("application"), dict) else {}
+        runtime = receipt.get("runtime") if isinstance(receipt.get("runtime"), dict) else {}
+        sdk = receipt.get("sdk") if isinstance(receipt.get("sdk"), dict) else {}
+        qt = receipt.get("qt_http_server") if isinstance(receipt.get("qt_http_server"), dict) else {}
+        patch = receipt.get("formatter_patch") if isinstance(receipt.get("formatter_patch"), dict) else {}
+        app_after = app.get("binary_after") if isinstance(app.get("binary_after"), dict) else {}
+        if (
+            receipt.get("schema") != "LUNITA_JASP_RUNTIME_POST_MUTATION_RECEIPT/1.0"
+            or receipt.get("status") != "PASS"
+            or receipt.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1"
+            or receipt.get("candidate_version") != "1.8.0"
+            or app.get("flatpak_ref") != "org.jaspstats.JASP"
+            or app.get("commit_before") != EXPECTED_JASP_APP_COMMIT
+            or app.get("commit_after") != EXPECTED_JASP_APP_COMMIT
+            or app.get("pinned_commit") != EXPECTED_JASP_APP_COMMIT
+            or not isinstance(app.get("binary_before_sha256"), str)
+            or app.get("binary_before_sha256") == app_after.get("sha256")
+            or not isinstance(runtime.get("flatpak_ref"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", runtime.get("commit_after", ""))
+            or not re.fullmatch(r"[0-9a-f]{64}", sdk.get("commit", ""))
+            or patch.get("changed_jasp_binary") is not True
+            or patch.get("r_startup_profile_mutated") is not False
+            or not isinstance(patch.get("call_sites"), int) or patch.get("call_sites") < 1
+            or not isinstance(patch.get("latex_sites"), int) or patch.get("latex_sites") < 1
+        ):
+            raise RuntimeError("JASP runtime mutation receipt schema, candidate, commit or patch contract mismatch")
+
+        env = jasp_process_env(os.environ)
+        env["FLATPAK_SYSTEM_DIR"] = str(ROOTFS / "var/lib/flatpak")
+        def flatpak_commit(ref: str, host: bool = False) -> str:
+            command_env = dict(env)
+            if host:
+                command_env.pop("FLATPAK_SYSTEM_DIR", None)
+            probe = subprocess.run(
+                ["/usr/bin/flatpak", "--system", "info", "--show-commit", ref],
+                env=command_env, capture_output=True, text=True, timeout=30, check=False,
+            )
+            observed = probe.stdout.strip() if probe.returncode == 0 else ""
+            if probe.returncode != 0 or not re.fullmatch(r"[0-9a-f]{64}", observed):
+                raise RuntimeError(f"Cannot verify live Flatpak commit for {ref}: {probe.stderr[-500:]}")
+            return observed
+
+        live_app_commit = flatpak_commit("org.jaspstats.JASP")
+        live_runtime_commit = flatpak_commit(runtime["flatpak_ref"])
+        live_sdk_commit = flatpak_commit(sdk.get("flatpak_ref", ""), host=True)
+        if live_app_commit != EXPECTED_JASP_APP_COMMIT:
+            raise RuntimeError("Live JASP app commit differs from the mutation receipt")
+        if live_runtime_commit != runtime.get("commit_after"):
+            raise RuntimeError("Live Flatpak runtime commit differs from the mutation receipt")
+        if live_sdk_commit != sdk.get("commit"):
+            raise RuntimeError("Live Flatpak SDK commit differs from the mutation receipt")
+
+        expected_jasp_binary = (
+            ROOTFS / "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/bin/JASP"
+        ).resolve(strict=True)
+        recorded_jasp_path = pathlib.Path(app_after.get("path", "")).resolve(strict=True)
+        if recorded_jasp_path != expected_jasp_binary:
+            raise RuntimeError("Mutation receipt JASP executable path is not the installed candidate executable")
+
+        evidence = {str(receipt_path): receipt_sha}
+        def verify_record(row: dict, label: str) -> None:
+            file_path = pathlib.Path(row.get("path", ""))
+            digest = row.get("sha256")
+            if file_path.is_symlink() or not file_path.is_file() or not isinstance(digest, str):
+                raise RuntimeError(f"{label} file is missing or unsafe")
+            observed = sha_file(file_path)
+            if observed != digest:
+                raise RuntimeError(f"{label} SHA-256 changed after the mutation receipt")
+            evidence[str(file_path)] = digest
+
+        verify_record(app_after, "JASP binary")
+        verify_record(qt.get("source_archive") or {}, "QtHttpServer source archive")
+        for key in ("built_libraries", "installed_libraries_after"):
+            rows = qt.get(key)
+            if not isinstance(rows, list) or not rows:
+                raise RuntimeError(f"JASP mutation receipt has no {key}")
+            for row in rows:
+                verify_record(row, key)
+        for row in (qt.get("installed_libraries_before_snapshot_file"), patch.get("script"), patch.get("log")):
+            if not isinstance(row, dict):
+                raise RuntimeError("JASP mutation receipt is missing a supporting source/log record")
+            verify_record(row, "JASP mutation provenance")
+        expected_patch_script = str(
+            (ROOT.parent.parent / "scripts" / "lunita" / "patch_jasp_certification_runtime_v1.py").resolve()
+        )
+        if patch.get("script", {}).get("path") != expected_patch_script:
+            raise RuntimeError("JASP formatter patch script path differs from the tracked source")
+        if not re.fullmatch(r"\d+\.\d+\.\d+", str(qt.get("qt_version", ""))):
+            raise RuntimeError("Qt version in JASP mutation receipt is malformed")
+        return {
+            "status": "PASS",
+            "returncode": 0,
+            "receipt_path": str(receipt_path),
+            "receipt_sha256": receipt_sha,
+            "jasp_app_commit": live_app_commit,
+            "flatpak_runtime_ref": runtime["flatpak_ref"],
+            "flatpak_runtime_commit": live_runtime_commit,
+            "flatpak_sdk_ref": sdk["flatpak_ref"],
+            "flatpak_sdk_commit": live_sdk_commit,
+            "qt_version": qt["qt_version"],
+            "jasp_binary_path": str(expected_jasp_binary),
+            "jasp_binary_sha256": app_after["sha256"],
+            "formatter_patch_script_sha256": patch["script"]["sha256"],
+            "formatter_patch_log_sha256": patch["log"]["sha256"],
+            "evidence": evidence,
+        }
+    except Exception as exc:
+        return {
+            "status": "BLOCKED",
+            "returncode": 1,
+            "details": f"JASP_POST_MUTATION_RUNTIME_IDENTITY_ERROR:{type(exc).__name__}:{exc}",
+        }
+
+
 def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
     """Rerun the registered JASP packaged-data tests in the pinned sandbox."""
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     OUT.mkdir(parents=True, exist_ok=True)
-    expected_commit = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
+    expected_commit = EXPECTED_JASP_APP_COMMIT
+    mutation_identity = verify_jasp_runtime_mutation_receipt()
     fixtures = {
         "flatpak_launch": ("JASP_UNITTEST_FLATPAK", "/app/lunita-fixtures/DeathPenalty.jasp", "JASP_UNITTEST_RC"),
         "reliability": ("JASP_UNITTEST_RELIABILITY", "/app/lunita-fixtures/Reliability.jasp", "JASP_RELIABILITY_UNITTEST_RC"),
@@ -597,8 +726,13 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
     results = {"schema": "CUSTOSZ_LUNITA_JASP_AUTOMATED_REGRESSION_SUITE/1.0", "timestamp_utc": utc(),
                "candidate_id": "G06_REBUILD_CANDIDATE_R1", "expected_app_commit": expected_commit,
                "flatpak_system_dir": env["FLATPAK_SYSTEM_DIR"], "network_unshared": True,
+               "runtime_mutation_identity": mutation_identity,
                "tests": {}, "certification": "NOT_GRANTED", "mission_completion_claim": False}
     try:
+        if mutation_identity.get("status") != "PASS":
+            results["status"] = "BLOCKED_JASP_POST_MUTATION_RUNTIME_IDENTITY"
+            atomic_json(result_path, results)
+            return results
         probe = subprocess.run(["/usr/bin/flatpak", "--system", "info", "--show-commit", "org.jaspstats.JASP"],
                                env=env, capture_output=True, text=True, timeout=30, check=False)
         actual_commit = probe.stdout.strip() if probe.returncode == 0 else None
@@ -636,6 +770,10 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                 command = flatpak_jasp_launch([], ["--unitTest", test_fixture])
                 header = (
                     f"START_UTC={started}\nAPP_COMMIT={actual_commit}\nTEST_FILE={test_fixture}\n"
+                    f"JASP_RUNTIME_MUTATION_RECEIPT_SHA256={mutation_identity.get('receipt_sha256')}\n"
+                    f"JASP_BINARY_SHA256={mutation_identity.get('jasp_binary_sha256')}\n"
+                    f"FLATPAK_RUNTIME_COMMIT={mutation_identity.get('flatpak_runtime_commit')}\n"
+                    f"FLATPAK_SDK_COMMIT={mutation_identity.get('flatpak_sdk_commit')}\n"
                     "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED\n"
                 )
                 if case_id == "flatpak_launch":
