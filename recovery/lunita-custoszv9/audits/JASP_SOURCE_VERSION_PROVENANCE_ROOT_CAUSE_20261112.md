@@ -73,6 +73,17 @@ El recibo del rootfs enlaza el deployment commit real, manifest commit/blob/hash
 
 El gate contractual compila el helper y ejecuta self-tests y unit tests que aceptan la identidad exacta y rechazan deriva en el hash del manifiesto, source commit o versión CMake.
 
+## 4.1. Huellas duales de los objetos fuente
+
+Las mismas fuentes quedaron fijadas por Git blob SHA-1 y por SHA-256 de los bytes descargados:
+
+| Archivo | Git blob SHA-1 | SHA-256 |
+|---|---|---|
+| `org.jaspstats.JASP.json` del manifiesto Flathub | `1aec5921883d56388c91627b09ba9cf6eb07c1d6` | `f83fd086dffbf2ca64b6e10e1589693ddf6ddbfc93ca0156feb66473cd52022d` |
+| `CMakeLists.txt` del source commit JASP | `d57ba1e22d4cd00f3848034dc09737498b91346b` | `5d60c82281a0329016245779dd7549807726c74f11a5b671cf95f192572deaac` |
+
+El verificador de builder ahora exige ambas familias de huella contra valores fijados. El target vuelve a calcular y comparar las dos huellas sobre los archivos preservados en el rootfs, no solo las copia o confía en el recibo. Las pruebas negativas cubren drift de SHA-256 de manifiesto y CMake.
+
 ## 5. No-regresión y estado
 
 No se cambia el deployment commit JASP, source commit, versión esperada, fixture .jasp, resultados históricos, G06 congelado, bindings G08 ni instrumento etiquetado `Lupa`. No se elimina el test de identidad runtime. No se convierte una cadena de versión hardcodeada en evidencia: la versión se deriva de contenido externo inmutable y se verifica luego contra el proceso real.
