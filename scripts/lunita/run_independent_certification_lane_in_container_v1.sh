@@ -5,6 +5,10 @@ set -Eeuo pipefail
 : "${LUNITA_ROOTFS_REAL:?LUNITA_ROOTFS_REAL is required}"
 : "${RUNNER_TEMP:?RUNNER_TEMP is required}"
 : "${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
+: "${GITHUB_RUN_ID:?GITHUB_RUN_ID is required for hash-bound JASP process receipts}"
+: "${GITHUB_RUN_ATTEMPT:?GITHUB_RUN_ATTEMPT is required for hash-bound JASP process receipts}"
+[[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ ]] || { echo "BLOCKED: GITHUB_RUN_ID is malformed" >&2; exit 2; }
+[[ "$GITHUB_RUN_ATTEMPT" =~ ^[0-9]+$ ]] || { echo "BLOCKED: GITHUB_RUN_ATTEMPT is malformed" >&2; exit 2; }
 
 CERT_STATE="$RUNNER_TEMP/lunita-stability-state"
 CERT_CANDIDATE="$RUNNER_TEMP/lunita-stability-candidate"
