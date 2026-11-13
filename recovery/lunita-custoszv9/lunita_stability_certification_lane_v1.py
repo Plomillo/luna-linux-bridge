@@ -1326,9 +1326,10 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                 and bool(temp_after_save) and temp_after_save == temp_after_rerun
             )
             item.update({
-                # Effective returncode denotes the deterministic-replay acceptance.
-                # Original JASP subprocess return codes are retained without masking.
-                "returncode": 0 if passed else 1,
+                # returncode is the actual strict-rerun subprocess result; the save
+                # subprocess result (which may be 1 on its expected historical mismatch)
+                # remains separately preserved without synthetic normalization.
+                "returncode": rerun.get("returncode"),
                 "save_subprocess_returncode": save_run.get("returncode"),
                 "rerun_subprocess_returncode": rerun.get("returncode"),
                 "status": (
@@ -1394,15 +1395,53 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
                     )
                 except (OSError, ValueError):
                     fixture_ok = False
+            historical_diagnostic = {"eligible": False}
+            if case == "flatpak_launch" and fixture_ok:
+                try:
+                    source_inspection = inspect_seed_option(expected_source)
+                    historical_diagnostic = classify_historical_reference_diagnostic(
+                        rc, text, runtime_identity, DEATH_PENALTY_SOURCE_SHA256,
+                        source_inspection.get("stored_results", {}),
+                        source_inspection.get("matches", []),
+                    )
+                    recorded_version = re.findall(r"^ORIGINAL_STORED_RESULTS_JASP_VERSION=(.+)$", text, re.M)
+                    recorded_member_hash = re.findall(r"^ORIGINAL_STORED_RESULTS_MEMBER_SHA256=([0-9a-f]{64})$", text, re.M)
+                    historical_diagnostic["eligible"] = bool(
+                        historical_diagnostic.get("eligible")
+                        and recorded_version and recorded_version[-1] == "0.97.1"
+                        and recorded_member_hash
+                        and recorded_member_hash[-1] == source_inspection["stored_results"]["member_sha256"]
+                        and "HISTORICAL_BASELINE_PROVENANCE=PASS" in text
+                    )
+                except Exception as provenance_exc:
+                    historical_diagnostic = {
+                        "eligible": False,
+                        "status": "BLOCKED_HISTORICAL_REFERENCE_DIAGNOSTIC",
+                        "provenance_error": f"{type(provenance_exc).__name__}:{str(provenance_exc)[:500]}",
+                    }
             passed = (
                 rc == 0 and pinned_commit and sandbox_bound and fixture_ok
                 and runtime_identity.get("status") == "PASS"
+            )
+            historical_passed = bool(
+                case == "flatpak_launch" and rc == 1 and pinned_commit and sandbox_bound
+                and fixture_ok and runtime_identity.get("status") == "PASS"
+                and historical_diagnostic.get("eligible") is True
             )
             runtime_versions = [item["version"] for item in runtime_identity.get("observed", [])]
             runtime_source_commits = [item["source_commit"] for item in runtime_identity.get("observed", [])]
             item.update({
                 "returncode": rc,
-                "status": "PASS" if passed else "BLOCKED",
+                "status": (
+                    "PASS" if passed else
+                    "PASS_HISTORICAL_REFERENCE_DIAGNOSTIC" if historical_passed else "BLOCKED"
+                ),
+                "acceptance_scope": (
+                    "STRICT_CURRENT_REFERENCE" if passed else
+                    "HISTORICAL_UNSEEDED_REFERENCE_DIAGNOSTIC_ONLY" if historical_passed else "BLOCKED"
+                ),
+                "historical_reference_diagnostic": historical_diagnostic,
+                "subprocess_returncode": rc,
                 "observed_app_commits": commits,
                 "pinned_commit_match": pinned_commit,
                 "sandbox_execution_marker_present": sandbox_bound,
@@ -1417,11 +1456,20 @@ def latest_jasp_evidence(worker_receipt: dict | None = None) -> dict:
     all_pass = all(
         (row.get("status") == "PASS" and row.get("returncode") == 0)
         or (
+            case == "flatpak_launch"
+            and row.get("status") == "PASS_HISTORICAL_REFERENCE_DIAGNOSTIC"
+            and row.get("returncode") == 1
+            and row.get("acceptance_scope") == "HISTORICAL_UNSEEDED_REFERENCE_DIAGNOSTIC_ONLY"
+            and (row.get("historical_reference_diagnostic") or {}).get("eligible") is True
+        )
+        or (
             case == "death_penalty_roundtrip"
             and row.get("status") == "PASS_DETERMINISTIC_REPLAY"
             and row.get("returncode") == 0
-            and row.get("acceptance_scope") == "DETERMINISTIC_REPLAY_ONLY"
+            and row.get("acceptance_scope") == "VERSIONED_DETERMINISTIC_BASELINE_WITH_HISTORICAL_REFERENCE_DEBT"
             and row.get("reference_comparison_status") == "BLOCKED_STORED_REFERENCE_MISMATCH"
+            and row.get("candidate_baseline_status") == "PASS_VERSIONED_DETERMINISTIC_BASELINE"
+            and row.get("historical_reference_debt_status") == "DISCLOSED_NONBLOCKING_HISTORICAL_REFERENCE_DEBT"
         )
         for case, row in rows.items()
     )
