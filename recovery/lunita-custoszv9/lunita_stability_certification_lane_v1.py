@@ -2530,12 +2530,22 @@ def issue_s32_independent_beta_validation_receipt() -> dict:
         "target_v1_8_runtime_acceptance_e01_e15_int8",
         "candidate_rootfs_inventory_and_dependency_manifest",
         "jasp_packaged_fixture_nonregression",
+        "jasp_process_tree_lifecycle",
         "squashfs_image_and_package_binding",
     }
     if not isinstance(checks, dict) or not required_checks.issubset(checks):
         return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS_MISSING", "certification": "NOT_GRANTED"}
     if any(not _stable_check(check) for check in checks.values()):
         return {"status": "BLOCKED_REQUIRED_INDEPENDENT_CHECKS", "certification": "NOT_GRANTED"}
+    process_tree_check = checks["jasp_process_tree_lifecycle"]
+    jasp_identity_check = checks.get("jasp_post_mutation_runtime_identity") or {}
+    if (
+        process_tree_check.get("workflow_identity") != target.get("workflow_identity")
+        or process_tree_check.get("jasp_binary_sha256") != jasp_identity_check.get("jasp_binary_sha256")
+        or process_tree_check.get("flatpak_runtime_ostree_commit") != jasp_identity_check.get("flatpak_runtime_commit")
+        or process_tree_check.get("invocation_count") != 5
+    ):
+        return {"status": "BLOCKED_JASP_PROCESS_TREE_IDENTITY_BINDING", "certification": "NOT_GRANTED"}
     target_check = checks["target_v1_8_runtime_acceptance_e01_e15_int8"]
     if (target_check.get("receipt_path") != str(target_path)
         or target_check.get("receipt_sha256") != target_sha):
