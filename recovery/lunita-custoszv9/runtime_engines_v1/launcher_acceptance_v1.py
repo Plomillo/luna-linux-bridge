@@ -253,7 +253,13 @@ class LunitaBetaV18Tests(unittest.TestCase):
             legacy_sha = hashlib.sha256(legacy.read_bytes()).hexdigest()
             with mock.patch.object(launcher, "LEGACY_LAUNCHER", legacy), \
                  mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha), \
-                 mock.patch.dict(os.environ, {"LUNITA_TARGET_ROOTFS": str(rootfs)}), \
+                 mock.patch.dict(os.environ, {
+                     "LUNITA_TARGET_ROOTFS": str(rootfs),
+                     "GITHUB_RUN_ID": "43341112917",
+                     "GITHUB_RUN_ATTEMPT": "1",
+                     "HOST_BIND_NAME": "lunita-host-43341112917-1",
+                     "XDG_RUNTIME_DIR": "/run/lunita-host-43341112917-1-runtime-1000",
+                 }, clear=True), \
                  mock.patch.object(launcher.subprocess, "run") as run:
                 self.assertEqual(5, launcher.run_legacy(["r-self-test"]))
             run.assert_not_called()
