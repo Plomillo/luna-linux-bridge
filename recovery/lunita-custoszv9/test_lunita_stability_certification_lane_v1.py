@@ -1066,14 +1066,14 @@ class JaspReferenceMismatchClassificationTests(unittest.TestCase):
             source_sha = lane.sha_file(source)
             banner = (
                 "Starting JASP 0.98.8 from commit "
-                "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1\\n"
+                "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1\n"
             )
             rows = (
-                "Row: | h: Model Comparison | \\n"
-                "Row: | h: Models | \\n"
-                "Row: | Model A | 0.500 | 1.000 | \\n"
-                "Footer:\\n"
-                "The results are different...\\n"
+                "Row: | h: Model Comparison | \n"
+                "Row: | h: Models | \n"
+                "Row: | Model A | 0.500 | 1.000 | \n"
+                "Footer:\n"
+                "The results are different...\n"
             )
             responses = [
                 SimpleNamespace(returncode=1, stdout=banner + rows, stderr=""),
