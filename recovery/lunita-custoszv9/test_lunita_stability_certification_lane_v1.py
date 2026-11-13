@@ -578,6 +578,45 @@ class JaspDeterministicFixtureTests(unittest.TestCase):
                 self.assertFalse(receipt.exists())
 
 
+class BoundedProcessTreeTests(unittest.TestCase):
+    def test_timeout_terminates_descendants_without_waiting_for_inherited_output_pipe(self):
+        child_code = "import time; time.sleep(60)"
+        parent_code = (
+            "import os, subprocess, sys, time; "
+            f"child = subprocess.Popen([sys.executable, '-c', {json.dumps(child_code)}]); "
+            "print(os.getpid(), child.pid, flush=True); "
+            "time.sleep(60)"
+        )
+        started = lane.time.monotonic()
+        with self.assertRaises(lane.subprocess.TimeoutExpired) as caught:
+            lane.run_bounded_process_tree(
+                [sys.executable, "-c", parent_code],
+                env=lane.os.environ.copy(),
+                timeout=1.0,
+            )
+        self.assertLess(lane.time.monotonic() - started, 8.0)
+        output = caught.exception.output
+        if isinstance(output, bytes):
+            output = output.decode("utf-8", "replace")
+        parent_pid, child_pid = (int(value) for value in output.strip().splitlines()[-1].split())
+
+        def is_running(pid):
+            stat = pathlib.Path(f"/proc/{pid}/stat")
+            if not stat.is_file():
+                return False
+            try:
+                state = stat.read_text(encoding="ascii").rsplit(")", 1)[1].strip().split()[0]
+                return state != "Z"
+            except (OSError, IndexError):
+                return False
+
+        deadline = lane.time.monotonic() + 2.0
+        while lane.time.monotonic() < deadline and (is_running(parent_pid) or is_running(child_pid)):
+            lane.time.sleep(0.05)
+        self.assertFalse(is_running(parent_pid))
+        self.assertFalse(is_running(child_pid))
+
+
 class JaspRunnerTests(unittest.TestCase):
     def test_runner_pins_commit_and_records_each_real_return_code(self):
         from types import SimpleNamespace
@@ -636,17 +675,20 @@ class JaspRunnerTests(unittest.TestCase):
                     "flatpak_sdk_commit": "d" * 64, "evidence": {},
                 }),
                 mock.patch.object(lane.subprocess, "run", side_effect=fake_run) as runner,
+                mock.patch.object(lane, "run_bounded_process_tree", side_effect=fake_run) as bounded_runner,
             ):
                 result = lane.run_jasp_regression_suite(report)
 
             self.assertEqual("BLOCKED_JASP_REGRESSION", result["status"])
-            self.assertEqual(6, runner.call_count)
-            for call in runner.call_args_list:
+            self.assertEqual(1, runner.call_count)
+            self.assertEqual(5, bounded_runner.call_count)
+            for call in bounded_runner.call_args_list:
                 self.assertEqual("offscreen", call.kwargs["env"].get("QT_QPA_PLATFORM"))
+                self.assertEqual(300, call.kwargs["timeout"])
                 self.assertNotIn("-platform", call.args[0])
                 self.assertNotIn("--timeOut=2", call.args[0])
 
-            jasp_calls = [call.args[0] for call in runner.call_args_list if "--unitTest" in call.args[0]]
+            jasp_calls = [call.args[0] for call in bounded_runner.call_args_list if "--unitTest" in call.args[0]]
             self.assertEqual(5, len(jasp_calls))
             self.assertTrue(all(
                 command[command.index("org.jaspstats.JASP") + 1] == "--unitTest"
@@ -718,7 +760,7 @@ class JaspStrictRoundtripPositiveTests(unittest.TestCase):
                 mock.patch.object(lane, "OUT", out),
                 mock.patch.object(lane, "ROOTFS", rootfs),
                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
-                mock.patch.object(lane.subprocess, "run", side_effect=lambda *a, **k: next(response_iter)) as runner,
+                mock.patch.object(lane, "run_bounded_process_tree", side_effect=lambda *a, **k: next(response_iter)) as runner,
             ):
                 result = lane.run_death_penalty_roundtrip(
                     "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
@@ -1231,7 +1273,7 @@ class JaspReferenceMismatchClassificationTests(unittest.TestCase):
                 mock.patch.object(lane, "EVIDENCE", evidence),
                 mock.patch.object(lane, "ROOTFS", rootfs),
                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
-                mock.patch.object(lane.subprocess, "run", side_effect=lambda *a, **k: next(response_iter)),
+                mock.patch.object(lane, "run_bounded_process_tree", side_effect=lambda *a, **k: next(response_iter)),
             ):
                 result = lane.run_death_penalty_roundtrip(
                     "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",

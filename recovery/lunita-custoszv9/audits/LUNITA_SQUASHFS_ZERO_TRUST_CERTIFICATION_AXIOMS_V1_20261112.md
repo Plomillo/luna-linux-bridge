@@ -717,3 +717,47 @@ El contrato debe aceptar tanto (a) una mutación embebida en `bin/JASP`, demostr
 ### Extensión del predicado terminal — AX-LUN-032
 
 `ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-032`. Este axioma no debilita ningún control de integridad: convierte los indicadores estáticos contradictorios en una comprobación derivada de hashes reales y mantiene fail-closed cualquier discrepancia.
+
+## 11. Addendum append-only — AX-LUN-033: cierre verificable del ciclo de vida de procesos JASP
+
+**Registro de evidencia:** 2026-11-13 UTC. Análisis del job real 131689968018 del workflow 43365648019, HEAD 36708abc13ec8c83f55161a14b3b254703671c29; inspección del ejecutor independiente y de la corrección aislada incorporada en fix/lunita-jasp-process-tree-timeout-20261113.
+
+### AX-LUN-033 — Ninguna ejecución JASP puede cerrar su recibo mientras conserve procesos descendientes activos
+
+Toda invocación JASP incluida en la validación independiente MUST ejecutarse dentro de una sesión y un grupo de procesos propios, con un límite temporal explícito de 300 segundos por caso. La captura de salida MUST usar un destino que no permita que un descriptor heredado por un descendiente mantenga bloqueada la recolección después de terminar el lanzador directo.
+
+Una terminación normal solo puede aceptarse si no queda ningún miembro no-zombie/no-exited en el grupo de procesos de la invocación. Si el límite se agota, el supervisor MUST enviar SIGTERM al grupo completo, esperar el periodo de gracia, enviar SIGKILL si todavía existen miembros, recolectar el proceso directo y comprobar nuevamente el cierre del grupo. La imposibilidad de demostrar el cierre MUST producir BLOCKED; nunca puede convertirse en PASS, en timeout benigno ni en un recibo de evidencia completo.
+
+El requisito se aplica, sin excepción, a los casos JASP originales y al replay determinista. La finalización del lanzador, la existencia de un código de salida o el cierre del pipe principal no equivalen a la terminación del árbol de procesos.
+
+### Contrato de identidad y cierre — política de identidad univalente
+
+Cada ejecución se identifica por la tupla completa:
+
+JASPInvocation = (run_id, run_attempt, case_id, invocation_id, process_group_id, executable_sha256, runtime_ostree_commit).
+
+Dos registros solo podrán tratarse como la misma invocación si existe una correspondencia verificable que preserve todos los componentes de esa tupla. La igualdad de nombre de caso, comando, versión o nombre de archivo no constituye por sí sola una identidad. La evidencia de cierre pertenece a esa invocación concreta y no puede transportarse a otro run, attempt, caso, binario, runtime o imagen.
+
+El predicado de aceptación es:
+
+ACCEPT_JASP(i) = BOUNDED(i) AND ISOLATED(i) AND PROCESS_GROUP_CLOSED(i) AND OUTPUT_CAPTURED(i) AND EVIDENCE_HASH_BOUND(i).
+
+PROCESS_GROUP_CLOSED(i) exige cero miembros vivos del grupo después de la terminación o limpieza. Cualquier miembro que permanezca activo, cualquier error de inspección o cualquier imposibilidad de verificar la identidad del grupo produce BLOCKED. Este contrato define la identidad operacional que debe conservar la evidencia; no declara una demostración externa de la equivalencia de tipos ni una propagación automática de certificación.
+
+### Evidencia de implementación y límite de la evidencia
+
+La revisión 25617dcc521edcea795f5d47dd6e72540d9bc3f5 incorpora run_bounded_process_tree, sesión dedicada, captura a archivo temporal, terminación SIGTERM/SIGKILL y detección de descendientes persistentes. Su ejecución contractual 43377000287 terminó success; la suite del ejecutor independiente registró 132 pruebas correctas, incluida test_timeout_terminates_descendants_without_waiting_for_inherited_output_pipe.
+
+Esa ejecución fue un evento pull_request: el job de destino real fue skipped. Por ello acredita la implementación contractual y la regresión del supervisor, no la validación funcional de la imagen.
+
+La ejecución real 43365648019, sobre HEAD 36708abc13ec8c83f55161a14b3b254703671c29, ya había pasado la construcción del rootfs, E01–E15 y aplicaciones heredadas, la generación de LUNITA.squashfs y su round-trip. Su job independiente permanecía en el paso de JASP. Los logs del job en curso no estuvieron disponibles para lectura en esta auditoría; por ello el bloqueo se clasifica como INDEPENDENT_JASP_LIFECYCLE_UNRESOLVED, no como prueba de que un caso JASP concreto haya fallado ni como causa raíz demostrada a partir de esos logs.
+
+### Condición de validación
+
+La validación exige una nueva ejecución completa posterior a la integración que demuestre, sobre una sola imagen y un solo SHA-256 interno: ejecución limitada de los cuatro casos JASP; cierre del grupo de procesos en cada caso; informe independiente PASS; manifiesto post-validación idéntico al manifiesto de empaquetado; recibo S32; stable release; y certificado funcional final. Ninguna evidencia de 43365648019, 43377000287 u otra revisión podrá mezclarse para completar esa cadena.
+
+**Estado al registrar:** AXIOM_APPENDED; PROCESS_TREE_REGRESSION_PASS_ON_PR_HEAD; REAL_TARGET_REVALIDATION_PENDING; CERTIFICATION_NOT_GRANTED.
+
+### Extensión del predicado terminal — AX-LUN-033
+
+ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-033. El certificado queda denegado si cualquier invocación JASP no satisface el límite temporal, aislamiento, captura de salida y cierre verificable del grupo de procesos en el mismo candidato.

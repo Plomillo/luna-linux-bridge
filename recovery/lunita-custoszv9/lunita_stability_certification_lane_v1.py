@@ -19,8 +19,10 @@ import os
 import pathlib
 import re
 import shutil
+import signal
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 
@@ -30,6 +32,104 @@ from jasp_seed_fixture_v1 import (
     prepare_deterministic_fixture,
     verify_deterministic_fixture_receipt,
 )
+
+
+class ProcessTreeCleanupError(RuntimeError):
+    """A bounded JASP command left descendants alive or could not clean them up."""
+
+
+def _process_group_exists(pgid: int) -> bool:
+    """Return true only while a non-zombie member remains in the process group."""
+    proc_root = pathlib.Path("/proc")
+    if proc_root.is_dir():
+        for entry in proc_root.iterdir():
+            if not entry.name.isdigit():
+                continue
+            try:
+                fields = (entry / "stat").read_text(encoding="ascii").rsplit(")", 1)[1].split()
+                state = fields[0]
+                process_group = int(fields[2])
+            except (OSError, ValueError, IndexError):
+                continue
+            if process_group == pgid and state not in {"Z", "X"}:
+                return True
+        return False
+    try:
+        os.killpg(pgid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
+def _terminate_process_group(process: subprocess.Popen, grace_seconds: float = 3.0) -> None:
+    """Terminate descendants and reap the direct process before checking the group."""
+    pgid = process.pid
+    if _process_group_exists(pgid):
+        try:
+            os.killpg(pgid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+    try:
+        process.wait(timeout=grace_seconds)
+    except subprocess.TimeoutExpired:
+        pass
+    if _process_group_exists(pgid):
+        try:
+            os.killpg(pgid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    try:
+        process.wait(timeout=grace_seconds)
+    except subprocess.TimeoutExpired as exc:
+        raise ProcessTreeCleanupError(
+            f"Direct process {pgid} survived SIGTERM and SIGKILL"
+        ) from exc
+
+    deadline = time.monotonic() + grace_seconds
+    while time.monotonic() < deadline and _process_group_exists(pgid):
+        time.sleep(0.05)
+    if _process_group_exists(pgid):
+        raise ProcessTreeCleanupError(
+            f"Process group {pgid} remained present after SIGTERM and SIGKILL"
+        )
+
+
+def run_bounded_process_tree(command: list[str], *, env: dict, timeout: int) -> subprocess.CompletedProcess:
+    """Run a JASP command in its own process group with bounded tree cleanup.
+
+    Output goes to a temporary file rather than a pipe. A Flatpak/JASP descendant
+    therefore cannot keep communicate() blocked by inheriting the pipe after the
+    direct launcher exits. Timeout and normal exit both check for orphaned members.
+    """
+    with tempfile.TemporaryFile(mode="w+b") as output:
+        process = subprocess.Popen(
+            command,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=output,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        try:
+            returncode = process.wait(timeout=timeout)
+        except subprocess.TimeoutExpired as exc:
+            _terminate_process_group(process)
+            process.wait(timeout=5)
+            output.seek(0)
+            captured = output.read().decode("utf-8", "replace")
+            raise subprocess.TimeoutExpired(command, timeout, output=captured) from exc
+
+        if _process_group_exists(process.pid):
+            _terminate_process_group(process)
+            raise ProcessTreeCleanupError(
+                f"JASP command exited with return code {returncode} while descendants remained"
+            )
+        output.seek(0)
+        captured = output.read().decode("utf-8", "replace")
+        return subprocess.CompletedProcess(command, returncode, stdout=captured)
+
 
 ROOT = pathlib.Path(__file__).resolve().parent
 ST = pathlib.Path(os.environ.get("LUNITA_STATE_DIR", str(ROOT / "state"))).expanduser()
@@ -402,10 +502,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     def execute_replay(command: list[str], label: str, log_path: pathlib.Path) -> dict:
         started = utc()
         try:
-            proc = subprocess.run(
-                command, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                text=True, timeout=300, check=False,
-            )
+            proc = run_bounded_process_tree(command, env=env, timeout=300)
             output = proc.stdout or ""
             rc = int(proc.returncode)
             try:
@@ -851,10 +948,7 @@ def run_jasp_regression_suite(result_path: pathlib.Path) -> dict:
                         f"ORIGINAL_FIXTURE_ALIAS_VALID={'TRUE' if original_alias_valid else 'FALSE'}\n"
                     )
                 try:
-                    run = subprocess.run(
-                        command, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                        text=True, timeout=300, check=False,
-                    )
+                    run = run_bounded_process_tree(command, env=env, timeout=300)
                     rc = int(run.returncode)
                     runtime_identity = inspect_jasp_runtime_identity(run.stdout or "")
                     fixture_integrity = original_alias_valid if case_id == "flatpak_launch" else True
