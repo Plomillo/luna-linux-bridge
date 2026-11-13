@@ -1,7 +1,7 @@
 # LUNITA v1.8 — Axiomas verificables de certificación funcional SquashFS
 
 **Documento:** `LUNITA_SQUASHFS_ZERO_TRUST_CERTIFICATION_AXIOMS_V1`  
-**Versión:** `1.0.0`  
+**Versión:** `1.1.0`  
 **Estado normativo:** `MANDATORY_PRECONDITION_FOR_FUNCTIONAL_CERTIFICATION`  
 **Doctrina:** `APPEND_ONLY; EXTEND_DO_NOT_REPLACE; FAIL_CLOSED`  
 **Objetivo único:** `LUNITA.squashfs`  
@@ -169,7 +169,7 @@ El recibo `L` solo puede emitirse tras S32 válido. MUST enlazar el mismo inform
 
 La función de certificación es:
 
-`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-020 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
+`FUNCTIONAL_CERTIFIED(I) ⇔ AX-LUN-001 … AX-LUN-021 ∧ CERTIFICATE_BINDINGS_VALID(C,I)`
 
 y además el certificado `C` MUST:
 
@@ -218,6 +218,20 @@ La versión JASP no se obtiene por inferencia desde una etiqueta, un campo opcio
 
 El recibo del rootfs MUST conservar el manifiesto, el CMakeLists y el recibo de identidad; registrar además el deployment commit Flatpak instalado y sus hashes. La validación independiente MUST iniciar el proceso JASP real y exigir el banner de versión y source commit fijados. El campo amigable `Version` de `flatpak info` y las versiones declaradas únicamente en AppStream/appdata NO son evidencia suficiente ni fuente de autoridad: pueden estar ausentes o rezagadas respecto del código de la aplicación.
 
+
+### AX-LUN-021 — Aislamiento del mountpoint Flatpak por ejecución e intento
+
+El constructor de aceptación monta el /run del host dentro del rootfs candidato mediante un bind recursivo. En consecuencia, los nombres bajo /run pertenecen a un espacio compartido con el runner y no pueden tratarse como rutas globales libres ni como estado exclusivo del rootfs.
+
+El identificador HOST_BIND_NAME MUST derivarse del ID de workflow y del número de intento, validarse como componente de ruta seguro (lunita-host-[A-Za-z0-9-]+) y ser único entre ejecuciones e intentos. El destino de montaje MUST ser /run/${HOST_BIND_NAME}-runtime-1000; queda prohibido reutilizar el destino global fijo /run/lunita-runtime-1000.
+
+El wrapper MUST comprobar que el destino específico no exista ni sea symlink antes de crearlo; si existe, MUST abortar sin borrarlo, reutilizarlo ni sobrescribirlo. El origen temporal MUST conservar propietario UID/GID 1000 y modo 0700. El proceso de destino MUST recibir exactamente el mismo XDG_RUNTIME_DIR que fue montado, y su verificador MUST derivar la ruta esperada desde HOST_BIND_NAME, exigir directorio real y comprobar UID/GID 1000 y modo 0700.
+
+La limpieza MUST desmontar y retirar exclusivamente el destino creado por el intento actual y verificar el estado de los mounts. Las pruebas MUST demostrar que dos intentos distintos producen rutas distintas, que las identidades inseguras se rechazan y que un path XDG distinto, symlink, owner, group o mode incorrectos se deniegan.
+
+La existencia de una ruta fija previa en el /run del host es evidencia de colisión, no autorización para eliminarla. Tal colisión produce BLOCKED hasta una corrección que aísle el nombre por ejecución y una revalidación completa del candidato.
+
+
 ## 3. Predicado terminal y orden de admisión
 
 La decisión terminal no es una suma de porcentajes ni una votación de jobs. Es una conjunción estricta:
@@ -237,7 +251,7 @@ No se permite saltar, invertir, fusionar silenciosamente ni heredar el resultado
 | Gate | Evidencia primaria requerida | Condición de aceptación |
 |---|---|---|
 | Identidad | manifiesto congelado + recibo rootfs + runtime banners | IDs, versiones, commits y hashes coincidentes |
-| Target runtime | recibo de destino | E01–E15, INT8 E04, ruta y smoke tests PASS |
+| Target runtime | recibo de destino + identidad HOST_BIND_NAME + mountpoint XDG_RUNTIME_DIR | E01–E15, INT8 E04, mountpoint por intento UID/GID 1000 modo 0700, ruta y smoke tests PASS |
 | Inventario | informe y manifiesto completo | árbol estable, cero errores, dependencias cerradas |
 | JASP referencia | log original + alias + hash fuente | fixture intacto, versión/commit correctos, RC 0 |
 | JASP replay | dos logs, filas, dos hashes y recibo del clon | misma entrada hash-bound y salidas exactas iguales |
@@ -256,6 +270,9 @@ Este contrato se deriva de las rutas operativas observadas en HEAD `08f932874ae3
 - `scripts/lunita/package_candidate_squashfs_v1.py`
 - `scripts/lunita/certify_candidate_squashfs_v1.py`
 - `scripts/lunita/run_independent_certification_lane_in_container_v1.sh`
+- `scripts/lunita/run_target_runtime_acceptance_in_container_v1.sh`
+- `recovery/lunita-custoszv9/runtime_engines_v1/target_runtime_acceptance_v1.py`
+- `recovery/lunita-custoszv9/runtime_engines_v1/target_acceptance_tests_v1.py`
 - `recovery/lunita-custoszv9/jasp_seed_fixture_v1.py`
 - `recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py`
 - `recovery/lunita-custoszv9/test_lunita_stability_certification_lane_v1.py`
@@ -291,6 +308,20 @@ La fuente de versión declarada como 0.98.8 no se autoriza por el valor codifica
 Implementación actual en la rama de integración `audit/lunita-zero-trust-certification-axioms-20261112`; pendiente de revisión por CI y de integración con el constructor operativo. Estado: `IMPLEMENTED_NOT_YET_VALIDATED`.
 
 
+
+## 5.3 — Bloqueo de runtime por colisión de mountpoint en /run y corrección
+
+El workflow 43332281299 (run #184), sobre HEAD a41e7b9fdc000b1c95f08aa212082e23d28051ea, pasó el job contractual 131579662707 y falló en el job de destino 131580478339, step 15 (Execute actual E01 inference and E02-E15 plus legacy application smoke tests). El log primario registra:
+
+    BLOCKED: target Flatpak runtime mountpoint already exists: /run/lunita-runtime-1000
+
+El wrapper ya aislaba el bind temporal del host con HOST_BIND_NAME, pero fijaba el destino del segundo bind en el nombre global /run/lunita-runtime-1000. El mismo wrapper hace mount --rbind /run "$ROOTFS/run"; por tanto, la comprobación se realiza contra el /run del host visible en el namespace privado. La ruta fija ya existía y el control fail-closed abortó con código 2 antes de ejecutar E01–E15. No se ha demostrado qué proceso creó la entrada previa; no se atribuye ese origen sin evidencia.
+
+Por esa causa, los pasos de refresh JASP, empaquetado SquashFS, lane independiente, S32 y stable release quedaron omitidos. El run no emitió LUNITA.squashfs; el artefacto de overlay y el archivo de evidencia del job no sustituyen la imagen ni son certificados. No se reutilizan para la siguiente ejecución.
+
+La corrección propuesta en la rama fix/lunita-flatpak-runtime-mount-collision-20261113 cambia el destino a /run/${HOST_BIND_NAME}-runtime-1000, valida el identificador antes de usarlo como componente de ruta y hace que el recibo de aceptación derive la ruta esperada desde el mismo identificador. Añade regresiones para unicidad entre intentos, identidad insegura, path incorrecto, tipo de entrada, UID/GID y modo. La corrección mantiene el rechazo de cualquier colisión y no elimina estado preexistente. Estado en esta revisión: IMPLEMENTED_NOT_YET_VALIDATED_BY_CI.
+
+
 ## 6. Estado de certificación al fijar la integración
 
 `LAST_OPERATIONAL_HEAD=08f932874ae38daf1deade88b201da7562078fe7`  
@@ -311,4 +342,27 @@ Implementación actual en la rama de integración `audit/lunita-zero-trust-certi
 `JASP_SOURCE_IDENTITY_SELFTESTS=INTEGRATED_NOT_YET_EXECUTED_IN_CI`  
 `NEXT_REQUIRED_ACTION=MERGE_INTEGRATION_AND_RUN_FULL_VALIDATION`
 
-**No se autoriza una transición a CERTIFIED hasta la demostración completa de AX-LUN-001 a AX-LUN-020 sobre un único SHA-256 de `LUNITA.squashfs`.**
+**No se autoriza una transición a CERTIFIED hasta la demostración completa de AX-LUN-001 a AX-LUN-021 sobre un único SHA-256 de `LUNITA.squashfs`.**
+
+
+## 7. Estado actualizado — run #184 y remediación subsiguiente (13-11-2026)
+
+Esta sección amplía el snapshot histórico de §6; no reemplaza los resultados fallidos ni les atribuye un PASS retroactivo.
+
+OPERATIONAL_HEAD_AT_RUN_184=a41e7b9fdc000b1c95f08aa212082e23d28051ea  
+WORKFLOW_RUN=43332281299  
+WORKFLOW_RESULT=FAILURE  
+CONTRACT_JOB=131579662707 / SUCCESS  
+TARGET_JOB=131580478339 / FAILURE_STEP_15  
+BLOCKER=STATIC_HOST_RUN_MOUNTPOINT_COLLISION  
+ROOTFS_OVERLAY=APPLIED_ADDITIVELY_NOT_CERTIFIED  
+TARGET_RUNTIME=BLOCKED  
+SQUASHFS_PACKAGE_STEP=SKIPPED  
+INDEPENDENT_VALIDATION=NOT_REACHED  
+S32=NOT_REACHED  
+STABLE_RELEASE=NOT_REACHED  
+FUNCTIONAL_CERTIFICATE=NOT_GRANTED
+
+La remediación está en la rama fix/lunita-flatpak-runtime-mount-collision-20261113. Su HEAD de trabajo al preparar esta revisión es cfe687753c0f6c2b43bbf019ad6229552dfcb9f6. Incluye cambios en el wrapper de namespace, en el verificador de runtime y en las pruebas contractuales. La incorporación de AX-LUN-021 y esta auditoría forma parte de la misma corrección documental. El estado sigue siendo IMPLEMENTED_NOT_YET_VALIDATED_BY_CI: aún no existe un nuevo run de extremo a extremo sobre el commit corregido.
+
+NEXT_REQUIRED_ACTION=REVIEW_AND_INTEGRATE_REMEDIATION_THEN_RUN_FULL_VALIDATION_ON_EXACT_HEAD

@@ -11,6 +11,7 @@ import importlib
 import json
 import os
 import pathlib
+import re
 import subprocess
 import stat
 import sys
@@ -113,9 +114,17 @@ class TargetGateError(RuntimeError):
     pass
 
 
+def expected_xdg_runtime_dir() -> str:
+    """Derive an isolated Flatpak runtime path from this workflow attempt identity."""
+    host_bind_name = os.environ.get("HOST_BIND_NAME", "")
+    if re.fullmatch(r"lunita-host-[A-Za-z0-9-]+", host_bind_name) is None:
+        raise TargetGateError("HOST_BIND_NAME is missing or unsafe for a runtime mount path")
+    return f"/run/{host_bind_name}-runtime-1000"
+
+
 def verify_xdg_runtime_dir() -> dict[str, Any]:
     """Require the Flatpak runtime directory to be a real private UID 1000 directory."""
-    expected = "/run/lunita-runtime-1000"
+    expected = expected_xdg_runtime_dir()
     observed = os.environ.get("XDG_RUNTIME_DIR")
     if observed != expected:
         raise TargetGateError(f"XDG_RUNTIME_DIR must be exactly {expected}; observed {observed!r}")
@@ -653,7 +662,7 @@ def verify_rootfs_build_receipt() -> dict[str, Any]:
             "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
             "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
             "XDG_DATA_HOME=/tmp/lunita-xdg/data",
-            "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+            f"XDG_RUNTIME_DIR={expected_xdg_runtime_dir()}",
             "FLATPAK_SYSTEM_DIR=/var/lib/flatpak",
             *extra_env,
         )
@@ -969,7 +978,7 @@ def run_qwen_via_v18() -> dict[str, Any]:
         "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
         "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
         "XDG_DATA_HOME=/tmp/lunita-xdg/data",
-        "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+        f"XDG_RUNTIME_DIR={expected_xdg_runtime_dir()}",
         "XDG_STATE_HOME=/tmp/lunita-xdg/state",
         "TMPDIR=/tmp/lunita-xdg",
         "LUNITA_ROOT=/opt/lunita",
@@ -1045,7 +1054,7 @@ def diagnose_flatpak_smoke(app_id: str) -> dict[str, Any]:
         "XDG_CACHE_HOME=/tmp/lunita-xdg/cache",
         "XDG_CONFIG_HOME=/tmp/lunita-xdg/config",
         "XDG_DATA_HOME=/tmp/lunita-xdg/data",
-        "XDG_RUNTIME_DIR=/run/lunita-runtime-1000",
+        f"XDG_RUNTIME_DIR={expected_xdg_runtime_dir()}",
         "XDG_STATE_HOME=/tmp/lunita-xdg/state",
         "FLATPAK_SYSTEM_DIR=/var/lib/flatpak",
         "TMPDIR=/tmp",

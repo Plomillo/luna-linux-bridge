@@ -52,6 +52,10 @@ if [ -e "$RESTORE_FILE" ] || [ -L "$RESTORE_FILE" ]; then
 fi
 (set -o noclobber; : > "$RESTORE_FILE")
 HOST_BIND_NAME="lunita-host-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}"
+if [[ ! "$HOST_BIND_NAME" =~ ^lunita-host-[A-Za-z0-9-]+$ ]]; then
+    echo "BLOCKED: workflow run identity is unsafe for a mount path." >&2
+    exit 2
+fi
 export HOST_BIND_NAME
 
 sysctl_path() {
@@ -133,7 +137,7 @@ cd /
 umount -l /.oldroot
 rmdir /.oldroot
 
-RUNTIME_BIND_TARGET=/run/lunita-runtime-1000
+RUNTIME_BIND_TARGET="/run/${HOST_BIND_NAME}-runtime-1000"
 RUNTIME_BIND_CREATED=0
 RUNTIME_BIND_MOUNTED=0
 
@@ -183,7 +187,7 @@ export LUNITA_ROOTFS_REAL=/
 export LUNITA_TARGET_ROOTFS=/
 export LUNITA_ROOT=/opt/lunita
 export FLATPAK_SYSTEM_DIR=/var/lib/flatpak
-export XDG_RUNTIME_DIR=/run/lunita-runtime-1000
+export XDG_RUNTIME_DIR="$RUNTIME_BIND_TARGET"
 export XDG_STATE_HOME="/run/$HOST_BIND_NAME/lunita-xdg"
 export LUNITA_XDG_STATE_HOME="$XDG_STATE_HOME"
 export LUNITA_TARGET_RUNTIME_RECEIPT_DIR="$XDG_STATE_HOME/lunita/runtime_validation"

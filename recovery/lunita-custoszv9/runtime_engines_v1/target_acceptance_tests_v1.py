@@ -202,23 +202,41 @@ class TargetSystemPythonAliasTests(unittest.TestCase):
 
 
 class TargetXdgRuntimeDirectoryTests(unittest.TestCase):
+    HOST_BIND_NAME = "lunita-host-43332281299-1"
+    RUNTIME_DIR = f"/run/{HOST_BIND_NAME}-runtime-1000"
+
     def test_private_uid1000_runtime_directory_passes(self):
         metadata = mock.Mock(st_mode=0o40700, st_uid=1000, st_gid=1000)
-        with mock.patch.dict(target.os.environ, {"XDG_RUNTIME_DIR": "/run/lunita-runtime-1000"}), \
-             mock.patch.object(target.os, "lstat", return_value=metadata):
+        environment = {"HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
+        with mock.patch.dict(target.os.environ, environment), mock.patch.object(target.os, "lstat", return_value=metadata):
             result = target.verify_xdg_runtime_dir()
         self.assertEqual("PASS_XDG_RUNTIME_DIR_UID1000_PRIVATE", result["status"])
+        self.assertEqual(self.RUNTIME_DIR, result["path"])
         self.assertEqual("0o700", result["mode_octal"])
 
-    def test_runtime_directory_path_must_match_legacy_flatpak_contract(self):
-        with mock.patch.dict(target.os.environ, {"XDG_RUNTIME_DIR": "/tmp/runtime"}):
+    def test_different_workflow_attempts_get_distinct_runtime_paths(self):
+        with mock.patch.dict(target.os.environ, {"HOST_BIND_NAME": "lunita-host-1001-1"}):
+            first_path = target.expected_xdg_runtime_dir()
+        with mock.patch.dict(target.os.environ, {"HOST_BIND_NAME": "lunita-host-1001-2"}):
+            second_path = target.expected_xdg_runtime_dir()
+        self.assertNotEqual(first_path, second_path)
+
+    def test_runtime_directory_path_must_match_run_scoped_contract(self):
+        environment = {"HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": "/tmp/runtime"}
+        with mock.patch.dict(target.os.environ, environment):
             with self.assertRaisesRegex(target.TargetGateError, "must be exactly"):
+                target.verify_xdg_runtime_dir()
+
+    def test_unsafe_run_identity_is_denied(self):
+        environment = {"HOST_BIND_NAME": "../shared", "XDG_RUNTIME_DIR": "/run/../shared-runtime-1000"}
+        with mock.patch.dict(target.os.environ, environment):
+            with self.assertRaisesRegex(target.TargetGateError, "missing or unsafe"):
                 target.verify_xdg_runtime_dir()
 
     def test_runtime_directory_must_exist_as_a_real_directory(self):
         metadata = mock.Mock(st_mode=0o120700, st_uid=1000, st_gid=1000)
-        with mock.patch.dict(target.os.environ, {"XDG_RUNTIME_DIR": "/run/lunita-runtime-1000"}), \
-             mock.patch.object(target.os, "lstat", return_value=metadata):
+        environment = {"HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
+        with mock.patch.dict(target.os.environ, environment), mock.patch.object(target.os, "lstat", return_value=metadata):
             with self.assertRaisesRegex(target.TargetGateError, "real directory"):
                 target.verify_xdg_runtime_dir()
 
@@ -228,12 +246,24 @@ class TargetXdgRuntimeDirectoryTests(unittest.TestCase):
             mock.Mock(st_mode=0o40700, st_uid=1000, st_gid=0),
             mock.Mock(st_mode=0o40755, st_uid=1000, st_gid=1000),
         )
+        environment = {"HOST_BIND_NAME": self.HOST_BIND_NAME, "XDG_RUNTIME_DIR": self.RUNTIME_DIR}
         for metadata in invalid_metadata:
             with self.subTest(uid=metadata.st_uid, gid=metadata.st_gid, mode=oct(metadata.st_mode)):
-                with mock.patch.dict(target.os.environ, {"XDG_RUNTIME_DIR": "/run/lunita-runtime-1000"}), \
-                     mock.patch.object(target.os, "lstat", return_value=metadata):
+                with mock.patch.dict(target.os.environ, environment), mock.patch.object(target.os, "lstat", return_value=metadata):
                     with self.assertRaisesRegex(target.TargetGateError, "owned by UID/GID 1000"):
                         target.verify_xdg_runtime_dir()
+
+
+class TargetRuntimeMountIsolationContractTests(unittest.TestCase):
+    def test_runtime_mount_target_is_scoped_to_workflow_attempt(self):
+        repository = pathlib.Path(__file__).resolve().parents[3]
+        wrapper = repository / "scripts/lunita/run_target_runtime_acceptance_in_container_v1.sh"
+        content = wrapper.read_text(encoding="utf-8")
+        self.assertIn('RUNTIME_BIND_TARGET="/run/${HOST_BIND_NAME}-runtime-1000"', content)
+        self.assertIn('export XDG_RUNTIME_DIR="$RUNTIME_BIND_TARGET"', content)
+        self.assertIn(r"^lunita-host-[A-Za-z0-9-]+$", content)
+        self.assertNotIn("RUNTIME_BIND_TARGET=/run/lunita-runtime-1000", content)
+
 
 class TargetHostFlatpakInstallWorkflowTests(unittest.TestCase):
     def test_host_flatpak_install_retries_network_and_still_requires_cli(self):
