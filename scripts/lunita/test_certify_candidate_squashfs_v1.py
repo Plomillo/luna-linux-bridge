@@ -109,7 +109,7 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "clone_is_distinct": True,
             "active_configuration_member": "analyses.json",
             "changed_archive_member": "analyses.json",
-            "changed_json_pointer": "/analyses/0/options/setSeed",
+            "changed_json_pointer": "/analyses/0/options",
             "analysis_index": 0,
             "analysis_id": "BayesianLogLinear",
             "analysis_name": "Bayesian Log-Linear",
