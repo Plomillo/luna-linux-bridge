@@ -39,6 +39,21 @@ class ProcessTreeCleanupError(RuntimeError):
 
 
 def _process_group_exists(pgid: int) -> bool:
+    """Return true only while a non-zombie member remains in the process group."""
+    proc_root = pathlib.Path("/proc")
+    if proc_root.is_dir():
+        for entry in proc_root.iterdir():
+            if not entry.name.isdigit():
+                continue
+            try:
+                fields = (entry / "stat").read_text(encoding="ascii").rsplit(")", 1)[1].split()
+                state = fields[0]
+                process_group = int(fields[2])
+            except (OSError, ValueError, IndexError):
+                continue
+            if process_group == pgid and state not in {"Z", "X"}:
+                return True
+        return False
     try:
         os.killpg(pgid, 0)
         return True
@@ -107,7 +122,7 @@ def run_bounded_process_tree(command: list[str], *, env: dict, timeout: int) -> 
             raise subprocess.TimeoutExpired(command, timeout, output=captured) from exc
 
         if _process_group_exists(process.pid):
-            _terminate_process_group(process.pid)
+            _terminate_process_group(process)
             raise ProcessTreeCleanupError(
                 f"JASP command exited with return code {returncode} while descendants remained"
             )
