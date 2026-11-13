@@ -63,14 +63,14 @@ def inspect_stored_results_member(source: pathlib.Path) -> dict:
         jasp_citations = [
             value for value in citations
             if isinstance(value, str) and re.search(
-                r"JASP Team \\(\\d{4}\\)\\. JASP \\(Version [^)]*\\)", value
+                r"JASP Team \(\d{4}\)\. JASP \(Version [^)]*\)", value
             )
         ]
         if len(jasp_citations) != 1:
             raise FixtureError(
                 f"Expected exactly one top-level JASP software citation; found {len(jasp_citations)}"
             )
-        version_match = re.search(r"JASP Team \\(\\d{4}\\)\\. JASP \\(Version ([^)]*)\\)", jasp_citations[0])
+        version_match = re.search(r"JASP Team \(\d{4}\)\. JASP \(Version ([^)]*)\)", jasp_citations[0])
         if not version_match:
             raise FixtureError("JASP software citation has no parseable version")
         return {
