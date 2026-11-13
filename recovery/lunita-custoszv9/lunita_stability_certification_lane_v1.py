@@ -1829,6 +1829,8 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         checks["squashfs_rootfs_postvalidation_manifest_closure"] = direct_candidate_rootfs_manifest_closure(
             jasp, inventory_hashes_valid
         )
+    if direct:
+        checks["jasp_post_mutation_runtime_identity"] = verify_jasp_runtime_mutation_receipt()
     # Re-validate pre-existing source-bound checks instead of overwriting their history.
     for name, check in list(checks.items()):
         if name in {"MISION1_identity_sha256", "runtime_report_and_launcher_identity"}:
