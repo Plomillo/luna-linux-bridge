@@ -781,6 +781,7 @@ class JaspRunnerTests(unittest.TestCase):
 
             with (
                 mock.patch.object(lane, "OUT", out),
+                mock.patch.dict(lane.os.environ, {"GITHUB_RUN_ID": "43409900123", "GITHUB_RUN_ATTEMPT": "2"}),
                 mock.patch.object(lane, "ROOTFS", rootfs),
                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
                 mock.patch.object(lane, "verify_jasp_runtime_mutation_receipt", return_value={
@@ -796,9 +797,13 @@ class JaspRunnerTests(unittest.TestCase):
 
             self.assertEqual("BLOCKED_JASP_REGRESSION", result["status"])
             self.assertEqual(1, runner.call_count)
+            self.assertTrue(result["workflow_identity_valid"])
+            self.assertEqual({"run_id": "43409900123", "run_attempt": "2"}, result["workflow_identity"])
             self.assertEqual(5, bounded_runner.call_count)
             for call in bounded_runner.call_args_list:
                 self.assertEqual("offscreen", call.kwargs["env"].get("QT_QPA_PLATFORM"))
+                self.assertEqual("43409900123", call.kwargs["env"].get("GITHUB_RUN_ID"))
+                self.assertEqual("2", call.kwargs["env"].get("GITHUB_RUN_ATTEMPT"))
                 self.assertEqual(300, call.kwargs["timeout"])
                 self.assertNotIn("-platform", call.args[0])
                 self.assertNotIn("--timeOut=2", call.args[0])
@@ -913,7 +918,7 @@ class JaspRunnerTests(unittest.TestCase):
                 return completed
 
             with (
-                mock.patch.object(lane, "OUT", out),
+                mock.patch.dict(lane.os.environ, {"GITHUB_RUN_ID": "43409900123", "GITHUB_RUN_ATTEMPT": "2"}),
                 mock.patch.object(lane, "ROOTFS", rootfs),
                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
                 mock.patch.object(lane, "verify_jasp_runtime_mutation_receipt", return_value={
