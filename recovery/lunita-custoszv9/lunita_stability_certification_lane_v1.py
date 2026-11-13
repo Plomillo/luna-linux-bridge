@@ -81,7 +81,7 @@ DEATH_PENALTY_SOURCE_SHA256 = "fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229
 EXPECTED_JASP_RUNTIME_VERSION = "0.98.8"
 EXPECTED_JASP_SOURCE_COMMIT = "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1"
 EXPECTED_JASP_APP_COMMIT = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
-JASP_CANDIDATE_BASELINE = ROOT / "baselines" / "LUNITA_JASP_0_98_8_DEATH_PENALTY_SEEDED_R1.json"
+JASP_CANDIDATE_BASELINE = ROOT / "baselines" / "LUNITA_JASP_0_98_8_DEATH_PENALTY_SEEDED_R2.json"
 
 
 def utc() -> str:
@@ -366,7 +366,7 @@ def load_pre_registered_jasp_candidate_baseline() -> dict:
         acceptance = data.get("acceptance") or {}
         valid = bool(
             data.get("schema") == "LUNITA_JASP_VERSIONED_BASELINE/1.0"
-            and data.get("baseline_id") == "LUNITA_JASP_0_98_8_DEATH_PENALTY_SEEDED_R1"
+            and data.get("baseline_id") == "LUNITA_JASP_0_98_8_DEATH_PENALTY_SEEDED_R2"
             and data.get("state") == "PRE_REGISTERED_PENDING_INDEPENDENT_REEXECUTION"
             and data.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
             and data.get("candidate_version") == "1.8.0"
