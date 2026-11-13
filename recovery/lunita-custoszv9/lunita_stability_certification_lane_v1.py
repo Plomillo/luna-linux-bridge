@@ -2325,6 +2325,26 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
             and isinstance(row.get("evidence_sha256"), str)
         },
     }
+    jasp_runtime_identity = verify_jasp_runtime_mutation_receipt() if direct else {}
+    target_workflow_identity = (
+        target_runtime.get("workflow_identity")
+        if isinstance(target_runtime.get("workflow_identity"), dict) else {}
+    )
+    expected_process_run_id = str(os.environ.get("GITHUB_RUN_ID", ""))
+    expected_process_attempt = str(os.environ.get("GITHUB_RUN_ATTEMPT", ""))
+    expected_process_executable = str(jasp_runtime_identity.get("jasp_binary_sha256", ""))
+    expected_process_runtime = str(jasp_runtime_identity.get("flatpak_runtime_commit", ""))
+    process_identity_bound = bool(
+        not direct or (
+            jasp_runtime_identity.get("status") == "PASS"
+            and re.fullmatch(r"\\d+", expected_process_run_id)
+            and re.fullmatch(r"\\d+", expected_process_attempt)
+            and target_workflow_identity.get("run_id") == expected_process_run_id
+            and target_workflow_identity.get("run_attempt") == expected_process_attempt
+            and re.fullmatch(r"[0-9a-f]{64}", expected_process_executable)
+            and re.fullmatch(r"[0-9a-f]{64}", expected_process_runtime)
+        )
+    )
     process_tree_invocations = []
     expected_process_cases = {
         "flatpak_launch": ["flatpak_launch"],
@@ -2363,7 +2383,8 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         and isinstance(row.get("evidence_sha256"), str)
     }
     process_tree_complete = (
-        set(jasp_cases) == set(expected_process_cases)
+        process_identity_bound
+        and set(jasp_cases) == set(expected_process_cases)
         and len(process_tree_invocations) == 5
         and len(unique_invocation_ids) == 5
         and all(
@@ -2373,21 +2394,22 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
             for row in process_tree_invocations
         )
     )
-    checks["jasp_process_tree_lifecycle"] = {
-        "status": "PASS" if process_tree_complete else "BLOCKED",
-        "returncode": 0 if process_tree_complete else 1,
-        "invocation_count": len(process_tree_invocations),
-        "expected_invocation_count": 5,
-        "unique_invocation_id_count": len(unique_invocation_ids),
-        "workflow_identity": {
-            "run_id": expected_process_run_id,
-            "run_attempt": expected_process_attempt,
-        },
-        "jasp_binary_sha256": expected_process_executable,
-        "flatpak_runtime_ostree_commit": expected_process_runtime,
-        "invocations": process_tree_invocations,
-        "evidence": process_tree_evidence,
-    }
+    if direct:
+        checks["jasp_process_tree_lifecycle"] = {
+            "status": "PASS" if process_tree_complete else "BLOCKED",
+            "returncode": 0 if process_tree_complete else 1,
+            "invocation_count": len(process_tree_invocations),
+            "expected_invocation_count": 5,
+            "unique_invocation_id_count": len(unique_invocation_ids),
+            "workflow_identity": {
+                "run_id": expected_process_run_id,
+                "run_attempt": expected_process_attempt,
+            },
+            "jasp_binary_sha256": expected_process_executable,
+            "flatpak_runtime_ostree_commit": expected_process_runtime,
+            "invocations": process_tree_invocations,
+            "evidence": process_tree_evidence,
+        }
     squashfs_identity = direct_candidate_squashfs_identity() if direct else {}
     if direct:
         checks["squashfs_image_and_package_binding"] = {
@@ -2419,7 +2441,7 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
             jasp, inventory_hashes_valid
         )
     if direct:
-        checks["jasp_post_mutation_runtime_identity"] = verify_jasp_runtime_mutation_receipt()
+        checks["jasp_post_mutation_runtime_identity"] = jasp_runtime_identity
     # Re-validate pre-existing source-bound checks instead of overwriting their history.
     for name, check in list(checks.items()):
         if name in {"MISION1_identity_sha256", "runtime_report_and_launcher_identity"}:
@@ -2531,6 +2553,7 @@ def issue_s32_independent_beta_validation_receipt() -> dict:
         "candidate_rootfs_inventory_and_dependency_manifest",
         "jasp_packaged_fixture_nonregression",
         "jasp_process_tree_lifecycle",
+        "jasp_post_mutation_runtime_identity",
         "squashfs_image_and_package_binding",
     }
     if not isinstance(checks, dict) or not required_checks.issubset(checks):
@@ -2541,6 +2564,38 @@ def issue_s32_independent_beta_validation_receipt() -> dict:
     process_tree_workflow = process_tree_check.get("workflow_identity") or {}
     target_workflow = target.get("workflow_identity") or {}
     jasp_identity_check = checks.get("jasp_post_mutation_runtime_identity") or {}
+    expected_process_cases = {
+        "flatpak_launch", "reliability", "weight_gain",
+        "death_penalty_save", "death_penalty_rerun",
+    }
+    process_invocations = process_tree_check.get("invocations")
+    executable_sha = str(process_tree_check.get("jasp_binary_sha256", ""))
+    runtime_commit = str(process_tree_check.get("flatpak_runtime_ostree_commit", ""))
+    invocation_ids = {
+        row.get("invocation_id") for row in process_invocations
+        if isinstance(row, dict)
+    } if isinstance(process_invocations, list) else set()
+    observed_cases = {
+        row.get("case_id") for row in process_invocations
+        if isinstance(row, dict)
+    } if isinstance(process_invocations, list) else set()
+    process_receipts_valid = bool(
+        isinstance(process_invocations, list)
+        and len(process_invocations) == 5
+        and observed_cases == expected_process_cases
+        and len(invocation_ids) == 5
+        and process_tree_check.get("invocation_count") == 5
+        and process_tree_check.get("unique_invocation_id_count") == 5
+        and all(
+            process_tree_receipt_identity_matches(
+                row, case_id=str(row.get("case_id", "")), env=os.environ,
+                executable_sha256=executable_sha, runtime_ostree_commit=runtime_commit,
+            )
+            for row in process_invocations
+        )
+    )
+    if not process_receipts_valid:
+        return {"status": "BLOCKED_JASP_PROCESS_TREE_RECEIPTS", "certification": "NOT_GRANTED"}
     if (
         process_tree_workflow.get("run_id") != str(target_workflow.get("run_id", ""))
         or process_tree_workflow.get("run_attempt") != str(target_workflow.get("run_attempt", ""))
