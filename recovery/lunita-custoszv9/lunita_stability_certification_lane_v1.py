@@ -81,6 +81,7 @@ DEATH_PENALTY_SOURCE_SHA256 = "fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229
 EXPECTED_JASP_RUNTIME_VERSION = "0.98.8"
 EXPECTED_JASP_SOURCE_COMMIT = "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1"
 EXPECTED_JASP_APP_COMMIT = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
+JASP_CANDIDATE_BASELINE = ROOT / "baselines" / "LUNITA_JASP_0_98_8_DEATH_PENALTY_SEEDED_R1.json"
 
 
 def utc() -> str:
@@ -350,6 +351,66 @@ def jasp_result_rows_sha256(rows: list[str]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def load_pre_registered_jasp_candidate_baseline() -> dict:
+    """Load and validate the immutable, pre-registered JASP 0.98.8 candidate baseline."""
+    path = JASP_CANDIDATE_BASELINE
+    try:
+        if path.is_symlink() or not path.is_file():
+            raise RuntimeError("Pre-registered JASP candidate baseline is missing or unsafe")
+        data = load_json(path, {}) or {}
+        rows = data.get("expected_result_rows")
+        rows_sha = data.get("expected_result_rows_sha256")
+        analysis = data.get("analysis_configuration") or {}
+        runtime = data.get("target_runtime") or {}
+        source = data.get("source_fixture") or {}
+        acceptance = data.get("acceptance") or {}
+        valid = bool(
+            data.get("schema") == "LUNITA_JASP_VERSIONED_BASELINE/1.0"
+            and data.get("baseline_id") == "LUNITA_JASP_0_98_8_DEATH_PENALTY_SEEDED_R1"
+            and data.get("state") == "PRE_REGISTERED_PENDING_INDEPENDENT_REEXECUTION"
+            and data.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
+            and data.get("candidate_version") == "1.8.0"
+            and data.get("scope") == "CANDIDATE_JASP_0_98_8_SEEDED_DEATH_PENALTY_REPLAY_ONLY"
+            and source.get("sha256") == DEATH_PENALTY_SOURCE_SHA256
+            and runtime.get("application_id") == "org.jaspstats.JASP"
+            and runtime.get("version") == EXPECTED_JASP_RUNTIME_VERSION
+            and runtime.get("source_commit") == EXPECTED_JASP_SOURCE_COMMIT
+            and runtime.get("flatpak_app_ostree_commit") == EXPECTED_JASP_APP_COMMIT
+            and analysis.get("original_setSeed") is False
+            and analysis.get("replay_setSeed") is True
+            and analysis.get("seed") == 1
+            and analysis.get("samplingMethod") == "auto"
+            and analysis.get("samplingMethodManualSamples") == 10000
+            and acceptance.get("independent_validation") == "REQUIRED"
+            and acceptance.get("automatic_baseline_replacement_allowed") is False
+            and acceptance.get("dynamic_autobaselining_allowed") is False
+            and isinstance(rows, list) and len(rows) == 3
+            and all(isinstance(row, str) and row for row in rows)
+            and isinstance(rows_sha, str) and re.fullmatch(r"[0-9a-f]{64}", rows_sha)
+            and jasp_result_rows_sha256(rows) == rows_sha
+        )
+        if not valid:
+            raise RuntimeError("Pre-registered JASP candidate baseline identity or content is invalid")
+        return {
+            "status": "PASS_PRE_REGISTERED_BASELINE_VALID",
+            "baseline_id": data["baseline_id"],
+            "path": str(path),
+            "sha256": sha_file(path),
+            "expected_result_rows": rows,
+            "expected_result_rows_sha256": rows_sha,
+            "state": data["state"],
+            "independent_reexecution_required": True,
+            "historical_reference_status": "PRESERVED_HISTORICAL_REFERENCE_MISMATCH",
+            "data": data,
+        }
+    except Exception as exc:
+        return {
+            "status": "BLOCKED_PRE_REGISTERED_BASELINE_INVALID",
+            "path": str(path),
+            "error": f"{type(exc).__name__}:{str(exc)[:800]}",
+        }
+
+
 def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: str) -> dict:
     """Verify two independent executions of the same hash-bound seeded input.
 
@@ -534,9 +595,23 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         (save_run.get("runtime_identity") or {}).get("status") == "PASS"
         and (rerun.get("runtime_identity") or {}).get("status") == "PASS"
     )
+    candidate_baseline = load_pre_registered_jasp_candidate_baseline()
+    candidate_baseline_match = bool(
+        candidate_baseline.get("status") == "PASS_PRE_REGISTERED_BASELINE_VALID"
+        and actual_rows_equal
+        and save_rows == candidate_baseline.get("expected_result_rows")
+        and rerun_rows == candidate_baseline.get("expected_result_rows")
+        and save_rows_sha == candidate_baseline.get("expected_result_rows_sha256")
+        and rerun_rows_sha == candidate_baseline.get("expected_result_rows_sha256")
+        and runtime_identity_pass
+        and actual_commit == EXPECTED_JASP_APP_COMMIT
+        and original_before == DEATH_PENALTY_SOURCE_SHA256
+        and original_after == DEATH_PENALTY_SOURCE_SHA256
+    )
     final_status = (
         "PASS"
-        if actual_rows_equal and runtime_identity_pass and fixture_receipt_valid and unchanged and roundtrip_reproducible
+        if actual_rows_equal and candidate_baseline_match and runtime_identity_pass
+        and fixture_receipt_valid and unchanged and roundtrip_reproducible
         else "FAIL"
     )
     result = {
@@ -545,12 +620,20 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         "status": (
             "PASS_JASP_STRICT_ROUNDTRIP"
             if final_status == "PASS" and reference_status == "PASS" else
-            "PASS_DETERMINISTIC_REPLAY_REFERENCE_MISMATCH_RECORDED"
+            "PASS_CANDIDATE_VERSIONED_BASELINE_HISTORICAL_MISMATCH_RECORDED"
             if final_status == "PASS" and reference_status == "BLOCKED_STORED_REFERENCE_MISMATCH" else
             "BLOCKED_JASP_STRICT_ROUNDTRIP"
         ),
         "deterministic_replay_status": replay_status,
         "reference_comparison_status": reference_status,
+        "candidate_baseline": {
+            key: candidate_baseline.get(key)
+            for key in ("status", "baseline_id", "path", "sha256", "expected_result_rows_sha256",
+                        "state", "independent_reexecution_required", "error")
+            if key in candidate_baseline
+        },
+        "candidate_baseline_match": candidate_baseline_match,
+        "candidate_baseline_match_status": "PASS" if candidate_baseline_match else "BLOCKED",
         "actual_result_rows_equal": actual_rows_equal,
         "runtime_identity_status": "PASS" if runtime_identity_pass else "BLOCKED",
         "save_runtime_identity": save_run.get("runtime_identity"),
