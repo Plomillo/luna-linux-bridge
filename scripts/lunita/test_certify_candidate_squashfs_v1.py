@@ -124,11 +124,11 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
         }
         seeded_log_path = independent_dir / "JASP_UNITTEST_FLATPAK_test.log"
         seeded_log_path.write_text(
-            f"TEST_FILE={seeded_receipt['clone_path']}\\n"
-            f"DETERMINISTIC_FIXTURE_RECEIPT_PATH={seeded_receipt_path}\\n"
-            f"DETERMINISTIC_FIXTURE_RECEIPT_SHA256={seeded_receipt['receipt_sha256']}\\n"
-            f"DETERMINISTIC_FIXTURE_CLONE_SHA256={seeded_receipt['clone_sha256']}\\n"
-            "DETERMINISTIC_FIXTURE_SEED_ENABLED=TRUE\\n",
+            f"TEST_FILE={seeded_receipt['clone_path']}\n"
+            f"DETERMINISTIC_FIXTURE_RECEIPT_PATH={seeded_receipt_path}\n"
+            f"DETERMINISTIC_FIXTURE_RECEIPT_SHA256={seeded_receipt['receipt_sha256']}\n"
+            f"DETERMINISTIC_FIXTURE_CLONE_SHA256={seeded_receipt['clone_sha256']}\n"
+            "DETERMINISTIC_FIXTURE_SEED_ENABLED=TRUE\n",
             encoding="utf-8",
         )
         seeded_log_sha = cert.sha256_file(seeded_log_path)
@@ -379,10 +379,7 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             paths = self.prepare(pathlib.Path(tmp))
             image_sha = cert.sha256_file(paths["image"])
-            result = cert.build_certificate(
-                paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
-                paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
-            )
+            result = self.build_certificate_for_paths(paths)
             self.assertEqual("CERTIFIED_FUNCTIONAL_CANDIDATE", result["status"])
             self.assertEqual(image_sha, result["artifact"]["sha256"])
             self.assertEqual(paths["target_sha"], result["target_runtime_receipt"]["sha256"])
@@ -441,8 +438,9 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             report = json.loads(paths["independent"].read_text(encoding="utf-8"))
             check = report["checks"]["jasp_packaged_fixture_nonregression"]
             check["cases"]["flatpak_launch"]["deterministic_fixture_receipt"]["after"]["setSeed"] = False
-            with self.assertRaisesRegex(cert.CertificationError, "seed transition"):
-                cert.validate_jasp_seeded_fixture_evidence(check)
+            with mock.patch.object(cert, "JASP_DEATH_PENALTY_SOURCE_SHA256", paths["source_sha"]):
+                with self.assertRaisesRegex(cert.CertificationError, "seed transition"):
+                    cert.validate_jasp_seeded_fixture_evidence(check)
 
     def test_nonzero_jasp_exit_receipt_blocks_lifecycle_validation(self):
         with tempfile.TemporaryDirectory() as tmp:
