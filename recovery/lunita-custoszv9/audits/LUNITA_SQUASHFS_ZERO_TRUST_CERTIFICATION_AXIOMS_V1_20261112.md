@@ -643,3 +643,46 @@ Además, el paso de refresco JASP mantiene fijado el commit de aplicación, actu
 ### Extensión del predicado terminal — AX-LUN-030
 
 `ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-030 AND AX-LUN-030A`. Una imagen con round-trip correcto no queda certificada mientras la identidad del rootfs validado después del empaquetado y los binarios/runtime efectivamente probados no estén cerrados criptográficamente contra los bytes de la imagen.
+
+
+## 9. Addendum append-only — AX-LUN-031: prueba de implementación no equivale a certificación funcional
+
+**Registro de evidencia:** 2026-11-13 UTC. Este axioma registra la implementación de los controles AX-LUN-030/030A y el resultado de su aceptación contractual. No modifica las declaraciones históricas contenidas en el addendum 8; complementa su estado con nueva evidencia.
+
+### AX-LUN-031 — Cierre de implementación, validación y certificación como estados distintos
+
+La implementación de un control, su aceptación contractual automatizada, su ejecución sobre el candidato real, la validación independiente y la emisión del certificado MUST mantenerse como estados epistémicos separados. Ningún estado inferior autoriza inferir uno superior.
+
+Para el cierre AX-LUN-030/030A quedan registrados los siguientes artefactos de implementación:
+
+- `recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py`: recálculo del manifiesto canónico del rootfs después de la validación independiente, generación del recibo de cierre y verificación del recibo de mutación JASP/Qt antes de ejecutar los casos.
+- `scripts/lunita/package_candidate_squashfs_v1.py`: implementación canónica de `tree_manifest`, reutilizada directamente por la validación post-pruebas y por el certificador final.
+- `scripts/lunita/certify_candidate_squashfs_v1.py`: comprobación independiente del recibo de cierre, verificación del hash del recibo y nueva recomputación del manifiesto vivo en el punto de emisión; exige además la comprobación de identidad JASP post-mutación.
+- `scripts/lunita/test_certify_candidate_squashfs_v1.py`: fixture de certificación con manifiesto canónico real y prueba negativa de mutación del rootfs posterior al empaquetado.
+- `scripts/lunita/record_jasp_runtime_mutation_receipt_v1.py`: emisión fail-closed del recibo `LUNITA_JASP_RUNTIME_POST_MUTATION_RECEIPT/1.0`; no exige falsamente que el ejecutable `bin/JASP` cambie si la modificación ocurre en un recurso Qt interno.
+- `scripts/lunita/patch_jasp_certification_runtime_v1.py`: registro de SHA-256 pre/post de cada recurso formatter realmente modificado, junto con la ruta y el número de sitios afectados.
+- `scripts/lunita/refresh_jasp_runtime_v1.sh` y `.github/workflows/lunita-v18-direct-functional-validation.yml`: propagación, conservación y entrega del recibo de mutación a la fase independiente y a la colección de evidencia.
+
+### Evidencia contractual registrada
+
+La revisión `535ad0107fe4935c212df8d0c4e219e9360b6338` completó correctamente el workflow contractual `43359676224` (job `131669941407`) con conclusión `success`. Esa ejecución verifica compilación, contratos y pruebas unitarias/negativas de la implementación, incluido el generador de recibos JASP/Qt, el cierre de manifiestos y el resto de contratos v1.8. La validación de destino fue omitida correctamente en el evento pull request; por ello, el resultado contractual no constituye una ejecución funcional sobre el rootfs candidato real.
+
+Los fallos de ejecuciones contractuales anteriores se conservan como historial de desarrollo y diagnóstico; no se presentan como aprobaciones. El resultado `success` citado corresponde únicamente a la revisión SHA exacta indicada arriba.
+
+### Condición de paso restante
+
+AX-LUN-030/030A solo podrán considerarse validados funcionalmente cuando una nueva ejecución completa, posterior a la integración de esta revisión en la rama operativa, pruebe sobre el mismo `G06_REBUILD_CANDIDATE_R1/1.8.0`:
+
+1. La regeneración y comparación exacta del manifiesto post-validación contra el manifiesto de origen del paquete, usando la misma implementación canónica.
+2. La verificación en vivo de los commits OSTree de aplicación/runtime/SDK y de los hashes post-mutación de cada recurso formatter, bibliotecas Qt, scripts y recibos.
+3. La ejecución JASP en el entorno realmente empaquetado, con logs, retornos y hashes ligados al recibo de mutación.
+4. La validación independiente completa, el recibo S32 y la elegibilidad de stable release ligados al SHA-256 de la misma imagen SquashFS, checksum, recibo de paquete y manifiesto candidato.
+5. La emisión por el certificador final de `CERTIFIED_FUNCTIONAL_CANDIDATE`, sin promociones canónicas ni concesión automática de G23/G24.
+
+Si una prueba JASP conserva `BLOCKED_STORED_REFERENCE_MISMATCH`, el replay determinista solo podrá registrarse como tal y NO podrá elevarse a aprobación de referencia estricta. La causa raíz de la discrepancia histórica deberá resolverse mediante evidencia reproducible y revisión independiente, o permanecer explícitamente bloqueada.
+
+**Estado al registrar este addendum:** `IMPLEMENTED; CONTRACT_CI_PASS_ON_SHA_535ad0107fe4935c212df8d0c4e219e9360b6338; REAL_TARGET_VALIDATION_PENDING; INDEPENDENT_VALIDATION_PENDING; S32_PENDING; FUNCTIONAL_CERTIFICATION_NOT_GRANTED`.
+
+### Extensión del predicado terminal — AX-LUN-031
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-031`. Ningún certificado puede ser emitido a partir de aceptación contractual aislada, artefactos de una revisión distinta o evidencia que no cierre criptográficamente sobre la misma imagen candidata.
