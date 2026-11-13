@@ -465,7 +465,7 @@ def sha256_file(path: pathlib.Path) -> str:
 
 def git_blob_sha1(payload: bytes) -> str:
     """Return Git's object SHA-1 for the exact blob bytes."""
-    header = f"blob {len(payload)}\\0".encode("ascii")
+    header = b"blob " + str(len(payload)).encode("ascii") + bytes((0,))
     return hashlib.sha1(header + payload).hexdigest()
 
 
