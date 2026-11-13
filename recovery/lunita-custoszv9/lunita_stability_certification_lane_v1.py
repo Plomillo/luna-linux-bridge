@@ -27,6 +27,8 @@ from jasp_seed_fixture_v1 import (
     FixtureError,
     inspect_seed_option,
     prepare_deterministic_fixture,
+    inspect_stored_results_member,
+    inspect_archive_member,
     verify_deterministic_fixture_receipt,
 )
 
@@ -390,6 +392,7 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
     save_run = {"status": "BLOCKED", "returncode": 125}
     rerun = {"status": "BLOCKED", "returncode": 125}
     temp_before = temp_after = temp_after_rerun = None
+    result_member_before = result_member_after_save = result_member_after_rerun = None
     temp_fixture = None
     temp_root = None
     fixture_receipt = None
@@ -480,14 +483,47 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
             temp_before = sha_file(temp_fixture)
             if not fixture_receipt_valid:
                 raise PermissionError("Deterministic JASP fixture receipt failed hash-bound validation")
+            result_member_name = fixture_receipt.get("historical_results_member")
+            result_member_before = inspect_archive_member(temp_fixture, result_member_name)
+            if result_member_before.get("member_sha256") != fixture_receipt.get("historical_results_member_sha256"):
+                raise PermissionError("Disposable JASP fixture changed historical results before native save")
 
-            command = flatpak_jasp_launch(
-                [f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)]
+            # JASP parses --save as a standalone flag before --unitTest. Native source
+            # confirms this causes saveJaspFile() after the recalculation/compare event.
+            save_command = flatpak_jasp_launch(
+                [f"--filesystem={temp_root}"], ["--save", "--unitTest", str(temp_fixture)]
             )
-            save_run = execute_replay(command, "save", save_log_path)
+            save_argument_order_valid = (
+                save_command.index("--save") < save_command.index("--unitTest")
+                and save_command[save_command.index("--unitTest") + 1] == str(temp_fixture)
+            )
+            if not save_argument_order_valid:
+                raise PermissionError("JASP native --save argument order is invalid")
+            save_run = execute_replay(save_command, "save", save_log_path)
             temp_after = sha_file(temp_fixture) if temp_fixture.is_file() else None
-            rerun = execute_replay(command, "rerun", rerun_log_path)
-            temp_after_rerun = sha_file(temp_fixture) if temp_fixture.is_file() else None
+            result_member_after_save = inspect_archive_member(temp_fixture, result_member_name) if temp_fixture.is_file() else None
+            save_persisted_results = bool(
+                result_member_after_save
+                and result_member_after_save.get("member_sha256") != result_member_before.get("member_sha256")
+                and result_member_after_save.get("archive_testzip") == "PASS"
+            )
+            if save_persisted_results:
+                rerun_command = flatpak_jasp_launch(
+                    [f"--filesystem={temp_root}"], ["--unitTest", str(temp_fixture)]
+                )
+                rerun = execute_replay(rerun_command, "rerun", rerun_log_path)
+                temp_after_rerun = sha_file(temp_fixture) if temp_fixture.is_file() else None
+                result_member_after_rerun = inspect_archive_member(temp_fixture, result_member_name)
+            else:
+                rerun = {
+                    "status": "BLOCKED_NATIVE_SAVE_NOT_PERSISTED",
+                    "returncode": 125,
+                    "runtime_identity": {"status": "BLOCKED_NATIVE_SAVE_NOT_PERSISTED"},
+                    "stored_reference_mismatch": False,
+                    "actual_result_rows": [],
+                    "actual_result_rows_sha256": None,
+                }
+                temp_after_rerun = temp_after
     except Exception as exc:
         base["executor_error"] = {"type": type(exc).__name__, "message": str(exc)[:1200]}
 
@@ -510,21 +546,31 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         save_rows and rerun_rows and save_rows_sha
         and save_rows_sha == rerun_rows_sha and save_rows == rerun_rows
     )
+    save_command = save_run.get("command")
+    save_command_order_valid = bool(
+        isinstance(save_command, list)
+        and "--save" in save_command and "--unitTest" in save_command
+        and save_command.index("--save") < save_command.index("--unitTest")
+        and save_command[save_command.index("--unitTest") + 1] == str(temp_fixture)
+    )
+    save_returncode_valid = bool(
+        save_run.get("returncode") == 0
+        or (save_run.get("returncode") == 1 and save_run.get("stored_reference_mismatch") is True
+            and save_run.get("status") == "REFERENCE_MISMATCH_RECORDED")
+    )
     both_reference_pass = (
         save_run.get("returncode") == 0 and rerun.get("returncode") == 0
         and save_run.get("status") == "PASS_REFERENCE_AND_REPLAY"
         and rerun.get("status") == "PASS_REFERENCE_AND_REPLAY"
     )
-    both_reference_mismatch = (
-        save_run.get("returncode") == 1 and rerun.get("returncode") == 1
+    first_reference_mismatch = (
+        save_run.get("returncode") == 1
         and save_run.get("status") == "REFERENCE_MISMATCH_RECORDED"
-        and rerun.get("status") == "REFERENCE_MISMATCH_RECORDED"
         and save_run.get("stored_reference_mismatch") is True
-        and rerun.get("stored_reference_mismatch") is True
     )
     reference_status = (
         "PASS" if both_reference_pass else
-        "BLOCKED_STORED_REFERENCE_MISMATCH" if both_reference_mismatch else
+        "BLOCKED_STORED_REFERENCE_MISMATCH" if first_reference_mismatch else
         "BLOCKED"
     )
     replay_status = "PASS_DETERMINISTIC_REPLAY" if actual_rows_equal else "BLOCKED_DETERMINISTIC_REPLAY"
@@ -532,21 +578,80 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         (save_run.get("runtime_identity") or {}).get("status") == "PASS"
         and (rerun.get("runtime_identity") or {}).get("status") == "PASS"
     )
-    final_status = (
-        "PASS"
-        if actual_rows_equal and runtime_identity_pass and fixture_receipt_valid and unchanged and roundtrip_reproducible
-        else "FAIL"
+    member_saved = bool(
+        result_member_before and result_member_after_save
+        and result_member_after_save.get("member_sha256") != result_member_before.get("member_sha256")
+        and result_member_after_save.get("archive_testzip") == "PASS"
     )
+    member_stable_after_rerun = bool(
+        result_member_after_save and result_member_after_rerun
+        and result_member_after_save.get("member_sha256") == result_member_after_rerun.get("member_sha256")
+        and result_member_after_rerun.get("archive_testzip") == "PASS"
+    )
+    try:
+        historical_inspection = inspect_seed_option(source)
+        historical_results = historical_inspection.get("stored_results", {})
+        historical_seed = historical_inspection.get("matches", [])
+        historical_provenance = bool(
+            historical_results.get("jasp_version") == "0.97.1"
+            and len(historical_seed) == 1
+            and historical_seed[0].get("module_name") == "jaspFrequencies"
+            and historical_seed[0].get("setSeed") is False
+            and historical_seed[0].get("seed") == 1
+            and original_before == DEATH_PENALTY_SOURCE_SHA256
+        )
+    except Exception:
+        historical_results = {}
+        historical_seed = []
+        historical_provenance = False
+    strict_rerun_pass = (
+        rerun.get("returncode") == 0
+        and rerun.get("status") == "PASS_REFERENCE_AND_REPLAY"
+        and (rerun.get("runtime_identity") or {}).get("status") == "PASS"
+    )
+    native_save_transaction_pass = bool(
+        save_command_order_valid and save_returncode_valid and member_saved
+        and save_run.get("result_capture_status") == "PASS"
+        and (save_run.get("runtime_identity") or {}).get("status") == "PASS"
+        and strict_rerun_pass and actual_rows_equal and member_stable_after_rerun
+        and roundtrip_reproducible and fixture_receipt_valid and unchanged
+    )
+    candidate_baseline_status = (
+        "PASS_VERSIONED_DETERMINISTIC_BASELINE"
+        if native_save_transaction_pass else "BLOCKED_VERSIONED_BASELINE_TRANSACTION"
+    )
+    historical_debt_status = (
+        "DISCLOSED_NONBLOCKING_HISTORICAL_REFERENCE_DEBT"
+        if reference_status == "BLOCKED_STORED_REFERENCE_MISMATCH" and historical_provenance
+        else "NONE_REFERENCE_MATCHED" if reference_status == "PASS"
+        else "BLOCKED_HISTORICAL_REFERENCE_PROVENANCE"
+    )
+    final_status = "PASS" if native_save_transaction_pass and (
+        reference_status == "PASS" or historical_debt_status == "DISCLOSED_NONBLOCKING_HISTORICAL_REFERENCE_DEBT"
+    ) else "FAIL"
     result = {
         **base,
         "captured_at_utc": utc(),
         "status": (
             "PASS_JASP_STRICT_ROUNDTRIP"
             if final_status == "PASS" and reference_status == "PASS" else
-            "PASS_DETERMINISTIC_REPLAY_REFERENCE_MISMATCH_RECORDED"
-            if final_status == "PASS" and reference_status == "BLOCKED_STORED_REFERENCE_MISMATCH" else
+            "PASS_CANDIDATE_BASELINE_WITH_HISTORICAL_REFERENCE_DEBT"
+            if final_status == "PASS" and historical_debt_status == "DISCLOSED_NONBLOCKING_HISTORICAL_REFERENCE_DEBT" else
             "BLOCKED_JASP_STRICT_ROUNDTRIP"
         ),
+        "native_save_transaction_status": "PASS" if native_save_transaction_pass else "BLOCKED",
+        "save_command_argument_order_valid": save_command_order_valid,
+        "save_results_member_changed": member_saved,
+        "saved_results_member_sha256_before": (result_member_before or {}).get("member_sha256"),
+        "saved_results_member_sha256_after_save": (result_member_after_save or {}).get("member_sha256"),
+        "saved_results_member_sha256_after_rerun": (result_member_after_rerun or {}).get("member_sha256"),
+        "saved_results_member_stable_after_rerun": member_stable_after_rerun,
+        "saved_results_member_archive_integrity": (result_member_after_rerun or {}).get("archive_testzip"),
+        "candidate_baseline_status": candidate_baseline_status,
+        "historical_reference_debt_status": historical_debt_status,
+        "historical_reference_provenance": historical_results,
+        "historical_active_seed_option": historical_seed,
+        "historical_reference_provenance_verified": historical_provenance,
         "deterministic_replay_status": replay_status,
         "reference_comparison_status": reference_status,
         "actual_result_rows_equal": actual_rows_equal,
@@ -563,8 +668,10 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         "source_fixture_path": str(source),
         "deterministic_fixture_receipt": fixture_receipt,
         "deterministic_fixture_receipt_valid": fixture_receipt_valid,
-        "save_run": save_run,
+        "save_run": {**save_run, "command": save_command},
         "strict_rerun_after_save": rerun,
+        "native_save_exit_code_preserved": save_run.get("returncode"),
+        "strict_rerun_exit_code_preserved": rerun.get("returncode"),
         "temporary_fixture_sha256_before": temp_before,
         "temporary_fixture_sha256_after_save": temp_after,
         "temporary_fixture_sha256_after_rerun": temp_after_rerun,
