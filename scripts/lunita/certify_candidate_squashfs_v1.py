@@ -238,6 +238,82 @@ def find_bound_stable_release(stable_dir: pathlib.Path, s32_path: pathlib.Path, 
     raise CertificationError("No stable-release receipt is bound to the exact S32, independent, and target-runtime evidence")
 
 
+def validate_jasp_process_tree_lifecycle(
+    check: dict,
+    target: dict,
+    jasp_runtime_identity: dict,
+) -> dict[str, Any]:
+    """Verify five hash-bound process-group receipts against this workflow/runtime."""
+    if not isinstance(check, dict) or check.get("status") != "PASS":
+        raise CertificationError("JASP process-tree lifecycle check is not PASS")
+    workflow = target.get("workflow_identity") if isinstance(target.get("workflow_identity"), dict) else {}
+    expected_run_id = str(workflow.get("run_id", ""))
+    expected_attempt = str(workflow.get("run_attempt", ""))
+    expected_binary_sha = jasp_runtime_identity.get("jasp_binary_sha256")
+    expected_runtime_commit = jasp_runtime_identity.get("flatpak_runtime_commit")
+    expected_case_ids = {
+        "flatpak_launch", "reliability", "weight_gain",
+        "death_penalty_save", "death_penalty_rerun",
+    }
+    rows = check.get("invocations")
+    if (not isinstance(rows, list) or len(rows) != 5
+        or check.get("invocation_count") != 5
+        or check.get("expected_invocation_count") != 5
+        or check.get("unique_invocation_id_count") != 5):
+        raise CertificationError("JASP process-tree lifecycle receipt count is incomplete")
+    observed_case_ids = set()
+    invocation_ids = set()
+    for receipt in rows:
+        if not isinstance(receipt, dict):
+            raise CertificationError("JASP process-tree invocation receipt is malformed")
+        invocation_id = receipt.get("invocation_id")
+        case_id = receipt.get("case_id")
+        if not isinstance(invocation_id, str) or not re.fullmatch(r"[0-9a-f]{32}", invocation_id):
+            raise CertificationError("JASP process-tree invocation UUID is missing or malformed")
+        if invocation_id in invocation_ids:
+            raise CertificationError("Duplicate JASP process-tree invocation UUID")
+        invocation_ids.add(invocation_id)
+        observed_case_ids.add(case_id)
+        if (receipt.get("schema") != "LUNITA_JASP_PROCESS_TREE_RECEIPT/1.0"
+            or receipt.get("status") != "PASS_PROCESS_GROUP_CLOSED"
+            or receipt.get("run_id") != expected_run_id
+            or receipt.get("run_attempt") != expected_attempt
+            or receipt.get("process_group_closed") is not True
+            or receipt.get("remaining_live_pids") != []
+            or receipt.get("timeout_triggered") is not False
+            or receipt.get("termination_signals") != []
+            or not isinstance(receipt.get("process_group_id"), int)
+            or receipt.get("process_group_id", 0) <= 1
+            or receipt.get("session_id") != receipt.get("process_group_id")
+            or receipt.get("executable_sha256") != expected_binary_sha
+            or receipt.get("runtime_ostree_commit") != expected_runtime_commit
+            or receipt.get("timeout_seconds") != 300
+            or not isinstance(receipt.get("returncode"), int)
+            or not re.fullmatch(r"[0-9a-f]{64}", str(receipt.get("command_sha256", "")))
+            or not re.fullmatch(r"[0-9a-f]{64}", str(receipt.get("captured_output_sha256", "")))
+            or not isinstance(receipt.get("captured_output_bytes"), int)
+            or receipt.get("captured_output_bytes", -1) < 0
+            or not isinstance(receipt.get("started_at_utc"), str)
+            or not isinstance(receipt.get("finished_at_utc"), str)):
+            raise CertificationError(f"JASP process-tree receipt failed identity/closure validation: {case_id}")
+    if observed_case_ids != expected_case_ids:
+        raise CertificationError("JASP process-tree receipts do not cover the exact five required invocations")
+    if (check.get("workflow_identity") != {
+        "run_id": expected_run_id, "run_attempt": expected_attempt,
+    } or check.get("jasp_binary_sha256") != expected_binary_sha
+       or check.get("flatpak_runtime_ostree_commit") != expected_runtime_commit):
+        raise CertificationError("JASP process-tree aggregate identity differs from target/JASP runtime receipts")
+    return {
+        "status": "PASS",
+        "invocation_count": 5,
+        "invocation_ids": sorted(invocation_ids),
+        "workflow_run_id": expected_run_id,
+        "workflow_run_attempt": expected_attempt,
+        "jasp_binary_sha256": expected_binary_sha,
+        "flatpak_runtime_ostree_commit": expected_runtime_commit,
+    }
+
+
 def build_certificate(
     image: pathlib.Path,
     checksum: pathlib.Path,
@@ -320,6 +396,7 @@ def build_certificate(
         "target_v1_8_runtime_acceptance_e01_e15_int8",
         "candidate_rootfs_inventory_and_dependency_manifest",
         "jasp_packaged_fixture_nonregression",
+        "jasp_process_tree_lifecycle",
         "jasp_post_mutation_runtime_identity",
         "squashfs_image_and_package_binding",
         "squashfs_rootfs_postvalidation_manifest_closure",
@@ -327,6 +404,11 @@ def build_certificate(
     if not isinstance(checks, dict) or not required_checks.issubset(checks):
         raise CertificationError("Independent report lacks one or more required v1.8 checks")
     validate_evidence_map(checks)
+    jasp_process_tree_summary = validate_jasp_process_tree_lifecycle(
+        checks["jasp_process_tree_lifecycle"],
+        target,
+        checks["jasp_post_mutation_runtime_identity"],
+    )
     rootfs_manifest_closure = validate_rootfs_manifest_closure(
         package, package_receipt_path, sha256_file(package_receipt_path),
         checks["squashfs_rootfs_postvalidation_manifest_closure"],
@@ -402,6 +484,7 @@ def build_certificate(
         "candidate_manifest": {"path": str(candidate_manifest_path), "sha256": manifest_sha},
         "source_rootfs_manifest_sha256": package["source_rootfs_manifest_sha256"],
         "post_validation_rootfs_manifest_closure": rootfs_manifest_closure,
+        "jasp_process_tree_lifecycle": jasp_process_tree_summary,
         "target_runtime_receipt": {"path": str(target_path), "sha256": target_sha_expected},
         "independent_validation": {"path": str(independent_report_path), "sha256": independent_sha, "status": "PASS"},
         "s32_operational_certificate": {"path": str(s32_path), "sha256": s32_sha, "status": PASS_S32},
