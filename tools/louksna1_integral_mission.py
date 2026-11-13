@@ -1015,13 +1015,22 @@ def op_onnx(runtime: Path) -> dict:
     )
 
 
-def download_verified(url: str, dest: Path, size: int, digest: str) -> None:
-    request = Request(url, headers={"User-Agent": "louksna1-integral-mission"})
-    with urlopen(request, timeout=300) as response, dest.open("wb") as handle:
-        shutil.copyfileobj(response, handle)
-    if dest.stat().st_size != size or sha256_file(dest) != digest:
-        dest.unlink(missing_ok=True)
-        raise RuntimeError("DOWNLOAD_HASH_MISMATCH")
+def download_verified(url: str, dest: Path, size: int, digest: str, attempts: int = 3) -> None:
+    """Download and verify size and SHA-256. Transient failures are retried; the pin is never relaxed."""
+    last: Exception | None = None
+    for _ in range(max(1, attempts)):
+        try:
+            request = Request(url, headers={"User-Agent": "louksna1-integral-mission"})
+            with urlopen(request, timeout=300) as response, dest.open("wb") as handle:
+                shutil.copyfileobj(response, handle)
+            if dest.stat().st_size != size or sha256_file(dest) != digest:
+                raise RuntimeError("DOWNLOAD_HASH_MISMATCH")
+            return
+        except (OSError, RuntimeError, TimeoutError) as exc:
+            last = exc
+            dest.unlink(missing_ok=True)
+    assert last is not None
+    raise last
 
 
 def calibre_pin(runtime: Path) -> tuple[dict | None, str]:
@@ -1769,6 +1778,12 @@ def main(argv: list[str] | None = None) -> int:
         "worker_status": report["worker"].get("status"),
         "passed_targets": report["gates"]["coverage_21"]["passed"],
         "failed_targets": report["gates"]["coverage_21"]["failed"],
+        "failed_gates": {name: gate.get("reason") or gate.get("problems") or "" for name, gate in report["gates"].items() if gate.get("status") != "PASS"},
+        "failure_reasons": [
+            {"target": row.get("target_id"), "reason": row.get("reason"), "detail": json.dumps(row.get("detail"), ensure_ascii=False, sort_keys=True)[:700]}
+            for row in report.get("matrix", [])
+            if row.get("status") != "PASS"
+        ],
         "output": str(output),
     }, ensure_ascii=False, indent=2))
     return 0 if report["decision"] == "GRANTED" else 2
