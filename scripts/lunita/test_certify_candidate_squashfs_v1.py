@@ -3,6 +3,7 @@ import json
 import pathlib
 import tempfile
 import unittest
+from unittest import mock
 
 import certify_candidate_squashfs_v1 as cert
 
@@ -64,6 +65,13 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
         rootfs = base / "packaged-rootfs"
         (rootfs / "etc").mkdir(parents=True)
         (rootfs / "etc" / "os-release").write_text("NAME=Test\n", encoding="utf-8")
+        source_fixture = rootfs / (
+            "var/lib/flatpak/app/org.jaspstats.JASP/x86_64/stable/active/files/"
+            "Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp"
+        )
+        source_fixture.parent.mkdir(parents=True)
+        source_fixture.write_bytes(b"immutable source Death Penalty fixture for certificate test")
+        source_sha = cert.sha256_file(source_fixture)
         rootfs_manifest = cert.canonical_rootfs_tree_manifest(rootfs)
 
         independent = independent_dir / "BETA_INDEPENDENT_VALIDATION.json"
@@ -86,6 +94,51 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "flatpak_runtime_commit": "c" * 64,
             "evidence": {str(jasp_mutation_receipt): jasp_mutation_sha},
         }
+        seeded_receipt_path = independent_dir / "jasp-seeded-fixture-receipt.json"
+        seeded_receipt_payload = {
+            "schema": "LUNITA_JASP_DETERMINISTIC_FIXTURE/1.0",
+            "status": "PASS_DETERMINISTIC_FIXTURE_COPY_CREATED",
+            "purpose": "TEST_ONLY_DISPOSABLE_COPY;SOURCE_FIXTURE_AND_REFERENCE_RESULTS_UNCHANGED",
+            "source_path": str(source_fixture),
+            "source_sha256": source_sha,
+            "expected_source_sha256": source_sha,
+            "source_sha256_after": source_sha,
+            "source_unchanged": True,
+            "clone_path": str(base / "temporary" / "DeathPenalty_seeded.jasp"),
+            "clone_sha256": "a" * 64,
+            "clone_is_distinct": True,
+            "active_configuration_member": "analyses.json",
+            "changed_archive_member": "analyses.json",
+            "changed_json_pointer": "/analyses/0/options",
+            "analysis_index": 0,
+            "analysis_id": "BayesianLogLinear",
+            "analysis_name": "Bayesian Log-Linear",
+            "module_name": "BayesianLogLinear",
+            "archive_member_count": 8,
+            "changed_archive_member_count": 1,
+            "unchanged_non_active_member_count": 7,
+            "before": {"setSeed": False, "seed": 1},
+            "after": {"setSeed": True, "seed": 1},
+            "result_output_members_changed": False,
+            "reference_results_modified": False,
+        }
+        seeded_receipt_path.write_text(json.dumps(seeded_receipt_payload), encoding="utf-8")
+        seeded_receipt = {
+            **seeded_receipt_payload,
+            "receipt_path": str(seeded_receipt_path),
+            "receipt_sha256": cert.sha256_file(seeded_receipt_path),
+        }
+        seeded_log_path = independent_dir / "JASP_UNITTEST_FLATPAK_test.log"
+        seeded_log_path.write_text(
+            f"TEST_FILE={seeded_receipt['clone_path']}\n"
+            f"DETERMINISTIC_FIXTURE_RECEIPT_PATH={seeded_receipt_path}\n"
+            f"DETERMINISTIC_FIXTURE_RECEIPT_SHA256={seeded_receipt['receipt_sha256']}\n"
+            f"DETERMINISTIC_FIXTURE_CLONE_SHA256={seeded_receipt['clone_sha256']}\n"
+            "DETERMINISTIC_FIXTURE_SEED_ENABLED=TRUE\n",
+            encoding="utf-8",
+        )
+        seeded_log_sha = cert.sha256_file(seeded_log_path)
+
         case_ids = [
             "flatpak_launch", "reliability", "weight_gain",
             "death_penalty_save", "death_penalty_rerun",
@@ -113,6 +166,26 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "captured_output_sha256": "e" * 64,
             "captured_output_bytes": 12,
         } for index, case_id in enumerate(case_ids)]
+        checks["jasp_packaged_fixture_nonregression"] = {
+            "status": "PASS", "returncode": 0,
+            "cases": {
+                "flatpak_launch": {
+                    "status": "PASS", "returncode": 0,
+                    "original_packaged_fixture_identity_valid": True,
+                    "deterministic_fixture_evidence_valid": True,
+                    "deterministic_fixture_receipt_valid": True,
+                    "deterministic_fixture_receipt": seeded_receipt,
+                    "deterministic_fixture_path": seeded_receipt["clone_path"],
+                    "evidence_path": str(seeded_log_path),
+                    "evidence_sha256": seeded_log_sha,
+                },
+            },
+            "evidence": {
+                str(source_fixture): source_sha,
+                str(seeded_receipt_path): seeded_receipt["receipt_sha256"],
+                str(seeded_log_path): seeded_log_sha,
+            },
+        }
         checks["jasp_process_tree_lifecycle"] = {
             "status": "PASS", "returncode": 0,
             "invocation_count": 5, "expected_invocation_count": 5,
@@ -298,16 +371,21 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             "stable_dir": stable_dir,
             "target_sha": target_sha,
             "independent_sha": independent_sha,
+            "source_sha": source_sha,
         }
+
+    def build_certificate_for_paths(self, paths):
+        with mock.patch.object(cert, "JASP_DEATH_PENALTY_SOURCE_SHA256", paths["source_sha"]):
+            return cert.build_certificate(
+                paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
+                paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
+            )
 
     def test_certificate_binds_exact_image_and_all_required_gates(self):
         with tempfile.TemporaryDirectory() as tmp:
             paths = self.prepare(pathlib.Path(tmp))
             image_sha = cert.sha256_file(paths["image"])
-            result = cert.build_certificate(
-                paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
-                paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
-            )
+            result = self.build_certificate_for_paths(paths)
             self.assertEqual("CERTIFIED_FUNCTIONAL_CANDIDATE", result["status"])
             self.assertEqual(image_sha, result["artifact"]["sha256"])
             self.assertEqual(paths["target_sha"], result["target_runtime_receipt"]["sha256"])
@@ -324,10 +402,7 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             receipt["evidence"]["squashfs_image_sha256"] = "f" * 64
             receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
             with self.assertRaisesRegex(cert.CertificationError, "No S32 receipt is bound"):
-                cert.build_certificate(
-                    paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
-                    paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
-                )
+                self.build_certificate_for_paths(paths)
 
     def test_stable_release_with_other_image_or_manifest_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -337,10 +412,7 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             stable["candidate_manifest_sha256"] = "e" * 64
             stable_path.write_text(json.dumps(stable), encoding="utf-8")
             with self.assertRaisesRegex(cert.CertificationError, "No stable-release receipt is bound"):
-                cert.build_certificate(
-                    paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
-                    paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
-                )
+                self.build_certificate_for_paths(paths)
 
     def test_missing_s32_receipt_blocks_functional_certificate(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -348,31 +420,65 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             for item in paths["s32_dir"].glob("*.json"):
                 item.unlink()
             with self.assertRaises(cert.CertificationError):
-                cert.build_certificate(
-                    paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
-                    paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
-                )
+                self.build_certificate_for_paths(paths)
 
     def test_postvalidation_rootfs_mutation_blocks_functional_certificate(self):
         with tempfile.TemporaryDirectory() as tmp:
             paths = self.prepare(pathlib.Path(tmp))
             (paths["rootfs"] / "etc" / "os-release").write_text("NAME=Mutated\n", encoding="utf-8")
             with self.assertRaisesRegex(cert.CertificationError, "Live post-validation rootfs no longer equals packaged canonical manifest"):
-                cert.build_certificate(
-                    paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
-                    paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
-                )
+                self.build_certificate_for_paths(paths)
 
     def test_image_tampering_after_package_receipt_blocks_certificate(self):
         with tempfile.TemporaryDirectory() as tmp:
             paths = self.prepare(pathlib.Path(tmp))
             paths["image"].write_bytes(b"tampered after package receipt")
             with self.assertRaises(cert.CertificationError):
-                cert.build_certificate(
-                    paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
-                    paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
-                )
+                self.build_certificate_for_paths(paths)
 
+
+
+    def test_seeded_fixture_receipt_must_show_seed_enabled_and_immutable_reference(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = self.prepare(pathlib.Path(tmp))
+            report = json.loads(paths["independent"].read_text(encoding="utf-8"))
+            check = report["checks"]["jasp_packaged_fixture_nonregression"]
+            seeded_receipt = check["cases"]["flatpak_launch"]["deterministic_fixture_receipt"]
+            seeded_receipt["after"]["setSeed"] = False
+            receipt_path = pathlib.Path(seeded_receipt["receipt_path"])
+            receipt_on_disk = json.loads(receipt_path.read_text(encoding="utf-8"))
+            receipt_on_disk["after"]["setSeed"] = False
+            receipt_path.write_text(json.dumps(receipt_on_disk), encoding="utf-8")
+            seeded_receipt["receipt_sha256"] = cert.sha256_file(receipt_path)
+            with mock.patch.object(cert, "JASP_DEATH_PENALTY_SOURCE_SHA256", paths["source_sha"]):
+                with self.assertRaisesRegex(cert.CertificationError, "seed transition"):
+                    cert.validate_jasp_seeded_fixture_evidence(check)
+
+
+    def test_seeded_fixture_clone_must_be_removed_after_execution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = self.prepare(pathlib.Path(tmp))
+            report = json.loads(paths["independent"].read_text(encoding="utf-8"))
+            check = report["checks"]["jasp_packaged_fixture_nonregression"]
+            receipt = check["cases"]["flatpak_launch"]["deterministic_fixture_receipt"]
+            clone_path = pathlib.Path(receipt["clone_path"])
+            clone_path.parent.mkdir(parents=True, exist_ok=True)
+            clone_path.write_bytes(b"unexpected persistent seeded clone")
+            with mock.patch.object(cert, "JASP_DEATH_PENALTY_SOURCE_SHA256", paths["source_sha"]):
+                with self.assertRaisesRegex(cert.CertificationError, "seed transition"):
+                    cert.validate_jasp_seeded_fixture_evidence(check)
+
+    def test_nonzero_jasp_exit_receipt_blocks_lifecycle_validation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = self.prepare(pathlib.Path(tmp))
+            report = json.loads(paths["independent"].read_text(encoding="utf-8"))
+            check = report["checks"]["jasp_process_tree_lifecycle"]
+            check["invocations"][0]["returncode"] = 1
+            with self.assertRaisesRegex(cert.CertificationError, "identity/closure validation"):
+                cert.validate_jasp_process_tree_lifecycle(
+                    check, {"workflow_identity": {"run_id": "777", "run_attempt": "1"}},
+                    {"jasp_binary_sha256": "b" * 64, "flatpak_runtime_commit": "c" * 64},
+                )
 
 if __name__ == "__main__":
     unittest.main()

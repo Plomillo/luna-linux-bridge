@@ -813,10 +813,20 @@ class JaspRunnerTests(unittest.TestCase):
 
             flatpak_command = result["tests"]["flatpak_launch"]["command"]
             self.assertFalse(any("RPROFILE" in arg or "SEED_HOOK" in arg for arg in flatpak_command))
-            self.assertFalse(any(
-                arg.startswith("--filesystem=") and "seeded-fixture" in arg
-                for arg in flatpak_command
-            ))
+            seeded_share = next(
+                (arg for arg in flatpak_command
+                 if arg.startswith("--filesystem=") and "flatpak-launch-seeded-fixture" in arg),
+                None,
+            )
+            self.assertIsNotNone(seeded_share)
+            self.assertTrue(any("DeathPenalty_seeded.jasp" in arg for arg in flatpak_command))
+            seeded_receipt = result["tests"]["flatpak_launch"]["deterministic_fixture_receipt"]
+            self.assertTrue(result["tests"]["flatpak_launch"]["deterministic_fixture_receipt_valid"])
+            self.assertEqual({"setSeed": False, "seed": 1}, seeded_receipt["before"])
+            self.assertEqual({"setSeed": True, "seed": 1}, seeded_receipt["after"])
+            self.assertEqual("analyses.json", seeded_receipt["changed_archive_member"])
+            self.assertFalse(seeded_receipt["reference_results_modified"])
+            self.assertNotEqual(source_sha, seeded_receipt["clone_sha256"])
             self.assertEqual(str(source_fixture), result["tests"]["flatpak_launch"]["original_fixture_path"])
             self.assertEqual(source_sha, result["tests"]["flatpak_launch"]["original_fixture_sha256"])
             self.assertTrue(result["tests"]["flatpak_launch"]["original_fixture_alias_valid"])
