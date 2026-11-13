@@ -94,3 +94,60 @@ The run proves a mismatch between stored Death Penalty outputs and outputs calcu
 No stored reference was changed, no tolerance was relaxed, and no test was suppressed. The correction path is to obtain authoritative provenance for the stored result and perform an independently reproducible comparison on the exact pinned data/runtime. Any new candidate baseline must be versioned separately while retaining the historical bytes and digest.
 
 Required status until root cause and reference provenance are resolved: JASP_REFERENCE_GATE=BLOCKED; ROOT_CAUSE=UNRESOLVED; REFERENCE_PROVENANCE=UNKNOWN; CERTIFICATION=NOT_GRANTED.
+
+## Addendum — Proveniencia pública parcial de la referencia histórica (2026-11-13)
+
+Se amplía la clasificación anterior `REFERENCE_PROVENANCE=UNKNOWN` a una procedencia parcialmente reconstruida. Esta ampliación no resuelve la causa ni modifica el estado de bloqueo.
+
+### Identidad del archivo fuente
+
+El Git blob del archivo oficial `Death Penalty.jasp` es `5da69f932e17a10bfb887552b6ca283efc87d338`. El mismo blob SHA aparece en:
+- `jasp-stats/jasp-desktop`, commit `9d91e61b354b48f00bc384e3ed7827a10aa36dee`, ruta `Resources/Data Sets/Data Library/5. Frequencies/Death Penalty.jasp`.
+- `jasp-stats/jasp-data-library`, commit `bb7d9ca73a98d43269fa783e09a80f32c65cb903`, ruta `Death Penalty/Death Penalty.jasp`.
+
+Esto corrobora que el fixture de run #220 coincide con el archivo fuente oficial publicado por ambos repositorios; el hash de contenido calculado dentro del run sigue siendo `fc8b6f8faf0e4437c8e4ab4bd922b3e959a0d4549c813b229bc5708050851895`.
+
+### Identidad y contenido de los resultados almacenados
+
+En el commit de Data Library `bb7d9ca73a98d43269fa783e09a80f32c65cb903`:
+- `Death Penalty/resources/2/jaspResults.json`: blob `f4ef4723cd4ecf001c8c0418e828570bbbb7856e`.
+- `Death Penalty/Death_Penalty.html`: blob `aee7f2f220c88e791fa72ad4d8f8723488799e7f`.
+- El JSON cita JASP 0.97.1 y conserva `samplingMethod=auto`, `samplingMethodManualSamples=10000`, `seed=1`, `setSeed=false`, `bayesFactorType=BF01` y los siete términos candidatos.
+- El HTML/JSON publica cuatro filas: `0.508/1.000`, `0.394/1.289`, `0.094/5.404` y `0.004/127.0`.
+
+La referencia anterior publicada en el commit Data Library `c9ccb0c0e1fa96e046f9e7feae1f7446d9436e08` tenía tres filas (`0.491/1.000`, `0.395/1.242`, `0.115/4.284`). El commit del 2026-06-01 agrega el cuarto modelo y actualiza los valores y la cita a 0.97.1. Esta diferencia histórica demuestra que los resultados empaquetados cambiaron antes de la ejecución de LUNITA; no demuestra por sí sola cuál de los cambios produjo la diferencia.
+
+### Qué prueba y qué no prueba la automatización upstream
+
+El workflow oficial `.github/workflows/update-datalib.yml`:
+1. hace checkout de `jasp-stats/jasp-desktop` en la rama móvil `development`;
+2. hace checkout de Data Library `main`;
+3. ejecuta `.scripts/dataGatherScript.py`;
+4. publica los archivos extraídos.
+
+El script copia archivos `.jasp` y extrae `index.html` y directorios `resources`; no invoca JASP, no recalcula modelos ni valida resultados estadísticos. El run #121 (ID `26766614970`) del 2026-06-01 terminó success. No obstante, el registro de salida del job no puede recuperarse actualmente (GitHub HTTP 410). El último commit público de `jasp-desktop/development` anterior al inicio de ese run es `9d91e61b354b48f00bc384e3ed7827a10aa36dee` (15:07:27 UTC); CMake en esa revisión declara versión 0.97.1. Esta revisión es una inferencia cronológica razonable, no un SHA de checkout acreditado por el recibo del workflow. Tampoco acredita qué módulo binario, paquetes R o dependencias se cargaron al generar originalmente el resultado.
+
+### Matriz de estado por dimensión
+
+| Dimensión | Estado | Base |
+|---|---|---|
+| Identidad del `.jasp` upstream | VERIFIED | Git blob SHA idéntico entre dos repositorios oficiales |
+| Hash calculado dentro de LUNITA | VERIFIED | Receipts del run #220 |
+| Versión escrita en resultados | DECLARED: 0.97.1 | Cita del JSON almacenado |
+| Versión CMake en candidato de revisión | VERIFIED: 0.97.1 | `CMakeLists.txt` en commit `9d91e61...` |
+| SHA exacto de checkout consumido por UpdateDL | INFERRED, not receipt-bound | Historia de commits previa al run; log expirado |
+| Workflow de publicación/extracción | VERIFIED | YAML + `dataGatherScript.py` + run #121 success |
+| Recalculation by UpdateDL | NOT PERFORMED | El script no lanza JASP |
+| Módulo JASP productor y build exacto | UNKNOWN | Sin recibo de ejecución o identificación binaria |
+| Dependencias/runtime estadístico productor | UNKNOWN | Sin recibo primario |
+| Opciones efectivas/estado de seed al producir | PARTIAL | Opciones del JSON conocidas; estado real del proceso productor no acreditado |
+| Causa exacta del mismatch 0.97.1 → 0.98.8 | UNRESOLVED | No hay replay histórico bajo entorno productor identificado |
+
+### Clasificación y consecuencia
+
+`REFERENCE_PROVENANCE=PARTIALLY_RECONSTRUCTED`
+`ROOT_CAUSE=UNRESOLVED`
+`JASP_REFERENCE_GATE=BLOCKED`
+`FUNCTIONAL_CERTIFICATION=NOT_GRANTED`
+
+Prueba discriminante pendiente: reejecutar el fixture byte-identical con un entorno histórico 0.97.1 cuyo módulo y dependencias reales estén fijados; y comparar con el runtime de destino 0.98.8 bajo configuración predefinida. Como alternativa separada, se puede proponer un baseline 0.98.8 nuevo, pero únicamente con especificación previa, semilla determinista fijada antes del primer run, dos ejecuciones coincidentes, evidencia estadística primaria y validación independiente. No sustituir ni editar el baseline histórico. Ninguna de estas pruebas se declara realizada por este addendum.
