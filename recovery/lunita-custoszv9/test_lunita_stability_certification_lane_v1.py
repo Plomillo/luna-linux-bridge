@@ -432,8 +432,18 @@ class JaspDeterministicFixtureTests(unittest.TestCase):
         with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
             archive.writestr(
                 "analyses.json",
-                json.dumps({"analyses": [{"analysisId": f"analysis-{i}", "options": option}
-                                         for i, option in enumerate(options_list)]}),
+                json.dumps({"analyses": [{
+                    "analysisId": f"analysis-{i}",
+                    "dynamicModule": {"moduleName": "jaspFrequencies"},
+                    "options": option,
+                } for i, option in enumerate(options_list)]}),
+            )
+            archive.writestr(
+                "resources/2/jaspResults.json",
+                json.dumps({
+                    "citations": ["JASP Team (2026). JASP (Version 0.97.1) [Computer software]."],
+                    "data": {"results": {"modelsVisited": 4}},
+                }, sort_keys=True).encode("utf-8"),
             )
             archive.writestr("data/data.bin", b"immutable data payload")
 
@@ -481,6 +491,7 @@ class JaspDeterministicFixtureTests(unittest.TestCase):
                 }]
             }
             saved_results = {
+                "citations": ["JASP Team (2026). JASP (Version 0.97.1) [Computer software]."],
                 "options": [
                     {"setSeed": False, "seed": 1},
                     {"nested": {"setSeed": False, "seed": 1}},
