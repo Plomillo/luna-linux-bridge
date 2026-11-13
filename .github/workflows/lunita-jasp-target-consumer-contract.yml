@@ -10,6 +10,12 @@ on:
       - "scripts/lunita/build_rootfs_candidate_v1.sh"
       - "scripts/lunita/verify_jasp_release_identity_v1.py"
       - "scripts/lunita/test_verify_jasp_release_identity_v1.py"
+      - "scripts/lunita/package_candidate_squashfs_v1.py"
+      - "scripts/lunita/certify_candidate_squashfs_v1.py"
+      - "scripts/lunita/test_certify_candidate_squashfs_v1.py"
+      - "recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py"
+      - "recovery/lunita-custoszv9/test_lunita_stability_certification_lane_v1.py"
+      - "recovery/lunita-custoszv9/audits/LUNITA_SQUASHFS_ZERO_TRUST_CERTIFICATION_AXIOMS_V1_20261112.md"
       - ".github/workflows/lunita-jasp-target-consumer-contract.yml"
   pull_request:
     types: [opened, synchronize, reopened]
@@ -44,9 +50,20 @@ jobs:
           python -m py_compile \
             scripts/lunita/verify_jasp_release_identity_v1.py \
             scripts/lunita/test_verify_jasp_release_identity_v1.py \
+            scripts/lunita/package_candidate_squashfs_v1.py \
+            scripts/lunita/certify_candidate_squashfs_v1.py \
+            scripts/lunita/test_certify_candidate_squashfs_v1.py \
             recovery/lunita-custoszv9/runtime_engines_v1/target_runtime_acceptance_v1.py \
-            recovery/lunita-custoszv9/runtime_engines_v1/target_acceptance_tests_v1.py
+            recovery/lunita-custoszv9/runtime_engines_v1/target_acceptance_tests_v1.py \
+            recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py \
+            recovery/lunita-custoszv9/test_lunita_stability_certification_lane_v1.py
           bash -n scripts/lunita/build_rootfs_candidate_v1.sh
+      - name: Install SquashFS tools for deterministic packaging test
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends squashfs-tools
       - name: Verify immutable Flathub and JASP source pins
         working-directory: scripts/lunita
         run: |
@@ -57,6 +74,15 @@ jobs:
         working-directory: recovery/lunita-custoszv9/runtime_engines_v1
         run: |
           set -euo pipefail
-          python -m unittest -v target_acceptance_tests_v1.TargetJaspBuilderConsumerContractTests
-          python -m unittest -v target_acceptance_tests_v1.TargetJaspSourceReleaseIdentityTests
-          python -m unittest -v target_acceptance_tests_v1.TargetLabelHierarchyAcceptanceTests
+          python -m unittest -v target_acceptance_tests_v1.py
+      - name: Verify package and certificate preserve JASP provenance
+        working-directory: scripts/lunita
+        run: |
+          set -euo pipefail
+          python package_candidate_squashfs_v1.py --self-test
+          python -m unittest -v test_certify_candidate_squashfs_v1.py
+      - name: Verify independent lane propagates JASP provenance
+        working-directory: recovery/lunita-custoszv9
+        run: |
+          set -euo pipefail
+          python -m unittest -v test_lunita_stability_certification_lane_v1.py
