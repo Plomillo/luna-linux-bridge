@@ -48,25 +48,33 @@ def _process_group_exists(pgid: int) -> bool:
         return True
 
 
-def _terminate_process_group(pgid: int, grace_seconds: float = 3.0) -> None:
-    """Terminate every process in a JASP command's isolated process group."""
-    if not _process_group_exists(pgid):
-        return
+def _terminate_process_group(process: subprocess.Popen, grace_seconds: float = 3.0) -> None:
+    """Terminate descendants and reap the direct process before checking the group."""
+    pgid = process.pid
+    if _process_group_exists(pgid):
+        try:
+            os.killpg(pgid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
     try:
-        os.killpg(pgid, signal.SIGTERM)
-    except ProcessLookupError:
-        return
-    deadline = time.monotonic() + grace_seconds
-    while time.monotonic() < deadline and _process_group_exists(pgid):
-        time.sleep(0.05)
+        process.wait(timeout=grace_seconds)
+    except subprocess.TimeoutExpired:
+        pass
     if _process_group_exists(pgid):
         try:
             os.killpg(pgid, signal.SIGKILL)
         except ProcessLookupError:
-            return
-        deadline = time.monotonic() + grace_seconds
-        while time.monotonic() < deadline and _process_group_exists(pgid):
-            time.sleep(0.05)
+            pass
+    try:
+        process.wait(timeout=grace_seconds)
+    except subprocess.TimeoutExpired as exc:
+        raise ProcessTreeCleanupError(
+            f"Direct process {pgid} survived SIGTERM and SIGKILL"
+        ) from exc
+
+    deadline = time.monotonic() + grace_seconds
+    while time.monotonic() < deadline and _process_group_exists(pgid):
+        time.sleep(0.05)
     if _process_group_exists(pgid):
         raise ProcessTreeCleanupError(
             f"Process group {pgid} remained present after SIGTERM and SIGKILL"
@@ -92,7 +100,7 @@ def run_bounded_process_tree(command: list[str], *, env: dict, timeout: int) -> 
         try:
             returncode = process.wait(timeout=timeout)
         except subprocess.TimeoutExpired as exc:
-            _terminate_process_group(process.pid)
+            _terminate_process_group(process)
             process.wait(timeout=5)
             output.seek(0)
             captured = output.read().decode("utf-8", "replace")
