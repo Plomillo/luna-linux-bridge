@@ -437,7 +437,13 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             paths = self.prepare(pathlib.Path(tmp))
             report = json.loads(paths["independent"].read_text(encoding="utf-8"))
             check = report["checks"]["jasp_packaged_fixture_nonregression"]
-            check["cases"]["flatpak_launch"]["deterministic_fixture_receipt"]["after"]["setSeed"] = False
+            seeded_receipt = check["cases"]["flatpak_launch"]["deterministic_fixture_receipt"]
+            seeded_receipt["after"]["setSeed"] = False
+            receipt_path = pathlib.Path(seeded_receipt["receipt_path"])
+            receipt_on_disk = json.loads(receipt_path.read_text(encoding="utf-8"))
+            receipt_on_disk["after"]["setSeed"] = False
+            receipt_path.write_text(json.dumps(receipt_on_disk), encoding="utf-8")
+            seeded_receipt["receipt_sha256"] = cert.sha256_file(receipt_path)
             with mock.patch.object(cert, "JASP_DEATH_PENALTY_SOURCE_SHA256", paths["source_sha"]):
                 with self.assertRaisesRegex(cert.CertificationError, "seed transition"):
                     cert.validate_jasp_seeded_fixture_evidence(check)
