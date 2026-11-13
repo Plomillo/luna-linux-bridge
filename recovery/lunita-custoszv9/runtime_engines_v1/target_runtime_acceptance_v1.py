@@ -33,7 +33,9 @@ EXPECTED_JASP_DEPLOYMENT_COMMIT = "83ec9d24365269942539c2d1f1af806c475e6320e5bdf
 EXPECTED_JASP_SOURCE_COMMIT = "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1"
 EXPECTED_JASP_FLATHUB_MANIFEST_COMMIT = "95e467d83089fb292e5d0746e98e188fef6f9113"
 EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1 = "1aec5921883d56388c91627b09ba9cf6eb07c1d6"
+EXPECTED_JASP_FLATHUB_MANIFEST_SHA256 = "f83fd086dffbf2ca64b6e10e1589693ddf6ddbfc93ca0156feb66473cd52022d"
 EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1 = "d57ba1e22d4cd00f3848034dc09737498b91346b"
+EXPECTED_JASP_SOURCE_CMAKE_SHA256 = "5d60c82281a0329016245779dd7549807726c74f11a5b671cf95f192572deaac"
 EXPECTED_JASP_VERSION_SOURCE = "PINNED_FLATHUB_MANIFEST_AND_JASP_CMAKE_SOURCE_VERIFIED"
 LEGACY_SMOKE_COMMANDS = (
     ("brujula-self-test",),
@@ -474,7 +476,9 @@ def inspect_jasp_release_sources(
     cmake_bytes: bytes,
     *,
     expected_manifest_blob_sha1: str = EXPECTED_JASP_FLATHUB_MANIFEST_BLOB_SHA1,
+    expected_manifest_sha256: str = EXPECTED_JASP_FLATHUB_MANIFEST_SHA256,
     expected_cmake_blob_sha1: str = EXPECTED_JASP_SOURCE_CMAKE_BLOB_SHA1,
+    expected_cmake_sha256: str = EXPECTED_JASP_SOURCE_CMAKE_SHA256,
     expected_source_commit: str = EXPECTED_JASP_SOURCE_COMMIT,
     expected_version: str = EXPECTED_JASP_VERSION,
 ) -> dict[str, Any]:
@@ -485,6 +489,12 @@ def inspect_jasp_release_sources(
         raise TargetGateError(f"JASP Flathub manifest Git blob SHA-1 mismatch: {manifest_blob}")
     if cmake_blob != expected_cmake_blob_sha1:
         raise TargetGateError(f"JASP source CMake Git blob SHA-1 mismatch: {cmake_blob}")
+    manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
+    cmake_sha256 = hashlib.sha256(cmake_bytes).hexdigest()
+    if manifest_sha256 != expected_manifest_sha256:
+        raise TargetGateError(f"JASP Flathub manifest SHA-256 mismatch: {manifest_sha256}")
+    if cmake_sha256 != expected_cmake_sha256:
+        raise TargetGateError(f"JASP source CMake SHA-256 mismatch: {cmake_sha256}")
     try:
         manifest = json.loads(manifest_bytes)
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -533,7 +543,9 @@ def inspect_jasp_release_sources(
         "version": version,
         "cmake_project_version": cmake_version,
         "flathub_manifest_git_blob_sha1": manifest_blob,
+        "flathub_manifest_sha256": manifest_sha256,
         "jasp_source_cmake_git_blob_sha1": cmake_blob,
+        "jasp_source_cmake_sha256": cmake_sha256,
         "jasp_source_commit": expected_source_commit,
         "manifest_jasp_source_commit_matches_pin": True,
     }
@@ -568,8 +580,12 @@ def verify_jasp_source_release_identity(lupa: dict[str, Any], metadata_dir: path
     cmake_bytes = cmake_path.read_bytes()
     manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
     cmake_sha256 = hashlib.sha256(cmake_bytes).hexdigest()
+    if manifest_sha256 != EXPECTED_JASP_FLATHUB_MANIFEST_SHA256:
+        raise TargetGateError("JASP Flathub manifest SHA-256 differs from immutable source pin")
     if manifest_sha256 != lupa.get("flathub_manifest_sha256"):
         raise TargetGateError("JASP Flathub manifest SHA-256 differs from rootfs build receipt")
+    if cmake_sha256 != EXPECTED_JASP_SOURCE_CMAKE_SHA256:
+        raise TargetGateError("JASP source CMakeLists SHA-256 differs from immutable source pin")
     if cmake_sha256 != lupa.get("jasp_source_cmake_sha256"):
         raise TargetGateError("JASP source CMakeLists SHA-256 differs from rootfs build receipt")
     identity_sha256 = sha256_file(identity_path)
