@@ -228,6 +228,7 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
 
         return {
             "image": image,
+            "rootfs": rootfs,
             "checksum": checksum,
             "package": package_path,
             "target_dir": target_dir,
@@ -287,6 +288,16 @@ class SquashFSFunctionalCertificateTests(unittest.TestCase):
             for item in paths["s32_dir"].glob("*.json"):
                 item.unlink()
             with self.assertRaises(cert.CertificationError):
+                cert.build_certificate(
+                    paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
+                    paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
+                )
+
+    def test_postvalidation_rootfs_mutation_blocks_functional_certificate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = self.prepare(pathlib.Path(tmp))
+            (paths["rootfs"] / "etc" / "os-release").write_text("NAME=Mutated\n", encoding="utf-8")
+            with self.assertRaisesRegex(cert.CertificationError, "Live post-validation rootfs no longer equals packaged canonical manifest"):
                 cert.build_certificate(
                     paths["image"], paths["checksum"], paths["package"], paths["target_dir"],
                     paths["independent"], paths["manifest"], paths["s32_dir"], paths["stable_dir"],
