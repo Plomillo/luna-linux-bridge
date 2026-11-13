@@ -158,24 +158,24 @@ def write_receipt(args: argparse.Namespace) -> dict[str, Any]:
 
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser()
-    result.add_argument("--output", type=pathlib.Path, required=True)
-    result.add_argument("--app-commit-before", required=True)
-    result.add_argument("--app-commit-after", required=True)
-    result.add_argument("--runtime-ref", required=True)
-    result.add_argument("--runtime-commit-before", required=True)
-    result.add_argument("--runtime-commit-after", required=True)
-    result.add_argument("--sdk-ref", required=True)
-    result.add_argument("--sdk-commit", required=True)
-    result.add_argument("--qt-version", required=True)
-    result.add_argument("--source-url", required=True)
-    result.add_argument("--source-archive", type=pathlib.Path, required=True)
-    result.add_argument("--build-dir", type=pathlib.Path, required=True)
-    result.add_argument("--qt-library-dir", type=pathlib.Path, required=True)
-    result.add_argument("--jasp-binary", type=pathlib.Path, required=True)
-    result.add_argument("--jasp-binary-before-sha256", required=True)
-    result.add_argument("--pre-qt-snapshot", type=pathlib.Path, required=True)
-    result.add_argument("--patch-script", type=pathlib.Path, required=True)
-    result.add_argument("--patch-log", type=pathlib.Path, required=True)
+    result.add_argument("--output", type=pathlib.Path, required=False)
+    result.add_argument("--app-commit-before", required=False)
+    result.add_argument("--app-commit-after", required=False)
+    result.add_argument("--runtime-ref", required=False)
+    result.add_argument("--runtime-commit-before", required=False)
+    result.add_argument("--runtime-commit-after", required=False)
+    result.add_argument("--sdk-ref", required=False)
+    result.add_argument("--sdk-commit", required=False)
+    result.add_argument("--qt-version", required=False)
+    result.add_argument("--source-url", required=False)
+    result.add_argument("--source-archive", type=pathlib.Path, required=False)
+    result.add_argument("--build-dir", type=pathlib.Path, required=False)
+    result.add_argument("--qt-library-dir", type=pathlib.Path, required=False)
+    result.add_argument("--jasp-binary", type=pathlib.Path, required=False)
+    result.add_argument("--jasp-binary-before-sha256", required=False)
+    result.add_argument("--pre-qt-snapshot", type=pathlib.Path, required=False)
+    result.add_argument("--patch-script", type=pathlib.Path, required=False)
+    result.add_argument("--patch-log", type=pathlib.Path, required=False)
     result.set_defaults(self_test=False)
     result.add_argument("--self-test", action="store_true")
     return result
@@ -218,10 +218,20 @@ def self_test() -> None:
 
 
 def main() -> int:
-    args = parser().parse_args()
+    argument_parser = parser()
+    args = argument_parser.parse_args()
     if args.self_test:
         self_test()
         return 0
+    required_names = (
+        "output", "app_commit_before", "app_commit_after", "runtime_ref",
+        "runtime_commit_before", "runtime_commit_after", "sdk_ref", "sdk_commit",
+        "qt_version", "source_url", "source_archive", "build_dir", "qt_library_dir",
+        "jasp_binary", "jasp_binary_before_sha256", "pre_qt_snapshot", "patch_script", "patch_log",
+    )
+    missing = [name for name in required_names if getattr(args, name) is None]
+    if missing:
+        argument_parser.error("missing required arguments: " + ", ".join("--" + name.replace("_", "-") for name in missing))
     result = write_receipt(args)
     print(json.dumps(result, sort_keys=True), flush=True)
     return 0
