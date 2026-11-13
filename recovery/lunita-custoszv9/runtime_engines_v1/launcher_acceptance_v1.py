@@ -143,6 +143,10 @@ class LunitaBetaV18Tests(unittest.TestCase):
                  mock.patch.dict(os.environ, {
                      "LUNITA_TARGET_ROOTFS": str(rootfs),
                      "LUNITA_IN_PIVOT_ROOT": "0",
+                     "GITHUB_RUN_ID": "43341112917",
+                     "GITHUB_RUN_ATTEMPT": "1",
+                     "HOST_BIND_NAME": "lunita-host-43341112917-1",
+                     "XDG_RUNTIME_DIR": "/run/lunita-host-43341112917-1-runtime-1000",
                      "PYTHONPATH": inherited_pythonpath,
                  }), \
                  mock.patch.object(
@@ -157,6 +161,8 @@ class LunitaBetaV18Tests(unittest.TestCase):
                  str(rootfs), "/usr/bin/env", "-C", "/tmp"],
                 command[:8],
             )
+            self.assertIn("XDG_RUNTIME_DIR=/run/lunita-host-43341112917-1-runtime-1000", command)
+            self.assertNotIn("XDG_RUNTIME_DIR=/run/lunita-runtime-1000", command)
             python_index = command.index("/usr/bin/python3.12")
             self.assertEqual(
                 ["/opt/lunita/agent/lunita.py", "r-self-test"],
@@ -175,6 +181,10 @@ class LunitaBetaV18Tests(unittest.TestCase):
                  mock.patch.dict(os.environ, {
                      "LUNITA_TARGET_ROOTFS": "/",
                      "LUNITA_IN_PIVOT_ROOT": "1",
+                     "GITHUB_RUN_ID": "43341112917",
+                     "GITHUB_RUN_ATTEMPT": "1",
+                     "HOST_BIND_NAME": "lunita-host-43341112917-1",
+                     "XDG_RUNTIME_DIR": "/run/lunita-host-43341112917-1-runtime-1000",
                      "PYTHONPATH": "",
                  }), \
                  mock.patch.object(launcher.os, "geteuid", return_value=0), \
@@ -189,10 +199,50 @@ class LunitaBetaV18Tests(unittest.TestCase):
                 command[:4],
             )
             self.assertNotIn("chroot", command)
+            self.assertIn("XDG_RUNTIME_DIR=/run/lunita-host-43341112917-1-runtime-1000", command)
+            self.assertNotIn("XDG_RUNTIME_DIR=/run/lunita-runtime-1000", command)
             python_index = command.index("/usr/bin/python3.12")
             self.assertTrue(command[python_index + 1].endswith("/opt/lunita/agent/lunita.py"))
             self.assertEqual(["jamovi-self-test"], command[python_index + 2:])
             self.assertNotIn("PYTHONPATH", run.call_args.kwargs["env"])
+
+    def test_legacy_target_delegation_rejects_missing_workflow_runtime_identity(self):
+        with tempfile.TemporaryDirectory(prefix="lunita-legacy-identity-") as temporary:
+            rootfs = pathlib.Path(temporary)
+            legacy = rootfs / "opt/lunita/agent/lunita.py"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_bytes(b"immutable beta v1.7 identity fixture")
+            legacy_sha = hashlib.sha256(legacy.read_bytes()).hexdigest()
+            with (
+                mock.patch.object(launcher, "LEGACY_LAUNCHER", legacy),
+                mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha),
+                mock.patch.dict(os.environ, {"LUNITA_TARGET_ROOTFS": str(rootfs)}, clear=True),
+                mock.patch.object(launcher.subprocess, "run") as run,
+            ):
+                self.assertEqual(5, launcher.run_legacy(["jamovi-self-test"]))
+            run.assert_not_called()
+
+    def test_legacy_target_delegation_rejects_runtime_path_from_another_attempt(self):
+        with tempfile.TemporaryDirectory(prefix="lunita-legacy-runtime-") as temporary:
+            rootfs = pathlib.Path(temporary)
+            legacy = rootfs / "opt/lunita/agent/lunita.py"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_bytes(b"immutable beta v1.7 runtime fixture")
+            legacy_sha = hashlib.sha256(legacy.read_bytes()).hexdigest()
+            with (
+                mock.patch.object(launcher, "LEGACY_LAUNCHER", legacy),
+                mock.patch.object(launcher, "LEGACY_SHA256", legacy_sha),
+                mock.patch.dict(os.environ, {
+                    "LUNITA_TARGET_ROOTFS": str(rootfs),
+                    "GITHUB_RUN_ID": "43341112917",
+                    "GITHUB_RUN_ATTEMPT": "1",
+                    "HOST_BIND_NAME": "lunita-host-43341112917-1",
+                    "XDG_RUNTIME_DIR": "/run/lunita-runtime-1000",
+                }, clear=True),
+                mock.patch.object(launcher.subprocess, "run") as run,
+            ):
+                self.assertEqual(5, launcher.run_legacy(["jamovi-self-test"]))
+            run.assert_not_called()
 
     def test_legacy_delegation_outside_declared_target_rootfs_is_denied(self):
         with tempfile.TemporaryDirectory(prefix="lunita-rootfs-") as rootfs_dir, \
