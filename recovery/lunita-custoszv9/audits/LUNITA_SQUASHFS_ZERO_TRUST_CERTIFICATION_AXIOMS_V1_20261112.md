@@ -828,3 +828,18 @@ La eliminación del directorio temporal continúa siendo obligatoria después de
 ### Extensión del predicado terminal — AX-LUN-036
 
 `ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-036`. Ninguna imagen podrá certificarse funcionalmente si el hash del fixture JASP derivado no se demuestra idéntico antes y después de la invocación real, antes de su eliminación temporal.
+
+
+### AX-LUN-037 — Continuidad de identidad de ejecución a través de la frontera privilegiada
+
+**Registro de causa raíz:** 2026-11-13 UTC. La pista independiente se inició mediante `sudo -n env` con una lista explícita de variables, pero la invocación omitió `GITHUB_RUN_ID` y `GITHUB_RUN_ATTEMPT`. El supervisor `run_bounded_process_tree` exige ambos valores numéricos para emitir recibos ligados a cada invocación. Su ausencia ocasionó `RuntimeError: GitHub workflow run ID/attempt is missing or malformed`, retornos bloqueados antes de la ejecución real de JASP y recibos de cierre inexistentes.
+
+El workflow MUST propagar explícitamente `GITHUB_RUN_ID` y `GITHUB_RUN_ATTEMPT` a través de la frontera `sudo env`. La capa de contenedor MUST comprobar que ambos valores existen y son enteros decimales antes de iniciar la pista. La función de aceptación JASP MUST conservarlos en el entorno depurado y registrar ambos en el recibo de la suite. Cada recibo de proceso MUST enlazar exactamente el mismo par run/attempt de la ejecución que materializa la imagen candidata.
+
+La corrección MUST permanecer en una allowlist mínima: se prohíbe resolverlo mediante `sudo -E`, propagación indiscriminada del entorno o exposición de secretos. La ausencia, alteración, formato inválido o divergencia de cualquiera de los identificadores MUST bloquear la ejecución antes de lanzar JASP y MUST impedir la emisión de recibos de aceptación o la certificación.
+
+El control no modifica la identidad del candidato, el runtime JASP, los fixtures, las referencias estadísticas ni los resultados de cálculo. Únicamente restaura la identidad de procedencia que el contrato de recibos exige.
+
+### Extensión del predicado terminal — AX-LUN-037
+
+`ADMIT_CURRENT(I) = ADMIT_PREVIOUS(I) AND AX-LUN-037`. Ninguna invocación JASP ni recibo de proceso podrá aceptarse si no está ligado al `GITHUB_RUN_ID` y `GITHUB_RUN_ATTEMPT` exactos del workflow que generó el artefacto.
