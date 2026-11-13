@@ -234,7 +234,7 @@ class CertificationGateTests(unittest.TestCase):
             mission.write_text("test mission identity", encoding="utf-8")
             mission_sha = hashlib.sha256(mission.read_bytes()).hexdigest()
             cases = {
-                "flatpak_launch": {
+                "flatpak_launch_smoke": {
                     "status": "PASS", "returncode": 0, "evidence_path": None,
                     "evidence_sha256": "0" * 64,
                 },
@@ -654,16 +654,20 @@ class JaspRunnerTests(unittest.TestCase):
             ))
             self.assertTrue(all("--hide" not in command for command in jasp_calls))
 
-            flatpak_command = result["tests"]["flatpak_launch"]["command"]
+            flatpak_command = result["tests"]["flatpak_launch_smoke"]["command"]
+            self.assertEqual(
+                "/app/lunita-fixtures/WeightGain.jasp",
+                flatpak_command[flatpak_command.index("org.jaspstats.JASP") + 2],
+            )
             self.assertFalse(any("RPROFILE" in arg or "SEED_HOOK" in arg for arg in flatpak_command))
             self.assertFalse(any(
                 arg.startswith("--filesystem=") and "seeded-fixture" in arg
                 for arg in flatpak_command
             ))
-            self.assertEqual(str(source_fixture), result["tests"]["flatpak_launch"]["original_fixture_path"])
-            self.assertEqual(source_sha, result["tests"]["flatpak_launch"]["original_fixture_sha256"])
-            self.assertTrue(result["tests"]["flatpak_launch"]["original_fixture_alias_valid"])
-            self.assertEqual("PASS", result["tests"]["flatpak_launch"]["status"])
+            self.assertEqual(str(source_fixture), result["tests"]["flatpak_launch_smoke"]["original_fixture_path"])
+            self.assertEqual(source_sha, result["tests"]["flatpak_launch_smoke"]["original_fixture_sha256"])
+            self.assertTrue(result["tests"]["flatpak_launch_smoke"]["original_fixture_alias_valid"])
+            self.assertEqual("PASS", result["tests"]["flatpak_launch_smoke"]["status"])
             self.assertEqual(1, result["tests"]["reliability"]["returncode"])
             self.assertEqual("BLOCKED", result["tests"]["reliability"]["status"])
             self.assertIn(
