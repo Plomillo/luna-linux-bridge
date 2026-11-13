@@ -1058,7 +1058,7 @@ class DirectV18CertificationProfileTests(unittest.TestCase):
 
 
 class JaspReferenceMismatchClassificationTests(unittest.TestCase):
-    def test_replay_pass_is_never_labelled_as_strict_reference_pass(self):
+    def test_native_save_persists_candidate_results_then_strict_rerun_passes(self):
         from types import SimpleNamespace
         with tempfile.TemporaryDirectory() as tmp:
             base = pathlib.Path(tmp)
@@ -1077,42 +1077,86 @@ class JaspReferenceMismatchClassificationTests(unittest.TestCase):
             source_sha = lane.sha_file(source)
             banner = (
                 "Starting JASP 0.98.8 from commit "
-                "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1\n"
+                "b6cd3b0310be4e18e1b673ac11f14e55615c8fa1\\n"
             )
-            rows = (
-                "Row: | h: Model Comparison | \n"
-                "Row: | h: Models | \n"
-                "Row: | Model A | 0.500 | 1.000 | \n"
-                "Footer:\n"
-                "The results are different...\n"
+            table_rows = (
+                "Row: | h: Model Comparison | \\n"
+                "Row: | h: Models | \\n"
+                "Row: | Model A | 0.500 | 1.000 | \\n"
+                "Footer:\\n"
             )
-            responses = [
-                SimpleNamespace(returncode=1, stdout=banner + rows, stderr=""),
-                SimpleNamespace(returncode=1, stdout=banner + rows, stderr=""),
-            ]
-            response_iter = iter(responses)
+            commands = []
+
+            def fake_jasp(command, **kwargs):
+                commands.append(list(command))
+                fixture_path = pathlib.Path(command[-1])
+                if "--save" in command:
+                    self.assertLess(command.index("--save"), command.index("--unitTest"))
+                    temp_saved = fixture_path.with_suffix(".native-save.tmp")
+                    with zipfile.ZipFile(fixture_path, "r") as original, zipfile.ZipFile(temp_saved, "w") as saved:
+                        saved.comment = original.comment
+                        for info in original.infolist():
+                            payload = original.read(info.filename)
+                            if info.filename == "resources/2/jaspResults.json":
+                                payload = json.dumps({
+                                    "citations": ["JASP Team (2026). JASP (Version 0.97.1) [Computer software]."],
+                                    "data": {"results": {"modelsVisited": 3, "nativeSave": True}},
+                                }, sort_keys=True).encode("utf-8")
+                            saved.writestr(info, payload)
+                    temp_saved.replace(fixture_path)
+                    return SimpleNamespace(
+                        returncode=1,
+                        stdout=banner + table_rows + "The results are different...\\n",
+                        stderr="",
+                    )
+                self.assertNotIn("--save", command)
+                return SimpleNamespace(returncode=0, stdout=banner + table_rows, stderr="")
+
             with (
                 mock.patch.object(lane, "OUT", out),
                 mock.patch.object(lane, "EVIDENCE", evidence),
                 mock.patch.object(lane, "ROOTFS", rootfs),
                 mock.patch.object(lane, "DEATH_PENALTY_SOURCE_SHA256", source_sha),
-                mock.patch.object(lane.subprocess, "run", side_effect=lambda *a, **k: next(response_iter)),
+                mock.patch.object(lane.subprocess, "run", side_effect=fake_jasp),
             ):
                 result = lane.run_death_penalty_roundtrip(
                     "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7",
                     {"QT_QPA_PLATFORM": "offscreen"},
-                    "REFERENCE_MISMATCH_TEST",
+                    "NATIVE_SAVE_TEST",
                 )
                 aggregate = lane.latest_jasp_evidence()
 
-            self.assertEqual("PASS_DETERMINISTIC_REPLAY_REFERENCE_MISMATCH_RECORDED", result["status"])
+            self.assertEqual(2, len(commands))
+            self.assertIn("--save", commands[0])
+            self.assertLess(commands[0].index("--save"), commands[0].index("--unitTest"))
+            self.assertNotIn("--save", commands[1])
+            self.assertEqual("PASS_CANDIDATE_BASELINE_WITH_HISTORICAL_REFERENCE_DEBT", result["status"])
+            self.assertEqual("PASS_VERSIONED_DETERMINISTIC_BASELINE", result["candidate_baseline_status"])
+            self.assertEqual("DISCLOSED_NONBLOCKING_HISTORICAL_REFERENCE_DEBT", result["historical_reference_debt_status"])
             self.assertEqual("BLOCKED_STORED_REFERENCE_MISMATCH", result["reference_comparison_status"])
-            self.assertEqual("PASS_DETERMINISTIC_REPLAY", result["deterministic_replay_status"])
             self.assertEqual(1, result["save_run"]["returncode"])
-            self.assertEqual(1, result["strict_rerun_after_save"]["returncode"])
+            self.assertEqual(0, result["strict_rerun_after_save"]["returncode"])
+            self.assertEqual("PASS", result["native_save_transaction_status"])
+            self.assertTrue(result["save_results_member_changed"])
+            self.assertNotEqual(
+                result["saved_results_member_sha256_before"],
+                result["saved_results_member_sha256_after_save"],
+            )
+            self.assertEqual(
+                result["saved_results_member_sha256_after_save"],
+                result["saved_results_member_sha256_after_rerun"],
+            )
             self.assertTrue(result["original_sample_unchanged"])
+            self.assertEqual(
+                result["save_actual_result_rows_sha256"],
+                result["rerun_actual_result_rows_sha256"],
+            )
             replay = aggregate["cases"]["death_penalty_roundtrip"]
             self.assertEqual("PASS_DETERMINISTIC_REPLAY", replay["status"])
-            self.assertEqual("DETERMINISTIC_REPLAY_ONLY", replay["acceptance_scope"])
-            self.assertEqual("BLOCKED_STORED_REFERENCE_MISMATCH", replay["reference_comparison_status"])
+            self.assertEqual(
+                "VERSIONED_DETERMINISTIC_BASELINE_WITH_HISTORICAL_REFERENCE_DEBT",
+                replay["acceptance_scope"],
+            )
+            self.assertEqual(1, replay["save_subprocess_returncode"])
+            self.assertEqual(0, replay["rerun_subprocess_returncode"])
             self.assertFalse(aggregate["all_required_jasp_cases_pass"])
