@@ -471,7 +471,7 @@ class DirectV18S32IssuerTests(unittest.TestCase):
             base = pathlib.Path(tmp)
             out, manifest, target, independent, acceptance, image, checksum, package = self.prepare_valid_evidence(base)
             with mock.patch.dict(lane.os.environ, {"GITHUB_RUN_ID": "43337415331", "GITHUB_RUN_ATTEMPT": "1"}), \
-            with mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
+                 mock.patch.object(lane, "CERTIFICATION_PROFILE", "V1_8_DIRECT"), \
                  mock.patch.object(lane, "CANDIDATE_MANIFEST", manifest), \
                  mock.patch.object(lane, "SQUASHFS_IMAGE", image), \
                  mock.patch.object(lane, "SQUASHFS_CHECKSUM", checksum), \
