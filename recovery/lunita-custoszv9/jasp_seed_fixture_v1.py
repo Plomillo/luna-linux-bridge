@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import pathlib
+import re
 import stat
 import zipfile
 
@@ -18,6 +19,8 @@ import zipfile
 SCHEMA = "LUNITA_JASP_DETERMINISTIC_FIXTURE/1.0"
 EXPECTED_SEED = 1
 ACTIVE_ANALYSES_MEMBER = "analyses.json"
+STORED_RESULTS_MEMBER = "resources/2/jaspResults.json"
+MAX_RESULTS_MEMBER_BYTES = 32 * 1024 * 1024
 
 
 class FixtureError(RuntimeError):
@@ -30,6 +33,82 @@ def sha_file(path: pathlib.Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def inspect_stored_results_member(source: pathlib.Path) -> dict:
+    """Inspect the immutable historical results member and its JASP version citation."""
+    source = pathlib.Path(source)
+    if source.is_symlink() or not source.is_file():
+        raise FixtureError("JASP source archive is missing or is a symlink")
+    with zipfile.ZipFile(source, "r") as archive:
+        infos = _safe_members(archive)
+        matches = [info for info in infos if info.filename == STORED_RESULTS_MEMBER]
+        if len(matches) != 1:
+            raise FixtureError(
+                f"Expected exactly one stored-results member {STORED_RESULTS_MEMBER!r}; found {len(matches)}"
+            )
+        info = matches[0]
+        if info.is_dir() or info.file_size <= 0 or info.file_size > MAX_RESULTS_MEMBER_BYTES:
+            raise FixtureError("Stored JASP results member is empty, a directory, or exceeds the size limit")
+        payload = archive.read(info)
+        if len(payload) != info.file_size:
+            raise FixtureError("Stored JASP results member length differs from archive metadata")
+        try:
+            document = json.loads(payload.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise FixtureError("Stored JASP results member is not valid UTF-8 JSON") from exc
+        citations = document.get("citations") if isinstance(document, dict) else None
+        if not isinstance(citations, list):
+            raise FixtureError("Stored JASP results member has no top-level citations list")
+        jasp_citations = [
+            value for value in citations
+            if isinstance(value, str) and re.search(
+                r"JASP Team \\(\\d{4}\\)\\. JASP \\(Version [^)]*\\)", value
+            )
+        ]
+        if len(jasp_citations) != 1:
+            raise FixtureError(
+                f"Expected exactly one top-level JASP software citation; found {len(jasp_citations)}"
+            )
+        version_match = re.search(r"JASP Team \\(\\d{4}\\)\\. JASP \\(Version ([^)]*)\\)", jasp_citations[0])
+        if not version_match:
+            raise FixtureError("JASP software citation has no parseable version")
+        return {
+            "member": STORED_RESULTS_MEMBER,
+            "member_size": len(payload),
+            "member_sha256": hashlib.sha256(payload).hexdigest(),
+            "citation": jasp_citations[0],
+            "jasp_version": version_match.group(1).strip(),
+            "top_level_citations_count": len(citations),
+            "json_valid": True,
+        }
+
+
+def inspect_archive_member(path: pathlib.Path, member: str) -> dict:
+    """Return a validated SHA-256 for one ZIP member without extracting the archive."""
+    path = pathlib.Path(path)
+    if path.is_symlink() or not path.is_file():
+        raise FixtureError("JASP archive is missing or is a symlink")
+    with zipfile.ZipFile(path, "r") as archive:
+        infos = _safe_members(archive)
+        if archive.testzip() is not None:
+            raise FixtureError("JASP archive CRC validation failed")
+        matches = [info for info in infos if info.filename == member]
+        if len(matches) != 1 or matches[0].is_dir():
+            raise FixtureError(f"Expected exactly one regular archive member {member!r}")
+        payload = archive.read(matches[0])
+        if len(payload) != matches[0].file_size:
+            raise FixtureError(f"Archive member length mismatch for {member!r}")
+        if member == STORED_RESULTS_MEMBER:
+            parsed = json.loads(payload.decode("utf-8"))
+            if not isinstance(parsed, dict) or not isinstance(parsed.get("citations"), list):
+                raise FixtureError("Saved results member is not a valid JASP results JSON document")
+        return {
+            "member": member,
+            "member_size": len(payload),
+            "member_sha256": hashlib.sha256(payload).hexdigest(),
+            "archive_testzip": "PASS",
+        }
 
 
 def _pointer(parts: tuple[str, ...]) -> str:
@@ -115,12 +194,14 @@ def inspect_seed_option(source: pathlib.Path) -> dict:
                 "setSeed": option["setSeed"],
                 "seed": option["seed"],
             })
+    stored_results = inspect_stored_results_member(source)
     return {
         "archive_member_count": len(infos),
         "active_configuration_member": ACTIVE_ANALYSES_MEMBER,
         "active_analysis_count": len(analyses),
         "seed_option_match_count": len(matches),
         "matches": matches,
+        "stored_results": stored_results,
     }
 
 
@@ -249,6 +330,11 @@ def prepare_deterministic_fixture(
         "analysis_id": match.get("analysis_id"),
         "analysis_name": match.get("analysis_name"),
         "module_name": match.get("module_name"),
+        "historical_results_member": inspection["stored_results"]["member"],
+        "historical_results_member_sha256": inspection["stored_results"]["member_sha256"],
+        "historical_results_jasp_version": inspection["stored_results"]["jasp_version"],
+        "historical_results_jasp_citation": inspection["stored_results"]["citation"],
+        "historical_results_member_size": inspection["stored_results"]["member_size"],
         "before": {"setSeed": False, "seed": EXPECTED_SEED},
         "after": {"setSeed": True, "seed": EXPECTED_SEED},
         "archive_member_count": inspection["archive_member_count"],
@@ -291,6 +377,11 @@ def verify_deterministic_fixture_receipt(
     on_disk = json.loads(receipt_path.read_text(encoding="utf-8"))
     if on_disk.get("clone_path") != str(clone) or on_disk.get("clone_sha256") != receipt.get("clone_sha256"):
         return False
+    try:
+        source_inspection = inspect_seed_option(source)
+    except (OSError, ValueError, FixtureError, zipfile.BadZipFile):
+        return False
+    source_results = source_inspection.get("stored_results", {})
     return bool(
         receipt.get("expected_source_sha256") == expected_source_sha256
         and receipt.get("source_sha256") == expected_source_sha256
@@ -307,5 +398,9 @@ def verify_deterministic_fixture_receipt(
         and receipt.get("result_output_members_changed") is False
         and receipt.get("before") == {"setSeed": False, "seed": EXPECTED_SEED}
         and receipt.get("after") == {"setSeed": True, "seed": EXPECTED_SEED}
+        and receipt.get("historical_results_member") == STORED_RESULTS_MEMBER
+        and receipt.get("historical_results_member_sha256") == source_results.get("member_sha256")
+        and receipt.get("historical_results_jasp_version") == source_results.get("jasp_version")
+        and receipt.get("historical_results_jasp_citation") == source_results.get("citation")
         and receipt.get("reference_results_modified") is False
     )
