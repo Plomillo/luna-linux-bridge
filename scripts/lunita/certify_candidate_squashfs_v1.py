@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import pathlib
@@ -78,6 +79,94 @@ def validate_evidence_map(checks: dict[str, Any]) -> None:
             raise CertificationError(f"Evidence map is malformed for check: {name}")
         for path_text, expected in evidence.items():
             require_hash(pathlib.Path(path_text), expected, f"Independent evidence for {name}")
+
+
+def canonical_rootfs_tree_manifest(rootfs: pathlib.Path) -> dict[str, Any]:
+    """Load and execute the exact tree_manifest implementation used by the packager."""
+    if rootfs.is_symlink() or not rootfs.is_dir():
+        raise CertificationError("Packaged source rootfs is missing, symlinked, or not a directory")
+    packager_path = pathlib.Path(__file__).resolve().parent / "package_candidate_squashfs_v1.py"
+    if packager_path.is_symlink() or not packager_path.is_file():
+        raise CertificationError("Canonical SquashFS packager source is missing or unsafe")
+    spec = importlib.util.spec_from_file_location("lunita_packager_manifest_certifier", packager_path)
+    if spec is None or spec.loader is None:
+        raise CertificationError("Cannot load canonical SquashFS packager implementation")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.tree_manifest(rootfs)
+
+
+def validate_rootfs_manifest_closure(
+    package: dict[str, Any],
+    package_receipt_path: pathlib.Path,
+    package_sha: str,
+    closure_check: dict[str, Any],
+) -> dict[str, Any]:
+    """Fail closed unless the post-validation rootfs still equals the packaged tree."""
+    if not isinstance(closure_check, dict) or closure_check.get("status") != "PASS" or closure_check.get("returncode", 0) != 0:
+        raise CertificationError("Post-validation rootfs/package manifest closure is not PASS")
+    rootfs_text = package.get("source_rootfs")
+    if not isinstance(rootfs_text, str) or not rootfs_text:
+        raise CertificationError("Package receipt lacks source_rootfs identity")
+    rootfs = pathlib.Path(rootfs_text)
+    if closure_check.get("rootfs_path") != str(rootfs):
+        raise CertificationError("Post-validation rootfs closure references a different rootfs")
+    expected_sha = package.get("source_rootfs_manifest_sha256")
+    if not isinstance(expected_sha, str) or len(expected_sha) != 64:
+        raise CertificationError("Package receipt lacks canonical source-rootfs manifest SHA-256")
+    if closure_check.get("package_source_rootfs_manifest_sha256") != expected_sha:
+        raise CertificationError("Post-validation closure does not bind the package source manifest")
+    if closure_check.get("observed_post_validation_rootfs_manifest_sha256") != expected_sha:
+        raise CertificationError("Post-validation rootfs manifest differs from the packaged source manifest")
+    expected_count = package.get("source_rootfs_entry_count")
+    if not isinstance(expected_count, int) or closure_check.get("package_source_rootfs_entry_count") != expected_count:
+        raise CertificationError("Post-validation closure entry count differs from package receipt")
+    if closure_check.get("observed_post_validation_rootfs_entry_count") != expected_count:
+        raise CertificationError("Post-validation rootfs entry count differs from package receipt")
+    if closure_check.get("package_receipt_path") != str(package_receipt_path):
+        raise CertificationError("Post-validation closure references another package receipt")
+    if closure_check.get("package_receipt_sha256") != package_sha:
+        raise CertificationError("Post-validation closure package receipt SHA-256 mismatch")
+    if closure_check.get("same_canonical_algorithm") is not True or closure_check.get("exact_manifest_equality") is not True:
+        raise CertificationError("Post-validation closure does not attest exact canonical manifest equality")
+    receipt_path_text = closure_check.get("manifest_closure_receipt_path")
+    receipt_sha = closure_check.get("manifest_closure_receipt_sha256")
+    if not isinstance(receipt_path_text, str) or not receipt_path_text or not isinstance(receipt_sha, str):
+        raise CertificationError("Post-validation rootfs closure receipt is missing")
+    receipt_path = pathlib.Path(receipt_path_text)
+    require_hash(receipt_path, receipt_sha, "Post-validation rootfs closure receipt")
+    receipt = load_json(receipt_path, "Post-validation rootfs closure receipt")
+    packager_path = pathlib.Path(__file__).resolve().parent / "package_candidate_squashfs_v1.py"
+    packager_sha = sha256_file(packager_path)
+    if (
+        receipt.get("schema") != "LUNITA_POSTVALIDATION_ROOTFS_PACKAGE_MANIFEST_CLOSURE/1.0"
+        or receipt.get("status") != "PASS"
+        or receipt.get("rootfs_path") != str(rootfs)
+        or receipt.get("package_receipt_path") != str(package_receipt_path)
+        or receipt.get("package_receipt_sha256") != package_sha
+        or receipt.get("packager_source_path") != str(packager_path)
+        or receipt.get("packager_source_sha256") != packager_sha
+        or receipt.get("package_source_rootfs_manifest_sha256") != expected_sha
+        or receipt.get("observed_post_validation_rootfs_manifest_sha256") != expected_sha
+        or receipt.get("package_source_rootfs_entry_count") != expected_count
+        or receipt.get("observed_post_validation_rootfs_entry_count") != expected_count
+        or receipt.get("same_canonical_algorithm") is not True
+        or receipt.get("exact_manifest_equality") is not True
+    ):
+        raise CertificationError("Post-validation rootfs closure receipt identity/content mismatch")
+    if closure_check.get("packager_source_path") != str(packager_path) or closure_check.get("packager_source_sha256") != packager_sha:
+        raise CertificationError("Post-validation closure packager source identity/hash mismatch")
+    observed = canonical_rootfs_tree_manifest(rootfs)
+    if observed.get("entries_sha256") != expected_sha or observed.get("entry_count") != expected_count:
+        raise CertificationError("Live post-validation rootfs no longer equals packaged canonical manifest")
+    return {
+        "rootfs_path": str(rootfs),
+        "manifest_sha256": expected_sha,
+        "entry_count": expected_count,
+        "closure_receipt_path": str(receipt_path),
+        "closure_receipt_sha256": receipt_sha,
+        "packager_source_sha256": packager_sha,
+    }
 
 
 def find_bound_s32(s32_dir: pathlib.Path, independent_path: pathlib.Path, independent_sha: str,
@@ -232,10 +321,15 @@ def build_certificate(
         "candidate_rootfs_inventory_and_dependency_manifest",
         "jasp_packaged_fixture_nonregression",
         "squashfs_image_and_package_binding",
+        "squashfs_rootfs_postvalidation_manifest_closure",
     }
     if not isinstance(checks, dict) or not required_checks.issubset(checks):
         raise CertificationError("Independent report lacks one or more required v1.8 checks")
     validate_evidence_map(checks)
+    rootfs_manifest_closure = validate_rootfs_manifest_closure(
+        package, package_receipt_path, sha256_file(package_receipt_path),
+        checks["squashfs_rootfs_postvalidation_manifest_closure"],
+    )
     target_check = checks["target_v1_8_runtime_acceptance_e01_e15_int8"]
     if target_check.get("receipt_path") != str(target_path) or target_check.get("receipt_sha256") != target_sha_expected:
         raise CertificationError("Independent target check does not bind the package's target receipt")
@@ -306,6 +400,7 @@ def build_certificate(
         "checksum": {"path": str(checksum), "sha256": checksum_sha},
         "candidate_manifest": {"path": str(candidate_manifest_path), "sha256": manifest_sha},
         "source_rootfs_manifest_sha256": package["source_rootfs_manifest_sha256"],
+        "post_validation_rootfs_manifest_closure": rootfs_manifest_closure,
         "target_runtime_receipt": {"path": str(target_path), "sha256": target_sha_expected},
         "independent_validation": {"path": str(independent_report_path), "sha256": independent_sha, "status": "PASS"},
         "s32_operational_certificate": {"path": str(s32_path), "sha256": s32_sha, "status": PASS_S32},
