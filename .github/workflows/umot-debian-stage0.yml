@@ -27,7 +27,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           lfs: true
-          fetch-depth: 0
+          fetch-depth: 1
           persist-credentials: false
       - name: Verify protected artifact hydration
         shell: bash
