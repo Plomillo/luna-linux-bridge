@@ -1,7 +1,5 @@
 name: UMOT Debian 13 Stage 0
 on:
-  push:
-    branches: [umot/debian-stage0-ci-20261114]
   pull_request:
     branches: [main]
     paths: ["umot/**", ".github/workflows/umot-debian-stage0.yml", ".gitattributes"]
@@ -69,9 +67,16 @@ jobs:
           print(f"- Debian: {d.get('environment',{}).get('distribution')}")
           print(f"- glibc: {d.get('environment',{}).get('glibc')}")
           print(f"- Wheel identity: {d.get('wheel',{}).get('identity')}")
-          print(f"- Offline wheel install (without deps): {d.get('offline_wheel_install',{}).get('status')}")
+          print(f"- Wheel filename compliance: {d.get('wheel_filename_compliance',{}).get('status')}")
+          print(f"- Wheel RECORD integrity: {d.get('wheel',{}).get('record_integrity')}")
+          print(f"- Wheel top-level modules: {d.get('wheel',{}).get('top_level_modules')}")
+          print(f"- ELF objects: {d.get('wheel',{}).get('elf_objects')}")
+          print(f"- Requires-Dist: {d.get('wheel',{}).get('requires_dist')}")
+          print(f"- Offline wheel install (identical canonical test alias, no deps): {d.get('offline_wheel_install',{}).get('status')}")
+          print(f"- Module import: {d.get('offline_wheel_install',{}).get('module_import_status')}")
           print(f"- Full dependency install: {d.get('full_offline_dependency_install')}")
           print(f"- Reproducible rebuild: {d.get('reproducible_rebuild',{}).get('status')}")
+          print(f"- Native dependency audit: {d.get('native_dependency_audit',{}).get('status')}")
           for item in d.get("wheel",{}).get("errors",[]): print(f"- Error: {item}")
           PY
             else

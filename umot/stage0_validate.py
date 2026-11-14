@@ -37,6 +37,18 @@ def file_sha256(path: Path) -> tuple[str, int]:
             size += len(chunk)
     return digest.hexdigest(), size
 
+def wheel_filename_compliance(filename: str) -> dict:
+    """Check PEP 427 filename shape without changing the protected artifact."""
+    basename = Path(filename).name
+    if not basename.endswith(".whl"):
+        return {"status": "FAIL", "reason": "WHEEL_EXTENSION_MISSING", "field_count": None}
+    fields = basename[:-4].split("-")
+    valid = len(fields) in (5, 6)
+    return {"status": "PASS" if valid else "FAIL", "field_count": len(fields),
+            "fields": fields,
+            "reason": None if valid else "WHEEL_FILENAME_MUST_HAVE_5_OR_6_HYPHEN_FIELDS"}
+
+
 def safe_wheel_members(names: list[str]) -> tuple[bool, str | None]:
     for name in names:
         member = PurePosixPath(name)
@@ -48,7 +60,9 @@ def verify_record(archive: zipfile.ZipFile, record_name: str) -> tuple[str, list
     errors, seen = [], set()
     try:
         rows = csv.reader(io.StringIO(archive.read(record_name).decode("utf-8")))
-        actual = {n for n in archive.namelist() if not n.endswith("/")}
+        signature_files = {record_name + ".jws", record_name + ".p7s"}
+        actual = {n for n in archive.namelist()
+                  if not n.endswith("/") and n not in signature_files}
         for row in rows:
             if len(row) != 3:
                 errors.append("RECORD_ROW_MALFORMED")
@@ -62,7 +76,9 @@ def verify_record(archive: zipfile.ZipFile, record_name: str) -> tuple[str, list
                 errors.append(f"RECORD_MISSING_MEMBER:{name}")
                 continue
             payload = archive.read(name)
-            if name == record_name and not hash_spec and not size_spec:
+            if name == record_name:
+                if hash_spec or size_spec:
+                    errors.append("RECORD_SELF_ENTRY_MUST_HAVE_EMPTY_HASH_AND_SIZE")
                 continue
             if not hash_spec.startswith("sha256="):
                 errors.append(f"RECORD_HASH_ALGORITHM_OR_MISSING:{name}")
@@ -73,16 +89,21 @@ def verify_record(archive: zipfile.ZipFile, record_name: str) -> tuple[str, list
                 errors.append(f"RECORD_HASH_MISMATCH:{name}")
             if not size_spec or not size_spec.isdigit() or int(size_spec) != len(payload):
                 errors.append(f"RECORD_SIZE_MISMATCH:{name}")
-        errors.extend(f"RECORD_UNLISTED_MEMBER:{name}" for name in sorted(actual - seen))
+        if record_name not in seen:
+            errors.append("RECORD_SELF_ENTRY_MISSING")
+        errors.extend(f"RECORD_UNLISTED_MEMBER:{n}" for n in sorted(actual - seen))
     except Exception as exc:
         errors.append(f"RECORD_READ_ERROR:{type(exc).__name__}:{exc}")
     return ("PASS" if not errors else "FAIL"), errors
 
 def inspect_wheel(path: Path) -> dict:
-    result = {"wheel": WHEEL_NAME, "path": str(path), "identity": "HOLD",
-              "archive_integrity": "HOLD", "record_integrity": "HOLD",
-              "wheel_tag": "HOLD", "metadata": "HOLD", "requires_dist": [],
-              "native_objects": [], "errors": []}
+    result = {
+        "wheel": WHEEL_NAME, "path": str(path), "identity": "HOLD",
+        "archive_integrity": "HOLD", "record_integrity": "HOLD",
+        "wheel_tag": "HOLD", "metadata": "HOLD", "requires_dist": [],
+        "native_objects": [], "elf_objects": [], "top_level_modules": [],
+        "member_count": 0, "errors": [],
+    }
     if path.is_symlink() or not path.is_file():
         result["errors"].append("WHEEL_NOT_A_REGULAR_FILE")
         result["identity"] = "FAIL"
@@ -99,6 +120,7 @@ def inspect_wheel(path: Path) -> dict:
     result["identity"] = "PASS" if digest == EXPECTED_SHA256 and size == EXPECTED_BYTES else "FAIL"
     if result["identity"] == "FAIL":
         result["errors"].append("PROTECTED_WHEEL_IDENTITY_MISMATCH")
+    result["filename_compliance"] = wheel_filename_compliance(path.name)
     try:
         with zipfile.ZipFile(path) as archive:
             bad_member = archive.testzip()
@@ -108,6 +130,7 @@ def inspect_wheel(path: Path) -> dict:
                 return result
             result["archive_integrity"] = "PASS"
             names = archive.namelist()
+            result["member_count"] = sum(not n.endswith("/") for n in names)
             safe, reason = safe_wheel_members(names)
             if not safe:
                 result["archive_integrity"] = "FAIL"
@@ -128,22 +151,46 @@ def inspect_wheel(path: Path) -> dict:
                 result["metadata"] = "FAIL"
                 return result
             wheel_text = archive.read(wheel_meta).decode("utf-8", errors="replace")
-            tags = [line.split(":", 1)[1].strip() for line in wheel_text.splitlines() if line.startswith("Tag:")]
+            tags = [line.split(":", 1)[1].strip() for line in wheel_text.splitlines()
+                    if line.startswith("Tag:")]
             result["declared_tags"] = tags
             result["wheel_tag"] = "PASS" if WHEEL_TAG in tags else "FAIL"
             if result["wheel_tag"] == "FAIL":
                 result["errors"].append("EXPECTED_MANYLINUX_2_34_X86_64_TAG_NOT_FOUND")
-            metadata = Parser().parsestr(archive.read(metadata_file).decode("utf-8", errors="replace"))
+            metadata = Parser().parsestr(
+                archive.read(metadata_file).decode("utf-8", errors="replace"))
             result["distribution_name"] = metadata.get("Name")
             result["distribution_version"] = metadata.get("Version")
             result["requires_dist"] = metadata.get_all("Requires-Dist", [])
             result["metadata"] = "PASS" if result["distribution_name"] and result["distribution_version"] else "FAIL"
             if result["metadata"] == "FAIL":
                 result["errors"].append("DISTRIBUTION_METADATA_INCOMPLETE")
+            top_level_file = f"{dist_info}/top_level.txt"
+            if top_level_file in names:
+                modules = [line.strip() for line in archive.read(top_level_file).decode(
+                    "utf-8", errors="replace").splitlines()
+                    if line.strip() and line.strip().isidentifier()]
+            else:
+                modules = sorted({
+                    n.split("/", 1)[0][:-3] if n.endswith(".py") else n.split("/", 1)[0]
+                    for n in names if not n.endswith("/") and not n.startswith(dist_info + "/")
+                    and not n.startswith("__") and ".data/" not in n
+                })
+                modules = [m for m in modules if m.isidentifier()]
+            result["top_level_modules"] = modules
             record_status, record_errors = verify_record(archive, record_file)
             result["record_integrity"] = record_status
             result["errors"].extend(record_errors)
-            result["native_objects"] = [n for n in names if not n.endswith("/") and (n.endswith(".so") or ".so." in n)]
+            result["native_objects"] = [
+                n for n in names if not n.endswith("/") and (n.endswith(".so") or ".so." in n)]
+            elf_objects = []
+            for name in names:
+                if name.endswith("/"):
+                    continue
+                with archive.open(name) as member:
+                    if member.read(4) == b"\x7fELF":
+                        elf_objects.append(name)
+            result["elf_objects"] = elf_objects
     except (zipfile.BadZipFile, OSError, RuntimeError) as exc:
         result["archive_integrity"] = "FAIL"
         result["errors"].append(f"WHEEL_ARCHIVE_ERROR:{type(exc).__name__}:{exc}")
@@ -204,30 +251,72 @@ def check_native_dependencies(wheel: Path, native_names: list[str]) -> dict:
             "missing": missing,
             "reason": None if not missing else "SYSTEM_LIBRARY_REQUIREMENTS_NEED_REVIEW_OR_PROVISIONING"}
 
-def offline_install_test(wheel: Path, distribution_name: str | None) -> dict:
-    if not distribution_name:
-        return {"status": "HOLD", "reason": "DISTRIBUTION_NAME_UNAVAILABLE"}
+def offline_install_test(
+    wheel: Path, distribution_name: str | None, distribution_version: str | None,
+    top_level_modules: list[str], filename_report: dict,
+) -> dict:
+    if not distribution_name or not distribution_version:
+        return {"status": "HOLD", "reason": "DISTRIBUTION_METADATA_UNAVAILABLE"}
+    normalized_name = re.sub(r"[-_.]+", "_", distribution_name).lower()
+    normalized_version = distribution_version.replace("-", "_")
+    alias_name = f"{normalized_name}-{normalized_version}-{WHEEL_TAG}.whl"
     with tempfile.TemporaryDirectory(prefix="umot-offline-install-") as tmp:
         root, venv = Path(tmp), Path(tmp) / "venv"
         target = root / "site"
+        install_wheel = wheel if filename_report.get("status") == "PASS" else root / alias_name
+        if install_wheel != wheel:
+            shutil.copyfile(wheel, install_wheel)
+        source_hash, source_size = file_sha256(wheel)
+        install_hash, install_size = file_sha256(install_wheel)
+        if (source_hash, source_size) != (install_hash, install_size):
+            return {"status": "FAIL", "reason": "TEMPORARY_CANONICAL_ALIAS_CONTENT_MISMATCH",
+                    "install_alias_filename": install_wheel.name}
         created = run([sys.executable, "-m", "venv", str(venv)], timeout=120)
         if created.returncode != 0:
             return {"status": "HOLD", "reason": "VENV_CREATION_FAILED", "output": created.stdout[-2000:]}
         python = venv / "bin" / "python"
         env = os.environ.copy()
-        env.update(PIP_NO_INDEX="1", PIP_DISABLE_PIP_VERSION_CHECK="1")
-        install = subprocess.run([str(python), "-m", "pip", "install", "--no-index", "--no-deps",
-                                  "--no-compile", "--target", str(target), str(wheel)],
-                                 check=False, text=True, stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT, timeout=600, env=env)
+        env.update(PIP_NO_INDEX="1", PIP_DISABLE_PIP_VERSION_CHECK="1", PIP_NO_CACHE_DIR="1")
+        install = subprocess.run(
+            [str(python), "-m", "pip", "install", "--no-index", "--no-deps",
+             "--no-compile", "--target", str(target), str(install_wheel)],
+            check=False, text=True, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, timeout=600, env=env)
         if install.returncode != 0:
-            return {"status": "FAIL", "reason": "OFFLINE_WHEEL_INSTALL_FAILED", "output": install.stdout[-4000:]}
-        check = run([str(python), "-c",
-                     "import importlib.metadata as m,sys; d=m.distribution(sys.argv[1]); print(d.metadata['Name'],d.version)",
-                     distribution_name], timeout=30)
+            return {"status": "FAIL", "reason": "OFFLINE_WHEEL_INSTALL_FAILED",
+                    "output": install.stdout[-4000:], "install_alias_filename": install_wheel.name,
+                    "source_filename_compliance": filename_report.get("status"),
+                    "content_identical_alias": True, "source_sha256": source_hash}
+        check = run([
+            str(python), "-c",
+            "import importlib.metadata as m,sys; sys.path.insert(0,sys.argv[1]); "
+            "d=m.distribution(sys.argv[2]); print(d.metadata['Name'],d.version)",
+            str(target), distribution_name], timeout=30)
         if check.returncode != 0:
-            return {"status": "FAIL", "reason": "INSTALLED_DISTRIBUTION_NOT_DISCOVERABLE", "output": check.stdout[-2000:]}
-        return {"status": "PASS", "method": "pip --no-index --no-deps", "distribution": check.stdout.strip()}
+            return {"status": "FAIL", "reason": "INSTALLED_DISTRIBUTION_NOT_DISCOVERABLE",
+                    "output": check.stdout[-2000:], "install_alias_filename": install_wheel.name}
+        import_status, import_output = "HOLD", "TOP_LEVEL_MODULE_MANIFEST_UNAVAILABLE"
+        if top_level_modules:
+            imported = run([
+                str(python), "-c",
+                "import importlib,json,sys; sys.path.insert(0,sys.argv[1]); "
+                "mods=json.loads(sys.argv[2]); [importlib.import_module(m) for m in mods]; "
+                "print('IMPORTED:'+','.join(mods))",
+                str(target), json.dumps(top_level_modules)], timeout=120)
+            import_output = imported.stdout[-4000:]
+            if imported.returncode == 0:
+                import_status = "PASS"
+            elif "ModuleNotFoundError" in imported.stdout:
+                import_status = "HOLD"
+            else:
+                import_status = "FAIL"
+        return {"status": "PASS", "method": "pip --no-index --no-deps",
+                "distribution": check.stdout.strip(),
+                "install_alias_filename": install_wheel.name,
+                "source_filename_compliance": filename_report.get("status"),
+                "content_identical_alias": True, "source_sha256": source_hash,
+                "module_import_status": import_status,
+                "module_import_output": import_output}
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -239,9 +328,10 @@ def main() -> int:
               "environment": check_environment()}
     wheel_result = inspect_wheel(args.wheel)
     report["wheel"] = wheel_result
-    native = check_native_dependencies(args.wheel, wheel_result.get("native_objects", [])) if wheel_result.get("archive_integrity") == "PASS" else {"status": "HOLD", "reason": "WHEEL_ARCHIVE_NOT_INSPECTABLE"}
+    native = check_native_dependencies(args.wheel, wheel_result.get("elf_objects", [])) if wheel_result.get("archive_integrity") == "PASS" else {"status": "HOLD", "reason": "WHEEL_ARCHIVE_NOT_INSPECTABLE"}
     report["native_dependency_audit"] = native
-    install = offline_install_test(args.wheel, wheel_result.get("distribution_name")) if wheel_result.get("archive_integrity") == "PASS" else {"status": "HOLD", "reason": "WHEEL_ARCHIVE_NOT_INSPECTABLE"}
+    install = offline_install_test(args.wheel, wheel_result.get("distribution_name"), wheel_result.get("distribution_version"), wheel_result.get("top_level_modules", []), wheel_result.get("filename_compliance", {})) if wheel_result.get("archive_integrity") == "PASS" else {"status": "HOLD", "reason": "WHEEL_ARCHIVE_NOT_INSPECTABLE"}
+    report["wheel_filename_compliance"] = wheel_result.get("filename_compliance", {"status": "HOLD"})
     report["offline_wheel_install"] = install
     requirements = wheel_result.get("requires_dist", [])
     wheelhouse = Path("umot/wheelhouse")
@@ -254,7 +344,9 @@ def main() -> int:
     report["reproducible_rebuild"] = {"status": "HOLD", "reason": "SOURCE_REVISION_AND_PINNED_BUILD_RECIPE_NOT_YET_REGISTERED"}
     required = [report["environment"]["debian_13_trixie"], report["environment"]["glibc_compatibility"],
                 wheel_result["identity"], wheel_result["archive_integrity"], wheel_result["record_integrity"],
+                report["wheel_filename_compliance"]["status"],
                 wheel_result["wheel_tag"], wheel_result["metadata"], native["status"], install["status"],
+                install.get("module_import_status", "HOLD"),
                 report["dependency_inventory"]["status"], report["reproducible_rebuild"]["status"]]
     overall = "FAIL" if "FAIL" in required else ("PASS" if all(x == "PASS" for x in required) else "HOLD")
     report["stage0_status"] = overall
