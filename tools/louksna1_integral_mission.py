@@ -882,6 +882,7 @@ GROUNDING_TEXT = "En un principio creó Elohim los cielos y la tierra."
 GROUNDING_ARGMAX = [0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 CALIBRE_URL = "https://github.com/kovidgoyal/calibre/releases/download/v9.17.0/calibre-9.17.0-x86_64.txz"
 CALIBRE_SHA256 = "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53"
+CALIBRE_FALLBACK_URLS = ("https://download.calibre-ebook.com/9.17.0/calibre-9.17.0-x86_64.txz",)
 CALIBRE_BYTES = 201590724
 CALIBRE_VERSION = "9.17.0"
 CALIBRE_FIXTURE = "Louksna1 calibre conversion fixture LOUKSNA1_CALIBRE_FIXTURE_V1.\n"
@@ -1015,13 +1016,22 @@ def op_onnx(runtime: Path) -> dict:
     )
 
 
-def download_verified(url: str, dest: Path, size: int, digest: str) -> None:
-    request = Request(url, headers={"User-Agent": "louksna1-integral-mission"})
-    with urlopen(request, timeout=300) as response, dest.open("wb") as handle:
-        shutil.copyfileobj(response, handle)
-    if dest.stat().st_size != size or sha256_file(dest) != digest:
-        dest.unlink(missing_ok=True)
-        raise RuntimeError("DOWNLOAD_HASH_MISMATCH")
+def download_verified(url: str, dest: Path, size: int, digest: str, attempts: int = 3) -> None:
+    """Download and verify size and SHA-256. Transient failures are retried; the pin is never relaxed."""
+    last: Exception | None = None
+    for _ in range(max(1, attempts)):
+        try:
+            request = Request(url, headers={"User-Agent": "louksna1-integral-mission"})
+            with urlopen(request, timeout=300) as response, dest.open("wb") as handle:
+                shutil.copyfileobj(response, handle)
+            if dest.stat().st_size != size or sha256_file(dest) != digest:
+                raise RuntimeError("DOWNLOAD_HASH_MISMATCH")
+            return
+        except (OSError, RuntimeError, TimeoutError) as exc:
+            last = exc
+            dest.unlink(missing_ok=True)
+    assert last is not None
+    raise last
 
 
 def calibre_pin(runtime: Path) -> tuple[dict | None, str]:
@@ -1052,14 +1062,21 @@ def op_calibre(runtime: Path) -> dict:
         temp = Path(temp_name)
         cached = os.environ.get("LOUKSNA1_CALIBRE_TXZ", "")
         txz = Path(cached) if cached else temp / "calibre-9.17.0-x86_64.txz"
+        download_source = "LOUKSNA1_CALIBRE_TXZ" if cached else ""
         if cached:
             if txz.is_symlink() or not txz.is_file() or txz.stat().st_size != CALIBRE_BYTES or sha256_file(txz) != CALIBRE_SHA256:
                 return record(target, "convert_document", "FAIL", exit_code=4, detail={}, reason="CALIBRE_CACHE_HASH_MISMATCH")
         else:
-            try:
-                download_verified(CALIBRE_URL, txz, CALIBRE_BYTES, CALIBRE_SHA256)
-            except (OSError, RuntimeError, TimeoutError) as exc:
-                return record(target, "convert_document", "FAIL", exit_code=4, detail={"error": type(exc).__name__}, reason="CALIBRE_DOWNLOAD_FAILED")
+            attempts_log = []
+            for source in (CALIBRE_URL, *CALIBRE_FALLBACK_URLS):
+                try:
+                    download_verified(source, txz, CALIBRE_BYTES, CALIBRE_SHA256, attempts=2)
+                    download_source = source
+                    break
+                except (OSError, RuntimeError, TimeoutError) as exc:
+                    attempts_log.append({"url": source, "error": type(exc).__name__, "http_status": getattr(exc, "code", None), "message": str(exc)[:120]})
+            else:
+                return record(target, "convert_document", "FAIL", exit_code=4, detail={"attempts": attempts_log}, reason="CALIBRE_DOWNLOAD_FAILED")
         extract = temp / "extract"
         extract.mkdir()
         unpacked = subprocess.run(["tar", "-xJf", str(txz), "-C", str(extract)], capture_output=True, text=True, timeout=240, check=False)
@@ -1099,6 +1116,7 @@ def op_calibre(runtime: Path) -> dict:
             "calibre_version": CALIBRE_VERSION,
             "binary_sha256": CALIBRE_SHA256,
             "binary_bytes": CALIBRE_BYTES,
+            "download_source": download_source,
             "mimetype": mimetype.decode("ascii", errors="replace"),
             "fixture_found": found,
             "fixture_sha256": sha256_bytes(CALIBRE_FIXTURE.encode("utf-8")),
@@ -1769,6 +1787,12 @@ def main(argv: list[str] | None = None) -> int:
         "worker_status": report["worker"].get("status"),
         "passed_targets": report["gates"]["coverage_21"]["passed"],
         "failed_targets": report["gates"]["coverage_21"]["failed"],
+        "failed_gates": {name: gate.get("reason") or gate.get("problems") or "" for name, gate in report["gates"].items() if gate.get("status") != "PASS"},
+        "failure_reasons": [
+            {"target": row.get("target_id"), "reason": row.get("reason"), "detail": json.dumps(row.get("detail"), ensure_ascii=False, sort_keys=True)[:700]}
+            for row in report.get("matrix", [])
+            if row.get("status") != "PASS"
+        ],
         "output": str(output),
     }, ensure_ascii=False, indent=2))
     return 0 if report["decision"] == "GRANTED" else 2
