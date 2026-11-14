@@ -1,0 +1,95 @@
+name: UMOT Debian 13 Stage 0
+on:
+  push:
+    branches: [umot/debian-stage0-ci-20261114]
+  pull_request:
+    branches: [main]
+    paths: ["umot/**", ".github/workflows/umot-debian-stage0.yml", ".gitattributes"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stage0:
+    name: Protected wheel acceptance on Debian 13 Trixie
+    runs-on: ubuntu-latest
+    container:
+      image: debian:13
+    steps:
+      - name: Provision the isolated test toolchain
+        run: |
+          set -euo pipefail
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates git git-lfs python3 python3-venv python3-pip binutils libc-bin file
+          git lfs install --local
+      - name: Checkout exact candidate and hydrate protected LFS object
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }
+          lfs: true
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify protected artifact hydration
+        shell: bash
+        run: |
+          set -euo pipefail
+          wheel='externalized-assets-staging/optimized-containers/umot_compact-1.0.5.post11-m11-m12-imatrix-cpu128-py3-none-manylinux_2_34_x86_64.whl'
+          test -f "$wheel"
+          if head -c 40 "$wheel" | grep -q 'git-lfs.github.com/spec'; then
+            echo "::error::Git LFS pointer was not hydrated."
+            exit 1
+          fi
+          stat -c 'wheel_bytes=%s' "$wheel"
+          sha256sum "$wheel"
+      - name: Run Stage 0 verifier
+        id: stage0
+        continue-on-error: true
+        run: |
+          python3 umot/stage0_validate.py \
+            --wheel 'externalized-assets-staging/optimized-containers/umot_compact-1.0.5.post11-m11-m12-imatrix-cpu128-py3-none-manylinux_2_34_x86_64.whl' \
+            --report umot-stage0-report.json
+      - name: Run verifier unit tests
+        id: unit
+        run: |
+          cd umot
+          PYTHONPATH=. python3 -m unittest discover -s tests -v
+      - name: Publish Stage 0 evidence summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## UMOT Stage 0 — Debian 13 Trixie'
+            if test -f umot-stage0-report.json; then
+              python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("umot-stage0-report.json").read_text())
+          print(f"- Stage 0 status: {d.get('stage0_status')}")
+          print(f"- Certification: {d.get('certification')}")
+          print(f"- Debian: {d.get('environment',{}).get('distribution')}")
+          print(f"- glibc: {d.get('environment',{}).get('glibc')}")
+          print(f"- Wheel identity: {d.get('wheel',{}).get('identity')}")
+          print(f"- Offline wheel install (without deps): {d.get('offline_wheel_install',{}).get('status')}")
+          print(f"- Full dependency install: {d.get('full_offline_dependency_install')}")
+          print(f"- Reproducible rebuild: {d.get('reproducible_rebuild',{}).get('status')}")
+          for item in d.get("wheel",{}).get("errors",[]): print(f"- Error: {item}")
+          PY
+            else
+              echo '- Stage 0 report was not produced.'
+            fi
+            echo '- The protected wheel is never rewritten by this workflow.'
+            echo '- HOLD/FAIL never grants certification.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload Stage 0 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umot-stage0-debian13-evidence
+          path: umot-stage0-report.json
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Enforce fail-closed acceptance
+        if: always()
+        run: |
+          test '${{ steps.stage0.outcome }' = 'success'
+          test '${{ steps.unit.outcome }' = 'success'
