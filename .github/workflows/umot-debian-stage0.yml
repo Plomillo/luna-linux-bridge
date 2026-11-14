@@ -25,7 +25,7 @@ jobs:
       - name: Checkout exact candidate and hydrate protected LFS object
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           lfs: true
           fetch-depth: 0
           persist-credentials: false
@@ -91,5 +91,5 @@ jobs:
       - name: Enforce fail-closed acceptance
         if: always()
         run: |
-          test '${{ steps.stage0.outcome }' = 'success'
-          test '${{ steps.unit.outcome }' = 'success'
+          test '${{ steps.stage0.outcome }}' = 'success'
+          test '${{ steps.unit.outcome }}' = 'success'
