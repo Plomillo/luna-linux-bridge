@@ -1,7 +1,7 @@
 {
   "schema": "LOUKSNA1_RELEASE_MANIFEST/1.0",
-  "source_commit": "719e63551a4dcf79125905cafe36e1cd47cf78ce",
-  "generated_at_utc": "2026-11-04T16:30:10Z",
+  "source_commit": "b6a259ec296b3c34ddb8347a046f71ba09522d70",
+  "generated_at_utc": "2026-11-14T01:59:15Z",
   "protected_architecture": {
     "path": "LOUKSNAMEJORADA.md",
     "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",

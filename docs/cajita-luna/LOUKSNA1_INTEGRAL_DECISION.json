@@ -87,13 +87,13 @@
         },
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 85011415040,
+        "disk_available_bytes": 87817502720,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
-        "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "ram_available_bytes": 6782709760
+        "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+        "ram_available_bytes": 6145126400
       },
       "reason": "",
       "status": "PASS"
@@ -132,7 +132,7 @@
       "status": "PASS"
     }
   },
-  "generated_at_utc": "2026-11-04T16:30:55Z",
+  "generated_at_utc": "2026-11-14T02:00:04Z",
   "global_certification": "NOT_GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
@@ -317,6 +317,7 @@
         "binary_bytes": 201590724,
         "binary_sha256": "953e4512a6482848cd803c88b6d942e6afca65dc3b67c7d1353ae048d616de53",
         "calibre_version": "9.17.0",
+        "download_source": "https://download.calibre-ebook.com/9.17.0/calibre-9.17.0-x86_64.txz",
         "fixture_found": true,
         "fixture_sha256": "00156bebeefed19dba97eeff366adf13d0135a19bd72df9a246ec762290bd14f",
         "mimetype": "application/epub+zip",
@@ -325,7 +326,7 @@
       },
       "exit_code": 0,
       "operation": "convert_document",
-      "output_sha256": "0f30cdacc455b39acd70fb5ab143ea0a44b3e17a0c045453f810158318808e1e",
+      "output_sha256": "80e481a5170ee465cd443973744e7f55aa0a5eec2c90869671cc0b14f7741def",
       "reason": "",
       "status": "PASS",
       "target_id": "D05_CALIBRE",
@@ -409,11 +410,11 @@
         "model_sha256": "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7",
         "ort": "1.29.0",
         "return_code": 0,
-        "stderr_tail": "h at \"/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171\" because filename \"5620e0c7-8062-4dce-aeb7-520c7ef76171\" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+\u001b[m\n"
+        "stderr_tail": ""
       },
       "exit_code": 0,
       "operation": "score_grounding",
-      "output_sha256": "57310d6f3212d1e4c39945712e7b9077faba65fe1b87c399e3d215c3f5d1029f",
+      "output_sha256": "b05124db92329e9383f985e1ed2cd02c23c31fec33ed139e5605d19624ffcc21",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ANTI_ALUCINACIONES",
@@ -434,12 +435,12 @@
         "reference_engine": "llama.cpp",
         "reference_kind": "AUTHORIZED_REFERENCE_MODEL",
         "reference_known_answer": "PASS",
-        "reference_sha256": "1c3c0cd305aa0b8181b4d9434e84ee669bff1d619d1fc5998df9fe64fe2680f8",
+        "reference_sha256": "bd8289308c7aa01f4590b0490a0ebe0db775b92b2c9f8891b5ca81a98cfbb5d9",
         "stderr_tail": ""
       },
       "exit_code": 0,
       "operation": "analyze_reasoning",
-      "output_sha256": "ba5b13e32b6a80a4364b6fc20f6e843487c9f9694e09944dc10fba00211a0a62",
+      "output_sha256": "b280130f94c3c555cc64799d543a3a9ff49d251eb22ceabf04a7afd66fb21e59",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ANALISIS_AVANZADO",
@@ -451,11 +452,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "66b8bae351ad9e9f2aa59620a84e6b9f541c373a55b5834072dcff0a3554c7f4"
+        "stdout_sha256": "d6affee369bfa9e7039644bdd5eadf33b379f4e347cbc302a94afede26cc8038"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "52dbd9f9d479a16435c05edb19a47573b2ca5d802da1d3fa2203118470d437ae",
+      "output_sha256": "4c307b34c0fa9f344c60d15691c78aae1e1ef3ffddf1ac5bce31631623df6416",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -512,12 +513,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "73a2223267e145e86c84bc1307ad16b2c76d0eccfefa5233ecf1690e7a204565",
+        "query_sha256": "efbb5b9027a955e753a0b97d0bc13316020d962888fe88b318602aa96af37b6e",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "34e0da728a9c39adad94232897d34fe7d678e8006fea93a297e857616fb1c184",
+      "output_sha256": "e71c8ee9fad9b85daa36c3db4ff583dbefee721d0785c36bc45f1f007ac0d1dc",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -609,11 +610,11 @@
       "stdout_sha256": "44d47c9675abf277caf0d7a5fc60e0aa76c8adc0c9a75c675c0951b9b8dac761"
     }
   },
-  "producer_commit": "719e63551a4dcf79125905cafe36e1cd47cf78ce",
+  "producer_commit": "b6a259ec296b3c34ddb8347a046f71ba09522d70",
   "release_manifest_refresh": {
     "build_error": "",
     "global_certification": "NOT_GRANTED",
-    "source_commit": "719e63551a4dcf79125905cafe36e1cd47cf78ce",
+    "source_commit": "b6a259ec296b3c34ddb8347a046f71ba09522d70",
     "status": "PASS"
   },
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
