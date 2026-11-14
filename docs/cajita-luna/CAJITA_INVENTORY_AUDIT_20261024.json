@@ -1,27 +1,27 @@
 {
   "schema": "CAJITA_INVENTORY_AUDIT/1.0",
   "audit_id": "CAJITA_INVENTORY_AUDIT_20261024",
-  "generated_at_utc": "2026-11-04T13:34:04.454703+00:00",
+  "generated_at_utc": "2026-11-14T06:06:20.336520+00:00",
   "repository": "Plomillo/luna-linux-bridge",
-  "source_commit": "254c09c12c9014146bfa170a043d6f2cb3f7dda7",
+  "source_commit": "11de23c921676447103997350e078e9bc126e8b3",
   "scope": "Exact files in the deterministic Macrodown distribution after materializing registered LFS objects; includes generated MACRODOWN_MANIFEST.json as the final inventory entry.",
   "distribution": {
     "archive_format": "deterministic ZIP container with .macrodown extension",
-    "member_count_including_manifest": 1421,
-    "file_count_excluding_manifest": 1420,
-    "runtime_payload_bytes_excluding_manifest": 447064009,
-    "gross_raw_payload_bytes_including_manifest": 447496001,
-    "archive_bytes": 370888320,
+    "member_count_including_manifest": 1422,
+    "file_count_excluding_manifest": 1421,
+    "runtime_payload_bytes_excluding_manifest": 447077599,
+    "gross_raw_payload_bytes_including_manifest": 447509781,
+    "archive_bytes": 370892995,
     "hard_cap_bytes": 470000000,
     "raw_input_ceiling_bytes": 1500000000,
-    "raw_bytes_under_input_ceiling": 1052503999,
+    "raw_bytes_under_input_ceiling": 1052490219,
     "raw_payload_target_bytes": 470000000,
     "raw_payload_target_gate": "PASS",
     "raw_bytes_over_target": 0,
     "archive_target_bytes": 470000000,
-    "raw_bytes_under_cap": 1052503999,
-    "archive_bytes_under_cap": 99111680,
-    "archive_sha256": "98bc8e87d1087b2554bcf34525f5b0cc938cc6644616ab67a2db83d2a6a5c7d4",
+    "raw_bytes_under_cap": 1052490219,
+    "archive_bytes_under_cap": 99107005,
+    "archive_sha256": "57add6402f26ea62a14a28be47493debabc99885a9faf31a9f59e52c621edc89",
     "raw_gate": "PASS",
     "archive_gate": "PASS",
     "certification": "NOT_GRANTED"
@@ -105,35 +105,26 @@
       "bytes": 272483479
     },
     "ROOT_OR_SUPPORT": {
-      "file_count": 24,
-      "bytes": 801869
+      "file_count": 25,
+      "bytes": 815459
     }
   },
   "prior_manifest_reconciliation": {
-    "prior_file_count_excluding_manifest": 1418,
-    "current_file_count_excluding_manifest": 1420,
+    "prior_file_count_excluding_manifest": 1420,
+    "current_file_count_excluding_manifest": 1421,
     "added_paths": [
-      "2. Orquestación/Multi + Interdisciplinar/block_engine_binding.json",
-      "LOUKSNAPG2_RUNTIME/louksnapg2_engine.py"
+      "cajita_command_wiring.py"
     ],
     "removed_paths": [],
     "changed_paths": [
-      "1. Cerebro/cerebro_180mb_runtime.py",
       "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
-      "2. Orquestación/Multi + Interdisciplinar/cajita_axiom_source_loader.py",
-      "3. Transcripción/lowrank_runtime.py",
-      "4. Traductor Inteligente/Traducción general/lowrank_runtime.py",
-      "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py",
-      "6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py",
-      "CajitadeLuna.md",
+      "2. Orquestación/Multi + Interdisciplinar/block_engine_binding.json",
       "EXTERNALIZED_ASSET_PLACEMENT.json",
-      "cajita_runtime.py",
-      "cajita_target_adapters.py",
-      "reproduce_macrodown.py"
+      "cajita_router.py"
     ],
-    "added_count": 2,
+    "added_count": 1,
     "removed_count": 0,
-    "changed_count": 12,
+    "changed_count": 4,
     "prior_manifest_was_in_sync": false
   },
   "inventory": [
@@ -3053,7 +3044,7 @@
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Multi + Interdisciplinar/axiom_interdisciplinary_binding.json",
       "route_type": "orquestacion",
-      "sha256": "8b4892aa25d46fa2239b85b648b92ac985843af7ea8816480387130104dd9ab7",
+      "sha256": "047b57bcd929853b8c6aeed3157aa9625e8b48b136e77eeb02538a5574277a1c",
       "size_bytes": 1984,
       "zip_method": "DEFLATED"
     },
@@ -3061,7 +3052,7 @@
       "domain_id": "D02_ORQUESTACION",
       "path": "2. Orquestación/Multi + Interdisciplinar/block_engine_binding.json",
       "route_type": "orquestacion",
-      "sha256": "38e9d06feb481ffb690dba7bdc9efb8ba51837e987a36c594d0e5f9b587c251f",
+      "sha256": "871b3856ee0b9dfa629b8a55ff4700ddfebd7e1b613d04b6d13cc7741b3b152f",
       "size_bytes": 46017,
       "zip_method": "DEFLATED"
     },
@@ -11357,7 +11348,7 @@
       "domain_id": null,
       "path": "EXTERNALIZED_ASSET_PLACEMENT.json",
       "route_type": null,
-      "sha256": "5d5f934a570f20d13f2b3ab62228424fa0f52266e93fc796961bb1bded9ec186",
+      "sha256": "c7b1f127059b3c1c313bb78081794e135c6ee955a9f3ad301282407921c8703c",
       "size_bytes": 126014,
       "zip_method": "DEFLATED"
     },
@@ -11419,6 +11410,14 @@
     },
     {
       "domain_id": null,
+      "path": "cajita_command_wiring.py",
+      "route_type": null,
+      "sha256": "129c0d3b30240ea0f455c17980338f9bd8b81c2f516d777d3ab42656c4e0f4bd",
+      "size_bytes": 13341,
+      "zip_method": "DEFLATED"
+    },
+    {
+      "domain_id": null,
       "path": "cajita_externalized_asset_loader.py",
       "route_type": null,
       "sha256": "b960a54e010f00fb20c331056faae78423e7dfa816028a47781278f40302bdde",
@@ -11437,8 +11436,8 @@
       "domain_id": null,
       "path": "cajita_router.py",
       "route_type": null,
-      "sha256": "1c147da871005f2d0f525126feb283448e6b7d5a3e6fcf7182333966fc3f4ced",
-      "size_bytes": 30418,
+      "sha256": "60d7f9320188561b4fd4200ffadb64ff1ec93d9ce759ba61b9529037b919ec03",
+      "size_bytes": 30667,
       "zip_method": "DEFLATED"
     },
     {
@@ -11499,8 +11498,8 @@
     },
     {
       "path": "MACRODOWN_MANIFEST.json",
-      "size_bytes": 431992,
-      "sha256": "c727327fd0169f732a4851ba80396048f4c80f2ada04e6cc50e7d79595b9ffe5",
+      "size_bytes": 432182,
+      "sha256": "6b9a59a4f47478b19045e81d04e7c9b76026592607249a58b17029aaa3ff5bde",
       "domain_id": null,
       "route_type": null,
       "zip_method": "DEFLATED",
