@@ -82,6 +82,15 @@ class DecisionTests(unittest.TestCase):
         self.assertEqual(decision["global_certification"], "GRANTED")
         self.assertEqual(decision["authority"], "INDEPENDENT_VALIDATOR_NOT_SELF_CERTIFICATION")
         self.assertNotEqual(decision["gates"]["independence"]["worker"], decision["gates"]["independence"]["evaluator"])
+        self.assertEqual(decision["gates"]["axiom_semantics"]["status"], "PASS")
+        self.assertEqual(
+            decision["gates"]["axiom_semantics"]["reason"],
+            "ARCHITECTURE_AXIOMS_CONSISTENT_NATURAL_LANGUAGE_SENTENCES_NOT_PROVED",
+        )
+        self.assertEqual(decision["semantic_gates"]["axiom_proposition_validity"], "NOT_ESTABLISHED")
+        self.assertEqual(decision["semantic_gates"]["natural_language_propositions"], "NOT_ESTABLISHED")
+        self.assertEqual(decision["semantic_gates"]["architecture_axiom_consistency"], "ESTABLISHED")
+        self.assertEqual(decision["semantic_gates"]["semantic_consistency"], "NOT_ESTABLISHED")
 
 
 class ExecutableGateTests(unittest.TestCase):
@@ -254,7 +263,20 @@ class ExecutableGateTests(unittest.TestCase):
         report = MISSION.execute_axiom_graph(Path(__file__).resolve().parents[1])
         self.assertEqual(report["record_count"], 10000)
         self.assertEqual(report["semantic_validity"], "NOT_ESTABLISHED_BY_STRUCTURAL_AUDIT")
-        self.assertIs(report["establishes_axiom_propositions"], False)
+        self.assertEqual(report["natural_language_propositions"], "NOT_ESTABLISHED")
+        architecture = report["architecture_axioms"]
+        self.assertEqual(architecture["status"], "PASS")
+        self.assertIs(architecture["establishes_architecture_axioms"], True)
+        self.assertEqual(architecture["natural_language_propositions"], "NOT_ESTABLISHED")
+        self.assertEqual(architecture["frame_count"], 18)
+        self.assertEqual(architecture["command_count"], 14)
+        self.assertEqual(architecture["memory_store_count"], 1)
+        jena_status = report.get("jena", {}).get("status")
+        if jena_status == "PASS":
+            self.assertIs(report["establishes_axiom_propositions"], True)
+        else:
+            self.assertEqual(jena_status, "NOT_EXECUTED")
+            self.assertIs(report["establishes_axiom_propositions"], False)
 
     def test_manifest_refresh_binds_head_and_does_not_grant(self):
         with tempfile.TemporaryDirectory() as temp_name:
