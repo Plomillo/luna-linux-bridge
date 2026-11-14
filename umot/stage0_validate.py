@@ -131,6 +131,19 @@ def inspect_wheel(path: Path) -> dict:
             result["archive_integrity"] = "PASS"
             names = archive.namelist()
             result["member_count"] = sum(not n.endswith("/") for n in names)
+            result["member_preview"] = names[:100]
+            result["payload_uncompressed_bytes"] = sum(
+                info.file_size for info in archive.infolist()
+                if not info.is_dir() and ".dist-info/" not in info.filename
+            )
+            result["python_source_files"] = [
+                n for n in names if n.endswith(".py") and ".dist-info/" not in n
+            ][:200]
+            entry_points_file = f"{dist_info}/entry_points.txt"
+            result["entry_points"] = (
+                archive.read(entry_points_file).decode("utf-8", errors="replace")
+                if entry_points_file in names else ""
+            )
             safe, reason = safe_wheel_members(names)
             if not safe:
                 result["archive_integrity"] = "FAIL"
@@ -254,74 +267,100 @@ def check_native_dependencies(wheel: Path, native_names: list[str]) -> dict:
 def offline_install_test(
     wheel: Path, distribution_name: str | None, distribution_version: str | None,
     top_level_modules: list[str], filename_report: dict,
+    wheelhouse: Path, lockfile: Path,
 ) -> dict:
     if not distribution_name or not distribution_version:
         return {"status": "HOLD", "reason": "DISTRIBUTION_METADATA_UNAVAILABLE"}
+    if not wheelhouse.is_dir() or not lockfile.is_file():
+        return {"status": "HOLD", "reason": "LOCK_OR_WHEELHOUSE_MISSING"}
     normalized_name = re.sub(r"[-_.]+", "_", distribution_name).lower()
     normalized_version = distribution_version.replace("-", "_")
     alias_name = f"{normalized_name}-{normalized_version}-{WHEEL_TAG}.whl"
     with tempfile.TemporaryDirectory(prefix="umot-offline-install-") as tmp:
         root, venv = Path(tmp), Path(tmp) / "venv"
-        target = root / "site"
         install_wheel = wheel if filename_report.get("status") == "PASS" else root / alias_name
         if install_wheel != wheel:
             shutil.copyfile(wheel, install_wheel)
         source_hash, source_size = file_sha256(wheel)
         install_hash, install_size = file_sha256(install_wheel)
         if (source_hash, source_size) != (install_hash, install_size):
-            return {"status": "FAIL", "reason": "TEMPORARY_CANONICAL_ALIAS_CONTENT_MISMATCH",
-                    "install_alias_filename": install_wheel.name}
+            return {"status": "FAIL", "reason": "TEMPORARY_CANONICAL_ALIAS_CONTENT_MISMATCH"}
         created = run([sys.executable, "-m", "venv", str(venv)], timeout=120)
         if created.returncode != 0:
             return {"status": "HOLD", "reason": "VENV_CREATION_FAILED", "output": created.stdout[-2000:]}
         python = venv / "bin" / "python"
         env = os.environ.copy()
         env.update(PIP_NO_INDEX="1", PIP_DISABLE_PIP_VERSION_CHECK="1", PIP_NO_CACHE_DIR="1")
-        install = subprocess.run(
-            [str(python), "-m", "pip", "install", "--no-index", "--no-deps",
-             "--no-compile", "--target", str(target), str(install_wheel)],
+        deps = subprocess.run(
+            [str(python), "-m", "pip", "install", "--no-index",
+             "--find-links", str(wheelhouse), "--require-hashes", "-r", str(lockfile)],
+            check=False, text=True, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, timeout=900, env=env)
+        if deps.returncode != 0:
+            return {"status": "FAIL", "reason": "OFFLINE_LOCKED_DEPENDENCY_INSTALL_FAILED",
+                    "output": deps.stdout[-6000:]}
+        package = subprocess.run(
+            [str(python), "-m", "pip", "install", "--no-index",
+             "--find-links", str(wheelhouse), "--no-deps", "--no-compile", str(install_wheel)],
             check=False, text=True, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, timeout=600, env=env)
-        if install.returncode != 0:
-            return {"status": "FAIL", "reason": "OFFLINE_WHEEL_INSTALL_FAILED",
-                    "output": install.stdout[-4000:], "install_alias_filename": install_wheel.name,
+        if package.returncode != 0:
+            return {"status": "FAIL", "reason": "OFFLINE_UMOT_WHEEL_INSTALL_FAILED",
+                    "output": package.stdout[-5000:],
+                    "install_alias_filename": install_wheel.name,
                     "source_filename_compliance": filename_report.get("status"),
                     "content_identical_alias": True, "source_sha256": source_hash}
-        check = run([
-            str(python), "-c",
-            "import importlib.metadata as m,sys; sys.path.insert(0,sys.argv[1]); "
-            "d=m.distribution(sys.argv[2]); print(d.metadata['Name'],d.version)",
-            str(target), distribution_name], timeout=30)
+        check = run([str(python), "-m", "pip", "check"], timeout=60)
         if check.returncode != 0:
+            return {"status": "FAIL", "reason": "OFFLINE_DEPENDENCY_GRAPH_INCONSISTENT",
+                    "output": check.stdout[-4000:]}
+        metadata = run([
+            str(python), "-c",
+            "import importlib.metadata as m,sys; d=m.distribution(sys.argv[1]); "
+            "print(d.metadata['Name'],d.version)",
+            distribution_name], timeout=30)
+        if metadata.returncode != 0:
             return {"status": "FAIL", "reason": "INSTALLED_DISTRIBUTION_NOT_DISCOVERABLE",
-                    "output": check.stdout[-2000:], "install_alias_filename": install_wheel.name}
+                    "output": metadata.stdout[-2000:]}
+        module_probe = String = (
+            "import importlib,inspect,json,pkgutil,sys; "
+            "name=sys.argv[1]; m=importlib.import_module(name); failures=[]; "
+            "mods=[x.name for x in pkgutil.walk_packages(getattr(m,'__path__',[]),m.__name__+'.')]; "
+            "[(lambda n: (importlib.import_module(n)))(n) for n in mods]; "
+            "print(json.dumps({'module':name,'file':getattr(m,'__file__',None),"
+            "'submodules':mods,'public_names':sorted(n for n in dir(m) if not n.startswith('_'))},"
+            "sort_keys=True))"
+        )
         import_status, import_output = "HOLD", "TOP_LEVEL_MODULE_MANIFEST_UNAVAILABLE"
         if top_level_modules:
-            imported = run([
-                str(python), "-c",
-                "import importlib,json,sys; sys.path.insert(0,sys.argv[1]); "
-                "mods=json.loads(sys.argv[2]); [importlib.import_module(m) for m in mods]; "
-                "print('IMPORTED:'+','.join(mods))",
-                str(target), json.dumps(top_level_modules)], timeout=120)
-            import_output = imported.stdout[-4000:]
+            imported = subprocess.run(
+                [str(python), "-c", module_probe, top_level_modules[0]],
+                check=False, text=True, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, timeout=180, env=env)
+            import_output = imported.stdout[-6000:]
             if imported.returncode == 0:
                 import_status = "PASS"
             elif "ModuleNotFoundError" in imported.stdout:
                 import_status = "HOLD"
             else:
                 import_status = "FAIL"
-        return {"status": "PASS", "method": "pip --no-index --no-deps",
-                "distribution": check.stdout.strip(),
-                "install_alias_filename": install_wheel.name,
-                "source_filename_compliance": filename_report.get("status"),
-                "content_identical_alias": True, "source_sha256": source_hash,
-                "module_import_status": import_status,
-                "module_import_output": import_output}
+        return {
+            "status": "PASS", "method": "pip --no-index --find-links --require-hashes",
+            "distribution": metadata.stdout.strip(), "pip_check": "PASS",
+            "locked_dependency_install": "PASS",
+            "lockfile": str(lockfile), "wheelhouse_file_count": len(list(wheelhouse.glob("*.whl"))),
+            "install_alias_filename": install_wheel.name,
+            "source_filename_compliance": filename_report.get("status"),
+            "content_identical_alias": True, "source_sha256": source_hash,
+            "module_import_status": import_status, "module_import_output": import_output,
+        }
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--wheel", type=Path, required=True)
     parser.add_argument("--report", type=Path, default=Path("umot-stage0-report.json"))
+    parser.add_argument("--wheelhouse", type=Path, required=True)
+    parser.add_argument("--lockfile", type=Path, default=Path("umot/requirements-offline.lock"))
     args = parser.parse_args()
     report = {"specification": "UMOT_STAGE_0_DEBIAN_13", "protected_wheel": WHEEL_NAME,
               "expected_bytes": EXPECTED_BYTES, "expected_sha256": EXPECTED_SHA256,
@@ -330,17 +369,38 @@ def main() -> int:
     report["wheel"] = wheel_result
     native = check_native_dependencies(args.wheel, wheel_result.get("elf_objects", [])) if wheel_result.get("archive_integrity") == "PASS" else {"status": "HOLD", "reason": "WHEEL_ARCHIVE_NOT_INSPECTABLE"}
     report["native_dependency_audit"] = native
-    install = offline_install_test(args.wheel, wheel_result.get("distribution_name"), wheel_result.get("distribution_version"), wheel_result.get("top_level_modules", []), wheel_result.get("filename_compliance", {})) if wheel_result.get("archive_integrity") == "PASS" else {"status": "HOLD", "reason": "WHEEL_ARCHIVE_NOT_INSPECTABLE"}
+    install = offline_install_test(args.wheel, wheel_result.get("distribution_name"), wheel_result.get("distribution_version"), wheel_result.get("top_level_modules", []), wheel_result.get("filename_compliance", {}), args.wheelhouse, args.lockfile) if wheel_result.get("archive_integrity") == "PASS" else {"status": "HOLD", "reason": "WHEEL_ARCHIVE_NOT_INSPECTABLE"}
     report["wheel_filename_compliance"] = wheel_result.get("filename_compliance", {"status": "HOLD"})
     report["offline_wheel_install"] = install
     requirements = wheel_result.get("requires_dist", [])
-    wheelhouse = Path("umot/wheelhouse")
-    wheelhouse_present = wheelhouse.is_dir() and any(wheelhouse.iterdir())
+    lock_text = args.lockfile.read_text(encoding="utf-8") if args.lockfile.is_file() else ""
+    locked_versions = all(token in lock_text for token in (
+        "playwright==1.62.0", "pyee==13.0.1", "greenlet==3.5.6", "typing-extensions==4.16.0"))
+    wheelhouse_files = sorted(args.wheelhouse.glob("*.whl")) if args.wheelhouse.is_dir() else []
+    expected_wheel_hashes = {
+        "playwright-1.62.0-py3-none-manylinux1_x86_64.whl": "ba33bae6a13b3d9d354c751cb618af357d20fe1d57767cbcce52079bbef17ad3",
+        "pyee-13.0.1-py3-none-any.whl": "af2f8fede4171ef667dfded53f96e2ed0d6e6bd7ee3bb46437f77e3b57689228",
+        "greenlet-3.5.6-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl": "f98e8215e172f567ce80eeaed9107fb4d32b6c44f26983d9b8334658136a205a",
+        "typing_extensions-4.16.0-py3-none-any.whl": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+    }
+    wheelhouse_hashes = {}
+    for artifact in wheelhouse_files:
+        digest, _ = file_sha256(artifact)
+        wheelhouse_hashes[artifact.name] = digest
+    wheelhouse_integrity = (
+        "PASS" if wheelhouse_hashes == expected_wheel_hashes else "FAIL")
     report["dependency_inventory"] = {
-        "requires_dist": requirements, "locked": False, "wheelhouse_present": wheelhouse_present,
-        "status": "HOLD" if requirements or not wheelhouse_present else "PASS",
-        "reason": "LOCK_AND_WHEELHOUSE_NOT_YET_SUPPLIED" if requirements or not wheelhouse_present else None}
-    report["full_offline_dependency_install"] = "HOLD" if requirements or not wheelhouse_present else "NOT_RUN"
+        "requires_dist": requirements, "locked": locked_versions,
+        "lockfile": str(args.lockfile), "wheelhouse_present": len(wheelhouse_files) == 4,
+        "wheelhouse_integrity": wheelhouse_integrity,
+        "wheelhouse_artifact_scope": "CI_MATERIALIZED_ARTIFACT_NOT_REPOSITORY_PERSISTENT_STORE",
+        "status": "PASS" if locked_versions and wheelhouse_integrity == "PASS" else "HOLD",
+        "wheelhouse_files": wheelhouse_hashes,
+    }
+    report["full_offline_dependency_install"] = (
+        "PASS" if install.get("locked_dependency_install") == "PASS" and
+        install.get("pip_check") == "PASS" else "FAIL")
+
     report["reproducible_rebuild"] = {"status": "HOLD", "reason": "SOURCE_REVISION_AND_PINNED_BUILD_RECIPE_NOT_YET_REGISTERED"}
     required = [report["environment"]["debian_13_trixie"], report["environment"]["glibc_compatibility"],
                 wheel_result["identity"], wheel_result["archive_integrity"], wheel_result["record_integrity"],
