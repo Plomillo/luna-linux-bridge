@@ -21,7 +21,7 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             ca-certificates git git-lfs python3 python3-venv python3-pip binutils libc-bin file
-          git lfs install --local
+          git lfs install --system
       - name: Checkout exact candidate and hydrate protected LFS object
         uses: actions/checkout@v4
         with:
