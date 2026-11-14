@@ -39,12 +39,24 @@ jobs:
           fi
           stat -c 'wheel_bytes=%s' "$wheel"
           sha256sum "$wheel"
+      - name: Materialize hash-pinned Python wheelhouse
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 --version
+          mkdir -p "$RUNNER_TEMP/umot-wheelhouse"
+          python3 -m pip download --only-binary=:all: --require-hashes \
+            --dest "$RUNNER_TEMP/umot-wheelhouse" \
+            -r umot/requirements-offline.lock
+          test "$(find "$RUNNER_TEMP/umot-wheelhouse" -maxdepth 1 -name '*.whl' | wc -l)" -eq 4
       - name: Run Stage 0 verifier
         id: stage0
         continue-on-error: true
         run: |
           python3 umot/stage0_validate.py \
             --wheel 'externalized-assets-staging/optimized-containers/umot_compact-1.0.5.post11-m11-m12-imatrix-cpu128-py3-none-manylinux_2_34_x86_64.whl' \
+            --wheelhouse "$RUNNER_TEMP/umot-wheelhouse" \
+            --lockfile umot/requirements-offline.lock \
             --report umot-stage0-report.json
       - name: Run verifier unit tests
         id: unit
@@ -70,10 +82,16 @@ jobs:
           print(f"- Wheel filename compliance: {d.get('wheel_filename_compliance',{}).get('status')}")
           print(f"- Wheel RECORD integrity: {d.get('wheel',{}).get('record_integrity')}")
           print(f"- Wheel top-level modules: {d.get('wheel',{}).get('top_level_modules')}")
+          print(f"- Python source files: {d.get('wheel',{}).get('python_source_files')}")
+          print(f"- Wheel member preview: {d.get('wheel',{}).get('member_preview')}")
+          print(f"- Entry points: {d.get('wheel',{}).get('entry_points')}")
           print(f"- ELF objects: {d.get('wheel',{}).get('elf_objects')}")
           print(f"- Requires-Dist: {d.get('wheel',{}).get('requires_dist')}")
-          print(f"- Offline wheel install (identical canonical test alias, no deps): {d.get('offline_wheel_install',{}).get('status')}")
+          print(f"- Offline locked dependency installation: {d.get('offline_wheel_install',{}).get('locked_dependency_install')}")
+          print(f"- Offline UMOT wheel install (identical canonical alias): {d.get('offline_wheel_install',{}).get('status')}")
+          print(f"- pip check: {d.get('offline_wheel_install',{}).get('pip_check')}")
           print(f"- Module import: {d.get('offline_wheel_install',{}).get('module_import_status')}")
+          print(f"- Wheelhouse integrity: {d.get('dependency_inventory',{}).get('wheelhouse_integrity')}")
           print(f"- Full dependency install: {d.get('full_offline_dependency_install')}")
           print(f"- Reproducible rebuild: {d.get('reproducible_rebuild',{}).get('status')}")
           print(f"- Native dependency audit: {d.get('native_dependency_audit',{}).get('status')}")
@@ -91,6 +109,14 @@ jobs:
         with:
           name: umot-stage0-debian13-evidence
           path: umot-stage0-report.json
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Upload materialized offline wheelhouse
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umot-stage0-python-wheelhouse-cp313-linux-x86_64
+          path: ${{ runner.temp }}/umot-wheelhouse
           if-no-files-found: warn
           retention-days: 90
       - name: Enforce fail-closed acceptance
