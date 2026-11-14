@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed Stage 0 verifier for the protected UMOT wheel on Debian 13."""
 from __future__ import annotations
+import argparse
 import base64, csv, hashlib, io, json, os, platform, re, shutil, subprocess, sys, tempfile, zipfile
 from email.parser import Parser
 from pathlib import Path, PurePosixPath
