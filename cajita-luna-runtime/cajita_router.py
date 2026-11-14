@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from cajita_antiparalysis import PersistentAntiParalysis
+from cajita_command_wiring import phase1_report
 
 SCHEMA = "CAJITA_DEMAND_ROUTER/1.0"
 MAX_RAM_MIB = 1024
@@ -443,6 +444,11 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
         "orchestration_mode": "PLAN_ONLY; REGISTERED_DOMAIN_ADAPTERS_REQUIRE_MEASURED_RESOURCE_AND_TARGET_EVIDENCE",
         "canonical_routes_mutated": False, "authority_transfer": False,
         "provenance": {"request_sha256": sha256_text(request), "trace_contains_request_text": False},
+        "phase1_wiring": phase1_report(
+            route["command"] if route else None,
+            request,
+            route["engines"] if route else ["E01", "E02", "E13", "E14", "E15"],
+        ),
         "certification": "NOT_GRANTED",
         "next_gate": "REGISTER_REMAINING_TARGET_ADAPTERS_AND_MEASURE_PEAK_RSS_BEFORE_ROUTED_EXECUTION",
     }

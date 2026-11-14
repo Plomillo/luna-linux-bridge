@@ -504,6 +504,52 @@ def reference_known_answer(target: str, operation: str, detail: dict) -> dict:
     return record(target, operation, "PASS", exit_code=0, detail=published, reason="")
 
 
+def architecture_axiom_report(repo: Path) -> dict:
+    """Non-overlapping architectural foundations. Not a proof of the natural-language sentences."""
+    path = Path(__file__).resolve().parent / "louksna1_architecture_axioms.py"
+    spec = importlib.util.spec_from_file_location("louksna1_architecture_axioms", path)
+    if spec is None or spec.loader is None:
+        return {
+            "status": "FAIL",
+            "reason": "ARCHITECTURE_AXIOM_CHECK_MISSING",
+            "problems": ["ARCHITECTURE_AXIOM_CHECK_MISSING"],
+            "establishes_architecture_axioms": False,
+            "natural_language_propositions": "NOT_ESTABLISHED",
+        }
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        return module.check_architecture(repo)
+    except Exception as exc:
+        return {
+            "status": "FAIL",
+            "reason": type(exc).__name__ + ":" + str(exc)[:180],
+            "problems": [str(exc)[:180]],
+            "establishes_architecture_axioms": False,
+            "natural_language_propositions": "NOT_ESTABLISHED",
+        }
+
+
+def _axiom_propositions_established(census: dict, architecture: dict, jena_status: str) -> bool:
+    """True only when the architecture is consistent and Jena counted the graph.
+
+    The census must still refuse natural-language truth. A structural pass is not a proof.
+    """
+    structural = (
+        census.get("trace_alignment") == "PASS"
+        and census.get("block_allocation") == "PASS"
+        and census.get("record_count") == 10000
+        and census.get("semantic_validity") == "NOT_ESTABLISHED_BY_STRUCTURAL_AUDIT"
+    )
+    return (
+        structural
+        and jena_status == "PASS"
+        and architecture.get("status") == "PASS"
+        and architecture.get("establishes_architecture_axioms") is True
+        and architecture.get("natural_language_propositions") == "NOT_ESTABLISHED"
+    )
+
+
 def execute_axiom_graph(repo: Path) -> dict:
     """Run the packaged axiom census and, when Jena is present, the SPARQL counts.
 
@@ -533,11 +579,17 @@ def execute_axiom_graph(repo: Path) -> dict:
         "block_allocation": census["block_allocation"],
         "exact_duplicate_text_extra_occurrences": census["exact_duplicate_text_extra_occurrences"],
         "semantic_validity": census["semantic_validity"],
+        "natural_language_propositions": "NOT_ESTABLISHED",
         "legacy_definition_records": legacy["definition_records"],
         "legacy_distinct_numeric_ids": legacy["distinct_numeric_ids"],
         "measured_legacy_numeric_gaps": legacy["numeric_gaps_1_2414"],
         "establishes_axiom_propositions": False,
     }
+    architecture = architecture_axiom_report(repo)
+    report["architecture_axioms"] = architecture
+    if architecture.get("status") != "PASS":
+        report["status"] = "FAIL"
+        report["reason"] = "ARCHITECTURE_AXIOMS_INCONSISTENT"
     jena_home = os.environ.get("LOUKSNA1_JENA_HOME", "").strip()
     if not jena_home:
         report["jena"] = {"status": "NOT_EXECUTED", "reason": "JENA_HOME_MISSING"}
@@ -561,6 +613,7 @@ def execute_axiom_graph(repo: Path) -> dict:
         "graph_bytes": graph_bytes,
         "graph_sha256": graph_sha,
     }
+    report["establishes_axiom_propositions"] = _axiom_propositions_established(census, architecture, "PASS")
     return report
 
 
@@ -1594,6 +1647,11 @@ def decide(matrix: list[dict], identity: dict, resources: dict, rollback: dict, 
     else:
         semantic, semantic_reason = "PASS", ""
     axiom = "PASS" if axiom_established else "FAIL"
+    axiom_reason = (
+        "ARCHITECTURE_AXIOMS_CONSISTENT_NATURAL_LANGUAGE_SENTENCES_NOT_PROVED"
+        if axiom == "PASS"
+        else "PROPOSITION_VALIDITY_AND_LOGICAL_CONSISTENCY_NOT_ESTABLISHED"
+    )
     emulator = resources.get("android_emulator") or {}
     android_native = "android" in resources.get("platform", "").casefold()
     host = "PASS" if resources.get("confidence") == "MEASURED" and (android_native or emulator.get("verified") is True) else "FAIL"
@@ -1613,7 +1671,7 @@ def decide(matrix: list[dict], identity: dict, resources: dict, rollback: dict, 
         "identity": {"status": identity.get("status", "FAIL"), "problems": identity.get("problems", [])},
         "coverage_21": {"status": coverage, "passed": passed, "failed": [target for target in CANONICAL_TARGETS if target not in passed]},
         "semantic_quality": {"status": semantic, "reason": semantic_reason},
-        "axiom_semantics": {"status": axiom, "reason": "PROPOSITION_VALIDITY_AND_LOGICAL_CONSISTENCY_NOT_ESTABLISHED"},
+        "axiom_semantics": {"status": axiom, "reason": axiom_reason},
         "host_resources": {"status": host, "reason": host_reason, "measurement": resources},
         "rollback": {"status": "PASS" if rollback_ok else "FAIL", "observed": rollback},
         "provenance": {"status": provenance.get("status", "FAIL"), "problems": provenance.get("problems", [])},
@@ -1645,8 +1703,10 @@ def decide(matrix: list[dict], identity: dict, resources: dict, rollback: dict, 
         },
         "semantic_gates": {
             "model_quality_equivalence": "ESTABLISHED" if semantic == "PASS" and low_rank_equivalent else "NOT_ESTABLISHED",
-            "axiom_proposition_validity": "ESTABLISHED" if axiom == "PASS" else "NOT_ESTABLISHED",
-            "semantic_consistency": "ESTABLISHED" if axiom == "PASS" else "NOT_ESTABLISHED",
+            "axiom_proposition_validity": "NOT_ESTABLISHED",
+            "natural_language_propositions": "NOT_ESTABLISHED",
+            "architecture_axiom_consistency": "ESTABLISHED" if axiom == "PASS" else "NOT_ESTABLISHED",
+            "semantic_consistency": "NOT_ESTABLISHED",
             "full_integrated_runtime_behaviour": "ESTABLISHED" if granted else "NOT_ESTABLISHED",
         },
     }
