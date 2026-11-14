@@ -1,7 +1,7 @@
 {
   "schema": "LOUKSNA1_RELEASE_MANIFEST/1.0",
-  "source_commit": "b6a259ec296b3c34ddb8347a046f71ba09522d70",
-  "generated_at_utc": "2026-11-14T01:59:15Z",
+  "source_commit": "11de23c921676447103997350e078e9bc126e8b3",
+  "generated_at_utc": "2026-11-14T06:22:18Z",
   "protected_architecture": {
     "path": "LOUKSNAMEJORADA.md",
     "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
@@ -16,8 +16,8 @@
   },
   "runtime_distribution": {
     "path": "CAJITA_LUNA_RUNTIME_V10.macrodown",
-    "bytes": 370966631,
-    "sha256": "9edc5eea6f8b5b85bc0a5726f12d44fcc76846e6d4882ea912054e9920342ebc"
+    "bytes": 370971315,
+    "sha256": "4375c8dd0481bb3fdb91e4b70d364f72da65f92c4b8e3219e6f1ffc6c1b940dc"
   },
   "externalized_archives": [
     {

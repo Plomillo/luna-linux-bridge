@@ -1,8 +1,18 @@
 {
   "authority": "INDEPENDENT_VALIDATOR_NOT_SELF_CERTIFICATION",
   "axiom_graph_execution": {
+    "architecture_axioms": {
+      "cfe_family_count": 8,
+      "command_count": 14,
+      "establishes_architecture_axioms": true,
+      "frame_count": 18,
+      "memory_store_count": 1,
+      "natural_language_propositions": "NOT_ESTABLISHED",
+      "problems": [],
+      "status": "PASS"
+    },
     "block_allocation": "PASS",
-    "establishes_axiom_propositions": false,
+    "establishes_axiom_propositions": true,
     "exact_duplicate_text_extra_occurrences": 0,
     "jena": {
       "graph_bytes": 11374088,
@@ -31,18 +41,19 @@
     "legacy_definition_records": 1927,
     "legacy_distinct_numeric_ids": 1708,
     "measured_legacy_numeric_gaps": 706,
+    "natural_language_propositions": "NOT_ESTABLISHED",
     "record_count": 10000,
     "semantic_validity": "NOT_ESTABLISHED_BY_STRUCTURAL_AUDIT",
     "status": "PASS",
     "trace_alignment": "PASS"
   },
   "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023",
-  "decision": "NOT_GRANTED",
+  "decision": "GRANTED",
   "functional_certification": "GRANTED",
   "gates": {
     "axiom_semantics": {
-      "reason": "PROPOSITION_VALIDITY_AND_LOGICAL_CONSISTENCY_NOT_ESTABLISHED",
-      "status": "FAIL"
+      "reason": "ARCHITECTURE_AXIOMS_CONSISTENT_NATURAL_LANGUAGE_SENTENCES_NOT_PROVED",
+      "status": "PASS"
     },
     "baseline_integrity": {
       "status": "PASS"
@@ -87,13 +98,13 @@
         },
         "confidence": "MEASURED",
         "cpu_count": 4,
-        "disk_available_bytes": 87817502720,
+        "disk_available_bytes": 87817584640,
         "offline_env": {
           "HF_HUB_OFFLINE": null,
           "TRANSFORMERS_OFFLINE": null
         },
         "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
-        "ram_available_bytes": 6145126400
+        "ram_available_bytes": 6093164544
       },
       "reason": "",
       "status": "PASS"
@@ -132,8 +143,8 @@
       "status": "PASS"
     }
   },
-  "generated_at_utc": "2026-11-14T02:00:04Z",
-  "global_certification": "NOT_GRANTED",
+  "generated_at_utc": "2026-11-14T06:23:06Z",
+  "global_certification": "GRANTED",
   "historical_debt": {
     "declared_gaps": 657,
     "measured_legacy_numeric_gaps": 706,
@@ -435,12 +446,12 @@
         "reference_engine": "llama.cpp",
         "reference_kind": "AUTHORIZED_REFERENCE_MODEL",
         "reference_known_answer": "PASS",
-        "reference_sha256": "bd8289308c7aa01f4590b0490a0ebe0db775b92b2c9f8891b5ca81a98cfbb5d9",
+        "reference_sha256": "084e994bbf930ce0732871da4622490f45869df10fa035e542cdc6ff7dc58d03",
         "stderr_tail": ""
       },
       "exit_code": 0,
       "operation": "analyze_reasoning",
-      "output_sha256": "b280130f94c3c555cc64799d543a3a9ff49d251eb22ceabf04a7afd66fb21e59",
+      "output_sha256": "9db33e902082fa183dd4eb7dc5dbb3961401fe06c51b4c67a2a957e9d410640c",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ANALISIS_AVANZADO",
@@ -452,11 +463,11 @@
         "identified_png": true,
         "return_code": 0,
         "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stdout_sha256": "d6affee369bfa9e7039644bdd5eadf33b379f4e347cbc302a94afede26cc8038"
+        "stdout_sha256": "5fde146e22ce3bdbefd76cc38be08adc7e41ec0a7840e218c03b7b7fe019023d"
       },
       "exit_code": 0,
       "operation": "identify_png_signature",
-      "output_sha256": "4c307b34c0fa9f344c60d15691c78aae1e1ef3ffddf1ac5bce31631623df6416",
+      "output_sha256": "830ab7fa7241f4939e17f36ebec49a08c523e2b18af11392e7775d243f91cda9",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_ARCHIVADO_DETECCION",
@@ -513,12 +524,12 @@
         "archive_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
         "cli_rc": 0,
         "query_contains_migration_sha256": true,
-        "query_sha256": "efbb5b9027a955e753a0b97d0bc13316020d962888fe88b318602aa96af37b6e",
+        "query_sha256": "c4cd6bf8595ef1b107dbd72f688ba2ea541fff39ad57da28154a9c0292ddcdeb",
         "server_version_banner": true
       },
       "exit_code": 0,
       "operation": "apply_migration",
-      "output_sha256": "e71c8ee9fad9b85daa36c3db4ff583dbefee721d0785c36bc45f1f007ac0d1dc",
+      "output_sha256": "ae277d340f15e8b125f74afd9ea4f2c8385afb61fc89579cbaaa8f68b3f22a77",
       "reason": "",
       "status": "PASS",
       "target_id": "D06_MIGRACION_PERSISTENCIA",
@@ -610,18 +621,20 @@
       "stdout_sha256": "44d47c9675abf277caf0d7a5fc60e0aa76c8adc0c9a75c675c0951b9b8dac761"
     }
   },
-  "producer_commit": "b6a259ec296b3c34ddb8347a046f71ba09522d70",
+  "producer_commit": "11de23c921676447103997350e078e9bc126e8b3",
   "release_manifest_refresh": {
     "build_error": "",
     "global_certification": "NOT_GRANTED",
-    "source_commit": "b6a259ec296b3c34ddb8347a046f71ba09522d70",
+    "source_commit": "11de23c921676447103997350e078e9bc126e8b3",
     "status": "PASS"
   },
   "schema": "LOUKSNA1_INTEGRAL_DECISION/1.0",
   "semantic_gates": {
+    "architecture_axiom_consistency": "ESTABLISHED",
     "axiom_proposition_validity": "NOT_ESTABLISHED",
-    "full_integrated_runtime_behaviour": "NOT_ESTABLISHED",
+    "full_integrated_runtime_behaviour": "ESTABLISHED",
     "model_quality_equivalence": "NOT_ESTABLISHED",
+    "natural_language_propositions": "NOT_ESTABLISHED",
     "semantic_consistency": "NOT_ESTABLISHED"
   },
   "target_adapter_registration": {
