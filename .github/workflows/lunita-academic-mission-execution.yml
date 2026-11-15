@@ -72,6 +72,9 @@ jobs:
           test -d "$ROOTFS/opt/lunita"
           test ! -L "$ROOTFS/opt"
           test ! -L "$ROOTFS/opt/lunita"
+          test -d "$ROOTFS/opt/lunita/engines/runtime_engines_v1"
+          test ! -L "$ROOTFS/opt/lunita/engines"
+          test ! -L "$ROOTFS/opt/lunita/engines/runtime_engines_v1"
           test -f "$MISSION_PATH"
           printf 'SOURCE_RUN_ID=%s\nSOURCE_ARTIFACT_ID=%s\nMISSION_COMMIT=%s\n' \
             "$SOURCE_RUN_ID" "$SOURCE_ARTIFACT_ID" "$(git rev-parse HEAD)" >> "$OUTPUT/IMAGE_IDENTITY.txt"
@@ -142,12 +145,12 @@ jobs:
               raise SystemExit(f"BLOCKED aggregate-integrity check: {sums=} {len(rows)=}")
           print("PASS_N26_AGGREGATE_FREQUENCIES; NO_PARTICIPANT_ROWS")
           PY
-          sudo install -d -o 1000 -g 1000 -m 0700 "$ROOTFS/opt/lunita/work/academic-mission"
-          test -d "$ROOTFS/opt/lunita/work/academic-mission"
-          test ! -L "$ROOTFS/opt/lunita/work/academic-mission"
-          sudo cp "$MISSION_PATH" "$OUTPUT/aggregate_frequency_data.csv" "$ROOTFS/opt/lunita/work/academic-mission/"
-          test -s "$ROOTFS/opt/lunita/work/academic-mission/MISSION.md"
-          test -s "$ROOTFS/opt/lunita/work/academic-mission/aggregate_frequency_data.csv"
+          sudo install -d -o 1000 -g 1000 -m 0777 "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission"
+          test -d "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission"
+          test ! -L "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission"
+          sudo cp "$MISSION_PATH" "$OUTPUT/aggregate_frequency_data.csv" "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/"
+          test -s "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/MISSION.md"
+          test -s "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/aggregate_frequency_data.csv"
           cat > "$OUTPUT/aggregate_analysis.R" <<'RS'
           a <- commandArgs(trailingOnly=TRUE); input <- a[1]; out <- a[2]
           dir.create(out, recursive=TRUE, showWarnings=FALSE)
@@ -186,10 +189,11 @@ jobs:
           writeLines(c(paste("JAMOVI=",omv),paste("JASP=",jasp),paste("R=",R.version.string)),
                      file.path(out,"statistical_app_status.txt"))
           RS
-          sudo cp "$OUTPUT/aggregate_analysis.R" "$ROOTFS/opt/lunita/work/academic-mission/"
-          sudo chown -R 1000:1000 "$ROOTFS/opt/lunita/work/academic-mission"
-          sudo chmod 0644 "$ROOTFS/opt/lunita/work/academic-mission/"*
-          python3 - "$ROOTFS/opt/lunita/work/academic-mission" <<'PY'
+          sudo cp "$OUTPUT/aggregate_analysis.R" "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/"
+          sudo chown -R 1000:1000 "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission"
+          sudo chmod 0644 "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/"*
+          ls -ld "$ROOTFS/opt" "$ROOTFS/opt/lunita" "$ROOTFS/opt/lunita/engines" "$ROOTFS/opt/lunita/engines/runtime_engines_v1" "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission"
+          python3 - "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission" <<'PY'
           import json, pathlib, sys
           d=pathlib.Path(sys.argv[1])
           requests={
@@ -201,8 +205,8 @@ jobs:
           for name,obj in requests.items():
               (d/name).write_text(json.dumps(obj,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
           PY
-          sudo chown 1000:1000 "$ROOTFS/opt/lunita/work/academic-mission/"*.json
-          sudo chmod 0644 "$ROOTFS/opt/lunita/work/academic-mission/"*.json
+          sudo chown 1000:1000 "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/"*.json
+          sudo chmod 0644 "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/"*.json
 
       - name: Execute real LUNITA E01, E02, E11, E13 and E14 engine operations
         id: engines
@@ -217,15 +221,15 @@ jobs:
           trap cleanup EXIT
           run_engine(){
             name="$1"; request="$2"
-            if sudo chroot --userspec=1000:1000 "$ROOTFS" /usr/bin/env -C /opt/lunita/work/academic-mission \
+            if sudo chroot --userspec=1000:1000 "$ROOTFS" /usr/bin/env -C /opt/lunita/engines/runtime_engines_v1/academic-mission \
               HOME=/home/lunita PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
               PYTHONPATH=/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages:/opt/lunita/engines/runtime_engines_v1 \
-              LUNITA_ROOT=/opt/lunita LUNITA_ENGINE_AUDIT_LOG=/opt/lunita/work/academic-mission/engine-execution.jsonl \
-              LUNITA_VECTOR_DB_PATH=/opt/lunita/work/academic-mission/vectors \
+              LUNITA_ROOT=/opt/lunita LUNITA_ENGINE_AUDIT_LOG=/opt/lunita/engines/runtime_engines_v1/academic-mission/engine-execution.jsonl \
+              LUNITA_VECTOR_DB_PATH=/opt/lunita/engines/runtime_engines_v1/academic-mission/vectors \
               LUNITA_FASTEMBED_CACHE=/opt/lunita/engines/runtime_engines_v1/model-cache/fastembed \
               HF_HUB_DISABLE_TELEMETRY=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
               /usr/bin/python3.12 /opt/lunita/engines/runtime_engines_v1/lunita_beta_v1_8.py \
-              engine-run --request "/opt/lunita/work/academic-mission/$request" \
+              engine-run --request "/opt/lunita/engines/runtime_engines_v1/academic-mission/$request" \
               > "$OUTPUT/$name.json" 2> "$OUTPUT/$name.stderr"; then
               echo "$name=PASS_ENGINE_OPERATION" | tee -a "$OUTPUT/ENGINE_STATUS.txt"
             else
@@ -236,20 +240,20 @@ jobs:
           run_engine E02 E02.json
           run_engine E11 E11.json
           run_engine E13 E13.json
-          if sudo test -f "$ROOTFS/opt/lunita/work/academic-mission/engine-execution.jsonl"; then
-            sudo python3 - "$ROOTFS/opt/lunita/work/academic-mission/engine-execution.jsonl" "$ROOTFS/opt/lunita/work/academic-mission/E14.json" <<'PY'
+          if sudo test -f "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/engine-execution.jsonl"; then
+            sudo python3 - "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/engine-execution.jsonl" "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/E14.json" <<'PY'
           import json,pathlib,sys
           events=[json.loads(x) for x in pathlib.Path(sys.argv[1]).read_text(encoding="utf-8").splitlines()]
           req={"command":"/play MA","agent":"Luna","engine_id":"E14","payload":{"action":"verify","events":events}}
           pathlib.Path(sys.argv[2]).write_text(json.dumps(req,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
           PY
-            sudo chown 1000:1000 "$ROOTFS/opt/lunita/work/academic-mission/E14.json"
-            sudo chmod 0644 "$ROOTFS/opt/lunita/work/academic-mission/E14.json"
+            sudo chown 1000:1000 "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/E14.json"
+            sudo chmod 0644 "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/E14.json"
             run_engine E14 E14.json
           else
             echo "E14=BLOCKED_NO_PROVENANCE_LOG" | tee -a "$OUTPUT/ENGINE_STATUS.txt"
           fi
-          sudo cp -a "$ROOTFS/opt/lunita/work/academic-mission/." "$OUTPUT/lunita-runtime/"
+          sudo cp -a "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/." "$OUTPUT/lunita-runtime/"
           sudo chmod -R a+rX "$OUTPUT/lunita-runtime"
 
       - name: Execute the packaged R 4.6.1 aggregate analysis
@@ -264,14 +268,14 @@ jobs:
           sudo mount --bind /proc "$ROOTFS/proc"
           cleanup(){ sudo umount "$ROOTFS/proc" 2>/dev/null || true; sudo umount "$ROOTFS/dev" 2>/dev/null || true; }
           trap cleanup EXIT
-          sudo chroot --userspec=1000:1000 "$ROOTFS" /usr/bin/env -C /opt/lunita/work/academic-mission \
+          sudo chroot --userspec=1000:1000 "$ROOTFS" /usr/bin/env -C /opt/lunita/engines/runtime_engines_v1/academic-mission \
             HOME=/home/lunita PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
             R_HOME=/opt/lunita/instruments/lapiz/R-4.6.1/lib/R TMPDIR=/tmp \
             /opt/lunita/instruments/lapiz/R-4.6.1/bin/Rscript --vanilla \
-            /opt/lunita/work/academic-mission/aggregate_analysis.R \
-            /opt/lunita/work/academic-mission/aggregate_frequency_data.csv \
-            /opt/lunita/work/academic-mission/statistical-output
-          sudo cp -a "$ROOTFS/opt/lunita/work/academic-mission/statistical-output" "$OUTPUT/R-4.6.1"
+            /opt/lunita/engines/runtime_engines_v1/academic-mission/aggregate_analysis.R \
+            /opt/lunita/engines/runtime_engines_v1/academic-mission/aggregate_frequency_data.csv \
+            /opt/lunita/engines/runtime_engines_v1/academic-mission/statistical-output
+          sudo cp -a "$ROOTFS/opt/lunita/engines/runtime_engines_v1/academic-mission/statistical-output" "$OUTPUT/R-4.6.1"
           sudo chmod -R a+rX "$OUTPUT/R-4.6.1"
           test -f "$OUTPUT/R-4.6.1/frequency_tables.csv"
           test -f "$OUTPUT/R-4.6.1/effort_summary.csv"
