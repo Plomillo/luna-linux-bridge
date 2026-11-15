@@ -126,10 +126,9 @@ jobs:
           esfuerzo,Esfuerzo autopercibido 0-10,6,6,1
           esfuerzo,Esfuerzo autopercibido 0-10,7,7,0
           esfuerzo,Esfuerzo autopercibido 0-10,8,8,2
-          esforço,Esfuerzo autopercibido 0-10,9,9,0
-          esforço,Esfuerzo autopercibido 0-10,10,10,1
+          esfuerzo,Esfuerzo autopercibido 0-10,9,9,0
+          esfuerzo,Esfuerzo autopercibido 0-10,10,10,1
           CSV
-          sed -i 's/^esforço,/esfuerzo/' "$OUTPUT/aggregate_frequency_data.csv"
           python3 - "$OUTPUT/aggregate_frequency_data.csv" <<'PY'
           import csv, sys
           rows = list(csv.DictReader(open(sys.argv[1], newline="", encoding="utf-8")))
@@ -248,7 +247,7 @@ jobs:
 
       - name: Execute the packaged R 4.6.1 aggregate analysis
         id: r
-        if: always()
+        if: success()
         continue-on-error: true
         shell: bash
         run: |
