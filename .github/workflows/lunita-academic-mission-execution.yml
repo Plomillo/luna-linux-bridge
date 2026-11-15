@@ -1,0 +1,333 @@
+name: LUNITA academic mission execution
+
+on:
+  push:
+    branches:
+      - fix/lunita-v18-rootfs-bound-checkpoint-20261109
+    paths:
+      - .github/workflows/lunita-academic-mission-execution.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  execute:
+    name: Execute Entregas 3 and 4 inside the certified LUNITA image
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      IMAGE_SHA256: 21e6503fb7c531b1f452c9983dba157a5988e183c9fd8247807409988132fbab
+      SOURCE_RUN_ID: "43730042509"
+      SOURCE_ARTIFACT_ID: "14169257477"
+      MISSION_PATH: recovery/lunita-custoszv9/academic-missions/lunita-entrega3-entrega4-20261115/MISSION.md
+      ROOTFS: ${{ runner.temp }}/lunita-academic-rootfs
+      OUTPUT: ${{ runner.temp }}/lunita-academic-output
+
+    steps:
+      - name: Checkout mission
+        uses: actions/checkout@v4
+        with:
+          ref: fix/lunita-v18-rootfs-bound-checkpoint-20261109
+          persist-credentials: false
+
+      - name: Download the exact certified SquashFS from run 43730042509
+        uses: actions/download-artifact@v4
+        with:
+          name: lunita-v1-8-squashfs-certified
+          repository: ${{ github.repository }}
+          run-id: 43730042509
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}/lunita-certified-artifact
+
+      - name: Verify image identity and extract without rebuilding
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$OUTPUT"
+          IMAGE="$(find "$RUNNER_TEMP/lunita-certified-artifact" -type f -name 'LUNITA.squashfs' -print -quit)"
+          test -n "$IMAGE"
+          ACTUAL="$(sha256sum "$IMAGE" | awk '{print $1}')"
+          printf 'EXPECTED=%s\nACTUAL=%s\n' "$IMAGE_SHA256" "$ACTUAL" | tee "$OUTPUT/IMAGE_IDENTITY.txt"
+          test "$ACTUAL" = "$IMAGE_SHA256"
+          CERT="$(find "$RUNNER_TEMP/lunita-certified-artifact" -type f -name 'LUNITA_FUNCTIONAL_CERTIFICATE.json' -print -quit)"
+          test -n "$CERT"
+          python3 - "$CERT" "$IMAGE_SHA256" <<'PY'
+          import json, pathlib, sys
+          raw = json.dumps(json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")))
+          required = ["CERTIFIED_FUNCTIONAL_CANDIDATE", "GRANTED_FOR_VERSIONED_CANDIDATE_ONLY",
+                      "LUNITA_V1_8_DERIVED_SQUASHFS_FUNCTIONALITY_ONLY", sys.argv[2]]
+          missing = [v for v in required if v not in raw]
+          if missing:
+              raise SystemExit("BLOCKED: candidate certificate mismatch: " + repr(missing))
+          print("PASS_EXACT_VERSIONED_CANDIDATE_CERTIFICATE")
+          PY
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends squashfs-tools
+          sudo unsquashfs -no-progress -d "$ROOTFS" "$IMAGE"
+          test -x "$ROOTFS/usr/bin/python3.12"
+          test -x "$ROOTFS/opt/lunita/instruments/lapiz/R-4.6.1/bin/Rscript"
+          test -f "$ROOTFS/opt/lunita/engines/runtime_engines_v1/lunita_beta_v1_8.py"
+          test -f "$MISSION_PATH"
+          printf 'SOURCE_RUN_ID=%s\nSOURCE_ARTIFACT_ID=%s\nMISSION_COMMIT=%s\n' \
+            "$SOURCE_RUN_ID" "$SOURCE_ARTIFACT_ID" "$(git rev-parse HEAD)" >> "$OUTPUT/IMAGE_IDENTITY.txt"
+
+      - name: Inventory academic sources without fabricating missing inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          {
+            echo "# Disponibilidad de fuentes"
+            echo
+            echo "Misión versionada: $MISSION_PATH"
+            echo "Commit inspeccionado: $(git rev-parse HEAD)"
+            echo
+            echo "Rutas tabulares/documentales localizadas en el árbol:"
+            git ls-files | grep -Ei '(entrega.?[234]|planificaci[oó]n.*responsabilidad|responsabilidad.*atenci[oó]n|\.(csv|xlsx|xls|docx|odt)$)' \
+              | grep -v 'academic-missions/.*/MISSION.md' || true
+            echo
+            echo "La rama no contiene los documentos fuente completos de Entrega 3/4 ni el CSV/XLSX individual de Google Forms. Solo están descritos en MISSION.md el instrumento y los recuentos agregados de 26 respuestas."
+            echo "No se crean microdatos ni filas sintéticas."
+          } > "$OUTPUT/SOURCE_AVAILABILITY.md"
+
+      - name: Prepare aggregate-only dataset, R analysis, and native engine requests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat > "$OUTPUT/aggregate_frequency_data.csv" <<'CSV'
+          variable,label,level,value,count
+          planificacion,Planificacion antes de estudiar,Nunca,,0
+          planificacion,Planificacion antes de estudiar,Casi nunca,,0
+          planificacion,Planificacion antes de estudiar,Algunas veces,,5
+          planificacion,Planificacion antes de estudiar,Casi siempre,,7
+          planificacion,Planificacion antes de estudiar,Siempre,,14
+          persistencia,Continuar pese a distractores,Nunca,,2
+          persistencia,Continuar pese a distractores,Casi nunca,,4
+          persistencia,Continuar pese a distractores,Algunas veces,,6
+          persistencia,Continuar pese a distractores,Casi siempre,,9
+          persistencia,Continuar pese a distractores,Siempre,,5
+          objeto,Dificultad al mirar objeto cinco minutos,Nada,,3
+          objeto,Dificultad al mirar objeto cinco minutos,Un poquito,,10
+          objeto,Dificultad al mirar objeto cinco minutos,Algo,,7
+          objeto,Dificultad al mirar objeto cinco minutos,Bastante,,4
+          objeto,Dificultad al mirar objeto cinco minutos,Mucho,,2
+          poema,Dificultad al comprender poema,Nada,,18
+          poema,Dificultad al comprender poema,Un poquito,,4
+          poema,Dificultad al comprender poema,Algo,,1
+          poema,Dificultad al comprender poema,Bastante,,1
+          poema,Dificultad al comprender poema,Mucho,,2
+          esfuerzo,Esfuerzo autopercibido 0-10,0,0,9
+          esfuerzo,Esfuerzo autopercibido 0-10,1,1,2
+          esfuerzo,Esfuerzo autopercibido 0-10,2,2,2
+          esfuerzo,Esfuerzo autopercibido 0-10,3,3,3
+          esfuerzo,Esfuerzo autopercibido 0-10,4,4,1
+          esfuerzo,Esfuerzo autopercibido 0-10,5,5,5
+          esfuerzo,Esfuerzo autopercibido 0-10,6,6,1
+          esfuerzo,Esfuerzo autopercibido 0-10,7,7,0
+          esfuerzo,Esfuerzo autopercibido 0-10,8,8,2
+          esforço,Esfuerzo autopercibido 0-10,9,9,0
+          esforço,Esfuerzo autopercibido 0-10,10,10,1
+          CSV
+          sed -i 's/^esforço,/esfuerzo/' "$OUTPUT/aggregate_frequency_data.csv"
+          python3 - "$OUTPUT/aggregate_frequency_data.csv" <<'PY'
+          import csv, sys
+          rows = list(csv.DictReader(open(sys.argv[1], newline="", encoding="utf-8")))
+          sums = {}
+          for r in rows: sums[r["variable"]] = sums.get(r["variable"], 0) + int(r["count"])
+          want = {k: 26 for k in ("planificacion", "persistencia", "objeto", "poema", "esfuerzo")}
+          if sums != want or len(rows) != 31:
+              raise SystemExit(f"BLOCKED aggregate-integrity check: {sums=} {len(rows)=}")
+          print("PASS_N26_AGGREGATE_FREQUENCIES; NO_PARTICIPANT_ROWS")
+          PY
+          sudo install -d -o 1000 -g 1000 -m 0700 "$ROOTFS/tmp/lunita-academic-mission"
+          sudo cp "$MISSION_PATH" "$OUTPUT/aggregate_frequency_data.csv" "$ROOTFS/tmp/lunita-academic-mission/"
+          cat > "$OUTPUT/aggregate_analysis.R" <<'RS'
+          a <- commandArgs(trailingOnly=TRUE); input <- a[1]; out <- a[2]
+          dir.create(out, recursive=TRUE, showWarnings=FALSE)
+          d <- read.csv(input, stringsAsFactors=FALSE, na.strings=c("", "NA"))
+          stopifnot(nrow(d)==31L, all(d$count>=0), all(is.finite(d$count)))
+          vars <- c("planificacion","persistencia","objeto","poema","esfuerzo")
+          for (v in vars) stopifnot(sum(d$count[d$variable==v])==26)
+          d$percent <- ave(d$count,d$variable,FUN=function(x) round(100*x/sum(x),1))
+          write.csv(d,file.path(out,"frequency_tables.csv"),row.names=FALSE,na="")
+          e <- d[d$variable=="esfuerzo",]; e <- e[order(e$value),]; n <- sum(e$count)
+          mu <- sum(e$value*e$count)/n
+          at <- function(p) e$value[which(cumsum(e$count)>=p)[1]]
+          med <- (at((n+1)%/%2)+at((n+2)%/%2))/2
+          sdv <- sqrt(sum(e$count*(e$value-mu)^2)/(n-1))
+          summary <- data.frame(N=n,mean=mu,median=med,mode=e$value[which.max(e$count)][1],
+                                sample_sd=sdv,minimum=min(e$value[e$count>0]),maximum=max(e$value[e$count>0]))
+          write.csv(summary,file.path(out,"effort_summary.csv"),row.names=FALSE)
+          write.csv(data.frame(N=26,minimum_age=18,maximum_age=66,
+                    note="Only range supplied; no individual age distribution."),
+                    file.path(out,"age_range_only.csv"),row.names=FALSE)
+          pdf(file.path(out,"aggregate_frequency_plots.pdf"),width=11,height=8.5)
+          old <- par(mfrow=c(3,2),mar=c(7,4,3,1))
+          for(v in vars){ z<-d[d$variable==v,]; barplot(z$count,names.arg=z$level,las=2,main=unique(z$label)[1],ylab="Aggregate count") }
+          par(old); dev.off()
+          sink(file.path(out,"R_session_info.txt"))
+          cat("Aggregate-only descriptive analysis; no participant rows were generated.\n")
+          print(summary); print(sessionInfo()); sink()
+          omv <- if(requireNamespace("jmvReadWrite",quietly=TRUE)) {
+            tryCatch({jmvReadWrite::write_omv(d[,c("variable","label","level","value","count","percent")],
+                      file.path(out,"aggregate_counts_dataset_only.omv")); "PASS_OMV_DATA_ONLY"},
+                     error=function(e) paste("BLOCKED_OMV_WRITE",conditionMessage(e)))
+          } else "BLOCKED_JMVREADWRITE_NOT_INSTALLED_IN_LUNITA_R"
+          jasp <- if(requireNamespace("jaspTools",quietly=TRUE))
+            "JASPTOOLS_PRESENT_NO_WEIGHTED_ANALYSIS_RUN_WITHOUT_VERIFIED_SPEC"
+          else "BLOCKED_JASPTOOLS_NOT_INSTALLED_IN_LUNITA_R"
+          writeLines(c(paste("JAMOVI=",omv),paste("JASP=",jasp),paste("R=",R.version.string)),
+                     file.path(out,"statistical_app_status.txt"))
+          RS
+          sudo cp "$OUTPUT/aggregate_analysis.R" "$ROOTFS/tmp/lunita-academic-mission/"
+          sudo chown -R 1000:1000 "$ROOTFS/tmp/lunita-academic-mission"
+          sudo chmod 0644 "$ROOTFS/tmp/lunita-academic-mission/"*
+          python3 - "$ROOTFS/tmp/lunita-academic-mission" <<'PY'
+          import json, pathlib, sys
+          d=pathlib.Path(sys.argv[1])
+          requests={
+           "E01.json":{"command":"/play MA","agent":"Luna","engine_id":"E01","payload":{"max_tokens":256,"timeout_seconds":180,"prompt":"Redacta una nota técnica en español basada SOLO en estos hechos. N=26, datos agregados; se preguntó por planificación antes de estudiar, persistencia cuando algo distrae, dificultad percibida al mirar un objeto cinco minutos, dificultad al comprender un poema de cuatro líneas y esfuerzo 0-10. Solo hay rango de edad 18-66. No se aplicó BFI-2-S ni CAM informatizada; no hay intervención, grupo control, asignación aleatoria, tiempos de reacción ni errores objetivos. No hay datos individuales ni documentos completos de Entregas 3/4. Indica qué descriptivos son válidos y qué hipótesis causales no pueden probarse. No inventes ni declares misión terminada."}},
+           "E02.json":{"command":"/play MA","agent":"Luna","engine_id":"E02","payload":{"text":"Antes de estudiar pensaste qué harías primero. Al estudiar pudiste continuar aunque algo llamara tu atención. Miraste un objeto cercano cinco minutos y volviste a mirarlo si te distraías. Después leíste un poema de cuatro líneas y valoraste la dificultad para comprenderlo y reflexionar. Informaste esfuerzo percibido de cero a diez."}},
+           "E11.json":{"command":"/play H","agent":"Luna","engine_id":"E11","payload":{"source_id":"MISSION_INSTRUMENT_AND_AGGREGATE_EVIDENCE","genre":"research methods brief and survey instrument","audience":"academic research team","historical_context":"Fieldwork as described in the November 2026 mission record; complete source documents not present in this repository tree.","preceding_context":"The proposed design mentioned BFI-2-S, randomized planning/control conditions and computerized visual search CAM.","following_context":"The applied instrument records retrospective self-report, a five-minute object-looking activity, poem difficulty and perceived effort.","source_text":"The applied form asks about planning before study and persistence when distracted. It asks difficulty maintaining gaze on a nearby object for five minutes, difficulty understanding a four-line poem, and perceived effort from zero to ten. The supplied aggregate counts have N=26. There are no BFI-2-S items, randomized conditions, computerized CAM trials, reaction times or error counts.","hypotheses":[{"statement":"The applied instrument does not measure BFI-2-S responsibility.","evidence_spans":["There are no BFI-2-S items"]},{"statement":"The applied instrument does not record randomized conditions or computerized CAM performance.","evidence_spans":["randomized conditions, computerized CAM trials, reaction times or error counts"]}] }},
+           "E13.json":{"command":"/play MA","agent":"Luna","engine_id":"E13","payload":{"instance":{"mission_id":"lunita-entrega3-entrega4-20261115","image_sha256":"21e6503fb7c531b1f452c9983dba157a5988e183c9fd8247807409988132fbab","data_level":"AGGREGATED_ONLY","sample_n":26,"participant_rows":0},"schema":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["mission_id","image_sha256","data_level","sample_n","participant_rows"],"properties":{"mission_id":{"type":"string"},"image_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"data_level":{"const":"AGGREGATED_ONLY"},"sample_n":{"type":"integer","const":26},"participant_rows":{"type":"integer","const":0}},"additionalProperties":false}}}
+          }
+          for name,obj in requests.items():
+              (d/name).write_text(json.dumps(obj,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
+          PY
+          sudo chown 1000:1000 "$ROOTFS/tmp/lunita-academic-mission/"*.json
+          sudo chmod 0644 "$ROOTFS/tmp/lunita-academic-mission/"*.json
+
+      - name: Execute real LUNITA E01, E02, E11, E13 and E14 engine operations
+        id: engines
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo mount --bind /dev "$ROOTFS/dev"
+          sudo mount --bind /proc "$ROOTFS/proc"
+          sudo mount --bind /sys "$ROOTFS/sys"
+          cleanup(){ sudo umount "$ROOTFS/sys" 2>/dev/null || true; sudo umount "$ROOTFS/proc" 2>/dev/null || true; sudo umount "$ROOTFS/dev" 2>/dev/null || true; }
+          trap cleanup EXIT
+          run_engine(){
+            name="$1"; request="$2"
+            if sudo chroot --userspec=1000:1000 "$ROOTFS" /usr/bin/env -C /tmp \
+              HOME=/home/lunita PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+              PYTHONPATH=/opt/lunita/engines/runtime_engines_v1/vendor/python3.12/site-packages:/opt/lunita/engines/runtime_engines_v1 \
+              LUNITA_ROOT=/opt/lunita LUNITA_ENGINE_AUDIT_LOG=/tmp/lunita-academic-mission/engine-execution.jsonl \
+              LUNITA_VECTOR_DB_PATH=/tmp/lunita-academic-mission/vectors \
+              LUNITA_FASTEMBED_CACHE=/opt/lunita/engines/runtime_engines_v1/model-cache/fastembed \
+              HF_HUB_DISABLE_TELEMETRY=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+              /usr/bin/python3.12 /opt/lunita/engines/runtime_engines_v1/lunita_beta_v1_8.py \
+              engine-run --request "/tmp/lunita-academic-mission/$request" \
+              > "$OUTPUT/$name.json" 2> "$OUTPUT/$name.stderr"; then
+              echo "$name=PASS_ENGINE_OPERATION" | tee -a "$OUTPUT/ENGINE_STATUS.txt"
+            else
+              rc=$?; echo "$name=BLOCKED_$rc" | tee -a "$OUTPUT/ENGINE_STATUS.txt"
+            fi
+          }
+          run_engine E01 E01.json
+          run_engine E02 E02.json
+          run_engine E11 E11.json
+          run_engine E13 E13.json
+          if sudo test -f "$ROOTFS/tmp/lunita-academic-mission/engine-execution.jsonl"; then
+            sudo python3 - "$ROOTFS/tmp/lunita-academic-mission/engine-execution.jsonl" "$ROOTFS/tmp/lunita-academic-mission/E14.json" <<'PY'
+          import json,pathlib,sys
+          events=[json.loads(x) for x in pathlib.Path(sys.argv[1]).read_text(encoding="utf-8").splitlines()]
+          req={"command":"/play MA","agent":"Luna","engine_id":"E14","payload":{"action":"verify","events":events}}
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(req,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
+          PY
+            sudo chown 1000:1000 "$ROOTFS/tmp/lunita-academic-mission/E14.json"
+            sudo chmod 0644 "$ROOTFS/tmp/lunita-academic-mission/E14.json"
+            run_engine E14 E14.json
+          else
+            echo "E14=BLOCKED_NO_PROVENANCE_LOG" | tee -a "$OUTPUT/ENGINE_STATUS.txt"
+          fi
+          sudo cp -a "$ROOTFS/tmp/lunita-academic-mission/." "$OUTPUT/lunita-runtime/"
+          sudo chmod -R a+rX "$OUTPUT/lunita-runtime"
+
+      - name: Execute the packaged R 4.6.1 aggregate analysis
+        id: r
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -x "$ROOTFS/opt/lunita/instruments/lapiz/R-4.6.1/bin/Rscript"
+          sudo mount --bind /dev "$ROOTFS/dev"
+          sudo mount --bind /proc "$ROOTFS/proc"
+          cleanup(){ sudo umount "$ROOTFS/proc" 2>/dev/null || true; sudo umount "$ROOTFS/dev" 2>/dev/null || true; }
+          trap cleanup EXIT
+          sudo chroot --userspec=1000:1000 "$ROOTFS" /usr/bin/env -C /tmp \
+            HOME=/home/lunita PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+            R_HOME=/opt/lunita/instruments/lapiz/R-4.6.1/lib/R TMPDIR=/tmp \
+            /opt/lunita/instruments/lapiz/R-4.6.1/bin/Rscript --vanilla \
+            /tmp/lunita-academic-mission/aggregate_analysis.R \
+            /tmp/lunita-academic-mission/aggregate_frequency_data.csv \
+            /tmp/lunita-academic-mission/statistical-output
+          sudo cp -a "$ROOTFS/tmp/lunita-academic-mission/statistical-output" "$OUTPUT/R-4.6.1"
+          sudo chmod -R a+rX "$OUTPUT/R-4.6.1"
+          test -f "$OUTPUT/R-4.6.1/frequency_tables.csv"
+          test -f "$OUTPUT/R-4.6.1/effort_summary.csv"
+          test -f "$OUTPUT/R-4.6.1/aggregate_frequency_plots.pdf"
+          echo "PASS_R_4_6_1_AGGREGATE_DESCRIPTIVES" > "$OUTPUT/R_STATUS.txt"
+
+      - name: Write a fail-closed mission execution report
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          E01="$(grep '^E01=' "$OUTPUT/ENGINE_STATUS.txt" 2>/dev/null | tail -1 || echo NOT_RUN)"
+          E02="$(grep '^E02=' "$OUTPUT/ENGINE_STATUS.txt" 2>/dev/null | tail -1 || echo NOT_RUN)"
+          E11="$(grep '^E11=' "$OUTPUT/ENGINE_STATUS.txt" 2>/dev/null | tail -1 || echo NOT_RUN)"
+          E13="$(grep '^E13=' "$OUTPUT/ENGINE_STATUS.txt" 2>/dev/null | tail -1 || echo NOT_RUN)"
+          E14="$(grep '^E14=' "$OUTPUT/ENGINE_STATUS.txt" 2>/dev/null | tail -1 || echo NOT_RUN)"
+          RSTAT="$(cat "$OUTPUT/R_STATUS.txt" 2>/dev/null || echo NOT_RUN)"
+          cat > "$OUTPUT/MISSION_EXECUTION_REPORT.md" <<EOF
+          # LUNITA — misión Entregas 3 y 4
+
+          **Estado: PARCIAL / BLOQUEADA POR FUENTES AUSENTES.** Este resultado no acredita la finalización de la misión académica.
+
+          ## Identidad
+          - SquashFS SHA-256: \`$IMAGE_SHA256\`
+          - Run de origen: \`$SOURCE_RUN_ID\`
+          - Artifact ID: \`$SOURCE_ARTIFACT_ID\`
+          - Commit de misión: \`$(git rev-parse HEAD)\`
+          - Se descargó y ejecutó la imagen certificada exacta; no se reconstruyó ni modificó.
+
+          ## Operaciones LUNITA ejecutadas
+          - E01: \`$E01\`
+          - E02: \`$E02\`
+          - E11: \`$E11\`
+          - E13: \`$E13\`
+          - E14: \`$E14\`
+          - R 4.6.1: \`$RSTAT\`
+
+          Los JSON de solicitud/respuesta y el registro de procedencia están en \`lunita-runtime/\`.
+
+          ## Bloqueos no ocultados
+          1. No están versionados aquí los documentos originales completos de Entrega 3 y Entrega 4; no se puede afirmar una auditoría de sus líneas.
+          2. No está versionada la exportación individual CSV/XLSX de Google Forms. Solo hay distribuciones agregadas de 26 respuestas.
+          3. No se fabricaron participantes ni registros individuales.
+          4. El formulario aplicado descrito en la misión no contiene BFI-2-S, asignación aleatoria, grupo control, CAM informatizada, tiempos de reacción ni errores objetivos. H1-H3 y las inferencias causales no pueden probarse con estos datos.
+          5. El análisis R ejecutado es descriptivo y utiliza frecuencias agregadas. Si el runtime no contiene \`jmvReadWrite\`, no se emite un archivo .omv. No se creará un .jasp vacío ni se presentará un chequeo de instalación como análisis JASP.
+
+          ## Evidencia adjunta
+          - \`aggregate_frequency_data.csv\`: recuentos agregados, N=26 por variable.
+          - \`R-4.6.1/\`: tablas, resumen de esfuerzo, rango de edad, gráfico PDF y sessionInfo (si R terminó correctamente).
+          - \`lunita-runtime/\`: petición de misión, respuestas de motores, script R y procedencia.
+          - \`SOURCE_AVAILABILITY.md\`: inventario de fuentes.
+          - \`IMAGE_IDENTITY.txt\`: vínculo entre imagen, run y artifact.
+
+          **Decisión:** la misión queda ABIERTA. Puede prepararse una Entrega 3 descriptiva de piloto basada en autorreportes. No puede afirmarse que Entrega 4 probó las hipótesis de la propuesta, ni emitir los análisis JASP/Jamovi que requieran archivos/microdatos y configuración no disponibles.
+          EOF
+          cat "$OUTPUT/MISSION_EXECUTION_REPORT.md"
+
+      - name: Upload execution evidence and outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunita-entrega3-entrega4-execution-evidence
+          path: ${{ runner.temp }}/lunita-academic-output/
+          if-no-files-found: warn
+          retention-days: 90
