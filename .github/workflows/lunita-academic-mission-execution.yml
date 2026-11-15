@@ -22,8 +22,8 @@ jobs:
       SOURCE_RUN_ID: "43730042509"
       SOURCE_ARTIFACT_ID: "14169257477"
       MISSION_PATH: recovery/lunita-custoszv9/academic-missions/lunita-entrega3-entrega4-20261115/MISSION.md
-      ROOTFS: ${{ runner.temp }}/lunita-academic-rootfs
-      OUTPUT: ${{ runner.temp }}/lunita-academic-output
+      ROOTFS: /tmp/lunita-academic-rootfs
+      OUTPUT: /tmp/lunita-academic-output
 
     steps:
       - name: Checkout mission
