@@ -1,0 +1,55 @@
+{
+  "candidate_bytes": 354078814,
+  "candidate_sha256": "4f0b01368eb946418ce0bf77ad8af3fb65b8d571d7887d47a062ae90f318d10d",
+  "certification": "NOT_GRANTED",
+  "core": {
+    "adapter_blocks_core": false,
+    "adapter_status": "UNAVAILABLE",
+    "checkpoint_created": "06a78cef522a493398a749d7fe119c67",
+    "doctor_exit": 0,
+    "recall_after_rollback": "one",
+    "remember_exit": 0,
+    "rollback_exit": 0,
+    "status_exit": 0,
+    "unknown_operation_exit": 2
+  },
+  "criteria": {
+    "A01_CANDIDATE_CREATED": "PASS",
+    "A02_POST11_PRESERVED": "PASS",
+    "A03_CANDIDATE_HASH_RECOMPUTED": "PASS",
+    "A04_METADATA_PRESENT": "PASS",
+    "A05_RECORD_VALID": "PASS",
+    "A06_NESTED_PAYLOAD_PRESENT": "PASS",
+    "A08_CLI_STATUS": "PASS",
+    "A10_OFFLINE_INSTALL_NO_DEPS": "PASS",
+    "A11_HOST_IS_DEBIAN_13": "FAIL",
+    "A12_REPLAY_BYTE_MATCH": "PASS",
+    "A13_CORE_ROLLBACK": "PASS",
+    "A16_FORGEJO": "FAIL",
+    "A17_LOCAL_INFERENCE": "FAIL",
+    "A19_BROWSER_AND_MODEL_LABS": "FAIL",
+    "A21_OCR": "FAIL",
+    "A22_ADAPTER_DOES_NOT_BLOCK": "PASS",
+    "A29_ROLLBACK": "PASS",
+    "A30_INDEPENDENT_PROCESS": "PASS"
+  },
+  "failed": [
+    "A11_HOST_IS_DEBIAN_13",
+    "A16_FORGEJO",
+    "A17_LOCAL_INFERENCE",
+    "A19_BROWSER_AND_MODEL_LABS",
+    "A21_OCR"
+  ],
+  "imports_core_certify": false,
+  "offline_install": {
+    "entrypoint": 0,
+    "install": 0,
+    "tail": "Processing /tmp/tmpqxid9hy_/umot_compact-1.0.5.post12-1additive-py3-none-manylinux_2_34_x86_64.whl\nInstalling collected packages: umot-compact\nSuccessfully installed umot-compact-1.0.5.post12\n",
+    "venv": 0
+  },
+  "parent_bytes": 205679247,
+  "parent_sha256": "2950aa605d972672af925015ec4d061e5f5e526187aaa2507fba6b6e80246db6",
+  "reason": "MANDATORY_CRITERIA_FAILED",
+  "record_errors": [],
+  "validator": "independent_validate.py"
+}

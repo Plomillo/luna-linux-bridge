@@ -43,10 +43,13 @@ def wheel_filename_compliance(filename: str) -> dict:
     if not basename.endswith(".whl"):
         return {"status": "FAIL", "reason": "WHEEL_EXTENSION_MISSING", "field_count": None}
     fields = basename[:-4].split("-")
-    valid = len(fields) in (5, 6)
-    return {"status": "PASS" if valid else "FAIL", "field_count": len(fields),
-            "fields": fields,
-            "reason": None if valid else "WHEEL_FILENAME_MUST_HAVE_5_OR_6_HYPHEN_FIELDS"}
+    if len(fields) not in (5, 6):
+        return {"status": "FAIL", "field_count": len(fields), "fields": fields,
+                "reason": "WHEEL_FILENAME_MUST_HAVE_5_OR_6_HYPHEN_FIELDS"}
+    if len(fields) == 6 and not fields[2][:1].isdigit():
+        return {"status": "FAIL", "field_count": 6, "fields": fields,
+                "reason": "BUILD_TAG_MUST_START_WITH_DIGIT"}
+    return {"status": "PASS", "field_count": len(fields), "fields": fields, "reason": None}
 
 
 def safe_wheel_members(names: list[str]) -> tuple[bool, str | None]:
@@ -139,11 +142,6 @@ def inspect_wheel(path: Path) -> dict:
             result["python_source_files"] = [
                 n for n in names if n.endswith(".py") and ".dist-info/" not in n
             ][:200]
-            entry_points_file = f"{dist_info}/entry_points.txt"
-            result["entry_points"] = (
-                archive.read(entry_points_file).decode("utf-8", errors="replace")
-                if entry_points_file in names else ""
-            )
             safe, reason = safe_wheel_members(names)
             if not safe:
                 result["archive_integrity"] = "FAIL"
@@ -155,6 +153,11 @@ def inspect_wheel(path: Path) -> dict:
                 result["errors"].append("EXPECTED_EXACTLY_ONE_DIST_INFO_DIRECTORY")
                 return result
             dist_info = dist_infos[0]
+            entry_points_file = f"{dist_info}/entry_points.txt"
+            result["entry_points"] = (
+                archive.read(entry_points_file).decode("utf-8", errors="replace")
+                if entry_points_file in names else ""
+            )
             wheel_meta, metadata_file, record_file = (
                 f"{dist_info}/WHEEL", f"{dist_info}/METADATA", f"{dist_info}/RECORD")
             for required in (wheel_meta, metadata_file, record_file):
