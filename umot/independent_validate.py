@@ -192,10 +192,15 @@ def main() -> int:
         "certification": functional_certification,
         "scope": "forgejo+gguf-inference+browser-lab+model-lab+ocr",
         "debian_13_host": criteria["A11_HOST_IS_DEBIAN_13"],
+        "os_release_codename": "trixie" if debian13 else "not-trixie",
         "reason": "FUNCTIONAL_GATES_EXECUTED" if functional_certification == "GRANTED" else "FUNCTIONAL_GATES_FAILED",
         "failed": mandatory_fail,
         "functional_failed": functional_fail,
-        "host_note": "A11 stays FAIL on Debian 12. This certificate does not claim a Debian 13 host.",
+        "host_note": (
+            "A11 measured PASS from /etc/os-release of the validating process: Debian 13 (trixie)."
+            if debian13
+            else "A11 measured FAIL. /etc/os-release of the validating process is not Debian 13 trixie."
+        ),
     }
     args.report.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"certification": report["certification"], "scope": report["scope"], "functional_failed": functional_fail, "debian_13_host": report["debian_13_host"], "candidate_sha256": candidate_hash}, indent=2))

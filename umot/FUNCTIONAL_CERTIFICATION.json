@@ -6,13 +6,13 @@
     "adapter_blocks_core": false,
     "adapter_status": "UNAVAILABLE",
     "browser": {
-      "dom": "<!DOCTYPE html>\n<html><head><title>UMOT-BROWSER-LAB</title></head><body><h1 id=\"mark\">UMOT-BROWSER-OK</h1>\n</body></html>\n[1115/113715.446826:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n[1115/113715.446895:ER",
+      "dom": "<!DOCTYPE html>\n<html><head><title>UMOT-BROWSER-LAB</title></head><body><h1 id=\"mark\">UMOT-BROWSER-OK</h1>\n</body></html>\n[1115/183215.184792:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n[1115/183215.185503:ER",
       "exit_code": 0,
       "marker": "UMOT-BROWSER-OK",
       "status": "PASS",
       "tool": "/tmp/umot-motors/browser/chrome-headless-shell/linux-157.0.8103.78/chrome-headless-shell-linux64/chrome-headless-shell"
     },
-    "checkpoint_created": "8ab9b439faf747049f6fd737b0da0d6d",
+    "checkpoint_created": "88330121ae18438782a6d4828cd2f64a",
     "doctor_exit": 0,
     "document": {
       "exit_code": 0,
@@ -23,7 +23,7 @@
     },
     "forgejo": {
       "binary": "/tmp/umot-motors/bin/forgejo",
-      "bound": "127.0.0.1:37207",
+      "bound": "127.0.0.1:46497",
       "database_ping": "pass",
       "description": "UMOT",
       "exit_code": 0,
@@ -58,7 +58,7 @@
     "A06_NESTED_PAYLOAD_PRESENT": "PASS",
     "A08_CLI_STATUS": "PASS",
     "A10_OFFLINE_INSTALL_NO_DEPS": "PASS",
-    "A11_HOST_IS_DEBIAN_13": "FAIL",
+    "A11_HOST_IS_DEBIAN_13": "PASS",
     "A12_REPLAY_BYTE_MATCH": "PASS",
     "A13_CORE_ROLLBACK": "PASS",
     "A16_FORGEJO": "PASS",
@@ -70,19 +70,18 @@
     "A30_INDEPENDENT_PROCESS": "PASS",
     "A31_WHEEL_RUNTIME_MATCHES_EXECUTED_SOURCE": "PASS"
   },
-  "debian_13_host": "FAIL",
-  "failed": [
-    "A11_HOST_IS_DEBIAN_13"
-  ],
+  "debian_13_host": "PASS",
+  "failed": [],
   "functional_failed": [],
-  "host_note": "A11 stays FAIL on Debian 12. This certificate does not claim a Debian 13 host.",
+  "host_note": "A11 measured PASS from /etc/os-release of the validating process: Debian 13 (trixie).",
   "imports_core_certify": false,
   "offline_install": {
     "entrypoint": 0,
     "install": 0,
-    "tail": "Processing /tmp/tmpas9xyupo/umot_compact-1.0.5.post12-1additive-py3-none-manylinux_2_34_x86_64.whl\nInstalling collected packages: umot-compact\nSuccessfully installed umot-compact-1.0.5.post12\n",
+    "tail": "Processing /tmp/tmpesb_ghgy/umot_compact-1.0.5.post12-1additive-py3-none-manylinux_2_34_x86_64.whl\nInstalling collected packages: umot-compact\nSuccessfully installed umot-compact-1.0.5.post12\n",
     "venv": 0
   },
+  "os_release_codename": "trixie",
   "parent_bytes": 205679247,
   "parent_sha256": "2950aa605d972672af925015ec4d061e5f5e526187aaa2507fba6b6e80246db6",
   "reason": "FUNCTIONAL_GATES_EXECUTED",
