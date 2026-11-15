@@ -5,8 +5,12 @@ import hashlib
 import json
 import os
 import shutil
+import signal
+import socket
 import subprocess
 import time
+import urllib.error
+import urllib.request
 import uuid
 from pathlib import Path
 
@@ -50,6 +54,90 @@ def _which(name: str) -> str | None:
     return shutil.which(name)
 
 
+def _tool_roots() -> list[Path]:
+    roots: list[Path] = []
+    configured = os.environ.get("UMOT_TOOLS")
+    if configured:
+        roots.append(Path(configured))
+    roots.append(Path(__file__).resolve().parent / "vendor")
+    default = Path("/tmp/umot-motors")
+    if default.is_dir():
+        roots.append(default)
+    return roots
+
+
+def _find_executable(name: str) -> Path | None:
+    relatives = (
+        Path("bin") / name,
+        Path(name),
+        Path("llama") / name,
+        Path("llama") / "llama-b12410" / name,
+    )
+    for root in _tool_roots():
+        for relative in relatives:
+            candidate = root / relative
+            if candidate.is_file() and os.access(candidate, os.X_OK):
+                return candidate
+        browser = root / "browser"
+        if browser.is_dir():
+            matches = [path for path in browser.glob(f"**/{name}") if path.is_file() and os.access(path, os.X_OK)]
+            if matches:
+                return sorted(matches, key=lambda path: len(path.parts))[0]
+    found = shutil.which(name)
+    return Path(found) if found else None
+
+
+def _find_gguf() -> Path | None:
+    for root in _tool_roots():
+        models = root / "models"
+        if not models.is_dir():
+            continue
+        found = sorted(path for path in models.glob("*.gguf") if path.is_file() and path.stat().st_size > 0)
+        if found:
+            return found[0]
+    return None
+
+
+def _free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
+def _forgejo_ini(work: Path, port: int) -> str:
+    return (
+        "APP_NAME = UMOT\n"
+        "RUN_MODE = prod\n"
+        f"WORK_PATH = {work}\n"
+        "\n[server]\n"
+        "PROTOCOL = http\n"
+        "DOMAIN = 127.0.0.1\n"
+        "HTTP_ADDR = 127.0.0.1\n"
+        f"HTTP_PORT = {port}\n"
+        f"ROOT_URL = http://127.0.0.1:{port}/\n"
+        "DISABLE_SSH = true\n"
+        "START_SSH_SERVER = false\n"
+        "LFS_START_SERVER = false\n"
+        "OFFLINE_MODE = true\n"
+        f"APP_DATA_PATH = {work}/data\n"
+        "\n[database]\n"
+        "DB_TYPE = sqlite3\n"
+        f"PATH = {work}/data/forgejo.db\n"
+        "\n[security]\n"
+        "INSTALL_LOCK = true\n"
+        "SECRET_KEY = 0123456789abcdef0123456789abcdef\n"
+        "INTERNAL_TOKEN = 0123456789abcdef0123456789abcdef0123456789abcdef\n"
+        "\n[service]\n"
+        "DISABLE_REGISTRATION = true\n"
+        "REQUIRE_SIGNIN_VIEW = false\n"
+        "\n[log]\n"
+        "MODE = console\n"
+        "LEVEL = Warn\n"
+        "\n[repository]\n"
+        "DEFAULT_BRANCH = main\n"
+    )
+
+
 class Core:
     def __init__(self, state: Path, root: Path | None = None):
         self.state = state
@@ -90,7 +178,10 @@ class Core:
             "ninja": _which("ninja"),
             "gdb": _which("gdb"),
             "mojo": _which("mojo"),
-            "forgejo": _which("forgejo"),
+            "forgejo": str(binary) if (binary := _find_executable("forgejo")) else None,
+            "llama-cli": str(binary) if (binary := _find_executable("llama-cli")) else None,
+            "tesseract": str(binary) if (binary := _find_executable("tesseract")) else None,
+            "chrome-headless-shell": str(binary) if (binary := _find_executable("chrome-headless-shell")) else None,
         }
         rows = []
         for name, path in tools.items():
@@ -268,7 +359,17 @@ class Core:
             proc = subprocess.run(argv, cwd=repo, capture_output=True, text=True, env=env, check=False)
             if proc.returncode != 0:
                 return {"status": "FAIL", "exit_code": proc.returncode, "output_head": ((proc.stdout or "") + (proc.stderr or ""))[:400]}
-        return {"status": "PASS", "repo": str(repo), "forgejo": "ABSENT"}
+        forgejo = _find_executable("forgejo")
+        if forgejo is None:
+            return {"status": "PASS", "repo": str(repo), "forgejo": "ABSENT"}
+        version = _run([str(forgejo), "--version"], timeout=20)
+        line = (version.get("output_head") or "").splitlines()
+        return {
+            "status": "PASS",
+            "repo": str(repo),
+            "forgejo": "PRESENT",
+            "forgejo_version": line[0][:200] if line else "",
+        }
 
     def _op_remember(self, params: dict) -> dict:
         stored = self.remember(str(params["key"]), str(params["value"]))
@@ -361,8 +462,7 @@ class Core:
             probe = _run(["python3", "-c", "import sqlite3; c=sqlite3.connect(':memory:'); c.execute('create table t(x)'); c.execute('insert into t values (1)'); print(c.execute('select x from t').fetchone()[0])"])
             return {"status": "PASS" if probe["status"] == "PASS" and "1" in probe["output_head"] else "FAIL"}
         if name == "document":
-            probe = _run(["python3", "-c", "print('document-lab')"])
-            return {"status": probe["status"], "scope": "TEXT_ONLY_OCR_ABSENT"}
+            return self._lab_document()
         if name == "binary":
             tool = _which("readelf")
             if not tool:
@@ -373,12 +473,166 @@ class Core:
         if name == "network":
             return {"status": "PASS", "scope": "NO_TRAFFIC_CAPTURE", "dns_tool": _which("getent") is not None}
         if name == "browser":
-            return {"status": "FAIL", "reason": "BROWSER_RUNTIME_NOT_LAUNCHED"}
+            return self._lab_browser()
         if name == "model":
-            return {"status": "FAIL", "reason": "NO_GGUF_INFERENCE_MODEL_EXECUTED"}
+            return self._lab_model()
         if name == "research":
             return self.agent("researcher", {"needle": "{"})
         return {"status": "FAIL", "reason": "LAB_NOT_WIRED"}
+
+    def forgejo(self) -> dict:
+        binary = _find_executable("forgejo")
+        if binary is None:
+            return {"status": "FAIL", "reason": "FORGEJO_ABSENT"}
+        version = _run([str(binary), "--version"], timeout=20)
+        work = self.state / "forgejo-probe"
+        if work.exists():
+            shutil.rmtree(work)
+        (work / "data").mkdir(parents=True)
+        port = _free_port()
+        (work / "app.ini").write_text(_forgejo_ini(work, port), encoding="utf-8")
+        log_path = work / "forgejo.log"
+        env = os.environ.copy()
+        env["GITEA_I_AM_BEING_UNSAFE_RUNNING_AS_ROOT"] = "1"
+        log_handle = log_path.open("w", encoding="utf-8")
+        proc = subprocess.Popen(
+            [str(binary), "web", "--config", str(work / "app.ini"), "--work-path", str(work)],
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            env=env,
+            start_new_session=True,
+        )
+        health = None
+        reason = None
+        try:
+            deadline = time.time() + 25
+            url = f"http://127.0.0.1:{port}/api/healthz"
+            while time.time() < deadline:
+                if proc.poll() is not None:
+                    reason = "FORGEJO_EXITED"
+                    break
+                try:
+                    with urllib.request.urlopen(url, timeout=1) as response:
+                        health = json.loads(response.read().decode())
+                    break
+                except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, ConnectionError):
+                    time.sleep(0.3)
+            else:
+                reason = "FORGEJO_HEALTH_TIMEOUT"
+        finally:
+            if proc.poll() is None:
+                try:
+                    os.killpg(proc.pid, signal.SIGTERM)
+                except OSError:
+                    proc.terminate()
+                try:
+                    proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    try:
+                        os.killpg(proc.pid, signal.SIGKILL)
+                    except OSError:
+                        proc.kill()
+                    proc.wait(timeout=5)
+            log_handle.close()
+        version_line = ((version.get("output_head") or "").splitlines() or [""])[0][:200]
+        if not isinstance(health, dict) or health.get("status") != "pass":
+            tail = log_path.read_text(encoding="utf-8", errors="replace")[-500:] if log_path.is_file() else ""
+            return {"status": "FAIL", "reason": reason or "FORGEJO_HEALTH_FAILED", "version": version_line, "health": health, "log_tail": tail}
+        database = (health.get("checks") or {}).get("database:ping") or []
+        if not any(isinstance(item, dict) and item.get("status") == "pass" for item in database):
+            return {"status": "FAIL", "reason": "FORGEJO_DATABASE_PING_FAILED", "version": version_line, "health": health}
+        return {
+            "status": "PASS",
+            "binary": str(binary),
+            "version": version_line,
+            "health_status": "pass",
+            "database_ping": "pass",
+            "description": health.get("description"),
+            "offline_mode": True,
+            "bound": f"127.0.0.1:{port}",
+        }
+
+    def _lab_document(self) -> dict:
+        tesseract = _find_executable("tesseract")
+        convert = _which("convert")
+        if tesseract is None:
+            return {"status": "FAIL", "reason": "TESSERACT_ABSENT"}
+        if not convert:
+            return {"status": "FAIL", "reason": "IMAGE_RENDERER_ABSENT"}
+        image = self.state / "ocr.png"
+        planted = "UMOT OCR OK"
+        rendered = _run([convert, "-background", "white", "-fill", "black", "-font", "DejaVu-Sans", "-pointsize", "48", f"label:{planted}", str(image)], timeout=20)
+        if rendered["status"] != "PASS" or not image.is_file():
+            return {"status": "FAIL", "reason": "OCR_IMAGE_NOT_RENDERED", "render": rendered}
+        recognized = _run([str(tesseract), str(image), "stdout", "--psm", "7"], timeout=30)
+        text = recognized.get("output_head") or ""
+        if recognized["status"] != "PASS" or "UMOT" not in text or "OCR" not in text:
+            return {"status": "FAIL", "reason": "OCR_TEXT_MISMATCH", "text": text[:240], "tool": str(tesseract)}
+        return {"status": "PASS", "tool": str(tesseract), "planted": planted, "text": text.strip()[:240]}
+
+    def _lab_browser(self) -> dict:
+        browser = _find_executable("chrome-headless-shell") or _find_executable("chromium") or _find_executable("google-chrome")
+        if browser is None:
+            return {"status": "FAIL", "reason": "BROWSER_RUNTIME_NOT_LAUNCHED"}
+        page = self.state / "browser.html"
+        marker = "UMOT-BROWSER-OK"
+        page.write_text(
+            f"<!doctype html><html><head><title>UMOT-BROWSER-LAB</title></head><body><h1 id=\"mark\">{marker}</h1></body></html>\n",
+            encoding="utf-8",
+        )
+        probe = _run([
+            str(browser), "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage",
+            "--virtual-time-budget=2000", "--dump-dom", page.resolve().as_uri(),
+        ], timeout=40)
+        dom = probe.get("output_head") or ""
+        if marker not in dom:
+            return {"status": "FAIL", "reason": "BROWSER_DOM_MISMATCH", "tool": str(browser), "dom": dom[:240], "exit_code": probe.get("exit_code")}
+        return {"status": "PASS", "tool": str(browser), "marker": marker, "dom": dom[dom.find("<!"):][:300] if "<!" in dom else dom[:300]}
+
+    def _lab_model(self) -> dict:
+        binary = _find_executable("llama-cli")
+        model = _find_gguf()
+        if binary is None or model is None:
+            return {"status": "FAIL", "reason": "NO_GGUF_INFERENCE_MODEL_EXECUTED", "binary": None if binary is None else str(binary), "model": None if model is None else str(model)}
+        prompt = "Once upon a time"
+        env = os.environ.copy()
+        libdir = str(binary.resolve().parent)
+        env["LD_LIBRARY_PATH"] = libdir if not env.get("LD_LIBRARY_PATH") else libdir + os.pathsep + env["LD_LIBRARY_PATH"]
+        try:
+            proc = subprocess.run(
+                [str(binary), "-m", str(model), "-p", prompt, "-n", "12", "-c", "128", "--temp", "0", "-t", "2",
+                 "--no-warmup", "--no-display-prompt", "--single-turn", "--simple-io", "--log-disable", "--no-jinja"],
+                capture_output=True, text=True, timeout=120, check=False, env=env,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return {"status": "FAIL", "reason": type(exc).__name__, "detail": str(exc)[:240]}
+        text = (proc.stdout or "") + (proc.stderr or "")
+        completion = ""
+        if prompt in text:
+            tail = text.split(prompt, 1)[1]
+            lines = []
+            for line in tail.splitlines():
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                if stripped.startswith("[") or stripped.startswith("Exiting"):
+                    break
+                lines.append(stripped)
+            completion = " ".join(lines)[:300]
+        generated = "Generation:" in text and bool(completion)
+        if proc.returncode != 0 or not generated:
+            return {"status": "FAIL", "reason": "GGUF_INFERENCE_FAILED", "exit_code": proc.returncode, "completion": completion, "output_head": text[:400]}
+        digest = hashlib.sha256(model.read_bytes()).hexdigest()
+        return {
+            "status": "PASS",
+            "engine": str(binary),
+            "model": model.name,
+            "model_bytes": model.stat().st_size,
+            "model_sha256": digest,
+            "prompt": prompt,
+            "completion": completion,
+            "evidence": "Generation:",
+        }
 
     def adapter(self, name: str) -> dict:
         if name not in ADAPTERS:

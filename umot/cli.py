@@ -17,10 +17,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--state", type=Path, default=Path(".umot-state"))
     parser.add_argument("--json", action="store_true", help="Accepted for compatibility. JSON is always emitted.")
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("status", "doctor", "capabilities", "verify", "rollback"):
+    for name in ("status", "doctor", "capabilities", "verify", "rollback", "forgejo"):
         command = sub.add_parser(name)
         if name == "rollback":
             command.add_argument("checkpoint")
+    lab = sub.add_parser("lab")
+    lab.add_argument("name")
     run = sub.add_parser("run")
     run.add_argument("operation")
     run.add_argument("--key")
@@ -41,6 +43,10 @@ def main(argv: list[str] | None = None) -> int:
         result = core.verify()
     elif args.command == "rollback":
         result = core.rollback(args.checkpoint)
+    elif args.command == "forgejo":
+        result = core.forgejo()
+    elif args.command == "lab":
+        result = core.lab(args.name)
     else:
         params = {"requested_kb": args.requested_kb}
         for key in ("key", "value", "path", "body", "name"):

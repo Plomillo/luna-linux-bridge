@@ -52,8 +52,28 @@ class RuntimeTests(unittest.TestCase):
     def test_security_rejects_traversal_and_cpp_and_git_execute(self):
         self.assertEqual(self.core.agent("security", {"path": "../escape"})["status"], "FAIL")
         self.assertEqual(self.core.run("compile-cpp")["status"], "PASS")
-        self.assertEqual(self.core.run("git-commit")["status"], "PASS")
-        self.assertEqual(self.core.run("git-commit")["forgejo"], "ABSENT")
+        git = self.core.run("git-commit")
+        self.assertEqual(git["status"], "PASS")
+        self.assertEqual(git["forgejo"], "PRESENT")
+        self.assertIn("17.0.1", git["forgejo_version"])
+
+    def test_forgejo_gguf_browser_and_ocr_execute(self):
+        forgejo = self.core.forgejo()
+        self.assertEqual(forgejo["status"], "PASS", forgejo)
+        self.assertEqual(forgejo["health_status"], "pass")
+        self.assertEqual(forgejo["database_ping"], "pass")
+        model = self.core.lab("model")
+        self.assertEqual(model["status"], "PASS", model)
+        self.assertEqual(model["model"], "stories260K.gguf")
+        self.assertTrue(model["completion"])
+        self.assertEqual(model["evidence"], "Generation:")
+        browser = self.core.lab("browser")
+        self.assertEqual(browser["status"], "PASS", browser)
+        self.assertIn("UMOT-BROWSER-OK", browser["dom"])
+        document = self.core.lab("document")
+        self.assertEqual(document["status"], "PASS", document)
+        self.assertIn("UMOT", document["text"])
+        self.assertIn("OCR", document["text"])
 
     def test_adapter_does_not_block_core(self):
         result = self.core.run("adapter", name="claude")

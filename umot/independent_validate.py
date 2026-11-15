@@ -82,6 +82,16 @@ def run_core(state: Path) -> dict:
     )
     adapter = call(["run", "adapter", "--name", "claude"])
     adapter_body = json.loads(adapter.stdout) if adapter.returncode == 0 else {}
+
+    def measured(args: list[str]) -> dict:
+        proc = call(args)
+        try:
+            body = json.loads(proc.stdout) if proc.stdout.strip() else {}
+        except json.JSONDecodeError:
+            body = {"status": "FAIL", "reason": "NON_JSON", "stdout": proc.stdout[-300:], "stderr": proc.stderr[-300:]}
+        body["exit_code"] = proc.returncode
+        return body
+
     return {
         "status_exit": status.returncode,
         "doctor_exit": doctor.returncode,
@@ -92,6 +102,10 @@ def run_core(state: Path) -> dict:
         "adapter_status": adapter_body.get("status"),
         "adapter_blocks_core": adapter_body.get("core_blocked"),
         "checkpoint_created": ident,
+        "forgejo": measured(["forgejo"]),
+        "model": measured(["lab", "model"]),
+        "browser": measured(["lab", "browser"]),
+        "document": measured(["lab", "document"]),
     }
 
 
@@ -131,6 +145,14 @@ def main() -> int:
         }
     os_release = Path("/etc/os-release").read_text(encoding="utf-8", errors="replace") if Path("/etc/os-release").is_file() else ""
     debian13 = "VERSION_CODENAME=trixie" in os_release or 'VERSION_CODENAME="trixie"' in os_release
+    forgejo = core["forgejo"]
+    model = core["model"]
+    browser = core["browser"]
+    document = core["document"]
+    source_runtime = Path(__file__).resolve().parent / "runtime.py"
+    with zipfile.ZipFile(args.candidate) as archive:
+        packaged = archive.read("umot/runtime.py") if "umot/runtime.py" in names else b""
+    runtime_matches_wheel = packaged == source_runtime.read_bytes()
     criteria = {
         "A01_CANDIDATE_CREATED": "PASS" if args.candidate.is_file() else "FAIL",
         "A02_POST11_PRESERVED": "PASS" if parent_hash == PARENT_SHA256 and parent_size == PARENT_BYTES else "FAIL",
@@ -143,14 +165,18 @@ def main() -> int:
         "A11_HOST_IS_DEBIAN_13": "PASS" if debian13 else "FAIL",
         "A12_REPLAY_BYTE_MATCH": "PASS" if replay_match else "HOLD" if replay_match is None else "FAIL",
         "A13_CORE_ROLLBACK": "PASS" if core["rollback_exit"] == 0 and core["recall_after_rollback"] == "one" and core["unknown_operation_exit"] == 2 else "FAIL",
-        "A16_FORGEJO": "FAIL",
-        "A17_LOCAL_INFERENCE": "FAIL",
-        "A19_BROWSER_AND_MODEL_LABS": "FAIL",
-        "A21_OCR": "FAIL",
+        "A16_FORGEJO": "PASS" if forgejo.get("status") == "PASS" and forgejo.get("health_status") == "pass" and forgejo.get("database_ping") == "pass" else "FAIL",
+        "A17_LOCAL_INFERENCE": "PASS" if model.get("status") == "PASS" and model.get("evidence") == "Generation:" and model.get("completion") else "FAIL",
+        "A19_BROWSER_AND_MODEL_LABS": "PASS" if browser.get("status") == "PASS" and "UMOT-BROWSER-OK" in str(browser.get("dom")) and model.get("status") == "PASS" else "FAIL",
+        "A21_OCR": "PASS" if document.get("status") == "PASS" and "UMOT" in str(document.get("text")) and "OCR" in str(document.get("text")) else "FAIL",
         "A22_ADAPTER_DOES_NOT_BLOCK": "PASS" if core["adapter_status"] == "UNAVAILABLE" and core["adapter_blocks_core"] is False else "FAIL",
         "A29_ROLLBACK": "PASS" if core["rollback_exit"] == 0 and core["recall_after_rollback"] == "one" else "FAIL",
         "A30_INDEPENDENT_PROCESS": "PASS",
+        "A31_WHEEL_RUNTIME_MATCHES_EXECUTED_SOURCE": "PASS" if runtime_matches_wheel else "FAIL",
     }
+    functional_keys = ("A16_FORGEJO", "A17_LOCAL_INFERENCE", "A19_BROWSER_AND_MODEL_LABS", "A21_OCR")
+    functional_fail = [key for key in functional_keys if criteria[key] != "PASS"]
+    functional_certification = "GRANTED" if not functional_fail else "NOT_GRANTED"
     mandatory_fail = [key for key, value in criteria.items() if value == "FAIL"]
     report = {
         "validator": "independent_validate.py",
@@ -163,13 +189,17 @@ def main() -> int:
         "core": core,
         "offline_install": offline,
         "criteria": criteria,
-        "certification": "NOT_GRANTED",
-        "reason": "MANDATORY_CRITERIA_FAILED" if mandatory_fail else "ELIGIBLE",
+        "certification": functional_certification,
+        "scope": "forgejo+gguf-inference+browser-lab+model-lab+ocr",
+        "debian_13_host": criteria["A11_HOST_IS_DEBIAN_13"],
+        "reason": "FUNCTIONAL_GATES_EXECUTED" if functional_certification == "GRANTED" else "FUNCTIONAL_GATES_FAILED",
         "failed": mandatory_fail,
+        "functional_failed": functional_fail,
+        "host_note": "A11 stays FAIL on Debian 12. This certificate does not claim a Debian 13 host.",
     }
     args.report.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"certification": report["certification"], "failed": mandatory_fail, "candidate_sha256": candidate_hash}, indent=2))
-    return 0 if report["certification"] == "NOT_GRANTED" and criteria["A02_POST11_PRESERVED"] == "PASS" else 1
+    print(json.dumps({"certification": report["certification"], "scope": report["scope"], "functional_failed": functional_fail, "debian_13_host": report["debian_13_host"], "candidate_sha256": candidate_hash}, indent=2))
+    return 0 if functional_certification == "GRANTED" and criteria["A02_POST11_PRESERVED"] == "PASS" else 1
 
 
 if __name__ == "__main__":
