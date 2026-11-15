@@ -1,0 +1,126 @@
+name: UMOT Debian 13 Stage 0
+on:
+  pull_request:
+    branches: [main]
+    paths: ["umot/**", ".github/workflows/umot-debian-stage0.yml", ".gitattributes"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stage0:
+    name: Protected wheel acceptance on Debian 13 Trixie
+    runs-on: ubuntu-latest
+    container:
+      image: debian:13
+    steps:
+      - name: Provision the isolated test toolchain
+        run: |
+          set -euo pipefail
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates git git-lfs python3 python3-venv python3-pip binutils libc-bin file
+          git lfs install --system
+      - name: Checkout exact candidate and hydrate protected LFS object
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          lfs: true
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify protected artifact hydration
+        shell: bash
+        run: |
+          set -euo pipefail
+          wheel='externalized-assets-staging/optimized-containers/umot_compact-1.0.5.post11-m11-m12-imatrix-cpu128-py3-none-manylinux_2_34_x86_64.whl'
+          test -f "$wheel"
+          if head -c 40 "$wheel" | grep -q 'git-lfs.github.com/spec'; then
+            echo "::error::Git LFS pointer was not hydrated."
+            exit 1
+          fi
+          stat -c 'wheel_bytes=%s' "$wheel"
+          sha256sum "$wheel"
+      - name: Materialize hash-pinned Python wheelhouse
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 --version
+          mkdir -p "$RUNNER_TEMP/umot-wheelhouse"
+          python3 -m pip download --only-binary=:all: --require-hashes \
+            --dest "$RUNNER_TEMP/umot-wheelhouse" \
+            -r umot/requirements-offline.lock
+          test "$(find "$RUNNER_TEMP/umot-wheelhouse" -maxdepth 1 -name '*.whl' | wc -l)" -eq 4
+      - name: Run Stage 0 verifier
+        id: stage0
+        continue-on-error: true
+        run: |
+          python3 umot/stage0_validate.py \
+            --wheel 'externalized-assets-staging/optimized-containers/umot_compact-1.0.5.post11-m11-m12-imatrix-cpu128-py3-none-manylinux_2_34_x86_64.whl' \
+            --wheelhouse "$RUNNER_TEMP/umot-wheelhouse" \
+            --lockfile umot/requirements-offline.lock \
+            --report umot-stage0-report.json
+      - name: Run verifier unit tests
+        id: unit
+        run: |
+          cd umot
+          PYTHONPATH=. python3 -m unittest discover -s tests -v
+      - name: Publish Stage 0 evidence summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## UMOT Stage 0 — Debian 13 Trixie'
+            if test -f umot-stage0-report.json; then
+              python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("umot-stage0-report.json").read_text())
+          print(f"- Stage 0 status: {d.get('stage0_status')}")
+          print(f"- Certification: {d.get('certification')}")
+          print(f"- Debian: {d.get('environment',{}).get('distribution')}")
+          print(f"- glibc: {d.get('environment',{}).get('glibc')}")
+          print(f"- Wheel identity: {d.get('wheel',{}).get('identity')}")
+          print(f"- Wheel filename compliance: {d.get('wheel_filename_compliance',{}).get('status')}")
+          print(f"- Wheel RECORD integrity: {d.get('wheel',{}).get('record_integrity')}")
+          print(f"- Wheel top-level modules: {d.get('wheel',{}).get('top_level_modules')}")
+          print(f"- Python source files: {d.get('wheel',{}).get('python_source_files')}")
+          print(f"- Wheel member preview: {d.get('wheel',{}).get('member_preview')}")
+          print(f"- Entry points: {d.get('wheel',{}).get('entry_points')}")
+          print(f"- ELF objects: {d.get('wheel',{}).get('elf_objects')}")
+          print(f"- Requires-Dist: {d.get('wheel',{}).get('requires_dist')}")
+          print(f"- Offline locked dependency installation: {d.get('offline_wheel_install',{}).get('locked_dependency_install')}")
+          print(f"- Offline UMOT wheel install (identical canonical alias): {d.get('offline_wheel_install',{}).get('status')}")
+          print(f"- pip check: {d.get('offline_wheel_install',{}).get('pip_check')}")
+          print(f"- Module import: {d.get('offline_wheel_install',{}).get('module_import_status')}")
+          print(f"- Wheelhouse integrity: {d.get('dependency_inventory',{}).get('wheelhouse_integrity')}")
+          print(f"- Full dependency install: {d.get('full_offline_dependency_install')}")
+          print(f"- Reproducible rebuild: {d.get('reproducible_rebuild',{}).get('status')}")
+          print(f"- Native dependency audit: {d.get('native_dependency_audit',{}).get('status')}")
+          for item in d.get("wheel",{}).get("errors",[]): print(f"- Error: {item}")
+          PY
+            else
+              echo '- Stage 0 report was not produced.'
+            fi
+            echo '- The protected wheel is never rewritten by this workflow.'
+            echo '- HOLD/FAIL never grants certification.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload Stage 0 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umot-stage0-debian13-evidence
+          path: umot-stage0-report.json
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Upload materialized offline wheelhouse
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umot-stage0-python-wheelhouse-cp313-linux-x86_64
+          path: ${{ runner.temp }}/umot-wheelhouse
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Enforce fail-closed acceptance
+        if: always()
+        run: |
+          test '${{ steps.stage0.outcome }}' = 'success'
+          test '${{ steps.unit.outcome }}' = 'success'

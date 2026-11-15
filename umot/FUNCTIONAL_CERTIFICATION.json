@@ -1,0 +1,91 @@
+{
+  "candidate_bytes": 354081883,
+  "candidate_sha256": "1534a176751060f3df7d8c6484e73d56323a291e96b6f787eb46f067ca1c86d7",
+  "certification": "GRANTED",
+  "core": {
+    "adapter_blocks_core": false,
+    "adapter_status": "UNAVAILABLE",
+    "browser": {
+      "dom": "<!DOCTYPE html>\n<html><head><title>UMOT-BROWSER-LAB</title></head><body><h1 id=\"mark\">UMOT-BROWSER-OK</h1>\n</body></html>\n[1115/183215.184792:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n[1115/183215.185503:ER",
+      "exit_code": 0,
+      "marker": "UMOT-BROWSER-OK",
+      "status": "PASS",
+      "tool": "/tmp/umot-motors/browser/chrome-headless-shell/linux-157.0.8103.78/chrome-headless-shell-linux64/chrome-headless-shell"
+    },
+    "checkpoint_created": "88330121ae18438782a6d4828cd2f64a",
+    "doctor_exit": 0,
+    "document": {
+      "exit_code": 0,
+      "planted": "UMOT OCR OK",
+      "status": "PASS",
+      "text": "UMOT OCR OK",
+      "tool": "/usr/bin/tesseract"
+    },
+    "forgejo": {
+      "binary": "/tmp/umot-motors/bin/forgejo",
+      "bound": "127.0.0.1:46497",
+      "database_ping": "pass",
+      "description": "UMOT",
+      "exit_code": 0,
+      "health_status": "pass",
+      "offline_mode": true,
+      "status": "PASS",
+      "version": "forgejo version 17.0.1+gitea-1.22.0 (release name 17.0.1) built with GNU Make 4.4.1, go1.26.10 : bindata, timetzdata, sqlite, sqlite_unlock_notify"
+    },
+    "model": {
+      "completion": "\"Here?\" Asked J",
+      "engine": "/tmp/umot-motors/llama/llama-b12410/llama-cli",
+      "evidence": "Generation:",
+      "exit_code": 0,
+      "model": "stories260K.gguf",
+      "model_bytes": 1185376,
+      "model_sha256": "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d",
+      "prompt": "Once upon a time",
+      "status": "PASS"
+    },
+    "recall_after_rollback": "one",
+    "remember_exit": 0,
+    "rollback_exit": 0,
+    "status_exit": 0,
+    "unknown_operation_exit": 2
+  },
+  "criteria": {
+    "A01_CANDIDATE_CREATED": "PASS",
+    "A02_POST11_PRESERVED": "PASS",
+    "A03_CANDIDATE_HASH_RECOMPUTED": "PASS",
+    "A04_METADATA_PRESENT": "PASS",
+    "A05_RECORD_VALID": "PASS",
+    "A06_NESTED_PAYLOAD_PRESENT": "PASS",
+    "A08_CLI_STATUS": "PASS",
+    "A10_OFFLINE_INSTALL_NO_DEPS": "PASS",
+    "A11_HOST_IS_DEBIAN_13": "PASS",
+    "A12_REPLAY_BYTE_MATCH": "PASS",
+    "A13_CORE_ROLLBACK": "PASS",
+    "A16_FORGEJO": "PASS",
+    "A17_LOCAL_INFERENCE": "PASS",
+    "A19_BROWSER_AND_MODEL_LABS": "PASS",
+    "A21_OCR": "PASS",
+    "A22_ADAPTER_DOES_NOT_BLOCK": "PASS",
+    "A29_ROLLBACK": "PASS",
+    "A30_INDEPENDENT_PROCESS": "PASS",
+    "A31_WHEEL_RUNTIME_MATCHES_EXECUTED_SOURCE": "PASS"
+  },
+  "debian_13_host": "PASS",
+  "failed": [],
+  "functional_failed": [],
+  "host_note": "A11 measured PASS from /etc/os-release of the validating process: Debian 13 (trixie).",
+  "imports_core_certify": false,
+  "offline_install": {
+    "entrypoint": 0,
+    "install": 0,
+    "tail": "Processing /tmp/tmpesb_ghgy/umot_compact-1.0.5.post12-1additive-py3-none-manylinux_2_34_x86_64.whl\nInstalling collected packages: umot-compact\nSuccessfully installed umot-compact-1.0.5.post12\n",
+    "venv": 0
+  },
+  "os_release_codename": "trixie",
+  "parent_bytes": 205679247,
+  "parent_sha256": "2950aa605d972672af925015ec4d061e5f5e526187aaa2507fba6b6e80246db6",
+  "reason": "FUNCTIONAL_GATES_EXECUTED",
+  "record_errors": [],
+  "scope": "forgejo+gguf-inference+browser-lab+model-lab+ocr",
+  "validator": "independent_validate.py"
+}
