@@ -178,14 +178,22 @@ jobs:
           sink(file.path(out,"R_session_info.txt"))
           cat("Aggregate-only descriptive analysis; no participant rows were generated.\n")
           print(summary); print(sessionInfo()); sink()
-          omv <- if(requireNamespace("jmvReadWrite",quietly=TRUE)) {
-            tryCatch({jmvReadWrite::write_omv(d[,c("variable","label","level","value","count","percent")],
-                      file.path(out,"aggregate_counts_dataset_only.omv")); "PASS_OMV_DATA_ONLY"},
-                     error=function(e) paste("BLOCKED_OMV_WRITE",conditionMessage(e)))
-          } else "BLOCKED_JMVREADWRITE_NOT_INSTALLED_IN_LUNITA_R"
-          jasp <- if(requireNamespace("jaspTools",quietly=TRUE))
+          omv <- if (requireNamespace("jmvReadWrite", quietly=TRUE)) {
+            tryCatch({
+              jmvReadWrite::write_omv(
+                d[,c("variable","label","level","value","count","percent")],
+                file.path(out,"aggregate_counts_dataset_only.omv")
+              )
+              "PASS_OMV_DATA_ONLY"
+            }, error=function(e) paste("BLOCKED_OMV_WRITE",conditionMessage(e)))
+          } else {
+            "BLOCKED_JMVREADWRITE_NOT_INSTALLED_IN_LUNITA_R"
+          }
+          jasp <- if (requireNamespace("jaspTools", quietly=TRUE)) {
             "JASPTOOLS_PRESENT_NO_WEIGHTED_ANALYSIS_RUN_WITHOUT_VERIFIED_SPEC"
-          else "BLOCKED_JASPTOOLS_NOT_INSTALLED_IN_LUNITA_R"
+          } else {
+            "BLOCKED_JASPTOOLS_NOT_INSTALLED_IN_LUNITA_R"
+          }
           writeLines(c(paste("JAMOVI=",omv),paste("JASP=",jasp),paste("R=",R.version.string)),
                      file.path(out,"statistical_app_status.txt"))
           RS
@@ -338,6 +346,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lunita-entrega3-entrega4-execution-evidence
-          path: ${{ runner.temp }}/lunita-academic-output/
-          if-no-files-found: warn
+          path: /tmp/lunita-academic-output/
+          if-no-files-found: error
           retention-days: 90
