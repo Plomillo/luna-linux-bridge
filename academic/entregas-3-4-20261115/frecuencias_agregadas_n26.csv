@@ -1,0 +1,32 @@
+tabla,variable,categoria,orden,frecuencia,n,porcentaje_un_decimal,nota
+planificacion,planificacion_estudio,Nunca,1,0,26,0.0,agregado Google Forms; sin microdatos
+planificacion,planificacion_estudio,Casi nunca,2,0,26,0.0,agregado Google Forms; sin microdatos
+planificacion,planificacion_estudio,Algunas veces,3,5,26,19.2,agregado Google Forms; sin microdatos
+planificacion,planificacion_estudio,Casi siempre,4,7,26,26.9,agregado Google Forms; sin microdatos
+planificacion,planificacion_estudio,Siempre,5,14,26,53.8,agregado Google Forms; sin microdatos
+continuidad,continuidad_ante_distraccion,Nunca,1,2,26,7.7,agregado Google Forms; sin microdatos
+continuidad,continuidad_ante_distraccion,Casi nunca,2,4,26,15.4,agregado Google Forms; sin microdatos
+continuidad,continuidad_ante_distraccion,Algunas veces,3,6,26,23.1,agregado Google Forms; sin microdatos
+continuidad,continuidad_ante_distraccion,Casi siempre,4,9,26,34.6,agregado Google Forms; sin microdatos
+continuidad,continuidad_ante_distraccion,Siempre,5,5,26,19.2,agregado Google Forms; sin microdatos
+objeto,dificultad_mirar_objeto,No me costo nada,1,3,26,11.5,agregado Google Forms; sin microdatos
+objeto,dificultad_mirar_objeto,Un poquito,2,10,26,38.5,agregado Google Forms; sin microdatos
+objeto,dificultad_mirar_objeto,Algo,3,7,26,26.9,agregado Google Forms; sin microdatos
+objeto,dificultad_mirar_objeto,Bastante,4,4,26,15.4,agregado Google Forms; sin microdatos
+objeto,dificultad_mirar_objeto,Mucho,5,2,26,7.7,agregado Google Forms; sin microdatos
+poema,dificultad_poema,No me costo nada,1,18,26,69.2,redondeo a 1 decimal; suma de porcentajes = 99.9
+poema,dificultad_poema,Un poquito,2,4,26,15.4,redondeo a 1 decimal; suma de porcentajes = 99.9
+poema,dificultad_poema,Algo,3,1,26,3.8,redondeo a 1 decimal; suma de porcentajes = 99.9
+poema,dificultad_poema,Bastante,4,1,26,3.8,redondeo a 1 decimal; suma de porcentajes = 99.9
+poema,dificultad_poema,Mucho,5,2,26,7.7,redondeo a 1 decimal; suma de porcentajes = 99.9
+esfuerzo,esfuerzo_0_10,0,0,9,26,34.6,distribucion marginal completa; no emparejada
+esfuerzo,esfuerzo_0_10,1,1,2,26,7.7,distribucion marginal completa; no emparejada
+esfuerzo,esfuerzo_0_10,2,2,2,26,7.7,distribucion marginal completa; no emparejada
+esfuerzo,esfuerzo_0_10,3,3,3,26,11.5,distribucion marginal completa; no emparejada
+esfuerzo,esfuerzo_0_10,4,4,1,26,3.8,distribucion marginal completa; no emparejada
+esfuerzo,esfuerzo_0_10,5,5,5,26,19.2,distribucion marginal completa; no emparejada
+esfuerzo,esfuerzo_0_10,6,6,1,26,3.8,distribucion marginal completa; no emparejada
+esfuerzo,esfuerzo_0_10,7,7,0,26,0.0,distribucion marginal completa; no emparejada
+esfuerzo,esfuerzo_0_10,8,8,2,26,7.7,distribucion marginal completa; no emparejada
+esfuerzo,esfuerzo_0_10,9,9,0,26,0.0,distribucion marginal completa; no emparejada
+esfuerzo,esfuerzo_0_10,10,10,1,26,3.8,distribucion marginal completa; no emparejada
