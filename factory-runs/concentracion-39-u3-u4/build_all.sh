@@ -9,6 +9,9 @@ mkdir -p "$TEMP_ROOT" "$OUTPUT/evidence"
 cp -a "$TASK/." "$TEMP_ROOT/"
 T="$TEMP_ROOT"
 python3 "$T/prepare_sheets.py"
+for name in entrega3-base entrega3-informe entrega4-resultados entrega4-informe; do
+  cp "$T/supporting_slides.md" "$T/workspaces/$name/source/slides.md"
+done
 
 # Pandoc resolves relative Markdown image paths from the repository root.
 mkdir -p "$REPO/assets"
