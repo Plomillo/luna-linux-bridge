@@ -2,13 +2,16 @@ RStudio_window_id=0x0080000a
 
 jamovi_window_id=0x01400002
 
-JASP_window_id=0x01c00019
+JASP_window_id=0x01c00024
+
+jamovi_result_file=/home/runner/work/luna-linux-bridge/luna-linux-bridge/academico/entregas-3-4/n39/salidas/descriptivos_jamovi_jmv.csv
+
+JASP_result_file=/home/runner/work/luna-linux-bridge/luna-linux-bridge/academico/entregas-3-4/n39/salidas/descriptivos_jasp.csv
 
 X11_WINDOWS_AFTER_CAPTURE:
-0x00800003  0 rstudio.rstudio       runnervm8axu0 RStudio
-0x01400002  0 jamovi.jamovi         runnervm8axu0 base_expandida_marginal_n39
-0x01c00019  0 JASP.JASP             runnervm8axu0 JASP
-0x01c00024  0 JASP.JASP             runnervm8axu0 JASP
+0x00800003  0 rstudio.rstudio       ip-10-0-128-34 RStudio
+0x01400002  0 jamovi.jamovi         ip-10-0-128-34 descriptivos_jamovi_jmv
+0x01c00024  0 JASP.JASP             ip-10-0-128-34 JASP
 
 
 $ R --version
