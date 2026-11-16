@@ -44,8 +44,6 @@ jobs:
 
       - name: Manufacture four approved documents and validate them
         shell: bash
-        env:
-          GITHUB_WORKSPACE: $GITHUB_WORKSPACE
         run: |
           set -Eeuo pipefail
           bash factory-runs/concentracion-39-u3-u4/build_all.sh
