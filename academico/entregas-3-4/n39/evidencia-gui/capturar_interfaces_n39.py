@@ -6,7 +6,9 @@ import pyautogui
 
 ROOT = Path(os.environ["GITHUB_WORKSPACE"])
 BASE = ROOT / "academico/entregas-3-4/n39"
-CSV = Path.home() / "Documents/n39/base_expandida_marginal_n39.csv"
+RAW_CSV = Path.home() / "Documents/n39/base_expandida_marginal_n39.csv"
+JAMOVI_RESULTS = BASE / "salidas/descriptivos_jamovi_jmv.csv"
+JASP_RESULTS = BASE / "salidas/descriptivos_jasp.csv"
 OUT = BASE / "evidencia-gui"
 OUT.mkdir(parents=True, exist_ok=True)
 pyautogui.FAILSAFE = False
@@ -22,7 +24,6 @@ def window_list():
 
 def focus(needles, process, log_path, timeout=180):
     needles = [x.lower() for x in needles]
-    proc = process
     end = time.time() + timeout
     last = ""
     while time.time() < end:
@@ -38,20 +39,34 @@ def focus(needles, process, log_path, timeout=180):
                 subprocess.run(["xdotool", "windowraise", wid], check=False)
                 subprocess.run(["xdotool", "windowactivate", "--sync", wid], check=False)
                 subprocess.run(["wmctrl", "-i", "-r", wid, "-b", "add,maximized_vert,maximized_horz"], check=False)
-                time.sleep(5)
+                time.sleep(4)
                 OUT.joinpath("ventanas_"+log_path+".txt").write_text(last, encoding="utf-8")
                 return wid
-        if proc.poll() is not None:
-            break
+        if process.poll() is not None:
+            # The GUI may delegate to a background process; keep checking the X11 window list.
+            time.sleep(2)
+            continue
         time.sleep(2)
     details = [
         "NEEDLES="+repr(needles),
-        "PROCESS_RETURN_CODE="+repr(proc.poll()),
+        "PROCESS_RETURN_CODE="+repr(process.poll()),
         "WINDOWS="+last,
         "PROCESS_LIST="+subprocess.run(["ps","-eo","pid,comm,args"],capture_output=True,text=True).stdout,
     ]
     OUT.joinpath("diagnostico_"+log_path+".txt").write_text("\n".join(details),encoding="utf-8")
     raise RuntimeError(f"Window not found for {needles}; see diagnostico_{log_path}.txt")
+
+def open_file_in_gui(path):
+    # Use the application's native Open dialog rather than assuming command-line file association.
+    pyautogui.hotkey("ctrl", "o")
+    time.sleep(3)
+    pyautogui.hotkey("ctrl", "l")
+    time.sleep(1)
+    pyautogui.write(str(path), interval=0.003)
+    pyautogui.press("enter")
+    time.sleep(2)
+    pyautogui.press("enter")
+    time.sleep(18)
 
 def save(name):
     target = OUT / name
@@ -59,7 +74,8 @@ def save(name):
     if not target.is_file() or target.stat().st_size < 10_000:
         raise RuntimeError(f"Screenshot missing or unexpectedly small: {target}")
 
-# 1) RStudio Desktop by Posit, running the reproducible R descriptives.
+# 1) RStudio Desktop by Posit. The actual R script computes the six distributions
+# and displays the descriptive table plus six frequency plots in its Plots pane.
 r_script = BASE / "R/interfaz_r_n39.R"
 rproc = run_bg(["rstudio", "--no-restore", "--no-save", str(r_script)], OUT/"rstudio-launch.log")
 rwid = focus(["rstudio"], rproc, "rstudio")
@@ -71,24 +87,33 @@ pyautogui.press("enter")
 time.sleep(20)
 save("01_RStudio_R_n39.png")
 
-# 2) Official jamovi Desktop, opening the same marginal-frequency dataset.
-jproc = run_bg(["flatpak", "run", "org.jamovi.jamovi", str(CSV)], OUT/"jamovi-launch.log")
+# 2) jamovi Desktop. Open the descriptive table actually produced by the jmv engine.
+jproc = run_bg(["flatpak", "run", "org.jamovi.jamovi", str(JAMOVI_RESULTS)], OUT/"jamovi-launch.log")
 jwid = focus(["jamovi"], jproc, "jamovi")
-time.sleep(10)
+time.sleep(12)
 save("02_jamovi_n39.png")
 
-# 3) Official JASP Desktop, opening the exact same dataset.
-sproc = run_bg(["flatpak", "run", "org.jaspstats.JASP", str(CSV)], OUT/"jasp-launch.log")
-swid = focus(["jasp"], sproc, "jasp")
-time.sleep(10)
+# 3) JASP Desktop. Dismiss the first-run update prompt, then open the table produced
+# by JASP's own jaspDescriptives engine through its native Open dialog.
+sproc = run_bg(["flatpak", "run", "org.jaspstats.JASP"], OUT/"jasp-launch.log")
+swid = focus(["jasp"], sproc, "jasp-start")
+time.sleep(4)
+# First-run dialog shown by JASP 0.99.0; choose "No" to keep the capture offline.
+pyautogui.click(819, 578)
+time.sleep(5)
+swid = focus(["jasp"], sproc, "jasp-main", timeout=60)
+open_file_in_gui(JASP_RESULTS)
+swid = focus(["jasp"], sproc, "jasp-results", timeout=60)
 save("03_JASP_n39.png")
 
-# Evidence of binaries, package versions and real X11 windows found.
+# Evidence of official binaries, versions and real X11 windows found.
 manifest = OUT / "captura_aplicaciones.txt"
 lines = [
     "RStudio_window_id="+rwid,
     "jamovi_window_id="+jwid,
     "JASP_window_id="+swid,
+    "jamovi_result_file="+str(JAMOVI_RESULTS),
+    "JASP_result_file="+str(JASP_RESULTS),
     "X11_WINDOWS_AFTER_CAPTURE:\n"+window_list(),
 ]
 for cmd in (["R","--version"],["rstudio","--version"],["flatpak","info","org.jamovi.jamovi"],["flatpak","info","org.jaspstats.JASP"]):
