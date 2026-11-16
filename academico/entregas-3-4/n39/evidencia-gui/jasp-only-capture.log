@@ -5,9 +5,7 @@ QtWebEngineQuick initialized
 Desktop:	Msg from Qt Warning: Call to org.freedesktop.portal.Settings.ReadAll failed QDBusError("org.freedesktop.DBus.Error.UnknownMethod", "No such interface “org.freedesktop.portal.Settings” on object at path /org/freedesktop/portal/desktop") [:0, ]
 Application initialized
 Desktop:	Sandboxing disabled by user.
-Desktop:	vkDebug: Unable to open device : No such file or directory (VK_ERROR_INCOMPATIBLE_DRIVER)
-Desktop:	vkDebug: Unable to open device : No such file or directory (VK_ERROR_INCOMPATIBLE_DRIVER)
-[4:32:1116/192058.241012:ERROR:../../../src/3rdparty/chromium/dbus/bus.cc:408] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[4:32:1116/192606.943201:ERROR:../../../src/3rdparty/chromium/dbus/bus.cc:408] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
 Application init entered
 MainWindow constructor started
 Desktop:	Msg from Qt Warning: Settings: no defaults.json found; checked: QList("/app/bin/defaults.json", "/app/bin/Resources/defaults.json") [/run/build/jasp/Desktop/utilities/settings.cpp:281, const QJsonObject& shippedSettings(bool)]
@@ -15,79 +13,80 @@ Desktop:	DEBUG createSessionDir: Creating session dir at /home/runner/.var/app/o
 Desktop:	'/home/runner/.var/app/org.jaspstats.JASP/data/JASP/JASP/temp//4' about to be (removed and re)created.
 Going to construct the necessary models for JASP to function.
 Desktop:	[JaspRpcDispatcher] Loaded 15 method specs from /app/bin/../Resources/JASP_RPC.json
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-pl.qm
-Desktop:	Language (Polish) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-fr.qm
-Desktop:	Language (French) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-nl.qm
-Desktop:	Language (Dutch) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-zh_Hans.qm
-Desktop:	Language (Chinese) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-de.qm
-Desktop:	Language (German) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-sr.qm
-Desktop:	Language (Serbian) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-pt.qm
-Desktop:	Language (Portuguese) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-fa.qm
-Desktop:	Language (Persian) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-pt_BR.qm
-Desktop:	Invalid translation file found with name: jaspDesktop-pt_BR.qm
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-gl.qm
-Desktop:	Language (Galician) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-ja.qm
-Desktop:	Language (Japanese) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-es.qm
-Desktop:	Language (Spanish) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-ru.qm
-Desktop:	Language (Russian) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-ta.qm
-Desktop:	Language (Tamil) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-eo.qm
-Desktop:	Invalid translation file found with name: jaspDesktop-eo.qm
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-tr.qm
-Desktop:	Language (Turkish) not registered in LanguageModel, adding it now
 Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-eu.qm
 Desktop:	Language (Basque) not registered in LanguageModel, adding it now
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-mk.qm
-Desktop:	Invalid translation file found with name: jaspDesktop-mk.qm
-Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-ar.qm
-Desktop:	Language (Arabic) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-pt_BR.qm
+Desktop:	Invalid translation file found with name: jaspDesktop-pt_BR.qm
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-ta.qm
+Desktop:	Language (Tamil) not registered in LanguageModel, adding it now
 Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-zh_Hant.qm
 Desktop:	Language (Chinese) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-ru.qm
+Desktop:	Language (Russian) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-ar.qm
+Desktop:	Language (Arabic) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-tr.qm
+Desktop:	Language (Turkish) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-sr.qm
+Desktop:	Language (Serbian) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-mk.qm
+Desktop:	Invalid translation file found with name: jaspDesktop-mk.qm
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-eo.qm
+Desktop:	Invalid translation file found with name: jaspDesktop-eo.qm
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-zh_Hans.qm
+Desktop:	Language (Chinese) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-gl.qm
+Desktop:	Language (Galician) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-es.qm
+Desktop:	Language (Spanish) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-de.qm
+Desktop:	Language (German) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-fr.qm
+Desktop:	Language (French) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-pt.qm
+Desktop:	Language (Portuguese) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-nl.qm
+Desktop:	Language (Dutch) not registered in LanguageModel, adding it now
 Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-it.qm
 Desktop:	Language (Italian) not registered in LanguageModel, adding it now
 Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-id.qm
 Desktop:	Language (Indonesian) not registered in LanguageModel, adding it now
-Desktop:	Opened internal sqlite database for creation at '/home/runner/.var/app/org.jaspstats.JASP/data/JASP/JASP/temp/4/internal.sqlite'.  This is for thread 140338816033472
-Desktop:	Opened internal sqlite database for loading at '/home/runner/.var/app/org.jaspstats.JASP/data/JASP/JASP/temp/4/internal.sqlite'. This is for thread 140338816033472
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-pl.qm
+Desktop:	Language (Polish) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-fa.qm
+Desktop:	Language (Persian) not registered in LanguageModel, adding it now
+Desktop:	Checking qm file: /app/Resources/Translations/jaspDesktop-ja.qm
+Desktop:	Language (Japanese) not registered in LanguageModel, adding it now
+Desktop:	Opened internal sqlite database for creation at '/home/runner/.var/app/org.jaspstats.JASP/data/JASP/JASP/temp/4/internal.sqlite'.  This is for thread 139934975759040
+Desktop:	Opened internal sqlite database for loading at '/home/runner/.var/app/org.jaspstats.JASP/data/JASP/JASP/temp/4/internal.sqlite'. This is for thread 139934975759040
 Desktop:	Loaded a database with #0 tables.
 Desktop:	DataSet::DataSet(index=-1)
-Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x5603d4176720) without calling endResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x5603d4176720) without calling beginResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x5603d4176c50) without calling endResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x5603d4176c50) without calling beginResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x5603d4174680) without calling endResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x5603d4174680) without calling beginResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x555f5af289d0) without calling endResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x555f5af289d0) without calling beginResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x555f5af255d0) without calling endResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x555f5af255d0) without calling beginResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x555f5a15fc60) without calling endResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x555f5a15fc60) without calling beginResetModel first [:0, ]
 Desktop:	DataSetPackage::reset()
 Desktop:	EngineSync::enginesPrepareForData!
-Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x5603d4176720) without calling endResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x5603d4176720) without calling endResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x5603d4176720) without calling beginResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x5603d4176c50) without calling endResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x5603d4176c50) without calling endResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x5603d4176c50) without calling beginResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x555f5af289d0) without calling endResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x555f5af289d0) without calling endResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x555f5af289d0) without calling beginResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x555f5af255d0) without calling endResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x555f5af255d0) without calling endResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x555f5af255d0) without calling beginResetModel first [:0, ]
 Desktop:	DataSet::DataSet(index=-1)
-Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackage(0x5603d4f27e90) without calling endResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x5603d4174680) without calling endResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x5603d4176720) without calling endResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x5603d4176720) without calling beginResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x5603d4176c50) without calling endResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x5603d4176c50) without calling beginResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackage(0x555f559f5e20) without calling endResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x555f5a15fc60) without calling endResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x555f5af289d0) without calling endResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x555f5af289d0) without calling beginResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: beginResetModel called on DataSetPackageSubNodeModel(0x555f5af255d0) without calling endResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x555f5af255d0) without calling beginResetModel first [:0, ]
 Desktop:	DataSetPackage::endLoadingData
-Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackage(0x5603d4f27e90) without calling beginResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x5603d4174680) without calling beginResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x5603d4176720) without calling beginResetModel first [:0, ]
-Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x5603d4176c50) without calling beginResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackage(0x555f559f5e20) without calling beginResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x555f5a15fc60) without calling beginResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x555f5af289d0) without calling beginResetModel first [:0, ]
+Desktop:	Msg from Qt Warning: endResetModel called on DataSetPackageSubNodeModel(0x555f5af255d0) without calling beginResetModel first [:0, ]
 Desktop:	EngineSync::enginesReceiveNewData!
+[64:123:1116/192608.263621:ERROR:../../../src/3rdparty/chromium/gpu/ipc/client/command_buffer_proxy_impl.cc:127] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
 Entering eventloop

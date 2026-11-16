@@ -1,2 +1,1 @@
-0x00800024  0 JASP.JASP             ip-10-0-142-218 JASP
-0x00a00007  0 xdg-desktop-portal-gtk.Xdg-desktop-portal-gtk  ip-10-0-142-218 Open
+0x00800024  0 JASP.JASP             runnervm8axu0 descriptivos_jasp      (/home/runner/work/luna-linux-bridge/luna-linux-bridge/academico/entregas-3-4/n39/salidas)
