@@ -1,0 +1,82 @@
+name: n39-official-gui-captures
+
+on:
+  push:
+    branches:
+      - lunita/entregas-3-4-n27-20261116
+    paths-ignore:
+      - "academico/entregas-3-4/n39/evidencia-gui/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: lunita/entregas-3-4-n27-20261116
+          fetch-depth: 0
+
+      - name: Install desktop and capture dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xdotool wmctrl scrot dbus-x11 flatpak             r-base r-base-dev python3-pip python3-tk python3-pil             libnss3 libatk-bridge2.0-0 libx11-xcb1 libxkbcommon-x11-0             libasound2t64 libgbm1 libgtk-3-0 libxss1 fonts-liberation
+
+      - name: Install official Posit RStudio Desktop
+        run: |
+          wget -q https://download1.rstudio.org/electron/jammy/amd64/rstudio-2026.11.0-203-amd64.deb -O /tmp/rstudio.deb
+          sudo apt-get install -y /tmp/rstudio.deb
+          rstudio --version
+
+      - name: Install official jamovi and JASP desktop applications
+        run: |
+          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak install --system -y flathub org.jamovi.jamovi org.jaspstats.JASP
+          flatpak info org.jamovi.jamovi
+          flatpak info org.jaspstats.JASP
+
+      - name: Build marginal frequency expansion and audit provenance
+        run: |
+          python3 -m pip install --user --break-system-packages pyautogui
+          python3 academico/entregas-3-4/n39/evidencia-gui/preparar_base_gui_n39.py
+          mkdir -p "$HOME/Documents/n39"
+          cp academico/entregas-3-4/n39/datos/base_expandida_marginal_n39.csv "$HOME/Documents/n39/"
+
+      - name: Launch official GUIs and capture real application windows
+        env:
+          GITHUB_WORKSPACE: ${{ github.workspace }}
+          QT_X11_NO_MITSHM: "1"
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          QTWEBENGINE_DISABLE_SANDBOX: "1"
+        run: |
+          mkdir -p /tmp/xdg-runtime
+          chmod 700 /tmp/xdg-runtime
+          export XDG_RUNTIME_DIR=/tmp/xdg-runtime
+          Xvfb :99 -screen 0 1600x1200x24 -ac +extension RANDR >/tmp/xvfb.log 2>&1 &
+          echo $! >/tmp/xvfb.pid
+          export DISPLAY=:99
+          sleep 3
+          dbus-run-session -- python3 academico/entregas-3-4/n39/evidencia-gui/capturar_interfaces_n39.py
+
+      - name: Validate image files
+        run: |
+          file academico/entregas-3-4/n39/evidencia-gui/*.png
+          test -s academico/entregas-3-4/n39/evidencia-gui/01_RStudio_R_n39.png
+          test -s academico/entregas-3-4/n39/evidencia-gui/02_jamovi_n39.png
+          test -s academico/entregas-3-4/n39/evidencia-gui/03_JASP_n39.png
+
+      - name: Commit real GUI captures and expanded dataset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add academico/entregas-3-4/n39/evidencia-gui/*.png                   academico/entregas-3-4/n39/evidencia-gui/captura_aplicaciones.txt                   academico/entregas-3-4/n39/evidencia-gui/manifesto_datos.json                   academico/entregas-3-4/n39/datos/base_expandida_marginal_n39.csv
+          git diff --cached --quiet && exit 0
+          git commit -m "Agrega capturas de las interfaces oficiales para N=39"
+          git push origin HEAD:lunita/entregas-3-4-n27-20261116
