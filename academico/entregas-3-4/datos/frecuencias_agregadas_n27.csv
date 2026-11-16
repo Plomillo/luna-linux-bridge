@@ -1,0 +1,54 @@
+tabla,categoria,orden,frecuencia,n,porcentaje,nota
+edad,18,0,1,27,3.7,agregado; no es microdato
+edad,19,1,2,27,7.4,agregado; no es microdato
+edad,26,2,1,27,3.7,agregado; no es microdato
+edad,28,3,1,27,3.7,agregado; no es microdato
+edad,31,4,1,27,3.7,agregado; no es microdato
+edad,32,5,1,27,3.7,agregado; no es microdato
+edad,33,6,3,27,11.1,agregado; no es microdato
+edad,34,7,1,27,3.7,agregado; no es microdato
+edad,39,8,1,27,3.7,agregado; no es microdato
+edad,43,9,1,27,3.7,agregado; no es microdato
+edad,44,10,2,27,7.4,agregado; no es microdato
+edad,45,11,1,27,3.7,agregado; no es microdato
+edad,47,12,1,27,3.7,agregado; no es microdato
+edad,48,13,1,27,3.7,agregado; no es microdato
+edad,50,14,2,27,7.4,agregado; no es microdato
+edad,55,15,1,27,3.7,agregado; no es microdato
+edad,57,16,1,27,3.7,agregado; no es microdato
+edad,59,17,1,27,3.7,agregado; no es microdato
+edad,61,18,1,27,3.7,agregado; no es microdato
+edad,63,19,1,27,3.7,agregado; no es microdato
+edad,65,20,1,27,3.7,agregado; no es microdato
+edad,66,21,1,27,3.7,agregado; no es microdato
+planificacion,1 Nunca,1,0,27,0.0,agregado; no es microdato
+planificacion,2 Casi nunca,2,0,27,0.0,agregado; no es microdato
+planificacion,3 Algunas veces,3,6,27,22.2,agregado; no es microdato
+planificacion,4 Casi siempre,4,7,27,25.9,agregado; no es microdato
+planificacion,5 Siempre,5,14,27,51.9,agregado; no es microdato
+continuidad,1 Nunca,1,2,27,7.4,agregado; no es microdato
+continuidad,2 Casi nunca,2,4,27,14.8,agregado; no es microdato
+continuidad,3 Algunas veces,3,6,27,22.2,agregado; no es microdato
+continuidad,4 Casi siempre,4,10,27,37.0,agregado; no es microdato
+continuidad,5 Siempre,5,5,27,18.5,agregado; no es microdato
+objeto,1 No me costó nada,1,3,27,11.1,agregado; no es microdato
+objeto,2 Un poquito,2,10,27,37.0,agregado; no es microdato
+objeto,3 Algo,3,8,27,29.6,agregado; no es microdato
+objeto,4 Bastante,4,4,27,14.8,agregado; no es microdato
+objeto,5 Mucho,5,2,27,7.4,agregado; no es microdato
+poema,1 No me costó nada,1,19,27,70.4,agregado; no es microdato
+poema,2 Un poquito,2,4,27,14.8,agregado; no es microdato
+poema,3 Algo,3,1,27,3.7,agregado; no es microdato
+poema,4 Bastante,4,1,27,3.7,agregado; no es microdato
+poema,5 Mucho,5,2,27,7.4,agregado; no es microdato
+esfuerzo,0,0,9,27,33.3,agregado; no es microdato
+esfuerzo,1,1,2,27,7.4,agregado; no es microdato
+esfuerzo,2,2,2,27,7.4,agregado; no es microdato
+esfuerzo,3,3,4,27,14.8,agregado; no es microdato
+esfuerzo,4,4,1,27,3.7,agregado; no es microdato
+esfuerzo,5,5,5,27,18.5,agregado; no es microdato
+esfuerzo,6,6,1,27,3.7,agregado; no es microdato
+esfuerzo,7,7,0,27,0.0,agregado; no es microdato
+esfuerzo,8,8,2,27,7.4,agregado; no es microdato
+esfuerzo,9,9,0,27,0.0,agregado; no es microdato
+esfuerzo,10,10,1,27,3.7,agregado; no es microdato

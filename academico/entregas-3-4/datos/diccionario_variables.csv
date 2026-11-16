@@ -1,0 +1,11 @@
+tabla,que_mide,codigo,estado,entra_en_H1_H2_H3
+edad,Edad en años declarada,valor de categoria,observada solo como marginal,no
+planificacion,Autorreporte de pensar qué hacer antes de estudiar en dos semanas,orden 1-5,observada solo como marginal,no sustituye la condición experimental
+continuidad,Autorreporte de seguir la tarea pese a distracciones,orden 1-5,observada solo como marginal,no
+objeto,Dificultad sentida al mirar un objeto cinco minutos,orden 1-5,observada solo como marginal,no es la tarea CAM
+poema,Dificultad sentida al comprender el poema,orden 1-5,observada solo como marginal,no es el control activo
+esfuerzo,Esfuerzo autopercibido de 0 a 10,valor de categoria,observada solo como marginal,no es responsabilidad
+condicion,0 control activo y 1 planificación,no está en el CSV,plantilla vacía,bloquea H1 y H3
+responsabilidad_media,Promedio BFI-2-S ítems 4 9 11 17R 23R 25R,no está en el CSV,plantilla vacía,bloquea H2 y H3
+cam_error_total_pct,Porcentaje de error en la búsqueda visual,no está en el CSV,plantilla vacía,bloquea H1 y H2
+cam_rt_total_ms,Tiempo medio de aciertos en milisegundos,no está en el CSV,plantilla vacía,bloquea H1 y H2

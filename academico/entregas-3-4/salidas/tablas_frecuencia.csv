@@ -1,0 +1,54 @@
+"variable_id","nivel_codigo","nivel_etiqueta","frecuencia","porcentaje"
+"edad",18,"18 años",1,3.7037037037037
+"edad",19,"19 años",2,7.40740740740741
+"edad",26,"26 años",1,3.7037037037037
+"edad",28,"28 años",1,3.7037037037037
+"edad",31,"31 años",1,3.7037037037037
+"edad",32,"32 años",1,3.7037037037037
+"edad",33,"33 años",3,11.1111111111111
+"edad",34,"34 años",1,3.7037037037037
+"edad",39,"39 años",1,3.7037037037037
+"edad",43,"43 años",1,3.7037037037037
+"edad",44,"44 años",2,7.40740740740741
+"edad",45,"45 años",1,3.7037037037037
+"edad",47,"47 años",1,3.7037037037037
+"edad",48,"48 años",1,3.7037037037037
+"edad",50,"50 años",2,7.40740740740741
+"edad",55,"55 años",1,3.7037037037037
+"edad",57,"57 años",1,3.7037037037037
+"edad",59,"59 años",1,3.7037037037037
+"edad",61,"61 años",1,3.7037037037037
+"edad",63,"63 años",1,3.7037037037037
+"edad",65,"65 años",1,3.7037037037037
+"edad",66,"66 años",1,3.7037037037037
+"planificacion",1,"Nunca",0,0
+"planificacion",2,"Casi nunca",0,0
+"planificacion",3,"Algunas veces",6,22.2222222222222
+"planificacion",4,"Casi siempre",7,25.9259259259259
+"planificacion",5,"Siempre",14,51.8518518518519
+"continuidad",1,"Nunca",2,7.40740740740741
+"continuidad",2,"Casi nunca",4,14.8148148148148
+"continuidad",3,"Algunas veces",6,22.2222222222222
+"continuidad",4,"Casi siempre",10,37.037037037037
+"continuidad",5,"Siempre",5,18.5185185185185
+"costo_objeto",1,"No me costó nada",3,11.1111111111111
+"costo_objeto",2,"Me costó un poquito",10,37.037037037037
+"costo_objeto",3,"Me costó algo",8,29.6296296296296
+"costo_objeto",4,"Me costó bastante",4,14.8148148148148
+"costo_objeto",5,"Me costó mucho",2,7.40740740740741
+"costo_poema",1,"No me costó nada",19,70.3703703703704
+"costo_poema",2,"Me costó un poquito",4,14.8148148148148
+"costo_poema",3,"Me costó algo",1,3.7037037037037
+"costo_poema",4,"Me costó bastante",1,3.7037037037037
+"costo_poema",5,"Me costó mucho",2,7.40740740740741
+"esfuerzo",0,"0",9,33.3333333333333
+"esfuerzo",1,"1",2,7.40740740740741
+"esfuerzo",2,"2",2,7.40740740740741
+"esfuerzo",3,"3",4,14.8148148148148
+"esfuerzo",4,"4",1,3.7037037037037
+"esfuerzo",5,"5",5,18.5185185185185
+"esfuerzo",6,"6",1,3.7037037037037
+"esfuerzo",7,"7",0,0
+"esfuerzo",8,"8",2,7.40740740740741
+"esfuerzo",9,"9",0,0
+"esfuerzo",10,"10",1,3.7037037037037

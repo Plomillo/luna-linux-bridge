@@ -1,0 +1,55 @@
+{
+  "artefacto_lunita_squashfs": {
+    "ruta_local": "/tmp/lunita-evidence/lunita-v1-8-squashfs-candidate/LUNITA.squashfs",
+    "bytes": 3576823808,
+    "superbloque_bytes": 3993154438,
+    "montaje": "NO",
+    "motivo": "read_id_table EOF; imagen truncada. No está como blob en main."
+  },
+  "csv": {
+    "archivo": "datos/frecuencias_agregadas_n27.csv",
+    "sha256": "d06ae497705feeb16a31e71782ede466f2c9038806f72f0c67806c7d4c96688c",
+    "origen": "CSV oficial adjunto, sin reedición. Agregados, no microdatos.",
+    "plantilla_vacia_filas": 0
+  },
+  "motores": {
+    "R": {
+      "ejecutado": true,
+      "version": "4.5.3 (2026-03-11)",
+      "ruta": "/tmp/renv/bin/Rscript"
+    },
+    "jamovi": {
+      "gui": false,
+      "motor_jmv_descriptives": true,
+      "version_codigo": "jmv 2.8.0",
+      "soporte": "jmvcore instalado en el R de Lunita",
+      "nota": "descriptives() del código de jamovi, no la ventana de escritorio. El binario de jamovi no está en el squashfs montable ni en el sistema."
+    },
+    "JASP": {
+      "gui": false,
+      "funciones_del_modulo": true,
+      "fuente": "jaspDescriptives/R/descriptives.R upstream",
+      "funciones": [
+        ".descriptivesDescriptivesTable_subFunction",
+        ".descriptivesMedian type 7"
+      ],
+      "nota": "No se lanzó la aplicación JASP. Se ejecutaron las funciones de su módulo de descriptivos. La moda de JASP para variables de escala es una moda de densidad y no se usó; la moda informada es la de la tabla de frecuencias."
+    }
+  },
+  "concordancia_media_y_de": "PASS",
+  "diferencia_maxima": 0,
+  "variables": [
+    "edad",
+    "planificacion",
+    "continuidad",
+    "costo_objeto",
+    "costo_poema",
+    "esfuerzo"
+  ],
+  "correlaciones": false,
+  "microdatos_fabricados": false,
+  "H1_H2_H3": "NO_EXAMINABLES",
+  "certificacion_estudio": "NOT_GRANTED",
+  "certificacion_descriptivos_tres_motores": "GRANTED",
+  "entregas_3_y_4_originales": "CONGELADAS_NO_REESCRITAS"
+}
