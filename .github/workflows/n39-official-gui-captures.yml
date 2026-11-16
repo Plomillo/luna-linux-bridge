@@ -4,9 +4,12 @@ on:
   push:
     branches:
       - lunita/entregas-3-4-n27-20261116
-    paths-ignore:
-      - "academico/entregas-3-4/n39/evidencia-gui/**"
-      - "academico/entregas-3-4/n39/datos/base_expandida_marginal_n39.csv"
+    paths:
+      - ".github/workflows/n39-official-gui-captures.yml"
+      - "academico/entregas-3-4/n39/evidencia-gui/capturar_interfaces_n39.py"
+      - "academico/entregas-3-4/n39/evidencia-gui/preparar_base_gui_n39.py"
+      - "academico/entregas-3-4/n39/R/interfaz_r_n39.R"
+      - "academico/entregas-3-4/n39/datos/base_frecuencias_n39.csv"
   workflow_dispatch:
 
 permissions:
@@ -15,7 +18,7 @@ permissions:
 jobs:
   capture:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
