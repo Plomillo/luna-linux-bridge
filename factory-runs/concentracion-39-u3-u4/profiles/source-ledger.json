@@ -1,0 +1,149 @@
+{
+  "schema": "DOCUMENT_FACTORY_SOURCE_LEDGER/1.0",
+  "sources": [
+    {
+      "source_id": "BOONE2012",
+      "verified": true,
+      "title": "Analyzing Likert data",
+      "author": [
+        {
+          "family": "Boone",
+          "given": "Harry N."
+        },
+        {
+          "family": "Boone",
+          "given": "Deborah A."
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2012
+          ]
+        ]
+      },
+      "container_title": "Journal of Extension",
+      "volume": "50",
+      "issue": "2",
+      "page": "Article 48",
+      "DOI": "10.34068/joe.50.02.48",
+      "URL": "https://doi.org/10.34068/joe.50.02.48",
+      "csl_type": "article-journal"
+    },
+    {
+      "source_id": "FORTENBAUGH2017",
+      "verified": true,
+      "title": "Recent theoretical, neural, and clinical advances in sustained attention research",
+      "author": [
+        {
+          "family": "Fortenbaugh",
+          "given": "Francesca C."
+        },
+        {
+          "family": "DeGutis",
+          "given": "Joseph"
+        },
+        {
+          "family": "Esterman",
+          "given": "Michael"
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2017
+          ]
+        ]
+      },
+      "container_title": "Annals of the New York Academy of Sciences",
+      "volume": "1396",
+      "issue": "1",
+      "page": "70-91",
+      "DOI": "10.1111/nyas.13318",
+      "URL": "https://doi.org/10.1111/nyas.13318",
+      "csl_type": "article-journal"
+    },
+    {
+      "source_id": "JAMOVI_DOCS",
+      "verified": true,
+      "title": "Descriptives (descriptives)",
+      "author": [
+        {
+          "literal": "jamovi"
+        }
+      ],
+      "URL": "https://docs.jamovi.org/jmv/jmv_descriptives.html",
+      "csl_type": "webpage"
+    },
+    {
+      "source_id": "KHODAMI2024",
+      "verified": true,
+      "title": "Comparing self-report vs. performance measures of attentional control and efficiency",
+      "author": [
+        {
+          "family": "Khodami",
+          "given": "Mohammad Ahsan"
+        },
+        {
+          "family": "Battaglini",
+          "given": "Luca"
+        },
+        {
+          "family": "Jansarvatan",
+          "given": "Maryam"
+        },
+        {
+          "family": "Kireeva",
+          "given": "Sofia"
+        },
+        {
+          "family": "Bagheri",
+          "given": "Seiran"
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2024
+          ]
+        ]
+      },
+      "container_title": "NeuroSci",
+      "volume": "5",
+      "issue": "2",
+      "page": "114-127",
+      "DOI": "10.3390/neurosci5020008",
+      "URL": "https://doi.org/10.3390/neurosci5020008",
+      "csl_type": "article-journal"
+    },
+    {
+      "source_id": "SULLIVAN2013",
+      "verified": true,
+      "title": "Analyzing and interpreting data from Likert-type scales",
+      "author": [
+        {
+          "family": "Sullivan",
+          "given": "Gail M."
+        },
+        {
+          "family": "Artino",
+          "given": "Anthony R., Jr."
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2013
+          ]
+        ]
+      },
+      "container_title": "Journal of Graduate Medical Education",
+      "volume": "5",
+      "issue": "4",
+      "page": "541-542",
+      "DOI": "10.4300/JGME-5-4-18",
+      "URL": "https://doi.org/10.4300/JGME-5-4-18",
+      "csl_type": "article-journal"
+    }
+  ]
+}

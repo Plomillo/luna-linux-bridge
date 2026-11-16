@@ -1,0 +1,135 @@
+{
+  "schema": "LOUKSNA_ASSIGNMENT_PROFILE/1.0",
+  "profile_id": "UNIACC_CONCENTRACION_39_U4_20261116",
+  "profile_version": "1.0",
+  "status": "TASK_PROFILE_CANDIDATE_NOT_CERTIFIED",
+  "raw_instruction_ref": "factory-runs/concentracion-39-u3-u4/instructions/entrega4.md",
+  "title": "Entrega 4 — Resultados descriptivos e informe analítico",
+  "language": "es",
+  "required_research": {
+    "minimum_distinct_sources": 5,
+    "source_priority": "Referencias verificadas sobre escalas ordinales, atención sostenida, autoinforme y Jamovi.",
+    "required_topics": [
+      "Frecuencias y descriptivos",
+      "Contraste de hipótesis",
+      "Atención sostenida",
+      "Límites de inferencia"
+    ]
+  },
+  "deliverables": [
+    {
+      "id": "ENTREGA4_RESULTADOS_DOCX",
+      "kind": "docx",
+      "submission_required": true
+    },
+    {
+      "id": "ENTREGA4_INFORME_DOCX",
+      "kind": "docx",
+      "submission_required": true
+    },
+    {
+      "id": "ENTREGA4_XLSX",
+      "kind": "xlsx",
+      "submission_required": false
+    },
+    {
+      "id": "ENTREGA4_PDF",
+      "kind": "pdf",
+      "submission_required": false
+    }
+  ],
+  "constraints": {
+    "language": "es",
+    "apa_edition": 7,
+    "page_count_total": {
+      "min": 1,
+      "max": 10
+    },
+    "formatting": {
+      "font": "Arial",
+      "body_size_pt": 12,
+      "heading_size_pt": 16,
+      "line_spacing": 1.5,
+      "margins_cm": {
+        "top": 2.5,
+        "bottom": 2.5,
+        "left": 2.5,
+        "right": 2.5
+      },
+      "paper": "letter"
+    },
+    "hypotheses": {
+      "required": [
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5"
+      ],
+      "contrast_required": true,
+      "possible_causes_must_be_marked_as_unmeasured": true
+    },
+    "data_integrity": {
+      "n_per_question": 39,
+      "participant_microdata": "NOT_AVAILABLE",
+      "cross_question_correlations_forbidden": true
+    },
+    "images": {
+      "required": [
+        "RStudio",
+        "jamovi",
+        "JASP"
+      ],
+      "source": "verified_official_application_screenshots"
+    }
+  },
+  "rubric": {
+    "declared_total_points": 0,
+    "official_teacher_rubric": "NOT_PROVIDED_IN_SOURCE_INSTRUCTIONS",
+    "criteria": [
+      {
+        "id": "E4-R1",
+        "points": 0,
+        "text": "Presenta frecuencias y estadísticos descriptivos.",
+        "validation": "AUTOMATED"
+      },
+      {
+        "id": "E4-R2",
+        "points": 0,
+        "text": "Contrasta las cinco hipótesis con los datos observados.",
+        "validation": "HUMAN"
+      },
+      {
+        "id": "E4-R3",
+        "points": 0,
+        "text": "Diferencia posibles causas no medidas de los hallazgos.",
+        "validation": "HUMAN"
+      }
+    ]
+  },
+  "runtime_policy": {
+    "heartbeat_interval_seconds": 1,
+    "stages": {
+      "PROFILE_VALIDATE": {
+        "timeout_seconds": 30,
+        "max_attempts": 1
+      },
+      "BUILD_DOCX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PPTX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PDF": {
+        "timeout_seconds": 300,
+        "max_attempts": 1
+      }
+    }
+  },
+  "no_subject_matter_inference": true,
+  "certification_authority": false,
+  "g23_authority": false,
+  "g24_authority": false
+}

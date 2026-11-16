@@ -1,0 +1,83 @@
+name: "Document Factory — Concentración N39, Entregas 3 y 4"
+
+on:
+  push:
+    branches:
+      - "candidate/document-factory-v1-unit2-20261013"
+    paths:
+      - "factory-runs/concentracion-39-u3-u4/README.md"
+      - "factory-runs/concentracion-39-u3-u4/instructions/**"
+      - "factory-runs/concentracion-39-u3-u4/profiles/**"
+      - "factory-runs/concentracion-39-u3-u4/workspaces/**"
+      - "factory-runs/concentracion-39-u3-u4/data/**"
+      - "factory-runs/concentracion-39-u3-u4/assets/**"
+      - "factory-runs/concentracion-39-u3-u4/prepare_sheets.py"
+      - "factory-runs/concentracion-39-u3-u4/build_all.sh"
+      - ".github/workflows/document-factory-concentracion-39-u3-u4.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: document-factory-concentracion-39-u3-u4
+  cancel-in-progress: false
+
+jobs:
+  manufacture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact factory branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: candidate/document-factory-v1-unit2-20261013
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Install document providers
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y pandoc libreoffice-writer python3-docx poppler-utils
+
+      - name: Manufacture four approved documents and validate them
+        shell: bash
+        env:
+          GITHUB_WORKSPACE: $GITHUB_WORKSPACE
+        run: |
+          set -Eeuo pipefail
+          bash factory-runs/concentracion-39-u3-u4/build_all.sh
+
+      - name: Publish factory report
+        shell: bash
+        run: |
+          {
+            echo "## Document Factory — Concentración N39"
+            echo "- Entrega 3 base: DOCX/PDF/XLSX"
+            echo "- Entrega 3 informe: DOCX/PDF, máximo dos páginas comprobado"
+            echo "- Entrega 4 resultados: DOCX/PDF/XLSX, tres capturas incrustadas"
+            echo "- Entrega 4 informe analítico: DOCX/PDF, máximo diez páginas"
+            echo "- Fuente: 39 respuestas por pregunta, seis preguntas, frecuencias marginales"
+            echo "- G23/G24: no ejecutados; no se reclama certificación académica."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit generated deliverables to factory branch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add factory-runs/concentracion-39-u3-u4/deliverables
+          git diff --cached --quiet && { echo "NO_DELIVERABLE_CHANGES"; exit 0; }
+          git commit -m "build(document-factory): fabrica cuatro entregas de concentración N=39"
+          git push origin HEAD:candidate/document-factory-v1-unit2-20261013
+
+      - name: Upload deliverables bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: concentracion-39-entregas-3-y-4
+          path: factory-runs/concentracion-39-u3-u4/deliverables
+          if-no-files-found: error
+          retention-days: 30

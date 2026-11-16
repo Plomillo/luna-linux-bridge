@@ -1,0 +1,108 @@
+{
+  "schema": "LOUKSNA_ASSIGNMENT_PROFILE/1.0",
+  "profile_id": "UNIACC_CONCENTRACION_39_U3_20261116",
+  "profile_version": "1.0",
+  "status": "TASK_PROFILE_CANDIDATE_NOT_CERTIFIED",
+  "raw_instruction_ref": "factory-runs/concentracion-39-u3-u4/instructions/entrega3.md",
+  "title": "Entrega 3 — Base organizada e informe de campo",
+  "language": "es",
+  "required_research": {
+    "minimum_distinct_sources": 5,
+    "source_priority": "Referencias metodológicas verificadas sobre escalas ordinales, atención sostenida y autoinforme.",
+    "required_topics": [
+      "Estructura de datos agregados",
+      "Codificación de preguntas ordinales",
+      "Control de calidad",
+      "Autoinforme y atención sostenida"
+    ]
+  },
+  "deliverables": [
+    {
+      "id": "ENTREGA3_BASE_DOCX",
+      "kind": "docx",
+      "submission_required": true
+    },
+    {
+      "id": "ENTREGA3_BASE_XLSX",
+      "kind": "xlsx",
+      "submission_required": true
+    },
+    {
+      "id": "ENTREGA3_INFORME_DOCX",
+      "kind": "docx",
+      "submission_required": true
+    },
+    {
+      "id": "ENTREGA3_PDF",
+      "kind": "pdf",
+      "submission_required": false
+    }
+  ],
+  "constraints": {
+    "language": "es",
+    "apa_edition": 7,
+    "formatting": {
+      "font": "Arial",
+      "body_size_pt": 12,
+      "heading_size_pt": 16,
+      "line_spacing": 1.5,
+      "margins_cm": {
+        "top": 2.5,
+        "bottom": 2.5,
+        "left": 2.5,
+        "right": 2.5
+      },
+      "paper": "letter"
+    },
+    "field_data": {
+      "n_per_question": 39,
+      "questions": 6,
+      "source_type": "AGGREGATED_MARGINAL_FREQUENCIES",
+      "participant_microdata": "NOT_AVAILABLE",
+      "synthetic_rows_forbidden": true
+    }
+  },
+  "rubric": {
+    "declared_total_points": 0,
+    "official_teacher_rubric": "NOT_PROVIDED_IN_SOURCE_INSTRUCTIONS",
+    "criteria": [
+      {
+        "id": "E3-B1",
+        "points": 0,
+        "text": "Base organizada con frecuencias, diccionario y controles.",
+        "validation": "AUTOMATED"
+      },
+      {
+        "id": "E3-B2",
+        "points": 0,
+        "text": "Informe breve fiel a la fuente.",
+        "validation": "AUTOMATED_PLUS_HUMAN"
+      }
+    ]
+  },
+  "runtime_policy": {
+    "heartbeat_interval_seconds": 1,
+    "stages": {
+      "PROFILE_VALIDATE": {
+        "timeout_seconds": 30,
+        "max_attempts": 1
+      },
+      "BUILD_DOCX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PPTX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PDF": {
+        "timeout_seconds": 300,
+        "max_attempts": 1
+      }
+    }
+  },
+  "no_subject_matter_inference": true,
+  "certification_authority": false,
+  "g23_authority": false,
+  "g24_authority": false
+}
