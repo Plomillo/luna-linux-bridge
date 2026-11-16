@@ -73,3 +73,6 @@ Installation: system
 
 JASP_only_recapture=success
 JASP_output_file=/home/runner/work/luna-linux-bridge/luna-linux-bridge/academico/entregas-3-4/n39/salidas/descriptivos_jasp.csv
+
+JASP_only_recapture=success
+JASP_output_file=/home/runner/work/luna-linux-bridge/luna-linux-bridge/academico/entregas-3-4/n39/salidas/descriptivos_jasp.csv

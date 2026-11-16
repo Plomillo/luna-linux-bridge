@@ -1,1 +1,2 @@
-0x00800024  0 JASP.JASP             runnervm8axu0 JASP
+0x00800024  0 JASP.JASP             ip-10-0-142-218 JASP
+0x00a00007  0 xdg-desktop-portal-gtk.Xdg-desktop-portal-gtk  ip-10-0-142-218 Open
