@@ -1,0 +1,16 @@
+{
+  "fuente": "/workspace/attachments/encuesta_atencion_resultados_39_respuestas_integral.csv",
+  "sha256": "50ba93f3834ee3453f501df8ac7684d86688e223e3401d337120ccd4555f3937",
+  "bytes": 16500,
+  "filas_datos": 98,
+  "filas_frecuencia": 60,
+  "preguntas": {
+    "1": 39,
+    "2": 39,
+    "3": 39,
+    "4": 39,
+    "5": 39,
+    "6": 39
+  },
+  "microdatos": false
+}

@@ -1,0 +1,99 @@
+linea_archivo,Tipo de fila,Orden,Parte,N.º de pregunta,Pregunta,Respuestas registradas,Edad,Valor,Respuesta,Recuento,Porcentaje,Elemento del registro final,Dato del registro final,Texto o encabezado original
+2,TITULO_DOCUMENTO,1,,,,,,,,,,,,Resultados de la encuesta
+3,TEXTO_INTERFAZ,2,,,,,,,,,,,,Procesó durante 55s
+4,METADATO_GENERAL,3,,,,,,,,,,Compatibilidad con lectores de pantalla,Habilitada,
+5,METADATO_GENERAL,4,,,,,,,,,,Total de respuestas,39,
+6,TITULO_PARTE,5,PARTE 1. Un poco sobre ti,,,,,,,,,,,PARTE 1. Un poco sobre ti
+7,TITULO_PARTE,6,PARTE 2. Cómo estudias,,,,,,,,,,,PARTE 2. Cómo estudias
+8,TITULO_PARTE,7,PARTE 3. Vamos a mirar un objeto,,,,,,,,,,,PARTE 3. Vamos a mirar un objeto
+9,TITULO_PARTE,8,PARTE 4. Vamos a hacer una prueba de atención,,,,,,,,,,,PARTE 4. Vamos a hacer una prueba de atención
+10,TITULO_PARTE,9,"PARTE 5. Ya terminaste la prueba, felicidades. :)",,,,,,,,,,,"PARTE 5. Ya terminaste la prueba, felicidades. :)"
+11,PREGUNTA,10,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,,,,,,,,¿Cuántos años tienes?
+12,ENCABEZADO_TABLA,11,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,,,,,,,,,Edad | Recuento
+13,RESPUESTA_EDAD,12,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,18,,,1,,,,
+14,RESPUESTA_EDAD,13,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,19,,,2,,,,
+15,RESPUESTA_EDAD,14,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,22,,,1,,,,
+16,RESPUESTA_EDAD,15,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,24,,,1,,,,
+17,RESPUESTA_EDAD,16,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,26,,,1,,,,
+18,RESPUESTA_EDAD,17,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,27,,,1,,,,
+19,RESPUESTA_EDAD,18,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,28,,,1,,,,
+20,RESPUESTA_EDAD,19,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,30,,,1,,,,
+21,RESPUESTA_EDAD,20,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,31,,,1,,,,
+22,RESPUESTA_EDAD,21,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,32,,,2,,,,
+23,RESPUESTA_EDAD,22,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,33,,,3,,,,
+24,RESPUESTA_EDAD,23,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,34,,,1,,,,
+25,RESPUESTA_EDAD,24,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,36,,,1,,,,
+26,RESPUESTA_EDAD,25,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,39,,,1,,,,
+27,RESPUESTA_EDAD,26,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,41,,,1,,,,
+28,RESPUESTA_EDAD,27,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,43,,,2,,,,
+29,RESPUESTA_EDAD,28,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,44,,,2,,,,
+30,RESPUESTA_EDAD,29,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,45,,,2,,,,
+31,RESPUESTA_EDAD,30,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,46,,,1,,,,
+32,RESPUESTA_EDAD,31,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,47,,,2,,,,
+33,RESPUESTA_EDAD,32,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,48,,,1,,,,
+34,RESPUESTA_EDAD,33,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,50,,,2,,,,
+35,RESPUESTA_EDAD,34,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,55,,,1,,,,
+36,RESPUESTA_EDAD,35,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,57,,,1,,,,
+37,RESPUESTA_EDAD,36,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,59,,,2,,,,
+38,RESPUESTA_EDAD,37,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,61,,,1,,,,
+39,RESPUESTA_EDAD,38,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,63,,,1,,,,
+40,RESPUESTA_EDAD,39,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,65,,,1,,,,
+41,RESPUESTA_EDAD,40,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,66,,,1,,,,
+42,TOTAL_PREGUNTA,41,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,39 respuestas,Total,,,39,,,,
+43,NOTA_TABLA,42,PARTE 1. Un poco sobre ti,1,¿Cuántos años tienes?,,,,,,,,,La tabla original de edades presenta Edad y Recuento; no presenta porcentajes.
+44,PREGUNTA,43,PARTE 2. Cómo estudias,2,"Antes de estudiar, ¿pensaste qué ibas a hacer primero?",39 respuestas,,,,,,,,"Antes de estudiar, ¿pensaste qué ibas a hacer primero?"
+45,ENCABEZADO_TABLA,44,PARTE 2. Cómo estudias,2,"Antes de estudiar, ¿pensaste qué ibas a hacer primero?",,,,,,,,,Valor | Respuesta | Recuento | Porcentaje
+46,RESPUESTA,45,PARTE 2. Cómo estudias,2,"Antes de estudiar, ¿pensaste qué ibas a hacer primero?",39 respuestas,,1,Nunca,0,0 %,,,
+47,RESPUESTA,46,PARTE 2. Cómo estudias,2,"Antes de estudiar, ¿pensaste qué ibas a hacer primero?",39 respuestas,,2,Casi nunca,0,0 %,,,
+48,RESPUESTA,47,PARTE 2. Cómo estudias,2,"Antes de estudiar, ¿pensaste qué ibas a hacer primero?",39 respuestas,,3,Algunas veces,9,"23,1 %",,,
+49,RESPUESTA,48,PARTE 2. Cómo estudias,2,"Antes de estudiar, ¿pensaste qué ibas a hacer primero?",39 respuestas,,4,Casi siempre,12,"30,8 %",,,
+50,RESPUESTA,49,PARTE 2. Cómo estudias,2,"Antes de estudiar, ¿pensaste qué ibas a hacer primero?",39 respuestas,,5,Siempre,18,"46,2 %",,,
+51,TOTAL_PREGUNTA,50,PARTE 2. Cómo estudias,2,"Antes de estudiar, ¿pensaste qué ibas a hacer primero?",39 respuestas,,,Total,39,100 %,,,
+52,PREGUNTA,51,PARTE 2. Cómo estudias,3,"Cuando estudiabas, ¿pudiste seguir haciendo tu tarea aunque algo llamara tu atención?",39 respuestas,,,,,,,,"Cuando estudiabas, ¿pudiste seguir haciendo tu tarea aunque algo llamara tu atención?"
+53,ENCABEZADO_TABLA,52,PARTE 2. Cómo estudias,3,"Cuando estudiabas, ¿pudiste seguir haciendo tu tarea aunque algo llamara tu atención?",,,,,,,,,Valor | Respuesta | Recuento | Porcentaje
+54,RESPUESTA,53,PARTE 2. Cómo estudias,3,"Cuando estudiabas, ¿pudiste seguir haciendo tu tarea aunque algo llamara tu atención?",39 respuestas,,1,Nunca,3,"7,7 %",,,
+55,RESPUESTA,54,PARTE 2. Cómo estudias,3,"Cuando estudiabas, ¿pudiste seguir haciendo tu tarea aunque algo llamara tu atención?",39 respuestas,,2,Casi nunca,4,"10,3 %",,,
+56,RESPUESTA,55,PARTE 2. Cómo estudias,3,"Cuando estudiabas, ¿pudiste seguir haciendo tu tarea aunque algo llamara tu atención?",39 respuestas,,3,Algunas veces,10,"25,6 %",,,
+57,RESPUESTA,56,PARTE 2. Cómo estudias,3,"Cuando estudiabas, ¿pudiste seguir haciendo tu tarea aunque algo llamara tu atención?",39 respuestas,,4,Casi siempre,16,"41,0 %",,,
+58,RESPUESTA,57,PARTE 2. Cómo estudias,3,"Cuando estudiabas, ¿pudiste seguir haciendo tu tarea aunque algo llamara tu atención?",39 respuestas,,5,Siempre,6,"15,4 %",,,
+59,TOTAL_PREGUNTA,58,PARTE 2. Cómo estudias,3,"Cuando estudiabas, ¿pudiste seguir haciendo tu tarea aunque algo llamara tu atención?",39 respuestas,,,Total,39,100 %,,,
+60,PREGUNTA,59,PARTE 3. Vamos a mirar un objeto,4,¿Te costó seguir mirando el objeto durante los cinco minutos?,39 respuestas,,,,,,,,¿Te costó seguir mirando el objeto durante los cinco minutos?
+61,ENCABEZADO_TABLA,60,PARTE 3. Vamos a mirar un objeto,4,¿Te costó seguir mirando el objeto durante los cinco minutos?,,,,,,,,,Valor | Respuesta | Recuento | Porcentaje
+62,RESPUESTA,61,PARTE 3. Vamos a mirar un objeto,4,¿Te costó seguir mirando el objeto durante los cinco minutos?,39 respuestas,,1,No me costó nada,7,"17,9 %",,,
+63,RESPUESTA,62,PARTE 3. Vamos a mirar un objeto,4,¿Te costó seguir mirando el objeto durante los cinco minutos?,39 respuestas,,2,Me costó un poquito,13,"33,3 %",,,
+64,RESPUESTA,63,PARTE 3. Vamos a mirar un objeto,4,¿Te costó seguir mirando el objeto durante los cinco minutos?,39 respuestas,,3,Me costó algo,10,"25,6 %",,,
+65,RESPUESTA,64,PARTE 3. Vamos a mirar un objeto,4,¿Te costó seguir mirando el objeto durante los cinco minutos?,39 respuestas,,4,Me costó bastante,7,"17,9 %",,,
+66,RESPUESTA,65,PARTE 3. Vamos a mirar un objeto,4,¿Te costó seguir mirando el objeto durante los cinco minutos?,39 respuestas,,5,Me costó mucho,2,"5,1 %",,,
+67,TOTAL_PREGUNTA,66,PARTE 3. Vamos a mirar un objeto,4,¿Te costó seguir mirando el objeto durante los cinco minutos?,39 respuestas,,,Total,39,100 %,,,
+68,PREGUNTA,67,PARTE 4. Vamos a hacer una prueba de atención,5,"Después de leer el poema, ¿qué tan fácil o difícil te resultó comprender su significado y reflexionar sobre la relación que plantea entre las decisiones personales y las oportunidades?",39 respuestas,,,,,,,,"Después de leer el poema, ¿qué tan fácil o difícil te resultó comprender su significado y reflexionar sobre la relación que plantea entre las decisiones personales y las oportunidades?"
+69,ENCABEZADO_TABLA,68,PARTE 4. Vamos a hacer una prueba de atención,5,"Después de leer el poema, ¿qué tan fácil o difícil te resultó comprender su significado y reflexionar sobre la relación que plantea entre las decisiones personales y las oportunidades?",,,,,,,,,Valor | Respuesta | Recuento | Porcentaje
+70,RESPUESTA,69,PARTE 4. Vamos a hacer una prueba de atención,5,"Después de leer el poema, ¿qué tan fácil o difícil te resultó comprender su significado y reflexionar sobre la relación que plantea entre las decisiones personales y las oportunidades?",39 respuestas,,1,No me costó nada,25,"64,1 %",,,
+71,RESPUESTA,70,PARTE 4. Vamos a hacer una prueba de atención,5,"Después de leer el poema, ¿qué tan fácil o difícil te resultó comprender su significado y reflexionar sobre la relación que plantea entre las decisiones personales y las oportunidades?",39 respuestas,,2,Me costó un poquito,6,"15,4 %",,,
+72,RESPUESTA,71,PARTE 4. Vamos a hacer una prueba de atención,5,"Después de leer el poema, ¿qué tan fácil o difícil te resultó comprender su significado y reflexionar sobre la relación que plantea entre las decisiones personales y las oportunidades?",39 respuestas,,3,Me costó algo,5,"12,8 %",,,
+73,RESPUESTA,72,PARTE 4. Vamos a hacer una prueba de atención,5,"Después de leer el poema, ¿qué tan fácil o difícil te resultó comprender su significado y reflexionar sobre la relación que plantea entre las decisiones personales y las oportunidades?",39 respuestas,,4,Me costó bastante,1,"2,6 %",,,
+74,RESPUESTA,73,PARTE 4. Vamos a hacer una prueba de atención,5,"Después de leer el poema, ¿qué tan fácil o difícil te resultó comprender su significado y reflexionar sobre la relación que plantea entre las decisiones personales y las oportunidades?",39 respuestas,,5,Me costó mucho,2,"5,1 %",,,
+75,TOTAL_PREGUNTA,74,PARTE 4. Vamos a hacer una prueba de atención,5,"Después de leer el poema, ¿qué tan fácil o difícil te resultó comprender su significado y reflexionar sobre la relación que plantea entre las decisiones personales y las oportunidades?",39 respuestas,,,Total,39,100 %,,,
+76,PREGUNTA,75,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,,,,,,,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?
+77,ENCABEZADO_TABLA,76,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,,,,,,,,,Valor | Recuento | Porcentaje
+78,RESPUESTA,77,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,0,,13,"33,3 %",,,
+79,RESPUESTA,78,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,1,,2,"5,1 %",,,
+80,RESPUESTA,79,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,2,,3,"7,7 %",,,
+81,RESPUESTA,80,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,3,,6,"15,4 %",,,
+82,RESPUESTA,81,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,4,,2,"5,1 %",,,
+83,RESPUESTA,82,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,5,,7,"17,9 %",,,
+84,RESPUESTA,83,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,6,,1,"2,6 %",,,
+85,RESPUESTA,84,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,7,,2,"5,1 %",,,
+86,RESPUESTA,85,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,8,,2,"5,1 %",,,
+87,RESPUESTA,86,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,9,,0,0 %,,,
+88,RESPUESTA,87,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,10,,1,"2,6 %",,,
+89,TOTAL_PREGUNTA,88,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,39 respuestas,,,Total,39,100 %,,,
+90,NOTA_ESCALA,89,"PARTE 5. Ya terminaste la prueba, felicidades. :)",6,¿Cuánto esfuerzo tuviste que hacer para completar la prueba?,,,,,,,,,"Escala de respuesta registrada: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 y 10."
+91,TITULO_REGISTRO_FINAL,90,,,,,,,,,,,,Registro final de la información
+92,ENCABEZADO_TABLA_FINAL,91,,,,,,,,,,,,Elemento | Dato
+93,REGISTRO_FINAL,92,,,,,,,,,,Número de respuestas,39,
+94,REGISTRO_FINAL,93,,,,,,,,,,Partes de la encuesta,5,
+95,REGISTRO_FINAL,94,,,,,,,,,,Preguntas registradas,6,
+96,REGISTRO_FINAL,95,,,,,,,,,,Primera pregunta,Edad,
+97,REGISTRO_FINAL,96,,,,,,,,,,Última pregunta,Esfuerzo para completar la prueba,
+98,REGISTRO_FINAL,97,,,,,,,,,,Compatibilidad con lectores de pantalla,Habilitada,
+99,REGISTRO_FINAL,98,,,,,,,,,,Estado del banner,Oculto,

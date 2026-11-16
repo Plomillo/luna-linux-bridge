@@ -1,0 +1,42 @@
+{
+  "estudio_H1_H2_H3": "NOT_GRANTED",
+  "motivo": "El CSV de 39 respuestas no trae condición, BFI-2-S ni CAM. No hay microdatos emparejados.",
+  "descriptivos_seis_preguntas": "GRANTED",
+  "diferencia_maxima_media_mediana_de": 0,
+  "n": 39,
+  "csv": {
+    "archivo": "encuesta_atencion_resultados_39_respuestas_integral.csv",
+    "sha256": "50ba93f3834ee3453f501df8ac7684d86688e223e3401d337120ccd4555f3937",
+    "bytes": 16500,
+    "filas_de_registro": 98,
+    "filas_de_frecuencia": 60
+  },
+  "motores": {
+    "R": {"ejecutado": true, "version": "4.5.3", "ruta": "/tmp/renv/bin/Rscript"},
+    "jamovi": {
+      "paquete": "org.jamovi.jamovi",
+      "version_app": "28.17.0.0",
+      "commit": "7e56871561f4c0e0507a49cc96506b827e1ab80527a6096754c70db8fe4fac9e",
+      "binario": "ELF electron y jamovi-engine dentro del flatpak",
+      "comando_version": "flatpak run --command=jamovi org.jamovi.jamovi --version",
+      "motor_estadistico": "jmv 2.8.0 y jmvcore 28.3, librería interna /app/lib/jamovi/modules/jmv",
+      "gui_de_escritorio": "el comando --version respondió; no quedó una ventana abierta"
+    },
+    "JASP": {
+      "paquete": "org.jaspstats.JASP",
+      "version_arranque": "0.99",
+      "version_flatpak": "0.98.1",
+      "commit": "a142fa6e6685d28a398463259fed880160efebbbe8a7b6440266381a8bdfa14a",
+      "binario": "ELF /app/bin/JASP, 18058560 bytes, magic 7fELF",
+      "arranque": "Starting JASP 0.99 y Application initialized bajo QT_QPA_PLATFORM=offscreen; el proceso de Chromium no siguió porque el host corre como root",
+      "motor_estadistico": "jaspDescriptives 0.96.5, función .descriptivesDescriptivesTable_subFunction del módulo instalado, R 4.5.2 del propio JASP"
+    }
+  },
+  "imagen_anterior": {
+    "ruta": "/tmp/lunita-evidence/lunita-v1-8-squashfs-candidate/LUNITA.squashfs",
+    "bytes": 3576823808,
+    "bytes_superbloque": 3993154438,
+    "montaje": "NO",
+    "causa": "inode_table, directory_table, fragment_table e id_table quedan después del EOF"
+  }
+}
