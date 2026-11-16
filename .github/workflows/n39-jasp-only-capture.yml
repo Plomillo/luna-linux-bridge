@@ -111,6 +111,8 @@ jobs:
           pyautogui.click(42, 165)     # Open
           time.sleep(2)
           pyautogui.click(210, 182)    # Computer
+          time.sleep(4)
+          pyautogui.click(336, 160)    # Browse (Recent Folders > Computer)
           time.sleep(5)
           pyautogui.hotkey("ctrl", "l")
           time.sleep(1)
