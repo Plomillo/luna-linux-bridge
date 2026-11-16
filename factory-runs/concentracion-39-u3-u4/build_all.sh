@@ -15,13 +15,13 @@ mkdir -p "$REPO/assets"
 cp -a "$T/assets/." "$REPO/assets/"
 
 python3 -B "$REPO/document-factory/src/selftest.py"
-python3 -B "$REPO/document-factory/src/factory.py" validate-profile "$REPO/$TASK/profiles/profile-entrega3.json" --repo-root "$REPO"
-python3 -B "$REPO/document-factory/src/factory.py" validate-profile "$REPO/$TASK/profiles/profile-entrega4.json" --repo-root "$REPO"
+python3 -B "$REPO/document-factory/src/factory.py" validate-profile "$TASK/profiles/profile-entrega3.json" --repo-root "$REPO"
+python3 -B "$REPO/document-factory/src/factory.py" validate-profile "$TASK/profiles/profile-entrega4.json" --repo-root "$REPO"
 
 build_one() {
   local name="$1" profile="$2" kind="$3" stem="$4" page_limit="$5"
   local workspace="$T/workspaces/$name"
-  local profile_path="$REPO/$TASK/profiles/$profile"
+  local profile_path="$TASK/profiles/$profile"
   local docx="$workspace/build/report.docx"
   local pdf="$workspace/build/report.pdf"
   local xlsx="$workspace/build/evidence.xlsx"
