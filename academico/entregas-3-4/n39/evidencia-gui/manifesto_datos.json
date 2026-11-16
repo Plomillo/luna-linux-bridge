@@ -1,0 +1,40 @@
+{
+  "source": "base_frecuencias_n39.csv",
+  "source_sha256": "3be8fa163912209e3b15ddc917242d76027d5b869255a88071e846e7fe64b4ac",
+  "expanded_file": "base_expandida_marginal_n39.csv",
+  "expanded_sha256": "53faf5d8bb96ff67b57a1a8922212e1e725c102b209d17ddc97b0b379b054920",
+  "rows": 234,
+  "questions": [
+    {
+      "pregunta_id": 1,
+      "n": 39,
+      "categorias": 29
+    },
+    {
+      "pregunta_id": 2,
+      "n": 39,
+      "categorias": 5
+    },
+    {
+      "pregunta_id": 3,
+      "n": 39,
+      "categorias": 5
+    },
+    {
+      "pregunta_id": 4,
+      "n": 39,
+      "categorias": 5
+    },
+    {
+      "pregunta_id": 5,
+      "n": 39,
+      "categorias": 5
+    },
+    {
+      "pregunta_id": 6,
+      "n": 39,
+      "categorias": 11
+    }
+  ],
+  "interpretation": "Each question is a separate marginal distribution expanded to N=39 for univariate descriptive analysis. Rows across different questions are NOT the same respondents and must never be treated as paired or joint microdata."
+}

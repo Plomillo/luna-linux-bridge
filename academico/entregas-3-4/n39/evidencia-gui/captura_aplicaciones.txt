@@ -1,0 +1,68 @@
+RStudio_window_id=0x0080000a
+
+jamovi_window_id=0x01400002
+
+JASP_window_id=0x01c00019
+
+X11_WINDOWS_AFTER_CAPTURE:
+0x00800003  0 rstudio.rstudio       runnervm8axu0 RStudio
+0x01400002  0 jamovi.jamovi         runnervm8axu0 base_expandida_marginal_n39
+0x01c00019  0 JASP.JASP             runnervm8axu0 JASP
+0x01c00024  0 JASP.JASP             runnervm8axu0 JASP
+
+
+$ R --version
+R version 4.3.3 (2024-02-29) -- "Angel Food Cake"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under the terms of the
+GNU General Public License versions 2 or 3.
+For more information about these matters see
+https://www.gnu.org/licenses/.
+
+$ rstudio --version
+2026.11.0+203
+
+$ flatpak info org.jamovi.jamovi
+jamovi - Real-time statistical spreadsheet
+
+          ID: org.jamovi.jamovi
+         Ref: app/org.jamovi.jamovi/x86_64/stable
+        Arch: x86_64
+      Branch: stable
+     Version: 28.7
+     License: AGPL-3.0-or-later
+      Origin: flathub
+  Collection: org.flathub.Stable
+Installation: system
+   Installed: 1.1 GB
+     Runtime: org.freedesktop.Platform/x86_64/25.08
+         Sdk: org.freedesktop.Sdk/x86_64/25.08
+
+      Commit: 7e56871561f4c0e0507a49cc96506b827e1ab80527a6096754c70db8fe4fac9e
+      Parent: bd19c81848b8f59fd071fa5e17fa043638e152e25a99777dfb301fa503164c76
+     Subject: Version 28.17 (9ae410a0b2ab)
+        Date: 2026-10-31 05:13:17 +0000
+
+$ flatpak info org.jaspstats.JASP
+JASP - Classical and Bayesian Statistics
+
+          ID: org.jaspstats.JASP
+         Ref: app/org.jaspstats.JASP/x86_64/stable
+        Arch: x86_64
+      Branch: stable
+     Version: 0.98.1
+     License: AGPL-3.0+
+      Origin: flathub
+  Collection: org.flathub.Stable
+Installation: system
+   Installed: 3.5 GB
+     Runtime: org.kde.Platform/x86_64/6.11
+         Sdk: org.kde.Sdk/x86_64/6.11
+
+      Commit: a142fa6e6685d28a398463259fed880160efebbbe8a7b6440266381a8bdfa14a
+      Parent: ea7a560c7a62386399e46f7b4d6dc4c1531c5519eece5a8b0e40684d53c6c034
+     Subject: rebuid JASP with Qt 6.11.3 (#200) (26da7209fd88)
+        Date: 2026-11-03 10:41:50 +0000
