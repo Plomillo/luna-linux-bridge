@@ -30,19 +30,12 @@ def focus(term, timeout=90):
         time.sleep(2)
     return False
 
-def open_csv():
-    # The launch argument opens CSV in releases that register file associations.
-    # Ctrl+O + location path is the GUI fallback and keeps the operation native.
-    pyautogui.hotkey("ctrl","o")
-    time.sleep(4)
-    pyautogui.hotkey("ctrl","l")
-    time.sleep(1)
-    pyautogui.write(str(CSV), interval=0.002)
-    pyautogui.press("enter")
-    time.sleep(24)
-
 def save(name):
-    pyautogui.screenshot().save(OUT / name)
+    # Capture the real X11 desktop with scrot (installed by the workflow).
+    target = OUT / name
+    subprocess.run(["scrot", str(target)], check=True)
+    if not target.is_file() or target.stat().st_size < 10_000:
+        raise RuntimeError(f"Screenshot missing or unexpectedly small: {target}")
 
 # RStudio Desktop (Posit) running R; load the project script into the editor.
 r_script = BASE / "R/interfaz_r_n39.R"
@@ -61,8 +54,8 @@ save("01_RStudio_R_n39.png")
 run_bg(["flatpak","run","org.jamovi.jamovi",str(CSV)], OUT/"jamovi-launch.log")
 if not focus("jamovi", 120):
     raise RuntimeError("jamovi GUI window did not appear")
-# Ensure the official application has opened the same data file.
-open_csv()
+# The CSV was passed as the official application's launch argument.
+time.sleep(8)
 save("02_jamovi_n39.png")
 
 # JASP official Flatpak desktop app.
@@ -71,7 +64,7 @@ if not focus("JASP", 120):
     # Some builds use lower-case title or append a file name.
     if not focus("jasp", 30):
         raise RuntimeError("JASP GUI window did not appear")
-open_csv()
+time.sleep(8)
 save("03_JASP_n39.png")
 
 # Save deterministic app/version/process evidence.
