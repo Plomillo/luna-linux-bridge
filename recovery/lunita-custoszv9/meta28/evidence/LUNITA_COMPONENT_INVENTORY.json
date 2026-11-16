@@ -1,0 +1,44 @@
+{
+  "base_branch": "fix/lunita-v18-rootfs-bound-checkpoint-20261109",
+  "base_commit": "9d4b53fc81728baa9bf35a96e776af9744776563",
+  "candidate_id": "LUNITA_META_28",
+  "certification": "NOT_GRANTED",
+  "engines": [
+    "E01",
+    "E02",
+    "E03",
+    "E04",
+    "E05",
+    "E06",
+    "E07",
+    "E08",
+    "E09",
+    "E10",
+    "E11",
+    "E12",
+    "E13",
+    "E14",
+    "E15"
+  ],
+  "functional_status": "NOT_RUN_NO_IMAGE",
+  "identity": "LUNITA",
+  "image": null,
+  "instruments": [
+    "brujula_giroscopica",
+    "lapiz",
+    "sacapuntas",
+    "lupa"
+  ],
+  "mailbox_modules": [
+    "CONSULTAS",
+    "TRABAJOS"
+  ],
+  "observed_at": "2026-11-16T20:13:00Z",
+  "qwen3_is_identity": false,
+  "replaces_v18": false,
+  "report": "COMPONENT_INVENTORY",
+  "schema": "LUNITA_META28_OBSERVATION/1.0",
+  "spec_version": "LUNITA-META-28",
+  "status": "NOT_INSTALLED",
+  "v18_candidate_id": "G06_REBUILD_CANDIDATE_R1"
+}

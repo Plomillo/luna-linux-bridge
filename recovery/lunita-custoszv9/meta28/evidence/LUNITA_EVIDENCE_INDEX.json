@@ -1,0 +1,83 @@
+{
+  "base_branch": "fix/lunita-v18-rootfs-bound-checkpoint-20261109",
+  "base_commit": "9d4b53fc81728baa9bf35a96e776af9744776563",
+  "candidate_id": "LUNITA_META_28",
+  "certification": "NOT_GRANTED",
+  "files": [
+    {
+      "bytes": 1575,
+      "name": "LUNITA_BUILD_MANIFEST.json",
+      "sha256": "c1c99f3421dd7f9ad9194aa3ff4b696d4959e95caaa38afac1e315879e4d411b"
+    },
+    {
+      "bytes": 914,
+      "name": "LUNITA_COMPONENT_INVENTORY.json",
+      "sha256": "2d9c3c54b62bcfe87c5fe75c23f001debfae11a316661e8895bf45ec4e07bb7f"
+    },
+    {
+      "bytes": 535,
+      "name": "LUNITA_DEPENDENCY_MANIFEST.json",
+      "sha256": "2670b2409df6b665683af28f634ec09043660b38e14b2d4ba163f7b48453c9f0"
+    },
+    {
+      "bytes": 585,
+      "name": "LUNITA_CONTRACT_REGISTRY.json",
+      "sha256": "cb0a9776c382d8b7ea2edd4c3784ac1ee5d7e62515daf743b9c8800ffa71ed11"
+    },
+    {
+      "bytes": 3036,
+      "name": "LUNITA_TEST_RESULTS.json",
+      "sha256": "8bf3a2209144eb576fe7f8a5f2e40e7fca429984dd03978176ea9d2d2023bfa1"
+    },
+    {
+      "bytes": 585,
+      "name": "LUNITA_SECURITY_AUDIT.json",
+      "sha256": "e3d5fa948d359b5b8ff95662f82b5fc01b9c398bda3abe4f297a05c629e7e8b3"
+    },
+    {
+      "bytes": 566,
+      "name": "LUNITA_ZERO_TRUST_REPORT.json",
+      "sha256": "99f60f56e92f31a468ef0fd12892b880e46ac3fc14425d8ae0edab17bb4c4530"
+    },
+    {
+      "bytes": 601,
+      "name": "LUNITA_METACOGNITIVE_REPORT.json",
+      "sha256": "cd62086e0382bdafe3654a03a67db24708f842adb4ae0945a03a9c71d9c8c2e9"
+    },
+    {
+      "bytes": 588,
+      "name": "LUNITA_RESEARCH_VALIDATION_REPORT.json",
+      "sha256": "0db8436c3d9cbae672ed3fe8643cba48e7d2210939373ed381aa155e31dcc5fb"
+    },
+    {
+      "bytes": 2007,
+      "name": "LUNITA_DOCUMENT_COMPATIBILITY_REPORT.json",
+      "sha256": "cbd3ae4251303feda92c03f3bd50868c5fbfca315867227f7daec8df55622c2b"
+    },
+    {
+      "bytes": 596,
+      "name": "LUNITA_ROLLBACK_REPORT.json",
+      "sha256": "d954b2008f7a50165cc63690cd670229297bdbb0bb59050cc6258a65bac8ef72"
+    },
+    {
+      "bytes": 533,
+      "name": "LUNITA_INDEPENDENT_VALIDATION_REPORT.json",
+      "sha256": "b8d1aeecf3aabf16036dd8d85f0dfff94cc6494d42d1d4db8fdddeeed8bb0724"
+    },
+    {
+      "bytes": 1598,
+      "name": "LUNITA_CERTIFICATION_REPORT.json",
+      "sha256": "c4363e0d82caa8cdfbaae52e31fc552b4af8390adb6af908311260db2a7fe06f"
+    }
+  ],
+  "image": null,
+  "observed_at": "2026-11-16T20:13:00Z",
+  "replaces_v18": false,
+  "report": "EVIDENCE_INDEX",
+  "schema": "LUNITA_META28_OBSERVATION/1.0",
+  "sha256sums_sha256": "15820a24b80b74ffb8e4eafd7a1bb45e1884ed17e1745dffaf3c5484f1bdeaba",
+  "spec_version": "LUNITA-META-28",
+  "squashfs": "NOT_PRODUCED",
+  "status": "BLOCKED",
+  "v18_candidate_id": "G06_REBUILD_CANDIDATE_R1"
+}

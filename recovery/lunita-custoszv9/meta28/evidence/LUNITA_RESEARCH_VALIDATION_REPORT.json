@@ -1,0 +1,18 @@
+{
+  "base_branch": "fix/lunita-v18-rootfs-bound-checkpoint-20261109",
+  "base_commit": "9d4b53fc81728baa9bf35a96e776af9744776563",
+  "candidate_id": "LUNITA_META_28",
+  "certification": "NOT_GRANTED",
+  "end_to_end_mission": "NOT_RUN",
+  "image": null,
+  "mixed": "NOT_RUN",
+  "observed_at": "2026-11-16T20:13:00Z",
+  "qualitative": "NOT_RUN",
+  "quantitative": "NOT_RUN",
+  "replaces_v18": false,
+  "report": "RESEARCH_VALIDATION",
+  "schema": "LUNITA_META28_OBSERVATION/1.0",
+  "spec_version": "LUNITA-META-28",
+  "status": "NOT_RUN",
+  "v18_candidate_id": "G06_REBUILD_CANDIDATE_R1"
+}

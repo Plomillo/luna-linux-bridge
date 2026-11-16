@@ -1,0 +1,44 @@
+{
+  "base_branch": "fix/lunita-v18-rootfs-bound-checkpoint-20261109",
+  "base_commit": "9d4b53fc81728baa9bf35a96e776af9744776563",
+  "candidate_id": "LUNITA_META_28",
+  "certification": "NOT_GRANTED",
+  "consensus_status": "CONSENSUS_UNAVAILABLE",
+  "contradictions": [
+    {
+      "id": "BASE_OS",
+      "meta28": "Debian GNU/Linux 13 Trixie XFCE",
+      "resolution": "UNRESOLVED_HUMAN_DECISION_REQUIRED",
+      "skeleton": "Debian GNU/Linux 13 Trixie KDE Plasma",
+      "v18": "Ubuntu 24.04 rootfs candidate"
+    },
+    {
+      "id": "SIZE",
+      "meta28_hard_max_bytes": 515000000,
+      "required_lower_bound_bytes": 836784544,
+      "resolution": "BUILD_BLOCKED_BY_SIZE_CONSTRAINT"
+    },
+    {
+      "id": "IDENTITY_LINE",
+      "meta28_candidate": "LUNITA_META_28",
+      "preserved_candidate": "G06_REBUILD_CANDIDATE_R1",
+      "resolution": "EXTEND_DO_NOT_REPLACE"
+    }
+  ],
+  "forbidden_jump_blocked": true,
+  "human_decision_required": [
+    "Raise GLOBAL_LUNITA_HARD_MAX_BYTES to a measured envelope, or",
+    "Amend META-28 explicitly so instruments are outside LUNITA.squashfs.",
+    "Choose the binding desktop: skeleton KDE, v1.8 Ubuntu, or META-28 XFCE."
+  ],
+  "image": null,
+  "observed_at": "2026-11-16T20:13:00Z",
+  "predicate": "ADMIT(image) is false because image is absent and AX-M28-021 size gate failed",
+  "replaces_v18": false,
+  "report": "CERTIFICATION",
+  "schema": "LUNITA_META28_OBSERVATION/1.0",
+  "silent_scope_reduction": "FORBIDDEN",
+  "spec_version": "LUNITA-META-28",
+  "status": "CERTIFICATION_BLOCKED",
+  "v18_candidate_id": "G06_REBUILD_CANDIDATE_R1"
+}

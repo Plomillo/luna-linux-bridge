@@ -1,0 +1,44 @@
+name: Lunita META-28 axiom gate
+
+on:
+  push:
+    branches:
+      - candidate/lunita-meta-28-architecture-axioms-20261116
+    paths:
+      - "recovery/lunita-custoszv9/meta28/**"
+      - ".github/workflows/lunita-meta-28-axiom-gate.yml"
+  pull_request:
+    paths:
+      - "recovery/lunita-custoszv9/meta28/**"
+      - ".github/workflows/lunita-meta-28-axiom-gate.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  axiom-gate:
+    name: Fail-closed META-28 predicate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run axiom tests
+        working-directory: recovery/lunita-custoszv9/meta28
+        run: python -m unittest discover -s . -p "test_*.py" -v
+      - name: Certification remains blocked
+        working-directory: recovery/lunita-custoszv9/meta28
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("evidence/LUNITA_CERTIFICATION_REPORT.json").read_text())
+          assert report["status"] == "CERTIFICATION_BLOCKED"
+          assert report["certification"] == "NOT_GRANTED"
+          assert report["image"] is None
+          print("META28_CERTIFICATION=NOT_GRANTED")
+          PY

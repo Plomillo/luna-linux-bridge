@@ -1,0 +1,88 @@
+{
+  "base_branch": "fix/lunita-v18-rootfs-bound-checkpoint-20261109",
+  "base_commit": "9d4b53fc81728baa9bf35a96e776af9744776563",
+  "candidate_id": "LUNITA_META_28",
+  "certification": "NOT_GRANTED",
+  "formats": [
+    {
+      "compatible": false,
+      "format": "ODT",
+      "reached": "DECLARED",
+      "status": "NOT_COMPATIBLE"
+    },
+    {
+      "compatible": false,
+      "format": "DOCX",
+      "reached": "DECLARED",
+      "status": "NOT_COMPATIBLE"
+    },
+    {
+      "compatible": false,
+      "format": "RTF",
+      "reached": "DECLARED",
+      "status": "NOT_COMPATIBLE"
+    },
+    {
+      "compatible": false,
+      "format": "TXT",
+      "reached": "DECLARED",
+      "status": "NOT_COMPATIBLE"
+    },
+    {
+      "compatible": false,
+      "format": "PDF",
+      "reached": "DECLARED",
+      "status": "NOT_COMPATIBLE"
+    },
+    {
+      "compatible": false,
+      "format": "HTML",
+      "reached": "DECLARED",
+      "status": "NOT_COMPATIBLE"
+    },
+    {
+      "compatible": false,
+      "format": "ODS",
+      "reached": "DECLARED",
+      "status": "NOT_COMPATIBLE"
+    },
+    {
+      "compatible": false,
+      "format": "XLSX",
+      "reached": "DECLARED",
+      "status": "NOT_COMPATIBLE"
+    },
+    {
+      "compatible": false,
+      "format": "CSV",
+      "reached": "DECLARED",
+      "status": "NOT_COMPATIBLE"
+    },
+    {
+      "compatible": false,
+      "format": "TSV",
+      "reached": "DECLARED",
+      "status": "NOT_COMPATIBLE"
+    },
+    {
+      "compatible": false,
+      "format": "ODP",
+      "reached": "DECLARED",
+      "status": "NOT_COMPATIBLE"
+    },
+    {
+      "compatible": false,
+      "format": "PPTX",
+      "reached": "DECLARED",
+      "status": "NOT_COMPATIBLE"
+    }
+  ],
+  "image": null,
+  "observed_at": "2026-11-16T20:13:00Z",
+  "replaces_v18": false,
+  "report": "DOCUMENT_COMPATIBILITY",
+  "schema": "LUNITA_META28_OBSERVATION/1.0",
+  "spec_version": "LUNITA-META-28",
+  "status": "NOT_COMPATIBLE",
+  "v18_candidate_id": "G06_REBUILD_CANDIDATE_R1"
+}

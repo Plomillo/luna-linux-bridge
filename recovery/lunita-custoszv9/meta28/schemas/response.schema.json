@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Plomillo/luna-linux-bridge/recovery/lunita-custoszv9/meta28/schemas/response.schema.json",
+  "title": "LUNITA response contract 1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_id",
+    "mission_id",
+    "component_id",
+    "status",
+    "output",
+    "evidence",
+    "artifacts",
+    "warnings",
+    "errors",
+    "provenance",
+    "execution_metadata",
+    "contract_version"
+  ],
+  "properties": {
+    "request_id": {"type": "string", "format": "uuid"},
+    "mission_id": {"type": "string", "format": "uuid"},
+    "component_id": {"type": "string", "minLength": 1},
+    "status": {
+      "enum": [
+        "SUCCESS",
+        "PARTIAL",
+        "FAILED",
+        "REJECTED",
+        "TIMEOUT",
+        "UNAVAILABLE",
+        "VALIDATION_FAILED",
+        "DENIED"
+      ]
+    },
+    "output": {"type": "object"},
+    "evidence": {"type": "array"},
+    "artifacts": {"type": "array"},
+    "warnings": {"type": "array"},
+    "errors": {"type": "array"},
+    "provenance": {"type": "object"},
+    "execution_metadata": {"type": "object"},
+    "contract_version": {"const": "1.0"}
+  }
+}

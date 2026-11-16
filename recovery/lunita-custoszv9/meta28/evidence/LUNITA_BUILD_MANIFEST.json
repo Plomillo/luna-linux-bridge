@@ -1,0 +1,52 @@
+{
+  "accounted_required_lower_bound_bytes": 836784544,
+  "base_branch": "fix/lunita-v18-rootfs-bound-checkpoint-20261109",
+  "base_commit": "9d4b53fc81728baa9bf35a96e776af9744776563",
+  "built": false,
+  "candidate_id": "LUNITA_META_28",
+  "certification": "NOT_GRANTED",
+  "final_squashfs_bytes": null,
+  "final_squashfs_sha256": null,
+  "hard_max_bytes": 515000000,
+  "image": null,
+  "observed_at": "2026-11-16T20:13:00Z",
+  "over_by_bytes": 321784544,
+  "payloads": [
+    {
+      "compression_credit_bytes": 0,
+      "epistemic": "REMOTE_CONTENT_LENGTH",
+      "id": "Qwen3-0.6B-IQ3_XS.gguf",
+      "locally_hashed": false,
+      "lower_bound_bytes": 379605408,
+      "net_lower_bound_bytes": 379605408,
+      "required": true,
+      "sha256_claim": "0906dcf62aa4f005887e855731376f0bf3be8f5ffa61f547df71e6154ea748d9"
+    },
+    {
+      "catalog_text": "436 MiB Download",
+      "compression_credit_bytes": 0,
+      "epistemic": "RETRIEVED_CATALOG_CLAIM",
+      "id": "org.jamovi.jamovi",
+      "locally_hashed": false,
+      "lower_bound_bytes": 457179136,
+      "net_lower_bound_bytes": 457179136,
+      "required": true,
+      "source": "https://flathub.org/en/apps/org.jamovi.jamovi"
+    }
+  ],
+  "replaces_v18": false,
+  "report": "BUILD_MANIFEST",
+  "schema": "LUNITA_META28_OBSERVATION/1.0",
+  "spec_version": "LUNITA-META-28",
+  "status": "BUILD_BLOCKED_BY_SIZE_CONSTRAINT",
+  "unmeasured_required": [
+    "debian-13-xfce",
+    "libreoffice",
+    "r",
+    "rstudio",
+    "jasp",
+    "chromium",
+    "qdrant"
+  ],
+  "v18_candidate_id": "G06_REBUILD_CANDIDATE_R1"
+}
