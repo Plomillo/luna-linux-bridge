@@ -1,0 +1,45 @@
+[5:1116/190834.240171:ERROR:bus.cc(399)] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[5:1116/190834.240321:ERROR:bus.cc(399)] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[5:1116/190834.242313:ERROR:bus.cc(399)] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[46:1116/190834.391264:ERROR:viz_main_impl.cc(186)] Exiting GPU process due to errors during initialization
+[75:1116/190834.407487:ERROR:angle_platform_impl.cc(43)] Display.cpp:1023 (initialize): ANGLE Display::initialize error 0: Internal Vulkan error (-3): Initialization of an object could not be completed for implementation-specific reasons, in ../../third_party/angle/src/libANGLE/renderer/vulkan/RendererVk.cpp, initialize:1599.
+ERR: Display.cpp:1023 (initialize): ANGLE Display::initialize error 0: Internal Vulkan error (-3): Initialization of an object could not be completed for implementation-specific reasons, in ../../third_party/angle/src/libANGLE/renderer/vulkan/RendererVk.cpp, initialize:1599.
+[75:1116/190834.407646:ERROR:gl_display.cc(520)] EGL Driver message (Critical) eglInitialize: Internal Vulkan error (-3): Initialization of an object could not be completed for implementation-specific reasons, in ../../third_party/angle/src/libANGLE/renderer/vulkan/RendererVk.cpp, initialize:1599.
+[75:1116/190834.407733:ERROR:gl_display.cc(790)] eglInitialize SwANGLE failed with error EGL_NOT_INITIALIZED
+[75:1116/190834.407792:ERROR:gl_display.cc(824)] Initialization of all EGL display types failed.
+[75:1116/190834.407839:ERROR:gl_ozone_egl.cc(26)] GLDisplayEGL::Initialize failed.
+[75:1116/190834.408558:ERROR:angle_platform_impl.cc(43)] Display.cpp:1023 (initialize): ANGLE Display::initialize error 0: Internal Vulkan error (-3): Initialization of an object could not be completed for implementation-specific reasons, in ../../third_party/angle/src/libANGLE/renderer/vulkan/RendererVk.cpp, initialize:1599.
+ERR: Display.cpp:1023 (initialize): ANGLE Display::initialize error 0: Internal Vulkan error (-3): Initialization of an object could not be completed for implementation-specific reasons, in ../../third_party/angle/src/libANGLE/renderer/vulkan/RendererVk.cpp, initialize:1599.
+[75:1116/190834.408647:ERROR:gl_display.cc(520)] EGL Driver message (Critical) eglInitialize: Internal Vulkan error (-3): Initialization of an object could not be completed for implementation-specific reasons, in ../../third_party/angle/src/libANGLE/renderer/vulkan/RendererVk.cpp, initialize:1599.
+[75:1116/190834.408709:ERROR:gl_display.cc(790)] eglInitialize SwANGLE failed with error EGL_NOT_INITIALIZED
+[75:1116/190834.408780:ERROR:gl_display.cc(824)] Initialization of all EGL display types failed.
+[75:1116/190834.408840:ERROR:gl_ozone_egl.cc(26)] GLDisplayEGL::Initialize failed.
+[75:1116/190834.411140:ERROR:viz_main_impl.cc(186)] Exiting GPU process due to errors during initialization
+jamovi
+version: 0.0.0
+cli:     0.0.0
+
+[Errno 2] No such file or directory: '/home/runner/.jamovi/settings.json'
+
+2026-11-16 19:08:35,715 - jamovi.server.session - e1f97e95-620d-4912-8ca3-45c411858dfc: starting run loop, time_limit=None, timeout_no_connection=3, timeout_no_connection_unclean=inf, timeout_no_connection_virgin=inf, timeout_idle=0, timeout_idle_notice=300, session_expires=False, session_expires_prevent_path=None
+
+2026-11-16 19:08:35,716 - jamovi.server.server - listening across origin(s): 127.0.0.1:37379 127.0.0.1:45745 127.0.0.1:39331
+2026-11-16 19:08:35,716 - jamovi.server.server - jamovi accessible from: 127.0.0.1:37379/?access_key=bdc6921d34ae4822b746576e40125c94
+ports: 37379, 45745, 39331, access_key: bdc6921d34ae4822b746576e40125c94
+
+2026-11-16 19:08:36,365 - jamovi.server.instance - opening 'descriptivos_jam...'
+
+2026-11-16 19:08:36,569 - jamovi.server.clientconnection - Websocket opened (instance ec54bee3-8c08-4e7b-8341-ad989a3e17e8)
+
+2026-11-16 19:08:36,720 - jamovi.server.session - instance 1baa3d68-e416-4b05-b752-c9c85bd1ed95: awaiting connection (unclean=False, virgin=True), will be ended after inf seconds without a connection
+2026-11-16 19:08:36,720 - jamovi.server.session - instance ec54bee3-8c08-4e7b-8341-ad989a3e17e8: connected
+
+2026-11-16 19:09:23,374 - jamovi.server.datasetcontroller - DataSet change: {'data_to_modify': [(0, 1, 0, 1)], 'data_values': [{'value': '/home/runner/work/luna-linux-bridge/luna-linux-bridge/academico/entregas-3-4/n39/salidas/descriptivos_jasp.csv'}]}
+
+2026-11-16 19:09:23,374 - jamovi.server.datasetcontroller - Request: b'\x08\x01\x10\x01"x\x10\x01\x18\x01 \x01*p\x1an/home/runner/work/luna-linux-bridge/luna-linux-bridge/academico/entregas-3-4/n39/salidas/descriptivos_jasp.csv'
+
+2026-11-16 19:09:23,375 - jamovi.server.datasetcontroller - DataSet changes complete
+
+2026-11-16 19:09:35,794 - jamovi.server.session - e1f97e95-620d-4912-8ca3-45c411858dfc: 2 instance(s), idle for 12 seconds, no connection for 0 seconds (unclean=False), running for 60 seconds
+
+[5 preload-host-spawn-strategy] Dropping 0x68c00240fc0 (3) because of connection closed

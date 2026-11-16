@@ -1,0 +1,4 @@
+0x00800003  0 rstudio.rstudio       runnervm8axu0 RStudio
+0x01400002  0 jamovi.jamovi         runnervm8axu0 descriptivos_jamovi_jmv
+0x01c00019  0 JASP.JASP             runnervm8axu0 JASP
+0x01c00024  0 JASP.JASP             runnervm8axu0 JASP
