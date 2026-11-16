@@ -27,7 +27,16 @@ build_one() {
   local xlsx="$workspace/build/evidence.xlsx"
 
   echo "FACTORY_BUILD_START=$name"
-  python3 -B "$REPO/document-factory/src/factory.py" build "$workspace" "$profile_path" --repo-root "$REPO"
+  if ! python3 -B "$REPO/document-factory/src/factory.py" build "$workspace" "$profile_path" --repo-root "$REPO"; then
+    echo "FACTORY_BUILD_DIAGNOSTICS=$name" >&2
+    for log in "$workspace"/evidence/logs/*.stderr.txt "$workspace"/evidence/logs/*.stdout.txt; do
+      if [ -f "$log" ]; then
+        echo "===== $log =====" >&2
+        cat "$log" >&2
+      fi
+    done
+    exit 41
+  fi
   python3 -B "$REPO/factory-runs/metodologia-cuantitativa-u3-u4/format_docx.py" "$docx" "$workspace/evidence/formatting.json" "$kind"
   rm -f "$pdf"
   soffice --headless --convert-to pdf --outdir "$workspace/build" "$docx" >/dev/null
