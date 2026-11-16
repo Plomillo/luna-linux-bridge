@@ -2,7 +2,8 @@
 # Los 234 registros son expansión de frecuencias marginales:
 # 39 por pregunta, sin emparejamiento entre preguntas.
 args <- commandArgs(trailingOnly = TRUE)
-csv <- if (length(args)) args[[1]] else file.path("academico","entregas-3-4","n39","datos","base_expandida_marginal_n39.csv")
+workspace <- Sys.getenv("GITHUB_WORKSPACE", unset = getwd())
+csv <- if (length(args)) args[[1]] else file.path(workspace, "academico", "entregas-3-4", "n39", "datos", "base_expandida_marginal_n39.csv")
 datos <- read.csv(csv, check.names = FALSE, fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
 stopifnot(nrow(datos) == 234L, length(unique(datos$pregunta_id)) == 6L)
 

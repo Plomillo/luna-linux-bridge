@@ -6,6 +6,7 @@ on:
       - lunita/entregas-3-4-n27-20261116
     paths-ignore:
       - "academico/entregas-3-4/n39/evidencia-gui/**"
+      - "academico/entregas-3-4/n39/datos/base_expandida_marginal_n39.csv"
   workflow_dispatch:
 
 permissions:
@@ -57,6 +58,9 @@ jobs:
           mkdir -p /tmp/xdg-runtime
           chmod 700 /tmp/xdg-runtime
           export XDG_RUNTIME_DIR=/tmp/xdg-runtime
+          touch "$HOME/.Xauthority"
+          chmod 600 "$HOME/.Xauthority"
+          export XAUTHORITY="$HOME/.Xauthority"
           Xvfb :99 -screen 0 1600x1200x24 -ac +extension RANDR >/tmp/xvfb.log 2>&1 &
           echo $! >/tmp/xvfb.pid
           export DISPLAY=:99
