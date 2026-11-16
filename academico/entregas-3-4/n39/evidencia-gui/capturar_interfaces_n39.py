@@ -14,6 +14,10 @@ OUT.mkdir(parents=True, exist_ok=True)
 pyautogui.FAILSAFE = False
 pyautogui.PAUSE = 0.6
 
+# Remove duplicate artifacts from previous non-overwriting screenshot attempts.
+for old in OUT.glob("*_000.png"):
+    old.unlink(missing_ok=True)
+
 def run_bg(args, log):
     f = open(log, "w")
     return subprocess.Popen(args, stdout=f, stderr=subprocess.STDOUT, start_new_session=True)
@@ -43,7 +47,6 @@ def focus(needles, process, log_path, timeout=180):
                 OUT.joinpath("ventanas_"+log_path+".txt").write_text(last, encoding="utf-8")
                 return wid
         if process.poll() is not None:
-            # The GUI may delegate to a background process; keep checking the X11 window list.
             time.sleep(2)
             continue
         time.sleep(2)
@@ -56,45 +59,30 @@ def focus(needles, process, log_path, timeout=180):
     OUT.joinpath("diagnostico_"+log_path+".txt").write_text("\n".join(details),encoding="utf-8")
     raise RuntimeError(f"Window not found for {needles}; see diagnostico_{log_path}.txt")
 
-def open_file_in_gui(path):
-    # Use the application's native Open dialog rather than assuming command-line file association.
-    pyautogui.hotkey("ctrl", "o")
-    time.sleep(3)
-    pyautogui.hotkey("ctrl", "l")
-    time.sleep(1)
-    pyautogui.write(str(path), interval=0.003)
-    pyautogui.press("enter")
-    time.sleep(2)
-    pyautogui.press("enter")
-    time.sleep(18)
-
 def save(name):
     target = OUT / name
+    target.unlink(missing_ok=True)
     subprocess.run(["scrot", str(target)], check=True)
     if not target.is_file() or target.stat().st_size < 10_000:
         raise RuntimeError(f"Screenshot missing or unexpectedly small: {target}")
 
-# 1) RStudio Desktop by Posit. The actual R script computes the six distributions
-# and displays the descriptive table plus six frequency plots in its Plots pane.
+# 1) RStudio Desktop by Posit: explicitly run the open R script from its Source toolbar.
 r_script = BASE / "R/interfaz_r_n39.R"
 rproc = run_bg(["rstudio", "--no-restore", "--no-save", str(r_script)], OUT/"rstudio-launch.log")
 rwid = focus(["rstudio"], rproc, "rstudio")
-pyautogui.hotkey("ctrl", "2")
-time.sleep(2)
-cmd = f'source("{r_script.as_posix()}")'
-pyautogui.write(cmd, interval=0.004)
-pyautogui.press("enter")
-time.sleep(20)
+time.sleep(8)
+# In the maximized 1600x1200 RStudio window, Source is on the script toolbar.
+pyautogui.click(530, 115)
+time.sleep(25)
 save("01_RStudio_R_n39.png")
 
-# 2) jamovi Desktop. Open the descriptive table actually produced by the jmv engine.
+# 2) jamovi Desktop: show the six-row descriptive table produced by the jmv engine.
 jproc = run_bg(["flatpak", "run", "org.jamovi.jamovi", str(JAMOVI_RESULTS)], OUT/"jamovi-launch.log")
 jwid = focus(["jamovi"], jproc, "jamovi")
 time.sleep(12)
 save("02_jamovi_n39.png")
 
-# 3) JASP Desktop. Dismiss the first-run update prompt, then open the table produced
-# by JASP's own jaspDescriptives engine through its native Open dialog.
+# 3) JASP Desktop: dismiss its first-run prompt and use File > Open > Computer.
 sproc = run_bg(["flatpak", "run", "org.jaspstats.JASP"], OUT/"jasp-launch.log")
 swid = focus(["jasp"], sproc, "jasp-start")
 time.sleep(4)
@@ -102,11 +90,23 @@ time.sleep(4)
 pyautogui.click(819, 578)
 time.sleep(5)
 swid = focus(["jasp"], sproc, "jasp-main", timeout=60)
-open_file_in_gui(JASP_RESULTS)
+# Ctrl+O opens JASP's File menu. Choose Open > Computer.
+pyautogui.hotkey("ctrl", "o")
+time.sleep(2)
+pyautogui.click(220, 185)
+time.sleep(4)
+# Computer opens the native file chooser; Ctrl+L selects its location field.
+pyautogui.hotkey("ctrl", "l")
+time.sleep(1)
+pyautogui.write(str(JASP_RESULTS), interval=0.003)
+pyautogui.press("enter")
+time.sleep(2)
+pyautogui.press("enter")
+time.sleep(20)
 swid = focus(["jasp"], sproc, "jasp-results", timeout=60)
 save("03_JASP_n39.png")
 
-# Evidence of official binaries, versions and real X11 windows found.
+# Record exact app identities and native window classes used for the captures.
 manifest = OUT / "captura_aplicaciones.txt"
 lines = [
     "RStudio_window_id="+rwid,

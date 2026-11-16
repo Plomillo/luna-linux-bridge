@@ -18,7 +18,7 @@ permissions:
 jobs:
   capture:
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 55
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -86,7 +86,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add academico/entregas-3-4/n39/evidencia-gui/*.png                   academico/entregas-3-4/n39/evidencia-gui/captura_aplicaciones.txt                   academico/entregas-3-4/n39/evidencia-gui/manifesto_datos.json                   academico/entregas-3-4/n39/datos/base_expandida_marginal_n39.csv
+          git add -A academico/entregas-3-4/n39/evidencia-gui
+          git add academico/entregas-3-4/n39/datos/base_expandida_marginal_n39.csv
           git diff --cached --quiet && exit 0
           git commit -m "Agrega capturas de las interfaces oficiales para N=39"
           git push origin HEAD:lunita/entregas-3-4-n27-20261116
