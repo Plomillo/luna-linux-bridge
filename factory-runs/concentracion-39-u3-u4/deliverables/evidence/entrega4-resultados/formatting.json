@@ -1,0 +1,23 @@
+{
+  "schema": "UNIACC_QUANTITATIVE_REPORT_FORMAT/1.0",
+  "status": "APPLIED",
+  "artifact": "report.docx",
+  "sha256": "75fdbed13432dcc714ee102ceba4bcd64282e044869106325ccb77401a4bfbc0",
+  "profile_kind": "ENTREGA4",
+  "font": "Arial",
+  "body_size_pt": 12,
+  "heading_size_pt": 16,
+  "line_spacing": 1.5,
+  "paragraph_alignment": "justified",
+  "references_hanging_indent": true,
+  "margins_cm": {
+    "top": 2.5,
+    "bottom": 2.5,
+    "left": 2.5,
+    "right": 2.5
+  },
+  "page_size": "Letter",
+  "cover_page_inserted": false,
+  "g23_authority": false,
+  "g24_authority": false
+}

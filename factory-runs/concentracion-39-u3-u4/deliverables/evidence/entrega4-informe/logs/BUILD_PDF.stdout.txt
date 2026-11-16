@@ -1,0 +1,1 @@
+convert /home/runner/work/_temp/concentracion-39-u3-u4/workspaces/entrega4-informe/build/report.docx as a Writer document -> /home/runner/work/_temp/concentracion-39-u3-u4/workspaces/entrega4-informe/build/report.pdf using filter : writer_pdf_Export

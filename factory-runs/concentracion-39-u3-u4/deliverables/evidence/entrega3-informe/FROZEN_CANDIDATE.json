@@ -1,0 +1,134 @@
+{
+  "candidate_digest_sha256": "a0df6f592bea4b11619d8bf3e2eb6a08337462c8a093fcb7fd26e2bc748c19af",
+  "files": [
+    {
+      "path": "source/report.md",
+      "sha256": "68c074fd70904e701428b556c8a6bb583e06c2d5a5c99e7c9f74da6b79d5f299",
+      "size_bytes": 3518
+    },
+    {
+      "path": "source/slides.md",
+      "sha256": "959460098cf66670a2f36859c22d14d6e8ae102c9ff0c50ca1c488f58348f84e",
+      "size_bytes": 684
+    },
+    {
+      "path": "data/sheets.json",
+      "sha256": "6847b75bdd5785469128fc4285ed95e11e930fa85120df06051c6414c7c7f520",
+      "size_bytes": 19611
+    },
+    {
+      "path": "data/source-ledger.json",
+      "sha256": "6e60c52b60981067ea97cfe3dd67af2e4316030a97a8f3f282eda53e76ef3ef8",
+      "size_bytes": 3470
+    },
+    {
+      "path": "build/evidence.xlsx",
+      "sha256": "c43964692e2251c533660cd3e86283909775a792925724bdb29c0abc800606c4",
+      "size_bytes": 7915
+    },
+    {
+      "path": "build/report.docx",
+      "sha256": "0e5e611fe813ea619bb1bf31beb063978e3acfb553df68eb3c6da3f1927dd9c3",
+      "size_bytes": 12136
+    },
+    {
+      "path": "build/report.pdf",
+      "sha256": "005fb05f7a15f44a66c4cc6b7c45cdfedd4cf1570b1a45ecb4f8127c714a8eda",
+      "size_bytes": 46367
+    },
+    {
+      "path": "build/slides.pptx",
+      "sha256": "f489236b8b88d17e1dd2f844fc6b85fa143433cb2781bbdbf055e092aef0840b",
+      "size_bytes": 31671
+    },
+    {
+      "path": "evidence/audit.jsonl",
+      "sha256": "343a9e09310188febeb2b212b2d1cfb8e00768526a28431cb5bdcf8e46c1243b",
+      "size_bytes": 4227
+    },
+    {
+      "path": "evidence/formatting.json",
+      "sha256": "86941fce22537b9c272fc1587aadddd9c3b3146fc5102850827ffd3b94f86775",
+      "size_bytes": 583
+    },
+    {
+      "path": "evidence/logs/BUILD_DOCX.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "path": "evidence/logs/BUILD_DOCX.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "path": "evidence/logs/BUILD_PDF.stderr.txt",
+      "sha256": "5dacd3568f64c55f742e85aabf51b6ec588447027c2a17c137ce8a6618dc33e4",
+      "size_bytes": 68
+    },
+    {
+      "path": "evidence/logs/BUILD_PDF.stdout.txt",
+      "sha256": "1f5437e299e9f2a547cedf5a76b26570b321018e77d26158f46c2fad6eab6201",
+      "size_bytes": 250
+    },
+    {
+      "path": "evidence/logs/BUILD_PPTX.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "path": "evidence/logs/BUILD_PPTX.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "path": "evidence/self-audit.json",
+      "sha256": "77db0bc2fe3fca3224a6432234ebcfd45bd2ed44b88dda7efeb88d93e340a5ca",
+      "size_bytes": 346
+    },
+    {
+      "path": "evidence/validation.json",
+      "sha256": "e070243927090ba8ec38cb9dd18303a00d9feb6a87d255c0afb2cd2927e5a230",
+      "size_bytes": 949
+    },
+    {
+      "path": "runtime/checkpoint.json",
+      "sha256": "034d8dbb8b3005cf8ec9886ad98c0c53e56eca73cfca229700530ff1e431dde8",
+      "size_bytes": 968
+    },
+    {
+      "path": "runtime/checkpoints/8e945b3e1c7c3d80079978a77424df759ce1efbe607f9ab098c6d8180e1689ba/checkpoint.json",
+      "sha256": "034d8dbb8b3005cf8ec9886ad98c0c53e56eca73cfca229700530ff1e431dde8",
+      "size_bytes": 968
+    },
+    {
+      "path": "runtime/checkpoints/8e945b3e1c7c3d80079978a77424df759ce1efbe607f9ab098c6d8180e1689ba/snapshot/data/sheets.json",
+      "sha256": "6847b75bdd5785469128fc4285ed95e11e930fa85120df06051c6414c7c7f520",
+      "size_bytes": 19611
+    },
+    {
+      "path": "runtime/checkpoints/8e945b3e1c7c3d80079978a77424df759ce1efbe607f9ab098c6d8180e1689ba/snapshot/data/source-ledger.json",
+      "sha256": "6e60c52b60981067ea97cfe3dd67af2e4316030a97a8f3f282eda53e76ef3ef8",
+      "size_bytes": 3470
+    },
+    {
+      "path": "runtime/checkpoints/8e945b3e1c7c3d80079978a77424df759ce1efbe607f9ab098c6d8180e1689ba/snapshot/source/report.md",
+      "sha256": "68c074fd70904e701428b556c8a6bb583e06c2d5a5c99e7c9f74da6b79d5f299",
+      "size_bytes": 3518
+    },
+    {
+      "path": "runtime/checkpoints/8e945b3e1c7c3d80079978a77424df759ce1efbe607f9ab098c6d8180e1689ba/snapshot/source/slides.md",
+      "sha256": "959460098cf66670a2f36859c22d14d6e8ae102c9ff0c50ca1c488f58348f84e",
+      "size_bytes": 684
+    },
+    {
+      "path": "runtime/heartbeat.json",
+      "sha256": "14eb562d7b0939f16cf8f6d09c13ca0571486760281f01c8817984805a8b3c3e",
+      "size_bytes": 107
+    }
+  ],
+  "frozen": true,
+  "g23": "NOT_EXECUTED",
+  "g24": "NOT_EXECUTED",
+  "schema": "DOCUMENT_FACTORY_FROZEN_WORKSPACE/1.0"
+}

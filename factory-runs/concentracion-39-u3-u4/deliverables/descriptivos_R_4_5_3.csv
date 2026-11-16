@@ -1,0 +1,7 @@
+"motor","n_pregunta","pregunta","n","media","mediana","moda","de","minimo","maximo"
+"R-4.5.3",1,"¿Cuántos años tienes?",39,40.8717948717949,43,"33",13.5144746712932,18,66
+"R-4.5.3",2,"Antes de estudiar, ¿pensaste qué ibas a hacer primero?",39,4.23076923076923,4,"5",0.809858287198526,3,5
+"R-4.5.3",3,"Cuando estudiabas, ¿pudiste seguir haciendo tu tarea aunque algo llamara tu atención?",39,3.46153846153846,4,"4",1.12029492935786,1,5
+"R-4.5.3",4,"¿Te costó seguir mirando el objeto durante los cinco minutos?",39,2.58974358974359,2,"2",1.14058961478953,1,5
+"R-4.5.3",5,"Después de leer el poema, ¿qué tan fácil o difícil te resultó comprender su significado y reflexionar sobre la relación que plantea entre las decisiones personales y las oportunidades?",39,1.69230769230769,1,"1",1.12749947260686,1,5
+"R-4.5.3",6,"¿Cuánto esfuerzo tuviste que hacer para completar la prueba?",39,2.94871794871795,3,"0",2.79989396367564,0,10

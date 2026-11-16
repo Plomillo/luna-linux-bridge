@@ -1,0 +1,11 @@
+{
+  "certification_authority": false,
+  "first_order_validation": "PASS",
+  "g23_granted": false,
+  "g24_granted": false,
+  "observed_at_utc": "2026-11-16T23:34:40.014613+00:00",
+  "rubric_criteria_requiring_independent_or_human_judgment": [],
+  "schema": "DOCUMENT_FACTORY_METACOGNITIVE_SELF_AUDIT/1.0",
+  "status": "PASS",
+  "unresolved": []
+}
