@@ -86,7 +86,9 @@ jobs:
                       subprocess.run(["wmctrl", "-i", "-a", wid], check=False)
                       subprocess.run(["xdotool", "windowraise", wid], check=False)
                       subprocess.run(["xdotool", "windowactivate", "--sync", wid], check=False)
-                      time.sleep(2)
+                      subprocess.run(["wmctrl", "-i", "-r", wid, "-b", "add,maximized_vert,maximized_horz"], check=False)
+                      subprocess.run(["wmctrl", "-i", "-r", wid, "-e", "0,0,0,1600,1200"], check=False)
+                      time.sleep(4)
                       return wid
                   time.sleep(2)
               raise RuntimeError("JASP window did not appear")
@@ -102,9 +104,11 @@ jobs:
 
           # Open the JASP navigation panel and select Open > Computer.
           # Coordinates are for the fixed 1600x1200 virtual desktop.
-          pyautogui.click(27, 46)      # hamburger
+          # Ensure the maximized window owns the full 1600x1200 desktop.
+          wid = focus_jasp()
+          pyautogui.click(28, 48)      # hamburger
           time.sleep(2)
-          pyautogui.click(40, 166)     # Open
+          pyautogui.click(42, 165)     # Open
           time.sleep(2)
           pyautogui.click(210, 182)    # Computer
           time.sleep(5)
@@ -112,10 +116,11 @@ jobs:
           time.sleep(1)
           pyautogui.write(str(result), interval=0.003)
           pyautogui.press("enter")
-          time.sleep(2)
+          time.sleep(3)
           pyautogui.press("enter")
-          time.sleep(18)
-          focus_jasp()
+          time.sleep(25)
+          wid = focus_jasp()
+          time.sleep(4)
 
           # Capture the actual JASP window desktop; require a substantial PNG.
           target.unlink(missing_ok=True)
