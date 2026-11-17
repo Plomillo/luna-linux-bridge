@@ -83,48 +83,82 @@ def download_via_invidious(video_id: str, temp_dir: Path) -> tuple[Path, dict[st
             if not formats:
                 raise RuntimeError("instance returned no audio-only adaptive formats")
 
-            # Try the two highest-bitrate audio-only formats before moving hosts.
-            for audio_format in formats[:2]:
+            # Try the highest-bitrate unique audio-only itags first.
+            unique_formats: list[dict[str, Any]] = []
+            seen_itags: set[str] = set()
+            for item in formats:
+                itag_value = str(item["itag"])
+                if itag_value not in seen_itags:
+                    seen_itags.add(itag_value)
+                    unique_formats.append(item)
+
+            for audio_format in unique_formats[:3]:
                 itag = str(audio_format["itag"])
                 container = re.sub(
                     r"[^a-z0-9]", "", str(audio_format.get("container") or "m4a").lower()
                 )
                 if container not in {"m4a", "mp4", "webm", "ogg", "opus", "mp3"}:
                     container = "m4a"
-                output_path = temp_dir / f"{video_id}.invidious.{container}"
-                playback_url = (
+
+                candidate_urls: list[tuple[str, str]] = []
+                direct_url = str(audio_format.get("url") or "")
+                if direct_url:
+                    candidate_urls.append(("direct adaptive URL", direct_url))
+
+                candidate_urls.append((
+                    "latest_version direct",
                     f"{instance}/latest_version?"
-                    + urlencode({"id": video_id, "itag": itag, "local": "true"})
-                )
-                try:
-                    with _http_get(playback_url, timeout=90) as response:
-                        content_type = response.headers.get_content_type().lower()
-                        if content_type in {"text/html", "application/json", "text/plain"}:
-                            sample = response.read(512).decode("utf-8", errors="replace")
-                            raise RuntimeError(
-                                f"playback endpoint returned {content_type}: {sample[:180]}"
-                            )
-                        total = 0
-                        with output_path.open("wb") as destination:
-                            while True:
-                                chunk = response.read(1024 * 1024)
-                                if not chunk:
-                                    break
-                                destination.write(chunk)
-                                total += len(chunk)
-                    if total < 32_000:
-                        output_path.unlink(missing_ok=True)
-                        raise RuntimeError(f"audio response was too small ({total} bytes)")
-                    print(
-                        f"Invidious audio downloaded via {host}, itag={itag}, "
-                        f"bytes={total}, container={container}",
-                        flush=True,
+                    + urlencode({"id": video_id, "itag": itag}),
+                ))
+                candidate_urls.append((
+                    "latest_version proxied",
+                    f"{instance}/latest_version?"
+                    + urlencode({"id": video_id, "itag": itag, "local": "true"}),
+                ))
+
+                for method, playback_url in candidate_urls:
+                    from urllib.parse import urlparse
+
+                    parsed = urlparse(playback_url)
+                    allowed_hosts = (
+                        parsed.hostname == host
+                        or parsed.hostname == "googlevideo.com"
+                        or bool(parsed.hostname and parsed.hostname.endswith(".googlevideo.com"))
                     )
-                    return output_path, metadata
-                except Exception as exc:
-                    output_path.unlink(missing_ok=True)
-                    errors.append(f"{host} itag {itag}: {type(exc).__name__}: {exc}")
-                    print(f"Invidious audio attempt failed: {errors[-1]}", file=sys.stderr, flush=True)
+                    if parsed.scheme != "https" or not allowed_hosts:
+                        errors.append(f"{host} itag {itag} {method}: rejected non-allowlisted playback host")
+                        continue
+
+                    output_path = temp_dir / f"{video_id}.invidious.{itag}.{container}"
+                    try:
+                        with _http_get(playback_url, timeout=120) as response:
+                            content_type = response.headers.get_content_type().lower()
+                            if content_type in {"text/html", "application/json", "text/plain"}:
+                                sample = response.read(512).decode("utf-8", errors="replace")
+                                raise RuntimeError(
+                                    f"playback endpoint returned {content_type}: {sample[:180]}"
+                                )
+                            total = 0
+                            with output_path.open("wb") as destination:
+                                while True:
+                                    chunk = response.read(1024 * 1024)
+                                    if not chunk:
+                                        break
+                                    destination.write(chunk)
+                                    total += len(chunk)
+                        if total < 32_000:
+                            output_path.unlink(missing_ok=True)
+                            raise RuntimeError(f"audio response was too small ({total} bytes)")
+                        print(
+                            f"Invidious audio downloaded via {host}, method={method}, "
+                            f"itag={itag}, bytes={total}, container={container}",
+                            flush=True,
+                        )
+                        return output_path, metadata
+                    except Exception as exc:
+                        output_path.unlink(missing_ok=True)
+                        errors.append(f"{host} itag {itag} {method}: {type(exc).__name__}: {exc}")
+                        print(f"Invidious audio attempt failed: {errors[-1]}", file=sys.stderr, flush=True)
         except Exception as exc:
             errors.append(f"{host} metadata: {type(exc).__name__}: {exc}")
             print(f"Invidious metadata attempt failed: {errors[-1]}", file=sys.stderr, flush=True)
