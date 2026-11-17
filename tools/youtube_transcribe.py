@@ -35,8 +35,121 @@ def safe_video_id(value: str) -> str:
     return cleaned
 
 
+def _http_get(url: str, *, timeout: int = 45):
+    import urllib.request
+
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36",
+            "Accept": "application/json, audio/*, */*;q=0.8",
+        },
+    )
+    return urllib.request.urlopen(request, timeout=timeout)
+
+
+def download_via_invidious(video_id: str, temp_dir: Path) -> tuple[Path, dict[str, Any]]:
+    """Download audio through an Invidious instance, proxying playback at the instance."""
+    from urllib.parse import urlencode
+
+    # Only instances present on Invidious' maintained public-instance list.
+    instances = (
+        "https://inv.nadeko.net",
+        "https://invidious.nerdvpn.de",
+        "https://yt.chocolatemoo53.com",
+        "https://invidious.tiekoetter.com",
+    )
+    errors: list[str] = []
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    for instance in instances:
+        host = instance.removeprefix("https://")
+        try:
+            api_url = f"{instance}/api/v1/videos/{video_id}?region=CL"
+            print(f"Trying trusted Invidious instance: {host}", flush=True)
+            with _http_get(api_url, timeout=35) as response:
+                metadata = json.loads(response.read().decode("utf-8"))
+
+            formats = [
+                item for item in metadata.get("adaptiveFormats", [])
+                if isinstance(item, dict)
+                and str(item.get("type", "")).lower().startswith("audio/")
+                and item.get("itag") is not None
+            ]
+            formats.sort(
+                key=lambda item: int(item.get("bitrate") or 0),
+                reverse=True,
+            )
+            if not formats:
+                raise RuntimeError("instance returned no audio-only adaptive formats")
+
+            # Try the two highest-bitrate audio-only formats before moving hosts.
+            for audio_format in formats[:2]:
+                itag = str(audio_format["itag"])
+                container = re.sub(
+                    r"[^a-z0-9]", "", str(audio_format.get("container") or "m4a").lower()
+                )
+                if container not in {"m4a", "mp4", "webm", "ogg", "opus", "mp3"}:
+                    container = "m4a"
+                output_path = temp_dir / f"{video_id}.invidious.{container}"
+                playback_url = (
+                    f"{instance}/latest_version?"
+                    + urlencode({"id": video_id, "itag": itag, "local": "true"})
+                )
+                try:
+                    with _http_get(playback_url, timeout=90) as response:
+                        content_type = response.headers.get_content_type().lower()
+                        if content_type in {"text/html", "application/json", "text/plain"}:
+                            sample = response.read(512).decode("utf-8", errors="replace")
+                            raise RuntimeError(
+                                f"playback endpoint returned {content_type}: {sample[:180]}"
+                            )
+                        total = 0
+                        with output_path.open("wb") as destination:
+                            while True:
+                                chunk = response.read(1024 * 1024)
+                                if not chunk:
+                                    break
+                                destination.write(chunk)
+                                total += len(chunk)
+                    if total < 32_000:
+                        output_path.unlink(missing_ok=True)
+                        raise RuntimeError(f"audio response was too small ({total} bytes)")
+                    print(
+                        f"Invidious audio downloaded via {host}, itag={itag}, "
+                        f"bytes={total}, container={container}",
+                        flush=True,
+                    )
+                    return output_path, metadata
+                except Exception as exc:
+                    output_path.unlink(missing_ok=True)
+                    errors.append(f"{host} itag {itag}: {type(exc).__name__}: {exc}")
+                    print(f"Invidious audio attempt failed: {errors[-1]}", file=sys.stderr, flush=True)
+        except Exception as exc:
+            errors.append(f"{host} metadata: {type(exc).__name__}: {exc}")
+            print(f"Invidious metadata attempt failed: {errors[-1]}", file=sys.stderr, flush=True)
+
+    raise RuntimeError(
+        "All trusted Invidious instances failed to provide audio. "
+        + " | ".join(errors[-8:])
+    )
+
+
 def download_audio(url: str, video_id: str, temp_dir: Path) -> tuple[Path, dict[str, Any]]:
     temp_dir.mkdir(parents=True, exist_ok=True)
+
+    # First avoid YouTube's direct datacenter bot challenge by using an official,
+    # allowlisted Invidious instance that proxies the audio stream.
+    try:
+        return download_via_invidious(video_id, temp_dir)
+    except Exception as invidious_error:
+        print(
+            f"Invidious fallback unavailable: {invidious_error}. "
+            "Trying yt-dlp direct extraction.",
+            file=sys.stderr,
+            flush=True,
+        )
+
     output_template = str(temp_dir / "%(id)s.%(ext)s")
     client_args = [
         "--force-ipv4",
@@ -58,7 +171,7 @@ def download_audio(url: str, video_id: str, temp_dir: Path) -> tuple[Path, dict[
         output_template,
         url,
     ]
-    print(f"Downloading complete YouTube audio for {video_id}...", flush=True)
+    print(f"Trying yt-dlp direct extraction for {video_id}...", flush=True)
     completed = subprocess.run(command, check=True, text=True, capture_output=True)
     if completed.stderr:
         print(completed.stderr, file=sys.stderr, flush=True)
@@ -72,6 +185,7 @@ def download_audio(url: str, video_id: str, temp_dir: Path) -> tuple[Path, dict[
         matches = [
             item for item in temp_dir.glob(f"{video_id}.*")
             if item.is_file() and item.stat().st_size > 0
+            and not item.name.endswith(".info.json")
         ]
         audio_path = matches[0] if matches else None
     if audio_path is None:
