@@ -38,13 +38,20 @@ def safe_video_id(value: str) -> str:
 def download_audio(url: str, video_id: str, temp_dir: Path) -> tuple[Path, dict[str, Any]]:
     temp_dir.mkdir(parents=True, exist_ok=True)
     output_template = str(temp_dir / "%(id)s.%(ext)s")
+    client_args = [
+        "--force-ipv4",
+        "--sleep-requests", "1",
+        "--extractor-args", "youtube:player_client=tv,web_safari",
+    ]
     command = [
         sys.executable,
         "-m",
         "yt_dlp",
+        *client_args,
         "--no-playlist",
         "--format",
         "bestaudio/best",
+        "--write-info-json",
         "--print",
         "after_move:filepath",
         "--output",
@@ -70,14 +77,11 @@ def download_audio(url: str, video_id: str, temp_dir: Path) -> tuple[Path, dict[
     if audio_path is None:
         raise RuntimeError("yt-dlp completed without producing a non-empty audio file.")
 
-    metadata_cmd = [
-        sys.executable, "-m", "yt_dlp", "--no-playlist",
-        "--skip-download", "--dump-single-json", url,
-    ]
-    metadata_run = subprocess.run(
-        metadata_cmd, check=True, text=True, capture_output=True
-    )
-    metadata = json.loads(metadata_run.stdout)
+    info_path = temp_dir / f"{video_id}.info.json"
+    metadata: dict[str, Any] = {}
+    if info_path.is_file():
+        metadata = json.loads(info_path.read_text(encoding="utf-8"))
+        info_path.unlink(missing_ok=True)
     return audio_path, metadata
 
 
