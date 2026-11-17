@@ -43,34 +43,33 @@ def download_audio(url: str, video_id: str, temp_dir: Path) -> tuple[Path, dict[
         "-m",
         "yt_dlp",
         "--no-playlist",
-        "--extract-audio",
-        "--audio-format",
-        "mp3",
-        "--audio-quality",
-        "0",
+        "--format",
+        "bestaudio/best",
         "--print",
         "after_move:filepath",
         "--output",
         output_template,
         url,
     ]
-    print(f"Downloading complete audio for YouTube video {video_id}...", flush=True)
+    print(f"Downloading complete YouTube audio for {video_id}...", flush=True)
     completed = subprocess.run(command, check=True, text=True, capture_output=True)
     if completed.stderr:
         print(completed.stderr, file=sys.stderr, flush=True)
-    candidates = [
-        Path(line.strip())
-        for line in completed.stdout.splitlines()
-        if line.strip().lower().endswith(".mp3")
-    ]
-    audio_path = next((item for item in reversed(candidates) if item.is_file()), None)
-    if audio_path is None:
-        expected = temp_dir / f"{video_id}.mp3"
-        audio_path = expected if expected.is_file() else None
-    if audio_path is None or not audio_path.is_file() or audio_path.stat().st_size == 0:
-        raise RuntimeError("yt-dlp completed without producing a non-empty MP3 audio file.")
 
-    # Metadata is fetched separately so the selected file path is unambiguous.
+    candidates = [Path(line.strip()) for line in completed.stdout.splitlines() if line.strip()]
+    audio_path = next(
+        (item for item in reversed(candidates) if item.is_file() and item.stat().st_size > 0),
+        None,
+    )
+    if audio_path is None:
+        matches = [
+            item for item in temp_dir.glob(f"{video_id}.*")
+            if item.is_file() and item.stat().st_size > 0
+        ]
+        audio_path = matches[0] if matches else None
+    if audio_path is None:
+        raise RuntimeError("yt-dlp completed without producing a non-empty audio file.")
+
     metadata_cmd = [
         sys.executable, "-m", "yt_dlp", "--no-playlist",
         "--skip-download", "--dump-single-json", url,
@@ -111,7 +110,7 @@ def main() -> int:
         cpu_threads=2,
         num_workers=1,
     )
-    print("Transcribing entire audio stream; this is not a summary or subtitle-only extraction.", flush=True)
+    print("Transcribing the complete downloaded audio; no existing caption track is required.", flush=True)
     segments_iter, info = model.transcribe(
         str(audio_path),
         language=language,
@@ -150,7 +149,6 @@ def main() -> int:
     generated_at = datetime.now(timezone.utc).isoformat()
     word_count = sum(len(re.findall(r"\S+", item["text"])) for item in segments)
 
-    # Plain-text transcript grouped by minute, with exact segment timestamps.
     lines = [
         f"TITLE: {title}",
         f"YOUTUBE_URL: {url}",
@@ -216,7 +214,6 @@ def main() -> int:
     print(f"SRT: {srt_path} ({srt_path.stat().st_size} bytes)", flush=True)
     print(f"JSON: {json_path} ({json_path.stat().st_size} bytes)", flush=True)
 
-    # Remove downloaded source audio after all transcript files have been written.
     audio_path.unlink(missing_ok=True)
     try:
         temp_dir.rmdir()

@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: youtube-transcription-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   transcribe:
@@ -36,11 +36,6 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-
-      - name: Install FFmpeg
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes ffmpeg
 
       - name: Install transcription dependencies
         run: |
