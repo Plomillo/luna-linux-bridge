@@ -1,0 +1,75 @@
+name: Full YouTube transcription
+
+on:
+  push:
+    branches:
+      - feature/whisper-webui-youtube-transcription
+    paths:
+      - ".github/workflows/youtube-full-transcription.yml"
+      - ".github/transcription-request.json"
+      - "tools/youtube_transcribe.py"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: youtube-transcription-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  transcribe:
+    name: Download and transcribe complete YouTube audio
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - name: Checkout dedicated branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Set up Deno for YouTube challenge solving
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg
+
+      - name: Install transcription dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "yt-dlp[default]" "faster-whisper>=1.1.0,<2"
+
+      - name: Transcribe requested video
+        env:
+          OMP_NUM_THREADS: "2"
+          HF_HUB_DISABLE_TELEMETRY: "1"
+        run: |
+          python -u tools/youtube_transcribe.py \
+            --request .github/transcription-request.json \
+            --output-dir transcriptions
+
+      - name: Commit complete transcript to this branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VIDEO_ID: SFDyEY2PruY
+        run: |
+          test -s "transcriptions/${VIDEO_ID}.txt"
+          test -s "transcriptions/${VIDEO_ID}.srt"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "transcriptions/${VIDEO_ID}.txt" "transcriptions/${VIDEO_ID}.srt" "transcriptions/${VIDEO_ID}.json"
+          if git diff --cached --quiet; then
+            echo "Transcript files are unchanged; nothing to commit."
+            exit 0
+          fi
+          git commit -m "Add full YouTube transcript SFDyEY2PruY"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
