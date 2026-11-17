@@ -31,7 +31,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
 
       - name: Set up Deno for YouTube challenge solving
         uses: denoland/setup-deno@v2
@@ -59,7 +58,6 @@ jobs:
 
       - name: Commit complete transcript to this branch
         env:
-          GH_TOKEN: ${{ github.token }}
           VIDEO_ID: SFDyEY2PruY
         run: |
           test -s "transcriptions/${VIDEO_ID}.txt"
