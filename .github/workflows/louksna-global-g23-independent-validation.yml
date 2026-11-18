@@ -157,20 +157,40 @@ jobs:
             exit 1
           fi
           test "$RS_RC" = "0"
+          sudo chroot "$MNT" /usr/sbin/visudo -cf /etc/sudoers
+          sudo chroot "$MNT" /usr/bin/env -i HOME=/home/lunita USER=lunita LOGNAME=lunita PATH=/usr/bin:/bin \
+            /usr/bin/sudo -n /usr/bin/id -u > "$RUNNER_TEMP/sudo-id.txt"
+          grep -qx '0' "$RUNNER_TEMP/sudo-id.txt"
           set +e
           sudo chroot "$MNT" /usr/bin/python3.13 - << 'PY'
           import json, sys
           sys.path.insert(0, "/opt/lunita/agent")
+          from lunita import engines
           from lunita.orchestrator import _jasp_status
+          e01 = engines.e01_infer("Responde solo: OK", n_predict=8)
+          e04 = engines.e04_embed("prueba")
           status = _jasp_status()
-          print(json.dumps(status))
+          report = {
+              "e01_status": e01.get("status"),
+              "e01_rc": e01.get("returncode"),
+              "e01_answer": (e01.get("answer") or "")[:200],
+              "e04_dims": len(e04),
+              "jasp": status,
+          }
+          print(json.dumps({"e01_status": report["e01_status"], "e04_dims": report["e04_dims"], "jasp_ok": status.get("ok")}))
           open("/tmp/jasp-status.json", "w").write(json.dumps(status))
+          open("/tmp/engine-smoke.json", "w").write(json.dumps(report))
+          if e01.get("status") != "EXECUTED" or e01.get("returncode") != 0:
+              raise SystemExit("e01 failed")
+          if len(e04) != 384:
+              raise SystemExit("e04 dims")
           if status.get("ok") is not True:
               raise SystemExit("jasp not ok")
           PY
           JASP_RC=$?
           set -e
-          sudo cp "$MNT/tmp/jasp-status.json" "$RUNNER_TEMP/jasp-status.json" || true
+          sudo cp "$MNT/tmp/jasp-status.json" "$RUNNER_TEMP/jasp-status.json"
+          sudo cp "$MNT/tmp/engine-smoke.json" "$RUNNER_TEMP/engine-smoke.json"
           test "$JASP_RC" = "0"
           python3 - << PY
           import json, os, hashlib, pathlib
@@ -184,6 +204,8 @@ jobs:
           if digest != expected:
               raise SystemExit("rehash mismatch")
           jasp = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/jasp-status.json").read_text())
+          smoke = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/engine-smoke.json").read_text())
+          sudo_id = pathlib.Path(os.environ["RUNNER_TEMP"] + "/sudo-id.txt").read_text().strip()
           out = pathlib.Path(os.environ["RUNNER_TEMP"] + "/rsession.out").read_text()
           attestation = {
               "schema": "LUNITA_G23_ATTESTATION/1",
@@ -203,9 +225,13 @@ jobs:
               "jasp_ok": jasp.get("ok") is True,
               "jasp_comparator": jasp.get("comparator"),
               "jasp_unit_test_rc": jasp.get("unit_test_rc"),
+              "sudo_uid": sudo_id,
+              "sudo_ok": sudo_id == "0",
+              "e01_status": smoke.get("e01_status"),
+              "e04_dims": smoke.get("e04_dims"),
               "not_a_local_second_script": True,
           }
-          if not attestation["welch_observed"] or not attestation["jasp_ok"]:
+          if not attestation["welch_observed"] or not attestation["jasp_ok"] or not attestation["sudo_ok"] or attestation["e04_dims"] != 384 or attestation["e01_status"] != "EXECUTED":
               raise SystemExit("attestation inputs failed")
           path = pathlib.Path(os.environ["RUNNER_TEMP"] + "/LUNITA_G23_ATTESTATION.json")
           path.write_text(json.dumps(attestation, indent=2) + "\n")
@@ -227,4 +253,6 @@ jobs:
             ${{ runner.temp }}/mount-cycles.json
             ${{ runner.temp }}/rsession.out
             ${{ runner.temp }}/jasp-status.json
+            ${{ runner.temp }}/engine-smoke.json
+            ${{ runner.temp }}/sudo-id.txt
           if-no-files-found: error
