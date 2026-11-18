@@ -122,7 +122,9 @@ jobs:
           set -euo pipefail
           MNT="$RUNNER_TEMP/lunita-run"
           mkdir -p "$MNT"
-          squashfuse -o ro "$ASSET" "$MNT"
+          # Root must own the FUSE mount. A user squashfuse is invisible to sudo,
+          # so bind-mounting /proc onto it fails with EPERM/EINVAL.
+          sudo squashfuse -o ro "$ASSET" "$MNT"
           sudo mount --bind /proc "$MNT/proc"
           # /dev in the image is not a device tree. Cover it with a tmpfs, then bind real nodes.
           sudo mount -t tmpfs -o size=64m tmpfs "$MNT/dev"
@@ -214,7 +216,7 @@ jobs:
           for node in urandom random zero null; do sudo umount "$MNT/dev/$node" || true; done
           sudo umount "$MNT/dev" || true
           sudo umount "$MNT/proc" || true
-          fusermount3 -u "$MNT"
+          sudo fusermount3 -u "$MNT" || sudo umount "$MNT"
 
       - name: Upload G23 attestation
         uses: actions/upload-artifact@v4
