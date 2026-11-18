@@ -92,6 +92,9 @@ jobs:
                   "jasp_dataset": os.path.isfile(os.path.join(mnt, "opt/lunita/validate/Directed.jasp")),
                   "brujula_js": os.path.isfile(os.path.join(mnt, "opt/lunita/bin/brujula.js")),
                   "orchestrator": os.path.isfile(os.path.join(mnt, "opt/lunita/agent/lunita/orchestrator.py")),
+                  "xfce_session": os.path.isfile(os.path.join(mnt, "usr/bin/xfce4-session")),
+                  "qdrant": os.path.isfile(os.path.join(mnt, "opt/lunita/runtime/qdrant/qdrant")),
+                  "mailbox": os.path.isfile(os.path.join(mnt, "usr/bin/lunita-mailbox")),
               }
               u = subprocess.run(["fusermount3", "-u", mnt], capture_output=True, text=True)
               still = subprocess.call(["mountpoint", "-q", mnt]) == 0
@@ -192,6 +195,49 @@ jobs:
           sudo cp "$MNT/tmp/jasp-status.json" "$RUNNER_TEMP/jasp-status.json"
           sudo cp "$MNT/tmp/engine-smoke.json" "$RUNNER_TEMP/engine-smoke.json"
           test "$JASP_RC" = "0"
+          test -x "$MNT/usr/bin/xfce4-session"
+          test -x "$MNT/usr/bin/xfwm4"
+          test -x "$MNT/usr/bin/xfce4-panel"
+          test -x "$MNT/opt/lunita/runtime/qdrant/qdrant"
+          test -x "$MNT/usr/bin/lunita-mailbox"
+          grep -q 'pam_permit.so' "$MNT/etc/pam.d/sudo"
+          set +e
+          sudo chroot "$MNT" /usr/bin/env -i \
+            HOME=/tmp USER=root PATH=/usr/bin:/bin \
+            LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+            PYTHONPATH=/opt/lunita/agent \
+            LUNITA_STATE_DIR=/tmp/lunita-state \
+            LUNITA_ROOT=/opt/lunita \
+            GI_TYPELIB_PATH=/usr/lib/x86_64-linux-gnu/girepository-1.0 \
+            /bin/sh -c 'Xvfb :18 -screen 0 1024x768x24 >/tmp/xvfb.log 2>&1 & echo $! >/tmp/xvfb.pid; sleep 0.5; DISPLAY=:18 /usr/bin/lunita-mailbox --self-test > /tmp/mailbox.json 2>/tmp/mailbox.err; rc=$?; kill $(cat /tmp/xvfb.pid) >/dev/null 2>&1 || true; exit $rc'
+          MB_RC=$?
+          set -e
+          echo "MB_RC=$MB_RC"
+          sudo cat "$MNT/tmp/mailbox.err" || true
+          test "$MB_RC" = "0"
+          sudo chroot "$MNT" /usr/bin/env -i \
+            HOME=/tmp USER=root PATH=/usr/bin:/bin \
+            LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+            PYTHONPATH=/opt/lunita/agent \
+            LUNITA_STATE_DIR=/tmp/lunita-state \
+            LUNITA_ROOT=/opt/lunita \
+            /usr/bin/python3.13 - << 'PY'
+          import json, sys
+          sys.path.insert(0, "/opt/lunita/agent")
+          from lunita import engines
+          from lunita.qdrant_store import persist_roundtrip
+          persisted = persist_roundtrip(engines.e04_embed)
+          hits = engines.e05_search("alfa", [
+              {"id": "alfa", "text": "alfa persistencia lunita"},
+              {"id": "beta", "text": "otro tema distinto"},
+          ])
+          report = {"persisted": persisted.get("persisted") is True, "top": hits[0]["id"] if hits else None}
+          open("/tmp/qdrant-smoke.json", "w").write(json.dumps(report))
+          if report["persisted"] is not True or report["top"] != "alfa":
+              raise SystemExit("qdrant failed " + json.dumps(report))
+          PY
+          sudo cp "$MNT/tmp/mailbox.json" "$RUNNER_TEMP/mailbox.json"
+          sudo cp "$MNT/tmp/qdrant-smoke.json" "$RUNNER_TEMP/qdrant-smoke.json"
           python3 - << PY
           import json, os, hashlib, pathlib
           asset = os.environ["ASSET"]
@@ -205,6 +251,8 @@ jobs:
               raise SystemExit("rehash mismatch")
           jasp = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/jasp-status.json").read_text())
           smoke = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/engine-smoke.json").read_text())
+          mailbox = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/mailbox.json").read_text())
+          qdrant = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/qdrant-smoke.json").read_text())
           sudo_id = pathlib.Path(os.environ["RUNNER_TEMP"] + "/sudo-id.txt").read_text().strip()
           out = pathlib.Path(os.environ["RUNNER_TEMP"] + "/rsession.out").read_text()
           attestation = {
@@ -229,10 +277,17 @@ jobs:
               "sudo_ok": sudo_id == "0",
               "e01_status": smoke.get("e01_status"),
               "e04_dims": smoke.get("e04_dims"),
+              "xfce_session": True,
+              "mailbox_ok": mailbox.get("ok") is True and mailbox.get("modules") == ["CONSULTAS", "TRABAJOS"],
+              "mailbox_modules": mailbox.get("modules"),
+              "qdrant_persisted": qdrant.get("persisted") is True,
+              "qdrant_top": qdrant.get("top"),
               "not_a_local_second_script": True,
           }
           if not attestation["welch_observed"] or not attestation["jasp_ok"] or not attestation["sudo_ok"] or attestation["e04_dims"] != 384 or attestation["e01_status"] != "EXECUTED":
               raise SystemExit("attestation inputs failed")
+          if not attestation["mailbox_ok"] or not attestation["qdrant_persisted"] or attestation["qdrant_top"] != "alfa":
+              raise SystemExit("xfce/qdrant/mailbox attestation failed")
           path = pathlib.Path(os.environ["RUNNER_TEMP"] + "/LUNITA_G23_ATTESTATION.json")
           path.write_text(json.dumps(attestation, indent=2) + "\n")
           print(path.read_text())
