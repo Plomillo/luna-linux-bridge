@@ -1,0 +1,116 @@
+name: LUNITA G24 terminal certification
+
+# Runs only after G23 completes. Re-downloads the same release asset and
+# refuses to certify unless the independent attestation names that exact hash.
+
+on:
+  workflow_run:
+    workflows:
+      - LUNITA G23 independent validation
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      g23_run_id:
+        description: Successful G23 run id whose attestation must be checked
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  g24:
+    name: Certify only the hash G23 actually executed
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Resolve the G23 run
+        id: g23
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "run_id=${{ github.event.workflow_run.id }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_id=${{ inputs.g23_run_id }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download the G23 attestation
+        uses: actions/download-artifact@v4
+        with:
+          name: lunita-g23-attestation
+          run-id: ${{ steps.g23.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: g23-evidence
+
+      - name: Re-download the asset and require the same hash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - << 'PY'
+          import hashlib, json, os, pathlib, subprocess, sys
+          evidence = pathlib.Path("g23-evidence")
+          att_path = next(evidence.rglob("LUNITA_G23_ATTESTATION.json"))
+          att = json.loads(att_path.read_text())
+          required = [
+              att.get("schema") == "LUNITA_G23_ATTESTATION/1",
+              att.get("result") == "PASS",
+              att.get("independent_runner") is True,
+              att.get("builder_host") is False,
+              att.get("mount_cycles") == 10,
+              att.get("mount") == "squashfuse",
+              att.get("rsession_rc") == 0,
+              att.get("welch_observed") is True,
+              att.get("jasp_ok") is True,
+              isinstance(att.get("sha256"), str) and len(att["sha256"]) == 64,
+              isinstance(att.get("bytes"), int) and 0 < att["bytes"] <= 2_000_000_000,
+              bool(att.get("release_tag")) and bool(att.get("asset_name")),
+          ]
+          if not all(required):
+              print(json.dumps(att, indent=2))
+              raise SystemExit("G23 attestation is incomplete")
+          dest = pathlib.Path("downloaded-asset")
+          dest.mkdir()
+          subprocess.check_call([
+              "gh", "release", "download", att["release_tag"],
+              "--repo", os.environ["GITHUB_REPOSITORY"],
+              "--pattern", att["asset_name"],
+              "--dir", str(dest),
+              "--clobber",
+          ])
+          blob = dest / att["asset_name"]
+          h = hashlib.sha256()
+          with blob.open("rb") as fh:
+              for chunk in iter(lambda: fh.read(8 << 20), b""):
+                  h.update(chunk)
+          digest = h.hexdigest()
+          size = blob.stat().st_size
+          if digest != att["sha256"] or size != att["bytes"]:
+              raise SystemExit(f"asset identity mismatch {digest} {size}")
+          certificate = {
+              "schema": "LUNITA_G24_CERTIFICATE/1",
+              "gate": "G24",
+              "result": "CERTIFIED",
+              "sha256": digest,
+              "bytes": size,
+              "asset_name": att["asset_name"],
+              "release_tag": att["release_tag"],
+              "g23_run_id": os.environ.get("G23_RUN_ID") or "${{ steps.g23.outputs.run_id }}",
+              "g23_result": att["result"],
+              "same_hash_as_g23": True,
+          }
+          pathlib.Path("LUNITA_G24_CERTIFICATE.json").write_text(json.dumps(certificate, indent=2) + "\n")
+          print(json.dumps(certificate, indent=2))
+          PY
+
+      - name: Upload G24 certificate
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunita-g24-certificate
+          path: LUNITA_G24_CERTIFICATE.json
+          if-no-files-found: error
