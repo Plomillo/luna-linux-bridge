@@ -98,6 +98,11 @@ jobs:
                   "model_xs": os.path.isfile(os.path.join(mnt, "opt/lunita/brain/qwen3/Qwen3-0.6B-IQ3_XS.gguf")),
                   "e2e": os.path.isfile(os.path.join(mnt, "opt/lunita/bin/e2e_mission.py")),
                   "t01": os.path.isfile(os.path.join(mnt, "opt/lunita/bin/t01_t80.py")),
+                  "jamovi_electron": os.path.isfile(os.path.join(mnt, "opt/jamovi-desktop/bin/electron")),
+                  "jamovi_asar": os.path.isfile(os.path.join(mnt, "opt/jamovi-desktop/bin/resources/default_app.asar")),
+                  "vmlinuz": os.path.isfile(os.path.join(mnt, "boot/vmlinuz-6.1.0-50-cloud-amd64")),
+                  "initrd": os.path.isfile(os.path.join(mnt, "boot/lunita-initrd.img")),
+                  "qemu_marker": os.path.isfile(os.path.join(mnt, "opt/lunita/QEMU_MARKER")),
               }
               u = subprocess.run(["fusermount3", "-u", mnt], capture_output=True, text=True)
               still = subprocess.call(["mountpoint", "-q", mnt]) == 0
@@ -138,8 +143,13 @@ jobs:
             sudo touch "$MNT/dev/$node"
             sudo mount --bind "/dev/$node" "$MNT/dev/$node"
           done
-          sudo mkdir -p "$MNT/dev/shm" "$MNT/tmp"
-          sudo mount -t tmpfs -o size=128m tmpfs "$MNT/dev/shm"
+          sudo mkdir -p "$MNT/dev/shm" "$MNT/dev/pts" "$MNT/tmp"
+          sudo mount -t tmpfs -o size=512m tmpfs "$MNT/dev/shm"
+          sudo mount -t devpts -o gid=5,mode=620 devpts "$MNT/dev/pts" || sudo mount --bind /dev/pts "$MNT/dev/pts"
+          sudo touch "$MNT/dev/ptmx"
+          sudo mount --bind /dev/ptmx "$MNT/dev/ptmx" || true
+          sudo touch "$MNT/dev/tty"
+          sudo mount --bind /dev/tty "$MNT/dev/tty" || true
           sudo mount -t tmpfs -o size=2048m tmpfs "$MNT/tmp"
           sudo mkdir -p "$MNT/tmp/runhome"
           set +e
@@ -281,6 +291,36 @@ jobs:
           echo "T_RC=$T_RC"
           test "$T_RC" = "0"
           sudo cp "$MNT/tmp/LUNITA_TEST_RESULTS.json" "$RUNNER_TEMP/LUNITA_TEST_RESULTS.json"
+          # Boot the published squashfs itself. The kernel and initrd are copied
+          # out of that mount; QEMU is only the harness, same role as squashfuse.
+          sudo cp "$MNT/boot/vmlinuz-6.1.0-50-cloud-amd64" "$RUNNER_TEMP/vmlinuz"
+          sudo cp "$MNT/boot/lunita-initrd.img" "$RUNNER_TEMP/lunita-initrd.img"
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y qemu-system-x86
+          if [ -e /dev/kvm ]; then QEMU_ACCEL=kvm; else QEMU_ACCEL=tcg; fi
+          echo "QEMU_ACCEL=$QEMU_ACCEL" >> "$GITHUB_ENV"
+          echo "$QEMU_ACCEL" > "$RUNNER_TEMP/qemu-accel.txt"
+          rm -f "$RUNNER_TEMP/qemu-serial.txt"
+          set +e
+          qemu-system-x86_64 \
+            -m 1024 -smp 1 -machine pc -accel "$QEMU_ACCEL" -no-reboot \
+            -kernel "$RUNNER_TEMP/vmlinuz" \
+            -initrd "$RUNNER_TEMP/lunita-initrd.img" \
+            -append "console=ttyS0 quiet" \
+            -drive "file=${ASSET},format=raw,if=virtio,readonly=on" \
+            -display none -serial "file:${RUNNER_TEMP}/qemu-serial.txt" -monitor none
+          QEMU_RC=$?
+          set -e
+          echo "QEMU_RC=$QEMU_RC"
+          # QEMU serial is CRLF. Whole-line checks fail if the CR is left in place.
+          tr -d '\r' < "$RUNNER_TEMP/qemu-serial.txt" > "$RUNNER_TEMP/qemu-serial.lf"
+          mv "$RUNNER_TEMP/qemu-serial.lf" "$RUNNER_TEMP/qemu-serial.txt"
+          cat "$RUNNER_TEMP/qemu-serial.txt" || true
+          grep -q 'SQUASH_MOUNTED' "$RUNNER_TEMP/qemu-serial.txt"
+          grep -q 'LUNITA-I14-r6 qemu boot marker' "$RUNNER_TEMP/qemu-serial.txt"
+          grep -q 'JAMOVI_ELECTRON_PRESENT' "$RUNNER_TEMP/qemu-serial.txt"
+          grep -qx 'XFCE_FOUND xfce4-session xfwm4 xfce4-panel xfconfd' "$RUNNER_TEMP/qemu-serial.txt"
+          grep -qx 'LUNITA_BOOT_OK' "$RUNNER_TEMP/qemu-serial.txt"
           python3 - << PY
           import json, os, hashlib, pathlib
           asset = os.environ["ASSET"]
@@ -301,13 +341,23 @@ jobs:
           model_line = pathlib.Path(os.environ["RUNNER_TEMP"] + "/model.sha").read_text().split()[0]
           sudo_id = pathlib.Path(os.environ["RUNNER_TEMP"] + "/sudo-id.txt").read_text().strip()
           out = pathlib.Path(os.environ["RUNNER_TEMP"] + "/rsession.out").read_text()
+          serial = pathlib.Path(os.environ["RUNNER_TEMP"] + "/qemu-serial.txt").read_text(errors="replace")
+          qemu_accel = pathlib.Path(os.environ["RUNNER_TEMP"] + "/qemu-accel.txt").read_text().strip()
+          qemu_boot = (
+              "SQUASH_MOUNTED" in serial
+              and "LUNITA-I14-r6 qemu boot marker" in serial
+              and "JAMOVI_ELECTRON_PRESENT" in serial
+              and "XFCE_FOUND xfce4-session xfwm4 xfce4-panel xfconfd" in serial
+              and "LUNITA_BOOT_OK" in serial
+              and "6.1.0-50-cloud-amd64" in serial
+          )
           steps = e2e["steps"]
           xfce_found = set(steps["xfce"].get("found") or [])
           xfce_live = {"xfce4-session", "xfwm4", "xfce4-panel", "xfconfd"} <= xfce_found
           page = (steps["brujula"].get("page") or {})
           means = steps["rstudio"].get("means") or []
           attestation = {
-              "schema": "LUNITA_G23_ATTESTATION/2",
+              "schema": "LUNITA_G23_ATTESTATION/3",
               "gate": "G23",
               "result": "PASS",
               "independent_runner": True,
@@ -339,13 +389,16 @@ jobs:
               "jamovi_engine": steps["jamovi"].get("engine"),
               "jamovi_mean_a": steps["jamovi"].get("mean_a"),
               "jamovi_desktop_ui": steps["jamovi"].get("desktop_ui") is True,
+              "jamovi_window": (steps["jamovi"].get("desktop") or {}).get("window") is True,
               "rstudio_ok": steps["rstudio"].get("ok") is True,
               "libreoffice_ok": steps["libreoffice"].get("ok") is True,
               "xfce_session": xfce_live,
               "xfce_found": sorted(xfce_found),
               "xfce_display": steps["xfce"].get("display"),
               "physical_console": False,
-              "kvm": False,
+              "kvm": qemu_accel == "kvm",
+              "qemu_boot": qemu_boot,
+              "qemu_accel": qemu_accel,
               "mailbox_ok": mailbox.get("ok") is True and mailbox.get("modules") == ["CONSULTAS", "TRABAJOS"] and (steps["xfce"].get("mailbox") or {}).get("modules") == ["CONSULTAS", "TRABAJOS"],
               "mailbox_modules": mailbox.get("modules"),
               "qdrant_persisted": qdrant.get("persisted") is True and steps["qdrant"].get("persisted") is True,
@@ -353,8 +406,8 @@ jobs:
               "e2e_ok": e2e.get("ok") is True,
               "t01_count": t01.get("count"),
               "t01_failed": t01.get("failed"),
-              "integral_meta28": False,
-              "not_certified": ["jamovi_electron_desktop", "physical_or_kvm_console_boot"],
+              "integral_meta28": (steps["jamovi"].get("desktop_ui") is True) and qemu_boot,
+              "not_certified": [] if ((steps["jamovi"].get("desktop_ui") is True) and qemu_boot) else ["jamovi_electron_desktop", "physical_or_kvm_console_boot"],
               "not_a_local_second_script": True,
           }
           if not attestation["welch_observed"] or not attestation["jasp_ok"] or not attestation["sudo_ok"] or attestation["e04_dims"] != 384 or attestation["e01_status"] != "EXECUTED":
@@ -367,8 +420,12 @@ jobs:
               raise SystemExit("e01 did not run IQ3_XS")
           if attestation["brujula_status"] != 200 or attestation["brujula_title"] != "LUNITA-BRUJULA-MARKER":
               raise SystemExit("brujula navigation failed")
-          if not attestation["jamovi_ok"] or attestation["jamovi_engine"] != "jmv::ttestIS" or attestation["jamovi_mean_a"] != 2.5:
-              raise SystemExit("jamovi analysis failed")
+          if not attestation["jamovi_ok"] or attestation["jamovi_engine"] != "jmv::ttestIS" or attestation["jamovi_mean_a"] != 2.5 or attestation["jamovi_desktop_ui"] is not True:
+              raise SystemExit("jamovi desktop failed")
+          if attestation["qemu_boot"] is not True:
+              raise SystemExit("qemu boot failed")
+          if attestation["integral_meta28"] is not True:
+              raise SystemExit("integral_meta28 is not true")
           if not attestation["rstudio_ok"] or not attestation["libreoffice_ok"] or not attestation["xfce_session"] or attestation["xfce_display"] != "Xvfb":
               raise SystemExit("rstudio/libreoffice/xfce session failed")
           if not attestation["e2e_ok"] or attestation["t01_count"] != 80 or attestation["t01_failed"] != []:
@@ -381,7 +438,8 @@ jobs:
           PY
           sudo umount "$MNT/tmp" || sudo umount -l "$MNT/tmp" || true
           sudo umount "$MNT/dev/shm" || sudo umount -l "$MNT/dev/shm" || true
-          for node in urandom random zero null; do sudo umount "$MNT/dev/$node" || sudo umount -l "$MNT/dev/$node" || true; done
+          sudo umount "$MNT/dev/pts" || sudo umount -l "$MNT/dev/pts" || true
+          for node in tty ptmx urandom random zero null; do sudo umount "$MNT/dev/$node" || sudo umount -l "$MNT/dev/$node" || true; done
           sudo umount "$MNT/dev" || sudo umount -l "$MNT/dev" || true
           sudo umount "$MNT/proc" || sudo umount -l "$MNT/proc" || true
           # Qdrant keeps the squashfs executable mapped. Lazy detach must not fail the gate.
@@ -403,4 +461,6 @@ jobs:
             ${{ runner.temp }}/e2e-mission.json
             ${{ runner.temp }}/LUNITA_TEST_RESULTS.json
             ${{ runner.temp }}/model.sha
+            ${{ runner.temp }}/qemu-serial.txt
+            ${{ runner.temp }}/qemu-accel.txt
           if-no-files-found: error

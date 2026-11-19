@@ -58,7 +58,7 @@ jobs:
           att_path = next(evidence.rglob("LUNITA_G23_ATTESTATION.json"))
           att = json.loads(att_path.read_text())
           required = [
-              att.get("schema") == "LUNITA_G23_ATTESTATION/2",
+              att.get("schema") == "LUNITA_G23_ATTESTATION/3",
               att.get("result") == "PASS",
               att.get("independent_runner") is True,
               att.get("builder_host") is False,
@@ -80,20 +80,24 @@ jobs:
               att.get("jamovi_ok") is True,
               att.get("jamovi_engine") == "jmv::ttestIS",
               att.get("jamovi_mean_a") == 2.5,
-              att.get("jamovi_desktop_ui") is False,
+              att.get("jamovi_desktop_ui") is True,
+              att.get("jamovi_window") is True,
               att.get("rstudio_ok") is True,
               att.get("libreoffice_ok") is True,
               att.get("xfce_session") is True,
               att.get("xfce_display") == "Xvfb",
               att.get("physical_console") is False,
-              att.get("kvm") is False,
+              att.get("qemu_boot") is True,
+              att.get("qemu_accel") in ("kvm", "tcg"),
+              att.get("kvm") is (att.get("qemu_accel") == "kvm"),
               att.get("mailbox_ok") is True,
               att.get("qdrant_persisted") is True,
               att.get("qdrant_top") == "alfa",
               att.get("e2e_ok") is True,
               att.get("t01_count") == 80,
               att.get("t01_failed") == [],
-              att.get("integral_meta28") is False,
+              att.get("integral_meta28") is True,
+              att.get("not_certified") == [],
               isinstance(att.get("sha256"), str) and len(att["sha256"]) == 64,
               isinstance(att.get("bytes"), int) and 0 < att["bytes"] <= 2_000_000_000,
               bool(att.get("release_tag")) and bool(att.get("asset_name")),
@@ -119,12 +123,26 @@ jobs:
           size = blob.stat().st_size
           if digest != att["sha256"] or size != att["bytes"]:
               raise SystemExit(f"asset identity mismatch {digest} {size}")
+          serial_path = next(evidence.rglob("qemu-serial.txt"), None)
+          if serial_path is None:
+              raise SystemExit("qemu serial log missing from G23 artifact")
+          serial = serial_path.read_text(errors="replace")
+          for needle in (
+              "SQUASH_MOUNTED",
+              "LUNITA-I14-r6 qemu boot marker",
+              "JAMOVI_ELECTRON_PRESENT",
+              "XFCE_FOUND xfce4-session xfwm4 xfce4-panel xfconfd",
+              "LUNITA_BOOT_OK",
+              "6.1.0-50-cloud-amd64",
+          ):
+              if needle not in serial:
+                  raise SystemExit("qemu serial missing " + needle)
           certificate = {
-              "schema": "LUNITA_G24_CERTIFICATE/2",
+              "schema": "LUNITA_G24_CERTIFICATE/3",
               "gate": "G24",
-              "result": "CERTIFIED_SCOPE",
-              "integral_meta28": False,
-              "not_certified": ["jamovi_electron_desktop", "physical_or_kvm_console_boot"],
+              "result": "CERTIFIED",
+              "integral_meta28": True,
+              "not_certified": [],
               "sha256": digest,
               "bytes": size,
               "asset_name": att["asset_name"],
@@ -140,9 +158,13 @@ jobs:
               "xfce_session": att.get("xfce_session") is True,
               "xfce_display": att.get("xfce_display"),
               "physical_console": False,
+              "kvm": att.get("kvm") is True,
+              "qemu_boot": True,
+              "qemu_accel": att.get("qemu_accel"),
               "brujula_title": att.get("brujula_title"),
               "jamovi_engine": att.get("jamovi_engine"),
-              "jamovi_desktop_ui": False,
+              "jamovi_desktop_ui": True,
+              "jamovi_window": True,
               "libreoffice_ok": att.get("libreoffice_ok") is True,
               "rstudio_ok": att.get("rstudio_ok") is True,
               "mailbox_ok": att.get("mailbox_ok") is True,
