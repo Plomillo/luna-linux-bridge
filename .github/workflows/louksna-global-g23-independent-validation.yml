@@ -95,6 +95,9 @@ jobs:
                   "xfce_session": os.path.isfile(os.path.join(mnt, "usr/bin/xfce4-session")),
                   "qdrant": os.path.isfile(os.path.join(mnt, "opt/lunita/runtime/qdrant/qdrant")),
                   "mailbox": os.path.isfile(os.path.join(mnt, "usr/bin/lunita-mailbox")),
+                  "model_xs": os.path.isfile(os.path.join(mnt, "opt/lunita/brain/qwen3/Qwen3-0.6B-IQ3_XS.gguf")),
+                  "e2e": os.path.isfile(os.path.join(mnt, "opt/lunita/bin/e2e_mission.py")),
+                  "t01": os.path.isfile(os.path.join(mnt, "opt/lunita/bin/t01_t80.py")),
               }
               u = subprocess.run(["fusermount3", "-u", mnt], capture_output=True, text=True)
               still = subprocess.call(["mountpoint", "-q", mnt]) == 0
@@ -137,7 +140,7 @@ jobs:
           done
           sudo mkdir -p "$MNT/dev/shm" "$MNT/tmp"
           sudo mount -t tmpfs -o size=128m tmpfs "$MNT/dev/shm"
-          sudo mount -t tmpfs -o size=512m tmpfs "$MNT/tmp"
+          sudo mount -t tmpfs -o size=2048m tmpfs "$MNT/tmp"
           sudo mkdir -p "$MNT/tmp/runhome"
           set +e
           sudo chroot "$MNT" /usr/bin/env -i \
@@ -239,6 +242,45 @@ jobs:
           PY
           sudo cp "$MNT/tmp/mailbox.json" "$RUNNER_TEMP/mailbox.json"
           sudo cp "$MNT/tmp/qdrant-smoke.json" "$RUNNER_TEMP/qdrant-smoke.json"
+          # The checks above keep the r4 contract. r5 also has to execute the
+          # chained mission and T01–T80 from this mount, not from the builder tree.
+          sudo fuser -k "$MNT/opt/lunita/runtime/qdrant/qdrant" || true
+          sleep 1
+          set +e
+          sudo chroot "$MNT" /usr/bin/env -i \
+            HOME=/tmp USER=root PATH=/usr/bin:/bin:/opt/jasp/bin \
+            LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+            PYTHONPATH=/opt/lunita/agent \
+            LUNITA_STATE_DIR=/tmp/lunita-state-e2e \
+            LUNITA_ROOT=/opt/lunita \
+            GI_TYPELIB_PATH=/usr/lib/x86_64-linux-gnu/girepository-1.0 \
+            /usr/bin/python3.13 /opt/lunita/bin/e2e_mission.py \
+            > "$RUNNER_TEMP/e2e.out" 2> "$RUNNER_TEMP/e2e.err"
+          E2E_RC=$?
+          set -e
+          echo "E2E_RC=$E2E_RC"
+          sudo cat "$MNT/tmp/e2e-mission.json" || true
+          test "$E2E_RC" = "0"
+          sudo cp "$MNT/tmp/e2e-mission.json" "$RUNNER_TEMP/e2e-mission.json"
+          sudo sha256sum "$MNT/opt/lunita/brain/qwen3/Qwen3-0.6B-IQ3_XS.gguf" | tee "$RUNNER_TEMP/model.sha"
+          grep -q '^0906dcf62aa4f005887e855731376f0bf3be8f5ffa61f547df71e6154ea748d9 ' "$RUNNER_TEMP/model.sha"
+          sudo fuser -k "$MNT/opt/lunita/runtime/qdrant/qdrant" || true
+          sleep 1
+          set +e
+          sudo chroot "$MNT" /usr/bin/env -i \
+            HOME=/tmp USER=root PATH=/usr/bin:/bin \
+            LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+            PYTHONPATH=/opt/lunita/agent \
+            LUNITA_STATE_DIR=/tmp/lunita-state-t01 \
+            LUNITA_ROOT=/opt/lunita \
+            T01_OUT=/tmp/LUNITA_TEST_RESULTS.json \
+            /usr/bin/python3.13 /opt/lunita/bin/t01_t80.py \
+            > "$RUNNER_TEMP/t01.out" 2> "$RUNNER_TEMP/t01.err"
+          T_RC=$?
+          set -e
+          echo "T_RC=$T_RC"
+          test "$T_RC" = "0"
+          sudo cp "$MNT/tmp/LUNITA_TEST_RESULTS.json" "$RUNNER_TEMP/LUNITA_TEST_RESULTS.json"
           python3 - << PY
           import json, os, hashlib, pathlib
           asset = os.environ["ASSET"]
@@ -254,10 +296,18 @@ jobs:
           smoke = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/engine-smoke.json").read_text())
           mailbox = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/mailbox.json").read_text())
           qdrant = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/qdrant-smoke.json").read_text())
+          e2e = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/e2e-mission.json").read_text())
+          t01 = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/LUNITA_TEST_RESULTS.json").read_text())
+          model_line = pathlib.Path(os.environ["RUNNER_TEMP"] + "/model.sha").read_text().split()[0]
           sudo_id = pathlib.Path(os.environ["RUNNER_TEMP"] + "/sudo-id.txt").read_text().strip()
           out = pathlib.Path(os.environ["RUNNER_TEMP"] + "/rsession.out").read_text()
+          steps = e2e["steps"]
+          xfce_found = set(steps["xfce"].get("found") or [])
+          xfce_live = {"xfce4-session", "xfwm4", "xfce4-panel", "xfconfd"} <= xfce_found
+          page = (steps["brujula"].get("page") or {})
+          means = steps["rstudio"].get("means") or []
           attestation = {
-              "schema": "LUNITA_G23_ATTESTATION/1",
+              "schema": "LUNITA_G23_ATTESTATION/2",
               "gate": "G23",
               "result": "PASS",
               "independent_runner": True,
@@ -271,24 +321,60 @@ jobs:
               "rsession_rc": 0,
               "welch_line": "WELCH t=-1.1677484162 df=5.584615 p=0.290333569 mean1=2.5000 mean2=3.7500",
               "welch_observed": "WELCH t=-1.1677484162" in out,
-              "jasp_ok": jasp.get("ok") is True,
+              "jasp_ok": jasp.get("ok") is True and steps["jasp"].get("ok") is True,
               "jasp_comparator": jasp.get("comparator"),
               "jasp_unit_test_rc": jasp.get("unit_test_rc"),
               "sudo_uid": sudo_id,
               "sudo_ok": sudo_id == "0",
+              "sudo_scope": "root-equivalent NOPASSWD ALL inside the image, not least privilege",
               "e01_status": smoke.get("e01_status"),
+              "e01_model": steps["e01"].get("model"),
               "e04_dims": smoke.get("e04_dims"),
-              "xfce_session": True,
-              "mailbox_ok": mailbox.get("ok") is True and mailbox.get("modules") == ["CONSULTAS", "TRABAJOS"],
+              "model_file": steps["model"].get("file"),
+              "model_bytes": steps["model"].get("bytes"),
+              "model_sha256": model_line,
+              "brujula_status": page.get("status"),
+              "brujula_title": page.get("title"),
+              "jamovi_ok": steps["jamovi"].get("ok") is True,
+              "jamovi_engine": steps["jamovi"].get("engine"),
+              "jamovi_mean_a": steps["jamovi"].get("mean_a"),
+              "jamovi_desktop_ui": steps["jamovi"].get("desktop_ui") is True,
+              "rstudio_ok": steps["rstudio"].get("ok") is True,
+              "libreoffice_ok": steps["libreoffice"].get("ok") is True,
+              "xfce_session": xfce_live,
+              "xfce_found": sorted(xfce_found),
+              "xfce_display": steps["xfce"].get("display"),
+              "physical_console": False,
+              "kvm": False,
+              "mailbox_ok": mailbox.get("ok") is True and mailbox.get("modules") == ["CONSULTAS", "TRABAJOS"] and (steps["xfce"].get("mailbox") or {}).get("modules") == ["CONSULTAS", "TRABAJOS"],
               "mailbox_modules": mailbox.get("modules"),
-              "qdrant_persisted": qdrant.get("persisted") is True,
+              "qdrant_persisted": qdrant.get("persisted") is True and steps["qdrant"].get("persisted") is True,
               "qdrant_top": qdrant.get("top"),
+              "e2e_ok": e2e.get("ok") is True,
+              "t01_count": t01.get("count"),
+              "t01_failed": t01.get("failed"),
+              "integral_meta28": False,
+              "not_certified": ["jamovi_electron_desktop", "physical_or_kvm_console_boot"],
               "not_a_local_second_script": True,
           }
           if not attestation["welch_observed"] or not attestation["jasp_ok"] or not attestation["sudo_ok"] or attestation["e04_dims"] != 384 or attestation["e01_status"] != "EXECUTED":
               raise SystemExit("attestation inputs failed")
           if not attestation["mailbox_ok"] or not attestation["qdrant_persisted"] or attestation["qdrant_top"] != "alfa":
               raise SystemExit("xfce/qdrant/mailbox attestation failed")
+          if attestation["model_file"] != "Qwen3-0.6B-IQ3_XS.gguf" or attestation["model_bytes"] != 379605408 or attestation["model_sha256"] != "0906dcf62aa4f005887e855731376f0bf3be8f5ffa61f547df71e6154ea748d9":
+              raise SystemExit("model identity failed")
+          if "IQ3_XS" not in str(attestation["e01_model"]):
+              raise SystemExit("e01 did not run IQ3_XS")
+          if attestation["brujula_status"] != 200 or attestation["brujula_title"] != "LUNITA-BRUJULA-MARKER":
+              raise SystemExit("brujula navigation failed")
+          if not attestation["jamovi_ok"] or attestation["jamovi_engine"] != "jmv::ttestIS" or attestation["jamovi_mean_a"] != 2.5:
+              raise SystemExit("jamovi analysis failed")
+          if not attestation["rstudio_ok"] or not attestation["libreoffice_ok"] or not attestation["xfce_session"] or attestation["xfce_display"] != "Xvfb":
+              raise SystemExit("rstudio/libreoffice/xfce session failed")
+          if not attestation["e2e_ok"] or attestation["t01_count"] != 80 or attestation["t01_failed"] != []:
+              raise SystemExit("e2e or T01-T80 failed")
+          if len(means) < 2 or abs(means[0] - 2.5) > 1e-9 or abs(means[1] - 3.75) > 1e-9:
+              raise SystemExit("rstudio means failed")
           path = pathlib.Path(os.environ["RUNNER_TEMP"] + "/LUNITA_G23_ATTESTATION.json")
           path.write_text(json.dumps(attestation, indent=2) + "\n")
           print(path.read_text())
@@ -314,4 +400,7 @@ jobs:
             ${{ runner.temp }}/jasp-status.json
             ${{ runner.temp }}/engine-smoke.json
             ${{ runner.temp }}/sudo-id.txt
+            ${{ runner.temp }}/e2e-mission.json
+            ${{ runner.temp }}/LUNITA_TEST_RESULTS.json
+            ${{ runner.temp }}/model.sha
           if-no-files-found: error
