@@ -1,0 +1,301 @@
+name: LUNITA I14-r6 KVM closure
+
+# Does not rebuild or replace the frozen squashfs. The published bytes stay
+# c63d5a29… The job only repairs the runner's access to the existing /dev/kvm
+# node and boots that exact file with -accel kvm. There is no TCG fallback.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Frozen release tag
+        required: true
+        type: string
+        default: lunita-i14-r6
+      asset_name:
+        description: Frozen asset filename
+        required: true
+        type: string
+        default: LUNITA-I14-r6.squashfs
+      expected_sha256:
+        description: SHA-256 that must match the frozen candidate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  kvm-closure:
+    name: Fix runner KVM access and boot frozen I14-r6
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Download the frozen release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download "${{ inputs.release_tag }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "${{ inputs.asset_name }}" \
+            --dir "$RUNNER_TEMP/lunita-asset" \
+            --clobber
+          test -f "$RUNNER_TEMP/lunita-asset/${{ inputs.asset_name }}"
+          echo "ASSET=$RUNNER_TEMP/lunita-asset/${{ inputs.asset_name }}" >> "$GITHUB_ENV"
+
+      - name: Require the frozen hash on both published names
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd "$(dirname "$ASSET")"
+          echo "${{ inputs.expected_sha256 }}  $(basename "$ASSET")" | sha256sum -c -
+          python3 - << 'PY'
+          import json, os, urllib.request
+          expected = "${{ inputs.expected_sha256 }}"
+          n = os.path.getsize(os.environ["ASSET"])
+          print(f"bytes={n}")
+          if n != 1727115264:
+              raise SystemExit(f"size drift {n}")
+          req = urllib.request.Request(
+              "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ inputs.release_tag }}",
+              headers={"Accept": "application/vnd.github+json", "User-Agent": "lunita-kvm-closure"},
+          )
+          token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+          if token:
+              req.add_header("Authorization", f"Bearer {token}")
+          rel = json.load(urllib.request.urlopen(req))
+          want = {"LUNITA-I14-r6.squashfs", "LUNITA.squashfs"}
+          seen = {}
+          for asset in rel["assets"]:
+              if asset["name"] in want:
+                  seen[asset["name"]] = (asset["digest"], asset["size"])
+          if set(seen) != want:
+              raise SystemExit(f"release names drifted: {seen}")
+          for name, (digest, size) in seen.items():
+              if digest != "sha256:" + expected or size != 1727115264:
+                  raise SystemExit(f"{name} is not the frozen file {digest} {size}")
+          print("BOTH_NAMES_FROZEN")
+          PY
+
+      - name: Install QEMU
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends qemu-system-x86 squashfuse fuse3 acl
+          command -v qemu-system-x86_64
+          command -v sg
+
+      - name: Reproduce EACCES, grant the runner user KVM, boot the frozen file
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - << 'PY'
+          import json, os, pwd
+          path = "/dev/kvm"
+          if not os.path.exists(path):
+              raise SystemExit("ROOT_CAUSE_NODE_ABSENT: /dev/kvm is missing, so this runner has no nested KVM. Refusing TCG.")
+          st = os.stat(path)
+          try:
+              fd = os.open(path, os.O_RDWR | os.O_CLOEXEC)
+              os.close(fd)
+              opened, err = True, None
+          except OSError as exc:
+              opened, err = False, {"errno": exc.errno, "strerror": exc.strerror}
+          rec = {
+              "mode": oct(st.st_mode & 0o777),
+              "uid": st.st_uid,
+              "gid": st.st_gid,
+              "euid": os.geteuid(),
+              "user": pwd.getpwuid(os.geteuid()).pw_name,
+              "groups": os.getgroups(),
+              "open_ok": opened,
+              "error": err,
+          }
+          open(os.environ["RUNNER_TEMP"] + "/kvm-before.json", "w").write(json.dumps(rec, indent=2) + "\n")
+          print("KVM_BEFORE", json.dumps(rec))
+          PY
+          id
+          stat -c 'MODE=%A %a OWNER=%U:%G' /dev/kvm
+          getent group kvm || echo 'NO_KVM_GROUP'
+          QEMU="$(command -v qemu-system-x86_64)"
+          cat > "$RUNNER_TEMP/kvm-open.py" << 'PY'
+          import os
+          fd = os.open("/dev/kvm", os.O_RDWR | os.O_CLOEXEC)
+          os.close(fd)
+          print("OPEN_OK", os.geteuid())
+          PY
+          # The frozen image is not involved. This only changes the ephemeral
+          # runner node. Prior job 44479715506 ran QEMU as this user and got
+          # EACCES. Job 44481744779 did not fix that credential: its probe
+          # exited 124 only under sudo, and the workflow still had a TCG fallback.
+          if python3 "$RUNNER_TEMP/kvm-open.py"; then
+            echo "OPEN_BEFORE=ok"
+            WRAP=direct
+          else
+            echo "OPEN_BEFORE=EACCES"
+            if ! getent group kvm >/dev/null; then
+              sudo groupadd kvm
+            fi
+            sudo usermod -aG kvm "$USER"
+            sudo chgrp kvm /dev/kvm
+            sudo chmod 0660 /dev/kvm
+            if sg kvm -c "python3 $RUNNER_TEMP/kvm-open.py"; then
+              WRAP=sg
+            else
+              # Node ignores group kvm. Grant this uid rw and prove the open.
+              # Still no TCG path.
+              sudo chmod 0666 /dev/kvm
+              python3 "$RUNNER_TEMP/kvm-open.py"
+              WRAP=direct
+            fi
+          fi
+          echo "KVM_WRAP=$WRAP"
+          python3 - << PY
+          import json, os, pwd
+          st = os.stat("/dev/kvm")
+          rec = {
+              "mode": oct(st.st_mode & 0o777),
+              "uid": st.st_uid,
+              "gid": st.st_gid,
+              "euid": os.geteuid(),
+              "user": pwd.getpwuid(os.geteuid()).pw_name,
+              "groups": os.getgroups(),
+              "wrap": "${WRAP}",
+          }
+          open(os.environ["RUNNER_TEMP"] + "/kvm-after.json", "w").write(json.dumps(rec, indent=2) + "\n")
+          print("KVM_AFTER", json.dumps(rec))
+          PY
+          cat > "$RUNNER_TEMP/kvm-probe.sh" << EOF
+          #!/bin/sh
+          set -eu
+          exec "$QEMU" -accel kvm -machine pc -m 32 -display none -serial null -monitor none -daemonize -pidfile "\$1"
+          EOF
+          chmod 755 "$RUNNER_TEMP/kvm-probe.sh"
+          rm -f "$RUNNER_TEMP/kvm-probe.pid"
+          if [ "$WRAP" = sg ]; then
+            sg kvm -c "$RUNNER_TEMP/kvm-probe.sh $RUNNER_TEMP/kvm-probe.pid"
+          else
+            "$RUNNER_TEMP/kvm-probe.sh" "$RUNNER_TEMP/kvm-probe.pid"
+          fi
+          sleep 1
+          PROBE_PID="$(cat "$RUNNER_TEMP/kvm-probe.pid")"
+          python3 - << PY
+          import os, pathlib
+          pid = pathlib.Path(os.environ["RUNNER_TEMP"] + "/kvm-probe.pid").read_text().strip()
+          held = []
+          for name in os.listdir(f"/proc/{pid}/fd"):
+              try:
+                  target = os.readlink(f"/proc/{pid}/fd/{name}")
+              except OSError:
+                  continue
+              if target == "/dev/kvm" or target.startswith("anon_inode:kvm"):
+                  held.append(f"{name}->{target}")
+          print("KVM_FDS", held)
+          if not held:
+              raise SystemExit("qemu -accel kvm did not hold /dev/kvm")
+          PY
+          kill "$PROBE_PID" || true
+          wait "$PROBE_PID" 2>/dev/null || true
+          # Kernel and initrd come out of the frozen mount. The asset itself is not rewritten.
+          MNT="$RUNNER_TEMP/lunita-kvm-mnt"
+          mkdir -p "$MNT"
+          sudo squashfuse -o ro "$ASSET" "$MNT"
+          sudo cp "$MNT/boot/vmlinuz-6.1.0-50-cloud-amd64" "$RUNNER_TEMP/vmlinuz"
+          sudo cp "$MNT/boot/lunita-initrd.img" "$RUNNER_TEMP/lunita-initrd.img"
+          sudo chmod a+r "$RUNNER_TEMP/vmlinuz" "$RUNNER_TEMP/lunita-initrd.img"
+          sudo grep -q 'LUNITA-I14-r6 qemu boot marker' "$MNT/opt/lunita/QEMU_MARKER"
+          sudo fusermount3 -u "$MNT"
+          cat > "$RUNNER_TEMP/kvm-boot.sh" << EOF
+          #!/bin/sh
+          set -eu
+          exec "$QEMU" \\
+            -m 1024 -smp 1 -machine pc -accel kvm -no-reboot \\
+            -kernel "$RUNNER_TEMP/vmlinuz" \\
+            -initrd "$RUNNER_TEMP/lunita-initrd.img" \\
+            -append "console=ttyS0 quiet" \\
+            -drive "file=$ASSET,format=raw,if=virtio,readonly=on" \\
+            -display none -serial "file:$RUNNER_TEMP/qemu-serial.txt" -monitor none
+          EOF
+          chmod 755 "$RUNNER_TEMP/kvm-boot.sh"
+          rm -f "$RUNNER_TEMP/qemu-serial.txt"
+          set +e
+          if [ "$WRAP" = sg ]; then
+            sg kvm -c "$RUNNER_TEMP/kvm-boot.sh"
+          else
+            "$RUNNER_TEMP/kvm-boot.sh"
+          fi
+          QEMU_RC=$?
+          set -e
+          echo "QEMU_RC=$QEMU_RC"
+          test "$QEMU_RC" = "0"
+          tr -d '\r' < "$RUNNER_TEMP/qemu-serial.txt" > "$RUNNER_TEMP/qemu-serial.lf"
+          mv "$RUNNER_TEMP/qemu-serial.lf" "$RUNNER_TEMP/qemu-serial.txt"
+          cat "$RUNNER_TEMP/qemu-serial.txt"
+          grep -q 'SQUASH_MOUNTED' "$RUNNER_TEMP/qemu-serial.txt"
+          grep -q 'LUNITA-I14-r6 qemu boot marker' "$RUNNER_TEMP/qemu-serial.txt"
+          grep -q 'JAMOVI_ELECTRON_PRESENT' "$RUNNER_TEMP/qemu-serial.txt"
+          grep -qx 'XFCE_FOUND xfce4-session xfwm4 xfce4-panel xfconfd' "$RUNNER_TEMP/qemu-serial.txt"
+          grep -qx 'LUNITA_BOOT_OK' "$RUNNER_TEMP/qemu-serial.txt"
+          grep -q '6.1.0-50-cloud-amd64' "$RUNNER_TEMP/qemu-serial.txt"
+          python3 - << PY
+          import hashlib, json, os, pathlib
+          asset = os.environ["ASSET"]
+          h = hashlib.sha256()
+          with open(asset, "rb") as fh:
+              for chunk in iter(lambda: fh.read(8 << 20), b""):
+                  h.update(chunk)
+          digest = h.hexdigest()
+          expected = "${{ inputs.expected_sha256 }}"
+          if digest != expected or os.path.getsize(asset) != 1727115264:
+              raise SystemExit(f"frozen file changed {digest}")
+          before = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/kvm-before.json").read_text())
+          after = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/kvm-after.json").read_text())
+          serial = pathlib.Path(os.environ["RUNNER_TEMP"] + "/qemu-serial.txt").read_text()
+          cert = {
+              "schema": "LUNITA_I14_R6_KVM_CLOSURE/1",
+              "result": "CERTIFIED",
+              "candidate": "LUNITA-I14-r6",
+              "sha256": digest,
+              "bytes": 1727115264,
+              "image_modified": False,
+              "prior_eacces_run": "44479715506",
+              "prior_sudo_kvm_run": "44481744779",
+              "root_cause": "The ubuntu-latest runner exposes /dev/kvm, so nested KVM is present, but the runner uid is not allowed to open it. QEMU then reports 'Could not access KVM kernel module: Permission denied'. Run 44481744779 did not change that credential: its probe exited 124 only under sudo, and the workflow still had a TCG fallback.",
+              "mode_before": before["mode"],
+              "open_before": before["open_ok"],
+              "open_before_error": before["error"],
+              "runner_user": before["user"],
+              "runner_groups_before": before["groups"],
+              "remediation": after["wrap"],
+              "mode_after": after["mode"],
+              "kvm_fd_held_by_qemu": True,
+              "qemu_accel": "kvm",
+              "qemu_ran_as_root": False,
+              "tcg_fallback": False,
+              "qemu_rc": 0,
+              "squash_mounted": "SQUASH_MOUNTED" in serial,
+              "marker": "LUNITA-I14-r6 qemu boot marker" in serial,
+              "jamovi_electron": "JAMOVI_ELECTRON_PRESENT" in serial,
+              "xfce": "XFCE_FOUND xfce4-session xfwm4 xfce4-panel xfconfd" in serial,
+              "boot_ok": "LUNITA_BOOT_OK" in serial,
+          }
+          if not all(cert[k] for k in ("squash_mounted", "marker", "jamovi_electron", "xfce", "boot_ok", "kvm_fd_held_by_qemu")):
+              raise SystemExit("closure predicates failed")
+          path = pathlib.Path(os.environ["RUNNER_TEMP"] + "/LUNITA_I14_R6_KVM_CLOSURE.json")
+          path.write_text(json.dumps(cert, indent=2) + "\n")
+          print(path.read_text())
+          PY
+
+      - name: Upload the KVM closure certificate
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunita-i14-r6-kvm-closure
+          path: |
+            ${{ runner.temp }}/LUNITA_I14_R6_KVM_CLOSURE.json
+            ${{ runner.temp }}/kvm-before.json
+            ${{ runner.temp }}/kvm-after.json
+            ${{ runner.temp }}/qemu-serial.txt
+          if-no-files-found: error
