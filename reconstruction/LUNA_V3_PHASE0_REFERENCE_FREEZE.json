@@ -1,0 +1,58 @@
+{
+  "specification_id": "LUNA_DIRECTIVA_V3_MASTER_RECONSTRUCTION",
+  "specification_version": "1.0",
+  "record_type": "PHASE_0_REFERENCE_FREEZE",
+  "record_status": "EVIDENCED",
+  "product_status": "NOT_CERTIFIED",
+  "release_status": "NOT_CERTIFIED_UNTIL_TESTED",
+  "automatic_merge": false,
+  "recorded_at": "2026-11-19T16:06:00Z",
+  "repository": "Plomillo/luna-linux-bridge",
+  "repository_visibility": "PUBLIC",
+  "default_branch": "main",
+  "baselines": {
+    "ui_source_branch": "work/louksna-zona-directiva-v0.3-functional-20261006",
+    "ui_source_head_sha": "ec8e4abb9d57ea9708fc273856227b5c41329b3f",
+    "ui_source_head_verified": true,
+    "ui_source_subject": "Restore canonical V0.3 governance contract to authorized work branch",
+    "ui_source_committed_at": "2026-10-10T03:19:50Z",
+    "mother_branch": "automation/mtls-evidence-gate-20261013",
+    "mother_head_sha_frozen": "9130bca95fc9a9400e51a80f7afc56ca7d47758c",
+    "mother_head_sha_frozen_verified": true,
+    "mother_frozen_subject": "kedb(directiva): evidence search tick 2026-11-17T22:38:40Z",
+    "mother_frozen_committed_at": "2026-11-17T22:38:40Z",
+    "mother_branch_tip_sha_observed": "efc5d8b0a541cf801422f3ae77ca04efb8f1fce3",
+    "mother_branch_tip_committed_at": "2026-11-19T13:53:44Z",
+    "mother_tip_drift_after_freeze": 5,
+    "common_ancestor_sha": "01d28c319af6a644168c621ab01b8e69dc1c0a0e",
+    "common_ancestor_verified": true,
+    "common_ancestor_subject": "ci(document-factory): add PR-bound operational authorization gate",
+    "branch_relation": "DIVERGED",
+    "ui_ahead_of_frozen_mother": 31,
+    "frozen_mother_ahead_of_ui": 268,
+    "ui_ahead_of_live_mother_tip": 31,
+    "live_mother_tip_ahead_of_ui": 273
+  },
+  "mother_tip_drift_commits": [
+    "cb9a14b002bc0b0c9e93b8825e4a02f83675c583",
+    "5f274b596fd6e975ac2cd40c19d52a3a20da94e1",
+    "eba2ba22d655aecc0a9982b8b6e37357ebbf6a1c",
+    "a89d75e71c46181246f4849cfbdf37460cc05b49",
+    "efc5d8b0a541cf801422f3ae77ca04efb8f1fce3"
+  ],
+  "reconstruction_branch": "work/luna-v3-phase0-reference-freeze-20261119",
+  "reconstruction_base_sha": "ec8e4abb9d57ea9708fc273856227b5c41329b3f",
+  "rules": {
+    "pin_frozen_shas_not_moving_branch_tips": true,
+    "do_not_fast_forward_mother_branch": true,
+    "do_not_automatic_merge": true,
+    "do_not_declare_louksna_deb": false,
+    "do_not_declare_louksna_sh": false,
+    "g23": "PENDING_EVIDENCE",
+    "g24": "PENDING_G23"
+  },
+  "artifacts": {
+    "LOUKSNA.deb": "ABSENT",
+    "LOUKSNA.sh": "ABSENT"
+  }
+}
