@@ -293,12 +293,15 @@ jobs:
           path.write_text(json.dumps(attestation, indent=2) + "\n")
           print(path.read_text())
           PY
-          sudo umount "$MNT/tmp" || true
-          sudo umount "$MNT/dev/shm" || true
-          for node in urandom random zero null; do sudo umount "$MNT/dev/$node" || true; done
-          sudo umount "$MNT/dev" || true
-          sudo umount "$MNT/proc" || true
-          sudo fusermount3 -u "$MNT" || sudo umount "$MNT"
+          sudo umount "$MNT/tmp" || sudo umount -l "$MNT/tmp" || true
+          sudo umount "$MNT/dev/shm" || sudo umount -l "$MNT/dev/shm" || true
+          for node in urandom random zero null; do sudo umount "$MNT/dev/$node" || sudo umount -l "$MNT/dev/$node" || true; done
+          sudo umount "$MNT/dev" || sudo umount -l "$MNT/dev" || true
+          sudo umount "$MNT/proc" || sudo umount -l "$MNT/proc" || true
+          # Qdrant keeps the squashfs executable mapped. Lazy detach must not fail the gate.
+          sudo fuser -km "$MNT" || true
+          sleep 1
+          sudo fusermount3 -u "$MNT" || sudo umount -l "$MNT" || true
 
       - name: Upload G23 attestation
         uses: actions/upload-artifact@v4
