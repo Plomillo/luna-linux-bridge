@@ -46,8 +46,8 @@
     "pin_frozen_shas_not_moving_branch_tips": true,
     "do_not_fast_forward_mother_branch": true,
     "do_not_automatic_merge": true,
-    "do_not_declare_louksna_deb": false,
-    "do_not_declare_louksna_sh": false,
+    "declare_louksna_deb_delivered": false,
+    "declare_louksna_sh_delivered": false,
     "g23": "PENDING_EVIDENCE",
     "g24": "PENDING_G23"
   },
