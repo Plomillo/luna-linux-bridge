@@ -1,0 +1,42 @@
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:#070814;color:#ece9ff;font:15px/1.45 "IBM Plex Sans",sans-serif}
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.sidebar{background:#101226;border-right:1px solid #2a2748;padding:18px 14px;display:flex;flex-direction:column;gap:12px}
+.brand{display:flex;gap:10px;align-items:center}
+.orb{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#d9d3c3 42%,#1b2038 43%);box-shadow:0 0 0 2px #3a3568}
+.brand b{display:block}
+.brand span{color:#9aa3bd;font-size:12px}
+.sidebar nav{display:grid;gap:6px}
+.sidebar button,.actions button,.panel button,.composer button{border:1px solid #3a3568;background:#16182c;color:#ece9ff;text-align:left;padding:9px 10px;border-radius:10px;cursor:pointer}
+.sidebar button.active{border-color:#8b7cff;background:#221c44}
+.guard{margin-top:auto;color:#8e96b0;font-size:12px}
+.workspace{padding:22px}
+header{display:flex;justify-content:space-between;gap:12px;align-items:flex-end}
+.eyebrow{letter-spacing:.08em;color:#a597ff;font-size:12px;margin:0}
+h1,h2,h3{margin:4px 0}
+.status{color:#9be7c4}
+.notice,.busy{padding:10px 14px;border:1px solid #3d326c;border-radius:12px;margin:12px 0;background:#14132d}
+.busy{border-color:#215d68;color:#a7f3d0}
+.hero,.cards,.grid,.panel,.chat-grid{margin-top:14px}
+.hero{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;align-items:center}
+.hero img{width:100%;max-height:220px;object-fit:cover;border-radius:16px;background:#111}
+.cards,.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.grid{grid-template-columns:1fr 1fr}
+.cards article,.panel{background:#101226;border:1px solid #2a2748;border-radius:14px;padding:12px}
+.cards strong{display:block;font-size:18px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.table{display:grid;gap:8px}
+.row,.e-row{display:grid;gap:8px;border:1px solid #29264b;border-radius:12px;padding:10px;background:#0d0f26}
+.muted{color:#7f8aa0}
+.ok{color:#34d399}.warn{color:#fbbf24}
+.chat-grid{display:grid;grid-template-columns:1.5fr .75fr;gap:14px}
+.messages{height:420px;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.bubble{max-width:80%;padding:10px 12px;border-radius:14px;background:#17172f;border:1px solid #2b2c50}
+.bubble.user{align-self:flex-end;background:#24174c}
+.composer{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:10px}
+textarea,input[type=text],input[type=password],input:not([type]){background:#090b1d;color:white;border:1px solid #37345f;border-radius:10px;padding:10px}
+.form{display:grid;gap:10px}
+.form label{display:grid;gap:6px;color:#b8c0d2}
+.danger{border-color:#7f1d1d!important;color:#fecaca!important}
+@media(max-width:900px){.shell{grid-template-columns:1fr}.cards,.hero,.chat-grid,.grid{grid-template-columns:1fr}}

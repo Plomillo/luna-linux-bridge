@@ -1,0 +1,20 @@
+[Unit]
+Description=LOUKSNA LUNA session
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/louksna-session --serve --bind 127.0.0.1:47321 --state %h/.local/share/louksna
+Restart=on-failure
+RestartSec=2
+MemoryMax=900M
+CPUQuota=100%
+NoNewPrivileges=yes
+Environment=LOUKSNA_PIPER=/usr/lib/louksna/piper-wrapper
+Environment=LOUKSNA_WHISPER=/usr/lib/louksna/whisper-cli
+Environment=LOUKSNA_MODEL_DIR=/usr/share/louksna/models
+Environment=LOUKSNA_REFERENCE_DIR=/usr/share/louksna/reference
+Environment=PYTHONNOUSERSITE=1
+
+[Install]
+WantedBy=default.target

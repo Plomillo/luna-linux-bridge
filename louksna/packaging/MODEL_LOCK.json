@@ -1,0 +1,19 @@
+{
+  "es_ES-sharvard-medium.onnx": {
+    "sha256": "234dc4cf0fdb53ccb76b9b2c4d7ef1330364762674c1b78c1b62d8608c528a54",
+    "url": "https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/sharvard/medium/es_ES-sharvard-medium.onnx",
+    "speaker_id_map": {"M": 0, "F": 1},
+    "required_speaker": "1",
+    "note": "default_speaker_id is 0 (male). Invocation must pass --speaker 1."
+  },
+  "es_ES-sharvard-medium.onnx.json": {
+    "sha256": "c3d92a576c2fb5ac5120c9feeb6dd09e6577a564e20c75b91981ee1ceb441a90",
+    "url": "https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/sharvard/medium/es_ES-sharvard-medium.onnx.json"
+  },
+  "ggml-tiny.bin": {
+    "sha256": "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21",
+    "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin"
+  },
+  "whisper_cpp_commit": "d1be6fde11ac6e0407606b4e42fe72d34add8037",
+  "piper_tts": "1.5.0"
+}

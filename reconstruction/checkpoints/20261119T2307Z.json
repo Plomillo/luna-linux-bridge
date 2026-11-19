@@ -1,0 +1,21 @@
+{
+  "record_type": "EXECUTION_CHECKPOINT",
+  "branch": "work/luna-v3-reconstruction-20261119",
+  "base": "bb1e1010bd549a235590958aeb5d0371d636b25b",
+  "freeze_branch_untouched": "work/luna-v3-phase0-reference-freeze-20261119",
+  "mother_branch_untouched": "automation/mtls-evidence-gate-20261013",
+  "mother_frozen_sha": "9130bca95fc9a9400e51a80f7afc56ca7d47758c",
+  "cargo_test_lib": "8 passed",
+  "payload_parity_sha256": "8de1e7518acbb9a810d8871233f17bae6de38638620b4b50e6d1e261530ba1b4",
+  "synthesis": "PASS piper es_ES-sharvard-medium --speaker 1",
+  "stt": "hola, soy luna.",
+  "g23_cli": "PASS producer=louksna-g23",
+  "g24_cli": "PASS only after matching g23 verdict",
+  "g24_foreign_database": "REJECTED G23_DB_HASH_MISMATCH",
+  "wayland_launcher_without_session": "EXIT_3 WAYLAND_REQUIRED",
+  "kde_plasma_physical": "NOT_RUN",
+  "debian_13_physical": "NOT_RUN",
+  "certification": "NOT_CERTIFIED",
+  "artifacts": ["LOUKSNA.deb", "LOUKSNA.sh"],
+  "next": "Run louksna-canonical-build on the reconstruction branch. Physical Debian 13 KDE Wayland remains blocked in this environment."
+}

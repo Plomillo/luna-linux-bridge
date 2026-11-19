@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=LOUKSNA
+GenericName=LUNA Zona Directiva
+Comment=Sesion local de LUNA. Requiere Wayland.
+Exec=louksna-launch
+Icon=louksna
+Terminal=false
+Categories=Development;
+StartupWMClass=louksna

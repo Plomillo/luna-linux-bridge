@@ -1,0 +1,20 @@
+name: louksna-chatterbox-secondary
+on:
+  workflow_dispatch:
+jobs:
+  secondary:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: do not replace Piper
+        run: |
+          set -eu
+          python3 - << 'PY'
+          import json
+          lock=json.load(open("louksna/packaging/MODEL_LOCK.json"))
+          assert lock["es_ES-sharvard-medium.onnx"]["required_speaker"]=="1"
+          assert lock["es_ES-sharvard-medium.onnx"]["speaker_id_map"]["F"]==1
+          print("CHATTERBOX_NOT_RUN")
+          print("secondary voice stays remote and was not substituted for Piper speaker 1")
+          raise SystemExit(2)
+          PY

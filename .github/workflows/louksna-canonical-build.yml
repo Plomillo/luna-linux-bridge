@@ -1,0 +1,111 @@
+name: louksna-canonical-build
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/luna-v3-reconstruction-20261119
+    paths:
+      - "louksna/**"
+      - ".github/workflows/louksna-canonical-build.yml"
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: packages
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential python3 ca-certificates curl xz-utils
+      - name: models
+        run: |
+          set -eu
+          mkdir -p /tmp/louksna-cache
+          python3 - << 'PY'
+          import hashlib, json, pathlib, urllib.request
+          lock = json.loads(pathlib.Path("louksna/packaging/MODEL_LOCK.json").read_text())
+          cache = pathlib.Path("/tmp/louksna-cache")
+          for name in ("es_ES-sharvard-medium.onnx", "es_ES-sharvard-medium.onnx.json", "ggml-tiny.bin"):
+              dest = cache / name
+              urllib.request.urlretrieve(lock[name]["url"], dest)
+              digest = hashlib.sha256(dest.read_bytes()).hexdigest()
+              if digest != lock[name]["sha256"]:
+                  raise SystemExit(f"hash {name} {digest}")
+          PY
+      - name: piper runtime
+        run: |
+          set -eu
+          curl -fsSL -o /tmp/cpython.tar.gz https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.12.7+20241016-x86_64-unknown-linux-gnu-install_only.tar.gz
+          mkdir -p /tmp/louksna-cache/python
+          tar -xzf /tmp/cpython.tar.gz -C /tmp/louksna-cache/python --strip-components=1
+          /tmp/louksna-cache/python/bin/python3 -m pip install --no-cache-dir piper-tts==1.5.0 'onnxruntime==1.20.1'
+      - name: whisper
+        run: |
+          set -eu
+          git clone --filter=blob:none --no-checkout https://github.com/ggml-org/whisper.cpp.git /tmp/whisper.cpp
+          git -C /tmp/whisper.cpp fetch --depth 1 origin d1be6fde11ac6e0407606b4e42fe72d34add8037
+          git -C /tmp/whisper.cpp checkout FETCH_HEAD
+          cmake -S /tmp/whisper.cpp -B /tmp/whisper.cpp/build -DWHISPER_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DGGML_CCACHE=OFF
+          cmake --build /tmp/whisper.cpp/build -j2 --target whisper-cli
+      - name: cargo test
+        working-directory: louksna/session
+        run: cargo test --release
+      - name: package
+        run: python3 louksna/packaging/build_payload.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: louksna-installers
+          path: |
+            dist/LOUKSNA.deb
+            dist/LOUKSNA.sh
+            dist/SHA256SUMS
+            dist/VERIFY.json
+            dist/PAYLOAD_PARITY_PASS
+  g23:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: louksna-installers
+      - name: independent g23
+        run: |
+          set -eu
+          dpkg-deb -x LOUKSNA.deb /tmp/louksna
+          install -d /tmp/g23-state
+          /tmp/louksna/usr/bin/louksna-session --state /tmp/g23-state --g23 > /tmp/g23.json
+          python3 -c 'import json;v=json.load(open("/tmp/g23.json")); assert v["producer"]=="louksna-g23" and v["verdict"]=="PASS", v'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g23-verdict
+          path: |
+            /tmp/g23.json
+            /tmp/g23-state/g23-verdict.json
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: louksna-installers
+      - uses: actions/download-artifact@v4
+        with:
+          name: g23-verdict
+          path: g23
+      - name: g24 after g23
+        run: |
+          set -eu
+          dpkg-deb -x LOUKSNA.deb /tmp/louksna
+          install -d /tmp/g24-state
+          cp g23/g23-verdict.json /tmp/g24-state/g23-verdict.json
+          # The verdict is bound to the database hash from the g23 job.
+          # Replaying it against an empty database must fail closed.
+          if /tmp/louksna/usr/bin/louksna-session --state /tmp/g24-state --g24 --subject product; then
+            echo "G24 accepted a foreign database" >&2
+            exit 1
+          fi
+          /tmp/louksna/usr/bin/louksna-session --state /tmp/g24-state --g23 > /tmp/own-g23.json
+          cp /tmp/g24-state/g23-verdict.json /tmp/g24-state/g23-verdict.json
+          /tmp/louksna/usr/bin/louksna-session --state /tmp/g24-state --g24 --subject ci
+          python3 - << 'PY'
+          import json
+          print("g24 sequence held")
+          PY

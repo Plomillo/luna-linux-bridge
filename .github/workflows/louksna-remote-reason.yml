@@ -1,0 +1,28 @@
+name: louksna-remote-reason
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: Persisted task text
+        required: true
+        type: string
+jobs:
+  reason:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: refuse paid inference
+        env:
+          PROMPT: ${{ inputs.prompt }}
+        run: |
+          set -eu
+          python3 - << 'PY'
+          import os
+          paid=[k for k in os.environ if k.startswith(("OPENAI_","ANTHROPIC_","AZURE_OPENAI"))]
+          if paid:
+              print("PAID_INFERENCE_KEYS_PRESENT", ",".join(paid))
+              raise SystemExit(1)
+          print("NO_PAID_INFERENCE")
+          print("prompt_bytes", len(os.environ.get("PROMPT","")))
+          print("REMOTE_REASON_NOT_EXECUTED no local model and no paid API are configured")
+          raise SystemExit(2)
+          PY

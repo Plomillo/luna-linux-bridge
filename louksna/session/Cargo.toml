@@ -1,0 +1,23 @@
+[package]
+name = "louksna-session"
+version = "3.0.0"
+edition = "2021"
+description = "LOUKSNA local session runtime for LUNA / Directiva V3"
+license = "GPL-3.0-or-later"
+publish = false
+
+[dependencies]
+base64 = "0.22"
+hex = "0.4"
+hmac = "0.12"
+jsonwebtoken = { version = "9.3.1", features = ["use_pem"] }
+rusqlite = { version = "0.32", features = ["bundled", "backup"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+ureq = { version = "2.12", default-features = false, features = ["json", "tls"] }
+
+[profile.release]
+lto = false
+codegen-units = 1
+opt-level = 2
