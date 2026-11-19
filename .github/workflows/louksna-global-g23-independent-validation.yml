@@ -634,10 +634,12 @@ jobs:
           cat > "$RUNNER_TEMP/kvm-probe.sh" << EOF
           #!/bin/sh
           set -eu
-          exec "$QEMU" -accel kvm -machine pc -m 32 -display none -serial null -monitor none -daemonize -pidfile "\$1"
+          exec "$QEMU" -accel kvm -machine pc -m 32 -display none -serial null \\
+            -qmp "unix:$RUNNER_TEMP/kvm-qmp.sock,server,nowait" \\
+            -daemonize -pidfile "\$1"
           EOF
           chmod 755 "$RUNNER_TEMP/kvm-probe.sh"
-          rm -f "$RUNNER_TEMP/kvm-probe.pid"
+          rm -f "$RUNNER_TEMP/kvm-probe.pid" "$RUNNER_TEMP/kvm-qmp.sock"
           if [ "$WRAP" = sg ]; then
             sg kvm -c "$RUNNER_TEMP/kvm-probe.sh $RUNNER_TEMP/kvm-probe.pid"
           else
@@ -646,19 +648,39 @@ jobs:
           sleep 1
           PROBE_PID="$(cat "$RUNNER_TEMP/kvm-probe.pid")"
           python3 - << PY
-          import os, pathlib
+          import json, os, pathlib, socket
           pid = pathlib.Path(os.environ["RUNNER_TEMP"] + "/kvm-probe.pid").read_text().strip()
-          held = []
+          comm = pathlib.Path(f"/proc/{pid}/comm").read_text().strip()
+          fds = []
           for name in os.listdir(f"/proc/{pid}/fd"):
               try:
-                  target = os.readlink(f"/proc/{pid}/fd/{name}")
-              except OSError:
+                  fds.append(os.readlink(f"/proc/{pid}/fd/{name}"))
+              except OSError as exc:
+                  fds.append(f"{name}:{exc}")
+          print("PROBE_COMM", comm)
+          print("PROBE_FDS", fds)
+          sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+          sock.connect(os.environ["RUNNER_TEMP"] + "/kvm-qmp.sock")
+          sock.settimeout(5)
+          greeting = sock.recv(65536)
+          sock.sendall(b'{"execute":"qmp_capabilities"}\n')
+          sock.recv(65536)
+          sock.sendall(b'{"execute":"query-kvm"}\n')
+          raw = b""
+          while b"return" not in raw:
+              raw += sock.recv(65536)
+          print("QMP", raw.decode("utf-8", "replace"))
+          enabled = False
+          for line in raw.decode("utf-8", "replace").splitlines():
+              line = line.strip()
+              if not line.startswith("{"):
                   continue
-              if target == "/dev/kvm" or target.startswith("anon_inode:kvm"):
-                  held.append(f"{name}->{target}")
-          print("KVM_FDS", held)
-          if not held:
-              raise SystemExit("qemu -accel kvm did not hold /dev/kvm")
+              obj = json.loads(line)
+              if "return" in obj and isinstance(obj["return"], dict) and "enabled" in obj["return"]:
+                  enabled = obj["return"]["enabled"] is True and obj["return"]["present"] is True
+          if comm != "qemu-system-x86" or not enabled:
+              raise SystemExit("query-kvm did not report an enabled accelerator")
+          open(os.environ["RUNNER_TEMP"] + "/kvm-qmp.json", "w").write(raw.decode("utf-8", "replace"))
           PY
           kill "$PROBE_PID" || true
           wait "$PROBE_PID" 2>/dev/null || true
@@ -716,6 +738,9 @@ jobs:
               raise SystemExit(f"frozen file changed {digest}")
           before = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/kvm-before.json").read_text())
           after = json.loads(pathlib.Path(os.environ["RUNNER_TEMP"] + "/kvm-after.json").read_text())
+          qmp = pathlib.Path(os.environ["RUNNER_TEMP"] + "/kvm-qmp.json").read_text()
+          if '"enabled": true' not in qmp:
+              raise SystemExit("query-kvm record is not enabled")
           serial = pathlib.Path(os.environ["RUNNER_TEMP"] + "/qemu-serial.txt").read_text()
           cert = {
               "schema": "LUNITA_I14_R6_KVM_CLOSURE/1",
@@ -734,7 +759,7 @@ jobs:
               "runner_groups_before": before["groups"],
               "remediation": after["wrap"],
               "mode_after": after["mode"],
-              "kvm_fd_held_by_qemu": True,
+              "query_kvm_enabled": True,
               "qemu_accel": "kvm",
               "qemu_ran_as_root": False,
               "tcg_fallback": False,
@@ -745,7 +770,7 @@ jobs:
               "xfce": "XFCE_FOUND xfce4-session xfwm4 xfce4-panel xfconfd" in serial,
               "boot_ok": "LUNITA_BOOT_OK" in serial,
           }
-          if not all(cert[k] for k in ("squash_mounted", "marker", "jamovi_electron", "xfce", "boot_ok", "kvm_fd_held_by_qemu")):
+          if not all(cert[k] for k in ("squash_mounted", "marker", "jamovi_electron", "xfce", "boot_ok", "query_kvm_enabled")):
               raise SystemExit("closure predicates failed")
           path = pathlib.Path(os.environ["RUNNER_TEMP"] + "/LUNITA_I14_R6_KVM_CLOSURE.json")
           path.write_text(json.dumps(cert, indent=2) + "\n")
@@ -760,5 +785,6 @@ jobs:
             ${{ runner.temp }}/LUNITA_I14_R6_KVM_CLOSURE.json
             ${{ runner.temp }}/kvm-before.json
             ${{ runner.temp }}/kvm-after.json
+            ${{ runner.temp }}/kvm-qmp.json
             ${{ runner.temp }}/qemu-serial.txt
           if-no-files-found: error
