@@ -297,12 +297,29 @@ jobs:
           sudo cp "$MNT/boot/lunita-initrd.img" "$RUNNER_TEMP/lunita-initrd.img"
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y qemu-system-x86
-          if [ -e /dev/kvm ]; then QEMU_ACCEL=kvm; else QEMU_ACCEL=tcg; fi
+          # /dev/kvm can exist while the runner user still gets EACCES/EPERM.
+          # Use KVM only when a process can actually open it; otherwise TCG.
+          QEMU_ACCEL=tcg
+          QEMU_PREFIX=
+          if [ -w /dev/kvm ]; then
+            QEMU_ACCEL=kvm
+          elif [ -e /dev/kvm ]; then
+            set +e
+            sudo -n timeout 12 qemu-system-x86_64 -accel kvm -machine pc -m 32 -display none -serial null -monitor none
+            KVM_PROBE=$?
+            set -e
+            echo "KVM_PROBE=$KVM_PROBE"
+            if [ "$KVM_PROBE" = "0" ] || [ "$KVM_PROBE" = "124" ]; then
+              QEMU_ACCEL=kvm
+              QEMU_PREFIX=sudo
+            fi
+          fi
+          echo "QEMU_ACCEL=$QEMU_ACCEL"
           echo "QEMU_ACCEL=$QEMU_ACCEL" >> "$GITHUB_ENV"
           echo "$QEMU_ACCEL" > "$RUNNER_TEMP/qemu-accel.txt"
           rm -f "$RUNNER_TEMP/qemu-serial.txt"
           set +e
-          qemu-system-x86_64 \
+          $QEMU_PREFIX qemu-system-x86_64 \
             -m 1024 -smp 1 -machine pc -accel "$QEMU_ACCEL" -no-reboot \
             -kernel "$RUNNER_TEMP/vmlinuz" \
             -initrd "$RUNNER_TEMP/lunita-initrd.img" \
