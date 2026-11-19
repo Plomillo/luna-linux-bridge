@@ -195,12 +195,13 @@ jobs:
           sudo cp "$MNT/tmp/jasp-status.json" "$RUNNER_TEMP/jasp-status.json"
           sudo cp "$MNT/tmp/engine-smoke.json" "$RUNNER_TEMP/engine-smoke.json"
           test "$JASP_RC" = "0"
-          test -x "$MNT/usr/bin/xfce4-session"
-          test -x "$MNT/usr/bin/xfwm4"
-          test -x "$MNT/usr/bin/xfce4-panel"
-          test -x "$MNT/opt/lunita/runtime/qdrant/qdrant"
-          test -x "$MNT/usr/bin/lunita-mailbox"
-          grep -q 'pam_permit.so' "$MNT/etc/pam.d/sudo"
+          # The functional mount is root-owned squashfuse. The runner user cannot stat it.
+          sudo test -x "$MNT/usr/bin/xfce4-session"
+          sudo test -x "$MNT/usr/bin/xfwm4"
+          sudo test -x "$MNT/usr/bin/xfce4-panel"
+          sudo test -x "$MNT/opt/lunita/runtime/qdrant/qdrant"
+          sudo test -x "$MNT/usr/bin/lunita-mailbox"
+          sudo grep -q 'pam_permit.so' "$MNT/etc/pam.d/sudo"
           set +e
           sudo chroot "$MNT" /usr/bin/env -i \
             HOME=/tmp USER=root PATH=/usr/bin:/bin \
