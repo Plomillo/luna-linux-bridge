@@ -32,7 +32,9 @@ pub fn classify_credential(token: &str) -> Result<&'static str> {
     let t = token.trim();
     if t.starts_with("ghs_") && t.len() >= 20 {
         Ok("installation")
-    } else if t.starts_with("ghp_") || t.starts_with("github_pat_") || t.starts_with("gho_") || t.starts_with("ghu_") {
+    } else if t.starts_with("ghu_") && t.len() >= 20 {
+        Ok("user_to_server")
+    } else if t.starts_with("ghp_") || t.starts_with("github_pat_") || t.starts_with("gho_") {
         Err(err("PAT_REJECTED_USE_GITHUB_APP_INSTALLATION_TOKEN"))
     } else if t.contains("BEGIN PRIVATE KEY") || t.contains("BEGIN RSA PRIVATE KEY") {
         Ok("app_private_key")
@@ -173,6 +175,35 @@ impl UreqGithub {
     }
 }
 
+pub fn parse_user(body: &Value) -> Result<Value> {
+    let login = body.get("login").and_then(|v| v.as_str()).ok_or_else(|| err("GITHUB_USER_SHAPE"))?;
+    Ok(json!({
+        "connected": true,
+        "login": login,
+        "name": body.get("name").and_then(|v| v.as_str()).unwrap_or(""),
+        "id": body.get("id").and_then(|v| v.as_i64()).unwrap_or(0)
+    }))
+}
+
+pub fn parse_user_repos(body: &Value) -> Result<Vec<Value>> {
+    let repos = body.as_array().ok_or_else(|| err("GITHUB_USER_REPOS_SHAPE"))?;
+    let mut out = Vec::new();
+    for repo in repos {
+        out.push(json!({
+            "full_name": repo.get("full_name").and_then(|v| v.as_str()).unwrap_or(""),
+            "private": repo.get("private").and_then(|v| v.as_bool()).unwrap_or(false),
+            "default_branch": repo.get("default_branch").and_then(|v| v.as_str()).unwrap_or(""),
+            "updated_at": repo.get("updated_at").and_then(|v| v.as_str()).unwrap_or(""),
+            "open_issues_count": repo.get("open_issues_count").and_then(|v| v.as_i64()).unwrap_or(0)
+        }));
+    }
+    Ok(out)
+}
+
+pub fn user_repos_url(per_page: u32) -> String {
+    format!("https://api.github.com/user/repos?per_page={per_page}&sort=updated")
+}
+
 pub fn installation_repo_url(per_page: u32) -> String {
     format!("https://api.github.com/installation/repositories?per_page={per_page}")
 }
@@ -189,10 +220,119 @@ pub fn issues_url(repo: &str) -> Result<String> {
 
 pub fn contents_url(repo: &str, path: &str) -> Result<String> {
     validate_repo(repo)?;
-    if path.is_empty() || path.contains("..") || path.starts_with('/') {
+    if path.is_empty() || path.contains("..") || path.starts_with('/') || path.contains('\\') {
         return Err(err("GITHUB_PATH_REJECTED"));
     }
     Ok(format!("https://api.github.com/repos/{repo}/contents/{path}"))
+}
+
+pub fn branches_url(repo: &str) -> Result<String> {
+    validate_repo(repo)?;
+    Ok(format!("https://api.github.com/repos/{repo}/branches?per_page=100"))
+}
+
+pub fn branch_url(repo: &str, name: &str) -> Result<String> {
+    validate_repo(repo)?;
+    if name.is_empty() || name.contains("..") || name.contains(' ') || name.contains('\\') || name.contains('?') || name.contains('#') {
+        return Err(err("REF_REJECTED"));
+    }
+    Ok(format!("https://api.github.com/repos/{repo}/branches/{}", path_escape(name)))
+}
+
+pub fn parse_branch(body: &Value) -> Result<Value> {
+    let name = body.get("name").and_then(|v| v.as_str()).ok_or_else(|| err("GITHUB_BRANCH_SHAPE"))?;
+    Ok(json!({
+        "name": name,
+        "sha": body.pointer("/commit/sha").and_then(|v| v.as_str()).unwrap_or(""),
+        "protected": body.get("protected").and_then(|v| v.as_bool()).unwrap_or(false)
+    }))
+}
+
+fn path_escape(input: &str) -> String {
+    let mut out = String::new();
+    for b in input.bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => out.push(b as char),
+            _ => out.push_str(&format!("%{b:02X}")),
+        }
+    }
+    out
+}
+
+pub fn commits_url(repo: &str) -> Result<String> {
+    validate_repo(repo)?;
+    Ok(format!("https://api.github.com/repos/{repo}/commits?per_page=20"))
+}
+
+pub fn rate_url() -> &'static str {
+    "https://api.github.com/rate_limit"
+}
+
+pub fn parse_branches(body: &Value) -> Result<Vec<Value>> {
+    let arr = body.as_array().ok_or_else(|| err("GITHUB_BRANCHES_SHAPE"))?;
+    let mut out = Vec::new();
+    for item in arr {
+        out.push(json!({
+            "name": item.get("name").and_then(|v| v.as_str()).unwrap_or(""),
+            "sha": item.pointer("/commit/sha").and_then(|v| v.as_str()).unwrap_or(""),
+            "protected": item.get("protected").and_then(|v| v.as_bool()).unwrap_or(false)
+        }));
+    }
+    Ok(out)
+}
+
+pub fn parse_commits(body: &Value) -> Result<Vec<Value>> {
+    let arr = body.as_array().ok_or_else(|| err("GITHUB_COMMITS_SHAPE"))?;
+    let mut out = Vec::new();
+    for item in arr {
+        let message = item.pointer("/commit/message").and_then(|v| v.as_str()).unwrap_or("");
+        let first: String = message.lines().next().unwrap_or("").chars().take(180).collect();
+        out.push(json!({
+            "sha": item.get("sha").and_then(|v| v.as_str()).unwrap_or(""),
+            "message": first,
+            "date": item.pointer("/commit/author/date").and_then(|v| v.as_str()).unwrap_or("")
+        }));
+    }
+    Ok(out)
+}
+
+pub fn parse_rate(body: &Value) -> Result<Value> {
+    let core = body.pointer("/resources/core").ok_or_else(|| err("GITHUB_RATE_SHAPE"))?;
+    Ok(json!({
+        "limit": core.get("limit").and_then(|v| v.as_i64()).unwrap_or(0),
+        "remaining": core.get("remaining").and_then(|v| v.as_i64()).unwrap_or(0),
+        "reset": core.get("reset").and_then(|v| v.as_i64()).unwrap_or(0),
+        "used": core.get("used").and_then(|v| v.as_i64()).unwrap_or(0)
+    }))
+}
+
+pub fn parse_contents(body: &Value) -> Result<Value> {
+    if body.get("type").and_then(|v| v.as_str()) != Some("file") {
+        return Err(err("GITHUB_CONTENTS_NOT_FILE"));
+    }
+    let encoding = body.get("encoding").and_then(|v| v.as_str()).unwrap_or("");
+    let mut text = String::new();
+    if encoding == "base64" {
+        if let Some(raw) = body.get("content").and_then(|v| v.as_str()) {
+            let cleaned: String = raw.chars().filter(|c| !c.is_whitespace()).collect();
+            if cleaned.len() <= 400_000 {
+                if let Ok(bytes) = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &cleaned) {
+                    if bytes.len() <= 200_000 {
+                        if let Ok(decoded) = String::from_utf8(bytes) {
+                            text = decoded.chars().take(8000).collect();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(json!({
+        "path": body.get("path").and_then(|v| v.as_str()).unwrap_or(""),
+        "sha": body.get("sha").and_then(|v| v.as_str()).unwrap_or(""),
+        "size": body.get("size").and_then(|v| v.as_i64()).unwrap_or(0),
+        "encoding": encoding,
+        "text": text
+    }))
 }
 
 fn validate_repo(repo: &str) -> Result<()> {

@@ -1,0 +1,48 @@
+{
+  "utc": "2026-11-20T06:19:00Z",
+  "branch": "work/luna-v3-reconstruction-20261119",
+  "base_commit": "58fd4f01f7f45605934f7e062f08ffc6b6109784",
+  "freeze_branch": "work/luna-v3-phase0-reference-freeze-20261119",
+  "freeze_sha": "bb1e1010bd549a235590958aeb5d0371d636b25b",
+  "mother_remote_observed": "e0102ce94b4c1c9d3c0c97b6d85e93bae94178c3",
+  "mother_untouched": true,
+  "preserved_artifacts": {
+    "LOUKSNA.deb": "173e86d9878bac75ac35dfc49ed0f8ef54828873d8f85c38ab65b1914133f49d",
+    "LOUKSNA.sh": "540558295e16b531fc88eebc88d697cb67c53ebf3a2b0c26da552cae0e43e74b",
+    "tree": "8de1e7518acbb9a810d8871233f17bae6de38638620b4b50e6d1e261530ba1b4",
+    "path": "/tmp/louksna-preserve-173e86d9"
+  },
+  "intermediate_artifacts_preserved": {
+    "LOUKSNA.deb": "8c664a9716e6f147aac5648c8c8b23766483d7fea6c04c0706241d091422c3aa",
+    "LOUKSNA.sh": "79ad2b6a41d47991416eb146efff2906ecef1a9402bb3cff8d4f3ef4bf6a220a",
+    "reason": "ghu and chat client present, G23 not yet bound to a unique database row"
+  },
+  "current_artifacts": {
+    "LOUKSNA.deb": "67a46db755081c90aedb69cdc8de264b28477e11ba6ee9f6c6c87f744232dab1",
+    "LOUKSNA.sh": "4140a0fe4af247c049a9c16016c9697782518b72df9c6535df0f60b2b6777376",
+    "tree": "b19c57c0f1e1203f01bb856575f12320a86bdf180ee33b34885255434a59bf8a",
+    "stt": "hola, soy luna.",
+    "why_rebuilt": "Published binaries reject ghu_ user-to-server tokens and have no remote chat client. A later gate defect let any fresh database satisfy a G23 verdict."
+  },
+  "tests": {
+    "cargo_lib": "9 passed",
+    "github_user": "Plomillo id 177490054",
+    "github_branch_sha_prefix": "58fd4f01",
+    "github_readme_sha_match": true,
+    "github_rate_limit": 15000,
+    "github_invalid_token": "GITHUB_HTTP_401",
+    "pat_rejected": true,
+    "secrets_absent_from_sqlite_and_logs": true,
+    "chat_remote": "HTTP 402 personal-team-blocked:spending-limit, no simulated reply",
+    "chat_cancel_during_dispatch": "PASS",
+    "chat_timeout": "PASS",
+    "g23_foreign_database": "G23_DB_HASH_MISMATCH",
+    "g24_same_database": "PASS",
+    "debian13_rootfs": "Debian GNU/Linux 13 (trixie) 13.7, dpkg --root install, executed with Trixie ld-linux",
+    "debian13_physical_or_vm_with_kde": "NOT_RUN",
+    "wayland_weston_10_headless_debian12": "PASS socket louksna-way, wl_compositor, launcher served",
+    "kwin_wayland_5_27_5_virtual_debian12": "PASS socket kwin-louksna, wl_compositor v5, llvmpipe, no DRM device, no plasmashell, no DBus",
+    "kde_plasma_session": "NOT_RUN",
+    "certification": "NOT_CERTIFIED"
+  }
+}

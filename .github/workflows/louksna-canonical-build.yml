@@ -48,6 +48,9 @@ jobs:
       - name: cargo test
         working-directory: louksna/session
         run: cargo test --release
+      - name: cargo build
+        working-directory: louksna/session
+        run: cargo build --release
       - name: package
         run: python3 louksna/packaging/build_payload.py
       - uses: actions/upload-artifact@v4

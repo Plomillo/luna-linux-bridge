@@ -34,6 +34,7 @@ impl Store {
             fs::create_dir_all(parent)?;
         }
         let conn = Connection::open(path)?;
+        conn.busy_timeout(std::time::Duration::from_secs(4))?;
         let store = Store {
             path: path.to_path_buf(),
             conn,
@@ -324,7 +325,7 @@ pub fn file_sha256(path: &Path) -> Result<String> {
 
 pub fn redact(input: &str) -> String {
     let mut out = input.to_string();
-    for prefix in ["github_pat_", "ghp_", "gho_", "ghu_", "ghs_", "glpat-", "AKIA"] {
+    for prefix in ["github_pat_", "ghp_", "gho_", "ghu_", "ghs_", "glpat-", "AKIA", "xai-"] {
         while let Some(start) = out.find(prefix) {
             let rest = &out[start..];
             let end_rel = rest.find(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == ',' || c == '}').unwrap_or(rest.len());

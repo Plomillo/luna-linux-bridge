@@ -6,7 +6,7 @@ const sections = [
   {key:"chat-llamada", label:"Chat / Llamada", image:"05_louksna_zona_directiva_chat_llamada_8k.png"},
   {key:"configuracion", label:"Configuracion", image:"06_louksna_zona_directiva_configuracion_8k.png"}
 ];
-const state = {active:"centro", settings:{offline_mode:false,preferred_repo:"",github_owner_filter:"",remote_chat_bridge:""}, token:"", conn:null, repos:[], prs:[], evidence:[], chats:[], msg:"", busy:"", notice:"", plans:null, sessions:null, probe:null};
+const state = {active:"centro", settings:{offline_mode:false,preferred_repo:"",github_owner_filter:"",remote_chat_bridge:""}, token:"", conn:null, repos:[], prs:[], evidence:[], chats:[], msg:"", busy:"", notice:"", plans:null, sessions:null, probe:null, meta:null};
 const headers = {"Content-Type":"application/json","X-Louksna-Client":"luna"};
 async function api(path, opts){
   const res = await fetch(path, Object.assign({headers}, opts||{}));
@@ -15,7 +15,7 @@ async function api(path, opts){
   return body;
 }
 function el(html){ const t=document.createElement("template"); t.innerHTML=html.trim(); return t.content.firstChild; }
-function esc(s){ return String(s??"").replace(/[&<>"']/g, c => ({'&':'&','<':'<','>':'>','"':'"',"'":'&#39;'}[c])); }
+function esc(s){ return String(s??"").replace(/[&<>"']/g, c => ({"&":"&","<":"<",">":">","\"":""","'":"&#39;"}[c])); }
 async function refreshEvidence(){ state.evidence = await api("/api/evidence"); }
 async function refreshConnection(){
   state.busy="Conectando GitHub..."; state.notice=""; render();
@@ -37,12 +37,26 @@ async function refreshPrs(){
   catch(e){ state.notice="No se pudieron leer PR: "+e.message; }
   finally{ state.busy=""; await refreshEvidence(); render(); }
 }
+async function refreshMeta(kind){
+  const repo=state.settings.preferred_repo||(state.repos[0]&&state.repos[0].full_name)||"";
+  if(kind!=="rate" && !repo){ state.notice="Selecciona un repositorio primero."; render(); return; }
+  state.busy="Leyendo GitHub..."; state.notice=""; render();
+  try{
+    if(kind==="branches") state.meta=await api("/api/github/branches?repo="+encodeURIComponent(repo));
+    if(kind==="commits") state.meta=await api("/api/github/commits?repo="+encodeURIComponent(repo));
+    if(kind==="file") state.meta=await api("/api/github/contents?repo="+encodeURIComponent(repo)+"&path=README.md");
+    if(kind==="rate") state.meta=await api("/api/github/rate");
+    const n=Array.isArray(state.meta)?state.meta.length:(state.meta&&state.meta.sha?"1 archivo":"ok");
+    state.notice="Lectura GitHub "+kind+" de "+(repo||"cuenta")+": "+n+".";
+  }catch(e){ state.notice="GitHub "+kind+": "+e.message; }
+  finally{ state.busy=""; await refreshEvidence(); render(); }
+}
 async function loadChat(){ state.chats=await api("/api/chat"); }
 async function sendChat(){
   if(!state.msg.trim()) return;
   state.busy="Enviando mensaje..."; state.notice=""; render();
   try{ await api("/api/chat",{method:"POST",body:JSON.stringify({message:state.msg})}); state.msg=""; await loadChat(); }
-  catch(e){ state.notice="Chat: "+e.message; }
+  catch(e){ state.notice="Chat: "+e.message; try{ await loadChat(); }catch(_){} }
   finally{ state.busy=""; await refreshEvidence(); render(); }
 }
 async function saveSettingsNow(){
@@ -52,7 +66,7 @@ async function saveSettingsNow(){
   finally{ state.busy=""; await refreshEvidence(); render(); }
 }
 async function saveToken(){
-  if(!state.token.trim()){ state.notice="Introduce un token de instalacion ghs_ o una clave PEM de GitHub App."; render(); return; }
+  if(!state.token.trim()){ state.notice="Introduce un token ghs_ de instalacion, un token ghu_ de usuario a servidor, o una clave PEM de GitHub App."; render(); return; }
   state.busy="Guardando credencial..."; state.notice=""; render();
   try{ await api("/api/token",{method:"POST",body:JSON.stringify({token:state.token})}); state.token=""; state.notice="Credencial guardada fuera de SQLite con modo 0600. Un PAT permanente es rechazado."; await refreshConnection(); }
   catch(e){ state.notice="Credencial: "+e.message; state.busy=""; await refreshEvidence(); render(); }
@@ -116,8 +130,12 @@ function render(){
     panel.querySelector("#plans").onclick=()=>plan("list");
   }
   if(state.active==="repositorios"){
-    const panel=el(`<section class="panel"><div class="actions"><button id="r">Leer repositorios</button></div><div class="table">${state.repos.map(r=>`<div class="row"><b>${esc(r.full_name)}</b><span>${esc(r.default_branch)}</span><span class="muted">${esc(r.updated_at)}</span></div>`).join("")||"<p class=\"muted\">Sin datos de API.</p>"}</div></section>`);
+    const panel=el(`<section class="panel"><div class="actions"><button id="r">Leer repositorios</button><button id="br">Ramas</button><button id="cm">Commits</button><button id="fl">README</button><button id="rt">Rate limit</button></div><div class="table">${state.repos.map(r=>`<div class="row"><b>${esc(r.full_name)}</b><span>${esc(r.default_branch)}</span><span class="muted">${esc(r.updated_at)}</span></div>`).join("")||"<p class=\"muted\">Sin datos de API.</p>"}</div>${state.meta?`<pre class="muted">${esc(JSON.stringify(state.meta,null,2))}</pre>`:""}</section>`);
     view.append(panel); panel.querySelector("#r").onclick=refreshRepos;
+    panel.querySelector("#br").onclick=()=>refreshMeta("branches");
+    panel.querySelector("#cm").onclick=()=>refreshMeta("commits");
+    panel.querySelector("#fl").onclick=()=>refreshMeta("file");
+    panel.querySelector("#rt").onclick=()=>refreshMeta("rate");
   }
   if(state.active==="pull-requests"){
     const panel=el(`<section class="panel"><div class="actions"><button id="p">Leer Pull Requests</button></div><div class="table">${state.prs.map(r=>`<div class="row"><b>#${esc(r.number)} ${esc(r.title)}</b><span>${esc(r.state)}</span></div>`).join("")||"<p class=\"muted\">Sin PR leidos.</p>"}</div></section>`);
@@ -128,11 +146,16 @@ function render(){
     view.querySelector("#e").onclick=async()=>{await refreshEvidence(); render();};
   }
   if(state.active==="chat-llamada"){
-    const panel=el(`<section class="chat-grid"><article class="panel"><div class="messages">${state.chats.map(c=>`<div class="bubble ${c.role==="user"?"user":""}"><small>${esc(c.role)} · ${esc(c.transport)}</small><p>${esc(c.content)}</p></div>`).join("")}</div><div class="composer"><textarea id="msg">${esc(state.msg)}</textarea><button id="send">Enviar</button></div></article><article class="panel"><h3>Llamada persistente</h3><p>La sesion de voz permanece mientras hay tareas. Piper Sharvard, speaker 1. Sin respuesta simulada.</p><div class="actions"><button id="vs">Iniciar voz</button><button id="sp">Hablar</button><button id="vx">Cerrar voz</button></div><pre class="muted">${esc(JSON.stringify(state.sessions||{},null,2))}</pre></article></section>`);
+    const panel=el(`<section class="chat-grid"><article class="panel"><div class="messages">${state.chats.map(c=>`<div class="bubble ${c.role==="user"?"user":""}"><small>${esc(c.role)} · ${esc(c.transport)}</small><p>${esc(c.content)}</p></div>`).join("")}</div><div class="composer"><textarea id="msg">${esc(state.msg)}</textarea><button id="send">Enviar</button><button id="cancel">Cancelar</button></div></article><article class="panel"><h3>Llamada persistente</h3><p>La sesion de voz permanece mientras hay tareas. Piper Sharvard, speaker 1. Sin respuesta simulada.</p><div class="actions"><button id="vs">Iniciar voz</button><button id="sp">Hablar</button><button id="vx">Cerrar voz</button></div><pre class="muted">${esc(JSON.stringify(state.sessions||{},null,2))}</pre></article></section>`);
     view.append(panel);
     const msg=panel.querySelector("#msg");
     msg.oninput=()=>{state.msg=msg.value;};
     panel.querySelector("#send").onclick=sendChat;
+    panel.querySelector("#cancel").onclick=async()=>{
+      try{ await api("/api/chat/cancel",{method:"POST",body:"{}"}); state.notice="Cancelacion solicitada."; }
+      catch(e){ state.notice="Cancelar: "+e.message; }
+      render();
+    };
     panel.querySelector("#vs").onclick=()=>voice("start");
     panel.querySelector("#sp").onclick=()=>voice("speak");
     panel.querySelector("#vx").onclick=()=>voice("stop");
@@ -144,7 +167,7 @@ function render(){
       <label>Filtro de propietario<input id="own" value="${esc(state.settings.github_owner_filter)}" placeholder="Plomillo"/></label>
       <label>Bridge remoto de chat<input id="br" value="${esc(state.settings.remote_chat_bridge)}" placeholder="https://..."/></label>
       <button id="sv">Guardar</button></div></article>
-      <article class="panel"><h3>GitHub App</h3><div class="form"><label>Token de instalacion o PEM<input id="tk" type="password" autocomplete="off" value="${esc(state.token)}"/></label><button id="st">Guardar credencial</button><button id="rm" class="danger">Eliminar credencial</button></div><p class="muted">No se acepta un PAT permanente. El valor no entra en SQLite.</p></article></section>`);
+      <article class="panel"><h3>GitHub App</h3><div class="form"><label>Token ghs_, ghu_ o PEM<input id="tk" type="password" autocomplete="off" value="${esc(state.token)}"/></label><button id="st">Guardar credencial</button><button id="rm" class="danger">Eliminar credencial</button></div><p class="muted">Se rechazan PAT ghp_, github_pat_ y gho_. El valor no entra en SQLite.</p></article></section>`);
     view.append(panel);
     panel.querySelector("#off").onchange=e=>{state.settings.offline_mode=e.target.checked;};
     panel.querySelector("#repo").oninput=e=>{state.settings.preferred_repo=e.target.value;};

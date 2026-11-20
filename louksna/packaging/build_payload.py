@@ -206,6 +206,8 @@ def verify(deb: Path, sh_path: Path, digest: str) -> None:
         raise SystemExit(f"PAYLOAD_PARITY_FAIL deb={deb_digest} sh={sh_digest} staged={digest}")
     (OUT / "PAYLOAD_PARITY_PASS").write_text(digest + "\n")
     env = os.environ.copy()
+    for secret_name in ("XAI_API_KEY", "LOUKSNA_XAI_API_KEY", "GH_TOKEN", "GITHUB_TOKEN", "GROK_SERVER_KEY"):
+        env.pop(secret_name, None)
     env.update({
         "LOUKSNA_PIPER": str(deb_root / "usr/lib/louksna/piper-wrapper"),
         "LOUKSNA_WHISPER": str(deb_root / "usr/lib/louksna/whisper-cli"),

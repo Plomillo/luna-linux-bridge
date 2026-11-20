@@ -1,8 +1,14 @@
 #!/bin/sh
 set -eu
-if [ "${XDG_SESSION_TYPE:-}" != "wayland" ] && [ "${LOUKSNA_ALLOW_NON_WAYLAND:-}" != "1" ]; then
-  echo "WAYLAND_REQUIRED session=${XDG_SESSION_TYPE:-unset}" >&2
-  exit 3
+SOCKET=""
+if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -n "${WAYLAND_DISPLAY:-}" ]; then
+  SOCKET="${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}"
+fi
+if [ "${LOUKSNA_ALLOW_NON_WAYLAND:-}" != "1" ]; then
+  if [ "${XDG_SESSION_TYPE:-}" != "wayland" ] || [ ! -S "$SOCKET" ]; then
+    echo "WAYLAND_REQUIRED session=${XDG_SESSION_TYPE:-unset} display=${WAYLAND_DISPLAY:-unset}" >&2
+    exit 3
+  fi
 fi
 STATE=${LOUKSNA_STATE:-"$HOME/.local/share/louksna"}
 BIN=$(CDPATH= cd -- "$(dirname "$0")" && pwd)/louksna-session

@@ -18,7 +18,7 @@ pub fn validate(store: &Store) -> Result<Value> {
     // UNION trick is messy if empty; do three counts instead.
     let _ = secret_hits;
     let mut secret = 0i64;
-    for like in ["%ghp_%", "%github_pat_%", "%ghs_%", "%BEGIN PRIVATE KEY%"] {
+    for like in ["%ghp_%", "%github_pat_%", "%ghs_%", "%ghu_%", "%gho_%", "%xai-%", "%BEGIN PRIVATE KEY%"] {
         let n: i64 = store.conn().query_row(
             "SELECT COUNT(*) FROM evidence WHERE detail LIKE ?1",
             params![like],
@@ -60,6 +60,10 @@ pub fn validate(store: &Store) -> Result<Value> {
     )?;
     if bad_sessions > 0 {
         failures.push("SESSION_KIND".into());
+    }
+    if failures.is_empty() {
+        // A fresh genesis database must not satisfy a verdict made for another database.
+        store.insert_record(14, "g23-bind", &format!("{{\"event\":\"g23\",\"utc\":\"{}\"}}", crate::store::now()))?;
     }
     store.checkpoint_wal()?;
     let db_sha = file_sha256(&store.path).unwrap_or_else(|_| sha256_hex(b""));

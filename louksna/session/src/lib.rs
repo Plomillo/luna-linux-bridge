@@ -22,7 +22,7 @@ fn scratch() -> PathBuf {
 mod tests {
     use super::*;
     use crate::flow::{approve_plan, complete_task, create_plan, enqueue_task, session_state, set_session};
-    use crate::github::{app_jwt, classify_credential, contents_put_body, ref_update_allowed, verify_webhook};
+    use crate::github::{app_jwt, branches_url, classify_credential, contents_put_body, contents_url, parse_branches, parse_commits, parse_contents, parse_rate, ref_update_allowed, verify_webhook};
     use crate::runtime::App;
     use crate::store::{redact, restore_snapshot, secret_mode_is_private};
     use crate::voice::{assert_speaker_locked, female_speaker_id, piper_invocation, reject_empty_audio, whisper_invocation, REQUIRED_SPEAKER};
@@ -66,7 +66,9 @@ mod tests {
         assert!(redact("token ghp_abcdefghijklmnopqrstuvwxyz").contains("[REDACTED]"));
         assert!(!redact("ghp_abcdefghijklmnopqrstuvwxyz").contains("ghp_"));
         assert!(classify_credential("github_pat_abcdefghijklmnopqrstuvwxyz").is_err());
-        assert!(classify_credential("ghs_abcdefghijklmnopqrstuvwxyz").is_ok());
+        assert!(classify_credential("ghp_abcdefghijklmnopqrstuvwxyz").is_err());
+        assert_eq!(classify_credential("ghs_abcdefghijklmnopqrstuvwxyz").unwrap(), "installation");
+        assert_eq!(classify_credential("ghu_abcdefghijklmnopqrstuvwxyz").unwrap(), "user_to_server");
         let dir = scratch();
         let app = App::open(&dir).unwrap();
         app.chat_send("mira ghp_abcdefghijklmnopqrstuvwxyz por favor").unwrap();
@@ -129,6 +131,11 @@ mod tests {
         let g24 = crate::g23::certify_g24(&app.store, &verdict_path, "product").unwrap();
         assert_eq!(g24["verdict"], "PASS");
         assert_eq!(g24["depends_on"], "louksna-g23");
+        let other = scratch();
+        let foreign = App::open(&other).unwrap();
+        std::fs::copy(&verdict_path, other.join("g23-verdict.json")).unwrap();
+        let rejected = crate::g23::certify_g24(&foreign.store, &other.join("g23-verdict.json"), "foreign");
+        assert!(rejected.is_err(), "fresh database must not inherit another G23 verdict");
     }
 
     #[test]
@@ -136,6 +143,30 @@ mod tests {
         assert!(crate::http::enforce_loopback("127.0.0.1:47321").is_ok());
         assert!(crate::http::enforce_loopback("0.0.0.0:47321").is_err());
         assert!(crate::http::enforce_loopback("192.168.1.10:47321").is_err());
+    }
+
+    #[test]
+    fn github_read_parsers_and_path_guards() {
+        assert!(branches_url("not-a-repo").is_err());
+        assert!(crate::github::branch_url("Plomillo/luna-linux-bridge", "../x").is_err());
+        assert!(crate::github::branch_url("Plomillo/luna-linux-bridge", "work/luna").unwrap().contains("work%2Fluna"));
+        assert!(contents_url("Plomillo/luna-linux-bridge", "../secret").is_err());
+        let branches = parse_branches(&serde_json::json!([
+            {"name":"work","protected":true,"commit":{"sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}
+        ])).unwrap();
+        assert_eq!(branches[0]["name"], "work");
+        assert_eq!(branches[0]["sha"], "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        let commits = parse_commits(&serde_json::json!([
+            {"sha":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","commit":{"message":"hola\nmas","author":{"date":"2026-01-01T00:00:00Z"}}}
+        ])).unwrap();
+        assert_eq!(commits[0]["message"], "hola");
+        let rate = parse_rate(&serde_json::json!({"resources":{"core":{"limit":5000,"remaining":4990,"reset":1,"used":10}}})).unwrap();
+        assert_eq!(rate["remaining"], 4990);
+        let file = parse_contents(&serde_json::json!({
+            "type":"file","encoding":"base64","path":"README.md","sha":"abc","size":4,"content":"aG9sYQ=="
+        })).unwrap();
+        assert_eq!(file["text"], "hola");
+        assert!(parse_contents(&serde_json::json!({"type":"dir"})).is_err());
     }
 
     #[test]

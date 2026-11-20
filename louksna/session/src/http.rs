@@ -27,9 +27,12 @@ pub fn serve(state_dir: &Path, addr: &str) -> Result<()> {
     for conn in listener.incoming() {
         match conn {
             Ok(stream) => {
-                if let Err(e) = handle(state_dir, stream) {
-                    eprintln!("LOUKSNA_HTTP:{e}");
-                }
+                let dir = state_dir.to_path_buf();
+                std::thread::spawn(move || {
+                    if let Err(e) = handle(&dir, stream) {
+                        eprintln!("LOUKSNA_HTTP:{e}");
+                    }
+                });
             }
             Err(e) => eprintln!("LOUKSNA_ACCEPT:{e}"),
         }
@@ -143,6 +146,10 @@ fn dispatch(app: &App, method: &str, path: &str, target: &str, body: &[u8]) -> R
             let reply = app.chat_send(message)?;
             Ok(json!({"reply": reply}))
         }
+        ("POST", "/api/chat/cancel") => {
+            std::fs::write(app.state_dir.join("chat.cancel"), b"1")?;
+            Ok(json!({"ok": true}))
+        }
         ("POST", "/api/token") => {
             let token = payload.get("token").and_then(|v| v.as_str()).unwrap_or("");
             let kind = app.store_credential(token)?;
@@ -162,6 +169,23 @@ fn dispatch(app: &App, method: &str, path: &str, target: &str, body: &[u8]) -> R
             let repo = query_param(target, "repo").unwrap_or_default();
             Ok(json!(app.github_issues(&repo)?))
         }
+        ("GET", "/api/github/branches") => {
+            let repo = query_param(target, "repo").unwrap_or_default();
+            if let Some(name) = query_param(target, "name") {
+                return Ok(json!(app.github_branch(&repo, &name)?));
+            }
+            Ok(json!(app.github_branches(&repo)?))
+        }
+        ("GET", "/api/github/commits") => {
+            let repo = query_param(target, "repo").unwrap_or_default();
+            Ok(json!(app.github_commits(&repo)?))
+        }
+        ("GET", "/api/github/contents") => {
+            let repo = query_param(target, "repo").unwrap_or_default();
+            let path = query_param(target, "path").unwrap_or_default();
+            app.github_file(&repo, &path)
+        }
+        ("GET", "/api/github/rate") => app.github_rate(),
         ("GET", "/api/layers") => Ok(json!({"count": app.store.layer_count()?, "names": crate::store::LAYER_NAMES})),
         ("GET", "/api/plans") => flow::plans_overview(&app.store),
         ("POST", "/api/plans") => {
@@ -237,11 +261,29 @@ fn query_param(target: &str, key: &str) -> Option<String> {
     for pair in q.split('&') {
         if let Some((k, v)) = pair.split_once('=') {
             if k == key {
-                return Some(v.to_string());
+                return Some(percent_decode(v));
             }
         }
     }
     None
+}
+
+fn percent_decode(input: &str) -> String {
+    let bytes = input.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            if let Ok(v) = u8::from_str_radix(std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or(""), 16) {
+                out.push(v);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
 }
 
 fn write_response(stream: &mut TcpStream, status: u16, content_type: &str, body: &[u8]) -> Result<()> {
