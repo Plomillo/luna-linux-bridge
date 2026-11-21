@@ -108,7 +108,7 @@ jobs:
             exit 1
           fi
           /tmp/louksna/usr/bin/louksna-session --state /tmp/g24-state --g23 > /tmp/own-g23.json
-          cp /tmp/g24-state/g23-verdict.json /tmp/g24-state/g23-verdict.json
+          test -s /tmp/g24-state/g23-verdict.json
           /tmp/louksna/usr/bin/louksna-session --state /tmp/g24-state --g24 --subject ci | tee /tmp/g24.json
           python3 - << 'PY'
           import json
