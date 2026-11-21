@@ -10,6 +10,8 @@ La conciencia no se afirma: `NOT_CLAIMED`.
 - Repositorio de trabajo: `Plomillo/luna-linux-bridge`.
 - Rama de trabajo: `work/luna-v3-reconstruction-20261119`.
 - Cabeza previa a esta integración: `ce14a8d316fd9c7e1c05acb4f370bde248e38f64`.
+- Commit de esta ejecución: `a5602826d19d67846d24434e9180205a944a1073`.
+- CI de ese commit: `44943854415`, en curso al entregar este informe. La corrida verde anterior `44857103125` no cubre la suite aditiva.
 - Rama congelada `work/luna-v3-phase0-reference-freeze-20261119` permanece en `bb1e1010bd549a235590958aeb5d0371d636b25b`.
 - La rama madre `automation/mtls-evidence-gate-20261013` no se movió.
 - No se reescribió `Louksna.md` ni `reconstruction/mra/MRA-LUNA-5O-001.md`.
@@ -105,8 +107,7 @@ Debian 13, KDE Plasma y Wayland real: `NOT_RUN`.
 
 - `louksna-session --mra-856` localiza la suite empaquetada o la del árbol de fuentes, ejecuta el oráculo Python y rechaza recursión, certificación, entrenamiento de pesos y secretos en la salida.
 - El hijo histórico solo relanza `--mra`, no `--mra-856`.
-- El empaquetador copia `louksna/mra_suite` y falla el cierre si la suite no está verde en el sentido definido arriba.
-- La corrida de CI anterior `44857103125` no cubre esta suite. El workflow vuelve a dispararse porque cambia `louksna/**`.
+- El empaquetador copia `louksna/mra_suite` y falla el cierre si aparece un fallo, una certificación o un bloqueo sin desbloqueo.
 
 ## 10. Lo que esta orden no cierra
 
