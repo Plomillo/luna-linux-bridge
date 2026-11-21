@@ -1,3 +1,5 @@
 louksna/session/target/
 dist/
 *.wav
+__pycache__/
+*.pyc

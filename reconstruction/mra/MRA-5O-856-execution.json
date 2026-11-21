@@ -1,0 +1,19 @@
+{
+  "bad": [],
+  "consciousness": "NOT_CLAIMED",
+  "count": 856,
+  "counts": {
+    "BLOCKED": 83,
+    "HISTORICAL_PRESERVED": 36,
+    "NOT_PRESENT": 108,
+    "PASS_FUNCTIONAL": 629
+  },
+  "historical_evidence_sha256": "497b4e108d300da29352b2a2fe4f2bd677658900cd152aca0f6b2ad82fce0638",
+  "historical_failed": 0,
+  "independent_note": "037-144 NOT_PRESENT; 001-036 NOT_ESTABLISHED because the Rust oracle calls run_suite again",
+  "product_platform": "NOT_CERTIFIED",
+  "scrubbed": false,
+  "suite": "MRA-5O-001-856",
+  "unique": true,
+  "weight_training": "NOT_AUTHORIZED"
+}

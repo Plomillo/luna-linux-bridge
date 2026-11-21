@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -42,6 +43,10 @@ def stage(tree: Path) -> None:
     copy_file(PACKAGING / "louksna-launch.sh", usr / "bin" / "louksna-launch", 0o755)
     lib = usr / "lib" / "louksna"
     copy_file(PACKAGING / "piper-wrapper.sh", lib / "piper-wrapper", 0o755)
+    suite_src = ROOT / "louksna" / "mra_suite"
+    if not (suite_src / "suite.py").is_file():
+        raise SystemExit(f"MRA_SUITE_ABSENT {suite_src}")
+    shutil.copytree(suite_src, lib / "mra_suite", ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"))
     if not WHISPER.is_file():
         raise SystemExit(f"WHISPER_BIN_ABSENT {WHISPER}")
     copy_file(WHISPER, lib / "whisper-cli", 0o755)
@@ -75,6 +80,7 @@ def stage(tree: Path) -> None:
         "CERTIFICATION=NOT_CERTIFIED\n"
         "REASON=Debian 13 KDE Plasma Wayland physical session was not available in this build environment.\n"
         "G23_G24=EXECUTED_BY_SESSION_SELFTEST_WHEN_INSTALL_TEST_RUNS\n"
+        "MRA_856=ADDITIVE_SUITE_IS_NOT_PRODUCT_CERTIFICATION\n"
     )
 
 
@@ -257,6 +263,30 @@ def verify(deb: Path, sh_path: Path, digest: str) -> None:
         raise SystemExit("MRA_ORACLE_SHAPE\n" + oracle.stdout)
     if mra_oracle.get("product_platform") != "NOT_CERTIFIED":
         raise SystemExit("MRA_PLATFORM_MUST_STAY_NOT_CERTIFIED")
+    additive = subprocess.run(
+        [str(deb_root / "usr/bin/louksna-session"), "--state", str(base / "mra856-state"), "--mra-856", "--out", str(base / "mra-856")],
+        env=env, text=True, capture_output=True,
+    )
+    if additive.returncode != 0:
+        raise SystemExit("MRA856_FAIL\n" + additive.stdout + additive.stderr)
+    additive_report = json.loads((base / "mra-856" / "report.json").read_text())
+    additive_cases = json.loads((base / "mra-856" / "cases.json").read_text())
+    blob = (base / "mra-856" / "report.json").read_text() + (base / "mra-856" / "cases.json").read_text() + additive.stdout + additive.stderr
+    if re.search(r"(ghu_|ghs_|ghp_|gho_|github_pat_|xai-)[A-Za-z0-9_\-]{8,}", blob):
+        raise SystemExit("MRA856_SECRET")
+    if additive_report.get("count") != 856 or additive_report.get("unique") is not True or additive_report.get("bad") or additive_report.get("historical_failed") != 0:
+        raise SystemExit("MRA856_SHAPE")
+    if additive_report.get("product_platform") != "NOT_CERTIFIED" or additive_report.get("weight_training") != "NOT_AUTHORIZED" or additive_report.get("consciousness") != "NOT_CLAIMED":
+        raise SystemExit("MRA856_FORBIDDEN_CLAIM")
+    if len(additive_cases) != 856 or sum(additive_report.get("counts", {}).values()) != 856:
+        raise SystemExit("MRA856_COUNT")
+    for row in additive_cases:
+        if row.get("status") not in {"HISTORICAL_PRESERVED", "NOT_PRESENT", "PASS_FUNCTIONAL", "BLOCKED"}:
+            raise SystemExit(f"MRA856_STATUS {row.get('id')}")
+        if row.get("certification") != "NOT_CERTIFIED" or row.get("weight_training") != "NOT_AUTHORIZED":
+            raise SystemExit(f"MRA856_ROW {row.get('id')}")
+        if row.get("status") == "BLOCKED" and not row.get("unlock"):
+            raise SystemExit(f"MRA856_UNLOCK {row.get('id')}")
     (OUT / "VERIFY.json").write_text(json.dumps({
         "payload_parity": "PASS",
         "tree_sha256": digest,
@@ -268,8 +298,19 @@ def verify(deb: Path, sh_path: Path, digest: str) -> None:
         "mra_worker": {"failed": mra_report.get("failed"), "count": mra_report.get("count"), "evidence_sha256": mra_report.get("evidence_sha256"), "certification": mra_report.get("certification")},
         "mra_oracle": mra_oracle,
         "mra_operational": "GRANTED",
+        "mra_856": {
+            "count": additive_report.get("count"),
+            "unique": additive_report.get("unique"),
+            "counts": additive_report.get("counts"),
+            "bad": additive_report.get("bad"),
+            "historical_failed": additive_report.get("historical_failed"),
+            "historical_evidence_sha256": additive_report.get("historical_evidence_sha256"),
+            "product_platform": additive_report.get("product_platform"),
+            "weight_training": additive_report.get("weight_training"),
+            "consciousness": additive_report.get("consciousness"),
+        },
         "certification": "NOT_CERTIFIED",
-        "certification_scope_note": "MRA-5O operational oracle granted. Product platform certification remains denied until Debian 13 KDE Plasma Wayland is actually run.",
+        "certification_scope_note": "MRA-5O operational oracle granted for cases 001-036 only. The 856-case run is not a product certification. Platform certification remains denied until Debian 13 KDE Plasma Wayland is actually run.",
     }, indent=2))
     print(json.dumps({"deb": str(deb), "sh": str(sh_path), "parity": digest, "stt": transcript}))
 
