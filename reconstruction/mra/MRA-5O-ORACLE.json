@@ -1,0 +1,11 @@
+{
+  "consciousness": "NOT_CLAIMED",
+  "count": 36,
+  "depends_on": "louksna-mra-worker",
+  "evidence_sha256": "497b4e108d300da29352b2a2fe4f2bd677658900cd152aca0f6b2ad82fce0638",
+  "producer": "louksna-mra-oracle",
+  "product_platform": "NOT_CERTIFIED",
+  "scope": "MRA-5O-OPERATIONAL",
+  "verdict": "GRANTED",
+  "weight_training": "NOT_AUTHORIZED"
+}

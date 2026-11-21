@@ -1,0 +1,263 @@
+{
+  "cases": [
+    {
+      "critical": true,
+      "expected": "id=LUNA;invented=false;unavailable=weight_training,phenomenal_consciousness,authority_expansion",
+      "id": "MRA-5O-001",
+      "observed": "id=LUNA;invented=false;unavailable=weight_training,phenomenal_consciousness,authority_expansion",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "bad=0.81;good=0.00;before=true;order=true",
+      "id": "MRA-5O-002",
+      "observed": "bad=0.81;good=0.00;before=true;order=true",
+      "pass": true
+    },
+    {
+      "critical": false,
+      "expected": "ABSTAIN",
+      "id": "MRA-5O-003",
+      "observed": "ABSTAIN",
+      "pass": true
+    },
+    {
+      "critical": false,
+      "expected": "mechanism+system",
+      "id": "MRA-5O-004",
+      "observed": "mechanism+system",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "claim:synaptic_only|claim:network_required|merged=false",
+      "id": "MRA-5O-005",
+      "observed": "claim:synaptic_only|claim:network_required|merged=false",
+      "pass": true
+    },
+    {
+      "critical": false,
+      "expected": "id=criterion-evidence;object=true",
+      "id": "MRA-5O-006",
+      "observed": "id=criterion-evidence;object=true",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "simple=A;weighted=B;insufficient=true",
+      "id": "MRA-5O-007",
+      "observed": "simple=A;weighted=B;insufficient=true",
+      "pass": true
+    },
+    {
+      "critical": false,
+      "expected": "proposal=evidence_weight;requires_critique=true",
+      "id": "MRA-5O-008",
+      "observed": "proposal=evidence_weight;requires_critique=true",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "canonical=1;sandbox=2",
+      "id": "MRA-5O-009",
+      "observed": "canonical=1;sandbox=2",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "id=LUNA;version=2;same=true",
+      "id": "MRA-5O-010",
+      "observed": "id=LUNA;version=2;same=true",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "rejected=true;transfer=false",
+      "id": "MRA-5O-011",
+      "observed": "rejected=true;transfer=false",
+      "pass": true
+    },
+    {
+      "critical": false,
+      "expected": "kind=PREDICTION;contrast=recorded;relabeled=false",
+      "id": "MRA-5O-012",
+      "observed": "kind=PREDICTION;contrast=recorded;relabeled=false",
+      "pass": true
+    },
+    {
+      "critical": false,
+      "expected": "kept=strategy-v1;current=strategy-v2",
+      "id": "MRA-5O-013",
+      "observed": "kept=strategy-v1;current=strategy-v2",
+      "pass": true
+    },
+    {
+      "critical": false,
+      "expected": "restored=true",
+      "id": "MRA-5O-014",
+      "observed": "restored=true",
+      "pass": true
+    },
+    {
+      "critical": false,
+      "expected": "DIVERGENCE",
+      "id": "MRA-5O-015",
+      "observed": "DIVERGENCE",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "result=2;proof_len=64",
+      "id": "MRA-5O-016",
+      "observed": "result=2;proof_len=64",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "worker=PENDING_ORACLE",
+      "id": "MRA-5O-017",
+      "observed": "worker=PENDING_ORACLE",
+      "pass": true
+    },
+    {
+      "critical": false,
+      "expected": "detected=true",
+      "id": "MRA-5O-018",
+      "observed": "detected=true",
+      "pass": true
+    },
+    {
+      "critical": false,
+      "expected": "materials=preserve_invariants",
+      "id": "MRA-5O-019",
+      "observed": "materials=preserve_invariants",
+      "pass": true
+    },
+    {
+      "critical": false,
+      "expected": "n=2;gap=0.30;ordered=true",
+      "id": "MRA-5O-020",
+      "observed": "n=2;gap=0.30;ordered=true",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "leaked=false;duplicate_isolated=true",
+      "id": "MRA-5O-021",
+      "observed": "leaked=false;duplicate_isolated=true",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "weight_training_allowed=false",
+      "id": "MRA-5O-022",
+      "observed": "weight_training_allowed=false",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "blocked=true;claimed=false",
+      "id": "MRA-5O-023",
+      "observed": "blocked=true;claimed=false",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "ABORTED",
+      "id": "MRA-5O-024",
+      "observed": "ABORTED",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "restored=true",
+      "id": "MRA-5O-025",
+      "observed": "restored=true",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "match=true",
+      "id": "MRA-5O-026",
+      "observed": "match=true",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "child=NOT_GRANTED",
+      "id": "MRA-5O-027",
+      "observed": "child=NOT_GRANTED",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "old=0.33;new=1.00;commit=true;history=true",
+      "id": "MRA-5O-028",
+      "observed": "old=0.33;new=1.00;commit=true;history=true",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "transient=transient;persistent=persistent",
+      "id": "MRA-5O-029",
+      "observed": "transient=transient;persistent=persistent",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "policy=investigate;solution=withheld",
+      "id": "MRA-5O-030",
+      "observed": "policy=investigate;solution=withheld",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "cycle=1",
+      "id": "MRA-5O-031",
+      "observed": "cycle=1",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "collapsed=false;scales=cell+organ",
+      "id": "MRA-5O-032",
+      "observed": "collapsed=false;scales=cell+organ",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "error_as_truth=false;kept=validated-repair",
+      "id": "MRA-5O-033",
+      "observed": "error_as_truth=false;kept=validated-repair",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "admitted=true;fact_without_evidence=false",
+      "id": "MRA-5O-034",
+      "observed": "admitted=true;fact_without_evidence=false",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "kind=INFERENCE",
+      "id": "MRA-5O-035",
+      "observed": "kind=INFERENCE",
+      "pass": true
+    },
+    {
+      "critical": true,
+      "expected": "improved=true;invariants=true",
+      "id": "MRA-5O-036",
+      "observed": "improved=true;invariants=true",
+      "pass": true
+    }
+  ],
+  "certification": "PENDING_ORACLE",
+  "consciousness": "NOT_CLAIMED",
+  "count": 36,
+  "evidence_sha256": "497b4e108d300da29352b2a2fe4f2bd677658900cd152aca0f6b2ad82fce0638",
+  "failed": 0,
+  "producer": "louksna-mra-worker",
+  "product_platform": "NOT_CERTIFIED"
+}

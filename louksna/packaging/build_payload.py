@@ -233,6 +233,30 @@ def verify(deb: Path, sh_path: Path, digest: str) -> None:
     launch = subprocess.run([str(deb_root / "usr/bin/louksna-launch")], env={**env, "XDG_SESSION_TYPE": "tty", "HOME": str(base)}, capture_output=True, text=True)
     if launch.returncode != 3 or "WAYLAND_REQUIRED" not in launch.stderr:
         raise SystemExit(f"WAYLAND_GATE_FAIL {launch.returncode} {launch.stderr}")
+    mra_path = base / "mra-worker.json"
+    oracle_path = base / "mra-oracle.json"
+    worker = subprocess.run(
+        [str(deb_root / "usr/bin/louksna-session"), "--state", str(base / "mra-state"), "--mra"],
+        env=env, text=True, capture_output=True,
+    )
+    if worker.returncode != 0:
+        raise SystemExit("MRA_WORKER_FAIL\n" + worker.stdout + worker.stderr)
+    mra_path.write_text(worker.stdout)
+    mra_report = json.loads(worker.stdout)
+    if mra_report.get("failed") != 0 or mra_report.get("certification") != "PENDING_ORACLE":
+        raise SystemExit("MRA_WORKER_SHAPE\n" + worker.stdout)
+    oracle = subprocess.run(
+        [str(deb_root / "usr/bin/louksna-session"), "--state", str(base / "mra-oracle-state"), "--mra-oracle", "--report", str(mra_path)],
+        env=env, text=True, capture_output=True,
+    )
+    if oracle.returncode != 0:
+        raise SystemExit("MRA_ORACLE_FAIL\n" + oracle.stdout + oracle.stderr)
+    oracle_path.write_text(oracle.stdout)
+    mra_oracle = json.loads(oracle.stdout)
+    if mra_oracle.get("verdict") != "GRANTED" or mra_oracle.get("producer") != "louksna-mra-oracle":
+        raise SystemExit("MRA_ORACLE_SHAPE\n" + oracle.stdout)
+    if mra_oracle.get("product_platform") != "NOT_CERTIFIED":
+        raise SystemExit("MRA_PLATFORM_MUST_STAY_NOT_CERTIFIED")
     (OUT / "VERIFY.json").write_text(json.dumps({
         "payload_parity": "PASS",
         "tree_sha256": digest,
@@ -241,7 +265,11 @@ def verify(deb: Path, sh_path: Path, digest: str) -> None:
         "wayland_launcher_without_session": "BLOCKED_EXIT_3",
         "kde_plasma_physical": "NOT_RUN",
         "debian_13_physical": "NOT_RUN",
+        "mra_worker": {"failed": mra_report.get("failed"), "count": mra_report.get("count"), "evidence_sha256": mra_report.get("evidence_sha256"), "certification": mra_report.get("certification")},
+        "mra_oracle": mra_oracle,
+        "mra_operational": "GRANTED",
         "certification": "NOT_CERTIFIED",
+        "certification_scope_note": "MRA-5O operational oracle granted. Product platform certification remains denied until Debian 13 KDE Plasma Wayland is actually run.",
     }, indent=2))
     print(json.dumps({"deb": str(deb), "sh": str(sh_path), "parity": digest, "stt": transcript}))
 

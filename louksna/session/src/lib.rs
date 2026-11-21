@@ -3,6 +3,7 @@ pub mod flow;
 pub mod g23;
 pub mod github;
 pub mod http;
+pub mod mra;
 pub mod runtime;
 pub mod store;
 pub mod voice;
@@ -143,6 +144,26 @@ mod tests {
         assert!(crate::http::enforce_loopback("127.0.0.1:47321").is_ok());
         assert!(crate::http::enforce_loopback("0.0.0.0:47321").is_err());
         assert!(crate::http::enforce_loopback("192.168.1.10:47321").is_err());
+    }
+
+    #[test]
+    fn mra_suite_matches_pre_registered_expectations_and_oracle_rejects_tamper() {
+        let dir = scratch();
+        let report = crate::mra::run_suite(&dir).unwrap();
+        assert_eq!(report["count"], 36);
+        assert_eq!(report["failed"], 0, "{report}");
+        assert_eq!(report["certification"], "PENDING_ORACLE");
+        assert_eq!(report["consciousness"], "NOT_CLAIMED");
+        let verdict = crate::mra::oracle_verify(&report).unwrap();
+        assert_eq!(verdict["producer"], "louksna-mra-oracle");
+        assert_eq!(verdict["verdict"], "GRANTED");
+        assert_eq!(verdict["product_platform"], "NOT_CERTIFIED");
+        let mut tampered = report.clone();
+        tampered["cases"][0]["observed"] = serde_json::json!("TAMPERED");
+        assert!(crate::mra::oracle_verify(&tampered).is_err());
+        let mut self_cert = report.clone();
+        self_cert["certification"] = serde_json::json!("GRANTED");
+        assert!(crate::mra::oracle_verify(&self_cert).is_err());
     }
 
     #[test]

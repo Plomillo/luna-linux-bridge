@@ -25,6 +25,18 @@ fn run() -> Result<ExitCode> {
         return Ok(if report["ok"] == true { ExitCode::SUCCESS } else { ExitCode::from(1) });
     }
     let state = state_dir(&args);
+    if args.iter().any(|a| a == "--mra") {
+        let report = louksna_session::mra::run_suite(&state)?;
+        println!("{}", serde_json::to_string_pretty(&report)?);
+        return Ok(if louksna_session::mra::suite_exit_ok(&report) { ExitCode::SUCCESS } else { ExitCode::from(1) });
+    }
+    if args.iter().any(|a| a == "--mra-oracle") {
+        let path = arg_value(&args, "--report").ok_or_else(|| louksna_session::error::err("MRA_REPORT_REQUIRED"))?;
+        let submitted: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path)?)?;
+        let verdict = louksna_session::mra::oracle_verify(&submitted)?;
+        println!("{}", serde_json::to_string_pretty(&verdict)?);
+        return Ok(if verdict["verdict"] == "GRANTED" { ExitCode::SUCCESS } else { ExitCode::from(1) });
+    }
     if args.iter().any(|a| a == "--g23") {
         let app = App::open(&state)?;
         let verdict = g23::validate(&app.store)?;

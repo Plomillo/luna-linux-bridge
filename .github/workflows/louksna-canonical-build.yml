@@ -76,12 +76,14 @@ jobs:
           install -d /tmp/g23-state
           /tmp/louksna/usr/bin/louksna-session --state /tmp/g23-state --g23 > /tmp/g23.json
           python3 -c 'import json;v=json.load(open("/tmp/g23.json")); assert v["producer"]=="louksna-g23" and v["verdict"]=="PASS", v'
+          install -d "$GITHUB_WORKSPACE/g23-out"
+          cp /tmp/g23.json "$GITHUB_WORKSPACE/g23-out/g23.json"
+          cp /tmp/g23-state/g23-verdict.json "$GITHUB_WORKSPACE/g23-out/g23-verdict.json"
+          test -f "$GITHUB_WORKSPACE/g23-out/g23-verdict.json"
       - uses: actions/upload-artifact@v4
         with:
           name: g23-verdict
-          path: |
-            /tmp/g23.json
-            /tmp/g23-state/g23-verdict.json
+          path: g23-out/
   g24:
     needs: g23
     runs-on: ubuntu-24.04
@@ -107,8 +109,10 @@ jobs:
           fi
           /tmp/louksna/usr/bin/louksna-session --state /tmp/g24-state --g23 > /tmp/own-g23.json
           cp /tmp/g24-state/g23-verdict.json /tmp/g24-state/g23-verdict.json
-          /tmp/louksna/usr/bin/louksna-session --state /tmp/g24-state --g24 --subject ci
+          /tmp/louksna/usr/bin/louksna-session --state /tmp/g24-state --g24 --subject ci | tee /tmp/g24.json
           python3 - << 'PY'
           import json
+          verdict = json.load(open("/tmp/g24.json"))
+          assert verdict["producer"] == "louksna-g24" and verdict["verdict"] == "PASS" and verdict["depends_on"] == "louksna-g23", verdict
           print("g24 sequence held")
           PY
