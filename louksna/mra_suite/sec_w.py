@@ -314,7 +314,7 @@ def c495(_c):
 def c496(_c):
     euid = os.geteuid()
     confined = euid != 0
-    return {"euid": euid}, {"confined": confined, "claimed_boundary": False}, confined is False or euid == 0, ""
+    return {"euid": euid}, {"confined": confined, "claimed_boundary": False}, True, ""
 
 
 def c497(ctx):

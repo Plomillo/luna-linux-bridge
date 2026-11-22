@@ -154,7 +154,9 @@ def e416(inp):
 
 
 def e418(inp):
-    return {"entered": inp["rc"] == 0, "host_firewall_changed": False}
+    if inp["rc"] != 0:
+        return {"blocked": True, "probe": "netns"}
+    return {"entered": True, "host_firewall_changed": False}
 
 
 def e419(inp):

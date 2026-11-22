@@ -601,8 +601,12 @@ def c658(_c):
 
 def c418(_c):
     proc = subprocess.run(["unshare", "--net", "true"], capture_output=True, text=True)
-    return go("net", 2, "Namespace de red desechable con unshare", {"rc": proc.returncode},
-              {"entered": proc.returncode == 0, "host_firewall_changed": False}, proc.returncode == 0)
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "unshare --net rechazo").strip().replace("\n", " ")[:160]
+        return go("net", 2, "Namespace de red desechable con unshare", {"rc": proc.returncode},
+                  {"blocked": True, "probe": "netns"}, False, unlock=detail or "unshare --net no disponible")
+    return go("net", 2, "Namespace de red desechable con unshare", {"rc": 0},
+              {"entered": True, "host_firewall_changed": False}, True)
 
 
 def scripture(n, domain, objective, facts, good, limits="MECHANISM_ON_SYNTHETIC_FIXTURE"):
