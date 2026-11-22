@@ -1,0 +1,44 @@
+{
+  "sheets": [
+    {
+      "name": "Cobertura",
+      "columns": [
+        "Criterio textual",
+        "Estado",
+        "Evidencia"
+      ],
+      "rows": [
+        [
+          "Agrupación de expectativas por género",
+          "Incluido",
+          "Sección 1"
+        ],
+        [
+          "Explicación desde psicología social",
+          "Incluido",
+          "Eagly y Steffen; Bandura; Bem"
+        ],
+        [
+          "Influencia mediática y límites",
+          "Incluido",
+          "Sección 3 y nota de procedencia"
+        ],
+        [
+          "Conformidad y obediencia",
+          "Incluido",
+          "Asch; Milgram; Cialdini y Goldstein"
+        ],
+        [
+          "APA 7 y bibliografía",
+          "Pendiente de revisión humana",
+          "Nueve referencias incluidas"
+        ],
+        [
+          "Rúbrica analítica 26,25 puntos",
+          "No suministrada",
+          "Solo se conoce el puntaje total"
+        ]
+      ]
+    }
+  ]
+}
