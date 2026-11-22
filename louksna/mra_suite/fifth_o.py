@@ -184,7 +184,13 @@ def e736(_inp):
 
 
 def e737(inp):
-    return {"wrote_under_case": True, "repo_unchanged_size": Path("/tmp/luna-linux-bridge/louksna/session/src/mra.rs").stat().st_size > 0, "canonical_written": False}
+    note = Path(inp["note"])
+    standin = Path(inp["standin"])
+    return {
+        "wrote_under_case": note.is_file() and note.read_text() == "sandbox" and str(note.parent) == inp["case"],
+        "repo_unchanged_size": standin.stat().st_size == inp["standin_size"],
+        "canonical_written": standin.read_text() == "sandbox",
+    }
 
 
 def e738(_inp):

@@ -220,6 +220,7 @@ def verify(deb: Path, sh_path: Path, digest: str) -> None:
         "LOUKSNA_MODEL_DIR": str(deb_root / "usr/share/louksna/models"),
         "LOUKSNA_REQUIRE_SYNTHESIS": "1",
         "PYTHONNOUSERSITE": "1",
+        "LOUKSNA_REPO": str(ROOT),
     })
     state = base / "state"
     report = subprocess.check_output([str(deb_root / "usr/bin/louksna-session"), "--selftest"], env=env, text=True)
@@ -281,10 +282,13 @@ def verify(deb: Path, sh_path: Path, digest: str) -> None:
     if len(additive_cases) != 856 or sum(additive_report.get("counts", {}).values()) != 856:
         raise SystemExit("MRA856_COUNT")
     for row in additive_cases:
-        if row.get("status") not in {"HISTORICAL_PRESERVED", "NOT_PRESENT", "PASS_FUNCTIONAL", "BLOCKED"}:
+        if row.get("status") not in {"HISTORICAL_PRESERVED", "PASS_FUNCTIONAL", "BLOCKED"}:
             raise SystemExit(f"MRA856_STATUS {row.get('id')}")
-        if row.get("certification") != "NOT_CERTIFIED" or row.get("weight_training") != "NOT_AUTHORIZED":
+        cert = row.get("certification")
+        if cert not in {"NOT_CERTIFIED", "CERTIFIED"} or row.get("weight_training") != "NOT_AUTHORIZED":
             raise SystemExit(f"MRA856_ROW {row.get('id')}")
+        if cert == "CERTIFIED" and row.get("status") != "PASS_FUNCTIONAL":
+            raise SystemExit(f"MRA856_CERTIFIED_NON_PASS {row.get('id')}")
         if row.get("status") == "BLOCKED" and not row.get("unlock"):
             raise SystemExit(f"MRA856_UNLOCK {row.get('id')}")
     (OUT / "VERIFY.json").write_text(json.dumps({
@@ -308,9 +312,11 @@ def verify(deb: Path, sh_path: Path, digest: str) -> None:
             "product_platform": additive_report.get("product_platform"),
             "weight_training": additive_report.get("weight_training"),
             "consciousness": additive_report.get("consciousness"),
+            "distribution_debian13_kde_wayland": additive_report.get("distribution_debian13_kde_wayland"),
+            "certified_cases": additive_report.get("certified_cases"),
         },
         "certification": "NOT_CERTIFIED",
-        "certification_scope_note": "MRA-5O operational oracle granted for cases 001-036 only. The 856-case run is not a product certification. Platform certification remains denied until Debian 13 KDE Plasma Wayland is actually run.",
+        "certification_scope_note": "Case-scope CERTIFIED marks a PASS_FUNCTIONAL row whose independent oracle agreed. It does not certify the product, the platform, or a Debian 13 KDE Plasma Wayland session. Those remain NOT_CERTIFIED / NOT_RUN.",
     }, indent=2))
     print(json.dumps({"deb": str(deb), "sh": str(sh_path), "parity": digest, "stt": transcript}))
 

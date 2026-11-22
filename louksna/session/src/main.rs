@@ -69,8 +69,12 @@ fn require_status(row: &serde_json::Value) -> Result<()> {
     if !matches!(status, "HISTORICAL_PRESERVED" | "NOT_PRESENT" | "PASS_FUNCTIONAL" | "BLOCKED") {
         return Err(louksna_session::error::err("MRA856_STATUS"));
     }
-    if row["certification"] != "NOT_CERTIFIED" || row["weight_training"] != "NOT_AUTHORIZED" || row["consciousness"] != "NOT_CLAIMED" {
+    let certification = row["certification"].as_str().unwrap_or("");
+    if !matches!(certification, "NOT_CERTIFIED" | "CERTIFIED") || row["weight_training"] != "NOT_AUTHORIZED" || row["consciousness"] != "NOT_CLAIMED" {
         return Err(louksna_session::error::err("MRA856_FORBIDDEN_CLAIM"));
+    }
+    if certification == "CERTIFIED" && status != "PASS_FUNCTIONAL" {
+        return Err(louksna_session::error::err("MRA856_CERTIFIED_NON_PASS"));
     }
     if status == "BLOCKED" && row["unlock"].as_str().unwrap_or("").is_empty() {
         return Err(louksna_session::error::err("MRA856_BLOCKED_WITHOUT_UNLOCK"));

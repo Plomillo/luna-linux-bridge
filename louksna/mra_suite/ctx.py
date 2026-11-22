@@ -5,6 +5,17 @@ import os
 from pathlib import Path
 
 
+def discover_repo() -> Path:
+    env = os.environ.get("LOUKSNA_REPO", "")
+    if env and Path(env).is_dir():
+        return Path(env)
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / "louksna" / "session" / "src" / "mra.rs").is_file():
+            return parent
+    return Path("/tmp/luna-linux-bridge")
+
+
 class Ctx:
     def __init__(self, root: Path):
         self.root = Path(root)
@@ -17,11 +28,14 @@ class Ctx:
 
     @property
     def repo(self) -> Path:
-        return Path(os.environ.get("LOUKSNA_REPO", "/tmp/luna-linux-bridge"))
+        return discover_repo()
 
     @property
     def session_bin(self) -> str:
-        return os.environ.get(
-            "LOUKSNA_SESSION_BIN",
-            "/tmp/luna-linux-bridge/louksna/session/target/release/louksna-session",
-        )
+        env = os.environ.get("LOUKSNA_SESSION_BIN", "")
+        if env:
+            return env
+        candidate = self.repo / "louksna" / "session" / "target" / "release" / "louksna-session"
+        if candidate.is_file():
+            return str(candidate)
+        return "/tmp/luna-linux-bridge/louksna/session/target/release/louksna-session"

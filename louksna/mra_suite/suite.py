@@ -1,4 +1,4 @@
-"""Assemble MRA-5O-001..856. Historical cases stay in Rust. 037-144 stay absent."""
+"""Assemble MRA-5O-001..856. Historical cases stay in Rust. 037-144 are executable."""
 from __future__ import annotations
 
 import json
@@ -12,6 +12,8 @@ import ai_o
 import ai_w
 import comp_o
 import comp_w
+import complement_o
+import complement_w
 import data_o
 import data_w
 import fifth_o
@@ -32,6 +34,8 @@ import part2_o
 import part2_w
 import part2b_o
 import part2b_w
+import repair_o
+import repair_w
 import sci_o
 import sci_w
 import sec_o
@@ -61,6 +65,8 @@ PAIRS = [
 
 
 def additive_owner(n: int):
+    if n in repair_w.IDS:
+        return repair_w, repair_o
     if n in fifth_w.DISPATCH and n in theo_w.DISPATCH:
         raise RuntimeError(f"overlap {n}")
     if n in fifth_w.DISPATCH:
@@ -74,14 +80,14 @@ def additive_owner(n: int):
 
 
 def coverage():
-    missing = []
-    for n in range(145, 857):
-        if additive_owner(n) is None:
-            missing.append(n)
+    missing = [n for n in range(145, 857) if additive_owner(n) is None]
+    missing.extend(n for n in range(37, 145) if n not in complement_w.DISPATCH or n not in complement_o.TABLE)
     return missing
 
 
 def run_worker(n: int, ctx: Ctx):
+    if 37 <= n <= 144:
+        return complement_w.run(n, ctx)
     owner = additive_owner(n)
     if owner is None:
         return None
@@ -89,6 +95,8 @@ def run_worker(n: int, ctx: Ctx):
 
 
 def run_oracle(n: int, inp: dict):
+    if 37 <= n <= 144:
+        return complement_o.expect(n, inp)
     owner = additive_owner(n)
     if owner is None:
         raise KeyError(n)
@@ -113,24 +121,8 @@ def no_floats(value, path=""):
 def historical(session: str, state: Path) -> dict:
     proc = subprocess.run([session, "--mra", "--state", str(state)], capture_output=True, text=True, timeout=180)
     if proc.returncode != 0:
-        raise RuntimeError("historical mra failed")
-    report = json.loads(proc.stdout)
-    return report
-
-
-def not_present(n: int) -> dict:
-    return {
-        "id": f"MRA-5O-{n:03d}",
-        "n": n,
-        "domain": "preserved-absent",
-        "objective": "UNKNOWN_DOSSIER_ABSENT",
-        "status": "NOT_PRESENT",
-        "independent_validation": "NOT_ESTABLISHED",
-        "certification": "NOT_CERTIFIED",
-        "weight_training": "NOT_AUTHORIZED",
-        "consciousness": "NOT_CLAIMED",
-        "unlock": "el expediente complementario 037-144 no esta en el repositorio; no se inventa un PASS",
-    }
+        raise RuntimeError("historical mra failed\n" + proc.stderr)
+    return json.loads(proc.stdout)
 
 
 def historical_row(case: dict, evidence: str) -> dict:
@@ -147,29 +139,36 @@ def historical_row(case: dict, evidence: str) -> dict:
         "evidence_sha256": evidence,
         "pass": case.get("pass") is True,
         "limits": "RUST_ORACLE_REINVOKES_RUN_SUITE",
+        "unlock": "",
     }
 
 
-def compare_additive(ctx: Ctx):
+def judge(rec: dict) -> str:
+    if rec["status"] == "PASS_FUNCTIONAL":
+        return "CERTIFIED"
+    return "NOT_CERTIFIED"
+
+
+def compare_range(ctx: Ctx, start: int, stop: int):
     bad = []
     rows = []
-    for n in range(145, 857):
+    for n in range(start, stop):
         rec = run_worker(n, ctx)
         if rec is None:
             bad.append((n, "MISSING"))
             continue
-        if rec.get("status") == "CERTIFIED":
-            bad.append((n, "CERTIFIED"))
+        if rec.get("status") not in {"PASS_FUNCTIONAL", "BLOCKED", "FAIL"}:
+            bad.append((n, "STATUS"))
             continue
         try:
             no_floats(rec.get("facts"))
             exp = run_oracle(n, rec["input"])
             no_floats(exp)
         except Exception as exc:
-            bad.append((n, type(exc).__name__))
+            bad.append((n, type(exc).__name__ + ":" + str(exc)[:180]))
             continue
         if exp != rec["facts"] or rec["status"] == "FAIL":
-            bad.append((n, rec["status"]))
+            bad.append((n, "MISMATCH" if exp != rec["facts"] else rec["status"]))
             continue
         if rec["status"] == "BLOCKED" and not rec.get("unlock"):
             bad.append((n, "BLOCKED_WITHOUT_UNLOCK"))
@@ -181,7 +180,7 @@ def compare_additive(ctx: Ctx):
             "objective": rec["objective"],
             "status": rec["status"],
             "independent_validation": "INDEPENDENTLY_VALIDATED" if rec["status"] == "PASS_FUNCTIONAL" else "NOT_ESTABLISHED",
-            "certification": "NOT_CERTIFIED",
+            "certification": judge(rec),
             "weight_training": "NOT_AUTHORIZED",
             "consciousness": "NOT_CLAIMED",
             "unlock": rec.get("unlock") or "",
@@ -211,21 +210,29 @@ def execute(root: Path) -> dict:
     if missing:
         raise RuntimeError("missing ids " + ",".join(str(n) for n in missing[:20]))
     ctx = Ctx(root)
-    rows, bad = compare_additive(ctx)
+    complement_rows, bad = compare_range(ctx, 37, 145)
+    additive_rows, bad2 = compare_range(ctx, 145, 857)
+    bad.extend(bad2)
     if not tamper(ctx):
         raise RuntimeError("tamper check failed")
-    session = os.environ.get("LOUKSNA_SESSION_BIN", "/tmp/luna-linux-bridge/louksna/session/target/release/louksna-session")
+    session = os.environ.get("LOUKSNA_SESSION_BIN") or Ctx(root).session_bin
     hist = historical(session, ctx.d(1) / "state")
     hist_rows = [historical_row(case, hist["evidence_sha256"]) for case in hist["cases"]]
-    absent = [not_present(n) for n in range(37, 145)]
-    all_rows = hist_rows + absent + rows
+    all_rows = hist_rows + complement_rows + additive_rows
     ids = [row["n"] for row in all_rows]
     if ids != list(range(1, 857)):
         raise RuntimeError("id sequence broken")
     counts = {}
+    certified = 0
     for row in all_rows:
         counts[row["status"]] = counts.get(row["status"], 0) + 1
-        if row["certification"] == "CERTIFIED" or row["weight_training"] != "NOT_AUTHORIZED":
+        if row["certification"] == "CERTIFIED":
+            if row["status"] != "PASS_FUNCTIONAL":
+                raise RuntimeError("certified non-pass")
+            certified += 1
+        elif row["certification"] != "NOT_CERTIFIED":
+            raise RuntimeError("certification value")
+        if row["weight_training"] != "NOT_AUTHORIZED" or row["consciousness"] != "NOT_CLAIMED":
             raise RuntimeError("forbidden status")
     report = {
         "suite": "MRA-5O-001-856",
@@ -233,12 +240,14 @@ def execute(root: Path) -> dict:
         "unique": len(set(ids)) == 856,
         "bad": [{"n": n, "why": why} for n, why in bad],
         "counts": counts,
+        "certified_cases": certified,
         "historical_evidence_sha256": hist.get("evidence_sha256"),
         "historical_failed": hist.get("failed"),
         "product_platform": "NOT_CERTIFIED",
+        "distribution_debian13_kde_wayland": "NOT_RUN",
         "consciousness": "NOT_CLAIMED",
         "weight_training": "NOT_AUTHORIZED",
-        "independent_note": "037-144 NOT_PRESENT; 001-036 NOT_ESTABLISHED because the Rust oracle calls run_suite again",
+        "independent_note": "001-036 stay NOT_ESTABLISHED because the Rust oracle calls run_suite. PASS_FUNCTIONAL rows are case-scope CERTIFIED. Product platform and Debian 13 KDE Plasma Wayland stay uncertified.",
         "cases": all_rows,
     }
     blob = scrub(json.dumps(report, sort_keys=True))
@@ -254,7 +263,7 @@ def main() -> int:
     out = root / "report.json"
     out.write_text(scrub(json.dumps({k: v for k, v in report.items() if k != "cases"}, indent=2, sort_keys=True)) + "\n")
     (root / "cases.json").write_text(scrub(json.dumps(report["cases"], indent=2)) + "\n")
-    print(json.dumps({k: report[k] for k in ("count", "unique", "counts", "bad", "historical_failed", "historical_evidence_sha256")}, indent=2))
+    print(json.dumps({k: report[k] for k in ("count", "unique", "counts", "certified_cases", "bad", "historical_failed", "historical_evidence_sha256", "product_platform", "distribution_debian13_kde_wayland")}, indent=2))
     return 0 if not report["bad"] and report["historical_failed"] == 0 else 1
 
 

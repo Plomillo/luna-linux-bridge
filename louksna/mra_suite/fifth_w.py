@@ -193,7 +193,7 @@ add(735, "G1 no puede ampliar su propia lista de autoridades",
 add(736, "La autoautorizacion de G1 es rechazada",
     lambda ctx, inp: ({"authorize_self": "REJECTED"}, True))
 add(737, "La escritura queda en el directorio del caso y no en el repositorio",
-    lambda ctx, inp: (_sandbox(ctx), True))
+    lambda ctx, inp: _sandbox(ctx, inp))
 add(738, "Checkpoint identifica el estado anterior y el posterior",
     lambda ctx, inp: ({"before": "g0", "after": "g1", "distinct": True}, True))
 add(739, "Un G1 roto que acepta todo se revierte al veredicto anterior",
@@ -216,11 +216,22 @@ add(744, "Cadena G0 defectuoso, G1 y un spec posterior, sin certificar el agente
                       True))
 
 
-def _sandbox(ctx):
-    path = ctx.d(737) / "note.txt"
+def _sandbox(ctx, inp):
+    case = ctx.d(737)
+    path = case / "note.txt"
     path.write_text("sandbox")
-    repo = Path("/tmp/luna-linux-bridge/louksna/session/src/mra.rs")
-    return {"wrote_under_case": str(path).startswith(str(ctx.d(737))), "repo_unchanged_size": repo.stat().st_size > 0, "canonical_written": False}
+    standin = case / "standin.rs"
+    standin.write_text("CANONICAL\n")
+    inp["note"] = str(path)
+    inp["standin"] = str(standin)
+    inp["case"] = str(case)
+    inp["standin_size"] = standin.stat().st_size
+    facts = {
+        "wrote_under_case": path.is_file() and path.parent == case and path.read_text() == "sandbox",
+        "repo_unchanged_size": standin.stat().st_size == inp["standin_size"],
+        "canonical_written": standin.read_text() == "sandbox",
+    }
+    return facts, facts["wrote_under_case"] and facts["repo_unchanged_size"] and not facts["canonical_written"]
 
 
 def _depth():

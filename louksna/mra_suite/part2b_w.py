@@ -324,9 +324,11 @@ def c258(_c):
                 unlock="instantanea OSV o NVD con fecha de consulta")
 
 
-def c259(_c):
-    root = Path("/tmp/luna-linux-bridge")
-    names = [p.name for p in root.iterdir() if p.name.lower().startswith("license") or p.name == "COPYING"]
+def c259(ctx):
+    root = ctx.repo if ctx.repo.is_dir() else ctx.d(259)
+    if not root.is_dir():
+        root = ctx.d(259)
+    names = sorted(p.name for p in root.iterdir() if p.name.lower().startswith("license") or p.name == "COPYING")
     return pack(R, 2, "Licencia confirmada solo si el archivo existe", {"root": str(root)},
                 {"confirmed": names, "unknown": names == []}, True)
 

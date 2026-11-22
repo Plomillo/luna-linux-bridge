@@ -244,7 +244,7 @@ def e258(_inp):
 
 def e259(inp):
     root = Path(inp["root"])
-    names = [p.name for p in root.iterdir() if p.name.lower().startswith("license") or p.name == "COPYING"]
+    names = sorted(p.name for p in root.iterdir() if p.name.lower().startswith("license") or p.name == "COPYING")
     return {"confirmed": names, "unknown": names == []}
 
 

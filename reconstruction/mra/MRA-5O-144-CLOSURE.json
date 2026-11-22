@@ -1,0 +1,118 @@
+{
+  "bad": [],
+  "blocked": [
+    {
+      "id": "MRA-5O-297",
+      "limits": "",
+      "n": 297,
+      "unlock": "SDK de Android o iOS y un emulador o dispositivo"
+    },
+    {
+      "id": "MRA-5O-298",
+      "limits": "",
+      "n": 298,
+      "unlock": "sesion grafica real para un toolkit de escritorio"
+    },
+    {
+      "id": "MRA-5O-334",
+      "limits": "",
+      "n": 334,
+      "unlock": "hace falta llvm-as y opt para relacionar etapas LLVM; no se inventa IR"
+    },
+    {
+      "id": "MRA-5O-353",
+      "limits": "",
+      "n": 353,
+      "unlock": "hace falta getfacl y setfacl; no se simula una ACL"
+    },
+    {
+      "id": "MRA-5O-368",
+      "limits": "",
+      "n": 368,
+      "unlock": "no se ejecuta apt install ni --force-depends; hace falta Debian con indices y dependencias reales"
+    },
+    {
+      "id": "MRA-5O-370",
+      "limits": "",
+      "n": 370,
+      "unlock": "systemd no esta en ejecucion (is-system-running no devolvio running); no se crea un servicio"
+    },
+    {
+      "id": "MRA-5O-375",
+      "limits": "",
+      "n": 375,
+      "unlock": "hace falta una sesion KDE Plasma real; no se usa kwin_wayland --virtual ni Weston"
+    },
+    {
+      "id": "MRA-5O-376",
+      "limits": "",
+      "n": 376,
+      "unlock": "hace falta una sesion Wayland real con socket; no se certifica con un compositor virtual"
+    },
+    {
+      "id": "MRA-5O-377",
+      "limits": "",
+      "n": 377,
+      "unlock": "no hay una sesion de escritorio con xdg-desktop-portal para comprobar permisos"
+    },
+    {
+      "id": "MRA-5O-378",
+      "limits": "",
+      "n": 378,
+      "unlock": "no hay una sesion grafica donde registrar un lanzador y comprobar que abre"
+    },
+    {
+      "id": "MRA-5O-379",
+      "limits": "",
+      "n": 379,
+      "unlock": "no hay /dev/snd ni pactl; no se afirma que el audio funcione"
+    },
+    {
+      "id": "MRA-5O-380",
+      "limits": "",
+      "n": 380,
+      "unlock": "no se puede comparar /proc/self/ns/pid (errno 0) con /proc/1/ns/pid (errno 13)"
+    },
+    {
+      "id": "MRA-5O-383",
+      "limits": "",
+      "n": 383,
+      "unlock": "el anfitrion es Debian 12; falta un segundo entorno real, sin --force-depends"
+    },
+    {
+      "id": "MRA-5O-575",
+      "limits": "",
+      "n": 575,
+      "unlock": "no hay un runner self-hosted inspeccionable en este entorno"
+    },
+    {
+      "id": "MRA-5O-608",
+      "limits": "",
+      "n": 608,
+      "unlock": "no hay sesion de escritorio; no se simula Wayland ni KDE"
+    }
+  ],
+  "case_144": {
+    "certification": "CERTIFIED",
+    "independent_validation": "INDEPENDENTLY_VALIDATED",
+    "limits": "Certifica el cierre operacional de 037-144. No certifica Debian 13, KDE Plasma ni Wayland.",
+    "status": "PASS_FUNCTIONAL"
+  },
+  "certified_cases": 805,
+  "consciousness": "NOT_CLAIMED",
+  "count": 856,
+  "counts": {
+    "BLOCKED": 15,
+    "HISTORICAL_PRESERVED": 36,
+    "PASS_FUNCTIONAL": 805
+  },
+  "distribution_debian13_kde_wayland": "NOT_RUN",
+  "historical_evidence_sha256": "497b4e108d300da29352b2a2fe4f2bd677658900cd152aca0f6b2ad82fce0638",
+  "historical_failed": 0,
+  "independent_note": "001-036 stay NOT_ESTABLISHED because the Rust oracle calls run_suite. PASS_FUNCTIONAL rows are case-scope CERTIFIED. Product platform and Debian 13 KDE Plasma Wayland stay uncertified.",
+  "product_platform": "NOT_CERTIFIED",
+  "scrubbed": false,
+  "suite": "MRA-5O-001-856",
+  "unique": true,
+  "weight_training": "NOT_AUTHORIZED"
+}
