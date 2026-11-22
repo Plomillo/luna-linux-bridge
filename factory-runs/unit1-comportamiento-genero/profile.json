@@ -1,0 +1,153 @@
+{
+  "schema": "LOUKSNA_ASSIGNMENT_PROFILE/1.0",
+  "profile_id": "UNIACC_COMPORTAMIENTO_GENERO_U1_20261122",
+  "profile_version": "1.0",
+  "status": "TASK_PROFILE_CANDIDATE_NOT_CERTIFIED",
+  "raw_instruction_ref": "factory-runs/unit1-comportamiento-genero/instructions.md",
+  "title": "Comportamiento y género — Análisis crítico de la denominada Guía de la buena esposa",
+  "language": "es",
+  "required_research": {
+    "minimum_distinct_sources": 7,
+    "source_priority": "Fuentes de psicología social con datos bibliográficos verificables y verificación documental de la procedencia del caso.",
+    "required_topics": [
+      "Distribución social de roles y estereotipos de género",
+      "Aprendizaje social y modelado",
+      "Esquemas cognitivos de género",
+      "Influencia mediática, normas sociales y límites de la inferencia causal",
+      "Conformidad e influencia de la mayoría",
+      "Obediencia a la autoridad y límites de extrapolación"
+    ]
+  },
+  "deliverables": [
+    {
+      "id": "REPORT_DOCX",
+      "kind": "docx",
+      "submission_required": true
+    },
+    {
+      "id": "AUX_PDF",
+      "kind": "pdf",
+      "submission_required": false
+    }
+  ],
+  "constraints": {
+    "report_word_count": {
+      "min": 1050,
+      "max": 1650,
+      "exclude": [
+        "cover",
+        "references"
+      ]
+    },
+    "formatting": {
+      "font": "Arial",
+      "body_size_pt": 12,
+      "heading_size_pt": 16,
+      "line_spacing": 1.5,
+      "paragraph_alignment": "justified",
+      "heading_alignment": "center",
+      "margins_cm": {
+        "top": 2.5,
+        "bottom": 2.5,
+        "left": 2.5,
+        "right": 2.5
+      }
+    },
+    "language": "es",
+    "cover": {
+      "author_names": [
+        "Diego Ignacio Norambuena Miranda"
+      ],
+      "required": true,
+      "editable_fields": [
+        "Asignatura",
+        "Docente",
+        "Fecha de entrega"
+      ]
+    },
+    "references": {
+      "apa_edition": 7,
+      "required": true,
+      "own_page": true
+    },
+    "body_pages": 4,
+    "development_pages": 3,
+    "required_sections": [
+      "Introducción",
+      "Desarrollo: 1. Atributos y expectativas asociados a cada género",
+      "Desarrollo: 2. Causas sociales de las conductas asociadas a lo femenino y lo masculino",
+      "Desarrollo: 3. Influencia de los medios; 4. Conformidad y obediencia",
+      "Conclusión"
+    ],
+    "page_break_before_headings": [
+      "Introducción",
+      "Desarrollo: 1. Atributos y expectativas asociados a cada género",
+      "Desarrollo: 2. Causas sociales de las conductas asociadas a lo femenino y lo masculino",
+      "Desarrollo: 3. Influencia de los medios; 4. Conformidad y obediencia",
+      "Referencias"
+    ]
+  },
+  "rubric": {
+    "declared_total_points": 26.25,
+    "criteria": [
+      {
+        "id": "R00_AGGREGATE_ONLY",
+        "points": 26.25,
+        "text": "Puntaje máximo total declarado en las instrucciones. La rúbrica analítica desglosada no fue suministrada; este registro conserva únicamente el total y no inventa ponderaciones internas.",
+        "validation": "G23_HUMAN_REVIEW_REQUIRED"
+      }
+    ],
+    "detail_status": "OFFICIAL_RUBRIC_BREAKDOWN_NOT_PROVIDED",
+    "no_invented_weights": true
+  },
+  "unresolved_source_conflicts": [
+    "La atribución de la copia visual de once reglas a una revista BUENHOGAR de 1953 no está verificada; Maldita.es sitúa las imágenes y frases de la versión circulante en la apertura de Las Aparicio (2010) y documenta la ausencia de esas reglas en manuales de economía doméstica consultados.",
+    "El PDF original adjunto por la asignatura no fue entregado ni aparece entre los archivos conversacionales accesibles; el perfil registra una copia pública secundaria como referencia textual, no como original histórico autenticado."
+  ],
+  "runtime_policy": {
+    "heartbeat_interval_seconds": 1,
+    "stages": {
+      "PROFILE_VALIDATE": {
+        "timeout_seconds": 30,
+        "max_attempts": 1
+      },
+      "SOURCE_LEDGER": {
+        "timeout_seconds": 30,
+        "max_attempts": 1
+      },
+      "BUILD_DOCX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PPTX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PDF": {
+        "timeout_seconds": 300,
+        "max_attempts": 1
+      },
+      "FORMAT_DOCX": {
+        "timeout_seconds": 60,
+        "max_attempts": 1
+      },
+      "VALIDATE": {
+        "timeout_seconds": 60,
+        "max_attempts": 1
+      },
+      "SELF_AUDIT": {
+        "timeout_seconds": 30,
+        "max_attempts": 1
+      },
+      "FREEZE": {
+        "timeout_seconds": 30,
+        "max_attempts": 1
+      }
+    }
+  },
+  "no_fabricated_bibliography": true,
+  "no_subject_matter_inference": false,
+  "g23_authority": false,
+  "g24_authority": false,
+  "certification_authority": false
+}
