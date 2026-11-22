@@ -1,0 +1,87 @@
+name: Document Factory — Unit 1 Comportamiento y género
+
+on:
+  push:
+    branches:
+      - candidate/document-factory-v1-unit2-20261013
+    paths:
+      - factory-runs/unit1-comportamiento-genero/instructions.md
+      - factory-runs/unit1-comportamiento-genero/profile.json
+      - factory-runs/unit1-comportamiento-genero/workspace/source/report.md
+      - factory-runs/unit1-comportamiento-genero/workspace/source/slides.md
+      - factory-runs/unit1-comportamiento-genero/workspace/data/sheets.json
+      - factory-runs/unit1-comportamiento-genero/workspace/data/source-ledger.json
+      - factory-runs/unit1-comportamiento-genero/format_docx.py
+      - .github/workflows/document-factory-unit1-run.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: document-factory-unit1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@v4
+        with:
+          ref: candidate/document-factory-v1-unit2-20261013
+          fetch-depth: 0
+
+      - name: Install document toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc libreoffice-writer python3-docx
+
+      - name: Validate profile and build with Document Factory
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$GITHUB_WORKSPACE"
+          RUN="$RUNNER_TEMP/louksna-unit1"
+          PROFILE="$ROOT/factory-runs/unit1-comportamiento-genero/profile.json"
+          SRC="$ROOT/factory-runs/unit1-comportamiento-genero/workspace"
+          mkdir -p "$RUN"
+          cp -a "$SRC/." "$RUN/"
+          python3 document-factory/src/factory.py validate-profile "$PROFILE" --repo-root "$ROOT"
+          python3 document-factory/src/factory.py build "$RUN" "$PROFILE" --repo-root "$ROOT"
+          python3 factory-runs/unit1-comportamiento-genero/format_docx.py "$RUN/build/report.docx" "$RUN/evidence/formatting.json"
+          rm -f "$RUN/build/report.pdf"
+          libreoffice --headless --convert-to pdf --outdir "$RUN/build" "$RUN/build/report.docx"
+          python3 document-factory/src/factory.py validate "$RUN" "$PROFILE" --repo-root "$ROOT"
+          python3 document-factory/src/factory.py self-audit "$RUN" "$PROFILE"
+          python3 document-factory/src/factory.py freeze "$RUN"
+          mkdir -p "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/evidence"
+          cp "$RUN/build/report.docx" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/Trabajo1_DiegoIgnacioNorambuenaMiranda.docx"
+          cp "$RUN/build/report.pdf" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/Trabajo1_DiegoIgnacioNorambuenaMiranda.pdf"
+          cp "$RUN/evidence/"*.json "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/evidence/"
+          cp "$RUN/FROZEN_CANDIDATE.json" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/"
+          cp "$RUN/CANDIDATE_DIGEST.txt" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/"
+          cp "$RUN/source/report.md" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/report-source.md"
+          printf 'factory_status=BUILT_AND_FIRST_ORDER_VALIDATED\ng23=NOT_EXECUTED\ng24=NOT_EXECUTED\n' > "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/STATUS.txt"
+
+      - name: Commit deliverables to the candidate branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add factory-runs/unit1-comportamiento-genero/deliverables/latest
+          if git diff --cached --quiet; then
+            echo "No deliverable changes."
+          else
+            git commit -m "docs(unit1): build comportamiento y genero essay"
+            git push origin HEAD:candidate/document-factory-v1-unit2-20261013
+          fi
+
+      - name: Upload immutable workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unidad1-comportamiento-genero-documentos
+          path: factory-runs/unit1-comportamiento-genero/deliverables/latest/
+          if-no-files-found: error
