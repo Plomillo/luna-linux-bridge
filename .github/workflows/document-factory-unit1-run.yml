@@ -36,7 +36,7 @@ jobs:
       - name: Install document toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y pandoc libreoffice-writer python3-docx
+          sudo apt-get install -y pandoc libreoffice-writer python3-docx poppler-utils
 
       - name: Validate profile and build with Document Factory
         shell: bash
@@ -53,8 +53,34 @@ jobs:
           python3 factory-runs/unit1-comportamiento-genero/format_docx.py "$RUN/build/report.docx" "$RUN/evidence/formatting.json"
           rm -f "$RUN/build/report.pdf"
           libreoffice --headless --convert-to pdf --outdir "$RUN/build" "$RUN/build/report.docx"
+          PAGES="$(pdfinfo "$RUN/build/report.pdf" | awk '/^Pages:/ {print $2}')"
+          test "$PAGES" = "6"
+          pdftotext -layout "$RUN/build/report.pdf" "$RUN/build/report.txt"
+          python3 - "$RUN/build/report.txt" <<'PY'
+          import pathlib,sys
+          text=pathlib.Path(sys.argv[1]).read_text(encoding="utf-8",errors="replace")
+          required=["Introducción","Atributos y expectativas asociados a cada género","Causas sociales de las conductas asociadas a lo femenino y lo masculino","Influencia de los medios","Conclusión","Referencias"]
+          missing=[x for x in required if x not in text]
+          if missing: raise SystemExit("PDF_SECTION_TEXT_MISSING:"+",".join(missing))
+          print("PDF_PAGE_COUNT=6; REQUIRED_SECTIONS=PASS")
+          PY
           python3 document-factory/src/factory.py validate "$RUN" "$PROFILE" --repo-root "$ROOT"
-          python3 document-factory/src/factory.py self-audit "$RUN" "$PROFILE"
+          python3 - "$RUN/evidence/validation.json" <<'PY'
+          import json,pathlib,sys
+          r=json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          failures=[x for x in r.get("results",[]) if x.get("status")!="PASS"]
+          if r.get("status")!="PASS": raise SystemExit("FIRST_ORDER_VALIDATION_FAILED:"+json.dumps(failures,ensure_ascii=False))
+          print("FIRST_ORDER_VALIDATION=PASS")
+          PY
+          python3 -B document-factory/src/factory.py self-audit "$RUN" "$PROFILE"
+          META_STATUS="$(python3 - "$RUN/evidence/self-audit.json" <<'PY'
+          import json,pathlib,sys
+          x=json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if x.get("status") not in ("PASS","PASS_WITH_ESCALATION"): raise SystemExit("METACOGNITIVE_SELF_AUDIT_HOLD:"+str(x.get("status")))
+          if x.get("g23_granted") or x.get("g24_granted") or x.get("certification_authority"): raise SystemExit("UNAUTHORIZED_CERTIFICATION_STATE")
+          print(x["status"])
+          PY
+          )"
           python3 document-factory/src/factory.py freeze "$RUN"
           mkdir -p "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/evidence"
           cp "$RUN/build/report.docx" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/Trabajo1_DiegoIgnacioNorambuenaMiranda.docx"
@@ -63,7 +89,7 @@ jobs:
           cp "$RUN/FROZEN_CANDIDATE.json" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/"
           cp "$RUN/CANDIDATE_DIGEST.txt" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/"
           cp "$RUN/source/report.md" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/report-source.md"
-          printf 'factory_status=BUILT_AND_FIRST_ORDER_VALIDATED\ng23=NOT_EXECUTED\ng24=NOT_EXECUTED\n' > "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/STATUS.txt"
+          printf 'factory_status=BUILT_AND_VALIDATED\nfirst_order_validation=PASS\nmetacognitive_self_audit=%s\npdf_pages=%s\ng23=NOT_EXECUTED\ng24=NOT_EXECUTED\ncertification=NOT_GRANTED\n' "$META_STATUS" "$PAGES" > "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/STATUS.txt"
 
       - name: Commit deliverables to the candidate branch
         shell: bash
