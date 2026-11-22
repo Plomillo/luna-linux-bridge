@@ -46,17 +46,17 @@ Los mecanismos se refuerzan: la división del trabajo produce modelos; los model
 
 # Desarrollo: 3. Influencia de los medios; 4. Conformidad y obediencia
 
-Los medios influyen al seleccionar modelos y señalar conductas aprobadas. Mostrar a la esposa como bella, ordenada, silenciosa y disponible transmite una norma; repetirla puede normalizarla si coincide con mensajes familiares o educativos. Las lectoras también pueden aceptarla, negociarla o rechazarla: la influencia no es automática (Cialdini & Goldstein, 2004).
+Los medios seleccionan modelos y comunican normas. Presentar a la esposa como bella, silenciosa y disponible puede normalizar ese ideal, especialmente si lo repiten la familia y otros espacios; las lectoras también pueden aceptarlo o rechazarlo (Cialdini & Goldstein, 2004).
 
-El material no aporta datos de tiraje, lectoría o recepción que demuestren efectos conductuales de BUENHOGAR. La procedencia de las once reglas es controvertida: Maldita.es (2020/2022) documenta su uso en la apertura de *Las Aparicio* (2010) y su ausencia en los manuales consultados. No cabe afirmar que BUENHOGAR publicara la pieza ni que las mujeres de 1953 siguieran sus instrucciones; sí analizar cómo un consejo autorizado puede reforzar estereotipos.
+El material no aporta datos de tiraje, lectoría o recepción que prueben efectos de BUENHOGAR. La atribución de las once reglas a 1953 es controvertida: Maldita.es (2020/2022) las ubica en la apertura de *Las Aparicio* (2010) y no las encontró en manuales consultados. No debe afirmarse esa publicación ni un seguimiento general de sus instrucciones.
 
-La conformidad consiste en ajustar la conducta a expectativas grupales para obtener aceptación o evitar sanciones (influencia normativa), o porque se cree que el grupo conoce la respuesta correcta (influencia informativa). Asch (1956) mostró que la presión mayoritaria puede modificar juicios. Una mujer podía seguir estas reglas para evitar críticas o porque su comunidad las consideraba normales. La guía expresa una norma posible, no una adhesión universal.
+La conformidad consiste en ajustar la conducta a una norma grupal para lograr aceptación o evitar sanciones (influencia normativa), o porque se cree que el grupo tiene razón (informativa). Asch (1956) mostró que la mayoría puede modificar juicios. Una mujer podía seguir el modelo para evitar críticas o porque su comunidad lo consideraba normal.
 
-La obediencia supone cumplir órdenes de una figura percibida como autoridad. El texto presenta los deseos del marido como prioritarios y a la esposa como subordinada, jerarquía que puede reforzarse mediante autoridades familiares o institucionales. Milgram (1963) estudió la obediencia en laboratorio, no en matrimonios; su trabajo explica el mecanismo, pero no prueba una obediencia uniforme de las esposas. Así, conformidad remite a presión grupal y obediencia a órdenes jerárquicas; ambas reproducen desigualdad, aunque también hay resistencia y negociación.
+La obediencia es cumplir órdenes de una autoridad. El texto presenta al marido como autoridad doméstica y a la esposa como subordinada. Milgram (1963) estudió obediencia en laboratorio, no en matrimonios: ilustra el mecanismo, pero no prueba que las esposas obedecieran uniformemente. Conformidad remite a presión grupal; obediencia, a jerarquía. Ambas pueden reproducir desigualdad, aunque también cabe resistencia.
 
 # Conclusión
 
-El caso muestra cómo una división desigual del trabajo se convierte en expectativas de género: la esposa cuida y sirve; el marido recibe prioridad y autonomía. El aprendizaje social, los esquemas, la conformidad y la obediencia explican parte de esa reproducción. Los medios pueden reforzar normas sin determinar toda conducta. La procedencia incierta obliga a separar el análisis del contenido de la afirmación de que se publicó en 1953. La crítica identifica la desigualdad que ese ideal presenta como natural, sin generalizar la experiencia femenina.
+El caso muestra cómo una división desigual del trabajo se transforma en expectativas de género: la mujer cuida y sirve; el hombre recibe prioridad. Aprendizaje, esquemas, conformidad y obediencia ayudan a explicar su reproducción. La procedencia incierta exige analizar el mensaje sin dar por probada su publicación en 1953. El problema central es la desigualdad presentada como natural.
 
 <!-- BODY_END -->
 
