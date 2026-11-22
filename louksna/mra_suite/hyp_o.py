@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -153,7 +154,25 @@ def e607(inp):
 
 
 def e608(inp):
-    return blocked(inp)
+    session = os.environ.get("XDG_SESSION_TYPE", "")
+    display = os.environ.get("WAYLAND_DISPLAY", "")
+    runtime = os.environ.get("XDG_RUNTIME_DIR", "")
+    socket_ok = bool(display and runtime and (Path(runtime) / display).is_socket())
+    plasma = kwin = False
+    for pid in Path("/proc").iterdir():
+        if not pid.name.isdigit():
+            continue
+        try:
+            cmd = (pid / "cmdline").read_bytes().replace(b"\x00", b" ").decode(errors="replace")
+        except OSError:
+            continue
+        if "plasmashell" in cmd:
+            plasma = True
+        if "kwin_wayland" in cmd or cmd.startswith("kwin ") or "/kwin " in cmd:
+            kwin = True
+    if not (session == "wayland" and socket_ok and plasma and kwin):
+        return blocked(inp)
+    return {"blocked": False, "probe": "desktop", "kde_wayland": True}
 
 
 def e609(inp):

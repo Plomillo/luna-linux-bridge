@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 
 from pack import pack
@@ -202,8 +203,30 @@ def c607(_c):
     return block("browser", "no hay un navegador grafico; no se inventa una navegacion")
 
 
+def _kde_wayland():
+    session = os.environ.get("XDG_SESSION_TYPE", "")
+    display = os.environ.get("WAYLAND_DISPLAY", "")
+    runtime = os.environ.get("XDG_RUNTIME_DIR", "")
+    socket_ok = bool(display and runtime and (Path(runtime) / display).is_socket())
+    plasma = kwin = False
+    for pid in Path("/proc").iterdir():
+        if not pid.name.isdigit():
+            continue
+        try:
+            cmd = (pid / "cmdline").read_bytes().replace(b"\x00", b" ").decode(errors="replace")
+        except OSError:
+            continue
+        if "plasmashell" in cmd:
+            plasma = True
+        if "kwin_wayland" in cmd or cmd.startswith("kwin ") or "/kwin " in cmd:
+            kwin = True
+    return session == "wayland" and socket_ok and plasma and kwin
+
+
 def c608(_c):
-    return block("desktop", "no hay sesion de escritorio; no se simula Wayland ni KDE")
+    if not _kde_wayland():
+        return block("desktop", "no hay sesion KDE Wayland observable; no se simula Weston ni kwin_wayland --virtual")
+    return {"probe": "desktop"}, {"blocked": False, "probe": "desktop", "kde_wayland": True}, True, ""
 
 
 def c609(ctx):

@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import struct
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -413,12 +414,46 @@ def e296(_inp):
     return {"rejected": True, "small": 8}
 
 
+def _mobile_sdk_facts():
+    homes = [p for p in (os.environ.get("ANDROID_HOME", ""), "/opt/android-sdk", "/usr/lib/android-sdk") if p and Path(p).is_dir()]
+    adb = shutil.which("adb")
+    emulator = shutil.which("emulator")
+    xcrun = shutil.which("xcrun")
+
+    def ran(argv):
+        try:
+            proc = subprocess.run(argv, capture_output=True, text=True, timeout=20)
+        except (OSError, subprocess.TimeoutExpired):
+            return False, ""
+        return proc.returncode == 0, proc.stdout or ""
+
+    adb_ok, adb_out = ran([adb, "version"]) if adb else (False, "")
+    adb_ok = adb_ok and "Android Debug Bridge" in adb_out
+    emulator_ok, _emu_out = ran([emulator, "-version"]) if emulator else (False, "")
+    ios_ok, _ios_out = ran([xcrun, "--find", "simctl"]) if xcrun else (False, "")
+    sdk_dir = bool(homes)
+    real = (adb_ok and emulator_ok and sdk_dir) or ios_ok
+    return {"blocked": not real, "adb_ok": adb_ok, "emulator_ok": emulator_ok, "ios_sim_ok": ios_ok, "sdk_dir": sdk_dir}
+
+
+def _graphical_facts():
+    session = os.environ.get("XDG_SESSION_TYPE", "")
+    desktop = (os.environ.get("XDG_CURRENT_DESKTOP", "") + os.environ.get("DESKTOP_SESSION", "")).upper()
+    display = os.environ.get("WAYLAND_DISPLAY", "")
+    runtime = os.environ.get("XDG_RUNTIME_DIR", "")
+    socket_ok = bool(display and runtime and (Path(runtime) / display).is_socket())
+    kde = ("KDE" in desktop) and Path("/usr/bin/plasmashell").is_file()
+    if session == "wayland" and socket_ok and kde:
+        return {"blocked": False, "graphical": True, "wayland": True, "kde": True}
+    return {"blocked": True, "graphical": False, "wayland": session == "wayland", "kde": bool(kde)}
+
+
 def e297(_inp):
-    return {"blocked": True}
+    return _mobile_sdk_facts()
 
 
-def e298(inp):
-    return {"blocked": True, "display_empty": inp.get("display", "") == ""}
+def e298(_inp):
+    return _graphical_facts()
 
 
 def e299(inp):

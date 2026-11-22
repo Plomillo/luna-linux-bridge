@@ -235,7 +235,45 @@ def e367(inp):
 
 
 def e368(inp):
-    return blocked(inp)
+    proc = subprocess.run(["apt-get", "update"], capture_output=True, text=True, timeout=180)
+    root = Path("/var/lib/apt/lists")
+    lists = sorted(p.name for p in root.iterdir() if p.is_file() and p.name.endswith("_Packages")) if root.is_dir() else []
+    ok = proc.returncode == 0 and len(lists) > 0
+    return {
+        "blocked": not ok,
+        "probe": "apt-indexes",
+        "update_rc": proc.returncode,
+        "lists": len(lists),
+        "used_install": False,
+        "force_depends": False,
+    }
+
+
+def e377(_inp):
+    bins = Path("/usr/bin/xdg-desktop-portal").is_file() and Path("/usr/bin/xdg-desktop-portal-kde").is_file()
+    portal = kde = False
+    for pid in Path("/proc").iterdir():
+        if not pid.name.isdigit():
+            continue
+        try:
+            cmd = (pid / "cmdline").read_bytes().replace(b"\x00", b" ").decode(errors="replace")
+        except OSError:
+            continue
+        if "xdg-desktop-portal-kde" in cmd:
+            kde = True
+        elif "xdg-desktop-portal" in cmd:
+            portal = True
+    ok = bins and portal and kde
+    return {"blocked": not ok, "probe": "xdg-portals", "running": ok}
+
+
+def e378(inp):
+    stamp = inp.get("stamp")
+    nonce = inp.get("nonce")
+    opened = bool(stamp and nonce and Path(stamp).is_file() and Path(stamp).read_text().strip() == nonce)
+    if not opened:
+        return {"blocked": True, "probe": "desktop-integration", "opened": False}
+    return {"blocked": False, "probe": "desktop-integration", "opened": True}
 
 
 def e369(inp):
@@ -295,14 +333,6 @@ def e376(inp):
     real = bool(display and runtime and Path(runtime, display).exists() and os.environ.get("XDG_SESSION_TYPE") == "wayland")
     if real:
         return {"blocked": False, "probe": inp["probe"]}
-    return blocked(inp)
-
-
-def e377(inp):
-    return blocked(inp)
-
-
-def e378(inp):
     return blocked(inp)
 
 

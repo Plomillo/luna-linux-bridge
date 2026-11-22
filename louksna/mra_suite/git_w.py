@@ -329,8 +329,23 @@ def c574(_c):
     return {"covered": covered, "total": total}, {"ratio_milli": ratio, "quality_alone": assertion}, assertion is False and ratio == 900, ""
 
 
+def _runner_facts():
+    actions = os.environ.get("GITHUB_ACTIONS") == "true"
+    environment = os.environ.get("RUNNER_ENVIRONMENT", "")
+    image = os.environ.get("ImageOS", "")
+    runner_os = os.environ.get("RUNNER_OS", "")
+    hosted = actions and environment == "github-hosted" and runner_os == "Linux" and image.startswith("ubuntu24")
+    if not hosted:
+        return False, {"blocked": True, "probe": "runner", "hosted_standard": False, "self_hosted": environment == "self-hosted"}
+    return True, {"blocked": False, "probe": "runner", "hosted_standard": True, "self_hosted": False}
+
+
 def c575(_c):
-    return block("self-hosted-runner", "no hay un runner self-hosted inspeccionable en este entorno")
+    hosted, facts = _runner_facts()
+    inp = {"probe": "runner", "environment": os.environ.get("RUNNER_ENVIRONMENT", ""), "image": os.environ.get("ImageOS", "")}
+    if not hosted:
+        return inp, facts, False, "el proceso no es el runner estandar github-hosted ubuntu-24.04; no basta con una etiqueta runs-on"
+    return inp, facts, True, ""
 
 
 def c576(_c):

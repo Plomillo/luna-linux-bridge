@@ -7,7 +7,7 @@ import os
 import sys
 from pathlib import Path
 
-SUITE = Path("/usr/lib/louksna/mra_suite")
+SUITE = Path(os.environ.get("LOUKSNA_SUITE", "/usr/lib/louksna/mra_suite"))
 OPEN = [297, 298, 334, 349, 353, 368, 370, 375, 376, 377, 378, 379, 380, 575, 608]
 
 
@@ -49,40 +49,49 @@ def plasma_env() -> dict[str, str]:
 
 
 def run_one(n: int) -> dict:
+    try:
+        return _run_one(n)
+    except Exception as exc:
+        return {"n": n, "status": "ERROR", "unlock": str(exc)[:300], "plasma_pid": ""}
+
+
+def _run_one(n: int) -> dict:
     sys.path.insert(0, str(SUITE))
+    import suite
     ctx = Ctx()
-    if n in {297, 298}:
-        import part2b_w
-        rec = part2b_w.run(n, ctx)
-    elif n == 334:
-        import repair_w
-        rec = repair_w.run(n, ctx)
-    elif n == 575:
-        import git_w
-        rec = git_w.run(n, ctx)
-    elif n == 608:
-        import hyp_w
-        rec = hyp_w.run(n, ctx)
-    else:
-        import os_w
-        rec = os_w.run(n, ctx)
+    rec = suite.run_worker(n, ctx)
+    if rec is None:
+        return {"n": n, "status": None, "unlock": "MISSING", "plasma_pid": os.environ.get("LOUKSNA_PLASMA_PID", "")}
+    expected = suite.run_oracle(n, rec["input"])
+    status = rec.get("status")
+    if expected != rec.get("facts"):
+        status = "MISMATCH"
     return {
         "n": n,
-        "status": None if rec is None else rec.get("status"),
-        "unlock": None if rec is None else rec.get("unlock", ""),
+        "status": status,
+        "unlock": rec.get("unlock", ""),
         "plasma_pid": os.environ.get("LOUKSNA_PLASMA_PID", ""),
+        "oracle_match": expected == rec.get("facts"),
     }
 
 
 def main() -> int:
     os.environ.update(plasma_env())
+    out = Path(os.environ.get("LOUKSNA_PROBE_OUT", ""))
     if len(sys.argv) < 2:
         rows = [run_one(n) for n in OPEN]
-        Path("/var/tmp/luna-out").mkdir(parents=True, exist_ok=True)
-        Path("/var/tmp/blocker-register.json").write_text(json.dumps(rows, indent=2) + "\n")
+        if out:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(rows, indent=2) + "\n")
+        else:
+            Path("/var/tmp/luna-out").mkdir(parents=True, exist_ok=True)
+            Path("/var/tmp/blocker-register.json").write_text(json.dumps(rows, indent=2) + "\n")
         print(json.dumps(rows))
         return 0
     rec = run_one(int(sys.argv[1]))
+    if out:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(rec, indent=2) + "\n")
     print(rec.get("status") or "MISSING")
     return 0
 

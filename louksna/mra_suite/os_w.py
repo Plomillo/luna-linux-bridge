@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import os
+import pwd
 import shutil
 import signal
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 
 from pack import pack
@@ -278,8 +280,100 @@ def c367(_c):
     return block("dpkg-install", "no se instala un paquete en el sistema anfitrion; hace falta un root desechable sin --force-depends")
 
 
+def _apt_index_facts():
+    proc = subprocess.run(["apt-get", "update"], capture_output=True, text=True, timeout=180)
+    root = Path("/var/lib/apt/lists")
+    lists = sorted(p.name for p in root.iterdir() if p.is_file() and p.name.endswith("_Packages")) if root.is_dir() else []
+    ok = proc.returncode == 0 and len(lists) > 0
+    facts = {
+        "blocked": not ok,
+        "probe": "apt-indexes",
+        "update_rc": proc.returncode,
+        "lists": len(lists),
+        "used_install": False,
+        "force_depends": False,
+    }
+    return ok, facts
+
+
+def _portal_facts():
+    bins = Path("/usr/bin/xdg-desktop-portal").is_file() and Path("/usr/bin/xdg-desktop-portal-kde").is_file()
+    portal = kde = False
+    proc = Path("/proc")
+    for pid in proc.iterdir():
+        if not pid.name.isdigit():
+            continue
+        try:
+            cmd = (pid / "cmdline").read_bytes().replace(b"\x00", b" ").decode(errors="replace")
+        except OSError:
+            continue
+        if "xdg-desktop-portal-kde" in cmd:
+            kde = True
+        elif "xdg-desktop-portal" in cmd:
+            portal = True
+    ok = bins and portal and kde
+    return ok, {"blocked": not ok, "probe": "xdg-portals", "running": ok}
+
+
+def _session_user():
+    runtime = os.environ.get("XDG_RUNTIME_DIR", "")
+    if not runtime.startswith("/run/user/"):
+        return None
+    try:
+        uid = int(Path(runtime).name)
+        return pwd.getpwuid(uid)
+    except (OSError, ValueError):
+        return None
+
+
 def c368(_c):
-    return block("apt-install", "no se ejecuta apt install ni --force-depends; hace falta Debian con indices y dependencias reales")
+    ok, facts = _apt_index_facts()
+    if not ok:
+        return {"probe": "apt-indexes"}, facts, False, "apt-get update no dejo indices Packages; no se usa apt install ni --force-depends"
+    return {"probe": "apt-indexes", "lists": facts["lists"]}, facts, True, ""
+
+
+def c377(_c):
+    ok, facts = _portal_facts()
+    if not ok:
+        return {"probe": "xdg-portals"}, facts, False, "no hay xdg-desktop-portal y xdg-desktop-portal-kde en ejecucion"
+    return {"probe": "xdg-portals"}, facts, True, ""
+
+
+def c378(ctx):
+    display = os.environ.get("WAYLAND_DISPLAY", "")
+    runtime = os.environ.get("XDG_RUNTIME_DIR", "")
+    real = bool(display and runtime and (Path(runtime) / display).is_socket() and os.environ.get("XDG_SESSION_TYPE") == "wayland")
+    user = _session_user()
+    if not real or user is None or not shutil.which("gio"):
+        return {"probe": "desktop-integration"}, {"blocked": True, "probe": "desktop-integration", "opened": False}, False, "hace falta sesion Wayland del usuario y gio launch"
+    nonce = os.urandom(8).hex()
+    stamp = Path("/var/tmp") / f"louksna-c378-{nonce}"
+    script = Path("/var/tmp") / f"louksna-c378-{nonce}.sh"
+    script.write_text("#!/bin/sh\necho %s > %s\n" % (nonce, stamp))
+    script.chmod(0o755)
+    appdir = Path(user.pw_dir) / ".local" / "share" / "applications"
+    appdir.mkdir(parents=True, exist_ok=True)
+    desktop = appdir / f"louksna-c378-{nonce}.desktop"
+    desktop.write_text("[Desktop Entry]\nType=Application\nName=LouksnaC378\nExec=%s\nTerminal=false\n" % script)
+    os.chown(script, user.pw_uid, user.pw_gid)
+    os.chown(desktop, user.pw_uid, user.pw_gid)
+    os.chown(appdir, user.pw_uid, user.pw_gid)
+    env = os.environ.copy()
+    env["HOME"] = user.pw_dir
+    env["USER"] = user.pw_name
+    env["LOGNAME"] = user.pw_name
+    proc = subprocess.run(["runuser", "-u", user.pw_name, "--preserve-environment", "--", "gio", "launch", str(desktop)], env=env, capture_output=True, text=True, timeout=30)
+    opened = False
+    for _ in range(20):
+        if stamp.is_file() and stamp.read_text().strip() == nonce:
+            opened = True
+            break
+        time.sleep(0.25)
+    inp = {"probe": "desktop-integration", "nonce": nonce, "stamp": str(stamp), "rc": proc.returncode}
+    if not opened:
+        return inp, {"blocked": True, "probe": "desktop-integration", "opened": False}, False, (proc.stderr or "el lanzador no abrio")[:180]
+    return inp, {"blocked": False, "probe": "desktop-integration", "opened": True}, True, ""
 
 
 def c369(ctx):
@@ -346,14 +440,6 @@ def c376(_c):
     if not real:
         return block("wayland", "hace falta una sesion Wayland real con socket; no se certifica con un compositor virtual")
     return {"probe": "wayland"}, {"blocked": False, "probe": "wayland"}, True, ""
-
-
-def c377(_c):
-    return block("xdg-portals", "no hay una sesion de escritorio con xdg-desktop-portal para comprobar permisos")
-
-
-def c378(_c):
-    return block("desktop-integration", "no hay una sesion grafica donde registrar un lanzador y comprobar que abre")
 
 
 def c379(_c):

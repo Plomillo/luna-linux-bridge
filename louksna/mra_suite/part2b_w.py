@@ -7,6 +7,7 @@ import hashlib
 import inspect
 import os
 import queue
+import shutil
 import subprocess
 import textwrap
 import threading
@@ -771,15 +772,56 @@ def c296(_c):
                 {"rejected": rejected, "small": alloc(8, 32)}, rejected and alloc(8, 32) == 8)
 
 
+def _mobile_sdk_facts():
+    homes = [p for p in (os.environ.get("ANDROID_HOME", ""), "/opt/android-sdk", "/usr/lib/android-sdk") if p and Path(p).is_dir()]
+    adb = shutil.which("adb")
+    emulator = shutil.which("emulator")
+    xcrun = shutil.which("xcrun")
+
+    def ran(argv):
+        try:
+            proc = subprocess.run(argv, capture_output=True, text=True, timeout=20)
+        except (OSError, subprocess.TimeoutExpired):
+            return False, ""
+        return proc.returncode == 0, proc.stdout or ""
+
+    adb_ok, adb_out = ran([adb, "version"]) if adb else (False, "")
+    adb_ok = adb_ok and "Android Debug Bridge" in adb_out
+    emulator_ok, _emu_out = ran([emulator, "-version"]) if emulator else (False, "")
+    ios_ok, _ios_out = ran([xcrun, "--find", "simctl"]) if xcrun else (False, "")
+    sdk_dir = bool(homes)
+    real = (adb_ok and emulator_ok and sdk_dir) or ios_ok
+    facts = {"blocked": not real, "adb_ok": adb_ok, "emulator_ok": emulator_ok, "ios_sim_ok": ios_ok, "sdk_dir": sdk_dir}
+    return real, facts
+
+
+def _graphical_facts():
+    session = os.environ.get("XDG_SESSION_TYPE", "")
+    desktop = (os.environ.get("XDG_CURRENT_DESKTOP", "") + os.environ.get("DESKTOP_SESSION", "")).upper()
+    display = os.environ.get("WAYLAND_DISPLAY", "")
+    runtime = os.environ.get("XDG_RUNTIME_DIR", "")
+    socket_ok = bool(display and runtime and (Path(runtime) / display).is_socket())
+    kde = ("KDE" in desktop) and Path("/usr/bin/plasmashell").is_file()
+    real = session == "wayland" and socket_ok and kde
+    if real:
+        return True, {"blocked": False, "graphical": True, "wayland": True, "kde": True}
+    return False, {"blocked": True, "graphical": False, "wayland": session == "wayland", "kde": bool(kde)}
+
+
 def c297(_c):
-    return pack(P, 2, "Compilacion movil no disponible", {"sdk": None},
-                {"blocked": True}, False, unlock="SDK de Android o iOS y un emulador o dispositivo")
+    real, facts = _mobile_sdk_facts()
+    if not real:
+        return pack(P, 2, "Compilacion movil no disponible", {"sdk": "observed"},
+                    facts, False, unlock="SDK de Android o iOS y un emulador o dispositivo")
+    return pack(P, 2, "Compilacion movil observada", {"sdk": "observed"}, facts, True)
 
 
 def c298(_c):
-    return pack(P, 2, "Sesion grafica de escritorio no disponible", {"display": os.environ.get("DISPLAY", "")},
-                {"blocked": True, "display_empty": os.environ.get("DISPLAY", "") == ""}, False,
-                unlock="sesion grafica real para un toolkit de escritorio")
+    real, facts = _graphical_facts()
+    if not real:
+        return pack(P, 2, "Sesion grafica de escritorio no disponible", {"display": os.environ.get("WAYLAND_DISPLAY", "")},
+                    facts, False, unlock="sesion grafica real KDE Wayland con socket")
+    return pack(P, 2, "Sesion grafica KDE Wayland observada", {"display": os.environ.get("WAYLAND_DISPLAY", "")}, facts, True)
 
 
 def c299(_c):

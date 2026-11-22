@@ -142,6 +142,24 @@ def main() -> int:
     audio = (root / "vm" / "audio-checks.txt").read_text() if (root / "vm" / "audio-checks.txt").is_file() else ""
     if "SND=yes" not in audio or "PACTL=yes" not in audio:
         failures.append("AUDIO_NOT_PROVEN")
+    required = [297, 298, 334, 349, 353, 368, 370, 375, 376, 377, 378, 379, 380, 575, 608]
+    blockers = root / "blockers" / "blocker-register.json"
+    blocker_rows = []
+    if not blockers.is_file():
+        failures.append("BLOCKER_REGISTER_ABSENT")
+    else:
+        try:
+            blocker_rows = json.loads(blockers.read_text())
+        except json.JSONDecodeError:
+            blocker_rows = []
+            failures.append("BLOCKER_REGISTER_INVALID")
+        by_n = {row.get("n"): row for row in blocker_rows if isinstance(row, dict)}
+        for n in required:
+            row = by_n.get(n)
+            if row is None:
+                failures.append(f"BLOCKER_{n}_ABSENT")
+            elif row.get("status") != "PASS_FUNCTIONAL":
+                failures.append(f"BLOCKER_{n}_{row.get('status')}")
     verdict = "PASS" if not failures else "FAIL"
     out = {
         "producer": "louksna-g23-debian13",

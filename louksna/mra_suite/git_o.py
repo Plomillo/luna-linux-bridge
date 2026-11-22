@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import os
 import subprocess
 from pathlib import Path
 
@@ -179,8 +180,15 @@ def e574(inp):
     return {"ratio_milli": int(1000 * inp["covered"] / inp["total"]), "quality_alone": False}
 
 
-def e575(inp):
-    return blocked(inp)
+def e575(_inp):
+    actions = os.environ.get("GITHUB_ACTIONS") == "true"
+    environment = os.environ.get("RUNNER_ENVIRONMENT", "")
+    image = os.environ.get("ImageOS", "")
+    runner_os = os.environ.get("RUNNER_OS", "")
+    hosted = actions and environment == "github-hosted" and runner_os == "Linux" and image.startswith("ubuntu24")
+    if not hosted:
+        return {"blocked": True, "probe": "runner", "hosted_standard": False, "self_hosted": environment == "self-hosted"}
+    return {"blocked": False, "probe": "runner", "hosted_standard": True, "self_hosted": False}
 
 
 def e576(_inp):

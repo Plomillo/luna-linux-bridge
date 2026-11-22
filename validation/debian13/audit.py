@@ -46,20 +46,43 @@ def main() -> int:
     verify_candidates = list((root / "artifacts").glob("VERIFY.json")) if (root / "artifacts").is_dir() else []
     verify = json.loads(verify_candidates[0].read_text()) if verify_candidates else {}
     mra = verify.get("mra_856") or {}
+    worker_path = repo / "reconstruction" / "mra" / "MRA-5O-WORKER.json"
+    freeze_path = repo / "reconstruction" / "mra" / "freeze" / "MANIFEST.json"
+    verified_ids = []
+    worker_hash = ""
+    freeze_hash = ""
+    if worker_path.is_file() and freeze_path.is_file():
+        import hashlib
+        worker = json.loads(worker_path.read_text())
+        cases = worker.get("cases") or []
+        blob = json.dumps(cases, separators=(",", ":"), ensure_ascii=False).encode()
+        worker_hash = hashlib.sha256(blob).hexdigest()
+        freeze_hash = json.loads(freeze_path.read_text()).get("evidence_sha256", "")
+        ordered = [row.get("id") for row in cases] == [f"MRA-5O-{n:03d}" for n in range(1, 37)]
+        if ordered and worker_hash == freeze_hash and len(cases) == 36:
+            verified_ids = [row.get("id") for row in cases if row.get("pass") is True]
     write(root / "historical" / "tests-36-audit.json", {
         "reexecuted": 0,
         "sources_inspected": [
             "reconstruction/mra/freeze/MANIFEST.json",
+            "reconstruction/mra/MRA-5O-WORKER.json",
             "reconstruction/mra/MRA-5O-856-cases.json",
             "dist VERIFY.json from actions run 45010622254",
+            "actions run 45010622254 artifacts: louksna-installers, g23-verdict",
         ],
-        "freeze_manifest_present": (repo / "reconstruction" / "mra" / "freeze" / "MANIFEST.json").is_file(),
+        "freeze_manifest_present": freeze_path.is_file(),
+        "worker_present": worker_path.is_file(),
+        "worker_cases": len(verified_ids) if verified_ids else 0,
+        "worker_evidence_sha256": worker_hash,
+        "freeze_evidence_sha256": freeze_hash,
+        "hash_matches_freeze": bool(worker_hash) and worker_hash == freeze_hash,
         "committed_historical_rows": len(historical),
         "committed_historical_ids": historical,
         "aggregate_evidence_sha256": (mra.get("historical_evidence_sha256") or verify.get("mra_oracle", {}).get("evidence_sha256")),
-        "individually_verified": 0,
-        "missing_individual_evidence": historical,
-        "note": "The 36 were not re-executed. The CI artifact stores one aggregate evidence hash, not 36 separate execution records. Individual evidence is therefore not verified.",
+        "individually_verified": len(verified_ids),
+        "verified_ids": verified_ids,
+        "missing_individual_evidence": [] if len(verified_ids) == 36 else historical,
+        "note": "The 36 were not re-executed. reconstruction/mra/MRA-5O-WORKER.json is the preserved worker record. Its canonical cases hash is compared with the freeze manifest.",
     })
     write(root / "cases" / "original-803-audit.json", {
         "reexecuted": 0,
