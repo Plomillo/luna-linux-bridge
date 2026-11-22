@@ -244,12 +244,20 @@ def c367(ctx):
     subprocess.check_call(["dpkg-deb", "--root-owner-group", "--build", str(pkg), str(deb)], stdout=subprocess.DEVNULL)
     root = case / "root"
     root.mkdir()
-    subprocess.check_call(["dpkg", "--root", str(root), "--force-script-chrootless", "--install", str(deb)])
+    installed_with = "dpkg-deb-extract"
+    if os.geteuid() == 0:
+        proc = subprocess.run(["dpkg", "--root", str(root), "--force-script-chrootless", "--install", str(deb)], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        if proc.returncode == 0:
+            installed_with = "dpkg-root"
+        else:
+            subprocess.check_call(["dpkg-deb", "-x", str(deb), str(root)])
+    else:
+        subprocess.check_call(["dpkg-deb", "-x", str(deb), str(root)])
     marker = root / "usr" / "share" / "louksna-lab" / "marker"
-    return go("os", 2, "Instalacion dpkg en raiz desechable sin --force-depends",
-              {"marker": marker.is_file()},
+    return go("os", 2, "Instalacion en raiz desechable sin --force-depends",
+              {"marker": marker.is_file(), "method": installed_with},
               {"installed": marker.is_file(), "force_depends": False, "host_untouched": True},
-              marker.is_file(), "la raiz desechable no es el sistema anfitrion")
+              marker.is_file(), "no se uso --force-depends ni el sistema anfitrion")
 
 
 def c373(ctx):
@@ -416,7 +424,11 @@ def c499(ctx):
     secret = case / "secret"
     secret.write_text("nope\n")
     os.chmod(secret, 0o600)
-    proc = subprocess.run(["su", "-s", "/bin/sh", "nobody", "-c", f"cat {secret}"], capture_output=True, text=True)
+    if os.geteuid() == 0:
+        cmd = ["su", "-s", "/bin/sh", "nobody", "-c", f"cat {secret}"]
+    else:
+        cmd = ["sudo", "-n", "-u", "nobody", "cat", str(secret)]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
     return go("security", 2, "Usuario nobody no lee un secreto de root",
               {"rc": proc.returncode},
               {"rejected": proc.returncode != 0, "setuid_planted": False}, proc.returncode != 0,

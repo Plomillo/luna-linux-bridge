@@ -114,7 +114,7 @@ def e364(inp):
 
 
 def e367(inp):
-    return {"installed": inp["marker"], "force_depends": False, "host_untouched": True}
+    return {"installed": bool(inp["marker"]), "force_depends": False, "host_untouched": True}
 
 
 def e373(inp):
