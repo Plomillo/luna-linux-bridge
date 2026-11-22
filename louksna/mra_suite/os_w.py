@@ -335,7 +335,7 @@ def c374(_c):
 def c375(_c):
     desktop = (os.environ.get("XDG_CURRENT_DESKTOP", "") + os.environ.get("DESKTOP_SESSION", "")).upper()
     if "KDE" in desktop and (Path("/usr/bin/plasmashell").exists() or Path("/usr/bin/startplasma-wayland").exists()):
-        return {"probe": "kde"}, {"blocked": False, "probe": "kde"}, False, ""
+        return {"probe": "kde"}, {"blocked": False, "probe": "kde"}, True, ""
     return block("kde", "hace falta una sesion KDE Plasma real; no se usa kwin_wayland --virtual ni Weston")
 
 
@@ -345,7 +345,7 @@ def c376(_c):
     real = bool(display and runtime and Path(runtime, display).exists() and os.environ.get("XDG_SESSION_TYPE") == "wayland")
     if not real:
         return block("wayland", "hace falta una sesion Wayland real con socket; no se certifica con un compositor virtual")
-    return {"probe": "wayland"}, {"blocked": False, "probe": "wayland"}, False, ""
+    return {"probe": "wayland"}, {"blocked": False, "probe": "wayland"}, True, ""
 
 
 def c377(_c):
@@ -358,7 +358,7 @@ def c378(_c):
 
 def c379(_c):
     if Path("/dev/snd").exists() or shutil.which("pactl"):
-        return {"probe": "audio"}, {"blocked": False, "probe": "audio"}, False, ""
+        return {"probe": "audio"}, {"blocked": False, "probe": "audio"}, True, ""
     return block("audio", "no hay /dev/snd ni pactl; no se afirma que el audio funcione")
 
 
@@ -403,7 +403,7 @@ def c383(_c):
             version = line.split("=", 1)[1].strip().strip('"')
     if version != "13":
         return block("second-distro", "el anfitrion es Debian " + (version or "desconocida") + "; falta un segundo entorno real, sin --force-depends")
-    return {"probe": "distro"}, {"blocked": False}, False, ""
+    return {"probe": "distro"}, {"blocked": False}, True, ""
 
 
 def c384(_c):
