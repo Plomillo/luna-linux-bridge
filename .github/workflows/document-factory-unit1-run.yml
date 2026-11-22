@@ -54,16 +54,33 @@ jobs:
           rm -f "$RUN/build/report.pdf"
           libreoffice --headless --convert-to pdf --outdir "$RUN/build" "$RUN/build/report.docx"
           PAGES="$(pdfinfo "$RUN/build/report.pdf" | awk '/^Pages:/ {print $2}')"
-          test "$PAGES" = "6"
+          echo "PDF_PAGE_COUNT=$PAGES"
           pdftotext -layout "$RUN/build/report.pdf" "$RUN/build/report.txt"
-          python3 - "$RUN/build/report.txt" <<'PY'
-          import pathlib,sys
-          text=pathlib.Path(sys.argv[1]).read_text(encoding="utf-8",errors="replace")
-          required=["Introducción","Atributos y expectativas asociados a cada género","Causas sociales de las conductas asociadas a lo femenino y lo masculino","Influencia de los medios","Conclusión","Referencias"]
-          missing=[x for x in required if x not in text]
+          BODY_PAGES="$(python3 - "$RUN/build/report.txt" <<'PY'
+          import pathlib,re,sys
+          raw=pathlib.Path(sys.argv[1]).read_text(encoding="utf-8",errors="replace")
+          pages=[re.sub(r"\s+"," ",x).strip() for x in raw.split("\f") if x.strip()]
+          required=["Introducción","Desarrollo: 1. Atributos y expectativas asociados a cada género","Desarrollo: 2. Causas sociales de las conductas asociadas a lo femenino y lo masculino","Desarrollo: 3. Influencia de los medios; 4. Conformidad y obediencia","Conclusión","Referencias"]
+          whole=" ".join(pages)
+          missing=[x for x in required if re.sub(r"\s+"," ",x) not in whole]
           if missing: raise SystemExit("PDF_SECTION_TEXT_MISSING:"+",".join(missing))
-          print("PDF_PAGE_COUNT=6; REQUIRED_SECTIONS=PASS")
+          def page_of(term):
+              target=re.sub(r"\s+"," ",term)
+              for i,p in enumerate(pages):
+                  if target in p: return i
+              raise SystemExit("PDF_SECTION_PAGE_MISSING:"+term)
+          intro=page_of("Introducción")
+          conclusion=page_of("Conclusión")
+          refs=page_of("Referencias")
+          body_pages=conclusion-intro+1
+          if intro!=1: raise SystemExit("COVER_PAGE_COUNT_INVALID:"+str(intro))
+          if body_pages!=4: raise SystemExit("BODY_PAGE_COUNT_INVALID:"+str(body_pages))
+          if refs<=conclusion: raise SystemExit("REFERENCES_NOT_AFTER_BODY")
+          print(body_pages)
           PY
+          )"
+          test "$BODY_PAGES" = "4"
+          echo "BODY_PAGE_COUNT=$BODY_PAGES; REQUIRED_SECTIONS=PASS; COVER=1; REFERENCES=AFTER_BODY"
           python3 document-factory/src/factory.py validate "$RUN" "$PROFILE" --repo-root "$ROOT"
           python3 - "$RUN/evidence/validation.json" <<'PY'
           import json,pathlib,sys
