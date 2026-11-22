@@ -122,23 +122,41 @@ def historical(session: str, state: Path) -> dict:
     proc = subprocess.run([session, "--mra", "--state", str(state)], capture_output=True, text=True, timeout=180)
     if proc.returncode != 0:
         raise RuntimeError("historical mra failed\n" + proc.stderr)
-    return json.loads(proc.stdout)
+    report = json.loads(proc.stdout)
+    report_path = state / "worker.json"
+    report_path.write_text(proc.stdout)
+    oracle = subprocess.run(
+        [session, "--mra-oracle", "--report", str(report_path), "--state", str(state)],
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    if oracle.returncode != 0:
+        raise RuntimeError("historical oracle failed\n" + oracle.stderr)
+    report["oracle"] = json.loads(oracle.stdout)
+    return report
 
 
-def historical_row(case: dict, evidence: str) -> dict:
+def historical_row(case: dict, evidence: str, oracle: dict) -> dict:
+    independent = (
+        oracle.get("verdict") == "GRANTED"
+        and oracle.get("method") == "INDEPENDENT_EXPECTATIONS"
+        and oracle.get("reexecutes_worker") is False
+        and case.get("pass") is True
+    )
     return {
         "id": case["id"],
         "n": int(case["id"].rsplit("-", 1)[1]),
         "domain": "historical",
         "objective": "PRESERVED_RUST_CASE",
         "status": "HISTORICAL_PRESERVED" if case.get("pass") is True else "FAIL",
-        "independent_validation": "NOT_ESTABLISHED",
-        "certification": "NOT_CERTIFIED",
+        "independent_validation": "INDEPENDENTLY_VALIDATED" if independent else "NOT_ESTABLISHED",
+        "certification": "CERTIFIED" if independent else "NOT_CERTIFIED",
         "weight_training": "NOT_AUTHORIZED",
         "consciousness": "NOT_CLAIMED",
         "evidence_sha256": evidence,
         "pass": case.get("pass") is True,
-        "limits": "RUST_ORACLE_REINVOKES_RUN_SUITE",
+        "limits": "CLONE_INDEPENDENT_ORACLE" if independent else "RUST_ORACLE_REINVOKES_RUN_SUITE",
         "unlock": "",
     }
 
@@ -217,7 +235,7 @@ def execute(root: Path) -> dict:
         raise RuntimeError("tamper check failed")
     session = os.environ.get("LOUKSNA_SESSION_BIN") or Ctx(root).session_bin
     hist = historical(session, ctx.d(1) / "state")
-    hist_rows = [historical_row(case, hist["evidence_sha256"]) for case in hist["cases"]]
+    hist_rows = [historical_row(case, hist["evidence_sha256"], hist["oracle"]) for case in hist["cases"]]
     all_rows = hist_rows + complement_rows + additive_rows
     ids = [row["n"] for row in all_rows]
     if ids != list(range(1, 857)):
@@ -228,7 +246,8 @@ def execute(root: Path) -> dict:
     for row in all_rows:
         counts[row["status"]] = counts.get(row["status"], 0) + 1
         if row["certification"] == "CERTIFIED":
-            if row["status"] != "PASS_FUNCTIONAL":
+            ok_hist = row["status"] == "HISTORICAL_PRESERVED" and row.get("independent_validation") == "INDEPENDENTLY_VALIDATED"
+            if row["status"] != "PASS_FUNCTIONAL" and not ok_hist:
                 raise RuntimeError("certified non-pass")
             certified += 1
         elif row["certification"] != "NOT_CERTIFIED":
@@ -248,7 +267,7 @@ def execute(root: Path) -> dict:
         "distribution_debian13_kde_wayland": "NOT_RUN",
         "consciousness": "NOT_CLAIMED",
         "weight_training": "NOT_AUTHORIZED",
-        "independent_note": "001-036 stay NOT_ESTABLISHED because the Rust oracle calls run_suite. PASS_FUNCTIONAL rows are case-scope CERTIFIED. Product platform and Debian 13 KDE Plasma Wayland stay uncertified.",
+        "independent_note": "001-036 are checked by mra_oracle, which does not call run_suite. Case-scope CERTIFIED is not product or Debian 13 KDE Plasma Wayland certification. Those stay NOT_CERTIFIED / NOT_RUN. The d1ccf3b worker snapshot stays in reconstruction/mra/freeze.",
         "cases": all_rows,
     }
     blob = scrub(json.dumps(report, sort_keys=True))

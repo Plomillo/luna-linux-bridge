@@ -43,50 +43,7 @@ pub fn run_suite(dir: &Path) -> Result<Value> {
 }
 
 pub fn oracle_verify(submitted: &Value) -> Result<Value> {
-    if submitted.get("producer").and_then(|v| v.as_str()) != Some("louksna-mra-worker") {
-        return Err(err("MRA_ORACLE_PRODUCER"));
-    }
-    if submitted.get("certification").and_then(|v| v.as_str()) == Some("GRANTED") {
-        return Err(err("MRA_WORKER_CANNOT_SELF_CERTIFY"));
-    }
-    let cases = submitted.get("cases").and_then(|v| v.as_array()).ok_or_else(|| err("MRA_CASES_ABSENT"))?;
-    let recomputed = sha256_hex(serde_json::to_string(cases)?.as_bytes());
-    if submitted.get("evidence_sha256").and_then(|v| v.as_str()) != Some(recomputed.as_str()) {
-        return Err(err("MRA_EVIDENCE_HASH_MISMATCH"));
-    }
-    let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
-    let fresh_dir = std::env::temp_dir().join(format!("louksna-mra-oracle-{nanos}"));
-    let fresh = run_suite(&fresh_dir)?;
-    let fresh_cases = fresh["cases"].as_array().ok_or_else(|| err("MRA_FRESH_CASES"))?;
-    if fresh_cases.len() != 36 || cases.len() != 36 {
-        return Err(err("MRA_ORACLE_COUNT"));
-    }
-    for (left, right) in cases.iter().zip(fresh_cases.iter()) {
-        if left["id"] != right["id"] || left["observed"] != right["observed"] || left["expected"] != right["expected"] {
-            return Err(err(format!("MRA_ORACLE_DIVERGENCE:{}", left["id"].as_str().unwrap_or(""))));
-        }
-        if left["pass"] != json!(left["observed"] == left["expected"]) {
-            return Err(err("MRA_PASS_FLAG_UNTRUSTED"));
-        }
-        if left["pass"] != true {
-            return Err(err(format!("MRA_CASE_FAILED:{}", left["id"].as_str().unwrap_or(""))));
-        }
-    }
-    let critical_ok = CRITICAL.iter().all(|id| cases.iter().any(|c| c["id"] == *id && c["pass"] == true));
-    if !critical_ok {
-        return Err(err("MRA_CRITICAL_FAIL"));
-    }
-    Ok(json!({
-        "producer": "louksna-mra-oracle",
-        "verdict": "GRANTED",
-        "scope": "MRA-5O-OPERATIONAL",
-        "depends_on": "louksna-mra-worker",
-        "evidence_sha256": recomputed,
-        "count": 36,
-        "consciousness": "NOT_CLAIMED",
-        "product_platform": "NOT_CERTIFIED",
-        "weight_training": "NOT_AUTHORIZED"
-    }))
+    crate::mra_oracle::verify(submitted)
 }
 
 fn execute(dir: &Path) -> Result<Vec<(&'static str, String, String)>> {
@@ -288,7 +245,9 @@ fn case_016() -> (&'static str, String, String) {
 }
 
 fn case_017() -> (&'static str, String, String) {
-    ("MRA-5O-017", "worker=PENDING_ORACLE".into(), "worker=PENDING_ORACLE".into())
+    let reexec = crate::mra_oracle::reexecutes_worker();
+    let observed = format!("independent={};reexecutes_worker={}", !reexec, reexec);
+    ("MRA-5O-017", observed, "independent=true;reexecutes_worker=false".into())
 }
 
 fn case_018() -> (&'static str, String, String) {

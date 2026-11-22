@@ -138,7 +138,7 @@ if [ "$UNINSTALL" -eq 1 ]; then
   exit 0
 fi
 mkdir -p "$PREFIX"
-tail -n +"$MARKER" "$0" | tar -xJf - -C "$PREFIX"
+tail -n +"$MARKER" "$0" | tar --no-same-owner -xJf - -C "$PREFIX"
 echo "LOUKSNA installed under $PREFIX"
 echo "Certification: NOT_CERTIFIED until Debian 13 KDE Plasma Wayland evidence exists."
 exit 0
@@ -287,7 +287,11 @@ def verify(deb: Path, sh_path: Path, digest: str) -> None:
         cert = row.get("certification")
         if cert not in {"NOT_CERTIFIED", "CERTIFIED"} or row.get("weight_training") != "NOT_AUTHORIZED":
             raise SystemExit(f"MRA856_ROW {row.get('id')}")
-        if cert == "CERTIFIED" and row.get("status") != "PASS_FUNCTIONAL":
+        if cert == "CERTIFIED" and row.get("status") == "PASS_FUNCTIONAL":
+            pass
+        elif cert == "CERTIFIED" and row.get("status") == "HISTORICAL_PRESERVED" and row.get("independent_validation") == "INDEPENDENTLY_VALIDATED":
+            pass
+        elif cert == "CERTIFIED":
             raise SystemExit(f"MRA856_CERTIFIED_NON_PASS {row.get('id')}")
         if row.get("status") == "BLOCKED" and not row.get("unlock"):
             raise SystemExit(f"MRA856_UNLOCK {row.get('id')}")

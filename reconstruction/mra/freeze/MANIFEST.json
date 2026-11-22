@@ -1,0 +1,8 @@
+{
+  "role": "IMMUTABLE_HISTORICAL_SNAPSHOT",
+  "commit": "d1ccf3b0147035da89fc44be3b597ada3888987e",
+  "path": "louksna/session/src/mra.rs",
+  "sha256": "740daacab311eb05a93510fa6b7789c4617f4fe0a9c28d14192115f65d43811b",
+  "evidence_sha256": "497b4e108d300da29352b2a2fe4f2bd677658900cd152aca0f6b2ad82fce0638",
+  "note": "Do not edit. Clone repairs live on the working tree and carry their own evidence hash."
+}

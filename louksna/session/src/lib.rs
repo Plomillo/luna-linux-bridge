@@ -4,6 +4,7 @@ pub mod g23;
 pub mod github;
 pub mod http;
 pub mod mra;
+pub mod mra_oracle;
 pub mod runtime;
 pub mod store;
 pub mod voice;
