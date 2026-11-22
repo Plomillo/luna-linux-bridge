@@ -55,7 +55,11 @@ audit() {
 
 fetch_artifacts() {
   log ARTIFACTS
-  gh run download 45010622254 --repo Plomillo/luna-linux-bridge --name louksna-installers --dir "$EVIDENCE/artifacts"
+  gh run download 45010622254 --repo Plomillo/luna-linux-bridge --name louksna-installers --dir "$EVIDENCE/artifacts" || {
+    echo GH_DOWNLOAD_FAIL | tee "$EVIDENCE/artifacts/download-fail.txt"
+    FINAL=2
+    return 1
+  }
   python3 - << 'PY'
 import hashlib, pathlib, sys
 root = pathlib.Path("evidence/artifacts")
@@ -116,6 +120,9 @@ ssh_pwauth: false
 disable_root: true
 EOF
   cloud-localds "$WORKDIR/seed.img" "$WORKDIR/user-data" "$WORKDIR/meta-data"
+  if [ -e /dev/kvm ]; then
+    sudo chmod 666 /dev/kvm || true
+  fi
   local accel="tcg"
   if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
     accel="kvm"
