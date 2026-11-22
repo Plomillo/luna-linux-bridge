@@ -37,6 +37,7 @@ for name in ("Title", "Subtitle", "Heading 1", "Heading 2", "Heading 3"):
 page_break_heads = {
     "Introducción",
     "Desarrollo: 1. Atributos y expectativas asociados a cada género",
+    "Desarrollo: 2. Causas sociales de las conductas asociadas a lo femenino y lo masculino",
     "Desarrollo: 3. Influencia de los medios; 4. Conformidad y obediencia",
     "Referencias",
 }
