@@ -1,0 +1,28 @@
+name: louksna-debian13-kde-wayland-validation
+on:
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+concurrency:
+  group: louksna-debian13-kde-wayland
+  cancel-in-progress: false
+jobs:
+  validate:
+    name: PRECHECK_THROUGH_CERTIFICATION
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/luna-v3-reconstruction-20261119
+          fetch-depth: 1
+      - name: stages
+        run: bash validation/debian13/run.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: louksna-debian13-evidence
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 14

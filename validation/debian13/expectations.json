@@ -1,0 +1,320 @@
+[
+  {
+    "id": "SUB-001",
+    "title": "Debian 13 VERSION_ID",
+    "expect": "stdout_contains",
+    "needle": "VERSION_ID=\"13\""
+  },
+  {
+    "id": "SUB-002",
+    "title": "PID 1 is systemd",
+    "expect": "stdout_eq",
+    "needle": "systemd"
+  },
+  {
+    "id": "SUB-003",
+    "title": "systemctl is-system-running is running",
+    "expect": "stdout_eq",
+    "needle": "running"
+  },
+  {
+    "id": "SUB-004",
+    "title": "test user is not root",
+    "expect": "stdout_eq",
+    "needle": "NONROOT"
+  },
+  {
+    "id": "SUB-005",
+    "title": "os id debian",
+    "expect": "stdout_eq",
+    "needle": "ID=debian"
+  },
+  {
+    "id": "SUB-006",
+    "title": "louksna package configured",
+    "expect": "stdout_eq",
+    "needle": "installed"
+  },
+  {
+    "id": "SUB-007",
+    "title": "session binary is ELF",
+    "expect": "stdout_contains",
+    "needle": "7f 45 4c 46"
+  },
+  {
+    "id": "SUB-008",
+    "title": "sh prefix binary exists",
+    "expect": "stdout_eq",
+    "needle": "PRESENT"
+  },
+  {
+    "id": "SUB-009",
+    "title": "install log has no force-depends",
+    "expect": "stdout_eq",
+    "needle": "ABSENT"
+  },
+  {
+    "id": "SUB-010",
+    "title": "selftest ok and not product-certified",
+    "expect": "json_selftest",
+    "needle": ""
+  },
+  {
+    "id": "SUB-011",
+    "title": "speak writes a wav",
+    "expect": "stdout_eq",
+    "needle": "RIFF_OK"
+  },
+  {
+    "id": "SUB-012",
+    "title": "stt hears luna",
+    "expect": "stdout_contains",
+    "needle": "una"
+  },
+  {
+    "id": "SUB-013",
+    "title": "launcher without wayland exits 3",
+    "expect": "stdout_contains",
+    "needle": "RC:3"
+  },
+  {
+    "id": "SUB-014",
+    "title": "plasmashell binary",
+    "expect": "stdout_eq",
+    "needle": "PRESENT"
+  },
+  {
+    "id": "SUB-015",
+    "title": "startplasma-wayland binary",
+    "expect": "stdout_eq",
+    "needle": "PRESENT"
+  },
+  {
+    "id": "SUB-016",
+    "title": "sddm active",
+    "expect": "stdout_eq",
+    "needle": "active"
+  },
+  {
+    "id": "SUB-017",
+    "title": "loginctl wayland session",
+    "expect": "stdout_contains",
+    "needle": "Type=wayland"
+  },
+  {
+    "id": "SUB-018",
+    "title": "wayland socket",
+    "expect": "stdout_contains",
+    "needle": "wayland-"
+  },
+  {
+    "id": "SUB-019",
+    "title": "kwin process",
+    "expect": "stdout_eq",
+    "needle": "KWIN"
+  },
+  {
+    "id": "SUB-020",
+    "title": "plasmashell process",
+    "expect": "stdout_eq",
+    "needle": "PLASMA"
+  },
+  {
+    "id": "SUB-021",
+    "title": "virtual drm node",
+    "expect": "stdout_contains",
+    "needle": "card"
+  },
+  {
+    "id": "SUB-022",
+    "title": "snd node",
+    "expect": "stdout_eq",
+    "needle": "SND"
+  },
+  {
+    "id": "SUB-023",
+    "title": "pactl info",
+    "expect": "code0",
+    "needle": ""
+  },
+  {
+    "id": "SUB-024",
+    "title": "posix acl roundtrip",
+    "expect": "stdout_contains",
+    "needle": "user:nobody:r"
+  },
+  {
+    "id": "SUB-025",
+    "title": "llvm-as and opt",
+    "expect": "stdout_eq",
+    "needle": "1"
+  },
+  {
+    "id": "SUB-026",
+    "title": "unshare user",
+    "expect": "code0",
+    "needle": ""
+  },
+  {
+    "id": "SUB-027",
+    "title": "unshare net",
+    "expect": "code0",
+    "needle": ""
+  },
+  {
+    "id": "SUB-028",
+    "title": "pid1 namespace readable",
+    "expect": "code0",
+    "needle": ""
+  },
+  {
+    "id": "SUB-029",
+    "title": "journalctl reads",
+    "expect": "code0",
+    "needle": ""
+  },
+  {
+    "id": "SUB-030",
+    "title": "apt indexes",
+    "expect": "code0",
+    "needle": ""
+  },
+  {
+    "id": "SUB-031",
+    "title": "network to debian",
+    "expect": "code0",
+    "needle": ""
+  },
+  {
+    "id": "SUB-032",
+    "title": "python3 present",
+    "expect": "stdout_contains",
+    "needle": "Python 3"
+  },
+  {
+    "id": "SUB-033",
+    "title": "root fs at least 3G",
+    "expect": "stdout_eq",
+    "needle": "BIG"
+  },
+  {
+    "id": "SUB-034",
+    "title": "guest virtualization visible",
+    "expect": "stdout_contains",
+    "needle": "VIRT:"
+  },
+  {
+    "id": "SUB-035",
+    "title": "mesa dri package",
+    "expect": "stdout_contains",
+    "needle": "install ok installed"
+  },
+  {
+    "id": "SUB-036",
+    "title": "xdg desktop portal",
+    "expect": "stdout_eq",
+    "needle": "PORTAL"
+  },
+  {
+    "id": "SUB-037",
+    "title": "kde portal",
+    "expect": "stdout_eq",
+    "needle": "KDEPORTAL"
+  },
+  {
+    "id": "SUB-038",
+    "title": "pipewire or pulse",
+    "expect": "stdout_eq",
+    "needle": "AUDIO_SERVER"
+  },
+  {
+    "id": "SUB-039",
+    "title": "louksna in audio group",
+    "expect": "stdout_contains",
+    "needle": "audio"
+  },
+  {
+    "id": "SUB-040",
+    "title": "uname linux",
+    "expect": "stdout_eq",
+    "needle": "Linux"
+  },
+  {
+    "id": "SUB-041",
+    "title": "kernel cmdline",
+    "expect": "stdout_eq",
+    "needle": "CMDLINE"
+  },
+  {
+    "id": "SUB-042",
+    "title": "marker survived reboot",
+    "expect": "stdout_eq",
+    "needle": "KEPT"
+  },
+  {
+    "id": "SUB-043",
+    "title": "sh and deb session hashes match",
+    "expect": "stdout_eq",
+    "needle": "MATCH"
+  },
+  {
+    "id": "SUB-044",
+    "title": "sh reinstall keeps hash",
+    "expect": "stdout_eq",
+    "needle": "RESTORED"
+  },
+  {
+    "id": "SUB-045",
+    "title": "dpkg remove and reinstall without force-depends",
+    "expect": "stdout_eq",
+    "needle": "installed"
+  },
+  {
+    "id": "SUB-046",
+    "title": "selftest after reinstall",
+    "expect": "json_selftest",
+    "needle": ""
+  },
+  {
+    "id": "SUB-047",
+    "title": "luna manifest refuses self-certification",
+    "expect": "json_luna",
+    "needle": ""
+  },
+  {
+    "id": "SUB-048",
+    "title": "a failing command stays failed",
+    "expect": "stdout_eq",
+    "needle": "FAIL"
+  },
+  {
+    "id": "SUB-049",
+    "title": "checker did not export a fake wayland display",
+    "expect": "stdout_eq",
+    "needle": "CLEAN"
+  },
+  {
+    "id": "SUB-050",
+    "title": "wayland socket still present at end",
+    "expect": "stdout_eq",
+    "needle": "STILL"
+  },
+  {
+    "id": "SUB-051",
+    "title": "original c375 inside plasma environment",
+    "expect": "stdout_contains",
+    "needle": "PASS_FUNCTIONAL"
+  },
+  {
+    "id": "SUB-052",
+    "title": "original c376 inside plasma environment",
+    "expect": "stdout_contains",
+    "needle": "PASS_FUNCTIONAL"
+  },
+  {
+    "id": "SUB-053",
+    "title": "original c379 audio probe",
+    "expect": "stdout_contains",
+    "needle": "PASS_FUNCTIONAL"
+  }
+]
