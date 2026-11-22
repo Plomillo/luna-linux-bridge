@@ -1,6 +1,12 @@
 name: louksna-debian13-kde-wayland-validation
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - work/luna-v3-reconstruction-20261119
+    paths:
+      - ".github/workflows/louksna-debian13-kde-wayland-validation.yml"
+      - "validation/**"
 permissions:
   actions: read
   contents: read
