@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import os
-import pwd
+import shutil
 import socket
 import struct
 import subprocess
@@ -24,13 +24,13 @@ def run(n, ctx):
     return None if fn is None else fn(ctx)
 
 
-def go(domain, level, objective, inp, facts, good, limits=""):
+def go(domain, level, objective, inp, facts, good, limits="", unlock=""):
     facts = dict(facts)
     if domain in {"exegesis", "theology", "metatheology"}:
         facts.setdefault("corpus", "SYNTHETIC_FIXTURE")
         facts.setdefault("scripture_claim", False)
         facts.setdefault("theological_certification", "NOT_CLAIMED")
-    return pack(domain, level, objective, inp, facts, good, limits=limits)
+    return pack(domain, level, objective, inp, facts, good, unlock=unlock, limits=limits)
 
 
 def dossier():
@@ -184,6 +184,48 @@ def c333(_c):
 
 def c345(ctx):
     return _ld(ctx, 345, "Observacion de enlazado como alternativa a strace")
+
+
+def c334(ctx):
+    present = bool(shutil.which("llvm-as") and shutil.which("opt"))
+    if not present:
+        return go("compiler", 2, "Etapas LLVM reales", {"present": False},
+                  {"blocked": True, "probe": "llvm"}, False,
+                  unlock="hacen falta llvm-as y opt; no se inventa IR")
+    case = ctx.d(334)
+    ll = case / "add.ll"
+    ll.write_text("define i32 @add(i32 %a, i32 %b) {\n  %c = add i32 %a, %b\n  ret i32 %c\n}\n")
+    bc = case / "add.bc"
+    out = case / "add.opt.ll"
+    subprocess.check_call(["llvm-as", str(ll), "-o", str(bc)])
+    subprocess.check_call(["opt", "-S", str(bc), "-o", str(out)])
+    text = out.read_text()
+    has_define = "define i32 @add" in text
+    return go("compiler", 2, "llvm-as y opt sobre IR de laboratorio",
+              {"present": True, "bc": bc.stat().st_size, "has_define": has_define},
+              {"assembled": bc.stat().st_size > 0, "optimized": has_define},
+              bc.stat().st_size > 0 and has_define)
+
+
+def c353(ctx):
+    present = bool(shutil.which("setfacl") and shutil.which("getfacl"))
+    if not present:
+        return go("os", 2, "ACL real con setfacl", {"present": False, "ok": False},
+                  {"blocked": True, "probe": "acl"}, False,
+                  unlock="hacen falta getfacl y setfacl")
+    case = ctx.d(353)
+    path = case / "guard.txt"
+    path.write_text("acl\n")
+    proc = subprocess.run(["setfacl", "-m", "u:nobody:r", str(path)], capture_output=True, text=True)
+    if proc.returncode != 0:
+        return go("os", 2, "ACL real con setfacl", {"present": True, "ok": False},
+                  {"blocked": True, "probe": "acl-unsupported"}, False,
+                  unlock=(proc.stderr or "setfacl rechazo el archivo").strip()[:180])
+    text = subprocess.check_output(["getfacl", "-c", str(path)], text=True, stderr=subprocess.DEVNULL)
+    entry = "user:nobody:r" in text
+    return go("os", 2, "ACL real con setfacl",
+              {"present": True, "ok": True, "entry": entry},
+              {"granted": entry, "host_policy": False}, entry)
 
 
 def c350(ctx):

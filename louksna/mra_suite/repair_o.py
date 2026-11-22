@@ -97,6 +97,18 @@ def e345(inp):
     return {"saw_libc": inp["saw"], "intent_claim": False, "rc": inp["rc"]}
 
 
+def e334(inp):
+    if not inp["present"]:
+        return {"blocked": True, "probe": "llvm"}
+    return {"assembled": inp["bc"] > 0, "optimized": inp["has_define"]}
+
+
+def e353(inp):
+    if not inp.get("ok"):
+        return {"blocked": True, "probe": "acl" if not inp["present"] else "acl-unsupported"}
+    return {"granted": inp["entry"], "host_policy": False}
+
+
 def e350(inp):
     return {"pressured": bool(inp["saw_error"]) or inp["rc"] != 0, "kernel_oom": False, "parent_alive": True}
 
@@ -239,6 +251,6 @@ SCRIPTURE = {
     776, 777, 778, 779, 785, 786, 787, 788, 789, 790, 791, 792, 793, 794, 795, 796, 801, 802, 841,
 }
 TABLE = {i: globals()[f"e{i}"] for i in (
-    217, 249, 250, 253, 254, 256, 258, 331, 333, 345, 350, 356, 362, 364, 367, 373, 382,
+    217, 249, 250, 253, 254, 256, 258, 331, 333, 334, 345, 350, 353, 356, 362, 364, 367, 373, 382,
     389, 390, 397, 416, 418, 419, 485, 499, 519, 530, 558, 564, 572, 573, 607, 658,
 )}

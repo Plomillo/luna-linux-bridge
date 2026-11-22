@@ -221,7 +221,8 @@ def execute(root: Path) -> dict:
     all_rows = hist_rows + complement_rows + additive_rows
     ids = [row["n"] for row in all_rows]
     if ids != list(range(1, 857)):
-        raise RuntimeError("id sequence broken")
+        missing = sorted(set(range(1, 857)) - set(ids))
+        raise RuntimeError(f"id sequence broken missing={missing[:30]} bad={bad[:12]}")
     counts = {}
     certified = 0
     for row in all_rows:
