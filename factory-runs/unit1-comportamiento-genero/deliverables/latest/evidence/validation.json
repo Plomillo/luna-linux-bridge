@@ -1,24 +1,24 @@
 {
-  "observed_at_utc": "2026-11-22T22:15:54.164031+00:00",
+  "observed_at_utc": "2026-11-22T22:22:56.937779+00:00",
   "results": [
     {
       "check": "docx",
-      "sha256": "3e550f4b696378d57c7868842b147d76545f28b182e6e299c86c4632efaf53ee",
+      "sha256": "5f1ff304234dc744f7ee5e360eb65b5620fbf76aec756e9d05d3ab21d7392e29",
       "status": "PASS"
     },
     {
       "check": "pptx",
-      "sha256": "8b295afb51fb1830b88e191f859c39d8074a9fcbafb7041748860420cad3b90f",
+      "sha256": "011dd7fa2ec0d3b27c453cdd62961fd6d304cdb14c099d36bf11e07b4ca00799",
       "status": "PASS"
     },
     {
       "check": "xlsx",
-      "sha256": "a16cc27ee4aba75672ac1f0e0846a050e597eedc965c0fa878eba557f1ec9bb9",
+      "sha256": "a07dcd0c8ca88d652edae7f2b7e28043280c8722772e46d4076c6d251b2e8b52",
       "status": "PASS"
     },
     {
       "check": "pdf",
-      "sha256": "ef2431be686c369754f037ff5549ffbe10f8230683401b6d118828f3daa64c16",
+      "sha256": "8aedbdb71e6bc694fe0f9c41eeade15b0990e5560e9d817aa875820079b92239",
       "status": "PASS"
     },
     {
@@ -32,7 +32,7 @@
         "min": 1050
       },
       "status": "PASS",
-      "value": 1462
+      "value": 1078
     },
     {
       "check": "source_ledger",
