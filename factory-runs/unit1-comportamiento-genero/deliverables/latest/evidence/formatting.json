@@ -1,0 +1,26 @@
+{
+  "schema": "UNIT1_DOCX_FORMATTING_EVIDENCE/1.0",
+  "status": "APPLIED",
+  "artifact": "report.docx",
+  "sha256": "e1b82c74a5c257a38a50545c828723bd388687591def3e0d50a2b653d8f720e2",
+  "font": "Arial",
+  "body_size_pt": 12,
+  "heading_size_pt": 16,
+  "line_spacing": 1.5,
+  "paragraph_alignment": "justified",
+  "heading_alignment": "center",
+  "margins_cm": {
+    "top": 2.5,
+    "bottom": 2.5,
+    "left": 2.5,
+    "right": 2.5
+  },
+  "body_page_breaks": [
+    "Desarrollo: 1. Atributos y expectativas asociados a cada género",
+    "Desarrollo: 2. Causas sociales de las conductas asociadas a lo femenino y lo masculino",
+    "Desarrollo: 3. Influencia de los medios; 4. Conformidad y obediencia",
+    "Introducción",
+    "Referencias"
+  ],
+  "rubric_detail_status": "OFFICIAL_RUBRIC_BREAKDOWN_NOT_PROVIDED"
+}

@@ -1,0 +1,17 @@
+{
+  "certification_authority": false,
+  "first_order_validation": "FAIL",
+  "g23_granted": false,
+  "g24_granted": false,
+  "observed_at_utc": "2026-11-22T22:14:08.471692+00:00",
+  "rubric_criteria_requiring_independent_or_human_judgment": [
+    "R00_AGGREGATE_ONLY"
+  ],
+  "schema": "DOCUMENT_FACTORY_METACOGNITIVE_SELF_AUDIT/1.0",
+  "status": "HOLD",
+  "unresolved": [
+    "FIRST_ORDER_VALIDATION_NOT_PASS",
+    "INDEPENDENT_OR_HUMAN_RUBRIC_JUDGMENT_PENDING",
+    "SOURCE_CONFLICT_REQUIRES_GOVERNED_RESOLUTION"
+  ]
+}
