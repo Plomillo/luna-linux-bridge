@@ -1,81 +1,78 @@
----
-title: "Comportamiento y género"
-subtitle: "Análisis crítico de la denominada «Guía de la buena esposa»"
-author: "Diego Ignacio Norabuena Miranda"
-date: "[Completar fecha de entrega]"
-lang: es
----
-
-**UNIVERSIDAD UNIACC**
-
-**Trabajo de la unidad 1**
-
-**Asignatura:** [Completar]  
-**Docente:** [Completar]  
-**Fecha de entrega:** [Completar]
+# Comportamiento y género
+## Análisis de la «Guía de la buena esposa»
 
 <!-- BODY_START -->
 
+<!-- PAGE: 1 -->
 # Introducción
 
-Las expectativas sobre cómo deben comportarse mujeres y hombres se aprenden en contextos familiares, educativos, institucionales y mediáticos. La denominada «Guía de la buena esposa» permite examinar esa construcción porque dirige instrucciones a una mujer casada y organiza la vida doméstica alrededor de las necesidades del marido. El texto prescribe tareas, apariencia, comunicación y regulación emocional.
+La denominada «Guía de la buena esposa» reúne instrucciones para organizar la conducta de una mujer casada alrededor del bienestar de su marido. No se limita a recomendar labores domésticas: prescribe cómo debe vestir, expresar emociones, conversar, cuidar a los hijos y responder ante las ausencias o molestias del esposo. El material permite analizar cómo ciertas normas sociales convierten una distribución específica de funciones en un ideal de feminidad y masculinidad (BUENHOGAR, 1953)[@BUENHOGAR1953].
 
-Este ensayo sostiene que el material representa una distribución desigual de roles: asigna a la mujer el trabajo doméstico, el cuidado familiar y la responsabilidad afectiva, mientras sitúa al hombre como trabajador externo, autoridad y destinatario de atención. Desde la psicología social, esa reproducción puede explicarse mediante aprendizaje por observación, esquemas de género y roles sociales. La conformidad y la obediencia permiten analizar cómo esas normas se mantienen por presión grupal o por autoridad.
+La tesis de este ensayo es que la guía representa una relación conyugal asimétrica. A la mujer le asigna el trabajo doméstico, el cuidado familiar y la regulación emocional del hogar; al hombre lo presenta como proveedor que vuelve cansado del trabajo y merece atención, silencio, descanso y comprensión. Desde la psicología social, esta diferencia puede explicarse mediante socialización, aprendizaje por observación, estereotipos e interiorización de roles. Los conceptos de influencia social, conformidad y obediencia permiten comprender cómo esas expectativas se mantienen y legitiman.
 
-La consigna atribuye el material a BUENHOGAR y al año 1953. La copia digital consultada muestra esa fecha; sin embargo, Maldita.es (2020/2022) documenta que las imágenes y frases de la versión de once reglas se usaron en la apertura de la telenovela mexicana *Las Aparicio* (2010) y que no encontró esa lista en manuales de economía doméstica revisados en la Biblioteca Nacional de España. Por ello, se analizará su contenido como representación de un ideal tradicional, sin dar por probada su publicación original en BUENHOGAR en 1953.
+La consigna identifica el material como un texto de la revista BUENHOGAR de 1953 y el PDF exhibe la leyenda «AÑO 1953». Sin embargo, el archivo no incorpora número de edición, fecha completa ni autoría individual. Por rigor, se conserva la atribución proporcionada por el curso sin agregar datos editoriales que la fuente no contiene. El propósito no es afirmar que todas las parejas de la época vivieran de ese modo, sino examinar el modelo normativo que el documento propone y las relaciones de poder que normaliza.
 
-# Desarrollo: 1. Atributos y expectativas asociados a cada género
+<!-- PAGEBREAK -->
+<!-- PAGE: 2 -->
+# Desarrollo
 
-En la representación femenina se agrupan cuatro expectativas. La primera es la responsabilidad doméstica: preparar la cena, ordenar, limpiar y disponer un ambiente cómodo para el regreso del marido. La segunda es el cuidado familiar: arreglar a los niños para que su padre los encuentre aseados. La tercera es la apariencia personal: descansar antes de su llegada y cuidar maquillaje, peinado y vestimenta. La cuarta es el trabajo emocional: sonreír, ser agradable, escuchar primero, evitar quejas y no cargar al esposo con los propios problemas (Académie de Poitiers, s. f.).
+## 1. Atributos, comportamientos y expectativas asociados a cada género
 
-El ideal femenino resultante privilegia docilidad, paciencia, disponibilidad, discreción, complacencia y anticipación de necesidades ajenas. La mujer debe asegurar el funcionamiento del hogar y el descanso del marido; hasta su expresión emocional queda prescrita. Estos atributos no son rasgos naturales de las mujeres, sino normas asignadas a la posición social de esposa.
+En el modelo femenino se concentran las tareas de servicio y cuidado. La esposa debe planificar la cena y preparar el plato favorito del marido (regla 1), arreglarse para recibirlo (2), mostrarse dulce e interesante y distraerlo (3), mantener la casa impecable (4), preparar un ambiente de descanso y encender la chimenea en invierno (5), asear y vestir a los niños (6), apagar lavadora, secadora y aspiradora para reducir los ruidos (7), y recibirlo con una sonrisa, como si su felicidad fuera la recompensa por el esfuerzo de él (8). La guía asocia así la feminidad con disponibilidad, belleza, amabilidad, paciencia, orden, docilidad y atención permanente a las necesidades ajenas.
 
-El hombre aparece como trabajador remunerado que vuelve cansado, necesita alimento, silencio y descanso, y merece prioridad en la conversación. El texto normaliza que llegue tarde, se divierta sin su esposa o pase la noche fuera, mientras espera de ella comprensión y ausencia de reclamos. Así, el marido ocupa el centro de la vida doméstica, recibe cuidados y conserva mayor libertad.
+La mujer aparece como responsable de ejecutar tareas y anticipar deseos. Su trabajo incluye una dimensión emocional: controlar su expresión, ofrecer conversación agradable y producir tranquilidad. Estas exigencias se presentan como cualidades de una buena esposa, no como una distribución discutible del trabajo. En contraste, el marido es descrito como trabajador que vuelve de la oficina después de una jornada pesada, puede llegar cansado o de mal humor y necesita comida, descanso, silencio y comodidad. Su bienestar organiza las actividades de la casa; queda asociado con provisión económica, actividad pública y autoridad doméstica.
 
-La desigualdad no reside en capacidades naturales, sino en la distribución de obligaciones y privilegios: ella debe servir y moderar sus necesidades; él recibe atención sin una responsabilidad equivalente. La frase según la cual una buena esposa conoce «su lugar» resume la jerarquía y presenta la subordinación como conducta apropiada. Esta descripción identifica el estereotipo del material, no una experiencia universal de las personas de la época.
+La desigualdad se vuelve explícita en las reglas 9, 10 y 11: la esposa debe escucharlo primero, considerar sus temas más importantes, no reclamar si él llega tarde o sale sin ella y relativizar sus propios problemas. El apartado «Extra» añade que debe ofrecerle una bebida caliente, acomodar su almohada, quitarle los zapatos y hablarle con voz suave. La imagen final —«Una buena esposa siempre sabe cuál es su lugar»— condensa la jerarquía del documento (BUENHOGAR, 1953)[@BUENHOGAR1953]. El marido recibe prioridad y libertad de movimiento; la esposa asume obligaciones domésticas, parentales y afectivas sin reciprocidad equivalente. Es un ideal normativo, no una descripción universal de todas las personas.
 
-# Desarrollo: 2. Causas sociales de las conductas asociadas a lo femenino y lo masculino
+<!-- PAGEBREAK -->
+<!-- PAGE: 3 -->
+## 2. Explicación desde la psicología social
 
-La psicología social explica estas conductas mediante socialización, aprendizaje y organización de roles. Las personas observan quién realiza determinadas actividades y pueden atribuir a cada género las características asociadas a ellas. Eagly y Steffen (1984) relacionan los estereotipos con la distribución social de mujeres y hombres: la asociación femenina con tareas domésticas favorece su identificación con el cuidado, mientras que la presencia masculina en el empleo y la autoridad favorece su asociación con autonomía y agencia.
+Las conductas asociadas a lo femenino y lo masculino se aprenden en interacción. Familia, escuela, pares, instituciones y medios transmiten expectativas sobre las tareas y rasgos considerados apropiados para cada género. La psicología social analiza cómo pensamiento y conducta se configuran en relación con otros (Baron & Byrne, 2005)[@BARONBYRNE2005]. La distribución de la guía es, por tanto, un aprendizaje social y no una consecuencia inevitable de la biología.
 
-El aprendizaje social de Bandura (1977) permite comprender la transmisión de esas pautas. Se aprende observando modelos y las consecuencias de sus acciones, además de recibir aprobación o sanción. Una niña puede observar que las mujeres de su entorno realizan la mayor parte del trabajo doméstico y reciben reconocimiento por cuidar; un niño puede observar que a los varones se les concede mayor autonomía o se les reconoce como proveedores. No es una reproducción inevitable: las personas interpretan, cuestionan o sustituyen los modelos observados.
+El aprendizaje por observación también reproduce roles. Bandura (1977)[@BANDURA1977] explica que se adquieren pautas al observar modelos y consecuencias. Una niña que ve a las mujeres cuidar y recibir aprobación puede aprender que ese papel se espera de ella; un niño que observa a varones atendidos puede normalizar esa asimetría. La aprobación y la sanción refuerzan la repetición.
 
-Bem (1981), mediante la teoría del esquema de género, explica cómo las categorías culturales organizan la información y orientan la evaluación de la propia conducta. Una mujer podría interpretar que expresar desacuerdo contradice el ideal de esposa, mientras un hombre podría considerar que las tareas domésticas no corresponden a su papel. Los esquemas influyen en la percepción, pero no prueban que esas diferencias sean naturales o inmutables.
+Los estereotipos organizan la percepción. Bem (1981)[@BEM1981] sostiene que los esquemas de género influyen en cómo se interpreta la información y se evalúa la propia conducta. Eagly y Steffen (1984)[@EAGLYSTEFFEN1984] vinculan los estereotipos con la distribución de mujeres y hombres en roles sociales: la repetición de tareas lleva a atribuir a cada grupo rasgos supuestamente adecuados. Así, los roles producen estereotipos y estos justifican su continuidad.
 
-Los mecanismos se refuerzan: la división del trabajo produce modelos; los modelos sostienen estereotipos; estos orientan la crianza y la aprobación social favorece su repetición. Como la cultura, la economía, la educación y las instituciones varían, también cambian los roles. La guía representa una versión rígida de ese proceso al presentar una distribución desigual como el modo correcto de ser esposa.
+## 3. Influencia del medio de comunicación
 
-# Desarrollo: 3. Influencia de los medios; 4. Conformidad y obediencia
+Una revista influye cuando selecciona modelos, los repite y los presenta como deseables. La guía convierte sus instrucciones en una norma prescriptiva sobre cómo ser una buena esposa. El mensaje puede actuar mediante identificación, búsqueda de aprobación e interiorización de expectativas. Moscovici (1991, pp. 17–37)[@MOSCOVICI1991] sitúa la psicología social en la relación entre individuo y sociedad, lo que permite comprender que las normas difundidas por un medio se producen y adquieren sentido en un contexto colectivo.
 
-Los medios seleccionan modelos y comunican normas. Presentar a la esposa como bella, silenciosa y disponible puede normalizar ese ideal, especialmente si lo repiten la familia y otros espacios; las lectoras también pueden aceptarlo o rechazarlo (Cialdini & Goldstein, 2004).
+La influencia no es automática: las lectoras pueden aceptar, negociar o rechazar el mensaje. Como el material no aporta datos de tiraje ni de recepción, no demuestra un efecto causal ni que todas las mujeres siguieran las reglas. Sí permite analizar un modelo que puede reforzar estereotipos existentes.
 
-El material no aporta datos de tiraje, lectoría o recepción que prueben efectos de BUENHOGAR. La atribución de las once reglas a 1953 es controvertida: Maldita.es (2020/2022) las ubica en la apertura de *Las Aparicio* (2010) y no las encontró en manuales consultados. No debe afirmarse esa publicación ni un seguimiento general de sus instrucciones.
+<!-- PAGEBREAK -->
+<!-- PAGE: 4 -->
+## 4. Conformidad y obediencia
 
-La conformidad consiste en ajustar la conducta a una norma grupal para lograr aceptación o evitar sanciones (influencia normativa), o porque se cree que el grupo tiene razón (informativa). Asch (1956) mostró que la mayoría puede modificar juicios. Una mujer podía seguir el modelo para evitar críticas o porque su comunidad lo consideraba normal.
+La conformidad ocurre cuando una persona ajusta su conducta a las expectativas de un grupo. Puede responder a influencia normativa —buscar aceptación o evitar críticas— o informativa —suponer que el grupo conoce la conducta correcta— (Cialdini & Goldstein, 2004)[@CIALDINIGOLDSTEIN2004]. En el caso, una mujer podría cumplir las reglas porque su entorno considera que ese comportamiento define a una buena esposa, o porque observa que otras mujeres reciben aprobación por hacerlo. La presión no necesita expresarse como una orden: basta con que la norma parezca compartida y su incumplimiento pueda generar rechazo. Asch (1956)[@ASCH1956] mostró que la unanimidad de una mayoría puede modificar la respuesta individual incluso ante una tarea sencilla.
 
-La obediencia es cumplir órdenes de una autoridad. El texto presenta al marido como autoridad doméstica y a la esposa como subordinada. Milgram (1963) estudió obediencia en laboratorio, no en matrimonios: ilustra el mecanismo, pero no prueba que las esposas obedecieran uniformemente. Conformidad remite a presión grupal; obediencia, a jerarquía. Ambas pueden reproducir desigualdad, aunque también cabe resistencia.
+La obediencia, en cambio, supone responder a una instrucción proveniente de una autoridad reconocida. Milgram (1963)[@MILGRAM1963] mostró experimentalmente la importancia de la autoridad en el cumplimiento de órdenes, aunque su estudio no investigó matrimonios ni demuestra que todas las mujeres obedecieran a sus esposos. En la guía, la autoridad masculina aparece implícita en la prioridad concedida a los deseos del marido y en la obligación de adaptarse a sus decisiones. Esa jerarquía puede sostenerse mediante normas familiares, educativas, religiosas y culturales que legitiman la subordinación femenina.
 
-# Conclusión
+Ambos conceptos deben distinguirse: conformidad remite a la presión del grupo y obediencia al cumplimiento de una directriz de autoridad. El documento permite identificar un ideal que podría favorecer ambos procesos, pero no demuestra por sí solo que existiera obediencia efectiva en cada hogar.
 
-El caso muestra cómo una división desigual del trabajo se transforma en expectativas de género: la mujer cuida y sirve; el hombre recibe prioridad. Aprendizaje, esquemas, conformidad y obediencia ayudan a explicar su reproducción. La procedencia incierta exige analizar el mensaje sin dar por probada su publicación en 1953. El problema central es la desigualdad presentada como natural.
+## Conclusión
+
+La guía construye dos posiciones desiguales: una esposa dedicada al servicio doméstico y emocional, y un marido presentado como proveedor con prioridad y libertad. La psicología social explica la reproducción de ese modelo mediante socialización, aprendizaje observacional, estereotipos y presión normativa. Los medios pueden reforzarlo al presentar una conducta cultural como ideal, mientras que conformidad y obediencia describen mecanismos distintos de mantenimiento de las normas. Estas diferencias no son destinos naturales: son expectativas aprendidas, legitimadas y, por tanto, susceptibles de crítica y transformación.
 
 <!-- BODY_END -->
 
+<!-- PAGEBREAK -->
 # Referencias
-
-Académie de Poitiers. (s. f.). *Guía de la buena esposa: 11 reglas para mantener a tu marido feliz* [Material visual en PDF]. https://ww2.ac-poitiers.fr/espagnol/sites/espagnol/IMG/pdf/guia_de_la_buena_esposa-2.pdf
 
 Asch, S. E. (1956). Studies of independence and conformity: I. A minority of one against a unanimous majority. *Psychological Monographs: General and Applied, 70*(9), 1–70. https://doi.org/10.1037/h0093718
 
 Bandura, A. (1977). *Social learning theory*. Prentice Hall.
 
+Baron, R., & Byrne, D. (2005). El campo de la psicología social: cómo pensamos acerca de e interactuamos con los demás. En *Psicología social* (10.ª ed., pp. 5–30). Pearson Educación.
+
 Bem, S. L. (1981). Gender schema theory: A cognitive account of sex typing. *Psychological Review, 88*(4), 354–364. https://doi.org/10.1037/0033-295X.88.4.354
+
+BUENHOGAR. (1953). *Guía de la buena esposa* [Material visual adjunto a la actividad U1 de Psicología Social, 14 páginas].
 
 Cialdini, R. B., & Goldstein, N. J. (2004). Social influence: Compliance and conformity. *Annual Review of Psychology, 55*, 591–621. https://doi.org/10.1146/annurev.psych.55.090902.142015
 
 Eagly, A. H., & Steffen, V. J. (1984). Gender stereotypes stem from the distribution of women and men into social roles. *Journal of Personality and Social Psychology, 46*(4), 735–754. https://doi.org/10.1037/0022-3514.46.4.735
 
-Maldita.es. (2020, 10 de febrero; actualizado el 23 de agosto de 2022). *No, no hay pruebas de que la «guía de la buena esposa: 11 reglas para mantener a tu marido feliz» sea un manual de los años 50 de la Falange Española*. https://maldita.es/malditobulo/no-no-hay-pruebas-de-que-la-guia-de-la-buena-esposa-11-reglas-para-mantener-a-tu-marido-feliz-sea-un-manual-de-los-anos-50-de-la-falange-espanola-los-disenos-son-de-una-telenovela-mexicana-las/
+Moscovici, S. (1991). Introducción: el campo de la psicología social. En S. Moscovici (Ed.), *Psicología social I: Influencia y cambio de actitudes, individuos y grupos* (pp. 17–37). Paidós.
 
 Milgram, S. (1963). Behavioral study of obedience. *The Journal of Abnormal and Social Psychology, 67*(4), 371–378. https://doi.org/10.1037/h0040525
-
-Universidad UNIACC. (2026). *Trabajo de la unidad 1: Comportamiento y género* [Instrucciones de actividad entregadas en plataforma].

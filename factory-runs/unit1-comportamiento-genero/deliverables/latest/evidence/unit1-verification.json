@@ -1,0 +1,41 @@
+{
+  "schema": "UNIT1_DOCUMENT_VERIFICATION/1.0",
+  "status": "PASS",
+  "rubric_points": 26.25,
+  "rubric_criteria": 6,
+  "total_pages": 6,
+  "body_pages": 4,
+  "development_pages": 3,
+  "body_word_count": 1242,
+  "source_pdf_pages": 14,
+  "source_pdf_sha256": "ccb0979322fceba254e01c4eb5b5a8d5954326eaa0112c414ac635ff27626c5f",
+  "verified_sources": 10,
+  "citation_ids": [
+    "ASCH1956",
+    "BANDURA1977",
+    "BARONBYRNE2005",
+    "BEM1981",
+    "BUENHOGAR1953",
+    "CIALDINIGOLDSTEIN2004",
+    "EAGLYSTEFFEN1984",
+    "MILGRAM1963",
+    "MOSCOVICI1991"
+  ],
+  "checks": {
+    "page_map": "PASS",
+    "case_rules_1_to_11_extra_final_image": "PASS",
+    "Arial_12_16": "PASS",
+    "line_spacing_1_5": "PASS",
+    "margins_2_5cm": "PASS",
+    "rubric_sum": "PASS",
+    "citation_ledger": "PASS"
+  },
+  "human_gates": {
+    "deadline_submission": "PENDING_USER",
+    "language_final_review": "PENDING_TEACHER",
+    "rubric_content_grade": "PENDING_TEACHER",
+    "G23": "NOT_EXECUTED",
+    "G24": "NOT_EXECUTED"
+  },
+  "certification_authority": false
+}

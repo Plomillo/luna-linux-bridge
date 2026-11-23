@@ -1,0 +1,32 @@
+{
+  "schema": "UNIT1_DOCUMENT_FACTORY_BUILD/1.0",
+  "status": "PASS",
+  "rubric_total": 26.25,
+  "rubric_criteria": 6,
+  "source_pdf_sha256": "ccb0979322fceba254e01c4eb5b5a8d5954326eaa0112c414ac635ff27626c5f",
+  "source_ledger": {
+    "status": "PASS",
+    "failures": [],
+    "distinct_verified": 10
+  },
+  "citation_ledger": {
+    "status": "PASS",
+    "cited_ids": [
+      "ASCH1956",
+      "BANDURA1977",
+      "BARONBYRNE2005",
+      "BEM1981",
+      "BUENHOGAR1953",
+      "CIALDINIGOLDSTEIN2004",
+      "EAGLYSTEFFEN1984",
+      "MILGRAM1963",
+      "MOSCOVICI1991"
+    ],
+    "failures": []
+  },
+  "total_pages": 6,
+  "required_total_pages": 6,
+  "required_body_pages": 4,
+  "docx_bytes": 10819,
+  "pdf_bytes": 66329
+}
