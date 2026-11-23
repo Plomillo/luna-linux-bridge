@@ -1,0 +1,87 @@
+{
+  "schema": "UNIT1_CASE_COVERAGE/1.0",
+  "source_pdf": "sources/Guia de la buena esposa.pdf",
+  "source_pdf_sha256": "ccb0979322fceba254e01c4eb5b5a8d5954326eaa0112c414ac635ff27626c5f",
+  "source_pages": 14,
+  "rules": [
+    {
+      "number": 1,
+      "source": "Ten lista la cena",
+      "analysis": "Meal preparation, anticipation of the husband's preferences, domestic service.",
+      "pdf_page": 2
+    },
+    {
+      "number": 2,
+      "source": "¡Luce hermosa!",
+      "analysis": "Appearance, grooming and the expectation of attractiveness for the husband's arrival.",
+      "pdf_page": 3
+    },
+    {
+      "number": 3,
+      "source": "Sé dulce e interesante",
+      "analysis": "Pleasantness, conversation and emotional responsibility for improving his mood.",
+      "pdf_page": 4
+    },
+    {
+      "number": 4,
+      "source": "Arregla tu casa",
+      "analysis": "Household order and cleaning assigned to the wife.",
+      "pdf_page": 5
+    },
+    {
+      "number": 5,
+      "source": "Hazlo sentir en el paraíso",
+      "analysis": "Preparing comfort and rest, including the fireplace in cold months.",
+      "pdf_page": 6
+    },
+    {
+      "number": 6,
+      "source": "Prepara a los niños",
+      "analysis": "Children's grooming and presentation assigned to the mother.",
+      "pdf_page": 7
+    },
+    {
+      "number": 7,
+      "source": "Minimiza el ruido",
+      "analysis": "Silencing household appliances and children to protect his rest.",
+      "pdf_page": 8
+    },
+    {
+      "number": 8,
+      "source": "Procura verte feliz",
+      "analysis": "Smiling, pleasing him and treating her happiness as reward for his work.",
+      "pdf_page": 9
+    },
+    {
+      "number": 9,
+      "source": "Escúchalo",
+      "analysis": "His topics and opportunity to speak are prioritized over hers.",
+      "pdf_page": 10
+    },
+    {
+      "number": 10,
+      "source": "Ponte en sus zapatos",
+      "analysis": "Tolerance of lateness, outings without her and not returning home overnight.",
+      "pdf_page": 11
+    },
+    {
+      "number": 11,
+      "source": "¡No te quejes!",
+      "analysis": "Her problems are minimized against his workday difficulties.",
+      "pdf_page": 12
+    },
+    {
+      "number": "Extra",
+      "source": "Hazlo sentir a sus anchas",
+      "analysis": "Drink, pillow, shoes and soft voice: intensified service and comfort.",
+      "pdf_page": 13
+    },
+    {
+      "number": "Final",
+      "source": "Una buena esposa siempre sabe cuál es su lugar",
+      "analysis": "Closing slogan explicitly condenses the hierarchy and gender subordination.",
+      "pdf_page": 14
+    }
+  ],
+  "status": "PASS"
+}

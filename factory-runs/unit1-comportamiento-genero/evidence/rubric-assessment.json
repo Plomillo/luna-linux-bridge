@@ -1,0 +1,66 @@
+{
+  "schema": "UNIT1_RUBRIC_ALIGNMENT/1.0",
+  "declared_maximum": 26.25,
+  "score_claimed": false,
+  "criteria": [
+    {
+      "id": "R1",
+      "name": "Entrega a tiempo",
+      "points": 1.75,
+      "maximum_descriptor": "Envían o entregan su trabajo en el plazo indicado, respetando la extensión solicitada.",
+      "alignment": "The artifact is ready for upload; the learner must submit before 2026-11-23 23:55 Chile time.",
+      "artifact_status": "PENDING_USER_SUBMISSION",
+      "evidence": "deadline recorded in sources/assignment-and-rubric.md"
+    },
+    {
+      "id": "R2",
+      "name": "Formato",
+      "points": 1.75,
+      "maximum_descriptor": "El ensayo respeta totalmente el formato solicitado: APA 7.ª edición, letra Arial 12 para texto plano y 16 para títulos; interlineado 1,5; alineación justificada para párrafos y centrada para imágenes; márgenes superior, inferior, izquierdo y derecho de 2,5 cm.",
+      "artifact_status": "PASS",
+      "evidence": "evidence/validation.json; six-page PDF; DOCX XML checks"
+    },
+    {
+      "id": "R3",
+      "name": "Uso del lenguaje",
+      "points": 1.75,
+      "maximum_descriptor": "La intención comunicativa se refuerza mediante la expresión de las ideas con total coherencia, riqueza lingüística y manejo conceptual de la disciplina. La redacción no presenta errores de sintaxis, gramaticales u ortográficos.",
+      "artifact_status": "SELF_REVIEWED_HUMAN_REVIEW_PENDING",
+      "evidence": "source/report.md; final language review remains subject to student/teacher judgment"
+    },
+    {
+      "id": "R4",
+      "name": "Análisis del caso estudiado",
+      "points": 7,
+      "maximum_descriptor": "Presentan un análisis del caso estudiado completamente coherente con los conceptos trabajados en la unidad.",
+      "artifact_status": "CONTENT_COVERAGE_PASS",
+      "evidence": "evidence/case-coverage.json"
+    },
+    {
+      "id": "R5",
+      "name": "Aplicación de los contenidos",
+      "points": 7,
+      "maximum_descriptor": "Sustentan correctamente el análisis del caso estudiado, basándose en los contenidos trabajados en la unidad.",
+      "artifact_status": "THEORY_MAPPING_PASS_TEACHER_JUDGMENT_PENDING",
+      "evidence": "Socialization, observational learning, gender schemas, social-role distribution, media influence, conformity and obedience are explicitly applied in pages 3–5."
+    },
+    {
+      "id": "R6",
+      "name": "Conclusión",
+      "points": 7,
+      "maximum_descriptor": "Sintetizan correctamente las ideas principales propuestas en el ensayo.",
+      "artifact_status": "CONTENT_COVERAGE_PASS",
+      "evidence": "Conclusion on body page 4 (PDF page 5)."
+    }
+  ],
+  "totals": {
+    "criterion_count": 6,
+    "points": 26.25,
+    "arithmetic": "PASS"
+  },
+  "caveats": [
+    "R1 depends on the user's platform submission before the deadline.",
+    "R3, R4, R5 and R6 remain subject to the teacher's human grading.",
+    "No guaranteed grade or score is asserted."
+  ]
+}

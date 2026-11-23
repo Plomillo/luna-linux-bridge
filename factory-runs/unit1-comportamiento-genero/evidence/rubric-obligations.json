@@ -1,0 +1,70 @@
+{
+  "schema": "DOCUMENT_FACTORY_RUBRIC_OBLIGATIONS/1.0",
+  "profile_id": "UNIACC_PSICOLOGIA_SOCIAL_U1_COMPORTAMIENTO_GENERO",
+  "profile_version": "1.0.0",
+  "declared_total_points": 26.25,
+  "criterion_count": 6,
+  "obligations": [
+    {
+      "criterion_id": "R1",
+      "points": 1.75,
+      "requirement_text": "Envían o entregan su trabajo en el plazo indicado, respetando la extensión solicitada.",
+      "validation_class": "HUMAN_PLATFORM_SUBMISSION",
+      "automated_assist": false,
+      "independent_or_human_required": true,
+      "claim_status": "UNKNOWN",
+      "evidence_ref": null
+    },
+    {
+      "criterion_id": "R2",
+      "points": 1.75,
+      "requirement_text": "El ensayo respeta totalmente el formato solicitado: APA 7.ª edición, letra Arial 12 para texto plano y 16 para títulos; interlineado 1,5; alineación justificada para párrafos y centrada para imágenes; márgenes superior, inferior, izquierdo y derecho de 2,5 cm.",
+      "validation_class": "AUTOMATED_DOCUMENT_FORMAT",
+      "automated_assist": true,
+      "independent_or_human_required": false,
+      "claim_status": "UNKNOWN",
+      "evidence_ref": null
+    },
+    {
+      "criterion_id": "R3",
+      "points": 1.75,
+      "requirement_text": "La intención comunicativa se refuerza mediante la expresión de las ideas con total coherencia, riqueza lingüística y manejo conceptual de la disciplina. La redacción no presenta errores de sintaxis, gramaticales u ortográficos.",
+      "validation_class": "EDITORIAL_AND_HUMAN_REVIEW",
+      "automated_assist": false,
+      "independent_or_human_required": true,
+      "claim_status": "UNKNOWN",
+      "evidence_ref": null
+    },
+    {
+      "criterion_id": "R4",
+      "points": 7.0,
+      "requirement_text": "Presentan un análisis del caso estudiado completamente coherente con los conceptos trabajados en la unidad.",
+      "validation_class": "CONTENT_MAP_AND_HUMAN_RUBRIC_JUDGMENT",
+      "automated_assist": false,
+      "independent_or_human_required": true,
+      "claim_status": "UNKNOWN",
+      "evidence_ref": null
+    },
+    {
+      "criterion_id": "R5",
+      "points": 7.0,
+      "requirement_text": "Sustentan correctamente el análisis del caso estudiado, basándose en los contenidos trabajados en la unidad.",
+      "validation_class": "THEORY_APPLICATION_MAP_AND_HUMAN_RUBRIC_JUDGMENT",
+      "automated_assist": false,
+      "independent_or_human_required": true,
+      "claim_status": "UNKNOWN",
+      "evidence_ref": null
+    },
+    {
+      "criterion_id": "R6",
+      "points": 7.0,
+      "requirement_text": "Sintetizan correctamente las ideas principales propuestas en el ensayo.",
+      "validation_class": "CONCLUSION_COVERAGE_AND_HUMAN_RUBRIC_JUDGMENT",
+      "automated_assist": false,
+      "independent_or_human_required": true,
+      "claim_status": "UNKNOWN",
+      "evidence_ref": null
+    }
+  ],
+  "certification_authority": false
+}

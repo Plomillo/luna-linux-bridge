@@ -1,71 +1,30 @@
-# Auditoría del trabajo — Unidad 1: Comportamiento y género
+# Auditoría actualizada — Unidad 1: Comportamiento y género
 
-- Fecha: 2026-11-22
+- Fecha de revisión: 2026-11-22
 - Repositorio: `Plomillo/luna-linux-bridge`
-- Rama de trabajo: `candidate/document-factory-v1-unit2-20261013`
-- Workflow: `.github/workflows/document-factory-unit1-run.yml`
-- Run definitivo: https://github.com/Plomillo/luna-linux-bridge/actions/runs/45077299372
-- Resultado del run definitivo: `success`
-- Artifact de GitHub Actions: `unidad1-comportamiento-genero-documentos` (artifact ID `14774774951`)
-- Commit de entradas final: `8c056ed2857e8f43015ddd3ec57b0cbd43cde8a8`
+- Rama objetivo: `candidate/document-factory-v1-unit2-20261013`
+- Fuente normativa: actividad autenticada de Moodle y rúbrica completa, seis criterios / 26,25 puntos.
+- Fuente de caso: adjunto exacto de la actividad, 14 páginas; SHA-256 verificado.
 
-## Resultado de construcción y validación
+## Correcciones respecto del candidato previo
+1. Se sustituyó la estructura de ocho páginas por el formato solicitado: seis páginas totales (portada, cuatro páginas de cuerpo y referencias), con tres páginas de desarrollo.
+2. Se incorporó la rúbrica analítica completa que sí estaba disponible en la sesión autenticada de Moodle; la evaluación ya no se basa únicamente en el total de 26,25 puntos.
+3. Se agregó el nombre del estudiante conocido a la portada y se mantuvieron editables los datos docentes no verificados.
+4. Se agregó a referencias la entrada completa de Moscovici (1991), citada en el cuerpo, con páginas 17–37; se alineó el registro de fuente.
+5. Se conservó el PDF exacto descargado de Moodle, con hash verificado, y se eliminó la afirmación anterior de que no se había recuperado el adjunto.
+6. Se actualizó la nota de procedencia: la pieza es el adjunto oficial de la tarea y su contenido se analiza; su atribución editorial histórica a BUENHOGAR no se presenta como autenticada más allá de lo indicado por la consigna.
 
-| Control | Resultado |
-|---|---|
-| DOCX | PASS |
-| PDF | PASS |
-| PPTX | PASS |
-| XLSX | PASS |
-| Conteo de cuerpo | PASS — 1.078 palabras; rango del perfil 1.050–1.650 |
-| Fuentes verificadas | PASS — 8 fuentes; mínimo configurado 7 |
-| Formato Word | APLICADO — Arial 12 texto, Arial 16 títulos, 1,5 interlineado, márgenes 2,5 cm, párrafos justificados y títulos centrados |
-| Paginación del cuerpo | PASS — 4 páginas entre Introducción y Conclusión |
-| PDF total | 8 páginas — portada, cuerpo y referencias |
-| Congelación del candidato | PASS — `frozen=true` |
+## Validación reproducible
+- `build.py`: PASS; DOCX y PDF generados.
+- `verify.py`: PASS; seis páginas, cuatro páginas de cuerpo, tres páginas de desarrollo, Arial 12/16, interlineado 1,5, márgenes 2,5 cm, rúbrica 26,25 y trazabilidad de citas.
+- Document Factory selftest: 12/12 PASS.
+- Rubric compiler selftest: PASS.
+- El PDF final es de seis páginas A4.
 
-Archivos finales:
-- `deliverables/latest/Trabajo1_DiegoIgnacioNorambuenaMiranda.docx`
-- `deliverables/latest/Trabajo1_DiegoIgnacioNorambuenaMiranda.pdf`
-- `deliverables/latest/report-source.md`
-- `deliverables/latest/evidence/validation.json`
-- `deliverables/latest/evidence/formatting.json`
-- `deliverables/latest/evidence/self-audit.json`
-- `deliverables/latest/FROZEN_CANDIDATE.json`
-- `deliverables/latest/CANDIDATE_DIGEST.txt`
-- `deliverables/latest/STATUS.txt`
+## Límites de certificación
+- R1 (entrega a tiempo): pendiente de envío en Moodle.
+- R3–R6: alineación y cobertura documentadas; la calificación sustantiva corresponde al docente.
+- G23/G24: no ejecutados.
+- `CERTIFICATION=NOT_GRANTED`; no se afirma nota máxima garantizada.
 
-Digest del candidato congelado:
-`991fdfbb0bbc99dbb17bdff54740fb9961190efc1ffa22ba7ee69b8861db2558`
-
-SHA-256 del DOCX:
-`5f1ff304234dc744f7ee5e360eb65b5620fbf76aec756e9d05d3ab21d7392e29`
-
-SHA-256 del PDF:
-`8aedbdb71e6bc694fe0f9c41eeade15b0990e5560e9d817aa875820079b92239`
-
-## Estado epistemológico y límites de certificación
-
-`first_order_validation=PASS`
-
-`metacognitive_self_audit=PASS_WITH_ESCALATION`
-
-`G23=NOT_EXECUTED`
-
-`G24=NOT_EXECUTED`
-
-`CERTIFICATION=NOT_GRANTED`
-
-El auto-audit conserva dos asuntos no resueltos: (1) juicio humano/independiente sobre la rúbrica y (2) conflicto documental relativo a la procedencia de la pieza. La rúbrica analítica de 26,25 puntos no fue incluida en el material recibido; el perfil conserva solo el puntaje total y no inventa criterios ni ponderaciones. Por ello, el trabajo satisface las instrucciones explícitas auditables, pero no se afirma una nota máxima garantizada ni certificación académica.
-
-## Fuente «Guía de la buena esposa»
-
-No se encontró en los archivos accesibles un PDF original facilitado por UNIACC ni un ejemplar autenticado de BUENHOGAR de 1953. Por esa razón, no se ha incorporado al repositorio un binario rotulado engañosamente como original. En cambio, se añadió:
-
-`sources/GUIA_DE_LA_BUENA_ESPOSA_SOURCE.md`
-
-Esa ficha enlaza una copia pública de Académie de Poitiers y registra que la fecha impresa «Año 1953» no autentica por sí sola su procedencia. También resume la verificación de Maldita.es: la versión de once reglas circuló en la apertura de *Las Aparicio* (2010) y no se halló esa lista en los manuales de economía doméstica consultados por esa investigación. El ensayo distingue expresamente el análisis del contenido de la atribución histórica controvertida.
-
-## Integridad del repositorio
-
-Se creó un directorio nuevo `factory-runs/unit1-comportamiento-genero/` y un workflow específico para esta actividad. No se editaron los archivos canónicos de `document-factory/`, los trabajos preexistentes de otras unidades ni la rama `main`. Los intentos de validación que fallaron por paginación quedaron registrados en GitHub Actions; el último run pasó las compuertas fail-closed y es el único utilizado para los entregables finales.
+El `AUDIT.md` previo y los metadatos de congelación del candidato de ocho páginas se conservan en `history/prior-candidate-8-page-20261122/` como registro histórico supersedido, no como estado vigente.

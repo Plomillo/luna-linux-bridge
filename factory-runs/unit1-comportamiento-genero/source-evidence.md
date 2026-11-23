@@ -1,25 +1,15 @@
-# Evidencia de fuentes y límite de autenticidad
+# Evidencia de fuentes y límites de autenticidad
 
-Fecha de verificación: 2026-11-22.
+Fecha de auditoría: 22 de noviembre de 2026.
 
-## Documento de caso
-Se consultó una copia en PDF alojada por Académie de Poitiers: https://ww2.ac-poitiers.fr/espagnol/sites/espagnol/IMG/pdf/guia_de_la_buena_esposa-2.pdf. Contiene el encabezado «Año 1953» y once consejos domésticos. Esto acredita que la copia circula y que ese texto está disponible; no acredita que sea un ejemplar original de la revista BUENHOGAR ni una edición histórica de 1953.
+## Consigna y rúbrica institucional
+Se inspeccionó la actividad autenticada de Moodle de UNIACC, curso PSICOLOGIA SOCIAL - 388 - 487999, U1 «Comportamiento y género». Se recuperaron las instrucciones completas y los seis criterios de la rúbrica, con ponderaciones 1,75 + 1,75 + 1,75 + 7 + 7 + 7 = 26,25 puntos. La transcripción y los criterios están en `sources/assignment-and-rubric.md`.
 
-## Contraste de procedencia
-Maldita.es, con actualización de 23-08-2022, informa que las mismas imágenes y frases se emplearon en la secuencia de apertura de la telenovela mexicana *Las Aparicio*, estrenada en abril de 2010, y que no encontró la lista en los manuales de economía doméstica de la Sección Femenina consultados en la Biblioteca Nacional de España. URL: https://maldita.es/malditobulo/no-no-hay-pruebas-de-que-la-guia-de-la-buena-esposa-11-reglas-para-mantener-a-tu-marido-feliz-sea-un-manual-de-los-anos-50-de-la-falange-espanola-los-disenos-son-de-una-telenovela-mexicana-las/
+## Adjunto oficial de la actividad
+Se descargó desde el enlace de adjuntos de esa misma actividad el archivo exacto `Guia de la buena esposa.pdf`, conservado sin modificación en `sources/` y copiado a `deliverables/latest/` como referencia. Tiene 14 páginas y SHA-256 `ccb0979322fceba254e01c4eb5b5a8d5954326eaa0112c414ac635ff27626c5f`. El documento muestra «AÑO 1953», once reglas, un apartado «Extra» y una ilustración final. La consigna atribuye la pieza a BUENHOGAR; el archivo no contiene número de edición, fecha completa ni autoría individual. Por tanto, el ensayo analiza fielmente el documento proporcionado por UNIACC y conserva la atribución como atribución de la consigna, sin afirmar que se haya autenticado independientemente su procedencia editorial histórica.
 
-Por ello, el ensayo no afirma que BUENHOGAR publicara la pieza ni usa el artefacto como evidencia primaria de una fecha concreta. El análisis recae en el contenido, las prescripciones y los estereotipos representados.
+## Bibliografía del curso y apoyo académico
+El índice del apunte de clase enumera Baron y Byrne (2005), Moscovici (1991) y Rizo (2015). Se identifican los dos primeros en el ensayo; no se afirma haber consultado el PDF de Rizo. Moscovici se referencia como capítulo «Introducción: el campo de la psicología social», pp. 17–37, en *Psicología social I*. Las fuentes complementarias sobre aprendizaje observacional, esquemas de género, roles sociales, influencia, conformidad y obediencia se registran en `workspace/data/source-ledger.json`.
 
-## Fuentes académicas
-- Eagly y Steffen (1984): relación entre distribución de roles sociales y estereotipos de género.
-- Bandura (1977): aprendizaje por observación, modelado y consecuencias sociales.
-- Bem (1981): esquemas cognitivos de género.
-- Asch (1956): presión de una mayoría y conformidad.
-- Cialdini y Goldstein (2004): mecanismos de influencia, conformidad y cumplimiento.
-- Milgram (1963): obediencia a órdenes de autoridad en un contexto experimental.
-
-## Gaps
-- No se proporcionó el PDF original adjunto a la unidad.
-- No se proporcionó una copia o referencia verificable de la edición de BUENHOGAR alegada en las instrucciones.
-- No se proporcionó la rúbrica analítica con la distribución de los 26,25 puntos.
-- No hay datos de tiraje, lectura o recepción de la supuesta edición de BUENHOGAR; el ensayo no atribuye efectos causales empíricos al medio.
+## Límites
+No se dispone de datos de tiraje, recepción o efectos; el ensayo no afirma causalidad empírica ni cumplimiento universal. La fabricación y validación documental no garantizan una calificación ni sustituyen el juicio docente. La entrega a Moodle sigue siendo un acto separado.

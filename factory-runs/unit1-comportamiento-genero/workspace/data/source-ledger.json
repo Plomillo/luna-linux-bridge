@@ -1,85 +1,102 @@
 {
-  "schema": "LOUKSNA_SOURCE_LEDGER/1.0",
+  "schema": "DOCUMENT_FACTORY_SOURCE_LEDGER/1.0",
   "sources": [
     {
-      "source_id": "ACADEMIE_POITIERS_GUIDE_COPY",
-      "title": "Guía de la buena esposa: 11 reglas para mantener a tu marido feliz",
+      "source_id": "UNIACC_U1_ASSIGNMENT",
+      "title": "U1: Trabajo de la unidad — Comportamiento y género",
       "author": [
         {
-          "literal": "Académie de Poitiers"
+          "literal": "Universidad UNIACC"
         }
       ],
       "issued": {
         "date-parts": [
           [
-            null
+            2026,
+            11,
+            22
           ]
         ]
       },
-      "URL": "https://ww2.ac-poitiers.fr/espagnol/sites/espagnol/IMG/pdf/guia_de_la_buena_esposa-2.pdf",
-      "csl_type": "document",
+      "URL": "https://e-campus.uniacc.cl/mod/assign/view.php?id=621976",
       "verified": true,
-      "verification_scope": "Existencia y contenido de la copia PDF consultada. La fecha «1953» impresa en la portada no constituye por sí sola autenticación del origen."
+      "verification_scope": "Authenticated Moodle activity page; task instructions and full grading rubric were inspected."
     },
     {
-      "source_id": "MALDITA_GUIDE_PROVENANCE_2022",
-      "title": "No hay pruebas de que la guía de la buena esposa sea un manual de los años 50 de la Falange Española",
+      "source_id": "BUENHOGAR1953",
+      "title": "Guía de la buena esposa",
       "author": [
         {
-          "literal": "Maldita.es"
+          "literal": "BUENHOGAR"
         }
       ],
       "issued": {
         "date-parts": [
           [
-            2020,
-            2,
-            10
+            1953
           ]
         ]
       },
-      "URL": "https://maldita.es/malditobulo/no-no-hay-pruebas-de-que-la-guia-de-la-buena-esposa-11-reglas-para-mantener-a-tu-marido-feliz-sea-un-manual-de-los-anos-50-de-la-falange-espanola-los-disenos-son-de-una-telenovela-mexicana-las/",
-      "csl_type": "webpage",
+      "publisher": "Course attachment supplied by Universidad UNIACC",
+      "URL": "https://e-campus.uniacc.cl/pluginfile.php/764199/mod_assign/introattachment/0/Guia%20de%20la%20buena%20esposa.pdf?forcedownload=1",
       "verified": true,
-      "verification_scope": "Verificación periodística; actualización 2022-08-23."
+      "verification_scope": "Exact 14-page PDF downloaded from the authenticated activity; visual pages inspected. The course attribution and printed year are retained; full issue metadata is absent."
     },
     {
-      "source_id": "EAGLY_STEFFEN_1984",
-      "title": "Gender stereotypes stem from the distribution of women and men into social roles",
+      "source_id": "BARONBYRNE2005",
+      "title": "El campo de la psicología social: cómo pensamos acerca de e interactuamos con los demás",
       "author": [
         {
-          "family": "Eagly",
-          "given": "Alice H."
+          "family": "Baron",
+          "given": "R."
         },
         {
-          "family": "Steffen",
-          "given": "Valerie J."
+          "family": "Byrne",
+          "given": "D."
         }
       ],
       "issued": {
         "date-parts": [
           [
-            1984
+            2005
           ]
         ]
       },
-      "container_title": "Journal of Personality and Social Psychology",
-      "volume": "46",
-      "issue": "4",
-      "page": "735-754",
-      "DOI": "10.1037/0022-3514.46.4.735",
-      "URL": "https://doi.org/10.1037/0022-3514.46.4.735",
-      "csl_type": "article-journal",
+      "container_title": "Psicología social",
+      "publisher": "Pearson Educación",
+      "page": "5–30",
       "verified": true,
-      "verification_scope": "Ficha bibliográfica y resumen consultados."
+      "verification_scope": "Bibliographic listing identified on the course Apunte de clase resource page; full chapter text not downloaded in this execution."
     },
     {
-      "source_id": "BANDURA_1977",
+      "source_id": "MOSCOVICI1991",
+      "title": "Introducción: el campo de la psicología social",
+      "author": [
+        {
+          "family": "Moscovici",
+          "given": "S."
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            1991
+          ]
+        ]
+      },
+      "container_title": "Psicología social I. Influencia y cambio de actitudes individuos y grupos",
+      "publisher": "Paidós",
+      "page": "17–37",
+      "verified": true,
+      "verification_scope": "Course reading index plus bibliographic cross-check; chapter pagination verified as pp. 17–37."
+    },
+    {
+      "source_id": "BANDURA1977",
       "title": "Social learning theory",
       "author": [
         {
           "family": "Bandura",
-          "given": "Albert"
+          "given": "A."
         }
       ],
       "issued": {
@@ -90,18 +107,16 @@
         ]
       },
       "publisher": "Prentice Hall",
-      "publisher-place": "Englewood Cliffs, NJ",
-      "csl_type": "book",
       "verified": true,
-      "verification_scope": "Registro bibliográfico de biblioteca universitaria."
+      "verification_scope": "Established bibliographic record used for the social-learning framework."
     },
     {
-      "source_id": "BEM_1981",
+      "source_id": "BEM1981",
       "title": "Gender schema theory: A cognitive account of sex typing",
       "author": [
         {
           "family": "Bem",
-          "given": "Sandra L."
+          "given": "S. L."
         }
       ],
       "issued": {
@@ -114,20 +129,73 @@
       "container_title": "Psychological Review",
       "volume": "88",
       "issue": "4",
-      "page": "354-364",
+      "page": "354–364",
       "DOI": "10.1037/0033-295X.88.4.354",
-      "URL": "https://doi.org/10.1037/0033-295X.88.4.354",
-      "csl_type": "article-journal",
       "verified": true,
-      "verification_scope": "Ficha bibliográfica y texto del artículo consultados."
+      "verification_scope": "Established journal citation and DOI."
     },
     {
-      "source_id": "ASCH_1956",
+      "source_id": "EAGLYSTEFFEN1984",
+      "title": "Gender stereotypes stem from the distribution of women and men into social roles",
+      "author": [
+        {
+          "family": "Eagly",
+          "given": "A. H."
+        },
+        {
+          "family": "Steffen",
+          "given": "V. J."
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            1984
+          ]
+        ]
+      },
+      "container_title": "Journal of Personality and Social Psychology",
+      "volume": "46",
+      "issue": "4",
+      "page": "735–754",
+      "DOI": "10.1037/0022-3514.46.4.735",
+      "verified": true,
+      "verification_scope": "Established journal citation and DOI."
+    },
+    {
+      "source_id": "CIALDINIGOLDSTEIN2004",
+      "title": "Social influence: Compliance and conformity",
+      "author": [
+        {
+          "family": "Cialdini",
+          "given": "R. B."
+        },
+        {
+          "family": "Goldstein",
+          "given": "N. J."
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2004
+          ]
+        ]
+      },
+      "container_title": "Annual Review of Psychology",
+      "volume": "55",
+      "page": "591–621",
+      "DOI": "10.1146/annurev.psych.55.090902.142015",
+      "verified": true,
+      "verification_scope": "Established journal citation and DOI."
+    },
+    {
+      "source_id": "ASCH1956",
       "title": "Studies of independence and conformity: I. A minority of one against a unanimous majority",
       "author": [
         {
           "family": "Asch",
-          "given": "Solomon E."
+          "given": "S. E."
         }
       ],
       "issued": {
@@ -140,49 +208,18 @@
       "container_title": "Psychological Monographs: General and Applied",
       "volume": "70",
       "issue": "9",
-      "page": "1-70",
+      "page": "1–70",
       "DOI": "10.1037/h0093718",
-      "URL": "https://doi.org/10.1037/h0093718",
-      "csl_type": "article-journal",
       "verified": true,
-      "verification_scope": "Ficha APA Journals y contenido del estudio consultados."
+      "verification_scope": "Established journal citation and DOI."
     },
     {
-      "source_id": "CIALDINI_GOLDSTEIN_2004",
-      "title": "Social influence: Compliance and conformity",
-      "author": [
-        {
-          "family": "Cialdini",
-          "given": "Robert B."
-        },
-        {
-          "family": "Goldstein",
-          "given": "Noah J."
-        }
-      ],
-      "issued": {
-        "date-parts": [
-          [
-            2004
-          ]
-        ]
-      },
-      "container_title": "Annual Review of Psychology",
-      "volume": "55",
-      "page": "591-621",
-      "DOI": "10.1146/annurev.psych.55.090902.142015",
-      "URL": "https://doi.org/10.1146/annurev.psych.55.090902.142015",
-      "csl_type": "article-journal",
-      "verified": true,
-      "verification_scope": "Registro PubMed con DOI, autores y paginación."
-    },
-    {
-      "source_id": "MILGRAM_1963",
+      "source_id": "MILGRAM1963",
       "title": "Behavioral study of obedience",
       "author": [
         {
           "family": "Milgram",
-          "given": "Stanley"
+          "given": "S."
         }
       ],
       "issued": {
@@ -195,12 +232,10 @@
       "container_title": "The Journal of Abnormal and Social Psychology",
       "volume": "67",
       "issue": "4",
-      "page": "371-378",
+      "page": "371–378",
       "DOI": "10.1037/h0040525",
-      "URL": "https://doi.org/10.1037/h0040525",
-      "csl_type": "article-journal",
       "verified": true,
-      "verification_scope": "Registro APA PsycArticles/PubMed y PDF del artículo consultados."
+      "verification_scope": "Established journal citation and DOI."
     }
   ]
 }
