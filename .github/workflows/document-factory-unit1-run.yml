@@ -59,8 +59,8 @@ jobs:
           python3 document-factory/src/factory.py build "$RUN" "$PROFILE" --repo-root "$ROOT"
           python3 factory-runs/unit1-comportamiento-genero/build.py
           python3 factory-runs/unit1-comportamiento-genero/verify.py
-          cp "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/Trabajo1_DiegoIgnacioNorabuenaMiranda.docx" "$RUN/build/report.docx"
-          cp "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/Trabajo1_DiegoIgnacioNorabuenaMiranda.pdf" "$RUN/build/report.pdf"
+          cp "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/Trabajo1_DiegoIgnacioNorambuenaMiranda.docx" "$RUN/build/report.docx"
+          cp "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/Trabajo1_DiegoIgnacioNorambuenaMiranda.pdf" "$RUN/build/report.pdf"
           python3 document-factory/src/factory.py validate "$RUN" "$PROFILE" --repo-root "$ROOT"
           python3 - "$RUN/evidence/validation.json" <<'PY'
           import json,pathlib,sys

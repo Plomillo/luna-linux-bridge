@@ -65,3 +65,8 @@ La ejecución de GitHub Actions debe repetirse sobre este flujo corregido y veri
 - En el runner Ubuntu, LibreOffice produjo el estilo de sangría francesa con un identificador OOXML distinto al que expone la instalación local.
 - El verificador ya no depende de un `styleId` localizado; inspecciona las propiedades OOXML y exige que exista un estilo con `w:ind/@w:hanging=720`.
 - La comprobación sigue siendo estructural y no relaja el requisito APA de sangría francesa.
+
+
+### Corrección de referencia de archivo en el workflow
+- La ejecución `45091731863` completó la construcción y `verify.py` (seis páginas, formato y contenido PASS), pero se detuvo al copiar el DOCX por una diferencia tipográfica en el nombre del archivo (`Norabuena` frente al nombre de artefacto existente `Norambuena`).
+- Se alineó la ruta de origen con el nombre que realmente produce `build.py`; no afecta el contenido del documento ni su identidad en portada.
