@@ -109,7 +109,8 @@ def main() -> int:
     smoke = {"attempted": False}
     if weight_ok and os.environ.get("CAJITA_SMOKE", "1") == "1":
         runtime = package / "1. Cerebro" / "cerebro_180mb_runtime.py"
-        trace = evidence / "cerebro-openat.txt"
+        trace = (evidence / "cerebro-openat.txt").resolve()
+        trace.parent.mkdir(parents=True, exist_ok=True)
         proc = run(["strace", "-f", "-e", "trace=openat", "-o", str(trace), sys.executable, str(runtime), "--generate-test"], cwd=package, capture_output=True, timeout=int(os.environ.get("CAJITA_SMOKE_TIMEOUT", "2400")))
         opened = False
         if trace.is_file():
