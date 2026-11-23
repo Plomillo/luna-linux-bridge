@@ -2,7 +2,7 @@
   "schema": "UNIT1_DOCX_FORMATTING_EVIDENCE/1.0",
   "status": "APPLIED",
   "artifact": "report.docx",
-  "sha256": "5f1ff304234dc744f7ee5e360eb65b5620fbf76aec756e9d05d3ab21d7392e29",
+  "sha256": "f62e8a61f4618cc438326eb28fdd43f06c4dbc104bb4c339c7849d26090f3ae6",
   "font": "Arial",
   "body_size_pt": 12,
   "heading_size_pt": 16,

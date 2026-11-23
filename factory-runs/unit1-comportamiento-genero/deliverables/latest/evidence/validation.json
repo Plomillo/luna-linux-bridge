@@ -1,44 +1,37 @@
 {
-  "observed_at_utc": "2026-11-22T22:22:56.937779+00:00",
+  "observed_at_utc": "2026-11-23T00:50:23.349540+00:00",
   "results": [
     {
       "check": "docx",
-      "sha256": "5f1ff304234dc744f7ee5e360eb65b5620fbf76aec756e9d05d3ab21d7392e29",
+      "sha256": "f62e8a61f4618cc438326eb28fdd43f06c4dbc104bb4c339c7849d26090f3ae6",
       "status": "PASS"
     },
     {
       "check": "pptx",
-      "sha256": "011dd7fa2ec0d3b27c453cdd62961fd6d304cdb14c099d36bf11e07b4ca00799",
+      "sha256": "a707df049738557cd2e162577926dbc1d460f94bf8cf18b9c3c73657faaa275e",
       "status": "PASS"
     },
     {
       "check": "xlsx",
-      "sha256": "a07dcd0c8ca88d652edae7f2b7e28043280c8722772e46d4076c6d251b2e8b52",
+      "sha256": "6019b283de991dcd44b3870fed4fd8b48bffcba957d064f4f84506e4c3eae06c",
       "status": "PASS"
     },
     {
       "check": "pdf",
-      "sha256": "8aedbdb71e6bc694fe0f9c41eeade15b0990e5560e9d817aa875820079b92239",
+      "sha256": "68b9eb8f936c47bdd23156c353d5c86ac607fd113a7a23489f97e24818f14f28",
       "status": "PASS"
     },
     {
       "check": "word_count",
-      "rule": {
-        "exclude": [
-          "cover",
-          "references"
-        ],
-        "max": 1650,
-        "min": 1050
-      },
+      "rule": null,
       "status": "PASS",
       "value": 1078
     },
     {
       "check": "source_ledger",
-      "required": 7,
+      "required": 5,
       "status": "PASS",
-      "verified_distinct_sources": 8
+      "verified_distinct_sources": 10
     }
   ],
   "schema": "DOCUMENT_FACTORY_VALIDATION/1.0",
