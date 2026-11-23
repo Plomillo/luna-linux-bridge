@@ -1,0 +1,130 @@
+name: Document Factory — Unit 1 Comportamiento y género
+
+on:
+  push:
+    branches:
+      - candidate/document-factory-v1-unit2-20261013
+    paths:
+      - factory-runs/unit1-comportamiento-genero/instructions.md
+      - factory-runs/unit1-comportamiento-genero/profile.json
+      - factory-runs/unit1-comportamiento-genero/workspace/source/report.md
+      - factory-runs/unit1-comportamiento-genero/workspace/source/slides.md
+      - factory-runs/unit1-comportamiento-genero/workspace/data/sheets.json
+      - factory-runs/unit1-comportamiento-genero/workspace/data/source-ledger.json
+      - factory-runs/unit1-comportamiento-genero/format_docx.py
+      - .github/workflows/document-factory-unit1-run.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: document-factory-unit1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@v4
+        with:
+          ref: candidate/document-factory-v1-unit2-20261013
+          fetch-depth: 0
+
+      - name: Install document toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc libreoffice-writer python3-docx poppler-utils
+
+      - name: Validate profile and build with Document Factory
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$GITHUB_WORKSPACE"
+          RUN="$RUNNER_TEMP/louksna-unit1"
+          PROFILE="$ROOT/factory-runs/unit1-comportamiento-genero/profile.json"
+          SRC="$ROOT/factory-runs/unit1-comportamiento-genero/workspace"
+          mkdir -p "$RUN"
+          cp -a "$SRC/." "$RUN/"
+          python3 document-factory/src/factory.py validate-profile "$PROFILE" --repo-root "$ROOT"
+          python3 document-factory/src/factory.py build "$RUN" "$PROFILE" --repo-root "$ROOT"
+          python3 factory-runs/unit1-comportamiento-genero/format_docx.py "$RUN/build/report.docx" "$RUN/evidence/formatting.json"
+          rm -f "$RUN/build/report.pdf"
+          libreoffice --headless --convert-to pdf --outdir "$RUN/build" "$RUN/build/report.docx"
+          PAGES="$(pdfinfo "$RUN/build/report.pdf" | awk '/^Pages:/ {print $2}')"
+          echo "PDF_PAGE_COUNT=$PAGES"
+          pdftotext -layout "$RUN/build/report.pdf" "$RUN/build/report.txt"
+          BODY_PAGES="$(python3 - "$RUN/build/report.txt" <<'PY'
+          import pathlib,re,sys
+          raw=pathlib.Path(sys.argv[1]).read_text(encoding="utf-8",errors="replace")
+          pages=[re.sub(r"\s+"," ",x).strip() for x in raw.split("\f") if x.strip()]
+          required=["Introducción","Desarrollo: 1. Atributos y expectativas asociados a cada género","Desarrollo: 2. Causas sociales de las conductas asociadas a lo femenino y lo masculino","Desarrollo: 3. Influencia de los medios; 4. Conformidad y obediencia","Conclusión","Referencias"]
+          whole=" ".join(pages)
+          missing=[x for x in required if re.sub(r"\s+"," ",x) not in whole]
+          if missing: raise SystemExit("PDF_SECTION_TEXT_MISSING:"+",".join(missing))
+          def page_of(term):
+              target=re.sub(r"\s+"," ",term)
+              for i,p in enumerate(pages):
+                  if target in p: return i
+              raise SystemExit("PDF_SECTION_PAGE_MISSING:"+term)
+          intro=page_of("Introducción")
+          conclusion=page_of("Conclusión")
+          refs=page_of("Referencias")
+          body_pages=conclusion-intro+1
+          if intro!=1: raise SystemExit("COVER_PAGE_COUNT_INVALID:"+str(intro))
+          if body_pages!=4: raise SystemExit("BODY_PAGE_COUNT_INVALID:"+str(body_pages))
+          if refs<=conclusion: raise SystemExit("REFERENCES_NOT_AFTER_BODY")
+          print(body_pages)
+          PY
+          )"
+          test "$BODY_PAGES" = "4"
+          echo "BODY_PAGE_COUNT=$BODY_PAGES; REQUIRED_SECTIONS=PASS; COVER=1; REFERENCES=AFTER_BODY"
+          python3 document-factory/src/factory.py validate "$RUN" "$PROFILE" --repo-root "$ROOT"
+          python3 - "$RUN/evidence/validation.json" <<'PY'
+          import json,pathlib,sys
+          r=json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          failures=[x for x in r.get("results",[]) if x.get("status")!="PASS"]
+          if r.get("status")!="PASS": raise SystemExit("FIRST_ORDER_VALIDATION_FAILED:"+json.dumps(failures,ensure_ascii=False))
+          print("FIRST_ORDER_VALIDATION=PASS")
+          PY
+          python3 -B document-factory/src/factory.py self-audit "$RUN" "$PROFILE"
+          META_STATUS="$(python3 - "$RUN/evidence/self-audit.json" <<'PY'
+          import json,pathlib,sys
+          x=json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if x.get("status") not in ("PASS","PASS_WITH_ESCALATION"): raise SystemExit("METACOGNITIVE_SELF_AUDIT_HOLD:"+str(x.get("status")))
+          if x.get("g23_granted") or x.get("g24_granted") or x.get("certification_authority"): raise SystemExit("UNAUTHORIZED_CERTIFICATION_STATE")
+          print(x["status"])
+          PY
+          )"
+          python3 document-factory/src/factory.py freeze "$RUN"
+          mkdir -p "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/evidence"
+          cp "$RUN/build/report.docx" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/Trabajo1_DiegoIgnacioNorambuenaMiranda.docx"
+          cp "$RUN/build/report.pdf" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/Trabajo1_DiegoIgnacioNorambuenaMiranda.pdf"
+          cp "$RUN/evidence/"*.json "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/evidence/"
+          cp "$RUN/FROZEN_CANDIDATE.json" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/"
+          cp "$RUN/CANDIDATE_DIGEST.txt" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/"
+          cp "$RUN/source/report.md" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/report-source.md"
+          printf 'factory_status=BUILT_AND_VALIDATED\nfirst_order_validation=PASS\nmetacognitive_self_audit=%s\npdf_pages=%s\ng23=NOT_EXECUTED\ng24=NOT_EXECUTED\ncertification=NOT_GRANTED\n' "$META_STATUS" "$PAGES" > "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/STATUS.txt"
+
+      - name: Commit deliverables to the candidate branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add factory-runs/unit1-comportamiento-genero/deliverables/latest
+          if git diff --cached --quiet; then
+            echo "No deliverable changes."
+          else
+            git commit -m "docs(unit1): build comportamiento y genero essay"
+            git push origin HEAD:candidate/document-factory-v1-unit2-20261013
+          fi
+
+      - name: Upload immutable workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unidad1-comportamiento-genero-documentos
+          path: factory-runs/unit1-comportamiento-genero/deliverables/latest/
+          if-no-files-found: error
