@@ -296,8 +296,17 @@ def _apt_index_facts():
     return ok, facts
 
 
+def _portal_bins() -> bool:
+    portal = Path("/usr/bin/xdg-desktop-portal").is_file() or Path("/usr/libexec/xdg-desktop-portal").is_file()
+    kde_bin = Path("/usr/bin/xdg-desktop-portal-kde").is_file() or Path("/usr/libexec/xdg-desktop-portal-kde").is_file()
+    if not kde_bin:
+        lib = Path("/usr/lib")
+        kde_bin = lib.is_dir() and any(lib.glob("*/libexec/xdg-desktop-portal-kde"))
+    return portal and kde_bin
+
+
 def _portal_facts():
-    bins = Path("/usr/bin/xdg-desktop-portal").is_file() and Path("/usr/bin/xdg-desktop-portal-kde").is_file()
+    bins = _portal_bins()
     portal = kde = False
     proc = Path("/proc")
     for pid in proc.iterdir():
@@ -363,10 +372,16 @@ def c378(ctx):
     os.chown(script, user.pw_uid, user.pw_gid)
     os.chown(desktop, user.pw_uid, user.pw_gid)
     env = os.environ.copy()
+    path = env.get("PATH", "")
+    for extra in ("/usr/sbin", "/sbin", "/usr/bin", "/bin"):
+        if extra not in path.split(":"):
+            path = extra + ":" + path
+    env["PATH"] = path
     env["HOME"] = user.pw_dir
     env["USER"] = user.pw_name
     env["LOGNAME"] = user.pw_name
-    proc = subprocess.run(["runuser", "-u", user.pw_name, "--preserve-environment", "--", "gio", "launch", str(desktop)], env=env, capture_output=True, text=True, timeout=30)
+    runuser_bin = "/usr/sbin/runuser" if Path("/usr/sbin/runuser").is_file() else "runuser"
+    proc = subprocess.run([runuser_bin, "-u", user.pw_name, "--preserve-environment", "--", "gio", "launch", str(desktop)], env=env, capture_output=True, text=True, timeout=30)
     opened = False
     for _ in range(20):
         if stamp.is_file() and stamp.read_text().strip() == nonce:

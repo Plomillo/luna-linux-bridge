@@ -250,8 +250,13 @@ def e368(inp):
 
 
 def e377(_inp):
-    bins = Path("/usr/bin/xdg-desktop-portal").is_file() and Path("/usr/bin/xdg-desktop-portal-kde").is_file()
-    portal = kde = False
+    portal = Path("/usr/bin/xdg-desktop-portal").is_file() or Path("/usr/libexec/xdg-desktop-portal").is_file()
+    kde_bin = Path("/usr/bin/xdg-desktop-portal-kde").is_file() or Path("/usr/libexec/xdg-desktop-portal-kde").is_file()
+    if not kde_bin:
+        lib = Path("/usr/lib")
+        kde_bin = lib.is_dir() and any(lib.glob("*/libexec/xdg-desktop-portal-kde"))
+    bins = portal and kde_bin
+    portal_running = kde = False
     for pid in Path("/proc").iterdir():
         if not pid.name.isdigit():
             continue
@@ -262,8 +267,8 @@ def e377(_inp):
         if "xdg-desktop-portal-kde" in cmd:
             kde = True
         elif "xdg-desktop-portal" in cmd:
-            portal = True
-    ok = bins and portal and kde
+            portal_running = True
+    ok = bins and portal_running and kde
     return {"blocked": not ok, "probe": "xdg-portals", "running": ok}
 
 

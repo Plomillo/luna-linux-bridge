@@ -426,8 +426,8 @@ g24 = json.loads(g24_path.read_text()) if g24_path.is_file() else {"verdict": "C
 }, indent=2) + "\n")
 (root / "resumption-log.json").write_text(json.dumps({
     "reference_run": "45010622254",
-    "previous_validation_run": "45114379983",
-    "previous_failure": "Run 45114379983 installed the Android SDK, then SUB-045 reinstalled the immutable deb and wiped the repaired suite. The probe correctly refused that suite. SUB-033 failed because the 12G disk no longer had 3G free.",
+    "previous_validation_run": "45115875527",
+    "previous_failure": "Run 45115875527 passed 297, 298, 368 and 608. 377 required portal binaries under /usr/bin, but Debian runs them from libexec. 378 failed to exec runuser because the Plasma environment dropped /usr/sbin from PATH.",
     "this_executor": "validation/debian13/run.sh",
     "active_at_start": False,
 }, indent=2) + "\n")
@@ -444,12 +444,12 @@ root.mkdir(parents=True, exist_ok=True)
 def git(*args):
     return subprocess.run(["git", *args], capture_output=True, text=True).stdout.strip()
 state = {
-    "resumed_from_run": "45114379983",
+    "resumed_from_run": "45115875527",
     "reference_run": "45010622254",
     "reference_commit": "db77c2f27da8060f0362ac8f36cc8860de94c882",
     "head": git("rev-parse", "HEAD"),
     "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
-    "previous_failure": "run 45114379983 installed a real Android SDK and a repaired suite, then the deb reinstall restored the unconditional blockers and the 12G disk missed the 3G free check",
+    "previous_failure": "run 45115875527 left blockers 377 and 378 open after the repaired suite actually ran; 803 individual records remain absent",
     "historical_36_reexecuted": 0,
     "original_803_reexecuted": 0,
 }

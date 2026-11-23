@@ -156,17 +156,14 @@ def main() -> int:
         "head": head,
         "reference_commit": "db77c2f27da8060f0362ac8f36cc8860de94c882",
         "reference_run": "45010622254",
-        "previous_validation_run": "45114379983",
+        "previous_validation_run": "45115875527",
         "previous_validation_conclusion": "failure",
         "previous_open_failures": [
-            "CASE_SUB-033",
-            "CASE_SUB-051",
-            "CASE_SUB-052",
-            "CASE_SUB-053",
             "ORIGINAL_803_INDIVIDUAL_EVIDENCE_INCOMPLETE",
-            "BLOCKER_SUITE_NOT_REPAIRED"
+            "BLOCKER_377_BLOCKED",
+            "BLOCKER_378_ERROR"
         ],
-        "root_cause": "ANDROID_SDK_OK left under 3G free on the 12G disk, so SUB-033 failed. SUB-045 reinstalled the immutable deb after the suite overlay, so the later probe imported the unconditional blockers again.",
+        "root_cause": "Run 45115875527 cleared 297, 298, 368 and 608 inside the guest. 377 looked only for /usr/bin portal binaries while Debian runs them from libexec. 378 called runuser after Plasma replaced PATH and dropped /usr/sbin.",
         "active_run": None,
         "historical_36_reexecuted": 0,
         "original_803_reexecuted": 0,
