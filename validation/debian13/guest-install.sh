@@ -25,8 +25,10 @@ install_group() {
 install_group base sudo ca-certificates acl llvm python3 libgomp1 libstdc++6 libglib2.0-bin adduser
 install_group audio pipewire pipewire-pulse wireplumber
 install_group plasma plasma-desktop kwin-wayland sddm xdg-desktop-portal xdg-desktop-portal-kde mesa-utils libgl1-mesa-dri dbus-user-session xwayland libpam-systemd
-if [ -x /var/tmp/android-sdk.sh ]; then
+if [ -f /var/tmp/android-sdk.sh ]; then
   bash /var/tmp/android-sdk.sh || echo ANDROID_SDK_FAIL
+else
+  echo ANDROID_SDK_ABSENT
 fi
 udevadm settle || true
 for group in sudo audio video render netdev systemd-journal adm; do

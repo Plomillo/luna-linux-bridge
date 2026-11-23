@@ -394,8 +394,8 @@ g24 = json.loads(g24_path.read_text()) if g24_path.is_file() else {"verdict": "C
 }, indent=2) + "\n")
 (root / "resumption-log.json").write_text(json.dumps({
     "reference_run": "45010622254",
-    "previous_validation_run": "45082647710",
-    "previous_failure": "QEMU 8.2 rejected chardev socket parameter client=on",
+    "previous_validation_run": "45111535583",
+    "previous_failure": "Guest probes imported the immutable installer suite. Cases 297, 298, 368, 377, 378 and 608 stayed the unconditional BLOCKED returns from db77c2f. The suite overlay was not verified, and android-sdk.sh was skipped because it was not executable.",
     "this_executor": "validation/debian13/run.sh",
     "active_at_start": False,
 }, indent=2) + "\n")
@@ -412,12 +412,12 @@ root.mkdir(parents=True, exist_ok=True)
 def git(*args):
     return subprocess.run(["git", *args], capture_output=True, text=True).stdout.strip()
 state = {
-    "resumed_from_run": "45082647710",
+    "resumed_from_run": "45111535583",
     "reference_run": "45010622254",
     "reference_commit": "db77c2f27da8060f0362ac8f36cc8860de94c882",
     "head": git("rev-parse", "HEAD"),
     "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
-    "previous_failure": "QEMU 8.2 rejected chardev socket parameter client=on, so the virtual machine never started and SSH timed out",
+    "previous_failure": "run 45111535583 proved Debian 13 KDE Wayland audio and 53/53 substitutes, then G23 stayed FAIL because the guest executed the packaged unconditional blockers and ORIGINAL_803 individual evidence is still absent",
     "historical_36_reexecuted": 0,
     "original_803_reexecuted": 0,
 }
@@ -459,7 +459,7 @@ PY
     louksna@127.0.0.1:/var/tmp/
   guest "cp /var/tmp/agent.py /var/tmp/luna-agent.py"
   scp "${SSH_BASE[@]}" -r -P 2222 \
-    "$ROOT/louksna/mra_suite" louksna@127.0.0.1:/var/tmp/mra_suite_src
+    "$ROOT/louksna/mra_suite" louksna@127.0.0.1:/var/tmp/
   guest "sudo bash /var/tmp/guest-install.sh" | tee "$EVIDENCE/vm/guest-install.stdout" || FINAL=2
   guest "sudo cp /var/log/louksna-guest-install.log /var/tmp/guest-install.log || true"
   scp "${SSH_BASE[@]}" -P 2222 \
@@ -510,7 +510,34 @@ if chosen:
 Path("evidence/vm/audio-playback.json").write_text(json.dumps(record, indent=2) + "\n")
 print(json.dumps(record))
 PY
-  guest "sudo rm -rf /usr/lib/louksna/mra_suite/__pycache__ /opt/louksna-sh/usr/lib/louksna/mra_suite/__pycache__; sudo mkdir -p /usr/lib/louksna/mra_suite /opt/louksna-sh/usr/lib/louksna/mra_suite && sudo cp /var/tmp/mra_suite_src/*.py /usr/lib/louksna/mra_suite/ && sudo cp /var/tmp/mra_suite_src/*.py /opt/louksna-sh/usr/lib/louksna/mra_suite/" || FINAL=2
+  if ! guest bash -s << 'EOS' | tee "$EVIDENCE/vm/suite-overlay.txt"
+set -u
+src=""
+for candidate in /var/tmp/mra_suite /var/tmp/mra_suite_src /var/tmp/mra_suite_src/mra_suite; do
+  if [ -f "$candidate/os_w.py" ]; then
+    src=$candidate
+    break
+  fi
+done
+if [ -z "$src" ]; then
+  echo OVERLAY_SOURCE_ABSENT
+  find /var/tmp -name os_w.py -maxdepth 3 || true
+  exit 1
+fi
+if ! grep -q '_apt_index_facts' "$src/os_w.py"; then
+  echo OVERLAY_SOURCE_STALE "$src"
+  exit 1
+fi
+sudo rm -rf /usr/lib/louksna/mra_suite/__pycache__ /opt/louksna-sh/usr/lib/louksna/mra_suite/__pycache__
+sudo mkdir -p /usr/lib/louksna/mra_suite /opt/louksna-sh/usr/lib/louksna/mra_suite
+sudo cp "$src"/*.py /usr/lib/louksna/mra_suite/
+sudo cp "$src"/*.py /opt/louksna-sh/usr/lib/louksna/mra_suite/
+sudo python3 -c 'import sys; sys.path.insert(0, "/usr/lib/louksna/mra_suite"); import hyp_w, os_w, part2b_w; assert hasattr(os_w, "_apt_index_facts"), os_w.__file__; assert hasattr(part2b_w, "_graphical_facts"), part2b_w.__file__; assert hasattr(hyp_w, "_kde_wayland"), hyp_w.__file__; print("OVERLAY_IMPORT_OK", os_w.__file__)'
+EOS
+  then
+    echo OVERLAY_FAIL | tee -a "$EVIDENCE/vm/suite-overlay.txt"
+    FINAL=2
+  fi
   guest "sudo python3 /var/tmp/as_session.py id -u; sudo python3 /var/tmp/as_session.py whoami" | tee "$EVIDENCE/luna/session-identity.txt" || FINAL=2
   python3 - << 'PY'
 import json
@@ -545,7 +572,12 @@ reg["SUBSTITUTE_53_CERTIFIED"] = 0
 reg["not_originals"] = True
 reg_path.write_text(json.dumps(reg, indent=2) + "\n")
 PY
-  guest "sudo python3 /var/tmp/probe_original.py" | tee "$EVIDENCE/blockers/probe-stdout.txt" || true
+  guest "sudo python3 /var/tmp/as_session.py systemctl --user start xdg-desktop-portal.service xdg-desktop-portal-kde.service" | tee "$EVIDENCE/vm/portals-start.txt" || echo PORTAL_START_NONZERO | tee -a "$EVIDENCE/vm/portals-start.txt"
+  guest "ps -eo args | grep -E 'xdg-desktop-portal|kwin_wayland|plasmashell' | grep -v grep || true" | tee "$EVIDENCE/vm/session-processes.txt" || true
+  if ! guest "sudo python3 /var/tmp/probe_original.py" | tee "$EVIDENCE/blockers/probe-stdout.txt"; then
+    echo PROBE_FAIL | tee -a "$EVIDENCE/blockers/probe-stdout.txt"
+    FINAL=2
+  fi
   guest "sudo cat /var/tmp/blocker-register.json" > "$EVIDENCE/blockers/guest-blocker-register.json" || true
   python3 - << 'PY'
 import json

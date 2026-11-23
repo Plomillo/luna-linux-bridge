@@ -352,13 +352,16 @@ def c378(ctx):
     script = Path("/var/tmp") / f"louksna-c378-{nonce}.sh"
     script.write_text("#!/bin/sh\necho %s > %s\n" % (nonce, stamp))
     script.chmod(0o755)
-    appdir = Path(user.pw_dir) / ".local" / "share" / "applications"
+    local = Path(user.pw_dir) / ".local"
+    share = local / "share"
+    appdir = share / "applications"
     appdir.mkdir(parents=True, exist_ok=True)
+    for path in (local, share, appdir):
+        os.chown(path, user.pw_uid, user.pw_gid)
     desktop = appdir / f"louksna-c378-{nonce}.desktop"
     desktop.write_text("[Desktop Entry]\nType=Application\nName=LouksnaC378\nExec=%s\nTerminal=false\n" % script)
     os.chown(script, user.pw_uid, user.pw_gid)
     os.chown(desktop, user.pw_uid, user.pw_gid)
-    os.chown(appdir, user.pw_uid, user.pw_gid)
     env = os.environ.copy()
     env["HOME"] = user.pw_dir
     env["USER"] = user.pw_name
