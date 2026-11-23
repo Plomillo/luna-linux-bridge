@@ -85,8 +85,12 @@ def main():
         align = body_style.find("w:pPr/w:jc", ns)
         assert line is not None and line.attrib.get("{%s}line" % ns["w"]) == "360", "ONE_AND_HALF_LINE_SPACING_MISSING"
         assert align is not None and align.attrib.get("{%s}val" % ns["w"]) == "both", "BODY_NOT_JUSTIFIED"
-        refs = style_rows["Cuerpodetextoreference"].find("w:pPr/w:ind", ns)
-        assert refs is not None and refs.attrib.get("{%s}hanging" % ns["w"]) == "720", "APA_HANGING_INDENT_MISSING"
+        hanging_styles = []
+        for style_id, row in style_rows.items():
+            ind = row.find("w:pPr/w:ind", ns)
+            if ind is not None and ind.attrib.get("{%s}hanging" % ns["w"]) == "720":
+                hanging_styles.append(style_id)
+        assert hanging_styles, "APA_HANGING_INDENT_MISSING"
         margins = re.findall(r'<w:pgMar[^>]*/>', xml)
         assert margins and all(str(x) in margins[0] for x in ['w:top="1417"','w:bottom="1417"','w:left="1417"','w:right="1417"']), "MARGINS_NOT_2_5CM"
     result = {

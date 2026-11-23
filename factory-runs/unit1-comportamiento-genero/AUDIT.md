@@ -59,3 +59,9 @@ El `AUDIT.md` previo y los metadatos de congelación del candidato de ocho pági
 - G23/G24 no se ejecutaron; certificación académica no concedida; envío a Moodle pendiente.
 
 La ejecución de GitHub Actions debe repetirse sobre este flujo corregido y verificarse antes de declarar la automatización remota conforme.
+
+
+### Ajuste de portabilidad del verificador DOCX
+- En el runner Ubuntu, LibreOffice produjo el estilo de sangría francesa con un identificador OOXML distinto al que expone la instalación local.
+- El verificador ya no depende de un `styleId` localizado; inspecciona las propiedades OOXML y exige que exista un estilo con `w:ind/@w:hanging=720`.
+- La comprobación sigue siendo estructural y no relaja el requisito APA de sangría francesa.
