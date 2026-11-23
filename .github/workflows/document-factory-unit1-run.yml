@@ -12,6 +12,10 @@ on:
       - factory-runs/unit1-comportamiento-genero/workspace/data/sheets.json
       - factory-runs/unit1-comportamiento-genero/workspace/data/source-ledger.json
       - factory-runs/unit1-comportamiento-genero/format_docx.py
+      - document-factory/src/factory.py
+      - document-factory/src/runtime.py
+      - document-factory/src/selftest.py
+      - document-factory/profiles/profile.schema.json
       - .github/workflows/document-factory-unit1-run.yml
   workflow_dispatch:
 

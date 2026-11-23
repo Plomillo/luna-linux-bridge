@@ -24,6 +24,20 @@ def main():
     assert (REPO/data["raw_instruction_ref"]).is_file()
     passed.append("CURRENT_PROFILE_EXACT_CONTRACT")
 
+    unit1_profile=REPO/"factory-runs"/"unit1-comportamiento-genero"/"profile.json"
+    unit1_data,unit1_failures=validate_profile(unit1_profile,REPO)
+    assert not unit1_failures,unit1_failures
+    for required_stage in ("BUILD_DOCX","BUILD_PPTX","BUILD_PDF"):
+        assert required_stage in unit1_data["runtime_policy"]["stages"],required_stage
+    with tempfile.TemporaryDirectory() as td:
+        bad=pathlib.Path(td)/"unit1-missing-build-stage.json"
+        invalid=json.loads(json.dumps(unit1_data))
+        invalid["runtime_policy"]["stages"].pop("BUILD_DOCX")
+        bad.write_text(json.dumps(invalid),encoding="utf-8")
+        _,errors=validate_profile(bad)
+        assert "MISSING_REQUIRED_STAGE:BUILD_DOCX" in errors,errors
+    passed.append("UNIT1_PROFILE_BUILD_STAGE_CONTRACT_FAIL_CLOSED")
+
     with tempfile.TemporaryDirectory() as td:
         t=pathlib.Path(td)/"bad-profile.json"
         bad=json.loads(json.dumps(data))

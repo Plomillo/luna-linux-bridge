@@ -25,10 +25,18 @@ def validate_profile(path,repo_root=None):
     rp=data.get("runtime_policy") or {}
     if rp.get("heartbeat_interval_seconds")!=1:
         failures.append("HEARTBEAT_INTERVAL_NOT_ONE_SECOND")
-    for name,stage in (rp.get("stages") or {}).items():
-        if not isinstance(stage.get("timeout_seconds"),int) or stage["timeout_seconds"]<=0:
+    stage_map=rp.get("stages") or {}
+    required_stages=("BUILD_DOCX","BUILD_PPTX","BUILD_PDF")
+    for name in required_stages:
+        if name not in stage_map:
+            failures.append("MISSING_REQUIRED_STAGE:"+name)
+    for name,stage in stage_map.items():
+        if not isinstance(stage,dict):
+            failures.append("INVALID_STAGE_DEFINITION:"+name)
+            continue
+        if not isinstance(stage.get("timeout_seconds"),int) or isinstance(stage.get("timeout_seconds"),bool) or stage["timeout_seconds"]<=0:
             failures.append("INVALID_TIMEOUT:"+name)
-        if not isinstance(stage.get("max_attempts"),int) or stage["max_attempts"]<1:
+        if not isinstance(stage.get("max_attempts"),int) or isinstance(stage.get("max_attempts"),bool) or stage["max_attempts"]<1:
             failures.append("INVALID_MAX_ATTEMPTS:"+name)
     if repo_root:
         raw=pathlib.Path(repo_root)/str(data.get("raw_instruction_ref",""))
