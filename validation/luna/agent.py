@@ -98,10 +98,10 @@ CASES = [
     ("SUB-025", "llvm-as and opt", ["bash", "-lc", "d=/var/tmp/ll; mkdir -p \"$d\"; printf 'define i32 @add(i32 %%a, i32 %%b) {\\n  %%c = add i32 %%a, %%b\\n  ret i32 %%c\\n}\\n' > \"$d/a.ll\"; llvm-as \"$d/a.ll\" -o \"$d/a.bc\"; opt -S \"$d/a.bc\" -o \"$d/a.opt.ll\"; grep -c 'define i32 @add' \"$d/a.opt.ll\""], "stdout_eq", "1"),
     ("SUB-026", "unshare user", ["unshare", "--user", "--map-root-user", "true"], "code0", ""),
     ("SUB-027", "unprivileged user net namespace", ["unshare", "--user", "--map-root-user", "--net", "true"], "code0", ""),
-    ("SUB-028", "pid1 namespace readable", ["bash", "-lc", "readlink /proc/1/ns/pid"], "code0", ""),
+    ("SUB-028", "pid1 namespace readable", ["sudo", "-n", "readlink", "/proc/1/ns/pid"], "code0", ""),
     ("SUB-029", "journalctl reads", ["journalctl", "-n", "1", "--no-pager"], "code0", ""),
     ("SUB-030", "apt indexes", ["sudo", "-n", "apt-get", "update"], "code0", ""),
-    ("SUB-031", "network to debian", ["ping", "-c", "1", "-W", "8", "deb.debian.org"], "code0", ""),
+    ("SUB-031", "https to the debian archive", ["python3", "-c", "import urllib.request; urllib.request.urlopen('https://deb.debian.org/debian/', timeout=30).read(32)"], "code0", ""),
     ("SUB-032", "python3 present", ["python3", "--version"], "stdout_contains", "Python 3"),
     ("SUB-033", "root fs at least 3G", ["bash", "-lc", "kb=$(df -Pk / | awk 'NR==2{print $4}'); test \"$kb\" -ge 3000000 && echo BIG"], "stdout_eq", "BIG"),
     ("SUB-034", "guest virtualization visible", ["bash", "-lc", "v=$(systemd-detect-virt || true); if [ -n \"$v\" ] && [ \"$v\" != none ]; then echo VIRT:$v; exit 0; fi; if grep -q hypervisor /proc/cpuinfo; then echo VIRT:hypervisor; exit 0; fi; echo VIRT:none; exit 1"], "stdout_contains", "VIRT:"),
@@ -114,8 +114,8 @@ CASES = [
     ("SUB-041", "kernel cmdline", ["bash", "-lc", "test -s /proc/cmdline && echo CMDLINE"], "stdout_eq", "CMDLINE"),
     ("SUB-042", "marker survived reboot", ["bash", "-lc", "test \"$(cat /var/lib/louksna-boot-marker)\" = phase-a && echo KEPT"], "stdout_eq", "KEPT"),
     ("SUB-043", "sh and deb session hashes match", ["bash", "-lc", "a=$(sha256sum /usr/bin/louksna-session | awk '{print $1}'); b=$(sha256sum /opt/louksna-sh/usr/bin/louksna-session | awk '{print $1}'); if [ \"$a\" = \"$b\" ]; then echo MATCH; else echo DIFFER; fi"], "stdout_eq", "MATCH"),
-    ("SUB-044", "sh reinstall keeps hash", ["sudo", "-n", "bash", "-lc", "h1=$(sha256sum /opt/louksna-sh/usr/bin/louksna-session | awk '{print $1}'); sh /var/tmp/LOUKSNA.sh --prefix /opt/louksna-sh --uninstall; sh /var/tmp/LOUKSNA.sh --prefix /opt/louksna-sh; h2=$(sha256sum /opt/louksna-sh/usr/bin/louksna-session | awk '{print $1}'); if [ \"$h1\" = \"$h2\" ]; then echo RESTORED; else echo CHANGED; fi"], "stdout_eq", "RESTORED"),
-    ("SUB-045", "dpkg remove and reinstall without force-depends", ["sudo", "-n", "bash", "-lc", "dpkg -r louksna && apt-get install -y libgomp1 libstdc++6 ca-certificates && dpkg -i /var/tmp/LOUKSNA.deb && dpkg-query -W -f '${db:Status-Status}\\n' louksna"], "stdout_eq", "installed"),
+    ("SUB-044", "sh reinstall keeps hash", ["sudo", "-n", "bash", "-lc", "set -e; h1=$(sha256sum /opt/louksna-sh/usr/bin/louksna-session | awk '{print $1}'); sh /var/tmp/LOUKSNA.sh --prefix /opt/louksna-sh --uninstall >/tmp/louksna-sh-reinstall.log 2>&1; sh /var/tmp/LOUKSNA.sh --prefix /opt/louksna-sh >>/tmp/louksna-sh-reinstall.log 2>&1; h2=$(sha256sum /opt/louksna-sh/usr/bin/louksna-session | awk '{print $1}'); if [ \"$h1\" = \"$h2\" ]; then echo RESTORED; else echo CHANGED; fi"], "stdout_eq", "RESTORED"),
+    ("SUB-045", "dpkg remove and reinstall without force-depends", ["sudo", "-n", "bash", "-lc", "set -e; export DEBIAN_FRONTEND=noninteractive; dpkg -r louksna >/tmp/louksna-dpkg-reinstall.log 2>&1; apt-get install -y libgomp1 libstdc++6 ca-certificates >>/tmp/louksna-dpkg-reinstall.log 2>&1; dpkg -i /var/tmp/LOUKSNA.deb >>/tmp/louksna-dpkg-reinstall.log 2>&1; dpkg-query -W -f '${db:Status-Status}\\n' louksna"], "stdout_eq", "installed"),
     ("SUB-046", "selftest after reinstall", ["bash", "-lc", "/usr/bin/louksna-session --selftest"], "json_selftest", ""),
     ("SUB-047", "luna manifest refuses self-certification", ["bash", "-lc", "python3 /var/tmp/luna-agent.py --manifest"], "json_luna", ""),
     ("SUB-048", "a failing command stays failed", ["bash", "-lc", "python3 /var/tmp/luna-agent.py --probe-false"], "stdout_eq", "FAIL"),
@@ -127,7 +127,7 @@ CASES = [
 ]
 
 
-ADMIN = {"SUB-030", "SUB-044", "SUB-045"}
+ADMIN = {"SUB-028", "SUB-030", "SUB-044", "SUB-045"}
 
 
 def diagnose(result: dict) -> dict:

@@ -77,7 +77,8 @@ def _run_one(n: int) -> dict:
 
 def main() -> int:
     os.environ.update(plasma_env())
-    out = Path(os.environ.get("LOUKSNA_PROBE_OUT", ""))
+    raw_out = os.environ.get("LOUKSNA_PROBE_OUT", "").strip()
+    out = Path(raw_out) if raw_out else None
     if len(sys.argv) < 2:
         rows = [run_one(n) for n in OPEN]
         if out:

@@ -181,7 +181,7 @@
   },
   {
     "id": "SUB-031",
-    "title": "network to debian",
+    "title": "https to the debian archive",
     "expect": "code0",
     "needle": ""
   },
