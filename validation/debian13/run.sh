@@ -133,7 +133,7 @@ boot_vm() {
   local image_sha
   image_sha=$(awk -v name="$image" '$2==name || $2==("*" name) {print $1}' "$sums")
   qemu-img info "$WORKDIR/$image" > "$EVIDENCE/vm/image-info.txt"
-  qemu-img resize "$WORKDIR/$image" 12G
+  qemu-img resize "$WORKDIR/$image" 20G
   ssh-keygen -t ed25519 -f "$WORKDIR/vmkey" -N "" -q
   local pub
   pub=$(cat "$WORKDIR/vmkey.pub")
@@ -206,7 +206,7 @@ data["image_sha512"] = "$image_sha"
 data["image_reason"] = "official debian-13-nocloud. systemd-firstboot is masked in the image before boot."
 data["memory_mb"] = 6144
 data["smp"] = 4
-data["virtual_disk"] = "12G sparse"
+data["virtual_disk"] = "20G sparse"
 data["audio_backend"] = "$audio_backend"
 json.dump(data, open(p, "w"), indent=2)
 PY
@@ -369,6 +369,38 @@ guest() {
   ssh "${SSH_BASE[@]}" -p 2222 louksna@127.0.0.1 "$@"
 }
 
+overlay_suite() {
+  if ! guest bash -s << 'EOS' | tee "$EVIDENCE/vm/suite-overlay.txt"
+set -u
+src=""
+for candidate in /var/tmp/mra_suite /var/tmp/mra_suite_src /var/tmp/mra_suite_src/mra_suite; do
+  if [ -f "$candidate/os_w.py" ]; then
+    src=$candidate
+    break
+  fi
+done
+if [ -z "$src" ]; then
+  echo OVERLAY_SOURCE_ABSENT
+  find /var/tmp -name os_w.py -maxdepth 3 || true
+  exit 1
+fi
+if ! grep -q '_apt_index_facts' "$src/os_w.py"; then
+  echo OVERLAY_SOURCE_STALE "$src"
+  exit 1
+fi
+sudo rm -rf /usr/lib/louksna/mra_suite/__pycache__ /opt/louksna-sh/usr/lib/louksna/mra_suite/__pycache__
+sudo mkdir -p /usr/lib/louksna/mra_suite /opt/louksna-sh/usr/lib/louksna/mra_suite
+sudo cp "$src"/*.py /usr/lib/louksna/mra_suite/
+sudo cp "$src"/*.py /opt/louksna-sh/usr/lib/louksna/mra_suite/
+sudo python3 -c 'import sys; sys.path.insert(0, "/usr/lib/louksna/mra_suite"); import hyp_w, os_w, part2b_w; assert hasattr(os_w, "_apt_index_facts"), os_w.__file__; assert hasattr(part2b_w, "_graphical_facts"), part2b_w.__file__; assert hasattr(hyp_w, "_kde_wayland"), hyp_w.__file__; print("OVERLAY_IMPORT_OK", os_w.__file__)'
+EOS
+  then
+    echo OVERLAY_FAIL | tee -a "$EVIDENCE/vm/suite-overlay.txt"
+    FINAL=2
+    return 1
+  fi
+}
+
 gates() {
   log G23
   python3 validation/debian13/g23_check.py "$EVIDENCE" | tee "$EVIDENCE/certification/g23-stdout.txt" || true
@@ -394,8 +426,8 @@ g24 = json.loads(g24_path.read_text()) if g24_path.is_file() else {"verdict": "C
 }, indent=2) + "\n")
 (root / "resumption-log.json").write_text(json.dumps({
     "reference_run": "45010622254",
-    "previous_validation_run": "45111535583",
-    "previous_failure": "Guest probes imported the immutable installer suite. Cases 297, 298, 368, 377, 378 and 608 stayed the unconditional BLOCKED returns from db77c2f. The suite overlay was not verified, and android-sdk.sh was skipped because it was not executable.",
+    "previous_validation_run": "45114379983",
+    "previous_failure": "Run 45114379983 installed the Android SDK, then SUB-045 reinstalled the immutable deb and wiped the repaired suite. The probe correctly refused that suite. SUB-033 failed because the 12G disk no longer had 3G free.",
     "this_executor": "validation/debian13/run.sh",
     "active_at_start": False,
 }, indent=2) + "\n")
@@ -412,12 +444,12 @@ root.mkdir(parents=True, exist_ok=True)
 def git(*args):
     return subprocess.run(["git", *args], capture_output=True, text=True).stdout.strip()
 state = {
-    "resumed_from_run": "45111535583",
+    "resumed_from_run": "45114379983",
     "reference_run": "45010622254",
     "reference_commit": "db77c2f27da8060f0362ac8f36cc8860de94c882",
     "head": git("rev-parse", "HEAD"),
     "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
-    "previous_failure": "run 45111535583 proved Debian 13 KDE Wayland audio and 53/53 substitutes, then G23 stayed FAIL because the guest executed the packaged unconditional blockers and ORIGINAL_803 individual evidence is still absent",
+    "previous_failure": "run 45114379983 installed a real Android SDK and a repaired suite, then the deb reinstall restored the unconditional blockers and the 12G disk missed the 3G free check",
     "historical_36_reexecuted": 0,
     "original_803_reexecuted": 0,
 }
@@ -510,34 +542,6 @@ if chosen:
 Path("evidence/vm/audio-playback.json").write_text(json.dumps(record, indent=2) + "\n")
 print(json.dumps(record))
 PY
-  if ! guest bash -s << 'EOS' | tee "$EVIDENCE/vm/suite-overlay.txt"
-set -u
-src=""
-for candidate in /var/tmp/mra_suite /var/tmp/mra_suite_src /var/tmp/mra_suite_src/mra_suite; do
-  if [ -f "$candidate/os_w.py" ]; then
-    src=$candidate
-    break
-  fi
-done
-if [ -z "$src" ]; then
-  echo OVERLAY_SOURCE_ABSENT
-  find /var/tmp -name os_w.py -maxdepth 3 || true
-  exit 1
-fi
-if ! grep -q '_apt_index_facts' "$src/os_w.py"; then
-  echo OVERLAY_SOURCE_STALE "$src"
-  exit 1
-fi
-sudo rm -rf /usr/lib/louksna/mra_suite/__pycache__ /opt/louksna-sh/usr/lib/louksna/mra_suite/__pycache__
-sudo mkdir -p /usr/lib/louksna/mra_suite /opt/louksna-sh/usr/lib/louksna/mra_suite
-sudo cp "$src"/*.py /usr/lib/louksna/mra_suite/
-sudo cp "$src"/*.py /opt/louksna-sh/usr/lib/louksna/mra_suite/
-sudo python3 -c 'import sys; sys.path.insert(0, "/usr/lib/louksna/mra_suite"); import hyp_w, os_w, part2b_w; assert hasattr(os_w, "_apt_index_facts"), os_w.__file__; assert hasattr(part2b_w, "_graphical_facts"), part2b_w.__file__; assert hasattr(hyp_w, "_kde_wayland"), hyp_w.__file__; print("OVERLAY_IMPORT_OK", os_w.__file__)'
-EOS
-  then
-    echo OVERLAY_FAIL | tee -a "$EVIDENCE/vm/suite-overlay.txt"
-    FINAL=2
-  fi
   guest "sudo python3 /var/tmp/as_session.py id -u; sudo python3 /var/tmp/as_session.py whoami" | tee "$EVIDENCE/luna/session-identity.txt" || FINAL=2
   python3 - << 'PY'
 import json
@@ -572,6 +576,32 @@ reg["SUBSTITUTE_53_CERTIFIED"] = 0
 reg["not_originals"] = True
 reg_path.write_text(json.dumps(reg, indent=2) + "\n")
 PY
+  if [ -f "$EVIDENCE/artifacts/derived/LOUKSNA-luna-derived.deb" ]; then
+    scp "${SSH_BASE[@]}" -P 2222 \
+      "$EVIDENCE/artifacts/derived/LOUKSNA-luna-derived.deb" \
+      "$EVIDENCE/artifacts/derived/LOUKSNA-luna-derived.sh" \
+      louksna@127.0.0.1:/var/tmp/
+    guest "sudo dpkg -i /var/tmp/LOUKSNA-luna-derived.deb || sudo apt-get install -f -y" | tee "$EVIDENCE/luna/derived-deb-install.txt" || FINAL=2
+    guest "sudo sh /var/tmp/LOUKSNA-luna-derived.sh --prefix /opt/louksna-sh" | tee "$EVIDENCE/luna/derived-sh-install.txt" || FINAL=2
+    guest "sudo python3 /var/tmp/as_session.py /usr/bin/luna --manifest" > "$EVIDENCE/luna/agent-deb-manifest.txt" || FINAL=2
+    guest "sudo python3 /var/tmp/as_session.py /opt/louksna-sh/usr/bin/luna --manifest" > "$EVIDENCE/luna/agent-sh-manifest.txt" || FINAL=2
+    python3 - << 'PY' || FINAL=2
+import json
+from pathlib import Path
+for src, dest in (
+    ("evidence/luna/agent-deb-manifest.txt", "evidence/luna/agent-deb-verification.json"),
+    ("evidence/luna/agent-sh-manifest.txt", "evidence/luna/agent-sh-verification.json"),
+):
+    text = Path(src).read_text().strip()
+    start = text.find("{")
+    data = json.loads(text[start:] if start >= 0 else text)
+    data["executed_as"] = "louksna"
+    data["identity"] = "derived-installer"
+    data["originals_replaced"] = False
+    Path(dest).write_text(json.dumps(data, indent=2) + "\n")
+PY
+  fi
+  overlay_suite || true
   guest "sudo python3 /var/tmp/as_session.py systemctl --user start xdg-desktop-portal.service xdg-desktop-portal-kde.service" | tee "$EVIDENCE/vm/portals-start.txt" || echo PORTAL_START_NONZERO | tee -a "$EVIDENCE/vm/portals-start.txt"
   guest "ps -eo args | grep -E 'xdg-desktop-portal|kwin_wayland|plasmashell' | grep -v grep || true" | tee "$EVIDENCE/vm/session-processes.txt" || true
   if ! guest "sudo python3 /var/tmp/probe_original.py" | tee "$EVIDENCE/blockers/probe-stdout.txt"; then
@@ -598,35 +628,10 @@ if host.is_file():
 Path("evidence/blockers/blocker-register.json").write_text(json.dumps(rows, indent=2) + "\n")
 Path("evidence/blockers/blocker-resolution-log.json").write_text(json.dumps({
     "probe_harness": "root",
-    "reason": "apt-get and runuser inside the original probes require an administrative process; the Plasma session itself is louksna",
+    "reason": "apt-get and runuser inside the original probes require an administrative process; the Plasma session itself is louksna. The repaired suite is copied after installer reinstall so dpkg does not restore the unconditional blockers.",
     "rows": rows,
 }, indent=2) + "\n")
 PY
-  if [ -f "$EVIDENCE/artifacts/derived/LOUKSNA-luna-derived.deb" ]; then
-    scp "${SSH_BASE[@]}" -P 2222 \
-      "$EVIDENCE/artifacts/derived/LOUKSNA-luna-derived.deb" \
-      "$EVIDENCE/artifacts/derived/LOUKSNA-luna-derived.sh" \
-      louksna@127.0.0.1:/var/tmp/
-    guest "sudo dpkg -i /var/tmp/LOUKSNA-luna-derived.deb || sudo apt-get install -f -y" | tee "$EVIDENCE/luna/derived-deb-install.txt" || FINAL=2
-    guest "sudo sh /var/tmp/LOUKSNA-luna-derived.sh --prefix /opt/louksna-sh" | tee "$EVIDENCE/luna/derived-sh-install.txt" || FINAL=2
-    guest "sudo python3 /var/tmp/as_session.py /usr/bin/luna --manifest" > "$EVIDENCE/luna/agent-deb-manifest.txt" || FINAL=2
-    guest "sudo python3 /var/tmp/as_session.py /opt/louksna-sh/usr/bin/luna --manifest" > "$EVIDENCE/luna/agent-sh-manifest.txt" || FINAL=2
-    python3 - << 'PY' || FINAL=2
-import json
-from pathlib import Path
-for src, dest in (
-    ("evidence/luna/agent-deb-manifest.txt", "evidence/luna/agent-deb-verification.json"),
-    ("evidence/luna/agent-sh-manifest.txt", "evidence/luna/agent-sh-verification.json"),
-):
-    text = Path(src).read_text().strip()
-    start = text.find("{")
-    data = json.loads(text[start:] if start >= 0 else text)
-    data["executed_as"] = "louksna"
-    data["identity"] = "derived-installer"
-    data["originals_replaced"] = False
-    Path(dest).write_text(json.dumps(data, indent=2) + "\n")
-PY
-  fi
   guest "grep -E '^(VERSION_ID|ID|PRETTY_NAME)=' /etc/os-release; echo ---; tr -d '\\0' < /proc/1/comm" > "$EVIDENCE/vm/debian-version.txt" || true
   guest "tr -d '\\0' < /proc/1/comm" > "$EVIDENCE/vm/pid1.txt" || true
   guest "systemctl is-system-running || true; systemctl --no-pager --failed || true" > "$EVIDENCE/vm/systemd-status.txt" || true

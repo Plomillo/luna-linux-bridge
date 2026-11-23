@@ -101,18 +101,23 @@ def main() -> int:
     os.environ.update(plasma_env())
     raw_out = os.environ.get("LOUKSNA_PROBE_OUT", "").strip()
     out = Path(raw_out) if raw_out else None
-    try:
-        suite_file = suite_ready()
-    except Exception as exc:
-        rows = [{"n": n, "status": "ERROR", "unlock": str(exc)[:300], "plasma_pid": ""} for n in OPEN]
-        text = json.dumps(rows, indent=2) + "\n"
-        if out:
-            out.parent.mkdir(parents=True, exist_ok=True)
-            out.write_text(text)
-        else:
-            Path("/var/tmp/blocker-register.json").write_text(text)
-        print(str(exc))
-        return 2
+    full = len(sys.argv) < 2
+    suite_file = ""
+    if full:
+        try:
+            suite_file = suite_ready()
+        except Exception as exc:
+            rows = [{"n": n, "status": "ERROR", "unlock": str(exc)[:300], "plasma_pid": ""} for n in OPEN]
+            text = json.dumps(rows, indent=2) + "\n"
+            if out:
+                out.parent.mkdir(parents=True, exist_ok=True)
+                out.write_text(text)
+            else:
+                Path("/var/tmp/blocker-register.json").write_text(text)
+            print(str(exc))
+            return 2
+    else:
+        sys.path.insert(0, str(SUITE))
     os.environ["LOUKSNA_SUITE_FILE"] = suite_file
     if len(sys.argv) < 2:
         rows = [run_one(n) for n in OPEN]
