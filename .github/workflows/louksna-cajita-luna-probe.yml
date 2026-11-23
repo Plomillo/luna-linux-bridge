@@ -7,12 +7,13 @@ on:
     paths:
       - ".github/workflows/louksna-cajita-luna-probe.yml"
       - "validation/luna/cajita_probe.py"
+      - "scripts/cajita/**"
 permissions:
   actions: read
   contents: read
 jobs:
   identify-and-load:
-    name: CAJITA_WEIGHTS_AND_CEREBRO_FORWARD
+    name: CAJITA_CANDIDATE_PACKAGE_AND_RELOAD
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
@@ -33,6 +34,15 @@ jobs:
           CAJITA_SMOKE: "1"
           EVIDENCE: evidence/luna-cajita
         run: python3 validation/luna/cajita_probe.py
+      - name: distinct cajita candidates
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVIDENCE: evidence/luna-cajita
+          CAJITA_WORK: /tmp/cajita-probe
+        run: python3 scripts/cajita/build_candidate.py
+      - name: drop extraction tree
+        if: always()
+        run: rm -rf /tmp/cajita-probe
       - uses: actions/upload-artifact@v4
         if: always()
         with:
