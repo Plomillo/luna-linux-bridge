@@ -139,6 +139,57 @@ sudoers.write_text("louksna ALL=(ALL) NOPASSWD:ALL\n")
 sudoers.chmod(0o440)
 print(f"INJECTED uid={uid}")
 PY
+# The nocloud image has no openssh-server. Install it on first boot from apt.
+cat > "$MNT/usr/local/sbin/louksna-bootstrap.sh" << 'EOF'
+#!/bin/bash
+echo BOOTSTRAP_BEGIN
+export DEBIAN_FRONTEND=noninteractive
+for _ in $(seq 1 60); do
+  if getent hosts deb.debian.org >/dev/null 2>&1; then
+    break
+  fi
+  sleep 2
+done
+set -e
+apt-get update
+apt-get install -y openssh-server
+install -d -m 755 /run/sshd
+rm -f /etc/ssh/sshd_not_to_be_run
+systemctl enable ssh.service
+systemctl restart ssh.service
+/usr/sbin/sshd -t
+systemctl is-active ssh.service
+echo BOOTSTRAP_OK
+EOF
+chmod 755 "$MNT/usr/local/sbin/louksna-bootstrap.sh"
+mkdir -p "$MNT/etc/systemd/system/multi-user.target.wants" "$MNT/etc/systemd/network"
+cat > "$MNT/etc/systemd/system/louksna-bootstrap.service" << 'EOF'
+[Unit]
+Description=Install OpenSSH for the LOUKSNA validation
+After=systemd-networkd.service systemd-resolved.service
+Wants=systemd-networkd.service
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/louksna-bootstrap.sh
+TimeoutStartSec=600
+StandardOutput=journal+console
+StandardError=journal+console
+[Install]
+WantedBy=multi-user.target
+EOF
+ln -sfn /etc/systemd/system/louksna-bootstrap.service "$MNT/etc/systemd/system/multi-user.target.wants/louksna-bootstrap.service"
+cat > "$MNT/etc/systemd/network/10-louksna.network" << 'EOF'
+[Match]
+Name=en*
+Name=eth*
+
+[Network]
+DHCP=yes
+DNS=1.1.1.1
+DNS=8.8.8.8
+EOF
+rm -f "$MNT/etc/ssh/sshd_not_to_be_run"
+echo BOOTSTRAP_UNIT_INSTALLED
 echo PREPARE_OK
 if ! umount "$MNT"; then
   echo UMOUNT_FAIL
