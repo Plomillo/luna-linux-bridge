@@ -28,3 +28,34 @@
 - `CERTIFICATION=NOT_GRANTED`; no se afirma nota máxima garantizada.
 
 El `AUDIT.md` previo y los metadatos de congelación del candidato de ocho páginas se conservan en `history/prior-candidate-8-page-20261122/` como registro histórico supersedido, no como estado vigente.
+
+
+## Incidente de automatización y corrección — 2026-11-23
+
+### Fallo inicial (run `45090536290`)
+- Resultado: `failure` en `Validate profile and build with Document Factory`.
+- Causa raíz: `profile.json` declaraba etapas genéricas `INGEST`, `BUILD`, `VALIDATE` y `SELF_AUDIT`, mientras `factory.py` consumía `BUILD_DOCX`, `BUILD_PPTX` y `BUILD_PDF`.
+- Defecto de control: `validate_profile` validaba únicamente las etapas presentes y no exigía las claves que el constructor indexaba directamente. Por eso declaró válido un perfil incompatible.
+- Responsabilidad: defecto de integración y validación introducido en la configuración del flujo; no fue un fallo espontáneo de GitHub Actions.
+
+### Segundo defecto detectado tras el primer rerun
+- El run `45090975862` terminó técnicamente en `success`, pero el artefacto descargado tenía ocho páginas.
+- Causa raíz: el workflow compilaba `workspace/source/report.md`, una copia anterior, en vez de `source/report.md`, fuente canónica corregida. Además, el gate medía la distancia entre encabezados, pero no exigía `total_pages == 6`; el documento podía desbordarse en páginas adicionales y pasar.
+- Se descartó ese artefacto como no conforme. Su `success` de CI no se considera validación documental suficiente.
+
+### Remediación aplicada
+1. El perfil declara explícitamente `BUILD_DOCX`, `BUILD_PPTX` y `BUILD_PDF`; `validate_profile` falla cerrado si falta cualquiera o si su definición es inválida.
+2. `selftest.py` incorpora prueba positiva del perfil de Unidad 1 y prueba negativa de ausencia de `BUILD_DOCX`.
+3. El workflow usa `source/report.md` como fuente canónica y ejecuta `build.py` + `verify.py` antes de congelar el candidato.
+4. `verify.py` impone seis páginas exactas, mapa de contenido por página, cuatro páginas de cuerpo, tres de desarrollo, formato Arial 12/16, interlineado 1,5, márgenes de 2,5 cm, integridad de la fuente y trazabilidad de citas.
+5. El workflow preserva evidencia separada del constructor y de la verificación documental.
+
+### Verificación local reproducible de la corrección
+- Document Factory selftest: 13/13 PASS.
+- Perfil Unidad 1: PASS; ausencia de `BUILD_DOCX`: rechazo esperado.
+- `build.py`: PASS; seis páginas; 1.242 palabras de cuerpo; rúbrica 6 criterios / 26,25 puntos; ledger 10 fuentes verificadas.
+- `verify.py`: PASS; 6 páginas totales, 4 de cuerpo, 3 de desarrollo; Arial 12/16; 1,5; márgenes 2,5 cm; cobertura de reglas 1–11, «Extra» e imagen final.
+- Flujo completo local (factory build → build.py → verify.py → validación → self-audit → freeze): PASS.
+- G23/G24 no se ejecutaron; certificación académica no concedida; envío a Moodle pendiente.
+
+La ejecución de GitHub Actions debe repetirse sobre este flujo corregido y verificarse antes de declarar la automatización remota conforme.
