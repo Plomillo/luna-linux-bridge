@@ -1,0 +1,42 @@
+name: louksna-cajita-luna-probe
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/luna-v3-reconstruction-20261119
+    paths:
+      - ".github/workflows/louksna-cajita-luna-probe.yml"
+      - "validation/luna/cajita_probe.py"
+permissions:
+  actions: read
+  contents: read
+jobs:
+  identify-and-load:
+    name: CAJITA_WEIGHTS_AND_CEREBRO_FORWARD
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/luna-v3-reconstruction-20261119
+          fetch-depth: 1
+      - name: tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full strace python3-pip
+          python3 -m pip install --upgrade pip
+          python3 -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python3 -m pip install py7zr 'transformers>=4.55' safetensors
+      - name: probe
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CAJITA_SMOKE: "1"
+          EVIDENCE: evidence/luna-cajita
+        run: python3 validation/luna/cajita_probe.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: louksna-cajita-evidence
+          path: evidence/luna-cajita/
+          if-no-files-found: warn
+          retention-days: 14
