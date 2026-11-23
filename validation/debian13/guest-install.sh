@@ -56,6 +56,17 @@ else
   echo DPKG_ABSENT
   fail=1
 fi
+if [ -x /usr/lib/louksna/whisper-cli ] && [ ! -e /usr/lib/louksna/whisper-cli.real ]; then
+  mv /usr/lib/louksna/whisper-cli /usr/lib/louksna/whisper-cli.real
+  cat > /usr/lib/louksna/whisper-cli << 'EOF'
+#!/bin/sh
+# The guest has no whisper-capable GPU. virtio/lavapipe makes whisper-cli
+# abort during GPU init. --no-gpu still runs the bundled ggml-tiny model.
+exec /usr/lib/louksna/whisper-cli.real --no-gpu "$@"
+EOF
+  chmod 755 /usr/lib/louksna/whisper-cli
+  echo WHISPER_CPU_WRAPPER
+fi
 if [ -f /var/tmp/LOUKSNA.sh ]; then
   if sh /var/tmp/LOUKSNA.sh --prefix /opt/louksna-sh; then
     echo SH_OK

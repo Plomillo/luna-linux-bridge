@@ -426,8 +426,8 @@ g24 = json.loads(g24_path.read_text()) if g24_path.is_file() else {"verdict": "C
 }, indent=2) + "\n")
 (root / "resumption-log.json").write_text(json.dumps({
     "reference_run": "45010622254",
-    "previous_validation_run": "45115875527",
-    "previous_failure": "Run 45115875527 passed 297, 298, 368 and 608. 377 required portal binaries under /usr/bin, but Debian runs them from libexec. 378 failed to exec runuser because the Plasma environment dropped /usr/sbin from PATH.",
+    "previous_validation_run": "45118208715",
+    "previous_failure": "Run 45118208715 passed the 15 platform blockers. SUB-012 failed because whisper-cli aborted while initializing a GPU on virtio. Individual 803 records are still absent.",
     "this_executor": "validation/debian13/run.sh",
     "active_at_start": False,
 }, indent=2) + "\n")
@@ -444,12 +444,12 @@ root.mkdir(parents=True, exist_ok=True)
 def git(*args):
     return subprocess.run(["git", *args], capture_output=True, text=True).stdout.strip()
 state = {
-    "resumed_from_run": "45115875527",
+    "resumed_from_run": "45118208715",
     "reference_run": "45010622254",
     "reference_commit": "db77c2f27da8060f0362ac8f36cc8860de94c882",
     "head": git("rev-parse", "HEAD"),
     "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
-    "previous_failure": "run 45115875527 left blockers 377 and 378 open after the repaired suite actually ran; 803 individual records remain absent",
+    "previous_failure": "run 45118208715 cleared the platform blockers; whisper GPU init failed on SUB-012 and the 803 individual evidence is still missing",
     "historical_36_reexecuted": 0,
     "original_803_reexecuted": 0,
 }

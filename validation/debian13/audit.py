@@ -156,14 +156,13 @@ def main() -> int:
         "head": head,
         "reference_commit": "db77c2f27da8060f0362ac8f36cc8860de94c882",
         "reference_run": "45010622254",
-        "previous_validation_run": "45115875527",
+        "previous_validation_run": "45118208715",
         "previous_validation_conclusion": "failure",
         "previous_open_failures": [
-            "ORIGINAL_803_INDIVIDUAL_EVIDENCE_INCOMPLETE",
-            "BLOCKER_377_BLOCKED",
-            "BLOCKER_378_ERROR"
+            "CASE_SUB-012",
+            "ORIGINAL_803_INDIVIDUAL_EVIDENCE_INCOMPLETE"
         ],
-        "root_cause": "Run 45115875527 cleared 297, 298, 368 and 608 inside the guest. 377 looked only for /usr/bin portal binaries while Debian runs them from libexec. 378 called runuser after Plasma replaced PATH and dropped /usr/sbin.",
+        "root_cause": "Run 45118208715 passed every platform blocker. SUB-012 failed because whisper-cli tried GPU init on virtio and exited. The 803 individual records are still absent from the historical artifacts.",
         "active_run": None,
         "historical_36_reexecuted": 0,
         "original_803_reexecuted": 0,
