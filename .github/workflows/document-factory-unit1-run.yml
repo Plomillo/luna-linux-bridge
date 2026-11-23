@@ -83,7 +83,7 @@ jobs:
           cp "$ROOT/factory-runs/unit1-comportamiento-genero/evidence/build.json" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/evidence/unit1-build.json"
           cp "$ROOT/factory-runs/unit1-comportamiento-genero/evidence/validation.json" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/evidence/unit1-verification.json"
           cp "$RUN/build/report.docx" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/Trabajo1_DiegoIgnacioNorambuenaMiranda.docx"
-          cp "$RUN/build/report.pdf" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/Trabajo1_DiegoIgnacioNorabuenaMiranda.pdf"
+          cp "$RUN/build/report.pdf" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/Trabajo1_DiegoIgnacioNorambuenaMiranda.pdf"
           cp "$RUN/evidence/"*.json "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/evidence/"
           cp "$RUN/FROZEN_CANDIDATE.json" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/"
           cp "$RUN/CANDIDATE_DIGEST.txt" "$ROOT/factory-runs/unit1-comportamiento-genero/deliverables/latest/"
