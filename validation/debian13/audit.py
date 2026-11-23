@@ -93,7 +93,13 @@ def main() -> int:
         "committed_cases_json_counts": by_status,
         "committed_cases_json_is_stale": by_status.get("PASS_FUNCTIONAL") != 803,
         "individually_verified": 0,
-        "note": "Run 45010622254 VERIFY.json records 803 PASS_FUNCTIONAL as an aggregate. It does not ship per-case evidence. Those 803 were not re-executed.",
+        "sources_checked_for_individual_records": [
+            "VERIFY.json mra_856 object has counts only and no cases array",
+            "g23-verdict artifact of run 45010622254 is a verdict, not 803 records",
+            "reconstruction/mra/MRA-5O-856-cases.json is stale and is not 803 PASS_FUNCTIONAL rows",
+            "reconstruction/mra/MRA-5O-856-execution.json stores counts, not per-case output",
+        ],
+        "note": "Run 45010622254 VERIFY.json records 803 PASS_FUNCTIONAL as an aggregate. It does not ship per-case evidence. Those 803 were not re-executed. The individual gap stays open.",
     })
     search = {
         "looked_for": "a register of exactly 53 original blocked case ids",
@@ -101,7 +107,10 @@ def main() -> int:
             "reconstruction/mra/MRA-5O-856-cases.json",
             "reconstruction/mra/MRA-5O-144-CLOSURE.json",
             "reconstruction/mra/MRA-5O-856-REPORT.md",
+            "reconstruction/mra/MRA-5O-856-execution.json",
+            "reconstruction/mra/freeze/MANIFEST.json",
             "VERIFY.json of actions run 45010622254",
+            "g23-verdict artifact of actions run 45010622254",
             "git history of this checkout",
         ],
         "committed_blocked_count": len(blocked),
@@ -118,6 +127,42 @@ def main() -> int:
         "rows": len(rows),
         "counts": by_status,
         "stale_relative_to_verify": True,
+    })
+    expectations = repo / "validation" / "debian13" / "expectations.json"
+    spec = json.loads(expectations.read_text()) if expectations.is_file() else []
+    write(root / "cases" / "original-53-search-ledger.json", {
+        "found_register_of_53": False,
+        "inspected": search["sources"],
+        "committed_blocked_count": len(blocked),
+        "verify_blocked_count": mra.get("counts", {}).get("BLOCKED"),
+        "not_used_as_the_53": "17 BLOCKED + 36 HISTORICAL_PRESERVED",
+        "result": "NOT_FOUND_WITH_DOCUMENTED_SEARCH",
+    })
+    write(root / "cases" / "substitute-53-register.json", {
+        "ORIGINAL_53_RECOVERED": 0,
+        "ORIGINAL_53_NOT_FOUND": 53,
+        "SUBSTITUTE_53_CREATED": len(spec),
+        "SUBSTITUTE_53_EXECUTED": 0,
+        "SUBSTITUTE_53_RESOLVED": 0,
+        "SUBSTITUTE_53_CERTIFIED": 0,
+        "namespace": "SUB-001..SUB-053",
+        "ids": [row.get("id") for row in spec],
+        "not_originals": True,
+        "source": "validation/debian13/expectations.json",
+    })
+    write(root / "resumption" / "checkpoint.json", {
+        "repository": "Plomillo/luna-linux-bridge",
+        "branch": branch,
+        "head": head,
+        "reference_commit": "db77c2f27da8060f0362ac8f36cc8860de94c882",
+        "reference_run": "45010622254",
+        "previous_validation_run": "45082647710",
+        "previous_validation_conclusion": "failure",
+        "active_run": None,
+        "historical_36_reexecuted": 0,
+        "original_803_reexecuted": 0,
+        "original_803_individually_verified": 0,
+        "product_certification": "NOT_CERTIFIED",
     })
     print(json.dumps({"head": head, "blocked_in_commit": len(blocked), "recovery": search["recovery"]}, indent=2))
     return 0

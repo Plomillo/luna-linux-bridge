@@ -157,7 +157,7 @@
   },
   {
     "id": "SUB-027",
-    "title": "unshare net",
+    "title": "unprivileged user net namespace",
     "expect": "code0",
     "needle": ""
   },

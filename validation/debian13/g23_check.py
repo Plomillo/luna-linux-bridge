@@ -139,9 +139,62 @@ def main() -> int:
     wayland = (root / "vm" / "wayland-checks.txt").read_text() if (root / "vm" / "wayland-checks.txt").is_file() else ""
     if "WAYLAND_SOCKET=yes" not in wayland or "KWIN=yes" not in wayland or "PLASMA=yes" not in wayland:
         failures.append("KDE_WAYLAND_SESSION_NOT_PROVEN")
+    graphics = root / "vm" / "graphics-checks.json"
+    screen = root / "vm" / "screen.ppm"
+    if not graphics.is_file():
+        failures.append("GRAPHICS_RECORD_ABSENT")
+    else:
+        graphic = json.loads(graphics.read_text())
+        if graphic.get("display") != "vnc" or int(graphic.get("screendump_bytes") or 0) < 10000:
+            failures.append("GRAPHICS_SCREEN_NOT_PROVEN")
+    if not screen.is_file() or screen.stat().st_size < 10000:
+        failures.append("GRAPHICS_SCREEN_FILE_ABSENT")
+    else:
+        with screen.open("rb") as handle:
+            if handle.read(2) != b"P6":
+                failures.append("GRAPHICS_SCREEN_FORMAT")
     audio = (root / "vm" / "audio-checks.txt").read_text() if (root / "vm" / "audio-checks.txt").is_file() else ""
     if "SND=yes" not in audio or "PACTL=yes" not in audio:
         failures.append("AUDIO_NOT_PROVEN")
+    playback_path = root / "vm" / "audio-playback.json"
+    if not playback_path.is_file():
+        failures.append("AUDIO_PLAYBACK_ABSENT")
+    else:
+        playback = json.loads(playback_path.read_text())
+        if playback.get("non_silent") is not True:
+            failures.append("AUDIO_PLAYBACK_NOT_PROVEN")
+    privilege_path = root / "luna" / "privilege.json"
+    if not privilege_path.is_file():
+        failures.append("LUNA_PRIVILEGE_ABSENT")
+    else:
+        privilege = json.loads(privilege_path.read_text())
+        if privilege.get("user") != "louksna" or not isinstance(privilege.get("euid"), int) or privilege.get("euid") <= 0:
+            failures.append("LUNA_NOT_UNPRIVILEGED")
+    for label, filename in (("DEB", "agent-deb-verification.json"), ("SH", "agent-sh-verification.json")):
+        path = root / "luna" / filename
+        if not path.is_file():
+            failures.append(f"LUNA_{label}_INTEGRATION_ABSENT")
+            continue
+        try:
+            shown = json.loads(path.read_text())
+        except json.JSONDecodeError:
+            failures.append(f"LUNA_{label}_INTEGRATION_INVALID")
+            continue
+        if shown.get("self_certifies") is not False or shown.get("weight_training") != "NOT_AUTHORIZED":
+            failures.append(f"LUNA_{label}_INTEGRATION_BAD_MANIFEST")
+        if shown.get("executed_as") != "louksna":
+            failures.append(f"LUNA_{label}_NOT_RUN_AS_USER")
+    substitute = root / "cases" / "substitute-53-register.json"
+    if not substitute.is_file():
+        failures.append("SUBSTITUTE_53_REGISTER_ABSENT")
+    else:
+        register = json.loads(substitute.read_text())
+        if register.get("ORIGINAL_53_RECOVERED") != 0:
+            failures.append("SUBSTITUTE_COUNTED_AS_ORIGINAL")
+        if register.get("SUBSTITUTE_53_CREATED") != 53:
+            failures.append("SUBSTITUTE_53_NOT_CREATED")
+    if not (root / "cases" / "substitute-53-results.json").is_file():
+        failures.append("SUBSTITUTE_53_RESULTS_ABSENT")
     required = [297, 298, 334, 349, 353, 368, 370, 375, 376, 377, 378, 379, 380, 575, 608]
     blockers = root / "blockers" / "blocker-register.json"
     blocker_rows = []
