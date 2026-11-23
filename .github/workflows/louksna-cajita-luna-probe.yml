@@ -26,7 +26,7 @@ jobs:
           sudo apt-get install -y p7zip-full strace python3-pip
           python3 -m pip install --upgrade pip
           python3 -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-          python3 -m pip install py7zr 'transformers>=4.55' safetensors
+          python3 -m pip install 'transformers==4.56.2' safetensors py7zr
       - name: probe
         env:
           GH_TOKEN: ${{ github.token }}
