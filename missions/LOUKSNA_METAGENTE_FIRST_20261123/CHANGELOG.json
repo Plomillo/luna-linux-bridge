@@ -50,6 +50,16 @@
       "counter": "3/26",
       "evidence_commit": "df1952414a3e894ce54c49144f3fa6c8a4ed03b2",
       "state_change": false
+    },
+    {
+      "recorded_at": "2026-11-24T14:16:07Z",
+      "operation": "create-m0",
+      "condition": "C04",
+      "counter": "3/26",
+      "evidence_commit": "0bd76b5b233a7a21e1252e8f50bee9235b4c27d8",
+      "state_change": false,
+      "agent_version": "M0-20261124.1",
+      "provenance": "NEW_IMPLEMENTATION"
     }
   ]
 }

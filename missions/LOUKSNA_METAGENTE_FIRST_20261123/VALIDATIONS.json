@@ -52,6 +52,13 @@
       "recorded_at": "2026-11-24T08:04:34Z",
       "evidence_commit": "df1952414a3e894ce54c49144f3fa6c8a4ed03b2",
       "method": "Expanded search of authorized refs. Product probe validation/luna/agent.py was rejected as a substitute. No MGL5 entry point recovered. Counter unchanged."
+    },
+    {
+      "id": "C04",
+      "state": "REOPENED",
+      "recorded_at": "2026-11-24T14:16:07Z",
+      "evidence_commit": "0bd76b5b233a7a21e1252e8f50bee9235b4c27d8",
+      "method": "M0 created and smoke-tested on synthetic instructions. Corpus not started. Counter unchanged."
     }
   ]
 }
