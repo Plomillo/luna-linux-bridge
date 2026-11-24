@@ -134,5 +134,22 @@
     ],
     "corpus_preflight_remains": "PASS",
     "c05": "BLOCKED"
+  },
+  "CP-C04-REVALIDATION": {
+    "state": "PASS",
+    "recorded_at": "2026-11-24T20:20:54Z",
+    "evidence_commit": "5876962e97629520aaf8aa180b53387432ab0b19",
+    "keeps": [
+      "CP-C04",
+      "CP-C04-REOPEN"
+    ],
+    "agent": "METAGENTE_LUNA",
+    "version": "M0-20261124.2",
+    "demonstrated": "1000 operations were submitted individually, three clean processes each, and the results were reconstructed from the agent output.",
+    "not_claimed": "This is not accreditation of the agent and not C08.",
+    "case_counts": {
+      "PASS": 20,
+      "FAIL": 980
+    }
   }
 }

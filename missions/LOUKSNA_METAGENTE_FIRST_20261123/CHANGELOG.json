@@ -60,6 +60,16 @@
       "state_change": false,
       "agent_version": "M0-20261124.1",
       "provenance": "NEW_IMPLEMENTATION"
+    },
+    {
+      "recorded_at": "2026-11-24T20:20:54Z",
+      "operation": "revalidate",
+      "condition": "C04",
+      "counter": "4/26",
+      "evidence_commit": "5876962e97629520aaf8aa180b53387432ab0b19",
+      "c05": "IN_PROGRESS",
+      "pass": 20,
+      "fail": 980
     }
   ]
 }

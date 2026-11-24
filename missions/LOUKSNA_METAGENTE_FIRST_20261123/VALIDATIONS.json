@@ -59,6 +59,13 @@
       "recorded_at": "2026-11-24T14:16:07Z",
       "evidence_commit": "0bd76b5b233a7a21e1252e8f50bee9235b4c27d8",
       "method": "M0 created and smoke-tested on synthetic instructions. Corpus not started. Counter unchanged."
+    },
+    {
+      "id": "C04",
+      "state": "PASS",
+      "recorded_at": "2026-11-24T20:20:54Z",
+      "evidence_commit": "5876962e97629520aaf8aa180b53387432ab0b19",
+      "method": "Revalidation after M0 executed the designated program. Reopen record kept."
     }
   ]
 }
