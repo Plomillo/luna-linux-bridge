@@ -1,16 +1,12 @@
 {
-  "recorded_at": "2026-11-24T14:15:47Z",
-  "high_resolution_file": "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt",
-  "high_resolution_blob": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
-  "high_resolution_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
-  "high_resolution_introduced_in": "b8e793c0a09021e6b269f0161ddee2396b792f76",
-  "named_original": "programa de entrenamiento.txt",
-  "original_recovered": false,
-  "searched": [
-    "trees of execution, historical, main, gui, product, phase0 and mother",
-    "default-branch code search for the filename: 0 results",
-    "commit history of the high-resolution file: a single add commit"
-  ],
-  "not_claimed": "The high-resolution file is not asserted to be byte-for-byte the named original.",
-  "mgl5_execution": "NOT_STARTED"
+  "recorded_at": "2026-11-24T20:20:28Z",
+  "working_source": "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt",
+  "branch": "feat/metagente-luna-1000-casos-alta-resolucion",
+  "commit": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+  "blob": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
+  "sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
+  "verified_against_named_commit": true,
+  "antecedent_named_in_program": "programa de entrenamiento.txt",
+  "antecedent_status": "PROVENANCE_DEBT",
+  "antecedent_blocks_execution": false
 }

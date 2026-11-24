@@ -1,0 +1,108 @@
+{
+  "recorded_at": "2026-11-24T20:20:28Z",
+  "agent": "METAGENTE_LUNA",
+  "version": "M0-20261124.2",
+  "machinery": "M0",
+  "provenance": "NEW_IMPLEMENTATION",
+  "program_commit": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+  "program_blob": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
+  "program_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
+  "antecedent_programa_de_entrenamiento_txt": "NOT_AVAILABLE_PROVENANCE_DEBT_NOT_A_BLOCKER",
+  "cases": 1000,
+  "repetitions_each": 3,
+  "clean_process": true,
+  "counts": {
+    "PASS": 20,
+    "FAIL": 980
+  },
+  "pass_ids": [
+    "MGL5-INF-0001",
+    "MGL5-INF-0002",
+    "MGL5-INF-0003",
+    "MGL5-INF-0004",
+    "MGL5-INF-0007",
+    "MGL5-INF-0008",
+    "MGL5-INF-0009",
+    "MGL5-INF-0010",
+    "MGL5-INF-0011",
+    "MGL5-INF-0012",
+    "MGL5-INF-0013",
+    "MGL5-INF-0014",
+    "MGL5-INF-0015",
+    "MGL5-INF-0016",
+    "MGL5-INF-0017",
+    "MGL5-INF-0018",
+    "MGL5-INF-0048",
+    "MGL5-INF-0101",
+    "MGL5-INF-0102",
+    "MGL5-INF-0308"
+  ],
+  "by_domain": {
+    "D01": {
+      "PASS": 17,
+      "FAIL": 33
+    },
+    "D02": {
+      "FAIL": 50
+    },
+    "D03": {
+      "PASS": 2,
+      "FAIL": 48
+    },
+    "D04": {
+      "FAIL": 50
+    },
+    "D05": {
+      "FAIL": 50
+    },
+    "D06": {
+      "FAIL": 50
+    },
+    "D07": {
+      "FAIL": 49,
+      "PASS": 1
+    },
+    "D08": {
+      "FAIL": 50
+    },
+    "D09": {
+      "FAIL": 50
+    },
+    "D10": {
+      "FAIL": 50
+    },
+    "D11": {
+      "FAIL": 50
+    },
+    "D12": {
+      "FAIL": 50
+    },
+    "D13": {
+      "FAIL": 50
+    },
+    "D14": {
+      "FAIL": 50
+    },
+    "D15": {
+      "FAIL": 50
+    },
+    "D16": {
+      "FAIL": 50
+    },
+    "D17": {
+      "FAIL": 50
+    },
+    "D18": {
+      "FAIL": 50
+    },
+    "D19": {
+      "FAIL": 50
+    },
+    "D20": {
+      "FAIL": 50
+    }
+  },
+  "false_pass_removed": "MGL5-INF-0413 matched NaN inside an embedding sentence. The parser now requires 'Procesar NaN'. The case was re-run and is FAIL.",
+  "not_accreditation": true,
+  "c08": "NOT_MET"
+}
