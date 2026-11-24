@@ -34,6 +34,14 @@
       "c05": "IN_PROGRESS",
       "training_commit": "1d37479975a91a95153f1bd486841c2046689b81",
       "counter": "4/26"
+    },
+    {
+      "recorded_at": "2026-11-24T05:35:33Z",
+      "operation": "reopen",
+      "condition": "C04",
+      "counter": "3/26",
+      "evidence_commit": "070f45f22da670bc169ede78a601adba1c77eeb6",
+      "historical_contract_commit": "dfc464c1d8bec119016e59c6eb3e75cb04fbed9c"
     }
   ]
 }

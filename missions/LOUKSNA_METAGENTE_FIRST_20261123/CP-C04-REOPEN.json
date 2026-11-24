@@ -1,0 +1,16 @@
+{
+  "state": "REOPENED",
+  "historical_checkpoint": "CP-C04",
+  "historical_verdict": "PASS",
+  "historical_evidence_commit": "1d37479975a91a95153f1bd486841c2046689b81",
+  "reopen_evidence_commit": "070f45f22da670bc169ede78a601adba1c77eeb6",
+  "recorded_at": "2026-11-24T05:35:33Z",
+  "failed_criteria": [
+    "agent identity and version not registered",
+    "M0 not identified",
+    "no invocation path for an individual case",
+    "existing PASS records are helper functions"
+  ],
+  "corpus_preflight_remains": "PASS",
+  "c05": "BLOCKED"
+}
