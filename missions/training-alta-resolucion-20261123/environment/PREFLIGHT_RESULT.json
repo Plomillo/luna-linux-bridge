@@ -1,0 +1,25 @@
+{
+  "id": "C04-PREFLIGHT",
+  "state": "PASS",
+  "does_not_execute_cases": true,
+  "does_not_accredit_agent": true,
+  "pinned_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
+  "observed_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
+  "checks": {
+    "program_present": true,
+    "sha256_matches_pin": true,
+    "hash_repeated_3": true,
+    "inf_1000_contiguous": true,
+    "teo_50_contiguous": true,
+    "declared_not_run_1000": true
+  },
+  "python": "3.10.22 (main, Oct  1 2026, 21:57:32) [GCC 12.2.0]",
+  "platform": "Linux-6.12.8+-x86_64-with-glibc2.36",
+  "duration_s": 0.01214,
+  "limitations": [
+    "This host is not Debian 13 KDE Wayland.",
+    "The Piper es_ES-sharvard-medium model blob is not in the git tree.",
+    "No physical microphone or speaker is claimed.",
+    "Case execution has not started."
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "MGL5-INF-0006",
+  "state": "PASS",
+  "repetitions": 3,
+  "repetitions_identical": true,
+  "duration_s": 9e-06,
+  "observed": {
+    "state": "PASS",
+    "policy": "STRIP_UTF8_BOM_DO_NOT_KEEP_UFEFF_IN_VISIBLE_TEXT",
+    "with_bom": "Luna",
+    "without_bom": "Luna"
+  },
+  "program_original_state": "NOT_RUN",
+  "python": "3.10.22",
+  "platform": "Linux-6.12.8+-x86_64-with-glibc2.36",
+  "program_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf"
+}

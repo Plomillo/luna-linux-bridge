@@ -1,0 +1,76 @@
+{
+  "executed_ids": 16,
+  "counts_including_not_run": {
+    "PASS": 14,
+    "BLOCKED": 2,
+    "NOT_RUN": 984
+  },
+  "rows": [
+    {
+      "id": "MGL5-INF-0001",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0002",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0003",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0004",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0005",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0006",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0007",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0008",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0009",
+      "state": "BLOCKED"
+    },
+    {
+      "id": "MGL5-INF-0010",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0011",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0012",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0013",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0014",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0015",
+      "state": "PASS"
+    },
+    {
+      "id": "MGL5-INF-0016",
+      "state": "BLOCKED"
+    }
+  ],
+  "c05_condition": "IN_PROGRESS",
+  "c05_not_pass_because": "984 cases remain NOT_RUN and blocked cases are not PASS."
+}

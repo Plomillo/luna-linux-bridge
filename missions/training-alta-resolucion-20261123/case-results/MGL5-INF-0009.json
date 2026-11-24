@@ -1,0 +1,13 @@
+{
+  "id": "MGL5-INF-0009",
+  "state": "BLOCKED",
+  "repetitions": 0,
+  "observed": {
+    "state": "BLOCKED",
+    "reason": "FIXTURE_CONTRADICTION",
+    "detail": "Operation names -32768 and -1. Literal list is 32768, 1, 0, 32767. Criterion was not modified."
+  },
+  "program_original_state": "NOT_RUN",
+  "note": "Not executed. Fixture contradiction preserved.",
+  "program_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf"
+}
