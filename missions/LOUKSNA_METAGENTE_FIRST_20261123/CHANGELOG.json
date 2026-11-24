@@ -42,6 +42,14 @@
       "counter": "3/26",
       "evidence_commit": "070f45f22da670bc169ede78a601adba1c77eeb6",
       "historical_contract_commit": "dfc464c1d8bec119016e59c6eb3e75cb04fbed9c"
+    },
+    {
+      "recorded_at": "2026-11-24T08:04:34Z",
+      "operation": "identity-search",
+      "condition": "C04",
+      "counter": "3/26",
+      "evidence_commit": "df1952414a3e894ce54c49144f3fa6c8a4ed03b2",
+      "state_change": false
     }
   ]
 }
