@@ -1,0 +1,12 @@
+{
+  "state": "IN_PROGRESS",
+  "evidence_commit": "1d37479975a91a95153f1bd486841c2046689b81",
+  "recorded_at": "2026-11-24T03:53:55Z",
+  "summary": "14 PASS, 2 BLOCKED, 984 NOT_RUN. Not a condition PASS.",
+  "counts": {
+    "PASS": 14,
+    "BLOCKED": 2,
+    "FAIL": 0,
+    "NOT_RUN": 984
+  }
+}

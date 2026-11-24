@@ -23,6 +23,20 @@
       "evidence_commit": "7608be11b7d3feadb81f6863e3b00c8d4576b11b",
       "summary": "CORPUS_INDEX.jsonl on the evidence commit contains MGL5-INF-0001..1000 and MGL5-TEO-0001..0050. Original program blob c259b6bc remains on feat and on the training ref. Program file was not modified. All 1000 INF records remain program-state NOT_RUN.",
       "method": "GitHub re-read of evidence commit; historical refs re-read and unchanged."
+    },
+    {
+      "id": "C04",
+      "state": "PASS",
+      "recorded_at": "2026-11-24T03:53:55Z",
+      "evidence_commit": "1d37479975a91a95153f1bd486841c2046689b81",
+      "method": "Re-read PREFLIGHT_RESULT.json from training commit."
+    },
+    {
+      "id": "C05",
+      "state": "IN_PROGRESS",
+      "recorded_at": "2026-11-24T03:53:55Z",
+      "evidence_commit": "1d37479975a91a95153f1bd486841c2046689b81",
+      "method": "Re-read CASE_REGISTER.json. Blocked and not-run are not counted as pass."
     }
   ]
 }

@@ -1,0 +1,6 @@
+{
+  "state": "PASS",
+  "evidence_commit": "1d37479975a91a95153f1bd486841c2046689b81",
+  "recorded_at": "2026-11-24T03:53:55Z",
+  "summary": "Preflight re-read from the training branch returned PASS, three identical hashes, 1000 contiguous INF ids and 50 TEO ids. It explicitly does not accredit the agent or execute cases. Host is not Debian 13 and has no Piper model blob."
+}

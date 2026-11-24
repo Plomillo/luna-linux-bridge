@@ -18,12 +18,22 @@
     "summary": "CORPUS_INDEX.jsonl on the evidence commit contains MGL5-INF-0001..1000 and MGL5-TEO-0001..0050. Original program blob c259b6bc remains on feat and on the training ref. Program file was not modified. All 1000 INF records remain program-state NOT_RUN."
   },
   "CP-C04": {
-    "state": "OPEN",
-    "commit": null
+    "state": "PASS",
+    "evidence_commit": "1d37479975a91a95153f1bd486841c2046689b81",
+    "recorded_at": "2026-11-24T03:53:55Z",
+    "summary": "Preflight re-read from the training branch returned PASS, three identical hashes, 1000 contiguous INF ids and 50 TEO ids. It explicitly does not accredit the agent or execute cases. Host is not Debian 13 and has no Piper model blob."
   },
   "CP-C05": {
-    "state": "OPEN",
-    "commit": null
+    "state": "IN_PROGRESS",
+    "evidence_commit": "1d37479975a91a95153f1bd486841c2046689b81",
+    "recorded_at": "2026-11-24T03:53:55Z",
+    "summary": "14 PASS, 2 BLOCKED, 984 NOT_RUN. Not a condition PASS.",
+    "counts": {
+      "PASS": 14,
+      "BLOCKED": 2,
+      "FAIL": 0,
+      "NOT_RUN": 984
+    }
   },
   "CP-C06": {
     "state": "OPEN",
