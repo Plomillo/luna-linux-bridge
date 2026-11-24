@@ -1,0 +1,20 @@
+{
+  "entries": [
+    {
+      "recorded_at": "2026-11-24T03:50:04Z",
+      "operation": "create_ref",
+      "branch": "training/metagente-luna-alta-resolucion-20261123",
+      "sha": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+      "source_ref": "feat/metagente-luna-1000-casos-alta-resolucion",
+      "source_still": "b8e793c0a09021e6b269f0161ddee2396b792f76"
+    },
+    {
+      "recorded_at": "2026-11-24T03:50:04Z",
+      "operation": "create_ref",
+      "branch": "contract/louksna-metagente-26-20261123",
+      "sha": "f58acbdb7dfc6722d1dd874729249f06fbbef76d",
+      "source_ref": "main",
+      "source_still": "f58acbdb7dfc6722d1dd874729249f06fbbef76d"
+    }
+  ]
+}

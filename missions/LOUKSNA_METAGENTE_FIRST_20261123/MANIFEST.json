@@ -1,0 +1,61 @@
+{
+  "mission_id": "LOUKSNA_METAGENTE_FIRST_20261123",
+  "recorded_at": "2026-11-24T03:50:04Z",
+  "authority": {
+    "path": "PROTODEFINITIVO.txt",
+    "branch": "main",
+    "commit": "f58acbdb7dfc6722d1dd874729249f06fbbef76d",
+    "git_blob_sha": "c40ca28ef8e515b25c8d8c6b035d4e0a8eebe2bf",
+    "sha256": "81752b5d837b69a0e50fbb1ec3a6c4f8701cbcad0cbfdb1ebd16ab1efddf06a5",
+    "bytes": 104583,
+    "modified": false
+  },
+  "training_program": {
+    "path": "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt",
+    "source_branch": "feat/metagente-luna-1000-casos-alta-resolucion",
+    "source_commit": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+    "git_blob_sha": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
+    "sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
+    "bytes": 862771,
+    "inf_cases": 1000,
+    "teo_cases": 50,
+    "domains": [
+      "D01",
+      "D02",
+      "D03",
+      "D04",
+      "D05",
+      "D06",
+      "D07",
+      "D08",
+      "D09",
+      "D10",
+      "D11",
+      "D12",
+      "D13",
+      "D14",
+      "D15",
+      "D16",
+      "D17",
+      "D18",
+      "D19",
+      "D20"
+    ],
+    "program_declared_execution": "NOT_RUN",
+    "modified": false
+  },
+  "new_refs": {
+    "contract": {
+      "name": "contract/louksna-metagente-26-20261123",
+      "from": "main",
+      "sha": "f58acbdb7dfc6722d1dd874729249f06fbbef76d"
+    },
+    "training_execution": {
+      "name": "training/metagente-luna-alta-resolucion-20261123",
+      "from": "feat/metagente-luna-1000-casos-alta-resolucion",
+      "sha": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+      "historical_ref_unchanged": true
+    }
+  },
+  "counter": "0/26"
+}

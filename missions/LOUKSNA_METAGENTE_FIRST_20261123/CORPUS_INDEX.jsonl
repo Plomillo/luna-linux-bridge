@@ -1,0 +1,1050 @@
+{"id": "MGL5-INF-0001", "n": 1, "title": "UTF-8 ASCII", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0002", "n": 2, "title": "UTF-8 multibyte", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0003", "n": 3, "title": "UTF-8 inválido", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0004", "n": 4, "title": "UTF-16 LE", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0005", "n": 5, "title": "UTF-16 BE", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0006", "n": 6, "title": "BOM", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0007", "n": 7, "title": "Endianness", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0008", "n": 8, "title": "Entero sin signo", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0009", "n": 9, "title": "Entero con signo", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0010", "n": 10, "title": "Complemento a dos", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0011", "n": 11, "title": "IEEE 754", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0012", "n": 12, "title": "Float64", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0013", "n": 13, "title": "NaN", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0014", "n": 14, "title": "Infinito", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0015", "n": 15, "title": "Subnormal", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0016", "n": 16, "title": "Unicode NFC", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0017", "n": 17, "title": "Unicode NFD", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0018", "n": 18, "title": "Unicode NFKC", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0019", "n": 19, "title": "Emoji compuesto", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0020", "n": 20, "title": "Grafemas", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0021", "n": 21, "title": "CRLF", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0022", "n": 22, "title": "LF", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0023", "n": 23, "title": "CSV con comillas", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0024", "n": 24, "title": "CSV con saltos", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0025", "n": 25, "title": "JSON tipos", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0026", "n": 26, "title": "JSON Unicode", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0027", "n": 27, "title": "JSON duplicados", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0028", "n": 28, "title": "JSON inválido", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0029", "n": 29, "title": "JSON canónico", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0030", "n": 30, "title": "XML namespaces", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0031", "n": 31, "title": "XML entidades", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0032", "n": 32, "title": "XML inválido", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0033", "n": 33, "title": "YAML tipos", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0034", "n": 34, "title": "YAML ambiguo", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0035", "n": 35, "title": "Protobuf compatibilidad", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0036", "n": 36, "title": "Serialización binaria", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0037", "n": 37, "title": "Truncamiento", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0038", "n": 38, "title": "Longitud maliciosa", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0039", "n": 39, "title": "Versión de esquema", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0040", "n": 40, "title": "Campo desconocido", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0041", "n": 41, "title": "Pérdida numérica", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0042", "n": 42, "title": "Decimal monetario", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0043", "n": 43, "title": "Datos nulos", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0044", "n": 44, "title": "Compresión reversible", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0045", "n": 45, "title": "Compresión corrupta", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0046", "n": 46, "title": "Base64", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0047", "n": 47, "title": "Base64 inválido", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0048", "n": 48, "title": "Hash de contenido", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0049", "n": 49, "title": "Round-trip mixto", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0050", "n": 50, "title": "Canonización integral", "domain": "D01 REPRESENTACIÓN, CODIFICACIÓN Y SERIALIZACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0051", "n": 51, "title": "Identificación por firma", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0052", "n": 52, "title": "Extensión falsa", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0053", "n": 53, "title": "Cabecera ELF", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0054", "n": 54, "title": "Tabla de secciones ELF", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0055", "n": 55, "title": "Tabla de segmentos ELF", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0056", "n": 56, "title": "Símbolos ELF", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0057", "n": 57, "title": "Binario stripped", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0058", "n": 58, "title": "Dependencias dinámicas", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0059", "n": 59, "title": "RPATH y RUNPATH", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0060", "n": 60, "title": "Arquitectura incorrecta", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0061", "n": 61, "title": "PE DOS/NT", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0062", "n": 62, "title": "PE secciones", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0063", "n": 63, "title": "PE importaciones", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0064", "n": 64, "title": "PE truncado", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0065", "n": 65, "title": "APK inventario", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0066", "n": 66, "title": "APK firma", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0067", "n": 67, "title": "DEX cabecera", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0068", "n": 68, "title": "DEX tablas", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0069", "n": 69, "title": "ZIP central directory", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0070", "n": 70, "title": "ZIP path traversal", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0071", "n": 71, "title": "ZIP CRC", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0072", "n": 72, "title": "ZIP nombre duplicado", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0073", "n": 73, "title": "TAR offsets", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0074", "n": 74, "title": "TAR truncado", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0075", "n": 75, "title": "GZIP checksum", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0076", "n": 76, "title": "7z lista", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0077", "n": 77, "title": "Archivo multipartes", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0078", "n": 78, "title": "SQLite estructura", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0079", "n": 79, "title": "SQLite integridad", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0080", "n": 80, "title": "PNG chunks", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0081", "n": 81, "title": "JPEG markers", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0082", "n": 82, "title": "PDF objetos", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0083", "n": 83, "title": "PDF xref", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0084", "n": 84, "title": "PDF cifrado", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0085", "n": 85, "title": "WebAssembly header", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0086", "n": 86, "title": "WASM secciones", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0087", "n": 87, "title": "WASM tipos", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0088", "n": 88, "title": "Archivo desconocido", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0089", "n": 89, "title": "Entropía", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0090", "n": 90, "title": "Diferencia binaria", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0091", "n": 91, "title": "Reconstrucción parcial", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0092", "n": 92, "title": "Metadatos temporales", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0093", "n": 93, "title": "Dependencia recursiva", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0094", "n": 94, "title": "Versionado binario", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0095", "n": 95, "title": "Símbolos dinámicos", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0096", "n": 96, "title": "Sección superpuesta", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0097", "n": 97, "title": "Tamaño engañoso", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0098", "n": 98, "title": "Contenedor anidado", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0099", "n": 99, "title": "Reconstrucción reproducible", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0100", "n": 100, "title": "Informe forense", "domain": "D02 INGENIERÍA INVERSA Y RECONSTRUCCIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0101", "n": 101, "title": "Suma de enteros", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0102", "n": 102, "title": "Máximo y mínimo", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0103", "n": 103, "title": "Búsqueda lineal", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0104", "n": 104, "title": "Búsqueda binaria", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0105", "n": 105, "title": "Ordenamiento estable", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0106", "n": 106, "title": "Ordenamiento inverso", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0107", "n": 107, "title": "Detección de duplicados", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0108", "n": 108, "title": "Paréntesis balanceados", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0109", "n": 109, "title": "Pila", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0110", "n": 110, "title": "Cola FIFO", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0111", "n": 111, "title": "Lista enlazada", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0112", "n": 112, "title": "Árbol BST", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0113", "n": 113, "title": "Árbol balanceado", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0114", "n": 114, "title": "Grafo BFS", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0115", "n": 115, "title": "Grafo DFS", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0116", "n": 116, "title": "Dijkstra", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0117", "n": 117, "title": "Dijkstra pesos negativos", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0118", "n": 118, "title": "Bellman-Ford", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0119", "n": 119, "title": "Complejidad", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0120", "n": 120, "title": "Recursión", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0121", "n": 121, "title": "Profundidad recursiva", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0122", "n": 122, "title": "Memoización", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0123", "n": 123, "title": "Programación dinámica", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0124", "n": 124, "title": "Expresiones regulares", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0125", "n": 125, "title": "Parser simple", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0126", "n": 126, "title": "Tipos estáticos", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0127", "n": 127, "title": "Tipos opcionales", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0128", "n": 128, "title": "Manejo de errores", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0129", "n": 129, "title": "Excepciones", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0130", "n": 130, "title": "RAII", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0131", "n": 131, "title": "Concurrencia race", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0132", "n": 132, "title": "Deadlock", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0133", "n": 133, "title": "Mutex", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0134", "n": 134, "title": "Atomicidad", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0135", "n": 135, "title": "Productor-consumidor", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0136", "n": 136, "title": "Inmutabilidad", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0137", "n": 137, "title": "API contrato", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0138", "n": 138, "title": "Idempotencia API", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0139", "n": 139, "title": "Paginación", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0140", "n": 140, "title": "Validación de entrada", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0141", "n": 141, "title": "Inyección SQL", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0142", "n": 142, "title": "Path traversal", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0143", "n": 143, "title": "Refactorización", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0144", "n": 144, "title": "Diseño modular", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0145", "n": 145, "title": "Pruebas unitarias", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0146", "n": 146, "title": "Pruebas de integración", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0147", "n": 147, "title": "Pruebas de aceptación", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0148", "n": 148, "title": "Fuzzing", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0149", "n": 149, "title": "Mutación de código", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0150", "n": 150, "title": "Reproducibilidad de build", "domain": "D03 PROGRAMACIÓN E INGENIERÍA DE SOFTWARE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0151", "n": 151, "title": "Lexer", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0152", "n": 152, "title": "Lexer cadena", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0153", "n": 153, "title": "Lexer inválido", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0154", "n": 154, "title": "Parser precedencia", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0155", "n": 155, "title": "Parser paréntesis", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0156", "n": 156, "title": "Parser error", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0157", "n": 157, "title": "AST", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0158", "n": 158, "title": "Análisis semántico", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0159", "n": 159, "title": "Scope léxico", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0160", "n": 160, "title": "Shadowing", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0161", "n": 161, "title": "Inferencia de tipos", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0162", "n": 162, "title": "Genéricos", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0163", "n": 163, "title": "Unificación", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0164", "n": 164, "title": "Representación intermedia", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0165", "n": 165, "title": "SSA", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0166", "n": 166, "title": "Dominadores", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0167", "n": 167, "title": "Liveness", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0168", "n": 168, "title": "Constant folding", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0169", "n": 169, "title": "Dead code", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0170", "n": 170, "title": "Common subexpression", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0171", "n": 171, "title": "Bounds checks", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0172", "n": 172, "title": "Overflow compiler", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0173", "n": 173, "title": "ABI llamada", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0174", "n": 174, "title": "ABI incompatible", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0175", "n": 175, "title": "Linking símbolos", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0176", "n": 176, "title": "Símbolo ausente", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0177", "n": 177, "title": "Link estático", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0178", "n": 178, "title": "Link dinámico", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0179", "n": 179, "title": "Intérprete", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0180", "n": 180, "title": "VM stack", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0181", "n": 181, "title": "VM opcode inválido", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0182", "n": 182, "title": "GC alcanzabilidad", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0183", "n": 183, "title": "GC referencias cíclicas", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0184", "n": 184, "title": "Memory leak", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0185", "n": 185, "title": "Stack overflow", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0186", "n": 186, "title": "Excepción runtime", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0187", "n": 187, "title": "Unwind", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0188", "n": 188, "title": "JIT calentamiento", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0189", "n": 189, "title": "JIT equivalencia", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0190", "n": 190, "title": "Desoptimización", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0191", "n": 191, "title": "Warning", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0192", "n": 192, "title": "Source map", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0193", "n": 193, "title": "Optimización nivel 0/2", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0194", "n": 194, "title": "Flags", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0195", "n": 195, "title": "Cross compile", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0196", "n": 196, "title": "Toolchain ausente", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0197", "n": 197, "title": "Compatibilidad runtime", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0198", "n": 198, "title": "Bytecode version", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0199", "n": 199, "title": "Determinismo compilador", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0200", "n": 200, "title": "Cadena completa", "domain": "D04 COMPILADORES, LENGUAJES Y RUNTIMES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0201", "n": 201, "title": "Identificación SO", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0202", "n": 202, "title": "Proceso", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0203", "n": 203, "title": "Señal", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0204", "n": 204, "title": "SIGKILL", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0205", "n": 205, "title": "Zombie", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0206", "n": 206, "title": "Descriptor", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0207", "n": 207, "title": "Límite de descriptores", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0208", "n": 208, "title": "Permisos Unix", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0209", "n": 209, "title": "Umask", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0210", "n": 210, "title": "ACL", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0211", "n": 211, "title": "Propietario", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0212", "n": 212, "title": "Symlink", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0213", "n": 213, "title": "Symlink escape", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0214", "n": 214, "title": "Hardlink", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0215", "n": 215, "title": "Inode", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0216", "n": 216, "title": "Disco lleno simulado", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0217", "n": 217, "title": "Inodos agotados simulados", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0218", "n": 218, "title": "Montaje RO", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0219", "n": 219, "title": "Espacio", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0220", "n": 220, "title": "Mount namespace", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0221", "n": 221, "title": "Memoria virtual", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0222", "n": 222, "title": "OOM controlado", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0223", "n": 223, "title": "Swap", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0224", "n": 224, "title": "Cgroups CPU", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0225", "n": 225, "title": "Cgroups memoria", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0226", "n": 226, "title": "Namespace PID", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0227", "n": 227, "title": "Servicio systemd", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0228", "n": 228, "title": "Reinicio servicio", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0229", "n": 229, "title": "Dependencias servicio", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0230", "n": 230, "title": "Journal", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0231", "n": 231, "title": "Cron", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0232", "n": 232, "title": "Systemd timer", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0233", "n": 233, "title": "Variables entorno", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0234", "n": 234, "title": "PATH", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0235", "n": 235, "title": "Biblioteca compartida", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0236", "n": 236, "title": "Biblioteca ausente", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0237", "n": 237, "title": "Kernel capability", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0238", "n": 238, "title": "sudo boundary", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0239", "n": 239, "title": "Contenedor", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0240", "n": 240, "title": "Imagen de contenedor", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0241", "n": 241, "title": "Volumen persistente", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0242", "n": 242, "title": "Overlay filesystem", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0243", "n": 243, "title": "Backup local", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0244", "n": 244, "title": "Restore", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0245", "n": 245, "title": "Snapshot", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0246", "n": 246, "title": "Kernel logs", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0247", "n": 247, "title": "Boot time", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0248", "n": 248, "title": "Paquetes instalados", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0249", "n": 249, "title": "Dependencias rotas", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0250", "n": 250, "title": "Diagnóstico integral SO", "domain": "D05 SISTEMAS OPERATIVOS E INFRAESTRUCTURA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0251", "n": 251, "title": "IPv4 parsing", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0252", "n": 252, "title": "IPv6 parsing", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0253", "n": 253, "title": "IPv6 inválida", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0254", "n": 254, "title": "Subred IPv4", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0255", "n": 255, "title": "Subred IPv6", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0256", "n": 256, "title": "Máscara inválida", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0257", "n": 257, "title": "DNS A", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0258", "n": 258, "title": "DNS AAAA", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0259", "n": 259, "title": "DNS CNAME", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0260", "n": 260, "title": "DNS NXDOMAIN", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0261", "n": 261, "title": "DNS timeout", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0262", "n": 262, "title": "DNS TTL", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0263", "n": 263, "title": "DNS cache", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0264", "n": 264, "title": "TCP handshake", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0265", "n": 265, "title": "TCP refused", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0266", "n": 266, "title": "TCP timeout", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0267", "n": 267, "title": "TCP retransmisión", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0268", "n": 268, "title": "UDP pérdida", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0269", "n": 269, "title": "UDP duplicación", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0270", "n": 270, "title": "MTU", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0271", "n": 271, "title": "Path MTU", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0272", "n": 272, "title": "HTTP GET", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0273", "n": 273, "title": "HTTP POST", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0274", "n": 274, "title": "HTTP idempotencia", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0275", "n": 275, "title": "HTTP redirect", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0276", "n": 276, "title": "HTTP content length", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0277", "n": 277, "title": "HTTP chunked", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0278", "n": 278, "title": "HTTP compression", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0279", "n": 279, "title": "HTTP cache", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0280", "n": 280, "title": "HTTP range", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0281", "n": 281, "title": "TLS certificado válido", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0282", "n": 282, "title": "TLS certificado expirado", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0283", "n": 283, "title": "TLS hostname", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0284", "n": 284, "title": "TLS CA desconocida", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0285", "n": 285, "title": "TLS versión", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0286", "n": 286, "title": "Socket half-close", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0287", "n": 287, "title": "Keepalive", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0288", "n": 288, "title": "Load balancing", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0289", "n": 289, "title": "Backend caído", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0290", "n": 290, "title": "Health check falso", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0291", "n": 291, "title": "Replicación retrasada", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0292", "n": 292, "title": "Partición de red", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0293", "n": 293, "title": "Split brain", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0294", "n": 294, "title": "Elección de líder", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0295", "n": 295, "title": "Mensajería duplicada", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0296", "n": 296, "title": "Mensajería orden", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0297", "n": 297, "title": "Cola llena", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0298", "n": 298, "title": "Reintentos", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0299", "n": 299, "title": "Idempotencia distribuida", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0300", "n": 300, "title": "Misión distribuida", "domain": "D06 REDES Y SISTEMAS DISTRIBUIDOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0301", "n": 301, "title": "Esquema relacional", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0302", "n": 302, "title": "Normalización 1FN", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0303", "n": 303, "title": "Normalización 2FN", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0304", "n": 304, "title": "Normalización 3FN", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0305", "n": 305, "title": "Clave primaria", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0306", "n": 306, "title": "Clave foránea", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0307", "n": 307, "title": "UNIQUE", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0308", "n": 308, "title": "CHECK", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0309", "n": 309, "title": "NOT NULL", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0310", "n": 310, "title": "Índice B-tree", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0311", "n": 311, "title": "Índice compuesto", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0312", "n": 312, "title": "Índice parcial", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0313", "n": 313, "title": "Índice único", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0314", "n": 314, "title": "SQL JOIN", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0315", "n": 315, "title": "LEFT JOIN", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0316", "n": 316, "title": "GROUP BY", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0317", "n": 317, "title": "NULL semantics", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0318", "n": 318, "title": "SQL injection", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0319", "n": 319, "title": "Transacción commit", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0320", "n": 320, "title": "Transacción rollback", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0321", "n": 321, "title": "Atomicidad", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0322", "n": 322, "title": "Dirty read", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0323", "n": 323, "title": "Non-repeatable read", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0324", "n": 324, "title": "Phantom read", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0325", "n": 325, "title": "Deadlock SQL", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0326", "n": 326, "title": "Lock timeout", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0327", "n": 327, "title": "MVCC snapshot", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0328", "n": 328, "title": "Migración aditiva", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0329", "n": 329, "title": "Migración destructiva protegida", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0330", "n": 330, "title": "Migración reversible", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0331", "n": 331, "title": "Migración parcial", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0332", "n": 332, "title": "Backup lógico", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0333", "n": 333, "title": "Backup físico", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0334", "n": 334, "title": "Restauración PITR", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0335", "n": 335, "title": "Corrupción página", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0336", "n": 336, "title": "WAL/redo", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0337", "n": 337, "title": "Replicación", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0338", "n": 338, "title": "Replica lag", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0339", "n": 339, "title": "Conflicto replicación", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0340", "n": 340, "title": "Documento JSON", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0341", "n": 341, "title": "Índice JSON", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0342", "n": 342, "title": "Clave-valor TTL", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0343", "n": 343, "title": "Caché invalidation", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0344", "n": 344, "title": "Base vectorial", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0345", "n": 345, "title": "Distancia vectorial", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0346", "n": 346, "title": "Grafo nodos", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0347", "n": 347, "title": "Grafo ciclo", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0348", "n": 348, "title": "Integridad referencial", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0349", "n": 349, "title": "Pool conexiones", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0350", "n": 350, "title": "Persistencia integral", "domain": "D07 BASES DE DATOS Y PERSISTENCIA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0351", "n": 351, "title": "Modelo de amenazas", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0352", "n": 352, "title": "Inventario de superficie", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0353", "n": 353, "title": "Autenticación válida", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0354", "n": 354, "title": "Autenticación inválida", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0355", "n": 355, "title": "Enumeración usuarios", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0356", "n": 356, "title": "MFA", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0357", "n": 357, "title": "Token expirado", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0358", "n": 358, "title": "Token firma", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0359", "n": 359, "title": "Token audiencia", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0360", "n": 360, "title": "Rotación de sesión", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0361", "n": 361, "title": "Autorización vertical", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0362", "n": 362, "title": "Autorización horizontal", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0363", "n": 363, "title": "Least privilege", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0364", "n": 364, "title": "Secret scanning", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0365", "n": 365, "title": "Secret leakage logs", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0366", "n": 366, "title": "Cifrado en tránsito", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0367", "n": 367, "title": "Cifrado en reposo", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0368", "n": 368, "title": "Hash password", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0369", "n": 369, "title": "Comparación constante", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0370", "n": 370, "title": "Certificado cadena", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0371", "n": 371, "title": "Certificado revocado", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0372", "n": 372, "title": "Firma artefacto", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0373", "n": 373, "title": "Hash artefacto", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0374", "n": 374, "title": "SBOM", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0375", "n": 375, "title": "Vulnerabilidad dependencia", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0376", "n": 376, "title": "Dependencia no fijada", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0377", "n": 377, "title": "Lockfile", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0378", "n": 378, "title": "Paquete typosquatting", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0379", "n": 379, "title": "Firma repositorio", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0380", "n": 380, "title": "Build provenance", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0381", "n": 381, "title": "Inyección SQL", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0382", "n": 382, "title": "XSS reflejado", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0383", "n": 383, "title": "XSS almacenado", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0384", "n": 384, "title": "CSRF", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0385", "n": 385, "title": "SSRF allowlist", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0386", "n": 386, "title": "Path traversal", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0387", "n": 387, "title": "Deserialización", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0388", "n": 388, "title": "Archivo comprimido bomb", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0389", "n": 389, "title": "Buffer bounds", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0390", "n": 390, "title": "Integer overflow", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0391", "n": 391, "title": "Race security", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0392", "n": 392, "title": "Permisos archivo sensible", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0393", "n": 393, "title": "Contenedor rootless", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0394", "n": 394, "title": "Seccomp", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0395", "n": 395, "title": "Egress control", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0396", "n": 396, "title": "Incidente", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0397", "n": 397, "title": "Respuesta seguridad", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0398", "n": 398, "title": "Restauración segura", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0399", "n": 399, "title": "Threat regression", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0400", "n": 400, "title": "Auditoría de cadena", "domain": "D08 CIBERSEGURIDAD Y CADENA DE SUMINISTRO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0401", "n": 401, "title": "Clasificación binaria", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0402", "n": 402, "title": "Clasificación multiclase", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0403", "n": 403, "title": "Desbalance", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0404", "n": 404, "title": "Leakage", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0405", "n": 405, "title": "Split estratificado", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0406", "n": 406, "title": "Split temporal", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0407", "n": 407, "title": "Overfitting", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0408", "n": 408, "title": "Regularización", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0409", "n": 409, "title": "Calibración", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0410", "n": 410, "title": "Umbral decisión", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0411", "n": 411, "title": "Embedding similitud", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0412", "n": 412, "title": "Embedding dimensión", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0413", "n": 413, "title": "Vector NaN", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0414", "n": 414, "title": "Búsqueda exacta", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0415", "n": 415, "title": "Búsqueda ANN", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0416", "n": 416, "title": "Filtros metadata", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0417", "n": 417, "title": "Reindexación", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0418", "n": 418, "title": "Chunking", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0419", "n": 419, "title": "Overlap chunks", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0420", "n": 420, "title": "Recuperación RAG", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0421", "n": 421, "title": "RAG sin evidencia", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0422", "n": 422, "title": "RAG conflicto", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0423", "n": 423, "title": "RAG obsolescencia", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0424", "n": 424, "title": "Cita exacta", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0425", "n": 425, "title": "Prompt injection documental", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0426", "n": 426, "title": "Recuperación híbrida", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0427", "n": 427, "title": "Ranking", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0428", "n": 428, "title": "Knowledge graph", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0429", "n": 429, "title": "RDF triples", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0430", "n": 430, "title": "RDF namespaces", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0431", "n": 431, "title": "OWL restricción", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0432", "n": 432, "title": "Inconsistencia ontológica", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0433", "n": 433, "title": "Inferencia transitiva", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0434", "n": 434, "title": "Inferencia simétrica", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0435", "n": 435, "title": "Regla lógica", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0436", "n": 436, "title": "Conflicto reglas", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0437", "n": 437, "title": "Memoria conversacional", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0438", "n": 438, "title": "Memoria caducidad", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0439", "n": 439, "title": "Contradicción memoria", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0440", "n": 440, "title": "Hallucination benchmark", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0441", "n": 441, "title": "Abstención calibrada", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0442", "n": 442, "title": "Incertidumbre", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0443", "n": 443, "title": "Robustez paráfrasis", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0444", "n": 444, "title": "Sensibilidad orden", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0445", "n": 445, "title": "Multilingüe", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0446", "n": 446, "title": "Traducción cita", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0447", "n": 447, "title": "Fine-tuning leakage", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0448", "n": 448, "title": "Model drift", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0449", "n": 449, "title": "Evaluación LLM", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0450", "n": 450, "title": "Sistema RAG integral", "domain": "D09 INTELIGENCIA ARTIFICIAL Y SISTEMAS DE CONOCIMIENTO", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0451", "n": 451, "title": "Inicializar repositorio", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0452", "n": 452, "title": "Identidad commit", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0453", "n": 453, "title": "Hash commit", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0454", "n": 454, "title": "Rama", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0455", "n": 455, "title": "Merge fast-forward", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0456", "n": 456, "title": "Merge conflict", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0457", "n": 457, "title": "Abort merge", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0458", "n": 458, "title": "Rebase", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0459", "n": 459, "title": "Rebase conflict", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0460", "n": 460, "title": "Cherry-pick", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0461", "n": 461, "title": "Revert", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0462", "n": 462, "title": "Reset soft", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0463", "n": 463, "title": "Reset hard protegido", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0464", "n": 464, "title": "Stash", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0465", "n": 465, "title": "Bisect", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0466", "n": 466, "title": "Tags", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0467", "n": 467, "title": "Firma commit", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0468", "n": 468, "title": "Git hooks", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0469", "n": 469, "title": ".gitignore", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0470", "n": 470, "title": "Archivo grande", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0471", "n": 471, "title": "Git LFS", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0472", "n": 472, "title": "Submódulo", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0473", "n": 473, "title": "Submódulo desactualizado", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0474", "n": 474, "title": "Historial archivo", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0475", "n": 475, "title": "Blame", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0476", "n": 476, "title": "Repo corrupto", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0477", "n": 477, "title": "Repo shallow", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0478", "n": 478, "title": "Clone mirror", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0479", "n": 479, "title": "Fetch/pull", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0480", "n": 480, "title": "Push non-fast-forward", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0481", "n": 481, "title": "Branch protection", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0482", "n": 482, "title": "Pull request", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0483", "n": 483, "title": "Review requerida", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0484", "n": 484, "title": "CODEOWNERS", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0485", "n": 485, "title": "CI status", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0486", "n": 486, "title": "CI cache", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0487", "n": 487, "title": "Reproducible CI", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0488", "n": 488, "title": "Workflow permisos", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0489", "n": 489, "title": "Secret workflow", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0490", "n": 490, "title": "Dependabot-like update", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0491", "n": 491, "title": "Release tag", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0492", "n": 492, "title": "Changelog", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0493", "n": 493, "title": "Monorepo scope", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0494", "n": 494, "title": "Repo search", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0495", "n": 495, "title": "Binary diff", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0496", "n": 496, "title": "Sparse checkout", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0497", "n": 497, "title": "Worktree", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0498", "n": 498, "title": "Recovery reflog", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0499", "n": 499, "title": "Auditoría histórica", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0500", "n": 500, "title": "Entrega Git integral", "domain": "D10 GIT, GITHUB Y REPOSITORIOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0501", "n": 501, "title": "Script idempotente", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0502", "n": 502, "title": "Script con parámetros", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0503", "n": 503, "title": "Código de salida", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0504", "n": 504, "title": "Pipeline secuencial", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0505", "n": 505, "title": "Pipeline paralelo", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0506", "n": 506, "title": "Dependencia DAG", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0507", "n": 507, "title": "Ciclo DAG", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0508", "n": 508, "title": "Reintento transitorio", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0509", "n": 509, "title": "Reintento permanente", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0510", "n": 510, "title": "Backoff exponencial", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0511", "n": 511, "title": "Timeout tarea", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0512", "n": 512, "title": "Cancelación cooperativa", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0513", "n": 513, "title": "Cancelación forzada", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0514", "n": 514, "title": "Checkpoint", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0515", "n": 515, "title": "Checkpoint corrupto", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0516", "n": 516, "title": "Cola de trabajos", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0517", "n": 517, "title": "Worker caído", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0518", "n": 518, "title": "Lease vencido", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0519", "n": 519, "title": "Lock distribuido", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0520", "n": 520, "title": "Orden de tareas", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0521", "n": 521, "title": "Scheduler cron", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0522", "n": 522, "title": "Cambio DST", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0523", "n": 523, "title": "Reentrada", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0524", "n": 524, "title": "Límite concurrencia", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0525", "n": 525, "title": "Presupuesto recursos", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0526", "n": 526, "title": "Aislamiento tarea", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0527", "n": 527, "title": "Limpieza temporal", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0528", "n": 528, "title": "Variables secretas", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0529", "n": 529, "title": "Rotación secreto", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0530", "n": 530, "title": "Workflow aprobación", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0531", "n": 531, "title": "Dry run", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0532", "n": 532, "title": "Plan divergente", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0533", "n": 533, "title": "Aplicación parcial", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0534", "n": 534, "title": "Saga compensatoria", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0535", "n": 535, "title": "Rollback de despliegue", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0536", "n": 536, "title": "Dos fases", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0537", "n": 537, "title": "Herramienta ausente", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0538", "n": 538, "title": "Versión errónea", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0539", "n": 539, "title": "Tool output", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0540", "n": 540, "title": "Tool timeout", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0541", "n": 541, "title": "Multiagente asignación", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0542", "n": 542, "title": "Multiagente colisión", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0543", "n": 543, "title": "Multiagente procedencia", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0544", "n": 544, "title": "Agente no confiable", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0545", "n": 545, "title": "Contexto excesivo", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0546", "n": 546, "title": "Contexto contradictorio", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0547", "n": 547, "title": "Presupuesto de tokens", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0548", "n": 548, "title": "Ciclo agente", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0549", "n": 549, "title": "Delegación fallida", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0550", "n": 550, "title": "Orquestación integral", "domain": "D11 AUTOMATIZACIÓN, AGENTES Y ORQUESTACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0551", "n": 551, "title": "Log estructurado", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0552", "n": 552, "title": "Redacción", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0553", "n": 553, "title": "Correlación", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0554", "n": 554, "title": "Trace parent", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0555", "n": 555, "title": "Métrica contador", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0556", "n": 556, "title": "Métrica gauge", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0557", "n": 557, "title": "Histograma latencia", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0558", "n": 558, "title": "Cardinalidad", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0559", "n": 559, "title": "Métrica ausente", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0560", "n": 560, "title": "Reloj desincronizado", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0561", "n": 561, "title": "SLI disponibilidad", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0562", "n": 562, "title": "SLI latencia", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0563", "n": 563, "title": "SLO ventana", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0564", "n": 564, "title": "Error budget", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0565", "n": 565, "title": "Alerta umbral", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0566", "n": 566, "title": "Alerta flapping", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0567", "n": 567, "title": "Alerta silenciada", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0568", "n": 568, "title": "Alerta huérfana", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0569", "n": 569, "title": "Saturación CPU", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0570", "n": 570, "title": "Saturación memoria", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0571", "n": 571, "title": "Saturación disco", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0572", "n": 572, "title": "Saturación pool", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0573", "n": 573, "title": "Circuit breaker open", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0574", "n": 574, "title": "Circuit breaker half-open", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0575", "n": 575, "title": "Bulkhead", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0576", "n": 576, "title": "Retry storm", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0577", "n": 577, "title": "Graceful degradation", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0578", "n": 578, "title": "Failover", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0579", "n": 579, "title": "RTO", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0580", "n": 580, "title": "RPO", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0581", "n": 581, "title": "Health liveness", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0582", "n": 582, "title": "Readiness", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0583", "n": 583, "title": "Deadlock detector", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0584", "n": 584, "title": "Heartbeat", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0585", "n": 585, "title": "Progreso falso", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0586", "n": 586, "title": "Cola estancada", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0587", "n": 587, "title": "Ciclo de reintento", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0588", "n": 588, "title": "Infinite loop", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0589", "n": 589, "title": "Starvation", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0590", "n": 590, "title": "Thread pool starvation", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0591", "n": 591, "title": "Memory leak trend", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0592", "n": 592, "title": "Log loss", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0593", "n": 593, "title": "Sampling traces", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0594", "n": 594, "title": "Cardinality attack", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0595", "n": 595, "title": "Diagnóstico causal", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0596", "n": 596, "title": "Postmortem", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0597", "n": 597, "title": "Runbook", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0598", "n": 598, "title": "Prueba caos segura", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0599", "n": 599, "title": "No regresión observabilidad", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0600", "n": 600, "title": "Resiliencia integral", "domain": "D12 OBSERVABILIDAD, RESILIENCIA Y DETECCIÓN DE PARÁLISIS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0601", "n": 601, "title": "Suma flotante", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0602", "n": 602, "title": "Error absoluto", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0603", "n": 603, "title": "Error relativo", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0604", "n": 604, "title": "Cancelación numérica", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0605", "n": 605, "title": "Overflow", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0606", "n": 606, "title": "Underflow", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0607", "n": 607, "title": "Suma compensada", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0608", "n": 608, "title": "Norma vectorial", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0609", "n": 609, "title": "Producto matriz", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0610", "n": 610, "title": "Matriz singular", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0611", "n": 611, "title": "Determinante", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0612", "n": 612, "title": "LU", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0613", "n": 613, "title": "QR", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0614", "n": 614, "title": "Eigenvalues", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0615", "n": 615, "title": "Condition number", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0616", "n": 616, "title": "Newton-Raphson", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0617", "n": 617, "title": "Newton divergencia", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0618", "n": 618, "title": "Bisección", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0619", "n": 619, "title": "Secante", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0620", "n": 620, "title": "Integración trapezoidal", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0621", "n": 621, "title": "Simpson", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0622", "n": 622, "title": "Monte Carlo", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0623", "n": 623, "title": "Varianza", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0624", "n": 624, "title": "Intervalo confianza", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0625", "n": 625, "title": "Bootstrap", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0626", "n": 626, "title": "Correlación", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0627", "n": 627, "title": "Correlación negativa", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0628", "n": 628, "title": "Correlación espuria", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0629", "n": 629, "title": "Regresión lineal", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0630", "n": 630, "title": "Multicolinealidad", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0631", "n": 631, "title": "Overfitting científico", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0632", "n": 632, "title": "Serie temporal", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0633", "n": 633, "title": "Autocorrelación", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0634", "n": 634, "title": "Estacionariedad", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0635", "n": 635, "title": "Fourier", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0636", "n": 636, "title": "Aliasing", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0637", "n": 637, "title": "Filtrado", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0638", "n": 638, "title": "EDO Euler", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0639", "n": 639, "title": "EDO Runge-Kutta", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0640", "n": 640, "title": "Estabilidad EDO", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0641", "n": 641, "title": "Sistema caótico", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0642", "n": 642, "title": "Sensibilidad inicial", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0643", "n": 643, "title": "Optimización convexa", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0644", "n": 644, "title": "Optimización no convexa", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0645", "n": 645, "title": "Gradiente numérico", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0646", "n": 646, "title": "Gradient checking", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0647", "n": 647, "title": "Conservación masa", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0648", "n": 648, "title": "Conservación energía", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0649", "n": 649, "title": "Reproducibilidad semilla", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0650", "n": 650, "title": "Auditoría científica", "domain": "D13 COMPUTACIÓN CIENTÍFICA, MATEMÁTICAS Y SISTEMAS COMPLEJOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0651", "n": 651, "title": "Selector de algoritmos", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0652", "n": 652, "title": "Selector por tamaño", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0653", "n": 653, "title": "Selector por memoria", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0654", "n": 654, "title": "Selector por exactitud", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0655", "n": 655, "title": "Selector por latencia", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0656", "n": 656, "title": "Selector por energía", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0657", "n": 657, "title": "Aprendizaje de umbral", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0658", "n": 658, "title": "Detección de estrategia fallida", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0659", "n": 659, "title": "Transferencia de estrategia", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0660", "n": 660, "title": "Incertidumbre del selector", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0661", "n": 661, "title": "Meta-dataset", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0662", "n": 662, "title": "Meta-feature", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0663", "n": 663, "title": "Selección sesgada", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0664", "n": 664, "title": "Meta-overfitting", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0665", "n": 665, "title": "Adaptación few-shot", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0666", "n": 666, "title": "Adaptación sin etiquetas", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0667", "n": 667, "title": "Detección OOD", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0668", "n": 668, "title": "Cambio de objetivo", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0669", "n": 669, "title": "Objetivos múltiples", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0670", "n": 670, "title": "Restricción dura", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0671", "n": 671, "title": "Aprendizaje de tasa", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0672", "n": 672, "title": "Estrategia de exploración", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0673", "n": 673, "title": "Estrategia de explotación", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0674", "n": 674, "title": "Bandit adaptativo", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0675", "n": 675, "title": "Cambio de régimen", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0676", "n": 676, "title": "Meta-policy", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0677", "n": 677, "title": "Atribución de mejora", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0678", "n": 678, "title": "Ablación meta-feature", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0679", "n": 679, "title": "Ablación selector", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0680", "n": 680, "title": "Selector corrupto", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0681", "n": 681, "title": "Selección por evidencia", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0682", "n": 682, "title": "Confianza mal calibrada", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0683", "n": 683, "title": "Adaptación con límite", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0684", "n": 684, "title": "Meta-learning reproducible", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0685", "n": 685, "title": "Continual meta-learning", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0686", "n": 686, "title": "Catastrophic forgetting", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0687", "n": 687, "title": "Adaptación reversible", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0688", "n": 688, "title": "Revisión de política", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0689", "n": 689, "title": "Metaevaluación", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0690", "n": 690, "title": "Evaluador del selector", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0691", "n": 691, "title": "Estrategia no aplicable", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0692", "n": 692, "title": "Aprendizaje de fallos", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0693", "n": 693, "title": "Detección de deriva", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0694", "n": 694, "title": "Umbral adaptativo", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0695", "n": 695, "title": "Política multiobjetivo", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0696", "n": 696, "title": "Modelo de coste", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0697", "n": 697, "title": "Selector explicable", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0698", "n": 698, "title": "Contrafactual selector", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0699", "n": 699, "title": "Evolución de selector", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0700", "n": 700, "title": "Acreditación metaaprendizaje", "domain": "D14 INGENIERÍA ADAPTATIVA Y METAAPRENDIZAJE", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0701", "n": 701, "title": "Generador base", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0702", "n": 702, "title": "Generación diversa", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0703", "n": 703, "title": "Restricciones duras", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0704", "n": 704, "title": "Restricciones lógicas", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0705", "n": 705, "title": "Generación de grafo", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0706", "n": 706, "title": "Generación de esquema", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0707", "n": 707, "title": "Generación ontológica", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0708", "n": 708, "title": "Generación de reglas", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0709", "n": 709, "title": "Generador condicionado", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0710", "n": 710, "title": "Generador multiobjetivo", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0711", "n": 711, "title": "Generación determinista", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0712", "n": 712, "title": "Generación por plantilla", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0713", "n": 713, "title": "Generación composicional", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0714", "n": 714, "title": "Generación incompatible", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0715", "n": 715, "title": "Generación mínima", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0716", "n": 716, "title": "Redundancia", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0717", "n": 717, "title": "Diversidad estructural", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0718", "n": 718, "title": "Generación inválida", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0719", "n": 719, "title": "SAT/SMT", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0720", "n": 720, "title": "UNSAT", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0721", "n": 721, "title": "Generador con feedback", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0722", "n": 722, "title": "Feedback engañoso", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0723", "n": 723, "title": "Mutación generador", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0724", "n": 724, "title": "Ablación operador", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0725", "n": 725, "title": "Generador redundante", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0726", "n": 726, "title": "Expansión de espacio", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0727", "n": 727, "title": "Búsqueda evolutiva", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0728", "n": 728, "title": "Selección generativa", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0729", "n": 729, "title": "Mutación de candidatos", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0730", "n": 730, "title": "Cruce de candidatos", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0731", "n": 731, "title": "Sobreajuste del generador", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0732", "n": 732, "title": "Robustez del generador", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0733", "n": 733, "title": "Nueva gramática", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0734", "n": 734, "title": "Compatibilidad versión", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0735", "n": 735, "title": "Trazabilidad generativa", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0736", "n": 736, "title": "Costo generativo", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0737", "n": 737, "title": "Límites de búsqueda", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0738", "n": 738, "title": "Generación incremental", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0739", "n": 739, "title": "Regeneración completa", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0740", "n": 740, "title": "Generador autocriticable", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0741", "n": 741, "title": "Evolución estructural G", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0742", "n": 742, "title": "Evolución de operadores", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0743", "n": 743, "title": "Generación recursiva", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0744", "n": 744, "title": "Meta-generador inválido", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0745", "n": 745, "title": "Comparación G0/G1", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0746", "n": 746, "title": "Ablación del cambio G", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0747", "n": 747, "title": "Transferencia G", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0748", "n": 748, "title": "Deriva generativa", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0749", "n": 749, "title": "Reversión G", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0750", "n": 750, "title": "Certificación generador", "domain": "D15 GENERADORES Y METAMODELOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0751", "n": 751, "title": "Evaluador de esquema", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0752", "n": 752, "title": "Falso positivo", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0753", "n": 753, "title": "Falso negativo", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0754", "n": 754, "title": "Evaluador de tipos", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0755", "n": 755, "title": "Evaluador de invariantes", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0756", "n": 756, "title": "Evaluador diferencial", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0757", "n": 757, "title": "Evaluador metamórfico", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0758", "n": 758, "title": "Evaluador de propiedades", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0759", "n": 759, "title": "Oráculo independiente", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0760", "n": 760, "title": "Oráculo defectuoso", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0761", "n": 761, "title": "Evaluador determinista", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0762", "n": 762, "title": "Evaluador estocástico", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0763", "n": 763, "title": "Métrica accuracy", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0764", "n": 764, "title": "Métrica precision/recall", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0765", "n": 765, "title": "Métrica F1", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0766", "n": 766, "title": "Métrica macro/micro", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0767", "n": 767, "title": "Métrica latencia", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0768", "n": 768, "title": "Métrica memoria", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0769", "n": 769, "title": "Métrica robustez", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0770", "n": 770, "title": "Métrica incertidumbre", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0771", "n": 771, "title": "Umbral preregistrado", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0772", "n": 772, "title": "Umbral retrospectivo", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0773", "n": 773, "title": "Test reservado", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0774", "n": 774, "title": "Leakage de evaluador", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0775", "n": 775, "title": "Sesgo de orden", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0776", "n": 776, "title": "Sesgo de longitud", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0777", "n": 777, "title": "Evaluador adversarial", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0778", "n": 778, "title": "Evaluación ciega", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0779", "n": 779, "title": "Doble evaluación", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0780", "n": 780, "title": "Calibración de juez", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0781", "n": 781, "title": "Interevaluador", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0782", "n": 782, "title": "Verificación formal", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0783", "n": 783, "title": "Contramodelo", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0784", "n": 784, "title": "Timeout formal", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0785", "n": 785, "title": "Cobertura de pruebas", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0786", "n": 786, "title": "Mutation score", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0787", "n": 787, "title": "Prueba vacua", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0788", "n": 788, "title": "Evaluación de robustez", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0789", "n": 789, "title": "Evaluación OOD", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0790", "n": 790, "title": "Evaluación transferencia", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0791", "n": 791, "title": "Evolución del evaluador", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0792", "n": 792, "title": "Metaevaluador", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0793", "n": 793, "title": "Evaluador de evidencia", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0794", "n": 794, "title": "Proveniencia de métricas", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0795", "n": 795, "title": "Resistencia a manipulación", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0796", "n": 796, "title": "Independencia de criterio", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0797", "n": 797, "title": "Consistencia entre versiones", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0798", "n": 798, "title": "Regresión evaluativa", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0799", "n": 799, "title": "Reversión evaluador", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0800", "n": 800, "title": "Certificación evaluativa", "domain": "D16 EVALUADORES, VERIFICADORES Y CERTIFICACIÓN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0801", "n": 801, "title": "Inventario M0", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0802", "n": 802, "title": "Línea base M0", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0803", "n": 803, "title": "Limitación reproducible", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0804", "n": 804, "title": "Diagnóstico estructural", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0805", "n": 805, "title": "Hipótesis evolutiva", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0806", "n": 806, "title": "Cambio de generador", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0807", "n": 807, "title": "Cambio de selector", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0808", "n": 808, "title": "Cambio de evaluador", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0809", "n": 809, "title": "Cambio de validador", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0810", "n": 810, "title": "Cambio del controlador", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0811", "n": 811, "title": "Diferencia M0/M1", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0812", "n": 812, "title": "Prueba de equivalencia", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0813", "n": 813, "title": "Ablación M1", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0814", "n": 814, "title": "Comparación justa", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0815", "n": 815, "title": "Métrica preregistrada", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0816", "n": 816, "title": "Test ciego", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0817", "n": 817, "title": "Contraejemplo M1", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0818", "n": 818, "title": "Efecto secundario", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0819", "n": 819, "title": "Complejidad evolutiva", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0820", "n": 820, "title": "Reproducibilidad M1", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0821", "n": 821, "title": "Generador de generadores", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0822", "n": 822, "title": "Selector de evaluadores", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0823", "n": 823, "title": "Evaluador de evoluciones", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0824", "n": 824, "title": "Validador de maquinaria", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0825", "n": 825, "title": "Controlador recursivo", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0826", "n": 826, "title": "Evolución de mecanismo selectivo", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0827", "n": 827, "title": "Evolución de mecanismo evaluativo", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0828", "n": 828, "title": "Evolución de mecanismo validador", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0829", "n": 829, "title": "Evolución del mecanismo de búsqueda", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0830", "n": 830, "title": "Evolución del mecanismo de diagnóstico", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0831", "n": 831, "title": "Construcción de M2", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0832", "n": 832, "title": "Validación de M2", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0833", "n": 833, "title": "Transferencia de M2", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0834", "n": 834, "title": "Transferencia estructural", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0835", "n": 835, "title": "Transferencia de restricciones", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0836", "n": 836, "title": "Transferencia sin ejemplos", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0837", "n": 837, "title": "Transferencia OOD", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0838", "n": 838, "title": "Recursividad auténtica", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0839", "n": 839, "title": "Recursividad aparente", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0840", "n": 840, "title": "Autovalidación circular", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0841", "n": 841, "title": "Manipulación de benchmark", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0842", "n": 842, "title": "Evolución bajo presupuesto", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0843", "n": 843, "title": "Evolución adversarial", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0844", "n": 844, "title": "Evolución reversible", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0845", "n": 845, "title": "Evolución incremental", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0846", "n": 846, "title": "Conflicto de mejoras", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0847", "n": 847, "title": "Deriva recursiva", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0848", "n": 848, "title": "Conservación de capacidades", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0849", "n": 849, "title": "Validación independiente quinta orden", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0850", "n": 850, "title": "Gate quinto orden completo", "domain": "D17 EVOLUCIÓN RECURSIVA DE QUINTO ORDEN", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0851", "n": 851, "title": "Transferencia de arrays a listas", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0852", "n": 852, "title": "Transferencia de listas a árboles", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0853", "n": 853, "title": "Transferencia CPU a GPU", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0854", "n": 854, "title": "Transferencia GPU ausente", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0855", "n": 855, "title": "Transferencia Linux a Windows", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0856", "n": 856, "title": "Transferencia Windows a Linux", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0857", "n": 857, "title": "Transferencia de lenguaje", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0858", "n": 858, "title": "Transferencia compilado a interpretado", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0859", "n": 859, "title": "Transferencia SQL a documental", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0860", "n": 860, "title": "Transferencia local a distribuido", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0861", "n": 861, "title": "Transferencia API REST a mensajería", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0862", "n": 862, "title": "Transferencia formato JSON a binario", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0863", "n": 863, "title": "Transferencia de modelo tabular a texto", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0864", "n": 864, "title": "Transferencia de texto a grafo", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0865", "n": 865, "title": "Transferencia de ontología", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0866", "n": 866, "title": "Transferencia a código desconocido", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0867", "n": 867, "title": "Transferencia a formato nuevo", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0868", "n": 868, "title": "Transferencia a protocolo nuevo", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0869", "n": 869, "title": "Transferencia a hardware limitado", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0870", "n": 870, "title": "Transferencia a alta carga", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0871", "n": 871, "title": "Transferencia a baja latencia", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0872", "n": 872, "title": "Transferencia a alta precisión", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0873", "n": 873, "title": "Transferencia a datos faltantes", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0874", "n": 874, "title": "Transferencia a ruido", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0875", "n": 875, "title": "Transferencia a datos adversariales", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0876", "n": 876, "title": "Transferencia temporal", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0877", "n": 877, "title": "Transferencia multilingüe", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0878", "n": 878, "title": "Transferencia semántica", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0879", "n": 879, "title": "Transferencia de género", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0880", "n": 880, "title": "Transferencia de problema matemático", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0881", "n": 881, "title": "Transferencia científica", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0882", "n": 882, "title": "Transferencia de dominio clínico simulado", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0883", "n": 883, "title": "Transferencia financiera simulada", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0884", "n": 884, "title": "Transferencia industrial simulada", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0885", "n": 885, "title": "Transferencia documental", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0886", "n": 886, "title": "Transferencia histórica", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0887", "n": 887, "title": "Transferencia hermenéutica", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0888", "n": 888, "title": "Transferencia adversarial de instrucciones", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0889", "n": 889, "title": "Transferencia con evidencia parcial", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0890", "n": 890, "title": "Transferencia sin benchmark", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0891", "n": 891, "title": "Test de generalización ciego", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0892", "n": 892, "title": "Test de extrapolación", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0893", "n": 893, "title": "Test de composición", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0894", "n": 894, "title": "Test de abstracción", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0895", "n": 895, "title": "Test de invariancia", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0896", "n": 896, "title": "Test de cambio causal", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0897", "n": 897, "title": "Transferencia de maquinaria M1", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0898", "n": 898, "title": "Transferencia de maquinaria M2", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0899", "n": 899, "title": "Generalización adversarial", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0900", "n": 900, "title": "Gate de transferencia", "domain": "D18 TRANSFERENCIA, GENERALIZACIÓN Y PROBLEMAS INÉDITOS", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0901", "n": 901, "title": "Autorización mínima", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0902", "n": 902, "title": "Separación funciones", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0903", "n": 903, "title": "Doble aprobación", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0904", "n": 904, "title": "No escalada privilegios", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0905", "n": 905, "title": "Cambio silencioso", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0906", "n": 906, "title": "Integridad de logs", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0907", "n": 907, "title": "Proveniencia de entrada", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0908", "n": 908, "title": "Proveniencia de salida", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0909", "n": 909, "title": "Trazabilidad decisión", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0910", "n": 910, "title": "Hecho vs inferencia", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0911", "n": 911, "title": "Incertidumbre explícita", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0912", "n": 912, "title": "Fuente contradictoria", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0913", "n": 913, "title": "Actualidad", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0914", "n": 914, "title": "Afirmación falsable", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0915", "n": 915, "title": "Confirmación sesgo", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0916", "n": 916, "title": "Sesgo de selección", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0917", "n": 917, "title": "Sesgo de supervivencia", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0918", "n": 918, "title": "Causalidad", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0919", "n": 919, "title": "Hipótesis alternativa", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0920", "n": 920, "title": "Falsa precisión", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0921", "n": 921, "title": "Reproducibilidad", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0922", "n": 922, "title": "Replicabilidad", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0923", "n": 923, "title": "Auditoría externa", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0924", "n": 924, "title": "Conflicto de interés", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0925", "n": 925, "title": "Afirmación no sustentada", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0926", "n": 926, "title": "Simulación declarada", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0927", "n": 927, "title": "Herramienta inexistente", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0928", "n": 928, "title": "Datos personales", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0929", "n": 929, "title": "Retención", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0930", "n": 930, "title": "Exposición accidental", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0931", "n": 931, "title": "Alcance de permiso", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0932", "n": 932, "title": "Cambio de alcance", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0933", "n": 933, "title": "Reversibilidad", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0934", "n": 934, "title": "Punto de control", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0935", "n": 935, "title": "Evidencia preservada", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0936", "n": 936, "title": "No sobrescritura", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0937", "n": 937, "title": "Gestión de versiones", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0938", "n": 938, "title": "Conflicto de autoridad", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0939", "n": 939, "title": "Instrucción hostil externa", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0940", "n": 940, "title": "Protección del evaluador", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0941", "n": 941, "title": "Límite de autonomía", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0942", "n": 942, "title": "Gestión de riesgo", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0943", "n": 943, "title": "Riesgo residual", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0944", "n": 944, "title": "Incidente crítico", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0945", "n": 945, "title": "Auditoría completa", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0946", "n": 946, "title": "Consistencia epistemológica", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0947", "n": 947, "title": "Calidad de fuente", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0948", "n": 948, "title": "Revisión de afirmaciones", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0949", "n": 949, "title": "Criterio de detención", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0950", "n": 950, "title": "Gobernanza integral", "domain": "D19 GOBERNANZA, INTEGRIDAD, EPISTEMOLOGÍA Y AUTONOMÍA", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0951", "n": 951, "title": "Archivo a ejecutable", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0952", "n": 952, "title": "Binario a dependencia", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0953", "n": 953, "title": "Recuperación de datos", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0954", "n": 954, "title": "Servicio degradado", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0955", "n": 955, "title": "Cadena software", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0956", "n": 956, "title": "Vulnerabilidad y corrección", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0957", "n": 957, "title": "Migración de sistema", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0958", "n": 958, "title": "Red y persistencia", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0959", "n": 959, "title": "API y cola", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0960", "n": 960, "title": "RAG auditado", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0961", "n": 961, "title": "Datos a modelo", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0962", "n": 962, "title": "OOD y abstención", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0963", "n": 963, "title": "Generación y compilación", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0964", "n": 964, "title": "Generación con mutación", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0965", "n": 965, "title": "Orquestación interrumpida", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0966", "n": 966, "title": "Multiagente con desacuerdo", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0967", "n": 967, "title": "Fallo múltiple", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0968", "n": 968, "title": "Recursos restringidos", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0969", "n": 969, "title": "Ataque de prompt injection", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0970", "n": 970, "title": "Artefacto falsificado", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0971", "n": 971, "title": "Benchmark manipulado", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0972", "n": 972, "title": "Evaluador sesgado", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0973", "n": 973, "title": "Certificación circular", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0974", "n": 974, "title": "Fallo no reproducible", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0975", "n": 975, "title": "Error de especificación", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0976", "n": 976, "title": "Cambio de requisito", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0977", "n": 977, "title": "Regresión cruzada", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0978", "n": 978, "title": "Recuperación forense", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0979", "n": 979, "title": "Reproducción científica", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0980", "n": 980, "title": "Causalidad experimental", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0981", "n": 981, "title": "Misión de metamodelo", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0982", "n": 982, "title": "Misión de generador evolutivo", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0983", "n": 983, "title": "Misión de selector evolutivo", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0984", "n": 984, "title": "Misión de evaluador evolutivo", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0985", "n": 985, "title": "Misión de validador evolutivo", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0986", "n": 986, "title": "Misión de controlador evolutivo", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0987", "n": 987, "title": "Misión M0→M1", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0988", "n": 988, "title": "Misión M1→M2", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0989", "n": 989, "title": "Misión dominio inédito", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0990", "n": 990, "title": "Misión doble dominio", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0991", "n": 991, "title": "Misión metateológica", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0992", "n": 992, "title": "Misión epistemológica", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0993", "n": 993, "title": "Misión científica", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0994", "n": 994, "title": "Misión interdisciplinaria", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0995", "n": 995, "title": "Misión de autonomía segura", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0996", "n": 996, "title": "Misión anti-parálisis", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0997", "n": 997, "title": "Misión de no regresión", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0998", "n": 998, "title": "Misión adversarial externa", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-0999", "n": 999, "title": "Reproducción integral independiente", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-INF-1000", "n": 1000, "title": "ACREDITACIÓN INFORMÁTICA FINAL", "domain": "D20 MISIONES INTEGRADAS Y PRUEBAS ADVERSARIALES FINALES", "kind": "INF", "program_state": "NOT_RUN"}
+{"id": "MGL5-TEO-0001", "n": 1, "title": "Referencia", "operation": "Verificar libro, capítulo y versículo citados.", "criterion": "PASS si la referencia existe y el contenido corresponde al pasaje.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0002", "n": 2, "title": "Contexto inmediato", "operation": "Analizar un versículo junto con los párrafos anterior y posterior.", "criterion": "PASS si la conclusión no contradice el argumento inmediato sin justificación.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0003", "n": 3, "title": "Unidad literaria", "operation": "Delimitar una perícopa narrativa.", "criterion": "PASS si límites y criterio literario quedan justificados.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0004", "n": 4, "title": "Género", "operation": "Diferenciar poesía, narrativa, profecía y epístola en cuatro textos.", "criterion": "PASS si identifica rasgos relevantes y ajusta método de interpretación.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0005", "n": 5, "title": "Descripción/prescripción", "operation": "Evaluar una acción descrita en narrativa bíblica.", "criterion": "PASS si no la convierte automáticamente en mandato universal.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0006", "n": 6, "title": "Cita parcial", "operation": "Comparar cita abreviada y pasaje completo.", "criterion": "PASS si detecta omisión que cambia el sentido.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0007", "n": 7, "title": "Traducción", "operation": "Comparar dos traducciones de un pasaje con diferencia semántica.", "criterion": "PASS si registra diferencias y no inventa equivalencia total.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0008", "n": 8, "title": "Variante textual", "operation": "Analizar una variante documentada.", "criterion": "PASS si distingue lectura textual, evidencia y efecto interpretativo.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0009", "n": 9, "title": "Griego koiné", "operation": "Identificar forma morfológica de término en fixture.", "criterion": "PASS si análisis coincide con fuente lingüística y contexto.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0010", "n": 10, "title": "Hebreo bíblico", "operation": "Analizar forma verbal de un pasaje de prueba.", "criterion": "PASS si distingue raíz, forma, aspecto y función contextual.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0011", "n": 11, "title": "Sintaxis", "operation": "Identificar sujeto, verbo y complementos en una oración del corpus.", "criterion": "PASS si dependencias sintácticas se justifican.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0012", "n": 12, "title": "Semántica contextual", "operation": "Comparar usos de una palabra en dos pasajes.", "criterion": "PASS si no presupone que todos los usos significan lo mismo.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0013", "n": 13, "title": "Falacia léxica", "operation": "Introducir argumento basado en todos los sentidos posibles de una palabra.", "criterion": "PASS si identifica falacia y evalúa el sentido contextual.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0014", "n": 14, "title": "Campo semántico", "operation": "Evaluar término dentro de su campo léxico.", "criterion": "PASS si distingue relación semántica de equivalencia absoluta.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0015", "n": 15, "title": "Pragmática", "operation": "Analizar ironía o pregunta retórica en texto de prueba.", "criterion": "PASS si identifica función comunicativa con evidencia contextual.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0016", "n": 16, "title": "Contexto histórico", "operation": "Analizar referencia a costumbre del período bíblico.", "criterion": "PASS si distingue evidencia histórica de inferencia moderna.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0017", "n": 17, "title": "Contexto cultural", "operation": "Interpretar institución social antigua.", "criterion": "PASS si no aplica automáticamente categorías modernas sin mediación histórica.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0018", "n": 18, "title": "Contexto canónico", "operation": "Comparar tema presente en dos libros distintos.", "criterion": "PASS si conserva diferencias de contexto y demuestra relación.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0019", "n": 19, "title": "Progresión de revelación", "operation": "Examinar desarrollo de promesa entre dos etapas del canon.", "criterion": "PASS si secuencia se apoya en textos y no se impone retrospectivamente.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0020", "n": 20, "title": "Tipología", "operation": "Evaluar propuesta tipológica.", "criterion": "PASS si existe correspondencia textual y canónica y no es analogía arbitraria.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0021", "n": 21, "title": "Pacto", "operation": "Comparar formulación de pactos en pasajes de referencia.", "criterion": "PASS si distingue elementos explícitos e inferencias sistemáticas.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0022", "n": 22, "title": "Cristología", "operation": "Analizar afirmación cristológica con pasajes relevantes.", "criterion": "PASS si distingue afirmación explícita, inferencia y síntesis doctrinal.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0023", "n": 23, "title": "Trinidad", "operation": "Evaluar conjunto de textos trinitarios.", "criterion": "PASS si representa distinciones doctrinales sin atribuir términos técnicos literalmente a cada pasaje.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0024", "n": 24, "title": "Pneumatología", "operation": "Analizar referencias al Espíritu Santo en dos géneros.", "criterion": "PASS si interpreta cada texto en su contexto y no homogeneiza funciones distintas.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0025", "n": 25, "title": "Antropología", "operation": "Analizar afirmaciones sobre cuerpo, alma y persona.", "criterion": "PASS si distingue lenguaje textual, modelo antropológico y debate sistemático.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0026", "n": 26, "title": "Hamartiología", "operation": "Evaluar textos sobre pecado y responsabilidad.", "criterion": "PASS si conserva alcance y contexto de cada afirmación.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0027", "n": 27, "title": "Depravación total", "operation": "Construir síntesis con textos pertinentes.", "criterion": "PASS si argumenta alcance doctrinal y distingue incapacidad moral de afirmaciones que los textos no hacen.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0028", "n": 28, "title": "Elección incondicional", "operation": "Examinar textos utilizados en la doctrina de elección.", "criterion": "PASS si identifica premisas, inferencias y posibles objeciones sin circularidad.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0029", "n": 29, "title": "Expiación definida", "operation": "Comparar textos de alcance universal y particular.", "criterion": "PASS si interpreta cada pasaje en contexto y explicita la síntesis doctrinal resultante.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0030", "n": 30, "title": "Llamamiento eficaz", "operation": "Analizar textos sobre llamamiento, respuesta y gracia.", "criterion": "PASS si distingue llamamiento externo e interno cuando la interpretación lo requiere.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0031", "n": 31, "title": "Perseverancia", "operation": "Examinar textos de seguridad y advertencia.", "criterion": "PASS si integra ambos grupos sin eliminar la función de ninguno.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0032", "n": 32, "title": "Justificación", "operation": "Diferenciar declaración forense y transformación ética.", "criterion": "PASS si no confunde justificación y santificación.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0033", "n": 33, "title": "Regeneración", "operation": "Analizar prioridad lógica y temporal en distintos modelos.", "criterion": "PASS si presenta el marco reformado como síntesis y reconoce las cuestiones debatidas.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0034", "n": 34, "title": "Conversión", "operation": "Diferenciar arrepentimiento, fe y fruto.", "criterion": "PASS si define relaciones con sustento textual y evita reducir conversión a emoción.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0035", "n": 35, "title": "Bautismo", "operation": "Analizar relación entre conversión, fe y bautismo.", "criterion": "PASS si distingue mandato, signo, experiencia y debate sacramental.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0036", "n": 36, "title": "Eclesiología", "operation": "Diferenciar iglesia como comunidad y edificio físico.", "criterion": "PASS si la interpretación responde al uso contextual de ekklesia y no reduce el concepto a inmueble.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0037", "n": 37, "title": "Sacramentos", "operation": "Comparar formulaciones de bautismo y Cena.", "criterion": "PASS si distingue descripción bíblica y explicación confesional.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0038", "n": 38, "title": "Escatología", "operation": "Interpretar pasaje apocalíptico.", "criterion": "PASS si considera género, símbolos y contexto sin literalismo automático.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0039", "n": 39, "title": "Historia doctrinal", "operation": "Ubicar una controversia en período y contexto conocidos.", "criterion": "PASS si fuentes y cronología son verificables.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0040", "n": 40, "title": "Reforma", "operation": "Comparar formulaciones históricas de Sola Scriptura.", "criterion": "PASS si no proyecta formulación moderna sin evidencia sobre todos los reformadores.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0041", "n": 41, "title": "Confesiones", "operation": "Comparar una confesión reformada con un pasaje bíblico.", "criterion": "PASS si identifica concordancias, síntesis y diferencias interpretativas.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0042", "n": 42, "title": "Postura alternativa", "operation": "Reconstruir fielmente una posición no reformada.", "criterion": "PASS si un defensor informado reconoce la presentación como justa.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0043", "n": 43, "title": "Refutación", "operation": "Evaluar argumento doctrinal con premisas explícitas.", "criterion": "PASS si la crítica responde a las premisas reales y no a una caricatura.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0044", "n": 44, "title": "Argumento circular", "operation": "Presentar razonamiento que presupone su conclusión.", "criterion": "PASS si detecta circularidad y explica el punto de cierre.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0045", "n": 45, "title": "Prueba-texto", "operation": "Presentar pasaje fuera de contexto para apoyar doctrina.", "criterion": "PASS si recupera contexto y determina si el uso es legítimo.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0046", "n": 46, "title": "Anacronismo", "operation": "Interpretar institución antigua mediante categoría moderna.", "criterion": "PASS si detecta desplazamiento histórico y propone formulación prudente.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0047", "n": 47, "title": "Eiségesis", "operation": "Introducir premisa doctrinal previa no demostrada por el texto.", "criterion": "PASS si identifica la premisa y separa lectura del supuesto.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0048", "n": 48, "title": "Síntesis doctrinal", "operation": "Construir doctrina usando varias unidades textuales.", "criterion": "PASS si cada premisa tiene referencia y se explicita la inferencia.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0049", "n": 49, "title": "Evolución hermenéutica", "operation": "Modificar procedimiento después de detectar una falacia recurrente.", "criterion": "PASS si mejora detección en corpus no utilizado durante el diseño y conserva interpretaciones válidas.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}
+{"id": "MGL5-TEO-0050", "n": 50, "title": "Metateología de quinto orden", "operation": "Evolucionar el mecanismo que genera, selecciona y valida métodos exegéticos y transferirlo a un género no usado en el desarrollo.", "criterion": "PASS si hay cambio estructural, comparación, validación humana independiente y segunda evolución demostrada.", "kind": "TEO", "program_state": "NOT_COUNTED_AS_INF"}

@@ -1,0 +1,7 @@
+{
+  "ram_budget_bytes": 1073741824,
+  "cpu_budget_cores": 1,
+  "type": "TARGET_BUDGET_NOT_REQUIRED_CONSUMPTION",
+  "minimum_consumption": null,
+  "measurements": []
+}

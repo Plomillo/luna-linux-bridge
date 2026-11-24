@@ -1,0 +1,31 @@
+{
+  "required_fields": [
+    "id",
+    "recorded_at",
+    "commit",
+    "branch",
+    "operation",
+    "input",
+    "expected",
+    "observed",
+    "hash",
+    "state"
+  ],
+  "condition_states": [
+    "NOT_STARTED",
+    "IN_PROGRESS",
+    "BLOCKED",
+    "FAILED",
+    "AWAITING_VALIDATION",
+    "PASS",
+    "REOPENED"
+  ],
+  "case_states": [
+    "PASS",
+    "FAIL",
+    "BLOCKED",
+    "INCONCLUSIVE",
+    "NOT_RUN"
+  ],
+  "rule": "NOT_RUN, BLOCKED and INCONCLUSIVE are never PASS."
+}

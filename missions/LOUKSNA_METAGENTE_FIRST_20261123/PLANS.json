@@ -1,0 +1,9 @@
+{
+  "entries": [
+    {
+      "id": "PLAN-CONTINUITY-20261124",
+      "state": "AUTHORIZED",
+      "scope": "Execute PROTODEFINITIVO in order on isolated refs. Do not move historical branches. Do not alter rector documents."
+    }
+  ]
+}
