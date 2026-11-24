@@ -1,0 +1,6 @@
+{
+  "state": "PASS",
+  "evidence_commit": "7608be11b7d3feadb81f6863e3b00c8d4576b11b",
+  "verdict_recorded_at": "2026-11-24T03:51:25Z",
+  "summary": "Source inventory on the evidence commit records verified tips, ancestry, the mother-SHA discrepancy, the missing git tag, the absent Piper model blobs, and the governance-blob divergence."
+}

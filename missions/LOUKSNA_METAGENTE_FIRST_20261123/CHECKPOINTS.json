@@ -1,15 +1,21 @@
 {
   "CP-C01": {
-    "state": "OPEN",
-    "commit": null
+    "state": "PASS",
+    "evidence_commit": "7608be11b7d3feadb81f6863e3b00c8d4576b11b",
+    "verdict_recorded_at": "2026-11-24T03:51:25Z",
+    "summary": "Contract branch exists, parent is main f58acbdb, PROTODEFINITIVO blob c40ca28e unchanged, counter file on evidence commit reads 0/26, schema and persistence registers present. main and feat tips unchanged."
   },
   "CP-C02": {
-    "state": "OPEN",
-    "commit": null
+    "state": "PASS",
+    "evidence_commit": "7608be11b7d3feadb81f6863e3b00c8d4576b11b",
+    "verdict_recorded_at": "2026-11-24T03:51:25Z",
+    "summary": "Source inventory on the evidence commit records verified tips, ancestry, the mother-SHA discrepancy, the missing git tag, the absent Piper model blobs, and the governance-blob divergence."
   },
   "CP-C03": {
-    "state": "OPEN",
-    "commit": null
+    "state": "PASS",
+    "evidence_commit": "7608be11b7d3feadb81f6863e3b00c8d4576b11b",
+    "verdict_recorded_at": "2026-11-24T03:51:25Z",
+    "summary": "CORPUS_INDEX.jsonl on the evidence commit contains MGL5-INF-0001..1000 and MGL5-TEO-0001..0050. Original program blob c259b6bc remains on feat and on the training ref. Program file was not modified. All 1000 INF records remain program-state NOT_RUN."
   },
   "CP-C04": {
     "state": "OPEN",

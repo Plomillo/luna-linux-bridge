@@ -1,3 +1,28 @@
 {
-  "entries": []
+  "entries": [
+    {
+      "id": "C01",
+      "state": "PASS",
+      "recorded_at": "2026-11-24T03:51:25Z",
+      "evidence_commit": "7608be11b7d3feadb81f6863e3b00c8d4576b11b",
+      "summary": "Contract branch exists, parent is main f58acbdb, PROTODEFINITIVO blob c40ca28e unchanged, counter file on evidence commit reads 0/26, schema and persistence registers present. main and feat tips unchanged.",
+      "method": "GitHub re-read of evidence commit; historical refs re-read and unchanged."
+    },
+    {
+      "id": "C02",
+      "state": "PASS",
+      "recorded_at": "2026-11-24T03:51:25Z",
+      "evidence_commit": "7608be11b7d3feadb81f6863e3b00c8d4576b11b",
+      "summary": "Source inventory on the evidence commit records verified tips, ancestry, the mother-SHA discrepancy, the missing git tag, the absent Piper model blobs, and the governance-blob divergence.",
+      "method": "GitHub re-read of evidence commit; historical refs re-read and unchanged."
+    },
+    {
+      "id": "C03",
+      "state": "PASS",
+      "recorded_at": "2026-11-24T03:51:25Z",
+      "evidence_commit": "7608be11b7d3feadb81f6863e3b00c8d4576b11b",
+      "summary": "CORPUS_INDEX.jsonl on the evidence commit contains MGL5-INF-0001..1000 and MGL5-TEO-0001..0050. Original program blob c259b6bc remains on feat and on the training ref. Program file was not modified. All 1000 INF records remain program-state NOT_RUN.",
+      "method": "GitHub re-read of evidence commit; historical refs re-read and unchanged."
+    }
+  ]
 }

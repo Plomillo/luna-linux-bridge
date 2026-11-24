@@ -1,9 +1,9 @@
 {
-  "recorded_at": "2026-11-24T03:50:04Z",
+  "recorded_at": "2026-11-24T03:51:25Z",
   "states": {
-    "C01": "IN_PROGRESS",
-    "C02": "NOT_STARTED",
-    "C03": "NOT_STARTED",
+    "C01": "PASS",
+    "C02": "PASS",
+    "C03": "PASS",
     "C04": "NOT_STARTED",
     "C05": "NOT_STARTED",
     "C06": "NOT_STARTED",
