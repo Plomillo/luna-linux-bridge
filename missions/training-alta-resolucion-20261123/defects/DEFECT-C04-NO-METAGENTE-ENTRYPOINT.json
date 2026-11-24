@@ -1,0 +1,12 @@
+{
+  "DEFECT_ID": "DEFECT-C04-NO-METAGENTE-ENTRYPOINT",
+  "category": "IDENTITY_OR_VERSION_DEFECT",
+  "condition": "C04",
+  "component": "METAGENTE LUNA",
+  "affected_commit": "1d37479975a91a95153f1bd486841c2046689b81",
+  "signature": "NO_FILE_AND_NO_CALLABLE_NAMED_AS_AGENT_ENTRYPOINT",
+  "root_cause": "No recoverable implementation in the authorized tree exposes an entry point that receives a training instruction and returns a response attributable to METAGENTE LUNA.",
+  "state": "OPEN_EXTERNAL_TO_INVENTION",
+  "not_repaired_because": "Inventing an agent identity or substituting cajita_router or helper functions is forbidden.",
+  "recorded_at": "2026-11-24T05:34:49Z"
+}

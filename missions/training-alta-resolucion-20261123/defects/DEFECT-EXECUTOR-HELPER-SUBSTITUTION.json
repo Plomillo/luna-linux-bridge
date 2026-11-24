@@ -1,0 +1,12 @@
+{
+  "DEFECT_ID": "DEFECT-EXECUTOR-HELPER-SUBSTITUTION",
+  "category": "EXECUTION_DEFECT",
+  "condition": "C05",
+  "component": "missions/training-alta-resolucion-20261123/runner/run_d01_first.py",
+  "affected_commit": "1d37479975a91a95153f1bd486841c2046689b81",
+  "signature": "program_original_state=NOT_RUN plus local Python oracle functions",
+  "root_cause": "The runner evaluated auxiliary functions and recorded PASS. It did not invoke METAGENTE LUNA.",
+  "repair": "QUARANTINE_APPEND_ONLY. Original runner and JSON results are unchanged.",
+  "state": "MITIGATED_NOT_CLOSED",
+  "recorded_at": "2026-11-24T05:34:49Z"
+}

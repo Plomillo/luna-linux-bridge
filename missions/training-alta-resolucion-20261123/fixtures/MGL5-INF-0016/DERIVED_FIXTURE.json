@@ -1,0 +1,19 @@
+{
+  "DEFECT_ID": "DEFECT-FIXTURE-MGL5-INF-0016",
+  "SOURCE_OPERATION": "Normalizar \"e\" + U+0301 y comparar con U+00E9.",
+  "SOURCE_LITERAL_VALUES": [
+    "0301",
+    "00"
+  ],
+  "DERIVED_INPUTS": [
+    "U+0065 U+0301",
+    "U+00E9"
+  ],
+  "DERIVED_OPERATION": "NFC",
+  "DERIVATION_REASON": "Operation names both code points. Literal 00 is an incomplete token and is preserved, not corrected in the source.",
+  "execution": "NOT_RUN",
+  "independent_review": "NOT_DONE",
+  "accreditation": false,
+  "recorded_at": "2026-11-24T05:34:49Z",
+  "source_program_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf"
+}

@@ -1,0 +1,16 @@
+{
+  "DEFECT_ID": "DEFECT-FIXTURE-MGL5-INF-0308",
+  "SOURCE_OPERATION_VALUE": -4,
+  "SOURCE_LITERAL_VALUES": [
+    4,
+    0
+  ],
+  "DERIVED_CONSTRAINT": "edad >= 0",
+  "DERIVED_EXPECTED": "REJECT",
+  "DERIVATION_REASON": "Operation inserts -4. Literals contain 4 without the sign. PASS requires rejection.",
+  "execution": "NOT_RUN",
+  "independent_review": "NOT_DONE",
+  "accreditation": false,
+  "recorded_at": "2026-11-24T05:34:49Z",
+  "source_program_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf"
+}

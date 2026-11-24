@@ -1,0 +1,31 @@
+{
+  "DEFECT_ID": "DEFECT-FIXTURE-MGL5-INF-0009",
+  "SOURCE_OPERATION_VALUES": [
+    -32768,
+    -1,
+    0,
+    32767
+  ],
+  "SOURCE_LITERAL_VALUES": [
+    32768,
+    1,
+    0,
+    32767
+  ],
+  "DERIVED_VALID_INT16": [
+    -32768,
+    -1,
+    0,
+    32767
+  ],
+  "DERIVED_OUT_OF_RANGE": [
+    -32769,
+    32768
+  ],
+  "DERIVATION_REASON": "Operation names the four values to recover. Literal list dropped the minus signs on 32768 and 1. Both declarations are preserved. 32768 is out of signed int16 range; -32769 is the other adjacent exterior.",
+  "execution": "NOT_RUN",
+  "independent_review": "NOT_DONE",
+  "accreditation": false,
+  "recorded_at": "2026-11-24T05:34:49Z",
+  "source_program_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf"
+}
