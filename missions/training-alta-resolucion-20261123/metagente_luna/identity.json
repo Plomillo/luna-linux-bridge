@@ -1,0 +1,18 @@
+{
+  "AGENT_ID": "METAGENTE_LUNA",
+  "AGENT_VERSION": "M0-20261124.1",
+  "MACHINERY": "M0",
+  "PROVENANCE": "NEW_IMPLEMENTATION",
+  "HISTORICAL_RECOVERY": false,
+  "CREATED_BECAUSE": "Authorized refs contained no component that accepts an MGL5 instruction and returns its own response.",
+  "NOT_COPIED_FROM": [
+    "validation/luna/agent.py",
+    "louksna/mra_suite/fifth_w.py",
+    "cajita-luna-runtime/cajita_router.py",
+    "implementation/super1200/core/super1200_core/foundation.py",
+    "missions/training-alta-resolucion-20261123/runner/run_d01_first.py"
+  ],
+  "WEIGHT_TRAINING": "NOT_USED",
+  "CASE_ID_TABLE": false,
+  "SELF_CERTIFIES": false
+}

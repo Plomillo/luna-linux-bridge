@@ -1,0 +1,12 @@
+{
+  "recorded_at": "2026-11-24T14:15:47Z",
+  "agent": "METAGENTE_LUNA",
+  "version": "M0-20261124.1",
+  "provenance": "NEW_IMPLEMENTATION",
+  "smoke": "synthetic instructions only; three clean processes each",
+  "corpus_cases_executed": 0,
+  "c04": "REOPENED",
+  "c05": "BLOCKED",
+  "reason_c04_not_passed": "M0 executes the mechanisms it implements. The 1,000-case laboratory is not ready: the named original program was not recovered, and unmatched instructions fail closed.",
+  "counter": "3/26"
+}
