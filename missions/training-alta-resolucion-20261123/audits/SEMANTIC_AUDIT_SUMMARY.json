@@ -1,0 +1,12 @@
+{
+  "recorded_at": "2026-11-24T08:04:13Z",
+  "cases": 1000,
+  "scope": "Textual reproducibility of each operation, literal list and PASS sentence. Execution-only checks (repetitions, runtime oracle, simulated execution) are not applicable and were not marked done.",
+  "counts": {
+    "CONFIRMED_SOURCE_CONTRADICTION": 6,
+    "LITERALS_NONE_NOT_A_DEFECT": 859,
+    "EXPLICIT_LITERALS_NO_CONTRADICTION_FOUND": 135
+  },
+  "audit_declares_all_fixtures_valid": false,
+  "remaining": "No additional source contradiction was found by the signed-value, truncated-codepoint, empty-field and opposition checks. That does not convert NOT_RUN cases into executable evidence."
+}

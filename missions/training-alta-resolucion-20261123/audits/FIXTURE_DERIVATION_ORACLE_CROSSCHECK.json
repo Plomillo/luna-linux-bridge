@@ -1,0 +1,180 @@
+{
+  "recorded_at": "2026-11-24T08:04:13Z",
+  "method": "Second procedure. It recomputes the six derived values from the operation text using struct, unicodedata or integer predicates. It does not read the derivation as its oracle.",
+  "independent_review_for_accreditation": "NOT_DONE",
+  "fixtures_rewritten": false,
+  "reason_not_validated": "The cross-check agrees with the derivations, but the same mission produced both and the cases were not executed. The order forbids treating that agreement as validation.",
+  "committed_fixtures": {
+    "MGL5-INF-0009": {
+      "sha256": "4c8a98c755315b8ee82e5e8c399b1f851de8c984b29b625c6faaf9de0105b7ff",
+      "blob": "bc17dc35613c491049ce024e72542f927ed49237",
+      "unchanged": true,
+      "execution": "NOT_RUN",
+      "independent_review": "NOT_DONE",
+      "accreditation": false
+    },
+    "MGL5-INF-0016": {
+      "sha256": "178b15a16a5c19a2bc45bb384e01de7f889863b5b75f16e422eb338251c403e1",
+      "blob": "a9040600b53882f5bafad5883f892f19b5c16ead",
+      "unchanged": true,
+      "execution": "NOT_RUN",
+      "independent_review": "NOT_DONE",
+      "accreditation": false
+    },
+    "MGL5-INF-0017": {
+      "sha256": "e9b6af28a0b5e1ef5cf4ea61352e4d559f78bde971341acc90754a41efa7de12",
+      "blob": "c30844f36c84558c41724dcf05fd7ca7be0a6369",
+      "unchanged": true,
+      "execution": "NOT_RUN",
+      "independent_review": "NOT_DONE",
+      "accreditation": false
+    },
+    "MGL5-INF-0101": {
+      "sha256": "e96cdba0db9e10da722efb940ca91f3df5becd3d257df066c6713ca5f581ca1f",
+      "blob": "56eb2df6b0b3e1dba8b267ad0ff03f5f453d1669",
+      "unchanged": true,
+      "execution": "NOT_RUN",
+      "independent_review": "NOT_DONE",
+      "accreditation": false
+    },
+    "MGL5-INF-0102": {
+      "sha256": "680dd44196b7f3094720b2031d137bba146ff6eaa3dcaef4233cbf7ff6218c29",
+      "blob": "ea57c61e3b926eb89bc88cf5a2085aede1adacd6",
+      "unchanged": true,
+      "execution": "NOT_RUN",
+      "independent_review": "NOT_DONE",
+      "accreditation": false
+    },
+    "MGL5-INF-0308": {
+      "sha256": "b70474e9425f4df4c2cb884a7b0a77d84366644dfc4feacd34d43bec800d1ce4",
+      "blob": "9a6fb6769ec3103169a4879602633e30b9110d44",
+      "unchanged": true,
+      "execution": "NOT_RUN",
+      "independent_review": "NOT_DONE",
+      "accreditation": false
+    }
+  },
+  "oracle_results": [
+    {
+      "CASE_ID": "MGL5-INF-0009",
+      "oracle": "python struct independent of the derivation file",
+      "valid_roundtrip": [
+        {
+          "value": -32768,
+          "packed_le": "0080",
+          "recovered": -32768
+        },
+        {
+          "value": -1,
+          "packed_le": "ffff",
+          "recovered": -1
+        },
+        {
+          "value": 0,
+          "packed_le": "0000",
+          "recovered": 0
+        },
+        {
+          "value": 32767,
+          "packed_le": "ff7f",
+          "recovered": 32767
+        }
+      ],
+      "out_of_range_rejected": [
+        {
+          "value": -32769,
+          "pack_int16_rejected": true
+        },
+        {
+          "value": 32768,
+          "pack_int16_rejected": true
+        }
+      ],
+      "all_valid_recovered": true,
+      "all_exterior_rejected": true,
+      "case_execution": "NOT_RUN",
+      "accreditation": false
+    },
+    {
+      "CASE_ID": "MGL5-INF-0016",
+      "oracle": "unicodedata.normalize NFC",
+      "before": [
+        {
+          "label": "U+0065 U+0301",
+          "codepoints": [
+            "U+0065",
+            "U+0301"
+          ],
+          "utf8": "65cc81"
+        },
+        {
+          "label": "U+00E9",
+          "codepoints": [
+            "U+00E9"
+          ],
+          "utf8": "c3a9"
+        }
+      ],
+      "after": [
+        {
+          "label": "nfc-1",
+          "codepoints": [
+            "U+00E9"
+          ],
+          "utf8": "c3a9"
+        },
+        {
+          "label": "nfc-2",
+          "codepoints": [
+            "U+00E9"
+          ],
+          "utf8": "c3a9"
+        }
+      ],
+      "same_nfc": true,
+      "case_execution": "NOT_RUN",
+      "accreditation": false
+    },
+    {
+      "CASE_ID": "MGL5-INF-0017",
+      "oracle": "unicodedata.normalize NFD",
+      "input": "U+00E9",
+      "produced": [
+        "U+0065",
+        "U+0301"
+      ],
+      "matches_U+0065_U+0301": true,
+      "case_execution": "NOT_RUN",
+      "accreditation": false
+    },
+    {
+      "CASE_ID": "MGL5-INF-0101",
+      "oracle": "integer sum",
+      "sum": 15,
+      "empty": 0,
+      "matches": true,
+      "case_execution": "NOT_RUN",
+      "accreditation": false
+    },
+    {
+      "CASE_ID": "MGL5-INF-0102",
+      "oracle": "min/max",
+      "min": -8,
+      "max": 19,
+      "matches": true,
+      "case_execution": "NOT_RUN",
+      "accreditation": false
+    },
+    {
+      "CASE_ID": "MGL5-INF-0308",
+      "oracle": "constraint predicate, not a database engine",
+      "value": -4,
+      "constraint": "edad >= 0",
+      "violates": true,
+      "expected": "REJECT",
+      "engine_executed": false,
+      "case_execution": "NOT_RUN",
+      "accreditation": false
+    }
+  ]
+}

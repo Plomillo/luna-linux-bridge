@@ -1,0 +1,39 @@
+{
+  "recorded_at": "2026-11-24T08:04:13Z",
+  "execution_tip": "2de71c0b678a24d2ef069a80307b5bcce0345261",
+  "execution_tree_blobs": 3792,
+  "checked_refs": {
+    "training": "2de71c0b678a24d2ef069a80307b5bcce0345261",
+    "historical_feat": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+    "main": "f58acbdb7dfc6722d1dd874729249f06fbbef76d",
+    "gui": "ec8e4abb9d57ea9708fc273856227b5c41329b3f",
+    "product": "113d63a921cf69fe9f090932a180188bba03d103",
+    "phase0_branch": "bb1e1010bd549a235590958aeb5d0371d636b25b",
+    "mother": "9130bca95fc9a9400e51a80f7afc56ca7d47758c"
+  },
+  "candidate_rejected": {
+    "path": "validation/luna/agent.py",
+    "present_on": "113d63a921cf69fe9f090932a180188bba03d103",
+    "blob": "eea3439a2ec3c824c573f058e8614a6ad67ff521",
+    "present_on_training_history": false,
+    "why_not_recovered": [
+      "Its own execute() records namespace substitute and original_recovered false.",
+      "It runs a fixed SUB-* command table for Debian probes, not MGL5-INF instructions.",
+      "It states that it does not train weights and does not certify.",
+      "Copying it into the training branch would substitute a product probe for METAGENTE LUNA."
+    ]
+  },
+  "specification_not_implementation": {
+    "path": "reconstruction/mra/MRA-LUNA-5O-001.md",
+    "states": "specification FINALIZED, tests NOT_EXECUTED, certification NOT_GRANTED"
+  },
+  "other_code_not_used": [
+    "louksna/mra_suite/fifth_w.py implements MRA cases 705-856, a different corpus",
+    "cajita_router.py remains a planner with certification NOT_GRANTED",
+    "foundation.py remains a registry library"
+  ],
+  "verdict": "NO_AUTHORIZED_RECOVERABLE_MGL5_ENTRYPOINT",
+  "c04": "REOPENED",
+  "c05": "BLOCKED",
+  "agent_invented": false
+}
