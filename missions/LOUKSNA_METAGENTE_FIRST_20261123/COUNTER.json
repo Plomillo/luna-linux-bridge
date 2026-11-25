@@ -1,18 +1,18 @@
 {
-  "recorded_at": "2026-11-24T20:20:54Z",
-  "counter": "4/26",
+  "recorded_at": "2026-11-25T01:10:11Z",
+  "counter": "3/26",
   "passed": [
     "C01",
     "C02",
-    "C03",
-    "C04"
+    "C03"
   ],
   "evidence_commit": "7608be11b7d3feadb81f6863e3b00c8d4576b11b",
   "c05": "IN_PROGRESS",
   "reopened": [],
-  "blocked": [],
-  "note": "C04 revalidation is the current PASS. Historical PASS and the reopen record stay. C05 is not closed: 980 operations were not implemented.",
-  "in_progress": [
+  "blocked": [
+    "C04",
     "C05"
-  ]
+  ],
+  "note": "C04 revalidation is kept but is not the current state. C05 cannot proceed without the original agent. The substitute run remains in the training branch.",
+  "in_progress": []
 }

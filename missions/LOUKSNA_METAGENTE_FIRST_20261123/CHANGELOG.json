@@ -70,6 +70,14 @@
       "c05": "IN_PROGRESS",
       "pass": 20,
       "fail": 980
+    },
+    {
+      "recorded_at": "2026-11-25T01:10:11Z",
+      "operation": "block",
+      "condition": "C04",
+      "counter": "3/26",
+      "evidence_commit": "3eebda7f762c9ca8901b0641fc6a03d00f75174b",
+      "c05": "BLOCKED"
     }
   ]
 }

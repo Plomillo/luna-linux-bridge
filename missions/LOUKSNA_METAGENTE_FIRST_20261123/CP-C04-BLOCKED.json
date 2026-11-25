@@ -1,0 +1,12 @@
+{
+  "state": "BLOCKED",
+  "recorded_at": "2026-11-25T01:10:11Z",
+  "evidence_commit": "3eebda7f762c9ca8901b0641fc6a03d00f75174b",
+  "keeps": [
+    "CP-C04",
+    "CP-C04-REOPEN",
+    "CP-C04-REVALIDATION"
+  ],
+  "reason": "The current order forbids creating or substituting the agent. The M0 used for CP-C04-REVALIDATION is a new implementation. The original METAGENTE LUNA was not found in the authorized refs.",
+  "corpus_results_status": "PRESERVED_NOT_ATTRIBUTABLE_TO_ORIGINAL_AGENT"
+}
