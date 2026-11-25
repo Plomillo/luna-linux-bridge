@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from metagente_luna_s3.registry import REGISTRY
+
 
 class CycleError(ValueError):
     pass
@@ -41,7 +43,7 @@ def order(steps: list[Step]) -> list[str]:
 
 
 def plan_for(plan_id: str, capability_id: str | None) -> Plan:
-    if capability_id is None:
+    if capability_id is None or capability_id not in REGISTRY:
         return Plan(plan_id=plan_id, steps=[], status="NOT_EXECUTABLE")
     return Plan(
         plan_id=plan_id,

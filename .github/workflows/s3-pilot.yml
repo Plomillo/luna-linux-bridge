@@ -19,7 +19,11 @@ jobs:
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
         with:
           python-version: "3.12.15"
-      - run: uv sync --frozen --extra dev
-      - run: uv run python -c "import sys; assert sys.version.startswith('3.12.15'), sys.version"
-      - run: uv run pytest tests
-      - run: uv run ruff check src tests
+      - name: sync
+        run: unset VIRTUAL_ENV; uv sync --frozen --extra dev
+      - name: python
+        run: unset VIRTUAL_ENV; uv run python -c "import sys; assert sys.version.startswith('3.12.15'), sys.version"
+      - name: pytest
+        run: unset VIRTUAL_ENV; uv run pytest tests
+      - name: ruff
+        run: unset VIRTUAL_ENV; uv run ruff check src tests

@@ -49,6 +49,10 @@ REGISTRY: dict[str, Capability] = {
     )
 }
 
+ORACLES: dict[str, Callable[..., dict]] = {
+    "ipaddress": lambda arguments, observed: cidr_oracle(arguments["cidr"], observed),
+}
+
 EXECUTORS: dict[str, Callable[..., dict]] = {"cidr_bounds": cidr_bounds}
 
 
