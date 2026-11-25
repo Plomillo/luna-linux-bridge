@@ -78,6 +78,15 @@
       "counter": "3/26",
       "evidence_commit": "3eebda7f762c9ca8901b0641fc6a03d00f75174b",
       "c05": "BLOCKED"
+    },
+    {
+      "recorded_at": "2026-11-25T04:22:01Z",
+      "operation": "designate-m0",
+      "condition": "C04",
+      "counter": "4/26",
+      "m1": "4c16104e3ec4565e1b0cd0896b9ba7e7675a0161",
+      "c05": "IN_PROGRESS",
+      "c06": "NOT_STARTED"
     }
   ]
 }

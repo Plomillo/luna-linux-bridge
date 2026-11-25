@@ -1,0 +1,13 @@
+{
+  "state": "PASS",
+  "recorded_at": "2026-11-25T04:22:01Z",
+  "evidence_commit": "ef9a003ab1285f39b9c324858df250e5ad92197a",
+  "m1_commit": "4c16104e3ec4565e1b0cd0896b9ba7e7675a0161",
+  "keeps": [
+    "CP-C04",
+    "CP-C04-REOPEN",
+    "CP-C04-REVALIDATION",
+    "CP-C04-BLOCKED"
+  ],
+  "reason": "The block treated provenance as a missing historical agent. M0 is the designated baseline. A clean rerun reproduced the baseline. This does not certify the agent."
+}

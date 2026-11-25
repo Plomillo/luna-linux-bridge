@@ -1,11 +1,11 @@
 {
-  "recorded_at": "2026-11-25T01:10:11Z",
+  "recorded_at": "2026-11-25T04:22:01Z",
   "states": {
     "C01": "PASS",
     "C02": "PASS",
     "C03": "PASS",
-    "C04": "BLOCKED",
-    "C05": "BLOCKED",
+    "C04": "PASS",
+    "C05": "IN_PROGRESS",
     "C06": "NOT_STARTED",
     "C07": "NOT_STARTED",
     "C08": "NOT_STARTED",

@@ -1,18 +1,18 @@
 {
-  "recorded_at": "2026-11-25T01:10:11Z",
-  "counter": "3/26",
+  "recorded_at": "2026-11-25T04:22:01Z",
+  "counter": "4/26",
   "passed": [
     "C01",
     "C02",
-    "C03"
+    "C03",
+    "C04"
   ],
   "evidence_commit": "7608be11b7d3feadb81f6863e3b00c8d4576b11b",
   "c05": "IN_PROGRESS",
   "reopened": [],
-  "blocked": [
-    "C04",
+  "blocked": [],
+  "note": "M0 baseline remains 20 PASS and 980 FAIL. M1 adds 19 observations and is not C06 or C08.",
+  "in_progress": [
     "C05"
-  ],
-  "note": "C04 revalidation is kept but is not the current state. C05 cannot proceed without the original agent. The substitute run remains in the training branch.",
-  "in_progress": []
+  ]
 }

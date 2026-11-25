@@ -73,6 +73,13 @@
       "recorded_at": "2026-11-25T01:10:11Z",
       "evidence_commit": "3eebda7f762c9ca8901b0641fc6a03d00f75174b",
       "method": "Original-agent search under the order that forbids a new agent. Revalidation retained."
+    },
+    {
+      "id": "C04",
+      "state": "PASS",
+      "recorded_at": "2026-11-25T04:22:01Z",
+      "evidence_commit": "ef9a003ab1285f39b9c324858df250e5ad92197a",
+      "method": "Designation plus environment rerun. Earlier block retained."
     }
   ]
 }
