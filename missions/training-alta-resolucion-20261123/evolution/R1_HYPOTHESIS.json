@@ -1,0 +1,12 @@
+{
+  "recorded_before_results": true,
+  "limitation": "M0 raises Unmatched inside parse() before any tool. Exit code 2 means no grammar match.",
+  "summary_bug": "The rerun summary read observed.reason. On UNMATCHED the reason is top-level, so the summary showed null.",
+  "hypothesis": "A derived dispatcher can delegate M0 matches, name the stop stage, and execute operations whose operands are in the text.",
+  "not_claimed": [
+    "C05 closure",
+    "C06",
+    "Q5",
+    "full corpus rerun"
+  ]
+}
