@@ -1,0 +1,42 @@
+{
+  "recorded_at": "2026-11-25T06:46:49Z",
+  "kind": "NON_DESTRUCTIVE_REPRODUCTION",
+  "agent_code_modified": false,
+  "heads": {
+    "main": "db0523d489ca81d134ad62e50a45d8c7d3030ee6",
+    "training_source": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+    "training_execution": "4c16104e3ec4565e1b0cd0896b9ba7e7675a0161",
+    "contract": "01d1c965316f85e7357999541f35521aec5e1dec",
+    "candidate/louksna-clean-deb-sh-20261123": "ABSENT",
+    "mother_branch_tip": "835d70425513cb6bfba4fe0b5b7bb13332af2784",
+    "mother_named_sha": "9130bca95fc9a9400e51a80f7afc56ca7d47758c",
+    "mother_relation": "tip is 21 commits ahead of the named sha; named sha was not moved"
+  },
+  "m0_historical_agent_status": "UNMATCHED",
+  "m0_executor_verdict_field": "FAIL",
+  "m0_counts": {
+    "executed": 1000,
+    "pass": 20,
+    "unmatched": 980
+  },
+  "historical_records_rewritten": false,
+  "m1_reproduction": {
+    "instruction": "Procesar un archivo UTF-8 con BOM y otro sin BOM.",
+    "exit_code": 0,
+    "identity_version": "M1-20261125.1",
+    "reported_machinery": "M0",
+    "tool": "utf8_bom_policy",
+    "accredited": false
+  },
+  "m1_oracle_blob_equals_m0_oracle_blob": "0bd0d5ba2802a795eb09a1ef60f939671e452011",
+  "unmatched_opening_pairs": 901,
+  "materialized_fixture_directories": 6,
+  "plan_status": "AWAITING_APPROVAL",
+  "not_advanced": [
+    "C05",
+    "C06",
+    "C08",
+    "C10",
+    "C26"
+  ]
+}
