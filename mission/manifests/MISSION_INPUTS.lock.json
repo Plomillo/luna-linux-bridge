@@ -1,0 +1,27 @@
+{
+  "MISSION_ID": "LOUKSNA_METAGENTE_FIRST_20261123",
+  "AUTHORITY_MUTATION": "FORBIDDEN",
+  "SOURCE_MUTATION": "FORBIDDEN",
+  "documents": [
+    {
+      "role": "GOVERNING_PROTOCOL",
+      "path_in_worktree": "mission/authority/PROTODEFINITIVO.txt",
+      "authority_branch": "main",
+      "authority_commit": "db0523d489ca81d134ad62e50a45d8c7d3030ee6",
+      "authority_blob": "c40ca28ef8e515b25c8d8c6b035d4e0a8eebe2bf",
+      "sha256": "81752b5d837b69a0e50fbb1ec3a6c4f8701cbcad0cbfdb1ebd16ab1efddf06a5",
+      "bytes": 104583,
+      "copy_is_authority": false
+    },
+    {
+      "role": "TRAINING_PROGRAM",
+      "path_in_worktree": "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt",
+      "authority_branch": "feat/metagente-luna-1000-casos-alta-resolucion",
+      "authority_commit": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+      "authority_blob": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
+      "sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
+      "bytes": 862771,
+      "second_copy": false
+    }
+  ]
+}
