@@ -1,0 +1,56 @@
+{
+  "C04_REVALIDATION_ID": "C04-DESIGNATION-20261125",
+  "recorded_at": "2026-11-25T04:21:24Z",
+  "PREVIOUS_STATE": "BLOCKED",
+  "ROOT_CAUSE_OF_BLOCK": "CP-C04-BLOCKED treated NEW_IMPLEMENTATION as failure to recover a historical agent.",
+  "INCORRECT_INTERPRETATION": "C04 was read as a requirement to find an older agent.",
+  "CORRECTED_INTERPRETATION": "M0-20261124.2 is the designated base agent. Provenance NEW_IMPLEMENTATION stays unchanged in identity.json.",
+  "M0_IDENTITY_EVIDENCE": "identity.json blob 28ce68361cda, sha256 4fa9946c3f9d536f unchanged between 5876962e and 3eebda7f",
+  "M0_IMPLEMENTATION_EVIDENCE": "m0.py, parse.py and mechanisms.py blobs unchanged. Entry point m0.py.",
+  "ENVIRONMENT_EVIDENCE": {
+    "platform": "Linux-6.12.8+-x86_64-with-glibc2.36",
+    "machine": "x86_64",
+    "python": "3.10.22",
+    "cpu_count": 2,
+    "ram_bytes": 4121083904,
+    "locale": "en_US.UTF-8",
+    "tz": null,
+    "models_loaded": []
+  },
+  "REPRODUCIBILITY_EVIDENCE": "Six cases rerun in three clean processes. Codes matched the baseline.",
+  "HASH_VERIFICATION": {
+    "protocol_sha256": "81752b5d837b69a0e50fbb1ec3a6c4f8701cbcad0cbfdb1ebd16ab1efddf06a5",
+    "program_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
+    "fixture_index_sha256": "0e269f95c464cf9319e9b01900ec6e0b1bd29a55c780581d944a87e2ba563920"
+  },
+  "TESTS_EXECUTED": "Baseline corpus run 5876962e plus the 2026-11-25 reproducibility sample.",
+  "CRITERIA_SATISFIED": [
+    "identity",
+    "entry_point",
+    "separate_oracle_module",
+    "three_clean_repetitions",
+    "result_reconstruction",
+    "measured_host_environment"
+  ],
+  "CRITERIA_PENDING": [
+    "per_case_resource_samples",
+    "model_inventory_is_empty_because_no_model_is_used"
+  ],
+  "RESIDUAL_RISKS": [
+    "Several oracles recompute with the same stdlib in a separate module.",
+    "The frozen input of the baseline is the operation text, not a richer invented fixture."
+  ],
+  "INDEPENDENT_REVIEW": "NOT_DONE",
+  "FINAL_VERDICT": "PASS",
+  "NOT_CLAIMED": [
+    "agent certification",
+    "C05 closure",
+    "C06",
+    "C08"
+  ],
+  "counts": {
+    "PASS": 20,
+    "FAIL": 980,
+    "executed": 1000
+  }
+}
