@@ -1,0 +1,10 @@
+{
+  "CASE_ID": "MGL5-INF-0151",
+  "origin": "OPERATION_TEXT",
+  "operation": "Tokenizar \"let x = 42 + 3;\".",
+  "tokens": [
+    "\"let x = 42 + 3;\""
+  ],
+  "executable": false,
+  "reason": "Only the tokens present in the operation are frozen. The case was not executed."
+}

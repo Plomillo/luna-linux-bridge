@@ -1,0 +1,30 @@
+{
+  "status": "AWAITING_APPROVAL",
+  "this_order_is_not_approval": true,
+  "objective": "Repair identity and coverage without rewriting M0 or inventing inputs.",
+  "affected_paths_after_approval": [
+    "missions/training-alta-resolucion-20261123/metagente_luna_m2/",
+    "missions/training-alta-resolucion-20261123/results/M2-*/"
+  ],
+  "not_modified": [
+    "metagente_luna/",
+    "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt",
+    "main",
+    "automation/mtls-evidence-gate-20261013"
+  ],
+  "risks": [
+    "A new parser can regress the 20 historical passes.",
+    "An oracle written beside the mechanism can repeat its mistake.",
+    "Filling missing inputs would manufacture PASS results."
+  ],
+  "tests_after_approval": [
+    "Reported machinery equals declared machinery.",
+    "Oracle blob differs from 0bd0d5ba2802a795eb09a1ef60f939671e452011.",
+    "The 20 M0 passes still pass.",
+    "The 7 explicit-token cases run from the frozen tokens only.",
+    "The 25 anaphoric and 119 artifact-missing cases stay BLOCKED.",
+    "No case id appears in the dispatcher."
+  ],
+  "rollback": "Leave M0 at blobs 830f7add, bd601851, eeb58c6b and M1 at 4c16104e. Revert only the new M2 commit.",
+  "acceptance": "Not C05, C06, C08 or C10. Acceptance of this plan's first slice is coherent identity plus non-regression of the 20 passes."
+}

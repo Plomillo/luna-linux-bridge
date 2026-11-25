@@ -1,0 +1,9 @@
+{
+  "recorded_at": "2026-11-25T07:03:49Z",
+  "scope": "980 UNMATCHED only",
+  "NO_ESSENTIAL_LITERAL_IN_TEXT": 829,
+  "REFERS_TO_ABSENT_ARTIFACT": 119,
+  "ANAPHORIC": 25,
+  "HAS_EXPLICIT_TOKEN": 7,
+  "rule": "A token found in the sentence is recorded. It is not expanded into an invented fixture."
+}

@@ -1,0 +1,10 @@
+{
+  "CASE_ID": "MGL5-INF-0253",
+  "origin": "OPERATION_TEXT",
+  "operation": "Analizar una dirección con dos compresiones \"::\".",
+  "tokens": [
+    "\"::\""
+  ],
+  "executable": false,
+  "reason": "Only the tokens present in the operation are frozen. The case was not executed."
+}

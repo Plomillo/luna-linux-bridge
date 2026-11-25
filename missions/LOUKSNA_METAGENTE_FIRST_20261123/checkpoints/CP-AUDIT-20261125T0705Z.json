@@ -1,0 +1,35 @@
+{
+  "CHECKPOINT_ID": "CP-AUDIT-20261125T0705Z",
+  "TIMESTAMP_UTC": "2026-11-25T07:03:49Z",
+  "MISSION_ID": "LOUKSNA_METAGENTE_FIRST_20261123",
+  "BRANCH": "contract/louksna-metagente-26-20261123",
+  "PARENT_COMMIT": "301e3b301ed86010e34f985026f0e95c54b68d5f",
+  "TRAINING_COMMIT": "4c16104e3ec4565e1b0cd0896b9ba7e7675a0161",
+  "MAIN": "db0523d489ca81d134ad62e50a45d8c7d3030ee6",
+  "PROGRAM_COMMIT": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+  "MOTHER_TIP": "835d70425513cb6bfba4fe0b5b7bb13332af2784",
+  "MOTHER_NAMED_SHA": "9130bca95fc9a9400e51a80f7afc56ca7d47758c",
+  "CANDIDATE": "ABSENT",
+  "ACTIVE_CONDITION": "C05",
+  "GLOBAL_COUNTER": "4/26",
+  "states": {
+    "C01": "PASS",
+    "C02": "PASS",
+    "C03": "PASS",
+    "C04": "PASS",
+    "C05": "IN_PROGRESS"
+  },
+  "CASE_COUNTS": {
+    "executed_m0": 1000,
+    "pass": 20,
+    "unmatched": 980,
+    "m1_accredited": 0,
+    "blocked": 0,
+    "not_run_teo": 50
+  },
+  "difference_from_previous_audit": "301e3b30 is the contract tip. Its parent is 01d1c965. The reproduction file names 01d1c965 because that was the tip before the file was committed. No other listed branch moved.",
+  "agent_code_modified": false,
+  "APPROVAL_STATUS": "AWAITING_APPROVAL",
+  "NEXT_AUTHORIZED_ACTION": "Keep preparing determined fixtures and the M2 specification. Do not write agent code until the plan is approved.",
+  "matrix_sha256": "e50e7fd1f993aa523bbdddeafad68970936c7726850bec34f1f244015bff7d8b"
+}

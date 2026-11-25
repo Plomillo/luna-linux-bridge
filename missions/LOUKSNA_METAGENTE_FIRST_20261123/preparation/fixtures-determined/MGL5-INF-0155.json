@@ -1,0 +1,10 @@
+{
+  "CASE_ID": "MGL5-INF-0155",
+  "origin": "OPERATION_TEXT",
+  "operation": "Parsear \"(1+2)*3\".",
+  "tokens": [
+    "\"(1+2)*3\""
+  ],
+  "executable": false,
+  "reason": "Only the tokens present in the operation are frozen. The case was not executed."
+}

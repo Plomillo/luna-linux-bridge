@@ -1,0 +1,11 @@
+{
+  "CASE_ID": "MGL5-INF-0046",
+  "origin": "OPERATION_TEXT",
+  "operation": "Codificar y decodificar bytes que incluyen 0x00 y 0xFF.",
+  "tokens": [
+    "0x00",
+    "0xFF"
+  ],
+  "executable": false,
+  "reason": "Only the tokens present in the operation are frozen. The case was not executed."
+}

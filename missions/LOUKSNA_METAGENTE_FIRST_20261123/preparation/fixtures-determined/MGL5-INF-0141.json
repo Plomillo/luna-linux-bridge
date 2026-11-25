@@ -1,0 +1,10 @@
+{
+  "CASE_ID": "MGL5-INF-0141",
+  "origin": "OPERATION_TEXT",
+  "operation": "Enviar cadena de prueba \"' OR 1=1 --\" a endpoint de laboratorio.",
+  "tokens": [
+    "\"' OR 1=1 --\""
+  ],
+  "executable": false,
+  "reason": "Only the tokens present in the operation are frozen. The case was not executed."
+}

@@ -1,0 +1,17 @@
+{
+  "status": "SPECIFICATION_ONLY",
+  "code_written": false,
+  "agent_id": "METAGENTE_LUNA",
+  "proposed_version": "M2-PENDING-APPROVAL",
+  "declared_machinery_must_equal_reported_machinery": true,
+  "m0_files": "UNTOUCHED",
+  "m1_files": "UNTOUCHED",
+  "oracle": "A separate module that recomputes the criterion and does not import the mechanism under test.",
+  "dispatch": "By operation semantics, never by case id.",
+  "missing_parameter": "BLOCKED",
+  "default_inputs_forbidden": [
+    "hola",
+    "a\\r\\nb",
+    "fixed CSV rows"
+  ]
+}
