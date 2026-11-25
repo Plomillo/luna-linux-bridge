@@ -1,0 +1,46 @@
+{
+  "recorded_at": "2026-11-25T19:17:40Z",
+  "code_commit": "e5399184fd685aa580a5f3bcf023826319ef1b1f",
+  "machinery": "S2-20261125.1",
+  "learning": "NOT_DEMONSTRATED",
+  "m1_promoted": false,
+  "c05": "IN_PROGRESS",
+  "counter": "4/26",
+  "counts": {
+    "REGRESSION_PASS": 20,
+    "VALIDATED": 22,
+    "NO_CAPABILITY": 914,
+    "BLOCKED": 42,
+    "OBSERVED_NOT_ACCREDITED": 2
+  },
+  "validated": [
+    "MGL5-INF-0005",
+    "MGL5-INF-0041",
+    "MGL5-INF-0042",
+    "MGL5-INF-0046",
+    "MGL5-INF-0104",
+    "MGL5-INF-0107",
+    "MGL5-INF-0112",
+    "MGL5-INF-0120",
+    "MGL5-INF-0125",
+    "MGL5-INF-0154",
+    "MGL5-INF-0155",
+    "MGL5-INF-0168",
+    "MGL5-INF-0201",
+    "MGL5-INF-0202",
+    "MGL5-INF-0208",
+    "MGL5-INF-0251",
+    "MGL5-INF-0254",
+    "MGL5-INF-0255",
+    "MGL5-INF-0256",
+    "MGL5-INF-0451",
+    "MGL5-INF-0601",
+    "MGL5-INF-0623"
+  ],
+  "not_accredited": [
+    "MGL5-INF-0103",
+    "MGL5-INF-0209"
+  ],
+  "document_continuity": "protocol blob c40ca28e pinned; preflight blocks if it is missing",
+  "still_without_capability": 914
+}
