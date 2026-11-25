@@ -27,5 +27,12 @@
   "c05": "IN_PROGRESS",
   "counter": "4/26",
   "local_tests": "20 passed before this commit",
-  "remote_ci": "NOT_YET_RERUN"
+  "remote_ci": {
+    "run": 45716378898,
+    "conclusion": "success",
+    "python": "3.12.15",
+    "tests": "20 passed",
+    "virtualenv_warning": "absent after unset VIRTUAL_ENV",
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/45716378898"
+  }
 }
