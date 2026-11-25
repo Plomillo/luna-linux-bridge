@@ -120,6 +120,7 @@ def main() -> int:
                     [sys.executable, str(M0_ENTRY), "--instruction", row["INSTRUCTION"],
                      "--state-dir", str(state), "--out", str(out)],
                     cwd=ROOT, capture_output=True, text=True, check=False,
+                    env={**os.environ, "PYTHONPATH": str(MISSION) + os.pathsep + os.environ.get("PYTHONPATH", "")},
                 )
                 payload = json.loads(out.read_text(encoding="utf-8"))
                 expected_code = 0 if row["VERDICT"] == "PASS" else 2
