@@ -1,0 +1,12 @@
+{
+  "recorded_at": "2026-11-25T17:25:39Z",
+  "event": "REPAIR_AUTHORIZATION_RECORDED",
+  "historical_state_preserved": "AWAITING_APPROVAL",
+  "rewritten": false,
+  "scope": "Derived dispatcher, instrumentation and fixture classification. M0 not modified.",
+  "code_commit": "c4554ff279530c9740f67f0597e0b05e5f81d4b8",
+  "result_commit_pending": "f1feddd8aed5f4b5358dd4283167527a24d73c6e",
+  "counter": "4/26",
+  "c05": "IN_PROGRESS",
+  "root_cause": "parse() raises Unmatched before tool selection. Exit 2 is NO_GRAMMAR_MATCH. The null reason was in the summary reader, not in the M0 record."
+}
