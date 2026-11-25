@@ -1,0 +1,9 @@
+{
+  "recorded_at": "2026-11-25T18:33:05Z",
+  "repair_branch": "repair/metagente-luna-structured-20261125",
+  "repair_head": "5230649d0c101317a02eebbc1e7fe9ac39e47fd0",
+  "counter": "4/26",
+  "c05": "IN_PROGRESS",
+  "s1_is_not_m1": true,
+  "inf_pass_claimed": false
+}
