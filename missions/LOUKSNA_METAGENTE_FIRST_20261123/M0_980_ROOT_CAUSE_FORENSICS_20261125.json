@@ -1,0 +1,318 @@
+{
+  "audit_id": "M0-980-ROOT-CAUSE-FORENSICS-20261125",
+  "audit_as_of": "2026-11-25T01:38:00-03:00",
+  "mission_id": "LOUKSNA_METAGENTE_FIRST_20261123",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch_heads_verified": {
+    "main": "db0523d489ca81d134ad62e50a45d8c7d3030ee6",
+    "training_source": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+    "training_execution": "4c16104e3ec4565e1b0cd0896b9ba7e7675a0161",
+    "contract": "bff4213ee817cf7f7f8e52cc5b0610967345f1b7"
+  },
+  "governing_sources": {
+    "protocol": {
+      "path": "PROTODEFINITIVO.txt",
+      "branch": "main",
+      "blob": "c40ca28ef8e515b25c8d8c6b035d4e0a8eebe2bf",
+      "sha256": "81752b5d837b69a0e50fbb1ec3a6c4f8701cbcad0cbfdb1ebd16ab1efddf06a5"
+    },
+    "training_program": {
+      "path": "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt",
+      "branch": "feat/metagente-luna-1000-casos-alta-resolucion",
+      "commit": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+      "blob": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
+      "sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
+      "lines": 5124
+    }
+  },
+  "m0_baseline": {
+    "agent_id": "METAGENTE_LUNA",
+    "version": "M0-20261124.2",
+    "machinery": "M0",
+    "identity_blob": "28ce68361cdaa34fe055da043fd0140aba52bcaf",
+    "execution_commit": "5876962e97629520aaf8aa180b53387432ab0b19",
+    "code_blobs": {
+      "m0_py": "830f7add5b02c0d70107785464b1fd1a789c7afc",
+      "parse_py": "bd6018510f66f3a09724093b59dd5662ea75b19e",
+      "mechanisms_py": "eeb58c6b66c980eb3d8a4607680bae8d52e3105e",
+      "oracle_py": "0bd0d5ba2802a795eb09a1ef60f939671e452011"
+    },
+    "results_blob": "02a0d095545e61ddf4838125ef98b76c6e94b80e",
+    "summary_blob": "de04724a7e6174141220a8ff363f3740d1043e4a",
+    "arithmetic": {
+      "cases": 1000,
+      "pass": 20,
+      "fail": 980,
+      "blocked": 0,
+      "inconclusive": 0,
+      "not_run": 0,
+      "repetitions_per_case": 3,
+      "clean_process": true
+    },
+    "fail_invariants": {
+      "count": 980,
+      "all_observed_status_unmatched": true,
+      "all_exit_codes": [
+        2,
+        2,
+        2
+      ],
+      "all_observed_reason_equals_original_instruction": true,
+      "all_oracle_values_null": true,
+      "all_case_ids_individually_recorded": true
+    },
+    "by_domain": {
+      "D01": {
+        "pass": 17,
+        "fail": 33
+      },
+      "D02": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D03": {
+        "pass": 2,
+        "fail": 48
+      },
+      "D04": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D05": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D06": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D07": {
+        "pass": 1,
+        "fail": 49
+      },
+      "D08": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D09": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D10": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D11": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D12": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D13": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D14": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D15": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D16": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D17": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D18": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D19": {
+        "pass": 0,
+        "fail": 50
+      },
+      "D20": {
+        "pass": 0,
+        "fail": 50
+      }
+    }
+  },
+  "confirmed_common_cause": {
+    "classification": "PARSER_DEFECT / CAPABILITY_COVERAGE_GAP",
+    "immediate_mechanism": "parse.py normalizes instruction text, tests a finite set of regex patterns, and raises Unmatched when no pattern is recognized. Every one of the 980 failed records has status UNMATCHED and observed reason equal to the original instruction, confirming no grammar production matched.",
+    "confidence": "HIGH_FOR_IMMEDIATE_DISPATCH_FAILURE",
+    "not_yet_proven": "The deeper domain-specific implementation cause for each operation; whether each operation can be satisfied by one reusable adapter or requires a distinct subsystem; fixture adequacy and oracle independence per case.",
+    "exclusions": [
+      "Not an environment crash",
+      "Not a dependency failure",
+      "Not a timeout",
+      "Not non-determinism",
+      "Not a helper result",
+      "Not evidence that M0 does not exist"
+    ]
+  },
+  "case_register_reconciliation": {
+    "path": "missions/training-alta-resolucion-20261123/CASE_REGISTER.json",
+    "blob": "fef43810cfcd2a663328aa6d6c92261b570ffbf7",
+    "counts": {
+      "PASS": 14,
+      "BLOCKED": 2,
+      "FAIL": 0,
+      "INCONCLUSIVE": 0,
+      "NOT_RUN": 984
+    },
+    "interpretation": "Historical pre-M0/helper register. It is distinct from M0-20261124.2 CORPUS_RESULTS.jsonl and must not be merged into M0 results.",
+    "quarantine": {
+      "path": "missions/training-alta-resolucion-20261123/EXECUTOR_QUARANTINE.json",
+      "blob": "7aabadb60b349e9623ce19e5821487d3fccf89a2",
+      "runner": "missions/training-alta-resolucion-20261123/runner/run_d01_first.py",
+      "accreditation_allowed": false
+    }
+  },
+  "fixture_audit": {
+    "fixture_index_blob": "fbe548f993e0a48ebf2daff95c5480a9e48c75b2",
+    "fixture_index_records": 1000,
+    "index_fields": [
+      "CASE_ID",
+      "DOMAIN_ID",
+      "instruction_sha256",
+      "baseline_verdict"
+    ],
+    "materialized_fixture_directories": 6,
+    "materialized_fixture_case_ids": [
+      "MGL5-INF-0009",
+      "MGL5-INF-0016",
+      "MGL5-INF-0017",
+      "MGL5-INF-0101",
+      "MGL5-INF-0102",
+      "MGL5-INF-0308"
+    ],
+    "finding": "The 1,000-row index hashes instruction text; it is not itself 1,000 materialized typed fixtures. The repository fixture directory contains six case directories only. This is an evidence gap against the program's per-case fixture instructions."
+  },
+  "c04_review": {
+    "recorded_state": "PASS",
+    "revalidation_commit": "ef9a003ab1285f39b9c324858df250e5ad92197a",
+    "c04_audit_path": "missions/training-alta-resolucion-20261123/audits/C04_DESIGNATION_20261125.json",
+    "c04_audit_verdict": "PASS",
+    "independent_review": "NOT_DONE",
+    "pending_criteria": [
+      "per_case_resource_samples"
+    ],
+    "measured_environment": {
+      "platform": "Linux-6.12.8+-x86_64-with-glibc2.36",
+      "machine": "x86_64",
+      "python": "3.10.22",
+      "cpu_count": 2,
+      "ram_bytes": 4121083904,
+      "locale": "en_US.UTF-8",
+      "timezone": null,
+      "models_loaded": []
+    },
+    "qualification": "C04 PASS is recorded by the contract branch and is an environment-readiness verdict, not agent certification. The detailed checklist in the reactivation order still has unclosed evidence fields (including timezone, full dependency/tool versions, permissions/filesystem, exact command and full fixture/input/output provenance). Reconcile these gaps before treating the extended forensic checklist as complete."
+  },
+  "m1_review": {
+    "version": "M1-20261125.1",
+    "commit": "4c16104e3ec4565e1b0cd0896b9ba7e7675a0161",
+    "delta_path": "missions/training-alta-resolucion-20261123/results/M1-20261125.1/M1_DELTA.json",
+    "delta_blob": "57ab3544e14cbabde3f4efae131452aec79ac9ce",
+    "claimed_additional_pass": 19,
+    "claimed_remaining_fail_or_unmatched": 961,
+    "claimed_ids": [
+      "MGL5-INF-0006",
+      "MGL5-INF-0021",
+      "MGL5-INF-0022",
+      "MGL5-INF-0023",
+      "MGL5-INF-0024",
+      "MGL5-INF-0025",
+      "MGL5-INF-0026",
+      "MGL5-INF-0027",
+      "MGL5-INF-0028",
+      "MGL5-INF-0029",
+      "MGL5-INF-0036",
+      "MGL5-INF-0037",
+      "MGL5-INF-0038",
+      "MGL5-INF-0041",
+      "MGL5-INF-0042",
+      "MGL5-INF-0043",
+      "MGL5-INF-0044",
+      "MGL5-INF-0045",
+      "MGL5-INF-0046"
+    ],
+    "evidence_gaps": [
+      "M1_DELTA.json is the only file in the M1 results directory; no per-case M1 run records, stdout/stderr, exit codes, observations or oracle results are committed.",
+      "M1 oracle.py has the same blob as M0 oracle.py and contains no checks for the 19 newly added M1 mechanism names; unsupported tools fall through to oracle=none, ok=false.",
+      "M1 m0.py reports machinery=M0 in both successful and UNMATCHED results although identity.json declares machinery=M1.",
+      "M1 new mechanisms use hard-coded default data such as 'hola', 'a\\r\\nb\\r\\n', and fixed CSV/JSON values rather than consuming a committed per-case fixture with the program's seed/literals.",
+      "M1_HYPOTHESIS.json explicitly states that repaired operations were visible during implementation and the test is not a held-out transfer test."
+    ],
+    "verdict": "19 additional PASS claims are NOT ACCEPTED as accredited results until per-case execution evidence, valid fixture provenance, and an oracle that actually checks those operations are committed and independently reproduced.",
+    "q5_status": "NOT_DEMONSTRATED",
+    "c06_status": "NOT_STARTED"
+  },
+  "contract_state": {
+    "branch": "contract/louksna-metagente-26-20261123",
+    "head": "bff4213ee817cf7f7f8e52cc5b0610967345f1b7",
+    "counter": "4/26",
+    "states": {
+      "C01": "PASS",
+      "C02": "PASS",
+      "C03": "PASS",
+      "C04": "PASS",
+      "C05": "IN_PROGRESS",
+      "C06": "NOT_STARTED",
+      "C07": "NOT_STARTED",
+      "C08": "NOT_STARTED",
+      "C09": "NOT_STARTED",
+      "C10": "NOT_STARTED",
+      "C11": "NOT_STARTED",
+      "C12": "NOT_STARTED",
+      "C13": "NOT_STARTED",
+      "C14": "NOT_STARTED",
+      "C15": "NOT_STARTED",
+      "C16": "NOT_STARTED",
+      "C17": "NOT_STARTED",
+      "C18": "NOT_STARTED",
+      "C19": "NOT_STARTED",
+      "C20": "NOT_STARTED",
+      "C21": "NOT_STARTED",
+      "C22": "NOT_STARTED",
+      "C23": "NOT_STARTED",
+      "C24": "NOT_STARTED",
+      "C25": "NOT_STARTED",
+      "C26": "NOT_STARTED"
+    }
+  },
+  "append_only_artifact_created": {
+    "path": "missions/LOUKSNA_METAGENTE_FIRST_20261123/M0_980_CASE_ROOT_CAUSE_REGISTER.jsonl",
+    "commit": "8a31e7ab6d58f110333b6380d080a990f73883fc",
+    "records": 980,
+    "note": "Adds per-case immediate root-cause classification while preserving the original M0 result records. No source, M0 file, historical result or acceptance criterion was changed."
+  },
+  "next_authorized_work": {
+    "priority": "C05 completion and root-cause-driven remediation, with C06 not credited",
+    "steps": [
+      "Build complete typed fixture artifacts from the immutable program's seeds and literals; retain the six existing fixture directories and hash every new artifact.",
+      "Convert each of the 980 parser rejections into an operation-level capability requirement, grouped by reusable domain adapter while retaining a case-to-requirement trace.",
+      "Replace the narrow regex-only dispatch in a new version with a structured intent/operation schema and a registered executor per supported capability; never dispatch by case ID and never alter the source criterion.",
+      "Make each executor consume the actual fixture and produce observed outputs; add independent oracles that recompute each criterion using a materially separate method.",
+      "Run affected cases individually in clean processes, capture full evidence and preserve all failed attempts; add regression coverage for the 20 M0 passes and the 19 M1 claims only after independently revalidating them.",
+      "Complete M1 material evolution, held-out transfer, ablation, independent validation and M2 recursive evolution before C06 can pass; do not start C08 closure until exactly 1,000 independently checked PASS results exist."
+    ]
+  },
+  "non_mutation_attestation": {
+    "protocol_modified": false,
+    "training_program_modified": false,
+    "m0_modified": false,
+    "historical_results_overwritten": false,
+    "helper_results_merged_into_m0": false,
+    "case_criteria_modified": false,
+    "contract_counter_modified": false
+  }
+}
