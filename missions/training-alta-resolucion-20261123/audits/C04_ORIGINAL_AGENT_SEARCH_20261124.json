@@ -1,0 +1,51 @@
+{
+  "recorded_at": "2026-11-25T01:09:53Z",
+  "order": "MGL5_LUNA_EXISTING_AGENT_20261124",
+  "rule": "AGENT_CREATION_FORBIDDEN",
+  "protocol": {
+    "commit": "db0523d489ca81d134ad62e50a45d8c7d3030ee6",
+    "parent": "f58acbdb7dfc6722d1dd874729249f06fbbef76d",
+    "blob": "c40ca28ef8e515b25c8d8c6b035d4e0a8eebe2bf",
+    "bytes": 104583,
+    "sha256": "81752b5d837b69a0e50fbb1ec3a6c4f8701cbcad0cbfdb1ebd16ab1efddf06a5",
+    "lines_splitlines": 2689,
+    "lines_declared_by_order": 2690,
+    "line_count_note": "Blob matches. splitlines() returns 2689 because the file ends in a newline and has no extra blank line."
+  },
+  "program": {
+    "commit": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+    "blob": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
+    "sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
+    "lines_splitlines": 5123,
+    "lines_declared_by_order": 5124,
+    "also_present_on_main_same_blob": "db0523d489ca81d134ad62e50a45d8c7d3030ee6"
+  },
+  "refs": {
+    "gui": "ec8e4abb9d57ea9708fc273856227b5c41329b3f",
+    "product": "113d63a921cf69fe9f090932a180188bba03d103",
+    "phase0_branch_not_tag": "bb1e1010bd549a235590958aeb5d0371d636b25b",
+    "phase0_tag_api": "404"
+  },
+  "searched": [
+    "main, feat, training, product, phase0, gui and mother trees",
+    "implementation/ on main: 588 blobs, no agent or metagente filename",
+    "default-branch code search for METAGENTE_LUNA: protocol mentions only",
+    "filename agent.py on the default branch: 0"
+  ],
+  "rejected": {
+    "validation/luna/agent.py": "Runs SUB-001..SUB-053. Its own record says original_recovered false and namespace substitute.",
+    "louksna/mra_suite/fifth_w.py": "Laboratory cases 705-744, not MGL5.",
+    "louksna/mra_suite/fifth_o.py": "Independent recomputation for that other corpus.",
+    "missions/training-alta-resolucion-20261123/metagente_luna": "Created during this mission as NEW_IMPLEMENTATION. Preserved, not deleted, and not the original agent."
+  },
+  "piper_onnx": "NOT_FOUND in the default-branch filename search. Product tree has louksna/packaging/piper-wrapper.sh only.",
+  "governance_files_on_main": "PRESENT",
+  "original_metagente_luna": "NOT_FOUND",
+  "c04": "BLOCKED",
+  "corpus_run_M0-20261124.2": {
+    "commit": "5876962e97629520aaf8aa180b53387432ab0b19",
+    "pass": 20,
+    "fail": 980,
+    "attributable_to_original_agent": false
+  }
+}
