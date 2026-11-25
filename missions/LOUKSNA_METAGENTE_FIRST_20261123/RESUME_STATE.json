@@ -1,16 +1,16 @@
 {
-  "updated_at": "2026-11-25T07:04:19Z",
-  "resume_from": "CP-AUDIT-20261125T0705Z",
-  "contract": "3fc752ac17e956ffd97ed35e3f08e86152e9f2e2",
-  "training": "4c16104e3ec4565e1b0cd0896b9ba7e7675a0161",
+  "updated_at": "2026-11-25T15:42:38Z",
+  "training": "02c798ffb37cc364d3bb07ae88ca63955c096f61",
+  "contract": "ec0b5187d554f2c72d51f486e2358ca972c35b61",
   "counter": "4/26",
   "active": "C05",
   "approval": "AWAITING_APPROVAL",
+  "last_operation": "1000 operations re-executed on unchanged M0; 20 OBSERVED, 980 UNMATCHED",
+  "previous_monitor_absent": "01a21184-e17e-7df0-8a4d-8a5ad9fef07d",
   "monitor": {
-    "kind": "scheduled_prompt",
-    "id": "01a21184-e17e-7df0-8a4d-8a5ad9fef07d",
+    "id": "01a2135f-6f38-7ea0-86ca-61c7b9ae7bdd",
     "interval": "2h",
-    "durable": true,
-    "limit": "It is a scheduled prompt, not a resident process. It must not invent activity between fires."
+    "kind": "scheduled_prompt",
+    "resident_process": false
   }
 }
