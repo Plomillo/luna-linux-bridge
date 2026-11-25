@@ -1,0 +1,33 @@
+name: METAGENTE LUNA forensic reproduction
+
+on:
+  push:
+    branches:
+      - audit/metagente-luna-repro-20261125
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout immutable training source and candidate versions
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Reproduce all 1,000 M0 dispatch outcomes and audit M1 claims
+        run: python missions/training-alta-resolucion-20261123/audits/reproduce_m0_m1_forensic.py
+
+      - name: Preserve machine-readable reproduction evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: metagente-luna-forensic-reproduction
+          path: forensic-reproduction.json
+          if-no-files-found: error
