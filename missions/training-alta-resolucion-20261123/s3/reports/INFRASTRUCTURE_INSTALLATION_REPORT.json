@@ -1,0 +1,37 @@
+{
+  "recorded_at": "2026-11-25T21:26:14Z",
+  "python": "3.12.15",
+  "installer": "uv",
+  "installed": [
+    "annotated-types==0.8.0",
+    "attrs==26.1.0",
+    "hypothesis==6.170.17",
+    "iniconfig==2.3.1",
+    "jsonschema==4.26.0",
+    "jsonschema-specifications==2025.9.1",
+    "lark==1.3.1",
+    "-e file:///tmp/s3proj",
+    "packaging==26.4",
+    "pluggy==1.7.0",
+    "pydantic==2.14.4",
+    "pydantic-core==2.50.5",
+    "pygments==2.21.0",
+    "pytest==9.2.0",
+    "referencing==0.37.0",
+    "rpds-py==2026.9.1",
+    "ruff==0.17.6",
+    "sortedcontainers==2.4.0",
+    "typing-extensions==4.16.0",
+    "typing-inspection==0.4.5"
+  ],
+  "not_installed": {
+    "docker": "binary absent; Kestra was not started",
+    "trivy": "not installed; no image to scan in this environment",
+    "semgrep": "not installed; no rule set was needed for the pilot",
+    "syft": "not installed",
+    "opentelemetry": "not installed; the pilot records files, not a collector",
+    "grok-mcp-composio": "not installed; no credential and no demonstrated gain over the existing GitHub API"
+  },
+  "johnson": "NO_PATH_IN_THE_4060_FILE_TREE",
+  "learning": "NOT_DEMONSTRATED"
+}

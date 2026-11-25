@@ -1,0 +1,15 @@
+{
+  "recorded_at": "2026-11-25T21:26:14Z",
+  "case": "MGL5-INF-0254",
+  "runs": [
+    "run-1",
+    "run-2",
+    "run-3"
+  ],
+  "tests": "8 passed",
+  "ruff": "clean",
+  "mass_execution": false,
+  "c05": "IN_PROGRESS",
+  "counter": "4/26",
+  "s2_unchanged": true
+}

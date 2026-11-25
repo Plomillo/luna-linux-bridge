@@ -1,0 +1,1 @@
+{"ambiguities": [], "arguments": [{"name": "cidr", "provenance": "SOURCE_INSTRUCTION", "required": true, "value": "192.0.2.130/26"}], "intent": "cidr_bounds", "intent_method": "LARK_LITERALS_PLUS_INTENT_WORD", "missing": [], "model_provider": "UNAVAILABLE", "source_instruction": "Calcular red y broadcast de 192.0.2.130/26.", "status": "READY"}

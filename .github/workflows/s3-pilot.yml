@@ -1,0 +1,15 @@
+name: s3-pilot
+on:
+  push:
+    paths:
+      - "missions/training-alta-resolucion-20261123/s3/**"
+      - ".github/workflows/s3-pilot.yml"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --extra dev --project missions/training-alta-resolucion-20261123/s3
+      - run: uv run --project missions/training-alta-resolucion-20261123/s3 pytest
+      - run: uv run --project missions/training-alta-resolucion-20261123/s3 ruff check src tests
