@@ -1,0 +1,7 @@
+{
+  "recorded_before_results": true,
+  "limitation": "M0 returns UNMATCHED for operations that name a general transformation but do not match its parser.",
+  "hypothesis": "General tools for BOM, CRLF, JSON, decimal, zlib, length-prefix and the float32 boundary can observe those operations without editing M0 and without regressing its 20 passes.",
+  "not_reserved_test": "The repaired operations were visible while the tools were written. This is not a held-out transfer test.",
+  "q5_not_claimed": true
+}
