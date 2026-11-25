@@ -1,0 +1,45 @@
+{
+  "recorded_at": "2026-11-25T18:33:05Z",
+  "code_commit": "76d1d848911690a1ae9be32c89a13b3a70f8625c",
+  "machinery": "S1-20261125.1",
+  "m1_promoted": false,
+  "m0_modified": false,
+  "full_pass": false,
+  "counts": {
+    "REGRESSION_PASS": 20,
+    "VALIDATED": 7,
+    "BLOCKED": 52,
+    "NO_CAPABILITY": 916,
+    "OBSERVED_NOT_ACCREDITED": 3,
+    "SIMULATION": 2
+  },
+  "validated": [
+    "MGL5-INF-0005",
+    "MGL5-INF-0046",
+    "MGL5-INF-0155",
+    "MGL5-INF-0201",
+    "MGL5-INF-0251",
+    "MGL5-INF-0451",
+    "MGL5-INF-0601"
+  ],
+  "not_accredited": [
+    "MGL5-INF-0108",
+    "MGL5-INF-0141",
+    "MGL5-INF-0142",
+    "MGL5-INF-0151",
+    "MGL5-INF-0301"
+  ],
+  "reason_audit": {
+    "unmatched_records": 980,
+    "top_level_reason_equals_instruction": 980,
+    "observed_object_absent": 980
+  },
+  "corrections": {
+    "0253": "BLOCKED. The address is not in the source. The earlier ::x:: construction is rejected.",
+    "0141": "SIMULATION. In-memory SQLite is not the laboratory endpoint.",
+    "0142": "SIMULATION.",
+    "0601": "Oracle repaired: decimal equality explains the binary inequality. Then validated."
+  },
+  "learning": "journal only; no weight update; LEARNED is not claimed",
+  "counter": "4/26"
+}
