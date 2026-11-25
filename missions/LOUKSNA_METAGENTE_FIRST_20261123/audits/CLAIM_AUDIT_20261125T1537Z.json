@@ -1,0 +1,89 @@
+{
+  "recorded_at": "2026-11-25T15:42:17Z",
+  "program_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
+  "program_matches_canonical": true,
+  "claims": [
+    {
+      "id": "CLAIM-001",
+      "result": "CONFIRMED",
+      "detail": "Contract tip at the start of this activation was 3966c992."
+    },
+    {
+      "id": "CLAIM-002",
+      "result": "CONFIRMED",
+      "detail": "301e3b30 has parent 01d1c965."
+    },
+    {
+      "id": "CLAIM-003",
+      "result": "CONFIRMED",
+      "detail": "STATES.json still has C01-C04 PASS and C05 IN_PROGRESS. Counter stays 4/26."
+    },
+    {
+      "id": "CLAIM-004",
+      "result": "CONFIRMED",
+      "detail": "C05 remains the active condition."
+    },
+    {
+      "id": "CLAIM-005",
+      "result": "CONFIRMED",
+      "detail": "identity.json blob is still 28ce68361cda after the rerun commit."
+    },
+    {
+      "id": "CLAIM-006",
+      "result": "NOT_RERUN",
+      "detail": "The M1 machinery mismatch was reproduced in 301e3b30. This activation did not repeat that process."
+    },
+    {
+      "id": "CLAIM-007",
+      "result": "PREVIOUSLY_CONFIRMED",
+      "detail": "Both oracle.py blobs were 0bd0d5ba. Not re-hashed in this activation."
+    },
+    {
+      "id": "CLAIM-008",
+      "result": "CONFIRMED",
+      "detail": "The 19 M1 results still have no individual dossier and are not counted."
+    },
+    {
+      "id": "CLAIM-009",
+      "result": "CORRECTED",
+      "detail": "829 was a keyword heuristic. The program itself marks 769 of 1000 cases as literales=ninguno explícito."
+    },
+    {
+      "id": "CLAIM-010",
+      "result": "CORRECTED",
+      "detail": "119 was a heuristic. The operation text refers to a laboratory artifact in 69 cases."
+    },
+    {
+      "id": "CLAIM-011",
+      "result": "CORRECTED",
+      "detail": "25 was a heuristic. 22 operations are anaphoric."
+    },
+    {
+      "id": "CLAIM-012",
+      "result": "CORRECTED",
+      "detail": "Seven token files were incomplete. The operation text contains a quoted string or hex in 14 cases, including historical passes."
+    },
+    {
+      "id": "CLAIM-013",
+      "result": "NOT_CONFIRMED",
+      "detail": "The scheduled monitor 01a21184 is not present. No resident worker exists."
+    }
+  ],
+  "mother": {
+    "previous_tip": "835d7042",
+    "current_tip": "60b4e3dd8b5f5ba53364e4fcc2f62d5060c12d82",
+    "ahead_of_9130bca": 22,
+    "moved_by_this_activation": false
+  },
+  "rerun": {
+    "commit": "02c798ffb37cc364d3bb07ae88ca63955c096f61",
+    "observed": 20,
+    "unmatched": 980,
+    "unstable": 0,
+    "oracle_failures_on_observed": 0,
+    "seconds": 119.7
+  },
+  "agent_code_modified": false,
+  "counter": "4/26",
+  "approval": "AWAITING_APPROVAL"
+}
