@@ -45,7 +45,7 @@ def execute(capability_id: str, arguments: dict, case_id: str, backend: str = "L
         verdict = oracle(arguments, observed)
     except Exception as exc:  # noqa: BLE001 - the runner boundary must record any executor failure
         return _record(run_id, case_id, capability_id, started, 1, stdout.getvalue(), stderr.getvalue() or type(exc).__name__, None, "ERROR", decision, backend)
-    status = "EXECUTED" if verdict.get("ok") is True else "INCONCLUSIVE"
+    status = "EXECUTED" if verdict.get("ok") is True else "FAIL"
     return _record(run_id, case_id, capability_id, started, 0, stdout.getvalue(), stderr.getvalue(), observed, status, decision, backend, verdict)
 
 

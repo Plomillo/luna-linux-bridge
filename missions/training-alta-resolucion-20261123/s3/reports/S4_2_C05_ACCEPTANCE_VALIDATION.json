@@ -1,0 +1,15 @@
+{
+  "source": "mission/authority/PROTODEFINITIVO.txt",
+  "source_lines": "589-643",
+  "acceptance_text": "los 1.000 identificadores tienen expedientes individuales y resultados auténticos, sin ocultar fallos.",
+  "operation_text": "Ejecutar cada caso individualmente",
+  "identifiers": 1000,
+  "executed_this_run": 21,
+  "criterion_met_this_run": 21,
+  "not_run": 979,
+  "gate": "NOT_PASSED",
+  "counter": "4/26",
+  "reason": "979 cases were not executed. A matching criterion is not the common protocol PASS, because the separate negative and boundary runs are still missing.",
+  "teo_engineering_board": "NOT_DEFINED_IN_PROTOCOL",
+  "teo_cases": "MGL5-TEO-0001..0050 remain NOT_RUN"
+}
