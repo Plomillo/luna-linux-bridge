@@ -20,6 +20,8 @@ def execute(capability_id: str, arguments: dict, case_id: str, backend: str = "L
         require_case_id(case_id)
     except ValueError as exc:
         return _record(run_id, case_id, capability_id, started, 2, "", str(exc), None, "REJECTED", backend=backend)
+    if case_id.startswith("MGL5-TEO-"):
+        return _record(run_id, case_id, capability_id, started, 2, "", "theological cases are not computational executions", None, "BLOCKED", backend=backend)
     try:
         decision = authorize(capability_id, backend)
     except KeyError:
