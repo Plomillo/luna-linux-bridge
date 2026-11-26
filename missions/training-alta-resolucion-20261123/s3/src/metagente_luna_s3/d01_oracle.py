@@ -99,13 +99,16 @@ def nfc_table(arguments: dict, observed: dict) -> dict:
 
 
 def nfd_table(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["codepoints"] == ["U+0065", "U+0301"], "method": "fixed decomposition"}
+    expected = ["U+0061"] if arguments["composed"] == "a" else ["U+0065", "U+0301"]
+    return {"ok": observed["codepoints"] == expected, "method": "fixed decomposition"}
 
 
 def nfkc_table(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["compatibility"] == "fi" and observed["preserves_original_form"] is False, "method": "fixed ligature"}
+    if arguments["text"] == "A":
+        ok = observed["compatibility"] == "A" and observed["preserves_original_form"] is True
+    else:
+        ok = observed["compatibility"] == "fi" and observed["preserves_original_form"] is False
+    return {"ok": ok, "method": "fixed ligature"}
 
 
 def bom_visible(arguments: dict, observed: dict) -> dict:

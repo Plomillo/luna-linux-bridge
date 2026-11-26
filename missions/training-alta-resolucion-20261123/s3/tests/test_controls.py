@@ -14,7 +14,14 @@ def test_process_separation_hides_secrets_and_times_out(monkeypatch):
     assert os.environ["LUNA_SECRET"] == "do-not-leak"
 
 
-def test_isolated_case_matches_the_known_sum():
+def test_child_file_stays_in_the_child_workspace():
+    from pathlib import Path
+
+    parent = Path.cwd()
+    outcome = run_bounded("from pathlib import Path; Path('marker.txt').write_text('x')", "", 2)
+    assert outcome["status"] == "FINISHED"
+    assert (Path(outcome["cwd"]) / "marker.txt").read_text() == "x"
+    assert not (parent / "marker.txt").exists()
     record = execute_isolated("array_sum", {"values": [-3, 0, 7, 11], "empty": []}, "MGL5-INF-0101")
     assert record["backend"] == "PROCESS_SEPARATION"
     assert record["sandbox"] is False
@@ -27,4 +34,4 @@ def test_controls_that_were_defined_are_accepted():
     defined = [row for row in rows if row["controls"]]
     assert defined
     assert all(row["control_status"] == "PRESENT" for row in defined)
-    assert len(defined) >= 30
+    assert len(defined) == 50

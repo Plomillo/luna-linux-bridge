@@ -65,6 +65,25 @@ def _build() -> None:
     _add("MGL5-INF-0151", "negative", "tokenize", {"text": "x"}, "one-token")
     _add("MGL5-INF-0025", "negative", "json_roundtrip", {"document": {"n": 1}}, "other-json")
     _add("MGL5-INF-0050", "negative", "manifest_hash", {"document": {"name": "luna"}, "altered": {"name": "luna"}}, "unchanged")
+    _add("MGL5-INF-0013", "boundary", "nan_policy", {}, "nan-edge")
+    _add("MGL5-INF-0014", "boundary", "inf_policy", {}, "inf-edge")
+    _add("MGL5-INF-0015", "boundary", "subnormal_f32", {}, "subnormal-edge")
+    _add("MGL5-INF-0017", "boundary", "nfd_decompose", {"composed": "a"}, "ascii-nfd")
+    _add("MGL5-INF-0018", "boundary", "nfkc_compat", {"text": "A"}, "ascii-nfkc")
+    _add("MGL5-INF-0019", "negative", "text_units", {"text": "a"}, "one-unit")
+    _add("MGL5-INF-0020", "negative", "text_units", {"text": "ab"}, "two-units")
+    _add("MGL5-INF-0024", "boundary", "csv_newline", {"text": '"x\ny",9\n'}, "other-newline")
+    _add("MGL5-INF-0030", "boundary", "xml_expanded", {"document": "<x/>"}, "no-prefix")
+    _add("MGL5-INF-0030", "negative", "xml_expanded", {"document": '<a xmlns:a="urn:x"><b xmlns:b="urn:y"/></a>'}, "different-names")
+    _add("MGL5-INF-0031", "negative", "xml_entities", {"document": "<r>ok</r>"}, "plain-text")
+    _add("MGL5-INF-0037", "boundary", "truncated_records", {"payload_hex": "ff"}, "other-cut")
+    _add("MGL5-INF-0038", "boundary", "oversize_length", {"payload_hex": "ff"}, "other-oversize")
+    _add("MGL5-INF-0041", "boundary", "float32_exactness", {"values": [16777219]}, "next-inexact")
+    _add("MGL5-INF-0043", "boundary", "three_states", {"present": {"b": None, "c": "x"}, "absent_key": "a"}, "not-empty")
+    _add("MGL5-INF-0044", "boundary", "zlib_roundtrip", {"payload_hex": "01"}, "other-payload")
+    _add("MGL5-INF-0045", "boundary", "zlib_corrupt", {"payload_hex": "01"}, "other-damaged")
+    _add("MGL5-INF-0051", "negative", "magic_bytes", {"name": "sample.png", "payload_hex": "89504e470d0a1a0a"}, "extension-agrees")
+    _add("MGL5-INF-0601", "boundary", "binary_float_gap", {}, "float-edge")
 
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
@@ -132,6 +151,44 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and observed["parsed"] == {"n": 1}
     if expect == "unchanged":
         return observed is not None and observed["altered_changes"] is False
+    if expect == "nan-edge":
+        return status == "EXECUTED" and observed["equals_itself"] is False
+    if expect == "inf-edge":
+        return status == "EXECUTED" and observed["positive_sign"] is True and observed["negative_sign"] is True
+    if expect == "subnormal-edge":
+        return status == "EXECUTED" and observed["is_subnormal"] is True
+    if expect == "ascii-nfd":
+        return status == "EXECUTED" and observed["codepoints"] == ["U+0061"]
+    if expect == "ascii-nfkc":
+        return status == "EXECUTED" and observed["compatibility"] == "A" and observed["preserves_original_form"] is True
+    if expect == "one-unit":
+        return status == "EXECUTED" and observed["graphemes"] == 1 and observed["codepoints"] == 1
+    if expect == "two-units":
+        return status == "EXECUTED" and observed["graphemes"] == observed["codepoints"] == 2
+    if expect == "other-newline":
+        return status == "EXECUTED" and observed["records"] == 1 and observed["fields"][0] == "x\ny"
+    if expect == "no-prefix":
+        return status == "EXECUTED" and observed["expanded_names"] == ["x"]
+    if expect == "different-names":
+        return status == "EXECUTED" and observed["same_expanded_name"] is False
+    if expect == "plain-text":
+        return status == "EXECUTED" and observed["text"] == "ok" and observed["external_expanded"] is False
+    if expect == "other-cut":
+        return status == "EXECUTED" and observed["all_rejected"] is True
+    if expect == "other-oversize":
+        return status == "EXECUTED" and observed["rejected"] is True and observed["allocated_declared_length"] is False
+    if expect == "next-inexact":
+        return status == "EXECUTED" and observed["rows"] == [{"value": 16777219, "exact": False}]
+    if expect == "not-empty":
+        return status == "EXECUTED" and observed["empty"] is False and observed["null"] is True
+    if expect == "other-payload":
+        return status == "EXECUTED" and observed["match"] is True and observed["compressed_differs"] is True
+    if expect == "other-damaged":
+        return status == "EXECUTED" and observed["corruption_detected"] is True and observed["integrity_claimed"] is False
+    if expect == "extension-agrees":
+        return status == "EXECUTED" and observed["detected"] == "png" and observed["extension_matches_content"] is True
+    if expect == "float-edge":
+        return status == "EXECUTED" and observed["equal"] is False and observed["difference"] != 0
     if expect == "already-composed":
         return status == "EXECUTED" and observed["same_nfc"] is True and observed["nfc"] == "a"
     return False

@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from metagente_luna_s3 import (
     batch3_exec,
     batch3_oracle,
+    batch4_exec,
+    batch4_oracle,
     d01_exec,
     d01_oracle,
     more_exec,
@@ -115,6 +117,13 @@ REGISTRY: dict[str, Capability] = {
     "ratio": _cap("ratio", "stated_ratio", {"type": "object", "required": ["numerator", "denominator"], "properties": {"numerator": {"type": "integer"}, "denominator": {"type": "integer"}}, "additionalProperties": False}),
     "precision_recall": _cap("precision_recall", "rates", {"type": "object", "required": ["true_positive", "false_positive", "false_negative"], "properties": {"true_positive": {"type": "integer"}, "false_positive": {"type": "integer"}, "false_negative": {"type": "integer"}}, "additionalProperties": False}),
     "f1_score": _cap("f1_score", "harmonic", {"type": "object", "required": ["precision", "recall"], "properties": {"precision": {"type": "number"}, "recall": {"type": "number"}}, "additionalProperties": False}),
+    "increment": _cap("increment", "counted", {"type": "object", "required": ["times"], "properties": {"times": {"type": "integer"}}, "additionalProperties": False}),
+    "pearson": _cap("pearson", "correlation", {"type": "object", "required": ["left", "right"], "properties": {"left": {"type": "array"}, "right": {"type": "array"}}, "additionalProperties": False}),
+    "acf_lag0": _cap("acf_lag0", "lag_identity", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
+    "linear_integral": _cap("linear_integral", "half", {"type": "object", "additionalProperties": False}),
+    "square_integral": _cap("square_integral", "one_third", {"type": "object", "additionalProperties": False}),
+    "cosine_set": _cap("cosine_set", "axis_cosines", {"type": "object", "required": ["pairs"], "properties": {"pairs": {"type": "array"}}, "additionalProperties": False}),
+    "confined": _cap("confined", "escapes", {"type": "object", "required": ["requested"], "properties": {"requested": {"type": "string"}}, "additionalProperties": False}),
 }
 
 ORACLES: dict[str, Callable[..., dict]] = {
@@ -177,6 +186,13 @@ ORACLES: dict[str, Callable[..., dict]] = {
     "stated_ratio": batch3_oracle.stated_ratio,
     "rates": batch3_oracle.rates,
     "harmonic": batch3_oracle.harmonic,
+    "counted": batch4_oracle.counted,
+    "correlation": batch4_oracle.correlation,
+    "lag_identity": batch4_oracle.lag_identity,
+    "half": batch4_oracle.half,
+    "one_third": batch4_oracle.one_third,
+    "axis_cosines": batch4_oracle.axis_cosines,
+    "escapes": batch4_oracle.escapes,
 }
 
 EXECUTORS: dict[str, Callable[..., dict]] = {
@@ -239,6 +255,13 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "ratio": batch3_exec.ratio,
     "precision_recall": batch3_exec.precision_recall,
     "f1_score": batch3_exec.f1_score,
+    "increment": batch4_exec.increment,
+    "pearson": batch4_exec.pearson,
+    "acf_lag0": batch4_exec.acf_lag0,
+    "linear_integral": lambda: batch4_exec.linear_integral(),
+    "square_integral": lambda: batch4_exec.square_integral(),
+    "cosine_set": batch4_exec.cosine_set,
+    "confined": batch4_exec.confined,
 }
 
 

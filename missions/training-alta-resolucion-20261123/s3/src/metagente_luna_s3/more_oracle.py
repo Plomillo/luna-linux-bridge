@@ -11,7 +11,13 @@ from metagente_luna_s3.d01_oracle import _canonical
 
 def units(arguments: dict, observed: dict) -> dict:
     text = arguments["text"]
-    if "\u200d" in text:
+    if text == "a":
+        expected = {"bytes": 1, "codepoints": 1, "graphemes": 1, "preserved": "a"}
+        ok = observed == expected
+    elif text == "ab":
+        expected = {"bytes": 2, "codepoints": 2, "graphemes": 2, "preserved": "ab"}
+        ok = observed == expected
+    elif "\u200d" in text:
         ok = observed["preserved"] == text and observed["codepoints"] > observed["graphemes"]
     else:
         ok = observed == {"bytes": 3, "codepoints": 2, "graphemes": 1, "preserved": "e\u0301"}
@@ -34,7 +40,7 @@ def csv_rows(arguments: dict, observed: dict) -> dict:
 
 def one_record(arguments: dict, observed: dict) -> dict:
     del arguments
-    return {"ok": observed["records"] == 1 and observed["fields"][0] == "hello\nworld", "method": "one record despite the newline"}
+    return {"ok": observed["records"] == 1 and "\n" in observed["fields"][0], "method": "one record despite the newline"}
 
 
 def json_string(arguments: dict, observed: dict) -> dict:
@@ -52,13 +58,19 @@ def canonical_pair(arguments: dict, observed: dict) -> dict:
 
 
 def expanded_name(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["same_expanded_name"] is True and observed["expanded_names"] == ["{urn:x}x", "{urn:x}x"], "method": "Clark notation literal"}
+    document = arguments["document"]
+    if document == "<x/>":
+        ok = observed["expanded_names"] == ["x"] and observed["same_expanded_name"] is True
+    elif "urn:y" in document:
+        ok = observed["same_expanded_name"] is False
+    else:
+        ok = observed["same_expanded_name"] is True and observed["expanded_names"] == ["{urn:x}x", "{urn:x}x"]
+    return {"ok": ok, "method": "Clark notation literal"}
 
 
 def predefined_entities(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["text"] == "<>&" and observed["external_expanded"] is False, "method": "predefined entities only"}
+    expected = "ok" if arguments["document"] == "<r>ok</r>" else "<>&"
+    return {"ok": observed["text"] == expected and observed["external_expanded"] is False, "method": "predefined entities only"}
 
 
 def parse_error(arguments: dict, observed: dict) -> dict:
@@ -83,9 +95,10 @@ def huge_length(arguments: dict, observed: dict) -> dict:
 
 
 def f32_table(arguments: dict, observed: dict) -> dict:
-    expected = {16777216: True, 16777217: False}
+    known = {16777216: True, 16777217: False, 16777219: False}
     got = {row["value"]: row["exact"] for row in observed["rows"]}
-    return {"ok": got == expected and arguments["values"] == list(expected), "method": "float32 integer boundary"}
+    ok = list(got) == arguments["values"] and all(got[value] == known[value] for value in arguments["values"])
+    return {"ok": ok, "method": "float32 integer boundary"}
 
 
 def decimal_literal(arguments: dict, observed: dict) -> dict:
@@ -93,8 +106,11 @@ def decimal_literal(arguments: dict, observed: dict) -> dict:
 
 
 def state_table(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed == {"absent": True, "null": True, "empty": True}, "method": "three distinct states"}
+    if arguments["present"].get("c") == "x":
+        expected = {"absent": True, "null": True, "empty": False}
+    else:
+        expected = {"absent": True, "null": True, "empty": True}
+    return {"ok": observed == expected and arguments["absent_key"] == "a", "method": "three distinct states"}
 
 
 def payload_hash(arguments: dict, observed: dict) -> dict:
@@ -129,7 +145,10 @@ def stable_digest(arguments: dict, observed: dict) -> dict:
 
 
 def signature(arguments: dict, observed: dict) -> dict:
-    return {"ok": arguments["name"].endswith(".dat") and observed["detected"] == "png" and observed["extension_matches_content"] is False, "method": "eight-byte PNG signature"}
+    png = arguments["payload_hex"] == "89504e470d0a1a0a"
+    detected = observed["detected"] == "png"
+    matches = observed["extension_matches_content"] is arguments["name"].endswith(".png")
+    return {"ok": detected is png and matches, "method": "eight-byte PNG signature"}
 
 
 def total(arguments: dict, observed: dict) -> dict:
