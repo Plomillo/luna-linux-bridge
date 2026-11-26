@@ -463,6 +463,12 @@ def _heapsort(values: list[int]) -> list[int]:
     return heap
 
 
+def descending_values(values: list[int]) -> dict:
+    ordered = list(reversed(_heapsort(list(values))))
+    print(ordered)
+    return {"ordered": ordered, "length": len(ordered)}
+
+
 def descending_seed(seed: int, count: int) -> dict:
     import random
 
@@ -523,6 +529,7 @@ SPECS = [
     ("euler_decay", "smaller_step", {"type": "object", "required": ["coarse_step", "fine_step"], "properties": {"coarse_step": {"type": "number"}, "fine_step": {"type": "number"}}, "additionalProperties": False}),
     ("rk4_decay", "series_exp", {"type": "object", "required": ["step"], "properties": {"step": {"type": "number"}}, "additionalProperties": False}),
     ("stable_ages", "stable_order", {"type": "object", "required": ["records"], "properties": {"records": {"type": "array"}}, "additionalProperties": False}),
+    ("descending_values", "full_permutation", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
     ("descending_seed", "seed_permutation", {"type": "object", "required": ["seed", "count"], "properties": {"seed": {"type": "integer"}, "count": {"type": "integer"}}, "additionalProperties": False}),
     ("stack_script", "script_replay", {"type": "object", "required": ["steps"], "properties": {"steps": {"type": "array"}}, "additionalProperties": False}),
     ("moving_average", "window_means", {"type": "object", "required": ["values", "window"], "properties": {"values": {"type": "array"}, "window": {"type": "integer"}}, "additionalProperties": False}),

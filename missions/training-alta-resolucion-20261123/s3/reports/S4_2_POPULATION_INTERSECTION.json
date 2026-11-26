@@ -1,0 +1,18 @@
+{
+  "m0_pass": 20,
+  "m0_fail": 980,
+  "helper_records": 106,
+  "helper_criterion_met": 103,
+  "helper_blocked": 3,
+  "met_inside_m0_fail": 83,
+  "met_inside_m0_pass": 20,
+  "blocked_inside_m0_fail": 3,
+  "m0_fail_without_helper": 894,
+  "identity": "83 + 3 + 894 = 980",
+  "withdrawn_helper_claims": [
+    "MGL5-INF-0106",
+    "MGL5-INF-0109",
+    "MGL5-INF-0632"
+  ],
+  "contractual_pass": 0
+}

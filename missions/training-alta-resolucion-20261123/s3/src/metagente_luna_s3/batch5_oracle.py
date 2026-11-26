@@ -187,6 +187,12 @@ def stable_order(arguments: dict, observed: dict) -> dict:
     return {"ok": ordered and stable and len(ids) == len(records), "method": "original positions of equal ages"}
 
 
+def full_permutation(arguments: dict, observed: dict) -> dict:
+    expected = sorted(arguments["values"], reverse=True)
+    same = observed["ordered"] == expected and observed["length"] == len(arguments["values"])
+    return {"ok": same, "method": "full comparison against an independent sort"}
+
+
 def seed_permutation(arguments: dict, observed: dict) -> dict:
     generator = random.Random(arguments["seed"])
     values = [generator.randrange(-1_000_000, 1_000_000) for _ in range(arguments["count"])]
