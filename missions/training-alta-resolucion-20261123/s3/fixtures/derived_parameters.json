@@ -1,0 +1,48 @@
+{
+  "cube-interval": {
+    "low": 1.0,
+    "high": 2.0,
+    "reason": "f(1)=1-2 is negative and f(2)=8-2 is positive, so [1, 2] contains the real root of x^3-2."
+  },
+  "line-points": {
+    "xs": [0, 1, 2],
+    "slope": 2,
+    "intercept": 3,
+    "reason": "The equation y=2x+3 does not name the abscissas. 0, 1 and 2 are the smallest non-negative integers."
+  },
+  "euler-steps": {
+    "coarse_step": 0.1,
+    "fine_step": 0.05,
+    "horizon": 1.0,
+    "reason": "The source asks to show that a smaller step reduces the error. These two steps were declared before the run."
+  },
+  "rk4-step": {
+    "step": 0.1,
+    "horizon": 1.0,
+    "reason": "The same step used for the coarse Euler run, declared before the comparison."
+  },
+  "stable-ages": {
+    "records": [
+      {"id": "a", "age": 30},
+      {"id": "b", "age": 20},
+      {"id": "c", "age": 30},
+      {"id": "d", "age": 20}
+    ],
+    "reason": "The source requires equal ages and distinct ids. It does not list them. This is the authorized minimal fixture."
+  },
+  "ten-thousand": {
+    "count": 10000,
+    "seed": 106,
+    "reason": "The source fixes the length at 10000 and the program fixes the seed as the numeric suffix 0106."
+  },
+  "stack-script": {
+    "steps": ["push:1", "push:2", "peek", "pop", "pop", "pop"],
+    "reason": "The source requires a predefined push, pop, peek and underflow sequence. This sequence was declared before the run."
+  },
+  "moving-window": {
+    "seed": 632,
+    "length": 6,
+    "window": 3,
+    "reason": "The source fixes window 3 and the program fixes seed 0632. The six samples are drawn from that seed."
+  }
+}

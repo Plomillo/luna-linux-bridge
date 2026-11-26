@@ -1,7 +1,12 @@
 """Fifth batch. These identifiers were not executed before."""
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from metagente_luna_s4.runner import execute
+
+PARAMS = json.loads((Path(__file__).resolve().parents[2] / "fixtures" / "derived_parameters.json").read_text(encoding="utf-8"))
 
 CASES = [
     {"case_id": "MGL5-INF-0103", "capability_id": "first_match", "arguments": {"needle": 7, "values": [2, 7, 9, 7]}},
@@ -24,11 +29,11 @@ CASES = [
     {"case_id": "MGL5-INF-0602", "capability_id": "sqrt_two", "arguments": {}},
     {"case_id": "MGL5-INF-0607", "capability_id": "compensated_sum", "arguments": {}},
     {"case_id": "MGL5-INF-0616", "capability_id": "newton_root", "arguments": {}},
-    {"case_id": "MGL5-INF-0618", "capability_id": "bracket_cube", "arguments": {}},
+    {"case_id": "MGL5-INF-0618", "capability_id": "bracket_cube", "arguments": {"low": PARAMS["cube-interval"]["low"], "high": PARAMS["cube-interval"]["high"]}},
     {"case_id": "MGL5-INF-0623", "capability_id": "two_variances", "arguments": {"values": [2, 4, 4, 4, 5, 5, 7, 9]}},
-    {"case_id": "MGL5-INF-0629", "capability_id": "exact_line", "arguments": {}},
-    {"case_id": "MGL5-INF-0638", "capability_id": "euler_decay", "arguments": {}},
-    {"case_id": "MGL5-INF-0639", "capability_id": "rk4_decay", "arguments": {}},
+    {"case_id": "MGL5-INF-0629", "capability_id": "exact_line", "arguments": {"xs": PARAMS["line-points"]["xs"], "slope": PARAMS["line-points"]["slope"], "intercept": PARAMS["line-points"]["intercept"]}},
+    {"case_id": "MGL5-INF-0638", "capability_id": "euler_decay", "arguments": {"coarse_step": PARAMS["euler-steps"]["coarse_step"], "fine_step": PARAMS["euler-steps"]["fine_step"]}},
+    {"case_id": "MGL5-INF-0639", "capability_id": "rk4_decay", "arguments": {"step": PARAMS["rk4-step"]["step"]}},
 ]
 
 

@@ -1,21 +1,25 @@
 """Operations whose literals are in the training program."""
 from __future__ import annotations
 
+import json
 import math
 import os
 import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
+import traceback
+import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 
 def first_match(needle: int, values: list[int]) -> dict:
-    for index, value in enumerate(values):
-        if value == needle:
-            print(index)
-            return {"index": index, "policy": "first-zero-based"}
-    return {"index": None, "policy": "first-zero-based"}
+    duplicates = [index for index, value in enumerate(values) if value == needle]
+    first = duplicates[0] if duplicates else None
+    print(first, duplicates)
+    return {"index": first, "duplicates": duplicates, "policy": "first-of-all-matches"}
 
 
 def binary_find(needle: int, start: int, end: int) -> dict:
@@ -99,13 +103,24 @@ def _present(node: dict | None, key: int) -> bool:
     return False
 
 
+def _balanced(node: dict | None) -> tuple[int, int, bool]:
+    if node is None:
+        return 0, 0, True
+    left_height, left_count, left_ok = _balanced(node["left"])
+    right_height, right_count, right_ok = _balanced(node["right"])
+    height = 1 + max(left_height, right_height)
+    ok = left_ok and right_ok and abs(left_height - right_height) <= 1 and height == node["height"]
+    return height, 1 + left_count + right_count, ok
+
+
 def balanced_range() -> dict:
     root = None
     for key in range(1, 1001):
         root = _insert(root, key)
+    height, nodes, balanced = _balanced(root)
     found = sum(_present(root, key) for key in range(1, 1001))
-    print(root["height"], found)
-    return {"height": root["height"], "found": found, "count": 1000}
+    print(height, nodes, balanced, found)
+    return {"height": height, "nodes": nodes, "balanced": balanced, "found": found, "count": 1000}
 
 
 def linear_scans() -> dict:
@@ -118,7 +133,8 @@ def linear_scans() -> dict:
                 break
         counts.append(comparisons)
     print(counts)
-    return {"comparisons": counts}
+    ratios = [counts[1] / counts[0], counts[2] / counts[1]]
+    return {"comparisons": counts, "ratios": ratios, "count_noise": 0}
 
 
 def factorials() -> dict:
@@ -184,20 +200,26 @@ def precedence_tree() -> dict:
 
 
 def index_limit(length: int) -> dict:
+    data = list(range(length))
+    reads = 0
     index = length
-    if index < 0 or index >= length:
-        print("blocked")
-        return {"out_of_range": True, "read": False}
-    return {"out_of_range": False, "read": True}
+    if 0 <= index < len(data):
+        reads += 1
+        _value = data[index]
+        del _value
+        return {"out_of_range": False, "read": True, "reads": reads, "length": len(data)}
+    print("blocked", reads)
+    return {"out_of_range": True, "read": False, "reads": reads, "length": len(data)}
 
 
 def divide_zero() -> dict:
     try:
         value = 1 / 0
-    except ZeroDivisionError as exc:
-        print(type(exc).__name__)
-        return {"raised": True, "type": type(exc).__name__, "value": None}
-    return {"raised": False, "type": None, "value": value}
+    except ZeroDivisionError:
+        frame = traceback.extract_tb(sys.exc_info()[2])[-1]
+        print(frame.name, frame.lineno)
+        return {"raised": True, "type": "ZeroDivisionError", "value": None, "function": frame.name, "line": frame.lineno}
+    return {"raised": False, "type": None, "value": value, "function": None, "line": None}
 
 
 def mode_0640() -> dict:
@@ -208,7 +230,13 @@ def mode_0640() -> dict:
     os.chmod(path, 0o640)
     mode = os.stat(path).st_mode & 0o777
     print(oct(mode))
-    return {"mode": mode}
+    return {
+        "mode": mode,
+        "owner_read": os.access(path, os.R_OK),
+        "owner_execute": os.access(path, os.X_OK),
+        "group_write": bool(mode & 0o020),
+        "other_bits": mode & 0o007,
+    }
 
 
 def umask_0027() -> dict:
@@ -245,8 +273,11 @@ def expand_v6(address: str) -> dict:
     missing = 8 - (len(left) + len(right))
     groups = left + ["0"] * missing + right
     expanded = ":".join(f"{int(group, 16):04x}" for group in groups)
+    integer = 0
+    for group in groups:
+        integer = (integer << 16) | int(group, 16)
     print(expanded)
-    return {"expanded": expanded}
+    return {"expanded": expanded, "integer": integer}
 
 
 def mask_bits(mask: str) -> dict:
@@ -269,25 +300,46 @@ def reject_age() -> dict:
 
 
 def parameterized_name() -> dict:
-    connection = sqlite3.connect(":memory:")
-    connection.execute("create table user(name text)")
-    connection.execute("insert into user(name) values ('ada')")
-    payload = "' OR 1=1 --"
-    matched = connection.execute("select name from user where name = ?", (payload,)).fetchall()
-    print(len(matched))
-    return {"matched": len(matched)}
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self) -> None:
+            length = int(self.headers.get("Content-Length", "0"))
+            body = self.rfile.read(length).decode()
+            connection = sqlite3.connect(":memory:")
+            connection.execute("create table user(name text)")
+            connection.execute("insert into user(name) values ('ada')")
+            matched = connection.execute("select name from user where name = ?", (body,)).fetchall()
+            payload = json.dumps({"matched": len(matched)}).encode()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+
+        def log_message(self, fmt: str, *args) -> None:
+            return
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    host, port = server.server_address
+    request = urllib.request.Request(f"http://{host}:{port}/users", data=b"' OR 1=1 --", method="POST")
+    with urllib.request.urlopen(request, timeout=5) as response:
+        body = json.loads(response.read().decode())
+        status = response.status
+    server.shutdown()
+    print(body["matched"], status)
+    return {"matched": body["matched"], "status": status}
 
 
 def exit_codes() -> dict:
-    codes = []
+    results = []
     for command in (["true"], ["false"], ["luna-command-absent"]):
         try:
             completed = subprocess.run(command, check=False, capture_output=True, timeout=5)
-            codes.append(completed.returncode)
+            results.append({"command": command[0], "code": completed.returncode})
         except FileNotFoundError:
-            codes.append(127)
-    print(codes)
-    return {"codes": codes}
+            results.append({"command": command[0], "code": 127})
+    print(results)
+    return {"codes": [item["code"] for item in results], "commands": [item["command"] for item in results]}
 
 
 def sqrt_two() -> dict:
@@ -322,16 +374,16 @@ def newton_root() -> dict:
     return {"root": value, "residual": value * value - 2}
 
 
-def bracket_cube() -> dict:
-    low, high = 1.0, 2.0
+def bracket_cube(low: float, high: float) -> dict:
+    left, right = low, high
     for _ in range(40):
-        mid = (low + high) / 2
+        mid = (left + right) / 2
         if mid**3 - 2 < 0:
-            low = mid
+            left = mid
         else:
-            high = mid
-    print(low, high)
-    return {"low": low, "high": high, "interval_provenance": "DERIVED_SIGN_CHANGE"}
+            right = mid
+    print(left, right)
+    return {"low": left, "high": right, "interval_provenance": "PREREGISTERED_SIGN_CHANGE"}
 
 
 def two_variances(values: list[int]) -> dict:
@@ -342,17 +394,16 @@ def two_variances(values: list[int]) -> dict:
     return {"population": square / count, "sample": square / (count - 1)}
 
 
-def exact_line() -> dict:
-    xs = [0, 1, 2]
-    ys = [2 * item + 3 for item in xs]
+def exact_line(xs: list[int], slope: float, intercept: float) -> dict:
+    ys = [slope * item + intercept for item in xs]
     count = len(xs)
     mean_x = sum(xs) / count
     mean_y = sum(ys) / count
-    slope = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys, strict=True))
-    slope /= sum((x - mean_x) ** 2 for x in xs)
-    intercept = mean_y - slope * mean_x
-    print(slope, intercept)
-    return {"slope": slope, "intercept": intercept, "x_provenance": "DERIVED_FROM_EQUATION"}
+    fitted = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys, strict=True))
+    fitted /= sum((x - mean_x) ** 2 for x in xs)
+    fitted_intercept = mean_y - fitted * mean_x
+    print(fitted, fitted_intercept)
+    return {"xs": xs, "ys": ys, "slope": fitted, "intercept": fitted_intercept}
 
 
 def _euler(step: float) -> float:
@@ -362,17 +413,16 @@ def _euler(step: float) -> float:
     return value
 
 
-def euler_decay() -> dict:
-    coarse = abs(_euler(0.1) - math.e)
-    fine = abs(_euler(0.05) - math.e)
+def euler_decay(coarse_step: float, fine_step: float) -> dict:
+    coarse = abs(_euler(coarse_step) - math.e)
+    fine = abs(_euler(fine_step) - math.e)
     print(coarse, fine)
-    return {"coarse_error": coarse, "fine_error": fine, "step_provenance": "DECLARED_LAB_STEP"}
+    return {"coarse_error": coarse, "fine_error": fine, "coarse_step": coarse_step, "fine_step": fine_step}
 
 
-def rk4_decay() -> dict:
-    step = 0.1
+def rk4_decay(step: float) -> dict:
     value = 1.0
-    for _ in range(10):
+    for _ in range(round(1 / step)):
         first = value
         second = value + 0.5 * step * first
         third = value + 0.5 * step * second
@@ -380,7 +430,68 @@ def rk4_decay() -> dict:
         value += step * (first + 2 * second + 2 * third + fourth) / 6
     euler = _euler(step)
     print(value, euler)
-    return {"rk4": value, "euler": euler, "step": step, "step_provenance": "DECLARED_LAB_STEP"}
+    return {"rk4": value, "euler": euler, "step": step}
+
+
+def stable_ages(records: list[dict]) -> dict:
+    ordered = sorted(records, key=lambda item: (item["age"],))
+    print([item["id"] for item in ordered])
+    return {"ids": [item["id"] for item in ordered]}
+
+
+def _heapsort(values: list[int]) -> list[int]:
+    heap = values[:]
+    count = len(heap)
+
+    def sift(start: int, end: int) -> None:
+        root = start
+        while root * 2 + 1 < end:
+            child = root * 2 + 1
+            if child + 1 < end and heap[child] < heap[child + 1]:
+                child += 1
+            if heap[root] < heap[child]:
+                heap[root], heap[child] = heap[child], heap[root]
+                root = child
+            else:
+                return
+
+    for index in range(count // 2 - 1, -1, -1):
+        sift(index, count)
+    for end in range(count - 1, 0, -1):
+        heap[0], heap[end] = heap[end], heap[0]
+        sift(0, end)
+    return heap
+
+
+def descending_seed(seed: int, count: int) -> dict:
+    import random
+
+    generator = random.Random(seed)
+    values = [generator.randrange(-1_000_000, 1_000_000) for _ in range(count)]
+    ordered = list(reversed(_heapsort(values[:])))
+    print(len(ordered), ordered[0], ordered[-1])
+    return {"length": len(ordered), "first": ordered[0], "last": ordered[-1], "checksum": sum(ordered)}
+
+
+def stack_script(steps: list[str]) -> dict:
+    stack: list[int] = []
+    outputs: list[str | int] = []
+    for step in steps:
+        if step.startswith("push:"):
+            stack.append(int(step.split(":", 1)[1]))
+            outputs.append("pushed")
+        elif step == "peek":
+            outputs.append(stack[-1] if stack else "underflow")
+        elif step == "pop":
+            outputs.append(stack.pop() if stack else "underflow")
+    print(outputs)
+    return {"outputs": outputs}
+
+
+def moving_average(values: list[int], window: int) -> dict:
+    means = [sum(values[index : index + window]) / window for index in range(len(values) - window + 1)]
+    print(means)
+    return {"means": means, "alignment": "window-end", "window": window}
 
 
 _NONE = {"type": "object", "additionalProperties": False}
@@ -406,10 +517,14 @@ SPECS = [
     ("sqrt_two", "library_sqrt", _NONE),
     ("compensated_sum", "decimal_total", _NONE),
     ("newton_root", "library_root", _NONE),
-    ("bracket_cube", "sign_change", _NONE),
+    ("bracket_cube", "sign_change", {"type": "object", "required": ["low", "high"], "properties": {"low": {"type": "number"}, "high": {"type": "number"}}, "additionalProperties": False}),
     ("two_variances", "statistics_variance", _VALUES),
-    ("exact_line", "two_points", _NONE),
-    ("euler_decay", "smaller_step", _NONE),
-    ("rk4_decay", "series_exp", _NONE),
+    ("exact_line", "two_points", {"type": "object", "required": ["xs", "slope", "intercept"], "properties": {"xs": {"type": "array"}, "slope": {"type": "number"}, "intercept": {"type": "number"}}, "additionalProperties": False}),
+    ("euler_decay", "smaller_step", {"type": "object", "required": ["coarse_step", "fine_step"], "properties": {"coarse_step": {"type": "number"}, "fine_step": {"type": "number"}}, "additionalProperties": False}),
+    ("rk4_decay", "series_exp", {"type": "object", "required": ["step"], "properties": {"step": {"type": "number"}}, "additionalProperties": False}),
+    ("stable_ages", "stable_order", {"type": "object", "required": ["records"], "properties": {"records": {"type": "array"}}, "additionalProperties": False}),
+    ("descending_seed", "seed_permutation", {"type": "object", "required": ["seed", "count"], "properties": {"seed": {"type": "integer"}, "count": {"type": "integer"}}, "additionalProperties": False}),
+    ("stack_script", "script_replay", {"type": "object", "required": ["steps"], "properties": {"steps": {"type": "array"}}, "additionalProperties": False}),
+    ("moving_average", "window_means", {"type": "object", "required": ["values", "window"], "properties": {"values": {"type": "array"}, "window": {"type": "integer"}}, "additionalProperties": False}),
 ]
 
