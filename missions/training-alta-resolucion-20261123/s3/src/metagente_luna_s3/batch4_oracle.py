@@ -10,33 +10,50 @@ def counted(arguments: dict, observed: dict) -> dict:
 
 def correlation(arguments: dict, observed: dict) -> dict:
     left, right = arguments["left"], arguments["right"]
-    proportional = all(right[index] == 2 * left[index] for index in range(len(left)))
-    reversed_pair = list(right) == list(reversed(left))
-    if proportional:
-        ok = abs(observed["value"] - 1) < 1e-9
-    elif reversed_pair:
-        ok = abs(observed["value"] + 1) < 1e-9
-    else:
-        ok = False
-    return {"ok": ok, "method": "proportional or reversed vectors, not the Pearson sum"}
+    count = len(left)
+    sum_x, sum_y = sum(left), sum(right)
+    sum_xy = sum(item * other for item, other in zip(left, right, strict=True))
+    sum_x2 = sum(item * item for item in left)
+    sum_y2 = sum(item * item for item in right)
+    numerator = count * sum_xy - sum_x * sum_y
+    denominator = ((count * sum_x2 - sum_x**2) * (count * sum_y2 - sum_y**2)) ** 0.5
+    expected = numerator / denominator
+    ok = observed["error"] is None and abs(observed["value"] - expected) < 1e-9
+    return {"ok": ok, "method": "raw-score Pearson; residual shared definition"}
 
 
 def lag_identity(arguments: dict, observed: dict) -> dict:
-    expected = [1, 0.25, -0.3, -0.45]
-    ok = arguments["values"] == [1, 2, 3, 4] and all(abs(got - wanted) < 1e-9 for got, wanted in zip(observed["lags"], expected, strict=True))
-    return {"ok": ok, "method": "fixed lags for the declared series"}
+    values = arguments["values"]
+    count = len(values)
+    mean = sum(values) / count
+    denominator = sum((item - mean) ** 2 for item in values)
+    expected = []
+    for lag in range(count):
+        total = 0.0
+        for index in range(lag, count):
+            total += (values[index - lag] - mean) * (values[index] - mean)
+        expected.append(total / denominator)
+    ok = observed["error"] is None and all(abs(got - wanted) < 1e-9 for got, wanted in zip(observed["lags"], expected, strict=True))
+    return {"ok": ok, "method": "reverse-index products; shared global-mean definition"}
 
 
 def half(arguments: dict, observed: dict) -> dict:
     del arguments
-    trapezoid = observed["method"] == "trapezoidal" and observed["weights"] == [1, 2, 2, 2, 1]
-    return {"ok": trapezoid and observed["value"] == 0.5, "method": "trapezoid weights, not Simpson"}
+    weights, points = observed["weights"], observed["points"]
+    step = 1 / observed["panels"]
+    recomputed = sum(weight * point for weight, point in zip(weights, points, strict=True)) * step / 2
+    trapezoid = observed["method"] == "trapezoidal" and weights == [1, 2, 2, 2, 1]
+    return {"ok": trapezoid and observed["value"] == recomputed == 0.5, "method": "recomputed trapezoid, not the label"}
 
 
 def one_third(arguments: dict, observed: dict) -> dict:
     del arguments
-    simpson = observed["method"] == "simpson" and observed["panels"] % 2 == 0 and observed["weights"] == [1, 4, 2, 4, 1]
-    return {"ok": simpson and abs(observed["value"] - (1 / 3)) < 1e-9, "method": "closed form plus Simpson weights"}
+    weights, points = observed["weights"], observed["points"]
+    step = 1 / observed["panels"]
+    recomputed = sum(weight * point for weight, point in zip(weights, points, strict=True)) * step / 3
+    simpson = observed["method"] == "simpson" and observed["panels"] % 2 == 0 and weights == [1, 4, 2, 4, 1]
+    close = abs(observed["value"] - recomputed) < 1e-12 and abs(recomputed - (1 / 3)) < 1e-12
+    return {"ok": simpson and close, "method": "recomputed Simpson weights"}
 
 
 def axis_cosines(arguments: dict, observed: dict) -> dict:
@@ -47,12 +64,17 @@ def axis_cosines(arguments: dict, observed: dict) -> dict:
 
 
 def request_counts(arguments: dict, observed: dict) -> dict:
-    ok = arguments["successes"] == 99 and arguments["failures"] == 1
-    ok = ok and observed["successes"] == 99 and observed["failures"] == 1 and observed["total"] == 100
-    return {"ok": ok and observed["availability"] == 0.99, "method": "counted requests, not a bare ratio"}
+    del arguments
+    statuses = observed["statuses"]
+    ok_count = sum(status == 200 for status in statuses)
+    bad_count = sum(status == 500 for status in statuses)
+    total = len(statuses)
+    recomputed = ok_count / total
+    ok = ok_count == 99 and bad_count == 1 and total == 100 and observed["availability"] == recomputed
+    return {"ok": ok, "method": "recounted status codes"}
 
 
 def escapes(arguments: dict, observed: dict) -> dict:
     traversal = arguments["requested"] == "../../etc/passwd"
-    untouched = observed["blocked"] is True and observed["bytes_read"] == 0
+    untouched = observed["blocked"] is True and observed["bytes_read"] == 0 and observed["opened_outside"] is False
     return {"ok": traversal and untouched and observed["operation"] == "simulated-download", "method": "no bytes were read outside the root"}
