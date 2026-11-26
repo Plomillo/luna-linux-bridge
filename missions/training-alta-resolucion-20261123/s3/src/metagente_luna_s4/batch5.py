@@ -1,0 +1,51 @@
+"""Fifth batch. These identifiers were not executed before."""
+from __future__ import annotations
+
+from metagente_luna_s4.runner import execute
+
+CASES = [
+    {"case_id": "MGL5-INF-0103", "capability_id": "first_match", "arguments": {"needle": 7, "values": [2, 7, 9, 7]}},
+    {"case_id": "MGL5-INF-0104", "capability_id": "binary_find", "arguments": {"needle": 13, "start": 1, "end": 31}},
+    {"case_id": "MGL5-INF-0110", "capability_id": "dequeue_named", "arguments": {}},
+    {"case_id": "MGL5-INF-0113", "capability_id": "balanced_range", "arguments": {}},
+    {"case_id": "MGL5-INF-0119", "capability_id": "linear_scans", "arguments": {}},
+    {"case_id": "MGL5-INF-0120", "capability_id": "factorials", "arguments": {}},
+    {"case_id": "MGL5-INF-0154", "capability_id": "precedence_tree", "arguments": {}},
+    {"case_id": "MGL5-INF-0171", "capability_id": "index_limit", "arguments": {"length": 8}},
+    {"case_id": "MGL5-INF-0186", "capability_id": "divide_zero", "arguments": {}},
+    {"case_id": "MGL5-INF-0208", "capability_id": "mode_0640", "arguments": {}},
+    {"case_id": "MGL5-INF-0209", "capability_id": "umask_0027", "arguments": {}},
+    {"case_id": "MGL5-INF-0233", "capability_id": "child_env", "arguments": {}},
+    {"case_id": "MGL5-INF-0252", "capability_id": "expand_v6", "arguments": {"address": "2001:db8::1"}},
+    {"case_id": "MGL5-INF-0256", "capability_id": "mask_bits", "arguments": {"mask": "255.0.255.0"}},
+    {"case_id": "MGL5-INF-0308", "capability_id": "reject_age", "arguments": {}},
+    {"case_id": "MGL5-INF-0141", "capability_id": "parameterized_name", "arguments": {}},
+    {"case_id": "MGL5-INF-0503", "capability_id": "exit_codes", "arguments": {}},
+    {"case_id": "MGL5-INF-0602", "capability_id": "sqrt_two", "arguments": {}},
+    {"case_id": "MGL5-INF-0607", "capability_id": "compensated_sum", "arguments": {}},
+    {"case_id": "MGL5-INF-0616", "capability_id": "newton_root", "arguments": {}},
+    {"case_id": "MGL5-INF-0618", "capability_id": "bracket_cube", "arguments": {}},
+    {"case_id": "MGL5-INF-0623", "capability_id": "two_variances", "arguments": {"values": [2, 4, 4, 4, 5, 5, 7, 9]}},
+    {"case_id": "MGL5-INF-0629", "capability_id": "exact_line", "arguments": {}},
+    {"case_id": "MGL5-INF-0638", "capability_id": "euler_decay", "arguments": {}},
+    {"case_id": "MGL5-INF-0639", "capability_id": "rk4_decay", "arguments": {}},
+]
+
+
+def run_all() -> list[dict]:
+    rows = []
+    for spec in CASES:
+        runs = [execute(spec["capability_id"], spec["arguments"], spec["case_id"]) for _ in range(3)]
+        observed = [run["observed"] for run in runs]
+        stable = all(item == observed[0] for item in observed)
+        ok = all(run["execution_status"] == "EXECUTED" for run in runs) and stable
+        rows.append({
+            "case_id": spec["case_id"],
+            "observed": observed[0],
+            "execution_status": "CRITERION_MET" if ok else runs[0]["execution_status"],
+            "stderr": runs[0]["stderr"],
+            "repetitions": [run["run_id"] for run in runs],
+            "backend": "LOCAL_TEST_ONLY",
+            "c05_gate": "NOT_PASSED",
+        })
+    return rows

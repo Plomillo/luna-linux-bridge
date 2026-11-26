@@ -11,6 +11,8 @@ from metagente_luna_s3 import (
     batch3_oracle,
     batch4_exec,
     batch4_oracle,
+    batch5_exec,
+    batch5_oracle,
     d01_exec,
     d01_oracle,
     more_exec,
@@ -266,6 +268,11 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "confined": batch4_exec.confined,
     "request_log": batch4_exec.request_log,
 }
+
+for _name, _oracle_name, _schema in batch5_exec.SPECS:
+    REGISTRY[_name] = _cap(_name, _oracle_name, _schema)
+    EXECUTORS[_name] = getattr(batch5_exec, _name)
+    ORACLES[_oracle_name] = getattr(batch5_oracle, _oracle_name)
 
 
 def run(capability_id: str, arguments: dict) -> dict:
