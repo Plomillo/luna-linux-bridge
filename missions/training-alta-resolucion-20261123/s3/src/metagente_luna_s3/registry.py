@@ -6,7 +6,14 @@ from collections.abc import Callable
 
 from pydantic import BaseModel
 
-from metagente_luna_s3 import d01_exec, d01_oracle, more_exec, more_oracle
+from metagente_luna_s3 import (
+    batch3_exec,
+    batch3_oracle,
+    d01_exec,
+    d01_oracle,
+    more_exec,
+    more_oracle,
+)
 
 
 class Capability(BaseModel):
@@ -96,6 +103,18 @@ REGISTRY: dict[str, Capability] = {
     "tokenize": _cap("tokenize", "token_vector", _TEXT),
     "ipv4_check": _cap("ipv4_check", "ip_module", {"type": "object", "required": ["addresses"], "properties": {"addresses": {"type": "array"}}, "additionalProperties": False}),
     "binary_float_gap": _cap("binary_float_gap", "decimal_gap", {"type": "object", "additionalProperties": False}),
+    "duplicates": _cap("duplicates", "repeated", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
+    "brackets": _cap("brackets", "bracket_pairs", {"type": "object", "required": ["texts"], "properties": {"texts": {"type": "array"}}, "additionalProperties": False}),
+    "binary_insert": _cap("binary_insert", "sorted_values", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
+    "arithmetic": _cap("arithmetic", "stated_value", {"type": "object", "required": ["expression"], "properties": {"expression": {"type": "string"}}, "additionalProperties": False}),
+    "child_status": _cap("child_status", "exit_seven", {"type": "object", "additionalProperties": False}),
+    "ipv6_reject": _cap("ipv6_reject", "two_compressions", {"type": "object", "required": ["address"], "properties": {"address": {"type": "string"}}, "additionalProperties": False}),
+    "ipv6_prefix": _cap("ipv6_prefix", "stated_prefix", {"type": "object", "required": ["cidr"], "properties": {"cidr": {"type": "string"}}, "additionalProperties": False}),
+    "threshold": _cap("threshold", "fever_rule", {"type": "object", "required": ["low", "high", "limit"], "properties": {"low": {"type": "number"}, "high": {"type": "number"}, "limit": {"type": "number"}}, "additionalProperties": False}),
+    "l2_norm": _cap("l2_norm", "thirteen", {"type": "object", "required": ["components"], "properties": {"components": {"type": "array"}}, "additionalProperties": False}),
+    "ratio": _cap("ratio", "stated_ratio", {"type": "object", "required": ["numerator", "denominator"], "properties": {"numerator": {"type": "integer"}, "denominator": {"type": "integer"}}, "additionalProperties": False}),
+    "precision_recall": _cap("precision_recall", "rates", {"type": "object", "required": ["true_positive", "false_positive", "false_negative"], "properties": {"true_positive": {"type": "integer"}, "false_positive": {"type": "integer"}, "false_negative": {"type": "integer"}}, "additionalProperties": False}),
+    "f1_score": _cap("f1_score", "harmonic", {"type": "object", "required": ["precision", "recall"], "properties": {"precision": {"type": "number"}, "recall": {"type": "number"}}, "additionalProperties": False}),
 }
 
 ORACLES: dict[str, Callable[..., dict]] = {
@@ -146,6 +165,18 @@ ORACLES: dict[str, Callable[..., dict]] = {
     "token_vector": more_oracle.token_vector,
     "ip_module": more_oracle.ip_module,
     "decimal_gap": more_oracle.decimal_gap,
+    "repeated": batch3_oracle.repeated,
+    "bracket_pairs": batch3_oracle.bracket_pairs,
+    "sorted_values": batch3_oracle.sorted_values,
+    "stated_value": batch3_oracle.stated_value,
+    "exit_seven": batch3_oracle.exit_seven,
+    "two_compressions": batch3_oracle.two_compressions,
+    "stated_prefix": batch3_oracle.stated_prefix,
+    "fever_rule": batch3_oracle.fever_rule,
+    "thirteen": batch3_oracle.thirteen,
+    "stated_ratio": batch3_oracle.stated_ratio,
+    "rates": batch3_oracle.rates,
+    "harmonic": batch3_oracle.harmonic,
 }
 
 EXECUTORS: dict[str, Callable[..., dict]] = {
@@ -196,6 +227,18 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "tokenize": more_exec.tokenize,
     "ipv4_check": more_exec.ipv4_check,
     "binary_float_gap": lambda: more_exec.binary_float_gap(),
+    "duplicates": batch3_exec.duplicates,
+    "brackets": batch3_exec.brackets,
+    "binary_insert": batch3_exec.binary_insert,
+    "arithmetic": batch3_exec.arithmetic,
+    "child_status": lambda: batch3_exec.child_status(),
+    "ipv6_reject": batch3_exec.ipv6_reject,
+    "ipv6_prefix": batch3_exec.ipv6_prefix,
+    "threshold": batch3_exec.threshold,
+    "l2_norm": batch3_exec.l2_norm,
+    "ratio": batch3_exec.ratio,
+    "precision_recall": batch3_exec.precision_recall,
+    "f1_score": batch3_exec.f1_score,
 }
 
 

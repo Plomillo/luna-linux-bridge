@@ -90,6 +90,9 @@ def subnormal_bits(arguments: dict, observed: dict) -> dict:
 
 
 def nfc_table(arguments: dict, observed: dict) -> dict:
+    if arguments["decomposed"] == arguments["composed"]:
+        ok = observed["same_nfc"] is True and observed["nfc"] == arguments["composed"]
+        return {"ok": ok, "method": "identity pair, not unicodedata"}
     table = {("e\u0301", "\u00e9"): "\u00e9"}
     expected = table[(arguments["decomposed"], arguments["composed"])]
     return {"ok": observed["same_nfc"] is True and observed["nfc"] == expected, "method": "fixed pair, not unicodedata"}

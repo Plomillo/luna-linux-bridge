@@ -133,12 +133,12 @@ def signature(arguments: dict, observed: dict) -> dict:
 
 
 def total(arguments: dict, observed: dict) -> dict:
-    return {"ok": observed["sum"] == 15 and observed["empty_sum"] == 0 and arguments["values"] == [-3, 0, 7, 11], "method": "closed sum"}
+    return {"ok": observed["sum"] == sum(arguments["values"]) and observed["empty_sum"] == sum(arguments["empty"]), "method": "builtin sum, not the loop"}
 
 
 def extremes(arguments: dict, observed: dict) -> dict:
     ordered = sorted(arguments["values"])
-    return {"ok": observed["minimum"] == ordered[0] == -8 and observed["maximum"] == ordered[-1] == 19, "method": "sorted copy"}
+    return {"ok": observed["minimum"] == ordered[0] and observed["maximum"] == ordered[-1], "method": "sorted copy"}
 
 
 def token_vector(arguments: dict, observed: dict) -> dict:
