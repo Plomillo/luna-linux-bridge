@@ -6,11 +6,9 @@ from pathlib import Path
 
 
 def increment(times: int) -> dict:
-    value = 0
-    for _ in range(times):
-        value += 1
-    print(value)
-    return {"value": value}
+    completed = [{"id": index, "status": "ok"} for index in range(times)]
+    print(len(completed))
+    return {"completed": len(completed), "failed": 0, "ids": [item["id"] for item in completed]}
 
 
 def pearson(left: list[int], right: list[int]) -> dict:
@@ -25,33 +23,40 @@ def pearson(left: list[int], right: list[int]) -> dict:
     return {"value": value}
 
 
-def acf_lag0(values: list[int]) -> dict:
+def acf_series(values: list[int]) -> dict:
     mean = sum(values) / len(values)
     variance = sum((item - mean) ** 2 for item in values)
-    lag0 = sum((item - mean) ** 2 for item in values) / variance
-    print(lag0)
-    return {"lag0": lag0}
+    lags = []
+    for lag in range(len(values)):
+        numerator = sum((values[index] - mean) * (values[index + lag] - mean) for index in range(len(values) - lag))
+        lags.append(numerator / variance)
+    print(lags)
+    return {"lags": lags}
 
 
 def linear_integral() -> dict:
     panels = 4
     step = 1 / panels
-    total = 0.0 + 1.0
-    for index in range(1, panels):
-        total += 2 * (index * step)
-    print(total * step / 2)
-    return {"value": total * step / 2}
+    weights = [1, *([2] * (panels - 1)), 1]
+    total = 0.0
+    for index, weight in enumerate(weights):
+        total += weight * (index * step)
+    value = total * step / 2
+    print(value)
+    return {"value": value, "method": "trapezoidal", "panels": panels, "weights": weights}
 
 
 def square_integral() -> dict:
-    panels = 1000
+    panels = 4
     step = 1 / panels
+    weights = [1 if index in {0, panels} else 4 if index % 2 else 2 for index in range(panels + 1)]
     total = 0.0
-    for index in range(panels):
-        point = (index + 0.5) * step
-        total += point * point * step
-    print(total)
-    return {"value": total}
+    for index, weight in enumerate(weights):
+        point = index * step
+        total += weight * point * point
+    value = total * step / 3
+    print(value)
+    return {"value": value, "method": "simpson", "panels": panels, "weights": weights}
 
 
 def cosine_set(pairs: list[list[list[int]]]) -> dict:
@@ -65,8 +70,28 @@ def cosine_set(pairs: list[list[list[int]]]) -> dict:
     return {"values": values}
 
 
+def request_log(successes: int, failures: int) -> dict:
+    requests = [{"id": index, "ok": True} for index in range(successes)]
+    requests.extend({"id": successes + index, "ok": False} for index in range(failures))
+    completed = sum(item["ok"] for item in requests)
+    total = len(requests)
+    print(completed, total)
+    return {"availability": completed / total, "successes": completed, "failures": total - completed, "total": total}
+
+
 def confined(requested: str) -> dict:
     root = Path(tempfile.mkdtemp(prefix="luna-root-"))
+    (root / "allowed.txt").write_text("payload")
+    outside = Path(tempfile.mkdtemp(prefix="luna-out-"))
+    secret = outside / "secret.txt"
+    secret.write_text("secret")
+    (root / "escape").symlink_to(secret)
     target = (root / requested).resolve()
-    print(target)
-    return {"blocked": not target.is_relative_to(root)}
+    try:
+        target.relative_to(root.resolve())
+        inside = True
+    except ValueError:
+        inside = False
+    read = len(target.read_bytes()) if inside and target.is_file() else 0
+    print(inside, read)
+    return {"blocked": not inside, "bytes_read": read, "operation": "simulated-download"}

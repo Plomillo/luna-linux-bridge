@@ -8,7 +8,7 @@ CASES = [
     {"case_id": "MGL5-INF-0142", "capability_id": "confined", "arguments": {"requested": "../../etc/passwd"}},
     {"case_id": "MGL5-INF-0411", "capability_id": "cosine_set", "arguments": {"pairs": PAIRS}},
     {"case_id": "MGL5-INF-0555", "capability_id": "increment", "arguments": {"times": 100}},
-    {"case_id": "MGL5-INF-0561", "capability_id": "ratio", "arguments": {"numerator": 99, "denominator": 100}},
+    {"case_id": "MGL5-INF-0561", "capability_id": "request_log", "arguments": {"successes": 99, "failures": 1}},
     {"case_id": "MGL5-INF-0620", "capability_id": "linear_integral", "arguments": {}},
     {"case_id": "MGL5-INF-0621", "capability_id": "square_integral", "arguments": {}},
     {"case_id": "MGL5-INF-0626", "capability_id": "pearson", "arguments": {"left": [1, 2, 3], "right": [2, 4, 6]}},

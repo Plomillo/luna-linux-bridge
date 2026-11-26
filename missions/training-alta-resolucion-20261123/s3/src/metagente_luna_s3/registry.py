@@ -124,6 +124,7 @@ REGISTRY: dict[str, Capability] = {
     "square_integral": _cap("square_integral", "one_third", {"type": "object", "additionalProperties": False}),
     "cosine_set": _cap("cosine_set", "axis_cosines", {"type": "object", "required": ["pairs"], "properties": {"pairs": {"type": "array"}}, "additionalProperties": False}),
     "confined": _cap("confined", "escapes", {"type": "object", "required": ["requested"], "properties": {"requested": {"type": "string"}}, "additionalProperties": False}),
+    "request_log": _cap("request_log", "request_counts", {"type": "object", "required": ["successes", "failures"], "properties": {"successes": {"type": "integer"}, "failures": {"type": "integer"}}, "additionalProperties": False}),
 }
 
 ORACLES: dict[str, Callable[..., dict]] = {
@@ -193,6 +194,7 @@ ORACLES: dict[str, Callable[..., dict]] = {
     "one_third": batch4_oracle.one_third,
     "axis_cosines": batch4_oracle.axis_cosines,
     "escapes": batch4_oracle.escapes,
+    "request_counts": batch4_oracle.request_counts,
 }
 
 EXECUTORS: dict[str, Callable[..., dict]] = {
@@ -257,11 +259,12 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "f1_score": batch3_exec.f1_score,
     "increment": batch4_exec.increment,
     "pearson": batch4_exec.pearson,
-    "acf_lag0": batch4_exec.acf_lag0,
+    "acf_lag0": batch4_exec.acf_series,
     "linear_integral": lambda: batch4_exec.linear_integral(),
     "square_integral": lambda: batch4_exec.square_integral(),
     "cosine_set": batch4_exec.cosine_set,
     "confined": batch4_exec.confined,
+    "request_log": batch4_exec.request_log,
 }
 
 
