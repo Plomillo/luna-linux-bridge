@@ -34,7 +34,7 @@ Added source-derived controls for:
 - L2 norm: malformed component rejection and the zero-vector boundary;
 - Pearson correlation: zero-variance rejection and perfect positive/negative two-point boundaries.
 
-The L2 executor now rejects non-integer components explicitly. The independent norm oracle recomputes the integer square root; the Pearson oracle independently handles zero variance and recomputes the raw-score coefficient.
+The L2 executor now rejects non-integer components explicitly. The independent norm oracle recomputes the integer square root; the Pearson oracle independently handles zero variance and recomputes the raw-score coefficient. The first-match oracle now handles absent values without indexing an empty match list; stable-age capability registration no longer gets overwritten by a conflicting legacy executor; and zero-panel trapezoid controls are adjudicated as schema-level rejections.
 
 ## Validation requirements
 
