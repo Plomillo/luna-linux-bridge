@@ -140,12 +140,12 @@ jobs:
           outcomes = Counter(row["execution_status"] for row in ledger)
 
           blockers = [json.loads(line) for line in Path("reports/C05_POPULATION_BLOCKERS.jsonl").read_text().splitlines() if line]
-          assert plan["authored_normal_specs"] == 101, plan
+          assert plan["authored_normal_specs"] == 109, plan
           assert plan["interpreter_candidates"] == 7, plan
           assert plan["interpreter_ready"] == 2, plan
           assert plan["interpreter_blocked"] == 5, plan
           assert plan["interpreter_registered"] == 2, plan
-          assert plan["unique_source_plan_candidates"] == 106, plan
+          assert plan["unique_source_plan_candidates"] == 113, plan
           assert plan["compiled_executable_plans"] == 88, plan
           assert plan["not_in_plan_set"] == 912, plan
           assert report["expected"] == 1000, report
