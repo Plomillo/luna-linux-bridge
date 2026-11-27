@@ -14,10 +14,12 @@ def run_operation(token: str) -> dict:
 
 
 def increment(times: int) -> dict:
+    if times < 0:
+        return {"rejected": True, "reason": "operation count must be non-negative"}
     records = [run_operation(f"op-{index}") for index in range(times)]
     completed = [item["id"] for item in records if item["ok"]]
     print(len(completed))
-    return {"completed": len(completed), "failed": len(records) - len(completed), "ids": completed}
+    return {"rejected": False, "completed": len(completed), "failed": len(records) - len(completed), "ids": completed}
 
 
 def pearson(left: list[int], right: list[int]) -> dict:
@@ -90,6 +92,8 @@ def handle_request(index: int, fail_index: int) -> dict:
 
 
 def request_log(successes: int, failures: int) -> dict:
+    if successes < 0 or failures < 0 or successes + failures <= 0:
+        return {"rejected": True, "reason": "request counts must be non-negative with positive total"}
     total = successes + failures
     fail_index = successes if failures else -1
     responses = [handle_request(index, fail_index) for index in range(total)]
@@ -97,6 +101,7 @@ def request_log(successes: int, failures: int) -> dict:
     bad_count = sum(item["status"] == 500 for item in responses)
     print(ok_count, bad_count)
     return {
+        "rejected": False,
         "availability": ok_count / total,
         "successes": ok_count,
         "failures": bad_count,
