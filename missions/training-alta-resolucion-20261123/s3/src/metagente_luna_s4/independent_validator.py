@@ -151,10 +151,13 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
                     findings.append("producer-source-hash-invalid")
                 if _digest(oracle_source) == _digest(producer_source):
                     findings.append("oracle-source-equals-producer")
-            if run.get("execution_status") == "PASS" and (
-                run.get("exit_code") != 0 or oracle.get("result") != "PASS"
-            ):
+            outcome = run.get("execution_status")
+            if outcome == "PASS" and (run.get("exit_code") != 0 or oracle.get("result") != "PASS"):
                 findings.append("pass-not-supported-by-oracle")
+            if outcome == "FAIL" and oracle.get("result") != "FAIL":
+                findings.append("fail-not-supported-by-oracle")
+            if outcome in {"BLOCKED", "INCONCLUSIVE"} and oracle.get("result") != "INCONCLUSIVE":
+                findings.append("nonterminal-oracle-mismatch")
         if not environment or environment.get("case_id") != case_id or environment.get("run_id") != run_id:
             findings.append("environment-identity-invalid")
         else:
