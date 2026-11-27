@@ -141,6 +141,9 @@ def execute_isolated(
     source_bytes = source_path.read_bytes()
     if hashlib.sha256(source_bytes).hexdigest() != source_metadata["file_sha256"]:
         raise ValueError("source file SHA-256 mismatch")
+    git_blob = hashlib.sha1(f"blob {len(source_bytes)}\\0".encode("ascii") + source_bytes).hexdigest()
+    if git_blob != source_metadata["source_blob"]:
+        raise ValueError("source Git blob identity mismatch")
     lines = source_bytes.splitlines(keepends=True)
     line_start = source_metadata["line_start"]
     line_end = source_metadata["line_end"]
