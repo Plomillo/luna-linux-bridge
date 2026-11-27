@@ -49,6 +49,8 @@ EXPECTED = {
     "MGL5-INF-0057": "elf_symbol_tables",
     "MGL5-INF-0095": "elf_symbol_tables",
     "MGL5-INF-0060": "elf_host_compatibility",
+    "MGL5-INF-0054": "elf_section_layout",
+    "MGL5-INF-0055": "elf_section_layout",
 }
 
 

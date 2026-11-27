@@ -339,3 +339,39 @@ def elf_host_compatibility_oracle(arguments: dict, observed: dict) -> dict:
     expected_compatible = valid and machine == arguments["native_machine"]
     header = observed.get("header", {})
     return {"ok": observed.get("native_machine") == arguments["native_machine"] and observed.get("host_compatible") is expected_compatible and header.get("rejected") is (not valid) and (not valid or header.get("architecture") is not None), "method": "independent ELF identification bounds and e_machine field decoding"}
+
+
+def elf_section_layout_oracle(arguments: dict, observed: dict) -> dict:
+    raw = bytes.fromhex(arguments["payload_hex"])
+    if len(raw) < 64 or raw[:6] != b"\x7fELF\x02\x01":
+        return {"ok": observed.get("rejected") is True, "method": "independent ELF64 identification check"}
+    shoff, phoff = struct.unpack_from("<QQ", raw, 40)[0], struct.unpack_from("<Q", raw, 32)[0]
+    phentsize, phnum, shentsize, shnum, shstrndx = struct.unpack_from("<HHHHH", raw, 54)
+    if shentsize < 64 or shnum == 0 or shstrndx >= shnum or shoff + shentsize * shnum > len(raw):
+        return {"ok": observed.get("rejected") is True, "method": "independent ELF section table bounds validation"}
+    section_headers = [struct.unpack_from("<IIQQQQIIQQ", raw, shoff + i * shentsize) for i in range(shnum)]
+    names_header = section_headers[shstrndx]
+    names_data = raw[names_header[4]:names_header[4] + names_header[5]]
+    def cstring(data: bytes, offset: int) -> str:
+        end = data.find(b"\0", offset)
+        return data[offset:end if end >= 0 else len(data)].decode("utf-8", "replace")
+    sections = []
+    for index, row in enumerate(section_headers):
+        if index == 0:
+            continue
+        name = cstring(names_data, row[0])
+        sections.append({"index": index, "name": name, "address": row[3], "offset": row[4], "size": row[5], "offset_within_file": row[4] <= len(raw)})
+    expected_loads = []
+    if arguments["include_load_segments"]:
+        if phentsize < 56 or phoff + phentsize * phnum > len(raw):
+            return {"ok": observed.get("rejected") is True, "method": "independent ELF program header bounds validation"}
+        for index in range(phnum):
+            header = struct.unpack_from("<IIQQQQQQ", raw, phoff + index * phentsize)
+            kind, _flags, offset, vaddr, _paddr, filesz, memsz, _alignment = header
+            if kind != 1:
+                continue
+            associated = [row["name"] for row, section in zip(sections, section_headers[1:], strict=True) if section[2] & 2 and section[3] >= vaddr and section[3] + section[5] <= vaddr + memsz]
+            expected_loads.append({"offset": offset, "virtual_address": vaddr, "file_size": filesz, "memory_size": memsz, "associated_sections": associated})
+    expected = {"rejected": False, "sections": sections, "load_segments": expected_loads, "section_offsets_valid": all(row["offset_within_file"] for row in sections), "sha256": hashlib.sha256(raw).hexdigest()}
+    ok = observed == expected
+    return {"ok": ok, "method": "independent ELF section-name string table and program-header interval reconstruction"}

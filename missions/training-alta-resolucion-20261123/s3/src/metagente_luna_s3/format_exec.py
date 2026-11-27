@@ -454,3 +454,52 @@ def elf_host_compatibility(payload_hex: str, native_machine: int) -> dict:
 
     header = elf_header(payload_hex)
     return {"header": header, "native_machine": native_machine, "host_compatible": not header.get("rejected", True) and int.from_bytes(bytes.fromhex(payload_hex)[18:20], "little" if header["endianness"] == "little" else "big") == native_machine}
+
+
+def elf_section_layout(payload_hex: str, include_load_segments: bool) -> dict:
+    """Extract bounded ELF section offsets and optional PT_LOAD mappings."""
+    raw = bytes.fromhex(payload_hex)
+    if not raw.startswith(b"\x7fELF"):
+        raise ValueError("input does not have an ELF signature")
+    with tempfile.TemporaryDirectory(prefix="c05-elf-layout-") as temporary:
+        path = f"{temporary}/specimen.elf"
+        with open(path, "wb") as specimen:
+            specimen.write(raw)
+        section_result = subprocess.run(["readelf", "--sections", "--wide", path], capture_output=True, text=True, timeout=5, check=False)
+        program_result = subprocess.run(["readelf", "--program-headers", "--wide", path], capture_output=True, text=True, timeout=5, check=False) if include_load_segments else None
+    if section_result.returncode != 0 or (program_result and program_result.returncode != 0):
+        return {"rejected": True, "reason": (section_result.stderr or program_result.stderr).strip()[:300], "sha256": hashlib.sha256(raw).hexdigest()}
+    sections = []
+    section_pattern = re.compile(r"^\s*\[\s*(\d+)\]\s+(\S*)\s+(\S+)\s+([0-9a-fA-F]+)\s+([0-9a-fA-F]+)\s+([0-9a-fA-F]+)")
+    for line in section_result.stdout.splitlines():
+        match = section_pattern.match(line)
+        if match:
+            index, name, _kind, address, offset, size = match.groups()
+            if int(index) == 0:
+                continue
+            start, length = int(offset, 16), int(size, 16)
+            sections.append({"index": int(index), "name": name, "address": int(address, 16), "offset": start, "size": length, "offset_within_file": start <= len(raw)})
+    load_segments = []
+    if program_result:
+        segment_pattern = re.compile(r"^\s*(LOAD)\s+0x([0-9a-fA-F]+)\s+0x([0-9a-fA-F]+)\s+0x([0-9a-fA-F]+)\s+0x([0-9a-fA-F]+)\s+0x([0-9a-fA-F]+)\s+(.*)$")
+        segments = []
+        for line in program_result.stdout.splitlines():
+            match = segment_pattern.match(line)
+            if match:
+                _, offset, vaddr, _paddr, filesz, memsz, _flags = match.groups()
+                segments.append({"offset": int(offset, 16), "virtual_address": int(vaddr, 16), "file_size": int(filesz, 16), "memory_size": int(memsz, 16)})
+        mapping = False
+        mappings: dict[int, list[str]] = {}
+        for line in program_result.stdout.splitlines():
+            if line.strip().startswith("Segment Sections"):
+                mapping = True
+                continue
+            if mapping:
+                match = re.match(r"^\s*(\d+)\s+(.*)$", line)
+                if match:
+                    mappings[int(match.group(1))] = match.group(2).split()
+        for index, segment in enumerate(segments):
+            segment["associated_sections"] = mappings.get(index + 2, [])
+            load_segments.append(segment)
+    valid = all(section["offset_within_file"] for section in sections)
+    return {"rejected": False, "sections": sections, "load_segments": load_segments, "section_offsets_valid": valid, "sha256": hashlib.sha256(raw).hexdigest()}

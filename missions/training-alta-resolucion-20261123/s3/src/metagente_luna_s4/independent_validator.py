@@ -157,6 +157,9 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "elf-distinct-full-and-dynamic-tables": return completed and observed.get("stripped") is False and bool(observed.get("complete_only")) and observed.get("provenance", {}).get("complete") == ".symtab" and observed.get("provenance", {}).get("dynamic") == ".dynsym"
     if expect == "elf-truncated-wrong-architecture-rejected": return completed and observed.get("host_compatible") is False and observed.get("header", {}).get("rejected") is True
     if expect == "elf-native-architecture-compatible": return completed and observed.get("host_compatible") is True and observed.get("header", {}).get("architecture") == "x86-64"
+    if expect in {"elf-truncated-section-table-rejected", "elf-truncated-load-map-rejected"}: return completed and observed.get("rejected") is True
+    if expect == "elf-alternate-section-offsets-within-file": return completed and observed.get("rejected") is False and observed.get("section_offsets_valid") is True and not observed.get("load_segments")
+    if expect == "elf-alternate-load-map-preserves-sections": return completed and observed.get("rejected") is False and observed.get("section_offsets_valid") is True and bool(observed.get("load_segments")) and all(segment.get("associated_sections") for segment in observed.get("load_segments", []))
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

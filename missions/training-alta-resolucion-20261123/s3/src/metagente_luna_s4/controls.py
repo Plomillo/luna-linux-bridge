@@ -102,6 +102,10 @@ def _build() -> None:
     _add("MGL5-INF-0095", "boundary", "elf_symbol_tables", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX, "require_complete": True}, "elf-distinct-full-and-dynamic-tables")
     _add("MGL5-INF-0060", "negative", "elf_host_compatibility", {"payload_hex": _ELF_ARM_HEX[:48], "native_machine": 62}, "elf-truncated-wrong-architecture-rejected")
     _add("MGL5-INF-0060", "boundary", "elf_host_compatibility", {"payload_hex": _ELF_SYMBOLS_HEX, "native_machine": 62}, "elf-native-architecture-compatible")
+    _add("MGL5-INF-0054", "negative", "elf_section_layout", {"payload_hex": _ELF_SYMBOLS_HEX[:120], "include_load_segments": False}, "elf-truncated-section-table-rejected")
+    _add("MGL5-INF-0054", "boundary", "elf_section_layout", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX, "include_load_segments": False}, "elf-alternate-section-offsets-within-file")
+    _add("MGL5-INF-0055", "negative", "elf_section_layout", {"payload_hex": _ELF_SYMBOLS_HEX[:120], "include_load_segments": True}, "elf-truncated-load-map-rejected")
+    _add("MGL5-INF-0055", "boundary", "elf_section_layout", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX, "include_load_segments": True}, "elf-alternate-load-map-preserves-sections")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -399,6 +403,9 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "elf-distinct-full-and-dynamic-tables": return control_completed and observed.get("stripped") is False and bool(observed.get("complete_only")) and observed.get("provenance", {}).get("complete") == ".symtab" and observed.get("provenance", {}).get("dynamic") == ".dynsym"
     if expect == "elf-truncated-wrong-architecture-rejected": return control_completed and observed.get("host_compatible") is False and observed.get("header", {}).get("rejected") is True
     if expect == "elf-native-architecture-compatible": return control_completed and observed.get("host_compatible") is True and observed.get("header", {}).get("architecture") == "x86-64"
+    if expect in {"elf-truncated-section-table-rejected", "elf-truncated-load-map-rejected"}: return control_completed and observed.get("rejected") is True
+    if expect == "elf-alternate-section-offsets-within-file": return control_completed and observed.get("rejected") is False and observed.get("section_offsets_valid") is True and not observed.get("load_segments")
+    if expect == "elf-alternate-load-map-preserves-sections": return control_completed and observed.get("rejected") is False and observed.get("section_offsets_valid") is True and bool(observed.get("load_segments")) and all(segment.get("associated_sections") for segment in observed.get("load_segments", []))
     if expect == "wasm-type-index-out-of-range": return control_completed and observed.get("rejected") is True and observed.get("invalid_indices") == [1]
     if expect == "wasm-no-types-no-functions": return control_completed and observed.get("rejected") is False and observed.get("invalid_indices") == []
     if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True
