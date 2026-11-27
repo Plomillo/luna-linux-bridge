@@ -11,10 +11,10 @@ PARAMS = json.loads((Path(__file__).resolve().parents[2] / "fixtures" / "derived
 CASES = [
     {"case_id": "MGL5-INF-0103", "capability_id": "first_match", "arguments": {"needle": 7, "values": [2, 7, 9, 7]}},
     {"case_id": "MGL5-INF-0104", "capability_id": "binary_find", "arguments": {"needle": 13, "start": 1, "end": 31}},
-    {"case_id": "MGL5-INF-0110", "capability_id": "dequeue_named", "arguments": {}},
+    {"case_id": "MGL5-INF-0110", "capability_id": "dequeue_named", "arguments": {"values": ["A", "B", "C"]}},
     {"case_id": "MGL5-INF-0113", "capability_id": "balanced_range", "arguments": {}},
     {"case_id": "MGL5-INF-0119", "capability_id": "linear_scans", "arguments": {}},
-    {"case_id": "MGL5-INF-0120", "capability_id": "factorials", "arguments": {}},
+    {"case_id": "MGL5-INF-0120", "capability_id": "factorials", "arguments": {"values": list(range(13))}},
     {"case_id": "MGL5-INF-0154", "capability_id": "precedence_tree", "arguments": {}},
     {"case_id": "MGL5-INF-0171", "capability_id": "index_limit", "arguments": {"length": 8}},
     {"case_id": "MGL5-INF-0186", "capability_id": "divide_zero", "arguments": {}},
