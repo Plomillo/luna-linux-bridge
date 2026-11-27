@@ -80,28 +80,44 @@ def float_bits(value: float, kind: str) -> dict:
     return {"bits_hex": "0x" + raw.hex()}
 
 
-def nan_policy() -> dict:
-    value = float("nan")
-    print("nan")
-    return {"is_nan": math.isnan(value), "equals_itself": bool(value == value), "ordinary": False}  # noqa: PLR0124
+def nan_policy(value_kind: str) -> dict:
+    if value_kind == "nan":
+        value = float("nan")
+    elif value_kind == "negative-nan":
+        value = struct.unpack(">d", bytes.fromhex("fff8000000000000"))[0]
+    elif value_kind == "finite":
+        value = 1.0
+    else:
+        return {"rejected": True, "reason": "unsupported NaN fixture"}
+    print(value_kind)
+    return {"is_nan": math.isnan(value), "equals_itself": bool(value == value), "ordinary": math.isfinite(value), "negative_sign": math.copysign(1.0, value) < 0}  # noqa: PLR0124
 
 
-def inf_policy() -> dict:
-    positive, negative = math.inf, -math.inf
-    print("inf -inf")
+def inf_policy(value_kind: str) -> dict:
+    values = {"both": (math.inf, -math.inf), "positive": (math.inf, 0.0), "negative": (0.0, -math.inf), "finite": (1.0, -1.0)}
+    if value_kind not in values:
+        return {"rejected": True, "reason": "unsupported infinity fixture"}
+    positive, negative = values[value_kind]
+    print(value_kind)
     return {
-        "positive_sign": math.copysign(1.0, positive) > 0,
-        "negative_sign": math.copysign(1.0, negative) < 0,
-        "output_format": "Python float, printed as inf and -inf",
+        "positive_sign": math.isinf(positive) and math.copysign(1.0, positive) > 0,
+        "negative_sign": math.isinf(negative) and math.copysign(1.0, negative) < 0,
+        "output_format": f"{positive} {negative}",
     }
 
 
-def subnormal_f32() -> dict:
-    value = struct.unpack(">f", bytes.fromhex("00000001"))[0]
+def subnormal_f32(value_kind: str) -> dict:
+    encodings = {"smallest-subnormal": "00000001", "zero": "00000000", "smallest-normal": "00800000"}
+    if value_kind not in encodings:
+        return {"rejected": True, "reason": "unsupported float32 fixture"}
+    value = struct.unpack(">f", bytes.fromhex(encodings[value_kind]))[0]
     bits = struct.pack(">f", value).hex()
     widened = struct.pack(">d", float(value)).hex()
+    exponent = (int(bits, 16) >> 23) & 0xFF
+    mantissa_nonzero = int(bits, 16) & 0x7FFFFF != 0
+    is_subnormal = exponent == 0 and mantissa_nonzero
     print(bits)
-    return {"is_subnormal": bits == "00000001", "float32_bits_hex": bits, "float64_bits_hex": widened, "precision_loss_on_widening": False}
+    return {"is_subnormal": is_subnormal, "float32_bits_hex": bits, "float64_bits_hex": widened, "precision_loss_on_widening": False}
 
 
 def nfc_compare(decomposed: str, composed: str) -> dict:

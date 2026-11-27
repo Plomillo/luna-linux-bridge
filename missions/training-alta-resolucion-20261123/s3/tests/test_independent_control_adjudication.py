@@ -81,3 +81,52 @@ def test_independent_adjudicator_preserves_special_failure_and_schema_rejection_
     assert _independent_control_accepts(
         "rejected", {"rejected": []}, "FAIL"
     ) is False
+
+
+def test_new_source_grounded_controls_are_independently_adjudicated():
+    cases = [
+        ("binary-insert-variant", {"inorder": [2, 5, 9]}, "EXECUTED"),
+        ("binary-insert-singleton", {"inorder": [7]}, "EXECUTED"),
+        ("arithmetic-variant-17", {"value": 17}, "EXECUTED"),
+        ("arithmetic-variant-6", {"value": 6}, "EXECUTED"),
+        ("arithmetic-zero-boundary", {"value": 0}, "EXECUTED"),
+        ("child-exit-one", {"exit_code": 1}, "EXECUTED"),
+        ("child-exit-zero", {"exit_code": 0}, "EXECUTED"),
+        ("cosine-zero-vector-rejected", {"rejected": True}, "EXECUTED"),
+        ("cosine-identical-boundary", {"rejected": False, "values": [1.0]}, "EXECUTED"),
+        ("acf-zero-variance-rejected", {"lags": None, "error": "zero-variance"}, "EXECUTED"),
+        ("acf-two-point-boundary", {"lags": [1.0, -0.5], "error": None}, "EXECUTED"),
+    ]
+    for expect, observed, status in cases:
+        assert _independent_control_accepts(expect, observed, status) is True, expect
+        assert _independent_control_accepts(expect, observed, "BLOCKED") is False, expect
+
+
+def test_ieee754_and_float_gap_controls_have_independent_adjudication():
+    cases = [
+        ("nan-finite-control", {"is_nan": False, "equals_itself": True, "ordinary": True}),
+        ("nan-negative-payload-boundary", {"is_nan": True, "equals_itself": False, "negative_sign": True}),
+        ("inf-finite-control", {"positive_sign": False, "negative_sign": False}),
+        ("inf-negative-boundary", {"positive_sign": False, "negative_sign": True}),
+        ("subnormal-normal-control", {"is_subnormal": False, "float32_bits_hex": "00800000"}),
+        ("subnormal-zero-boundary", {"is_subnormal": False, "float32_bits_hex": "00000000"}),
+        ("float-exact-control", {"equal": True, "difference": 0, "decimal_exact": True}),
+        ("float-rounding-boundary", {"equal": True, "difference": 0, "decimal_exact": False}),
+    ]
+    for expect, observed in cases:
+        assert _independent_control_accepts(expect, observed, "EXECUTED") is True, expect
+        assert _independent_control_accepts(expect, observed, "BLOCKED") is False, expect
+
+
+def test_numerical_fit_and_integrator_controls_are_independently_adjudicated():
+    cases = [
+        ("line-negative-slope", {"slope": -1, "intercept": 0}),
+        ("line-zero-slope-boundary", {"slope": 0, "intercept": 0}),
+        ("euler-step-order-reversed", {"coarse_error": 0.1, "fine_error": 0.2}),
+        ("euler-equal-step-boundary", {"coarse_error": 0.1, "fine_error": 0.1}),
+        ("rk4-step-out-of-range-rejected", {"rejected": True}),
+        ("rk4-single-step-boundary", {"rejected": False, "step": 1.0}),
+    ]
+    for expect, observed in cases:
+        assert _independent_control_accepts(expect, observed, "EXECUTED") is True, expect
+        assert _independent_control_accepts(expect, observed, "BLOCKED") is False, expect

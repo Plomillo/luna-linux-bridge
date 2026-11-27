@@ -22,17 +22,16 @@ def bracket_pairs(arguments: dict, observed: dict) -> dict:
 
 
 def sorted_values(arguments: dict, observed: dict) -> dict:
-    return {"ok": observed["inorder"] == sorted(arguments["values"]) == [1, 3, 6, 8, 10, 14], "method": "sort, not the tree"}
+    return {"ok": observed.get("inorder") == sorted(arguments["values"]), "method": "independent sorted-copy comparison"}
 
 
 def stated_value(arguments: dict, observed: dict) -> dict:
-    answers = {"2+3*4": 14, "(1+2)*3": 9, "2*3+4": 10}
+    answers = {"2+3*4": 14, "(1+2)*3": 9, "2*3+4": 10, "2+3*5": 17, "0+0": 0, "2*(1+2)": 6, "(0+0)*1": 0, "3*4+5": 17, "0*1+0": 0}
     return {"ok": observed["value"] == answers[arguments["expression"]], "method": "stated value, not the parser"}
 
 
 def exit_seven(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["exit_code"] == 7 and isinstance(observed["pid"], int) and observed["pid"] > 0, "method": "status seven"}
+    return {"ok": observed.get("exit_code") == arguments["exit_code"] and isinstance(observed.get("pid"), int) and observed["pid"] > 0, "method": "independent child exit-status comparison"}
 
 
 def two_compressions(arguments: dict, observed: dict) -> dict:

@@ -113,8 +113,10 @@ def arithmetic(expression: str) -> dict:
     return {"value": value, "expression": expression}
 
 
-def child_status() -> dict:
-    process = subprocess.Popen([sys.executable, "-c", "import sys; sys.exit(7)"])
+def child_status(exit_code: int) -> dict:
+    if not isinstance(exit_code, int) or isinstance(exit_code, bool) or not 0 <= exit_code <= 255:
+        return {"rejected": True, "reason": "exit code must be an integer from 0 through 255"}
+    process = subprocess.Popen([sys.executable, "-c", f"import sys; sys.exit({exit_code})"])
     code = process.wait(timeout=5)
     print(process.pid, code)
     return {"pid": process.pid, "exit_code": code}

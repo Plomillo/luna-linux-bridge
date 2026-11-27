@@ -296,8 +296,9 @@ def ipv4_check(addresses: list[str]) -> dict:
     return {"accepted": accepted, "rejected": rejected}
 
 
-def binary_float_gap() -> dict:
-    total = 0.1 + 0.2
-    difference = total - 0.3
+def binary_float_gap(left: float, right: float, target: float) -> dict:
+    total = left + right
+    difference = total - target
+    decimal_exact = Decimal(str(left)) + Decimal(str(right)) == Decimal(str(target))
     print(difference)
-    return {"equal": total == 0.3, "difference": difference, "explanation": "binary floating point, not an exact decimal"}
+    return {"equal": total == target, "difference": difference, "decimal_exact": decimal_exact, "explanation": "binary floating point compared with exact decimal arithmetic"}

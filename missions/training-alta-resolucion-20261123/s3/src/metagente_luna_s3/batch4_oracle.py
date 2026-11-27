@@ -30,17 +30,18 @@ def correlation(arguments: dict, observed: dict) -> dict:
 
 def lag_identity(arguments: dict, observed: dict) -> dict:
     values = arguments["values"]
-    count = len(values)
-    mean = sum(values) / count
+    if len(values) < 2:
+        return {"ok": observed.get("lags") is None and observed.get("error") == "too-short", "method": "independent sample-size precondition"}
+    mean = sum(values) / len(values)
     denominator = sum((item - mean) ** 2 for item in values)
+    if denominator == 0:
+        return {"ok": observed.get("lags") is None and observed.get("error") == "zero-variance", "method": "independent variance precondition"}
     expected = []
-    for lag in range(count):
-        total = 0.0
-        for index in range(lag, count):
-            total += (values[index - lag] - mean) * (values[index] - mean)
+    for lag in range(len(values)):
+        total = sum((values[index] - mean) * (values[index - lag] - mean) for index in range(lag, len(values)))
         expected.append(total / denominator)
-    ok = observed["error"] is None and all(abs(got - wanted) < 1e-9 for got, wanted in zip(observed["lags"], expected, strict=True))
-    return {"ok": ok, "method": "reverse-index products; shared global-mean definition"}
+    ok = observed.get("error") is None and isinstance(observed.get("lags"), list) and len(observed["lags"]) == len(expected) and all(abs(got - wanted) < 1e-9 for got, wanted in zip(observed["lags"], expected, strict=True))
+    return {"ok": ok, "method": "independent lagged covariance recomputation"}
 
 
 def half(arguments: dict, observed: dict) -> dict:
@@ -68,10 +69,16 @@ def one_third(arguments: dict, observed: dict) -> dict:
 
 
 def axis_cosines(arguments: dict, observed: dict) -> dict:
-    del arguments
-    expected = [1.0, 0.0, -1.0]
-    ok = all(abs(got - wanted) < 1e-9 for got, wanted in zip(observed["values"], expected, strict=True))
-    return {"ok": ok, "method": "axis-aligned reference"}
+    expected = []
+    for left, right in arguments["pairs"]:
+        if len(left) != len(right) or not left or sum(item * item for item in left) == 0 or sum(item * item for item in right) == 0:
+            return {"ok": observed.get("rejected") is True, "method": "independent vector-domain validation"}
+        dot = sum(item * other for item, other in zip(left, right, strict=True))
+        scale = (sum(item * item for item in left) * sum(item * item for item in right)) ** 0.5
+        expected.append(dot / scale)
+    got = observed.get("values")
+    ok = observed.get("rejected") is False and isinstance(got, list) and len(got) == len(expected) and all(abs(a - b) < 1e-9 for a, b in zip(got, expected, strict=True))
+    return {"ok": ok, "method": "independent dot-product and norm recomputation"}
 
 
 def request_counts(arguments: dict, observed: dict) -> dict:

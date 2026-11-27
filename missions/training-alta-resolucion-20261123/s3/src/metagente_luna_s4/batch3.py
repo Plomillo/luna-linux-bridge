@@ -10,7 +10,7 @@ CASES = [
     {"case_id": "MGL5-INF-0125", "capability_id": "arithmetic", "arguments": {"expression": "2+3*4"}},
     {"case_id": "MGL5-INF-0155", "capability_id": "arithmetic", "arguments": {"expression": "(1+2)*3"}},
     {"case_id": "MGL5-INF-0168", "capability_id": "arithmetic", "arguments": {"expression": "2*3+4"}},
-    {"case_id": "MGL5-INF-0202", "capability_id": "child_status", "arguments": {}},
+    {"case_id": "MGL5-INF-0202", "capability_id": "child_status", "arguments": {"exit_code": 7}},
     {"case_id": "MGL5-INF-0253", "capability_id": "ipv6_reject", "arguments": {"address": "2001:db8::1::2"}},
     {"case_id": "MGL5-INF-0254", "capability_id": "cidr_bounds", "arguments": {"cidr": "192.0.2.130/26"}},
     {"case_id": "MGL5-INF-0255", "capability_id": "ipv6_prefix", "arguments": {"cidr": "2001:db8:abcd:12::5/64"}},

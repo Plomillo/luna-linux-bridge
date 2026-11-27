@@ -191,7 +191,8 @@ def smaller_step(arguments: dict, observed: dict) -> dict:
 
 
 def series_exp(arguments: dict, observed: dict) -> dict:
-    del arguments
+    if arguments["step"] > 1 or arguments["step"] <= 0:
+        return {"ok": observed.get("rejected") is True, "method": "independent step-domain validation"}
     reference = sum(1 / math.factorial(number) for number in range(20))
     rk4_error = abs(observed["rk4"] - reference)
     euler_error = abs(observed["euler"] - reference)

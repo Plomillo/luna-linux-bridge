@@ -38,7 +38,7 @@ def test_controls_that_were_defined_are_accepted():
     # The runner must execute every currently authored control case; the
     # registry is the authoritative count, not a stale historical constant.
     assert {row["case_id"] for row in defined} == set(CONTROLS)
-    assert len(defined) == len(CONTROLS) == 83
+    assert len(defined) == len(CONTROLS) == 93
 
 def test_both_kept_control_returns_a_boolean_not_a_collection():
     result = accepts("both-kept", {"kept": [0, 65535]}, "EXECUTED")
@@ -278,3 +278,61 @@ def test_elf_magic_identification_ignores_a_misleading_jpg_extension():
     assert result["observed"] == {"extension": "jpg", "detected": "elf", "extension_matches_content": False}
     assert accepts("unknown-signature", {"detected": "unknown", "extension_matches_content": False}, "EXECUTED") is True
     assert accepts("elf-extension-match", {"detected": "elf", "extension_matches_content": True}, "EXECUTED") is True
+
+
+def test_new_source_grounded_controls_match_their_contracts():
+    from metagente_luna_s4.controls import accepts
+
+    cases = [
+        ("binary-insert-variant", {"inorder": [2, 5, 9]}, "EXECUTED"),
+        ("binary-insert-singleton", {"inorder": [7]}, "EXECUTED"),
+        ("arithmetic-variant-17", {"value": 17}, "EXECUTED"),
+        ("arithmetic-variant-6", {"value": 6}, "EXECUTED"),
+        ("arithmetic-zero-boundary", {"value": 0}, "EXECUTED"),
+        ("child-exit-one", {"exit_code": 1}, "EXECUTED"),
+        ("child-exit-zero", {"exit_code": 0}, "EXECUTED"),
+        ("cosine-zero-vector-rejected", {"rejected": True}, "EXECUTED"),
+        ("cosine-identical-boundary", {"rejected": False, "values": [1.0]}, "EXECUTED"),
+        ("acf-zero-variance-rejected", {"lags": None, "error": "zero-variance"}, "EXECUTED"),
+        ("acf-two-point-boundary", {"lags": [1.0, -0.5], "error": None}, "EXECUTED"),
+    ]
+    for expect, observed, status in cases:
+        assert accepts(expect, observed, status) is True, expect
+        assert accepts(expect, observed, "BLOCKED") is False, expect
+
+
+def test_ieee754_and_float_gap_controls_are_checked_by_primary_adjudicator():
+    from metagente_luna_s4.controls import accepts
+
+    cases = [
+        ("nan-finite-control", {"is_nan": False, "equals_itself": True, "ordinary": True}),
+        ("nan-negative-payload-boundary", {"is_nan": True, "equals_itself": False, "negative_sign": True}),
+        ("inf-finite-control", {"positive_sign": False, "negative_sign": False}),
+        ("inf-negative-boundary", {"positive_sign": False, "negative_sign": True}),
+        ("subnormal-normal-control", {"is_subnormal": False, "float32_bits_hex": "00800000"}),
+        ("subnormal-zero-boundary", {"is_subnormal": False, "float32_bits_hex": "00000000"}),
+        ("float-exact-control", {"equal": True, "difference": 0, "decimal_exact": True}),
+        ("float-rounding-boundary", {"equal": True, "difference": 0, "decimal_exact": False}),
+    ]
+    for expect, observed in cases:
+        assert accepts(expect, observed, "EXECUTED") is True, expect
+        assert accepts(expect, observed, "BLOCKED") is False, expect
+
+
+def test_numerical_fit_and_integrator_controls():
+    from metagente_luna_s3.batch5_exec import exact_line, euler_decay, rk4_decay
+    from metagente_luna_s3.batch5_oracle import two_points, smaller_step, series_exp
+    from metagente_luna_s4.controls import accepts
+
+    line_args = {"xs": [0, 1, 2], "slope": -1, "intercept": 0}
+    line = exact_line(**line_args)
+    assert two_points(line_args, line)["ok"] is True
+    assert accepts("line-negative-slope", line, "EXECUTED") is True
+
+    euler_args = {"coarse_step": 0.05, "fine_step": 0.1}
+    euler = euler_decay(**euler_args)
+    assert smaller_step(euler_args, euler)["ok"] is False
+    assert accepts("euler-step-order-reversed", euler, "FAIL") is True
+
+    assert rk4_decay(2.0)["rejected"] is True
+    assert series_exp({"step": 2.0}, rk4_decay(2.0))["ok"] is True

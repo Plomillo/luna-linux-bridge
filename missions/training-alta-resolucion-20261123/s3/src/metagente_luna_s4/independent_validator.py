@@ -406,6 +406,33 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "float-edge":
         return completed and observed.get("equal") is False and observed.get("difference") != 0
 
+    if expect == "binary-insert-variant": return completed and observed.get("inorder") == [2, 5, 9]
+    if expect == "binary-insert-singleton": return completed and observed.get("inorder") == [7]
+    if expect == "arithmetic-variant-17": return completed and observed.get("value") == 17
+    if expect == "arithmetic-variant-6": return completed and observed.get("value") == 6
+    if expect == "arithmetic-zero-boundary": return completed and observed.get("value") == 0
+    if expect == "child-exit-one": return completed and observed.get("exit_code") == 1
+    if expect == "child-exit-zero": return completed and observed.get("exit_code") == 0
+    if expect == "cosine-zero-vector-rejected": return completed and observed.get("rejected") is True
+    if expect == "cosine-identical-boundary": return completed and observed.get("rejected") is False and observed.get("values") == [1.0]
+    if expect == "acf-zero-variance-rejected": return completed and observed.get("lags") is None and observed.get("error") == "zero-variance"
+    if expect == "acf-two-point-boundary":
+        values = observed.get("lags")
+        return completed and observed.get("error") is None and isinstance(values, list) and len(values) == 2 and abs(values[0] - 1.0) < 1e-9 and abs(values[1] + 0.5) < 1e-9
+    if expect == "nan-finite-control": return completed and observed.get("is_nan") is False and observed.get("equals_itself") is True and observed.get("ordinary") is True
+    if expect == "nan-negative-payload-boundary": return completed and observed.get("is_nan") is True and observed.get("equals_itself") is False and observed.get("negative_sign") is True
+    if expect == "inf-finite-control": return completed and observed.get("positive_sign") is False and observed.get("negative_sign") is False
+    if expect == "inf-negative-boundary": return completed and observed.get("positive_sign") is False and observed.get("negative_sign") is True
+    if expect == "subnormal-normal-control": return completed and observed.get("is_subnormal") is False and observed.get("float32_bits_hex") == "00800000"
+    if expect == "subnormal-zero-boundary": return completed and observed.get("is_subnormal") is False and observed.get("float32_bits_hex") == "00000000"
+    if expect == "float-exact-control": return completed and observed.get("equal") is True and observed.get("difference") == 0 and observed.get("decimal_exact") is True
+    if expect == "float-rounding-boundary": return completed and observed.get("equal") is True and observed.get("difference") == 0 and observed.get("decimal_exact") is False
+    if expect == "line-negative-slope": return completed and observed.get("slope") == -1 and observed.get("intercept") == 0
+    if expect == "line-zero-slope-boundary": return completed and observed.get("slope") == 0 and observed.get("intercept") == 0
+    if expect == "euler-step-order-reversed": return completed and observed.get("fine_error", 0) > observed.get("coarse_error", 0)
+    if expect == "euler-equal-step-boundary": return completed and abs(observed.get("fine_error", 0) - observed.get("coarse_error", 0)) < 1e-12
+    if expect == "rk4-step-out-of-range-rejected": return completed and observed.get("rejected") is True
+    if expect == "rk4-single-step-boundary": return completed and observed.get("rejected") is not True and observed.get("step") == 1.0
     return False
 
 
