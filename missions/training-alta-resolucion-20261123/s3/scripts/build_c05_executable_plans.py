@@ -20,30 +20,30 @@ ROOT = Path(__file__).resolve().parents[4]
 SOURCE_PATH = ROOT / "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt"
 CONTROL_PATH = Path(__file__).resolve().parents[1] / "src" / "metagente_luna_s4" / "controls.py"
 CASE_SPECS = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5
-CASE_HEADER = re.compile(r"(?m)^\\[(MGL5-INF-\\d{4})\\].*$")
+CASE_HEADER = re.compile(r"(?m)^\[(MGL5-INF-\d{4})\].*$")
 
 
 def _source_record(case_id: str, source: bytes, text: str, lines: list[bytes]) -> tuple[dict, str]:
-    match = re.search(rf"(?m)^\\[{re.escape(case_id)}\\].*?(?=^\\[MGL5-INF-|\\Z)", text, re.S)
+    match = re.search(rf"(?m)^\[{re.escape(case_id)}\].*?(?=^\[MGL5-INF-|\Z)", text, re.S)
     if match is None:
         raise ValueError(f"source case missing: {case_id}")
     excerpt = match.group(0)
-    start = text[:match.start()].count("\\n") + 1
-    end = excerpt.count("\\n") + start - (1 if excerpt.endswith("\\n") else 0)
+    start = text[:match.start()].count("\n") + 1
+    end = excerpt.count("\n") + start - (1 if excerpt.endswith("\n") else 0)
     exact = b"".join(lines[start - 1:end])
     if exact.decode("utf-8") != excerpt:
         raise ValueError(f"source line range mismatch: {case_id}")
     fields = {}
     for name, pattern in (
-        ("operation", r"(?m)^FUENTE/OPERACIÓN:\\s*(.*)$"),
-        ("acceptance_criterion", r"(?m)^PASS:\\s*(.*)$"),
-        ("oracle_requirement", r"(?m)^ORÁCULO:\\s*(.*)$"),
+        ("operation", r"(?m)^FUENTE/OPERACIÓN:\s*(.*)$"),
+        ("acceptance_criterion", r"(?m)^PASS:\s*(.*)$"),
+        ("oracle_requirement", r"(?m)^ORÁCULO:\s*(.*)$"),
     ):
         field_match = re.search(pattern, excerpt)
         if field_match is None or not field_match.group(1).strip():
             raise ValueError(f"source field missing: {case_id}:{name}")
         fields[name] = field_match.group(1).strip()
-    blob = hashlib.sha1(f"blob {len(source)}\\0".encode("ascii") + source).hexdigest()
+    blob = hashlib.sha1(f"blob {len(source)}\0".encode("ascii") + source).hexdigest()
     metadata = {
         "source_file": SOURCE_PATH.name,
         "line_start": start,
@@ -128,7 +128,7 @@ def compile_plans() -> tuple[list[dict], dict]:
     report = {
         "status": "SOURCE_BOUND_PARTIAL_PLAN_SET_NOT_CERTIFICATION",
         "source_sha256": hashlib.sha256(source).hexdigest(),
-        "source_git_blob": hashlib.sha1(f"blob {len(source)}\\0".encode("ascii") + source).hexdigest(),
+        "source_git_blob": hashlib.sha1(f"blob {len(source)}\0".encode("ascii") + source).hexdigest(),
         "authored_normal_specs": len(normal_by_id),
         "compiled_executable_plans": len(plans),
         "skipped_specs": len(skipped),
@@ -153,10 +153,10 @@ def main() -> int:
     if args.output.exists() or args.report.exists():
         raise SystemExit("refusing to overwrite existing plan output")
     args.output.write_text(
-        "".join(json.dumps(plan, ensure_ascii=False, sort_keys=True) + "\\n" for plan in plans),
+        "".join(json.dumps(plan, ensure_ascii=False, sort_keys=True) + "\n" for plan in plans),
         encoding="utf-8",
     )
-    args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+    args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({
         "compiled_executable_plans": report["compiled_executable_plans"],
         "skipped_specs": report["skipped_specs"],
