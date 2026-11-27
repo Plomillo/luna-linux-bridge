@@ -427,5 +427,5 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
         "structure_problems": problems,
         "evidence_root_supplied": root is not None,
         "human_review_required": False,
-        "reason": "C05 requires 1,000 individually executed dossiers with persisted, byte-verified evidence; investigation and inline hashes are not execution evidence",
+        "reason": "C05 requires 1,000 individually accounted dossiers with persisted, byte-verified evidence and independent validation; preflight BLOCKED is terminal but never an operation PASS.",
     }
