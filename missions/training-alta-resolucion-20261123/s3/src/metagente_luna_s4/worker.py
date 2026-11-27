@@ -17,11 +17,11 @@ def main() -> int:
             backend="LOCAL_TEST_ONLY",
         )
         json.dump(record, sys.stdout, ensure_ascii=False, sort_keys=True)
-        sys.stdout.write("\\n")
+        sys.stdout.write("\n")
         return 0
     except Exception as exc:  # noqa: BLE001 - worker boundary must report startup/dispatch failures
         json.dump({"worker_error": f"{type(exc).__name__}: {exc}"}, sys.stdout, ensure_ascii=False)
-        sys.stdout.write("\\n")
+        sys.stdout.write("\n")
         return 1
 
 
