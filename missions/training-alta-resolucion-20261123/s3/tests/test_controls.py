@@ -33,7 +33,7 @@ def test_controls_that_were_defined_are_accepted():
     rows = run_controls()
     defined = [row for row in rows if row["controls"]]
     assert defined
-    failures = [(row["case_id"], [kind for kind, result in row["controls"].items() if not result["accepted"]]) for row in defined if row["control_status"] != "PRESENT"]
+    failures = [(row["case_id"], {kind: {"accepted": result["accepted"], "status": result["execution_status"], "observed": result["observed"]} for kind, result in row["controls"].items() if not result["accepted"]}) for row in defined if row["control_status"] != "PRESENT"]
     assert not failures, failures
     assert len(defined) == 99
 
