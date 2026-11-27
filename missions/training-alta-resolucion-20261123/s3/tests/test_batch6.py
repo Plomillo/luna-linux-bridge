@@ -96,14 +96,19 @@ def test_descending_sort_checks_permutation_order_and_rejection_controls():
 
 def test_four_new_d03_candidates_are_registered_oracled_and_controlled():
     from metagente_luna_s3.batch6_exec import (
-        determinant_3x3, matrix_multiply, moving_average, shortest_path,
+        determinant_3x3,
+        matrix_multiply,
+        moving_average,
+        shortest_path,
     )
     from metagente_luna_s3.batch6_oracle import (
-        determinant_3x3_oracle, matrix_multiply_oracle, moving_average_oracle,
+        determinant_3x3_oracle,
+        matrix_multiply_oracle,
+        moving_average_oracle,
         shortest_path_oracle,
     )
-    from metagente_luna_s4.controls import run_controls
     from metagente_luna_s4.batch6 import CASES as BATCH6_CASES
+    from metagente_luna_s4.controls import run_controls
 
     specs = {item["case_id"]: item for item in BATCH6_CASES}
     graph = specs["MGL5-INF-0114"]["arguments"]
