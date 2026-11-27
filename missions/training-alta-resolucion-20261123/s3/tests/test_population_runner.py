@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "execute_c05_population.py"
