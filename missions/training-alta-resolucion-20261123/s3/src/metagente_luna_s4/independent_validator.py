@@ -98,6 +98,11 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "age-zero-accepted": return completed and observed.get("rejected") is False and observed.get("rows") == 1
     if expect == "command-list-rejected": return completed and observed.get("rejected") is True
     if expect == "single-zero-exit": return completed and observed.get("rejected") is not True and observed.get("commands") == ["true"] and observed.get("codes") == [0]
+
+    if expect == "dex-truncated-header-rejected": return completed and observed.get("rejected") is True
+    if expect == "dex-minimum-valid-header": return completed and observed.get("rejected") is False and observed.get("header_size") == 112 and observed.get("checksum_valid") is True and observed.get("signature_valid") is True
+    if expect == "dex-invalid-type-string-index": return completed and observed.get("rejected") is False and observed.get("indices_valid") is False
+    if expect == "dex-valid-table-indices": return completed and observed.get("rejected") is False and observed.get("indices_valid") is True
     if expect == "zip-traversal-blocked": return completed and observed.get("blocked") == ["../../escape"] and observed.get("outside_write") is False
     if expect == "zip-safe-empty": return completed and observed.get("safe") == ["inside.txt"] and observed.get("blocked") == []
     if expect in {"zip-corrupt-crc-detected", "zip-minimum-member-crc-detected", "gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return completed and observed.get("crc_error_detected") is True and (not expect.startswith("zip-") or observed.get("damaged_member_crc32") != observed.get("central_crc32"))
