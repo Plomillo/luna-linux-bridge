@@ -330,20 +330,20 @@ for _name, _oracle_name, _schema in batch5_exec.SPECS:
     ORACLES[_oracle_name] = getattr(batch5_oracle, _oracle_name)
 
 
-REGISTRY["yaml_types"] = _cap("yaml_types", "yaml_types", {"type": "object", "required": ["yaml_text"], "properties": {"yaml_text": {"type": "string"}}, "additionalProperties": False})
-REGISTRY["yaml_ambiguous"] = _cap("yaml_ambiguous", "yaml_ambiguous", {"type": "object", "required": ["version", "yaml_text"], "properties": {"version": {"type": "string"}, "yaml_text": {"type": "string"}}, "additionalProperties": False})
-REGISTRY["protobuf_compat"] = _cap("protobuf_compat", "protobuf_compat", {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string"}}, "additionalProperties": False})
-REGISTRY["schema_migrate"] = _cap("schema_migrate", "schema_migrate", {"type": "object", "required": ["document"], "properties": {"document": {"type": "object"}}, "additionalProperties": False})
-REGISTRY["unknown_field"] = _cap("unknown_field", "unknown_field", {"type": "object", "required": ["record", "known_fields"], "properties": {"record": {"type": "object"}, "known_fields": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": False})
-REGISTRY["mixed_roundtrip"] = _cap("mixed_roundtrip", "mixed_roundtrip", {"type": "object", "required": ["document"], "properties": {"document": {"type": "object"}}, "additionalProperties": False})
+REGISTRY["yaml_types"] = _cap("yaml_types", "yaml_types_oracle", {"type": "object", "required": ["yaml_text"], "properties": {"yaml_text": {"type": "string"}}, "additionalProperties": False})
+REGISTRY["yaml_ambiguous"] = _cap("yaml_ambiguous", "yaml_ambiguous_oracle", {"type": "object", "required": ["version", "yaml_text"], "properties": {"version": {"type": "string"}, "yaml_text": {"type": "string"}}, "additionalProperties": False})
+REGISTRY["protobuf_compat"] = _cap("protobuf_compat", "protobuf_compat_oracle", {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string"}}, "additionalProperties": False})
+REGISTRY["schema_migrate"] = _cap("schema_migrate", "schema_migrate_oracle", {"type": "object", "required": ["document"], "properties": {"document": {"type": "object"}}, "additionalProperties": False})
+REGISTRY["unknown_field"] = _cap("unknown_field", "unknown_field_oracle", {"type": "object", "required": ["record", "known_fields"], "properties": {"record": {"type": "object"}, "known_fields": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": False})
+REGISTRY["mixed_roundtrip"] = _cap("mixed_roundtrip", "mixed_roundtrip_oracle", {"type": "object", "required": ["document"], "properties": {"document": {"type": "object"}}, "additionalProperties": False})
 
 ORACLES.update({
-    "yaml_types": d01_compat_oracle.yaml_types,
-    "yaml_ambiguous": d01_compat_oracle.yaml_ambiguous,
-    "protobuf_compat": d01_compat_oracle.protobuf_compat,
-    "schema_migrate": d01_compat_oracle.schema_migrate,
-    "unknown_field": d01_compat_oracle.unknown_field,
-    "mixed_roundtrip": d01_compat_oracle.mixed_roundtrip,
+    "yaml_types_oracle": d01_compat_oracle.yaml_types,
+    "yaml_ambiguous_oracle": d01_compat_oracle.yaml_ambiguous,
+    "protobuf_compat_oracle": d01_compat_oracle.protobuf_compat,
+    "schema_migrate_oracle": d01_compat_oracle.schema_migrate,
+    "unknown_field_oracle": d01_compat_oracle.unknown_field,
+    "mixed_roundtrip_oracle": d01_compat_oracle.mixed_roundtrip,
 })
 EXECUTORS.update({
     "yaml_types": d01_compat_exec.yaml_types,
