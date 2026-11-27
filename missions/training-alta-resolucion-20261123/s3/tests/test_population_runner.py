@@ -105,8 +105,8 @@ def test_plan_compiler_emits_only_cases_with_both_authored_controls():
 
     plans, report = compiler.compile_plans()
 
-    assert report["compiled_executable_plans"] == len(plans) == 30
-    assert report["not_in_plan_set"] == 970
+    assert report["compiled_executable_plans"] == len(plans) == 48
+    assert report["not_in_plan_set"] == 952
     assert report["certification"] == "NOT_PASSED"
     assert [plan["CASE_ID"] for plan in plans] == sorted(plan["CASE_ID"] for plan in plans)
     for plan in plans:
@@ -164,21 +164,32 @@ def test_compiled_plans_pass_source_and_capability_preflight():
     for plan in plans:
         assert population.plan_errors(plan, plan["CASE_ID"]) == []
 
-def test_thirty_authentic_executions_and_970_explicit_not_run_complete_inventory_not_c05():
+def _compiled_case_ids():
+    script = Path(__file__).parents[1] / "scripts" / "build_c05_executable_plans.py"
+    compiler_spec = importlib.util.spec_from_file_location("build_c05_executable_plans_inventory", script)
+    assert compiler_spec is not None and compiler_spec.loader is not None
+    compiler = importlib.util.module_from_spec(compiler_spec)
+    compiler_spec.loader.exec_module(compiler)
+    plans, _ = compiler.compile_plans()
+    return {plan["CASE_ID"] for plan in plans}
+
+
+def test_48_authentic_executions_and_952_explicit_not_run_complete_inventory_not_c05():
+    executable = _compiled_case_ids()
+    rejected = [case_id for case_id in population.EXPECTED if case_id not in executable]
     report = {
         "expected": 1000,
         "rows": 1000,
-        "authentic_results": 30,
-        "not_run": 970,
-        "rejected": [
-            {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
-            for number in range(31, 1001)
-        ],
+        "authentic_results": len(executable),
+        "not_run": len(rejected),
+        "rejected": [{"case_id": case_id, "reasons": ["case-not-executed"]} for case_id in rejected],
         "c05_passed": False,
         "c05_status": "NOT_PASSED",
     }
 
-    assert population.evidence_inventory_complete(report, {f"MGL5-INF-{number:04d}" for number in range(1, 31)}) is True
+    assert len(executable) == 48
+    assert len(rejected) == 952
+    assert population.evidence_inventory_complete(report, executable) is True
     assert report["c05_passed"] is False
     assert report["c05_status"] == "NOT_PASSED"
 
@@ -192,17 +203,17 @@ def test_inventory_gate_rejects_missing_or_fabricated_execution_evidence():
         "rejected": [],
     }
 
-    assert population.evidence_inventory_complete(report, {f"MGL5-INF-{number:04d}" for number in range(1, 31)}) is False
+    assert population.evidence_inventory_complete(report, _compiled_case_ids()) is False
 
 def test_inventory_gate_rejects_duplicate_or_noncanonical_blocker_ids():
     report = {
         "expected": 1000,
         "rows": 1000,
-        "authentic_results": 30,
-        "not_run": 970,
+        "authentic_results": len(_compiled_case_ids()),
+        "not_run": 1000 - len(_compiled_case_ids()),
         "rejected": [
-            {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
-            for number in range(31, 1001)
+            {"case_id": case_id, "reasons": ["case-not-executed"]}
+            for case_id in population.EXPECTED if case_id not in _compiled_case_ids()
         ],
     }
     report["rejected"][-1]["case_id"] = report["rejected"][0]["case_id"]
@@ -210,17 +221,17 @@ def test_inventory_gate_rejects_duplicate_or_noncanonical_blocker_ids():
     assert population.evidence_inventory_complete(report, {f"MGL5-INF-{number:04d}" for number in range(1, 22)}) is False
 
 def test_inventory_gate_rejects_blocker_set_that_is_not_exact_executable_complement():
-    executable = {f"MGL5-INF-{number:04d}" for number in range(1, 31)}
-    rejected_ids = [number for number in range(31, 1001)]
-    rejected_ids[-1] = 1  # omit a genuine NOT_RUN case and misclassify an executable case
+    executable = _compiled_case_ids()
+    rejected_ids = [case_id for case_id in population.EXPECTED if case_id not in executable]
+    rejected_ids[-1] = sorted(executable)[0]  # omit a genuine NOT_RUN case and misclassify an executable case
     report = {
         "expected": 1000,
         "rows": 1000,
         "authentic_results": 21,
         "not_run": 979,
         "rejected": [
-            {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
-            for number in rejected_ids
+            {"case_id": case_id, "reasons": ["case-not-executed"]}
+            for case_id in rejected_ids
         ],
     }
     assert population.evidence_inventory_complete(report, executable) is False
