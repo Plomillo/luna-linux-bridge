@@ -5,7 +5,7 @@ from metagente_luna_s4.batch4 import run_all
 def test_fourth_batch_meets_the_stated_results():
     rows = run_all()
     assert len(rows) == 9
-    assert {row["execution_status"] for row in rows} == {"CRITERION_MET"}
+    assert {row["execution_status"] for row in rows} == {"CRITERION_MET"}, [(row["case_id"], row["execution_status"], row.get("observed")) for row in rows]
     by_id = {row["case_id"]: row["observed"] for row in rows}
     assert by_id["MGL5-INF-0142"]["blocked"] is True
     assert by_id["MGL5-INF-0142"]["bytes_read"] == 0
