@@ -34,3 +34,8 @@ def test_coverage_matrix_identifies_missing_plan_and_control_reasons():
     assert by_id["MGL5-INF-0100"]["ready_for_execution"] is False
     assert "NORMAL_EXECUTION_SPEC_MISSING" in by_id["MGL5-INF-0100"]["blockers"]
     assert summary["blocker_counts"]["NORMAL_EXECUTION_SPEC_MISSING"] == 901
+
+
+def test_require_complete_gate_fails_closed_for_incomplete_population(monkeypatch):
+    monkeypatch.setattr("sys.argv", ["build_c05_coverage_matrix.py", "--require-complete"])
+    assert coverage.main() == 1
