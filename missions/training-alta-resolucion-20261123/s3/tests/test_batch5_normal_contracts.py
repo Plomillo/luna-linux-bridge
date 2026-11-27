@@ -1,5 +1,4 @@
 from metagente_luna_s4.batch5 import CASES
-from metagente_luna_s4.controls import run_controls
 from metagente_luna_s4.runner import execute
 
 
@@ -50,6 +49,8 @@ def test_source_defined_batch5_normal_specs_do_not_claim_negative_or_boundary_co
 
 
 def test_ten_batch5_cases_have_distinct_accepted_negative_and_boundary_controls():
+    from metagente_luna_s4.controls import run_controls
+
     expected = {
         "MGL5-INF-0113", "MGL5-INF-0119", "MGL5-INF-0141", "MGL5-INF-0154",
         "MGL5-INF-0186", "MGL5-INF-0208", "MGL5-INF-0209", "MGL5-INF-0233",
