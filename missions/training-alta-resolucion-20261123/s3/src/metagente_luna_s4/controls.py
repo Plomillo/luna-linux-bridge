@@ -185,6 +185,20 @@ def _build() -> None:
     _add("MGL5-INF-0607", "boundary", "compensated_sum", {"start": 1.0, "increment": 1e-8, "count": 0}, "sum-zero-boundary")
     _add("MGL5-INF-0109", "negative", "stack_sequence", {"steps": ["pop"]}, "single-underflow")
     _add("MGL5-INF-0109", "boundary", "stack_sequence", {"steps": []}, "empty-stack-sequence")
+    _add("MGL5-INF-0112", "negative", "binary_insert", {"values": [5, 2, 9]}, "binary-insert-variant")
+    _add("MGL5-INF-0112", "boundary", "binary_insert", {"values": [7]}, "binary-insert-singleton")
+    _add("MGL5-INF-0125", "negative", "arithmetic", {"expression": "2+3*5"}, "arithmetic-variant-17")
+    _add("MGL5-INF-0125", "boundary", "arithmetic", {"expression": "0+0"}, "arithmetic-zero-boundary")
+    _add("MGL5-INF-0155", "negative", "arithmetic", {"expression": "2*(1+2)"}, "arithmetic-variant-6")
+    _add("MGL5-INF-0155", "boundary", "arithmetic", {"expression": "(0+0)*1"}, "arithmetic-zero-boundary")
+    _add("MGL5-INF-0168", "negative", "arithmetic", {"expression": "3*4+5"}, "arithmetic-variant-17")
+    _add("MGL5-INF-0168", "boundary", "arithmetic", {"expression": "0*1+0"}, "arithmetic-zero-boundary")
+    _add("MGL5-INF-0202", "negative", "child_status", {"exit_code": 1}, "child-exit-one")
+    _add("MGL5-INF-0202", "boundary", "child_status", {"exit_code": 0}, "child-exit-zero")
+    _add("MGL5-INF-0411", "negative", "cosine_set", {"pairs": [[[0, 0], [1, 0]]]}, "cosine-zero-vector-rejected")
+    _add("MGL5-INF-0411", "boundary", "cosine_set", {"pairs": [[[3, 4], [3, 4]]]}, "cosine-identical-boundary")
+    _add("MGL5-INF-0633", "negative", "acf_lag0", {"values": [5, 5, 5]}, "acf-zero-variance-rejected")
+    _add("MGL5-INF-0633", "boundary", "acf_lag0", {"values": [1, 2]}, "acf-two-point-boundary")
 
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
@@ -517,6 +531,19 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
             and observed.get("stack") == []
             and observed.get("underflow_count") == 0
         )
+    if expect == "binary-insert-variant": return control_completed and observed.get("inorder") == [2, 5, 9]
+    if expect == "binary-insert-singleton": return control_completed and observed.get("inorder") == [7]
+    if expect == "arithmetic-variant-17": return control_completed and observed.get("value") == 17
+    if expect == "arithmetic-variant-6": return control_completed and observed.get("value") == 6
+    if expect == "arithmetic-zero-boundary": return control_completed and observed.get("value") == 0
+    if expect == "child-exit-one": return control_completed and observed.get("exit_code") == 1
+    if expect == "child-exit-zero": return control_completed and observed.get("exit_code") == 0
+    if expect == "cosine-zero-vector-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "cosine-identical-boundary": return control_completed and observed.get("rejected") is False and observed.get("values") == [1.0]
+    if expect == "acf-zero-variance-rejected": return control_completed and observed.get("lags") is None and observed.get("error") == "zero-variance"
+    if expect == "acf-two-point-boundary":
+        values = observed.get("lags")
+        return control_completed and observed.get("error") is None and isinstance(values, list) and len(values) == 2 and abs(values[0] - 1.0) < 1e-9 and abs(values[1] + 0.5) < 1e-9
     return False
 
 
