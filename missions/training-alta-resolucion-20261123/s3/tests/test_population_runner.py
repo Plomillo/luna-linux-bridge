@@ -11,6 +11,27 @@ population = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(population)
 
 
+def test_valid_plans_execute_concurrently_with_deterministic_result_order(monkeypatch, tmp_path):
+    from threading import Barrier
+
+    barrier = Barrier(2)
+
+    def fake_execute_plan(plan, case_id, evidence_root, timeout, image):
+        barrier.wait(timeout=3)
+        return {"CASE_ID": case_id, "execution_status": "PASS"}
+
+    monkeypatch.setattr(population, "execute_plan", fake_execute_plan)
+    plans = {
+        "MGL5-INF-0001": {"normal": {}},
+        "MGL5-INF-0002": {"normal": {}},
+    }
+    results = population.execute_valid_plans(
+        plans, set(plans), tmp_path, "sha256:" + "a" * 64, max_workers=2,
+    )
+    assert list(results) == ["MGL5-INF-0001", "MGL5-INF-0002"]
+    assert all(row["execution_status"] == "PASS" for row in results.values())
+
+
 def test_population_plan_forwards_pinned_docker_image_to_all_five_runs(monkeypatch, tmp_path):
     image_id = "sha256:" + "a" * 64
     observed_images = []

@@ -34,6 +34,7 @@ import hashlib
 import json
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from metagente_luna_s4.c05_validator import validate
@@ -194,6 +195,39 @@ def execute_plan(plan: dict, case_id: str, evidence_root: Path, timeout_seconds:
     return row
 
 
+def execute_valid_plans(
+    plan_map: dict[str, dict],
+    valid_case_ids: set[str],
+    evidence_root: Path,
+    sandbox_image: str,
+    *,
+    max_workers: int = 4,
+) -> dict[str, dict]:
+    """Execute independent case plans concurrently with bounded Docker pressure."""
+    items = [
+        (case_id, plan_map[case_id])
+        for case_id in EXPECTED
+        if case_id in valid_case_ids
+    ]
+    if not items:
+        return {}
+
+    def execute_one(item: tuple[str, dict]) -> tuple[str, dict]:
+        case_id, plan = item
+        try:
+            return case_id, execute_plan(plan, case_id, evidence_root, 60, sandbox_image)
+        except Exception as exc:  # noqa: BLE001 - preserve each failed case independently
+            return case_id, {
+                "CASE_ID": case_id,
+                "execution_status": "INCONCLUSIVE",
+                "contract_status": "NOT_A_PASS",
+                "reason": f"EXECUTION_OR_EVIDENCE_FAILURE:{type(exc).__name__}:{exc}",
+            }
+
+    with ThreadPoolExecutor(max_workers=min(max_workers, len(items))) as executor:
+        return dict(executor.map(execute_one, items))
+
+
 def source_record(case_id: str) -> tuple[dict, str]:
     root = Path(__file__).resolve().parents[4]
     source_path = root / "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt"
@@ -321,6 +355,9 @@ def main(argv: list[str]) -> int:
         case_id for case_id, plan in plan_map.items()
         if not plan_errors(plan, case_id)
     }
+    execution_results = execute_valid_plans(
+        plan_map, valid_executable_ids, evidence_root, sandbox_image, max_workers=4,
+    )
     rows = []
     blocker_inventory = []
     for case_id in EXPECTED:
@@ -351,14 +388,7 @@ def main(argv: list[str]) -> int:
                 "reason": "NO_COMPLETE_SOURCE_GROUNDED_EXECUTION_PLAN",
             })
             continue
-        try:
-            rows.append(execute_plan(plan, case_id, evidence_root, 60, sandbox_image))
-        except Exception as exc:  # noqa: BLE001 - preserve a failed execution without promoting it
-            rows.append({
-                "CASE_ID": case_id, "execution_status": "INCONCLUSIVE",
-                "contract_status": "NOT_A_PASS",
-                "reason": f"EXECUTION_OR_EVIDENCE_FAILURE:{type(exc).__name__}:{exc}",
-            })
+        rows.append(execution_results[case_id])
 
     report = validate(rows, evidence_root=evidence_root)
     ledger_text = "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows)
