@@ -6,7 +6,7 @@ on:
       - repair/metagente-luna-structured-20261125
   pull_request:
     branches:
-      - repair/metagente-luna-structured-20261125
+      - main
   workflow_dispatch:
 
 permissions:
