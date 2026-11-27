@@ -40,8 +40,8 @@ def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries
     assert accepts("distinct-bom-payloads", {"visible": "marked", "plain_text": "plain", "contains_bom_character": False}, "EXECUTED") is True
     assert accepts("combining-grapheme", {"bytes": 3, "codepoints": 2, "graphemes": 1}, "EXECUTED") is True
     assert accepts("zwj-one-grapheme", {"preserved": "👨‍🚀", "codepoints": 3, "graphemes": 1}, "EXECUTED") is True
-    assert accepts("single-crlf", {"lines": ["x"], "written": "x\\r\\n", "doubled_cr": False}, "EXECUTED") is True
-    assert accepts("lone-cr-normalized", {"converted": "a\\nb", "cr_remaining": False}, "EXECUTED") is True
+    assert accepts("single-crlf", {"lines": ["x"], "written": "x\r\n", "doubled_cr": False}, "EXECUTED") is True
+    assert accepts("lone-cr-normalized", {"converted": "a\nb", "cr_remaining": False}, "EXECUTED") is True
     assert accepts("empty-cell-preserved", {"parsed": [["", "x"], ["y", "z"]]}, "EXECUTED") is True
     assert accepts("nested-types-preserved", {"parsed": {"items": [1, None, False], "child": {"ok": True}}}, "EXECUTED") is True
     assert accepts("single-nonascii", {"parsed": "ñ", "raw": '"ñ"'}, "EXECUTED") is True
@@ -55,6 +55,15 @@ def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries
     assert accepts("invalid-padding-rejected", {"rejected": True, "error_recorded": True}, "EXECUTED") is True
     assert accepts("empty-sha256", {"digest_hex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}, "EXECUTED") is True
     assert accepts("empty-manifest-change", {"reproduced": True, "altered_changes": True, "digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"}, "EXECUTED") is True
+
+
+def test_independent_oracles_cover_empty_decimal_and_empty_sha256_vectors():
+    from metagente_luna_s3.d01_oracle import nist_abc
+    from metagente_luna_s3.more_oracle import decimal_literal
+
+    digest = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    assert nist_abc({"text": ""}, {"digest_hex": digest})["ok"] is True
+    assert decimal_literal({"text": "0.00"}, {"text": "0.00", "used_binary_float": False})["ok"] is True
 
 
 def test_serialization_controls_cover_csv_xml_binary_compression_and_manifest_edges():
