@@ -169,6 +169,13 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
     if (not isinstance(fixture, dict) or fixture.get("case_id") != case_id or fixture.get("run_id") != run_id
             or not (fixture.get("fixture_origin") or fixture.get("fixture_id"))):
         errors.append("fixture-provenance-invalid")
+    elif rep.get("kind") in {"NEGATIVE", "BOUNDARY"}:
+        control = fixture.get("control")
+        if not isinstance(control, dict) or not all(
+            isinstance(control.get(field), str) and control[field]
+            for field in ("definition", "expected_behavior", "source")
+        ):
+            errors.append("negative-or-boundary-control-not-specified")
 
     environment = _load_json(loaded["environment"]) if "environment" in loaded else None
     if not isinstance(environment, dict) or not environment.get("environment_id") or environment.get("case_id") != case_id or environment.get("run_id") != run_id:
