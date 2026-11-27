@@ -372,10 +372,10 @@ def main(argv: list[str]) -> int:
         "blocker_inventory": str(blocker_path),
         "blocked_cases": len(blocker_inventory),
     }, ensure_ascii=False))
-    # Exit successfully only when all 15 authored executable plans produce
-    # authentic evidence and the remaining 985 are explicitly source-bound
+    # Exit successfully only when all 17 authored executable plans produce
+    # authentic evidence and the remaining 983 are explicitly source-bound
     # NOT_RUN blockers. This completes evidence collection, not C05.
-    return 0 if evidence_inventory_complete(report) and len(blocker_inventory) == 985 else 1
+    return 0 if evidence_inventory_complete(report) and len(blocker_inventory) == 983 else 1
 
 
 if __name__ == "__main__":
