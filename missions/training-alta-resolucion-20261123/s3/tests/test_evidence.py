@@ -3,6 +3,7 @@ import json
 
 import pytest
 
+from metagente_luna_s4.c05_validator import _validate_row
 from metagente_luna_s4.evidence import assemble_case_record, persist_run
 
 
@@ -106,3 +107,29 @@ def test_assembler_rejects_missing_negative_or_boundary_run(tmp_path):
     ]
     with pytest.raises(ValueError, match="exactly one NORMAL"):
         assemble_case_record("MGL5-INF-0001", runs)
+
+
+def test_isolated_runner_produces_c05_eligible_process_evidence(tmp_path):
+    from metagente_luna_s4.runner import execute_isolated
+
+    runs = [
+        execute_isolated(
+            "utf8_roundtrip", {"text": "Luna"}, "MGL5-INF-0001",
+            evidence_root=str(tmp_path), run_kind="NORMAL",
+        ),
+        execute_isolated(
+            "utf8_reject_invalid", {"payload_hex": "80"}, "MGL5-INF-0001",
+            evidence_root=str(tmp_path), run_kind="NEGATIVE",
+            control_metadata={"definition": "isolated continuation byte", "expected_behavior": "reject invalid UTF-8", "source": "test-spec"},
+        ),
+        execute_isolated(
+            "utf8_roundtrip", {"text": ""}, "MGL5-INF-0001",
+            evidence_root=str(tmp_path), run_kind="BOUNDARY",
+            control_metadata={"definition": "empty string boundary", "expected_behavior": "round-trip empty text", "source": "test-spec"},
+        ),
+    ]
+    row = assemble_case_record("MGL5-INF-0001", runs)
+    assert all(run["persisted_evidence"]["clean_state"] is True for run in runs)
+    assert all(run["persisted_evidence"]["independent_validation"]["passed"] is False for run in runs)
+    assert all(run["persisted_evidence"]["machinery"] == "LOCAL_SUBPROCESS_TEST_ONLY" for run in runs)
+    assert _validate_row(row, tmp_path) == []
