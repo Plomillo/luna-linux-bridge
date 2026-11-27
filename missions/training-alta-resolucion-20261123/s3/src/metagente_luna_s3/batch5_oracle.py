@@ -127,16 +127,23 @@ def posix_codes(arguments: dict, observed: dict) -> dict:
 
 
 def library_sqrt(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": abs(observed["estimate"] - math.sqrt(2)) < 1e-9, "method": "math.sqrt"}
+    value = arguments["value"]
+    if value < 0:
+        return {"ok": observed.get("rejected") is True, "method": "negative square-root domain"}
+    expected = math.sqrt(value)
+    return {"ok": observed.get("rejected") is False and abs(observed["estimate"] - expected) < 1e-9 and abs(observed.get("residual", 0.0) - (observed["estimate"] ** 2 - value)) < 1e-9, "method": "math.sqrt"}
 
 
 def decimal_total(arguments: dict, observed: dict) -> dict:
-    del arguments
-    exact = Decimal(1) + Decimal(100_000) * Decimal("1e-8")
+    count = arguments["count"]
+    if count < 0:
+        return {"ok": observed.get("rejected") is True, "method": "negative repetition count rejected"}
+    exact = Decimal(str(arguments["start"])) + Decimal(str(arguments["increment"])) * count
+    if count == 0:
+        return {"ok": observed.get("rejected") is False and observed["naive"] == float(exact) and observed["kahan"] == float(exact), "method": "exact empty accumulation"}
     naive = abs(Decimal(str(observed["naive"])) - exact)
     kahan = abs(Decimal(str(observed["kahan"])) - exact)
-    return {"ok": kahan < naive and kahan < Decimal("1e-9"), "method": "decimal exact total"}
+    return {"ok": observed.get("rejected") is False and kahan < naive and kahan <= Decimal("1e-12"), "method": "decimal exact total"}
 
 
 def library_root(arguments: dict, observed: dict) -> dict:
