@@ -224,6 +224,17 @@ def execute_blocked_preflight(
     return row
 
 
+def evidence_population_complete(report: dict) -> bool:
+    """Evidence generation may succeed while the functional C05 gate remains closed."""
+    return (
+        report.get("expected") == 1000
+        and report.get("rows") == 1000
+        and report.get("authentic_results") == 1000
+        and report.get("not_run") == 0
+        and report.get("rejected") == []
+    )
+
+
 def write_exclusive(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x", encoding="utf-8", newline="\n") as stream:
@@ -324,7 +335,10 @@ def main(argv: list[str]) -> int:
         "ledger": str(ledger_path),
         "report": str(report_path),
     }, ensure_ascii=False))
-    return 0 if report["c05_passed"] else 1
+    # Exit successfully only when all 1,000 dossiers have authentic,
+    # independently validated evidence. The report's C05 status remains
+    # NOT_PASSED until all underlying operations contractually pass.
+    return 0 if evidence_population_complete(report) else 1
 
 
 if __name__ == "__main__":
