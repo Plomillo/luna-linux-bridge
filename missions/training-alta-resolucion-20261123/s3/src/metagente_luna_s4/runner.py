@@ -220,6 +220,7 @@ def execute_isolated(
         record["execution_status"] = "INCONCLUSIVE"
     elif lifecycle == "REJECTED":
         record["execution_status"] = "BLOCKED"
+    record["result_status"] = record.get("execution_status")
     try:
         record["persisted_evidence"] = persist_run(record, arguments, evidence_root)
         record["persisted_evidence"]["kind"] = run_kind
