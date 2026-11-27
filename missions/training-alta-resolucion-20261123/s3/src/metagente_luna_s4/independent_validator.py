@@ -406,6 +406,19 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "float-edge":
         return completed and observed.get("equal") is False and observed.get("difference") != 0
 
+    if expect == "binary-insert-variant": return completed and observed.get("inorder") == [2, 5, 9]
+    if expect == "binary-insert-singleton": return completed and observed.get("inorder") == [7]
+    if expect == "arithmetic-variant-17": return completed and observed.get("value") == 17
+    if expect == "arithmetic-variant-6": return completed and observed.get("value") == 6
+    if expect == "arithmetic-zero-boundary": return completed and observed.get("value") == 0
+    if expect == "child-exit-one": return completed and observed.get("exit_code") == 1
+    if expect == "child-exit-zero": return completed and observed.get("exit_code") == 0
+    if expect == "cosine-zero-vector-rejected": return completed and observed.get("rejected") is True
+    if expect == "cosine-identical-boundary": return completed and observed.get("rejected") is False and observed.get("values") == [1.0]
+    if expect == "acf-zero-variance-rejected": return completed and observed.get("lags") is None and observed.get("error") == "zero-variance"
+    if expect == "acf-two-point-boundary":
+        values = observed.get("lags")
+        return completed and observed.get("error") is None and isinstance(values, list) and len(values) == 2 and abs(values[0] - 1.0) < 1e-9 and abs(values[1] + 0.5) < 1e-9
     return False
 
 
