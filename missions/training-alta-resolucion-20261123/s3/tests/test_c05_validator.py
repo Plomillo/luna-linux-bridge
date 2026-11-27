@@ -45,7 +45,7 @@ def _valid_row_with_artifacts(tmp_path):
         source_metadata = {
             "source_file": "test-source.txt", "line_start": 1, "line_end": 1,
             "file_sha256": hashlib.sha256(b"test-source-file").hexdigest(),
-            "excerpt_sha256": source_excerpt["sha256"], "source_blob": "test-git-blob",
+            "excerpt_sha256": source_excerpt["sha256"], "source_blob": hashlib.sha1(b"test-git-blob").hexdigest(),
         }
         artifacts = {
             "fixture": _write_artifact(tmp_path, f"{run_id}/fixture.json", {
