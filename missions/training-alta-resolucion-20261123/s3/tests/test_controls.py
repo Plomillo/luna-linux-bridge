@@ -40,6 +40,12 @@ def test_controls_that_were_defined_are_accepted():
     assert {row["case_id"] for row in defined} == set(CONTROLS)
     assert len(defined) == len(CONTROLS) == 83
 
+def test_both_kept_control_returns_a_boolean_not_a_collection():
+    result = accepts("both-kept", {"kept": [0, 65535]}, "EXECUTED")
+    assert result is True
+    assert isinstance(result, bool)
+
+
 def test_negative_controls_accept_explicit_rejected_collections():
     assert accepts("rejected", {"kept": [], "rejected": [-1]}, "EXECUTED") is True
     assert accepts("rejected", {"accepted": [], "rejected": ["192.0.2.256"]}, "EXECUTED") is True
