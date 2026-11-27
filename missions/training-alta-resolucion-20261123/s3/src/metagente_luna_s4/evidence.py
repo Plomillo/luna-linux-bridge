@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import importlib
 import inspect
+from importlib.metadata import distributions
 import json
 import os
 import platform
@@ -88,6 +89,10 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
             "python": sys.version, "platform": platform.platform(),
             "isolation": record.get("isolation_metadata"),
         }),
+        "environment_lock": ("\n".join(sorted(
+            f"{dist.metadata.get('Name', 'unknown')}=={dist.version}"
+            for dist in distributions()
+        )) + "\n").encode("utf-8"),
         "procedure": _json_bytes({
             "case_id": case_id, "run_id": run_id, "capability_id": capability_id,
             "procedure": "metagente_luna_s4.runner.execute",
@@ -127,10 +132,17 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
     payloads.update(source_payloads)
     artifacts = {}
     for name, data in payloads.items():
-        suffix = ".txt" if name in {"stdout", "stderr", "source_excerpt"} else ".py" if name in {"oracle_source", "producer_source"} else ".json"
+        suffix = ".txt" if name in {"stdout", "stderr", "source_excerpt", "environment_lock"} else ".py" if name in {"oracle_source", "producer_source"} else ".json"
         entry = _write_bytes(destination / f"{name}{suffix}", data)
         entry["path"] = f"{case_id}/{run_id}/{entry['path']}"
         artifacts[name] = entry
+    sums = "".join(
+        f"{entry['sha256']}  {entry['path']}\n"
+        for _, entry in sorted(artifacts.items())
+    ).encode("utf-8")
+    sums_entry = _write_bytes(destination / "SHA256SUMS", sums)
+    sums_entry["path"] = f"{case_id}/{run_id}/{sums_entry['path']}"
+    artifacts["sha256sums"] = sums_entry
     return {
         "case_id": case_id,
         "run_id": run_id,
