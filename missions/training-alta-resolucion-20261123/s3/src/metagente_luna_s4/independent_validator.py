@@ -121,6 +121,14 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
         )
     if expect == "not-fifteen":
         return lifecycle_status == "EXECUTED" and observed.get("sum") != 15
+    if expect == "no-duplicates":
+        return lifecycle_status == "EXECUTED" and observed.get("duplicates") == []
+    if expect == "single-duplicate":
+        return lifecycle_status == "EXECUTED" and observed.get("duplicates") == [5]
+    if expect == "mismatched-brackets":
+        return lifecycle_status == "EXECUTED" and observed.get("results") == [{"text": "([)]", "accepted": False}]
+    if expect == "empty-brackets":
+        return lifecycle_status == "EXECUTED" and observed.get("results") == [{"text": "", "accepted": True}]
     if expect == "first-match-absent":
         return lifecycle_status == "EXECUTED" and observed.get("index") is None and observed.get("duplicates") == []
     if expect == "first-match-singleton":
