@@ -244,7 +244,7 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
     root = Path(evidence_root).resolve() if evidence_root is not None else None
     rejected = []
     run_owner: dict[str, str] = {}
-    artifact_owner: dict[str, tuple[str, str]] = {}
+    artifact_owner: dict[str, tuple[str, str, str]] = {}
     authentic = 0
     not_run = 0
     contractual_pass = 0
@@ -271,7 +271,7 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
                         if not isinstance(artifact, dict) or not isinstance(artifact.get("path"), str):
                             continue
                         artifact_path = artifact["path"]
-                        artifact_key = (case_id, run_id if isinstance(run_id, str) else "")
+                        artifact_key = (case_id, run_id if isinstance(run_id, str) else "", artifact_name)
                         previous_owner = artifact_owner.setdefault(artifact_path, artifact_key)
                         if previous_owner != artifact_key:
                             errors.append(f"evidence-path-reused:{artifact_path}")
