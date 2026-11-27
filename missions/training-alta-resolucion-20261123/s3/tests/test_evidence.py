@@ -69,7 +69,8 @@ def test_runner_persists_observed_execution_but_does_not_claim_clean_state(tmp_p
         run_kind="NORMAL",
     )
     assert record["lifecycle_status"] == "EXECUTED"
-    assert record["execution_status"] == "PASS"
+    assert record["execution_status"] == "EXECUTED"
+    assert record["result_status"] == "PASS"
     assert record["contract_status"] == "NOT_A_PASS"
     assert record["persisted_evidence"]["clean_state"] is False
     assert record["persisted_evidence"]["independent_validation"]["passed"] is False
