@@ -34,7 +34,7 @@ def test_controls_that_were_defined_are_accepted():
     defined = [row for row in rows if row["controls"]]
     assert defined
     assert all(row["control_status"] == "PRESENT" for row in defined)
-    assert len(defined) == 80
+    assert len(defined) == 84
 
 def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries():
     assert accepts("distinct-bom-payloads", {"visible": "marked", "plain_text": "plain", "contains_bom_character": False}, "EXECUTED") is True
@@ -71,6 +71,20 @@ def test_fifo_factorial_path_and_ipv6_independent_oracles():
     assert two_compressions({"address": "::"}, {"accepted": True})["ok"] is True
     assert stated_prefix({"cidr": "2001:db8::1/129"}, {"rejected": True})["ok"] is True
     assert stated_prefix({"cidr": "2001:db8::1/128"}, {"rejected": False, "prefix": "2001:db8::1/128"})["ok"] is True
+
+
+def test_index_ipv6_mask_and_threshold_independent_oracles():
+    from metagente_luna_s3.batch3_oracle import fever_rule, stated_prefix
+    from metagente_luna_s3.batch5_oracle import library_v6, one_run, refused_index
+
+    assert refused_index({"length": -1}, {"out_of_range": True, "reads": 0, "length": 0})["ok"] is True
+    assert library_v6({"address": "not-an-ipv6-address"}, {"rejected": True})["ok"] is True
+    assert library_v6({"address": "::"}, {"rejected": False, "expanded": "0000:0000:0000:0000:0000:0000:0000:0000", "integer": 0})["ok"] is True
+    assert one_run({"mask": "255.0.0.255"}, {"rejected": True, "contiguous": False, "bits": "11111111000000000000000011111111"})["ok"] is True
+    assert one_run({"mask": "255.255.255.255"}, {"rejected": False, "contiguous": True, "bits": "1" * 32})["ok"] is True
+    assert stated_prefix({"cidr": "2001:db8::1/129"}, {"rejected": True})["ok"] is True
+    assert fever_rule({"low": 38, "high": 38, "limit": 38}, {"at_or_below": True, "above": False})["ok"] is True
+    assert fever_rule({"low": 38.1, "high": 38.1, "limit": 38}, {"at_or_below": False, "above": True})["ok"] is True
 
 
 def test_index_ipv6_mask_and_threshold_control_expectations():
