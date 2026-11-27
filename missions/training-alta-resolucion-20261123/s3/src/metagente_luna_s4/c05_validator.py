@@ -202,7 +202,8 @@ def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
         errors.append("case-outcome-does-not-match-repetitions")
     if row.get("contract_status") == "PASS" and row.get("execution_status") != "PASS":
         errors.append("contract-pass-with-nonpass-execution")
-    if row.get("contract_status") == "PASS" and not row.get("independent_validation", {}).get("passed", False):
+    independent = row.get("independent_validation")
+    if row.get("contract_status") == "PASS" and (not isinstance(independent, dict) or independent.get("passed") is not True):
         errors.append("contract-pass-without-independent-validation")
     return errors
 
