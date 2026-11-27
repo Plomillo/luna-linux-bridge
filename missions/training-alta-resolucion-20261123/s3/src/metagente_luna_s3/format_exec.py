@@ -617,3 +617,69 @@ def pe_inspect(payload_hex: str, mode: str) -> dict:
             result["dynamic_runtime_modules_observed"] = None
             result["static_dynamic_distinguished"] = True
         return result
+
+
+def dex_inspect(payload_hex: str, mode: str) -> dict:
+    """Inspect a bounded DEX header and cross-table indices without loading code."""
+    raw = bytes.fromhex(payload_hex)
+    if mode not in {"header", "tables"}:
+        return {"rejected": True, "reason": "unsupported_mode"}
+    if len(raw) < 112 or raw[:4] != b"dex\\n" or raw[7] != 0:
+        return {"rejected": True, "reason": "invalid_or_truncated_dex_header"}
+    version = raw[4:7].decode("ascii", "replace")
+    file_size, header_size, endian = struct.unpack_from("<III", raw, 32)
+    if file_size != len(raw) or header_size != 112 or endian != 0x12345678:
+        return {"rejected": True, "reason": "header_size_endian_or_file_size_mismatch"}
+    checksum = struct.unpack_from("<I", raw, 8)[0]
+    signature = raw[12:32].hex()
+    checksum_valid = checksum == (zlib.adler32(raw[12:]) & 0xFFFFFFFF)
+    signature_valid = raw[12:32] == hashlib.sha1(raw[32:]).digest()
+    if mode == "header":
+        return {"rejected": False, "version": version, "file_size": file_size,
+                "header_size": header_size, "endian_tag": endian,
+                "checksum_valid": checksum_valid, "signature_valid": signature_valid}
+    fields = {
+        "string_ids": (56, 60, 4), "type_ids": (64, 68, 4),
+        "proto_ids": (72, 76, 12), "field_ids": (80, 84, 8),
+        "method_ids": (88, 92, 8), "class_defs": (96, 100, 32),
+    }
+    tables = {}
+    for name, (size_at, off_at, width) in fields.items():
+        count, offset = struct.unpack_from("<II", raw, size_at)
+        if count and (offset < 112 or offset + count * width > len(raw)):
+            return {"rejected": True, "reason": f"{name}_out_of_bounds"}
+        tables[name] = {"count": count, "offset": offset, "width": width}
+    strings = []
+    string_table = tables["string_ids"]
+    for index in range(string_table["count"]):
+        offset = struct.unpack_from("<I", raw, string_table["offset"] + index * 4)[0]
+        if offset >= len(raw):
+            return {"rejected": True, "reason": "string_data_offset_out_of_bounds"}
+        end = raw.find(b"\\0", offset)
+        if end < 0:
+            return {"rejected": True, "reason": "unterminated_string_data"}
+        strings.append(raw[offset:end].decode("utf-8", "replace"))
+    type_refs = []
+    type_table = tables["type_ids"]
+    for index in range(type_table["count"]):
+        string_idx = struct.unpack_from("<I", raw, type_table["offset"] + index * 4)[0]
+        type_refs.append(string_idx)
+    proto_refs = []
+    proto_table = tables["proto_ids"]
+    for index in range(proto_table["count"]):
+        shorty_idx, return_idx, parameters_off = struct.unpack_from("<III", raw, proto_table["offset"] + index * 12)
+        proto_refs.append({"shorty_idx": shorty_idx, "return_type_idx": return_idx, "parameters_off": parameters_off})
+    method_refs = []
+    method_table = tables["method_ids"]
+    for index in range(method_table["count"]):
+        class_idx, proto_idx, name_idx = struct.unpack_from("<HHI", raw, method_table["offset"] + index * 8)
+        method_refs.append({"class_idx": class_idx, "proto_idx": proto_idx, "name_idx": name_idx})
+    valid = (
+        all(index < len(strings) for index in type_refs)
+        and all(row["shorty_idx"] < len(strings) and row["return_type_idx"] < len(type_refs) for row in proto_refs)
+        and all(row["class_idx"] < len(type_refs) and row["proto_idx"] < len(proto_refs) and row["name_idx"] < len(strings) for row in method_refs)
+    )
+    return {"rejected": False, "tables": tables, "strings": strings,
+            "type_string_indices": type_refs, "proto_references": proto_refs,
+            "method_references": method_refs, "indices_valid": valid,
+            "checksum_valid": checksum_valid, "signature_valid": signature_valid}
