@@ -36,12 +36,24 @@ def _source_reference(case_id):
     end = min(start + 5, len(lines))
     excerpt = b"".join(lines[start:end])
     git_blob = hashlib.sha1(b"blob " + str(len(source_bytes)).encode("ascii") + b"\0" + source_bytes).hexdigest()
-    return {
+    excerpt_text = excerpt.decode("utf-8")
+    metadata = {
         "source_file": source_file, "line_start": start + 1, "line_end": end,
         "file_sha256": hashlib.sha256(source_bytes).hexdigest(),
         "excerpt_sha256": hashlib.sha256(excerpt).hexdigest(),
         "source_blob": git_blob,
-    }, excerpt.decode("utf-8")
+    }
+    prefixes = {
+        "operation": "FUENTE/OPERACIÓN:",
+        "acceptance_criterion": "PASS:",
+        "oracle_requirement": "ORÁCULO:",
+    }
+    for field, prefix in prefixes.items():
+        metadata[field] = next(
+            line.split(":", 1)[1].strip()
+            for line in excerpt_text.splitlines() if line.startswith(prefix)
+        )
+    return metadata, excerpt_text
 
 
 def _valid_row_with_artifacts(tmp_path):
