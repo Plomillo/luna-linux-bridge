@@ -133,6 +133,18 @@ def _build() -> None:
     _add("MGL5-INF-0626", "boundary", "pearson", {"left": [1, 2], "right": [2, 4]}, "perfect-positive-correlation")
     _add("MGL5-INF-0627", "negative", "pearson", {"left": [1, 1, 1], "right": [3, 2, 1]}, "zero-variance-rejected")
     _add("MGL5-INF-0627", "boundary", "pearson", {"left": [1, 2], "right": [2, 1]}, "perfect-negative-correlation")
+    _add("MGL5-INF-0110", "negative", "dequeue_named", {"values": ["C", "B", "A"]}, "fifo-reversed-order")
+    _add("MGL5-INF-0110", "boundary", "dequeue_named", {"values": ["A"]}, "fifo-singleton")
+    _add("MGL5-INF-0120", "negative", "factorials", {"values": [-1]}, "factorial-negative-rejected")
+    _add("MGL5-INF-0120", "boundary", "factorials", {"values": [0]}, "factorial-zero-boundary")
+    _add("MGL5-INF-0142", "negative", "confined", {"requested": "escape"}, "symlink-escape-blocked")
+    _add("MGL5-INF-0142", "boundary", "confined", {"requested": "inside-link"}, "internal-symlink-allowed")
+    _add("MGL5-INF-0253", "negative", "ipv6_reject", {"address": "not-an-ipv6-address"}, "malformed-ipv6-rejected")
+    _add("MGL5-INF-0253", "boundary", "ipv6_reject", {"address": "::"}, "ipv6-unspecified-accepted")
+    _add("MGL5-INF-0254", "negative", "cidr_bounds", {"cidr": "192.0.2.130/33"}, "invalid-prefix-rejected")
+    _add("MGL5-INF-0254", "boundary", "cidr_bounds", {"cidr": "192.0.2.130/32"}, "host-prefix-boundary")
+    _add("MGL5-INF-0255", "negative", "ipv6_prefix", {"cidr": "2001:db8::1/129"}, "ipv6-prefix-rejected")
+    _add("MGL5-INF-0255", "boundary", "ipv6_prefix", {"cidr": "2001:db8::1/128"}, "ipv6-host-prefix")
     _add("MGL5-INF-0109", "negative", "stack_sequence", {"steps": ["pop"]}, "single-underflow")
     _add("MGL5-INF-0109", "boundary", "stack_sequence", {"steps": []}, "empty-stack-sequence")
 
@@ -187,6 +199,30 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and (observed.get("sum") == 11 or observed.get("minimum") == 4)
     if expect == "not-fifteen":
         return status == "EXECUTED" and observed["sum"] != 15
+    if expect == "fifo-reversed-order":
+        return status == "EXECUTED" and observed.get("order") == ["C", "B", "A"] and observed.get("remaining") == 0
+    if expect == "fifo-singleton":
+        return status == "EXECUTED" and observed.get("order") == ["A"] and observed.get("remaining") == 0
+    if expect == "factorial-negative-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True and observed.get("negative_rejected") is True
+    if expect == "factorial-zero-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("values") == [1]
+    if expect == "symlink-escape-blocked":
+        return status == "EXECUTED" and observed.get("blocked") is True and observed.get("bytes_read") == 0 and observed.get("reason") == "symlink-escapes"
+    if expect == "internal-symlink-allowed":
+        return status == "EXECUTED" and observed.get("blocked") is False and observed.get("bytes_read") == 7 and observed.get("reason") == "internal-link"
+    if expect == "malformed-ipv6-rejected":
+        return status == "EXECUTED" and observed.get("accepted") is False
+    if expect == "ipv6-unspecified-accepted":
+        return status == "EXECUTED" and observed.get("accepted") is True
+    if expect == "invalid-prefix-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "host-prefix-boundary":
+        return status == "EXECUTED" and observed.get("network") == "192.0.2.130" and observed.get("broadcast") == "192.0.2.130"
+    if expect == "ipv6-prefix-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "ipv6-host-prefix":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("prefix") == "2001:db8::1/128"
     if expect == "noninteger-components-rejected":
         return status == "EXECUTED" and observed.get("rejected") is True
     if expect == "zero-vector":
