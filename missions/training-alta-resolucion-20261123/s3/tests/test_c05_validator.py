@@ -2,8 +2,16 @@ import hashlib
 import json
 from pathlib import Path
 
-from metagente_luna_s4.c05_validator import _functional_population_passes, _validate_row, contradictions, validate
-from metagente_luna_s4.independent_validator import _independent_control_accepts, independently_validate_case
+from metagente_luna_s4.c05_validator import (
+    _functional_population_passes,
+    _validate_row,
+    contradictions,
+    validate,
+)
+from metagente_luna_s4.independent_validator import (
+    _independent_control_accepts,
+    independently_validate_case,
+)
 from metagente_luna_s4.reconcile import amendments, intersection, manifest
 
 
