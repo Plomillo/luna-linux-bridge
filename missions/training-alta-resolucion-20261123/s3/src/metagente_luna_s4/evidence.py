@@ -119,7 +119,7 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
     payloads.update(source_payloads)
     artifacts = {}
     for name, data in payloads.items():
-        suffix = ".txt" if name in {"stdout", "stderr"} else ".json"
+        suffix = ".txt" if name in {"stdout", "stderr"} else ".py" if name in {"oracle_source", "producer_source"} else ".json"
         entry = _write_bytes(destination / f"{name}{suffix}", data)
         entry["path"] = f"{case_id}/{run_id}/{entry['path']}"
         artifacts[name] = entry
