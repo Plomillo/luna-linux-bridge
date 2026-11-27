@@ -67,6 +67,63 @@ def _json(data: bytes | None) -> dict | None:
     return value if isinstance(value, dict) else None
 
 
+def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_status: str | None) -> bool:
+    """Independent control adjudication; unknown expectation IDs fail closed."""
+    if not isinstance(observed, dict):
+        return False
+    if expect == "different-text":
+        return lifecycle_status == "EXECUTED" and observed.get("recovered") not in {
+            "Luna-2026", "computación, información, ñandú"
+        }
+    if expect == "empty-roundtrip":
+        return lifecycle_status == "EXECUTED" and (
+            observed.get("recovered", observed.get("visible", observed.get("plain_text", ""))) in {"", "LUNA"}
+            or observed.get("bytes_hex") == ""
+            or observed.get("visible") == ""
+        )
+    if expect == "single-multibyte":
+        return lifecycle_status == "EXECUTED" and observed.get("bytes_hex") == "c3b1"
+    if expect in {"valid-byte-accepted", "valid-pair-accepted"}:
+        return lifecycle_status == "EXECUTED" and observed.get("accepted_as_valid_utf8") is True
+    if expect == "opposite-endian":
+        return lifecycle_status == "EXECUTED" and observed.get("bytes_hex") in {
+            "004c0055004e0041", "4c0055004e004100"
+        }
+    if expect == "zero":
+        return lifecycle_status == "EXECUTED" and (
+            "0x00000000" in observed.values()
+            or observed.get("bits_hex") in {"0x00000000", "0x0000000000000000"}
+        )
+    if expect == "not-the-sample":
+        return lifecycle_status == "EXECUTED" and (
+            observed.get("little_endian_hex") != "0x04030201"
+            and observed.get("minimum") != -8
+        )
+    if expect == "rejected":
+        return lifecycle_status == "EXECUTED" and bool(observed.get("rejected"))
+    if expect == "both-kept":
+        return lifecycle_status == "EXECUTED" and bool(observed.get("kept", observed.get("accepted")))
+    if expect == "max-positive":
+        return lifecycle_status == "EXECUTED" and observed.get("signed") == 32767
+    if expect == "not-minus-one":
+        return lifecycle_status == "EXECUTED" and observed.get("signed") == 0
+    if expect == "one":
+        return lifecycle_status == "EXECUTED" and observed.get("bits_hex") in {
+            "0x3f800000", "0x3ff0000000000000"
+        }
+    if expect == "no-prefix":
+        return lifecycle_status == "EXECUTED" and observed.get("expanded_names") == ["x"]
+    if expect == "different-names":
+        return lifecycle_status == "EXECUTED" and observed.get("same_expanded_name") is False
+    if expect == "one-element":
+        return lifecycle_status == "EXECUTED" and (
+            observed.get("sum") == 11 or observed.get("minimum") == 4
+        )
+    if expect == "not-fifteen":
+        return lifecycle_status == "EXECUTED" and observed.get("sum") != 15
+    return False
+
+
 def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
     """Recompute evidence integrity without invoking the primary C05 validator."""
     root = Path(evidence_root).resolve()
@@ -220,11 +277,12 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
             control = fixture.get("control")
             if isinstance(control, dict) and isinstance(control.get("expect"), str):
                 try:
-                    from metagente_luna_s4.controls import accepts
-
-                    if not accepts(control["expect"], (observed or {}).get("value"), fixture.get("lifecycle_status")):
+                    if not _independent_control_accepts(
+                        control["expect"], (observed or {}).get("value"),
+                        fixture.get("lifecycle_status"),
+                    ):
                         findings.append("control-semantic-expectation-not-met")
-                except (ImportError, KeyError, TypeError, ValueError):
+                except (KeyError, TypeError, ValueError):
                     findings.append("control-semantic-validator-error")
         if not observed or observed.get("case_id") != case_id or observed.get("run_id") != run_id:
             findings.append("observed-identity-invalid")
