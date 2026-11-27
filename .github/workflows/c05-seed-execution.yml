@@ -130,27 +130,31 @@ jobs:
           ledger = [json.loads(line) for line in Path("reports/C05_POPULATION_LEDGER.jsonl").read_text().splitlines() if line]
           outcomes = Counter(row["execution_status"] for row in ledger)
 
+          blockers = [json.loads(line) for line in Path("reports/C05_POPULATION_BLOCKERS.jsonl").read_text().splitlines() if line]
           assert plan["compiled_executable_plans"] == 15, plan
           assert report["expected"] == 1000, report
           assert report["rows"] == 1000, report
-          assert report["authentic_results"] == 1000, report
-          assert report["not_run"] == 0, report
-          assert report["rejected"] == [], report
+          assert report["authentic_results"] == 15, report
+          assert report["not_run"] == 985, report
+          assert len(report["rejected"]) == 985, report
+          assert all(item["reasons"] == ["case-not-executed"] for item in report["rejected"]), report
           assert report["c05_passed"] is False, report
           assert report["c05_status"] == "NOT_PASSED", report
           assert report["contractual_pass"] < 1000, report
           assert report["operation_passed"] < 1000, report
           assert len({row["CASE_ID"] for row in ledger}) == 1000
-          assert outcomes["BLOCKED"] == 985, outcomes
-          assert outcomes["PASS"] + outcomes["FAIL"] + outcomes["INCONCLUSIVE"] + outcomes["BLOCKED"] == 1000
+          assert len(blockers) == 985
+          assert len({row["CASE_ID"] for row in blockers}) == 985
+          assert all(row["status"] == "NOT_RUN" and row["operation_invoked"] is False for row in blockers)
+          assert outcomes["BLOCKED"] + outcomes["PASS"] + outcomes["FAIL"] + outcomes["INCONCLUSIVE"] == 15, outcomes
           print(json.dumps({
               "c05_status": report["c05_status"],
-              "authentic_results": report["authentic_results"],
+              "authentic_executions": report["authentic_results"],
               "execution_outcomes": dict(outcomes),
               "not_run": report["not_run"],
-              "rejected": len(report["rejected"]),
+              "source_bound_blockers": len(blockers),
               "c05_certification": "NOT_PASSED",
-              "meaning": "Evidence population complete; 985 BLOCKED cases remain unexecuted at operation level; no functional C05 certification",
+              "meaning": "15 executable plans have authentic Docker evidence; 985 source-bound NOT_RUN cases remain unimplemented; C05 remains closed to certification",
           }, sort_keys=True))
           PY
       - name: Upload raw container execution evidence
@@ -167,6 +171,7 @@ jobs:
             missions/training-alta-resolucion-20261123/s3/reports/C05_POPULATION_EVIDENCE
             missions/training-alta-resolucion-20261123/s3/reports/C05_POPULATION_LEDGER.jsonl
             missions/training-alta-resolucion-20261123/s3/reports/C05_POPULATION_REPORT.json
+            missions/training-alta-resolucion-20261123/s3/reports/C05_POPULATION_BLOCKERS.jsonl
           if-no-files-found: error
           retention-days: 90
       - name: Detect and report the first C05 failure immediately
