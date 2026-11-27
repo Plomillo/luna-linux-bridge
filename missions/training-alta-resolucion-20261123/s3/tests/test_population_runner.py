@@ -192,14 +192,14 @@ def test_inventory_gate_rejects_missing_or_fabricated_execution_evidence():
         "rejected": [],
     }
 
-    assert population.evidence_inventory_complete(report, {f"MGL5-INF-{number:04d}" for number in range(1, 22)}) is False
+    assert population.evidence_inventory_complete(report, {f"MGL5-INF-{number:04d}" for number in range(1, 31)}) is False
 
 def test_inventory_gate_rejects_duplicate_or_noncanonical_blocker_ids():
     report = {
         "expected": 1000,
         "rows": 1000,
-        "authentic_results": 21,
-        "not_run": 979,
+        "authentic_results": 30,
+        "not_run": 970,
         "rejected": [
             {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
             for number in range(31, 1001)
@@ -210,8 +210,8 @@ def test_inventory_gate_rejects_duplicate_or_noncanonical_blocker_ids():
     assert population.evidence_inventory_complete(report, {f"MGL5-INF-{number:04d}" for number in range(1, 22)}) is False
 
 def test_inventory_gate_rejects_blocker_set_that_is_not_exact_executable_complement():
-    executable = {f"MGL5-INF-{number:04d}" for number in range(1, 22)}
-    rejected_ids = [number for number in range(22, 1001)]
+    executable = {f"MGL5-INF-{number:04d}" for number in range(1, 31)}
+    rejected_ids = [number for number in range(31, 1001)]
     rejected_ids[-1] = 1  # omit a genuine NOT_RUN case and misclassify an executable case
     report = {
         "expected": 1000,
