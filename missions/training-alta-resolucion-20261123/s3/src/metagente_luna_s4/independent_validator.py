@@ -71,6 +71,22 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     """Independent control adjudication; unknown expectation IDs fail closed."""
     if not isinstance(observed, dict):
         return False
+    if expect == "negative-length-no-read":
+        return lifecycle_status == "EXECUTED" and observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == 0
+    if expect == "zero-length-no-read":
+        return lifecycle_status == "EXECUTED" and observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == 0
+    if expect == "expanded-invalid-ipv6-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "ipv6-zero-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("expanded") == "0000:0000:0000:0000:0000:0000:0000:0000" and observed.get("integer") == 0
+    if expect == "invalid-mask-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True and observed.get("contiguous") is False
+    if expect == "all-ones-mask-valid":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("contiguous") is True and observed.get("bits") == "1" * 32
+    if expect == "threshold-equality-no-fire":
+        return lifecycle_status == "EXECUTED" and observed.get("at_or_below") is True and observed.get("above") is False
+    if expect == "threshold-above-fires":
+        return lifecycle_status == "EXECUTED" and observed.get("at_or_below") is False and observed.get("above") is True
     if expect == "fifo-reversed-order":
         return lifecycle_status == "EXECUTED" and observed.get("order") == ["C", "B", "A"] and observed.get("remaining") == 0
     if expect == "fifo-singleton":
