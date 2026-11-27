@@ -190,6 +190,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     # NORMAL-case oracle verdict. FAIL means the executor ran and the normal
     # oracle rejected this control input; the observed control may still pass.
     control_completed = status in {"EXECUTED", "FAIL"}
+    # A schema-level rejection is a valid negative control even though the
+    # operation never ran and therefore produced no observed payload.
     if observed is None:
         return False
     if expect == "preflight-blocked":
@@ -222,7 +224,10 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "not-the-sample":
         return control_completed and observed.get("little_endian_hex") != "0x04030201" and observed.get("minimum") != -8
     if expect == "rejected":
-        return control_completed and observed.get("rejected") is True
+        rejected = observed.get("rejected")
+        return control_completed and (
+            rejected is True or (isinstance(rejected, list) and bool(rejected))
+        )
     if expect == "both-kept":
         return control_completed and observed.get("kept", observed.get("accepted"))
     if expect == "max-positive":
