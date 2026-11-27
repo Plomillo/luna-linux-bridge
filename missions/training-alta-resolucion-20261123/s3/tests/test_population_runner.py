@@ -150,3 +150,15 @@ def test_population_plan_requires_machine_checkable_control_expectations():
     errors = population.plan_errors(plan, "MGL5-INF-0001")
 
     assert "negative-control-definition-incomplete" in errors
+
+
+def test_compiled_plans_pass_source_and_capability_preflight():
+    script = Path(__file__).parents[1] / "scripts" / "build_c05_executable_plans.py"
+    compiler_spec = importlib.util.spec_from_file_location("build_c05_executable_plans_preflight", script)
+    assert compiler_spec is not None and compiler_spec.loader is not None
+    compiler = importlib.util.module_from_spec(compiler_spec)
+    compiler_spec.loader.exec_module(compiler)
+    plans, _ = compiler.compile_plans()
+
+    for plan in plans:
+        assert population.plan_errors(plan, plan["CASE_ID"]) == []
