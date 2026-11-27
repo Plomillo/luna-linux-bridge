@@ -45,6 +45,14 @@ def find_attachment_name(body):
     match = ATTACHMENT_RE.search(normalized)
     return match.group(1) if match else None
 
+def format_srt_time(seconds):
+    """Format a floating-point timestamp as an SRT timecode."""
+    total_ms = int(round(seconds * 1000))
+    hours, remainder = divmod(total_ms, 3_600_000)
+    minutes, remainder = divmod(remainder, 60_000)
+    whole_seconds, milliseconds = divmod(remainder, 1000)
+    return f"{hours:02d}:{minutes:02d}:{whole_seconds:02d},{milliseconds:03d}"
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--zip", required=True, type=Path)
@@ -98,10 +106,18 @@ def main():
                     json_path.write_text(json.dumps({"source_filename": filename, "model": args.model,
                         "language": info.language, "duration_seconds": info.duration, "segments": rows},
                         ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                    srt_path = audio_out / f"{stem}.srt"
+                    srt_lines = []
+                    for index, row in enumerate(rows, 1):
+                        srt_lines.extend([str(index),
+                            f"{format_srt_time(row['start'])} --> {format_srt_time(row['end'])}",
+                            row["text"], ""])
+                    srt_path.write_text("\n".join(srt_lines), encoding="utf-8")
                     results[filename.lower()] = {"text": transcript, "file": f"audio_transcripts/{stem}.txt"}
                     audio_manifest.append({"filename": filename, "status": "completed",
                         "duration_seconds": round(info.duration, 3), "language": info.language,
-                        "segments": len(rows), "transcript_sha256": sha256_file(txt_path)})
+                        "segments": len(rows), "srt_file": f"audio_transcripts/{stem}.srt",
+                        "transcript_sha256": sha256_file(txt_path)})
                 except Exception as exc:
                     audio_manifest.append({"filename": filename, "status": "error",
                                            "error": f"{type(exc).__name__}: {exc}"})
