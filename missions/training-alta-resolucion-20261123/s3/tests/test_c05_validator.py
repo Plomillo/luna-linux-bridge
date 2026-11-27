@@ -1,6 +1,7 @@
 import hashlib
+import json
 
-from metagente_luna_s4.c05_validator import contradictions, validate
+from metagente_luna_s4.c05_validator import _validate_row, contradictions, validate
 from metagente_luna_s4.reconcile import amendments, intersection, manifest
 
 
@@ -13,19 +14,41 @@ def _population(status: str, **extra) -> list[dict]:
     return rows
 
 
-def _with_evidence(status: str) -> list[dict]:
-    rows = []
-    for number in range(1, 1001):
-        payload = f"{status}:{number}"
-        rows.append({
-            "CASE_ID": f"MGL5-INF-{number:04d}",
-            "execution_status": status,
-            "contract_status": status,
-            "evidence_payload": payload,
-            "evidence_sha256": hashlib.sha256(payload.encode("utf-8")).hexdigest(),
-            "fixture_sha256": "f" * 64,
+def _write_artifact(root, relative, payload):
+    path = root / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if isinstance(payload, (dict, list)):
+        path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+    else:
+        path.write_text(payload, encoding="utf-8")
+    return {"path": relative, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+
+
+def _valid_row_with_artifacts(tmp_path):
+    case_id = "MGL5-INF-0001"
+    repetitions = []
+    for index, kind in enumerate(("NORMAL", "NEGATIVE", "BOUNDARY"), start=1):
+        run_id = f"run-0001-{index:04d}"
+        artifacts = {
+            "fixture": _write_artifact(tmp_path, f"{run_id}/fixture.json", {"case_id": case_id, "fixture_id": "fixture-v1"}),
+            "environment": _write_artifact(tmp_path, f"{run_id}/environment.json", {"environment_id": "pytest-local"}),
+            "procedure": _write_artifact(tmp_path, f"{run_id}/procedure.json", {"case_id": case_id, "steps": ["invoke", "observe"]}),
+            "stdout": _write_artifact(tmp_path, f"{run_id}/stdout.txt", "execution output"),
+            "stderr": _write_artifact(tmp_path, f"{run_id}/stderr.txt", ""),
+            "observed": _write_artifact(tmp_path, f"{run_id}/observed.json", {"case_id": case_id, "run_id": run_id, "value": "observed"}),
+            "oracle": _write_artifact(tmp_path, f"{run_id}/oracle.json", {"case_id": case_id, "run_id": run_id, "independent": True, "producer_used_as_oracle": False, "result": "PASS"}),
+            "metrics": _write_artifact(tmp_path, f"{run_id}/metrics.json", {"case_id": case_id, "duration_ms": 1}),
+        }
+        repetitions.append({
+            "kind": kind, "run_id": run_id, "case_id": case_id,
+            "clean_state": True, "execution_status": "PASS", "exit_code": 0,
+            "agent_version": "test-agent-1", "executor_version": "test-executor-1",
+            "machinery": "pytest-test-fixture", "artifacts": artifacts,
         })
-    return rows
+    return {
+        "CASE_ID": case_id, "execution_status": "PASS", "contract_status": "PASS",
+        "repetitions": repetitions, "independent_validation": {"passed": True},
+    }
 
 
 def test_population_intersection_is_exact():
@@ -59,48 +82,81 @@ def test_investigation_flag_cannot_turn_not_run_into_c05():
     assert verdict["not_run"] == 1000
     assert verdict["authentic_results"] == 0
     assert verdict["not_run_counts_as_execution"] is False
-    assert verdict["rejected"][0]["reasons"] == ["investigation-is-not-execution"]
+    assert "investigation-is-not-execution" in verdict["rejected"][0]["reasons"]
+    assert "evidence-root-not-supplied" in verdict["rejected"][0]["reasons"]
     assert len(verdict["rejected"]) == 1000
 
 
-def test_fail_is_an_outcome_and_pass_is_not_required():
-    verdict = validate(_with_evidence("FAIL"))
-    assert verdict["c05_passed"] is True
-    assert verdict["contractual_pass"] == 0
-    assert verdict["not_run"] == 0
-    assert verdict["authentic_results"] == 1000
+def test_inline_self_hashed_payload_is_not_execution_evidence():
+    rows = _population("FAIL", evidence_payload="FAIL:1", evidence_sha256=hashlib.sha256(b"FAIL:1").hexdigest())
+    verdict = validate(rows)
+    assert verdict["c05_passed"] is False
+    assert verdict["authentic_results"] == 0
+    assert "exactly-three-repetitions-required" in verdict["rejected"][0]["reasons"]
 
 
-def test_adversarial_populations_are_rejected():
-    duplicated = _with_evidence("FAIL")
-    duplicated[1]["CASE_ID"] = duplicated[0]["CASE_ID"]
-    assert validate(duplicated)["c05_passed"] is False
-    missing = _with_evidence("FAIL")[:-1]
-    assert validate(missing)["structure_problems"][0]["missing"] == 1
-    promoted = _with_evidence("FAIL")
-    promoted[0]["contract_status"] = "PASS"
-    promoted[0]["basis"] = "CRITERION_MET"
-    promoted[0]["execution_status"] = "NOT_RUN"
-    assert "criterion-met-promoted-to-pass" in contradictions(promoted[0])
-    assert "not-run-promoted-to-pass" in contradictions(promoted[0])
-    copied = {"execution_status": "FAIL", "contract_status": "FAIL", "run_ids": ["a", "a"], "repetitions_copied": True}
-    assert "duplicate-run-id" in contradictions(copied)
-    assert "copied-repetition" in contradictions(copied)
-    broken = _with_evidence("PASS")
-    broken[0]["evidence_sha256"] = "0" * 64
-    broken[0]["fixture_sha256"] = ""
-    broken[0]["oracle_mode"] = "same-implementation"
-    broken[0]["evidence_missing"] = True
-    broken[0]["machinery_claimed"] = "M0"
-    broken[0]["machinery_observed"] = "S4"
-    reasons = contradictions(broken[0])
-    assert "incorrect-evidence-hash" in reasons
-    assert "pass-without-fixture-hash" in reasons
-    assert "circular-oracle" in reasons
-    assert "missing-evidence" in reasons
-    assert "false-machinery-identity" in reasons
-    assert validate(broken)["c05_passed"] is False
-    historical = _population("NOT_RUN")
-    assert validate(historical)["c05_passed"] is False
+def test_real_persisted_artifacts_are_verified_for_a_dossier(tmp_path):
+    row = _valid_row_with_artifacts(tmp_path)
+    assert _validate_row(row, tmp_path) == []
+
+
+def test_artifact_tampering_is_detected(tmp_path):
+    row = _valid_row_with_artifacts(tmp_path)
+    artifact = row["repetitions"][0]["artifacts"]["observed"]
+    (tmp_path / artifact["path"]).write_text('{"tampered":true}', encoding="utf-8")
+    errors = _validate_row(row, tmp_path)
+    assert any("artifact-digest-mismatch" in error for error in errors)
+
+
+def test_contract_status_cannot_contradict_execution():
+    row = {"execution_status": "FAIL", "contract_status": "PASS"}
+    assert "fail-promoted-to-contract-pass" in contradictions(row)
+    assert "non-success-promoted-to-contract-pass" in contradictions(
+        {"execution_status": "BLOCKED", "contract_status": "PASS"}
+    )
+
+
+def test_oracle_must_be_independent_and_bound_to_case_and_run(tmp_path):
+    row = _valid_row_with_artifacts(tmp_path)
+    oracle = row["repetitions"][0]["artifacts"]["oracle"]
+    payload = {"case_id": row["CASE_ID"], "run_id": row["repetitions"][0]["run_id"],
+               "independent": False, "producer_used_as_oracle": True, "result": "PASS"}
+    path = tmp_path / oracle["path"]
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    oracle["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    errors = _validate_row(row, tmp_path)
+    assert "oracle-not-independent" in errors
+    assert "oracle-circular" in errors
+
+
+def test_repetition_and_run_id_requirements_are_enforced(tmp_path):
+    row = _valid_row_with_artifacts(tmp_path)
+    row["repetitions"][1]["run_id"] = row["repetitions"][0]["run_id"]
+    errors = _validate_row(row, tmp_path)
+    assert "duplicate-run-id-within-case" in errors
+
+
+def test_missing_environment_and_clean_state_are_rejected(tmp_path):
+    row = _valid_row_with_artifacts(tmp_path)
+    row["repetitions"][0]["clean_state"] = False
+    row["repetitions"][0]["artifacts"].pop("environment")
+    errors = _validate_row(row, tmp_path)
+    assert "clean-state-not-proven" in errors
+    assert "artifact-environment-missing" in errors
+
+
+def test_cross_case_run_id_reuse_is_detected():
+    rows = _population("NOT_RUN")
+    rows[0] = {"CASE_ID": "MGL5-INF-0001", "execution_status": "FAIL",
+               "contract_status": "FAIL", "repetitions": [{"run_id": "run-duplicate-0001"}]}
+    rows[1] = {"CASE_ID": "MGL5-INF-0002", "execution_status": "FAIL",
+               "contract_status": "FAIL", "repetitions": [{"run_id": "run-duplicate-0001"}]}
+    verdict = validate(rows)
+    assert any("run-id-reused-across-cases" in item["reasons"] for item in verdict["rejected"])
+
+
+def test_population_and_historical_claims_remain_unaccredited():
+    rows = _population("NOT_RUN")
+    assert validate(rows)["c05_passed"] is False
     assert manifest()["c05_status"] == "NOT_PASSED"
     assert manifest()["global_condition_counter"] == "4/26"
