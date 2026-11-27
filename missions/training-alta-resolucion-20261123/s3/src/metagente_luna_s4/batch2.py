@@ -18,6 +18,7 @@ CASES = [
     {"case_id": "MGL5-INF-0030", "capability_id": "xml_expanded", "arguments": {"document": '<a:x xmlns:a="urn:x"><b:x xmlns:b="urn:x" /></a:x>'}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
     {"case_id": "MGL5-INF-0031", "capability_id": "xml_entities", "arguments": {"document": _ENTITIES}},
     {"case_id": "MGL5-INF-0032", "capability_id": "xml_unbalanced", "arguments": {"document": "<a></b>"}},
+    {"case_id": "MGL5-INF-0033", "capability_id": "yaml_types", "arguments": {"text": "name: Luna\\nenabled: true\\ncount: 3\\nitems:\\n  - uno\\n  - dos\\n"}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
     {"case_id": "MGL5-INF-0036", "capability_id": "framed_record", "arguments": {"payload_hex": "0102"}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
     {"case_id": "MGL5-INF-0037", "capability_id": "truncated_records", "arguments": {"payload_hex": "0102"}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
     {"case_id": "MGL5-INF-0038", "capability_id": "oversize_length", "arguments": {"payload_hex": "0102"}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
