@@ -83,14 +83,14 @@ jobs:
           from pathlib import Path
           plan=json.loads(Path("reports/C05_EXECUTABLE_PLANS_SUMMARY.json").read_text())
           report=json.loads(Path("reports/C05_POPULATION_REPORT.json").read_text())
-          assert plan["compiled_executable_plans"] == 13, plan
+          assert plan["compiled_executable_plans"] == 15, plan
           assert report["expected"] == 1000, report
-          assert report["authentic_results"] == 13, report
-          assert report["not_run"] == 987, report
+          assert report["authentic_results"] == 15, report
+          assert report["not_run"] == 985, report
           assert report["rejected"] == [], report
           assert report["c05_status"] == "NOT_PASSED", report
           assert report["c05_passed"] is False, report
-          print("Verified 13 source-bound dossiers with five Docker runs each; 987 remain NOT_RUN; C05 NOT_PASSED.")
+          print("Verified 15 source-bound dossiers with five Docker runs each; 987 remain NOT_RUN; C05 NOT_PASSED.")
           PY
       - name: Upload raw container execution evidence
         if: always()
