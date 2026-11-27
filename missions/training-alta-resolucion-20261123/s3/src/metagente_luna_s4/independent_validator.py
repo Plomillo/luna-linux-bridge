@@ -77,8 +77,8 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if not isinstance(observed, dict):
         return False
     completed = lifecycle_status in {"EXECUTED", "FAIL"}
-    if expect == "yaml-version-rejected":
-        return completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-yaml-version"
+    if expect == "yaml-invalid-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
     if expect == "yaml12-ambiguous-strings":
         return completed and observed.get("rejected") is False and observed.get("schema_version") == "1.2" and observed.get("parsed") == {"flag": "yes", "date": "2026-01-02"} and observed.get("types") == {"flag": "str", "date": "str"}
     if expect == "yaml-rejected":
