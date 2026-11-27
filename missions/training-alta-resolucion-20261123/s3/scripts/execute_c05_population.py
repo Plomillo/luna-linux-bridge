@@ -367,20 +367,27 @@ def main(argv: list[str]) -> int:
     write_exclusive(ledger_path, ledger_text)
     write_exclusive(report_path, report_text)
     write_exclusive(blocker_path, blocker_text)
+    execution_failures = [
+        {"case_id": row["CASE_ID"], "status": row["execution_status"], "reason": row.get("reason")}
+        for row in rows
+        if row["execution_status"] in {"INCONCLUSIVE", "FAIL", "BLOCKED"}
+    ]
     print(json.dumps({
         "c05_status": report["c05_status"],
         "sandbox_image_id": sandbox_image,
+        "compiled_executable_plans": len(valid_executable_ids),
         "authentic_results": report["authentic_results"],
         "not_run": report["not_run"],
         "rejected": len(report["rejected"]),
+        "execution_failures": execution_failures,
         "ledger": str(ledger_path),
         "report": str(report_path),
         "blocker_inventory": str(blocker_path),
         "blocked_cases": len(blocker_inventory),
     }, ensure_ascii=False))
-    # Exit successfully only when all 21 authored executable plans produce
-    # authentic evidence and the remaining 979 are explicitly source-bound
-    # NOT_RUN blockers. This completes evidence collection, not C05.
+    # Exit successfully only when every authored executable plan produced
+    # authentic evidence and the remaining cases are explicit NOT_RUN blockers.
+    # This completes evidence collection, not C05.
     return 0 if evidence_inventory_complete(report, valid_executable_ids) and len(blocker_inventory) == 1000 - len(valid_executable_ids) else 1
 
 
