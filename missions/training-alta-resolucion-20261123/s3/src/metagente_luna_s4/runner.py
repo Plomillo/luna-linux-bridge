@@ -10,7 +10,6 @@ import tempfile
 import time
 import uuid
 from pathlib import Path
-import uuid
 from contextlib import redirect_stderr, redirect_stdout
 
 import jsonschema
