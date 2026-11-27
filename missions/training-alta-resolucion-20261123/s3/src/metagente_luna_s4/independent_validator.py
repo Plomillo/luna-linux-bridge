@@ -277,6 +277,10 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
         return completed and observed.get("corruption_detected") is True and observed.get("integrity_claimed") is False
     if expect == "unknown-signature":
         return completed and observed.get("detected") == "unknown" and observed.get("extension_matches_content") is False
+    if expect == "elf-truncated-header":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "truncated-header"
+    if expect == "elf-rel-boundary":
+        return completed and observed == {"rejected": False, "class": "ELF64", "endianness": "little", "architecture": "x86-64", "object_type": "REL", "header_size": 64}
     if expect == "different-text":
         return completed and observed.get("recovered") not in {
             "Luna-2026", "computación, información, ñandú"

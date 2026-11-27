@@ -470,3 +470,22 @@ def test_d01_protobuf_schema_compatibility_and_cbor_roundtrip_cases():
     assert accepts("cbor-unsupported-value-rejected", cbor_negative, "EXECUTED") is True
     assert _independent_control_accepts("cbor-unsupported-value-rejected", cbor_negative, "EXECUTED") is True
     assert cbor_vector_oracle({"document": {}}, cbor_roundtrip({}))["ok"] is True
+
+
+def test_elf_header_reports_class_endian_architecture_and_type_with_fixed_oracle():
+    from metagente_luna_s3.more_exec import elf_header
+    from metagente_luna_s3.more_oracle import elf_header_oracle
+    from metagente_luna_s4.controls import accepts
+    from metagente_luna_s4.independent_validator import _independent_control_accepts
+
+    normal = {"payload_hex": "7f454c4602010100000000000000000002003e000100000000004000000000004000000000000000000000000000000000000000400038000000400000000000"}
+    observed = elf_header(**normal)
+    assert elf_header_oracle(normal, observed)["ok"] is True
+    truncated = elf_header(normal["payload_hex"][:-2])
+    assert accepts("elf-truncated-header", truncated, "EXECUTED") is True
+    assert _independent_control_accepts("elf-truncated-header", truncated, "EXECUTED") is True
+    boundary = {"payload_hex": "7f454c4602010100000000000000000001003e000100000000000000000000000000000000000000000000000000000000000000400038000000400000000000"}
+    boundary_observed = elf_header(**boundary)
+    assert elf_header_oracle(boundary, boundary_observed)["ok"] is True
+    assert accepts("elf-rel-boundary", boundary_observed, "EXECUTED") is True
+    assert _independent_control_accepts("elf-rel-boundary", boundary_observed, "EXECUTED") is True

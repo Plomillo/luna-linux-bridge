@@ -506,3 +506,47 @@ def cbor_roundtrip(document: dict) -> dict:
     except (TypeError, ValueError, UnicodeError) as exc:
         return {"rejected": True, "reason": str(exc)}
     return {"rejected": False, "accepted": True, "wire_hex": encoded.hex(), "decoded": decoded, "same_types": type(decoded) is type(document) and decoded == document}
+
+
+def elf_header(payload_hex: str) -> dict:
+    """Parse only the bounded ELF identification and fixed header, never sections."""
+    try:
+        raw = bytes.fromhex(payload_hex)
+    except ValueError:
+        return {"rejected": True, "reason": "invalid-hex"}
+    if len(raw) < 16:
+        return {"rejected": True, "reason": "truncated-ident"}
+    if raw[:4] != b"\x7fELF":
+        return {"rejected": True, "reason": "invalid-magic"}
+    elf_class, data_encoding, ident_version = raw[4], raw[5], raw[6]
+    if elf_class not in (1, 2):
+        return {"rejected": True, "reason": "unsupported-class"}
+    if data_encoding not in (1, 2):
+        return {"rejected": True, "reason": "unsupported-endian"}
+    if ident_version != 1:
+        return {"rejected": True, "reason": "unsupported-ident-version"}
+    header_size = 64 if elf_class == 2 else 52
+    if len(raw) < header_size:
+        return {"rejected": True, "reason": "truncated-header"}
+    endian = "<" if data_encoding == 1 else ">"
+    try:
+        if elf_class == 2:
+            fields = struct.unpack_from(endian + "HHIQQQIHHHHHH", raw, 16)
+        else:
+            fields = struct.unpack_from(endian + "HHIIIIIHHHHHH", raw, 16)
+    except struct.error:
+        return {"rejected": True, "reason": "truncated-header"}
+    object_type, machine, version = fields[:3]
+    ehsize = fields[7]
+    if version != 1 or ehsize != header_size:
+        return {"rejected": True, "reason": "invalid-header-version-or-size"}
+    architectures = {3: "x86", 40: "ARM", 62: "x86-64", 183: "AArch64"}
+    object_types = {0: "NONE", 1: "REL", 2: "EXEC", 3: "DYN", 4: "CORE"}
+    return {
+        "rejected": False,
+        "class": "ELF64" if elf_class == 2 else "ELF32",
+        "endianness": "little" if data_encoding == 1 else "big",
+        "architecture": architectures.get(machine, f"EM_{machine}"),
+        "object_type": object_types.get(object_type, f"ET_{object_type}"),
+        "header_size": ehsize,
+    }

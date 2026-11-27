@@ -254,3 +254,21 @@ def cbor_vector_oracle(arguments: dict, observed: dict) -> dict:
     else:
         expected = {"rejected": True, "reason": "unsupported-value-type"}
     return {"ok": observed == expected, "method": "fixed canonical CBOR vectors independent of encoder/decoder"}
+
+
+def elf_header_oracle(arguments: dict, observed: dict) -> dict:
+    vectors = {
+        "7f454c4602010100000000000000000002003e000100000000004000000000004000000000000000000000000000000000000000400038000000400000000000": {
+            "rejected": False, "class": "ELF64", "endianness": "little",
+            "architecture": "x86-64", "object_type": "EXEC", "header_size": 64,
+        },
+        "7f454c4602010100000000000000000001003e000100000000000000000000000000000000000000000000000000000000000000400038000000400000000000": {
+            "rejected": False, "class": "ELF64", "endianness": "little",
+            "architecture": "x86-64", "object_type": "REL", "header_size": 64,
+        },
+        "7f454c4602010100000000000000000002003e000100000000004000000000004000000000000000000000000000000000000000400038000000400000000000"[:-2]: {
+            "rejected": True, "reason": "truncated-header",
+        },
+    }
+    expected = vectors.get(arguments["payload_hex"].lower(), {"rejected": True, "reason": "invalid-magic"})
+    return {"ok": observed == expected, "method": "frozen ELF64 wire-format vectors, fixed byte offsets, no parser reuse"}

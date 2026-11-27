@@ -89,6 +89,8 @@ def _build() -> None:
     _add("MGL5-INF-0051", "negative", "magic_bytes", {"name": "sample.png", "payload_hex": "89504e470d0a1a0a"}, "extension-agrees")
     _add("MGL5-INF-0052", "negative", "magic_bytes", {"name": "sample.elf", "payload_hex": "00000000"}, "unknown-signature")
     _add("MGL5-INF-0052", "boundary", "magic_bytes", {"name": "sample.elf", "payload_hex": "7f454c46020101000000000000000000"}, "elf-extension-match")
+    _add("MGL5-INF-0053", "negative", "elf_header", {"payload_hex": "7f454c4602010100000000000000000002003e000100000000004000000000004000000000000000000000000000000000000000400038000000400000000000"[:-2]}, "elf-truncated-header")
+    _add("MGL5-INF-0053", "boundary", "elf_header", {"payload_hex": "7f454c4602010100000000000000000001003e000100000000000000000000000000000000000000000000000000000000000000400038000000400000000000"}, "elf-rel-boundary")
     _add("MGL5-INF-0601", "boundary", "binary_float_gap", {}, "float-edge")
     _add("MGL5-INF-0107", "negative", "duplicates", {"values": [1, 2, 3]}, "no-duplicates")
     _add("MGL5-INF-0107", "boundary", "duplicates", {"values": [5, 5]}, "single-duplicate")
@@ -496,6 +498,10 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return control_completed and observed.get("corruption_detected") is True and observed.get("integrity_claimed") is False
     if expect == "unknown-signature":
         return control_completed and observed.get("detected") == "unknown" and observed.get("extension_matches_content") is False
+    if expect == "elf-truncated-header":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "truncated-header"
+    if expect == "elf-rel-boundary":
+        return control_completed and observed == {"rejected": False, "class": "ELF64", "endianness": "little", "architecture": "x86-64", "object_type": "REL", "header_size": 64}
     if expect == "no-cr":
         return control_completed and observed["written"] == "a\r\nb\r\n"
     if expect == "already-lf":
