@@ -236,6 +236,28 @@ def _build() -> None:
     _add("MGL5-INF-0049", "negative", "cbor_roundtrip", {"document": {"name": 1.5}}, "cbor-unsupported-value-rejected")
     _add("MGL5-INF-0049", "boundary", "cbor_roundtrip", {"document": {}}, "cbor-empty-map-roundtrip")
 
+    # C05: distinct negative and boundary fixtures for the ten previously
+    # source-defined but control-incomplete batch-5 operations.
+    _add("MGL5-INF-0113", "negative", "balanced_range", {"count": 0}, "range-count-rejected")
+    _add("MGL5-INF-0113", "boundary", "balanced_range", {"start": 0, "count": 1}, "range-singleton")
+    _add("MGL5-INF-0119", "negative", "linear_scans", {"sizes": [0]}, "scan-size-rejected")
+    _add("MGL5-INF-0119", "boundary", "linear_scans", {"sizes": [1, 2, 4], "needle": 0}, "scan-first-element")
+    _add("MGL5-INF-0141", "negative", "parameterized_name", {"name": "' OR 1=1 --"}, "query-injection-not-matched")
+    _add("MGL5-INF-0141", "boundary", "parameterized_name", {"name": "ada"}, "query-exact-match")
+    _add("MGL5-INF-0154", "negative", "precedence_tree", {"text": "1+*2"}, "expression-rejected")
+    _add("MGL5-INF-0154", "boundary", "precedence_tree", {"text": "0+0"}, "expression-zero")
+    _add("MGL5-INF-0186", "negative", "divide_zero", {"numerator": 1, "denominator": 1}, "division-finite")
+    _add("MGL5-INF-0186", "boundary", "divide_zero", {"numerator": 0, "denominator": 1}, "division-zero-numerator")
+    _add("MGL5-INF-0208", "negative", "mode_0640", {"mode": 0o600}, "mode-owner-only")
+    _add("MGL5-INF-0208", "boundary", "mode_0640", {"mode": 0o644}, "mode-world-readable")
+    _add("MGL5-INF-0209", "negative", "umask_0027", {"mask": 0o077, "requested_mode": 0o666}, "umask-private")
+    _add("MGL5-INF-0209", "boundary", "umask_0027", {"mask": 0, "requested_mode": 0o600}, "umask-zero")
+    _add("MGL5-INF-0233", "negative", "child_env", {"key": "LUNA_C05_NEG", "value": "isolated-negative"}, "child-env-negative-value")
+    _add("MGL5-INF-0233", "boundary", "child_env", {"key": "LUNA_C05_EDGE", "value": ""}, "child-env-empty-value")
+    _add("MGL5-INF-0308", "negative", "reject_age", {"age": -1}, "age-negative-rejected")
+    _add("MGL5-INF-0308", "boundary", "reject_age", {"age": 0}, "age-zero-accepted")
+    _add("MGL5-INF-0503", "negative", "exit_codes", {"commands": []}, "command-list-rejected")
+    _add("MGL5-INF-0503", "boundary", "exit_codes", {"commands": ["true"]}, "single-zero-exit")
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
     # A control is adjudicated against its own expected behavior, not the
@@ -663,28 +685,7 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     return False
 
 
-    # C05: distinct negative and boundary fixtures for the ten previously
-    # source-defined but control-incomplete batch-5 operations.
-    _add("MGL5-INF-0113", "negative", "balanced_range", {"count": 0}, "range-count-rejected")
-    _add("MGL5-INF-0113", "boundary", "balanced_range", {"start": 0, "count": 1}, "range-singleton")
-    _add("MGL5-INF-0119", "negative", "linear_scans", {"sizes": [0]}, "scan-size-rejected")
-    _add("MGL5-INF-0119", "boundary", "linear_scans", {"sizes": [1, 2, 4], "needle": 0}, "scan-first-element")
-    _add("MGL5-INF-0141", "negative", "parameterized_name", {"name": "' OR 1=1 --"}, "query-injection-not-matched")
-    _add("MGL5-INF-0141", "boundary", "parameterized_name", {"name": "ada"}, "query-exact-match")
-    _add("MGL5-INF-0154", "negative", "precedence_tree", {"text": "1+*2"}, "expression-rejected")
-    _add("MGL5-INF-0154", "boundary", "precedence_tree", {"text": "0+0"}, "expression-zero")
-    _add("MGL5-INF-0186", "negative", "divide_zero", {"numerator": 1, "denominator": 1}, "division-finite")
-    _add("MGL5-INF-0186", "boundary", "divide_zero", {"numerator": 0, "denominator": 1}, "division-zero-numerator")
-    _add("MGL5-INF-0208", "negative", "mode_0640", {"mode": 0o600}, "mode-owner-only")
-    _add("MGL5-INF-0208", "boundary", "mode_0640", {"mode": 0o644}, "mode-world-readable")
-    _add("MGL5-INF-0209", "negative", "umask_0027", {"mask": 0o077, "requested_mode": 0o666}, "umask-private")
-    _add("MGL5-INF-0209", "boundary", "umask_0027", {"mask": 0, "requested_mode": 0o600}, "umask-zero")
-    _add("MGL5-INF-0233", "negative", "child_env", {"key": "LUNA_C05_NEG", "value": "isolated-negative"}, "child-env-negative-value")
-    _add("MGL5-INF-0233", "boundary", "child_env", {"key": "LUNA_C05_EDGE", "value": ""}, "child-env-empty-value")
-    _add("MGL5-INF-0308", "negative", "reject_age", {"age": -1}, "age-negative-rejected")
-    _add("MGL5-INF-0308", "boundary", "reject_age", {"age": 0}, "age-zero-accepted")
-    _add("MGL5-INF-0503", "negative", "exit_codes", {"commands": []}, "command-list-rejected")
-    _add("MGL5-INF-0503", "boundary", "exit_codes", {"commands": ["true"]}, "single-zero-exit")
+
 
 
 def run_controls() -> list[dict]:
