@@ -301,7 +301,7 @@ def main(argv: list[str]) -> int:
     ledger_text = "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows)
     report_text = json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     blocker_path = ledger_path.with_name("C05_POPULATION_BLOCKERS.jsonl")
-    blocker_text = "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\\n" for row in blocker_inventory)
+    blocker_text = "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in blocker_inventory)
     write_exclusive(ledger_path, ledger_text)
     write_exclusive(report_path, report_text)
     write_exclusive(blocker_path, blocker_text)
