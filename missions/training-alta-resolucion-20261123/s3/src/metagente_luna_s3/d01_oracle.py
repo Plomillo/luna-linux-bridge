@@ -79,7 +79,7 @@ def nan_bits(arguments: dict, observed: dict) -> dict:
     ok = (
         observed.get("payload_hex") == arguments["payload_hex"].lower()
         and observed.get("is_nan") is expected_nan
-        and observed.get("equals_itself") is (probe == probe)
+        and observed.get("equals_itself") is (probe == probe)  # noqa: PLR0124
         and observed.get("ordinary") is (not expected_nan)
     )
     return {"ok": ok, "method": "independent IEEE-754 payload interpretation"}
