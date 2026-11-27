@@ -234,7 +234,7 @@ def source_record(case_id: str) -> tuple[dict, str]:
     }, excerpt)
 
 
-def evidence_inventory_complete(report: dict) -> bool:
+def evidence_inventory_complete(report: dict, executable_case_ids: set[str]) -> bool:
     """Require authentic evidence for every executable plan and explicit NOT_RUN for the rest."""
     expected = report.get("expected")
     rows = report.get("rows")
@@ -244,17 +244,19 @@ def evidence_inventory_complete(report: dict) -> bool:
     if not all(isinstance(value, int) and not isinstance(value, bool)
                for value in (expected, rows, not_run, authentic)):
         return False
-    if expected != 1000 or rows != 1000 or not_run != 979 or authentic != 21:
+    if (expected != 1000 or rows != 1000 or not isinstance(executable_case_ids, set)
+            or len(executable_case_ids) != authentic or not executable_case_ids.issubset(set(EXPECTED))
+            or not_run != 1000 - len(executable_case_ids)):
         return False
-    if not isinstance(rejected, list) or len(rejected) != 979:
+    if not isinstance(rejected, list) or len(rejected) != not_run:
         return False
     if not all(isinstance(item, dict) for item in rejected):
         return False
     rejected_ids = [item.get("case_id") for item in rejected]
     expected_ids = set(EXPECTED)
     return (
-        len(set(rejected_ids)) == 979
-        and set(rejected_ids).issubset(expected_ids)
+        len(set(rejected_ids)) == not_run
+        and set(rejected_ids) == expected_ids - executable_case_ids
         and all(item.get("reasons") == ["case-not-executed"] for item in rejected)
     )
 
@@ -315,6 +317,10 @@ def main(argv: list[str]) -> int:
             if isinstance(row.get("CASE_ID"), str)
         }
 
+    valid_executable_ids = {
+        case_id for case_id, plan in plan_map.items()
+        if not plan_errors(plan, case_id)
+    }
     rows = []
     blocker_inventory = []
     for case_id in EXPECTED:
@@ -375,7 +381,7 @@ def main(argv: list[str]) -> int:
     # Exit successfully only when all 21 authored executable plans produce
     # authentic evidence and the remaining 979 are explicitly source-bound
     # NOT_RUN blockers. This completes evidence collection, not C05.
-    return 0 if evidence_inventory_complete(report) and len(blocker_inventory) == 979 else 1
+    return 0 if evidence_inventory_complete(report, valid_executable_ids) and len(blocker_inventory) == 1000 - len(valid_executable_ids) else 1
 
 
 if __name__ == "__main__":
