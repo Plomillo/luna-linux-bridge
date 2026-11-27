@@ -34,7 +34,7 @@ def test_controls_that_were_defined_are_accepted():
     defined = [row for row in rows if row["controls"]]
     assert defined
     assert all(row["control_status"] == "PRESENT" for row in defined)
-    assert len(defined) == 91
+    assert len(defined) == 96
 
 def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries():
     assert accepts("distinct-bom-payloads", {"visible": "marked", "plain_text": "plain", "contains_bom_character": False}, "EXECUTED") is True
@@ -71,6 +71,21 @@ def test_fifo_factorial_path_and_ipv6_independent_oracles():
     assert two_compressions({"address": "::"}, {"accepted": True})["ok"] is True
     assert stated_prefix({"cidr": "2001:db8::1/129"}, {"rejected": True})["ok"] is True
     assert stated_prefix({"cidr": "2001:db8::1/128"}, {"rejected": False, "prefix": "2001:db8::1/128"})["ok"] is True
+
+
+def test_scientific_and_evaluation_independent_oracles():
+    from metagente_luna_s3.batch3_oracle import harmonic, rates, stated_ratio
+    from metagente_luna_s3.batch5_oracle import sign_change, statistics_variance
+
+    assert stated_ratio({"numerator": 80, "denominator": 0}, {"rejected": True})["ok"] is True
+    assert stated_ratio({"numerator": 0, "denominator": 1}, {"rejected": False, "value": 0.0, "denominator": 1})["ok"] is True
+    assert rates({"true_positive": 0, "false_positive": 0, "false_negative": 1}, {"rejected": True})["ok"] is True
+    assert rates({"true_positive": 1, "false_positive": 0, "false_negative": 0}, {"rejected": False, "precision": 1.0, "recall": 1.0})["ok"] is True
+    assert harmonic({"precision": 0.0, "recall": 0.0}, {"rejected": True})["ok"] is True
+    assert harmonic({"precision": 1.0, "recall": 1.0}, {"rejected": False, "f1": 1.0})["ok"] is True
+    assert sign_change({"low": 2.0, "high": 3.0}, {"rejected": True})["ok"] is True
+    assert statistics_variance({"values": []}, {"rejected": True})["ok"] is True
+    assert statistics_variance({"values": [5]}, {"rejected": False, "population": 0.0, "sample": None})["ok"] is True
 
 
 def test_scientific_and_evaluation_controls_are_adjudicated():
