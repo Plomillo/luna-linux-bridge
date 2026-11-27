@@ -57,6 +57,15 @@ def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries
     assert accepts("empty-manifest-change", {"reproduced": True, "altered_changes": True, "digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"}, "EXECUTED") is True
 
 
+def test_numerical_oracles_cover_invalid_norm_and_pearson_zero_variance():
+    from metagente_luna_s3.batch3_oracle import thirteen
+    from metagente_luna_s3.batch4_oracle import correlation
+
+    assert thirteen({"components": ["3"]}, {"rejected": True, "reason": "components must be integers"})["ok"] is True
+    assert thirteen({"components": []}, {"norm": 0, "square": 0})["ok"] is True
+    assert correlation({"left": [1, 1, 1], "right": [1, 2, 3]}, {"value": None, "error": "zero-variance"})["ok"] is True
+
+
 def test_unicode_control_oracles_cover_distinct_normalization_edges():
     from metagente_luna_s3.d01_oracle import nfc_table, nfd_table, nfkc_table
 
