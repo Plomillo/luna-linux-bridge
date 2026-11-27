@@ -354,16 +354,22 @@ def exit_codes() -> dict:
     return {"codes": [item["code"] for item in results], "commands": [item["command"] for item in results]}
 
 
-def sqrt_two() -> dict:
-    guess = 1.0
-    for _ in range(8):
-        guess = (guess + 2 / guess) / 2
+def sqrt_two(value: float) -> dict:
+    if value < 0:
+        return {"rejected": True, "reason": "square root domain is non-negative"}
+    if value == 0:
+        return {"rejected": False, "estimate": 0.0, "residual": 0.0}
+    guess = value if value >= 1 else 1.0
+    for _ in range(12):
+        guess = (guess + value / guess) / 2
     print(guess)
-    return {"estimate": guess}
+    return {"rejected": False, "estimate": guess, "residual": guess * guess - value}
 
 
-def compensated_sum() -> dict:
-    values = [1.0, *([1e-8] * 100_000)]
+def compensated_sum(start: float, increment: float, count: int) -> dict:
+    if count < 0:
+        return {"rejected": True, "reason": "count must be non-negative"}
+    values = [start, *([increment] * count)]
     naive = 0.0
     for value in values:
         naive += value
@@ -375,7 +381,7 @@ def compensated_sum() -> dict:
         compensation = (updated - total) - adjusted
         total = updated
     print(naive, total)
-    return {"naive": naive, "kahan": total}
+    return {"rejected": False, "naive": naive, "kahan": total}
 
 
 def newton_root() -> dict:
