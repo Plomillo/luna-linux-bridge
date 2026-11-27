@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -111,7 +112,7 @@ def plan_errors(plan: dict, case_id: str) -> list[str]:
     return errors
 
 
-def execute_plan(plan: dict, case_id: str, evidence_root: Path, timeout_seconds: int) -> dict:
+def execute_plan(plan: dict, case_id: str, evidence_root: Path, timeout_seconds: int, sandbox_image: str) -> dict:
     source_metadata = plan["source_metadata"]
     source_excerpt = plan["source_excerpt"]
     normal = plan["normal"]
@@ -120,7 +121,7 @@ def execute_plan(plan: dict, case_id: str, evidence_root: Path, timeout_seconds:
             normal["capability_id"], normal["arguments"], case_id,
             evidence_root=str(evidence_root), run_kind="NORMAL",
             source_metadata=source_metadata, source_excerpt=source_excerpt,
-            timeout_seconds=timeout_seconds,
+            timeout_seconds=timeout_seconds, sandbox_image=sandbox_image,
         )
         for _ in range(3)
     ]
@@ -131,7 +132,7 @@ def execute_plan(plan: dict, case_id: str, evidence_root: Path, timeout_seconds:
             evidence_root=str(evidence_root), run_kind=kind.upper(),
             control_metadata=item["control_metadata"],
             source_metadata=source_metadata, source_excerpt=source_excerpt,
-            timeout_seconds=timeout_seconds,
+            timeout_seconds=timeout_seconds, sandbox_image=sandbox_image,
         ))
     row = assemble_case_record(case_id, runs)
     row["source_metadata"] = source_metadata
@@ -147,10 +148,14 @@ def write_exclusive(path: Path, content: str) -> None:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 6:
-        print("Usage: execute_c05_population.py DOSSIERS.jsonl PLANS.jsonl EVIDENCE_ROOT NEW_LEDGER.jsonl NEW_REPORT.json", file=sys.stderr)
+    if len(argv) != 7:
+        print("Usage: execute_c05_population.py DOSSIERS.jsonl PLANS.jsonl EVIDENCE_ROOT NEW_LEDGER.jsonl NEW_REPORT.json SANDBOX_IMAGE_ID", file=sys.stderr)
         return 2
-    dossiers_path, plans_path, evidence_root, ledger_path, report_path = map(Path, argv[1:])
+    dossiers_path, plans_path, evidence_root, ledger_path, report_path = map(Path, argv[1:6])
+    sandbox_image = argv[6]
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", sandbox_image):
+        print("sandbox image must be an immutable sha256:<64 lowercase hex> Docker image ID", file=sys.stderr)
+        return 2
     if not dossiers_path.is_file() or not plans_path.is_file():
         print("dossiers or plans file not found", file=sys.stderr)
         return 2
@@ -194,7 +199,7 @@ def main(argv: list[str]) -> int:
             })
             continue
         try:
-            rows.append(execute_plan(plan, case_id, evidence_root, 60))
+            rows.append(execute_plan(plan, case_id, evidence_root, 60, sandbox_image))
         except Exception as exc:  # noqa: BLE001 - preserve a per-case INCONCLUSIVE record and continue the population
             rows.append({
                 "CASE_ID": case_id, "execution_status": "INCONCLUSIVE",
@@ -209,6 +214,7 @@ def main(argv: list[str]) -> int:
     write_exclusive(report_path, report_text)
     print(json.dumps({
         "c05_status": report["c05_status"],
+        "sandbox_image_id": sandbox_image,
         "authentic_results": report["authentic_results"],
         "not_run": report["not_run"],
         "rejected": len(report["rejected"]),
