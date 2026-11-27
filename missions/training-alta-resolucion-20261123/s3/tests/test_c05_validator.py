@@ -180,3 +180,17 @@ def test_evidence_paths_cannot_be_reused_between_repetitions(tmp_path):
     verdict = validate(rows, evidence_root=tmp_path)
     reasons = verdict["rejected"][0]["reasons"]
     assert any(reason.startswith("evidence-path-reused:") for reason in reasons)
+
+
+def test_relabeling_same_input_as_negative_and_boundary_is_rejected(tmp_path):
+    row = _valid_row_with_artifacts(tmp_path)
+    first = row["repetitions"][0]["artifacts"]["fixture"]
+    second = row["repetitions"][1]["artifacts"]["fixture"]
+    source = json.loads((tmp_path / first["path"]).read_text(encoding="utf-8"))
+    target_path = tmp_path / second["path"]
+    target = json.loads(target_path.read_text(encoding="utf-8"))
+    target["input"] = source["input"]
+    target_path.write_text(json.dumps(target, sort_keys=True), encoding="utf-8")
+    second["sha256"] = hashlib.sha256(target_path.read_bytes()).hexdigest()
+    errors = _validate_row(row, tmp_path)
+    assert "normal-negative-boundary-inputs-not-distinct" in errors
