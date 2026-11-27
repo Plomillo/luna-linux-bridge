@@ -397,6 +397,22 @@ def main(argv: list[str]) -> int:
                 "contract_status": row.get("contract_status"),
                 "contract_evaluation": row.get("contract_evaluation"),
                 "independent_validation": row.get("independent_validation"),
+                "control_evidence": [
+                    {
+                        "kind": run.get("kind"),
+                        "execution_status": run.get("execution_status"),
+                        "fixture": json.loads(
+                            (evidence_root / run["artifacts"]["fixture"]["path"]).read_text(encoding="utf-8")
+                        ),
+                        "observed": json.loads(
+                            (evidence_root / run["artifacts"]["observed"]["path"]).read_text(encoding="utf-8")
+                        ),
+                        "oracle": json.loads(
+                            (evidence_root / run["artifacts"]["oracle"]["path"]).read_text(encoding="utf-8")
+                        ),
+                    }
+                    for run in row.get("controls", [])
+                ],
                 "reason": row.get("reason"),
             }
             for row in rows
