@@ -41,3 +41,43 @@ The current seed is one case with five source-bound runs. It does not satisfy th
 ## Verdict
 
 `MGL5-INF-0254` has a successful hosted seed run with five independently checked outcomes and uploaded raw evidence. C05 remains `NOT_PASSED`. The next blocking work is secure sandbox execution and source-grounded, independently validated plans and evidence for the full population.
+
+
+## Follow-up implementation — restricted container and TEO dossier compiler
+
+### Restricted-container execution
+
+- Workflow: [C05 hosted restricted-container seed execution](https://github.com/Plomillo/luna-linux-bridge/actions/runs/45936964550)
+- Run ID: 45936964550
+- Candidate commit: a0738c67a3b42d322a35079366e244fb3db40b34
+- Conclusion: success
+- Job: seed-0254-container — success
+- Artifact ID: 15170693617
+- Artifact SHA-256: ed3aa693932ce3342aed4eba82534303f692d3a2859485bfe254f4d8923fb788
+- Immutable Python base image: python@sha256:191083cdf6c7bda8c76158983163ead5d5cf7b77cf3033e805bb0f5296f51b4b
+- Worker image ID: sha256:b3a75ec8792b135dfc47e520150eb7e66137750d77bb9bb5831c28ab6555ce0c
+- Five source-bound runs: 3 NORMAL, 1 NEGATIVE, 1 BOUNDARY; all five returned PASS with independent oracle agreement.
+- Container assertions passed for all five runs: network disabled, read-only root filesystem, all Linux capabilities dropped, non-root UID 65534, 64-process limit, 256 MiB memory limit and 1 CPU limit.
+- The first container attempt failed because Docker was not attached to stdin. The failure was preserved; adding `docker run -i` fixed it and the subsequent run passed.
+
+This is restricted-container evidence, not VM isolation: the container shares the host kernel. The record intentionally retains `sandbox=false` and `SHARED_HOST_KERNEL_NOT_VM`. No stronger security claim is made.
+
+### TEO dossier compiler
+
+- Added `scripts/build_c05_teo_dossiers.py`.
+- Added the dossier compiler and artifact archival to `c05-automated-validation.yml`.
+- Workflow: [C05 automated independent validation](https://github.com/Plomillo/luna-linux-bridge/actions/runs/45936959606)
+- Run ID: 45936959606 — success.
+- Artifact ID: 15170907691.
+- Artifact SHA-256: db13a0f3ac873035938272505b8b6f526bc5605bc31b1089bafede6649917b8d.
+- The compiler checks the exact 50 ordered TEO IDs, source blob, file hash, excerpt hashes and line ranges; it emits one dossier per case.
+- Dossiers preserve operation, criterion, control protocol, hermeneutic stages and anti-error controls.
+- All 50 remain BLOCKED / NOT_RUN / NOT_CERTIFIED until the primary passage, edition, reference, pericope and contextual sources are supplied and reviewed by a competent human reviewer. This is dossier creation, not TEO validation.
+
+### INF planning census
+
+A source-corpus audit found 1,000 ordered INF records across D01–D20, each with operation, PASS criterion and oracle requirement. The fixture declaration contains explicit literals in 141 records and says `ninguno explícito` in 859 records. This count does not prove that those 859 lack all usable semantic parameters; each still needs case-level fixture analysis. The source-bound backlog generator continues to emit no executable plan rather than inventing a capability or fixture.
+
+### Current gate
+
+C05 remains NOT_PASSED. The restricted-container seed and TEO dossier compilation are validated implementation increments only. The 999 remaining INF plans, all 50 TEO source-specific validations, stronger-than-shared-kernel isolation, the full 1,000-case execution population, Q5 controls and final independent closure remain outstanding.
