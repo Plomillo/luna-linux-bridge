@@ -19,6 +19,7 @@ from metagente_luna_s3 import (
     more_oracle,
 )
 from metagente_luna_s3.independent_oracles import cidr_bounds_oracle
+from metagente_luna_s4 import c05_preflight, c05_preflight_oracle
 
 
 class Capability(BaseModel):
@@ -150,6 +151,14 @@ REGISTRY: dict[str, Capability] = {
     "request_log": _cap("request_log", "request_counts", {"type": "object", "required": ["successes", "failures"], "properties": {"successes": {"type": "integer"}, "failures": {"type": "integer"}}, "additionalProperties": False}),
 }
 
+REGISTRY["c05_preflight_blocked"] = _cap(
+    "c05_preflight_blocked", "c05_preflight_blocked_oracle",
+    {"type": "object", "required": ["case_id", "blocker_code", "phase", "details"],
+     "properties": {"case_id": {"type": "string"}, "blocker_code": {"type": "string"},
+                    "phase": {"type": "string"}, "details": {"type": "string"}},
+     "additionalProperties": False},
+)
+
 ORACLES: dict[str, Callable[..., dict]] = {
     "ipaddress": cidr_bounds_oracle,
     "utf8_manual": d01_oracle.utf8_manual,
@@ -220,6 +229,8 @@ ORACLES: dict[str, Callable[..., dict]] = {
     "request_counts": batch4_oracle.request_counts,
 }
 
+ORACLES["c05_preflight_blocked_oracle"] = c05_preflight_oracle.blocked_preflight_oracle
+
 EXECUTORS: dict[str, Callable[..., dict]] = {
     "cidr_bounds": cidr_bounds,
     "utf8_roundtrip": d01_exec.utf8_roundtrip,
@@ -289,6 +300,8 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "confined": batch4_exec.confined,
     "request_log": batch4_exec.request_log,
 }
+
+EXECUTORS["c05_preflight_blocked"] = c05_preflight.blocked_preflight_probe
 
 for _name, _oracle_name, _schema in batch5_exec.SPECS:
     REGISTRY[_name] = _cap(_name, _oracle_name, _schema)
