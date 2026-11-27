@@ -238,7 +238,7 @@ def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
         if not isinstance(rep, dict) or not isinstance(rep.get("artifacts"), dict):
             continue
         fixture_ref = rep["artifacts"].get("fixture")
-        fixture_path, fixture_error = _safe_artifact(evidence_root, fixture_ref)
+        fixture_path, _ = _safe_artifact(evidence_root, fixture_ref)
         fixture_data = _load_json(fixture_path) if fixture_path is not None else None
         if isinstance(fixture_data, dict) and "input" in fixture_data:
             encoded = json.dumps(fixture_data["input"], sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
