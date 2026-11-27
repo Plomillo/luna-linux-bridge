@@ -87,12 +87,14 @@ def execute(
     lifecycle = record.get("execution_status")
     record["lifecycle_status"] = lifecycle
     if lifecycle == "EXECUTED":
-        record["execution_status"] = "PASS" if isinstance(record.get("oracle_result"), dict) and record["oracle_result"].get("ok") is True else "FAIL"
+        record["result_status"] = "PASS" if isinstance(record.get("oracle_result"), dict) and record["oracle_result"].get("ok") is True else "FAIL"
     elif lifecycle == "ERROR":
-        record["execution_status"] = "INCONCLUSIVE"
+        record["result_status"] = "INCONCLUSIVE"
     elif lifecycle == "REJECTED":
-        record["execution_status"] = "BLOCKED"
-    if evidence_root is not None and record.get("execution_status") in {"PASS", "FAIL", "BLOCKED", "INCONCLUSIVE"}:
+        record["result_status"] = "BLOCKED"
+    else:
+        record["result_status"] = lifecycle
+    if evidence_root is not None and record.get("result_status") in {"PASS", "FAIL", "BLOCKED", "INCONCLUSIVE"}:
         try:
             record["persisted_evidence"] = persist_run(record, arguments, evidence_root)
             record["persisted_evidence"]["kind"] = run_kind
