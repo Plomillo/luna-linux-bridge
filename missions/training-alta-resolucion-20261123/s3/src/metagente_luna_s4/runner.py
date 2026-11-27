@@ -127,7 +127,7 @@ def execute_isolated(
         raise ValueError("negative and boundary runs require definition, expected_behavior, and source")
     if timeout_seconds < 1:
         raise ValueError("timeout_seconds must be positive")
-    required_source_fields = {"source_file", "line_start", "line_end", "file_sha256", "excerpt_sha256", "source_blob"}
+    required_source_fields = {"source_file", "line_start", "line_end", "file_sha256", "excerpt_sha256", "source_blob", "operation", "acceptance_criterion", "oracle_requirement"}
     if not isinstance(source_metadata, dict) or required_source_fields - set(source_metadata):
         raise ValueError("source metadata must bind the source file, line range, hashes, and Git blob")
     if not isinstance(source_excerpt, str) or not case_id in source_excerpt:
@@ -155,6 +155,10 @@ def execute_isolated(
         raise ValueError("source excerpt does not match the declared line range")
     if hashlib.sha256(exact_excerpt).hexdigest() != source_metadata["excerpt_sha256"]:
         raise ValueError("source excerpt SHA-256 mismatch")
+    for field in ("operation", "acceptance_criterion", "oracle_requirement"):
+        value = source_metadata[field]
+        if not isinstance(value, str) or not value or value.encode("utf-8") not in exact_excerpt:
+            raise ValueError(f"source excerpt does not bind required {field}")
 
     started = time.time()
     request = json.dumps({
