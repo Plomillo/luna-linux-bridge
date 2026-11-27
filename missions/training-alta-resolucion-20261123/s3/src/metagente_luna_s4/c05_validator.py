@@ -138,7 +138,7 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
         errors.append("environment-lock-missing-or-empty")
     sums_path = loaded.get("sha256sums")
     expected_sums = "".join(
-        f"{item['sha256']}  {item['path']}\\n"
+        f"{item['sha256']}  {item['path']}\n"
         for name, item in sorted(artifacts.items()) if name != "sha256sums" and isinstance(item, dict)
     )
     if sums_path is None or sums_path.read_text(encoding="utf-8") != expected_sums:
