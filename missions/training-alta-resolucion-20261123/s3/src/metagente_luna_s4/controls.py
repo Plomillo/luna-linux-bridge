@@ -198,7 +198,7 @@ def _build() -> None:
     _add("MGL5-INF-0039", "boundary", "schema_migrate", {"document": {"version": 1}}, "both-kept")
     _add("MGL5-INF-0040", "negative", "unknown_field", {"record": {"name": "Luna", "extra": "x"}, "known_fields": ["id", "name"]}, "rejected")
     _add("MGL5-INF-0040", "boundary", "unknown_field", {"record": {"id": "A-1", "name": "Luna"}, "known_fields": ["id", "name"]}, "both-kept")
-    _add("MGL5-INF-0049", "negative", "mixed_roundtrip", {"document": {"payload": b"not-json"}}, "rejected")
+    _add("MGL5-INF-0049", "negative", "mixed_roundtrip", {"document": {"n": 1208925819614629174706176}}, "rejected")
     _add("MGL5-INF-0049", "boundary", "mixed_roundtrip", {"document": {}}, "both-kept")
 
 
