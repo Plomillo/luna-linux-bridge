@@ -3,12 +3,13 @@ from __future__ import annotations
 
 from metagente_luna_s4.batch2 import CASES as SECOND
 from metagente_luna_s4.batch3 import CASES as THIRD
+from metagente_luna_s4.batch4 import CASES as FOURTH
 from metagente_luna_s4.batch5 import CASES as FIFTH
 from metagente_luna_s4.batch6 import CASES as SIXTH
 from metagente_luna_s4.d01_batch import CASES as FIRST
 from metagente_luna_s4.runner import execute
 
-CASES = FIRST + SECOND + THIRD + FIFTH + SIXTH
+CASES = FIRST + SECOND + THIRD + FOURTH + FIFTH + SIXTH
 
 
 CONTROLS: dict[str, dict] = {}
@@ -153,6 +154,15 @@ def _build() -> None:
     _add("MGL5-INF-0256", "boundary", "mask_bits", {"mask": "255.255.255.255"}, "all-ones-mask-valid")
     _add("MGL5-INF-0435", "negative", "threshold", {"low": 38, "high": 38, "limit": 38}, "threshold-equality-no-fire")
     _add("MGL5-INF-0435", "boundary", "threshold", {"low": 38.1, "high": 38.1, "limit": 38}, "threshold-above-fires")
+    _add("MGL5-INF-0151", "boundary", "tokenize", {"text": ""}, "empty-token-stream")
+    _add("MGL5-INF-0555", "negative", "increment", {"times": -1}, "increment-negative-rejected")
+    _add("MGL5-INF-0555", "boundary", "increment", {"times": 0}, "increment-zero-boundary")
+    _add("MGL5-INF-0561", "negative", "request_log", {"successes": 99, "failures": -1}, "request-negative-count-rejected")
+    _add("MGL5-INF-0561", "boundary", "request_log", {"successes": 1, "failures": 0}, "request-single-success-boundary")
+    _add("MGL5-INF-0602", "negative", "sqrt_two", {"value": -1.0}, "sqrt-negative-rejected")
+    _add("MGL5-INF-0602", "boundary", "sqrt_two", {"value": 0.0}, "sqrt-zero-boundary")
+    _add("MGL5-INF-0607", "negative", "compensated_sum", {"start": 1.0, "increment": 1e-8, "count": -1}, "sum-negative-count-rejected")
+    _add("MGL5-INF-0607", "boundary", "compensated_sum", {"start": 1.0, "increment": 1e-8, "count": 0}, "sum-zero-boundary")
     _add("MGL5-INF-0109", "negative", "stack_sequence", {"steps": ["pop"]}, "single-underflow")
     _add("MGL5-INF-0109", "boundary", "stack_sequence", {"steps": []}, "empty-stack-sequence")
 
@@ -207,6 +217,24 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and (observed.get("sum") == 11 or observed.get("minimum") == 4)
     if expect == "not-fifteen":
         return status == "EXECUTED" and observed["sum"] != 15
+    if expect == "empty-token-stream":
+        return status == "EXECUTED" and observed.get("tokens") == []
+    if expect == "increment-negative-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "increment-zero-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("completed") == 0 and observed.get("failed") == 0 and observed.get("ids") == []
+    if expect == "request-negative-count-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "request-single-success-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("availability") == 1.0 and observed.get("successes") == 1 and observed.get("failures") == 0 and observed.get("total") == 1
+    if expect == "sqrt-negative-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "sqrt-zero-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("estimate") == 0 and observed.get("residual") == 0
+    if expect == "sum-negative-count-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "sum-zero-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("naive") == 1.0 and observed.get("kahan") == 1.0
     if expect == "negative-length-no-read":
         return status == "EXECUTED" and observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == 0
     if expect == "zero-length-no-read":
