@@ -4,13 +4,13 @@
 
 This report records implementation readiness only. It does not certify C05 and does not claim that the newly added plans have already completed restricted-container execution.
 
-- Complete source-bound executable plans: **77 / 1,000**
-- Cases outside the executable plan set: **923 / 1,000**
-- Remaining underlying executions for those 946 cases: **4,615** (three NORMAL, one NEGATIVE, one BOUNDARY per case)
-- Typed normal specifications: **101**
+- Complete source-bound executable plans: **78 / 1,000**
+- Cases outside the executable plan set: **922 / 1,000**
+- Remaining underlying executions for those 922 cases: **4,610** (three NORMAL, one NEGATIVE, one BOUNDARY per case)
+- Typed normal specifications: **102**
 - Typed specifications still missing at least one required control: **24**
 - Interpreter candidates: **7**; ready and registered: **2**; blocked: **5**
-- Cases with neither a typed normal specification nor an interpreter candidate: **894**
+- Cases with neither a typed normal specification nor an interpreter candidate: **893**
 - C05: **NOT_PASSED**
 
 ## Implementation added in this increment
@@ -25,7 +25,7 @@ Added further Unicode normalization controls for:
 
 The D01 independent oracle now uses explicit published/fixed vectors for the new cases. Decimal and SHA-256 oracles were generalized to verify the alternate decimal and empty-input vectors independently.
 
-### D03 and numerical controls
+### D02 ELF signature identification and D03 numerical controls
 Added source-derived controls for:
 - linear and binary search (previous increment);
 - duplicate detection, bracket validation, stable age sorting and stack underflow (previous increments);
@@ -36,9 +36,9 @@ The L2 executor now rejects non-integer components explicitly. The independent n
 
 ## Validation requirements
 
-The compiler and regression assertions now expect 77 complete plans and 923 cases outside the plan set. The population inventory validator requires the NOT_RUN identifiers to be exactly the complement of valid executable-plan identifiers; it does not accept a matching count with substituted IDs.
+The compiler and regression assertions now expect 78 complete plans and 922 cases outside the plan set. The population inventory validator requires the NOT_RUN identifiers to be exactly the complement of valid executable-plan identifiers; it does not accept a matching count with substituted IDs.
 
-The hosted restricted-container workflow must still execute the 77 plans (385 runs) and persist authentic evidence. The independent workflow must validate those artifacts. No results from either workflow are asserted in this report.
+The hosted restricted-container workflow must still execute the 78 plans (390 runs) and persist authentic evidence. The independent workflow must validate those artifacts. No results from either workflow are asserted in this report.
 
 ## Remaining work
 
