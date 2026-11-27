@@ -38,7 +38,45 @@ def test_controls_that_were_defined_are_accepted():
     # The runner must execute every currently authored control case; the
     # registry is the authoritative count, not a stale historical constant.
     assert {row["case_id"] for row in defined} == set(CONTROLS)
-    assert len(defined) == len(CONTROLS) == 93
+    assert len(defined) == len(CONTROLS) == 100
+
+def test_yaml_type_plan_and_independent_oracle_cover_negative_and_boundary_inputs():
+    from metagente_luna_s3.d01_exec import yaml_types
+    from metagente_luna_s3.d01_oracle import yaml_types_oracle
+
+    normal = {"text": "name: Luna\nenabled: true\ncount: 3\nitems:\n  - uno\n  - dos\n"}
+    negative = {"text": "name: Luna\n  broken: true\n"}
+    boundary = {"text": "name: ''\nenabled: false\ncount: 0\nitems: []\n"}
+    normal_result = yaml_types(**normal)
+    assert yaml_types_oracle(normal, normal_result)["ok"] is True
+    negative_result = yaml_types(**negative)
+    assert yaml_types_oracle(negative, negative_result)["ok"] is True
+    boundary_result = yaml_types(**boundary)
+    assert yaml_types_oracle(boundary, boundary_result)["ok"] is True
+    assert accepts("yaml-rejected", negative_result, "EXECUTED") is True
+    assert accepts("yaml-empty-boundary", boundary_result, "EXECUTED") is True
+
+
+def test_yaml_ambiguous_scalars_follow_the_declared_schema_version():
+    from metagente_luna_s3.d01_exec import yaml_ambiguous
+    from metagente_luna_s3.d01_oracle import yaml_ambiguous_oracle
+
+    arguments_11 = {"text": "flag: yes\ndate: 2026-01-02\n", "schema_version": "1.1"}
+    result_11 = yaml_ambiguous(**arguments_11)
+    assert yaml_ambiguous_oracle(arguments_11, result_11)["ok"] is True
+    assert result_11["types"] == {"flag": "bool", "date": "date"}
+
+    arguments_12 = {"text": "flag: yes\ndate: 2026-01-02\n", "schema_version": "1.2"}
+    result_12 = yaml_ambiguous(**arguments_12)
+    assert yaml_ambiguous_oracle(arguments_12, result_12)["ok"] is True
+    assert result_12["types"] == {"flag": "str", "date": "str"}
+
+    negative = {"text": "flag: yes\n  broken: x\n", "schema_version": "1.1"}
+    rejected = yaml_ambiguous(**negative)
+    assert yaml_ambiguous_oracle(negative, rejected)["ok"] is True
+    assert accepts("yaml-invalid-rejected", rejected, "EXECUTED") is True
+    assert accepts("yaml12-ambiguous-strings", result_12, "EXECUTED") is True
+
 
 def test_both_kept_control_returns_a_boolean_not_a_collection():
     result = accepts("both-kept", {"kept": [0, 65535]}, "EXECUTED")
@@ -320,8 +358,8 @@ def test_ieee754_and_float_gap_controls_are_checked_by_primary_adjudicator():
 
 
 def test_numerical_fit_and_integrator_controls():
-    from metagente_luna_s3.batch5_exec import exact_line, euler_decay, rk4_decay
-    from metagente_luna_s3.batch5_oracle import two_points, smaller_step, series_exp
+    from metagente_luna_s3.batch5_exec import euler_decay, exact_line, rk4_decay
+    from metagente_luna_s3.batch5_oracle import series_exp, smaller_step, two_points
     from metagente_luna_s4.controls import accepts
 
     line_args = {"xs": [0, 1, 2], "slope": -1, "intercept": 0}
@@ -336,3 +374,118 @@ def test_numerical_fit_and_integrator_controls():
 
     assert rk4_decay(2.0)["rejected"] is True
     assert series_exp({"step": 2.0}, rk4_decay(2.0))["ok"] is True
+
+
+
+def test_d01_numeric_base64_null_and_manifest_controls_have_independent_adjudication():
+    from metagente_luna_s3.more_exec import (
+        base64_bytes,
+        base64_reject,
+        decimal_text,
+        float32_exactness,
+        manifest_hash,
+        three_states,
+    )
+    from metagente_luna_s3.more_oracle import (
+        b64_table,
+        decimal_literal,
+        f32_table,
+        stable_digest,
+        state_table,
+    )
+    from metagente_luna_s4.independent_validator import _independent_control_accepts
+
+    cases = [
+        ("float32-inexact-identified", float32_exactness(values=[16777217]), "EXECUTED"),
+        ("float32-exact-transition", float32_exactness(values=[16777216]), "EXECUTED"),
+        ("decimal-invalid-rejected", decimal_text("0.10x"), "EXECUTED"),
+        ("known-key-not-absent", three_states({"b": None, "c": ""}, "b"), "EXECUTED"),
+        ("nonempty-field-not-empty", three_states({"b": None, "c": "x"}, "a"), "EXECUTED"),
+        ("base64-invalid-hex-rejected", base64_bytes("0g"), "EXECUTED"),
+        ("valid-base64-accepted", base64_reject("AA=="), "FAIL"),
+        ("unchanged-manifest-stable", manifest_hash({"name": "luna"}, {"name": "luna"}), "EXECUTED"),
+    ]
+    for expectation, observed, lifecycle in cases:
+        assert accepts(expectation, observed, lifecycle) is True
+        assert _independent_control_accepts(expectation, observed, lifecycle) is True
+
+    normal_float = {"values": [16777216, 16777217, 16777219]}
+    assert f32_table(normal_float, float32_exactness(**normal_float))["ok"] is True
+    normal_decimal = {"text": "0.10"}
+    assert decimal_literal(normal_decimal, decimal_text(**normal_decimal))["ok"] is True
+    normal_states = {"present": {"b": None, "c": ""}, "absent_key": "a"}
+    assert state_table(normal_states, three_states(**normal_states))["ok"] is True
+    normal_base64 = {"payload_hex": "00ff01"}
+    assert b64_table(normal_base64, base64_bytes(**normal_base64))["ok"] is True
+    normal_hash = {"document": {"name": "luna", "version": 1}, "altered": {"name": "luna", "version": 2}}
+    assert stable_digest(normal_hash, manifest_hash(**normal_hash))["ok"] is True
+    invalid_decimal = {"text": "0.10x"}
+    assert decimal_literal(invalid_decimal, decimal_text(**invalid_decimal))["ok"] is True
+    invalid_hex = {"payload_hex": "0g"}
+    assert b64_table(invalid_hex, base64_bytes(**invalid_hex))["ok"] is True
+
+
+
+def test_d01_protobuf_schema_compatibility_and_cbor_roundtrip_cases():
+    from metagente_luna_s3.more_exec import (
+        cbor_roundtrip,
+        protobuf_old_reader,
+        schema_migrate,
+        schema_unknown_field,
+    )
+    from metagente_luna_s3.more_oracle import (
+        cbor_vector_oracle,
+        protobuf_wire_oracle,
+        schema_v2_oracle,
+        unknown_field_oracle,
+    )
+    from metagente_luna_s4.controls import accepts
+    from metagente_luna_s4.independent_validator import _independent_control_accepts
+
+    protobuf = {"wire_hex": "080712036e6577"}
+    observed_protobuf = protobuf_old_reader(**protobuf)
+    assert protobuf_wire_oracle(protobuf, observed_protobuf)["ok"] is True
+    assert observed_protobuf["unknown_fields"] == [2]
+    protobuf_negative = protobuf_old_reader("08071205")
+    assert accepts("protobuf-malformed-rejected", protobuf_negative, "EXECUTED") is True
+    assert _independent_control_accepts("protobuf-malformed-rejected", protobuf_negative, "EXECUTED") is True
+
+    migration = {"document": {"version": 1, "name": "Luna", "count": 3}}
+    assert schema_v2_oracle(migration, schema_migrate(**migration))["ok"] is True
+    schema_negative = schema_migrate({"version": 0, "name": "Luna", "count": 3})
+    assert accepts("schema-v0-rejected", schema_negative, "EXECUTED") is True
+    assert _independent_control_accepts("schema-v0-rejected", schema_negative, "EXECUTED") is True
+
+    unknown = {"record": {"name": "Luna", "version": 2, "extra": "future"}, "known_fields": ["name", "version"]}
+    assert unknown_field_oracle(unknown, schema_unknown_field(**unknown))["ok"] is True
+    unknown_negative = schema_unknown_field({"name": 7, "version": 2, "extra": "future"}, ["name", "version"])
+    assert accepts("known-field-type-rejected", unknown_negative, "EXECUTED") is True
+    assert _independent_control_accepts("known-field-type-rejected", unknown_negative, "EXECUTED") is True
+
+    document = {"name": "Luna", "count": 2, "enabled": True, "items": [1, None, False]}
+    cbor_args = {"document": document}
+    cbor_observed = cbor_roundtrip(**cbor_args)
+    assert cbor_vector_oracle(cbor_args, cbor_observed)["ok"] is True
+    cbor_negative = cbor_roundtrip({"name": 1.5})
+    assert accepts("cbor-unsupported-value-rejected", cbor_negative, "EXECUTED") is True
+    assert _independent_control_accepts("cbor-unsupported-value-rejected", cbor_negative, "EXECUTED") is True
+    assert cbor_vector_oracle({"document": {}}, cbor_roundtrip({}))["ok"] is True
+
+
+def test_elf_header_reports_class_endian_architecture_and_type_with_fixed_oracle():
+    from metagente_luna_s3.more_exec import elf_header
+    from metagente_luna_s3.more_oracle import elf_header_oracle
+    from metagente_luna_s4.controls import accepts
+    from metagente_luna_s4.independent_validator import _independent_control_accepts
+
+    normal = {"payload_hex": "7f454c4602010100000000000000000002003e000100000000004000000000004000000000000000000000000000000000000000400038000000400000000000"}
+    observed = elf_header(**normal)
+    assert elf_header_oracle(normal, observed)["ok"] is True
+    truncated = elf_header(normal["payload_hex"][:-2])
+    assert accepts("elf-truncated-header", truncated, "EXECUTED") is True
+    assert _independent_control_accepts("elf-truncated-header", truncated, "EXECUTED") is True
+    boundary = {"payload_hex": "7f454c4602010100000000000000000001003e000100000000000000000000000000000000000000000000000000000000000000400038000000400000000000"}
+    boundary_observed = elf_header(**boundary)
+    assert elf_header_oracle(boundary, boundary_observed)["ok"] is True
+    assert accepts("elf-rel-boundary", boundary_observed, "EXECUTED") is True
+    assert _independent_control_accepts("elf-rel-boundary", boundary_observed, "EXECUTED") is True

@@ -77,6 +77,46 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if not isinstance(observed, dict):
         return False
     completed = lifecycle_status in {"EXECUTED", "FAIL"}
+    if expect == "yaml-invalid-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
+    if expect == "yaml12-ambiguous-strings":
+        return completed and observed.get("rejected") is False and observed.get("schema_version") == "1.2" and observed.get("parsed") == {"flag": "yes", "date": "2026-01-02"} and observed.get("types") == {"flag": "str", "date": "str"}
+    if expect == "protobuf-malformed-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "truncated-length-delimited"
+    if expect == "protobuf-no-unknown-fields":
+        return completed and observed.get("accepted") is True and observed.get("unknown_fields") == [] and observed.get("known_fields") == {"1": 7}
+    if expect == "schema-v0-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-version"
+    if expect == "schema-v1-empty-migrates":
+        return completed and observed.get("rejected") is False and observed.get("document") == {"version": 2, "name": "", "count": 0}
+    if expect == "known-field-type-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "known-field-type"
+    if expect == "no-unknown-fields":
+        return completed and observed.get("accepted") is True and observed.get("known") == {"name": "Luna", "version": 2} and observed.get("unknown") == {}
+    if expect == "cbor-unsupported-value-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-value-type"
+    if expect == "cbor-empty-map-roundtrip":
+        return completed and observed.get("accepted") is True and observed.get("wire_hex") == "a0" and observed.get("decoded") == {} and observed.get("same_types") is True
+    if expect == "yaml-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
+    if expect == "yaml-empty-boundary":
+        return completed and observed.get("rejected") is False and observed.get("parsed") == {"name": "", "enabled": False, "count": 0, "items": []} and observed.get("types") == {"name": "str", "enabled": "bool", "count": "int", "items": "list"}
+    if expect == "float32-inexact-identified":
+        return completed and observed.get("rows") == [{"value": 16777217, "exact": False}]
+    if expect == "float32-exact-transition":
+        return completed and observed.get("rows") == [{"value": 16777216, "exact": True}]
+    if expect == "decimal-invalid-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "invalid-decimal"
+    if expect == "known-key-not-absent":
+        return completed and observed == {"absent": False, "null": True, "empty": True}
+    if expect == "nonempty-field-not-empty":
+        return completed and observed == {"absent": True, "null": True, "empty": False}
+    if expect == "base64-invalid-hex-rejected":
+        return completed and observed == {"rejected": True, "reason": "invalid-hex-input"}
+    if expect == "valid-base64-accepted":
+        return completed and observed.get("rejected") is False and observed.get("error_recorded") is False
+    if expect == "unchanged-manifest-stable":
+        return completed and observed.get("reproduced") is True and observed.get("altered_changes") is False
     if expect == "empty-token-stream":
         return completed and observed.get("tokens") == []
     if expect == "increment-negative-rejected":
@@ -237,6 +277,10 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
         return completed and observed.get("corruption_detected") is True and observed.get("integrity_claimed") is False
     if expect == "unknown-signature":
         return completed and observed.get("detected") == "unknown" and observed.get("extension_matches_content") is False
+    if expect == "elf-truncated-header":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "truncated-header"
+    if expect == "elf-rel-boundary":
+        return completed and observed == {"rejected": False, "class": "ELF64", "endianness": "little", "architecture": "x86-64", "object_type": "REL", "header_size": 64}
     if expect == "different-text":
         return completed and observed.get("recovered") not in {
             "Luna-2026", "computación, información, ñandú"

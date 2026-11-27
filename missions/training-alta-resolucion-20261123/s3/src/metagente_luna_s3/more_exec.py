@@ -11,7 +11,7 @@ import struct
 import unicodedata
 import xml.etree.ElementTree as ET
 import zlib
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 PNG = bytes.fromhex("89504e470d0a1a0a")
 
@@ -179,9 +179,12 @@ def float32_exactness(values: list[int]) -> dict:
 
 
 def decimal_text(text: str) -> dict:
-    value = Decimal(text)
+    try:
+        value = Decimal(text)
+    except InvalidOperation:
+        return {"rejected": True, "reason": "invalid-decimal"}
     print(value)
-    return {"text": str(value), "used_binary_float": False}
+    return {"rejected": False, "text": str(value), "used_binary_float": False}
 
 
 def three_states(present: dict, absent_key: str) -> dict:
@@ -210,10 +213,13 @@ def zlib_corrupt(payload_hex: str) -> dict:
 
 
 def base64_bytes(payload_hex: str) -> dict:
-    payload = bytes.fromhex(payload_hex)
+    try:
+        payload = bytes.fromhex(payload_hex)
+    except ValueError:
+        return {"rejected": True, "reason": "invalid-hex-input"}
     encoded = base64.b64encode(payload).decode("ascii")
     print(encoded)
-    return {"decoded_hex": base64.b64decode(encoded).hex(), "encoded": encoded}
+    return {"rejected": False, "decoded_hex": base64.b64decode(encoded).hex(), "encoded": encoded}
 
 
 def base64_reject(text: str) -> dict:
@@ -302,3 +308,245 @@ def binary_float_gap(left: float, right: float, target: float) -> dict:
     decimal_exact = Decimal(str(left)) + Decimal(str(right)) == Decimal(str(target))
     print(difference)
     return {"equal": total == target, "difference": difference, "decimal_exact": decimal_exact, "explanation": "binary floating point compared with exact decimal arithmetic"}
+
+
+def protobuf_old_reader(wire_hex: str) -> dict:
+    """Read field 1 and skip unknown protobuf fields using their wire type."""
+    try:
+        raw = bytes.fromhex(wire_hex)
+    except ValueError:
+        return {"rejected": True, "reason": "invalid-hex"}
+    cursor = 0
+
+    def varint() -> int:
+        nonlocal cursor
+        value = 0
+        for shift in range(0, 70, 7):
+            if cursor >= len(raw):
+                raise ValueError("truncated-varint")
+            byte = raw[cursor]
+            cursor += 1
+            value |= (byte & 0x7F) << shift
+            if byte < 0x80:
+                return value
+        raise ValueError("varint-overflow")
+
+    known: dict[str, int] = {}
+    unknown: list[int] = []
+    try:
+        while cursor < len(raw):
+            key = varint()
+            field_number, wire_type = key >> 3, key & 7
+            if field_number == 0:
+                raise ValueError("zero-field-number")
+            if wire_type == 0:
+                value = varint()
+                if field_number == 1:
+                    known[str(field_number)] = value
+                else:
+                    unknown.append(field_number)
+            elif wire_type == 1:
+                if len(raw) - cursor < 8:
+                    raise ValueError("truncated-fixed64")
+                cursor += 8
+                unknown.append(field_number)
+            elif wire_type == 2:
+                size = varint()
+                if size > len(raw) - cursor:
+                    raise ValueError("truncated-length-delimited")
+                payload = raw[cursor:cursor + size]
+                cursor += size
+                if field_number == 1:
+                    try:
+                        known[str(field_number)] = int(payload.decode("utf-8"))
+                    except (UnicodeError, ValueError):
+                        known[str(field_number)] = payload.hex()
+                else:
+                    unknown.append(field_number)
+            elif wire_type == 5:
+                if len(raw) - cursor < 4:
+                    raise ValueError("truncated-fixed32")
+                cursor += 4
+                unknown.append(field_number)
+            else:
+                raise ValueError("unsupported-wire-type")
+    except ValueError as exc:
+        return {"rejected": True, "reason": str(exc)}
+    return {"rejected": False, "accepted": True, "known_fields": known, "unknown_fields": unknown, "consumed": cursor}
+
+
+def schema_migrate(document: dict) -> dict:
+    if not isinstance(document, dict) or document.get("version") != 1:
+        return {"rejected": True, "reason": "unsupported-version"}
+    name, count = document.get("name"), document.get("count")
+    if not isinstance(name, str) or not isinstance(count, int) or isinstance(count, bool) or count < 0:
+        return {"rejected": True, "reason": "invalid-invariant-field"}
+    migrated = {"version": 2, "name": name, "count": count}
+    return {"rejected": False, "migrated": True, "document": migrated, "invariants": {"name": name, "count": count}}
+
+
+def schema_unknown_field(record: dict, known_fields: list[str]) -> dict:
+    if not isinstance(record, dict) or not isinstance(known_fields, list):
+        return {"rejected": True, "reason": "invalid-record"}
+    known: dict = {}
+    unknown: dict = {}
+    for name in known_fields:
+        if name not in record:
+            continue
+        value = record[name]
+        if name == "name" and not isinstance(value, str):
+            return {"rejected": True, "reason": "known-field-type"}
+        if name == "version" and (not isinstance(value, int) or isinstance(value, bool)):
+            return {"rejected": True, "reason": "known-field-type"}
+        known[name] = value
+    unknown = {key: value for key, value in record.items() if key not in known_fields}
+    return {"rejected": False, "accepted": True, "known": known, "unknown": unknown, "policy": "PRESERVE_UNKNOWN_SEPARATELY"}
+
+
+def _cbor_head(major: int, value: int) -> bytes:
+    if value < 0:
+        raise ValueError("negative-length")
+    prefix = major << 5
+    if value < 24:
+        return bytes([prefix | value])
+    if value <= 0xFF:
+        return bytes([prefix | 24, value])
+    if value <= 0xFFFF:
+        return bytes([prefix | 25]) + value.to_bytes(2, "big")
+    if value <= 0xFFFFFFFF:
+        return bytes([prefix | 26]) + value.to_bytes(4, "big")
+    if value <= 0xFFFFFFFFFFFFFFFF:
+        return bytes([prefix | 27]) + value.to_bytes(8, "big")
+    raise ValueError("integer-too-large")
+
+
+def _cbor_encode(value) -> bytes:
+    if value is None:
+        return b"\xf6"
+    if value is False:
+        return b"\xf4"
+    if value is True:
+        return b"\xf5"
+    if isinstance(value, int):
+        return _cbor_head(0, value) if value >= 0 else _cbor_head(1, -1 - value)
+    if isinstance(value, str):
+        raw = value.encode("utf-8")
+        return _cbor_head(3, len(raw)) + raw
+    if isinstance(value, list):
+        return _cbor_head(4, len(value)) + b"".join(_cbor_encode(item) for item in value)
+    if isinstance(value, dict):
+        if any(not isinstance(key, str) for key in value):
+            raise TypeError("unsupported-map-key")
+        pairs = [(_cbor_encode(key), _cbor_encode(item)) for key, item in value.items()]
+        pairs.sort(key=lambda pair: (len(pair[0]), pair[0]))
+        return _cbor_head(5, len(pairs)) + b"".join(key + item for key, item in pairs)
+    raise TypeError("unsupported-value-type")
+
+
+def _cbor_decode(raw: bytes) -> object:
+    cursor = 0
+
+    def uint(additional: int) -> int:
+        nonlocal cursor
+        if additional < 24:
+            return additional
+        sizes = {24: 1, 25: 2, 26: 4, 27: 8}
+        size = sizes.get(additional)
+        if size is None or len(raw) - cursor < size:
+            raise ValueError("invalid-or-truncated-cbor-length")
+        result = int.from_bytes(raw[cursor:cursor + size], "big")
+        cursor += size
+        return result
+
+    def read():
+        nonlocal cursor
+        if cursor >= len(raw):
+            raise ValueError("truncated-cbor-item")
+        initial = raw[cursor]
+        cursor += 1
+        major, additional = initial >> 5, initial & 31
+        if major in (0, 1):
+            number = uint(additional)
+            return number if major == 0 else -1 - number
+        if major in (2, 3):
+            length = uint(additional)
+            if length > len(raw) - cursor:
+                raise ValueError("truncated-cbor-string")
+            value = raw[cursor:cursor + length]
+            cursor += length
+            return value if major == 2 else value.decode("utf-8")
+        if major == 4:
+            return [read() for _ in range(uint(additional))]
+        if major == 5:
+            result = {}
+            for _ in range(uint(additional)):
+                key, value = read(), read()
+                if key in result:
+                    raise ValueError("duplicate-cbor-map-key")
+                result[key] = value
+            return result
+        if major == 7 and additional == 20:
+            return False
+        if major == 7 and additional == 21:
+            return True
+        if major == 7 and additional == 22:
+            return None
+        raise ValueError("unsupported-cbor-type")
+
+    value = read()
+    if cursor != len(raw):
+        raise ValueError("trailing-cbor-data")
+    return value
+
+
+def cbor_roundtrip(document: dict) -> dict:
+    try:
+        encoded = _cbor_encode(document)
+        decoded = _cbor_decode(encoded)
+    except (TypeError, ValueError, UnicodeError) as exc:
+        return {"rejected": True, "reason": str(exc)}
+    return {"rejected": False, "accepted": True, "wire_hex": encoded.hex(), "decoded": decoded, "same_types": type(decoded) is type(document) and decoded == document}
+
+
+def elf_header(payload_hex: str) -> dict:
+    """Parse only the bounded ELF identification and fixed header, never sections."""
+    try:
+        raw = bytes.fromhex(payload_hex)
+    except ValueError:
+        return {"rejected": True, "reason": "invalid-hex"}
+    if len(raw) < 16:
+        return {"rejected": True, "reason": "truncated-ident"}
+    if raw[:4] != b"\x7fELF":
+        return {"rejected": True, "reason": "invalid-magic"}
+    elf_class, data_encoding, ident_version = raw[4], raw[5], raw[6]
+    if elf_class not in (1, 2):
+        return {"rejected": True, "reason": "unsupported-class"}
+    if data_encoding not in (1, 2):
+        return {"rejected": True, "reason": "unsupported-endian"}
+    if ident_version != 1:
+        return {"rejected": True, "reason": "unsupported-ident-version"}
+    header_size = 64 if elf_class == 2 else 52
+    if len(raw) < header_size:
+        return {"rejected": True, "reason": "truncated-header"}
+    endian = "<" if data_encoding == 1 else ">"
+    try:
+        if elf_class == 2:
+            fields = struct.unpack_from(endian + "HHIQQQIHHHHHH", raw, 16)
+        else:
+            fields = struct.unpack_from(endian + "HHIIIIIHHHHHH", raw, 16)
+    except struct.error:
+        return {"rejected": True, "reason": "truncated-header"}
+    object_type, machine, version = fields[:3]
+    ehsize = fields[7]
+    if version != 1 or ehsize != header_size:
+        return {"rejected": True, "reason": "invalid-header-version-or-size"}
+    architectures = {3: "x86", 40: "ARM", 62: "x86-64", 183: "AArch64"}
+    object_types = {0: "NONE", 1: "REL", 2: "EXEC", 3: "DYN", 4: "CORE"}
+    return {
+        "rejected": False,
+        "class": "ELF64" if elf_class == 2 else "ELF32",
+        "endianness": "little" if data_encoding == 1 else "big",
+        "architecture": architectures.get(machine, f"EM_{machine}"),
+        "object_type": object_types.get(object_type, f"ET_{object_type}"),
+        "header_size": ehsize,
+    }

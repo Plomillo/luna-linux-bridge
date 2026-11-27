@@ -89,6 +89,8 @@ def _build() -> None:
     _add("MGL5-INF-0051", "negative", "magic_bytes", {"name": "sample.png", "payload_hex": "89504e470d0a1a0a"}, "extension-agrees")
     _add("MGL5-INF-0052", "negative", "magic_bytes", {"name": "sample.elf", "payload_hex": "00000000"}, "unknown-signature")
     _add("MGL5-INF-0052", "boundary", "magic_bytes", {"name": "sample.elf", "payload_hex": "7f454c46020101000000000000000000"}, "elf-extension-match")
+    _add("MGL5-INF-0053", "negative", "elf_header", {"payload_hex": "7f454c4602010100000000000000000002003e000100000000004000000000004000000000000000000000000000000000000000400038000000400000000000"[:-2]}, "elf-truncated-header")
+    _add("MGL5-INF-0053", "boundary", "elf_header", {"payload_hex": "7f454c4602010100000000000000000001003e000100000000000000000000000000000000000000000000000000000000000000400038000000400000000000"}, "elf-rel-boundary")
     _add("MGL5-INF-0601", "boundary", "binary_float_gap", {}, "float-edge")
     _add("MGL5-INF-0107", "negative", "duplicates", {"values": [1, 2, 3]}, "no-duplicates")
     _add("MGL5-INF-0107", "boundary", "duplicates", {"values": [5, 5]}, "single-duplicate")
@@ -126,11 +128,18 @@ def _build() -> None:
     _add("MGL5-INF-0028", "negative", "json_reject", {"texts": ["{\"a\":1}"]}, "valid-json-accepted")
     _add("MGL5-INF-0029", "boundary", "canonical_json", {"left": {}, "right": {}}, "empty-object-canonical")
     _add("MGL5-INF-0036", "negative", "framed_record", {"payload_hex": "ff"}, "single-byte-frame")
-    _add("MGL5-INF-0041", "negative", "float32_exactness", {"values": [16777216]}, "exact-power-boundary")
+    _add("MGL5-INF-0041", "negative", "float32_exactness", {"values": [16777217]}, "float32-inexact-identified")
+    _add("MGL5-INF-0041", "boundary", "float32_exactness", {"values": [16777216]}, "float32-exact-transition")
+    _add("MGL5-INF-0042", "negative", "decimal_text", {"text": "0.10x"}, "decimal-invalid-rejected")
     _add("MGL5-INF-0042", "boundary", "decimal_text", {"text": "0.00"}, "zero-decimal-preserved")
+    _add("MGL5-INF-0043", "negative", "three_states", {"present": {"b": None, "c": ""}, "absent_key": "b"}, "known-key-not-absent")
+    _add("MGL5-INF-0043", "boundary", "three_states", {"present": {"b": None, "c": "x"}, "absent_key": "a"}, "nonempty-field-not-empty")
+    _add("MGL5-INF-0046", "negative", "base64_bytes", {"payload_hex": "0g"}, "base64-invalid-hex-rejected")
     _add("MGL5-INF-0046", "boundary", "base64_bytes", {"payload_hex": "010203"}, "other-three-bytes")
+    _add("MGL5-INF-0047", "negative", "base64_reject", {"text": "AA=="}, "valid-base64-accepted")
     _add("MGL5-INF-0047", "boundary", "base64_reject", {"text": "A==="}, "invalid-padding-rejected")
     _add("MGL5-INF-0048", "boundary", "sha256_text", {"text": ""}, "empty-sha256")
+    _add("MGL5-INF-0050", "negative", "manifest_hash", {"document": {"name": "luna"}, "altered": {"name": "luna"}}, "unchanged-manifest-stable")
     _add("MGL5-INF-0050", "boundary", "manifest_hash", {"document": {}, "altered": {"name": "luna"}}, "empty-manifest-change")
     _add("MGL5-INF-0608", "negative", "l2_norm", {"components": ["3"]}, "noninteger-components-rejected")
     _add("MGL5-INF-0608", "boundary", "l2_norm", {"components": []}, "zero-vector")
@@ -214,6 +223,19 @@ def _build() -> None:
     _add("MGL5-INF-0639", "negative", "rk4_decay", {"step": 2.0}, "rk4-step-out-of-range-rejected")
     _add("MGL5-INF-0639", "boundary", "rk4_decay", {"step": 1.0}, "rk4-single-step-boundary")
 
+    _add("MGL5-INF-0033", "negative", "yaml_types", {"text": "name: Luna\n  broken: true\n"}, "yaml-rejected")
+    _add("MGL5-INF-0033", "boundary", "yaml_types", {"text": "name: ''\nenabled: false\ncount: 0\nitems: []\n"}, "yaml-empty-boundary")
+    _add("MGL5-INF-0034", "negative", "yaml_ambiguous", {"text": "flag: yes\n  broken: x\n", "schema_version": "1.1"}, "yaml-invalid-rejected")
+    _add("MGL5-INF-0034", "boundary", "yaml_ambiguous", {"text": "flag: yes\ndate: 2026-01-02\n", "schema_version": "1.2"}, "yaml12-ambiguous-strings")
+    _add("MGL5-INF-0035", "negative", "protobuf_old_reader", {"wire_hex": "08071205"}, "protobuf-malformed-rejected")
+    _add("MGL5-INF-0035", "boundary", "protobuf_old_reader", {"wire_hex": "0807"}, "protobuf-no-unknown-fields")
+    _add("MGL5-INF-0039", "negative", "schema_migrate", {"document": {"version": 0, "name": "Luna", "count": 3}}, "schema-v0-rejected")
+    _add("MGL5-INF-0039", "boundary", "schema_migrate", {"document": {"version": 1, "name": "", "count": 0}}, "schema-v1-empty-migrates")
+    _add("MGL5-INF-0040", "negative", "schema_unknown_field", {"record": {"name": 7, "version": 2, "extra": "future"}, "known_fields": ["name", "version"]}, "known-field-type-rejected")
+    _add("MGL5-INF-0040", "boundary", "schema_unknown_field", {"record": {"name": "Luna", "version": 2}, "known_fields": ["name", "version"]}, "no-unknown-fields")
+    _add("MGL5-INF-0049", "negative", "cbor_roundtrip", {"document": {"name": 1.5}}, "cbor-unsupported-value-rejected")
+    _add("MGL5-INF-0049", "boundary", "cbor_roundtrip", {"document": {}}, "cbor-empty-map-roundtrip")
+
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
     # A control is adjudicated against its own expected behavior, not the
@@ -222,6 +244,46 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     control_completed = status in {"EXECUTED", "FAIL"}
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.
+    if expect == "yaml-invalid-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
+    if expect == "yaml12-ambiguous-strings":
+        return control_completed and observed.get("rejected") is False and observed.get("schema_version") == "1.2" and observed.get("parsed") == {"flag": "yes", "date": "2026-01-02"} and observed.get("types") == {"flag": "str", "date": "str"}
+    if expect == "protobuf-malformed-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "truncated-length-delimited"
+    if expect == "protobuf-no-unknown-fields":
+        return control_completed and observed.get("accepted") is True and observed.get("unknown_fields") == [] and observed.get("known_fields") == {"1": 7}
+    if expect == "schema-v0-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-version"
+    if expect == "schema-v1-empty-migrates":
+        return control_completed and observed.get("rejected") is False and observed.get("document") == {"version": 2, "name": "", "count": 0}
+    if expect == "known-field-type-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "known-field-type"
+    if expect == "no-unknown-fields":
+        return control_completed and observed.get("accepted") is True and observed.get("known") == {"name": "Luna", "version": 2} and observed.get("unknown") == {}
+    if expect == "cbor-unsupported-value-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-value-type"
+    if expect == "cbor-empty-map-roundtrip":
+        return control_completed and observed.get("accepted") is True and observed.get("wire_hex") == "a0" and observed.get("decoded") == {} and observed.get("same_types") is True
+    if expect == "yaml-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
+    if expect == "yaml-empty-boundary":
+        return control_completed and observed.get("rejected") is False and observed.get("parsed") == {"name": "", "enabled": False, "count": 0, "items": []} and observed.get("types") == {"name": "str", "enabled": "bool", "count": "int", "items": "list"}
+    if expect == "float32-inexact-identified":
+        return control_completed and observed.get("rows") == [{"value": 16777217, "exact": False}]
+    if expect == "float32-exact-transition":
+        return control_completed and observed.get("rows") == [{"value": 16777216, "exact": True}]
+    if expect == "decimal-invalid-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid-decimal"
+    if expect == "known-key-not-absent":
+        return control_completed and observed == {"absent": False, "null": True, "empty": True}
+    if expect == "nonempty-field-not-empty":
+        return control_completed and observed == {"absent": True, "null": True, "empty": False}
+    if expect == "base64-invalid-hex-rejected":
+        return control_completed and observed == {"rejected": True, "reason": "invalid-hex-input"}
+    if expect == "valid-base64-accepted":
+        return control_completed and observed.get("rejected") is False and observed.get("error_recorded") is False
+    if expect == "unchanged-manifest-stable":
+        return control_completed and observed.get("reproduced") is True and observed.get("altered_changes") is False
     if expect == "trapezoid-zero-panels-rejected":
         return status == "REJECTED" and observed is None
     if observed is None:
@@ -436,6 +498,10 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return control_completed and observed.get("corruption_detected") is True and observed.get("integrity_claimed") is False
     if expect == "unknown-signature":
         return control_completed and observed.get("detected") == "unknown" and observed.get("extension_matches_content") is False
+    if expect == "elf-truncated-header":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "truncated-header"
+    if expect == "elf-rel-boundary":
+        return control_completed and observed == {"rejected": False, "class": "ELF64", "endianness": "little", "architecture": "x86-64", "object_type": "REL", "header_size": 64}
     if expect == "no-cr":
         return control_completed and observed["written"] == "a\r\nb\r\n"
     if expect == "already-lf":

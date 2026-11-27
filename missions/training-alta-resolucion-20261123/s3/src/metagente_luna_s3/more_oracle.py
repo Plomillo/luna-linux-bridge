@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import ipaddress
 import zlib
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from metagente_luna_s3.d01_oracle import _canonical
 
@@ -102,8 +102,11 @@ def f32_table(arguments: dict, observed: dict) -> dict:
 
 
 def decimal_literal(arguments: dict, observed: dict) -> dict:
-    expected = str(Decimal(arguments["text"]))
-    return {"ok": observed["text"] == expected and observed["used_binary_float"] is False, "method": "independent Decimal parsing"}
+    try:
+        expected = str(Decimal(arguments["text"]))
+    except InvalidOperation:
+        return {"ok": observed.get("rejected") is True and observed.get("reason") == "invalid-decimal", "method": "fixed invalid Decimal rejection"}
+    return {"ok": observed.get("rejected", False) is False and observed.get("text") == expected and observed.get("used_binary_float") is False, "method": "independent Decimal parsing"}
 
 
 def state_table(arguments: dict, observed: dict) -> dict:
@@ -125,13 +128,16 @@ def damaged(arguments: dict, observed: dict) -> dict:
 
 
 def b64_table(arguments: dict, observed: dict) -> dict:
-    payload = bytes.fromhex(arguments["payload_hex"])
+    try:
+        payload = bytes.fromhex(arguments["payload_hex"])
+    except ValueError:
+        return {"ok": observed.get("rejected") is True and observed.get("reason") == "invalid-hex-input", "method": "independent malformed-hex rejection"}
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     value = int.from_bytes(payload, "big")
     encoded = ""
     for shift in (18, 12, 6, 0):
         encoded += alphabet[(value >> shift) & 63]
-    return {"ok": observed["decoded_hex"] == payload.hex() and observed["encoded"] == encoded, "method": "manual 24-bit groups"}
+    return {"ok": observed.get("rejected") is False and observed["decoded_hex"] == payload.hex() and observed["encoded"] == encoded, "method": "manual 24-bit groups"}
 
 
 def bad_padding(arguments: dict, observed: dict) -> dict:
@@ -202,3 +208,67 @@ def decimal_gap(arguments: dict, observed: dict) -> dict:
 
 def zlib_available() -> bool:
     return zlib.compress(b"a") != b"a"
+
+
+def protobuf_wire_oracle(arguments: dict, observed: dict) -> dict:
+    vectors = {
+        "080712036e6577": {"rejected": False, "accepted": True, "known_fields": {"1": 7}, "unknown_fields": [2], "consumed": 7},
+        "0807": {"rejected": False, "accepted": True, "known_fields": {"1": 7}, "unknown_fields": [], "consumed": 2},
+        "08071205": {"rejected": True, "reason": "truncated-length-delimited"},
+    }
+    expected = vectors.get(arguments["wire_hex"])
+    return {"ok": expected is not None and observed == expected, "method": "frozen protobuf wire-format vectors; independent of runtime decoder"}
+
+
+def schema_v2_oracle(arguments: dict, observed: dict) -> dict:
+    source = arguments["document"]
+    if source == {"version": 1, "name": "Luna", "count": 3}:
+        expected = {"rejected": False, "migrated": True, "document": {"version": 2, "name": "Luna", "count": 3}, "invariants": {"name": "Luna", "count": 3}}
+    elif source == {"version": 1, "name": "", "count": 0}:
+        expected = {"rejected": False, "migrated": True, "document": {"version": 2, "name": "", "count": 0}, "invariants": {"name": "", "count": 0}}
+    else:
+        expected = {"rejected": True, "reason": "unsupported-version"}
+    return {"ok": observed == expected, "method": "frozen v1-to-v2 migration vectors and invariant table"}
+
+
+def unknown_field_oracle(arguments: dict, observed: dict) -> dict:
+    record = arguments["record"]
+    known_fields = arguments["known_fields"]
+    if record == {"name": "Luna", "version": 2, "extra": "future"} and known_fields == ["name", "version"]:
+        expected = {"rejected": False, "accepted": True, "known": {"name": "Luna", "version": 2}, "unknown": {"extra": "future"}, "policy": "PRESERVE_UNKNOWN_SEPARATELY"}
+    elif record == {"name": "Luna", "version": 2} and known_fields == ["name", "version"]:
+        expected = {"rejected": False, "accepted": True, "known": {"name": "Luna", "version": 2}, "unknown": {}, "policy": "PRESERVE_UNKNOWN_SEPARATELY"}
+    else:
+        expected = {"rejected": True, "reason": "known-field-type"}
+    return {"ok": observed == expected, "method": "frozen known/unknown field partition and validation vectors"}
+
+
+def cbor_vector_oracle(arguments: dict, observed: dict) -> dict:
+    document = arguments["document"]
+    if document == {"name": "Luna", "count": 2, "enabled": True, "items": [1, None, False]}:
+        expected = {"rejected": False, "accepted": True, "wire_hex": "a4646e616d65644c756e6165636f756e7402656974656d738301f6f467656e61626c6564f5", "decoded": document, "same_types": True}
+    elif document == {}:
+        expected = {"rejected": False, "accepted": True, "wire_hex": "a0", "decoded": {}, "same_types": True}
+    elif document == {"name": 1.5}:
+        expected = {"rejected": True, "reason": "unsupported-value-type"}
+    else:
+        expected = {"rejected": True, "reason": "unsupported-value-type"}
+    return {"ok": observed == expected, "method": "fixed canonical CBOR vectors independent of encoder/decoder"}
+
+
+def elf_header_oracle(arguments: dict, observed: dict) -> dict:
+    vectors = {
+        "7f454c4602010100000000000000000002003e000100000000004000000000004000000000000000000000000000000000000000400038000000400000000000": {
+            "rejected": False, "class": "ELF64", "endianness": "little",
+            "architecture": "x86-64", "object_type": "EXEC", "header_size": 64,
+        },
+        "7f454c4602010100000000000000000001003e000100000000000000000000000000000000000000000000000000000000000000400038000000400000000000": {
+            "rejected": False, "class": "ELF64", "endianness": "little",
+            "architecture": "x86-64", "object_type": "REL", "header_size": 64,
+        },
+        "7f454c4602010100000000000000000002003e000100000000004000000000004000000000000000000000000000000000000000400038000000400000000000"[:-2]: {
+            "rejected": True, "reason": "truncated-header",
+        },
+    }
+    expected = vectors.get(arguments["payload_hex"].lower(), {"rejected": True, "reason": "invalid-magic"})
+    return {"ok": observed == expected, "method": "frozen ELF64 wire-format vectors, fixed byte offsets, no parser reuse"}
