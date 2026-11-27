@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ipaddress
+import math
 
 
 def repeated(arguments: dict, observed: dict) -> dict:
@@ -48,8 +49,14 @@ def fever_rule(arguments: dict, observed: dict) -> dict:
 
 
 def thirteen(arguments: dict, observed: dict) -> dict:
-    square = sum(component * component for component in arguments["components"])
-    return {"ok": square == 169 and observed["norm"] == 13 and observed["square"] == 169, "method": "integer square"}
+    components = arguments["components"]
+    if any(not isinstance(component, int) or isinstance(component, bool) for component in components):
+        ok = observed.get("rejected") is True and observed.get("reason") == "components must be integers"
+        return {"ok": ok, "method": "independent component type validation"}
+    square = sum(component * component for component in components)
+    expected_norm = math.isqrt(square)
+    ok = observed.get("square") == square and observed.get("norm") == expected_norm
+    return {"ok": ok, "method": "independent integer square root"}
 
 
 def stated_ratio(arguments: dict, observed: dict) -> dict:
