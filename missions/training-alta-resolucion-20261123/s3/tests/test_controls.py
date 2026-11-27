@@ -320,8 +320,8 @@ def test_ieee754_and_float_gap_controls_are_checked_by_primary_adjudicator():
 
 
 def test_numerical_fit_and_integrator_controls():
-    from metagente_luna_s3.batch5_exec import exact_line, euler_decay, rk4_decay
-    from metagente_luna_s3.batch5_oracle import two_points, smaller_step, series_exp
+    from metagente_luna_s3.batch5_exec import euler_decay, exact_line, rk4_decay
+    from metagente_luna_s3.batch5_oracle import series_exp, smaller_step, two_points
     from metagente_luna_s4.controls import accepts
 
     line_args = {"xs": [0, 1, 2], "slope": -1, "intercept": 0}
