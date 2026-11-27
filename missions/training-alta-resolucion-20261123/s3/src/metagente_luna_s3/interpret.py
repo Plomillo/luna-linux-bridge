@@ -73,7 +73,11 @@ def interpret(instruction: str) -> Interpretation:
             ],
         )
     if ("10.000" in text or "10000" in text) and "ordenar" in folded and not found["bracket"]:
-        return _blocked(text, "descending-sort", ["input-integers"])
+        fixture = _FIXTURE["ten-thousand"]
+        return _ready(text, "descending_seed", [
+            Argument(name="seed", value=fixture["seed"], provenance=Provenance.FIXTURE),
+            Argument(name="count", value=fixture["count"], provenance=Provenance.FIXTURE),
+        ])
     if "edad" in folded and "ordenar" in folded:
         return _ready(text, "stable_ages", [Argument(name="records", value=_FIXTURE["stable-ages"]["records"], provenance=Provenance.FIXTURE)])
     if "push" in folded and "peek" in folded:
