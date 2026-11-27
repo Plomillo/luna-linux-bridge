@@ -66,6 +66,7 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
             "input": arguments, "fixture_origin": "runner-captured-input",
         }),
         "environment": _json_bytes({
+            "case_id": case_id, "run_id": run_id,
             "environment_id": f"{platform.system()}-{platform.machine()}-python-{sys.version_info.major}.{sys.version_info.minor}",
             "python": sys.version, "platform": platform.platform(),
         }),
