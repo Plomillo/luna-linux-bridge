@@ -135,15 +135,32 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
             inputs[kind].append(_digest(json.dumps(fixture["input"], sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")))
         source_metadata = fixture.get("source") if isinstance(fixture, dict) else None
         source_excerpt = loaded.get("source_excerpt")
-        if (not isinstance(source_metadata, dict)
-                or not isinstance(source_metadata.get("source_file"), str) or not source_metadata.get("source_file")
-                or not isinstance(source_metadata.get("line_start"), int) or source_metadata["line_start"] < 1
-                or not isinstance(source_metadata.get("line_end"), int) or source_metadata["line_end"] < source_metadata["line_start"]
-                or len(str(source_metadata.get("file_sha256", ""))) != 64
-                or len(str(source_metadata.get("excerpt_sha256", ""))) != 64
-                or not isinstance(source_metadata.get("source_blob"), str) or len(source_metadata["source_blob"]) != 40
-                or source_excerpt is None or _digest(source_excerpt) != source_metadata.get("excerpt_sha256")
-                or case_id.encode("utf-8") not in source_excerpt):
+        source_valid = False
+        if (isinstance(source_metadata, dict)
+                and isinstance(source_metadata.get("source_file"), str)
+                and isinstance(source_metadata.get("line_start"), int)
+                and isinstance(source_metadata.get("line_end"), int)
+                and source_excerpt is not None):
+            repository_root = Path(__file__).resolve().parents[5]
+            source_path = (repository_root / source_metadata["source_file"]).resolve()
+            try:
+                source_path.relative_to(repository_root)
+                source_bytes = source_path.read_bytes()
+                lines = source_bytes.splitlines(keepends=True)
+                line_start, line_end = source_metadata["line_start"], source_metadata["line_end"]
+                excerpt_bytes = b"".join(lines[line_start - 1:line_end])
+                git_blob = hashlib.sha1(f"blob {len(source_bytes)}\\0".encode("ascii") + source_bytes).hexdigest()
+                source_valid = (
+                    line_start >= 1 and line_end >= line_start and line_end <= len(lines)
+                    and _digest(source_bytes) == source_metadata.get("file_sha256")
+                    and git_blob == source_metadata.get("source_blob")
+                    and excerpt_bytes == source_excerpt
+                    and _digest(source_excerpt) == source_metadata.get("excerpt_sha256")
+                    and case_id.encode("utf-8") in source_excerpt
+                )
+            except (OSError, UnicodeError, ValueError, TypeError):
+                source_valid = False
+        if not source_valid:
             findings.append("source-line-provenance-invalid")
         if not oracle or oracle.get("case_id") != case_id or oracle.get("run_id") != run_id:
             findings.append("oracle-identity-invalid")
