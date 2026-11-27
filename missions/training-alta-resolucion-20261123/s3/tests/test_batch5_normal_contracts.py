@@ -1,5 +1,6 @@
 from metagente_luna_s4.batch5 import CASES
 from metagente_luna_s4.runner import execute
+from metagente_luna_s4.controls import run_controls
 
 
 EXPECTED = {
@@ -46,3 +47,19 @@ def test_source_defined_batch5_normal_specs_do_not_claim_negative_or_boundary_co
         assert by_id[case_id]["arguments"] == {}
     # These cases remain intentionally blocked from the C05 executable plan set
     # until distinct negative and boundary fixtures are authored and adjudicated.
+
+
+
+def test_ten_batch5_cases_have_distinct_accepted_negative_and_boundary_controls():
+    expected = {
+        "MGL5-INF-0113", "MGL5-INF-0119", "MGL5-INF-0141", "MGL5-INF-0154",
+        "MGL5-INF-0186", "MGL5-INF-0208", "MGL5-INF-0209", "MGL5-INF-0233",
+        "MGL5-INF-0308", "MGL5-INF-0503",
+    }
+    rows = {row["case_id"]: row for row in run_controls()}
+    assert expected.issubset(rows)
+    for case_id in expected:
+        controls = rows[case_id]["controls"]
+        assert set(controls) == {"negative", "boundary"}, case_id
+        assert controls["negative"]["accepted"] is True, (case_id, controls["negative"])
+        assert controls["boundary"]["accepted"] is True, (case_id, controls["boundary"])
