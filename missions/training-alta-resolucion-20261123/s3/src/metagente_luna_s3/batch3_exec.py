@@ -142,6 +142,8 @@ def threshold(low: float, high: float, limit: float) -> dict:
 
 
 def l2_norm(components: list[int]) -> dict:
+    if any(not isinstance(component, int) or isinstance(component, bool) for component in components):
+        return {"rejected": True, "reason": "components must be integers"}
     total = 0
     for component in components:
         total += component * component
