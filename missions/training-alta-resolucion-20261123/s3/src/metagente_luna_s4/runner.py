@@ -57,6 +57,7 @@ def execute(
     backend: str = "LOCAL_TEST_ONLY",
     evidence_root: str | None = None,
     run_kind: str = "NORMAL",
+    control_metadata: dict | None = None,
 ) -> dict:
     """Execute once and optionally persist its raw evidence; never certify it."""
     record = _execute(capability_id, arguments, case_id, backend)
@@ -69,6 +70,7 @@ def execute(
     record["executor_version"] = capability.version if capability is not None else "UNDECLARED"
     record["machinery"] = backend
     record["run_kind"] = run_kind
+    record["control_metadata"] = control_metadata
     lifecycle = record.get("execution_status")
     record["lifecycle_status"] = lifecycle
     if lifecycle == "EXECUTED":
