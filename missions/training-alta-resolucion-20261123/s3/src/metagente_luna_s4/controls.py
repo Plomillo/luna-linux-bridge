@@ -101,7 +101,11 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "different-text":
         return status == "EXECUTED" and observed["recovered"] not in {"Luna-2026", "computación, información, ñandú"}
     if expect == "empty-roundtrip":
-        return status == "EXECUTED" and observed.get("recovered", observed.get("visible", observed.get("plain_text", ""))) in {"", "LUNA"} or observed.get("bytes_hex") == "" or observed.get("visible") == ""
+        return status == "EXECUTED" and (
+            observed.get("recovered", observed.get("visible", observed.get("plain_text", ""))) in {"", "LUNA"}
+            or observed.get("bytes_hex") == ""
+            or observed.get("visible") == ""
+        )
     if expect == "single-multibyte":
         return status == "EXECUTED" and observed["bytes_hex"] == "c3b1"
     if expect == "valid-byte-accepted":
