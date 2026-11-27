@@ -39,18 +39,20 @@ def pearson(left: list[int], right: list[int]) -> dict:
 
 
 def acf_series(values: list[int]) -> dict:
+    if not isinstance(values, list) or any(not isinstance(item, (int, float)) or isinstance(item, bool) for item in values):
+        return {"accepted": False, "rejected": True, "lags": None, "error": "invalid-values"}
     if len(values) < 2:
-        return {"lags": None, "error": "too-short"}
+        return {"accepted": False, "rejected": True, "lags": None, "error": "too-short"}
     mean = sum(values) / len(values)
     variance = sum((item - mean) ** 2 for item in values)
     if variance == 0:
-        return {"lags": None, "error": "zero-variance"}
+        return {"accepted": False, "rejected": True, "lags": None, "error": "zero-variance"}
     lags = []
     for lag in range(len(values)):
         numerator = sum((values[index] - mean) * (values[index + lag] - mean) for index in range(len(values) - lag))
         lags.append(numerator / variance)
     print(lags)
-    return {"lags": lags, "error": None}
+    return {"accepted": True, "rejected": False, "lags": lags, "error": None}
 
 
 def linear_integral(panels: int) -> dict:
@@ -78,14 +80,27 @@ def square_integral(panels: int) -> dict:
 
 
 def cosine_set(pairs: list[list[list[int]]]) -> dict:
+    if not isinstance(pairs, list) or not pairs:
+        return {"accepted": False, "rejected": True, "reason": "at least one vector pair is required"}
     values = []
-    for left, right in pairs:
+    for pair in pairs:
+        if not isinstance(pair, list) or len(pair) != 2:
+            return {"accepted": False, "rejected": True, "reason": "each pair must contain two vectors"}
+        left, right = pair
+        if (
+            not isinstance(left, list) or not isinstance(right, list) or not left
+            or len(left) != len(right)
+            or any(not isinstance(item, (int, float)) or isinstance(item, bool) for item in left + right)
+        ):
+            return {"accepted": False, "rejected": True, "reason": "vectors must be non-empty, equal-length numeric arrays"}
         dot = sum(item * other for item, other in zip(left, right, strict=True))
         left_scale = sum(item * item for item in left) ** 0.5
         right_scale = sum(item * item for item in right) ** 0.5
+        if left_scale == 0 or right_scale == 0:
+            return {"accepted": False, "rejected": True, "reason": "cosine is undefined for a zero vector"}
         values.append(dot / (left_scale * right_scale))
     print(values)
-    return {"values": values}
+    return {"accepted": True, "rejected": False, "values": values}
 
 
 def handle_request(index: int, fail_index: int) -> dict:
