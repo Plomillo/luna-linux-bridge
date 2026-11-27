@@ -139,7 +139,7 @@ def linear_scans(sizes: list[int] | None = None, needle: int = -1) -> dict:
                 break
         counts.append(comparisons)
     print(counts)
-    ratios = [counts[1] / counts[0], counts[2] / counts[1]]
+    ratios = [counts[index + 1] / counts[index] for index in range(len(counts) - 1)]
     return {"comparisons": counts, "ratios": ratios, "count_noise": 0, "rejected": False}
 
 
@@ -267,7 +267,7 @@ def umask_0027(mask: int = 0o027, requested_mode: int = 0o666) -> dict:
 
 def child_env(value: str = "123", key: str = "test") -> dict:
     completed = subprocess.run(
-        [sys.executable, "-c", "import os; print(os.environ[KEY])"],
+        [sys.executable, "-c", f"import os; print(os.environ[{key!r}])"],
         check=False,
         capture_output=True,
         text=True,
