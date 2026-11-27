@@ -199,6 +199,14 @@ def _build() -> None:
     _add("MGL5-INF-0411", "boundary", "cosine_set", {"pairs": [[[3, 4], [3, 4]]]}, "cosine-identical-boundary")
     _add("MGL5-INF-0633", "negative", "acf_lag0", {"values": [5, 5, 5]}, "acf-zero-variance-rejected")
     _add("MGL5-INF-0633", "boundary", "acf_lag0", {"values": [1, 2]}, "acf-two-point-boundary")
+    _add("MGL5-INF-0013", "negative", "nan_policy", {"value_kind": "finite"}, "nan-finite-control")
+    _add("MGL5-INF-0013", "boundary", "nan_policy", {"value_kind": "negative-nan"}, "nan-negative-payload-boundary")
+    _add("MGL5-INF-0014", "negative", "inf_policy", {"value_kind": "finite"}, "inf-finite-control")
+    _add("MGL5-INF-0014", "boundary", "inf_policy", {"value_kind": "negative"}, "inf-negative-boundary")
+    _add("MGL5-INF-0015", "negative", "subnormal_f32", {"value_kind": "smallest-normal"}, "subnormal-normal-control")
+    _add("MGL5-INF-0015", "boundary", "subnormal_f32", {"value_kind": "zero"}, "subnormal-zero-boundary")
+    _add("MGL5-INF-0601", "negative", "binary_float_gap", {"left": 0.5, "right": 0.25, "target": 0.75}, "float-exact-control")
+    _add("MGL5-INF-0601", "boundary", "binary_float_gap", {"left": 0.1, "right": 0.2, "target": 0.30000000000000004}, "float-rounding-boundary")
 
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
@@ -544,6 +552,14 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "acf-two-point-boundary":
         values = observed.get("lags")
         return control_completed and observed.get("error") is None and isinstance(values, list) and len(values) == 2 and abs(values[0] - 1.0) < 1e-9 and abs(values[1] + 0.5) < 1e-9
+    if expect == "nan-finite-control": return control_completed and observed.get("is_nan") is False and observed.get("equals_itself") is True and observed.get("ordinary") is True
+    if expect == "nan-negative-payload-boundary": return control_completed and observed.get("is_nan") is True and observed.get("equals_itself") is False and observed.get("negative_sign") is True
+    if expect == "inf-finite-control": return control_completed and observed.get("positive_sign") is False and observed.get("negative_sign") is False
+    if expect == "inf-negative-boundary": return control_completed and observed.get("positive_sign") is False and observed.get("negative_sign") is True
+    if expect == "subnormal-normal-control": return control_completed and observed.get("is_subnormal") is False and observed.get("float32_bits_hex") == "00800000"
+    if expect == "subnormal-zero-boundary": return control_completed and observed.get("is_subnormal") is False and observed.get("float32_bits_hex") == "00000000"
+    if expect == "float-exact-control": return control_completed and observed.get("equal") is True and observed.get("difference") == 0 and observed.get("decimal_exact") is True
+    if expect == "float-rounding-boundary": return control_completed and observed.get("equal") is True and observed.get("difference") == 0 and observed.get("decimal_exact") is False
     return False
 
 
