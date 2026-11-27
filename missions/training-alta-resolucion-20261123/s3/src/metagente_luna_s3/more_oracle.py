@@ -162,16 +162,21 @@ def extremes(arguments: dict, observed: dict) -> dict:
 
 
 def token_vector(arguments: dict, observed: dict) -> dict:
-    expected = [
-        {"kind": "word", "lexeme": "let", "start": 0, "end": 3},
-        {"kind": "word", "lexeme": "x", "start": 4, "end": 5},
-        {"kind": "symbol", "lexeme": "=", "start": 6, "end": 7},
-        {"kind": "number", "lexeme": "42", "start": 8, "end": 10},
-        {"kind": "symbol", "lexeme": "+", "start": 11, "end": 12},
-        {"kind": "number", "lexeme": "3", "start": 13, "end": 14},
-        {"kind": "symbol", "lexeme": ";", "start": 14, "end": 15},
-    ]
-    return {"ok": arguments["text"] == "let x = 42 + 3;" and observed["tokens"] == expected, "method": "fixed token vector"}
+    vectors = {
+        "let x = 42 + 3;": [
+            {"kind": "word", "lexeme": "let", "start": 0, "end": 3},
+            {"kind": "word", "lexeme": "x", "start": 4, "end": 5},
+            {"kind": "symbol", "lexeme": "=", "start": 6, "end": 7},
+            {"kind": "number", "lexeme": "42", "start": 8, "end": 10},
+            {"kind": "symbol", "lexeme": "+", "start": 11, "end": 12},
+            {"kind": "number", "lexeme": "3", "start": 13, "end": 14},
+            {"kind": "symbol", "lexeme": ";", "start": 14, "end": 15},
+        ],
+        "x": [{"kind": "word", "lexeme": "x", "start": 0, "end": 1}],
+        "": [],
+    }
+    expected = vectors[arguments["text"]]
+    return {"ok": observed["tokens"] == expected, "method": "independent fixed token vectors"}
 
 
 def ip_module(arguments: dict, observed: dict) -> dict:
