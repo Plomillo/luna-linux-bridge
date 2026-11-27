@@ -216,12 +216,29 @@ def full_permutation(arguments: dict, observed: dict) -> dict:
 
 
 def seed_permutation(arguments: dict, observed: dict) -> dict:
-    generator = random.Random(arguments["seed"])
-    values = [generator.randrange(-1_000_000, 1_000_000) for _ in range(arguments["count"])]
+    seed, count = arguments["seed"], arguments["count"]
+    valid = (
+        isinstance(seed, int) and not isinstance(seed, bool)
+        and isinstance(count, int) and not isinstance(count, bool)
+        and 1 <= count <= 10_000
+    )
+    if not valid:
+        return {
+            "ok": observed.get("rejected") is True,
+            "method": "independent seeded-fixture domain validation",
+        }
+    generator = random.Random(seed)
+    values = [generator.randrange(-1_000_000, 1_000_000) for _ in range(count)]
     ordered = sorted(values, reverse=True)
-    ok = observed["length"] == arguments["count"] == 10000
-    ok = ok and observed["checksum"] == sum(ordered) and observed["first"] == ordered[0] and observed["last"] == ordered[-1]
-    return {"ok": ok, "method": "library sort of the seeded sample"}
+    ok = (
+        observed.get("rejected") is False
+        and observed.get("ordered") == ordered
+        and observed.get("length") == count
+        and observed.get("checksum") == sum(ordered)
+        and observed.get("first") == ordered[0]
+        and observed.get("last") == ordered[-1]
+    )
+    return {"ok": ok, "method": "independent library sort and full ordered-vector comparison"}
 
 
 def script_replay(arguments: dict, observed: dict) -> dict:
