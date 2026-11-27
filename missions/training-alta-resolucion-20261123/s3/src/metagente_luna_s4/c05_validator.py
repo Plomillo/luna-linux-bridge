@@ -15,7 +15,7 @@ EXPECTED = [f"MGL5-INF-{number:04d}" for number in range(1, 1001)]
 EXECUTION_OUTCOMES = {"PASS", "FAIL", "BLOCKED", "INCONCLUSIVE"}
 REQUIRED_ARTIFACTS = {
     "fixture", "environment", "procedure", "stdout", "stderr",
-    "observed", "oracle", "metrics", "oracle_source", "producer_source", "control_spec",
+    "observed", "oracle", "metrics", "oracle_source", "producer_source", "control_spec", "source_excerpt",
 }
 RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$")
 
@@ -170,6 +170,14 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
             or not (fixture.get("fixture_origin") or fixture.get("fixture_id"))
             or fixture.get("run_kind") != rep.get("kind") or "input" not in fixture):
         errors.append("fixture-provenance-invalid")
+    source_metadata = fixture.get("source") if isinstance(fixture, dict) else None
+    source_excerpt = loaded.get("source_excerpt")
+    if (not isinstance(source_metadata, dict)
+            or not all(field in source_metadata for field in ("source_file", "line_start", "line_end", "file_sha256", "excerpt_sha256", "source_blob"))
+            or source_excerpt is None
+            or _sha256(loaded["source_excerpt"]) != source_metadata.get("excerpt_sha256")
+            or case_id.encode("utf-8") not in source_excerpt):
+        errors.append("source-line-provenance-invalid")
     elif rep.get("kind") in {"NEGATIVE", "BOUNDARY"}:
         control = fixture.get("control")
         if not isinstance(control, dict) or not all(
