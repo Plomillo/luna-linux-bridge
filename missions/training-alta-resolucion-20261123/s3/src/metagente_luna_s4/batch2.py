@@ -1,11 +1,10 @@
 """Second execution batch. A matched criterion is not a closed C05 gate."""
 from __future__ import annotations
 
-from pathlib import Path
-
 import hashlib
 import struct
 import zlib
+from pathlib import Path
 
 
 def _build_dex_fixture() -> bytes:
