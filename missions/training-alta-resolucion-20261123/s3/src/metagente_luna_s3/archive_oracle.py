@@ -45,3 +45,30 @@ def truncated_oracle(arguments: dict, observed: dict) -> dict:
 def gzip_oracle(arguments: dict, observed: dict) -> dict:
     expected = zlib.crc32(bytes.fromhex(arguments["payload_hex"])) & 0xFFFFFFFF
     return {"ok": observed.get("crc_error_detected") is True and observed.get("expected_crc32") == expected, "method": "zlib CRC32 over source bytes"}
+
+
+def seven_zip_list_oracle(arguments: dict, observed: dict) -> dict:
+    expected = [{"name": row["name"], "size": len(bytes.fromhex(row["data_hex"])), "method": "Copy" if row["data_hex"] else "not_applicable_empty"} for row in arguments["entries"]]
+    return {"ok": observed.get("members") == expected and observed.get("tool_exit_code") == 0 and len(observed.get("archive_sha256", "")) == 64, "method": "source byte lengths plus independent 7z Copy-mode listing expectations"}
+
+
+def seven_zip_missing_volume_oracle(arguments: dict, observed: dict) -> dict:
+    expected = observed.get("expected_parts", [])
+    part_number = arguments["missing_part"]
+    target = f"parts.7z.{part_number:03d}"
+    if target not in expected:
+        ok = observed.get("rejected") is True and observed.get("reason") == "missing_part_index_out_of_range" and observed.get("reconstruction_complete") is False
+    else:
+        ordered_numbers = [int(name.rsplit(".", 1)[-1]) for name in expected]
+        expected_present = [name for name in expected if name != target]
+        ok = (
+            observed.get("rejected") is False
+            and ordered_numbers == list(range(1, len(expected) + 1))
+            and len(expected) > 1
+            and observed.get("missing_volume") == target
+            and observed.get("present_parts") == expected_present
+            and observed.get("reconstruction_complete") is False
+            and isinstance(observed.get("seven_zip_test_exit_code"), int)
+            and observed["seven_zip_test_exit_code"] != 0
+        )
+    return {"ok": ok, "method": "independent contiguous volume numbering and required nonzero damaged-archive test"}

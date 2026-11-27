@@ -70,6 +70,10 @@ def _build() -> None:
     _add("MGL5-INF-0098", "boundary", "nested_zip_tar", {"entries": [{"name": "empty", "data_hex": ""}]}, "nested-archive-empty-member")
     _add("MGL5-INF-0100", "negative", "forensic_report", {"payload_hex": "00", "declared_size": 1, "stored_crc32": 3523407757, "sections": [{"name": "a", "offset": 0, "size": 1}]}, "forensic-clean-single-byte")
     _add("MGL5-INF-0100", "boundary", "forensic_report", {"payload_hex": "", "declared_size": 0, "stored_crc32": 0, "sections": []}, "forensic-empty-clean-boundary")
+    _add("MGL5-INF-0076", "negative", "seven_zip_list", {"entries": [{"name": "nested/item.txt", "data_hex": "78"}]}, "seven-zip-nested-name-listed")
+    _add("MGL5-INF-0076", "boundary", "seven_zip_list", {"entries": [{"name": "empty.bin", "data_hex": ""}]}, "seven-zip-empty-file-listed")
+    _add("MGL5-INF-0077", "negative", "seven_zip_missing_volume", {"payload_hex": "00" * 8192, "volume_size": 1024, "missing_part": 99}, "seven-zip-out-of-range-part-rejected")
+    _add("MGL5-INF-0077", "boundary", "seven_zip_missing_volume", {"payload_hex": "00" * 8192, "volume_size": 2048, "missing_part": 1}, "seven-zip-first-volume-missing")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -347,6 +351,10 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "nested-archive-retains-literal-entry-name": return control_completed and observed.get("tree", {}).get("children", [{}])[0].get("children", [{}])[0].get("name") == "../../outside"
     if expect == "nested-archive-empty-member": return control_completed and observed.get("tree", {}).get("children", [{}])[0].get("children") == [{"name": "empty", "size": 0, "data_hex": ""}]
     if expect in {"forensic-clean-single-byte", "forensic-empty-clean-boundary"}: return control_completed and observed.get("observations") == [] and observed.get("inferences") == [] and observed.get("conclusion", {}).get("anomaly_count") == 0
+    if expect == "seven-zip-nested-name-listed": return control_completed and observed.get("members") == [{"name": "nested/item.txt", "size": 1, "method": "Copy"}]
+    if expect == "seven-zip-empty-file-listed": return control_completed and observed.get("members") == [{"name": "empty.bin", "size": 0, "method": "not_applicable_empty"}]
+    if expect == "seven-zip-out-of-range-part-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "missing_part_index_out_of_range"
+    if expect == "seven-zip-first-volume-missing": return control_completed and observed.get("rejected") is False and observed.get("missing_volume") == "parts.7z.001" and observed.get("reconstruction_complete") is False and observed.get("seven_zip_test_exit_code") != 0
     if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.

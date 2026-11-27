@@ -4,6 +4,9 @@ from __future__ import annotations
 import gzip
 import hashlib
 import io
+import os
+import shutil
+import subprocess
 import tarfile
 import tempfile
 import zipfile
@@ -134,3 +137,69 @@ def gzip_crc(payload_hex: str) -> dict:
     else:
         detected = False
     return {"crc_error_detected": detected, "expected_crc32": zlib.crc32(raw) & 0xFFFFFFFF}
+
+
+def _seven_zip(command: list[str], cwd: str) -> subprocess.CompletedProcess[str]:
+    executable = shutil.which("7z")
+    if executable is None:
+        raise RuntimeError("7z executable is unavailable in the restricted worker")
+    environment = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "LC_ALL": "C.UTF-8", "LANG": "C.UTF-8"}
+    return subprocess.run([executable, *command], cwd=cwd, env=environment, capture_output=True, text=True, timeout=20, check=False)
+
+
+def _write_7z_inputs(root: Path, entries: list[dict]) -> list[str]:
+    names = []
+    for entry in entries:
+        name = entry["name"]
+        path = Path(name)
+        if path.is_absolute() or ".." in path.parts or not path.parts or name.startswith("-"):
+            raise ValueError(f"unsafe 7z fixture path: {name}")
+        destination = (root / path).resolve()
+        if root.resolve() not in destination.parents:
+            raise ValueError(f"7z fixture escapes temporary root: {name}")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(bytes.fromhex(entry["data_hex"]))
+        os.utime(destination, (946684800, 946684800))
+        names.append(name)
+    return names
+
+
+def seven_zip_list(entries: list[dict]) -> dict:
+    with tempfile.TemporaryDirectory(prefix="c05-7z-list-") as temporary:
+        root = Path(temporary)
+        names = _write_7z_inputs(root, entries)
+        created = _seven_zip(["a", "-t7z", "-mx=0", "-mmt=off", "sample.7z", *names], temporary)
+        if created.returncode != 0:
+            raise RuntimeError(f"7z archive creation failed: {created.stderr or created.stdout}")
+        listed = _seven_zip(["l", "-slt", "sample.7z"], temporary)
+        if listed.returncode != 0:
+            raise RuntimeError(f"7z listing failed: {listed.stderr or listed.stdout}")
+        blocks = listed.stdout.split("----------\n")[-1].strip().split("\n\n")
+        members = []
+        for block in blocks:
+            fields = dict(line.split(" = ", 1) for line in block.splitlines() if " = " in line)
+            if "Path" in fields and fields["Path"] in names:
+                member_size = int(fields["Size"])
+                members.append({"name": fields["Path"], "size": member_size, "method": fields.get("Method") or ("not_applicable_empty" if member_size == 0 else "unknown")})
+        return {"members": members, "archive_sha256": __import__("hashlib").sha256((root / "sample.7z").read_bytes()).hexdigest(), "tool_exit_code": listed.returncode}
+
+
+def seven_zip_missing_volume(payload_hex: str, volume_size: int, missing_part: int) -> dict:
+    payload = bytes.fromhex(payload_hex)
+    with tempfile.TemporaryDirectory(prefix="c05-7z-volume-") as temporary:
+        root = Path(temporary)
+        source = root / "blob.bin"
+        source.write_bytes(payload)
+        os.utime(source, (946684800, 946684800))
+        created = _seven_zip(["a", "-t7z", "-mx=0", f"-v{volume_size}b", "parts.7z", "blob.bin"], temporary)
+        if created.returncode != 0:
+            raise RuntimeError(f"7z multipart fixture creation failed: {created.stderr or created.stdout}")
+        volumes = sorted(root.glob("parts.7z.*"))
+        expected_parts = [volume.name for volume in volumes]
+        target_name = f"parts.7z.{missing_part:03d}"
+        if target_name not in expected_parts:
+            return {"rejected": True, "reason": "missing_part_index_out_of_range", "expected_parts": expected_parts, "missing_volume": None, "reconstruction_complete": False}
+        (root / target_name).unlink()
+        checked = _seven_zip(["t", "parts.7z.001"], temporary)
+        present = sorted(path.name for path in root.glob("parts.7z.*"))
+        return {"rejected": False, "expected_parts": expected_parts, "present_parts": present, "missing_volume": target_name, "reconstruction_complete": False, "seven_zip_test_exit_code": checked.returncode}
