@@ -74,19 +74,26 @@ def published_bits(arguments: dict, observed: dict) -> dict:
 
 
 def nan_bits(arguments: dict, observed: dict) -> dict:
-    del arguments
-    probe = struct.unpack(">d", bytes.fromhex("7ff8000000000000"))[0]
-    return {"ok": observed["is_nan"] is True and observed["equals_itself"] is False and math.isnan(probe), "method": "canonical NaN payload"}
+    kind = arguments["value_kind"]
+    if kind == "finite":
+        ok = observed.get("is_nan") is False and observed.get("equals_itself") is True and observed.get("ordinary") is True
+    elif kind in {"nan", "negative-nan"}:
+        expected_sign = kind == "negative-nan"
+        probe = struct.unpack(">d", bytes.fromhex("fff8000000000000" if expected_sign else "7ff8000000000000"))[0]
+        ok = observed.get("is_nan") is True and observed.get("equals_itself") is False and observed.get("ordinary") is False and observed.get("negative_sign") is expected_sign and math.isnan(probe)
+    else:
+        ok = observed.get("rejected") is True
+    return {"ok": ok, "method": "independent IEEE-754 NaN and sign-bit reference"}
 
 
 def inf_signs(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["positive_sign"] is True and observed["negative_sign"] is True and bool(observed["output_format"]), "method": "separate sign check"}
+    expected = {"both": (True, True), "positive": (True, False), "negative": (False, True), "finite": (False, False)}.get(arguments["value_kind"])
+    return {"ok": expected is not None and (observed.get("positive_sign"), observed.get("negative_sign")) == expected and bool(observed.get("output_format")), "method": "independent infinity classification and sign check"}
 
 
 def subnormal_bits(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["float32_bits_hex"] == "00000001" and observed["is_subnormal"] is True, "method": "IEEE bit 0"}
+    expected = {"smallest-subnormal": ("00000001", True), "zero": ("00000000", False), "smallest-normal": ("00800000", False)}.get(arguments["value_kind"])
+    return {"ok": expected is not None and (observed.get("float32_bits_hex"), observed.get("is_subnormal")) == expected, "method": "independent IEEE-754 exponent and mantissa classification"}
 
 
 def nfc_table(arguments: dict, observed: dict) -> dict:
