@@ -116,6 +116,47 @@ def plan_errors(plan: dict, case_id: str) -> list[str]:
     return errors
 
 
+def evaluate_contract(plan: dict, runs: list[dict]) -> dict:
+    """Adjudicate three normal repetitions and the authored negative/boundary contracts."""
+    if len(runs) != 5:
+        return {
+            "normal_repetitions_pass": False,
+            "normal_repetition_checks": [],
+            "controls_pass": False,
+            "control_checks": [],
+            "adjudicator": "SOURCE_BOUND_PLAN_AND_REGISTERED_CONTROL_EXPECTATIONS",
+        }
+    normal_checks = [
+        run.get("execution_status") == "PASS"
+        and run.get("lifecycle_status") == "EXECUTED"
+        and isinstance(run.get("oracle_result"), dict)
+        and run["oracle_result"].get("ok") is True
+        for run in runs[:3]
+    ]
+    control_checks = []
+    for kind, run in zip(("negative", "boundary"), runs[3:], strict=True):
+        expected = plan[kind]["control_metadata"]["expect"]
+        try:
+            accepted = control_accepts(
+                expected, run.get("observed"), run.get("lifecycle_status"),
+            )
+        except (KeyError, TypeError, ValueError):
+            accepted = False
+        control_checks.append({
+            "kind": kind.upper(),
+            "expect": expected,
+            "lifecycle_status": run.get("lifecycle_status"),
+            "accepted": accepted,
+        })
+    return {
+        "normal_repetitions_pass": all(normal_checks),
+        "normal_repetition_checks": normal_checks,
+        "controls_pass": all(item["accepted"] for item in control_checks),
+        "control_checks": control_checks,
+        "adjudicator": "SOURCE_BOUND_PLAN_AND_REGISTERED_CONTROL_EXPECTATIONS",
+    }
+
+
 def execute_plan(plan: dict, case_id: str, evidence_root: Path, timeout_seconds: int, sandbox_image: str) -> dict:
     source_metadata = plan["source_metadata"]
     source_excerpt = plan["source_excerpt"]
@@ -141,41 +182,12 @@ def execute_plan(plan: dict, case_id: str, evidence_root: Path, timeout_seconds:
     row = assemble_case_record(case_id, runs)
     row["source_metadata"] = source_metadata
 
-    normal_checks = [
-        run.get("execution_status") == "PASS"
-        and run.get("lifecycle_status") == "EXECUTED"
-        and isinstance(run.get("oracle_result"), dict)
-        and run["oracle_result"].get("ok") is True
-        for run in runs[:3]
-    ]
-    control_checks = []
-    for kind, run in zip(("negative", "boundary"), runs[3:], strict=True):
-        expected = plan[kind]["control_metadata"]["expect"]
-        try:
-            accepted = control_accepts(
-                expected, run.get("observed"), run.get("lifecycle_status"),
-            )
-        except (KeyError, TypeError, ValueError):
-            accepted = False
-        control_checks.append({
-            "kind": kind.upper(),
-            "expect": expected,
-            "lifecycle_status": run.get("lifecycle_status"),
-            "accepted": accepted,
-        })
-
-    row["contract_evaluation"] = {
-        "normal_repetitions_pass": all(normal_checks),
-        "normal_repetition_checks": normal_checks,
-        "controls_pass": all(item["accepted"] for item in control_checks),
-        "control_checks": control_checks,
-        "adjudicator": "SOURCE_BOUND_PLAN_AND_REGISTERED_CONTROL_EXPECTATIONS",
-    }
+    row["contract_evaluation"] = evaluate_contract(plan, runs)
     row["independent_validation"] = independently_validate_case(row, evidence_root)
     contract_pass = (
         row["execution_status"] == "PASS"
-        and all(normal_checks)
-        and all(item["accepted"] for item in control_checks)
+        and row["contract_evaluation"]["normal_repetitions_pass"]
+        and row["contract_evaluation"]["controls_pass"]
         and row["independent_validation"].get("status") == "PASS"
     )
     row["contract_status"] = "PASS" if contract_pass else "NOT_A_PASS"
