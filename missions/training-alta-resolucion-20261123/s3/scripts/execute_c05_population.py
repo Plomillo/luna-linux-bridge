@@ -30,7 +30,7 @@ C05 dossiers or helper ledgers.
 """
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 import hashlib
 import json
 import re
@@ -224,7 +224,7 @@ def execute_valid_plans(
                 "reason": f"EXECUTION_OR_EVIDENCE_FAILURE:{type(exc).__name__}:{exc}",
             }
 
-    with ThreadPoolExecutor(max_workers=min(max_workers, len(items))) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(max_workers, len(items))) as executor:
         return dict(executor.map(execute_one, items))
 
 
