@@ -141,7 +141,7 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
                 or not isinstance(source_metadata.get("line_end"), int) or source_metadata["line_end"] < source_metadata["line_start"]
                 or len(str(source_metadata.get("file_sha256", ""))) != 64
                 or len(str(source_metadata.get("excerpt_sha256", ""))) != 64
-                or not isinstance(source_metadata.get("source_blob"), str) or not source_metadata["source_blob"]
+                or not isinstance(source_metadata.get("source_blob"), str) or len(source_metadata["source_blob"]) != 40
                 or source_excerpt is None or _digest(source_excerpt) != source_metadata.get("excerpt_sha256")
                 or case_id.encode("utf-8") not in source_excerpt):
             findings.append("source-line-provenance-invalid")
