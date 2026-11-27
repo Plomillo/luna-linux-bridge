@@ -58,7 +58,7 @@ def folded_value(arguments: dict, observed: dict) -> dict:
 
 
 def refused_index(arguments: dict, observed: dict) -> dict:
-    return {"ok": arguments["length"] >= 0 and observed["out_of_range"] is True and observed["reads"] == 0, "method": "the array was not indexed"}
+    return {"ok": observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == max(arguments["length"], 0), "method": "the array was not indexed"}
 
 
 def zero_type(arguments: dict, observed: dict) -> dict:
@@ -82,15 +82,21 @@ def declared_env(arguments: dict, observed: dict) -> dict:
 
 
 def library_v6(arguments: dict, observed: dict) -> dict:
-    parsed = ipaddress.IPv6Address(arguments["address"])
-    ok = observed["expanded"] == parsed.exploded and observed["integer"] == int(parsed)
+    try:
+        parsed = ipaddress.IPv6Address(arguments["address"])
+    except ipaddress.AddressValueError:
+        return {"ok": observed.get("rejected") is True, "method": "independent IPv6 parser rejection"}
+    ok = observed.get("rejected") is False and observed["expanded"] == parsed.exploded and observed["integer"] == int(parsed)
     return {"ok": ok, "method": "ipaddress integer, not the text split"}
 
 
 def one_run(arguments: dict, observed: dict) -> dict:
-    ones = [index for index, bit in enumerate(observed["bits"]) if bit == "1"]
-    contiguous = ones == list(range(ones[0], ones[-1] + 1))
-    return {"ok": arguments["mask"] == "255.0.255.0" and contiguous is False and observed["contiguous"] is False, "method": "span of one-bits"}
+    parts = arguments["mask"].split(".")
+    if len(parts) != 4 or any(not part.isdecimal() or not 0 <= int(part) <= 255 for part in parts):
+        return {"ok": observed.get("rejected") is True, "method": "independent IPv4 octet validation"}
+    bits = "".join(f"{int(part):08b}" for part in parts)
+    contiguous = "01" not in bits
+    return {"ok": observed.get("bits") == bits and observed.get("contiguous") is contiguous and observed.get("rejected") is (not contiguous), "method": "independent one-bit run analysis"}
 
 
 def own_check(arguments: dict, observed: dict) -> dict:
