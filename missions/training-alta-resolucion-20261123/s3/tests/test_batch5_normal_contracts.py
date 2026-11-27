@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from metagente_luna_s4.batch5 import CASES
 from metagente_luna_s4.runner import execute
 
