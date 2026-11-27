@@ -34,7 +34,7 @@ def test_controls_that_were_defined_are_accepted():
     defined = [row for row in rows if row["controls"]]
     assert defined
     assert all(row["control_status"] == "PRESENT" for row in defined)
-    assert len(defined) == 74
+    assert len(defined) == 80
 
 def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries():
     assert accepts("distinct-bom-payloads", {"visible": "marked", "plain_text": "plain", "contains_bom_character": False}, "EXECUTED") is True
@@ -55,6 +55,21 @@ def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries
     assert accepts("invalid-padding-rejected", {"rejected": True, "error_recorded": True}, "EXECUTED") is True
     assert accepts("empty-sha256", {"digest_hex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}, "EXECUTED") is True
     assert accepts("empty-manifest-change", {"reproduced": True, "altered_changes": True, "digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"}, "EXECUTED") is True
+
+
+def test_fifo_factorial_path_and_ipv6_controls_are_adjudicated():
+    assert accepts("fifo-reversed-order", {"order": ["C", "B", "A"], "remaining": 0}, "EXECUTED") is True
+    assert accepts("fifo-singleton", {"order": ["A"], "remaining": 0}, "EXECUTED") is True
+    assert accepts("factorial-negative-rejected", {"rejected": True, "negative_rejected": True}, "EXECUTED") is True
+    assert accepts("factorial-zero-boundary", {"rejected": False, "values": [1]}, "EXECUTED") is True
+    assert accepts("symlink-escape-blocked", {"blocked": True, "bytes_read": 0, "reason": "symlink-escapes"}, "EXECUTED") is True
+    assert accepts("internal-symlink-allowed", {"blocked": False, "bytes_read": 7, "reason": "internal-link"}, "EXECUTED") is True
+    assert accepts("malformed-ipv6-rejected", {"accepted": False}, "EXECUTED") is True
+    assert accepts("ipv6-unspecified-accepted", {"accepted": True}, "EXECUTED") is True
+    assert accepts("invalid-prefix-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("host-prefix-boundary", {"network": "192.0.2.130", "broadcast": "192.0.2.130"}, "EXECUTED") is True
+    assert accepts("ipv6-prefix-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("ipv6-host-prefix", {"rejected": False, "prefix": "2001:db8::1/128"}, "EXECUTED") is True
 
 
 def test_numerical_oracles_cover_invalid_norm_and_pearson_zero_variance():
