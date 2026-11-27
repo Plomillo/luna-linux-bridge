@@ -43,3 +43,11 @@ First run #37 (`45933730635`) generated the backlog successfully but artifact up
 ## C05 decision
 
 C05 remains **NOT_PASSED**. This run establishes complete source-bound plan backlog materialization and CI validation only. It does not satisfy individual execution, fixture completion, 3 clean normal repetitions, separate negative/boundary runs, independent case validation, or 1,000 authentic dossiers. The historical dossier and auxiliary ledgers remain unchanged.
+
+## Execution boundary clarification (user instruction)
+
+All mission work, source inspection, code changes, plans, execution, evidence and certification must occur through Git/GitHub and hosted Git workflows. **No user's PC, Desktop Commander, remote desktop, local filesystem or local shell may be accessed for this mission.** Hosted Git Actions runners are the execution environment. Any previous attempt to use a PC-connector was outside scope and is explicitly discontinued.
+
+## Registry census
+
+The registered S3 capability registry currently exposes 67 capability IDs. Registry membership alone does not provide a valid mapping for each INF case, nor source-authored inputs and independently defined controls. A planner must produce a reviewed mapping and reject unsupported cases rather than assign a capability by broad domain or invent inputs.
