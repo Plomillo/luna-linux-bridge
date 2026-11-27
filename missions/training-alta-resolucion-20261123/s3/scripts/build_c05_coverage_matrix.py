@@ -103,6 +103,11 @@ def build() -> tuple[list[dict], dict]:
 
 
 def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--require-complete", action="store_true")
+    args = parser.parse_args()
     rows, summary = build()
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     for target in (OUTPUT, SUMMARY):
@@ -111,6 +116,9 @@ def main() -> int:
     OUTPUT.write_text("".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
     SUMMARY.write_text(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
+    if args.require_complete and summary["counts"]["ready_for_execution"] != 1000:
+        print("C05 plan coverage gate failed: all 1,000 cases require a normal plan, registered capability, negative control, and boundary control.", file=__import__("sys").stderr)
+        return 1
     return 0
 
 
