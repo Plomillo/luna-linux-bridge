@@ -15,6 +15,8 @@ from metagente_luna_s3 import (
     batch5_oracle,
     batch6_exec,
     batch6_oracle,
+    d01_compat_exec,
+    d01_compat_oracle,
     d01_exec,
     d01_oracle,
     more_exec,
@@ -93,9 +95,9 @@ REGISTRY: dict[str, Capability] = {
     "int16_values": _cap("int16_values", "int16_range", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
     "twos_complement_16": _cap("twos_complement_16", "sign_bit", {"type": "object", "required": ["hex_value", "width"], "properties": {"hex_value": {"type": "string"}, "width": {"type": "integer"}}, "additionalProperties": False}),
     "float_bits": _cap("float_bits", "published_bits", {"type": "object", "required": ["value", "kind", "reference"], "properties": {"value": {"type": "number"}, "kind": {"type": "integer"}, "reference": {"type": "string"}}, "additionalProperties": False}),
-    "nan_policy": _cap("nan_policy", "nan_bits", {"type": "object", "additionalProperties": False}),
-    "inf_policy": _cap("inf_policy", "inf_signs", {"type": "object", "additionalProperties": False}),
-    "subnormal_f32": _cap("subnormal_f32", "subnormal_bits", {"type": "object", "additionalProperties": False}),
+    "nan_policy": _cap("nan_policy", "nan_bits", {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string"}}, "additionalProperties": False}),
+    "inf_policy": _cap("inf_policy", "inf_signs", {"type": "object", "required": ["encoding", "positive_hex", "negative_hex"], "properties": {"encoding": {"type": "string", "enum": ["literal", "binary64"]}, "positive_hex": {"type": "string"}, "negative_hex": {"type": "string"}}, "additionalProperties": False}),
+    "subnormal_f32": _cap("subnormal_f32", "subnormal_bits", {"type": "object", "required": ["bits_hex"], "properties": {"bits_hex": {"type": "string"}}, "additionalProperties": False}),
     "nfc_compare": _cap("nfc_compare", "nfc_table", {"type": "object", "required": ["decomposed", "composed"], "properties": {"decomposed": {"type": "string"}, "composed": {"type": "string"}}, "additionalProperties": False}),
     "nfd_decompose": _cap("nfd_decompose", "nfd_table", {"type": "object", "required": ["composed"], "properties": {"composed": {"type": "string"}}, "additionalProperties": False}),
     "nfkc_compat": _cap("nfkc_compat", "nfkc_table", {"type": "object", "required": ["text"], "properties": {"text": {"type": "string"}}, "additionalProperties": False}),
@@ -130,12 +132,12 @@ REGISTRY: dict[str, Capability] = {
     "array_minmax": _cap("array_minmax", "extremes", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
     "tokenize": _cap("tokenize", "token_vector", _TEXT),
     "ipv4_check": _cap("ipv4_check", "ip_module", {"type": "object", "required": ["addresses"], "properties": {"addresses": {"type": "array"}}, "additionalProperties": False}),
-    "binary_float_gap": _cap("binary_float_gap", "decimal_gap", {"type": "object", "additionalProperties": False}),
+    "binary_float_gap": _cap("binary_float_gap", "decimal_gap", {"type": "object", "required": ["left", "right", "target"], "properties": {"left": {"type": "number"}, "right": {"type": "number"}, "target": {"type": "number"}}, "additionalProperties": False}),
     "duplicates": _cap("duplicates", "repeated", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
     "brackets": _cap("brackets", "bracket_pairs", {"type": "object", "required": ["texts"], "properties": {"texts": {"type": "array"}}, "additionalProperties": False}),
     "binary_insert": _cap("binary_insert", "sorted_values", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
     "arithmetic": _cap("arithmetic", "stated_value", {"type": "object", "required": ["expression"], "properties": {"expression": {"type": "string"}}, "additionalProperties": False}),
-    "child_status": _cap("child_status", "exit_seven", {"type": "object", "additionalProperties": False}),
+    "child_status": _cap("child_status", "exit_seven", {"type": "object", "required": ["exit_code"], "properties": {"exit_code": {"type": "integer"}}, "additionalProperties": False}),
     "ipv6_reject": _cap("ipv6_reject", "two_compressions", {"type": "object", "required": ["address"], "properties": {"address": {"type": "string"}}, "additionalProperties": False}),
     "ipv6_prefix": _cap("ipv6_prefix", "stated_prefix", {"type": "object", "required": ["cidr"], "properties": {"cidr": {"type": "string"}}, "additionalProperties": False}),
     "threshold": _cap("threshold", "fever_rule", {"type": "object", "required": ["low", "high", "limit"], "properties": {"low": {"type": "number"}, "high": {"type": "number"}, "limit": {"type": "number"}}, "additionalProperties": False}),
@@ -258,9 +260,9 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "int16_values": d01_exec.int16_values,
     "twos_complement_16": d01_exec.twos_complement_16,
     "float_bits": lambda value, kind, reference: d01_exec.float_bits(value, kind),
-    "nan_policy": lambda: d01_exec.nan_policy(),
-    "inf_policy": lambda: d01_exec.inf_policy(),
-    "subnormal_f32": lambda: d01_exec.subnormal_f32(),
+    "nan_policy": d01_exec.nan_policy,
+    "inf_policy": d01_exec.inf_policy,
+    "subnormal_f32": d01_exec.subnormal_f32,
     "nfc_compare": d01_exec.nfc_compare,
     "nfd_decompose": d01_exec.nfd_decompose,
     "nfkc_compat": d01_exec.nfkc_compat,
@@ -295,12 +297,12 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "array_minmax": more_exec.array_minmax,
     "tokenize": more_exec.tokenize,
     "ipv4_check": more_exec.ipv4_check,
-    "binary_float_gap": lambda: more_exec.binary_float_gap(),
+    "binary_float_gap": more_exec.binary_float_gap,
     "duplicates": batch3_exec.duplicates,
     "brackets": batch3_exec.brackets,
     "binary_insert": batch3_exec.binary_insert,
     "arithmetic": batch3_exec.arithmetic,
-    "child_status": lambda: batch3_exec.child_status(),
+    "child_status": batch3_exec.child_status,
     "ipv6_reject": batch3_exec.ipv6_reject,
     "ipv6_prefix": batch3_exec.ipv6_prefix,
     "threshold": batch3_exec.threshold,
@@ -326,6 +328,31 @@ for _name, _oracle_name, _schema in batch5_exec.SPECS:
     REGISTRY[_name] = _cap(_name, _oracle_name, _schema)
     EXECUTORS[_name] = getattr(batch5_exec, _name)
     ORACLES[_oracle_name] = getattr(batch5_oracle, _oracle_name)
+
+
+REGISTRY["yaml_types"] = _cap("yaml_types", "yaml_types_oracle", {"type": "object", "required": ["yaml_text"], "properties": {"yaml_text": {"type": "string"}}, "additionalProperties": False})
+REGISTRY["yaml_ambiguous"] = _cap("yaml_ambiguous", "yaml_ambiguous_oracle", {"type": "object", "required": ["version", "yaml_text"], "properties": {"version": {"type": "string"}, "yaml_text": {"type": "string"}}, "additionalProperties": False})
+REGISTRY["protobuf_compat"] = _cap("protobuf_compat", "protobuf_compat_oracle", {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string"}}, "additionalProperties": False})
+REGISTRY["schema_migrate"] = _cap("schema_migrate", "schema_migrate_oracle", {"type": "object", "required": ["document"], "properties": {"document": {"type": "object"}}, "additionalProperties": False})
+REGISTRY["unknown_field"] = _cap("unknown_field", "unknown_field_oracle", {"type": "object", "required": ["record", "known_fields"], "properties": {"record": {"type": "object"}, "known_fields": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": False})
+REGISTRY["mixed_roundtrip"] = _cap("mixed_roundtrip", "mixed_roundtrip_oracle", {"type": "object", "required": ["document"], "properties": {"document": {"type": "object"}}, "additionalProperties": False})
+
+ORACLES.update({
+    "yaml_types_oracle": d01_compat_oracle.yaml_types,
+    "yaml_ambiguous_oracle": d01_compat_oracle.yaml_ambiguous,
+    "protobuf_compat_oracle": d01_compat_oracle.protobuf_compat,
+    "schema_migrate_oracle": d01_compat_oracle.schema_migrate,
+    "unknown_field_oracle": d01_compat_oracle.unknown_field,
+    "mixed_roundtrip_oracle": d01_compat_oracle.mixed_roundtrip,
+})
+EXECUTORS.update({
+    "yaml_types": d01_compat_exec.yaml_types,
+    "yaml_ambiguous": d01_compat_exec.yaml_ambiguous,
+    "protobuf_compat": d01_compat_exec.protobuf_compat,
+    "schema_migrate": d01_compat_exec.schema_migrate,
+    "unknown_field": d01_compat_exec.unknown_field,
+    "mixed_roundtrip": d01_compat_exec.mixed_roundtrip,
+})
 
 
 def run(capability_id: str, arguments: dict) -> dict:

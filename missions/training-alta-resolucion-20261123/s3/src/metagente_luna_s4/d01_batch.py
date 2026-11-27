@@ -17,15 +17,21 @@ CASES = [
     {"case_id": "MGL5-INF-0010", "capability_id": "twos_complement_16", "arguments": {"hex_value": "0xFFFF", "width": 16}},
     {"case_id": "MGL5-INF-0011", "capability_id": "float_bits", "arguments": {"value": 1.5, "kind": 32, "reference": "0x3fc00000"}},
     {"case_id": "MGL5-INF-0012", "capability_id": "float_bits", "arguments": {"value": 1.5, "kind": 64, "reference": "0x3ff8000000000000"}},
-    {"case_id": "MGL5-INF-0013", "capability_id": "nan_policy", "arguments": {}},
-    {"case_id": "MGL5-INF-0014", "capability_id": "inf_policy", "arguments": {}},
-    {"case_id": "MGL5-INF-0015", "capability_id": "subnormal_f32", "arguments": {}},
+    {"case_id": "MGL5-INF-0013", "capability_id": "nan_policy", "arguments": {"payload_hex": "7ff8000000000000"}},
+    {"case_id": "MGL5-INF-0014", "capability_id": "inf_policy", "arguments": {"encoding": "literal", "positive_hex": "7ff0000000000000", "negative_hex": "fff0000000000000"}},
+    {"case_id": "MGL5-INF-0015", "capability_id": "subnormal_f32", "arguments": {"bits_hex": "00000001"}},
     {"case_id": "MGL5-INF-0016", "capability_id": "nfc_compare", "arguments": {"decomposed": "e\u0301", "composed": "\u00e9"}},
     {"case_id": "MGL5-INF-0017", "capability_id": "nfd_decompose", "arguments": {"composed": "\u00e9"}},
     {"case_id": "MGL5-INF-0018", "capability_id": "nfkc_compat", "arguments": {"text": LIGATURE}},
     {"case_id": "MGL5-INF-0025", "capability_id": "json_roundtrip", "arguments": {"document": {"text": "ñ", "flag": True, "empty": None, "count": 1, "items": [1], "child": {"ok": False}}}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
     {"case_id": "MGL5-INF-0028", "capability_id": "json_reject", "arguments": {"texts": ["{a:1}", "{\"a\":1,}"]}},
     {"case_id": "MGL5-INF-0048", "capability_id": "sha256_text", "arguments": {"text": "abc"}},
+    {"case_id": "MGL5-INF-0033", "capability_id": "yaml_types", "arguments": {"yaml_text": "name: Luna\nenabled: true\ncount: 7\nitems:\n  - one\n  - two\n"}},
+    {"case_id": "MGL5-INF-0034", "capability_id": "yaml_ambiguous", "arguments": {"version": "1.2", "yaml_text": "enabled: yes\ndate: 2026-11-27\nexplicit: true\n"}},
+    {"case_id": "MGL5-INF-0035", "capability_id": "protobuf_compat", "arguments": {"payload_hex": "0a044c756e611007"}},
+    {"case_id": "MGL5-INF-0039", "capability_id": "schema_migrate", "arguments": {"document": {"version": 1, "id": "A-1", "name": "Luna", "active": True}}},
+    {"case_id": "MGL5-INF-0040", "capability_id": "unknown_field", "arguments": {"record": {"id": "A-1", "name": "Luna", "extra": "preserved"}, "known_fields": ["id", "name"]}},
+    {"case_id": "MGL5-INF-0049", "capability_id": "mixed_roundtrip", "arguments": {"document": {"id": 7, "name": "Luna", "enabled": True, "tags": ["core", "s3"]}}},
 ]
 
 
@@ -73,7 +79,7 @@ def assess_c05(executed: list[dict]) -> dict:
         "not_run": 1000 - len(executed),
         "gate": "NOT_PASSED",
         "counter": "4/26",
-        "reason": "979 cases were not executed. A matching criterion is not the common protocol PASS, because the separate negative and boundary runs are still missing.",
+        "reason": "973 cases were not executed. A matching criterion is not the common protocol PASS, because the separate negative and boundary runs are still missing.",
         "teo_engineering_board": "NOT_DEFINED_IN_PROTOCOL",
         "teo_cases": "MGL5-TEO-0001..0050 remain NOT_RUN",
     }

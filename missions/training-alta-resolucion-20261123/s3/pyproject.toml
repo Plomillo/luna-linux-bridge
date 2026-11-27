@@ -6,6 +6,8 @@ requires-python = ">=3.12"
 dependencies = [
   "pydantic>=2.10,<3",
   "lark>=1.2,<2",
+  "PyYAML>=6.0,<7",
+  "msgpack>=1.0,<2",
 ]
 
 [project.optional-dependencies]

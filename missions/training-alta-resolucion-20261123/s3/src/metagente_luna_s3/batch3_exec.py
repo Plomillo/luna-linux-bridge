@@ -45,13 +45,15 @@ class _Node:
 
 
 def binary_insert(values: list[int]) -> dict:
+    if not isinstance(values, list) or any(not isinstance(value, int) or isinstance(value, bool) for value in values):
+        return {"accepted": False, "rejected": True, "reason": "values must be integers"}
     root = None
     for value in values:
         root = _place(root, value)
     ordered = []
     _walk(root, ordered)
     print(ordered)
-    return {"inorder": ordered}
+    return {"accepted": True, "rejected": False, "inorder": ordered}
 
 
 def _place(node: _Node | None, value: int) -> _Node:
@@ -92,10 +94,14 @@ def _parse(expression: str) -> int:
 
     def parse_atom() -> int:
         nonlocal position
+        if position >= len(tokens):
+            raise ValueError("unexpected end of expression")
         token = tokens[position]
         position += 1
         if token == "(":
             value = parse_sum()
+            if position >= len(tokens) or tokens[position] != ")":
+                raise ValueError("unclosed parenthesis")
             position += 1
             return value
         return int(token)
@@ -104,20 +110,28 @@ def _parse(expression: str) -> int:
         nonlocal position
         position += 1
 
-    return parse_sum()
+    value = parse_sum()
+    if position != len(tokens):
+        raise ValueError("unexpected trailing token")
+    return value
 
 
 def arithmetic(expression: str) -> dict:
-    value = _parse(expression)
+    try:
+        value = _parse(expression)
+    except (IndexError, ValueError, RecursionError):
+        return {"accepted": False, "rejected": True, "reason": "invalid arithmetic expression", "expression": expression}
     print(value)
-    return {"value": value, "expression": expression}
+    return {"accepted": True, "rejected": False, "value": value, "expression": expression}
 
 
-def child_status() -> dict:
-    process = subprocess.Popen([sys.executable, "-c", "import sys; sys.exit(7)"])
+def child_status(exit_code: int = 7) -> dict:
+    if not isinstance(exit_code, int) or isinstance(exit_code, bool) or not 0 <= exit_code <= 255:
+        return {"accepted": False, "rejected": True, "reason": "exit code must be in 0..255"}
+    process = subprocess.Popen([sys.executable, "-c", f"import sys; sys.exit({exit_code})"])
     code = process.wait(timeout=5)
     print(process.pid, code)
-    return {"pid": process.pid, "exit_code": code}
+    return {"accepted": True, "rejected": False, "pid": process.pid, "exit_code": code}
 
 
 def ipv6_reject(address: str) -> dict:

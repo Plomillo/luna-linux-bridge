@@ -22,17 +22,50 @@ def bracket_pairs(arguments: dict, observed: dict) -> dict:
 
 
 def sorted_values(arguments: dict, observed: dict) -> dict:
-    return {"ok": observed["inorder"] == sorted(arguments["values"]) == [1, 3, 6, 8, 10, 14], "method": "sort, not the tree"}
+    values = arguments["values"]
+    valid = isinstance(values, list) and all(isinstance(value, int) and not isinstance(value, bool) for value in values)
+    if not valid:
+        return {"ok": observed.get("rejected") is True, "method": "independent binary-search-tree input validation"}
+    return {
+        "ok": observed.get("accepted") is True and observed.get("inorder") == sorted(values),
+        "method": "independent sort, not the tree",
+    }
+
+
+def _ast_integer(node):
+    import ast
+    if isinstance(node, ast.Expression):
+        return _ast_integer(node.body)
+    if isinstance(node, ast.Constant) and isinstance(node.value, int) and not isinstance(node.value, bool):
+        return node.value
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        return _ast_integer(node.left) + _ast_integer(node.right)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
+        return _ast_integer(node.left) * _ast_integer(node.right)
+    raise ValueError("unsupported arithmetic syntax")
 
 
 def stated_value(arguments: dict, observed: dict) -> dict:
-    answers = {"2+3*4": 14, "(1+2)*3": 9, "2*3+4": 10}
-    return {"ok": observed["value"] == answers[arguments["expression"]], "method": "stated value, not the parser"}
+    try:
+        import ast
+        expected = _ast_integer(ast.parse(arguments["expression"], mode="eval"))
+    except (SyntaxError, ValueError, TypeError):
+        return {"ok": observed.get("rejected") is True, "method": "independent AST rejection"}
+    return {
+        "ok": observed.get("accepted") is True and observed.get("value") == expected,
+        "method": "independent AST arithmetic evaluation",
+    }
 
 
 def exit_seven(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["exit_code"] == 7 and isinstance(observed["pid"], int) and observed["pid"] > 0, "method": "status seven"}
+    expected = arguments["exit_code"]
+    if not isinstance(expected, int) or isinstance(expected, bool) or not 0 <= expected <= 255:
+        return {"ok": observed.get("rejected") is True, "method": "independent process status range"}
+    return {
+        "ok": observed.get("accepted") is True and observed.get("exit_code") == expected
+        and isinstance(observed.get("pid"), int) and observed["pid"] > 0,
+        "method": "independent child exit status",
+    }
 
 
 def two_compressions(arguments: dict, observed: dict) -> dict:

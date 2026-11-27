@@ -5,6 +5,7 @@ import ipaddress
 import json
 import math
 import os
+import re
 import sqlite3
 import subprocess
 import sys
@@ -114,28 +115,40 @@ def _balanced(node: dict | None) -> tuple[int, int, bool]:
     return height, 1 + left_count + right_count, ok
 
 
-def balanced_range() -> dict:
+def balanced_range(count: int = 1000) -> dict:
+    if not isinstance(count, int) or isinstance(count, bool) or not 1 <= count <= 100000:
+        return {"accepted": False, "rejected": True, "reason": "count must be in 1..100000"}
     root = None
-    for key in range(1, 1001):
+    for key in range(1, count + 1):
         root = _insert(root, key)
     height, nodes, balanced = _balanced(root)
-    found = sum(_present(root, key) for key in range(1, 1001))
+    found = sum(_present(root, key) for key in range(1, count + 1))
     print(height, nodes, balanced, found)
-    return {"height": height, "nodes": nodes, "balanced": balanced, "found": found, "count": 1000}
+    return {
+        "accepted": True, "rejected": False, "height": height,
+        "nodes": nodes, "balanced": balanced, "found": found, "count": count,
+    }
 
 
-def linear_scans() -> dict:
+def linear_scans(sizes: list[int] | None = None) -> dict:
+    sizes = [1000, 2000, 4000] if sizes is None else sizes
+    if (
+        not isinstance(sizes, list) or len(sizes) < 2
+        or any(not isinstance(size, int) or isinstance(size, bool) or size < 1 for size in sizes)
+        or any(left >= right for left, right in zip(sizes, sizes[1:]))
+    ):
+        return {"accepted": False, "rejected": True, "reason": "sizes must be positive and strictly increasing"}
     counts = []
-    for size in (1000, 2000, 4000):
+    for size in sizes:
         comparisons = 0
         for value in range(size):
             comparisons += 1
             if value == -1:
                 break
         counts.append(comparisons)
+    ratios = [counts[index + 1] / counts[index] for index in range(len(counts) - 1)]
     print(counts)
-    ratios = [counts[1] / counts[0], counts[2] / counts[1]]
-    return {"comparisons": counts, "ratios": ratios, "count_noise": 0}
+    return {"accepted": True, "rejected": False, "comparisons": counts, "ratios": ratios, "count_noise": 0}
 
 
 def factorials(values: list[int]) -> dict:
@@ -160,31 +173,47 @@ def factorials(values: list[int]) -> dict:
     return {"rejected": False, "values": results, "negative_rejected": negative_rejected}
 
 
-def precedence_tree() -> dict:
-    text = "1+2*3-4"
+def precedence_tree(expression: str = "1+2*3-4") -> dict:
+    if not isinstance(expression, str) or not expression:
+        return {"accepted": False, "rejected": True, "reason": "expression is empty"}
+    tokens = re.findall(r"\d+|[+*\-]", expression)
+    if "".join(tokens) != expression:
+        return {"accepted": False, "rejected": True, "reason": "unsupported expression token"}
     values: list = []
     operators: list[str] = []
     precedence = {"+": 1, "-": 1, "*": 2}
+    expecting_value = True
 
     def apply() -> None:
+        if len(values) < 2 or not operators:
+            raise ValueError("operator lacks operands")
         operator = operators.pop()
         right = values.pop()
         left = values.pop()
         values.append({"op": operator, "left": left, "right": right})
 
-    number = ""
-    for character in text:
-        if character.isdigit():
-            number += character
-            continue
-        values.append(int(number))
-        number = ""
-        while operators and precedence[operators[-1]] >= precedence[character]:
+    try:
+        for token in tokens:
+            if token.isdigit():
+                if not expecting_value:
+                    raise ValueError("adjacent operands")
+                values.append(int(token))
+                expecting_value = False
+                continue
+            if expecting_value:
+                raise ValueError("operator lacks left operand")
+            while operators and precedence[operators[-1]] >= precedence[token]:
+                apply()
+            operators.append(token)
+            expecting_value = True
+        if expecting_value:
+            raise ValueError("expression ends with an operator")
+        while operators:
             apply()
-        operators.append(character)
-    values.append(int(number))
-    while operators:
-        apply()
+        if len(values) != 1:
+            raise ValueError("expression did not reduce to one tree")
+    except (KeyError, ValueError):
+        return {"accepted": False, "rejected": True, "reason": "invalid arithmetic expression"}
 
     def evaluate(node):
         if isinstance(node, int):
@@ -200,7 +229,7 @@ def precedence_tree() -> dict:
     tree = values[0]
     value = evaluate(tree)
     print(value)
-    return {"tree": tree, "value": value}
+    return {"accepted": True, "rejected": False, "tree": tree, "value": value}
 
 
 def index_limit(length: int) -> dict:
@@ -216,58 +245,80 @@ def index_limit(length: int) -> dict:
     return {"out_of_range": True, "read": False, "reads": reads, "length": len(data)}
 
 
-def divide_zero() -> dict:
+def divide_zero(numerator: float = 1, denominator: float = 0) -> dict:
+    if not all(isinstance(value, (int, float)) and not isinstance(value, bool) for value in (numerator, denominator)):
+        return {"accepted": False, "rejected": True, "reason": "operands must be numeric"}
     try:
-        value = 1 / 0
+        value = numerator / denominator
     except ZeroDivisionError:
         frame = traceback.extract_tb(sys.exc_info()[2])[-1]
         print(frame.name, frame.lineno)
-        return {"raised": True, "type": "ZeroDivisionError", "value": None, "function": frame.name, "line": frame.lineno}
-    return {"raised": False, "type": None, "value": value, "function": None, "line": None}
+        return {
+            "accepted": True, "rejected": False, "raised": True, "type": "ZeroDivisionError",
+            "value": None, "function": frame.name, "line": frame.lineno,
+        }
+    return {
+        "accepted": True, "rejected": False, "raised": False, "type": None,
+        "value": value, "function": None, "line": None,
+    }
 
 
-def mode_0640() -> dict:
+def mode_0640(mode: int = 0o640) -> dict:
+    if not isinstance(mode, int) or isinstance(mode, bool) or not 0 <= mode <= 0o777:
+        return {"accepted": False, "rejected": True, "reason": "mode must be an octal permission mask"}
     directory = Path(tempfile.mkdtemp(prefix="luna-mode-"))
     path = directory / "sample"
     descriptor = os.open(path, os.O_CREAT | os.O_WRONLY, 0o666)
     os.close(descriptor)
-    os.chmod(path, 0o640)
-    mode = os.stat(path).st_mode & 0o777
-    print(oct(mode))
+    os.chmod(path, mode)
+    actual = os.stat(path).st_mode & 0o777
+    print(oct(actual))
     return {
-        "mode": mode,
-        "owner_read": os.access(path, os.R_OK),
-        "owner_execute": os.access(path, os.X_OK),
-        "group_write": bool(mode & 0o020),
-        "other_bits": mode & 0o007,
+        "accepted": True, "rejected": False, "mode": actual,
+        "owner_read": bool(actual & 0o400),
+        "owner_execute": bool(actual & 0o100),
+        "group_write": bool(actual & 0o020),
+        "other_bits": actual & 0o007,
     }
 
 
-def umask_0027() -> dict:
+def umask_0027(umask: int = 0o027, requested_mode: int = 0o666) -> dict:
+    if (
+        not isinstance(umask, int) or isinstance(umask, bool) or not 0 <= umask <= 0o777
+        or not isinstance(requested_mode, int) or isinstance(requested_mode, bool)
+        or not 0 <= requested_mode <= 0o777
+    ):
+        return {"accepted": False, "rejected": True, "reason": "umask and requested mode must be octal masks"}
     directory = Path(tempfile.mkdtemp(prefix="luna-umask-"))
     path = directory / "sample"
-    previous = os.umask(0o027)
+    previous = os.umask(umask)
     try:
-        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o666)
+        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, requested_mode)
         os.close(descriptor)
         mode = os.stat(path).st_mode & 0o777
     finally:
         os.umask(previous)
     print(oct(mode))
-    return {"mode": mode}
+    return {"accepted": True, "rejected": False, "mode": mode}
 
 
-def child_env() -> dict:
+def child_env(env_key: str = "test", env_value: str = "123") -> dict:
+    if (
+        not isinstance(env_key, str) or not env_key or "=" in env_key or "\x00" in env_key
+        or not isinstance(env_value, str) or "\x00" in env_value
+    ):
+        return {"accepted": False, "rejected": True, "reason": "invalid environment key or value"}
+    script = f"import os; print(os.environ[{env_key!r}])"
     completed = subprocess.run(
-        [sys.executable, "-c", "import os; print(os.environ['test'])"],
+        [sys.executable, "-c", script],
         check=False,
         capture_output=True,
         text=True,
         timeout=10,
-        env={"PATH": os.environ.get("PATH", ""), "test": "123"},
+        env={"PATH": os.environ.get("PATH", ""), env_key: env_value},
     )
     print(completed.stdout)
-    return {"value": completed.stdout.strip(), "code": completed.returncode}
+    return {"accepted": True, "rejected": False, "value": completed.stdout.strip(), "code": completed.returncode}
 
 
 def expand_v6(address: str) -> dict:
@@ -298,33 +349,42 @@ def mask_bits(mask: str) -> dict:
     return {"rejected": not contiguous, "bits": bits, "contiguous": contiguous}
 
 
-def reject_age() -> dict:
+def reject_age(age: int = -4, minimum_age: int = 0) -> dict:
+    if (
+        not isinstance(age, int) or isinstance(age, bool)
+        or not isinstance(minimum_age, int) or isinstance(minimum_age, bool)
+        or minimum_age < 0
+    ):
+        return {"accepted": False, "rejected": True, "reason": "age values must be integers and minimum_age non-negative"}
     connection = sqlite3.connect(":memory:")
-    connection.execute("create table person(age integer check (age >= 0))")
+    connection.execute(f"create table person(age integer check (age >= {minimum_age}))")
     rejected = False
     try:
-        connection.execute("insert into person(age) values (-4)")
+        connection.execute("insert into person(age) values (?)", (age,))
     except sqlite3.IntegrityError:
         rejected = True
     rows = connection.execute("select count(*) from person").fetchone()[0]
     print(rejected, rows)
-    return {"rejected": rejected, "rows": rows}
+    return {"accepted": True, "rejected": rejected, "rows": rows, "age": age, "minimum_age": minimum_age}
 
 
-def parameterized_name() -> dict:
+def parameterized_name(payload: str = "' OR 1=1 --", stored_name: str = "ada") -> dict:
+    if not isinstance(payload, str) or not isinstance(stored_name, str):
+        return {"accepted": False, "rejected": True, "reason": "payload and stored name must be strings"}
+
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self) -> None:
             length = int(self.headers.get("Content-Length", "0"))
             body = self.rfile.read(length).decode()
             connection = sqlite3.connect(":memory:")
             connection.execute("create table user(name text)")
-            connection.execute("insert into user(name) values ('ada')")
+            connection.execute("insert into user(name) values (?)", (stored_name,))
             matched = connection.execute("select name from user where name = ?", (body,)).fetchall()
-            payload = json.dumps({"matched": len(matched)}).encode()
+            payload_bytes = json.dumps({"matched": len(matched)}).encode()
             self.send_response(200)
-            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("Content-Length", str(len(payload_bytes)))
             self.end_headers()
-            self.wfile.write(payload)
+            self.wfile.write(payload_bytes)
 
         def log_message(self, fmt: str, *args) -> None:
             return
@@ -333,25 +393,38 @@ def parameterized_name() -> dict:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     host, port = server.server_address
-    request = urllib.request.Request(f"http://{host}:{port}/users", data=b"' OR 1=1 --", method="POST")
-    with urllib.request.urlopen(request, timeout=5) as response:
-        body = json.loads(response.read().decode())
-        status = response.status
-    server.shutdown()
+    request = urllib.request.Request(
+        f"http://{host}:{port}/users", data=payload.encode(), method="POST"
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            body = json.loads(response.read().decode())
+            status = response.status
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+        server.server_close()
     print(body["matched"], status)
-    return {"matched": body["matched"], "status": status}
+    return {"accepted": True, "rejected": False, "matched": body["matched"], "status": status}
 
 
-def exit_codes() -> dict:
+def exit_codes(commands: list[str] | None = None) -> dict:
+    commands = ["true", "false", "luna-command-absent"] if commands is None else commands
+    if not isinstance(commands, list) or not commands or any(not isinstance(item, str) or not item for item in commands):
+        return {"accepted": False, "rejected": True, "reason": "commands must be a non-empty list of names"}
     results = []
-    for command in (["true"], ["false"], ["luna-command-absent"]):
+    for command in commands:
         try:
-            completed = subprocess.run(command, check=False, capture_output=True, timeout=5)
-            results.append({"command": command[0], "code": completed.returncode})
+            completed = subprocess.run([command], check=False, capture_output=True, timeout=5)
+            results.append({"command": command, "code": completed.returncode})
         except FileNotFoundError:
-            results.append({"command": command[0], "code": 127})
+            results.append({"command": command, "code": 127})
     print(results)
-    return {"codes": [item["code"] for item in results], "commands": [item["command"] for item in results]}
+    return {
+        "accepted": True, "rejected": False,
+        "codes": [item["code"] for item in results],
+        "commands": [item["command"] for item in results],
+    }
 
 
 def sqrt_two(value: float) -> dict:
@@ -422,15 +495,24 @@ def two_variances(values: list[int]) -> dict:
 
 
 def exact_line(xs: list[int], slope: float, intercept: float) -> dict:
+    if (
+        not isinstance(xs, list) or len(xs) < 2
+        or any(not isinstance(item, (int, float)) or isinstance(item, bool) for item in xs)
+        or not isinstance(slope, (int, float)) or isinstance(slope, bool)
+        or not isinstance(intercept, (int, float)) or isinstance(intercept, bool)
+    ):
+        return {"accepted": False, "rejected": True, "reason": "line fit requires two or more numeric points"}
     ys = [slope * item + intercept for item in xs]
     count = len(xs)
     mean_x = sum(xs) / count
     mean_y = sum(ys) / count
-    fitted = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys, strict=True))
-    fitted /= sum((x - mean_x) ** 2 for x in xs)
+    denominator = sum((x - mean_x) ** 2 for x in xs)
+    if denominator == 0:
+        return {"accepted": False, "rejected": True, "reason": "x values must not all be identical"}
+    fitted = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys, strict=True)) / denominator
     fitted_intercept = mean_y - fitted * mean_x
     print(fitted, fitted_intercept)
-    return {"xs": xs, "ys": ys, "slope": fitted, "intercept": fitted_intercept}
+    return {"accepted": True, "rejected": False, "xs": xs, "ys": ys, "slope": fitted, "intercept": fitted_intercept}
 
 
 def _euler(step: float) -> float:
@@ -441,13 +523,31 @@ def _euler(step: float) -> float:
 
 
 def euler_decay(coarse_step: float, fine_step: float) -> dict:
+    valid = all(
+        isinstance(step, (int, float)) and not isinstance(step, bool)
+        and math.isfinite(step) and 0 < step <= 1
+        and abs(round(1 / step) * step - 1) < 1e-9
+        for step in (coarse_step, fine_step)
+    )
+    if not valid or fine_step >= coarse_step:
+        return {"accepted": False, "rejected": True, "reason": "fine step must be smaller and both steps must partition the interval"}
     coarse = abs(_euler(coarse_step) - math.e)
     fine = abs(_euler(fine_step) - math.e)
     print(coarse, fine)
-    return {"coarse_error": coarse, "fine_error": fine, "coarse_step": coarse_step, "fine_step": fine_step}
+    return {
+        "accepted": True, "rejected": False,
+        "coarse_error": coarse, "fine_error": fine,
+        "coarse_step": coarse_step, "fine_step": fine_step,
+    }
 
 
 def rk4_decay(step: float) -> dict:
+    if (
+        not isinstance(step, (int, float)) or isinstance(step, bool)
+        or not math.isfinite(step) or not 0 < step <= 1
+        or abs(round(1 / step) * step - 1) >= 1e-9
+    ):
+        return {"accepted": False, "rejected": True, "reason": "step must be positive and partition the unit interval"}
     value = 1.0
     for _ in range(round(1 / step)):
         first = value
@@ -457,7 +557,7 @@ def rk4_decay(step: float) -> dict:
         value += step * (first + 2 * second + 2 * third + fourth) / 6
     euler = _euler(step)
     print(value, euler)
-    return {"rk4": value, "euler": euler, "step": step}
+    return {"accepted": True, "rejected": False, "rk4": value, "euler": euler, "step": step}
 
 
 def stable_ages(records: list[dict]) -> dict:
@@ -542,20 +642,20 @@ SPECS = [
     ("first_match", "scan_index", {"type": "object", "required": ["needle", "values"], "properties": {"needle": {"type": "integer"}, "values": {"type": "array"}}, "additionalProperties": False}),
     ("binary_find", "direct_index", {"type": "object", "required": ["needle", "start", "end"], "properties": {"needle": {"type": "integer"}, "start": {"type": "integer"}, "end": {"type": "integer"}}, "additionalProperties": False}),
     ("dequeue_named", "named_order", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
-    ("balanced_range", "range_sum", _NONE),
-    ("linear_scans", "full_scans", _NONE),
+    ("balanced_range", "range_sum", {"type": "object", "required": ["count"], "properties": {"count": {"type": "integer"}}, "additionalProperties": False}),
+    ("linear_scans", "full_scans", {"type": "object", "required": ["sizes"], "properties": {"sizes": {"type": "array", "items": {"type": "integer"} }}, "additionalProperties": False}),
     ("factorials", "reference_factorials", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
-    ("precedence_tree", "folded_value", _NONE),
+    ("precedence_tree", "folded_value", {"type": "object", "required": ["expression"], "properties": {"expression": {"type": "string"}}, "additionalProperties": False}),
     ("index_limit", "refused_index", {"type": "object", "required": ["length"], "properties": {"length": {"type": "integer"}}, "additionalProperties": False}),
-    ("divide_zero", "zero_type", _NONE),
-    ("mode_0640", "octal_mode", _NONE),
-    ("umask_0027", "masked_create", _NONE),
-    ("child_env", "declared_env", _NONE),
+    ("divide_zero", "zero_type", {"type": "object", "required": ["numerator", "denominator"], "properties": {"numerator": {"type": "number"}, "denominator": {"type": "number"}}, "additionalProperties": False}),
+    ("mode_0640", "octal_mode", {"type": "object", "required": ["mode"], "properties": {"mode": {"type": "integer"}}, "additionalProperties": False}),
+    ("umask_0027", "masked_create", {"type": "object", "required": ["umask", "requested_mode"], "properties": {"umask": {"type": "integer"}, "requested_mode": {"type": "integer"}}, "additionalProperties": False}),
+    ("child_env", "declared_env", {"type": "object", "required": ["env_key", "env_value"], "properties": {"env_key": {"type": "string"}, "env_value": {"type": "string"}}, "additionalProperties": False}),
     ("expand_v6", "library_v6", {"type": "object", "required": ["address"], "properties": {"address": {"type": "string"}}, "additionalProperties": False}),
     ("mask_bits", "one_run", {"type": "object", "required": ["mask"], "properties": {"mask": {"type": "string"}}, "additionalProperties": False}),
-    ("reject_age", "own_check", _NONE),
-    ("parameterized_name", "own_query", _NONE),
-    ("exit_codes", "posix_codes", _NONE),
+    ("reject_age", "own_check", {"type": "object", "required": ["age", "minimum_age"], "properties": {"age": {"type": "integer"}, "minimum_age": {"type": "integer"}}, "additionalProperties": False}),
+    ("parameterized_name", "own_query", {"type": "object", "required": ["payload", "stored_name"], "properties": {"payload": {"type": "string"}, "stored_name": {"type": "string"}}, "additionalProperties": False}),
+    ("exit_codes", "posix_codes", {"type": "object", "required": ["commands"], "properties": {"commands": {"type": "array", "items": {"type": "string"} }}, "additionalProperties": False}),
     ("sqrt_two", "library_sqrt", {"type": "object", "required": ["value"], "properties": {"value": {"type": "number"}}, "additionalProperties": False}),
     ("compensated_sum", "decimal_total", {"type": "object", "required": ["start", "increment", "count"], "properties": {"start": {"type": "number"}, "increment": {"type": "number"}, "count": {"type": "integer"}}, "additionalProperties": False}),
     ("newton_root", "library_root", {"type": "object", "required": ["initial", "target"], "properties": {"initial": {"type": "number"}, "target": {"type": "number"}}, "additionalProperties": False}),

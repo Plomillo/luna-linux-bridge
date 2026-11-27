@@ -80,28 +80,60 @@ def float_bits(value: float, kind: str) -> dict:
     return {"bits_hex": "0x" + raw.hex()}
 
 
-def nan_policy() -> dict:
-    value = float("nan")
-    print("nan")
-    return {"is_nan": math.isnan(value), "equals_itself": bool(value == value), "ordinary": False}  # noqa: PLR0124
-
-
-def inf_policy() -> dict:
-    positive, negative = math.inf, -math.inf
-    print("inf -inf")
+def nan_policy(payload_hex: str = "7ff8000000000000") -> dict:
+    value = struct.unpack(">d", bytes.fromhex(payload_hex))[0]
+    is_nan = math.isnan(value)
+    print("nan" if is_nan else repr(value))
     return {
-        "positive_sign": math.copysign(1.0, positive) > 0,
-        "negative_sign": math.copysign(1.0, negative) < 0,
-        "output_format": "Python float, printed as inf and -inf",
+        "payload_hex": payload_hex.lower(),
+        "is_nan": is_nan,
+        "equals_itself": bool(value == value),  # noqa: PLR0124
+        "ordinary": not is_nan,
+        "accepted": True,
     }
 
 
-def subnormal_f32() -> dict:
-    value = struct.unpack(">f", bytes.fromhex("00000001"))[0]
-    bits = struct.pack(">f", value).hex()
+def inf_policy(
+    encoding: str = "literal",
+    positive_hex: str = "7ff0000000000000",
+    negative_hex: str = "fff0000000000000",
+) -> dict:
+    if encoding == "literal":
+        positive, negative = math.inf, -math.inf
+    elif encoding == "binary64":
+        positive = struct.unpack(">d", bytes.fromhex(positive_hex))[0]
+        negative = struct.unpack(">d", bytes.fromhex(negative_hex))[0]
+    else:
+        return {"accepted": False, "rejected": True, "reason": "unknown construction"}
+    print(repr(positive), repr(negative))
+    return {
+        "positive_sign": math.copysign(1.0, positive) > 0,
+        "negative_sign": math.copysign(1.0, negative) < 0,
+        "positive_is_infinite": math.isinf(positive),
+        "negative_is_infinite": math.isinf(negative),
+        "encoding": encoding,
+        "output_format": "Python float repr",
+        "accepted": True,
+    }
+
+
+def subnormal_f32(bits_hex: str = "00000001") -> dict:
+    raw = bytes.fromhex(bits_hex)
+    if len(raw) != 4:
+        return {"accepted": False, "rejected": True, "reason": "float32 requires four bytes"}
+    value = struct.unpack(">f", raw)[0]
+    bits = raw.hex()
+    is_subnormal = math.isfinite(value) and value != 0.0 and abs(value) < 2 ** -126
     widened = struct.pack(">d", float(value)).hex()
     print(bits)
-    return {"is_subnormal": bits == "00000001", "float32_bits_hex": bits, "float64_bits_hex": widened, "precision_loss_on_widening": False}
+    return {
+        "accepted": True,
+        "bits_hex": bits,
+        "is_subnormal": is_subnormal,
+        "float32_bits_hex": bits,
+        "float64_bits_hex": widened,
+        "precision_loss_on_widening": False,
+    }
 
 
 def nfc_compare(decomposed: str, composed: str) -> dict:

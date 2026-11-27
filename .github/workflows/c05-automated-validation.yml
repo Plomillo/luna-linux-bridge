@@ -3,7 +3,7 @@ name: C05 automated independent validation
 on:
   push:
     branches:
-      - repair/metagente-luna-structured-20261125
+      - repair/c05-921-agency-agents-20261127
   pull_request:
     branches:
       - main
