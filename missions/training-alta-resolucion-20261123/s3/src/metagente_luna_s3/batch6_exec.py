@@ -53,11 +53,3 @@ def stack_sequence(steps: list[str]) -> dict:
         "underflow_count": underflow_count,
         "rejected": False,
     }
-
-
-def descending_values(values: list[int]) -> dict:
-    if not isinstance(values, list) or any(
-        not isinstance(value, int) or isinstance(value, bool) for value in values
-    ):
-        return {"rejected": True, "reason": "values must contain only integers"}
-    return {"ordered": sorted(values, reverse=True), "rejected": False}
