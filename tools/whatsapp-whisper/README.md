@@ -4,7 +4,7 @@ Pipeline reproducible para reconstruir una exportación de WhatsApp y transcribi
 
 ## Privacidad
 
-Este repositorio es público. No subas el ZIP, el TXT original, audios, transcripciones ni códigos de verificación. Los resultados se generan en `.local/`, excluida de Git.
+Este repositorio es público. No subas el ZIP, el TXT original, audios, transcripciones ni códigos de verificación. Los resultados se generan en `.local/`, excluida de Git. Para compartir resultados, prepara primero una copia revisada y anonimizada; no publiques datos de terceros ni credenciales.
 
 ## Requisitos e instalación
 
@@ -31,9 +31,19 @@ python tools/whatsapp-whisper/transcribe.py --zip /ruta/exportacion.zip --output
 
 El programa crea `conversation.md`, `audio_transcripts/` con TXT y JSON segmentado por tiempos, y `manifest.json` con hashes, parámetros y estado por audio. El modelo se descarga en la primera ejecución.
 
+## Pruebas
+
+Las pruebas del parser no requieren descargar Whisper ni instalar FFmpeg:
+
+```bash
+python -m unittest discover -s tools/whatsapp-whisper/tests -v
+```
+
+GitHub Actions ejecuta estas pruebas al modificar el pipeline o sus pruebas.
+
 ## Límites y auditoría
 
-- Modelo declarado: Whisper `large-v3-turbo` mediante faster-whisper; no se afirma que se haya ejecutado hasta que el usuario corra el pipeline y revise el manifiesto.
+- Modelo declarado: Whisper `large-v3-turbo` mediante faster-whisper; no se afirma que se haya ejecutado hasta que el pipeline termine y el manifiesto registre cada audio.
 - Whisper no identifica de forma fiable a los interlocutores. La etiqueta de emisor procede del mensaje de WhatsApp, no de diarización acústica.
 - Los audios fallidos quedan registrados y no se sustituyen por transcripciones inventadas.
 - Revisar nombres propios, ruido, solapamientos y modismos.
