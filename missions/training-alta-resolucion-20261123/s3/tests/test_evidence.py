@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from metagente_luna_s4.evidence import persist_run
+from metagente_luna_s4.evidence import assemble_case_record, persist_run
 
 
 def test_persist_run_writes_byte_hashed_artifacts_without_certifying(tmp_path):
@@ -65,6 +65,7 @@ def test_runner_persists_observed_execution_but_does_not_claim_clean_state(tmp_p
         {"text": "Luna"},
         "MGL5-INF-0001",
         evidence_root=str(tmp_path),
+        run_kind="NORMAL",
     )
     assert record["lifecycle_status"] == "EXECUTED"
     assert record["execution_status"] == "PASS"
@@ -72,3 +73,31 @@ def test_runner_persists_observed_execution_but_does_not_claim_clean_state(tmp_p
     assert record["persisted_evidence"]["clean_state"] is False
     assert record["persisted_evidence"]["independent_validation"]["passed"] is False
     assert record["persisted_evidence"]["evidence_status"] == "PERSISTED_NOT_INDEPENDENTLY_VALIDATED"
+
+
+def test_assembler_requires_three_distinct_run_kinds(tmp_path):
+    from metagente_luna_s4.runner import execute
+
+    runs = [
+        execute("utf8_roundtrip", {"text": "Luna"}, "MGL5-INF-0001",
+                evidence_root=str(tmp_path), run_kind=kind)
+        for kind in ("NORMAL", "NEGATIVE", "BOUNDARY")
+    ]
+    row = assemble_case_record("MGL5-INF-0001", runs)
+    assert row["CASE_ID"] == "MGL5-INF-0001"
+    assert row["execution_status"] == "PASS"
+    assert row["contract_status"] == "NOT_A_PASS"
+    assert len(row["repetitions"]) == 3
+    assert {item["kind"] for item in row["repetitions"]} == {"NORMAL", "NEGATIVE", "BOUNDARY"}
+    assert all(item["clean_state"] is False for item in row["repetitions"])
+
+
+def test_assembler_rejects_missing_negative_or_boundary_run(tmp_path):
+    from metagente_luna_s4.runner import execute
+
+    runs = [
+        execute("utf8_roundtrip", {"text": "Luna"}, "MGL5-INF-0001",
+                evidence_root=str(tmp_path), run_kind="NORMAL")
+    ]
+    with pytest.raises(ValueError, match="exactly one NORMAL"):
+        assemble_case_record("MGL5-INF-0001", runs)
