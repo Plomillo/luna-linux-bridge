@@ -4,11 +4,11 @@
 
 This report records implementation readiness only. It does not certify C05 and does not claim that the newly added plans have already completed restricted-container execution.
 
-- Complete source-bound executable plans: **54 / 1,000**
-- Cases outside the executable plan set: **946 / 1,000**
-- Remaining underlying executions for those 946 cases: **4,730** (three NORMAL, one NEGATIVE, one BOUNDARY per case)
+- Complete source-bound executable plans: **77 / 1,000**
+- Cases outside the executable plan set: **923 / 1,000**
+- Remaining underlying executions for those 946 cases: **4,615** (three NORMAL, one NEGATIVE, one BOUNDARY per case)
 - Typed normal specifications: **101**
-- Typed specifications still missing at least one required control: **47**
+- Typed specifications still missing at least one required control: **24**
 - Interpreter candidates: **7**; ready and registered: **2**; blocked: **5**
 - Cases with neither a typed normal specification nor an interpreter candidate: **894**
 - C05: **NOT_PASSED**
@@ -36,10 +36,10 @@ The L2 executor now rejects non-integer components explicitly. The independent n
 
 ## Validation requirements
 
-The compiler and regression assertions now expect 54 complete plans and 946 cases outside the plan set. The population inventory validator requires the NOT_RUN identifiers to be exactly the complement of valid executable-plan identifiers; it does not accept a matching count with substituted IDs.
+The compiler and regression assertions now expect 77 complete plans and 923 cases outside the plan set. The population inventory validator requires the NOT_RUN identifiers to be exactly the complement of valid executable-plan identifiers; it does not accept a matching count with substituted IDs.
 
-The hosted restricted-container workflow must still execute the 54 plans (270 runs) and persist authentic evidence. The independent workflow must validate those artifacts. No results from either workflow are asserted in this report.
+The hosted restricted-container workflow must still execute the 77 plans (385 runs) and persist authentic evidence. The independent workflow must validate those artifacts. No results from either workflow are asserted in this report.
 
 ## Remaining work
 
-All 946 cases outside the plan set still require source-grounded normal plans, registered capabilities, fixtures, negative and boundary controls, and actual restricted-container execution. Cases with missing essential parameters remain blocked rather than receiving invented inputs. C05 cannot pass until all 1,000 cases have five valid runs, individual evidence validation, contractual PASS, and global validation.
+All 923 cases outside the plan set still require source-grounded normal plans, registered capabilities, fixtures, negative and boundary controls, and actual restricted-container execution. Cases with missing essential parameters remain blocked rather than receiving invented inputs. C05 cannot pass until all 1,000 cases have five valid runs, individual evidence validation, contractual PASS, and global validation.
