@@ -56,6 +56,7 @@ def execute(
     case_id: str,
     backend: str = "LOCAL_TEST_ONLY",
     evidence_root: str | None = None,
+    run_kind: str = "NORMAL",
 ) -> dict:
     """Execute once and optionally persist its raw evidence; never certify it."""
     record = _execute(capability_id, arguments, case_id, backend)
@@ -67,6 +68,7 @@ def execute(
     record["agent_version"] = "0.1.0"
     record["executor_version"] = capability.version if capability is not None else "UNDECLARED"
     record["machinery"] = backend
+    record["run_kind"] = run_kind
     lifecycle = record.get("execution_status")
     record["lifecycle_status"] = lifecycle
     if lifecycle == "EXECUTED":
@@ -78,6 +80,7 @@ def execute(
     if evidence_root is not None and record.get("execution_status") in {"PASS", "FAIL", "BLOCKED", "INCONCLUSIVE"}:
         try:
             record["persisted_evidence"] = persist_run(record, arguments, evidence_root)
+            record["persisted_evidence"]["kind"] = run_kind
         except (OSError, TypeError, ValueError) as exc:
             record["evidence_persistence_error"] = f"{type(exc).__name__}: {exc}"
     return record
