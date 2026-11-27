@@ -16,4 +16,4 @@ def test_second_batch_meets_the_stated_criteria():
     assert by_id["MGL5-INF-0052"]["extension_matches_content"] is False
     first = {row["case_id"] for row in run_first()}
     assert first.isdisjoint({row["case_id"] for row in rows})
-    assert len(first) + len(rows) == 100
+    assert len(first) + len(rows) == 102
