@@ -34,7 +34,7 @@ def test_controls_that_were_defined_are_accepted():
     defined = [row for row in rows if row["controls"]]
     assert defined
     failures = [(row["case_id"], {kind: {"accepted": result["accepted"], "status": result["execution_status"], "observed": result["observed"]} for kind, result in row["controls"].items() if not result["accepted"]}) for row in defined if row["control_status"] != "PRESENT"]
-    assert not failures, failures
+    assert not failures, __import__("json").dumps(failures, ensure_ascii=False, sort_keys=True)
     assert len(defined) == 99
 
 def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries():
