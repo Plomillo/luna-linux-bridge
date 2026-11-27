@@ -278,3 +278,24 @@ def test_elf_magic_identification_ignores_a_misleading_jpg_extension():
     assert result["observed"] == {"extension": "jpg", "detected": "elf", "extension_matches_content": False}
     assert accepts("unknown-signature", {"detected": "unknown", "extension_matches_content": False}, "EXECUTED") is True
     assert accepts("elf-extension-match", {"detected": "elf", "extension_matches_content": True}, "EXECUTED") is True
+
+
+def test_new_source_grounded_controls_match_their_contracts():
+    from metagente_luna_s4.controls import accepts
+
+    cases = [
+        ("binary-insert-variant", {"inorder": [2, 5, 9]}, "EXECUTED"),
+        ("binary-insert-singleton", {"inorder": [7]}, "EXECUTED"),
+        ("arithmetic-variant-17", {"value": 17}, "EXECUTED"),
+        ("arithmetic-variant-6", {"value": 6}, "EXECUTED"),
+        ("arithmetic-zero-boundary", {"value": 0}, "EXECUTED"),
+        ("child-exit-one", {"exit_code": 1}, "EXECUTED"),
+        ("child-exit-zero", {"exit_code": 0}, "EXECUTED"),
+        ("cosine-zero-vector-rejected", {"rejected": True}, "EXECUTED"),
+        ("cosine-identical-boundary", {"rejected": False, "values": [1.0]}, "EXECUTED"),
+        ("acf-zero-variance-rejected", {"lags": None, "error": "zero-variance"}, "EXECUTED"),
+        ("acf-two-point-boundary", {"lags": [1.0, -0.5], "error": None}, "EXECUTED"),
+    ]
+    for expect, observed, status in cases:
+        assert accepts(expect, observed, status) is True, expect
+        assert accepts(expect, observed, "BLOCKED") is False, expect
