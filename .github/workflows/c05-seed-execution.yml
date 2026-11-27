@@ -91,11 +91,15 @@ jobs:
             const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
               owner, repo, run_id: runId, per_page: 100
             });
-            const failedJobs = jobsResponse.data.jobs.filter(job => job.conclusion === "failure");
-            const first = failedJobs.map(job => ({
+            // The current job may still be "in_progress" while this
+            // if: failure() handler runs. Detect failed steps directly;
+            // do not wait for the job-level conclusion to become "failure".
+            const jobsWithFailedSteps = jobsResponse.data.jobs.map(job => ({
               job,
               step: (job.steps || []).find(step => step.conclusion === "failure")
-            })).find(item => item.step) || { job: failedJobs[0], step: null };
+            }));
+            const first = jobsWithFailedSteps.find(item => item.step)
+              || { job: jobsWithFailedSteps.find(item => item.job.status === "in_progress")?.job, step: null };
             const marker = "<!-- C05_FIRST_FAILURE_WATCH -->";
             const body = [
               marker,
@@ -185,11 +189,15 @@ jobs:
             const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
               owner, repo, run_id: runId, per_page: 100
             });
-            const failedJobs = jobsResponse.data.jobs.filter(job => job.conclusion === "failure");
-            const first = failedJobs.map(job => ({
+            // The current job may still be "in_progress" while this
+            // if: failure() handler runs. Detect failed steps directly;
+            // do not wait for the job-level conclusion to become "failure".
+            const jobsWithFailedSteps = jobsResponse.data.jobs.map(job => ({
               job,
               step: (job.steps || []).find(step => step.conclusion === "failure")
-            })).find(item => item.step) || { job: failedJobs[0], step: null };
+            }));
+            const first = jobsWithFailedSteps.find(item => item.step)
+              || { job: jobsWithFailedSteps.find(item => item.job.status === "in_progress")?.job, step: null };
             const marker = "<!-- C05_FIRST_FAILURE_WATCH -->";
             const body = [
               marker,
