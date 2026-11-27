@@ -19,7 +19,6 @@ def cidr_bounds_oracle(arguments: dict, observed: dict) -> dict:
             "expected": expected,
         }
     expected = {
-        "accepted": True,
         "network": str(network.network_address),
         "broadcast": str(network.broadcast_address),
     }
