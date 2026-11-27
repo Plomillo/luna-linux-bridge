@@ -164,21 +164,21 @@ def test_compiled_plans_pass_source_and_capability_preflight():
     for plan in plans:
         assert population.plan_errors(plan, plan["CASE_ID"]) == []
 
-def test_seventeen_authentic_executions_and_983_explicit_not_run_complete_inventory_not_c05():
+def test_twenty_one_authentic_executions_and_979_explicit_not_run_complete_inventory_not_c05():
     report = {
         "expected": 1000,
         "rows": 1000,
-        "authentic_results": 17,
-        "not_run": 983,
+        "authentic_results": 21,
+        "not_run": 979,
         "rejected": [
             {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
-            for number in range(18, 1001)
+            for number in range(22, 1001)
         ],
         "c05_passed": False,
         "c05_status": "NOT_PASSED",
     }
 
-    assert population.evidence_inventory_complete(report) is True
+    assert population.evidence_inventory_complete(report, {f"MGL5-INF-{number:04d}" for number in range(1, 22)}) is True
     assert report["c05_passed"] is False
     assert report["c05_status"] == "NOT_PASSED"
 
@@ -192,17 +192,17 @@ def test_inventory_gate_rejects_missing_or_fabricated_execution_evidence():
         "rejected": [],
     }
 
-    assert population.evidence_inventory_complete(report) is False
+    assert population.evidence_inventory_complete(report, {f"MGL5-INF-{number:04d}" for number in range(1, 22)}) is False
 
 def test_inventory_gate_rejects_duplicate_or_noncanonical_blocker_ids():
     report = {
         "expected": 1000,
         "rows": 1000,
-        "authentic_results": 17,
-        "not_run": 983,
+        "authentic_results": 21,
+        "not_run": 979,
         "rejected": [
             {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
-            for number in range(1, 984)
+            for number in range(22, 1001)
         ],
     }
     report["rejected"][-1]["case_id"] = report["rejected"][0]["case_id"]
