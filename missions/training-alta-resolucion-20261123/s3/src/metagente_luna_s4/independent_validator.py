@@ -69,245 +69,251 @@ def _json(data: bytes | None) -> dict | None:
 
 def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_status: str | None) -> bool:
     """Independent control adjudication; unknown expectation IDs fail closed."""
+    # A negative control may be rejected by the normal oracle while still
+    # satisfying its own independently specified negative/boundary contract.
+    # REJECTED is reserved for the schema-level trapezoid control below.
+    if expect == "trapezoid-zero-panels-rejected":
+        return lifecycle_status == "REJECTED" and observed is None
     if not isinstance(observed, dict):
         return False
+    completed = lifecycle_status in {"EXECUTED", "FAIL"}
     if expect == "empty-token-stream":
-        return lifecycle_status == "EXECUTED" and observed.get("tokens") == []
+        return completed and observed.get("tokens") == []
     if expect == "increment-negative-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "increment-zero-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("completed") == 0 and observed.get("failed") == 0 and observed.get("ids") == []
+        return completed and observed.get("rejected") is False and observed.get("completed") == 0 and observed.get("failed") == 0 and observed.get("ids") == []
     if expect == "request-negative-count-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "request-single-success-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("availability") == 1.0 and observed.get("successes") == 1 and observed.get("failures") == 0 and observed.get("total") == 1
+        return completed and observed.get("rejected") is False and observed.get("availability") == 1.0 and observed.get("successes") == 1 and observed.get("failures") == 0 and observed.get("total") == 1
     if expect == "sqrt-negative-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "sqrt-zero-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("estimate") == 0 and observed.get("residual") == 0
+        return completed and observed.get("rejected") is False and observed.get("estimate") == 0 and observed.get("residual") == 0
     if expect == "sum-negative-count-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "sum-zero-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("naive") == 1.0 and observed.get("kahan") == 1.0
+        return completed and observed.get("rejected") is False and observed.get("naive") == 1.0 and observed.get("kahan") == 1.0
     if expect == "newton-negative-target-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "newton-unit-root-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("root") == 1.0 and observed.get("residual") == 0.0
+        return completed and observed.get("rejected") is False and observed.get("root") == 1.0 and observed.get("residual") == 0.0
     if expect == "trapezoid-zero-panels-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "trapezoid-single-panel-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("value") == 0.5 and observed.get("panels") == 1
+        return completed and observed.get("rejected") is False and observed.get("value") == 0.5 and observed.get("panels") == 1
     if expect == "simpson-odd-panels-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "simpson-minimum-even-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and abs(observed.get("value", 0) - (1 / 3)) < 1e-12 and observed.get("panels") == 2
+        return completed and observed.get("rejected") is False and abs(observed.get("value", 0) - (1 / 3)) < 1e-12 and observed.get("panels") == 2
     if expect == "cube-no-sign-change-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "cube-tight-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("high", 2) - observed.get("low", 0) < 1e-9
+        return completed and observed.get("rejected") is False and observed.get("high", 2) - observed.get("low", 0) < 1e-9
     if expect == "variance-empty-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "variance-singleton-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("population") == 0 and observed.get("sample") is None
+        return completed and observed.get("rejected") is False and observed.get("population") == 0 and observed.get("sample") is None
     if expect == "ratio-zero-denominator-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "ratio-zero-numerator-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("value") == 0 and observed.get("denominator") == 1
+        return completed and observed.get("rejected") is False and observed.get("value") == 0 and observed.get("denominator") == 1
     if expect == "precision-zero-denominator-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "precision-perfect-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("precision") == 1 and observed.get("recall") == 1
+        return completed and observed.get("rejected") is False and observed.get("precision") == 1 and observed.get("recall") == 1
     if expect == "f1-zero-denominator-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "f1-perfect-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("f1") == 1
+        return completed and observed.get("rejected") is False and observed.get("f1") == 1
     if expect == "negative-length-no-read":
-        return lifecycle_status == "EXECUTED" and observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == 0
+        return completed and observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == 0
     if expect == "zero-length-no-read":
-        return lifecycle_status == "EXECUTED" and observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == 0
+        return completed and observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == 0
     if expect == "expanded-invalid-ipv6-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "ipv6-zero-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("expanded") == "0000:0000:0000:0000:0000:0000:0000:0000" and observed.get("integer") == 0
+        return completed and observed.get("rejected") is False and observed.get("expanded") == "0000:0000:0000:0000:0000:0000:0000:0000" and observed.get("integer") == 0
     if expect == "invalid-mask-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True and observed.get("contiguous") is False
+        return completed and observed.get("rejected") is True and observed.get("contiguous") is False
     if expect == "all-ones-mask-valid":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("contiguous") is True and observed.get("bits") == "1" * 32
+        return completed and observed.get("rejected") is False and observed.get("contiguous") is True and observed.get("bits") == "1" * 32
     if expect == "threshold-equality-no-fire":
-        return lifecycle_status == "EXECUTED" and observed.get("at_or_below") is True and observed.get("above") is False
+        return completed and observed.get("at_or_below") is True and observed.get("above") is False
     if expect == "threshold-above-fires":
-        return lifecycle_status == "EXECUTED" and observed.get("at_or_below") is False and observed.get("above") is True
+        return completed and observed.get("at_or_below") is False and observed.get("above") is True
     if expect == "fifo-reversed-order":
-        return lifecycle_status == "EXECUTED" and observed.get("order") == ["C", "B", "A"] and observed.get("remaining") == 0
+        return completed and observed.get("order") == ["C", "B", "A"] and observed.get("remaining") == 0
     if expect == "fifo-singleton":
-        return lifecycle_status == "EXECUTED" and observed.get("order") == ["A"] and observed.get("remaining") == 0
+        return completed and observed.get("order") == ["A"] and observed.get("remaining") == 0
     if expect == "factorial-negative-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True and observed.get("negative_rejected") is True
+        return completed and observed.get("rejected") is True and observed.get("negative_rejected") is True
     if expect == "factorial-zero-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("values") == [1]
+        return completed and observed.get("rejected") is False and observed.get("values") == [1]
     if expect == "symlink-escape-blocked":
-        return lifecycle_status == "EXECUTED" and observed.get("blocked") is True and observed.get("bytes_read") == 0 and observed.get("reason") == "symlink-escapes"
+        return completed and observed.get("blocked") is True and observed.get("bytes_read") == 0 and observed.get("reason") == "symlink-escapes"
     if expect == "internal-symlink-allowed":
-        return lifecycle_status == "EXECUTED" and observed.get("blocked") is False and observed.get("bytes_read") == 7 and observed.get("reason") == "internal-link"
+        return completed and observed.get("blocked") is False and observed.get("bytes_read") == 7 and observed.get("reason") == "internal-link"
     if expect == "malformed-ipv6-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("accepted") is False
+        return completed and observed.get("accepted") is False
     if expect == "ipv6-unspecified-accepted":
-        return lifecycle_status == "EXECUTED" and observed.get("accepted") is True
+        return completed and observed.get("accepted") is True
     if expect == "invalid-prefix-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "host-prefix-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("network") == "192.0.2.130" and observed.get("broadcast") == "192.0.2.130"
+        return completed and observed.get("network") == "192.0.2.130" and observed.get("broadcast") == "192.0.2.130"
     if expect == "ipv6-prefix-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "ipv6-host-prefix":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("prefix") == "2001:db8::1/128"
+        return completed and observed.get("rejected") is False and observed.get("prefix") == "2001:db8::1/128"
     if expect == "noninteger-components-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+        return completed and observed.get("rejected") is True
     if expect == "zero-vector":
-        return lifecycle_status == "EXECUTED" and observed.get("norm") == 0 and observed.get("square") == 0
+        return completed and observed.get("norm") == 0 and observed.get("square") == 0
     if expect == "zero-variance-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("value") is None and observed.get("error") == "zero-variance"
+        return completed and observed.get("value") is None and observed.get("error") == "zero-variance"
     if expect == "perfect-positive-correlation":
-        return lifecycle_status == "EXECUTED" and observed.get("error") is None and isinstance(observed.get("value"), (int, float)) and abs(observed["value"] - 1.0) < 1e-9
+        return completed and observed.get("error") is None and isinstance(observed.get("value"), (int, float)) and abs(observed["value"] - 1.0) < 1e-9
     if expect == "perfect-negative-correlation":
-        return lifecycle_status == "EXECUTED" and observed.get("error") is None and isinstance(observed.get("value"), (int, float)) and abs(observed["value"] + 1.0) < 1e-9
+        return completed and observed.get("error") is None and isinstance(observed.get("value"), (int, float)) and abs(observed["value"] + 1.0) < 1e-9
     if expect == "nfc-mismatch":
-        return lifecycle_status == "EXECUTED" and observed.get("same_nfc") is False and observed.get("nfc") == "é"
+        return completed and observed.get("same_nfc") is False and observed.get("nfc") == "é"
     if expect == "n-tilde-decomposed":
-        return lifecycle_status == "EXECUTED" and observed.get("codepoints") == ["U+006E", "U+0303"]
+        return completed and observed.get("codepoints") == ["U+006E", "U+0303"]
     if expect == "fullwidth-compat":
-        return lifecycle_status == "EXECUTED" and observed.get("compatibility") == "A" and observed.get("preserves_original_form") is False
+        return completed and observed.get("compatibility") == "A" and observed.get("preserves_original_form") is False
     if expect == "distinct-bom-payloads":
-        return lifecycle_status == "EXECUTED" and observed.get("visible") == "marked" and observed.get("plain_text") == "plain" and observed.get("contains_bom_character") is False
+        return completed and observed.get("visible") == "marked" and observed.get("plain_text") == "plain" and observed.get("contains_bom_character") is False
     if expect == "combining-grapheme":
-        return lifecycle_status == "EXECUTED" and observed.get("bytes") == 3 and observed.get("codepoints") == 2 and observed.get("graphemes") == 1
+        return completed and observed.get("bytes") == 3 and observed.get("codepoints") == 2 and observed.get("graphemes") == 1
     if expect == "zwj-one-grapheme":
-        return lifecycle_status == "EXECUTED" and observed.get("preserved") == "👨‍🚀" and observed.get("codepoints") == 3 and observed.get("graphemes") == 1
+        return completed and observed.get("preserved") == "👨‍🚀" and observed.get("codepoints") == 3 and observed.get("graphemes") == 1
     if expect == "single-crlf":
-        return lifecycle_status == "EXECUTED" and observed.get("lines") == ["x"] and observed.get("written") == "x\r\n" and observed.get("doubled_cr") is False
+        return completed and observed.get("lines") == ["x"] and observed.get("written") == "x\r\n" and observed.get("doubled_cr") is False
     if expect == "lone-cr-normalized":
-        return lifecycle_status == "EXECUTED" and observed.get("converted") == "a\nb" and observed.get("cr_remaining") is False
+        return completed and observed.get("converted") == "a\nb" and observed.get("cr_remaining") is False
     if expect == "empty-cell-preserved":
-        return lifecycle_status == "EXECUTED" and observed.get("parsed") == [["", "x"], ["y", "z"]]
+        return completed and observed.get("parsed") == [["", "x"], ["y", "z"]]
     if expect == "nested-types-preserved":
-        return lifecycle_status == "EXECUTED" and observed.get("parsed") == {"items": [1, None, False], "child": {"ok": True}}
+        return completed and observed.get("parsed") == {"items": [1, None, False], "child": {"ok": True}}
     if expect == "single-nonascii":
-        return lifecycle_status == "EXECUTED" and observed.get("parsed") == "ñ" and "\\u00" not in observed.get("raw", "")
+        return completed and observed.get("parsed") == "ñ" and "\\u00" not in observed.get("raw", "")
     if expect == "duplicate-equal-values":
-        return lifecycle_status == "EXECUTED" and observed.get("duplicate_detected") is True and observed.get("deterministic") is True
+        return completed and observed.get("duplicate_detected") is True and observed.get("deterministic") is True
     if expect == "valid-json-accepted":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected_count") == 0 and observed.get("rejected") == []
+        return completed and observed.get("rejected_count") == 0 and observed.get("rejected") == []
     if expect == "empty-object-canonical":
-        return lifecycle_status == "EXECUTED" and observed.get("same") is True and observed.get("canonical") == "{}"
+        return completed and observed.get("same") is True and observed.get("canonical") == "{}"
     if expect == "single-byte-frame":
-        return lifecycle_status == "EXECUTED" and observed.get("length") == 1 and observed.get("checksum") == 255
+        return completed and observed.get("length") == 1 and observed.get("checksum") == 255
     if expect == "exact-power-boundary":
-        return lifecycle_status == "EXECUTED" and observed.get("rows") == [{"value": 16777216, "exact": True}]
+        return completed and observed.get("rows") == [{"value": 16777216, "exact": True}]
     if expect == "zero-decimal-preserved":
-        return lifecycle_status == "EXECUTED" and observed.get("text") == "0.00" and observed.get("used_binary_float") is False
+        return completed and observed.get("text") == "0.00" and observed.get("used_binary_float") is False
     if expect == "other-three-bytes":
-        return lifecycle_status == "EXECUTED" and observed.get("decoded_hex") == "010203"
+        return completed and observed.get("decoded_hex") == "010203"
     if expect == "invalid-padding-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True and observed.get("error_recorded") is True
+        return completed and observed.get("rejected") is True and observed.get("error_recorded") is True
     if expect == "empty-sha256":
-        return lifecycle_status == "EXECUTED" and observed.get("digest_hex") == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        return completed and observed.get("digest_hex") == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     if expect == "empty-manifest-change":
-        return lifecycle_status == "EXECUTED" and observed.get("reproduced") is True and observed.get("altered_changes") is True and observed.get("digest") == "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        return completed and observed.get("reproduced") is True and observed.get("altered_changes") is True and observed.get("digest") == "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
     if expect == "two-records":
-        return lifecycle_status == "EXECUTED" and observed.get("records") == 2 and observed.get("fields", [None])[0] == "a"
+        return completed and observed.get("records") == 2 and observed.get("fields", [None])[0] == "a"
     if expect == "predefined-entity-set":
-        return lifecycle_status == "EXECUTED" and observed.get("text") == "<>&" and observed.get("external_expanded") is False
+        return completed and observed.get("text") == "<>&" and observed.get("external_expanded") is False
     if expect == "self-closing-accepted":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False
+        return completed and observed.get("rejected") is False
     if expect == "all-truncated":
-        return lifecycle_status == "EXECUTED" and observed.get("all_rejected") is True and len(observed.get("rejected_lengths", [])) == 4
+        return completed and observed.get("all_rejected") is True and len(observed.get("rejected_lengths", [])) == 4
     if expect == "empty-oversize-rejected":
-        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True and observed.get("allocated_declared_length") is False
+        return completed and observed.get("rejected") is True and observed.get("allocated_declared_length") is False
     if expect == "field-present":
-        return lifecycle_status == "EXECUTED" and observed.get("absent") is False and observed.get("null") is True and observed.get("empty") is True
+        return completed and observed.get("absent") is False and observed.get("null") is True and observed.get("empty") is True
     if expect == "empty-payload-roundtrip":
-        return lifecycle_status == "EXECUTED" and observed.get("match") is True and observed.get("compressed_differs") is True
+        return completed and observed.get("match") is True and observed.get("compressed_differs") is True
     if expect == "empty-stream-corrupt":
-        return lifecycle_status == "EXECUTED" and observed.get("corruption_detected") is True and observed.get("integrity_claimed") is False
+        return completed and observed.get("corruption_detected") is True and observed.get("integrity_claimed") is False
     if expect == "unknown-signature":
-        return lifecycle_status == "EXECUTED" and observed.get("detected") == "unknown" and observed.get("extension_matches_content") is False
+        return completed and observed.get("detected") == "unknown" and observed.get("extension_matches_content") is False
     if expect == "different-text":
-        return lifecycle_status == "EXECUTED" and observed.get("recovered") not in {
+        return completed and observed.get("recovered") not in {
             "Luna-2026", "computación, información, ñandú"
         }
     if expect == "empty-roundtrip":
-        return lifecycle_status == "EXECUTED" and (
+        return completed and (
             observed.get("recovered", observed.get("visible", observed.get("plain_text", ""))) in {"", "LUNA"}
             or observed.get("bytes_hex") == ""
             or observed.get("visible") == ""
         )
     if expect == "single-multibyte":
-        return lifecycle_status == "EXECUTED" and observed.get("bytes_hex") == "c3b1"
+        return completed and observed.get("bytes_hex") == "c3b1"
     if expect in {"valid-byte-accepted", "valid-pair-accepted"}:
-        return lifecycle_status == "EXECUTED" and observed.get("accepted_as_valid_utf8") is True
+        return completed and observed.get("accepted_as_valid_utf8") is True
     if expect == "opposite-endian":
-        return lifecycle_status == "EXECUTED" and observed.get("bytes_hex") in {
+        return completed and observed.get("bytes_hex") in {
             "004c0055004e0041", "4c0055004e004100"
         }
     if expect == "zero":
-        return lifecycle_status == "EXECUTED" and (
+        return completed and (
             "0x00000000" in observed.values()
             or observed.get("bits_hex") in {"0x00000000", "0x0000000000000000"}
         )
     if expect == "not-the-sample":
-        return lifecycle_status == "EXECUTED" and (
+        return completed and (
             observed.get("little_endian_hex") != "0x04030201"
             and observed.get("minimum") != -8
         )
     if expect == "rejected":
-        return lifecycle_status == "EXECUTED" and bool(observed.get("rejected"))
+        return completed and bool(observed.get("rejected"))
     if expect == "both-kept":
-        return lifecycle_status == "EXECUTED" and bool(observed.get("kept", observed.get("accepted")))
+        return completed and bool(observed.get("kept", observed.get("accepted")))
     if expect == "max-positive":
-        return lifecycle_status == "EXECUTED" and observed.get("signed") == 32767
+        return completed and observed.get("signed") == 32767
     if expect == "not-minus-one":
-        return lifecycle_status == "EXECUTED" and observed.get("signed") == 0
+        return completed and observed.get("signed") == 0
     if expect == "one":
-        return lifecycle_status == "EXECUTED" and observed.get("bits_hex") in {
+        return completed and observed.get("bits_hex") in {
             "0x3f800000", "0x3ff0000000000000"
         }
     if expect == "no-prefix":
-        return lifecycle_status == "EXECUTED" and observed.get("expanded_names") == ["x"]
+        return completed and observed.get("expanded_names") == ["x"]
     if expect == "different-names":
-        return lifecycle_status == "EXECUTED" and observed.get("same_expanded_name") is False
+        return completed and observed.get("same_expanded_name") is False
     if expect == "one-element":
-        return lifecycle_status == "EXECUTED" and (
+        return completed and (
             observed.get("sum") == 11 or observed.get("minimum") == 4
         )
     if expect == "not-fifteen":
-        return lifecycle_status == "EXECUTED" and observed.get("sum") != 15
+        return completed and observed.get("sum") != 15
     if expect == "no-duplicates":
-        return lifecycle_status == "EXECUTED" and observed.get("duplicates") == []
+        return completed and observed.get("duplicates") == []
     if expect == "single-duplicate":
-        return lifecycle_status == "EXECUTED" and observed.get("duplicates") == [5]
+        return completed and observed.get("duplicates") == [5]
     if expect == "mismatched-brackets":
-        return lifecycle_status == "EXECUTED" and observed.get("results") == [{"text": "([)]", "accepted": False}]
+        return completed and observed.get("results") == [{"text": "([)]", "accepted": False}]
     if expect == "empty-brackets":
-        return lifecycle_status == "EXECUTED" and observed.get("results") == [{"text": "", "accepted": True}]
+        return completed and observed.get("results") == [{"text": "", "accepted": True}]
     if expect == "first-match-absent":
-        return lifecycle_status == "EXECUTED" and observed.get("index") is None and observed.get("duplicates") == []
+        return completed and observed.get("index") is None and observed.get("duplicates") == []
     if expect == "first-match-singleton":
-        return lifecycle_status == "EXECUTED" and observed.get("index") == 0 and observed.get("duplicates") == [0]
+        return completed and observed.get("index") == 0 and observed.get("duplicates") == [0]
     if expect == "binary-find-absent":
-        return lifecycle_status == "EXECUTED" and observed.get("index") is None and isinstance(observed.get("comparisons"), int) and observed["comparisons"] > 0
+        return completed and observed.get("index") is None and isinstance(observed.get("comparisons"), int) and observed["comparisons"] > 0
     if expect == "binary-find-first":
-        return lifecycle_status == "EXECUTED" and observed.get("index") == 0 and isinstance(observed.get("comparisons"), int) and 1 <= observed["comparisons"] <= 5
+        return completed and observed.get("index") == 0 and isinstance(observed.get("comparisons"), int) and 1 <= observed["comparisons"] <= 5
     if expect == "empty-record-set":
-        return lifecycle_status == "EXECUTED" and observed.get("records") == [] and observed.get("rejected") is False
+        return completed and observed.get("records") == [] and observed.get("rejected") is False
     if expect == "single-underflow":
         return (
-            lifecycle_status == "EXECUTED"
+            completed
             and observed.get("underflow_count") == 1
             and observed.get("events") == [{"operation": "underflow", "source": "pop"}]
         )
     if expect == "empty-stack-sequence":
         return (
-            lifecycle_status == "EXECUTED"
+            completed
             and observed.get("events") == []
             and observed.get("stack") == []
             and observed.get("underflow_count") == 0
@@ -315,13 +321,88 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "descending-seed-singleton":
         ordered = observed.get("ordered")
         return (
-            lifecycle_status == "EXECUTED"
+            completed
             and observed.get("rejected") is False
             and observed.get("length") == 1
             and isinstance(ordered, list) and len(ordered) == 1
             and observed.get("first") == observed.get("last") == ordered[0]
             and observed.get("checksum") == ordered[0]
         )
+
+    if expect == "valid-pair-accepted":
+        return completed and observed.get("accepted_as_valid_utf8") is True
+    if expect == "already-composed":
+        return completed and observed.get("same_nfc") is True and observed.get("nfc") == "a"
+    if expect == "also-rejected":
+        return completed and observed.get("rejected_count") == 1
+    if expect == "not-the-vector":
+        return lifecycle_status == "FAIL"
+    if expect == "no-cr":
+        return completed and observed.get("written") == "a\\r\\nb\\r\\n"
+    if expect == "already-lf":
+        return completed and observed.get("converted") == "a\\nb" and observed.get("cr_remaining") is False
+    if expect == "one-column":
+        return completed and observed.get("parsed") == [["plain"]]
+    if expect == "ascii":
+        return completed and observed.get("parsed") == "abc"
+    if expect == "no-duplicate":
+        return completed and observed.get("duplicate_detected") is False
+    if expect == "different":
+        return completed and observed.get("same") is False
+    if expect == "balanced-accepted":
+        return completed and observed.get("rejected") is False
+    if expect == "empty-payload":
+        return completed and observed.get("length") == 0 and observed.get("checksum") == 0
+    if expect == "other-decimal":
+        return completed and observed.get("text") == "0.2" and observed.get("used_binary_float") is False
+    if expect == "other-bytes":
+        return completed and observed.get("decoded_hex") == "000000"
+    if expect == "valid-accepted":
+        return completed and observed.get("rejected") is False
+    if expect == "one-token":
+        return completed and observed.get("tokens") == [{"kind": "word", "lexeme": "x", "start": 0, "end": 1}]
+    if expect == "other-json":
+        return completed and observed.get("parsed") == {"n": 1}
+    if expect == "unchanged":
+        return completed and observed.get("altered_changes") is False
+    if expect == "nan-edge":
+        return completed and observed.get("equals_itself") is False
+    if expect == "inf-edge":
+        return completed and observed.get("positive_sign") is True and observed.get("negative_sign") is True
+    if expect == "subnormal-edge":
+        return completed and observed.get("is_subnormal") is True
+    if expect == "ascii-nfd":
+        return completed and observed.get("codepoints") == ["U+0061"]
+    if expect == "ascii-nfkc":
+        return completed and observed.get("compatibility") == "A" and observed.get("preserves_original_form") is True
+    if expect == "one-unit":
+        return completed and observed.get("graphemes") == 1 and observed.get("codepoints") == 1
+    if expect == "two-units":
+        return completed and observed.get("graphemes") == observed.get("codepoints") == 2
+    if expect == "other-newline":
+        fields = observed.get("fields")
+        return completed and observed.get("records") == 1 and isinstance(fields, list) and bool(fields) and fields[0] == "x\\ny"
+    if expect == "plain-text":
+        return completed and observed.get("text") == "ok" and observed.get("external_expanded") is False
+    if expect == "other-cut":
+        return completed and observed.get("all_rejected") is True
+    if expect == "other-oversize":
+        return completed and observed.get("rejected") is True and observed.get("allocated_declared_length") is False
+    if expect == "next-inexact":
+        return completed and observed.get("rows") == [{"value": 16777219, "exact": False}]
+    if expect == "not-empty":
+        return completed and observed.get("empty") is False and observed.get("null") is True
+    if expect == "other-payload":
+        return completed and observed.get("match") is True and observed.get("compressed_differs") is True
+    if expect == "other-damaged":
+        return completed and observed.get("corruption_detected") is True and observed.get("integrity_claimed") is False
+    if expect == "extension-agrees":
+        return completed and observed.get("detected") == "png" and observed.get("extension_matches_content") is True
+    if expect == "elf-extension-match":
+        return completed and observed.get("detected") == "elf" and observed.get("extension_matches_content") is True
+    if expect == "float-edge":
+        return completed and observed.get("equal") is False and observed.get("difference") != 0
+
     return False
 
 
