@@ -38,7 +38,12 @@ def test_missing_input_is_not_invented():
 def test_seven_literal_instructions():
     rows = {row["case_id"]: row for row in run_all()}
     assert rows["MGL5-INF-0105"]["execution_status"] == "CRITERION_MET"
-    assert rows["MGL5-INF-0105"]["observed"]["ids"] == ["b", "d", "a", "c"]
+    stable = rows["MGL5-INF-0105"]["observed"]
+    # The executor's contract is to preserve complete records, not emit a
+    # detached ids-only projection. Verify both sorted order and stable ties.
+    assert [record["id"] for record in stable["records"]] == ["b", "d", "a", "c"]
+    assert stable["ids_by_age"] == {"20": ["b", "d"], "30": ["a", "c"]}
+    assert stable["rejected"] is False
     assert rows["MGL5-INF-0106"]["execution_status"] == "BLOCKED"
     assert rows["MGL5-INF-0106"]["missing_information"] == ["input-integers"]
     assert rows["MGL5-INF-0109"]["execution_status"] == "CRITERION_MET"
