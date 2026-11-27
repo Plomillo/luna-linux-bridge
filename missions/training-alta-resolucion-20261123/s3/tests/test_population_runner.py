@@ -192,3 +192,18 @@ def test_inventory_gate_rejects_missing_or_fabricated_execution_evidence():
     }
 
     assert population.evidence_inventory_complete(report) is False
+
+def test_inventory_gate_rejects_duplicate_or_noncanonical_blocker_ids():
+    report = {
+        "expected": 1000,
+        "rows": 1000,
+        "authentic_results": 15,
+        "not_run": 985,
+        "rejected": [
+            {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
+            for number in range(1, 986)
+        ],
+    }
+    report["rejected"][-1]["case_id"] = report["rejected"][0]["case_id"]
+
+    assert population.evidence_inventory_complete(report) is False
