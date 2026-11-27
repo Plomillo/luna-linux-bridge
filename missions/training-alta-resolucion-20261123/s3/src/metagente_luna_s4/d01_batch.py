@@ -29,9 +29,9 @@ CASES = [
     {"case_id": "MGL5-INF-0033", "capability_id": "yaml_types", "arguments": {"yaml_text": "name: Luna\nenabled: true\ncount: 7\nitems:\n  - one\n  - two\n"}},
     {"case_id": "MGL5-INF-0034", "capability_id": "yaml_ambiguous", "arguments": {"version": "1.2", "yaml_text": "enabled: yes\ndate: 2026-11-27\nexplicit: true\n"}},
     {"case_id": "MGL5-INF-0035", "capability_id": "protobuf_compat", "arguments": {"payload_hex": "0a044c756e611007"}},
-    {"case_id": "MGL5-INF-0039", "capability_id": "schema_migrate", "arguments": {"document": {"version": 1, "id": "A-1", "name": "Luna", "active": true}}},
+    {"case_id": "MGL5-INF-0039", "capability_id": "schema_migrate", "arguments": {"document": {"version": 1, "id": "A-1", "name": "Luna", "active": True}}},
     {"case_id": "MGL5-INF-0040", "capability_id": "unknown_field", "arguments": {"record": {"id": "A-1", "name": "Luna", "extra": "preserved"}, "known_fields": ["id", "name"]}},
-    {"case_id": "MGL5-INF-0049", "capability_id": "mixed_roundtrip", "arguments": {"document": {"id": 7, "name": "Luna", "enabled": true, "tags": ["core", "s3"]}}},
+    {"case_id": "MGL5-INF-0049", "capability_id": "mixed_roundtrip", "arguments": {"document": {"id": 7, "name": "Luna", "enabled": True, "tags": ["core", "s3"]}}},
 ]
 
 
