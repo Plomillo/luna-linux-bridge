@@ -7,6 +7,8 @@ import math
 import struct
 import unicodedata
 
+import yaml
+
 
 def utf8_roundtrip(text: str) -> dict:
     raw = text.encode("utf-8")
@@ -169,3 +171,16 @@ def sha256_text(text: str) -> dict:
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
     print(digest)
     return {"digest_hex": digest}
+
+ 
+def yaml_types(text: str) -> dict:
+    """Parse a small YAML mapping and expose concrete value types."""
+    try:
+        value = yaml.safe_load(text)
+    except yaml.YAMLError:
+        return {"rejected": True, "reason": "yaml-parse-error"}
+    if not isinstance(value, dict):
+        return {"rejected": True, "reason": "root-must-be-mapping"}
+    types = {key: type(item).__name__ for key, item in value.items()}
+    print(types)
+    return {"rejected": False, "parsed": value, "types": types}
