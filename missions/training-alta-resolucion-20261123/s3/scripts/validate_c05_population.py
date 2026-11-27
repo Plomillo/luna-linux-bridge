@@ -46,7 +46,7 @@ def main(argv: list[str]) -> int:
         print(str(exc), file=sys.stderr)
         return 2
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({
         "c05_status": report["c05_status"],
         "rows": report["rows"],
