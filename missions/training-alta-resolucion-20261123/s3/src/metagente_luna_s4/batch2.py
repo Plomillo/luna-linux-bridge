@@ -35,7 +35,7 @@ CASES = [
     {"case_id": "MGL5-INF-0102", "capability_id": "array_minmax", "arguments": {"values": [-8, 4, 4, 19, 0]}},
     {"case_id": "MGL5-INF-0151", "capability_id": "tokenize", "arguments": {"text": "let x = 42 + 3;"}},
     {"case_id": "MGL5-INF-0251", "capability_id": "ipv4_check", "arguments": {"addresses": ["192.0.2.17", "192.0.2.256"]}},
-    {"case_id": "MGL5-INF-0601", "capability_id": "binary_float_gap", "arguments": {}},
+    {"case_id": "MGL5-INF-0601", "capability_id": "binary_float_gap", "arguments": {"left": 0.1, "right": 0.2, "target": 0.3}},
 ]
 
 
