@@ -61,17 +61,17 @@ def test_yaml_ambiguous_scalars_follow_the_declared_schema_version():
     from metagente_luna_s3.d01_exec import yaml_ambiguous
     from metagente_luna_s3.d01_oracle import yaml_ambiguous_oracle
 
-    arguments_11 = {"text": "flag: yes\\ndate: 2026-01-02\\n", "schema_version": "1.1"}
+    arguments_11 = {"text": "flag: yes\ndate: 2026-01-02\n", "schema_version": "1.1"}
     result_11 = yaml_ambiguous(**arguments_11)
     assert yaml_ambiguous_oracle(arguments_11, result_11)["ok"] is True
     assert result_11["types"] == {"flag": "bool", "date": "date"}
 
-    arguments_12 = {"text": "flag: yes\\ndate: 2026-01-02\\n", "schema_version": "1.2"}
+    arguments_12 = {"text": "flag: yes\ndate: 2026-01-02\n", "schema_version": "1.2"}
     result_12 = yaml_ambiguous(**arguments_12)
     assert yaml_ambiguous_oracle(arguments_12, result_12)["ok"] is True
     assert result_12["types"] == {"flag": "str", "date": "str"}
 
-    negative = {"text": "flag: yes\\n  broken: x\\n", "schema_version": "1.1"}
+    negative = {"text": "flag: yes\n  broken: x\n", "schema_version": "1.1"}
     rejected = yaml_ambiguous(**negative)
     assert yaml_ambiguous_oracle(negative, rejected)["ok"] is True
     assert accepts("yaml-invalid-rejected", rejected, "EXECUTED") is True
