@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute source-grounded C05 plans; incomplete plans receive evidence-backed BLOCKED preflight outcomes.
+"""Execute source-grounded C05 plans; incomplete plans remain explicit NOT_RUN blockers.
 
 Plan JSONL record:
 {
@@ -22,8 +22,11 @@ Plan JSONL record:
   }
 }
 
-The script never infers missing capabilities or invents inputs. It writes a new
-ledger and report; it does not mutate historical C05 dossiers or helper ledgers.
+The script never infers missing capabilities or invents inputs. It does not
+launch Docker containers for cases that have no executable plan. Those cases
+are written to a source-bound NOT_RUN blocker inventory and never counted as
+executions. It writes new evidence artifacts; it does not mutate historical
+C05 dossiers or helper ledgers.
 """
 from __future__ import annotations
 
@@ -178,50 +181,6 @@ def source_record(case_id: str) -> tuple[dict, str]:
         "source_blob": hashlib.sha1(f"blob {len(raw)}\0".encode("ascii") + raw).hexdigest(),
         **fields,
     }, excerpt)
-
-
-def execute_blocked_preflight(
-    case_id: str, blocker_code: str, details: str, evidence_root: Path, sandbox_image: str,
-) -> dict:
-    source_metadata, source_excerpt = source_record(case_id)
-
-    def arguments(phase: str) -> dict:
-        return {
-            "case_id": case_id,
-            "blocker_code": blocker_code,
-            "phase": phase,
-            "details": details,
-        }
-
-    runs = [
-        execute_isolated(
-            "c05_preflight_blocked", arguments("NORMAL_PLAN"), case_id,
-            evidence_root=str(evidence_root), run_kind="NORMAL",
-            source_metadata=source_metadata, source_excerpt=source_excerpt,
-            timeout_seconds=60, sandbox_image=sandbox_image,
-        )
-        for _ in range(3)
-    ]
-    for kind, phase in (("negative", "NEGATIVE_CONTROL"), ("boundary", "BOUNDARY_CONTROL")):
-        control = {
-            "definition": f"{kind.upper()} preflight control; the underlying case operation is not invoked",
-            "expected_behavior": "Record the missing source-grounded execution prerequisite as BLOCKED",
-            "source": f"{source_metadata['source_file']}:{source_metadata['line_start']}-{source_metadata['line_end']}",
-            "expect": "preflight-blocked",
-        }
-        runs.append(execute_isolated(
-            "c05_preflight_blocked", arguments(phase), case_id,
-            evidence_root=str(evidence_root), run_kind=kind.upper(),
-            control_metadata=control,
-            source_metadata=source_metadata, source_excerpt=source_excerpt,
-            timeout_seconds=60, sandbox_image=sandbox_image,
-        ))
-    row = assemble_case_record(case_id, runs)
-    row["source_metadata"] = source_metadata
-    row["blocker_code"] = blocker_code
-    row["block_reason"] = details
-    row["independent_validation"] = independently_validate_case(row, evidence_root)
-    return row
 
 
 def evidence_inventory_complete(report: dict) -> bool:
