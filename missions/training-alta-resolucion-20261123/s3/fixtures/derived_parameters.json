@@ -1,11 +1,15 @@
 {
   "cube-interval": {
-    "low": 1.0,
-    "high": 2.0,
+    "low": 1,
+    "high": 2,
     "reason": "f(1)=1-2 is negative and f(2)=8-2 is positive, so [1, 2] contains the real root of x^3-2."
   },
   "line-points": {
-    "xs": [0, 1, 2],
+    "xs": [
+      0,
+      1,
+      2
+    ],
     "slope": 2,
     "intercept": 3,
     "reason": "The equation y=2x+3 does not name the abscissas. 0, 1 and 2 are the smallest non-negative integers."
@@ -13,20 +17,32 @@
   "euler-steps": {
     "coarse_step": 0.1,
     "fine_step": 0.05,
-    "horizon": 1.0,
+    "horizon": 1,
     "reason": "The source asks to show that a smaller step reduces the error. These two steps were declared before the run."
   },
   "rk4-step": {
     "step": 0.1,
-    "horizon": 1.0,
+    "horizon": 1,
     "reason": "The same step used for the coarse Euler run, declared before the comparison."
   },
   "stable-ages": {
     "records": [
-      {"id": "a", "age": 30},
-      {"id": "b", "age": 20},
-      {"id": "c", "age": 30},
-      {"id": "d", "age": 20}
+      {
+        "id": "a",
+        "age": 30
+      },
+      {
+        "id": "b",
+        "age": 20
+      },
+      {
+        "id": "c",
+        "age": 30
+      },
+      {
+        "id": "d",
+        "age": 20
+      }
     ],
     "reason": "The source requires equal ages and distinct ids. It does not list them. This is the authorized minimal fixture."
   },
@@ -36,13 +52,117 @@
     "reason": "The source fixes the length at 10000 and the program fixes the seed as the numeric suffix 0106."
   },
   "stack-script": {
-    "steps": ["push:1", "push:2", "peek", "pop", "pop", "pop"],
+    "steps": [
+      "push:1",
+      "push:2",
+      "peek",
+      "pop",
+      "pop",
+      "pop"
+    ],
     "reason": "The source requires a predefined push, pop, peek and underflow sequence. This sequence was declared before the run."
   },
   "moving-window": {
     "seed": 632,
     "length": 6,
     "window": 3,
-    "reason": "The source fixes window 3 and the program fixes seed 0632. The six samples are drawn from that seed."
+    "values": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "reason": "Source specifies window 3 and a six-sample fixture. Explicit values are frozen to avoid generating hidden data from a seed."
+  },
+  "bfs-six-node": {
+    "nodes": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F"
+    ],
+    "edges": [
+      [
+        "A",
+        "B"
+      ],
+      [
+        "A",
+        "C"
+      ],
+      [
+        "B",
+        "D"
+      ],
+      [
+        "C",
+        "D"
+      ],
+      [
+        "D",
+        "E"
+      ],
+      [
+        "E",
+        "F"
+      ]
+    ],
+    "start": "A",
+    "target": "F",
+    "reason": "Minimal six-node directed graph with two equal-length paths; neighbor order is fixed in the fixture."
+  },
+  "matrix-product": {
+    "left": [
+      [
+        1,
+        2,
+        3
+      ],
+      [
+        4,
+        5,
+        6
+      ]
+    ],
+    "right": [
+      [
+        7,
+        8
+      ],
+      [
+        9,
+        10
+      ],
+      [
+        11,
+        12
+      ]
+    ],
+    "reason": "Source asks for 2x3 times 3x2. Explicit small integer matrices make every output independently recomputable."
+  },
+  "determinant-reference": {
+    "matrix": [
+      [
+        6,
+        1,
+        1
+      ],
+      [
+        4,
+        -2,
+        5
+      ],
+      [
+        2,
+        8,
+        7
+      ]
+    ],
+    "expected": -306,
+    "reason": "Minimal 3x3 integer reference matrix; determinant can be checked by cofactor expansion."
   }
 }
