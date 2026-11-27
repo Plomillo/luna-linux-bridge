@@ -188,3 +188,28 @@ def forensic_report_oracle(arguments: dict, observed: dict) -> dict:
     inference_rows = [{"anomaly": item["code"], "confidence": "structural"} for item in expected]
     conclusion = {"anomaly_count": len(expected), "integrity": "INCOMPLETE" if expected else "NO_ANOMALY_DETECTED"}
     return {"ok": observed.get("observations") == expected and observed.get("inferences") == inference_rows and observed.get("conclusion") == conclusion, "method": "independent size, CRC32, and interval reconstruction"}
+
+
+def wasm_sections_oracle(arguments: dict, observed: dict) -> dict:
+    offset, expected = 8, []
+    for item in arguments["sections"]:
+        payload_size = len(bytes.fromhex(item["payload_hex"]))
+        length_size = 1
+        remaining = payload_size
+        while remaining >= 128:
+            length_size += 1
+            remaining >>= 7
+        expected.append({"section_id": item["section_id"], "offset": offset, "payload_offset": offset + 1 + length_size, "payload_size": payload_size, "within_module": True})
+        offset += 1 + length_size + payload_size
+    valid = arguments["truncate_index"] == -1
+    if valid:
+        matching = observed.get("sections") == expected and observed.get("valid") is True and observed.get("module_size") == offset
+    else:
+        matching = observed.get("valid") is False and observed.get("module_size") == offset - 1 and all(row.get("within_module") is True for row in observed.get("sections", []))
+    return {"ok": matching, "method": "independent ULEB128 length-width and module-offset reconstruction"}
+
+
+def wasm_type_indices_oracle(arguments: dict, observed: dict) -> dict:
+    count, indices = arguments["type_count"], arguments["function_type_indices"]
+    invalid = [index for index in indices if index < 0 or index >= count]
+    return {"ok": observed.get("rejected") is bool(invalid) and observed.get("type_count") == count and observed.get("function_type_indices") == indices and observed.get("invalid_indices") == invalid, "method": "independent function-index range check"}

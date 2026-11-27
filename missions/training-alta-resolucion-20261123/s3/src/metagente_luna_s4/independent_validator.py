@@ -139,6 +139,10 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "seven-zip-empty-file-listed": return completed and observed.get("members") == [{"name": "empty.bin", "size": 0, "method": "not_applicable_empty"}]
     if expect == "seven-zip-out-of-range-part-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "missing_part_index_out_of_range"
     if expect == "seven-zip-first-volume-missing": return completed and observed.get("rejected") is False and observed.get("missing_volume") == "parts.7z.001" and observed.get("reconstruction_complete") is False and observed.get("seven_zip_test_exit_code") != 0
+    if expect == "wasm-truncated-section-rejected": return completed and observed.get("valid") is False
+    if expect == "wasm-empty-custom-section": return completed and observed.get("valid") is True and observed.get("sections") == [{"section_id": 0, "offset": 8, "payload_offset": 10, "payload_size": 0, "within_module": True}]
+    if expect == "wasm-type-index-out-of-range": return completed and observed.get("rejected") is True and observed.get("invalid_indices") == [1]
+    if expect == "wasm-no-types-no-functions": return completed and observed.get("rejected") is False and observed.get("invalid_indices") == []
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

@@ -74,6 +74,10 @@ def _build() -> None:
     _add("MGL5-INF-0076", "boundary", "seven_zip_list", {"entries": [{"name": "empty.bin", "data_hex": ""}]}, "seven-zip-empty-file-listed")
     _add("MGL5-INF-0077", "negative", "seven_zip_missing_volume", {"payload_hex": "00" * 8192, "volume_size": 1024, "missing_part": 99}, "seven-zip-out-of-range-part-rejected")
     _add("MGL5-INF-0077", "boundary", "seven_zip_missing_volume", {"payload_hex": "00" * 8192, "volume_size": 2048, "missing_part": 1}, "seven-zip-first-volume-missing")
+    _add("MGL5-INF-0086", "negative", "wasm_sections", {"sections": [{"section_id": 1, "payload_hex": "01600000"}, {"section_id": 3, "payload_hex": "0100"}], "truncate_index": 1}, "wasm-truncated-section-rejected")
+    _add("MGL5-INF-0086", "boundary", "wasm_sections", {"sections": [{"section_id": 0, "payload_hex": ""}], "truncate_index": -1}, "wasm-empty-custom-section")
+    _add("MGL5-INF-0087", "negative", "wasm_type_indices", {"type_count": 1, "function_type_indices": [1]}, "wasm-type-index-out-of-range")
+    _add("MGL5-INF-0087", "boundary", "wasm_type_indices", {"type_count": 0, "function_type_indices": []}, "wasm-no-types-no-functions")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -355,6 +359,10 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "seven-zip-empty-file-listed": return control_completed and observed.get("members") == [{"name": "empty.bin", "size": 0, "method": "not_applicable_empty"}]
     if expect == "seven-zip-out-of-range-part-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "missing_part_index_out_of_range"
     if expect == "seven-zip-first-volume-missing": return control_completed and observed.get("rejected") is False and observed.get("missing_volume") == "parts.7z.001" and observed.get("reconstruction_complete") is False and observed.get("seven_zip_test_exit_code") != 0
+    if expect == "wasm-truncated-section-rejected": return control_completed and observed.get("valid") is False
+    if expect == "wasm-empty-custom-section": return control_completed and observed.get("valid") is True and observed.get("sections") == [{"section_id": 0, "offset": 8, "payload_offset": 10, "payload_size": 0, "within_module": True}]
+    if expect == "wasm-type-index-out-of-range": return control_completed and observed.get("rejected") is True and observed.get("invalid_indices") == [1]
+    if expect == "wasm-no-types-no-functions": return control_completed and observed.get("rejected") is False and observed.get("invalid_indices") == []
     if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.

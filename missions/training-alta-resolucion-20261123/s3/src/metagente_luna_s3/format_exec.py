@@ -266,3 +266,55 @@ def forensic_report(payload_hex: str, declared_size: int, stored_crc32: int, sec
             if max(left["offset"], right["offset"]) < min(left["offset"] + left["size"], right["offset"] + right["size"]):
                 anomalies.append({"code": "SECTION_OVERLAP", "offset": max(left["offset"], right["offset"]), "sections": [left["name"], right["name"]]})
     return {"observations": anomalies, "inferences": [{"anomaly": item["code"], "confidence": "structural"} for item in anomalies], "conclusion": {"anomaly_count": len(anomalies), "integrity": "INCOMPLETE" if anomalies else "NO_ANOMALY_DETECTED"}}
+
+
+def _uleb128(value: int) -> bytes:
+    encoded = bytearray()
+    while True:
+        byte = value & 0x7F
+        value >>= 7
+        encoded.append(byte | (0x80 if value else 0))
+        if not value:
+            return bytes(encoded)
+
+
+def wasm_sections(sections: list[dict], truncate_index: int) -> dict:
+    raw = bytearray(b"\0asm\x01\0\0\0")
+    for section in sections:
+        payload = bytes.fromhex(section["payload_hex"])
+        raw.append(section["section_id"])
+        raw.extend(_uleb128(len(payload)))
+        raw.extend(payload)
+    if truncate_index >= 0:
+        if truncate_index >= len(sections):
+            raise ValueError("truncated section index is outside fixture")
+        del raw[-1:]
+    parsed, offset, valid = [], 8, raw[:4] == b"\0asm" and raw[4:8] == b"\x01\0\0\0"
+    while valid and offset < len(raw):
+        section_offset, section_id = offset, raw[offset]
+        offset += 1
+        size, shift = 0, 0
+        while offset < len(raw):
+            byte = raw[offset]
+            offset += 1
+            size |= (byte & 0x7F) << shift
+            if not byte & 0x80:
+                break
+            shift += 7
+            if shift > 35:
+                valid = False
+                break
+        else:
+            valid = False
+            break
+        if not valid or offset + size > len(raw):
+            valid = False
+            break
+        parsed.append({"section_id": section_id, "offset": section_offset, "payload_offset": offset, "payload_size": size, "within_module": True})
+        offset += size
+    return {"sections": parsed, "valid": valid and offset == len(raw), "module_size": len(raw)}
+
+
+def wasm_type_indices(type_count: int, function_type_indices: list[int]) -> dict:
+    invalid = [index for index in function_type_indices if index < 0 or index >= type_count]
+    return {"rejected": bool(invalid), "type_count": type_count, "function_type_indices": function_type_indices, "invalid_indices": invalid}
