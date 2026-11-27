@@ -69,7 +69,9 @@ def build() -> tuple[list[dict], dict]:
                 reasons.append("NORMAL_CAPABILITY_UNREGISTERED")
             if not isinstance(spec.get("arguments"), dict):
                 reasons.append("NORMAL_ARGUMENTS_NOT_TYPED_OBJECT")
-        if interpreter is not None:
+        # An interpreter candidate is an alternative planning route, not
+        # an additional gate when a complete typed normal spec already exists.
+        if interpreter is not None and spec is None:
             if interpreter["status"] != "READY":
                 reasons.append("INTERPRETER_CANDIDATE_NOT_READY")
             elif not interpreter["registered"]:
