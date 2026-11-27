@@ -35,6 +35,7 @@ def _valid_row_with_artifacts(tmp_path):
             "fixture": _write_artifact(tmp_path, f"{run_id}/fixture.json", {"case_id": case_id, "run_id": run_id, "fixture_id": "fixture-v1", "run_kind": kind, "input": {"sample": index}, "control": ({"definition": f"{kind} control", "expected_behavior": "oracle-defined", "source": "test-spec"} if kind != "NORMAL" else None)}),
             "environment": _write_artifact(tmp_path, f"{run_id}/environment.json", {"case_id": case_id, "run_id": run_id, "environment_id": "pytest-local"}),
             "procedure": _write_artifact(tmp_path, f"{run_id}/procedure.json", {"case_id": case_id, "run_id": run_id, "steps": ["invoke", "observe"]}),
+            "control_spec": _write_artifact(tmp_path, f"{run_id}/control_spec.json", {"case_id": case_id, "run_id": run_id, "run_kind": kind, "control": ({"definition": f"{kind} control", "expected_behavior": "oracle-defined", "source": "test-spec"} if kind != "NORMAL" else None)}),
             "stdout": _write_artifact(tmp_path, f"{run_id}/stdout.txt", "execution output"),
             "stderr": _write_artifact(tmp_path, f"{run_id}/stderr.txt", ""),
             "observed": _write_artifact(tmp_path, f"{run_id}/observed.json", {"case_id": case_id, "run_id": run_id, "value": "observed"}),
