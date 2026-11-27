@@ -87,7 +87,7 @@ def nan_policy(payload_hex: str = "7ff8000000000000") -> dict:
     return {
         "payload_hex": payload_hex.lower(),
         "is_nan": is_nan,
-        "equals_itself": bool(value == value),
+        "equals_itself": bool(value == value),  # noqa: PLR0124
         "ordinary": not is_nan,
         "accepted": True,
     }
