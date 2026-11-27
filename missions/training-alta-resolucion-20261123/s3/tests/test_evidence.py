@@ -18,6 +18,7 @@ def _source_reference(case_id):
     start = next(index for index, line in enumerate(lines) if case_id.encode("utf-8") in line)
     end = min(start + 5, len(lines))
     excerpt = b"".join(lines[start:end])
+    excerpt_text = excerpt.decode("utf-8")
     metadata = {
         "source_file": source_file,
         "line_start": start + 1,
@@ -26,7 +27,17 @@ def _source_reference(case_id):
         "excerpt_sha256": hashlib.sha256(excerpt).hexdigest(),
         "source_blob": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
     }
-    return metadata, excerpt.decode("utf-8")
+    prefixes = {
+        "operation": "FUENTE/OPERACIÓN:",
+        "acceptance_criterion": "PASS:",
+        "oracle_requirement": "ORÁCULO:",
+    }
+    for field, prefix in prefixes.items():
+        metadata[field] = next(
+            line.split(":", 1)[1].strip()
+            for line in excerpt_text.splitlines() if line.startswith(prefix)
+        )
+    return metadata, excerpt_text
 
 def test_persist_run_writes_byte_hashed_artifacts_without_certifying(tmp_path):
     record = {
