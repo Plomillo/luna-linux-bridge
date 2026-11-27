@@ -1,0 +1,17 @@
+*.zip
+*.7z
+*.rar
+*.opus
+*.ogg
+*.mp3
+*.m4a
+*.wav
+*.aac
+*.mp4
+.local/
+output/
+audio_transcripts/
+conversation.md
+manifest.json
+__pycache__/
+.venv/
