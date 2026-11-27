@@ -8,6 +8,7 @@ from pathlib import Path, PurePosixPath
 AUDIO_EXTENSIONS = {".opus", ".ogg", ".mp3", ".m4a", ".wav", ".aac", ".flac", ".mp4"}
 MESSAGE_RE = re.compile(r"^(\d{1,2}/\d{1,2}/\d{4}),\s+(\d{1,2}:\d{2})\s*([ap])\.\s*m\.\s+-\s+(.*)$", re.I)
 ATTACHMENT_RE = re.compile(r"([^\\/<>\s]+\.(?:opus|ogg|mp3|m4a|wav|aac|flac|mp4))", re.I)
+BIDI_TRANSLATION = str.maketrans("", "", "\u200e\u200f\u202a\u202b\u202c\u2066\u2067\u2068\u2069")
 
 def sha256_file(path):
     h = hashlib.sha256()
@@ -37,6 +38,12 @@ def parse_chat(text):
         elif messages:
             messages[-1]["body"] += "\n" + line
     return messages
+
+def find_attachment_name(body):
+    """Return an attachment basename after removing WhatsApp bidi control marks."""
+    normalized = body.translate(BIDI_TRANSLATION)
+    match = ATTACHMENT_RE.search(normalized)
+    return match.group(1) if match else None
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
@@ -103,10 +110,9 @@ def main():
              "> Reconstrucción automática. Las transcripciones Whisper requieren revisión humana.", ""]
     for msg in messages:
         body = msg["body"]
-        match = ATTACHMENT_RE.search(body)
-        if match and match.group(1).lower() in results:
-            name = match.group(1)
-            item = results[name.lower()]
+        name = find_attachment_name(body)
+        item = results.get(name.lower()) if name else None
+        if item:
             body += f"\n\n**Transcripción automática:** {item['text']}\n\nArchivo: {item['file']}"
         lines += [f"## {msg['timestamp']:%Y-%m-%d %H:%M} — {msg['sender']}", "", body, ""]
     (output / "conversation.md").write_text("\n".join(lines), encoding="utf-8")
