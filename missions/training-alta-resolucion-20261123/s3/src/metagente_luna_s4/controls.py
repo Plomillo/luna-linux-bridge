@@ -85,7 +85,7 @@ def _build() -> None:
     _add("MGL5-INF-0045", "boundary", "zlib_corrupt", {"payload_hex": "01"}, "other-damaged")
     _add("MGL5-INF-0051", "negative", "magic_bytes", {"name": "sample.png", "payload_hex": "89504e470d0a1a0a"}, "extension-agrees")
     _add("MGL5-INF-0601", "boundary", "binary_float_gap", {}, "float-edge")
-    _add("MGL5-INF-0105", "negative", "stable_ages", {"records": [{"id": "bad", "age": "unknown"}]}, "rejected")
+    _add("MGL5-INF-0105", "negative", "stable_ages", {"records": [{"id": "", "age": 30}]}, "rejected")
     _add("MGL5-INF-0105", "boundary", "stable_ages", {"records": []}, "empty-record-set")
     _add("MGL5-INF-0109", "negative", "stack_sequence", {"steps": ["pop"]}, "single-underflow")
     _add("MGL5-INF-0109", "boundary", "stack_sequence", {"steps": []}, "empty-stack-sequence")
