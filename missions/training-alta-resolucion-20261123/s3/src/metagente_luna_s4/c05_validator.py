@@ -379,6 +379,18 @@ def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
     return errors
 
 
+def _functional_population_passes(rows: list[dict]) -> bool:
+    """Return true only when all 1,000 underlying operations contractually pass."""
+    return (
+        len(rows) == 1000
+        and all(
+            row.get("execution_status") == "PASS"
+            and row.get("contract_status") == "PASS"
+            for row in rows
+        )
+    )
+
+
 def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
     """Validate the exact INF population against persisted, byte-verified evidence."""
     identifiers = [row.get("CASE_ID") or row.get("case_id") for row in rows]
@@ -450,6 +462,7 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
         and contractual_pass == 1000
         and operation_passed == 1000
         and outcome_counts == {"BLOCKED": 0, "FAIL": 0, "INCONCLUSIVE": 0, "PASS": 1000}
+        and _functional_population_passes(rows)
     )
     return {
         "c05_passed": passed,
