@@ -9,7 +9,7 @@ VALIDATOR_ID = "LUNA_C05_INDEPENDENT_VALIDATOR"
 VALIDATOR_VERSION = "1.0.0"
 REQUIRED = {
     "fixture", "environment", "procedure", "control_spec", "stdout", "stderr",
-    "observed", "oracle", "metrics", "oracle_source", "producer_source",
+    "observed", "oracle", "metrics", "oracle_source", "producer_source", "source_excerpt",
 }
 
 
@@ -133,6 +133,13 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
             findings.append("fixture-identity-or-input-invalid")
         elif kind in inputs:
             inputs[kind].append(_digest(json.dumps(fixture["input"], sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")))
+        source_metadata = fixture.get("source") if isinstance(fixture, dict) else None
+        source_excerpt = loaded.get("source_excerpt")
+        if (not isinstance(source_metadata, dict)
+                or not all(field in source_metadata for field in ("source_file", "line_start", "line_end", "file_sha256", "excerpt_sha256", "source_blob"))
+                or source_excerpt is None or _digest(source_excerpt) != source_metadata.get("excerpt_sha256")
+                or case_id.encode("utf-8") not in source_excerpt):
+            findings.append("source-line-provenance-invalid")
         if not oracle or oracle.get("case_id") != case_id or oracle.get("run_id") != run_id:
             findings.append("oracle-identity-invalid")
         else:
