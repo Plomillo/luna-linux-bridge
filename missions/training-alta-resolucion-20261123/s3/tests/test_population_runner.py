@@ -128,8 +128,8 @@ def test_plan_compiler_emits_only_cases_with_both_authored_controls():
 
     plans, report = compiler.compile_plans()
 
-    assert report["compiled_executable_plans"] == len(plans) == 116
-    assert report["not_in_plan_set"] == 884
+    assert report["compiled_executable_plans"] == len(plans) == 119
+    assert report["not_in_plan_set"] == 881
     assert report["certification"] == "NOT_PASSED"
     assert [plan["CASE_ID"] for plan in plans] == sorted(plan["CASE_ID"] for plan in plans)
     for plan in plans:
@@ -197,7 +197,7 @@ def _compiled_case_ids():
     return {plan["CASE_ID"] for plan in plans}
 
 
-def test_116_authored_plans_and_884_explicit_not_run_complete_inventory_not_c05():
+def test_119_authored_plans_and_881_explicit_not_run_complete_inventory_not_c05():
     executable = _compiled_case_ids()
     rejected = [case_id for case_id in population.EXPECTED if case_id not in executable]
     report = {
@@ -210,8 +210,8 @@ def test_116_authored_plans_and_884_explicit_not_run_complete_inventory_not_c05(
         "c05_status": "NOT_PASSED",
     }
 
-    assert len(executable) == 116
-    assert len(rejected) == 884
+    assert len(executable) == 119
+    assert len(rejected) == 881
     assert population.evidence_inventory_complete(report, executable) is True
     assert report["c05_passed"] is False
     assert report["c05_status"] == "NOT_PASSED"

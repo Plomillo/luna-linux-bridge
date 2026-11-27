@@ -21,6 +21,9 @@ EXPECTED = {
     "MGL5-INF-0073": "tar_offsets",
     "MGL5-INF-0074": "tar_truncated",
     "MGL5-INF-0075": "gzip_crc",
+    "MGL5-INF-0078": "sqlite_header",
+    "MGL5-INF-0079": "sqlite_integrity",
+    "MGL5-INF-0085": "wasm_header",
 }
 
 

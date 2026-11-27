@@ -19,6 +19,8 @@ from metagente_luna_s3 import (
     batch6_oracle,
     d01_exec,
     d01_oracle,
+    format_exec,
+    format_oracle,
     more_exec,
     more_oracle,
 )
@@ -185,7 +187,7 @@ REGISTRY["c05_preflight_blocked"] = _cap(
 
 _ARCHIVE_SCHEMAS = {
     "zip_path_safety": {"type": "object", "required": ["entries"], "properties": {"entries": {"type": "array", "items": {"type": "object", "required": ["name", "data_hex"], "properties": {"name": {"type": "string"}, "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False}}}, "additionalProperties": False},
-    "zip_crc": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False},
+    "zip_crc": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "minLength": 2, "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False},
     "zip_duplicates": {"type": "object", "required": ["names", "payloads_hex"], "properties": {"names": {"type": "array", "items": {"type": "string"}}, "payloads_hex": {"type": "array", "items": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}}, "additionalProperties": False},
     "tar_offsets": {"type": "object", "required": ["entries"], "properties": {"entries": {"type": "array", "minItems": 3, "items": {"type": "object", "required": ["name", "data_hex"], "properties": {"name": {"type": "string"}, "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False}}}, "additionalProperties": False},
     "tar_truncated": {"type": "object", "required": ["first_hex", "second_hex", "cut_into_second"], "properties": {"first_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})+$"}, "second_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})+$"}, "cut_into_second": {"type": "integer", "minimum": 0}}, "additionalProperties": False},
@@ -194,6 +196,15 @@ _ARCHIVE_SCHEMAS = {
 _ARCHIVE_ORACLES = {"zip_path_safety": "archive_path", "zip_crc": "archive_zip_crc", "zip_duplicates": "archive_zip_duplicates", "tar_offsets": "archive_tar_offsets", "tar_truncated": "archive_tar_truncated", "gzip_crc": "archive_gzip_crc"}
 for _archive_name, _archive_oracle in _ARCHIVE_ORACLES.items():
     REGISTRY[_archive_name] = _cap(_archive_name, _archive_oracle, _ARCHIVE_SCHEMAS[_archive_name])
+
+_FORMAT_SCHEMAS = {
+    "sqlite_header": {"type": "object", "required": ["page_size"], "properties": {"page_size": {"type": "integer", "enum": [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]}}, "additionalProperties": False},
+    "sqlite_integrity": {"type": "object", "required": ["corrupt", "values"], "properties": {"corrupt": {"type": "boolean"}, "values": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": False},
+    "wasm_header": {"type": "object", "required": ["magic_hex", "version"], "properties": {"magic_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2}){4}$"}, "version": {"type": "integer", "minimum": 0, "maximum": 4294967295}}, "additionalProperties": False},
+}
+_FORMAT_ORACLES = {"sqlite_header": "sqlite_header_independent", "sqlite_integrity": "sqlite_integrity_independent", "wasm_header": "wasm_header_independent"}
+for _format_name, _format_oracle in _FORMAT_ORACLES.items():
+    REGISTRY[_format_name] = _cap(_format_name, _format_oracle, _FORMAT_SCHEMAS[_format_name])
 
 ORACLES: dict[str, Callable[..., dict]] = {
     "ipaddress": cidr_bounds_oracle,
@@ -276,6 +287,7 @@ ORACLES: dict[str, Callable[..., dict]] = {
 
 ORACLES["c05_preflight_blocked_oracle"] = c05_preflight_oracle.blocked_preflight_oracle
 ORACLES.update({"archive_path": archive_oracle.path_oracle, "archive_zip_crc": archive_oracle.crc_oracle, "archive_zip_duplicates": archive_oracle.duplicate_oracle, "archive_tar_offsets": archive_oracle.tar_offsets_oracle, "archive_tar_truncated": archive_oracle.truncated_oracle, "archive_gzip_crc": archive_oracle.gzip_oracle})
+ORACLES.update({"sqlite_header_independent": format_oracle.sqlite_header_oracle, "sqlite_integrity_independent": format_oracle.sqlite_integrity_oracle, "wasm_header_independent": format_oracle.wasm_header_oracle})
 
 EXECUTORS: dict[str, Callable[..., dict]] = {
     "cidr_bounds": cidr_bounds,
@@ -357,6 +369,7 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
 }
 
 EXECUTORS.update({"zip_path_safety": archive_exec.zip_path_safety, "zip_crc": archive_exec.zip_crc, "zip_duplicates": archive_exec.zip_duplicates, "tar_offsets": archive_exec.tar_offsets, "tar_truncated": archive_exec.tar_truncated, "gzip_crc": archive_exec.gzip_crc})
+EXECUTORS.update({"sqlite_header": format_exec.sqlite_header, "sqlite_integrity": format_exec.sqlite_integrity, "wasm_header": format_exec.wasm_header})
 
 EXECUTORS["c05_preflight_blocked"] = c05_preflight.blocked_preflight_probe
 

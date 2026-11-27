@@ -26,8 +26,8 @@ def _build() -> None:
     _add("MGL5-INF-0001", "negative", text, {"text": "Luna-2025"}, "different-text")
     _add("MGL5-INF-0070", "negative", "zip_path_safety", {"entries": [{"name": "../../escape", "data_hex": "78"}]}, "zip-traversal-blocked")
     _add("MGL5-INF-0070", "boundary", "zip_path_safety", {"entries": [{"name": "inside.txt", "data_hex": ""}]}, "zip-safe-empty")
-    _add("MGL5-INF-0071", "negative", "zip_crc", {"payload_hex": "00"}, "zip-corrupt-crc-detected")
-    _add("MGL5-INF-0071", "boundary", "zip_crc", {"payload_hex": ""}, "zip-empty-crc-detected")
+    _add("MGL5-INF-0071", "negative", "zip_crc", {"payload_hex": "0102"}, "zip-corrupt-crc-detected")
+    _add("MGL5-INF-0071", "boundary", "zip_crc", {"payload_hex": "00"}, "zip-minimum-member-crc-detected")
     _add("MGL5-INF-0072", "negative", "zip_duplicates", {"names": ["x", "x"], "payloads_hex": ["61", "62"]}, "zip-duplicate-content-preserved")
     _add("MGL5-INF-0072", "boundary", "zip_duplicates", {"names": ["only"], "payloads_hex": [""]}, "zip-single-entry-preserved")
     _add("MGL5-INF-0073", "negative", "tar_offsets", {"entries": [{"name": "a", "data_hex": ""}, {"name": "b", "data_hex": "00"}, {"name": "c", "data_hex": ""}]}, "tar-empty-block-boundaries")
@@ -36,6 +36,12 @@ def _build() -> None:
     _add("MGL5-INF-0074", "boundary", "tar_truncated", {"first_hex": "61", "second_hex": "62", "cut_into_second": 0}, "tar-second-empty-prefix-incomplete")
     _add("MGL5-INF-0075", "negative", "gzip_crc", {"payload_hex": "00"}, "gzip-crc-mismatch-detected")
     _add("MGL5-INF-0075", "boundary", "gzip_crc", {"payload_hex": ""}, "gzip-empty-crc-mismatch-detected")
+    _add("MGL5-INF-0078", "negative", "sqlite_header", {"page_size": 512}, "sqlite-minimum-page-size")
+    _add("MGL5-INF-0078", "boundary", "sqlite_header", {"page_size": 65536}, "sqlite-maximum-page-size")
+    _add("MGL5-INF-0079", "negative", "sqlite_integrity", {"corrupt": True, "values": ["alpha", "beta"]}, "sqlite-corruption-reported")
+    _add("MGL5-INF-0079", "boundary", "sqlite_integrity", {"corrupt": False, "values": []}, "sqlite-empty-integrity-ok")
+    _add("MGL5-INF-0085", "negative", "wasm_header", {"magic_hex": "0161736d", "version": 1}, "wasm-invalid-magic-rejected")
+    _add("MGL5-INF-0085", "boundary", "wasm_header", {"magic_hex": "0061736d", "version": 0}, "wasm-version-zero-rejected")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -278,12 +284,17 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     control_completed = status in {"EXECUTED", "FAIL"}
     if expect == "zip-traversal-blocked": return control_completed and observed.get("blocked") == ["../../escape"] and observed.get("outside_write") is False
     if expect == "zip-safe-empty": return control_completed and observed.get("safe") == ["inside.txt"] and observed.get("blocked") == []
-    if expect in {"zip-corrupt-crc-detected", "zip-empty-crc-detected"}: return control_completed and observed.get("crc_error_detected") is True
+    if expect in {"zip-corrupt-crc-detected", "zip-minimum-member-crc-detected"}: return control_completed and observed.get("crc_error_detected") is True and observed.get("damaged_member_crc32") != observed.get("central_crc32")
     if expect == "zip-duplicate-content-preserved": return control_completed and observed.get("collisions") == ["x"] and observed.get("contents") == ["61", "62"] and observed.get("silent_overwrite") is False
     if expect == "zip-single-entry-preserved": return control_completed and observed.get("collisions") == [] and observed.get("contents") == [""]
     if expect == "tar-empty-block-boundaries": return control_completed and [row["header_offset"] for row in observed.get("members", [])] == [0, 512, 1536] and [row["size"] for row in observed.get("members", [])] == [0, 1, 0]
     if expect == "tar-one-byte-block-boundaries": return control_completed and [row["header_offset"] for row in observed.get("members", [])] == [0, 1024, 2048] and all(row["size"] == 1 for row in observed.get("members", []))
     if expect in {"tar-second-header-only-incomplete", "tar-second-empty-prefix-incomplete"}: return control_completed and observed.get("first_preserved") is True and observed.get("second_incomplete") is True
+    if expect in {"sqlite-minimum-page-size", "sqlite-maximum-page-size"}: return control_completed and observed.get("page_size") in {512, 65536} and observed.get("encoding") == "UTF-8"
+    if expect == "sqlite-corruption-reported": return control_completed and observed.get("integrity") is False and observed.get("corrupt_input") is True and bool(observed.get("messages"))
+    if expect == "sqlite-empty-integrity-ok": return control_completed and observed.get("integrity") is True and observed.get("messages") == ["ok"]
+    if expect == "wasm-invalid-magic-rejected": return control_completed and observed.get("accepted") is False and observed.get("magic_valid") is False
+    if expect == "wasm-version-zero-rejected": return control_completed and observed.get("accepted") is False and observed.get("magic_valid") is True and observed.get("version") == 0
     if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.

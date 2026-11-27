@@ -44,6 +44,9 @@ CASES = [
     {"case_id": "MGL5-INF-0073", "capability_id": "tar_offsets", "arguments": {"entries": [{"name": "a", "data_hex": "61"}, {"name": "b", "data_hex": "62"}, {"name": "c", "data_hex": "6363"}]}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: three USTAR members, deterministic 512-byte blocks"},
     {"case_id": "MGL5-INF-0074", "capability_id": "tar_truncated", "arguments": {"first_hex": "6669727374", "second_hex": "7365636f6e64", "cut_into_second": 2}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: truncation two bytes into second member payload"},
     {"case_id": "MGL5-INF-0075", "capability_id": "gzip_crc", "arguments": {"payload_hex": "677a69702d637263"}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: deterministic payload; executor alters trailer CRC32 only"},
+    {"case_id": "MGL5-INF-0078", "capability_id": "sqlite_header", "arguments": {"page_size": 4096}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: generated in-memory SQLite database; header fields read from serialized bytes"},
+    {"case_id": "MGL5-INF-0079", "capability_id": "sqlite_integrity", "arguments": {"corrupt": False, "values": ["alpha", "beta"]}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: SQLite lab copy generated in memory; negative mutates only the copy header"},
+    {"case_id": "MGL5-INF-0085", "capability_id": "wasm_header", "arguments": {"magic_hex": "0061736d", "version": 1}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: WebAssembly magic and version encoded per binary format"},
 
     {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
     {"case_id": "MGL5-INF-0102", "capability_id": "array_minmax", "arguments": {"values": [-8, 4, 4, 19, 0]}},
