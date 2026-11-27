@@ -205,11 +205,10 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
         if not environment or environment.get("case_id") != case_id or environment.get("run_id") != run_id:
             findings.append("environment-identity-invalid")
         else:
+            from metagente_luna_s4.isolation import isolation_evidence_valid
+
             isolation = environment.get("isolation")
-            if (not isinstance(isolation, dict) or isolation.get("mode") != "FRESH_PROCESS_TEMPORARY_WORKSPACE"
-                    or isolation.get("process_isolated") is not True or isolation.get("workspace_ephemeral") is not True
-                    or isolation.get("cwd_isolated") is not True or isolation.get("home_isolated") is not True
-                    or isolation.get("tmp_isolated") is not True or isolation.get("sandbox") is not False):
+            if not isolation_evidence_valid(isolation):
                 findings.append("process-isolation-evidence-invalid")
         if not procedure or procedure.get("case_id") != case_id or procedure.get("run_id") != run_id:
             findings.append("procedure-identity-invalid")
