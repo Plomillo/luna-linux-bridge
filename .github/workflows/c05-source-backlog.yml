@@ -1,0 +1,31 @@
+name: C05 source-bound planning backlog
+on:
+  push:
+    branches:
+      - repair/metagente-luna-structured-20261125
+    paths:
+      - "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt"
+      - "missions/training-alta-resolucion-20261123/s3/scripts/build_c05_source_backlog.py"
+      - ".github/workflows/c05-source-backlog.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: c05-source-backlog-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build source-bound backlog (no execution plans generated)
+        run: python missions/training-alta-resolucion-20261123/s3/scripts/build_c05_source_backlog.py
+      - name: Upload immutable source planning artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: c05-source-backlog-${{ github.sha }}
+          path: |
+            missions/training-alta-resolucion-20261123/s3/reports/C05_SOURCE_PLAN_BACKLOG.jsonl
+            missions/training-alta-resolucion-20261123/s3/reports/C05_SOURCE_PLAN_BACKLOG_SUMMARY.json
+          if-no-files-found: error
+          retention-days: 90
