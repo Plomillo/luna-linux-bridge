@@ -228,6 +228,24 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
                     findings.append("control-semantic-validator-error")
         if not observed or observed.get("case_id") != case_id or observed.get("run_id") != run_id:
             findings.append("observed-identity-invalid")
+        if run.get("execution_status") == "BLOCKED":
+            value = (observed or {}).get("value")
+            expected_phase = {
+                "NORMAL": "NORMAL_PLAN",
+                "NEGATIVE": "NEGATIVE_CONTROL",
+                "BOUNDARY": "BOUNDARY_CONTROL",
+            }.get(kind)
+            detail = (oracle or {}).get("detail") if isinstance(oracle, dict) else None
+            if (not isinstance(value, dict) or value.get("blocked") is not True
+                    or value.get("case_id") != case_id
+                    or value.get("phase") != expected_phase
+                    or value.get("operation_invoked") is not False
+                    or not isinstance(value.get("blocker_code"), str) or not value["blocker_code"]
+                    or not isinstance(value.get("details"), str) or not value["details"]):
+                findings.append("blocked-preflight-observation-invalid")
+            if (not isinstance(detail, dict) or detail.get("valid_blocked_record") is not True
+                    or detail.get("underlying_operation_result") != "NOT_OBSERVED"):
+                findings.append("blocked-preflight-independent-oracle-invalid")
         if not metrics or metrics.get("case_id") != case_id or metrics.get("run_id") != run_id:
             findings.append("metrics-identity-invalid")
 
