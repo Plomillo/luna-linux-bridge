@@ -92,3 +92,30 @@ def test_population_cli_rejects_mutable_or_unpinned_image_reference(capsys):
 
     assert result == 2
     assert "immutable" in capsys.readouterr().err
+
+
+
+def test_plan_compiler_emits_only_cases_with_both_authored_controls():
+    script = Path(__file__).parents[1] / "scripts" / "build_c05_executable_plans.py"
+    compiler_spec = importlib.util.spec_from_file_location("build_c05_executable_plans", script)
+    assert compiler_spec is not None and compiler_spec.loader is not None
+    compiler = importlib.util.module_from_spec(compiler_spec)
+    compiler_spec.loader.exec_module(compiler)
+
+    plans, report = compiler.compile_plans()
+
+    assert report["compiled_executable_plans"] == len(plans) == 13
+    assert report["not_in_plan_set"] == 987
+    assert report["certification"] == "NOT_PASSED"
+    assert [plan["CASE_ID"] for plan in plans] == sorted(plan["CASE_ID"] for plan in plans)
+    for plan in plans:
+        assert plan["source_metadata"]["source_blob"]
+        assert plan["source_metadata"]["excerpt_sha256"]
+        assert plan["source_metadata"]["operation"] in plan["source_excerpt"]
+        assert plan["source_metadata"]["acceptance_criterion"] in plan["source_excerpt"]
+        assert plan["source_metadata"]["oracle_requirement"] in plan["source_excerpt"]
+        assert plan["negative"]["control_metadata"]["expect"]
+        assert plan["boundary"]["control_metadata"]["expect"]
+        assert plan["normal"]["arguments"] != plan["negative"]["arguments"]
+        assert plan["normal"]["arguments"] != plan["boundary"]["arguments"]
+        assert plan["negative"]["arguments"] != plan["boundary"]["arguments"]
