@@ -142,7 +142,7 @@ def _valid_row_with_artifacts(tmp_path):
         }
         (repetitions if kind == "NORMAL" else controls).append(run)
     row = {
-        "CASE_ID": case_id, "execution_status": "PASS", "contract_status": "PASS",
+        "CASE_ID": case_id, "execution_status": "PASS", "contract_status": "NOT_A_PASS",
         "repetitions": repetitions, "controls": controls,
     }
     row["independent_validation"] = independently_validate_case(row, tmp_path)
@@ -331,3 +331,11 @@ def test_independent_control_oracle_is_separate_and_fails_closed():
     assert _independent_control_accepts(
         "unregistered-expectation", {"value": "anything"}, "EXECUTED"
     ) is False
+
+def test_contractual_pass_requires_explicit_three_run_and_two_control_adjudication(tmp_path):
+    row = _valid_row_with_artifacts(tmp_path)
+    row["contract_status"] = "PASS"
+
+    errors = _validate_row(row, tmp_path)
+
+    assert "contract-adjudication-missing-or-failed" in errors
