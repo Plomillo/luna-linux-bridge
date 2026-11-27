@@ -226,7 +226,7 @@ def test_inventory_gate_rejects_duplicate_or_noncanonical_blocker_ids():
 def test_inventory_gate_rejects_blocker_set_that_is_not_exact_executable_complement():
     executable = _compiled_case_ids()
     rejected_ids = [case_id for case_id in population.EXPECTED if case_id not in executable]
-    rejected_ids[-1] = sorted(executable)[0]  # omit a genuine NOT_RUN case and misclassify an executable case
+    rejected_ids[-1] = min(executable)  # omit a genuine NOT_RUN case and misclassify an executable case
     report = {
         "expected": 1000,
         "rows": 1000,
