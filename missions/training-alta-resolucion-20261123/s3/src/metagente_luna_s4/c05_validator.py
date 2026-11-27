@@ -430,7 +430,27 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
             rejected.append({"case_id": case_id, "reasons": sorted(set(errors))})
         else:
             authentic += 1
-    passed = not problems and not rejected and authentic == 1000 and not_run == 0
+    outcome_counts = {
+        outcome: sum(row.get("execution_status") == outcome for row in rows)
+        for outcome in sorted(EXECUTION_OUTCOMES)
+    }
+    operation_passed = sum(
+        row.get("execution_status") == "PASS" and row.get("contract_status") == "PASS"
+        for row in rows
+    )
+    # Complete, authentic BLOCKED dossiers are useful forensic evidence, but
+    # they do not demonstrate that the underlying operations work. C05 is a
+    # functional gate: every one of the 1,000 cases must execute and pass its
+    # contract with independently verified evidence.
+    passed = (
+        not problems
+        and not rejected
+        and authentic == 1000
+        and not_run == 0
+        and contractual_pass == 1000
+        and operation_passed == 1000
+        and outcome_counts == {"BLOCKED": 0, "FAIL": 0, "INCONCLUSIVE": 0, "PASS": 1000}
+    )
     return {
         "c05_passed": passed,
         "c05_status": "PASS" if passed else "NOT_PASSED",
@@ -440,9 +460,11 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
         "not_run_counts_as_execution": False,
         "authentic_results": authentic,
         "contractual_pass": contractual_pass,
+        "operation_passed": operation_passed,
+        "execution_outcomes": outcome_counts,
         "rejected": rejected,
         "structure_problems": problems,
         "evidence_root_supplied": root is not None,
         "human_review_required": False,
-        "reason": "C05 requires 1,000 individually accounted dossiers with persisted, byte-verified evidence and independent validation; preflight BLOCKED is terminal but never an operation PASS.",
+        "reason": "C05 functional certification requires 1,000 individually accounted dossiers, 1,000 successful underlying operations, 1,000 contractual PASS results, persisted byte-verified evidence, and independent validation. BLOCKED preflight records are evidence of blockers, never functional operation PASS.",
     }
