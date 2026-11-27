@@ -147,7 +147,7 @@ def source_record(case_id: str) -> tuple[dict, str]:
     text = raw.decode("utf-8")
     lines = raw.splitlines(keepends=True)
     match = re.search(
-        rf"(?m)^\[{re.escape(case_id)}\].*?(?=^\[MGL5-INF-|\Z)",
+        rf"(?m)^\[{re.escape(case_id)}\].*?(?=^\[MGL5-(?:INF|TEO)-|\Z)",
         text,
         re.S,
     )
