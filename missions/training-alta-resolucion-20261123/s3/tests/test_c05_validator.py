@@ -212,7 +212,7 @@ def test_evidence_paths_cannot_be_reused_between_repetitions(tmp_path):
 def test_relabeling_same_input_as_negative_and_boundary_is_rejected(tmp_path):
     row = _valid_row_with_artifacts(tmp_path)
     first = row["repetitions"][0]["artifacts"]["fixture"]
-    second = row["repetitions"][1]["artifacts"]["fixture"]
+    second = row["controls"][0]["artifacts"]["fixture"]
     source = json.loads((tmp_path / first["path"]).read_text(encoding="utf-8"))
     target_path = tmp_path / second["path"]
     target = json.loads(target_path.read_text(encoding="utf-8"))
