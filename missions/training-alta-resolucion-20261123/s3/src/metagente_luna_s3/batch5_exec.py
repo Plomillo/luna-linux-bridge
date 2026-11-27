@@ -270,6 +270,10 @@ def child_env() -> dict:
 
 
 def expand_v6(address: str) -> dict:
+    try:
+        ipaddress.IPv6Address(address)
+    except ipaddress.AddressValueError as exc:
+        return {"rejected": True, "reason": str(exc)}
     halves = address.split("::")
     left = halves[0].split(":") if halves[0] else []
     right = halves[1].split(":") if len(halves) > 1 and halves[1] else []
@@ -280,13 +284,17 @@ def expand_v6(address: str) -> dict:
     for group in groups:
         integer = (integer << 16) | int(group, 16)
     print(expanded)
-    return {"expanded": expanded, "integer": integer}
+    return {"rejected": False, "expanded": expanded, "integer": integer}
 
 
 def mask_bits(mask: str) -> dict:
-    bits = "".join(f"{int(part):08b}" for part in mask.split("."))
+    parts = mask.split(".")
+    if len(parts) != 4 or any(not part.isdecimal() or not 0 <= int(part) <= 255 for part in parts):
+        return {"rejected": True, "reason": "invalid IPv4 octet"}
+    bits = "".join(f"{int(part):08b}" for part in parts)
+    contiguous = "01" not in bits
     print(bits)
-    return {"bits": bits, "contiguous": "01" not in bits}
+    return {"rejected": not contiguous, "bits": bits, "contiguous": contiguous}
 
 
 def reject_age() -> dict:
