@@ -1,0 +1,30 @@
+name: C05 hosted authentic seed execution
+on:
+  push:
+    branches: [repair/metagente-luna-structured-20261125]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  seed-0254:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: missions/training-alta-resolucion-20261123/s3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e .
+      - name: Execute source-grounded case MGL5-INF-0254
+        run: python scripts/execute_c05_seed_0254.py
+      - name: Upload raw hosted execution evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c05-seed-0254-\${{ github.sha }}
+          path: missions/training-alta-resolucion-20261123/s3/reports/C05_SEED_0254_EVIDENCE
+          if-no-files-found: error
+          retention-days: 90
