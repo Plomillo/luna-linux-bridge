@@ -97,10 +97,10 @@ def _valid_row_with_artifacts(tmp_path):
             }),
         }
         artifacts["environment_lock"] = _write_artifact(
-            tmp_path, f"{run_id}/environment.lock", "python==3.12\\npytest==8.3.0\\n"
+            tmp_path, f"{run_id}/environment.lock", "python==3.12\npytest==8.3.0\n"
         )
         sums_content = "".join(
-            f"{entry['sha256']}  {entry['path']}\\n"
+            f"{entry['sha256']}  {entry['path']}\n"
             for _, entry in sorted(artifacts.items())
         )
         artifacts["sha256sums"] = _write_artifact(
