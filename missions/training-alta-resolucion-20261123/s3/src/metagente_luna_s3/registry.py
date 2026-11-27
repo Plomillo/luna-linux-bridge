@@ -175,6 +175,31 @@ REGISTRY: dict[str, Capability] = {
         "properties": {"steps": {"type": "array", "items": {"type": "string"}}},
         "additionalProperties": False,
     }),
+    "shortest_path": _cap("shortest_path", "shortest_path_reference", {
+        "type": "object", "required": ["nodes", "edges", "start", "target"],
+        "properties": {
+            "nodes": {"type": "array", "items": {"type": "string"}},
+            "edges": {"type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "string"}}},
+            "start": {"type": "string"}, "target": {"type": "string"},
+        }, "additionalProperties": False,
+    }),
+    "matrix_multiply": _cap("matrix_multiply", "matrix_product_reference", {
+        "type": "object", "required": ["left", "right"],
+        "properties": {"left": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}},
+                       "right": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}}},
+        "additionalProperties": False,
+    }),
+    "determinant_3x3": _cap("determinant_3x3", "determinant_reference", {
+        "type": "object", "required": ["matrix"],
+        "properties": {"matrix": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}}},
+        "additionalProperties": False,
+    }),
+    "moving_average": _cap("moving_average", "moving_average_reference", {
+        "type": "object", "required": ["values", "window"],
+        "properties": {"values": {"type": "array", "items": {"type": "number"}},
+                       "window": {"type": "integer", "minimum": 1}},
+        "additionalProperties": False,
+    }),
 }
 
 REGISTRY["c05_preflight_blocked"] = _cap(
@@ -310,6 +335,10 @@ ORACLES: dict[str, Callable[..., dict]] = {
     "request_counts": batch4_oracle.request_counts,
     "stable_age_records": batch6_oracle.stable_ages_oracle,
     "stack_state_machine": batch6_oracle.stack_sequence_oracle,
+    "shortest_path_reference": batch6_oracle.shortest_path_oracle,
+    "matrix_product_reference": batch6_oracle.matrix_multiply_oracle,
+    "determinant_reference": batch6_oracle.determinant_3x3_oracle,
+    "moving_average_reference": batch6_oracle.moving_average_oracle,
 }
 
 REGISTRY.update({
@@ -414,6 +443,10 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "request_log": batch4_exec.request_log,
     "stable_ages": batch6_exec.stable_ages,
     "stack_sequence": batch6_exec.stack_sequence,
+    "shortest_path": batch6_exec.shortest_path,
+    "matrix_multiply": batch6_exec.matrix_multiply,
+    "determinant_3x3": batch6_exec.determinant_3x3,
+    "moving_average": batch6_exec.moving_average,
 }
 
 EXECUTORS.update({"zip_path_safety": archive_exec.zip_path_safety, "zip_crc": archive_exec.zip_crc, "zip_duplicates": archive_exec.zip_duplicates, "tar_offsets": archive_exec.tar_offsets, "tar_truncated": archive_exec.tar_truncated, "gzip_crc": archive_exec.gzip_crc})
