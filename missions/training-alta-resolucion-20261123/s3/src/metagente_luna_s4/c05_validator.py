@@ -103,11 +103,11 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
         errors.append("execution-outcome-invalid")
     if not isinstance(rep.get("exit_code"), int) or isinstance(rep.get("exit_code"), bool):
         errors.append("exit-code-missing")
-    if not isinstance(rep.get("agent_version"), str) or not rep["agent_version"]:
+    if not isinstance(rep.get("agent_version"), str) or not rep["agent_version"] or rep["agent_version"] == "UNDECLARED":
         errors.append("agent-version-missing")
-    if not isinstance(rep.get("executor_version"), str) or not rep["executor_version"]:
+    if not isinstance(rep.get("executor_version"), str) or not rep["executor_version"] or rep["executor_version"] == "UNDECLARED":
         errors.append("executor-version-missing")
-    if not isinstance(rep.get("machinery"), str) or not rep["machinery"]:
+    if not isinstance(rep.get("machinery"), str) or not rep["machinery"] or rep["machinery"] == "UNDECLARED":
         errors.append("machinery-missing")
     started = rep.get("started")
     ended = rep.get("ended")
