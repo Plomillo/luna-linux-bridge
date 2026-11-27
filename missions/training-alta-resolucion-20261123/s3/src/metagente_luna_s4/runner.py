@@ -111,6 +111,8 @@ def execute_isolated(
     evidence_root: str,
     run_kind: str = "NORMAL",
     control_metadata: dict | None = None,
+    source_metadata: dict | None = None,
+    source_excerpt: str | None = None,
     timeout_seconds: int = 60,
 ) -> dict:
     """Run in a fresh Python process and temporary workspace; this is not a sandbox."""
@@ -124,6 +126,31 @@ def execute_isolated(
         raise ValueError("negative and boundary runs require definition, expected_behavior, and source")
     if timeout_seconds < 1:
         raise ValueError("timeout_seconds must be positive")
+    required_source_fields = {"source_file", "line_start", "line_end", "file_sha256", "excerpt_sha256", "source_blob"}
+    if not isinstance(source_metadata, dict) or required_source_fields - set(source_metadata):
+        raise ValueError("source metadata must bind the source file, line range, hashes, and Git blob")
+    if not isinstance(source_excerpt, str) or not case_id in source_excerpt:
+        raise ValueError("source excerpt must contain the exact case ID")
+    source_root = Path(__file__).resolve().parents[5]
+    source_path = (source_root / source_metadata["source_file"]).resolve()
+    try:
+        source_path.relative_to(source_root)
+    except ValueError as exc:
+        raise ValueError("source path escapes repository root") from exc
+    source_bytes = source_path.read_bytes()
+    if hashlib.sha256(source_bytes).hexdigest() != source_metadata["file_sha256"]:
+        raise ValueError("source file SHA-256 mismatch")
+    lines = source_bytes.splitlines(keepends=True)
+    line_start = source_metadata["line_start"]
+    line_end = source_metadata["line_end"]
+    if (not isinstance(line_start, int) or not isinstance(line_end, int)
+            or line_start < 1 or line_end < line_start or line_end > len(lines)):
+        raise ValueError("source line range is invalid")
+    exact_excerpt = b"".join(lines[line_start - 1:line_end])
+    if exact_excerpt.decode("utf-8") != source_excerpt:
+        raise ValueError("source excerpt does not match the declared line range")
+    if hashlib.sha256(exact_excerpt).hexdigest() != source_metadata["excerpt_sha256"]:
+        raise ValueError("source excerpt SHA-256 mismatch")
 
     started = time.time()
     request = json.dumps({
@@ -202,6 +229,8 @@ def execute_isolated(
     record["backend"] = "LOCAL_SUBPROCESS_TEST_ONLY"
     record["run_kind"] = run_kind
     record["control_metadata"] = control_metadata
+    record["source_metadata"] = source_metadata
+    record["source_excerpt"] = source_excerpt
     record["clean_state_verified"] = True
     record["isolation_metadata"] = {
         "mode": "FRESH_PROCESS_TEMPORARY_WORKSPACE",
