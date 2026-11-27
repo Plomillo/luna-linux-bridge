@@ -38,6 +38,17 @@ jobs:
         run: python -m compileall -q src tests
       - name: Build source-bound planning backlog
         run: python scripts/build_c05_source_backlog.py
+      - name: Build exact per-case implementation and control coverage
+        run: python scripts/build_c05_coverage_matrix.py
+      - name: Archive per-case implementation and control coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: c05-case-coverage-${{ github.sha }}
+          path: |
+            missions/training-alta-resolucion-20261123/s3/reports/C05_COVERAGE_MATRIX.jsonl
+            missions/training-alta-resolucion-20261123/s3/reports/C05_COVERAGE_MATRIX_SUMMARY.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Archive source-bound planning backlog
         uses: actions/upload-artifact@v4
         with:
