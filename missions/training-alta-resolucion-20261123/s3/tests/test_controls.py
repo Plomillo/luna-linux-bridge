@@ -109,7 +109,7 @@ def test_newton_and_quadrature_controls_are_adjudicated():
 
 def test_scientific_and_evaluation_controls_are_adjudicated():
     assert accepts("cube-no-sign-change-rejected", {"rejected": True}, "EXECUTED") is True
-    assert accepts("cube-tight-boundary", {"rejected": False, "low": 1.259921049, "high": 1.259921050}, "EXECUTED") is True
+    assert accepts("cube-tight-boundary", {"rejected": False, "low": 1.2599210499, "high": 1.259921050}, "EXECUTED") is True
     assert accepts("variance-empty-rejected", {"rejected": True}, "EXECUTED") is True
     assert accepts("variance-singleton-boundary", {"rejected": False, "population": 0, "sample": None}, "EXECUTED") is True
     assert accepts("ratio-zero-denominator-rejected", {"rejected": True}, "EXECUTED") is True
