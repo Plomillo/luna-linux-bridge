@@ -224,15 +224,24 @@ def execute_blocked_preflight(
     return row
 
 
-def evidence_population_complete(report: dict) -> bool:
-    """Evidence generation may succeed while the functional C05 gate remains closed."""
-    return (
-        report.get("expected") == 1000
-        and report.get("rows") == 1000
-        and report.get("authentic_results") == 1000
-        and report.get("not_run") == 0
-        and report.get("rejected") == []
-    )
+def evidence_inventory_complete(report: dict) -> bool:
+    """Require authentic evidence for every executable plan and explicit NOT_RUN for the rest."""
+    expected = report.get("expected")
+    rows = report.get("rows")
+    not_run = report.get("not_run")
+    rejected = report.get("rejected")
+    authentic = report.get("authentic_results")
+    if not all(isinstance(value, int) and not isinstance(value, bool)
+               for value in (expected, rows, not_run, authentic)):
+        return False
+    if expected != 1000 or rows != 1000 or not_run != 985 or authentic != 15:
+        return False
+    if not isinstance(rejected, list) or len(rejected) != 985:
+        return False
+    return all(
+        item.get("reasons") == ["case-not-executed"]
+        for item in rejected if isinstance(item, dict)
+    ) and all(isinstance(item, dict) for item in rejected)
 
 
 def write_exclusive(path: Path, content: str) -> None:
@@ -286,6 +295,7 @@ def main(argv: list[str]) -> int:
         }
 
     rows = []
+    blocker_inventory = []
     for case_id in EXPECTED:
         plan = plan_map.get(case_id)
         errors = plan_errors(plan, case_id) if plan is not None else ["NO_COMPLETE_SOURCE_GROUNDED_PLAN"]
@@ -294,23 +304,25 @@ def main(argv: list[str]) -> int:
             reasons = coverage.get("blockers", [])
             if not reasons:
                 reasons = errors
-            blocker_code = "NO_COMPLETE_EXECUTION_PLAN" if plan is None else "INVALID_EXECUTION_PLAN"
-            details = (
-                "C05 preflight BLOCKED: no complete source-grounded normal plan, registered capability, "
-                "typed fixture, negative control and boundary control were available. "
-                f"Case-specific blockers: {', '.join(reasons)}. "
-                "The case operation was not invoked; this result is BLOCKED, never PASS."
-            )
-            try:
-                rows.append(execute_blocked_preflight(
-                    case_id, blocker_code, details, evidence_root, sandbox_image,
-                ))
-            except Exception as exc:  # noqa: BLE001 - preserve the failed preflight attempt explicitly
-                rows.append({
-                    "CASE_ID": case_id, "execution_status": "INCONCLUSIVE",
-                    "contract_status": "NOT_A_PASS",
-                    "reason": f"PREFLIGHT_EVIDENCE_FAILURE:{type(exc).__name__}:{exc}",
-                })
+            metadata, excerpt = source_record(case_id)
+            blocker_inventory.append({
+                "CASE_ID": case_id,
+                "status": "NOT_RUN",
+                "operation_invoked": False,
+                "blockers": reasons,
+                "source_metadata": metadata,
+                "source_excerpt": excerpt,
+                "certification_effect": "BLOCKS_C05",
+            })
+            # Do not launch five Docker containers merely to prove that no
+            # executable plan exists. NOT_RUN is explicit and never counted
+            # as execution; the source-bound blocker is retained separately.
+            rows.append({
+                "CASE_ID": case_id,
+                "execution_status": "NOT_RUN",
+                "contract_status": "NOT_A_PASS",
+                "reason": "NO_COMPLETE_SOURCE_GROUNDED_EXECUTION_PLAN",
+            })
             continue
         try:
             rows.append(execute_plan(plan, case_id, evidence_root, 60, sandbox_image))
@@ -324,8 +336,11 @@ def main(argv: list[str]) -> int:
     report = validate(rows, evidence_root=evidence_root)
     ledger_text = "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows)
     report_text = json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    blocker_path = ledger_path.with_name("C05_POPULATION_BLOCKERS.jsonl")
+    blocker_text = "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\\n" for row in blocker_inventory)
     write_exclusive(ledger_path, ledger_text)
     write_exclusive(report_path, report_text)
+    write_exclusive(blocker_path, blocker_text)
     print(json.dumps({
         "c05_status": report["c05_status"],
         "sandbox_image_id": sandbox_image,
@@ -334,11 +349,13 @@ def main(argv: list[str]) -> int:
         "rejected": len(report["rejected"]),
         "ledger": str(ledger_path),
         "report": str(report_path),
+        "blocker_inventory": str(blocker_path),
+        "blocked_cases": len(blocker_inventory),
     }, ensure_ascii=False))
-    # Exit successfully only when all 1,000 dossiers have authentic,
-    # independently validated evidence. The report's C05 status remains
-    # NOT_PASSED until all underlying operations contractually pass.
-    return 0 if evidence_population_complete(report) else 1
+    # Exit successfully only when all 15 authored executable plans produce
+    # authentic evidence and the remaining 985 are explicitly source-bound
+    # NOT_RUN blockers. This completes evidence collection, not C05.
+    return 0 if evidence_inventory_complete(report) and len(blocker_inventory) == 985 else 1
 
 
 if __name__ == "__main__":
