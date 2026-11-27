@@ -136,3 +136,36 @@ def dependency_graph_oracle(arguments: dict, observed: dict) -> dict:
                     queue.append(target)
     cycle = removed != len(relevant)
     return {"ok": observed.get("rejected") is False and observed.get("reachable") == sorted(reachable) and observed.get("cycle") is cycle, "method": "independent BFS closure and Kahn cycle detection"}
+
+
+def protocol_version_diff_oracle(arguments: dict, observed: dict) -> dict:
+    old = {row["name"]: (row["width"], row["offset"]) for row in arguments["old_fields"]}
+    new = {row["name"]: (row["width"], row["offset"]) for row in arguments["new_fields"]}
+    names = set(old) | set(new)
+    expected = []
+    for name in sorted(names):
+        if old.get(name) != new.get(name):
+            expected.append((name, "added" if name not in old else "removed" if name not in new else "modified"))
+    actual = [(row.get("field"), row.get("change")) for row in observed.get("changes", [])]
+    compatible = all(change == "added" for _, change in expected)
+    return {"ok": actual == expected and observed.get("backward_compatible") is compatible and observed.get("forward_compatible") is compatible, "method": "independent field tuple comparison and compatibility policy"}
+
+
+def section_overlaps_oracle(arguments: dict, observed: dict) -> dict:
+    ordered = sorted(arguments["sections"], key=lambda row: (row["offset"], row["size"], row["name"]))
+    overlaps = []
+    for index, left in enumerate(ordered):
+        for right in ordered[index + 1:]:
+            if right["offset"] >= left["offset"] + left["size"]:
+                break
+            overlaps.append({"left": left["name"], "right": right["name"], "overlap_start": right["offset"], "overlap_end": min(left["offset"] + left["size"], right["offset"] + right["size"])})
+    actual = sorted(observed.get("overlaps", []), key=lambda row: (row["overlap_start"], row["overlap_end"], row["left"], row["right"]))
+    expected = sorted(overlaps, key=lambda row: (row["overlap_start"], row["overlap_end"], row["left"], row["right"]))
+    return {"ok": actual == expected and observed.get("valid") is (not bool(expected)), "method": "independent sorted interval sweep"}
+
+
+def nested_zip_tar_oracle(arguments: dict, observed: dict) -> dict:
+    expected_files = [{"name": row["name"], "size": len(bytes.fromhex(row["data_hex"])), "data_hex": row["data_hex"]} for row in arguments["entries"]]
+    tree = observed.get("tree", {})
+    children = tree.get("children", [])
+    return {"ok": tree.get("name") == "outer.zip" and len(children) == 1 and children[0].get("name") == "inner.tar" and children[0].get("children") == expected_files and bool(observed.get("nested_sha256")), "method": "source-entry equality through expected parent-child container path"}

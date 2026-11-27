@@ -2,10 +2,15 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import math
 import sqlite3
 import struct
+import tarfile
+import zipfile
 import zlib
+
+from metagente_luna_s3.archive_exec import _tar, _zip
 
 
 def sqlite_header(page_size: int) -> dict:
@@ -210,3 +215,38 @@ def dependency_graph(root: str, nodes: list[str], edges: list[list[str]]) -> dic
 
     visit(root)
     return {"rejected": False, "reachable": sorted(reachable), "cycle": cycle}
+
+
+def protocol_version_diff(old_fields: list[dict], new_fields: list[dict]) -> dict:
+    old, new = {row["name"]: row for row in old_fields}, {row["name"]: row for row in new_fields}
+    changes = []
+    for name in sorted(set(old) | set(new)):
+        if name not in old:
+            changes.append({"field": name, "change": "added", "new": new[name]})
+        elif name not in new:
+            changes.append({"field": name, "change": "removed", "old": old[name]})
+        elif old[name] != new[name]:
+            changes.append({"field": name, "change": "modified", "old": old[name], "new": new[name]})
+    compatible = not any(row["change"] in {"removed", "modified"} for row in changes)
+    return {"changes": changes, "backward_compatible": compatible, "forward_compatible": compatible}
+
+
+def section_overlaps(sections: list[dict]) -> dict:
+    overlaps = []
+    for index, left in enumerate(sections):
+        for right in sections[index + 1:]:
+            start = max(left["offset"], right["offset"])
+            end = min(left["offset"] + left["size"], right["offset"] + right["size"])
+            if start < end:
+                overlaps.append({"left": left["name"], "right": right["name"], "overlap_start": start, "overlap_end": end})
+    return {"overlaps": overlaps, "valid": not overlaps}
+
+
+def nested_zip_tar(entries: list[dict]) -> dict:
+    tar_bytes = _tar(entries)
+    archive_bytes = _zip([{"name": "inner.tar", "data_hex": tar_bytes.hex()}])
+    with zipfile.ZipFile(io.BytesIO(archive_bytes)) as zipped:
+        nested = zipped.read("inner.tar")
+    with tarfile.open(fileobj=io.BytesIO(nested), mode="r:") as archive:
+        files = [{"name": member.name, "size": member.size, "data_hex": archive.extractfile(member).read().hex()} for member in archive.getmembers() if member.isfile()]
+    return {"tree": {"name": "outer.zip", "children": [{"name": "inner.tar", "children": files}]}, "nested_sha256": hashlib.sha256(nested).hexdigest()}

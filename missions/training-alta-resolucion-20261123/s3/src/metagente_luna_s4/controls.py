@@ -62,6 +62,12 @@ def _build() -> None:
     _add("MGL5-INF-0092", "boundary", "timestamp_provenance", {"metadata_timestamp": 100, "filesystem_timestamp": 100}, "timestamp-equality-source-preserved")
     _add("MGL5-INF-0093", "negative", "dependency_graph", {"root": "A", "nodes": ["A", "B"], "edges": [["A", "B"], ["B", "A"]]}, "dependency-cycle-detected")
     _add("MGL5-INF-0093", "boundary", "dependency_graph", {"root": "A", "nodes": ["A"], "edges": []}, "dependency-singleton-no-edges")
+    _add("MGL5-INF-0094", "negative", "protocol_version_diff", {"old_fields": [{"name": "count", "width": 16, "offset": 1}], "new_fields": [{"name": "count", "width": 32, "offset": 1}]}, "protocol-width-change-incompatible")
+    _add("MGL5-INF-0094", "boundary", "protocol_version_diff", {"old_fields": [{"name": "id", "width": 8, "offset": 0}], "new_fields": [{"name": "id", "width": 8, "offset": 0}]}, "protocol-identical-layout-boundary")
+    _add("MGL5-INF-0096", "negative", "section_overlaps", {"sections": [{"name": "a", "offset": 0, "size": 4}, {"name": "b", "offset": 8, "size": 2}]}, "sections-nonoverlap-rejected-as-invalid-fixture")
+    _add("MGL5-INF-0096", "boundary", "section_overlaps", {"sections": [{"name": "a", "offset": 0, "size": 4}, {"name": "b", "offset": 4, "size": 1}]}, "sections-adjacent-no-overlap")
+    _add("MGL5-INF-0098", "negative", "nested_zip_tar", {"entries": [{"name": "../../outside", "data_hex": "78"}]}, "nested-archive-retains-literal-entry-name")
+    _add("MGL5-INF-0098", "boundary", "nested_zip_tar", {"entries": [{"name": "empty", "data_hex": ""}]}, "nested-archive-empty-member")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -333,6 +339,11 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect in {"timestamp-order-does-not-prove-creation", "timestamp-equality-source-preserved"}: return control_completed and [row["source"] for row in observed.get("timestamps", [])] == ["embedded_metadata", "filesystem"] and observed.get("creation_time_proven") is False and bool(observed.get("warning"))
     if expect == "dependency-cycle-detected": return control_completed and observed.get("rejected") is False and observed.get("cycle") is True and observed.get("reachable") == ["A", "B"]
     if expect == "dependency-singleton-no-edges": return control_completed and observed.get("rejected") is False and observed.get("cycle") is False and observed.get("reachable") == []
+    if expect == "protocol-width-change-incompatible": return control_completed and observed.get("changes", [{}])[0].get("change") == "modified" and observed.get("backward_compatible") is False
+    if expect == "protocol-identical-layout-boundary": return control_completed and observed.get("changes") == [] and observed.get("backward_compatible") is True
+    if expect in {"sections-nonoverlap-rejected-as-invalid-fixture", "sections-adjacent-no-overlap"}: return control_completed and observed.get("overlaps") == [] and observed.get("valid") is True
+    if expect == "nested-archive-retains-literal-entry-name": return control_completed and observed.get("tree", {}).get("children", [{}])[0].get("children", [{}])[0].get("name") == "../../outside"
+    if expect == "nested-archive-empty-member": return control_completed and observed.get("tree", {}).get("children", [{}])[0].get("children") == [{"name": "empty", "size": 0, "data_hex": ""}]
     if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.
