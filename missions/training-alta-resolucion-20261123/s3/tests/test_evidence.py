@@ -9,7 +9,6 @@ from metagente_luna_s4.evidence import assemble_case_record, persist_run
 from metagente_luna_s4.independent_validator import independently_validate_case
 
 
-
 def _source_reference(case_id):
     repository_root = Path(__file__).resolve().parents[4]
     source_file = "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt"
