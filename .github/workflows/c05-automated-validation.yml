@@ -13,8 +13,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: c05-validation-${{ github.ref }}
-  cancel-in-progress: false
+  group: c05-validation-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   unit-and-adversarial:
