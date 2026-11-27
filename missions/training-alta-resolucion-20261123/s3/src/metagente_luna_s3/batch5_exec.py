@@ -499,11 +499,20 @@ def descending_values(values: list[int]) -> dict:
 def descending_seed(seed: int, count: int) -> dict:
     import random
 
+    if (
+        not isinstance(seed, int) or isinstance(seed, bool)
+        or not isinstance(count, int) or isinstance(count, bool)
+        or count < 1 or count > 10_000
+    ):
+        return {"rejected": True, "reason": "seed must be an integer and count must be in 1..10000"}
     generator = random.Random(seed)
     values = [generator.randrange(-1_000_000, 1_000_000) for _ in range(count)]
     ordered = list(reversed(_heapsort(values[:])))
     print(len(ordered), ordered[0], ordered[-1])
-    return {"length": len(ordered), "first": ordered[0], "last": ordered[-1], "checksum": sum(ordered)}
+    return {
+        "ordered": ordered, "length": len(ordered), "first": ordered[0],
+        "last": ordered[-1], "checksum": sum(ordered), "rejected": False,
+    }
 
 
 def stack_script(steps: list[str]) -> dict:
