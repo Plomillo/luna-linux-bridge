@@ -244,6 +244,7 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
     root = Path(evidence_root).resolve() if evidence_root is not None else None
     rejected = []
     run_owner: dict[str, str] = {}
+    artifact_owner: dict[str, tuple[str, str]] = {}
     authentic = 0
     not_run = 0
     contractual_pass = 0
@@ -264,6 +265,16 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
                     owner = run_owner.setdefault(run_id, case_id)
                     if owner != case_id:
                         errors.append("run-id-reused-across-cases")
+                artifacts = rep.get("artifacts")
+                if isinstance(artifacts, dict):
+                    for artifact_name, artifact in artifacts.items():
+                        if not isinstance(artifact, dict) or not isinstance(artifact.get("path"), str):
+                            continue
+                        artifact_path = artifact["path"]
+                        artifact_key = (case_id, run_id if isinstance(run_id, str) else "")
+                        previous_owner = artifact_owner.setdefault(artifact_path, artifact_key)
+                        if previous_owner != artifact_key:
+                            errors.append(f"evidence-path-reused:{artifact_path}")
         if errors:
             rejected.append({"case_id": case_id, "reasons": sorted(set(errors))})
         else:
