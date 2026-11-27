@@ -81,8 +81,9 @@ def test_assembler_requires_three_distinct_run_kinds(tmp_path):
     from metagente_luna_s4.runner import execute
 
     runs = [
-        execute("utf8_roundtrip", {"text": "Luna"}, "MGL5-INF-0001",
-                evidence_root=str(tmp_path), run_kind="NORMAL"),
+        execute("utf8_roundtrip", {"text": "Luna"}, "MGL5-INF-0001", evidence_root=str(tmp_path), run_kind="NORMAL")
+        for _ in range(3)
+    ] + [
         execute("utf8_reject_invalid", {"payload_hex": "80"}, "MGL5-INF-0001",
                 evidence_root=str(tmp_path), run_kind="NEGATIVE",
                 control_metadata={"definition": "isolated continuation byte", "expected_behavior": "reject invalid UTF-8", "source": "test-spec"}),
@@ -95,8 +96,9 @@ def test_assembler_requires_three_distinct_run_kinds(tmp_path):
     assert row["execution_status"] == "PASS"
     assert row["contract_status"] == "NOT_A_PASS"
     assert len(row["repetitions"]) == 3
-    assert {item["kind"] for item in row["repetitions"]} == {"NORMAL", "NEGATIVE", "BOUNDARY"}
-    assert all(item["clean_state"] is False for item in row["repetitions"])
+    assert {item["kind"] for item in row["repetitions"]} == {"NORMAL"}
+    assert {item["kind"] for item in row["controls"]} == {"NEGATIVE", "BOUNDARY"}
+    assert all(item["clean_state"] is False for item in row["repetitions"] + row["controls"])
 
 
 def test_assembler_rejects_missing_negative_or_boundary_run(tmp_path):
@@ -106,7 +108,7 @@ def test_assembler_rejects_missing_negative_or_boundary_run(tmp_path):
         execute("utf8_roundtrip", {"text": "Luna"}, "MGL5-INF-0001",
                 evidence_root=str(tmp_path), run_kind="NORMAL")
     ]
-    with pytest.raises(ValueError, match="exactly one NORMAL"):
+    with pytest.raises(ValueError, match="three NORMAL repetitions"):
         assemble_case_record("MGL5-INF-0001", runs)
 
 
@@ -114,10 +116,10 @@ def test_isolated_runner_produces_c05_eligible_process_evidence(tmp_path):
     from metagente_luna_s4.runner import execute_isolated
 
     runs = [
-        execute_isolated(
-            "utf8_roundtrip", {"text": "Luna"}, "MGL5-INF-0001",
-            evidence_root=str(tmp_path), run_kind="NORMAL",
-        ),
+        execute_isolated("utf8_roundtrip", {"text": "Luna"}, "MGL5-INF-0001",
+                         evidence_root=str(tmp_path), run_kind="NORMAL")
+        for _ in range(3)
+    ] + [
         execute_isolated(
             "utf8_reject_invalid", {"payload_hex": "80"}, "MGL5-INF-0001",
             evidence_root=str(tmp_path), run_kind="NEGATIVE",
