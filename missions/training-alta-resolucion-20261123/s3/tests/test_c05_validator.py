@@ -40,10 +40,17 @@ def _valid_row_with_artifacts(tmp_path):
         run_id = f"run-0001-{index:04d}"
         oracle_source = _write_artifact(tmp_path, f"{run_id}/oracle_source.py", "def oracle(value): return value == 1")
         producer_source = _write_artifact(tmp_path, f"{run_id}/producer_source.py", "def producer(value): return value + 0")
+        source_excerpt_text = f"[{case_id}] exact source excerpt"
+        source_excerpt = _write_artifact(tmp_path, f"{run_id}/source_excerpt.txt", source_excerpt_text)
+        source_metadata = {
+            "source_file": "test-source.txt", "line_start": 1, "line_end": 1,
+            "file_sha256": hashlib.sha256(b"test-source-file").hexdigest(),
+            "excerpt_sha256": source_excerpt["sha256"], "source_blob": "test-git-blob",
+        }
         artifacts = {
             "fixture": _write_artifact(tmp_path, f"{run_id}/fixture.json", {
                 "case_id": case_id, "run_id": run_id, "fixture_id": "fixture-v1",
-                "run_kind": kind, "input": input_value, "control": control,
+                "run_kind": kind, "input": input_value, "control": control, "source": source_metadata,
             }),
             "environment": _write_artifact(tmp_path, f"{run_id}/environment.json", {
                 "case_id": case_id, "run_id": run_id, "environment_id": "pytest-local",
@@ -70,6 +77,7 @@ def _valid_row_with_artifacts(tmp_path):
             }),
             "oracle_source": oracle_source,
             "producer_source": producer_source,
+            "source_excerpt": source_excerpt,
             "metrics": _write_artifact(tmp_path, f"{run_id}/metrics.json", {
                 "case_id": case_id, "run_id": run_id, "duration_ms": 1,
             }),
