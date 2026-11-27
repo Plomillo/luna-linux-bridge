@@ -72,20 +72,27 @@ def thirteen(arguments: dict, observed: dict) -> dict:
 
 
 def stated_ratio(arguments: dict, observed: dict) -> dict:
-    value = arguments["numerator"] / arguments["denominator"]
-    return {"ok": observed["value"] == value and observed["denominator"] == arguments["denominator"], "method": "division of the stated counts"}
+    numerator, denominator = arguments["numerator"], arguments["denominator"]
+    if numerator < 0 or denominator <= 0:
+        return {"ok": observed.get("rejected") is True, "method": "independent ratio domain validation"}
+    value = numerator / denominator
+    return {"ok": observed.get("rejected") is False and observed["value"] == value and observed["denominator"] == denominator, "method": "independent division of declared counts"}
 
 
 def rates(arguments: dict, observed: dict) -> dict:
-    precision = 40 / 50
-    recall = 40 / 60
-    return {"ok": arguments["true_positive"] == 40 and observed["precision"] == precision and observed["recall"] == recall, "method": "40/50 and 40/60"}
+    tp, fp, fn = arguments["true_positive"], arguments["false_positive"], arguments["false_negative"]
+    if min(tp, fp, fn) < 0 or tp + fp == 0 or tp + fn == 0:
+        return {"ok": observed.get("rejected") is True, "method": "independent precision/recall domain validation"}
+    precision, recall = tp / (tp + fp), tp / (tp + fn)
+    return {"ok": observed.get("rejected") is False and abs(observed["precision"] - precision) < 1e-12 and abs(observed["recall"] - recall) < 1e-12, "method": "independent count ratios"}
 
 
 def harmonic(arguments: dict, observed: dict) -> dict:
     precision, recall = arguments["precision"], arguments["recall"]
+    if precision < 0 or recall < 0 or precision + recall == 0:
+        return {"ok": observed.get("rejected") is True, "method": "independent harmonic-mean domain validation"}
     expected = 2 * precision * recall / (precision + recall)
-    return {"ok": observed["f1"] == expected, "method": "harmonic mean"}
+    return {"ok": observed.get("rejected") is False and abs(observed["f1"] - expected) < 1e-12, "method": "harmonic mean"}
 
 
 def library_available() -> bool:

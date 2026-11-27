@@ -156,18 +156,24 @@ def l2_norm(components: list[int]) -> dict:
 
 
 def ratio(numerator: int, denominator: int) -> dict:
+    if numerator < 0 or denominator <= 0:
+        return {"rejected": True, "reason": "ratio requires non-negative numerator and positive denominator"}
     print(numerator, denominator)
-    return {"value": numerator / denominator, "denominator": denominator}
+    return {"rejected": False, "value": numerator / denominator, "denominator": denominator}
 
 
 def precision_recall(true_positive: int, false_positive: int, false_negative: int) -> dict:
+    if min(true_positive, false_positive, false_negative) < 0 or true_positive + false_positive == 0 or true_positive + false_negative == 0:
+        return {"rejected": True, "reason": "precision and recall require non-negative counts and positive denominators"}
     precision = true_positive / (true_positive + false_positive)
     recall = true_positive / (true_positive + false_negative)
     print(precision, recall)
-    return {"precision": precision, "recall": recall}
+    return {"rejected": False, "precision": precision, "recall": recall}
 
 
 def f1_score(precision: float, recall: float) -> dict:
+    if precision < 0 or recall < 0 or precision + recall == 0:
+        return {"rejected": True, "reason": "F1 requires non-negative rates with positive sum"}
     score = 2 * precision * recall / (precision + recall)
     print(score)
-    return {"f1": score}
+    return {"rejected": False, "f1": score}

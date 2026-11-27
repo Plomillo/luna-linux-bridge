@@ -152,18 +152,22 @@ def library_root(arguments: dict, observed: dict) -> dict:
 
 
 def sign_change(arguments: dict, observed: dict) -> dict:
-    low, high = observed["low"], observed["high"]
-    contains = low**3 < 2 < high**3 and high - low < 1e-9
-    declared = arguments["low"] == 1 and arguments["high"] == 2
-    return {"ok": contains and declared and observed["interval_provenance"] == "PREREGISTERED_SIGN_CHANGE", "method": "cube signs inside the preregistered interval"}
+    low, high = arguments["low"], arguments["high"]
+    if low >= high or low**3 >= 2 or high**3 <= 2:
+        return {"ok": observed.get("rejected") is True, "method": "independent endpoint sign validation"}
+    root = 2 ** (1 / 3)
+    contains = observed["low"] <= root <= observed["high"] and observed["high"] - observed["low"] < 1e-9
+    return {"ok": observed.get("rejected") is False and contains and observed["interval_provenance"] == "PREREGISTERED_SIGN_CHANGE", "method": "independent cube-root containment"}
 
 
 def statistics_variance(arguments: dict, observed: dict) -> dict:
     values = arguments["values"]
+    if not values:
+        return {"ok": observed.get("rejected") is True, "method": "empty population rejected"}
     population = statistics.pvariance(values)
-    sample = statistics.variance(values)
-    ok = abs(observed["population"] - population) < 1e-9 and abs(observed["sample"] - sample) < 1e-9
-    return {"ok": ok, "method": "statistics module"}
+    sample = statistics.variance(values) if len(values) > 1 else None
+    ok = observed.get("rejected") is False and abs(observed["population"] - population) < 1e-9 and (observed.get("sample") is None if sample is None else abs(observed["sample"] - sample) < 1e-9)
+    return {"ok": ok, "method": "statistics module with singleton sample undefined"}
 
 
 def two_points(arguments: dict, observed: dict) -> dict:

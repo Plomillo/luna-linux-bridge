@@ -73,6 +73,19 @@ def test_fifo_factorial_path_and_ipv6_independent_oracles():
     assert stated_prefix({"cidr": "2001:db8::1/128"}, {"rejected": False, "prefix": "2001:db8::1/128"})["ok"] is True
 
 
+def test_scientific_and_evaluation_controls_are_adjudicated():
+    assert accepts("cube-no-sign-change-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("cube-tight-boundary", {"rejected": False, "low": 1.259921049, "high": 1.259921050}, "EXECUTED") is True
+    assert accepts("variance-empty-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("variance-singleton-boundary", {"rejected": False, "population": 0, "sample": None}, "EXECUTED") is True
+    assert accepts("ratio-zero-denominator-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("ratio-zero-numerator-boundary", {"rejected": False, "value": 0, "denominator": 1}, "EXECUTED") is True
+    assert accepts("precision-zero-denominator-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("precision-perfect-boundary", {"rejected": False, "precision": 1, "recall": 1}, "EXECUTED") is True
+    assert accepts("f1-zero-denominator-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("f1-perfect-boundary", {"rejected": False, "f1": 1}, "EXECUTED") is True
+
+
 def test_lexer_telemetry_and_numeric_controls_are_accepted():
     assert accepts("empty-token-stream", {"tokens": []}, "EXECUTED") is True
     assert accepts("increment-negative-rejected", {"rejected": True}, "EXECUTED") is True

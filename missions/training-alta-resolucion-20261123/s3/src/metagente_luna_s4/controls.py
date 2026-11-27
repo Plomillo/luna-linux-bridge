@@ -146,6 +146,16 @@ def _build() -> None:
     _add("MGL5-INF-0254", "boundary", "cidr_bounds", {"cidr": "192.0.2.130/32"}, "host-prefix-boundary")
     _add("MGL5-INF-0255", "negative", "ipv6_prefix", {"cidr": "2001:db8::1/129"}, "ipv6-prefix-rejected")
     _add("MGL5-INF-0255", "boundary", "ipv6_prefix", {"cidr": "2001:db8::1/128"}, "ipv6-host-prefix")
+    _add("MGL5-INF-0618", "negative", "bracket_cube", {"low": 2.0, "high": 3.0}, "cube-no-sign-change-rejected")
+    _add("MGL5-INF-0618", "boundary", "bracket_cube", {"low": 1.0, "high": 1.5}, "cube-tight-boundary")
+    _add("MGL5-INF-0623", "negative", "two_variances", {"values": []}, "variance-empty-rejected")
+    _add("MGL5-INF-0623", "boundary", "two_variances", {"values": [5]}, "variance-singleton-boundary")
+    _add("MGL5-INF-0763", "negative", "ratio", {"numerator": 80, "denominator": 0}, "ratio-zero-denominator-rejected")
+    _add("MGL5-INF-0763", "boundary", "ratio", {"numerator": 0, "denominator": 1}, "ratio-zero-numerator-boundary")
+    _add("MGL5-INF-0764", "negative", "precision_recall", {"true_positive": 0, "false_positive": 0, "false_negative": 1}, "precision-zero-denominator-rejected")
+    _add("MGL5-INF-0764", "boundary", "precision_recall", {"true_positive": 1, "false_positive": 0, "false_negative": 0}, "precision-perfect-boundary")
+    _add("MGL5-INF-0765", "negative", "f1_score", {"precision": 0.0, "recall": 0.0}, "f1-zero-denominator-rejected")
+    _add("MGL5-INF-0765", "boundary", "f1_score", {"precision": 1.0, "recall": 1.0}, "f1-perfect-boundary")
     _add("MGL5-INF-0171", "negative", "index_limit", {"length": -1}, "negative-length-no-read")
     _add("MGL5-INF-0171", "boundary", "index_limit", {"length": 0}, "zero-length-no-read")
     _add("MGL5-INF-0252", "negative", "expand_v6", {"address": "not-an-ipv6-address"}, "expanded-invalid-ipv6-rejected")
@@ -235,6 +245,26 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and observed.get("rejected") is True
     if expect == "sum-zero-boundary":
         return status == "EXECUTED" and observed.get("rejected") is False and observed.get("naive") == 1.0 and observed.get("kahan") == 1.0
+    if expect == "cube-no-sign-change-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "cube-tight-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("high", 2) - observed.get("low", 0) < 1e-9
+    if expect == "variance-empty-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "variance-singleton-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("population") == 0 and observed.get("sample") is None
+    if expect == "ratio-zero-denominator-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "ratio-zero-numerator-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("value") == 0 and observed.get("denominator") == 1
+    if expect == "precision-zero-denominator-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "precision-perfect-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("precision") == 1 and observed.get("recall") == 1
+    if expect == "f1-zero-denominator-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "f1-perfect-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("f1") == 1
     if expect == "negative-length-no-read":
         return status == "EXECUTED" and observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == 0
     if expect == "zero-length-no-read":

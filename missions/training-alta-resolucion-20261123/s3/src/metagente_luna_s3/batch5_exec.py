@@ -393,6 +393,8 @@ def newton_root() -> dict:
 
 
 def bracket_cube(low: float, high: float) -> dict:
+    if low >= high or low**3 >= 2 or high**3 <= 2:
+        return {"rejected": True, "reason": "interval must strictly bracket the real cube root of two"}
     left, right = low, high
     for _ in range(40):
         mid = (left + right) / 2
@@ -401,15 +403,18 @@ def bracket_cube(low: float, high: float) -> dict:
         else:
             right = mid
     print(left, right)
-    return {"low": left, "high": right, "interval_provenance": "PREREGISTERED_SIGN_CHANGE"}
+    return {"rejected": False, "low": left, "high": right, "interval_provenance": "PREREGISTERED_SIGN_CHANGE"}
 
 
 def two_variances(values: list[int]) -> dict:
+    if not values:
+        return {"rejected": True, "reason": "variance requires at least one observation"}
     count = len(values)
     mean = sum(values) / count
     square = sum((item - mean) ** 2 for item in values)
     print(square)
-    return {"population": square / count, "sample": square / (count - 1)}
+    sample = square / (count - 1) if count > 1 else None
+    return {"rejected": False, "population": square / count, "sample": sample}
 
 
 def exact_line(xs: list[int], slope: float, intercept: float) -> dict:

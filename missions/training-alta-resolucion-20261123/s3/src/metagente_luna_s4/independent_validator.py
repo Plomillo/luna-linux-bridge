@@ -89,6 +89,26 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
         return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
     if expect == "sum-zero-boundary":
         return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("naive") == 1.0 and observed.get("kahan") == 1.0
+    if expect == "cube-no-sign-change-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "cube-tight-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("high", 2) - observed.get("low", 0) < 1e-9
+    if expect == "variance-empty-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "variance-singleton-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("population") == 0 and observed.get("sample") is None
+    if expect == "ratio-zero-denominator-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "ratio-zero-numerator-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("value") == 0 and observed.get("denominator") == 1
+    if expect == "precision-zero-denominator-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "precision-perfect-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("precision") == 1 and observed.get("recall") == 1
+    if expect == "f1-zero-denominator-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "f1-perfect-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("f1") == 1
     if expect == "negative-length-no-read":
         return lifecycle_status == "EXECUTED" and observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == 0
     if expect == "zero-length-no-read":
