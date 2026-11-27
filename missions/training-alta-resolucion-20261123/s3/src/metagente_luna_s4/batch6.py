@@ -1,6 +1,9 @@
 """Literal training instructions. The identifier is recorded after interpretation, never used to choose the operation."""
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from metagente_luna_s3.interpret import interpret
 from metagente_luna_s4.runner import execute
 
@@ -12,6 +15,28 @@ OPERATIONS = [
     ("MGL5-INF-0609", "Multiplicar matrices 2×3 y 3×2 conocidas."),
     ("MGL5-INF-0611", "Calcular determinante de matriz 3×3 de referencia."),
     ("MGL5-INF-0632", "Calcular media móvil de ventana 3 sobre fixture."),
+]
+
+_FIXTURE = json.loads(
+    (Path(__file__).resolve().parents[2] / "fixtures" / "derived_parameters.json").read_text(encoding="utf-8")
+)
+
+# Only candidates whose source-derived fixture and registered capability are
+# complete are exposed to the C05 plan compiler. Other interpreter candidates
+# remain visible in the coverage matrix as blocked/ambiguous.
+CASES = [
+    {
+        "case_id": "MGL5-INF-0105",
+        "capability_id": "stable_ages",
+        "arguments": {"records": _FIXTURE["stable-ages"]["records"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#stable-ages",
+    },
+    {
+        "case_id": "MGL5-INF-0109",
+        "capability_id": "stack_sequence",
+        "arguments": {"steps": _FIXTURE["stack-script"]["steps"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#stack-script",
+    },
 ]
 
 
