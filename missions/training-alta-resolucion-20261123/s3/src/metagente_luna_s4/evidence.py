@@ -136,7 +136,7 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
         "ended": ended,
         "artifacts": artifacts,
         "clean_state": record.get("clean_state_verified") is True,
-        "execution_status": record.get("execution_status"),
+        "execution_status": record.get("result_status", record.get("execution_status")),
         "exit_code": record.get("exit_code"),
         "agent_version": record.get("agent_version"),
         "executor_version": record.get("executor_version"),
