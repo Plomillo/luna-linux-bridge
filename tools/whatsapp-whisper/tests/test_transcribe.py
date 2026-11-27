@@ -55,6 +55,10 @@ class ParseChatTests(unittest.TestCase):
             "PTT-20261012-WA0052.opus",
         )
 
+    def test_srt_timestamp_format(self):
+        self.assertEqual(MODULE.format_srt_time(61.234), "00:01:01,234")
+        self.assertEqual(MODULE.format_srt_time(3661.005), "01:01:01,005")
+
     def test_sender_name_and_colons_in_message(self):
         source = "4/1/2026, 4:05 p. m. - Lyx: hora: 16:05"
         rows = MODULE.parse_chat(source)
