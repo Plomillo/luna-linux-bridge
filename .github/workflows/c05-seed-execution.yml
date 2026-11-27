@@ -10,7 +10,7 @@ permissions:
 jobs:
   seed-0254-container:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: missions/training-alta-resolucion-20261123/s3
@@ -57,6 +57,40 @@ jobs:
               assert iso["sandbox"] is False
               assert iso["kernel_isolation"]=="SHARED_HOST_KERNEL_NOT_VM"
           print("Container restrictions recorded for all five runs; shared-kernel limitation retained.")
+          PY
+      - name: Build exact 1,000-case source-bound dossier population
+        run: python scripts/build_c05_source_backlog.py
+      - name: Compile only existing authored plans with both controls
+        run: |
+          python scripts/build_c05_executable_plans.py \
+            --output reports/C05_EXECUTABLE_PLANS.jsonl \
+            --report reports/C05_EXECUTABLE_PLANS_SUMMARY.json
+      - name: Execute compiled batch in pinned restricted Docker image
+        id: population
+        continue-on-error: true
+        run: |
+          python scripts/execute_c05_population.py \
+            reports/C05_SOURCE_PLAN_BACKLOG.jsonl \
+            reports/C05_EXECUTABLE_PLANS.jsonl \
+            reports/C05_POPULATION_EVIDENCE \
+            reports/C05_POPULATION_LEDGER.jsonl \
+            reports/C05_POPULATION_REPORT.json \
+            "$LUNA_C05_SANDBOX_IMAGE"
+      - name: Verify partial execution evidence without promoting C05
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          plan=json.loads(Path("reports/C05_EXECUTABLE_PLANS_SUMMARY.json").read_text())
+          report=json.loads(Path("reports/C05_POPULATION_REPORT.json").read_text())
+          assert plan["compiled_executable_plans"] == 13, plan
+          assert report["expected"] == 1000, report
+          assert report["authentic_results"] == 13, report
+          assert report["not_run"] == 987, report
+          assert report["rejected"] == [], report
+          assert report["c05_status"] == "NOT_PASSED", report
+          assert report["c05_passed"] is False, report
+          print("Verified 13 source-bound dossiers with five Docker runs each; 987 remain NOT_RUN; C05 NOT_PASSED.")
           PY
       - name: Upload raw container execution evidence
         if: always()
