@@ -19,9 +19,9 @@ def _build_dex_fixture() -> bytes:
     for value in strings:
         string_offsets.append(data_off + len(data))
         data.append(len(value))
-        data.extend(value + b"\\0")
+        data.extend(value + b"\0")
     raw = bytearray(data_off + len(data))
-    raw[:8] = b"dex\\n035\\0"
+    raw[:8] = b"dex\n035\0"
     struct.pack_into("<I", raw, 32, len(raw))
     struct.pack_into("<I", raw, 36, 112)
     struct.pack_into("<I", raw, 40, 0x12345678)
@@ -45,6 +45,11 @@ def _build_dex_fixture() -> bytes:
 
 _DEX_FIXTURE = _build_dex_fixture()
 _DEX_HEX = _DEX_FIXTURE.hex()
+_DEX_BOUNDARY_FIXTURE = bytearray(_DEX_FIXTURE)
+_DEX_BOUNDARY_FIXTURE[4:7] = b"036"
+_DEX_BOUNDARY_FIXTURE[12:32] = hashlib.sha1(_DEX_BOUNDARY_FIXTURE[32:]).digest()
+struct.pack_into("<I", _DEX_BOUNDARY_FIXTURE, 8, zlib.adler32(_DEX_BOUNDARY_FIXTURE[12:]) & 0xFFFFFFFF)
+_DEX_BOUNDARY_HEX = bytes(_DEX_BOUNDARY_FIXTURE).hex()
 
 from metagente_luna_s4.runner import execute
 
