@@ -121,6 +121,14 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
         )
     if expect == "not-fifteen":
         return lifecycle_status == "EXECUTED" and observed.get("sum") != 15
+    if expect == "first-match-absent":
+        return lifecycle_status == "EXECUTED" and observed.get("index") is None and observed.get("duplicates") == []
+    if expect == "first-match-singleton":
+        return lifecycle_status == "EXECUTED" and observed.get("index") == 0 and observed.get("duplicates") == [0]
+    if expect == "binary-find-absent":
+        return lifecycle_status == "EXECUTED" and observed.get("index") is None and isinstance(observed.get("comparisons"), int) and observed["comparisons"] > 0
+    if expect == "binary-find-first":
+        return lifecycle_status == "EXECUTED" and observed.get("index") == 0 and isinstance(observed.get("comparisons"), int) and 1 <= observed["comparisons"] <= 5
     if expect == "empty-record-set":
         return lifecycle_status == "EXECUTED" and observed.get("records") == [] and observed.get("rejected") is False
     if expect == "single-underflow":
