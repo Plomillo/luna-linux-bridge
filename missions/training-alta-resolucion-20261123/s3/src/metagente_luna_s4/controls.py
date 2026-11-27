@@ -207,6 +207,12 @@ def _build() -> None:
     _add("MGL5-INF-0015", "boundary", "subnormal_f32", {"value_kind": "zero"}, "subnormal-zero-boundary")
     _add("MGL5-INF-0601", "negative", "binary_float_gap", {"left": 0.5, "right": 0.25, "target": 0.75}, "float-exact-control")
     _add("MGL5-INF-0601", "boundary", "binary_float_gap", {"left": 0.1, "right": 0.2, "target": 0.30000000000000004}, "float-rounding-boundary")
+    _add("MGL5-INF-0629", "negative", "exact_line", {"xs": [0, 1, 2], "slope": -1, "intercept": 0}, "line-negative-slope")
+    _add("MGL5-INF-0629", "boundary", "exact_line", {"xs": [0, 1], "slope": 0, "intercept": 0}, "line-zero-slope-boundary")
+    _add("MGL5-INF-0638", "negative", "euler_decay", {"coarse_step": 0.05, "fine_step": 0.1}, "euler-step-order-reversed")
+    _add("MGL5-INF-0638", "boundary", "euler_decay", {"coarse_step": 0.1, "fine_step": 0.1}, "euler-equal-step-boundary")
+    _add("MGL5-INF-0639", "negative", "rk4_decay", {"step": 2.0}, "rk4-step-out-of-range-rejected")
+    _add("MGL5-INF-0639", "boundary", "rk4_decay", {"step": 1.0}, "rk4-single-step-boundary")
 
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
@@ -560,6 +566,12 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "subnormal-zero-boundary": return control_completed and observed.get("is_subnormal") is False and observed.get("float32_bits_hex") == "00000000"
     if expect == "float-exact-control": return control_completed and observed.get("equal") is True and observed.get("difference") == 0 and observed.get("decimal_exact") is True
     if expect == "float-rounding-boundary": return control_completed and observed.get("equal") is True and observed.get("difference") == 0 and observed.get("decimal_exact") is False
+    if expect == "line-negative-slope": return control_completed and observed.get("slope") == -1 and observed.get("intercept") == 0
+    if expect == "line-zero-slope-boundary": return control_completed and observed.get("slope") == 0 and observed.get("intercept") == 0
+    if expect == "euler-step-order-reversed": return control_completed and observed.get("fine_error", 0) > observed.get("coarse_error", 0)
+    if expect == "euler-equal-step-boundary": return control_completed and abs(observed.get("fine_error", 0) - observed.get("coarse_error", 0)) < 1e-12
+    if expect == "rk4-step-out-of-range-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "rk4-single-step-boundary": return control_completed and observed.get("rejected") is not True and observed.get("step") == 1.0
     return False
 
 
