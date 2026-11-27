@@ -9,7 +9,7 @@ VALIDATOR_ID = "LUNA_C05_INDEPENDENT_VALIDATOR"
 VALIDATOR_VERSION = "1.0.0"
 REQUIRED = {
     "fixture", "environment", "procedure", "control_spec", "stdout", "stderr",
-    "observed", "oracle", "metrics", "oracle_source", "producer_source", "source_excerpt",
+    "observed", "oracle", "metrics", "oracle_source", "producer_source", "source_excerpt", "environment_lock", "sha256sums",
 }
 
 
@@ -122,6 +122,17 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
                 loaded[name] = data
                 checked_artifacts += 1
 
+        lock_bytes = loaded.get("environment_lock")
+        if not lock_bytes or not lock_bytes.strip():
+            findings.append("environment-lock-missing-or-empty")
+        sums_bytes = loaded.get("sha256sums")
+        expected_sums = "".join(
+            f"{reference['sha256']}  {reference['path']}\\n"
+            for name, reference in sorted(artifacts.items())
+            if name != "sha256sums" and isinstance(reference, dict)
+        ).encode("utf-8")
+        if sums_bytes != expected_sums:
+            findings.append("sha256sums-manifest-mismatch")
         fixture = _json(loaded.get("fixture"))
         oracle = _json(loaded.get("oracle"))
         environment = _json(loaded.get("environment"))
