@@ -84,6 +84,10 @@ def _build() -> None:
     _add("MGL5-INF-0045", "boundary", "zlib_corrupt", {"payload_hex": "01"}, "other-damaged")
     _add("MGL5-INF-0051", "negative", "magic_bytes", {"name": "sample.png", "payload_hex": "89504e470d0a1a0a"}, "extension-agrees")
     _add("MGL5-INF-0601", "boundary", "binary_float_gap", {}, "float-edge")
+    _add("MGL5-INF-0105", "negative", "stable_ages", {"records": [{"id": "bad", "age": "unknown"}]}, "rejected")
+    _add("MGL5-INF-0105", "boundary", "stable_ages", {"records": []}, "empty-record-set")
+    _add("MGL5-INF-0109", "negative", "stack_sequence", {"steps": ["pop"]}, "single-underflow")
+    _add("MGL5-INF-0109", "boundary", "stack_sequence", {"steps": []}, "empty-stack-sequence")
 
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
@@ -204,6 +208,21 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and observed["equal"] is False and observed["difference"] != 0
     if expect == "already-composed":
         return status == "EXECUTED" and observed["same_nfc"] is True and observed["nfc"] == "a"
+    if expect == "empty-record-set":
+        return status == "EXECUTED" and observed.get("records") == [] and observed.get("rejected") is False
+    if expect == "single-underflow":
+        return (
+            status == "EXECUTED"
+            and observed.get("underflow_count") == 1
+            and observed.get("events") == [{"operation": "underflow", "source": "pop"}]
+        )
+    if expect == "empty-stack-sequence":
+        return (
+            status == "EXECUTED"
+            and observed.get("events") == []
+            and observed.get("stack") == []
+            and observed.get("underflow_count") == 0
+        )
     return False
 
 
