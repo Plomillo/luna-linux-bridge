@@ -46,6 +46,20 @@ def test_cidr_executor_and_oracle_agree():
     assert cidr_oracle("192.0.2.130/26", observed)["ok"] is True
 
 
+def test_cidr_executor_rejects_prefix_above_ipv4_limit():
+    observed = run("cidr_bounds", {"cidr": "192.0.2.130/33"})
+    assert observed["accepted"] is False
+    assert observed["rejected"] is True
+    assert cidr_oracle("192.0.2.130/33", observed)["ok"] is True
+
+
+def test_cidr_executor_rejects_non_ipv4_address():
+    observed = run("cidr_bounds", {"cidr": "192.0.2.999/24"})
+    assert observed["accepted"] is False
+    assert observed["rejected"] is True
+    assert cidr_oracle("192.0.2.999/24", observed)["ok"] is True
+
+
 def test_unknown_capability_cannot_run():
     with pytest.raises(KeyError):
         run("not-registered", {})
