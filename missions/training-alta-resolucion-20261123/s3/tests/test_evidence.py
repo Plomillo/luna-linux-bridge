@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 
 from metagente_luna_s4.c05_validator import _validate_row
-from metagente_luna_s4.independent_validator import independently_validate_case
 from metagente_luna_s4.evidence import assemble_case_record, persist_run
+from metagente_luna_s4.independent_validator import independently_validate_case
 
 
 
