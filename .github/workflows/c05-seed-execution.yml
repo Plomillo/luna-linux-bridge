@@ -172,7 +172,7 @@ jobs:
               "not_run": report["not_run"],
               "source_bound_blockers": len(blockers),
               "c05_certification": "NOT_PASSED",
-              "meaning": "17 executable plans have authentic Docker evidence; 983 source-bound NOT_RUN cases remain unimplemented; C05 remains closed to certification",
+              "meaning": "21 executable plans have authentic Docker evidence; 979 source-bound NOT_RUN cases remain unimplemented; C05 remains closed to certification",
           }, sort_keys=True))
           PY
       - name: Upload raw container execution evidence
