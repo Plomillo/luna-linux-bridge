@@ -4,12 +4,12 @@ from __future__ import annotations
 import hashlib
 import importlib
 import inspect
-from importlib.metadata import distributions
 import json
 import os
 import platform
 import sys
 import tempfile
+from importlib.metadata import distributions
 from pathlib import Path
 
 
@@ -169,7 +169,7 @@ def assemble_case_record(case_id: str, runs: list[dict]) -> dict:
     for run in runs:
         persisted = run.get("persisted_evidence")
         if not isinstance(persisted, dict):
-            raise ValueError("each run must have persisted evidence")
+            raise TypeError("each run must have persisted evidence")
         if persisted.get("case_id") != case_id or run.get("case_id") != case_id:
             raise ValueError("run belongs to a different case")
         repetition = dict(persisted)
