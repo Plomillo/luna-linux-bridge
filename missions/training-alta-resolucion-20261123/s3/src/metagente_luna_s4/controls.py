@@ -89,6 +89,15 @@ def _build() -> None:
 def accepts(expect: str, observed: dict, status: str) -> bool:
     if observed is None:
         return False
+    if expect == "preflight-blocked":
+        return (
+            status == "BLOCKED"
+            and observed.get("blocked") is True
+            and observed.get("operation_invoked") is False
+            and observed.get("phase") in {"NEGATIVE_CONTROL", "BOUNDARY_CONTROL"}
+            and isinstance(observed.get("blocker_code"), str)
+            and bool(observed["blocker_code"])
+        )
     if expect == "different-text":
         return status == "EXECUTED" and observed["recovered"] not in {"Luna-2026", "computación, información, ñandú"}
     if expect == "empty-roundtrip":
