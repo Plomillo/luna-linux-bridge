@@ -631,7 +631,6 @@ def dex_inspect(payload_hex: str, mode: str) -> dict:
     if file_size != len(raw) or header_size != 112 or endian != 0x12345678:
         return {"rejected": True, "reason": "header_size_endian_or_file_size_mismatch"}
     checksum = struct.unpack_from("<I", raw, 8)[0]
-    signature = raw[12:32].hex()
     checksum_valid = checksum == (zlib.adler32(raw[12:]) & 0xFFFFFFFF)
     signature_valid = raw[12:32] == hashlib.sha1(raw[32:]).digest()
     if mode == "header":
