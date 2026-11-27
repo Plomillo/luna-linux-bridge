@@ -1,11 +1,12 @@
-"""Negative and boundary inputs for the fifty cases already executed."""
+"""Source-bound negative and boundary inputs for authored executable cases."""
 from __future__ import annotations
 
 from metagente_luna_s4.batch2 import CASES as SECOND
+from metagente_luna_s4.batch6 import CASES as SIXTH
 from metagente_luna_s4.d01_batch import CASES as FIRST
 from metagente_luna_s4.runner import execute
 
-CASES = FIRST + SECOND
+CASES = FIRST + SECOND + SIXTH
 
 
 CONTROLS: dict[str, dict] = {}
