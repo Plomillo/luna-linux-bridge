@@ -37,6 +37,7 @@ import sys
 from pathlib import Path
 
 from metagente_luna_s4.c05_validator import validate
+from metagente_luna_s4.controls import accepts as control_accepts
 from metagente_luna_s4.evidence import assemble_case_record
 from metagente_luna_s4.independent_validator import independently_validate_case
 from metagente_luna_s4.runner import execute_isolated
@@ -139,7 +140,45 @@ def execute_plan(plan: dict, case_id: str, evidence_root: Path, timeout_seconds:
         ))
     row = assemble_case_record(case_id, runs)
     row["source_metadata"] = source_metadata
+
+    normal_checks = [
+        run.get("execution_status") == "PASS"
+        and run.get("lifecycle_status") == "EXECUTED"
+        and isinstance(run.get("oracle_result"), dict)
+        and run["oracle_result"].get("ok") is True
+        for run in runs[:3]
+    ]
+    control_checks = []
+    for kind, run in zip(("negative", "boundary"), runs[3:], strict=True):
+        expected = plan[kind]["control_metadata"]["expect"]
+        try:
+            accepted = control_accepts(
+                expected, run.get("observed"), run.get("lifecycle_status"),
+            )
+        except (KeyError, TypeError, ValueError):
+            accepted = False
+        control_checks.append({
+            "kind": kind.upper(),
+            "expect": expected,
+            "lifecycle_status": run.get("lifecycle_status"),
+            "accepted": accepted,
+        })
+
+    row["contract_evaluation"] = {
+        "normal_repetitions_pass": all(normal_checks),
+        "normal_repetition_checks": normal_checks,
+        "controls_pass": all(item["accepted"] for item in control_checks),
+        "control_checks": control_checks,
+        "adjudicator": "SOURCE_BOUND_PLAN_AND_REGISTERED_CONTROL_EXPECTATIONS",
+    }
     row["independent_validation"] = independently_validate_case(row, evidence_root)
+    contract_pass = (
+        row["execution_status"] == "PASS"
+        and all(normal_checks)
+        and all(item["accepted"] for item in control_checks)
+        and row["independent_validation"].get("status") == "PASS"
+    )
+    row["contract_status"] = "PASS" if contract_pass else "NOT_A_PASS"
     return row
 
 
