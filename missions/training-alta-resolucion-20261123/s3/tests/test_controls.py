@@ -34,7 +34,15 @@ def test_controls_that_were_defined_are_accepted():
     defined = [row for row in rows if row["controls"]]
     assert defined
     assert all(row["control_status"] == "PRESENT" for row in defined)
-    assert len(defined) == 54
+    assert len(defined) == 56
+
+def test_duplicate_and_bracket_controls_cover_negative_and_empty_boundaries():
+    assert accepts("no-duplicates", {"duplicates": []}, "EXECUTED") is True
+    assert accepts("single-duplicate", {"duplicates": [5]}, "EXECUTED") is True
+    assert accepts("mismatched-brackets", {"results": [{"text": "([)]", "accepted": False}]}, "EXECUTED") is True
+    assert accepts("empty-brackets", {"results": [{"text": "", "accepted": True}]}, "EXECUTED") is True
+    assert accepts("empty-brackets", {"results": [{"text": "", "accepted": True}]}, "BLOCKED") is False
+
 
 def test_search_controls_distinguish_absence_and_first_boundary_position():
     assert accepts("first-match-absent", {"index": None, "duplicates": []}, "EXECUTED") is True
