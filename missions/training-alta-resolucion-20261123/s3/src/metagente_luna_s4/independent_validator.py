@@ -216,6 +216,16 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
             findings.append("control-spec-identity-invalid")
         elif kind in {"NEGATIVE", "BOUNDARY"} and control_spec.get("control") != (fixture or {}).get("control"):
             findings.append("control-spec-fixture-mismatch")
+        if kind in {"NEGATIVE", "BOUNDARY"} and isinstance(fixture, dict):
+            control = fixture.get("control")
+            if isinstance(control, dict) and isinstance(control.get("expect"), str):
+                try:
+                    from metagente_luna_s4.controls import accepts
+
+                    if not accepts(control["expect"], (observed or {}).get("value"), fixture.get("lifecycle_status")):
+                        findings.append("control-semantic-expectation-not-met")
+                except (ImportError, KeyError, TypeError, ValueError):
+                    findings.append("control-semantic-validator-error")
         if not observed or observed.get("case_id") != case_id or observed.get("run_id") != run_id:
             findings.append("observed-identity-invalid")
         if not metrics or metrics.get("case_id") != case_id or metrics.get("run_id") != run_id:
