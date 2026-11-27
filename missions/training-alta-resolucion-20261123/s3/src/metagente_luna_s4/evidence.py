@@ -147,9 +147,11 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
 
 
 def assemble_case_record(case_id: str, runs: list[dict]) -> dict:
-    """Assemble three persisted run records without upgrading their evidence status."""
-    required_kinds = {"NORMAL", "NEGATIVE", "BOUNDARY"}
+    """Assemble three normal repetitions plus separate negative and boundary runs."""
+    if len(runs) != 5:
+        raise ValueError("three NORMAL repetitions plus NEGATIVE and BOUNDARY controls are required")
     repetitions = []
+    controls = []
     for run in runs:
         persisted = run.get("persisted_evidence")
         if not isinstance(persisted, dict):
@@ -158,21 +160,28 @@ def assemble_case_record(case_id: str, runs: list[dict]) -> dict:
             raise ValueError("run belongs to a different case")
         repetition = dict(persisted)
         repetition["kind"] = run.get("run_kind")
-        repetitions.append(repetition)
-    kinds = {item.get("kind") for item in repetitions}
-    if len(repetitions) != 3 or kinds != required_kinds:
-        raise ValueError("exactly one NORMAL, NEGATIVE, and BOUNDARY execution is required")
-    run_ids = [item.get("run_id") for item in repetitions]
-    if len(run_ids) != len(set(run_ids)):
-        raise ValueError("repetition RUN_ID values must be unique")
+        if repetition["kind"] == "NORMAL":
+            repetitions.append(repetition)
+        elif repetition["kind"] in {"NEGATIVE", "BOUNDARY"}:
+            controls.append(repetition)
+        else:
+            raise ValueError("run kind must be NORMAL, NEGATIVE, or BOUNDARY")
+    if len(repetitions) != 3:
+        raise ValueError("exactly three NORMAL repetitions are required")
+    if len(controls) != 2 or {item["kind"] for item in controls} != {"NEGATIVE", "BOUNDARY"}:
+        raise ValueError("exactly one NEGATIVE and one BOUNDARY control are required")
+    run_ids = [item.get("run_id") for item in repetitions + controls]
+    if any(not isinstance(run_id, str) or not run_id for run_id in run_ids) or len(run_ids) != len(set(run_ids)):
+        raise ValueError("all five RUN_ID values must be present and unique")
     outcomes = [item.get("execution_status") for item in repetitions]
     if any(outcome not in {"PASS", "FAIL", "BLOCKED", "INCONCLUSIVE"} for outcome in outcomes):
-        raise ValueError("each run must have an explicit execution outcome")
+        raise ValueError("each normal run must have an explicit execution outcome")
     outcome = outcomes[0] if len(set(outcomes)) == 1 else "INCONCLUSIVE"
     return {
         "CASE_ID": case_id,
         "execution_status": outcome,
         "contract_status": "NOT_A_PASS",
         "repetitions": repetitions,
+        "controls": controls,
         "independent_validation": {"passed": False, "status": "NOT_RUN"},
     }
