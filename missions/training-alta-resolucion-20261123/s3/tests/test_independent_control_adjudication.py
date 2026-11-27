@@ -116,3 +116,17 @@ def test_ieee754_and_float_gap_controls_have_independent_adjudication():
     for expect, observed in cases:
         assert _independent_control_accepts(expect, observed, "EXECUTED") is True, expect
         assert _independent_control_accepts(expect, observed, "BLOCKED") is False, expect
+
+
+def test_numerical_fit_and_integrator_controls_are_independently_adjudicated():
+    cases = [
+        ("line-negative-slope", {"slope": -1, "intercept": 0}),
+        ("line-zero-slope-boundary", {"slope": 0, "intercept": 0}),
+        ("euler-step-order-reversed", {"coarse_error": 0.1, "fine_error": 0.2}),
+        ("euler-equal-step-boundary", {"coarse_error": 0.1, "fine_error": 0.1}),
+        ("rk4-step-out-of-range-rejected", {"rejected": True}),
+        ("rk4-single-step-boundary", {"rejected": False, "step": 1.0}),
+    ]
+    for expect, observed in cases:
+        assert _independent_control_accepts(expect, observed, "EXECUTED") is True, expect
+        assert _independent_control_accepts(expect, observed, "BLOCKED") is False, expect
