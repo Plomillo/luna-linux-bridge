@@ -10,14 +10,14 @@ import sys
 import tempfile
 import time
 import uuid
-from pathlib import Path
 from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
 
 import jsonschema
 
 from metagente_luna_s3.registry import EXECUTORS, ORACLES, REGISTRY
-from metagente_luna_s4.guard import authorize, require_case_id
 from metagente_luna_s4.evidence import persist_run
+from metagente_luna_s4.guard import authorize, require_case_id
 
 
 def _execute(capability_id: str, arguments: dict, case_id: str, backend: str = "LOCAL_TEST_ONLY") -> dict:
