@@ -96,6 +96,16 @@ def _valid_row_with_artifacts(tmp_path):
                 "case_id": case_id, "run_id": run_id, "duration_ms": 1,
             }),
         }
+        artifacts["environment_lock"] = _write_artifact(
+            tmp_path, f"{run_id}/environment.lock", "python==3.12\\npytest==8.3.0\\n"
+        )
+        sums_content = "".join(
+            f"{entry['sha256']}  {entry['path']}\\n"
+            for _, entry in sorted(artifacts.items())
+        )
+        artifacts["sha256sums"] = _write_artifact(
+            tmp_path, f"{run_id}/SHA256SUMS", sums_content
+        )
         run = {
             "kind": kind, "run_id": run_id, "case_id": case_id,
             "clean_state": True, "execution_status": "PASS", "exit_code": 0,
