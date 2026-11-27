@@ -190,7 +190,7 @@ def execute_isolated(
                 if docker is None:
                     raise RuntimeError("Docker CLI unavailable; sandbox execution denied")
                 command = [
-                    docker, "run", "--rm", "--network", "none", "--read-only",
+                    docker, "run", "-i", "--rm", "--network", "none", "--read-only",
                     "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true",
                     "--pids-limit", "64", "--memory", "256m", "--cpus", "1",
                     "--user", "65534:65534",
