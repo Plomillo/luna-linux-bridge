@@ -2,7 +2,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from metagente_luna_s4.c05_validator import _validate_row, contradictions, validate
+from metagente_luna_s4.c05_validator import _functional_population_passes, _validate_row, contradictions, validate
 from metagente_luna_s4.independent_validator import independently_validate_case
 from metagente_luna_s4.reconcile import amendments, intersection, manifest
 
@@ -298,3 +298,22 @@ def test_relabeling_same_input_as_negative_and_boundary_is_rejected(tmp_path):
     second["sha256"] = hashlib.sha256(target_path.read_bytes()).hexdigest()
     errors = _validate_row(row, tmp_path)
     assert "negative-and-boundary-inputs-must-be-distinct" in errors
+
+def test_complete_blocked_preflights_never_satisfy_functional_c05_gate():
+    blocked = [
+        {"CASE_ID": f"MGL5-INF-{number:04d}", "execution_status": "BLOCKED",
+         "contract_status": "NOT_A_PASS"}
+        for number in range(1, 1001)
+    ]
+    assert _functional_population_passes(blocked) is False
+
+
+def test_functional_c05_gate_requires_all_1000_contractual_operation_passes():
+    passed = [
+        {"CASE_ID": f"MGL5-INF-{number:04d}", "execution_status": "PASS",
+         "contract_status": "PASS"}
+        for number in range(1, 1001)
+    ]
+    assert _functional_population_passes(passed) is True
+    passed[-1]["execution_status"] = "BLOCKED"
+    assert _functional_population_passes(passed) is False
