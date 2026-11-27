@@ -164,11 +164,6 @@ REGISTRY: dict[str, Capability] = {
         "properties": {"steps": {"type": "array", "items": {"type": "string"}}},
         "additionalProperties": False,
     }),
-    "descending_values": _cap("descending_values", "descending_permutation", {
-        "type": "object", "required": ["values"],
-        "properties": {"values": {"type": "array"}},
-        "additionalProperties": False,
-    }),
 }
 
 REGISTRY["c05_preflight_blocked"] = _cap(
@@ -249,7 +244,6 @@ ORACLES: dict[str, Callable[..., dict]] = {
     "request_counts": batch4_oracle.request_counts,
     "stable_age_records": batch6_oracle.stable_ages_oracle,
     "stack_state_machine": batch6_oracle.stack_sequence_oracle,
-    "descending_permutation": batch6_oracle.descending_values_oracle,
 }
 
 ORACLES["c05_preflight_blocked_oracle"] = c05_preflight_oracle.blocked_preflight_oracle
@@ -324,7 +318,6 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "request_log": batch4_exec.request_log,
     "stable_ages": batch6_exec.stable_ages,
     "stack_sequence": batch6_exec.stack_sequence,
-    "descending_values": batch6_exec.descending_values,
 }
 
 EXECUTORS["c05_preflight_blocked"] = c05_preflight.blocked_preflight_probe
