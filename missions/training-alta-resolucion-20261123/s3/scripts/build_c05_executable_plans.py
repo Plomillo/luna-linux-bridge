@@ -20,8 +20,6 @@ ROOT = Path(__file__).resolve().parents[4]
 SOURCE_PATH = ROOT / "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt"
 CONTROL_PATH = Path(__file__).resolve().parents[1] / "src" / "metagente_luna_s4" / "controls.py"
 CASE_SPECS = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5
-CASE_HEADER = re.compile(r"(?m)^\[(MGL5-INF-\d{4})\].*$")
-
 
 def _source_record(case_id: str, source: bytes, text: str, lines: list[bytes]) -> tuple[dict, str]:
     match = re.search(rf"(?m)^\[{re.escape(case_id)}\].*?(?=^\[MGL5-INF-|\Z)", text, re.S)
