@@ -100,6 +100,8 @@ def _build() -> None:
     _add("MGL5-INF-0104", "boundary", "binary_find", {"needle": 1, "start": 1, "end": 31}, "binary-find-first")
     _add("MGL5-INF-0105", "negative", "stable_ages", {"records": [{"id": "", "age": 30}]}, "rejected")
     _add("MGL5-INF-0105", "boundary", "stable_ages", {"records": []}, "empty-record-set")
+    _add("MGL5-INF-0106", "negative", "descending_values", {"values": [3, "invalid", 2]}, "rejected")
+    _add("MGL5-INF-0106", "boundary", "descending_values", {"values": [0]}, "descending-singleton")
     _add("MGL5-INF-0024", "negative", "csv_newline", {"text": '"a",1\n"b",2\n'}, "two-records")
     _add("MGL5-INF-0031", "boundary", "xml_entities", {"document": "<r>&lt;&gt;&amp;</r><!-- boundary -->"}, "predefined-entity-set")
     _add("MGL5-INF-0032", "boundary", "xml_unbalanced", {"document": "<a/>"}, "self-closing-accepted")
@@ -494,6 +496,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return control_completed and observed.get("index") == 0 and 1 <= observed.get("comparisons", 0) <= 5
     if expect == "empty-record-set":
         return control_completed and observed.get("records") == [] and observed.get("rejected") is False
+    if expect == "descending-singleton":
+        return control_completed and observed.get("ordered") == [0] and observed.get("rejected") is False
     if expect == "single-underflow":
         return (
             control_completed
