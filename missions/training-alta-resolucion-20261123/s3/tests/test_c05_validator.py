@@ -35,7 +35,7 @@ def _source_reference(case_id):
     start = next(index for index, line in enumerate(lines) if case_id.encode("utf-8") in line)
     end = min(start + 5, len(lines))
     excerpt = b"".join(lines[start:end])
-    git_blob = hashlib.sha1(b"blob " + str(len(source_bytes)).encode("ascii") + b"\\0" + source_bytes).hexdigest()
+    git_blob = hashlib.sha1(b"blob " + str(len(source_bytes)).encode("ascii") + b"\0" + source_bytes).hexdigest()
     return {
         "source_file": source_file, "line_start": start + 1, "line_end": end,
         "file_sha256": hashlib.sha256(source_bytes).hexdigest(),
