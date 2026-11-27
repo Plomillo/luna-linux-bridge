@@ -166,9 +166,18 @@ def execute_isolated(
                 }
             if "worker_error" in record:
                 record.update({
-                    "execution_status": "BLOCKED", "contract_status": "NOT_A_PASS",
-                    "stderr": record["worker_error"], "exit_code": completed.returncode,
-                    "started": started, "ended": time.time(),
+                    "run_id": str(uuid.uuid4()),
+                    "case_id": case_id,
+                    "capability_id": capability_id,
+                    "execution_status": "BLOCKED",
+                    "contract_status": "NOT_A_PASS",
+                    "stdout": "",
+                    "stderr": record["worker_error"],
+                    "observed": None,
+                    "oracle_result": None,
+                    "exit_code": completed.returncode,
+                    "started": started,
+                    "ended": time.time(),
                 })
         except subprocess.TimeoutExpired as exc:
             record = {
