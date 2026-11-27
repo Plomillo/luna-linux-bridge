@@ -147,6 +147,8 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "pdf-existing-references-resolved": return completed and observed.get("objects") == [1, 2] and all(row.get("resolved") is True for row in observed.get("references", []))
     if expect == "pdf-xref-object-one-offset-detected": return completed and observed.get("valid") is False and any(row.get("object") == 1 and row.get("actual_offset") != row.get("declared_offset") for row in observed.get("discrepancies", []))
     if expect == "pdf-xref-valid-offsets": return completed and observed.get("valid") is True and observed.get("discrepancies") == []
+    if expect == "pdf-unencrypted-input-no-protected-content-claim": return completed and observed.get("encrypted") is False and observed.get("content_available") is False and observed.get("plaintext_claim") is None
+    if expect == "pdf-empty-protected-fixture-access-limited": return completed and observed.get("encrypted") is True and observed.get("content_available") is False and observed.get("plaintext_claim") is None
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

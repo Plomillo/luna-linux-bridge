@@ -44,6 +44,7 @@ EXPECTED = {
     "MGL5-INF-0087": "wasm_type_indices",
     "MGL5-INF-0082": "pdf_objects",
     "MGL5-INF-0083": "pdf_xref",
+    "MGL5-INF-0084": "pdf_encryption_boundary",
 }
 
 

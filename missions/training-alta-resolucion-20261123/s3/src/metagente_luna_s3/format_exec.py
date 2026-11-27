@@ -365,3 +365,34 @@ def pdf_xref(corrupt_object: int) -> dict:
         if declared != actual.get(number):
             discrepancies.append({"object": number, "declared_offset": declared, "actual_offset": actual.get(number)})
     return {"object_offsets": actual, "xref_offset": xref_start, "discrepancies": discrepancies, "valid": not discrepancies}
+
+
+def pdf_encryption_boundary(pdf_hex: str) -> dict:
+    """Report encrypted PDF access limits without attempting decryption."""
+    raw = bytes.fromhex(pdf_hex)
+    if not raw.startswith(b"%PDF-"):
+        raise ValueError("input does not have a PDF header")
+    trailer = re.search(rb"trailer\s*<<(.*?)>>", raw, re.DOTALL)
+    reference = re.search(rb"/Encrypt\s+(\d+)\s+(\d+)\s+R", trailer.group(1)) if trailer else None
+    dictionary = None
+    if reference:
+        object_number = int(reference.group(1))
+        dictionary = re.search(rb"(?m)^" + str(object_number).encode() + rb"\s+\d+\s+obj\s*<<(.*?)>>\s*endobj", raw, re.DOTALL)
+    handler = re.search(rb"/Filter\s*/([A-Za-z0-9]+)", dictionary.group(1)) if dictionary else None
+    revision = re.search(rb"/R\s+(\d+)", dictionary.group(1)) if dictionary else None
+    version = re.search(rb"/V\s+(\d+)", dictionary.group(1)) if dictionary else None
+    key_length = re.search(rb"/Length\s+(\d+)", dictionary.group(1)) if dictionary else None
+    permissions = re.search(rb"/P\s+(-?\d+)", dictionary.group(1)) if dictionary else None
+    encrypted = bool(reference and handler and handler.group(1) == b"Standard")
+    return {
+        "encrypted": encrypted,
+        "handler": handler.group(1).decode("ascii") if encrypted else None,
+        "revision": int(revision.group(1)) if encrypted and revision else None,
+        "version": int(version.group(1)) if encrypted and version else None,
+        "key_length_bits": int(key_length.group(1)) if encrypted and key_length else None,
+        "permissions": int(permissions.group(1)) if encrypted and permissions else None,
+        "password_supplied": False,
+        "content_available": False,
+        "plaintext_claim": None,
+        "sha256": hashlib.sha256(raw).hexdigest(),
+    }

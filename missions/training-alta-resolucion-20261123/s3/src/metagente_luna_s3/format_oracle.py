@@ -238,3 +238,35 @@ def pdf_xref_oracle(arguments: dict, observed: dict) -> dict:
         discrepancies.append({"object": number, "declared_offset": offsets[number] + 1, "actual_offset": offsets[number]})
     ok = observed.get("object_offsets") == offsets and observed.get("discrepancies") == discrepancies and observed.get("valid") is (not bool(discrepancies))
     return {"ok": ok, "method": "independent PDF byte-offset reconstruction from header, object headers, and body lengths"}
+
+
+def pdf_encryption_boundary_oracle(arguments: dict, observed: dict) -> dict:
+    raw = bytes.fromhex(arguments["pdf_hex"])
+    trailer_start = raw.rfind(b"trailer")
+    trailer = raw[trailer_start:] if trailer_start >= 0 else b""
+    encrypted = b"/Encrypt " in trailer and b" R" in trailer
+    match = __import__("re").search(rb"/Encrypt\s+(\d+)\s+(\d+)\s+R", trailer)
+    dictionary = b""
+    if match:
+        number = int(match.group(1))
+        object_start = raw.find(f"{number} 0 obj".encode())
+        object_end = raw.find(b"endobj", object_start)
+        if object_start >= 0 and object_end >= 0:
+            dictionary = raw[object_start:object_end]
+    valid_handler = b"/Filter /Standard" in dictionary
+    def integer(key: bytes):
+        found = __import__("re").search(rb"/" + key + rb"\s+(-?\d+)", dictionary)
+        return int(found.group(1)) if found else None
+    expected = {
+        "encrypted": encrypted and valid_handler,
+        "handler": "Standard" if encrypted and valid_handler else None,
+        "revision": integer(b"R") if encrypted else None,
+        "version": integer(b"V") if encrypted else None,
+        "key_length_bits": integer(b"Length") if encrypted else None,
+        "permissions": integer(b"P") if encrypted else None,
+        "password_supplied": False,
+        "content_available": False,
+        "plaintext_claim": None,
+        "sha256": hashlib.sha256(raw).hexdigest(),
+    }
+    return {"ok": observed == expected and (not encrypted or valid_handler), "method": "independent trailer reference and Standard security-dictionary inspection; no plaintext assertion"}

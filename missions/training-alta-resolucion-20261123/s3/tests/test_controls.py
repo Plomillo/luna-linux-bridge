@@ -38,7 +38,7 @@ def test_controls_that_were_defined_are_accepted():
     # The runner must execute every currently authored control case; the
     # registry is the authoritative count, not a stale historical constant.
     assert {row["case_id"] for row in defined} == set(CONTROLS)
-    assert len(defined) == len(CONTROLS) == 139
+    assert len(defined) == len(CONTROLS) == 140
 
 def test_yaml_type_plan_and_independent_oracle_cover_negative_and_boundary_inputs():
     from metagente_luna_s3.d01_exec import yaml_types
