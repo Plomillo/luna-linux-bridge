@@ -167,7 +167,8 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
 
     fixture = _load_json(loaded["fixture"]) if "fixture" in loaded else None
     if (not isinstance(fixture, dict) or fixture.get("case_id") != case_id or fixture.get("run_id") != run_id
-            or not (fixture.get("fixture_origin") or fixture.get("fixture_id"))):
+            or not (fixture.get("fixture_origin") or fixture.get("fixture_id"))
+            or fixture.get("run_kind") != rep.get("kind") or "input" not in fixture):
         errors.append("fixture-provenance-invalid")
     elif rep.get("kind") in {"NEGATIVE", "BOUNDARY"}:
         control = fixture.get("control")
