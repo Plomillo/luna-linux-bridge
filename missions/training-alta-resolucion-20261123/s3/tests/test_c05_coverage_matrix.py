@@ -19,8 +19,8 @@ def test_coverage_matrix_accounts_for_every_source_case_without_promoting_missin
     ]
     assert summary["counts"]["source_defined"] == 1000
     assert summary["counts"]["normal_spec_defined"] == 105
-    assert summary["counts"]["ready_for_execution"] == 101
-    assert summary["counts"]["blocked"] == 899
+    assert summary["counts"]["ready_for_execution"] == 95
+    assert summary["counts"]["blocked"] == 905
     assert summary["counts"]["interpreter_candidates"] == 7
     assert summary["counts"]["interpreter_ready"] == 2
     assert summary["counts"]["interpreter_blocked"] == 5

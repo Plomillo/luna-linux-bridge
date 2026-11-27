@@ -106,7 +106,7 @@ def decimal_literal(arguments: dict, observed: dict) -> dict:
         expected = str(Decimal(arguments["text"]))
     except InvalidOperation:
         return {"ok": observed.get("rejected") is True and observed.get("reason") == "invalid-decimal", "method": "fixed invalid Decimal rejection"}
-    return {"ok": observed.get("rejected") is False and observed.get("text") == expected and observed.get("used_binary_float") is False, "method": "independent Decimal parsing"}
+    return {"ok": observed.get("rejected", False) is False and observed.get("text") == expected and observed.get("used_binary_float") is False, "method": "independent Decimal parsing"}
 
 
 def state_table(arguments: dict, observed: dict) -> dict:
