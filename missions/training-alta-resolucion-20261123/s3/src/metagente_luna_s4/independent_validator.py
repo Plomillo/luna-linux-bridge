@@ -98,6 +98,14 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "age-zero-accepted": return completed and observed.get("rejected") is False and observed.get("rows") == 1
     if expect == "command-list-rejected": return completed and observed.get("rejected") is True
     if expect == "single-zero-exit": return completed and observed.get("rejected") is not True and observed.get("commands") == ["true"] and observed.get("codes") == [0]
+    if expect == "zip-traversal-blocked": return completed and observed.get("blocked") == ["../../escape"] and observed.get("outside_write") is False
+    if expect == "zip-safe-empty": return completed and observed.get("safe") == ["inside.txt"] and observed.get("blocked") == []
+    if expect in {"zip-corrupt-crc-detected", "zip-empty-crc-detected", "gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return completed and observed.get("crc_error_detected") is True
+    if expect == "zip-duplicate-content-preserved": return completed and observed.get("collisions") == ["x"] and observed.get("contents") == ["61", "62"] and observed.get("silent_overwrite") is False
+    if expect == "zip-single-entry-preserved": return completed and observed.get("collisions") == [] and observed.get("contents") == [""]
+    if expect == "tar-empty-block-boundaries": return completed and [row["header_offset"] for row in observed.get("members", [])] == [0, 512, 1536] and [row["size"] for row in observed.get("members", [])] == [0, 1, 0]
+    if expect == "tar-one-byte-block-boundaries": return completed and [row["header_offset"] for row in observed.get("members", [])] == [0, 1024, 2048] and all(row["size"] == 1 for row in observed.get("members", []))
+    if expect in {"tar-second-header-only-incomplete", "tar-second-empty-prefix-incomplete"}: return completed and observed.get("first_preserved") is True and observed.get("second_incomplete") is True
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

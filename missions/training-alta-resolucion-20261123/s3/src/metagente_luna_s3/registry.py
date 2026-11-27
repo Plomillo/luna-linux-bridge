@@ -7,6 +7,8 @@ from collections.abc import Callable
 from pydantic import BaseModel
 
 from metagente_luna_s3 import (
+    archive_exec,
+    archive_oracle,
     batch3_exec,
     batch3_oracle,
     batch4_exec,
@@ -181,6 +183,18 @@ REGISTRY["c05_preflight_blocked"] = _cap(
      "additionalProperties": False},
 )
 
+_ARCHIVE_SCHEMAS = {
+    "zip_path_safety": {"type": "object", "required": ["entries"], "properties": {"entries": {"type": "array", "items": {"type": "object", "required": ["name", "data_hex"], "properties": {"name": {"type": "string"}, "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False}}}, "additionalProperties": False},
+    "zip_crc": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False},
+    "zip_duplicates": {"type": "object", "required": ["names", "payloads_hex"], "properties": {"names": {"type": "array", "items": {"type": "string"}}, "payloads_hex": {"type": "array", "items": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}}, "additionalProperties": False},
+    "tar_offsets": {"type": "object", "required": ["entries"], "properties": {"entries": {"type": "array", "minItems": 3, "items": {"type": "object", "required": ["name", "data_hex"], "properties": {"name": {"type": "string"}, "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False}}}, "additionalProperties": False},
+    "tar_truncated": {"type": "object", "required": ["first_hex", "second_hex", "cut_into_second"], "properties": {"first_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})+$"}, "second_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})+$"}, "cut_into_second": {"type": "integer", "minimum": 0}}, "additionalProperties": False},
+    "gzip_crc": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False},
+}
+_ARCHIVE_ORACLES = {"zip_path_safety": "archive_path", "zip_crc": "archive_zip_crc", "zip_duplicates": "archive_zip_duplicates", "tar_offsets": "archive_tar_offsets", "tar_truncated": "archive_tar_truncated", "gzip_crc": "archive_gzip_crc"}
+for _archive_name, _archive_oracle in _ARCHIVE_ORACLES.items():
+    REGISTRY[_archive_name] = _cap(_archive_name, _archive_oracle, _ARCHIVE_SCHEMAS[_archive_name])
+
 ORACLES: dict[str, Callable[..., dict]] = {
     "ipaddress": cidr_bounds_oracle,
     "utf8_manual": d01_oracle.utf8_manual,
@@ -261,6 +275,7 @@ ORACLES: dict[str, Callable[..., dict]] = {
 }
 
 ORACLES["c05_preflight_blocked_oracle"] = c05_preflight_oracle.blocked_preflight_oracle
+ORACLES.update({"archive_path": archive_oracle.path_oracle, "archive_zip_crc": archive_oracle.crc_oracle, "archive_zip_duplicates": archive_oracle.duplicate_oracle, "archive_tar_offsets": archive_oracle.tar_offsets_oracle, "archive_tar_truncated": archive_oracle.truncated_oracle, "archive_gzip_crc": archive_oracle.gzip_oracle})
 
 EXECUTORS: dict[str, Callable[..., dict]] = {
     "cidr_bounds": cidr_bounds,
@@ -340,6 +355,8 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "stable_ages": batch6_exec.stable_ages,
     "stack_sequence": batch6_exec.stack_sequence,
 }
+
+EXECUTORS.update({"zip_path_safety": archive_exec.zip_path_safety, "zip_crc": archive_exec.zip_crc, "zip_duplicates": archive_exec.zip_duplicates, "tar_offsets": archive_exec.tar_offsets, "tar_truncated": archive_exec.tar_truncated, "gzip_crc": archive_exec.gzip_crc})
 
 EXECUTORS["c05_preflight_blocked"] = c05_preflight.blocked_preflight_probe
 

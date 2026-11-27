@@ -38,6 +38,12 @@ CASES = [
     {"case_id": "MGL5-INF-0051", "capability_id": "magic_bytes", "arguments": {"name": "sample.dat", "payload_hex": "89504e470d0a1a0a"}, "fixture_provenance": "SIGNATURE_PREFIX_NOT_A_FULL_PNG"},
     {"case_id": "MGL5-INF-0052", "capability_id": "magic_bytes", "arguments": {"name": "sample.jpg", "payload_hex": "7f454c46020101000000000000000000"}, "fixture_provenance": "ELF64_LE_IDENT_HEADER_PREFIX"},
     {"case_id": "MGL5-INF-0053", "capability_id": "elf_header", "arguments": {"payload_hex": "7f454c4602010100000000000000000002003e000100000000004000000000004000000000000000000000000000000000000000400038000000400000000000"}, "fixture_provenance": "SYNTHETIC_MINIMAL: exact 64-byte ELF64 little-endian EXEC header"},
+    {"case_id": "MGL5-INF-0070", "capability_id": "zip_path_safety", "arguments": {"entries": [{"name": "../outside.txt", "data_hex": "736563726574"}, {"name": "inside.txt", "data_hex": "6f6b"}]}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: source specifies ../outside.txt; companion safe member added to prove containment"},
+    {"case_id": "MGL5-INF-0071", "capability_id": "zip_crc", "arguments": {"payload_hex": "4352432d74657374"}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: deterministic member bytes; executor mutates data byte only"},
+    {"case_id": "MGL5-INF-0072", "capability_id": "zip_duplicates", "arguments": {"names": ["same.txt", "same.txt"], "payloads_hex": ["6f6e65", "74776f"]}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: two distinct payloads use the required duplicate member name"},
+    {"case_id": "MGL5-INF-0073", "capability_id": "tar_offsets", "arguments": {"entries": [{"name": "a", "data_hex": "61"}, {"name": "b", "data_hex": "62"}, {"name": "c", "data_hex": "6363"}]}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: three USTAR members, deterministic 512-byte blocks"},
+    {"case_id": "MGL5-INF-0074", "capability_id": "tar_truncated", "arguments": {"first_hex": "6669727374", "second_hex": "7365636f6e64", "cut_into_second": 2}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: truncation two bytes into second member payload"},
+    {"case_id": "MGL5-INF-0075", "capability_id": "gzip_crc", "arguments": {"payload_hex": "677a69702d637263"}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: deterministic payload; executor alters trailer CRC32 only"},
 
     {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
     {"case_id": "MGL5-INF-0102", "capability_id": "array_minmax", "arguments": {"values": [-8, 4, 4, 19, 0]}},
