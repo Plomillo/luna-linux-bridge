@@ -4,7 +4,7 @@ from metagente_luna_s4.d01_batch import run_all as run_first
 
 def test_second_batch_meets_the_stated_criteria():
     rows = run_all()
-    assert len(rows) == 32
+    assert len(rows) == 36
     assert {row["execution_status"] for row in rows} == {"CRITERION_MET"}
     by_id = {row["case_id"]: row["observed"] for row in rows}
     assert by_id["MGL5-INF-0101"] == {"sum": 15, "empty_sum": 0}
