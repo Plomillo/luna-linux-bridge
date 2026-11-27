@@ -30,11 +30,11 @@ C05 dossiers or helper ledgers.
 """
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
 import re
 import sys
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from metagente_luna_s4.c05_validator import validate
