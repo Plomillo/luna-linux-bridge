@@ -560,25 +560,104 @@ def dex_header_oracle(arguments: dict, observed: dict) -> dict:
 
 
 def dex_tables_oracle(arguments: dict, observed: dict) -> dict:
+    """Reconstruct DEX table layout and references without using executor output as input."""
     raw = bytes.fromhex(arguments["payload_hex"])
-    if len(raw) < 112 or raw[:4] != bytes.fromhex("6465780a"):
-        return {"ok": observed.get("rejected") is True, "method": "independent DEX table bounds and index reconstruction"}
+    method = "independent DEX table bounds, strings and cross-reference reconstruction"
+    if len(raw) < 112 or raw[:4] != bytes.fromhex("6465780a") or raw[7] != 0 or raw[4:7] != b"035":
+        return {"ok": observed.get("rejected") is True, "method": method}
+    file_size, header_size, endian = struct.unpack_from("<III", raw, 32)
+    data_size, data_off = struct.unpack_from("<II", raw, 104)
+    if file_size != len(raw) or header_size != 112 or endian != 0x12345678:
+        return {"ok": observed.get("rejected") is True, "method": method}
+    if data_size == 0:
+        data_start = data_end = len(raw)
+        if data_off not in (0, len(raw)):
+            return {"ok": observed.get("rejected") is True, "method": method}
+    else:
+        data_start, data_end = data_off, data_off + data_size
+        if data_start < 112 or data_end > len(raw):
+            return {"ok": observed.get("rejected") is True, "method": method}
     layout = ((56, 60, 4), (64, 68, 4), (72, 76, 12), (80, 84, 8), (88, 92, 8), (96, 100, 32))
-    counts = []
+    counts, offsets = [], []
     for size_at, off_at, width in layout:
         count, offset = struct.unpack_from("<II", raw, size_at)
-        if count and (offset < 112 or offset + count * width > len(raw)):
-            return {"ok": observed.get("rejected") is True, "method": "independent DEX table bounds and index reconstruction"}
+        if count and (offset < 112 or offset % 4 or offset + count * width > data_start):
+            return {"ok": observed.get("rejected") is True, "method": method}
         counts.append(count)
-    tables = observed.get("tables", {})
-    expected_names = ("string_ids", "type_ids", "proto_ids", "field_ids", "method_ids", "class_defs")
-    ok = observed.get("rejected") is False and all(tables.get(name, {}).get("count") == count for name, count in zip(expected_names, counts, strict=True))
-    strings = observed.get("strings", [])
-    types = observed.get("type_string_indices", [])
-    protos = observed.get("proto_references", [])
-    methods = observed.get("method_references", [])
-    ok = ok and all(isinstance(i, int) and 0 <= i < len(strings) for i in types)
-    ok = ok and all(0 <= row.get("shorty_idx", -1) < len(strings) and 0 <= row.get("return_type_idx", -1) < len(types) for row in protos)
-    ok = ok and all(0 <= row.get("class_idx", -1) < len(types) and 0 <= row.get("proto_idx", -1) < len(protos) and 0 <= row.get("name_idx", -1) < len(strings) for row in methods)
-    ok = ok and observed.get("indices_valid") is True
-    return {"ok": bool(ok), "method": "independent DEX table counts, bounds and cross-reference checks"}
+        offsets.append(offset)
+    # Independent fixture parsing: the DEX string_data_item is ULEB128 length + ASCII bytes + NUL.
+    expected_strings = []
+    for index in range(counts[0]):
+        string_offset = struct.unpack_from("<I", raw, offsets[0] + index * 4)[0]
+        if not data_start <= string_offset < data_end:
+            return {"ok": observed.get("rejected") is True, "method": method}
+        length, cursor, shift = 0, string_offset, 0
+        while cursor < data_end and shift <= 28:
+            byte = raw[cursor]
+            cursor += 1
+            length |= (byte & 0x7f) << shift
+            if not byte & 0x80:
+                break
+            shift += 7
+        else:
+            return {"ok": observed.get("rejected") is True, "method": method}
+        terminator = raw.find(b"\\x00", cursor, data_end)
+        if terminator < 0 or terminator - cursor != length:
+            return {"ok": observed.get("rejected") is True, "method": method}
+        try:
+            expected_strings.append(raw[cursor:terminator].decode("ascii"))
+        except UnicodeDecodeError:
+            return {"ok": observed.get("rejected") is True, "method": method}
+    expected_types = [
+        struct.unpack_from("<I", raw, offsets[1] + index * 4)[0]
+        for index in range(counts[1])
+    ]
+    expected_protos = []
+    for index in range(counts[2]):
+        shorty_idx, return_idx, parameters_off = struct.unpack_from("<III", raw, offsets[2] + index * 12)
+        parameter_indices = []
+        if parameters_off:
+            if parameters_off < data_start or parameters_off % 4 or parameters_off + 4 > data_end:
+                return {"ok": observed.get("rejected") is True, "method": method}
+            parameter_count = struct.unpack_from("<I", raw, parameters_off)[0]
+            if parameters_off + 4 + parameter_count * 2 > data_end:
+                return {"ok": observed.get("rejected") is True, "method": method}
+            parameter_indices = [struct.unpack_from("<H", raw, parameters_off + 4 + n * 2)[0] for n in range(parameter_count)]
+        expected_protos.append({"shorty_idx": shorty_idx, "return_type_idx": return_idx,
+                                "parameters_off": parameters_off, "parameter_type_indices": parameter_indices})
+    expected_fields = [
+        {"class_idx": class_idx, "type_idx": type_idx, "name_idx": name_idx}
+        for class_idx, type_idx, name_idx in (
+            struct.unpack_from("<HHI", raw, offsets[3] + index * 8) for index in range(counts[3])
+        )
+    ]
+    expected_methods = [
+        {"class_idx": class_idx, "proto_idx": proto_idx, "name_idx": name_idx}
+        for class_idx, proto_idx, name_idx in (
+            struct.unpack_from("<HHI", raw, offsets[4] + index * 8) for index in range(counts[4])
+        )
+    ]
+    indices_valid = (
+        all(index < len(expected_strings) for index in expected_types)
+        and all(row["shorty_idx"] < len(expected_strings) and row["return_type_idx"] < len(expected_types)
+                and all(i < len(expected_types) for i in row["parameter_type_indices"]) for row in expected_protos)
+        and all(row["class_idx"] < len(expected_types) and row["type_idx"] < len(expected_types)
+                and row["name_idx"] < len(expected_strings) for row in expected_fields)
+        and all(row["class_idx"] < len(expected_types) and row["proto_idx"] < len(expected_protos)
+                and row["name_idx"] < len(expected_strings) for row in expected_methods)
+    )
+    names = ("string_ids", "type_ids", "proto_ids", "field_ids", "method_ids", "class_defs")
+    observed_tables = observed.get("tables", {})
+    ok = (
+        observed.get("rejected") is False
+        and all(observed_tables.get(name, {}).get("count") == count
+                and observed_tables.get(name, {}).get("offset") == offset
+                for name, count, offset in zip(names, counts, offsets, strict=True))
+        and observed.get("strings") == expected_strings
+        and observed.get("type_string_indices") == expected_types
+        and observed.get("proto_references") == expected_protos
+        and observed.get("field_references") == expected_fields
+        and observed.get("method_references") == expected_methods
+        and observed.get("indices_valid") is indices_valid
+    )
+    return {"ok": bool(ok), "method": method}
