@@ -316,25 +316,26 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
             contractual_pass += 1
         errors = _validate_row(row, root)
         repetitions = row.get("repetitions")
-        if isinstance(repetitions, list):
-            for rep in repetitions:
-                if not isinstance(rep, dict):
-                    continue
-                run_id = rep.get("run_id")
-                if isinstance(run_id, str):
-                    owner = run_owner.setdefault(run_id, case_id)
-                    if owner != case_id:
-                        errors.append("run-id-reused-across-cases")
-                artifacts = rep.get("artifacts")
-                if isinstance(artifacts, dict):
-                    for artifact_name, artifact in artifacts.items():
-                        if not isinstance(artifact, dict) or not isinstance(artifact.get("path"), str):
-                            continue
-                        artifact_path = artifact["path"]
-                        artifact_key = (case_id, run_id if isinstance(run_id, str) else "", artifact_name)
-                        previous_owner = artifact_owner.setdefault(artifact_path, artifact_key)
-                        if previous_owner != artifact_key:
-                            errors.append(f"evidence-path-reused:{artifact_path}")
+        controls = row.get("controls")
+        all_runs = (repetitions if isinstance(repetitions, list) else []) + (controls if isinstance(controls, list) else [])
+        for rep in all_runs:
+            if not isinstance(rep, dict):
+                continue
+            run_id = rep.get("run_id")
+            if isinstance(run_id, str):
+                owner = run_owner.setdefault(run_id, case_id)
+                if owner != case_id:
+                    errors.append("run-id-reused-across-cases")
+            artifacts = rep.get("artifacts")
+            if isinstance(artifacts, dict):
+                for artifact_name, artifact in artifacts.items():
+                    if not isinstance(artifact, dict) or not isinstance(artifact.get("path"), str):
+                        continue
+                    artifact_path = artifact["path"]
+                    artifact_key = (case_id, run_id if isinstance(run_id, str) else "", artifact_name)
+                    previous_owner = artifact_owner.setdefault(artifact_path, artifact_key)
+                    if previous_owner != artifact_key:
+                        errors.append(f"evidence-path-reused:{artifact_path}")
         if errors:
             rejected.append({"case_id": case_id, "reasons": sorted(set(errors))})
         else:
