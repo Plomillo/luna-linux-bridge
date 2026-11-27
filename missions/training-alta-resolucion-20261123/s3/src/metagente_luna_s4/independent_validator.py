@@ -113,6 +113,15 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "wasm-version-zero-rejected": return completed and observed.get("accepted") is False and observed.get("magic_valid") is True and observed.get("version") == 0
     if expect == "png-crc-mismatch-located": return completed and [row["type"] for row in observed.get("chunks", []) if not row["crc_valid"]] == ["IDAT"]
     if expect == "png-empty-idat-crc-valid": return completed and all(row["crc_valid"] for row in observed.get("chunks", [])) and observed.get("chunks", [])[1]["length"] == 0
+    if expect == "known-signature-is-not-unknown": return completed and observed.get("format") == "png" and observed.get("invented_details") is False
+    if expect == "unknown-single-byte": return completed and observed.get("format") == "unknown" and observed.get("length") == 1
+    if expect == "zero-entropy-blocks": return completed and all(row["bits_per_byte"] == 0 for row in observed.get("blocks", []))
+    if expect == "single-byte-entropy-boundary": return completed and observed.get("blocks") == [{"offset": 0, "length": 1, "bits_per_byte": 0.0}]
+    if expect == "identical-binaries-no-diff": return completed and observed.get("differences") == []
+    if expect == "single-byte-offset-zero-diff": return completed and observed.get("differences") == [{"offset": 0, "before": 0, "after": 1}]
+    if expect == "oversized-declaration-rejected": return completed and observed.get("rejected") is True and observed.get("allocated_from_declaration") is False
+    if expect == "zero-size-boundary": return completed and observed.get("rejected") is False and observed.get("actual_size") == 0 and observed.get("allocated_from_declaration") is False
+    if expect in {"reproducibility-with-different-input", "empty-input-reproducibility"}: return completed and observed.get("identical") is True and observed.get("first") == observed.get("second")
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

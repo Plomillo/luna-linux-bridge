@@ -44,6 +44,16 @@ def _build() -> None:
     _add("MGL5-INF-0085", "boundary", "wasm_header", {"magic_hex": "0061736d", "version": 0}, "wasm-version-zero-rejected")
     _add("MGL5-INF-0080", "negative", "png_chunks", {"chunks": [{"type": "IHDR", "data_hex": "00000001000000010802000000"}, {"type": "IDAT", "data_hex": "00"}, {"type": "IEND", "data_hex": ""}], "tamper_index": 1}, "png-crc-mismatch-located")
     _add("MGL5-INF-0080", "boundary", "png_chunks", {"chunks": [{"type": "IHDR", "data_hex": "00000001000000010802000000"}, {"type": "IDAT", "data_hex": ""}, {"type": "IEND", "data_hex": ""}], "tamper_index": -1}, "png-empty-idat-crc-valid")
+    _add("MGL5-INF-0088", "negative", "unknown_format", {"payload_hex": "89504e470d0a1a0a"}, "known-signature-is-not-unknown")
+    _add("MGL5-INF-0088", "boundary", "unknown_format", {"payload_hex": "00"}, "unknown-single-byte")
+    _add("MGL5-INF-0089", "negative", "block_entropy", {"payload_hex": "00000000", "block_size": 2}, "zero-entropy-blocks")
+    _add("MGL5-INF-0089", "boundary", "block_entropy", {"payload_hex": "ff", "block_size": 1}, "single-byte-entropy-boundary")
+    _add("MGL5-INF-0090", "negative", "binary_diff", {"left_hex": "aabb", "right_hex": "aabb"}, "identical-binaries-no-diff")
+    _add("MGL5-INF-0090", "boundary", "binary_diff", {"left_hex": "00", "right_hex": "01"}, "single-byte-offset-zero-diff")
+    _add("MGL5-INF-0097", "negative", "bounded_declared_size", {"declared_size": 3, "payload_hex": "00"}, "oversized-declaration-rejected")
+    _add("MGL5-INF-0097", "boundary", "bounded_declared_size", {"declared_size": 0, "payload_hex": ""}, "zero-size-boundary")
+    _add("MGL5-INF-0099", "negative", "reproducible_structure", {"payload_hex": "00ff"}, "reproducibility-with-different-input")
+    _add("MGL5-INF-0099", "boundary", "reproducible_structure", {"payload_hex": ""}, "empty-input-reproducibility")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -299,6 +309,15 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "wasm-version-zero-rejected": return control_completed and observed.get("accepted") is False and observed.get("magic_valid") is True and observed.get("version") == 0
     if expect == "png-crc-mismatch-located": return control_completed and [row["type"] for row in observed.get("chunks", []) if not row["crc_valid"]] == ["IDAT"]
     if expect == "png-empty-idat-crc-valid": return control_completed and all(row["crc_valid"] for row in observed.get("chunks", [])) and observed.get("chunks", [])[1]["length"] == 0
+    if expect == "known-signature-is-not-unknown": return control_completed and observed.get("format") == "png" and observed.get("invented_details") is False
+    if expect == "unknown-single-byte": return control_completed and observed.get("format") == "unknown" and observed.get("length") == 1
+    if expect == "zero-entropy-blocks": return control_completed and all(row["bits_per_byte"] == 0 for row in observed.get("blocks", []))
+    if expect == "single-byte-entropy-boundary": return control_completed and observed.get("blocks") == [{"offset": 0, "length": 1, "bits_per_byte": 0.0}]
+    if expect == "identical-binaries-no-diff": return control_completed and observed.get("differences") == []
+    if expect == "single-byte-offset-zero-diff": return control_completed and observed.get("differences") == [{"offset": 0, "before": 0, "after": 1}]
+    if expect == "oversized-declaration-rejected": return control_completed and observed.get("rejected") is True and observed.get("allocated_from_declaration") is False
+    if expect == "zero-size-boundary": return control_completed and observed.get("rejected") is False and observed.get("actual_size") == 0 and observed.get("allocated_from_declaration") is False
+    if expect in {"reproducibility-with-different-input", "empty-input-reproducibility"}: return control_completed and observed.get("identical") is True and observed.get("first") == observed.get("second")
     if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.

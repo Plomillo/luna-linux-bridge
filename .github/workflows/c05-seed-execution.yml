@@ -140,19 +140,19 @@ jobs:
           outcomes = Counter(row["execution_status"] for row in ledger)
 
           blockers = [json.loads(line) for line in Path("reports/C05_POPULATION_BLOCKERS.jsonl").read_text().splitlines() if line]
-          assert plan["authored_normal_specs"] == 120, plan
+          assert plan["authored_normal_specs"] == 125, plan
           assert plan["interpreter_candidates"] == 7, plan
           assert plan["interpreter_ready"] == 2, plan
           assert plan["interpreter_blocked"] == 5, plan
           assert plan["interpreter_registered"] == 2, plan
-          assert plan["unique_source_plan_candidates"] == 124, plan
-          assert plan["compiled_executable_plans"] == 120, plan
-          assert plan["not_in_plan_set"] == 880, plan
+          assert plan["unique_source_plan_candidates"] == 129, plan
+          assert plan["compiled_executable_plans"] == 125, plan
+          assert plan["not_in_plan_set"] == 875, plan
           assert report["expected"] == 1000, report
           assert report["rows"] == 1000, report
-          assert report["authentic_results"] == 120, report
-          assert report["not_run"] == 880, report
-          assert len(report["rejected"]) == 880, report
+          assert report["authentic_results"] == 125, report
+          assert report["not_run"] == 875, report
+          assert len(report["rejected"]) == 875, report
           assert all(item["reasons"] == ["case-not-executed"] for item in report["rejected"]), report
           assert report["c05_passed"] is False, report
           assert report["c05_status"] == "NOT_PASSED", report
@@ -163,13 +163,13 @@ jobs:
           rejected_ids = {row["case_id"] for row in report["rejected"]}
           not_run_ids = {row["CASE_ID"] for row in ledger if row["execution_status"] == "NOT_RUN"}
           assert len(ledger_ids) == 1000
-          assert len(blockers) == 880
-          assert len(blocker_ids) == 880
+          assert len(blockers) == 875
+          assert len(blocker_ids) == 875
           assert blocker_ids == rejected_ids == not_run_ids
           assert all(row["status"] == "NOT_RUN" and row["operation_invoked"] is False for row in blockers)
           assert all(row["CASE_ID"] in row["source_excerpt"] for row in blockers)
           assert all(len(row["source_metadata"]["excerpt_sha256"]) == 64 for row in blockers)
-          assert outcomes["BLOCKED"] + outcomes["PASS"] + outcomes["FAIL"] + outcomes["INCONCLUSIVE"] == 120, outcomes
+          assert outcomes["BLOCKED"] + outcomes["PASS"] + outcomes["FAIL"] + outcomes["INCONCLUSIVE"] == 125, outcomes
           print(json.dumps({
               "c05_status": report["c05_status"],
               "authentic_executions": report["authentic_results"],
@@ -177,7 +177,7 @@ jobs:
               "not_run": report["not_run"],
               "source_bound_blockers": len(blockers),
               "c05_certification": "NOT_PASSED",
-              "meaning": "120 executable plans have complete source-grounded plans; 880 source-bound NOT_RUN cases remain unimplemented; C05 remains closed to certification",
+              "meaning": "125 executable plans have complete source-grounded plans; 875 source-bound NOT_RUN cases remain unimplemented; C05 remains closed to certification",
           }, sort_keys=True))
           PY
       - name: Upload raw container execution evidence

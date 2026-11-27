@@ -25,6 +25,11 @@ EXPECTED = {
     "MGL5-INF-0079": "sqlite_integrity",
     "MGL5-INF-0085": "wasm_header",
     "MGL5-INF-0080": "png_chunks",
+    "MGL5-INF-0088": "unknown_format",
+    "MGL5-INF-0089": "block_entropy",
+    "MGL5-INF-0090": "binary_diff",
+    "MGL5-INF-0097": "bounded_declared_size",
+    "MGL5-INF-0099": "reproducible_structure",
 }
 
 

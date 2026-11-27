@@ -1,6 +1,8 @@
 """Format checks using SQLite header constants and WebAssembly binary contract."""
 from __future__ import annotations
 
+import hashlib
+import math
 import zlib
 
 
@@ -40,3 +42,39 @@ def png_chunks_oracle(arguments: dict, observed: dict) -> dict:
         and all(row.get("truncated") is False for row in chunks)
     )
     return {"ok": ok, "method": "independent PNG type/length/CRC reconstruction"}
+
+
+def unknown_format_oracle(arguments: dict, observed: dict) -> dict:
+    raw = bytes.fromhex(arguments["payload_hex"])
+    signatures = ((b"\x89PNG\r\n\x1a\n", "png"), (b"PK\x03\x04", "zip"), (b"\x7fELF", "elf"), (b"\0asm", "wasm"), (b"SQLite format 3\0", "sqlite"))
+    expected_format = next((name for signature, name in signatures if raw.startswith(signature)), "unknown")
+    return {"ok": observed.get("format") == expected_format and observed.get("length") == len(raw) and observed.get("prefix_hex") == raw[:8].hex() and observed.get("sha256") == hashlib.sha256(raw).hexdigest() and observed.get("invented_details") is False, "method": "independent known-signature catalog, exact length, and SHA-256"}
+
+
+def block_entropy_oracle(arguments: dict, observed: dict) -> dict:
+    raw, size = bytes.fromhex(arguments["payload_hex"]), arguments["block_size"]
+    expected = []
+    for start in range(0, len(raw), size):
+        block = raw[start:start + size]
+        entropy = -sum((count / len(block)) * math.log2(count / len(block)) for count in (block.count(value) for value in set(block)) if count)
+        expected.append({"offset": start, "length": len(block), "bits_per_byte": entropy})
+    actual = observed.get("blocks", [])
+    equal = len(actual) == len(expected) and all(a["offset"] == e["offset"] and a["length"] == e["length"] and abs(a["bits_per_byte"] - e["bits_per_byte"]) < 1e-12 for a, e in zip(actual, expected, strict=True))
+    return {"ok": equal and observed.get("interpretation") == "heuristic_only", "method": "independent frequency histogram and Shannon formula"}
+
+
+def binary_diff_oracle(arguments: dict, observed: dict) -> dict:
+    left, right = bytes.fromhex(arguments["left_hex"]), bytes.fromhex(arguments["right_hex"])
+    expected = [{"offset": i, "before": left[i] if i < len(left) else None, "after": right[i] if i < len(right) else None} for i in range(max(len(left), len(right))) if i >= len(left) or i >= len(right) or left[i] != right[i]]
+    return {"ok": observed.get("differences") == expected and observed.get("left_sha256") == hashlib.sha256(left).hexdigest() and observed.get("right_sha256") == hashlib.sha256(right).hexdigest(), "method": "bytewise comparison and independent SHA-256"}
+
+
+def bounded_size_oracle(arguments: dict, observed: dict) -> dict:
+    actual = len(bytes.fromhex(arguments["payload_hex"]))
+    return {"ok": observed.get("actual_size") == actual and observed.get("declared_size") == arguments["declared_size"] and observed.get("rejected") is (arguments["declared_size"] > actual) and observed.get("allocated_from_declaration") is False, "method": "measured input length and no-allocation invariant"}
+
+
+def reproducible_oracle(arguments: dict, observed: dict) -> dict:
+    raw = bytes.fromhex(arguments["payload_hex"])
+    expected = {"length": len(raw), "sha256": hashlib.sha256(raw).hexdigest(), "prefix_hex": raw[:8].hex()}
+    return {"ok": observed.get("first") == expected and observed.get("second") == expected and observed.get("identical") is True, "method": "independent source digest and byte-length derivation"}

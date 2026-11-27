@@ -1,6 +1,8 @@
 """Small binary-format probes backed by real standard-library artifacts."""
 from __future__ import annotations
 
+import hashlib
+import math
 import sqlite3
 import struct
 import zlib
@@ -92,3 +94,40 @@ def png_chunks(chunks: list[dict], tamper_index: int) -> dict:
         observed.append({"type": kind.decode("ascii"), "length": size, "stored_crc32": stored_crc, "computed_crc32": calculated_crc, "crc_valid": stored_crc == calculated_crc, "truncated": False})
         offset = end
     return {"signature_valid": True, "chunks": observed, "archive_sha256": __import__("hashlib").sha256(raw).hexdigest()}
+
+
+def unknown_format(payload_hex: str) -> dict:
+    raw = bytes.fromhex(payload_hex)
+    signatures = ((b"\x89PNG\r\n\x1a\n", "png"), (b"PK\x03\x04", "zip"), (b"\x7fELF", "elf"), (b"\0asm", "wasm"), (b"SQLite format 3\0", "sqlite"))
+    detected = next((name for signature, name in signatures if raw.startswith(signature)), None)
+    return {"format": detected or "unknown", "length": len(raw), "prefix_hex": raw[:8].hex(), "sha256": hashlib.sha256(raw).hexdigest(), "invented_details": False}
+
+
+def block_entropy(payload_hex: str, block_size: int) -> dict:
+    raw = bytes.fromhex(payload_hex)
+    blocks = []
+    for start in range(0, len(raw), block_size):
+        block = raw[start:start + block_size]
+        counts = [block.count(value) for value in range(256)]
+        entropy = -sum((count / len(block)) * math.log2(count / len(block)) for count in counts if count)
+        blocks.append({"offset": start, "length": len(block), "bits_per_byte": entropy})
+    return {"blocks": blocks, "interpretation": "heuristic_only"}
+
+
+def binary_diff(left_hex: str, right_hex: str) -> dict:
+    left, right = bytes.fromhex(left_hex), bytes.fromhex(right_hex)
+    differences = [{"offset": index, "before": left[index] if index < len(left) else None, "after": right[index] if index < len(right) else None} for index in range(max(len(left), len(right))) if index >= len(left) or index >= len(right) or left[index] != right[index]]
+    return {"differences": differences, "left_sha256": hashlib.sha256(left).hexdigest(), "right_sha256": hashlib.sha256(right).hexdigest()}
+
+
+def bounded_declared_size(declared_size: int, payload_hex: str) -> dict:
+    actual_size = len(bytes.fromhex(payload_hex))
+    rejected = declared_size > actual_size
+    return {"rejected": rejected, "declared_size": declared_size, "actual_size": actual_size, "allocated_from_declaration": False}
+
+
+def reproducible_structure(payload_hex: str) -> dict:
+    raw = bytes.fromhex(payload_hex)
+    first = {"length": len(raw), "sha256": hashlib.sha256(raw).hexdigest(), "prefix_hex": raw[:8].hex()}
+    second = {"length": len(raw), "sha256": hashlib.sha256(raw).hexdigest(), "prefix_hex": raw[:8].hex()}
+    return {"first": first, "second": second, "identical": first == second}

@@ -48,6 +48,11 @@ CASES = [
     {"case_id": "MGL5-INF-0079", "capability_id": "sqlite_integrity", "arguments": {"corrupt": False, "values": ["alpha", "beta"]}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: SQLite lab copy generated in memory; negative mutates only the copy header"},
     {"case_id": "MGL5-INF-0085", "capability_id": "wasm_header", "arguments": {"magic_hex": "0061736d", "version": 1}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: WebAssembly magic and version encoded per binary format"},
     {"case_id": "MGL5-INF-0080", "capability_id": "png_chunks", "arguments": {"chunks": [{"type": "IHDR", "data_hex": "00000001000000010802000000"}, {"type": "IDAT", "data_hex": "00"}, {"type": "IEND", "data_hex": ""}], "tamper_index": -1}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: 1x1 RGB PNG chunk sequence; integrity fields generated per PNG chunk CRC rule"},
+    {"case_id": "MGL5-INF-0088", "capability_id": "unknown_format", "arguments": {"payload_hex": "4c554e415f554e4b4e4f574e"}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: opaque bytes with no recognized registered signature"},
+    {"case_id": "MGL5-INF-0089", "capability_id": "block_entropy", "arguments": {"payload_hex": "00000101ffff", "block_size": 2}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: three deterministic mixed-entropy blocks"},
+    {"case_id": "MGL5-INF-0090", "capability_id": "binary_diff", "arguments": {"left_hex": "10203040", "right_hex": "10203140"}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: fixed-width vectors differ at exactly one byte"},
+    {"case_id": "MGL5-INF-0097", "capability_id": "bounded_declared_size", "arguments": {"declared_size": 4096, "payload_hex": "4142"}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: declared size exceeds the actual two-byte buffer"},
+    {"case_id": "MGL5-INF-0099", "capability_id": "reproducible_structure", "arguments": {"payload_hex": "434f50592d4944454e544943414c"}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: identical immutable byte input is analyzed twice"},
 
     {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
     {"case_id": "MGL5-INF-0102", "capability_id": "array_minmax", "arguments": {"values": [-8, 4, 4, 19, 0]}},

@@ -202,8 +202,13 @@ _FORMAT_SCHEMAS = {
     "sqlite_integrity": {"type": "object", "required": ["corrupt", "values"], "properties": {"corrupt": {"type": "boolean"}, "values": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": False},
     "wasm_header": {"type": "object", "required": ["magic_hex", "version"], "properties": {"magic_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2}){4}$"}, "version": {"type": "integer", "minimum": 0, "maximum": 4294967295}}, "additionalProperties": False},
     "png_chunks": {"type": "object", "required": ["chunks", "tamper_index"], "properties": {"chunks": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["type", "data_hex"], "properties": {"type": {"type": "string", "pattern": "^[A-Z]{4}$"}, "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False}}, "tamper_index": {"type": "integer", "minimum": -1, "maximum": 100}}, "additionalProperties": False},
+    "unknown_format": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "minLength": 2, "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False},
+    "block_entropy": {"type": "object", "required": ["payload_hex", "block_size"], "properties": {"payload_hex": {"type": "string", "minLength": 2, "pattern": "^([0-9a-fA-F]{2})+$"}, "block_size": {"type": "integer", "minimum": 1, "maximum": 1048576}}, "additionalProperties": False},
+    "binary_diff": {"type": "object", "required": ["left_hex", "right_hex"], "properties": {"left_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}, "right_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False},
+    "bounded_declared_size": {"type": "object", "required": ["declared_size", "payload_hex"], "properties": {"declared_size": {"type": "integer", "minimum": 0}, "payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False},
+    "reproducible_structure": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False},
 }
-_FORMAT_ORACLES = {"sqlite_header": "sqlite_header_independent", "sqlite_integrity": "sqlite_integrity_independent", "wasm_header": "wasm_header_independent", "png_chunks": "png_chunks_independent"}
+_FORMAT_ORACLES = {"sqlite_header": "sqlite_header_independent", "sqlite_integrity": "sqlite_integrity_independent", "wasm_header": "wasm_header_independent", "png_chunks": "png_chunks_independent", "unknown_format": "unknown_format_independent", "block_entropy": "block_entropy_independent", "binary_diff": "binary_diff_independent", "bounded_declared_size": "bounded_size_independent", "reproducible_structure": "reproducible_structure_independent"}
 for _format_name, _format_oracle in _FORMAT_ORACLES.items():
     REGISTRY[_format_name] = _cap(_format_name, _format_oracle, _FORMAT_SCHEMAS[_format_name])
 
@@ -290,6 +295,7 @@ ORACLES["c05_preflight_blocked_oracle"] = c05_preflight_oracle.blocked_preflight
 ORACLES.update({"archive_path": archive_oracle.path_oracle, "archive_zip_crc": archive_oracle.crc_oracle, "archive_zip_duplicates": archive_oracle.duplicate_oracle, "archive_tar_offsets": archive_oracle.tar_offsets_oracle, "archive_tar_truncated": archive_oracle.truncated_oracle, "archive_gzip_crc": archive_oracle.gzip_oracle})
 ORACLES.update({"sqlite_header_independent": format_oracle.sqlite_header_oracle, "sqlite_integrity_independent": format_oracle.sqlite_integrity_oracle, "wasm_header_independent": format_oracle.wasm_header_oracle})
 ORACLES["png_chunks_independent"] = format_oracle.png_chunks_oracle
+ORACLES.update({"unknown_format_independent": format_oracle.unknown_format_oracle, "block_entropy_independent": format_oracle.block_entropy_oracle, "binary_diff_independent": format_oracle.binary_diff_oracle, "bounded_size_independent": format_oracle.bounded_size_oracle, "reproducible_structure_independent": format_oracle.reproducible_oracle})
 
 EXECUTORS: dict[str, Callable[..., dict]] = {
     "cidr_bounds": cidr_bounds,
@@ -373,6 +379,7 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
 EXECUTORS.update({"zip_path_safety": archive_exec.zip_path_safety, "zip_crc": archive_exec.zip_crc, "zip_duplicates": archive_exec.zip_duplicates, "tar_offsets": archive_exec.tar_offsets, "tar_truncated": archive_exec.tar_truncated, "gzip_crc": archive_exec.gzip_crc})
 EXECUTORS.update({"sqlite_header": format_exec.sqlite_header, "sqlite_integrity": format_exec.sqlite_integrity, "wasm_header": format_exec.wasm_header})
 EXECUTORS["png_chunks"] = format_exec.png_chunks
+EXECUTORS.update({"unknown_format": format_exec.unknown_format, "block_entropy": format_exec.block_entropy, "binary_diff": format_exec.binary_diff, "bounded_declared_size": format_exec.bounded_declared_size, "reproducible_structure": format_exec.reproducible_structure})
 
 EXECUTORS["c05_preflight_blocked"] = c05_preflight.blocked_preflight_probe
 
