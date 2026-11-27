@@ -312,6 +312,11 @@ ORACLES: dict[str, Callable[..., dict]] = {
     "stack_state_machine": batch6_oracle.stack_sequence_oracle,
 }
 
+REGISTRY.update({
+    "dex_header": _cap("dex_header", "dex_header_independent", {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string"}}, "additionalProperties": False}),
+    "dex_tables": _cap("dex_tables", "dex_tables_independent", {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string"}}, "additionalProperties": False}),
+})
+
 ORACLES["c05_preflight_blocked_oracle"] = c05_preflight_oracle.blocked_preflight_oracle
 ORACLES.update({"archive_path": archive_oracle.path_oracle, "archive_zip_crc": archive_oracle.crc_oracle, "archive_zip_duplicates": archive_oracle.duplicate_oracle, "archive_tar_offsets": archive_oracle.tar_offsets_oracle, "archive_tar_truncated": archive_oracle.truncated_oracle, "archive_gzip_crc": archive_oracle.gzip_oracle})
 ORACLES.update({"sqlite_header_independent": format_oracle.sqlite_header_oracle, "sqlite_integrity_independent": format_oracle.sqlite_integrity_oracle, "wasm_header_independent": format_oracle.wasm_header_oracle})
@@ -430,7 +435,17 @@ EXECUTORS["elf_dynamic_dependencies"] = format_exec.elf_dynamic_dependencies
 EXECUTORS["elf_rpath_runpath"] = format_exec.elf_rpath_runpath
 EXECUTORS["pe_inspect"] = format_exec.pe_inspect
 
+ORACLES.update({
+    "dex_header_independent": format_oracle.dex_header_oracle,
+    "dex_tables_independent": format_oracle.dex_tables_oracle,
+})
+
 EXECUTORS["c05_preflight_blocked"] = c05_preflight.blocked_preflight_probe
+
+EXECUTORS.update({
+    "dex_header": lambda payload_hex: format_exec.dex_inspect(payload_hex, "header"),
+    "dex_tables": lambda payload_hex: format_exec.dex_inspect(payload_hex, "tables"),
+})
 
 for _name, _oracle_name, _schema in batch5_exec.SPECS:
     REGISTRY[_name] = _cap(_name, _oracle_name, _schema)
