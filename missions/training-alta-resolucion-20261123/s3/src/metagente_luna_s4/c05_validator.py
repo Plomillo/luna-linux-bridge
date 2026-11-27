@@ -15,7 +15,7 @@ EXPECTED = [f"MGL5-INF-{number:04d}" for number in range(1, 1001)]
 EXECUTION_OUTCOMES = {"PASS", "FAIL", "BLOCKED", "INCONCLUSIVE"}
 REQUIRED_ARTIFACTS = {
     "fixture", "environment", "procedure", "stdout", "stderr",
-    "observed", "oracle", "metrics",
+    "observed", "oracle", "metrics", "oracle_source", "producer_source",
 }
 RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$")
 
@@ -141,6 +141,19 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
             errors.append("oracle-not-independent")
         if oracle.get("producer_used_as_oracle") is True:
             errors.append("oracle-circular")
+        if not oracle.get("oracle_module") or oracle.get("oracle_module") == oracle.get("producer_module"):
+            errors.append("oracle-module-not-independent")
+        oracle_source = loaded.get("oracle_source")
+        producer_source = loaded.get("producer_source")
+        if oracle_source is None or producer_source is None:
+            errors.append("oracle-source-artifact-missing")
+        else:
+            if _sha256(oracle_source) != oracle.get("oracle_source_sha256"):
+                errors.append("oracle-source-hash-mismatch")
+            if _sha256(producer_source) != oracle.get("producer_source_sha256"):
+                errors.append("producer-source-hash-mismatch")
+            if _sha256(oracle_source) == _sha256(producer_source):
+                errors.append("oracle-source-identical-to-producer")
         if oracle.get("case_id") != case_id or oracle.get("run_id") != run_id:
             errors.append("oracle-provenance-mismatch")
 
