@@ -80,6 +80,7 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
             "case_id": case_id, "run_id": run_id, "capability_id": capability_id,
             "input": arguments, "fixture_origin": "runner-captured-input",
             "run_kind": record.get("run_kind"), "control": record.get("control_metadata"),
+            "source": record.get("source_metadata"),
         }),
         "environment": _json_bytes({
             "case_id": case_id, "run_id": run_id,
@@ -97,6 +98,7 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
         }),
         "stdout": str(record.get("stdout", "")).encode("utf-8"),
         "stderr": str(record.get("stderr", "")).encode("utf-8"),
+        "source_excerpt": str(record.get("source_excerpt", "")).encode("utf-8"),
         "observed": _json_bytes({
             "case_id": case_id, "run_id": run_id, "value": observed,
             "exit_code": record.get("exit_code"),
@@ -125,7 +127,7 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
     payloads.update(source_payloads)
     artifacts = {}
     for name, data in payloads.items():
-        suffix = ".txt" if name in {"stdout", "stderr"} else ".py" if name in {"oracle_source", "producer_source"} else ".json"
+        suffix = ".txt" if name in {"stdout", "stderr", "source_excerpt"} else ".py" if name in {"oracle_source", "producer_source"} else ".json"
         entry = _write_bytes(destination / f"{name}{suffix}", data)
         entry["path"] = f"{case_id}/{run_id}/{entry['path']}"
         artifacts[name] = entry
