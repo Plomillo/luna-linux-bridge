@@ -33,7 +33,7 @@ def test_controls_that_were_defined_are_accepted():
     rows = run_controls()
     defined = [row for row in rows if row["controls"]]
     assert defined
-    assert all(row["control_status"] == "PRESENT" for row in defined)
+    assert all(row["control_status"] == "PRESENT" for row in defined), [(row["case_id"], row["controls"]) for row in defined if row["control_status"] != "PRESENT"]
     assert len(defined) == 99
 
 def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries():
