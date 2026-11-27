@@ -147,7 +147,7 @@ def stable_digest(arguments: dict, observed: dict) -> dict:
 
 def signature(arguments: dict, observed: dict) -> dict:
     raw = bytes.fromhex(arguments["payload_hex"])
-    expected = "png" if raw.startswith(bytes.fromhex("89504e470d0a1a0a")) else "elf" if raw.startswith(b"\\x7fELF") else "unknown"
+    expected = "png" if raw.startswith(bytes.fromhex("89504e470d0a1a0a")) else "elf" if raw.startswith(b"\x7fELF") else "unknown"
     matches = arguments["name"].endswith("." + expected) if expected != "unknown" else False
     return {"ok": observed["detected"] == expected and observed["extension_matches_content"] is matches, "method": "independent PNG/ELF magic-byte classification"}
 
