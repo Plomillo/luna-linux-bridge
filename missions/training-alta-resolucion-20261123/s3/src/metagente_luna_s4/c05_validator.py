@@ -15,7 +15,7 @@ EXPECTED = [f"MGL5-INF-{number:04d}" for number in range(1, 1001)]
 EXECUTION_OUTCOMES = {"PASS", "FAIL", "BLOCKED", "INCONCLUSIVE"}
 REQUIRED_ARTIFACTS = {
     "fixture", "environment", "procedure", "stdout", "stderr",
-    "observed", "oracle", "metrics", "oracle_source", "producer_source", "control_spec", "source_excerpt",
+    "observed", "oracle", "metrics", "oracle_source", "producer_source", "control_spec", "source_excerpt", "environment_lock", "sha256sums",
 }
 RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$")
 
@@ -132,6 +132,17 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
             errors.append(f"{name}:{error}")
         elif path is not None:
             loaded[name] = path
+
+    lock_path = loaded.get("environment_lock")
+    if lock_path is None or not lock_path.is_file() or lock_path.stat().st_size == 0:
+        errors.append("environment-lock-missing-or-empty")
+    sums_path = loaded.get("sha256sums")
+    expected_sums = "".join(
+        f"{item['sha256']}  {item['path']}\\n"
+        for name, item in sorted(artifacts.items()) if name != "sha256sums" and isinstance(item, dict)
+    )
+    if sums_path is None or sums_path.read_text(encoding="utf-8") != expected_sums:
+        errors.append("sha256sums-manifest-mismatch")
 
     oracle = _load_json(loaded["oracle"]) if "oracle" in loaded else None
     if not isinstance(oracle, dict):
