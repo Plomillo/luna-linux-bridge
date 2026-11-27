@@ -136,7 +136,12 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
         source_metadata = fixture.get("source") if isinstance(fixture, dict) else None
         source_excerpt = loaded.get("source_excerpt")
         if (not isinstance(source_metadata, dict)
-                or not all(field in source_metadata for field in ("source_file", "line_start", "line_end", "file_sha256", "excerpt_sha256", "source_blob"))
+                or not isinstance(source_metadata.get("source_file"), str) or not source_metadata.get("source_file")
+                or not isinstance(source_metadata.get("line_start"), int) or source_metadata["line_start"] < 1
+                or not isinstance(source_metadata.get("line_end"), int) or source_metadata["line_end"] < source_metadata["line_start"]
+                or len(str(source_metadata.get("file_sha256", ""))) != 64
+                or len(str(source_metadata.get("excerpt_sha256", ""))) != 64
+                or not isinstance(source_metadata.get("source_blob"), str) or not source_metadata["source_blob"]
                 or source_excerpt is None or _digest(source_excerpt) != source_metadata.get("excerpt_sha256")
                 or case_id.encode("utf-8") not in source_excerpt):
             findings.append("source-line-provenance-invalid")
