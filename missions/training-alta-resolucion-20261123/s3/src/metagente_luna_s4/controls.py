@@ -227,6 +227,10 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     control_completed = status in {"EXECUTED", "FAIL"}
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.
+    if expect == "yaml-version-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-yaml-version"
+    if expect == "yaml12-ambiguous-strings":
+        return control_completed and observed.get("rejected") is False and observed.get("schema_version") == "1.2" and observed.get("parsed") == {"flag": "yes", "date": "2026-01-02"} and observed.get("types") == {"flag": "str", "date": "str"}
     if expect == "yaml-rejected":
         return control_completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
     if expect == "yaml-empty-boundary":
