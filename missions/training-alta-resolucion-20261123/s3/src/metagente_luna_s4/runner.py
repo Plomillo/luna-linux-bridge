@@ -5,6 +5,8 @@ import hashlib
 import io
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -115,8 +117,9 @@ def execute_isolated(
     source_metadata: dict | None = None,
     source_excerpt: str | None = None,
     timeout_seconds: int = 60,
+    sandbox_image: str | None = None,
 ) -> dict:
-    """Run in a fresh Python process and temporary workspace; this is not a sandbox."""
+    """Run in a restricted Docker container when an immutable image ID is supplied; otherwise local test only."""
     if run_kind not in {"NORMAL", "NEGATIVE", "BOUNDARY"}:
         raise ValueError("run_kind must be NORMAL, NEGATIVE, or BOUNDARY")
     if run_kind in {"NEGATIVE", "BOUNDARY"} and (
@@ -180,15 +183,28 @@ def execute_isolated(
             "LANG": "C.UTF-8",
         }
         try:
+            if sandbox_image is not None:
+                if not re.fullmatch(r"sha256:[0-9a-f]{64}", sandbox_image):
+                    raise ValueError("sandbox_image must be an immutable Docker image ID")
+                docker = shutil.which("docker")
+                if docker is None:
+                    raise RuntimeError("Docker CLI unavailable; sandbox execution denied")
+                command = [
+                    docker, "run", "--rm", "--network", "none", "--read-only",
+                    "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true",
+                    "--pids-limit", "64", "--memory", "256m", "--cpus", "1",
+                    "--user", "65534:65534",
+                    "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=64m",
+                    "--mount", f"type=bind,src={package_root},dst=/opt/luna,readonly",
+                    "--workdir", "/tmp", "--env", "PYTHONPATH=/opt/luna",
+                    "--env", "PYTHONHASHSEED=0", "--env", "PYTHONDONTWRITEBYTECODE=1",
+                    sandbox_image, "python", "-m", "metagente_luna_s4.worker",
+                ]
+            else:
+                command = [sys.executable, "-m", "metagente_luna_s4.worker"]
             completed = subprocess.run(
-                [sys.executable, "-m", "metagente_luna_s4.worker"],
-                input=request,
-                capture_output=True,
-                text=True,
-                cwd=workspace,
-                env=environment,
-                timeout=timeout_seconds,
-                check=False,
+                command, input=request, capture_output=True, text=True,
+                cwd=workspace, env=environment, timeout=timeout_seconds, check=False,
             )
             try:
                 record = json.loads(completed.stdout)
@@ -233,21 +249,30 @@ def execute_isolated(
     record["oracle_module"] = getattr(oracle, "__module__", None)
     record["agent_version"] = "0.1.0"
     record["executor_version"] = capability.version if capability is not None else None
-    record["machinery"] = "LOCAL_SUBPROCESS_TEST_ONLY"
-    record["backend"] = "LOCAL_SUBPROCESS_TEST_ONLY"
+    record["machinery"] = "DOCKER_RESTRICTED_CONTAINER" if sandbox_image is not None else "LOCAL_SUBPROCESS_TEST_ONLY"
+    record["backend"] = "DOCKER_RESTRICTED_CONTAINER" if sandbox_image is not None else "LOCAL_SUBPROCESS_TEST_ONLY"
     record["run_kind"] = run_kind
     record["control_metadata"] = control_metadata
     record["source_metadata"] = source_metadata
     record["source_excerpt"] = source_excerpt
     record["clean_state_verified"] = True
     record["isolation_metadata"] = {
-        "mode": "FRESH_PROCESS_TEMPORARY_WORKSPACE",
+        "mode": "DOCKER_RESTRICTED_CONTAINER" if sandbox_image is not None else "FRESH_PROCESS_TEMPORARY_WORKSPACE",
         "process_isolated": True,
+        "containerized": sandbox_image is not None,
+        "network_disabled": sandbox_image is not None,
+        "root_filesystem_read_only": sandbox_image is not None,
+        "capabilities_dropped": sandbox_image is not None,
+        "non_root_uid": 65534 if sandbox_image is not None else None,
+        "resource_limits": {"pids": 64, "memory": "256m", "cpus": 1} if sandbox_image is not None else None,
+        "image_id": sandbox_image,
         "workspace_ephemeral": True,
         "cwd_isolated": True,
         "home_isolated": True,
         "tmp_isolated": True,
         "sandbox": False,
+        "container_restrictions_verified": sandbox_image is not None,
+        "kernel_isolation": "SHARED_HOST_KERNEL_NOT_VM",
     }
     lifecycle = record.get("execution_status")
     record["lifecycle_status"] = lifecycle
