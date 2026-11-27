@@ -427,6 +427,12 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "subnormal-zero-boundary": return completed and observed.get("is_subnormal") is False and observed.get("float32_bits_hex") == "00000000"
     if expect == "float-exact-control": return completed and observed.get("equal") is True and observed.get("difference") == 0 and observed.get("decimal_exact") is True
     if expect == "float-rounding-boundary": return completed and observed.get("equal") is True and observed.get("difference") == 0 and observed.get("decimal_exact") is False
+    if expect == "line-negative-slope": return completed and observed.get("slope") == -1 and observed.get("intercept") == 0
+    if expect == "line-zero-slope-boundary": return completed and observed.get("slope") == 0 and observed.get("intercept") == 0
+    if expect == "euler-step-order-reversed": return completed and observed.get("fine_error", 0) > observed.get("coarse_error", 0)
+    if expect == "euler-equal-step-boundary": return completed and abs(observed.get("fine_error", 0) - observed.get("coarse_error", 0)) < 1e-12
+    if expect == "rk4-step-out-of-range-rejected": return completed and observed.get("rejected") is True
+    if expect == "rk4-single-step-boundary": return completed and observed.get("rejected") is not True and observed.get("step") == 1.0
     return False
 
 
