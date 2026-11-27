@@ -114,28 +114,33 @@ def _balanced(node: dict | None) -> tuple[int, int, bool]:
     return height, 1 + left_count + right_count, ok
 
 
-def balanced_range() -> dict:
+def balanced_range(start: int = 1, count: int = 1000) -> dict:
+    if count < 1 or count > 10000:
+        return {"rejected": True, "reason": "count must be in 1..10000"}
     root = None
-    for key in range(1, 1001):
+    for key in range(start, start + count):
         root = _insert(root, key)
     height, nodes, balanced = _balanced(root)
-    found = sum(_present(root, key) for key in range(1, 1001))
+    found = sum(_present(root, key) for key in range(start, start + count))
     print(height, nodes, balanced, found)
-    return {"height": height, "nodes": nodes, "balanced": balanced, "found": found, "count": 1000}
+    return {"height": height, "nodes": nodes, "balanced": balanced, "found": found, "count": count, "rejected": False}
 
 
-def linear_scans() -> dict:
+def linear_scans(sizes: list[int] | None = None, needle: int = -1) -> dict:
+    sizes = [1000, 2000, 4000] if sizes is None else sizes
+    if not sizes or any(not isinstance(size, int) or isinstance(size, bool) or size < 1 or size > 100000 for size in sizes):
+        return {"rejected": True, "comparisons": [], "ratios": [], "count_noise": 0}
     counts = []
-    for size in (1000, 2000, 4000):
+    for size in sizes:
         comparisons = 0
         for value in range(size):
             comparisons += 1
-            if value == -1:
+            if value == needle:
                 break
         counts.append(comparisons)
     print(counts)
     ratios = [counts[1] / counts[0], counts[2] / counts[1]]
-    return {"comparisons": counts, "ratios": ratios, "count_noise": 0}
+    return {"comparisons": counts, "ratios": ratios, "count_noise": 0, "rejected": False}
 
 
 def factorials(values: list[int]) -> dict:
@@ -160,8 +165,9 @@ def factorials(values: list[int]) -> dict:
     return {"rejected": False, "values": results, "negative_rejected": negative_rejected}
 
 
-def precedence_tree() -> dict:
-    text = "1+2*3-4"
+def precedence_tree(text: str = "1+2*3-4") -> dict:
+    if not isinstance(text, str) or not text or any(ch not in "0123456789+-*" for ch in text) or text[0] in "+-*" or text[-1] in "+-*" or any(a in "+-*" and b in "+-*" for a,b in zip(text,text[1:])):
+        return {"rejected": True, "reason": "invalid arithmetic expression"}
     values: list = []
     operators: list[str] = []
     precedence = {"+": 1, "-": 1, "*": 2}
@@ -216,9 +222,11 @@ def index_limit(length: int) -> dict:
     return {"out_of_range": True, "read": False, "reads": reads, "length": len(data)}
 
 
-def divide_zero() -> dict:
+def divide_zero(numerator: int = 1, denominator: int = 0) -> dict:
+    if denominator != 0:
+        return {"raised": False, "type": None, "value": numerator / denominator, "function": None, "line": None}
     try:
-        value = 1 / 0
+        value = numerator / denominator
     except ZeroDivisionError:
         frame = traceback.extract_tb(sys.exc_info()[2])[-1]
         print(frame.name, frame.lineno)
@@ -226,12 +234,12 @@ def divide_zero() -> dict:
     return {"raised": False, "type": None, "value": value, "function": None, "line": None}
 
 
-def mode_0640() -> dict:
+def mode_0640(mode: int = 0o640) -> dict:
     directory = Path(tempfile.mkdtemp(prefix="luna-mode-"))
     path = directory / "sample"
     descriptor = os.open(path, os.O_CREAT | os.O_WRONLY, 0o666)
     os.close(descriptor)
-    os.chmod(path, 0o640)
+    os.chmod(path, mode)
     mode = os.stat(path).st_mode & 0o777
     print(oct(mode))
     return {
@@ -243,12 +251,12 @@ def mode_0640() -> dict:
     }
 
 
-def umask_0027() -> dict:
+def umask_0027(mask: int = 0o027, requested_mode: int = 0o666) -> dict:
     directory = Path(tempfile.mkdtemp(prefix="luna-umask-"))
     path = directory / "sample"
-    previous = os.umask(0o027)
+    previous = os.umask(mask)
     try:
-        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o666)
+        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, requested_mode)
         os.close(descriptor)
         mode = os.stat(path).st_mode & 0o777
     finally:
@@ -257,14 +265,14 @@ def umask_0027() -> dict:
     return {"mode": mode}
 
 
-def child_env() -> dict:
+def child_env(value: str = "123", key: str = "test") -> dict:
     completed = subprocess.run(
-        [sys.executable, "-c", "import os; print(os.environ['test'])"],
+        [sys.executable, "-c", "import os; print(os.environ[KEY])"],
         check=False,
         capture_output=True,
         text=True,
         timeout=10,
-        env={"PATH": os.environ.get("PATH", ""), "test": "123"},
+        env={"PATH": os.environ.get("PATH", ""), "KEY": key, key: value},
     )
     print(completed.stdout)
     return {"value": completed.stdout.strip(), "code": completed.returncode}
@@ -298,12 +306,12 @@ def mask_bits(mask: str) -> dict:
     return {"rejected": not contiguous, "bits": bits, "contiguous": contiguous}
 
 
-def reject_age() -> dict:
+def reject_age(age: int = -4) -> dict:
     connection = sqlite3.connect(":memory:")
     connection.execute("create table person(age integer check (age >= 0))")
     rejected = False
     try:
-        connection.execute("insert into person(age) values (-4)")
+        connection.execute("insert into person(age) values (?)", (age,))
     except sqlite3.IntegrityError:
         rejected = True
     rows = connection.execute("select count(*) from person").fetchone()[0]
@@ -311,7 +319,7 @@ def reject_age() -> dict:
     return {"rejected": rejected, "rows": rows}
 
 
-def parameterized_name() -> dict:
+def parameterized_name(name: str = "' OR 1=1 --") -> dict:
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self) -> None:
             length = int(self.headers.get("Content-Length", "0"))
@@ -333,7 +341,7 @@ def parameterized_name() -> dict:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     host, port = server.server_address
-    request = urllib.request.Request(f"http://{host}:{port}/users", data=b"' OR 1=1 --", method="POST")
+    request = urllib.request.Request(f"http://{host}:{port}/users", data=name.encode("utf-8"), method="POST")
     with urllib.request.urlopen(request, timeout=5) as response:
         body = json.loads(response.read().decode())
         status = response.status
@@ -342,9 +350,12 @@ def parameterized_name() -> dict:
     return {"matched": body["matched"], "status": status}
 
 
-def exit_codes() -> dict:
+def exit_codes(commands: list[str] | None = None) -> dict:
+    commands = ["true", "false", "luna-command-absent"] if commands is None else commands
+    if not commands or any(not isinstance(command, str) or not command or "/" in command for command in commands):
+        return {"rejected": True, "codes": [], "commands": []}
     results = []
-    for command in (["true"], ["false"], ["luna-command-absent"]):
+    for command in ([item] for item in commands):
         try:
             completed = subprocess.run(command, check=False, capture_output=True, timeout=5)
             results.append({"command": command[0], "code": completed.returncode})
@@ -544,20 +555,20 @@ SPECS = [
     ("first_match", "scan_index", {"type": "object", "required": ["needle", "values"], "properties": {"needle": {"type": "integer"}, "values": {"type": "array"}}, "additionalProperties": False}),
     ("binary_find", "direct_index", {"type": "object", "required": ["needle", "start", "end"], "properties": {"needle": {"type": "integer"}, "start": {"type": "integer"}, "end": {"type": "integer"}}, "additionalProperties": False}),
     ("dequeue_named", "named_order", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
-    ("balanced_range", "range_sum", _NONE),
-    ("linear_scans", "full_scans", _NONE),
+    ("balanced_range", "range_sum", {"type":"object","properties":{"start":{"type":"integer"},"count":{"type":"integer","minimum":-10000,"maximum":10000}},"additionalProperties":False}),
+    ("linear_scans", "full_scans", {"type":"object","properties":{"sizes":{"type":"array","items":{"type":"integer"}},"needle":{"type":"integer"}},"additionalProperties":False}),
     ("factorials", "reference_factorials", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
-    ("precedence_tree", "folded_value", _NONE),
+    ("precedence_tree", "folded_value", {"type":"object","properties":{"text":{"type":"string"}},"additionalProperties":False}),
     ("index_limit", "refused_index", {"type": "object", "required": ["length"], "properties": {"length": {"type": "integer"}}, "additionalProperties": False}),
-    ("divide_zero", "zero_type", _NONE),
-    ("mode_0640", "octal_mode", _NONE),
-    ("umask_0027", "masked_create", _NONE),
-    ("child_env", "declared_env", _NONE),
+    ("divide_zero", "zero_type", {"type":"object","properties":{"numerator":{"type":"integer"},"denominator":{"type":"integer"}},"additionalProperties":False}),
+    ("mode_0640", "octal_mode", {"type":"object","properties":{"mode":{"type":"integer"}},"additionalProperties":False}),
+    ("umask_0027", "masked_create", {"type":"object","properties":{"mask":{"type":"integer"},"requested_mode":{"type":"integer"}},"additionalProperties":False}),
+    ("child_env", "declared_env", {"type":"object","properties":{"value":{"type":"string"},"key":{"type":"string","pattern":"^[A-Za-z_][A-Za-z0-9_]*$"}},"additionalProperties":False}),
     ("expand_v6", "library_v6", {"type": "object", "required": ["address"], "properties": {"address": {"type": "string"}}, "additionalProperties": False}),
     ("mask_bits", "one_run", {"type": "object", "required": ["mask"], "properties": {"mask": {"type": "string"}}, "additionalProperties": False}),
-    ("reject_age", "own_check", _NONE),
-    ("parameterized_name", "own_query", _NONE),
-    ("exit_codes", "posix_codes", _NONE),
+    ("reject_age", "own_check", {"type":"object","properties":{"age":{"type":"integer"}},"additionalProperties":False}),
+    ("parameterized_name", "own_query", {"type":"object","properties":{"name":{"type":"string"}},"additionalProperties":False}),
+    ("exit_codes", "posix_codes", {"type":"object","properties":{"commands":{"type":"array","items":{"type":"string"}}},"additionalProperties":False}),
     ("sqrt_two", "library_sqrt", {"type": "object", "required": ["value"], "properties": {"value": {"type": "number"}}, "additionalProperties": False}),
     ("compensated_sum", "decimal_total", {"type": "object", "required": ["start", "increment", "count"], "properties": {"start": {"type": "number"}, "increment": {"type": "number"}, "count": {"type": "integer"}}, "additionalProperties": False}),
     ("newton_root", "library_root", {"type": "object", "required": ["initial", "target"], "properties": {"initial": {"type": "number"}, "target": {"type": "number"}}, "additionalProperties": False}),
