@@ -170,6 +170,22 @@ def test_real_persisted_artifacts_are_verified_for_a_dossier(tmp_path):
     assert _validate_row(row, tmp_path) == []
 
 
+def test_caller_cannot_forge_independent_validation_pass(tmp_path):
+    row = _valid_row_with_artifacts(tmp_path)
+    row["independent_validation"] = {
+        "validator_id": "LUNA_C05_INDEPENDENT_VALIDATOR",
+        "validator_version": "1.0.0",
+        "status": "PASS",
+        "case_id": row["CASE_ID"],
+        "evidence_digest": "0" * 64,
+        "checked_run_count": 5,
+        "checked_artifact_count": 70,
+        "method": "INDEPENDENT_RECOMPUTATION",
+        "findings": [],
+    }
+    assert "independent-case-validation-missing-or-invalid" in _validate_row(row, tmp_path)
+
+
 def test_artifact_tampering_is_detected(tmp_path):
     row = _valid_row_with_artifacts(tmp_path)
     artifact = row["repetitions"][0]["artifacts"]["observed"]
