@@ -127,7 +127,7 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
             findings.append("environment-lock-missing-or-empty")
         sums_bytes = loaded.get("sha256sums")
         expected_sums = "".join(
-            f"{reference['sha256']}  {reference['path']}\\n"
+            f"{reference['sha256']}  {reference['path']}\n"
             for name, reference in sorted(artifacts.items())
             if name != "sha256sums" and isinstance(reference, dict)
         ).encode("utf-8")
