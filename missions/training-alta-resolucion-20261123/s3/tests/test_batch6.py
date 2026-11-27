@@ -12,7 +12,7 @@ def test_batch6_cases_are_typed_source_grounded_plans():
     assert set(by_id) == {"MGL5-INF-0105", "MGL5-INF-0106", "MGL5-INF-0109"}
     assert by_id["MGL5-INF-0105"]["fixture_provenance"].endswith("#stable-ages")
     assert by_id["MGL5-INF-0109"]["fixture_provenance"].endswith("#stack-script")
-    assert by_id["MGL5-INF-0106"]["fixture_provenance"].startswith("SOURCE_SEED_0106;")
+    assert by_id["MGL5-INF-0106"]["fixture_provenance"].endswith("#ten-thousand; range(count); seeded shuffle")
     assert len(by_id["MGL5-INF-0106"]["arguments"]["values"]) == 10_000
     for case_id, instruction in OPERATIONS:
         if case_id not in by_id:
