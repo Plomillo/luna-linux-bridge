@@ -71,3 +71,17 @@ The Docker execution and independent per-case evidence checks completed. The fin
 The same candidate's automated validation workflow run #122 (`45939496896`) succeeded: compileall, source backlog, TEO dossier compiler, Ruff, and 70 unit/adversarial tests passed. The next hosted run must verify the corrected population assertion and archive the partial batch.
 
 This result is not C05 certification: 985 INF cases remain NOT_RUN; the 15 authentic dossiers have `contract_status=NOT_A_PASS`; the global contract PASS count remains zero. The Docker container continues to share the host kernel (`SHARED_HOST_KERNEL_NOT_VM`).
+
+
+## Corrected hosted run — 2026-11-27
+
+- Workflow run #81: `45939713093` — SUCCESS.
+- Automated validation run #127: `45939713116` — SUCCESS; 71 unit/adversarial tests passed; Ruff and compileall passed.
+- Candidate commit: `22c1053bd9a1230eeec534d753a95225f5ffb89d`.
+- Docker population step: SUCCESS; the verification step now asserts that the rejected set is exactly the 985 IDs not present in the compiled plan set.
+- Results: 15 authentic, independently validated dossiers; 75 restricted-Docker executions; 985 NOT_RUN; 985 rejected specifically as `case-not-executed`; 0 contractual PASS; C05 remains `NOT_PASSED`.
+- Pinned Docker image ID: `sha256:4a41649dd0466a9414dbee6bade31b6e335138c419cd75a193a900cb3475f12f`.
+- Artifact ID: `15172540071`; SHA-256: `06b71fa107fef0346d0108840dfc088cd9fb5a224a406c1d76a976cbee38ab85`.
+- Artifact URL: https://github.com/Plomillo/luna-linux-bridge/actions/runs/45939713093
+
+This run verifies the full path from source-bound plan compilation through the pinned Docker executor, persisted artifacts, negative/boundary semantic checks, primary validation, and independent validation for the 15 compiled cases. It does not certify the 985 cases without plans or the global C05 gate.
