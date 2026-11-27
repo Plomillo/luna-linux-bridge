@@ -181,6 +181,12 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and (observed.get("sum") == 11 or observed.get("minimum") == 4)
     if expect == "not-fifteen":
         return status == "EXECUTED" and observed["sum"] != 15
+    if expect == "nfc-mismatch":
+        return status == "EXECUTED" and observed.get("same_nfc") is False and observed.get("nfc") == "é"
+    if expect == "n-tilde-decomposed":
+        return status == "EXECUTED" and observed.get("codepoints") == ["U+006E", "U+0303"]
+    if expect == "fullwidth-compat":
+        return status == "EXECUTED" and observed.get("compatibility") == "A" and observed.get("preserves_original_form") is False
     if expect == "distinct-bom-payloads":
         return status == "EXECUTED" and observed.get("visible") == "marked" and observed.get("plain_text") == "plain" and observed.get("contains_bom_character") is False
     if expect == "combining-grapheme":
