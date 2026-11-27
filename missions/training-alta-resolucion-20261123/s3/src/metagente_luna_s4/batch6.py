@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import random
 from pathlib import Path
 
 from metagente_luna_s3.interpret import interpret
@@ -22,11 +21,9 @@ _FIXTURE = json.loads(
     (Path(__file__).resolve().parents[2] / "fixtures" / "derived_parameters.json").read_text(encoding="utf-8")
 )
 
-# The source fixes a 10,000-integer fixture and seed 0106 but no literal values.
-# Use the minimal integer domain 0..9999 and a seeded shuffle; no runtime entropy.
+# The source-derived fixture fixes the seed and count; the registered
+# descending_seed capability deterministically materializes the 10,000 integers.
 _TEN_THOUSAND = _FIXTURE["ten-thousand"]
-_DESCENDING_VALUES = list(range(_TEN_THOUSAND["count"]))
-random.Random(_TEN_THOUSAND["seed"]).shuffle(_DESCENDING_VALUES)
 
 # Only candidates whose source-derived fixture and registered capability are
 # complete are exposed to the C05 plan compiler. Other interpreter candidates
@@ -34,9 +31,9 @@ random.Random(_TEN_THOUSAND["seed"]).shuffle(_DESCENDING_VALUES)
 CASES = [
     {
         "case_id": "MGL5-INF-0106",
-        "capability_id": "descending_values",
-        "arguments": {"values": _DESCENDING_VALUES},
-        "fixture_provenance": "FIXTURE:derived_parameters.json#ten-thousand; range(count); seeded shuffle",
+        "capability_id": "descending_seed",
+        "arguments": {"seed": _TEN_THOUSAND["seed"], "count": _TEN_THOUSAND["count"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#ten-thousand; seed/count drive deterministic integer generation",
     },
     {
         "case_id": "MGL5-INF-0105",
