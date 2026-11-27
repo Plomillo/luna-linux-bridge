@@ -611,6 +611,28 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
             and observed.get("stack") == []
             and observed.get("underflow_count") == 0
         )
+
+    if expect == "range-count-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "range-singleton": return control_completed and observed.get("rejected") is False and observed.get("count") == observed.get("nodes") == observed.get("found") == 1
+    if expect == "scan-size-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "scan-first-element": return control_completed and observed.get("rejected") is False and observed.get("comparisons") == [1, 1, 1]
+    if expect == "query-injection-not-matched": return control_completed and observed.get("matched") == 0 and observed.get("status") == 200
+    if expect == "query-exact-match": return control_completed and observed.get("matched") == 1 and observed.get("status") == 200
+    if expect == "expression-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "expression-zero": return control_completed and observed.get("rejected") is False and observed.get("value") == 0
+    if expect == "division-finite": return control_completed and observed.get("raised") is False and observed.get("value") == 1
+    if expect == "division-zero-numerator": return control_completed and observed.get("raised") is False and observed.get("value") == 0
+    if expect == "mode-owner-only": return control_completed and observed.get("mode") == 0o600
+    if expect == "mode-world-readable": return control_completed and observed.get("mode") == 0o644
+    if expect == "umask-private": return control_completed and observed.get("mode") == 0o600
+    if expect == "umask-zero": return control_completed and observed.get("mode") == 0o600
+    if expect == "child-env-negative-value": return control_completed and observed.get("value") == "isolated-negative" and observed.get("code") == 0
+    if expect == "child-env-empty-value": return control_completed and observed.get("value") == "" and observed.get("code") == 0
+    if expect == "age-negative-rejected": return control_completed and observed.get("rejected") is True and observed.get("rows") == 0
+    if expect == "age-zero-accepted": return control_completed and observed.get("rejected") is False and observed.get("rows") == 1
+    if expect == "command-list-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "single-zero-exit": return control_completed and observed.get("rejected") is not True and observed.get("commands") == ["true"] and observed.get("codes") == [0]
+
     if expect == "binary-insert-variant": return control_completed and observed.get("inorder") == [2, 5, 9]
     if expect == "binary-insert-singleton": return control_completed and observed.get("inorder") == [7]
     if expect == "arithmetic-variant-17": return control_completed and observed.get("value") == 17
@@ -639,6 +661,30 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "rk4-step-out-of-range-rejected": return control_completed and observed.get("rejected") is True
     if expect == "rk4-single-step-boundary": return control_completed and observed.get("rejected") is not True and observed.get("step") == 1.0
     return False
+
+
+    # C05: distinct negative and boundary fixtures for the ten previously
+    # source-defined but control-incomplete batch-5 operations.
+    _add("MGL5-INF-0113", "negative", "balanced_range", {"count": 0}, "range-count-rejected")
+    _add("MGL5-INF-0113", "boundary", "balanced_range", {"start": 0, "count": 1}, "range-singleton")
+    _add("MGL5-INF-0119", "negative", "linear_scans", {"sizes": [0]}, "scan-size-rejected")
+    _add("MGL5-INF-0119", "boundary", "linear_scans", {"sizes": [1, 2, 4], "needle": 0}, "scan-first-element")
+    _add("MGL5-INF-0141", "negative", "parameterized_name", {"name": "' OR 1=1 --"}, "query-injection-not-matched")
+    _add("MGL5-INF-0141", "boundary", "parameterized_name", {"name": "ada"}, "query-exact-match")
+    _add("MGL5-INF-0154", "negative", "precedence_tree", {"text": "1+*2"}, "expression-rejected")
+    _add("MGL5-INF-0154", "boundary", "precedence_tree", {"text": "0+0"}, "expression-zero")
+    _add("MGL5-INF-0186", "negative", "divide_zero", {"numerator": 1, "denominator": 1}, "division-finite")
+    _add("MGL5-INF-0186", "boundary", "divide_zero", {"numerator": 0, "denominator": 1}, "division-zero-numerator")
+    _add("MGL5-INF-0208", "negative", "mode_0640", {"mode": 0o600}, "mode-owner-only")
+    _add("MGL5-INF-0208", "boundary", "mode_0640", {"mode": 0o644}, "mode-world-readable")
+    _add("MGL5-INF-0209", "negative", "umask_0027", {"mask": 0o077, "requested_mode": 0o666}, "umask-private")
+    _add("MGL5-INF-0209", "boundary", "umask_0027", {"mask": 0, "requested_mode": 0o600}, "umask-zero")
+    _add("MGL5-INF-0233", "negative", "child_env", {"key": "LUNA_C05_NEG", "value": "isolated-negative"}, "child-env-negative-value")
+    _add("MGL5-INF-0233", "boundary", "child_env", {"key": "LUNA_C05_EDGE", "value": ""}, "child-env-empty-value")
+    _add("MGL5-INF-0308", "negative", "reject_age", {"age": -1}, "age-negative-rejected")
+    _add("MGL5-INF-0308", "boundary", "reject_age", {"age": 0}, "age-zero-accepted")
+    _add("MGL5-INF-0503", "negative", "exit_codes", {"commands": []}, "command-list-rejected")
+    _add("MGL5-INF-0503", "boundary", "exit_codes", {"commands": ["true"]}, "single-zero-exit")
 
 
 def run_controls() -> list[dict]:
