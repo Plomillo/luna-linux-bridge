@@ -555,7 +555,6 @@ SPECS = [
     ("exact_line", "two_points", {"type": "object", "required": ["xs", "slope", "intercept"], "properties": {"xs": {"type": "array"}, "slope": {"type": "number"}, "intercept": {"type": "number"}}, "additionalProperties": False}),
     ("euler_decay", "smaller_step", {"type": "object", "required": ["coarse_step", "fine_step"], "properties": {"coarse_step": {"type": "number"}, "fine_step": {"type": "number"}}, "additionalProperties": False}),
     ("rk4_decay", "series_exp", {"type": "object", "required": ["step"], "properties": {"step": {"type": "number"}}, "additionalProperties": False}),
-    ("stable_ages", "stable_order", {"type": "object", "required": ["records"], "properties": {"records": {"type": "array"}}, "additionalProperties": False}),
     ("descending_values", "full_permutation", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
     ("descending_seed", "seed_permutation", {"type": "object", "required": ["seed", "count"], "properties": {"seed": {"type": "integer"}, "count": {"type": "integer"}}, "additionalProperties": False}),
     ("stack_script", "script_replay", {"type": "object", "required": ["steps"], "properties": {"steps": {"type": "array"}}, "additionalProperties": False}),
