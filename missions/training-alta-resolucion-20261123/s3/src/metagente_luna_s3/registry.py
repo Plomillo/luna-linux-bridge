@@ -13,6 +13,8 @@ from metagente_luna_s3 import (
     batch4_oracle,
     batch5_exec,
     batch5_oracle,
+    batch6_exec,
+    batch6_oracle,
     d01_exec,
     d01_oracle,
     more_exec,
@@ -149,6 +151,19 @@ REGISTRY: dict[str, Capability] = {
     "cosine_set": _cap("cosine_set", "axis_cosines", {"type": "object", "required": ["pairs"], "properties": {"pairs": {"type": "array"}}, "additionalProperties": False}),
     "confined": _cap("confined", "escapes", {"type": "object", "required": ["requested"], "properties": {"requested": {"type": "string"}}, "additionalProperties": False}),
     "request_log": _cap("request_log", "request_counts", {"type": "object", "required": ["successes", "failures"], "properties": {"successes": {"type": "integer"}, "failures": {"type": "integer"}}, "additionalProperties": False}),
+    "stable_ages": _cap("stable_ages", "stable_age_records", {
+        "type": "object", "required": ["records"],
+        "properties": {"records": {"type": "array", "items": {
+            "type": "object", "required": ["id", "age"],
+            "properties": {"id": {"type": "string"}, "age": {"type": "integer"}},
+            "additionalProperties": False,
+        }}}, "additionalProperties": False,
+    }),
+    "stack_sequence": _cap("stack_sequence", "stack_state_machine", {
+        "type": "object", "required": ["steps"],
+        "properties": {"steps": {"type": "array", "items": {"type": "string"}}},
+        "additionalProperties": False,
+    }),
 }
 
 REGISTRY["c05_preflight_blocked"] = _cap(
@@ -227,6 +242,8 @@ ORACLES: dict[str, Callable[..., dict]] = {
     "axis_cosines": batch4_oracle.axis_cosines,
     "escapes": batch4_oracle.escapes,
     "request_counts": batch4_oracle.request_counts,
+    "stable_age_records": batch6_oracle.stable_ages_oracle,
+    "stack_state_machine": batch6_oracle.stack_sequence_oracle,
 }
 
 ORACLES["c05_preflight_blocked_oracle"] = c05_preflight_oracle.blocked_preflight_oracle
@@ -299,6 +316,8 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "cosine_set": batch4_exec.cosine_set,
     "confined": batch4_exec.confined,
     "request_log": batch4_exec.request_log,
+    "stable_ages": batch6_exec.stable_ages,
+    "stack_sequence": batch6_exec.stack_sequence,
 }
 
 EXECUTORS["c05_preflight_blocked"] = c05_preflight.blocked_preflight_probe
