@@ -45,6 +45,10 @@ EXPECTED = {
     "MGL5-INF-0082": "pdf_objects",
     "MGL5-INF-0083": "pdf_xref",
     "MGL5-INF-0084": "pdf_encryption_boundary",
+    "MGL5-INF-0056": "elf_symbol_tables",
+    "MGL5-INF-0057": "elf_symbol_tables",
+    "MGL5-INF-0095": "elf_symbol_tables",
+    "MGL5-INF-0060": "elf_host_compatibility",
 }
 
 

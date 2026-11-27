@@ -8,7 +8,9 @@ import math
 import re
 import sqlite3
 import struct
+import subprocess
 import tarfile
+import tempfile
 import zipfile
 import zlib
 
@@ -396,3 +398,59 @@ def pdf_encryption_boundary(pdf_hex: str) -> dict:
         "plaintext_claim": None,
         "sha256": hashlib.sha256(raw).hexdigest(),
     }
+
+
+def elf_symbol_tables(payload_hex: str, require_complete: bool, required_symbols: list[str] | None = None) -> dict:
+    """Read ELF symbol tables with binutils; the specimen is never executed."""
+    raw = bytes.fromhex(payload_hex)
+    if not raw.startswith(b"\x7fELF"):
+        raise ValueError("input does not have an ELF signature")
+    with tempfile.TemporaryDirectory(prefix="c05-elf-") as temporary:
+        path = f"{temporary}/specimen.elf"
+        with open(path, "wb") as specimen:
+            specimen.write(raw)
+        result = subprocess.run(["readelf", "--symbols", "--wide", path], capture_output=True, text=True, timeout=5, check=False)
+    if result.returncode != 0:
+        return {"rejected": True, "reason": result.stderr.strip()[:300], "sha256": hashlib.sha256(raw).hexdigest()}
+    tables: dict[str, list[dict]] = {}
+    current = None
+    row_pattern = re.compile(r"^\s*\d+:\s+([0-9a-fA-F]+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*(.*?)\s*$")
+    for line in result.stdout.splitlines():
+        heading = re.search(r"Symbol table '([^']+)'", line)
+        if heading:
+            current = heading.group(1)
+            tables[current] = []
+            continue
+        match = row_pattern.match(line)
+        if current and match and match.group(7):
+            value, size, kind, binding, visibility, section, name = match.groups()
+            name = name.split("@", 1)[0].split(" ", 1)[0]
+            tables[current].append({"name": name, "value": int(value, 16), "size": int(size), "type": kind, "binding": binding, "visibility": visibility, "section_index": section})
+    if ".symtab" not in tables:
+        return {"rejected": require_complete, "reason": "complete_symbol_table_missing" if require_complete else None, "stripped": True, "tables": sorted(tables), "complete_symbols": None, "dynamic_symbols": tables.get(".dynsym", []), "invented_symbols": [], "provenance": {"complete": None, "dynamic": ".dynsym" if ".dynsym" in tables else None, "tool": "GNU readelf", "binary_executed": False}, "sha256": hashlib.sha256(raw).hexdigest()}
+    if ".dynsym" not in tables:
+        return {"rejected": True, "reason": "dynamic_symbol_table_missing", "tables": sorted(tables), "sha256": hashlib.sha256(raw).hexdigest()}
+    complete, dynamic = tables[".symtab"], tables[".dynsym"]
+    expected_names = set(required_symbols or [])
+    complete_names = {row["name"] for row in complete}
+    dynamic_keys = {(row["name"], row["value"], row["type"]) for row in dynamic}
+    complete_keys = {(row["name"], row["value"], row["type"]) for row in complete}
+    return {
+        "rejected": False,
+        "stripped": False,
+        "tables": sorted(tables),
+        "complete_symbols": complete,
+        "dynamic_symbols": dynamic,
+        "complete_only": sorted(complete_keys - dynamic_keys),
+        "dynamic_only": sorted(dynamic_keys - complete_keys),
+        "required_symbols_present": expected_names <= complete_names,
+        "provenance": {"complete": ".symtab", "dynamic": ".dynsym", "tool": "GNU readelf", "binary_executed": False},
+        "sha256": hashlib.sha256(raw).hexdigest(),
+    }
+
+
+def elf_host_compatibility(payload_hex: str, native_machine: int) -> dict:
+    from metagente_luna_s3.more_exec import elf_header
+
+    header = elf_header(payload_hex)
+    return {"header": header, "native_machine": native_machine, "host_compatible": not header.get("rejected", True) and int.from_bytes(bytes.fromhex(payload_hex)[18:20], "little" if header["endianness"] == "little" else "big") == native_machine}

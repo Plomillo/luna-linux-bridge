@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import struct
 import zlib
 
 
@@ -270,3 +271,71 @@ def pdf_encryption_boundary_oracle(arguments: dict, observed: dict) -> dict:
         "sha256": hashlib.sha256(raw).hexdigest(),
     }
     return {"ok": observed == expected and (not encrypted or valid_handler), "method": "independent trailer reference and Standard security-dictionary inspection; no plaintext assertion"}
+
+
+def elf_symbol_tables_oracle(arguments: dict, observed: dict) -> dict:
+    raw = bytes.fromhex(arguments["payload_hex"])
+    if raw[:6] != b"\x7fELF\x02\x01" or len(raw) < 64:
+        return {"ok": observed.get("rejected") is True, "method": "independent ELF identification and readelf failure contract"}
+    shoff = struct.unpack_from("<Q", raw, 40)[0]
+    shentsize, shnum, shstrndx = struct.unpack_from("<HHH", raw, 58)
+    if shentsize < 64 or shnum == 0 or shstrndx >= shnum or shoff + shentsize * shnum > len(raw):
+        return {"ok": observed.get("rejected") is True, "method": "independent ELF section-table bounds validation"}
+    section_rows = [struct.unpack_from("<IIQQQQIIQQ", raw, shoff + i * shentsize) for i in range(shnum)]
+    names_header = section_rows[shstrndx]
+    names_data = raw[names_header[4]:names_header[4] + names_header[5]]
+    def cstring(data: bytes, offset: int) -> str:
+        end = data.find(b"\0", offset)
+        return data[offset:end if end >= 0 else len(data)].decode("utf-8", "replace")
+    sections = {cstring(names_data, row[0]): row for row in section_rows}
+    binding_names = {0: "LOCAL", 1: "GLOBAL", 2: "WEAK"}
+    type_names = {0: "NOTYPE", 1: "OBJECT", 2: "FUNC", 3: "SECTION", 4: "FILE", 5: "COMMON", 6: "TLS", 10: "IFUNC"}
+    visibility_names = {0: "DEFAULT", 1: "INTERNAL", 2: "HIDDEN", 3: "PROTECTED"}
+    section_names = {0: "UND", 0xFFF1: "ABS", 0xFFF2: "COM"}
+    parsed = {}
+    for name, section in sections.items():
+        if section[1] not in (2, 11):
+            continue
+        strings = section_rows[section[6]]
+        string_data = raw[strings[4]:strings[4] + strings[5]]
+        entries = []
+        for offset in range(section[4], section[4] + section[5], section[9]):
+            st_name, info, other, shndx, value, size = struct.unpack_from("<IBBHQQ", raw, offset)
+            symbol_name = cstring(string_data, st_name).split("@", 1)[0].split(" ", 1)[0]
+            if not symbol_name:
+                continue
+            entries.append({"name": symbol_name, "value": value, "size": size, "type": type_names.get(info & 15, f"{info & 15}"), "binding": binding_names.get(info >> 4, f"{info >> 4}"), "visibility": visibility_names.get(other & 3, f"{other & 3}"), "section_index": section_names.get(shndx, str(shndx))})
+        parsed[name] = entries
+    if ".symtab" not in parsed:
+        expected_rejected = arguments.get("require_complete", False)
+        ok = observed.get("rejected") is expected_rejected and observed.get("stripped") is True and observed.get("tables") == sorted(parsed) and observed.get("complete_symbols") is None and observed.get("invented_symbols") == [] and (not expected_rejected or observed.get("reason") == "complete_symbol_table_missing")
+        return {"ok": ok, "method": "independent ELF section-header and symbol-table decoding; absence of SHT_SYMTAB retained"}
+    complete, dynamic = parsed.get(".symtab", []), parsed.get(".dynsym", [])
+    key = lambda row: (row["name"], row["value"], row["type"])
+    complete_keys, dynamic_keys = {key(row) for row in complete}, {key(row) for row in dynamic}
+    required = set(arguments.get("required_symbols", []))
+    actual_names = {row["name"] for row in complete}
+    ok = (
+        observed.get("rejected") is False
+        and observed.get("stripped") is False
+        and observed.get("tables") == sorted(parsed)
+        and observed.get("complete_symbols") == complete
+        and observed.get("dynamic_symbols") == dynamic
+        and observed.get("complete_only") == sorted(complete_keys - dynamic_keys)
+        and observed.get("dynamic_only") == sorted(dynamic_keys - complete_keys)
+        and required <= actual_names
+        and observed.get("required_symbols_present") is True
+        and observed.get("provenance") == {"complete": ".symtab", "dynamic": ".dynsym", "tool": "GNU readelf", "binary_executed": False}
+        and observed.get("sha256") == hashlib.sha256(raw).hexdigest()
+    )
+    return {"ok": ok, "method": "independent ELF64 section and symbol-table reconstruction from linked string tables"}
+
+
+def elf_host_compatibility_oracle(arguments: dict, observed: dict) -> dict:
+    raw = bytes.fromhex(arguments["payload_hex"])
+    valid = len(raw) >= 20 and raw[:4] == b"\x7fELF" and raw[4] in (1, 2) and raw[5] in (1, 2)
+    endian = "little" if valid and raw[5] == 1 else "big" if valid else None
+    machine = int.from_bytes(raw[18:20], endian) if valid else None
+    expected_compatible = valid and machine == arguments["native_machine"]
+    header = observed.get("header", {})
+    return {"ok": observed.get("native_machine") == arguments["native_machine"] and observed.get("host_compatible") is expected_compatible and header.get("rejected") is (not valid) and (not valid or header.get("architecture") is not None), "method": "independent ELF identification bounds and e_machine field decoding"}

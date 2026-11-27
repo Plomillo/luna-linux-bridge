@@ -149,6 +149,14 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "pdf-xref-valid-offsets": return completed and observed.get("valid") is True and observed.get("discrepancies") == []
     if expect == "pdf-unencrypted-input-no-protected-content-claim": return completed and observed.get("encrypted") is False and observed.get("content_available") is False and observed.get("plaintext_claim") is None
     if expect == "pdf-empty-protected-fixture-access-limited": return completed and observed.get("encrypted") is True and observed.get("content_available") is False and observed.get("plaintext_claim") is None
+    if expect == "elf-truncated-symbol-input-rejected": return completed and observed.get("rejected") is True
+    if expect == "elf-boundary-symbol-present": return completed and observed.get("rejected") is False and any(row.get("name") == "main" for row in observed.get("complete_symbols", []))
+    if expect == "elf-symbol-tables-present-not-stripped": return completed and observed.get("rejected") is False and observed.get("stripped") is False
+    if expect == "elf-alternate-stripped-without-inference": return completed and observed.get("stripped") is True and observed.get("invented_symbols") == []
+    if expect == "elf-complete-table-required": return completed and observed.get("rejected") is True and observed.get("reason") == "complete_symbol_table_missing"
+    if expect == "elf-distinct-full-and-dynamic-tables": return completed and observed.get("stripped") is False and bool(observed.get("complete_only")) and observed.get("provenance", {}).get("complete") == ".symtab" and observed.get("provenance", {}).get("dynamic") == ".dynsym"
+    if expect == "elf-truncated-wrong-architecture-rejected": return completed and observed.get("host_compatible") is False and observed.get("header", {}).get("rejected") is True
+    if expect == "elf-native-architecture-compatible": return completed and observed.get("host_compatible") is True and observed.get("header", {}).get("architecture") == "x86-64"
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

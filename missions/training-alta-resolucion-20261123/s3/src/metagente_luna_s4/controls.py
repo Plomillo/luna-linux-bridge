@@ -1,7 +1,15 @@
 """Source-bound negative and boundary inputs for authored executable cases."""
 from __future__ import annotations
 
-from metagente_luna_s4.batch2 import _PDF_ENCRYPTED_BOUNDARY_HEX, _PDF_ENCRYPTED_HEX
+from metagente_luna_s4.batch2 import (
+    _ELF_ARM_HEX,
+    _ELF_STRIPPED_BOUNDARY_HEX,
+    _ELF_STRIPPED_HEX,
+    _ELF_SYMBOLS_BOUNDARY_HEX,
+    _ELF_SYMBOLS_HEX,
+    _PDF_ENCRYPTED_BOUNDARY_HEX,
+    _PDF_ENCRYPTED_HEX,
+)
 from metagente_luna_s4.batch2 import CASES as SECOND
 from metagente_luna_s4.batch3 import CASES as THIRD
 from metagente_luna_s4.batch4 import CASES as FOURTH
@@ -86,6 +94,14 @@ def _build() -> None:
     plain_pdf = bytes.fromhex(_PDF_ENCRYPTED_HEX).replace(b"/Encrypt 3 0 R", b"/EncrypX 3 0 R").hex()
     _add("MGL5-INF-0084", "negative", "pdf_encryption_boundary", {"pdf_hex": plain_pdf}, "pdf-unencrypted-input-no-protected-content-claim")
     _add("MGL5-INF-0084", "boundary", "pdf_encryption_boundary", {"pdf_hex": _PDF_ENCRYPTED_BOUNDARY_HEX}, "pdf-empty-protected-fixture-access-limited")
+    _add("MGL5-INF-0056", "negative", "elf_symbol_tables", {"payload_hex": _ELF_SYMBOLS_HEX[:120], "require_complete": True}, "elf-truncated-symbol-input-rejected")
+    _add("MGL5-INF-0056", "boundary", "elf_symbol_tables", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX, "require_complete": True, "required_symbols": ["main"]}, "elf-boundary-symbol-present")
+    _add("MGL5-INF-0057", "negative", "elf_symbol_tables", {"payload_hex": _ELF_SYMBOLS_HEX, "require_complete": False}, "elf-symbol-tables-present-not-stripped")
+    _add("MGL5-INF-0057", "boundary", "elf_symbol_tables", {"payload_hex": _ELF_STRIPPED_BOUNDARY_HEX, "require_complete": False}, "elf-alternate-stripped-without-inference")
+    _add("MGL5-INF-0095", "negative", "elf_symbol_tables", {"payload_hex": _ELF_STRIPPED_HEX, "require_complete": True}, "elf-complete-table-required")
+    _add("MGL5-INF-0095", "boundary", "elf_symbol_tables", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX, "require_complete": True}, "elf-distinct-full-and-dynamic-tables")
+    _add("MGL5-INF-0060", "negative", "elf_host_compatibility", {"payload_hex": _ELF_ARM_HEX[:48], "native_machine": 62}, "elf-truncated-wrong-architecture-rejected")
+    _add("MGL5-INF-0060", "boundary", "elf_host_compatibility", {"payload_hex": _ELF_SYMBOLS_HEX, "native_machine": 62}, "elf-native-architecture-compatible")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -375,6 +391,14 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "pdf-xref-valid-offsets": return control_completed and observed.get("valid") is True and observed.get("discrepancies") == []
     if expect == "pdf-unencrypted-input-no-protected-content-claim": return control_completed and observed.get("encrypted") is False and observed.get("content_available") is False and observed.get("plaintext_claim") is None
     if expect == "pdf-empty-protected-fixture-access-limited": return control_completed and observed.get("encrypted") is True and observed.get("content_available") is False and observed.get("plaintext_claim") is None
+    if expect == "elf-truncated-symbol-input-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "elf-boundary-symbol-present": return control_completed and observed.get("rejected") is False and "main" in {row["name"] for row in observed.get("complete_symbols", [])}
+    if expect == "elf-symbol-tables-present-not-stripped": return control_completed and observed.get("rejected") is False and observed.get("stripped") is False
+    if expect == "elf-alternate-stripped-without-inference": return control_completed and observed.get("stripped") is True and observed.get("invented_symbols") == []
+    if expect == "elf-complete-table-required": return control_completed and observed.get("rejected") is True and observed.get("reason") == "complete_symbol_table_missing"
+    if expect == "elf-distinct-full-and-dynamic-tables": return control_completed and observed.get("stripped") is False and bool(observed.get("complete_only")) and observed.get("provenance", {}).get("complete") == ".symtab" and observed.get("provenance", {}).get("dynamic") == ".dynsym"
+    if expect == "elf-truncated-wrong-architecture-rejected": return control_completed and observed.get("host_compatible") is False and observed.get("header", {}).get("rejected") is True
+    if expect == "elf-native-architecture-compatible": return control_completed and observed.get("host_compatible") is True and observed.get("header", {}).get("architecture") == "x86-64"
     if expect == "wasm-type-index-out-of-range": return control_completed and observed.get("rejected") is True and observed.get("invalid_indices") == [1]
     if expect == "wasm-no-types-no-functions": return control_completed and observed.get("rejected") is False and observed.get("invalid_indices") == []
     if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True
