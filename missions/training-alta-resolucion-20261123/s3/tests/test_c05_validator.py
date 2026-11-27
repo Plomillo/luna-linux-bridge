@@ -30,20 +30,20 @@ def _valid_row_with_artifacts(tmp_path):
     for index, kind in enumerate(("NORMAL", "NEGATIVE", "BOUNDARY"), start=1):
         run_id = f"run-0001-{index:04d}"
         artifacts = {
-            "fixture": _write_artifact(tmp_path, f"{run_id}/fixture.json", {"case_id": case_id, "fixture_id": "fixture-v1"}),
-            "environment": _write_artifact(tmp_path, f"{run_id}/environment.json", {"environment_id": "pytest-local"}),
-            "procedure": _write_artifact(tmp_path, f"{run_id}/procedure.json", {"case_id": case_id, "steps": ["invoke", "observe"]}),
+            "fixture": _write_artifact(tmp_path, f"{run_id}/fixture.json", {"case_id": case_id, "run_id": run_id, "fixture_id": "fixture-v1"}),
+            "environment": _write_artifact(tmp_path, f"{run_id}/environment.json", {"case_id": case_id, "run_id": run_id, "environment_id": "pytest-local"}),
+            "procedure": _write_artifact(tmp_path, f"{run_id}/procedure.json", {"case_id": case_id, "run_id": run_id, "steps": ["invoke", "observe"]}),
             "stdout": _write_artifact(tmp_path, f"{run_id}/stdout.txt", "execution output"),
             "stderr": _write_artifact(tmp_path, f"{run_id}/stderr.txt", ""),
             "observed": _write_artifact(tmp_path, f"{run_id}/observed.json", {"case_id": case_id, "run_id": run_id, "value": "observed"}),
             "oracle": _write_artifact(tmp_path, f"{run_id}/oracle.json", {"case_id": case_id, "run_id": run_id, "independent": True, "producer_used_as_oracle": False, "result": "PASS"}),
-            "metrics": _write_artifact(tmp_path, f"{run_id}/metrics.json", {"case_id": case_id, "duration_ms": 1}),
+            "metrics": _write_artifact(tmp_path, f"{run_id}/metrics.json", {"case_id": case_id, "run_id": run_id, "duration_ms": 1}),
         }
         repetitions.append({
             "kind": kind, "run_id": run_id, "case_id": case_id,
             "clean_state": True, "execution_status": "PASS", "exit_code": 0,
             "agent_version": "test-agent-1", "executor_version": "test-executor-1",
-            "machinery": "pytest-test-fixture", "artifacts": artifacts,
+            "machinery": "pytest-test-fixture", "started": 1.0, "ended": 2.0, "artifacts": artifacts,
         })
     return {
         "CASE_ID": case_id, "execution_status": "PASS", "contract_status": "PASS",
