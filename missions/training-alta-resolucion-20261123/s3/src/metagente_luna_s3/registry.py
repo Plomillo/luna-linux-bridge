@@ -208,8 +208,11 @@ _FORMAT_SCHEMAS = {
     "bounded_declared_size": {"type": "object", "required": ["declared_size", "payload_hex"], "properties": {"declared_size": {"type": "integer", "minimum": 0}, "payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False},
     "reproducible_structure": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False},
     "jpeg_markers": {"type": "object", "required": ["segments", "truncate_last"], "properties": {"segments": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "object", "required": ["marker", "payload_hex"], "properties": {"marker": {"type": "string", "enum": ["DQT", "SOF0"]}, "payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False}}, "truncate_last": {"type": "boolean"}}, "additionalProperties": False},
+    "partial_recovery": {"type": "object", "required": ["header_hex", "payload_hex", "expected_magic_hex"], "properties": {"header_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})+$"}, "payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}, "expected_magic_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False},
+    "timestamp_provenance": {"type": "object", "required": ["metadata_timestamp", "filesystem_timestamp"], "properties": {"metadata_timestamp": {"type": "integer"}, "filesystem_timestamp": {"type": "integer"}}, "additionalProperties": False},
+    "dependency_graph": {"type": "object", "required": ["root", "nodes", "edges"], "properties": {"root": {"type": "string"}, "nodes": {"type": "array", "items": {"type": "string"}, "uniqueItems": True}, "edges": {"type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "string"}}}}, "additionalProperties": False},
 }
-_FORMAT_ORACLES = {"sqlite_header": "sqlite_header_independent", "sqlite_integrity": "sqlite_integrity_independent", "wasm_header": "wasm_header_independent", "png_chunks": "png_chunks_independent", "unknown_format": "unknown_format_independent", "block_entropy": "block_entropy_independent", "binary_diff": "binary_diff_independent", "bounded_declared_size": "bounded_size_independent", "reproducible_structure": "reproducible_structure_independent", "jpeg_markers": "jpeg_markers_independent"}
+_FORMAT_ORACLES = {"sqlite_header": "sqlite_header_independent", "sqlite_integrity": "sqlite_integrity_independent", "wasm_header": "wasm_header_independent", "png_chunks": "png_chunks_independent", "unknown_format": "unknown_format_independent", "block_entropy": "block_entropy_independent", "binary_diff": "binary_diff_independent", "bounded_declared_size": "bounded_size_independent", "reproducible_structure": "reproducible_structure_independent", "jpeg_markers": "jpeg_markers_independent", "partial_recovery": "partial_recovery_independent", "timestamp_provenance": "timestamp_provenance_independent", "dependency_graph": "dependency_graph_independent"}
 for _format_name, _format_oracle in _FORMAT_ORACLES.items():
     REGISTRY[_format_name] = _cap(_format_name, _format_oracle, _FORMAT_SCHEMAS[_format_name])
 
@@ -298,6 +301,7 @@ ORACLES.update({"sqlite_header_independent": format_oracle.sqlite_header_oracle,
 ORACLES["png_chunks_independent"] = format_oracle.png_chunks_oracle
 ORACLES.update({"unknown_format_independent": format_oracle.unknown_format_oracle, "block_entropy_independent": format_oracle.block_entropy_oracle, "binary_diff_independent": format_oracle.binary_diff_oracle, "bounded_size_independent": format_oracle.bounded_size_oracle, "reproducible_structure_independent": format_oracle.reproducible_oracle})
 ORACLES["jpeg_markers_independent"] = format_oracle.jpeg_markers_oracle
+ORACLES.update({"partial_recovery_independent": format_oracle.partial_recovery_oracle, "timestamp_provenance_independent": format_oracle.timestamp_provenance_oracle, "dependency_graph_independent": format_oracle.dependency_graph_oracle})
 
 EXECUTORS: dict[str, Callable[..., dict]] = {
     "cidr_bounds": cidr_bounds,
@@ -383,6 +387,7 @@ EXECUTORS.update({"sqlite_header": format_exec.sqlite_header, "sqlite_integrity"
 EXECUTORS["png_chunks"] = format_exec.png_chunks
 EXECUTORS.update({"unknown_format": format_exec.unknown_format, "block_entropy": format_exec.block_entropy, "binary_diff": format_exec.binary_diff, "bounded_declared_size": format_exec.bounded_declared_size, "reproducible_structure": format_exec.reproducible_structure})
 EXECUTORS["jpeg_markers"] = format_exec.jpeg_markers
+EXECUTORS.update({"partial_recovery": format_exec.partial_recovery, "timestamp_provenance": format_exec.timestamp_provenance, "dependency_graph": format_exec.dependency_graph})
 
 EXECUTORS["c05_preflight_blocked"] = c05_preflight.blocked_preflight_probe
 

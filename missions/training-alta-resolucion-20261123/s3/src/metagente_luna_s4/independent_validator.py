@@ -124,6 +124,11 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect in {"reproducibility-with-different-input", "empty-input-reproducibility"}: return completed and observed.get("identical") is True and observed.get("first") == observed.get("second")
     if expect == "jpeg-truncated-marker-sequence-detected": return completed and observed.get("valid") is False and observed.get("truncated") is True
     if expect == "jpeg-alternate-valid-marker-sequence": return completed and observed.get("valid") is True and [row["name"] for row in observed.get("markers", [])] == ["SOI", "DQT", "SOF0", "EOI"]
+    if expect == "partial-invalid-header-rejected": return completed and observed.get("header_valid") is False and observed.get("recovered_hex") == "" and observed.get("integrity_complete") is False
+    if expect == "partial-empty-body-recovered": return completed and observed.get("header_valid") is True and observed.get("recovered_hex") == "" and observed.get("unknown_trailer") is True
+    if expect in {"timestamp-order-does-not-prove-creation", "timestamp-equality-source-preserved"}: return completed and [row["source"] for row in observed.get("timestamps", [])] == ["embedded_metadata", "filesystem"] and observed.get("creation_time_proven") is False and bool(observed.get("warning"))
+    if expect == "dependency-cycle-detected": return completed and observed.get("rejected") is False and observed.get("cycle") is True and observed.get("reachable") == ["A", "B"]
+    if expect == "dependency-singleton-no-edges": return completed and observed.get("rejected") is False and observed.get("cycle") is False and observed.get("reachable") == []
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

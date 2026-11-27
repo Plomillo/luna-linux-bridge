@@ -91,3 +91,48 @@ def jpeg_markers_oracle(arguments: dict, observed: dict) -> dict:
         expected.append({"name": "EOI", "offset": offset})
     complete = not arguments["truncate_last"]
     return {"ok": observed.get("markers") == expected and observed.get("valid") is complete and observed.get("truncated") is (not complete), "method": "independent marker offsets and length-field reconstruction"}
+
+
+def partial_recovery_oracle(arguments: dict, observed: dict) -> dict:
+    header, magic = bytes.fromhex(arguments["header_hex"]), bytes.fromhex(arguments["expected_magic_hex"])
+    valid = bool(magic) and header.startswith(magic)
+    recovered = bytes.fromhex(arguments["payload_hex"]).hex() if valid else ""
+    return {"ok": observed.get("header_valid") is valid and observed.get("recovered_hex") == recovered and observed.get("unknown_trailer") is True and observed.get("integrity_complete") is False, "method": "independent magic-prefix validation and exact payload provenance"}
+
+
+def timestamp_provenance_oracle(arguments: dict, observed: dict) -> dict:
+    expected = [{"value": arguments["metadata_timestamp"], "source": "embedded_metadata"}, {"value": arguments["filesystem_timestamp"], "source": "filesystem"}]
+    return {"ok": observed.get("timestamps") == expected and observed.get("creation_time_proven") is False and bool(observed.get("warning")), "method": "input-source equality and non-inference invariant"}
+
+
+def dependency_graph_oracle(arguments: dict, observed: dict) -> dict:
+    nodes, edges, root = arguments["nodes"], arguments["edges"], arguments["root"]
+    if root not in nodes or any(source not in nodes or target not in nodes for source, target in edges):
+        return {"ok": observed.get("rejected") is True and observed.get("reachable") == [], "method": "independent endpoint validation"}
+    adjacency = {node: [] for node in nodes}
+    for source, target in edges:
+        adjacency[source].append(target)
+    reachable, queue = set(), [root]
+    while queue:
+        current = queue.pop(0)
+        for target in adjacency[current]:
+            if target not in reachable:
+                reachable.add(target)
+                queue.append(target)
+    relevant = {root, *reachable}
+    indegree = {node: 0 for node in relevant}
+    for source, target in edges:
+        if source in relevant and target in relevant:
+            indegree[target] += 1
+    queue = [node for node, degree in indegree.items() if degree == 0]
+    removed = 0
+    while queue:
+        source = queue.pop()
+        removed += 1
+        for target in adjacency[source]:
+            if target in indegree:
+                indegree[target] -= 1
+                if indegree[target] == 0:
+                    queue.append(target)
+    cycle = removed != len(relevant)
+    return {"ok": observed.get("rejected") is False and observed.get("reachable") == sorted(reachable) and observed.get("cycle") is cycle, "method": "independent BFS closure and Kahn cycle detection"}

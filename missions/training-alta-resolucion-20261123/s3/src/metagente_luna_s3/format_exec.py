@@ -172,3 +172,41 @@ def jpeg_markers(segments: list[dict], truncate_last: bool) -> dict:
         markers[-1]["segment_length"] = length
         offset += 2 + length
     return {"markers": markers, "valid": valid and saw_eoi and offset == len(raw), "truncated": not saw_eoi or not valid}
+
+
+def partial_recovery(header_hex: str, payload_hex: str, expected_magic_hex: str) -> dict:
+    header, payload, magic = bytes.fromhex(header_hex), bytes.fromhex(payload_hex), bytes.fromhex(expected_magic_hex)
+    valid = bool(magic) and header.startswith(magic)
+    return {"header_valid": valid, "recovered_hex": payload.hex() if valid else "", "unknown_trailer": True, "integrity_complete": False}
+
+
+def timestamp_provenance(metadata_timestamp: int, filesystem_timestamp: int) -> dict:
+    return {"timestamps": [{"value": metadata_timestamp, "source": "embedded_metadata"}, {"value": filesystem_timestamp, "source": "filesystem"}], "creation_time_proven": False, "warning": "timestamps alone do not prove creation time"}
+
+
+def dependency_graph(root: str, nodes: list[str], edges: list[list[str]]) -> dict:
+    graph = {node: [] for node in nodes}
+    for source, target in edges:
+        if source not in graph or target not in graph:
+            return {"rejected": True, "reason": "edge_endpoint_missing", "reachable": [], "cycle": False}
+        graph[source].append(target)
+    if root not in graph:
+        return {"rejected": True, "reason": "root_missing", "reachable": [], "cycle": False}
+    reachable, active, done, cycle = set(), set(), set(), False
+
+    def visit(node: str) -> None:
+        nonlocal cycle
+        if node in active:
+            cycle = True
+            return
+        if node in done:
+            return
+        active.add(node)
+        for child in graph[node]:
+            reachable.add(child)
+            visit(child)
+        active.remove(node)
+        done.add(node)
+
+    visit(root)
+    return {"rejected": False, "reachable": sorted(reachable), "cycle": cycle}

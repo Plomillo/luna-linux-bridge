@@ -54,6 +54,9 @@ CASES = [
     {"case_id": "MGL5-INF-0097", "capability_id": "bounded_declared_size", "arguments": {"declared_size": 4096, "payload_hex": "4142"}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: declared size exceeds the actual two-byte buffer"},
     {"case_id": "MGL5-INF-0099", "capability_id": "reproducible_structure", "arguments": {"payload_hex": "434f50592d4944454e544943414c"}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: identical immutable byte input is analyzed twice"},
     {"case_id": "MGL5-INF-0081", "capability_id": "jpeg_markers", "arguments": {"segments": [{"marker": "DQT", "payload_hex": "00" + "01" * 64}, {"marker": "SOF0", "payload_hex": "080001000101011100"}], "truncate_last": False}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: JPEG SOI, one DQT, one 1x1 SOF0, and EOI marker stream"},
+    {"case_id": "MGL5-INF-0091", "capability_id": "partial_recovery", "arguments": {"header_hex": "4c554e41", "payload_hex": "5245434f5645524544", "expected_magic_hex": "4c554e41"}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: valid four-byte fixture magic, known body, and explicitly absent trailer"},
+    {"case_id": "MGL5-INF-0092", "capability_id": "timestamp_provenance", "arguments": {"metadata_timestamp": 1700000000, "filesystem_timestamp": 1700000100}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: distinct metadata and filesystem epoch values"},
+    {"case_id": "MGL5-INF-0093", "capability_id": "dependency_graph", "arguments": {"root": "A", "nodes": ["A", "B", "C", "D"], "edges": [["A", "B"], ["B", "C"], ["C", "D"]]}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: three-level directed dependency chain"},
 
     {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
     {"case_id": "MGL5-INF-0102", "capability_id": "array_minmax", "arguments": {"values": [-8, 4, 4, 19, 0]}},
