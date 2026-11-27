@@ -531,3 +531,54 @@ def pe_inspect_oracle(arguments: dict, observed: dict) -> dict:
             imports.append({"dll": dll, "symbols": symbols})
     expected = {"rejected": False, "sections": sections, "sha256": digest, "image_loaded": False, "static_imports": imports, "dynamic_runtime_modules_observed": None, "static_dynamic_distinguished": True}
     return {"ok": valid and observed == expected, "method": "independent PE data-directory, RVA mapping, and import-thunk reconstruction"}
+
+
+def dex_header_oracle(arguments: dict, observed: dict) -> dict:
+    raw = bytes.fromhex(arguments["payload_hex"])
+    valid = (len(raw) >= 112 and raw[:4] == b"dex\\n" and raw[7] == 0)
+    if valid:
+        version = raw[4:7].decode("ascii", "replace")
+        file_size, header_size, endian = struct.unpack_from("<III", raw, 32)
+        valid = file_size == len(raw) and header_size == 112 and endian == 0x12345678
+        checksum = struct.unpack_from("<I", raw, 8)[0]
+        signature = raw[12:32]
+        checksum_ok = checksum == (zlib.adler32(raw[12:]) & 0xFFFFFFFF)
+        signature_ok = signature == hashlib.sha1(raw[32:]).digest()
+    else:
+        version, file_size, header_size, endian = "", 0, 0, 0
+        checksum_ok = signature_ok = False
+    ok = (
+        observed.get("rejected") is False
+        and observed.get("version") == version
+        and observed.get("file_size") == file_size
+        and observed.get("header_size") == header_size
+        and observed.get("endian_tag") == endian
+        and observed.get("checksum_valid") is checksum_ok
+        and observed.get("signature_valid") is signature_ok
+    )
+    return {"ok": ok, "method": "independent DEX header offsets, Adler-32 and SHA-1 recomputation"}
+
+
+def dex_tables_oracle(arguments: dict, observed: dict) -> dict:
+    raw = bytes.fromhex(arguments["payload_hex"])
+    if len(raw) < 112 or raw[:4] != b"dex\\n":
+        return {"ok": observed.get("rejected") is True, "method": "independent DEX table bounds and index reconstruction"}
+    layout = ((56, 60, 4), (64, 68, 4), (72, 76, 12), (80, 84, 8), (88, 92, 8), (96, 100, 32))
+    counts = []
+    for size_at, off_at, width in layout:
+        count, offset = struct.unpack_from("<II", raw, size_at)
+        if count and (offset < 112 or offset + count * width > len(raw)):
+            return {"ok": observed.get("rejected") is True, "method": "independent DEX table bounds and index reconstruction"}
+        counts.append(count)
+    tables = observed.get("tables", {})
+    expected_names = ("string_ids", "type_ids", "proto_ids", "field_ids", "method_ids", "class_defs")
+    ok = observed.get("rejected") is False and all(tables.get(name, {}).get("count") == count for name, count in zip(expected_names, counts, strict=True))
+    strings = observed.get("strings", [])
+    types = observed.get("type_string_indices", [])
+    protos = observed.get("proto_references", [])
+    methods = observed.get("method_references", [])
+    ok = ok and all(isinstance(i, int) and 0 <= i < len(strings) for i in types)
+    ok = ok and all(0 <= row.get("shorty_idx", -1) < len(strings) and 0 <= row.get("return_type_idx", -1) < len(types) for row in protos)
+    ok = ok and all(0 <= row.get("class_idx", -1) < len(types) and 0 <= row.get("proto_idx", -1) < len(protos) and 0 <= row.get("name_idx", -1) < len(strings) for row in methods)
+    ok = ok and observed.get("indices_valid") is True
+    return {"ok": bool(ok), "method": "independent DEX table counts, bounds and cross-reference checks"}
