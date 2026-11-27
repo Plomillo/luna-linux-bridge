@@ -151,6 +151,8 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
                 and isinstance(source_metadata.get("source_file"), str)
                 and isinstance(source_metadata.get("line_start"), int)
                 and isinstance(source_metadata.get("line_end"), int)
+                and all(isinstance(source_metadata.get(field), str) and source_metadata[field]
+                        for field in ("operation", "acceptance_criterion", "oracle_requirement"))
                 and source_excerpt is not None):
             repository_root = Path(__file__).resolve().parents[5]
             source_path = (repository_root / source_metadata["source_file"]).resolve()
@@ -168,6 +170,8 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
                     and excerpt_bytes == source_excerpt
                     and _digest(source_excerpt) == source_metadata.get("excerpt_sha256")
                     and case_id.encode("utf-8") in source_excerpt
+                    and all(source_metadata[field].encode("utf-8") in source_excerpt
+                            for field in ("operation", "acceptance_criterion", "oracle_requirement"))
                 )
             except (OSError, UnicodeError, ValueError, TypeError):
                 source_valid = False
