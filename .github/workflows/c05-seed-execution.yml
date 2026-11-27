@@ -93,7 +93,7 @@ jobs:
           assert rejected_ids == expected_ids - planned_ids, report
           assert report["c05_status"] == "NOT_PASSED", report
           assert report["c05_passed"] is False, report
-          print("Verified 15 source-bound dossiers with five Docker runs each; 987 remain NOT_RUN; C05 NOT_PASSED.")
+          print("Verified 15 source-bound dossiers with five Docker runs each; 985 remain NOT_RUN; C05 NOT_PASSED.")
           PY
       - name: Upload raw container execution evidence
         if: always()
