@@ -63,9 +63,14 @@ def reference_factorials(arguments: dict, observed: dict) -> dict:
 def folded_value(arguments: dict, observed: dict) -> dict:
     expression = arguments.get("text", "1+2*3-4")
     if observed.get("rejected") is True:
-        return {"ok": not expression or any(ch not in "0123456789+-*" for ch in expression)
-                or expression[0] in "+-*" or expression[-1] in "+-*",
-                "method": "independent expression-domain validation"}
+        invalid = (
+            not expression
+            or any(ch not in "0123456789+-*" for ch in expression)
+            or expression[0] in "+-*"
+            or expression[-1] in "+-*"
+            or any(left in "+-*" and right in "+-*" for left, right in itertools.pairwise(expression))
+        )
+        return {"ok": invalid, "method": "independent expression-domain validation"}
     # Independent AST evaluator; it never evaluates compiled source or calls the producer.
     import ast
 
