@@ -321,15 +321,25 @@ def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
         len(run.get("artifacts", {}))
         for run in all_runs if isinstance(run, dict) and isinstance(run.get("artifacts"), dict)
     )
+    # Never trust a caller-supplied "independent PASS" object. Re-run the
+    # separate automated verifier at the gate and compare its complete result.
+    try:
+        from metagente_luna_s4.independent_validator import independently_validate_case
+
+        recomputed = independently_validate_case(row, evidence_root)
+    except (ImportError, OSError, TypeError, ValueError) as exc:
+        recomputed = {"status": "FAIL", "findings": [f"independent-validator-error:{type(exc).__name__}"]}
     if (not isinstance(independent, dict)
             or independent.get("validator_id") != "LUNA_C05_INDEPENDENT_VALIDATOR"
-            or not independent.get("validator_version")
+            or independent.get("validator_version") != recomputed.get("validator_version")
             or independent.get("status") != "PASS"
+            or recomputed.get("status") != "PASS"
             or independent.get("case_id") != case_id
             or independent.get("method") != "INDEPENDENT_RECOMPUTATION"
             or independent.get("checked_run_count") != 5
             or independent.get("checked_artifact_count") != expected_artifacts
-            or independent.get("evidence_digest") != _evidence_manifest_digest(row)):
+            or independent.get("evidence_digest") != _evidence_manifest_digest(row)
+            or independent != recomputed):
         errors.append("independent-case-validation-missing-or-invalid")
     if row.get("contract_status") == "PASS" and (
         not isinstance(independent, dict) or independent.get("status") != "PASS"
