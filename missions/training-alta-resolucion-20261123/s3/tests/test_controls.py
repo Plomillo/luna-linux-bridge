@@ -34,7 +34,20 @@ def test_controls_that_were_defined_are_accepted():
     defined = [row for row in rows if row["controls"]]
     assert defined
     assert all(row["control_status"] == "PRESENT" for row in defined)
-    assert len(defined) == 56
+    assert len(defined) == 74
+
+def test_serialization_controls_cover_csv_xml_binary_compression_and_manifest_edges():
+    assert accepts("two-records", {"records": 2, "fields": ["a", "1"]}, "EXECUTED") is True
+    assert accepts("predefined-entity-set", {"text": "<>&", "external_expanded": False}, "EXECUTED") is True
+    assert accepts("self-closing-accepted", {"rejected": False}, "EXECUTED") is True
+    assert accepts("all-truncated", {"all_rejected": True, "rejected_lengths": [0, 1, 2, 3]}, "EXECUTED") is True
+    assert accepts("empty-oversize-rejected", {"rejected": True, "allocated_declared_length": False}, "EXECUTED") is True
+    assert accepts("field-present", {"absent": False, "null": True, "empty": True}, "EXECUTED") is True
+    assert accepts("empty-payload-roundtrip", {"match": True, "compressed_differs": True}, "EXECUTED") is True
+    assert accepts("empty-stream-corrupt", {"corruption_detected": True, "integrity_claimed": False}, "EXECUTED") is True
+    assert accepts("unknown-signature", {"detected": "unknown", "extension_matches_content": False}, "EXECUTED") is True
+    assert accepts("empty-stream-corrupt", {"corruption_detected": True, "integrity_claimed": False}, "BLOCKED") is False
+
 
 def test_duplicate_and_bracket_controls_cover_negative_and_empty_boundaries():
     assert accepts("no-duplicates", {"duplicates": []}, "EXECUTED") is True
