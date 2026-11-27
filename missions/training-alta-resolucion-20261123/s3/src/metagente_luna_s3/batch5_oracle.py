@@ -30,16 +30,33 @@ def named_order(arguments: dict, observed: dict) -> dict:
 
 
 def range_sum(arguments: dict, observed: dict) -> dict:
-    del arguments
-    count = 1000
+    count = arguments["count"]
+    if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+        return {"ok": observed.get("rejected") is True, "method": "independent count-boundary rejection"}
     bound = math.floor(1.4404 * math.log2(count + 2)) + 1
-    ok = observed["found"] == count and observed["nodes"] == count and observed["balanced"] is True and observed["height"] <= bound
-    return {"ok": ok, "method": "every node has balance at most one"}
+    ok = (
+        observed.get("accepted") is True and observed.get("found") == count
+        and observed.get("nodes") == count and observed.get("balanced") is True
+        and observed.get("height", count + 1) <= bound
+    )
+    return {"ok": ok, "method": "independent AVL balance bound and node census"}
 
 
 def full_scans(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["comparisons"] == [1000, 2000, 4000] and observed["ratios"] == [2.0, 2.0] and observed["count_noise"] == 0, "method": "comparison counts double with the length"}
+    sizes = arguments["sizes"]
+    valid = (
+        isinstance(sizes, list) and len(sizes) >= 2
+        and all(isinstance(size, int) and not isinstance(size, bool) and size > 0 for size in sizes)
+        and all(left < right for left, right in zip(sizes, sizes[1:]))
+    )
+    if not valid:
+        return {"ok": observed.get("rejected") is True, "method": "independent scan-size validation"}
+    ratios = [sizes[index + 1] / sizes[index] for index in range(len(sizes) - 1)]
+    return {
+        "ok": observed.get("accepted") is True and observed.get("comparisons") == sizes
+        and observed.get("ratios") == ratios and observed.get("count_noise") == 0,
+        "method": "independent comparison census and growth ratios",
+    }
 
 
 def reference_factorials(arguments: dict, observed: dict) -> dict:
@@ -51,11 +68,34 @@ def reference_factorials(arguments: dict, observed: dict) -> dict:
 
 
 def folded_value(arguments: dict, observed: dict) -> dict:
-    del arguments
-    value = ((1 + (2 * 3)) - 4)
-    tree = observed["tree"]
-    shape = tree["op"] == "-" and tree["left"]["op"] == "+" and tree["left"]["right"]["op"] == "*"
-    return {"ok": shape and observed["value"] == value == 3, "method": "folded arithmetic, not the parser"}
+    import ast
+
+    def to_tree(node):
+        if isinstance(node, ast.Constant) and isinstance(node.value, int) and not isinstance(node.value, bool):
+            return node.value
+        if isinstance(node, ast.BinOp):
+            operations = {ast.Add: "+", ast.Sub: "-", ast.Mult: "*"}
+            operation = operations.get(type(node.op))
+            if operation is None:
+                raise ValueError("unsupported operator")
+            return {"op": operation, "left": to_tree(node.left), "right": to_tree(node.right)}
+        raise ValueError("unsupported expression node")
+
+    try:
+        expected_tree = to_tree(ast.parse(arguments["expression"], mode="eval").body)
+    except (SyntaxError, ValueError, TypeError):
+        return {"ok": observed.get("rejected") is True, "method": "independent AST syntax rejection"}
+    def evaluate(node):
+        if isinstance(node, int):
+            return node
+        left, right = evaluate(node["left"]), evaluate(node["right"])
+        return left + right if node["op"] == "+" else left - right if node["op"] == "-" else left * right
+    expected_value = evaluate(expected_tree)
+    return {
+        "ok": observed.get("accepted") is True and observed.get("tree") == expected_tree
+        and observed.get("value") == expected_value,
+        "method": "independent AST tree shape and precedence evaluation",
+    }
 
 
 def refused_index(arguments: dict, observed: dict) -> dict:
@@ -63,23 +103,59 @@ def refused_index(arguments: dict, observed: dict) -> dict:
 
 
 def zero_type(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["raised"] is True and observed["type"] == "ZeroDivisionError" and observed["function"] == "divide_zero", "method": "traceback function name"}
+    numerator, denominator = arguments["numerator"], arguments["denominator"]
+    if denominator == 0:
+        ok = (
+            observed.get("accepted") is True and observed.get("raised") is True
+            and observed.get("type") == "ZeroDivisionError"
+            and observed.get("function") == "divide_zero" and observed.get("value") is None
+        )
+    else:
+        ok = (
+            observed.get("accepted") is True and observed.get("raised") is False
+            and observed.get("value") == numerator / denominator
+        )
+    return {"ok": ok, "method": "independent arithmetic result and exception type"}
 
 
 def octal_mode(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["mode"] == 0o640 and observed["owner_read"] is True and observed["owner_execute"] is False and observed["group_write"] is False and observed["other_bits"] == 0, "method": "mode bits and owner access"}
+    mode = arguments["mode"]
+    valid = isinstance(mode, int) and not isinstance(mode, bool) and 0 <= mode <= 0o777
+    if not valid:
+        return {"ok": observed.get("rejected") is True, "method": "independent permission-mask validation"}
+    return {
+        "ok": observed.get("accepted") is True and observed.get("mode") == mode
+        and observed.get("owner_read") is bool(mode & 0o400)
+        and observed.get("owner_execute") is bool(mode & 0o100)
+        and observed.get("group_write") is bool(mode & 0o020)
+        and observed.get("other_bits") == mode & 0o007,
+        "method": "independent POSIX mode-bit interpretation",
+    }
 
 
 def masked_create(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["mode"] == (0o666 & ~0o027), "method": "permission mask, not stat of the executor"}
+    umask, requested = arguments["umask"], arguments["requested_mode"]
+    valid = (
+        isinstance(umask, int) and not isinstance(umask, bool) and 0 <= umask <= 0o777
+        and isinstance(requested, int) and not isinstance(requested, bool) and 0 <= requested <= 0o777
+    )
+    if not valid:
+        return {"ok": observed.get("rejected") is True, "method": "independent umask range validation"}
+    return {
+        "ok": observed.get("accepted") is True and observed.get("mode") == (requested & ~umask),
+        "method": "independent POSIX requested-mode mask",
+    }
 
 
 def declared_env(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["value"] == "123" and observed["code"] == 0, "method": "the declared environment value"}
+    key, value = arguments["env_key"], arguments["env_value"]
+    valid = isinstance(key, str) and bool(key) and "=" not in key and "\x00" not in key and isinstance(value, str) and "\x00" not in value
+    if not valid:
+        return {"ok": observed.get("rejected") is True, "method": "independent environment-variable validation"}
+    return {
+        "ok": observed.get("accepted") is True and observed.get("value") == value and observed.get("code") == 0,
+        "method": "independent child-environment value",
+    }
 
 
 def library_v6(arguments: dict, observed: dict) -> dict:
@@ -101,30 +177,53 @@ def one_run(arguments: dict, observed: dict) -> dict:
 
 
 def own_check(arguments: dict, observed: dict) -> dict:
-    del arguments
+    age, minimum_age = arguments["age"], arguments["minimum_age"]
+    valid = (
+        isinstance(age, int) and not isinstance(age, bool)
+        and isinstance(minimum_age, int) and not isinstance(minimum_age, bool) and minimum_age >= 0
+    )
+    if not valid:
+        return {"ok": observed.get("rejected") is True, "method": "independent age-domain validation"}
     connection = sqlite3.connect(":memory:")
-    connection.execute("create table person(age integer check (age >= 0))")
+    connection.execute(f"create table person(age integer check (age >= {minimum_age}))")
     rejected = False
     try:
-        connection.execute("insert into person(age) values (-4)")
+        connection.execute("insert into person(age) values (?)", (age,))
     except sqlite3.IntegrityError:
         rejected = True
-    return {"ok": rejected and observed["rejected"] is True and observed["rows"] == 0, "method": "separate sqlite connection"}
+    rows = connection.execute("select count(*) from person").fetchone()[0]
+    return {
+        "ok": observed.get("accepted") is True and observed.get("rejected") is rejected and observed.get("rows") == rows,
+        "method": "separate sqlite constraint and row-count check",
+    }
 
 
 def own_query(arguments: dict, observed: dict) -> dict:
-    del arguments
+    payload, stored_name = arguments["payload"], arguments["stored_name"]
+    if not isinstance(payload, str) or not isinstance(stored_name, str):
+        return {"ok": observed.get("rejected") is True, "method": "independent string-domain validation"}
     connection = sqlite3.connect(":memory:")
     connection.execute("create table user(name text)")
-    connection.execute("insert into user(name) values ('ada')")
-    matched = connection.execute("select name from user where name = ?", ("' OR 1=1 --",)).fetchall()
-    return {"ok": len(matched) == 0 and observed["matched"] == 0 and observed["status"] == 200, "method": "separate query; the case result came from HTTP"}
+    connection.execute("insert into user(name) values (?)", (stored_name,))
+    matched = connection.execute("select name from user where name = ?", (payload,)).fetchall()
+    return {
+        "ok": observed.get("accepted") is True and observed.get("matched") == len(matched)
+        and observed.get("status") == 200,
+        "method": "separate parameterized SQL query and match count",
+    }
 
 
 def posix_codes(arguments: dict, observed: dict) -> dict:
-    del arguments
-    ok = observed["commands"] == ["true", "false", "luna-command-absent"] and observed["codes"] == [0, 1, 127]
-    return {"ok": ok, "method": "commands actually dispatched"}
+    commands = arguments["commands"]
+    valid = isinstance(commands, list) and bool(commands) and all(isinstance(item, str) and item for item in commands)
+    if not valid:
+        return {"ok": observed.get("rejected") is True, "method": "independent command-list validation"}
+    expected = [{"true": 0, "false": 1}.get(command, 127) for command in commands]
+    return {
+        "ok": observed.get("accepted") is True and observed.get("commands") == commands
+        and observed.get("codes") == expected,
+        "method": "independent POSIX command exit-code fixtures",
+    }
 
 
 def library_sqrt(arguments: dict, observed: dict) -> dict:
@@ -174,28 +273,59 @@ def statistics_variance(arguments: dict, observed: dict) -> dict:
 
 
 def two_points(arguments: dict, observed: dict) -> dict:
-    xs, ys = observed["xs"], observed["ys"]
-    slope = (ys[-1] - ys[0]) / (xs[-1] - xs[0])
-    intercept = ys[0] - slope * xs[0]
-    same_input = xs == arguments["xs"]
-    refit = abs(observed["slope"] - slope) < 1e-9 and abs(observed["intercept"] - intercept) < 1e-9
-    return {"ok": same_input and refit, "method": "endpoint refit of the returned points"}
+    xs, slope, intercept = arguments["xs"], arguments["slope"], arguments["intercept"]
+    valid = (
+        isinstance(xs, list) and len(xs) >= 2
+        and all(isinstance(item, (int, float)) and not isinstance(item, bool) for item in xs)
+        and len(set(xs)) > 1
+    )
+    if not valid:
+        return {"ok": observed.get("rejected") is True, "method": "independent line-fit input validation"}
+    expected_ys = [slope * item + intercept for item in xs]
+    expected_slope = sum((x - sum(xs) / len(xs)) * (y - sum(expected_ys) / len(expected_ys)) for x, y in zip(xs, expected_ys, strict=True))
+    expected_slope /= sum((x - sum(xs) / len(xs)) ** 2 for x in xs)
+    expected_intercept = sum(expected_ys) / len(expected_ys) - expected_slope * (sum(xs) / len(xs))
+    return {
+        "ok": observed.get("accepted") is True and observed.get("xs") == xs and observed.get("ys") == expected_ys
+        and abs(observed.get("slope", 0) - expected_slope) < 1e-9
+        and abs(observed.get("intercept", 0) - expected_intercept) < 1e-9,
+        "method": "independent least-squares normal equations",
+    }
 
 
 def smaller_step(arguments: dict, observed: dict) -> dict:
+    coarse_step, fine_step = arguments["coarse_step"], arguments["fine_step"]
+    valid = all(
+        isinstance(step, (int, float)) and not isinstance(step, bool)
+        and math.isfinite(step) and 0 < step <= 1
+        and abs(round(1 / step) * step - 1) < 1e-9
+        for step in (coarse_step, fine_step)
+    ) and fine_step < coarse_step
+    if not valid:
+        return {"ok": observed.get("rejected") is True, "method": "independent step-domain validation"}
     reference = sum(1 / math.factorial(number) for number in range(20))
-    coarse = abs(((1 + arguments["coarse_step"]) ** round(1 / arguments["coarse_step"])) - reference)
-    fine = abs(((1 + arguments["fine_step"]) ** round(1 / arguments["fine_step"])) - reference)
-    same = abs(observed["coarse_error"] - coarse) < 1e-9 and abs(observed["fine_error"] - fine) < 1e-9
-    return {"ok": same and fine < coarse, "method": "(1+h)**(1/h) from the preregistered steps"}
+    coarse = abs(((1 + coarse_step) ** round(1 / coarse_step)) - reference)
+    fine = abs(((1 + fine_step) ** round(1 / fine_step)) - reference)
+    same = abs(observed.get("coarse_error", -1) - coarse) < 1e-9 and abs(observed.get("fine_error", -1) - fine) < 1e-9
+    return {"ok": observed.get("accepted") is True and same and fine < coarse, "method": "independent (1+h)**(1/h) reference"}
 
 
 def series_exp(arguments: dict, observed: dict) -> dict:
-    del arguments
+    step = arguments["step"]
+    valid = (
+        isinstance(step, (int, float)) and not isinstance(step, bool)
+        and math.isfinite(step) and 0 < step <= 1
+        and abs(round(1 / step) * step - 1) < 1e-9
+    )
+    if not valid:
+        return {"ok": observed.get("rejected") is True, "method": "independent RK4 step validation"}
     reference = sum(1 / math.factorial(number) for number in range(20))
-    rk4_error = abs(observed["rk4"] - reference)
-    euler_error = abs(observed["euler"] - reference)
-    return {"ok": rk4_error < euler_error, "method": "factorial series for e, not the integrator"}
+    rk4_error = abs(observed.get("rk4", float("inf")) - reference)
+    euler_error = abs(observed.get("euler", float("inf")) - reference)
+    return {
+        "ok": observed.get("accepted") is True and observed.get("step") == step and rk4_error < euler_error,
+        "method": "factorial series for e, not the integrator",
+    }
 
 
 def stable_order(arguments: dict, observed: dict) -> dict:
