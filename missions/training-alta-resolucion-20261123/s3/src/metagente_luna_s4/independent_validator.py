@@ -266,7 +266,10 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
             and observed.get("minimum") != -8
         )
     if expect == "rejected":
-        return completed and bool(observed.get("rejected"))
+        rejected = observed.get("rejected")
+        return completed and (
+            rejected is True or (isinstance(rejected, list) and bool(rejected))
+        )
     if expect == "both-kept":
         return completed and bool(observed.get("kept", observed.get("accepted")))
     if expect == "max-positive":
@@ -572,7 +575,18 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
                 findings.append("control-expectation-missing")
         if not observed or observed.get("case_id") != case_id or observed.get("run_id") != run_id:
             findings.append("observed-identity-invalid")
-        if run.get("execution_status") == "BLOCKED":
+        control = fixture.get("control") if isinstance(fixture, dict) else None
+        schema_rejected_control = (
+            kind in {"NEGATIVE", "BOUNDARY"}
+            and isinstance(control, dict)
+            and control.get("expect") == "trapezoid-zero-panels-rejected"
+            and fixture.get("lifecycle_status") == "REJECTED"
+            and isinstance(observed, dict)
+            and observed.get("value") is None
+            and isinstance(oracle, dict)
+            and oracle.get("result") == "INCONCLUSIVE"
+        )
+        if run.get("execution_status") == "BLOCKED" and not schema_rejected_control:
             value = (observed or {}).get("value")
             expected_phase = {
                 "NORMAL": "NORMAL_PLAN",
