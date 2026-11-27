@@ -73,6 +73,18 @@ def test_fifo_factorial_path_and_ipv6_independent_oracles():
     assert stated_prefix({"cidr": "2001:db8::1/128"}, {"rejected": False, "prefix": "2001:db8::1/128"})["ok"] is True
 
 
+def test_lexer_telemetry_and_numeric_controls_are_accepted():
+    assert accepts("empty-token-stream", {"tokens": []}, "EXECUTED") is True
+    assert accepts("increment-negative-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("increment-zero-boundary", {"rejected": False, "completed": 0, "failed": 0, "ids": []}, "EXECUTED") is True
+    assert accepts("request-negative-count-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("request-single-success-boundary", {"rejected": False, "availability": 1.0, "successes": 1, "failures": 0, "total": 1}, "EXECUTED") is True
+    assert accepts("sqrt-negative-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("sqrt-zero-boundary", {"rejected": False, "estimate": 0.0, "residual": 0.0}, "EXECUTED") is True
+    assert accepts("sum-negative-count-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("sum-zero-boundary", {"rejected": False, "naive": 1.0, "kahan": 1.0}, "EXECUTED") is True
+
+
 def test_lexer_metrics_and_numerical_oracles_cover_new_boundaries():
     from metagente_luna_s3.batch4_oracle import counted, request_counts
     from metagente_luna_s3.batch5_oracle import decimal_total, library_sqrt
