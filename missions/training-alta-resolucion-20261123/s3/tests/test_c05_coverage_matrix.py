@@ -19,14 +19,14 @@ def test_coverage_matrix_accounts_for_every_source_case_without_promoting_missin
     ]
     assert summary["counts"]["source_defined"] == 1000
     assert summary["counts"]["normal_spec_defined"] == 101
-    assert summary["counts"]["ready_for_execution"] == 17
-    assert summary["counts"]["blocked"] == 983
+    assert summary["counts"]["ready_for_execution"] == 19
+    assert summary["counts"]["blocked"] == 981
     assert summary["counts"]["interpreter_candidates"] == 7
     assert summary["counts"]["interpreter_ready"] == 2
     assert summary["counts"]["interpreter_blocked"] == 5
     assert summary["counts"]["interpreter_registered"] == 2
     assert summary["counts"]["no_normal_spec_and_no_interpreter_candidate"] == 894
-    assert summary["counts"]["normal_spec_incomplete"] == 84
+    assert summary["counts"]["normal_spec_incomplete"] == 82
     assert summary["certification"] == "NOT_PASSED"
 
 
@@ -39,6 +39,8 @@ def test_coverage_matrix_identifies_missing_plan_and_control_reasons():
     assert "NEGATIVE_CONTROL_MISSING" in by_id["MGL5-INF-0006"]["blockers"]
     assert by_id["MGL5-INF-0100"]["ready_for_execution"] is False
     assert "NORMAL_EXECUTION_SPEC_MISSING" in by_id["MGL5-INF-0100"]["blockers"]
+    assert by_id["MGL5-INF-0103"]["ready_for_execution"] is True
+    assert by_id["MGL5-INF-0104"]["ready_for_execution"] is True
     assert by_id["MGL5-INF-0105"]["ready_for_execution"] is True
     assert by_id["MGL5-INF-0109"]["ready_for_execution"] is True
     assert by_id["MGL5-INF-0106"]["interpreter_status"] == "BLOCKED"
