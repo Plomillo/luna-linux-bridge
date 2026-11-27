@@ -113,7 +113,7 @@ def subnormal_f32(value_kind: str) -> dict:
     value = struct.unpack(">f", bytes.fromhex(encodings[value_kind]))[0]
     bits = struct.pack(">f", value).hex()
     widened = struct.pack(">d", float(value)).hex()
-    exponent = int(bits[:3], 16) >> 1
+    exponent = (int(bits, 16) >> 23) & 0xFF
     mantissa_nonzero = int(bits, 16) & 0x7FFFFF != 0
     is_subnormal = exponent == 0 and mantissa_nonzero
     print(bits)
