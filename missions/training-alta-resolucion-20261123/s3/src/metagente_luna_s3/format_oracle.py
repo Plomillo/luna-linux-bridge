@@ -535,7 +535,7 @@ def pe_inspect_oracle(arguments: dict, observed: dict) -> dict:
 
 def dex_header_oracle(arguments: dict, observed: dict) -> dict:
     raw = bytes.fromhex(arguments["payload_hex"])
-    valid = (len(raw) >= 112 and raw[:4] == b"dex\\n" and raw[7] == 0)
+    valid = (len(raw) >= 112 and raw[:4] == bytes.fromhex("6465780a") and raw[7] == 0)
     if valid:
         version = raw[4:7].decode("ascii", "replace")
         file_size, header_size, endian = struct.unpack_from("<III", raw, 32)
@@ -561,7 +561,7 @@ def dex_header_oracle(arguments: dict, observed: dict) -> dict:
 
 def dex_tables_oracle(arguments: dict, observed: dict) -> dict:
     raw = bytes.fromhex(arguments["payload_hex"])
-    if len(raw) < 112 or raw[:4] != b"dex\\n":
+    if len(raw) < 112 or raw[:4] != bytes.fromhex("6465780a"):
         return {"ok": observed.get("rejected") is True, "method": "independent DEX table bounds and index reconstruction"}
     layout = ((56, 60, 4), (64, 68, 4), (72, 76, 12), (80, 84, 8), (88, 92, 8), (96, 100, 32))
     counts = []
