@@ -28,10 +28,12 @@ cases=[
  ("NEGATIVE",{"cidr":"192.0.2.130/33"},{"definition":"IPv4 prefix length above 32","expected_behavior":"reject input and do not produce a subnet result","source":"IPv4 prefix validity"}),
  ("BOUNDARY",{"cidr":"192.0.2.130/32"},{"definition":"IPv4 host-width prefix /32","expected_behavior":"network and broadcast equal the host address","source":"IPv4 CIDR boundary semantics"}),
 ]
+sandbox_image=os.environ.get("LUNA_C05_SANDBOX_IMAGE")
+if not sandbox_image: raise SystemExit("immutable Docker sandbox image ID is required; refusing local subprocess fallback")
 out=Path("reports/C05_SEED_0254_EVIDENCE"); out.mkdir(parents=True,exist_ok=True)
 results=[]
 for idx,(kind,args,control) in enumerate(cases,1):
- rec=execute_isolated("cidr_bounds",args,CASE,str(out),run_kind=kind,control_metadata=control,source_metadata=meta,source_excerpt=excerpt,timeout_seconds=30)
+ rec=execute_isolated("cidr_bounds",args,CASE,str(out),run_kind=kind,control_metadata=control,source_metadata=meta,source_excerpt=excerpt,timeout_seconds=30,sandbox_image=sandbox_image)
  results.append({"index":idx,"kind":kind,"arguments":args,"result":rec})
  print(json.dumps({"index":idx,"kind":kind,"arguments":args,"execution_status":rec.get("execution_status"),"result_status":rec.get("result_status"),"observed":rec.get("observed"),"oracle_result":rec.get("oracle_result"),"error":rec.get("stderr")},sort_keys=True))
 (out/"run-summary.json").write_text(json.dumps({"case_id":CASE,"source_metadata":meta,"runs":results,"evidence_status":"AUTHENTIC_HOSTED_EXECUTION_NON_CERTIFYING"},indent=2,sort_keys=True)+"\n")
