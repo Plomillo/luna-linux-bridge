@@ -77,6 +77,28 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if not isinstance(observed, dict):
         return False
     completed = lifecycle_status in {"EXECUTED", "FAIL"}
+
+    if expect == "range-count-rejected": return completed and observed.get("rejected") is True
+    if expect == "range-singleton": return completed and observed.get("rejected") is False and observed.get("count") == observed.get("nodes") == observed.get("found") == 1
+    if expect == "scan-size-rejected": return completed and observed.get("rejected") is True
+    if expect == "scan-first-element": return completed and observed.get("rejected") is False and observed.get("comparisons") == [1, 1, 1]
+    if expect == "query-injection-not-matched": return completed and observed.get("matched") == 0 and observed.get("status") == 200
+    if expect == "query-exact-match": return completed and observed.get("matched") == 1 and observed.get("status") == 200
+    if expect == "expression-rejected": return completed and observed.get("rejected") is True
+    if expect == "expression-zero": return completed and observed.get("rejected") is False and observed.get("value") == 0
+    if expect == "division-finite": return completed and observed.get("raised") is False and observed.get("value") == 1
+    if expect == "division-zero-numerator": return completed and observed.get("raised") is False and observed.get("value") == 0
+    if expect == "mode-owner-only": return completed and observed.get("mode") == 0o600
+    if expect == "mode-world-readable": return completed and observed.get("mode") == 0o644
+    if expect == "umask-private": return completed and observed.get("mode") == 0o600
+    if expect == "umask-zero": return completed and observed.get("mode") == 0o600
+    if expect == "child-env-negative-value": return completed and observed.get("value") == "isolated-negative" and observed.get("code") == 0
+    if expect == "child-env-empty-value": return completed and observed.get("value") == "" and observed.get("code") == 0
+    if expect == "age-negative-rejected": return completed and observed.get("rejected") is True and observed.get("rows") == 0
+    if expect == "age-zero-accepted": return completed and observed.get("rejected") is False and observed.get("rows") == 1
+    if expect == "command-list-rejected": return completed and observed.get("rejected") is True
+    if expect == "single-zero-exit": return completed and observed.get("rejected") is not True and observed.get("commands") == ["true"] and observed.get("codes") == [0]
+
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
     if expect == "yaml12-ambiguous-strings":
