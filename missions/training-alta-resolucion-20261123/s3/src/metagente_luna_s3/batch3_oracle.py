@@ -31,7 +31,6 @@ def stated_value(arguments: dict, observed: dict) -> dict:
 
 
 def exit_seven(arguments: dict, observed: dict) -> dict:
-    del arguments
     return {"ok": observed.get("exit_code") == arguments["exit_code"] and isinstance(observed.get("pid"), int) and observed["pid"] > 0, "method": "independent child exit-status comparison"}
 
 
