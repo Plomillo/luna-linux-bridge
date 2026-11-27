@@ -75,3 +75,9 @@ def test_independent_adjudicator_preserves_special_failure_and_schema_rejection_
         "trapezoid-zero-panels-rejected", {"rejected": True}, "EXECUTED"
     ) is False
     assert _independent_control_accepts("unknown-control", {}, "EXECUTED") is False
+    assert _independent_control_accepts(
+        "rejected", {"rejected": [-1]}, "FAIL"
+    ) is True
+    assert _independent_control_accepts(
+        "rejected", {"rejected": []}, "FAIL"
+    ) is False
