@@ -34,7 +34,7 @@ def test_controls_that_were_defined_are_accepted():
     defined = [row for row in rows if row["controls"]]
     assert defined
     assert all(row["control_status"] == "PRESENT" for row in defined)
-    assert len(defined) == 96
+    assert len(defined) == 99
 
 def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries():
     assert accepts("distinct-bom-payloads", {"visible": "marked", "plain_text": "plain", "contains_bom_character": False}, "EXECUTED") is True
@@ -86,6 +86,15 @@ def test_scientific_and_evaluation_independent_oracles():
     assert sign_change({"low": 2.0, "high": 3.0}, {"rejected": True})["ok"] is True
     assert statistics_variance({"values": []}, {"rejected": True})["ok"] is True
     assert statistics_variance({"values": [5]}, {"rejected": False, "population": 0.0, "sample": None})["ok"] is True
+
+
+def test_newton_and_quadrature_controls_are_adjudicated():
+    assert accepts("newton-negative-target-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("newton-unit-root-boundary", {"rejected": False, "root": 1.0, "residual": 0.0}, "EXECUTED") is True
+    assert accepts("trapezoid-zero-panels-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("trapezoid-single-panel-boundary", {"rejected": False, "value": 0.5, "panels": 1}, "EXECUTED") is True
+    assert accepts("simpson-odd-panels-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("simpson-minimum-even-boundary", {"rejected": False, "value": 1 / 3, "panels": 2}, "EXECUTED") is True
 
 
 def test_scientific_and_evaluation_controls_are_adjudicated():

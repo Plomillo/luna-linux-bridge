@@ -44,22 +44,27 @@ def lag_identity(arguments: dict, observed: dict) -> dict:
 
 
 def half(arguments: dict, observed: dict) -> dict:
-    del arguments
+    panels = arguments["panels"]
+    if panels < 1:
+        return {"ok": observed.get("rejected") is True, "method": "positive panel count required"}
     weights, points = observed["weights"], observed["points"]
-    step = 1 / observed["panels"]
+    step = 1 / panels
+    expected_weights = [1, *([2] * (panels - 1)), 1]
     recomputed = sum(weight * point for weight, point in zip(weights, points, strict=True)) * step / 2
-    trapezoid = observed["method"] == "trapezoidal" and weights == [1, 2, 2, 2, 1]
-    return {"ok": trapezoid and observed["value"] == recomputed == 0.5, "method": "recomputed trapezoid, not the label"}
+    ok = observed.get("rejected") is False and observed["panels"] == panels and weights == expected_weights and observed["value"] == recomputed == 0.5
+    return {"ok": ok, "method": "recomputed trapezoid, not the label"}
 
 
 def one_third(arguments: dict, observed: dict) -> dict:
-    del arguments
+    panels = arguments["panels"]
+    if panels < 2 or panels % 2:
+        return {"ok": observed.get("rejected") is True, "method": "Simpson requires an even panel count"}
     weights, points = observed["weights"], observed["points"]
-    step = 1 / observed["panels"]
+    step = 1 / panels
+    expected_weights = [1 if index in {0, panels} else 4 if index % 2 else 2 for index in range(panels + 1)]
     recomputed = sum(weight * point for weight, point in zip(weights, points, strict=True)) * step / 3
-    simpson = observed["method"] == "simpson" and observed["panels"] % 2 == 0 and weights == [1, 4, 2, 4, 1]
     close = abs(observed["value"] - recomputed) < 1e-12 and abs(recomputed - (1 / 3)) < 1e-12
-    return {"ok": simpson and close, "method": "recomputed Simpson weights"}
+    return {"ok": observed.get("rejected") is False and observed["panels"] == panels and observed["method"] == "simpson" and weights == expected_weights and close, "method": "recomputed Simpson weights"}
 
 
 def axis_cosines(arguments: dict, observed: dict) -> dict:

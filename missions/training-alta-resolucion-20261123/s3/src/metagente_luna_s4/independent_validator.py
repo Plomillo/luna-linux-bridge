@@ -89,6 +89,18 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
         return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
     if expect == "sum-zero-boundary":
         return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("naive") == 1.0 and observed.get("kahan") == 1.0
+    if expect == "newton-negative-target-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "newton-unit-root-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("root") == 1.0 and observed.get("residual") == 0.0
+    if expect == "trapezoid-zero-panels-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "trapezoid-single-panel-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("value") == 0.5 and observed.get("panels") == 1
+    if expect == "simpson-odd-panels-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "simpson-minimum-even-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and abs(observed.get("value", 0) - (1 / 3)) < 1e-12 and observed.get("panels") == 2
     if expect == "cube-no-sign-change-rejected":
         return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
     if expect == "cube-tight-boundary":

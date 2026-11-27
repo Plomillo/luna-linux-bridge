@@ -147,8 +147,10 @@ def decimal_total(arguments: dict, observed: dict) -> dict:
 
 
 def library_root(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": abs(observed["root"] - math.sqrt(2)) < 1e-9 and abs(observed["residual"]) < 1e-9, "method": "math.sqrt residual"}
+    if arguments["initial"] <= 0 or arguments["target"] < 0:
+        return {"ok": observed.get("rejected") is True, "method": "independent Newton domain validation"}
+    expected = math.sqrt(arguments["target"])
+    return {"ok": observed.get("rejected") is False and abs(observed["root"] - expected) < 1e-9 and abs(observed["residual"]) < 1e-9, "method": "math.sqrt residual"}
 
 
 def sign_change(arguments: dict, observed: dict) -> dict:

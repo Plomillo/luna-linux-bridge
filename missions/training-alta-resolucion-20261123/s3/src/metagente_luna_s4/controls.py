@@ -146,6 +146,12 @@ def _build() -> None:
     _add("MGL5-INF-0254", "boundary", "cidr_bounds", {"cidr": "192.0.2.130/32"}, "host-prefix-boundary")
     _add("MGL5-INF-0255", "negative", "ipv6_prefix", {"cidr": "2001:db8::1/129"}, "ipv6-prefix-rejected")
     _add("MGL5-INF-0255", "boundary", "ipv6_prefix", {"cidr": "2001:db8::1/128"}, "ipv6-host-prefix")
+    _add("MGL5-INF-0616", "negative", "newton_root", {"initial": 1.0, "target": -1.0}, "newton-negative-target-rejected")
+    _add("MGL5-INF-0616", "boundary", "newton_root", {"initial": 1.0, "target": 1.0}, "newton-unit-root-boundary")
+    _add("MGL5-INF-0620", "negative", "linear_integral", {"panels": 0}, "trapezoid-zero-panels-rejected")
+    _add("MGL5-INF-0620", "boundary", "linear_integral", {"panels": 1}, "trapezoid-single-panel-boundary")
+    _add("MGL5-INF-0621", "negative", "square_integral", {"panels": 3}, "simpson-odd-panels-rejected")
+    _add("MGL5-INF-0621", "boundary", "square_integral", {"panels": 2}, "simpson-minimum-even-boundary")
     _add("MGL5-INF-0618", "negative", "bracket_cube", {"low": 2.0, "high": 3.0}, "cube-no-sign-change-rejected")
     _add("MGL5-INF-0618", "boundary", "bracket_cube", {"low": 1.0, "high": 1.5}, "cube-tight-boundary")
     _add("MGL5-INF-0623", "negative", "two_variances", {"values": []}, "variance-empty-rejected")
@@ -245,6 +251,18 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and observed.get("rejected") is True
     if expect == "sum-zero-boundary":
         return status == "EXECUTED" and observed.get("rejected") is False and observed.get("naive") == 1.0 and observed.get("kahan") == 1.0
+    if expect == "newton-negative-target-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "newton-unit-root-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("root") == 1.0 and observed.get("residual") == 0.0
+    if expect == "trapezoid-zero-panels-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "trapezoid-single-panel-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("value") == 0.5 and observed.get("panels") == 1
+    if expect == "simpson-odd-panels-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "simpson-minimum-even-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and abs(observed.get("value", 0) - (1 / 3)) < 1e-12 and observed.get("panels") == 2
     if expect == "cube-no-sign-change-rejected":
         return status == "EXECUTED" and observed.get("rejected") is True
     if expect == "cube-tight-boundary":

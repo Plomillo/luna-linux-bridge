@@ -53,26 +53,28 @@ def acf_series(values: list[int]) -> dict:
     return {"lags": lags, "error": None}
 
 
-def linear_integral() -> dict:
-    panels = 4
+def linear_integral(panels: int) -> dict:
+    if panels < 1:
+        return {"rejected": True, "reason": "trapezoid requires at least one panel"}
     step = 1 / panels
     weights = [1, *([2] * (panels - 1)), 1]
     points = [index * step for index in range(panels + 1)]
     total = sum(weight * point for weight, point in zip(weights, points, strict=True))
     value = total * step / 2
     print(value)
-    return {"value": value, "method": "trapezoidal", "panels": panels, "weights": weights, "points": points}
+    return {"rejected": False, "value": value, "method": "trapezoidal", "panels": panels, "weights": weights, "points": points}
 
 
-def square_integral() -> dict:
-    panels = 4
+def square_integral(panels: int) -> dict:
+    if panels < 2 or panels % 2:
+        return {"rejected": True, "reason": "Simpson integration requires a positive even panel count"}
     step = 1 / panels
     weights = [1 if index in {0, panels} else 4 if index % 2 else 2 for index in range(panels + 1)]
     points = [(index * step) ** 2 for index in range(panels + 1)]
     total = sum(weight * point for weight, point in zip(weights, points, strict=True))
     value = total * step / 3
     print(value)
-    return {"value": value, "method": "simpson", "panels": panels, "weights": weights, "points": points}
+    return {"rejected": False, "value": value, "method": "simpson", "panels": panels, "weights": weights, "points": points}
 
 
 def cosine_set(pairs: list[list[list[int]]]) -> dict:

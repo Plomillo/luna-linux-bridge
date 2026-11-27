@@ -384,12 +384,16 @@ def compensated_sum(start: float, increment: float, count: int) -> dict:
     return {"rejected": False, "naive": naive, "kahan": total}
 
 
-def newton_root() -> dict:
-    value = 1.0
-    for _ in range(8):
-        value = value - (value * value - 2) / (2 * value)
+def newton_root(initial: float, target: float) -> dict:
+    if initial <= 0 or target < 0:
+        return {"rejected": True, "reason": "Newton square-root fixture requires positive initial value and non-negative target"}
+    if target == 0:
+        return {"rejected": False, "root": 0.0, "residual": 0.0}
+    value = initial
+    for _ in range(12):
+        value = value - (value * value - target) / (2 * value)
     print(value)
-    return {"root": value, "residual": value * value - 2}
+    return {"rejected": False, "root": value, "residual": value * value - target}
 
 
 def bracket_cube(low: float, high: float) -> dict:
@@ -545,7 +549,7 @@ SPECS = [
     ("exit_codes", "posix_codes", _NONE),
     ("sqrt_two", "library_sqrt", {"type": "object", "required": ["value"], "properties": {"value": {"type": "number"}}, "additionalProperties": False}),
     ("compensated_sum", "decimal_total", {"type": "object", "required": ["start", "increment", "count"], "properties": {"start": {"type": "number"}, "increment": {"type": "number"}, "count": {"type": "integer"}}, "additionalProperties": False}),
-    ("newton_root", "library_root", _NONE),
+    ("newton_root", "library_root", {"type": "object", "required": ["initial", "target"], "properties": {"initial": {"type": "number"}, "target": {"type": "number"}}, "additionalProperties": False}),
     ("bracket_cube", "sign_change", {"type": "object", "required": ["low", "high"], "properties": {"low": {"type": "number"}, "high": {"type": "number"}}, "additionalProperties": False}),
     ("two_variances", "statistics_variance", _VALUES),
     ("exact_line", "two_points", {"type": "object", "required": ["xs", "slope", "intercept"], "properties": {"xs": {"type": "array"}, "slope": {"type": "number"}, "intercept": {"type": "number"}}, "additionalProperties": False}),

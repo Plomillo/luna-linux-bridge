@@ -28,7 +28,7 @@ CASES = [
     {"case_id": "MGL5-INF-0503", "capability_id": "exit_codes", "arguments": {}},
     {"case_id": "MGL5-INF-0602", "capability_id": "sqrt_two", "arguments": {"value": 2.0}},
     {"case_id": "MGL5-INF-0607", "capability_id": "compensated_sum", "arguments": {"start": 1.0, "increment": 1e-8, "count": 100000}},
-    {"case_id": "MGL5-INF-0616", "capability_id": "newton_root", "arguments": {}},
+    {"case_id": "MGL5-INF-0616", "capability_id": "newton_root", "arguments": {"initial": 1.0, "target": 2.0}},
     {"case_id": "MGL5-INF-0618", "capability_id": "bracket_cube", "arguments": {"low": PARAMS["cube-interval"]["low"], "high": PARAMS["cube-interval"]["high"]}},
     {"case_id": "MGL5-INF-0623", "capability_id": "two_variances", "arguments": {"values": [2, 4, 4, 4, 5, 5, 7, 9]}},
     {"case_id": "MGL5-INF-0629", "capability_id": "exact_line", "arguments": {"xs": PARAMS["line-points"]["xs"], "slope": PARAMS["line-points"]["slope"], "intercept": PARAMS["line-points"]["intercept"]}},
