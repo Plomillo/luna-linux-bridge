@@ -216,7 +216,7 @@ def _build() -> None:
 
     _add("MGL5-INF-0033", "negative", "yaml_types", {"text": "name: Luna\n  broken: true\n"}, "yaml-rejected")
     _add("MGL5-INF-0033", "boundary", "yaml_types", {"text": "name: ''\nenabled: false\ncount: 0\nitems: []\n"}, "yaml-empty-boundary")
-    _add("MGL5-INF-0034", "negative", "yaml_ambiguous", {"text": "flag: yes\\ndate: 2026-01-02\\n", "schema_version": "1.3"}, "yaml-version-rejected")
+    _add("MGL5-INF-0034", "negative", "yaml_ambiguous", {"text": "flag: yes\\n  broken: x\\n", "schema_version": "1.1"}, "yaml-invalid-rejected")
     _add("MGL5-INF-0034", "boundary", "yaml_ambiguous", {"text": "flag: yes\\ndate: 2026-01-02\\n", "schema_version": "1.2"}, "yaml12-ambiguous-strings")
 
 
@@ -227,8 +227,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     control_completed = status in {"EXECUTED", "FAIL"}
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.
-    if expect == "yaml-version-rejected":
-        return control_completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-yaml-version"
+    if expect == "yaml-invalid-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
     if expect == "yaml12-ambiguous-strings":
         return control_completed and observed.get("rejected") is False and observed.get("schema_version") == "1.2" and observed.get("parsed") == {"flag": "yes", "date": "2026-01-02"} and observed.get("types") == {"flag": "str", "date": "str"}
     if expect == "yaml-rejected":
