@@ -12,6 +12,8 @@ from metagente_luna_s4.batch2 import CASES as BATCH2
 from metagente_luna_s4.batch3 import CASES as BATCH3
 from metagente_luna_s4.batch4 import CASES as BATCH4
 from metagente_luna_s4.batch5 import CASES as BATCH5
+from metagente_luna_s4.batch6 import CASES as BATCH6, OPERATIONS as BATCH6_OPERATIONS
+from metagente_luna_s3.interpret import interpret
 from metagente_luna_s4.controls import CONTROLS, _build as build_controls
 from metagente_luna_s4.d01_batch import CASES as D01
 
@@ -19,7 +21,7 @@ from metagente_luna_s4.d01_batch import CASES as D01
 ROOT = Path(__file__).resolve().parents[4]
 SOURCE_PATH = ROOT / "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt"
 CONTROL_PATH = Path(__file__).resolve().parents[1] / "src" / "metagente_luna_s4" / "controls.py"
-CASE_SPECS = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5
+CASE_SPECS = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5 + BATCH6
 
 def _source_record(case_id: str, source: bytes, text: str, lines: list[bytes]) -> tuple[dict, str]:
     match = re.search(rf"(?m)^\[{re.escape(case_id)}\].*?(?=^\[MGL5-INF-|\Z)", text, re.S)
@@ -123,11 +125,28 @@ def compile_plans() -> tuple[list[dict], dict]:
     ids = [item["CASE_ID"] for item in plans]
     if len(ids) != len(set(ids)):
         raise ValueError("compiled plan IDs are not unique")
+    interpreter_candidates = []
+    for case_id, instruction in BATCH6_OPERATIONS:
+        interpretation = interpret(instruction)
+        interpreter_candidates.append({
+            "case_id": case_id,
+            "status": interpretation.status,
+            "intent": interpretation.intent,
+            "registered": interpretation.intent in REGISTRY,
+            "missing": interpretation.missing,
+        })
+    interpreter_ids = {item["case_id"] for item in interpreter_candidates}
     report = {
         "status": "SOURCE_BOUND_PARTIAL_PLAN_SET_NOT_CERTIFICATION",
         "source_sha256": hashlib.sha256(source).hexdigest(),
         "source_git_blob": hashlib.sha1(f"blob {len(source)}\0".encode("ascii") + source).hexdigest(),
         "authored_normal_specs": len(normal_by_id),
+        "interpreter_candidates": len(interpreter_candidates),
+        "interpreter_ready": sum(item["status"] == "READY" for item in interpreter_candidates),
+        "interpreter_blocked": sum(item["status"] != "READY" for item in interpreter_candidates),
+        "interpreter_registered": sum(item["registered"] for item in interpreter_candidates),
+        "unique_source_plan_candidates": len(set(normal_by_id) | interpreter_ids),
+        "interpreter_candidate_status": interpreter_candidates,
         "compiled_executable_plans": len(plans),
         "skipped_specs": len(skipped),
         "compiled_case_ids": ids,
