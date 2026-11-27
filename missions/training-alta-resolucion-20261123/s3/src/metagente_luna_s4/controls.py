@@ -214,8 +214,8 @@ def _build() -> None:
     _add("MGL5-INF-0639", "negative", "rk4_decay", {"step": 2.0}, "rk4-step-out-of-range-rejected")
     _add("MGL5-INF-0639", "boundary", "rk4_decay", {"step": 1.0}, "rk4-single-step-boundary")
 
-    _add("MGL5-INF-0033", "negative", "yaml_types", {"text": "name: Luna\\n  broken: true\\n"}, "yaml-rejected")
-    _add("MGL5-INF-0033", "boundary", "yaml_types", {"text": "name: ''\\nenabled: false\\ncount: 0\\nitems: []\\n"}, "yaml-empty-boundary")
+    _add("MGL5-INF-0033", "negative", "yaml_types", {"text": "name: Luna\n  broken: true\n"}, "yaml-rejected")
+    _add("MGL5-INF-0033", "boundary", "yaml_types", {"text": "name: ''\nenabled: false\ncount: 0\nitems: []\n"}, "yaml-empty-boundary")
 
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
