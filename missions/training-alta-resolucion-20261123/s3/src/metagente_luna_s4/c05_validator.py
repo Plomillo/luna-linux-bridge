@@ -214,6 +214,23 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
     return errors
 
 
+
+def _evidence_manifest_digest(row: dict) -> str:
+    entries = []
+    for run in (row.get("repetitions") or []) + (row.get("controls") or []):
+        if not isinstance(run, dict):
+            continue
+        for name, artifact in (run.get("artifacts") or {}).items():
+            if isinstance(artifact, dict):
+                entries.append({
+                    "kind": run.get("kind"), "run_id": run.get("run_id"),
+                    "name": name, "path": artifact.get("path"), "sha256": artifact.get("sha256"),
+                })
+    encoded = json.dumps(sorted(entries, key=lambda item: (str(item["run_id"]), item["name"])),
+                         sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
     errors = contradictions(row)
     if evidence_root is None:
@@ -282,10 +299,25 @@ def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
         errors.append("case-outcome-does-not-match-normal-repetitions")
     if row.get("contract_status") == "PASS" and row.get("execution_status") != "PASS":
         errors.append("contract-pass-with-nonpass-execution")
-    if row.get("contract_status") == "PASS":
-        independent = row.get("independent_validation")
-        if not isinstance(independent, dict) or independent.get("passed") is not True:
-            errors.append("contract-pass-without-independent-validation")
+    independent = row.get("independent_validation")
+    expected_artifacts = sum(
+        len(run.get("artifacts", {}))
+        for run in all_runs if isinstance(run, dict) and isinstance(run.get("artifacts"), dict)
+    )
+    if (not isinstance(independent, dict)
+            or independent.get("validator_id") != "LUNA_C05_INDEPENDENT_VALIDATOR"
+            or not independent.get("validator_version")
+            or independent.get("status") != "PASS"
+            or independent.get("case_id") != case_id
+            or independent.get("method") != "INDEPENDENT_RECOMPUTATION"
+            or independent.get("checked_run_count") != 5
+            or independent.get("checked_artifact_count") != expected_artifacts
+            or independent.get("evidence_digest") != _evidence_manifest_digest(row)):
+        errors.append("independent-case-validation-missing-or-invalid")
+    if row.get("contract_status") == "PASS" and (
+        not isinstance(independent, dict) or independent.get("status") != "PASS"
+    ):
+        errors.append("contract-pass-without-independent-validation")
     return errors
 
 
