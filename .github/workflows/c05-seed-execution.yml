@@ -80,6 +80,44 @@ jobs:
             reports/C05_POPULATION_LEDGER.jsonl \
             reports/C05_POPULATION_REPORT.json \
             "$LUNA_C05_SANDBOX_IMAGE"
+      - name: Detect Docker population failure before downstream gates
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const runId = context.runId;
+            const run = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
+            const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
+              owner, repo, run_id: runId, per_page: 100
+            });
+            const failedJobs = jobsResponse.data.jobs.filter(job => job.conclusion === "failure");
+            const first = failedJobs.map(job => ({
+              job,
+              step: (job.steps || []).find(step => step.conclusion === "failure")
+            })).find(item => item.step) || { job: failedJobs[0], step: null };
+            const marker = "<!-- C05_FIRST_FAILURE_WATCH -->";
+            const body = [
+              marker,
+              "## C05 — Docker failure detected at first failed execution gate",
+              "",
+              "- Workflow: **" + run.data.name + "** (#" + run.data.run_number + ")",
+              "- Commit: `" + run.data.head_sha + "`",
+              "- Failed job: **" + (first.job?.name || "unknown") + "**",
+              "- First failed step: **" + (first.step?.name || "not exposed") + "**",
+              "- Run/logs: " + run.data.html_url,
+              "",
+              "Docker population failure detected before downstream validation and artifact upload. Diagnose the failed step, reproduce the cause, apply a targeted repair, add a regression test, and rerun the full C05 chain. No blind retry or PASS promotion."
+            ].join("\n");
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: 196, per_page: 100
+            });
+            const prior = comments.find(comment => comment.body?.includes(marker));
+            if (prior) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: prior.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: 196, body });
+            }
       - name: Verify evidence population while keeping functional C05 gate closed
         run: |
           python - <<'PY'
