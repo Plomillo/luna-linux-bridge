@@ -5,6 +5,7 @@ import pytest
 from metagente_luna_s3.evidence import verify_run, write_run
 from metagente_luna_s3.planner import plan_for
 from metagente_luna_s4.guard import authorize, require_case_id
+from metagente_luna_s4.isolation import isolation_evidence_valid
 from metagente_luna_s4.pipeline import run_local_case
 from metagente_luna_s4.provider import UnavailableProvider
 from metagente_luna_s4.runner import execute
@@ -104,3 +105,92 @@ def test_vertical_local_path_persists_the_result_it_actually_produced(tmp_path: 
     assert record["evidence_status"] == "EVIDENCE_VALIDATED"
     assert record["contract_status"] == "NOT_A_PASS"
     assert record["program_oracle"] == "NOT_MATCHED_TO_THE_PROGRAM_TEXT"
+
+
+
+def test_isolation_validator_accepts_the_exact_restricted_docker_profile():
+    evidence = {
+        "mode": "DOCKER_RESTRICTED_CONTAINER",
+        "process_isolated": True,
+        "containerized": True,
+        "network_disabled": True,
+        "root_filesystem_read_only": True,
+        "capabilities_dropped": True,
+        "non_root_uid": 65534,
+        "resource_limits": {"pids": 64, "memory": "256m", "cpus": 1},
+        "image_id": "sha256:" + "a" * 64,
+        "workspace_ephemeral": True,
+        "cwd_isolated": True,
+        "home_isolated": True,
+        "tmp_isolated": True,
+        "sandbox": False,
+        "container_restrictions_verified": True,
+        "kernel_isolation": "SHARED_HOST_KERNEL_NOT_VM",
+    }
+    assert isolation_evidence_valid(evidence) is True
+
+
+def test_isolation_validator_rejects_docker_without_network_isolation():
+    evidence = {
+        "mode": "DOCKER_RESTRICTED_CONTAINER",
+        "process_isolated": True,
+        "containerized": True,
+        "network_disabled": False,
+        "root_filesystem_read_only": True,
+        "capabilities_dropped": True,
+        "non_root_uid": 65534,
+        "resource_limits": {"pids": 64, "memory": "256m", "cpus": 1},
+        "image_id": "sha256:" + "a" * 64,
+        "workspace_ephemeral": True,
+        "cwd_isolated": True,
+        "home_isolated": True,
+        "tmp_isolated": True,
+        "sandbox": False,
+        "container_restrictions_verified": True,
+        "kernel_isolation": "SHARED_HOST_KERNEL_NOT_VM",
+    }
+    assert isolation_evidence_valid(evidence) is False
+
+
+def test_isolation_validator_rejects_mutable_docker_image_reference():
+    evidence = {
+        "mode": "DOCKER_RESTRICTED_CONTAINER",
+        "process_isolated": True,
+        "containerized": True,
+        "network_disabled": True,
+        "root_filesystem_read_only": True,
+        "capabilities_dropped": True,
+        "non_root_uid": 65534,
+        "resource_limits": {"pids": 64, "memory": "256m", "cpus": 1},
+        "image_id": "python:3.12-slim",
+        "workspace_ephemeral": True,
+        "cwd_isolated": True,
+        "home_isolated": True,
+        "tmp_isolated": True,
+        "sandbox": False,
+        "container_restrictions_verified": True,
+        "kernel_isolation": "SHARED_HOST_KERNEL_NOT_VM",
+    }
+    assert isolation_evidence_valid(evidence) is False
+
+
+def test_isolation_validator_preserves_local_process_profile():
+    evidence = {
+        "mode": "FRESH_PROCESS_TEMPORARY_WORKSPACE",
+        "process_isolated": True,
+        "containerized": False,
+        "network_disabled": False,
+        "root_filesystem_read_only": False,
+        "capabilities_dropped": False,
+        "non_root_uid": None,
+        "resource_limits": None,
+        "image_id": None,
+        "workspace_ephemeral": True,
+        "cwd_isolated": True,
+        "home_isolated": True,
+        "tmp_isolated": True,
+        "sandbox": False,
+        "container_restrictions_verified": False,
+        "kernel_isolation": "SHARED_HOST_KERNEL_NOT_VM",
+    }
+    assert isolation_evidence_valid(evidence) is True
