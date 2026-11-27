@@ -168,3 +168,21 @@ def nist_abc(arguments: dict, observed: dict) -> dict:
     expected = vectors.get(arguments["text"])
     ok = expected is not None and observed["digest_hex"] == expected
     return {"ok": ok, "method": "published SHA-256 vectors, not hashlib"}
+
+ 
+def yaml_types_oracle(arguments: dict, observed: dict) -> dict:
+    """Independent fixed-fixture adjudication; does not call a YAML parser."""
+    text = arguments["text"]
+    if text == "name: Luna\nenabled: true\ncount: 3\nitems:\n  - uno\n  - dos\n":
+        expected = {"name": "Luna", "enabled": True, "count": 3, "items": ["uno", "dos"]}
+        types = {"name": "str", "enabled": "bool", "count": "int", "items": "list"}
+        ok = observed.get("rejected") is False and observed.get("parsed") == expected and observed.get("types") == types
+    elif text == "name: ''\nenabled: false\ncount: 0\nitems: []\n":
+        expected = {"name": "", "enabled": False, "count": 0, "items": []}
+        types = {"name": "str", "enabled": "bool", "count": "int", "items": "list"}
+        ok = observed.get("rejected") is False and observed.get("parsed") == expected and observed.get("types") == types
+    elif text == "name: Luna\n  broken: true\n":
+        ok = observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
+    else:
+        ok = False
+    return {"ok": ok, "method": "fixed independent semantic fixture table"}
