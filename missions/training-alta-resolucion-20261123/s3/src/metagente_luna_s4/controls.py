@@ -106,6 +106,24 @@ def _build() -> None:
     _add("MGL5-INF-0044", "negative", "zlib_roundtrip", {"payload_hex": ""}, "empty-payload-roundtrip")
     _add("MGL5-INF-0045", "negative", "zlib_corrupt", {"payload_hex": ""}, "empty-stream-corrupt")
     _add("MGL5-INF-0051", "boundary", "magic_bytes", {"name": "sample.dat", "payload_hex": "00000000"}, "unknown-signature")
+    _add("MGL5-INF-0006", "negative", "bom_policy", {"without_bom": "plain", "with_bom_visible": "marked"}, "distinct-bom-payloads")
+    _add("MGL5-INF-0019", "boundary", "text_units", {"text": "e\u0301"}, "combining-grapheme")
+    _add("MGL5-INF-0020", "boundary", "text_units", {"text": "\U0001f468\u200d\U0001f680"}, "zwj-one-grapheme")
+    _add("MGL5-INF-0021", "boundary", "crlf_roundtrip", {"text": "x\r\n"}, "single-crlf")
+    _add("MGL5-INF-0022", "negative", "crlf_to_lf", {"text": "a\rb"}, "lone-cr-normalized")
+    _add("MGL5-INF-0023", "boundary", "csv_roundtrip", {"rows": [["", "x"], ["y", "z"]]}, "empty-cell-preserved")
+    _add("MGL5-INF-0025", "boundary", "json_roundtrip", {"document": {"items": [1, None, False], "child": {"ok": True}}}, "nested-types-preserved")
+    _add("MGL5-INF-0026", "boundary", "json_text", {"text": "ñ"}, "single-nonascii")
+    _add("MGL5-INF-0027", "boundary", "duplicate_keys", {"text": "{\"x\":0,\"x\":0}"}, "duplicate-equal-values")
+    _add("MGL5-INF-0028", "negative", "json_reject", {"texts": ["{\"a\":1}"]}, "valid-json-accepted")
+    _add("MGL5-INF-0029", "boundary", "canonical_json", {"left": {}, "right": {}}, "empty-object-canonical")
+    _add("MGL5-INF-0036", "negative", "framed_record", {"payload_hex": "ff"}, "single-byte-frame")
+    _add("MGL5-INF-0041", "negative", "float32_exactness", {"values": [16777216]}, "exact-power-boundary")
+    _add("MGL5-INF-0042", "boundary", "decimal_text", {"text": "0.00"}, "zero-decimal-preserved")
+    _add("MGL5-INF-0046", "boundary", "base64_bytes", {"payload_hex": "010203"}, "other-three-bytes")
+    _add("MGL5-INF-0047", "boundary", "base64_reject", {"text": "A==="}, "invalid-padding-rejected")
+    _add("MGL5-INF-0048", "boundary", "sha256_text", {"text": ""}, "empty-sha256")
+    _add("MGL5-INF-0050", "boundary", "manifest_hash", {"document": {}, "altered": {"name": "luna"}}, "empty-manifest-change")
     _add("MGL5-INF-0109", "negative", "stack_sequence", {"steps": ["pop"]}, "single-underflow")
     _add("MGL5-INF-0109", "boundary", "stack_sequence", {"steps": []}, "empty-stack-sequence")
 
@@ -160,6 +178,42 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and (observed.get("sum") == 11 or observed.get("minimum") == 4)
     if expect == "not-fifteen":
         return status == "EXECUTED" and observed["sum"] != 15
+    if expect == "distinct-bom-payloads":
+        return status == "EXECUTED" and observed.get("visible") == "marked" and observed.get("plain_text") == "plain" and observed.get("contains_bom_character") is False
+    if expect == "combining-grapheme":
+        return status == "EXECUTED" and observed.get("bytes") == 3 and observed.get("codepoints") == 2 and observed.get("graphemes") == 1
+    if expect == "zwj-one-grapheme":
+        return status == "EXECUTED" and observed.get("preserved") == "👨‍🚀" and observed.get("codepoints") == 3 and observed.get("graphemes") == 1
+    if expect == "single-crlf":
+        return status == "EXECUTED" and observed.get("lines") == ["x"] and observed.get("written") == "x\r\n" and observed.get("doubled_cr") is False
+    if expect == "lone-cr-normalized":
+        return status == "EXECUTED" and observed.get("converted") == "a\nb" and observed.get("cr_remaining") is False
+    if expect == "empty-cell-preserved":
+        return status == "EXECUTED" and observed.get("parsed") == [["", "x"], ["y", "z"]]
+    if expect == "nested-types-preserved":
+        return status == "EXECUTED" and observed.get("parsed") == {"items": [1, None, False], "child": {"ok": True}}
+    if expect == "single-nonascii":
+        return status == "EXECUTED" and observed.get("parsed") == "ñ" and "\\u00" not in observed.get("raw", "")
+    if expect == "duplicate-equal-values":
+        return status == "EXECUTED" and observed.get("duplicate_detected") is True and observed.get("deterministic") is True
+    if expect == "valid-json-accepted":
+        return status == "EXECUTED" and observed.get("rejected_count") == 0 and observed.get("rejected") == []
+    if expect == "empty-object-canonical":
+        return status == "EXECUTED" and observed.get("same") is True and observed.get("canonical") == "{}"
+    if expect == "single-byte-frame":
+        return status == "EXECUTED" and observed.get("length") == 1 and observed.get("checksum") == 255
+    if expect == "exact-power-boundary":
+        return status == "EXECUTED" and observed.get("rows") == [{"value": 16777216, "exact": True}]
+    if expect == "zero-decimal-preserved":
+        return status == "EXECUTED" and observed.get("text") == "0.00" and observed.get("used_binary_float") is False
+    if expect == "other-three-bytes":
+        return status == "EXECUTED" and observed.get("decoded_hex") == "010203"
+    if expect == "invalid-padding-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True and observed.get("error_recorded") is True
+    if expect == "empty-sha256":
+        return status == "EXECUTED" and observed.get("digest_hex") == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    if expect == "empty-manifest-change":
+        return status == "EXECUTED" and observed.get("reproduced") is True and observed.get("altered_changes") is True and observed.get("digest") == "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
     if expect == "two-records":
         return status == "EXECUTED" and observed.get("records") == 2 and observed.get("fields", [None])[0] == "a"
     if expect == "predefined-entity-set":
