@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install -e .
+      - run: python -m pip install -e ".[dev]"
       - name: Execute source-grounded case MGL5-INF-0254
         run: python scripts/execute_c05_seed_0254.py
       - name: Upload raw hosted execution evidence
