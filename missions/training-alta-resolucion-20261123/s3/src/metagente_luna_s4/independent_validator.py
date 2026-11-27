@@ -71,6 +71,16 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     """Independent control adjudication; unknown expectation IDs fail closed."""
     if not isinstance(observed, dict):
         return False
+    if expect == "noninteger-components-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "zero-vector":
+        return lifecycle_status == "EXECUTED" and observed.get("norm") == 0 and observed.get("square") == 0
+    if expect == "zero-variance-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("value") is None and observed.get("error") == "zero-variance"
+    if expect == "perfect-positive-correlation":
+        return lifecycle_status == "EXECUTED" and observed.get("error") is None and isinstance(observed.get("value"), (int, float)) and abs(observed["value"] - 1.0) < 1e-9
+    if expect == "perfect-negative-correlation":
+        return lifecycle_status == "EXECUTED" and observed.get("error") is None and isinstance(observed.get("value"), (int, float)) and abs(observed["value"] + 1.0) < 1e-9
     if expect == "nfc-mismatch":
         return lifecycle_status == "EXECUTED" and observed.get("same_nfc") is False and observed.get("nfc") == "é"
     if expect == "n-tilde-decomposed":
