@@ -138,3 +138,35 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
         "independent_validation": {"passed": False, "status": "NOT_RUN"},
         "evidence_status": "PERSISTED_NOT_INDEPENDENTLY_VALIDATED",
     }
+
+
+def assemble_case_record(case_id: str, runs: list[dict]) -> dict:
+    """Assemble three persisted run records without upgrading their evidence status."""
+    required_kinds = {"NORMAL", "NEGATIVE", "BOUNDARY"}
+    repetitions = []
+    for run in runs:
+        persisted = run.get("persisted_evidence")
+        if not isinstance(persisted, dict):
+            raise ValueError("each run must have persisted evidence")
+        if persisted.get("case_id") != case_id or run.get("case_id") != case_id:
+            raise ValueError("run belongs to a different case")
+        repetition = dict(persisted)
+        repetition["kind"] = run.get("run_kind")
+        repetitions.append(repetition)
+    kinds = {item.get("kind") for item in repetitions}
+    if len(repetitions) != 3 or kinds != required_kinds:
+        raise ValueError("exactly one NORMAL, NEGATIVE, and BOUNDARY execution is required")
+    run_ids = [item.get("run_id") for item in repetitions]
+    if len(run_ids) != len(set(run_ids)):
+        raise ValueError("repetition RUN_ID values must be unique")
+    outcomes = [item.get("execution_status") for item in repetitions]
+    if any(outcome not in {"PASS", "FAIL", "BLOCKED", "INCONCLUSIVE"} for outcome in outcomes):
+        raise ValueError("each run must have an explicit execution outcome")
+    outcome = outcomes[0] if len(set(outcomes)) == 1 else "INCONCLUSIVE"
+    return {
+        "CASE_ID": case_id,
+        "execution_status": outcome,
+        "contract_status": "NOT_A_PASS",
+        "repetitions": repetitions,
+        "independent_validation": {"passed": False, "status": "NOT_RUN"},
+    }
