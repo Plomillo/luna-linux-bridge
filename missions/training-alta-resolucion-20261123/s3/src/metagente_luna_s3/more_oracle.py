@@ -192,9 +192,12 @@ def ip_module(arguments: dict, observed: dict) -> dict:
 
 
 def decimal_gap(arguments: dict, observed: dict) -> dict:
-    del arguments
-    exact = Decimal("0.1") + Decimal("0.2") == Decimal("0.3")
-    return {"ok": exact and observed["equal"] is False and observed["difference"] != 0, "method": "decimal exact sum versus binary result"}
+    left, right, target = (Decimal(str(arguments[key])) for key in ("left", "right", "target"))
+    exact = left + right == target
+    binary_total = float(arguments["left"]) + float(arguments["right"])
+    expected_difference = binary_total - float(arguments["target"])
+    ok = observed.get("decimal_exact") is exact and observed.get("equal") is (binary_total == float(arguments["target"])) and abs(observed.get("difference", 0.0) - expected_difference) <= 1e-16
+    return {"ok": ok, "method": "Decimal reference plus independent binary arithmetic"}
 
 
 def zlib_available() -> bool:
