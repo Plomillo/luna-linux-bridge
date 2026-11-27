@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from metagente_luna_s3.batch5_exec import descending_seed
-from metagente_luna_s3.batch6_exec import stable_ages, stack_sequence
 from metagente_luna_s3.batch5_oracle import seed_permutation
+from metagente_luna_s3.batch6_exec import stable_ages, stack_sequence
 from metagente_luna_s3.batch6_oracle import (
     stable_ages_oracle,
     stack_sequence_oracle,
