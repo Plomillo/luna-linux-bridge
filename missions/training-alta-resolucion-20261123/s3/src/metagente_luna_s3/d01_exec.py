@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import struct
 import unicodedata
 
@@ -173,6 +174,46 @@ def sha256_text(text: str) -> dict:
     return {"digest_hex": digest}
 
  
+
+class _Yaml12SafeLoader(yaml.SafeLoader):
+    pass
+
+
+_Yaml12SafeLoader.yaml_implicit_resolvers = {
+    first: [
+        (tag, pattern)
+        for tag, pattern in resolvers
+        if tag not in {"tag:yaml.org,2002:bool", "tag:yaml.org,2002:timestamp"}
+    ]
+    for first, resolvers in yaml.SafeLoader.yaml_implicit_resolvers.items()
+}
+_Yaml12SafeLoader.add_implicit_resolver(
+    "tag:yaml.org,2002:bool",
+    re.compile(r"^(?:true|false)$", re.IGNORECASE),
+    list("tTfF"),
+)
+
+
+def yaml_ambiguous(text: str, schema_version: str) -> dict:
+    """Parse ambiguous scalars under an explicitly selected YAML schema."""
+    if schema_version not in {"1.1", "1.2"}:
+        return {"rejected": True, "reason": "unsupported-yaml-version"}
+    loader = yaml.SafeLoader if schema_version == "1.1" else _Yaml12SafeLoader
+    try:
+        value = yaml.load(text, Loader=loader)
+    except yaml.YAMLError:
+        return {"rejected": True, "reason": "yaml-parse-error"}
+    if not isinstance(value, dict):
+        return {"rejected": True, "reason": "root-must-be-mapping"}
+    normalized = {}
+    types = {}
+    for key, item in value.items():
+        types[key] = type(item).__name__
+        normalized[key] = item.isoformat() if hasattr(item, "isoformat") else item
+    print(schema_version, types)
+    return {"rejected": False, "schema_version": schema_version, "parsed": normalized, "types": types}
+
+
 def yaml_types(text: str) -> dict:
     """Parse a small YAML mapping and expose concrete value types."""
     try:
