@@ -29,6 +29,8 @@ def _valid_row_with_artifacts(tmp_path):
     repetitions = []
     for index, kind in enumerate(("NORMAL", "NEGATIVE", "BOUNDARY"), start=1):
         run_id = f"run-0001-{index:04d}"
+        oracle_source = _write_artifact(tmp_path, f"{run_id}/oracle_source.py", "def oracle(value): return value == 1\\n")
+        producer_source = _write_artifact(tmp_path, f"{run_id}/producer_source.py", "def producer(value): return value + 0\\n")
         artifacts = {
             "fixture": _write_artifact(tmp_path, f"{run_id}/fixture.json", {"case_id": case_id, "run_id": run_id, "fixture_id": "fixture-v1"}),
             "environment": _write_artifact(tmp_path, f"{run_id}/environment.json", {"case_id": case_id, "run_id": run_id, "environment_id": "pytest-local"}),
@@ -36,7 +38,14 @@ def _valid_row_with_artifacts(tmp_path):
             "stdout": _write_artifact(tmp_path, f"{run_id}/stdout.txt", "execution output"),
             "stderr": _write_artifact(tmp_path, f"{run_id}/stderr.txt", ""),
             "observed": _write_artifact(tmp_path, f"{run_id}/observed.json", {"case_id": case_id, "run_id": run_id, "value": "observed"}),
-            "oracle": _write_artifact(tmp_path, f"{run_id}/oracle.json", {"case_id": case_id, "run_id": run_id, "independent": True, "producer_used_as_oracle": False, "result": "PASS"}),
+            "oracle": _write_artifact(tmp_path, f"{run_id}/oracle.json", {
+                "case_id": case_id, "run_id": run_id, "independent": True,
+                "producer_used_as_oracle": False, "oracle_module": "oracle_impl",
+                "producer_module": "producer_impl", "oracle_source_sha256": oracle_source["sha256"],
+                "producer_source_sha256": producer_source["sha256"], "result": "PASS",
+            }),
+            "oracle_source": oracle_source,
+            "producer_source": producer_source,
             "metrics": _write_artifact(tmp_path, f"{run_id}/metrics.json", {"case_id": case_id, "run_id": run_id, "duration_ms": 1}),
         }
         repetitions.append({
