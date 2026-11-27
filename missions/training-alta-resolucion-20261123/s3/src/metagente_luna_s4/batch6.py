@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import random
 from pathlib import Path
 
 from metagente_luna_s3.interpret import interpret
@@ -21,10 +22,21 @@ _FIXTURE = json.loads(
     (Path(__file__).resolve().parents[2] / "fixtures" / "derived_parameters.json").read_text(encoding="utf-8")
 )
 
+# The source fixes a 10,000-integer fixture and seed 0106 but no literal values.
+# Use the minimal integer domain 0..9999 and a seeded shuffle; no runtime entropy.
+_DESCENDING_VALUES = list(range(10_000))
+random.Random(106).shuffle(_DESCENDING_VALUES)
+
 # Only candidates whose source-derived fixture and registered capability are
 # complete are exposed to the C05 plan compiler. Other interpreter candidates
 # remain visible in the coverage matrix as blocked/ambiguous.
 CASES = [
+    {
+        "case_id": "MGL5-INF-0106",
+        "capability_id": "descending_values",
+        "arguments": {"values": _DESCENDING_VALUES},
+        "fixture_provenance": "SOURCE_SEED_0106; range(10000); random.Random(106).shuffle",
+    },
     {
         "case_id": "MGL5-INF-0105",
         "capability_id": "stable_ages",
