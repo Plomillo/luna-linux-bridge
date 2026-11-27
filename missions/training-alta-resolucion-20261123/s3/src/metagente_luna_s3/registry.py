@@ -4,7 +4,6 @@ from __future__ import annotations
 import ipaddress
 from collections.abc import Callable
 
-from metagente_luna_s4 import c05_preflight, c05_preflight_oracle
 from pydantic import BaseModel
 
 from metagente_luna_s3 import (
@@ -26,6 +25,7 @@ from metagente_luna_s3 import (
     more_oracle,
 )
 from metagente_luna_s3.independent_oracles import cidr_bounds_oracle
+from metagente_luna_s4 import c05_preflight, c05_preflight_oracle
 
 
 class Capability(BaseModel):
