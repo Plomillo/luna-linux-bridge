@@ -38,7 +38,7 @@ def test_controls_that_were_defined_are_accepted():
     # The runner must execute every currently authored control case; the
     # registry is the authoritative count, not a stale historical constant.
     assert {row["case_id"] for row in defined} == set(CONTROLS)
-    assert len(defined) == len(CONTROLS) == 94
+    assert len(defined) == len(CONTROLS) == 95
 
 def test_yaml_type_plan_and_independent_oracle_cover_negative_and_boundary_inputs():
     from metagente_luna_s3.d01_exec import yaml_types
@@ -55,6 +55,27 @@ def test_yaml_type_plan_and_independent_oracle_cover_negative_and_boundary_input
     assert yaml_types_oracle(boundary, boundary_result)["ok"] is True
     assert accepts("yaml-rejected", negative_result, "EXECUTED") is True
     assert accepts("yaml-empty-boundary", boundary_result, "EXECUTED") is True
+
+
+def test_yaml_ambiguous_scalars_follow_the_declared_schema_version():
+    from metagente_luna_s3.d01_exec import yaml_ambiguous
+    from metagente_luna_s3.d01_oracle import yaml_ambiguous_oracle
+
+    arguments_11 = {"text": "flag: yes\\ndate: 2026-01-02\\n", "schema_version": "1.1"}
+    result_11 = yaml_ambiguous(**arguments_11)
+    assert yaml_ambiguous_oracle(arguments_11, result_11)["ok"] is True
+    assert result_11["types"] == {"flag": "bool", "date": "date"}
+
+    arguments_12 = {"text": "flag: yes\\ndate: 2026-01-02\\n", "schema_version": "1.2"}
+    result_12 = yaml_ambiguous(**arguments_12)
+    assert yaml_ambiguous_oracle(arguments_12, result_12)["ok"] is True
+    assert result_12["types"] == {"flag": "str", "date": "str"}
+
+    negative = {"text": "flag: yes\\n  broken: x\\n", "schema_version": "1.1"}
+    rejected = yaml_ambiguous(**negative)
+    assert yaml_ambiguous_oracle(negative, rejected)["ok"] is True
+    assert accepts("yaml-invalid-rejected", rejected, "EXECUTED") is True
+    assert accepts("yaml12-ambiguous-strings", result_12, "EXECUTED") is True
 
 
 def test_both_kept_control_returns_a_boolean_not_a_collection():
