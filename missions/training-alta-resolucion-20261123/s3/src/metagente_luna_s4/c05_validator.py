@@ -178,7 +178,7 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
             or not isinstance(source_metadata.get("line_end"), int) or source_metadata["line_end"] < source_metadata["line_start"]
             or not re.fullmatch(r"[0-9a-f]{64}", str(source_metadata.get("file_sha256", "")))
             or not re.fullmatch(r"[0-9a-f]{64}", str(source_metadata.get("excerpt_sha256", "")))
-            or not isinstance(source_metadata.get("source_blob"), str) or not source_metadata["source_blob"]
+            or not isinstance(source_metadata.get("source_blob"), str) or not re.fullmatch(r"[0-9a-f]{40}", source_metadata["source_blob"])
             or source_excerpt is None
             or _sha256(loaded["source_excerpt"]) != source_metadata.get("excerpt_sha256")
             or case_id.encode("utf-8") not in source_excerpt):
