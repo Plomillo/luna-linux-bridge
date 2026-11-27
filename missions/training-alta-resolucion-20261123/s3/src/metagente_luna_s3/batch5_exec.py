@@ -40,9 +40,9 @@ def binary_find(needle: int, start: int, end: int) -> dict:
     return {"index": found, "comparisons": comparisons}
 
 
-def dequeue_named() -> dict:
-    queue = ["A", "B", "C"]
-    order = [queue.pop(0) for _ in range(3)]
+def dequeue_named(values: list[str]) -> dict:
+    queue = list(values)
+    order = [queue.pop(0) for _ in range(len(queue))]
     print(order)
     return {"order": order, "remaining": len(queue)}
 
@@ -137,23 +137,26 @@ def linear_scans() -> dict:
     return {"comparisons": counts, "ratios": ratios, "count_noise": 0}
 
 
-def factorials() -> dict:
+def factorials(values: list[int]) -> dict:
     def checked(number: int) -> int:
-        if number < 0:
-            raise ValueError("negative")
+        if not isinstance(number, int) or isinstance(number, bool) or number < 0:
+            raise ValueError("factorial domain is non-negative integers")
         result = 1
         for factor in range(1, number + 1):
             result *= factor
         return result
 
-    values = [checked(number) for number in range(13)]
-    rejected = False
+    try:
+        results = [checked(number) for number in values]
+    except ValueError as exc:
+        return {"rejected": True, "reason": str(exc), "values": [], "negative_rejected": True}
+    negative_rejected = False
     try:
         checked(-1)
     except ValueError:
-        rejected = True
-    print(values[-1], rejected)
-    return {"values": values, "negative_rejected": rejected}
+        negative_rejected = True
+    print(results[-1] if results else 1, negative_rejected)
+    return {"rejected": False, "values": results, "negative_rejected": negative_rejected}
 
 
 def precedence_tree() -> dict:
