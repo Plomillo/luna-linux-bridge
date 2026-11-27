@@ -48,6 +48,13 @@ class ParseChatTests(unittest.TestCase):
         self.assertEqual(rows[0]["sender"], "SYSTEM")
         self.assertIn("cifrados", rows[0]["body"])
 
+    def test_whatsapp_bidi_mark_is_removed_from_audio_attachment_name(self):
+        body = "\u200ePTT-20261012-WA0052.opus (archivo adjunto)"
+        self.assertEqual(
+            MODULE.find_attachment_name(body),
+            "PTT-20261012-WA0052.opus",
+        )
+
     def test_sender_name_and_colons_in_message(self):
         source = "4/1/2026, 4:05 p. m. - Lyx: hora: 16:05"
         rows = MODULE.parse_chat(source)
