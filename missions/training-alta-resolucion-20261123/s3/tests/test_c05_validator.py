@@ -27,18 +27,40 @@ def _write_artifact(root, relative, payload):
 def _valid_row_with_artifacts(tmp_path):
     case_id = "MGL5-INF-0001"
     repetitions = []
-    for index, kind in enumerate(("NORMAL", "NEGATIVE", "BOUNDARY"), start=1):
+    controls = []
+    run_specs = [
+        ("NORMAL", {"sample": "normal"}, None),
+        ("NORMAL", {"sample": "normal"}, None),
+        ("NORMAL", {"sample": "normal"}, None),
+        ("NEGATIVE", {"sample": "negative"}, {"definition": "negative input", "expected_behavior": "reject invalid input", "source": "test-spec"}),
+        ("BOUNDARY", {"sample": "boundary"}, {"definition": "boundary input", "expected_behavior": "accept boundary", "source": "test-spec"}),
+    ]
+    for index, (kind, input_value, control) in enumerate(run_specs, start=1):
         run_id = f"run-0001-{index:04d}"
         oracle_source = _write_artifact(tmp_path, f"{run_id}/oracle_source.py", "def oracle(value): return value == 1")
         producer_source = _write_artifact(tmp_path, f"{run_id}/producer_source.py", "def producer(value): return value + 0")
         artifacts = {
-            "fixture": _write_artifact(tmp_path, f"{run_id}/fixture.json", {"case_id": case_id, "run_id": run_id, "fixture_id": "fixture-v1", "run_kind": kind, "input": {"sample": index}, "control": ({"definition": f"{kind} control", "expected_behavior": "oracle-defined", "source": "test-spec"} if kind != "NORMAL" else None)}),
-            "environment": _write_artifact(tmp_path, f"{run_id}/environment.json", {"case_id": case_id, "run_id": run_id, "environment_id": "pytest-local", "isolation": {"mode": "FRESH_PROCESS_TEMPORARY_WORKSPACE", "process_isolated": True, "workspace_ephemeral": True, "cwd_isolated": True, "home_isolated": True, "tmp_isolated": True, "sandbox": False}}),
-            "procedure": _write_artifact(tmp_path, f"{run_id}/procedure.json", {"case_id": case_id, "run_id": run_id, "steps": ["invoke", "observe"]}),
-            "control_spec": _write_artifact(tmp_path, f"{run_id}/control_spec.json", {"case_id": case_id, "run_id": run_id, "run_kind": kind, "control": ({"definition": f"{kind} control", "expected_behavior": "oracle-defined", "source": "test-spec"} if kind != "NORMAL" else None)}),
+            "fixture": _write_artifact(tmp_path, f"{run_id}/fixture.json", {
+                "case_id": case_id, "run_id": run_id, "fixture_id": "fixture-v1",
+                "run_kind": kind, "input": input_value, "control": control,
+            }),
+            "environment": _write_artifact(tmp_path, f"{run_id}/environment.json", {
+                "case_id": case_id, "run_id": run_id, "environment_id": "pytest-local",
+                "isolation": {"mode": "FRESH_PROCESS_TEMPORARY_WORKSPACE", "process_isolated": True,
+                              "workspace_ephemeral": True, "cwd_isolated": True, "home_isolated": True,
+                              "tmp_isolated": True, "sandbox": False},
+            }),
+            "procedure": _write_artifact(tmp_path, f"{run_id}/procedure.json", {
+                "case_id": case_id, "run_id": run_id, "steps": ["invoke", "observe"],
+            }),
+            "control_spec": _write_artifact(tmp_path, f"{run_id}/control_spec.json", {
+                "case_id": case_id, "run_id": run_id, "run_kind": kind, "control": control,
+            }),
             "stdout": _write_artifact(tmp_path, f"{run_id}/stdout.txt", "execution output"),
             "stderr": _write_artifact(tmp_path, f"{run_id}/stderr.txt", ""),
-            "observed": _write_artifact(tmp_path, f"{run_id}/observed.json", {"case_id": case_id, "run_id": run_id, "value": "observed"}),
+            "observed": _write_artifact(tmp_path, f"{run_id}/observed.json", {
+                "case_id": case_id, "run_id": run_id, "value": "observed",
+            }),
             "oracle": _write_artifact(tmp_path, f"{run_id}/oracle.json", {
                 "case_id": case_id, "run_id": run_id, "independent": True,
                 "producer_used_as_oracle": False, "oracle_module": "oracle_impl",
@@ -47,19 +69,23 @@ def _valid_row_with_artifacts(tmp_path):
             }),
             "oracle_source": oracle_source,
             "producer_source": producer_source,
-            "metrics": _write_artifact(tmp_path, f"{run_id}/metrics.json", {"case_id": case_id, "run_id": run_id, "duration_ms": 1}),
+            "metrics": _write_artifact(tmp_path, f"{run_id}/metrics.json", {
+                "case_id": case_id, "run_id": run_id, "duration_ms": 1,
+            }),
         }
-        repetitions.append({
+        run = {
             "kind": kind, "run_id": run_id, "case_id": case_id,
             "clean_state": True, "execution_status": "PASS", "exit_code": 0,
             "agent_version": "test-agent-1", "executor_version": "test-executor-1",
-            "machinery": "pytest-test-fixture", "started": 1.0, "ended": 2.0, "artifacts": artifacts,
-        })
+            "machinery": "pytest-test-fixture", "started": 1.0, "ended": 2.0,
+            "artifacts": artifacts,
+        }
+        (repetitions if kind == "NORMAL" else controls).append(run)
     return {
         "CASE_ID": case_id, "execution_status": "PASS", "contract_status": "PASS",
-        "repetitions": repetitions, "independent_validation": {"passed": True},
+        "repetitions": repetitions, "controls": controls,
+        "independent_validation": {"passed": True},
     }
-
 
 def test_population_intersection_is_exact():
     report = intersection()
