@@ -16,8 +16,11 @@ def correlation(arguments: dict, observed: dict) -> dict:
     sum_x2 = sum(item * item for item in left)
     sum_y2 = sum(item * item for item in right)
     numerator = count * sum_xy - sum_x * sum_y
-    denominator = ((count * sum_x2 - sum_x**2) * (count * sum_y2 - sum_y**2)) ** 0.5
-    expected = numerator / denominator
+    denominator_squared = (count * sum_x2 - sum_x**2) * (count * sum_y2 - sum_y**2)
+    if denominator_squared == 0:
+        ok = observed.get("error") == "zero-variance" and observed.get("value") is None
+        return {"ok": ok, "method": "independent zero-variance condition"}
+    expected = numerator / denominator_squared**0.5
     ok = observed["error"] is None and abs(observed["value"] - expected) < 1e-9
     return {"ok": ok, "method": "raw-score Pearson; residual shared definition"}
 
