@@ -60,7 +60,7 @@ def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries
 def test_unicode_control_oracles_cover_distinct_normalization_edges():
     from metagente_luna_s3.d01_oracle import nfc_table, nfd_table, nfkc_table
 
-    assert nfc_table({"decomposed": "e\\u0301", "composed": "e"}, {"same_nfc": False, "nfc": "é"})["ok"] is True
+    assert nfc_table({"decomposed": "e\u0301", "composed": "e"}, {"same_nfc": False, "nfc": "é"})["ok"] is True
     assert nfd_table({"composed": "ñ"}, {"codepoints": ["U+006E", "U+0303"]})["ok"] is True
     assert nfkc_table({"text": "Ａ"}, {"compatibility": "A", "preserves_original_form": False})["ok"] is True
 
