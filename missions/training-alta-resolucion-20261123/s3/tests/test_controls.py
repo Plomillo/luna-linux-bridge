@@ -73,6 +73,17 @@ def test_fifo_factorial_path_and_ipv6_independent_oracles():
     assert stated_prefix({"cidr": "2001:db8::1/128"}, {"rejected": False, "prefix": "2001:db8::1/128"})["ok"] is True
 
 
+def test_index_ipv6_mask_and_threshold_control_expectations():
+    assert accepts("negative-length-no-read", {"out_of_range": True, "reads": 0, "length": 0}, "EXECUTED") is True
+    assert accepts("zero-length-no-read", {"out_of_range": True, "reads": 0, "length": 0}, "EXECUTED") is True
+    assert accepts("expanded-invalid-ipv6-rejected", {"rejected": True}, "EXECUTED") is True
+    assert accepts("ipv6-zero-boundary", {"rejected": False, "expanded": "0000:0000:0000:0000:0000:0000:0000:0000", "integer": 0}, "EXECUTED") is True
+    assert accepts("invalid-mask-rejected", {"rejected": True, "contiguous": False}, "EXECUTED") is True
+    assert accepts("all-ones-mask-valid", {"rejected": False, "contiguous": True, "bits": "1" * 32}, "EXECUTED") is True
+    assert accepts("threshold-equality-no-fire", {"at_or_below": True, "above": False}, "EXECUTED") is True
+    assert accepts("threshold-above-fires", {"at_or_below": False, "above": True}, "EXECUTED") is True
+
+
 def test_fifo_factorial_path_and_ipv6_controls_are_adjudicated():
     assert accepts("fifo-reversed-order", {"order": ["C", "B", "A"], "remaining": 0}, "EXECUTED") is True
     assert accepts("fifo-singleton", {"order": ["A"], "remaining": 0}, "EXECUTED") is True
