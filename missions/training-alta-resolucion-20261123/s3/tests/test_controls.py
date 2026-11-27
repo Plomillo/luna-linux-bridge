@@ -379,10 +379,19 @@ def test_numerical_fit_and_integrator_controls():
 
 def test_d01_numeric_base64_null_and_manifest_controls_have_independent_adjudication():
     from metagente_luna_s3.more_exec import (
-        base64_bytes, base64_reject, decimal_text, float32_exactness, manifest_hash, three_states,
+        base64_bytes,
+        base64_reject,
+        decimal_text,
+        float32_exactness,
+        manifest_hash,
+        three_states,
     )
     from metagente_luna_s3.more_oracle import (
-        b64_table, decimal_literal, f32_table, stable_digest, state_table,
+        b64_table,
+        decimal_literal,
+        f32_table,
+        stable_digest,
+        state_table,
     )
     from metagente_luna_s4.independent_validator import _independent_control_accepts
 

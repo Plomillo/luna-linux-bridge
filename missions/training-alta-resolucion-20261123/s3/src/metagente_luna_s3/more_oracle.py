@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import ipaddress
 import zlib
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from metagente_luna_s3.d01_oracle import _canonical
 
@@ -104,7 +104,7 @@ def f32_table(arguments: dict, observed: dict) -> dict:
 def decimal_literal(arguments: dict, observed: dict) -> dict:
     try:
         expected = str(Decimal(arguments["text"]))
-    except Exception:
+    except InvalidOperation:
         return {"ok": observed.get("rejected") is True and observed.get("reason") == "invalid-decimal", "method": "fixed invalid Decimal rejection"}
     return {"ok": observed.get("rejected") is False and observed.get("text") == expected and observed.get("used_binary_float") is False, "method": "independent Decimal parsing"}
 
