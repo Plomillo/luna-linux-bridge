@@ -47,6 +47,30 @@ CASES = [
         "arguments": {"steps": _FIXTURE["stack-script"]["steps"]},
         "fixture_provenance": "FIXTURE:derived_parameters.json#stack-script",
     },
+    {
+        "case_id": "MGL5-INF-0114",
+        "capability_id": "shortest_path",
+        "arguments": {key: _FIXTURE["bfs-six-node"][key] for key in ("nodes", "edges", "start", "target")},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#bfs-six-node; six-node directed graph with tied shortest paths",
+    },
+    {
+        "case_id": "MGL5-INF-0609",
+        "capability_id": "matrix_multiply",
+        "arguments": {"left": _FIXTURE["matrix-product"]["left"], "right": _FIXTURE["matrix-product"]["right"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#matrix-product; 2x3 by 3x2 integer matrices",
+    },
+    {
+        "case_id": "MGL5-INF-0611",
+        "capability_id": "determinant_3x3",
+        "arguments": {"matrix": _FIXTURE["determinant-reference"]["matrix"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#determinant-reference; expected determinant -306",
+    },
+    {
+        "case_id": "MGL5-INF-0632",
+        "capability_id": "moving_average",
+        "arguments": {"values": _FIXTURE["moving-window"]["values"], "window": _FIXTURE["moving-window"]["window"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#moving-window; explicit six values, window 3",
+    },
 ]
 
 
