@@ -222,49 +222,70 @@ def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
     if row.get("execution_status") not in EXECUTION_OUTCOMES:
         errors.append("case-not-executed")
         return errors
+
     case_id = row.get("CASE_ID") or row.get("case_id")
     repetitions = row.get("repetitions")
+    controls = row.get("controls")
     if not isinstance(repetitions, list) or len(repetitions) != 3:
-        errors.append("exactly-three-repetitions-required")
-        return errors
+        errors.append("exactly-three-normal-repetitions-required")
+        repetitions = repetitions if isinstance(repetitions, list) else []
+    if not isinstance(controls, list) or len(controls) != 2:
+        errors.append("separate-negative-and-boundary-controls-required")
+        controls = controls if isinstance(controls, list) else []
+
+    normal_kinds = [rep.get("kind") for rep in repetitions if isinstance(rep, dict)]
+    control_kinds = [rep.get("kind") for rep in controls if isinstance(rep, dict)]
+    if normal_kinds != ["NORMAL"] * len(repetitions) or len(repetitions) != 3:
+        errors.append("three-normal-runs-required")
+    if set(control_kinds) != {"NEGATIVE", "BOUNDARY"} or len(controls) != 2:
+        errors.append("one-negative-and-one-boundary-run-required")
+
+    all_runs = repetitions + controls
     run_ids: list[str] = []
-    outcomes: list[str] = []
-    for rep in repetitions:
+    normal_outcomes: list[str] = []
+    input_digests: dict[str, list[str]] = {"NORMAL": [], "NEGATIVE": [], "BOUNDARY": []}
+    for rep in all_runs:
         if not isinstance(rep, dict):
             errors.append("repetition-entry-invalid")
             continue
         errors.extend(_validate_repetition(rep, evidence_root, case_id))
-        if isinstance(rep.get("run_id"), str):
-            run_ids.append(rep["run_id"])
-        if isinstance(rep.get("execution_status"), str):
-            outcomes.append(rep["execution_status"])
+        run_id = rep.get("run_id")
+        if isinstance(run_id, str):
+            run_ids.append(run_id)
+        kind = rep.get("kind")
+        if kind == "NORMAL" and isinstance(rep.get("execution_status"), str):
+            normal_outcomes.append(rep["execution_status"])
+        artifacts = rep.get("artifacts")
+        if isinstance(artifacts, dict):
+            fixture_ref = artifacts.get("fixture")
+            fixture_path, _ = _safe_artifact(evidence_root, fixture_ref)
+            fixture_data = _load_json(fixture_path) if fixture_path is not None else None
+            if isinstance(fixture_data, dict) and "input" in fixture_data and kind in input_digests:
+                encoded = json.dumps(fixture_data["input"], sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+                input_digests[kind].append(hashlib.sha256(encoded).hexdigest())
+
     if len(run_ids) != len(set(run_ids)):
         errors.append("duplicate-run-id-within-case")
-    input_digests = []
-    for rep in repetitions:
-        if not isinstance(rep, dict) or not isinstance(rep.get("artifacts"), dict):
-            continue
-        fixture_ref = rep["artifacts"].get("fixture")
-        fixture_path, _ = _safe_artifact(evidence_root, fixture_ref)
-        fixture_data = _load_json(fixture_path) if fixture_path is not None else None
-        if isinstance(fixture_data, dict) and "input" in fixture_data:
-            encoded = json.dumps(fixture_data["input"], sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-            input_digests.append(hashlib.sha256(encoded).hexdigest())
-    if len(input_digests) != 3 or len(set(input_digests)) != 3:
-        errors.append("normal-negative-boundary-inputs-not-distinct")
-    if len(set(outcomes)) > 1:
-        errors.append("repetition-outcomes-disagree")
-    required_kinds = {"NORMAL", "NEGATIVE", "BOUNDARY"}
-    kinds = {rep.get("kind") for rep in repetitions if isinstance(rep, dict)}
-    if kinds != required_kinds:
-        errors.append("normal-negative-boundary-runs-required")
-    if row.get("execution_status") != (outcomes[0] if outcomes else None):
-        errors.append("case-outcome-does-not-match-repetitions")
+    normal_inputs = input_digests["NORMAL"]
+    negative_inputs = input_digests["NEGATIVE"]
+    boundary_inputs = input_digests["BOUNDARY"]
+    if len(normal_inputs) != 3 or len(set(normal_inputs)) != 1:
+        errors.append("normal-repetitions-must-use-identical-input")
+    if (len(negative_inputs) != 1 or len(boundary_inputs) != 1
+            or not normal_inputs or negative_inputs[0] in normal_inputs
+            or boundary_inputs[0] in normal_inputs or negative_inputs == boundary_inputs):
+        errors.append("negative-and-boundary-inputs-must-be-distinct")
+
+    if len(set(normal_outcomes)) > 1:
+        errors.append("normal-repetition-outcomes-disagree")
+    if row.get("execution_status") != (normal_outcomes[0] if normal_outcomes else None):
+        errors.append("case-outcome-does-not-match-normal-repetitions")
     if row.get("contract_status") == "PASS" and row.get("execution_status") != "PASS":
         errors.append("contract-pass-with-nonpass-execution")
-    independent = row.get("independent_validation")
-    if row.get("contract_status") == "PASS" and (not isinstance(independent, dict) or independent.get("passed") is not True):
-        errors.append("contract-pass-without-independent-validation")
+    if row.get("contract_status") == "PASS":
+        independent = row.get("independent_validation")
+        if not isinstance(independent, dict) or independent.get("passed") is not True:
+            errors.append("contract-pass-without-independent-validation")
     return errors
 
 
