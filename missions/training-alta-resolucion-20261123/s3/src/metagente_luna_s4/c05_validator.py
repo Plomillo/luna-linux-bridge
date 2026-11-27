@@ -154,6 +154,8 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
                 errors.append("producer-source-hash-mismatch")
             if _sha256(oracle_source) == _sha256(producer_source):
                 errors.append("oracle-source-identical-to-producer")
+        if oracle.get("result") not in {"PASS", "FAIL", "INCONCLUSIVE"}:
+            errors.append("oracle-result-invalid")
         if oracle.get("case_id") != case_id or oracle.get("run_id") != run_id:
             errors.append("oracle-provenance-mismatch")
 
@@ -164,7 +166,8 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
         errors.append("observed-provenance-mismatch")
 
     fixture = _load_json(loaded["fixture"]) if "fixture" in loaded else None
-    if not isinstance(fixture, dict) or fixture.get("case_id") != case_id or fixture.get("run_id") != run_id:
+    if (not isinstance(fixture, dict) or fixture.get("case_id") != case_id or fixture.get("run_id") != run_id
+            or not (fixture.get("fixture_origin") or fixture.get("fixture_id"))):
         errors.append("fixture-provenance-invalid")
 
     environment = _load_json(loaded["environment"]) if "environment" in loaded else None
@@ -172,11 +175,13 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
         errors.append("environment-artifact-invalid")
 
     procedure = _load_json(loaded["procedure"]) if "procedure" in loaded else None
-    if not isinstance(procedure, dict) or procedure.get("case_id") != case_id or procedure.get("run_id") != run_id:
+    if (not isinstance(procedure, dict) or procedure.get("case_id") != case_id or procedure.get("run_id") != run_id
+            or not (procedure.get("procedure") or isinstance(procedure.get("steps"), list))):
         errors.append("procedure-artifact-invalid")
 
     metrics = _load_json(loaded["metrics"]) if "metrics" in loaded else None
-    if not isinstance(metrics, dict) or metrics.get("case_id") != case_id or metrics.get("run_id") != run_id:
+    if (not isinstance(metrics, dict) or metrics.get("case_id") != case_id or metrics.get("run_id") != run_id
+            or not any(key in metrics for key in ("duration_ms", "duration_seconds"))):
         errors.append("metrics-artifact-invalid")
 
     if rep.get("execution_status") == "PASS":
