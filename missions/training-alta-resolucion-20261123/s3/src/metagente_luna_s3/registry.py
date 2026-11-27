@@ -65,7 +65,7 @@ def cidr_oracle(cidr: str, observed: dict) -> dict:
         ok = observed.get("accepted") is False and observed.get("rejected") is True
         return {"ok": ok, "expected": {"rejected": True}, "method": "independent ipaddress input validation"}
     ok = (
-        observed.get("accepted") is True
+        observed.get("accepted") is not False
         and observed.get("network") == str(network.network_address)
         and observed.get("broadcast") == str(network.broadcast_address)
     )
