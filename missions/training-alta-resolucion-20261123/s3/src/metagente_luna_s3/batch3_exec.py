@@ -141,7 +141,7 @@ def ipv6_prefix(cidr: str) -> dict:
 
 def threshold(low: float, high: float, limit: float) -> dict:
     print(low, high)
-    return {"below_or_equal": low > limit, "above": high > limit}
+    return {"at_or_below": low <= limit, "above": high > limit}
 
 
 def l2_norm(components: list[int]) -> dict:
