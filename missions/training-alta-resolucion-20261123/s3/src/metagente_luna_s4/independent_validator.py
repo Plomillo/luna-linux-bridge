@@ -341,9 +341,9 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "not-the-vector":
         return lifecycle_status == "FAIL"
     if expect == "no-cr":
-        return completed and observed.get("written") == "a\\r\\nb\\r\\n"
+        return completed and observed.get("written") == "a\r\nb\r\n"
     if expect == "already-lf":
-        return completed and observed.get("converted") == "a\\nb" and observed.get("cr_remaining") is False
+        return completed and observed.get("converted") == "a\nb" and observed.get("cr_remaining") is False
     if expect == "one-column":
         return completed and observed.get("parsed") == [["plain"]]
     if expect == "ascii":
@@ -384,7 +384,7 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
         return completed and observed.get("graphemes") == observed.get("codepoints") == 2
     if expect == "other-newline":
         fields = observed.get("fields")
-        return completed and observed.get("records") == 1 and isinstance(fields, list) and bool(fields) and fields[0] == "x\\ny"
+        return completed and observed.get("records") == 1 and isinstance(fields, list) and bool(fields) and fields[0] == "x\ny"
     if expect == "plain-text":
         return completed and observed.get("text") == "ok" and observed.get("external_expanded") is False
     if expect == "other-cut":
