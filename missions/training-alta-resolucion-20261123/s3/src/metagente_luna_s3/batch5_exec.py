@@ -207,7 +207,7 @@ def precedence_tree(text: str = "1+2*3-4") -> dict:
     tree = values[0]
     value = evaluate(tree)
     print(value)
-    return {"tree": tree, "value": value}
+    return {"tree": tree, "value": value, "rejected": False}
 
 
 def index_limit(length: int) -> dict:
