@@ -121,6 +121,21 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
         )
     if expect == "not-fifteen":
         return lifecycle_status == "EXECUTED" and observed.get("sum") != 15
+    if expect == "empty-record-set":
+        return lifecycle_status == "EXECUTED" and observed.get("records") == [] and observed.get("rejected") is False
+    if expect == "single-underflow":
+        return (
+            lifecycle_status == "EXECUTED"
+            and observed.get("underflow_count") == 1
+            and observed.get("events") == [{"operation": "underflow", "source": "pop"}]
+        )
+    if expect == "empty-stack-sequence":
+        return (
+            lifecycle_status == "EXECUTED"
+            and observed.get("events") == []
+            and observed.get("stack") == []
+            and observed.get("underflow_count") == 0
+        )
     return False
 
 
