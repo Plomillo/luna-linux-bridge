@@ -146,10 +146,17 @@ jobs:
           assert report["c05_status"] == "NOT_PASSED", report
           assert report["contractual_pass"] < 1000, report
           assert report["operation_passed"] < 1000, report
-          assert len({row["CASE_ID"] for row in ledger}) == 1000
+          ledger_ids = {row["CASE_ID"] for row in ledger}
+          blocker_ids = {row["CASE_ID"] for row in blockers}
+          rejected_ids = {row["case_id"] for row in report["rejected"]}
+          not_run_ids = {row["CASE_ID"] for row in ledger if row["execution_status"] == "NOT_RUN"}
+          assert len(ledger_ids) == 1000
           assert len(blockers) == 985
-          assert len({row["CASE_ID"] for row in blockers}) == 985
+          assert len(blocker_ids) == 985
+          assert blocker_ids == rejected_ids == not_run_ids
           assert all(row["status"] == "NOT_RUN" and row["operation_invoked"] is False for row in blockers)
+          assert all(row["CASE_ID"] in row["source_excerpt"] for row in blockers)
+          assert all(len(row["source_metadata"]["excerpt_sha256"]) == 64 for row in blockers)
           assert outcomes["BLOCKED"] + outcomes["PASS"] + outcomes["FAIL"] + outcomes["INCONCLUSIVE"] == 15, outcomes
           print(json.dumps({
               "c05_status": report["c05_status"],
