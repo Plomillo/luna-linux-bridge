@@ -47,3 +47,17 @@ def test_failed_token_is_not_a_successful_operation():
     assert abs(lags[1] - 0.25) < 1e-9
     assert abs(lags[2] + 0.3) < 1e-9
     assert abs(lags[3] + 0.45) < 1e-9
+
+
+def test_cosine_and_acf_oracles_cover_negative_and_boundary_inputs():
+    from metagente_luna_s3.batch4_exec import acf_series, cosine_set
+    from metagente_luna_s3.batch4_oracle import axis_cosines, lag_identity
+
+    zero = {"pairs": [[[0, 0], [1, 0]]]}
+    assert axis_cosines(zero, cosine_set(zero["pairs"]))["ok"] is True
+    same = {"pairs": [[[3, 4], [3, 4]]]}
+    assert axis_cosines(same, cosine_set(same["pairs"]))["ok"] is True
+    constant = {"values": [5, 5, 5]}
+    assert lag_identity(constant, acf_series(constant["values"]))["ok"] is True
+    two = {"values": [1, 2]}
+    assert lag_identity(two, acf_series(two["values"]))["ok"] is True
