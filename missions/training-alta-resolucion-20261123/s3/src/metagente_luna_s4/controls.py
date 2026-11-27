@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 from metagente_luna_s4.batch2 import (
-    _ELF_ARM_HEX,
-    _DEX_HEX,
     _DEX_FIXTURE,
+    _DEX_HEX,
+    _ELF_ARM_HEX,
     _ELF_STRIPPED_BOUNDARY_HEX,
     _ELF_STRIPPED_HEX,
     _ELF_SYMBOLS_BOUNDARY_HEX,
@@ -38,7 +38,7 @@ def _build() -> None:
 
     _add("MGL5-INF-0067", "negative", "dex_header", {"payload_hex": _DEX_HEX[:80]}, "dex-truncated-header-rejected")
     _add("MGL5-INF-0067", "boundary", "dex_header", {"payload_hex": _DEX_HEX}, "dex-minimum-valid-header")
-    _add("MGL5-INF-0068", "negative", "dex_tables", {"payload_hex": (lambda b: (b.__setitem__(slice(124, 128), (99).to_bytes(4, "little")), b.hex())[1])(bytearray(_DEX_FIXTURE))}, "dex-invalid-type-string-index")
+    _add("MGL5-INF-0068", "negative", "dex_tables", {"payload_hex": (_DEX_FIXTURE[:124] + (99).to_bytes(4, "little") + _DEX_FIXTURE[128:]).hex()}, "dex-invalid-type-string-index")
     _add("MGL5-INF-0068", "boundary", "dex_tables", {"payload_hex": _DEX_HEX}, "dex-valid-table-indices")
     _add("MGL5-INF-0070", "negative", "zip_path_safety", {"entries": [{"name": "../../escape", "data_hex": "78"}]}, "zip-traversal-blocked")
     _add("MGL5-INF-0070", "boundary", "zip_path_safety", {"entries": [{"name": "inside.txt", "data_hex": ""}]}, "zip-safe-empty")
