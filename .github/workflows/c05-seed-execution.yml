@@ -2,6 +2,8 @@ name: C05 hosted authentic seed execution
 on:
   push:
     branches: [repair/metagente-luna-structured-20261125]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
