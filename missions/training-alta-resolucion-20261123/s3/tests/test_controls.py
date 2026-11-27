@@ -38,7 +38,7 @@ def test_controls_that_were_defined_are_accepted():
     # The runner must execute every currently authored control case; the
     # registry is the authoritative count, not a stale historical constant.
     assert {row["case_id"] for row in defined} == set(CONTROLS)
-    assert len(defined) == len(CONTROLS) == 83
+    assert len(defined) == len(CONTROLS) == 90
 
 def test_both_kept_control_returns_a_boolean_not_a_collection():
     result = accepts("both-kept", {"kept": [0, 65535]}, "EXECUTED")
