@@ -104,8 +104,8 @@ def test_plan_compiler_emits_only_cases_with_both_authored_controls():
 
     plans, report = compiler.compile_plans()
 
-    assert report["compiled_executable_plans"] == len(plans) == 13
-    assert report["not_in_plan_set"] == 987
+    assert report["compiled_executable_plans"] == len(plans) == 15
+    assert report["not_in_plan_set"] == 985
     assert report["certification"] == "NOT_PASSED"
     assert [plan["CASE_ID"] for plan in plans] == sorted(plan["CASE_ID"] for plan in plans)
     for plan in plans:
