@@ -78,6 +78,11 @@ def request_counts(arguments: dict, observed: dict) -> dict:
 
 
 def escapes(arguments: dict, observed: dict) -> dict:
-    traversal = arguments["requested"] == "../../etc/passwd"
-    untouched = observed["blocked"] is True and observed["bytes_read"] == 0 and observed["opened_outside"] is False
-    return {"ok": traversal and untouched and observed["operation"] == "simulated-download", "method": "no bytes were read outside the root"}
+    requested = arguments["requested"]
+    if requested in {"../../etc/passwd", "escape"}:
+        ok = observed.get("blocked") is True and observed.get("bytes_read") == 0 and observed.get("opened_outside") is False
+    elif requested == "inside-link":
+        ok = observed.get("blocked") is False and observed.get("bytes_read") == 7 and observed.get("opened_outside") is False
+    else:
+        ok = False
+    return {"ok": ok and observed.get("operation") == "simulated-download", "method": "no bytes were read outside the root"}
