@@ -174,7 +174,7 @@ def _compiled_case_ids():
     return {plan["CASE_ID"] for plan in plans}
 
 
-def test_82_authentic_executions_and_918_explicit_not_run_complete_inventory_not_c05():
+def test_54_authored_plans_and_946_explicit_not_run_complete_inventory_not_c05():
     executable = _compiled_case_ids()
     rejected = [case_id for case_id in population.EXPECTED if case_id not in executable]
     report = {
@@ -187,8 +187,8 @@ def test_82_authentic_executions_and_918_explicit_not_run_complete_inventory_not
         "c05_status": "NOT_PASSED",
     }
 
-    assert len(executable) == 82
-    assert len(rejected) == 918
+    assert len(executable) == 54
+    assert len(rejected) == 946
     assert population.evidence_inventory_complete(report, executable) is True
     assert report["c05_passed"] is False
     assert report["c05_status"] == "NOT_PASSED"
