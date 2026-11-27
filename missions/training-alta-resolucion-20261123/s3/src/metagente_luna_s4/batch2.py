@@ -23,7 +23,7 @@ CASES = [
     {"case_id": "MGL5-INF-0035", "capability_id": "protobuf_old_reader", "arguments": {"wire_hex": "080712036e6577"}, "fixture_provenance": "SYNTHETIC_MINIMAL: field 1 known, field 2 optional and unknown to previous reader"},
     {"case_id": "MGL5-INF-0039", "capability_id": "schema_migrate", "arguments": {"document": {"version": 1, "name": "Luna", "count": 3}}, "fixture_provenance": "SYNTHETIC_MINIMAL: source literals versions 1 and 2"},
     {"case_id": "MGL5-INF-0040", "capability_id": "schema_unknown_field", "arguments": {"record": {"name": "Luna", "version": 2, "extra": "future"}, "known_fields": ["name", "version"]}, "fixture_provenance": "SYNTHETIC_MINIMAL: known fields plus future field"},
-    {"case_id": "MGL5-INF-0049", "capability_id": "cbor_roundtrip", "arguments": {"document": {"name": "Luna", "count": 2, "enabled": true, "items": [1, null, false]}}, "fixture_provenance": "SYNTHETIC_MINIMAL: mixed JSON-compatible CBOR map"},
+    {"case_id": "MGL5-INF-0049", "capability_id": "cbor_roundtrip", "arguments": {"document": {"name": "Luna", "count": 2, "enabled": True, "items": [1, None, False]}}, "fixture_provenance": "SYNTHETIC_MINIMAL: mixed JSON-compatible CBOR map"},
     {"case_id": "MGL5-INF-0036", "capability_id": "framed_record", "arguments": {"payload_hex": "0102"}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
     {"case_id": "MGL5-INF-0037", "capability_id": "truncated_records", "arguments": {"payload_hex": "0102"}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
     {"case_id": "MGL5-INF-0038", "capability_id": "oversize_length", "arguments": {"payload_hex": "0102"}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
