@@ -31,6 +31,19 @@ def _execute(capability_id: str, arguments: dict, case_id: str, backend: str = "
         return _record(run_id, case_id, capability_id, started, 2, "", str(exc), None, "REJECTED", backend=backend)
     if case_id.startswith("MGL5-TEO-"):
         return _record(run_id, case_id, capability_id, started, 2, "", "no hermeneutic capability is registered for this operation", None, "BLOCKED", backend=backend)
+    if capability_id == "c05_preflight_blocked":
+        capability = REGISTRY[capability_id]
+        try:
+            jsonschema.validate(arguments, capability.input_schema)
+            observed = EXECUTORS[capability_id](**arguments)
+            verdict = ORACLES[capability.oracle_id](arguments, observed)
+        except Exception as exc:  # noqa: BLE001 - invalid preflight evidence remains blocked
+            return _record(run_id, case_id, capability_id, started, 2, "", str(exc), None, "BLOCKED", backend=backend)
+        return _record(
+            run_id, case_id, capability_id, started, 2, "", arguments["details"], observed,
+            "BLOCKED", authorization={"allowed": False, "reason": arguments["blocker_code"]},
+            backend=backend, oracle_result=verdict,
+        )
     try:
         decision = authorize(capability_id, backend)
     except KeyError:
