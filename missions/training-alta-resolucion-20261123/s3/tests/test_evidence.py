@@ -55,3 +55,20 @@ def test_persist_run_rejects_path_traversal_case_id(tmp_path):
     record = {"case_id": "../../outside", "run_id": "run-evidence-0003"}
     with pytest.raises(ValueError):
         persist_run(record, {}, tmp_path)
+
+
+def test_runner_persists_observed_execution_but_does_not_claim_clean_state(tmp_path):
+    from metagente_luna_s4.runner import execute
+
+    record = execute(
+        "utf8_roundtrip",
+        {"text": "Luna"},
+        "MGL5-INF-0001",
+        evidence_root=str(tmp_path),
+    )
+    assert record["lifecycle_status"] == "EXECUTED"
+    assert record["execution_status"] == "PASS"
+    assert record["contract_status"] == "NOT_A_PASS"
+    assert record["persisted_evidence"]["clean_state"] is False
+    assert record["persisted_evidence"]["independent_validation"]["passed"] is False
+    assert record["persisted_evidence"]["evidence_status"] == "PERSISTED_NOT_INDEPENDENTLY_VALIDATED"
