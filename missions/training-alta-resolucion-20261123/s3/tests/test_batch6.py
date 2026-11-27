@@ -24,10 +24,9 @@ def test_batch6_cases_are_typed_source_grounded_plans():
             continue
         result = interpret(instruction)
         if case_id == "MGL5-INF-0106":
-            # The language interpreter correctly refuses to invent the 10,000
-            # values; the separately authored, seeded fixture supplies them.
-            assert result.status == "BLOCKED"
-            assert result.missing == ["input-integers"]
+            assert result.status == "READY"
+            assert result.intent == "descending_seed"
+            assert {argument.name: argument.value for argument in result.arguments} == {"seed": 106, "count": 10_000}
             continue
         assert result.status == "READY"
         assert result.intent == by_id[case_id]["capability_id"]
@@ -141,9 +140,9 @@ def test_four_new_d03_candidates_are_registered_oracled_and_controlled():
 
 def test_interpreter_resolves_new_fixture_backed_d03_operations():
     for case_id, operation in OPERATIONS:
-        if case_id not in {"MGL5-INF-0114", "MGL5-INF-0609", "MGL5-INF-0611", "MGL5-INF-0632"}:
+        if case_id not in {"MGL5-INF-0106", "MGL5-INF-0114", "MGL5-INF-0609", "MGL5-INF-0611", "MGL5-INF-0632"}:
             continue
         result = interpret(operation)
         assert result.status == "READY"
-        assert result.intent in {"shortest_path", "matrix_multiply", "determinant_3x3", "moving_average"}
+        assert result.intent in {"descending_seed", "shortest_path", "matrix_multiply", "determinant_3x3", "moving_average"}
         assert all(argument.provenance == "FIXTURE" for argument in result.arguments)
