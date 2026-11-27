@@ -18,6 +18,7 @@ from metagente_luna_s3 import (
     more_exec,
     more_oracle,
 )
+from metagente_luna_s3.independent_oracles import cidr_bounds_oracle
 
 
 class Capability(BaseModel):
@@ -130,7 +131,7 @@ REGISTRY: dict[str, Capability] = {
 }
 
 ORACLES: dict[str, Callable[..., dict]] = {
-    "ipaddress": lambda arguments, observed: cidr_oracle(arguments["cidr"], observed),
+    "ipaddress": cidr_bounds_oracle,
     "utf8_manual": d01_oracle.utf8_manual,
     "utf8_state_machine": d01_oracle.utf8_state_machine,
     "utf16_units": d01_oracle.utf16_units,
