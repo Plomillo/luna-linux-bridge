@@ -44,9 +44,9 @@ def test_yaml_type_plan_and_independent_oracle_cover_negative_and_boundary_input
     from metagente_luna_s3.d01_exec import yaml_types
     from metagente_luna_s3.d01_oracle import yaml_types_oracle
 
-    normal = {"text": "name: Luna\\nenabled: true\\ncount: 3\\nitems:\\n  - uno\\n  - dos\\n"}
-    negative = {"text": "name: Luna\\n  broken: true\\n"}
-    boundary = {"text": "name: ''\\nenabled: false\\ncount: 0\\nitems: []\\n"}
+    normal = {"text": "name: Luna\nenabled: true\ncount: 3\nitems:\n  - uno\n  - dos\n"}
+    negative = {"text": "name: Luna\n  broken: true\n"}
+    boundary = {"text": "name: ''\nenabled: false\ncount: 0\nitems: []\n"}
     normal_result = yaml_types(**normal)
     assert yaml_types_oracle(normal, normal_result)["ok"] is True
     negative_result = yaml_types(**negative)
