@@ -122,6 +122,8 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "oversized-declaration-rejected": return completed and observed.get("rejected") is True and observed.get("allocated_from_declaration") is False
     if expect == "zero-size-boundary": return completed and observed.get("rejected") is False and observed.get("actual_size") == 0 and observed.get("allocated_from_declaration") is False
     if expect in {"reproducibility-with-different-input", "empty-input-reproducibility"}: return completed and observed.get("identical") is True and observed.get("first") == observed.get("second")
+    if expect == "jpeg-truncated-marker-sequence-detected": return completed and observed.get("valid") is False and observed.get("truncated") is True
+    if expect == "jpeg-alternate-valid-marker-sequence": return completed and observed.get("valid") is True and [row["name"] for row in observed.get("markers", [])] == ["SOI", "DQT", "SOF0", "EOI"]
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

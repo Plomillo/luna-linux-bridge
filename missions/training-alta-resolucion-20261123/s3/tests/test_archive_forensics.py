@@ -30,6 +30,7 @@ EXPECTED = {
     "MGL5-INF-0090": "binary_diff",
     "MGL5-INF-0097": "bounded_declared_size",
     "MGL5-INF-0099": "reproducible_structure",
+    "MGL5-INF-0081": "jpeg_markers",
 }
 
 

@@ -54,6 +54,8 @@ def _build() -> None:
     _add("MGL5-INF-0097", "boundary", "bounded_declared_size", {"declared_size": 0, "payload_hex": ""}, "zero-size-boundary")
     _add("MGL5-INF-0099", "negative", "reproducible_structure", {"payload_hex": "00ff"}, "reproducibility-with-different-input")
     _add("MGL5-INF-0099", "boundary", "reproducible_structure", {"payload_hex": ""}, "empty-input-reproducibility")
+    _add("MGL5-INF-0081", "negative", "jpeg_markers", {"segments": [{"marker": "DQT", "payload_hex": "00" + "01" * 64}, {"marker": "SOF0", "payload_hex": "080001000101011100"}], "truncate_last": True}, "jpeg-truncated-marker-sequence-detected")
+    _add("MGL5-INF-0081", "boundary", "jpeg_markers", {"segments": [{"marker": "DQT", "payload_hex": "00" + "ff" * 64}, {"marker": "SOF0", "payload_hex": "080002000201011100"}], "truncate_last": False}, "jpeg-alternate-valid-marker-sequence")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -318,6 +320,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "oversized-declaration-rejected": return control_completed and observed.get("rejected") is True and observed.get("allocated_from_declaration") is False
     if expect == "zero-size-boundary": return control_completed and observed.get("rejected") is False and observed.get("actual_size") == 0 and observed.get("allocated_from_declaration") is False
     if expect in {"reproducibility-with-different-input", "empty-input-reproducibility"}: return control_completed and observed.get("identical") is True and observed.get("first") == observed.get("second")
+    if expect == "jpeg-truncated-marker-sequence-detected": return control_completed and observed.get("valid") is False and observed.get("truncated") is True
+    if expect == "jpeg-alternate-valid-marker-sequence": return control_completed and observed.get("valid") is True and [row["name"] for row in observed.get("markers", [])] == ["SOI", "DQT", "SOF0", "EOI"]
     if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.

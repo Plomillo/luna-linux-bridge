@@ -78,3 +78,16 @@ def reproducible_oracle(arguments: dict, observed: dict) -> dict:
     raw = bytes.fromhex(arguments["payload_hex"])
     expected = {"length": len(raw), "sha256": hashlib.sha256(raw).hexdigest(), "prefix_hex": raw[:8].hex()}
     return {"ok": observed.get("first") == expected and observed.get("second") == expected and observed.get("identical") is True, "method": "independent source digest and byte-length derivation"}
+
+
+def jpeg_markers_oracle(arguments: dict, observed: dict) -> dict:
+    expected = [{"name": "SOI", "offset": 0}]
+    offset = 2
+    for segment in arguments["segments"]:
+        length = len(bytes.fromhex(segment["payload_hex"])) + 2
+        expected.append({"name": segment["marker"], "offset": offset, "segment_length": length})
+        offset += 2 + length
+    if not arguments["truncate_last"]:
+        expected.append({"name": "EOI", "offset": offset})
+    complete = not arguments["truncate_last"]
+    return {"ok": observed.get("markers") == expected and observed.get("valid") is complete and observed.get("truncated") is (not complete), "method": "independent marker offsets and length-field reconstruction"}

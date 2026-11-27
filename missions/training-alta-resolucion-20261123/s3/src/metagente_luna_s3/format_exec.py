@@ -131,3 +131,44 @@ def reproducible_structure(payload_hex: str) -> dict:
     first = {"length": len(raw), "sha256": hashlib.sha256(raw).hexdigest(), "prefix_hex": raw[:8].hex()}
     second = {"length": len(raw), "sha256": hashlib.sha256(raw).hexdigest(), "prefix_hex": raw[:8].hex()}
     return {"first": first, "second": second, "identical": first == second}
+
+
+def jpeg_markers(segments: list[dict], truncate_last: bool) -> dict:
+    if [segment["marker"] for segment in segments] != ["DQT", "SOF0"]:
+        raise ValueError("fixture must contain a quantization table followed by a frame marker")
+    if len(bytes.fromhex(segments[0]["payload_hex"])) != 65 or len(bytes.fromhex(segments[1]["payload_hex"])) != 9:
+        raise ValueError("invalid minimal DQT or SOF0 segment length")
+    marker_codes = {"DQT": 0xDB, "SOF0": 0xC0}
+    raw = bytearray(b"\xff\xd8")
+    for segment in segments:
+        payload = bytes.fromhex(segment["payload_hex"])
+        raw.extend((0xFF, marker_codes[segment["marker"]]))
+        raw.extend(struct.pack(">H", len(payload) + 2))
+        raw.extend(payload)
+    raw.extend(b"\xff\xd9")
+    if truncate_last:
+        del raw[-3:]
+    markers = [{"name": "SOI", "offset": 0}]
+    valid, offset, saw_eoi = raw.startswith(b"\xff\xd8"), 2, False
+    while valid and offset < len(raw):
+        if raw[offset] != 0xFF or offset + 1 >= len(raw):
+            valid = False
+            break
+        code = raw[offset + 1]
+        name = {0xDB: "DQT", 0xC0: "SOF0", 0xD9: "EOI"}.get(code, f"FF{code:02X}")
+        marker_offset = offset
+        markers.append({"name": name, "offset": marker_offset})
+        if code == 0xD9:
+            saw_eoi = True
+            offset += 2
+            break
+        if offset + 4 > len(raw):
+            valid = False
+            break
+        length = int.from_bytes(raw[offset + 2:offset + 4], "big")
+        if length < 2 or offset + 2 + length > len(raw):
+            valid = False
+            break
+        markers[-1]["segment_length"] = length
+        offset += 2 + length
+    return {"markers": markers, "valid": valid and saw_eoi and offset == len(raw), "truncated": not saw_eoi or not valid}
