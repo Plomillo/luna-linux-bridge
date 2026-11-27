@@ -113,28 +113,6 @@ def arithmetic(expression: str) -> dict:
     return {"value": value, "expression": expression}
 
 
-def fifo_queue(values: list[str]) -> dict:
-    queue = list(values)
-    dequeued = []
-    while queue:
-        dequeued.append(queue.pop(0))
-    print(dequeued)
-    return {"enqueued": list(values), "dequeued": dequeued, "remaining": queue}
-
-
-def factorials(values: list[int]) -> dict:
-    if any(not isinstance(value, int) or isinstance(value, bool) or value < 0 for value in values):
-        return {"rejected": True, "reason": "factorial domain is non-negative integers"}
-    results = []
-    for value in values:
-        result = 1
-        for factor in range(2, value + 1):
-            result *= factor
-        results.append({"n": value, "value": result})
-    print(results)
-    return {"rejected": False, "results": results}
-
-
 def child_status() -> dict:
     process = subprocess.Popen([sys.executable, "-c", "import sys; sys.exit(7)"])
     code = process.wait(timeout=5)
