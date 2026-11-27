@@ -1,6 +1,7 @@
 """Runs one registered capability in-process. That is a local test, not a sandbox."""
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import os
