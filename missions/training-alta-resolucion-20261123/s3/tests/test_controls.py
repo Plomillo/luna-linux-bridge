@@ -88,6 +88,16 @@ def test_scientific_and_evaluation_independent_oracles():
     assert statistics_variance({"values": [5]}, {"rejected": False, "population": 0.0, "sample": None})["ok"] is True
 
 
+def test_newton_and_quadrature_oracles_are_independent():
+    from metagente_luna_s3.batch4_oracle import half, one_third
+    from metagente_luna_s3.batch5_oracle import library_root
+
+    assert library_root({"initial": 1.0, "target": -1.0}, {"rejected": True})["ok"] is True
+    assert library_root({"initial": 1.0, "target": 1.0}, {"rejected": False, "root": 1.0, "residual": 0.0})["ok"] is True
+    assert half({"panels": 1}, {"rejected": False, "value": 0.5, "method": "trapezoidal", "panels": 1, "weights": [1, 1], "points": [0.0, 1.0]})["ok"] is True
+    assert one_third({"panels": 2}, {"rejected": False, "value": 1 / 3, "method": "simpson", "panels": 2, "weights": [1, 4, 1], "points": [0.0, 0.25, 1.0]})["ok"] is True
+
+
 def test_newton_and_quadrature_controls_are_adjudicated():
     assert accepts("newton-negative-target-rejected", {"rejected": True}, "EXECUTED") is True
     assert accepts("newton-unit-root-boundary", {"rejected": False, "root": 1.0, "residual": 0.0}, "EXECUTED") is True
