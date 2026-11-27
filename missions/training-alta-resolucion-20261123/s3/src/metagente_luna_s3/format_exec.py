@@ -654,7 +654,7 @@ def dex_inspect(payload_hex: str, mode: str) -> dict:
         offset = struct.unpack_from("<I", raw, string_table["offset"] + index * 4)[0]
         if offset >= len(raw):
             return {"rejected": True, "reason": "string_data_offset_out_of_bounds"}
-        end = raw.find(b"\\0", offset)
+        end = raw.find(bytes([0]), offset)
         if end < 0:
             return {"rejected": True, "reason": "unterminated_string_data"}
         strings.append(raw[offset:end].decode("utf-8", "replace"))
