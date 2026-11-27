@@ -35,7 +35,7 @@ def test_controls_that_were_defined_are_accepted():
     assert defined
     failures = [(row["case_id"], {kind: {"accepted": result["accepted"], "status": result["execution_status"], "observed": result["observed"]} for kind, result in row["controls"].items() if not result["accepted"]}) for row in defined if row["control_status"] != "PRESENT"]
     assert not failures, __import__("json").dumps(failures, ensure_ascii=False, sort_keys=True)
-    assert len(defined) == 99
+    assert len(defined) == 100
 
 def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries():
     assert accepts("distinct-bom-payloads", {"visible": "marked", "plain_text": "plain", "contains_bom_character": False}, "EXECUTED") is True
@@ -250,3 +250,13 @@ def test_empty_roundtrip_control_cannot_pass_without_successful_execution():
     assert accepts("empty-roundtrip", {"bytes_hex": ""}, "EXECUTED") is True
     assert accepts("empty-roundtrip", {"bytes_hex": ""}, "BLOCKED") is False
     assert accepts("empty-roundtrip", {"visible": ""}, "INCONCLUSIVE") is False
+
+
+def test_elf_magic_identification_ignores_a_misleading_jpg_extension():
+    from metagente_luna_s4.runner import execute
+    arguments = {"name": "sample.jpg", "payload_hex": "7f454c46020101000000000000000000"}
+    result = execute("magic_bytes", arguments, "MGL5-INF-0052")
+    assert result["execution_status"] == "EXECUTED"
+    assert result["observed"] == {"extension": "jpg", "detected": "elf", "extension_matches_content": False}
+    assert accepts("unknown-signature", {"detected": "unknown", "extension_matches_content": False}, "EXECUTED") is True
+    assert accepts("elf-extension-match", {"detected": "elf", "extension_matches_content": True}, "EXECUTED") is True
