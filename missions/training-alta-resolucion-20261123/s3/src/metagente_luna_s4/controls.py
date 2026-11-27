@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 from metagente_luna_s4.batch2 import (
-    _ELF_ARM_HEX,\n    _DEX_HEX,\n    _DEX_FIXTURE,
+    _ELF_ARM_HEX,
+    _DEX_HEX,
+    _DEX_FIXTURE,
     _ELF_STRIPPED_BOUNDARY_HEX,
     _ELF_STRIPPED_HEX,
     _ELF_SYMBOLS_BOUNDARY_HEX,
