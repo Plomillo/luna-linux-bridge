@@ -28,7 +28,7 @@ CASES = [
     {"case_id": "MGL5-INF-0048", "capability_id": "sha256_text", "arguments": {"text": "abc"}},
     {"case_id": "MGL5-INF-0041", "capability_id": "float32_exactness", "arguments": {"values": [16777216, 16777217, 16777219]}, "fixture_provenance": "SYNTHETIC_MINIMAL: IEEE-754 binary32 exact-integer boundary"},
     {"case_id": "MGL5-INF-0042", "capability_id": "decimal_text", "arguments": {"text": "0.10"}},
-    {"case_id": "MGL5-INF-0043", "capability_id": "three_states", "arguments": {"present": {"b": null, "c": ""}, "absent_key": "a"}, "fixture_provenance": "SYNTHETIC_MINIMAL: absent/null/empty fields"},
+    {"case_id": "MGL5-INF-0043", "capability_id": "three_states", "arguments": {"present": {"b": None, "c": ""}, "absent_key": "a"}, "fixture_provenance": "SYNTHETIC_MINIMAL: absent/null/empty fields"},
     {"case_id": "MGL5-INF-0046", "capability_id": "base64_bytes", "arguments": {"payload_hex": "00ff01"}, "fixture_provenance": "SYNTHETIC_MINIMAL: byte sequence contains 0x00 and 0xFF"},
     {"case_id": "MGL5-INF-0047", "capability_id": "base64_reject", "arguments": {"text": "A==="}},
     {"case_id": "MGL5-INF-0050", "capability_id": "manifest_hash", "arguments": {"document": {"name": "luna", "version": 1}, "altered": {"name": "luna", "version": 2}}, "fixture_provenance": "SYNTHETIC_MINIMAL: deterministic manifest and alteration"},
