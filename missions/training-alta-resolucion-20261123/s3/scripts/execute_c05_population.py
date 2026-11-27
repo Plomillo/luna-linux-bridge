@@ -72,7 +72,7 @@ def plan_errors(plan: dict, case_id: str) -> list[str]:
             lines = source_bytes.splitlines(keepends=True)
             start, end = source["line_start"], source["line_end"]
             exact = b"".join(lines[start - 1:end])
-            git_blob = hashlib.sha1(f"blob {len(source_bytes)}\\0".encode("ascii") + source_bytes).hexdigest()
+            git_blob = hashlib.sha1(f"blob {len(source_bytes)}\0".encode("ascii") + source_bytes).hexdigest()
             if hashlib.sha256(source_bytes).hexdigest() != source["file_sha256"]:
                 errors.append("source-file-sha256-mismatch")
             if git_blob != source["source_blob"]:
