@@ -51,3 +51,23 @@ All mission work, source inspection, code changes, plans, execution, evidence an
 ## Registry census
 
 The registered S3 capability registry currently exposes 67 capability IDs. Registry membership alone does not provide a valid mapping for each INF case, nor source-authored inputs and independently defined controls. A planner must produce a reviewed mapping and reject unsupported cases rather than assign a capability by broad domain or invent inputs.
+
+
+## Hosted restricted-Docker partial population — 2026-11-27
+
+- Workflow run #76: `45939496888`
+- Candidate commit: `bdf25b2d50207ee394468b0603abf3c9a065b4ec`
+- Docker job execution step: SUCCESS.
+- Source-bound backlog: 1,000 INF records; D01–D20, 50 each.
+- Executable-plan compiler: 15 plans emitted from existing normal specifications plus authored NEGATIVE and BOUNDARY controls; 84 other normal specifications skipped because one or both controls were not authored; remaining INF cases have no complete plan.
+- Compiled case IDs: `0001, 0002, 0003, 0004, 0005, 0007, 0008, 0009, 0010, 0011, 0012, 0030, 0101, 0102, 0251`.
+- Docker population: 75 runs (15 cases × 3 NORMAL + 1 NEGATIVE + 1 BOUNDARY), with the pinned worker image `sha256:5a5d9a113125f04406a5077af89e1fe62791fee66d117b37cf287ad134e93782`.
+- Population validator report: 15 authentic results; 985 NOT_RUN; 985 rejected as not executed; 0 contractual PASS; C05 `NOT_PASSED`.
+- Artifact ID: `15171603055`; SHA-256: `6d09ea0f59c16a91a6326e39ec38c6814efa19367064548811a1b7dd4f41815a`.
+- Artifact URL: https://github.com/Plomillo/luna-linux-bridge/actions/runs/45939496888
+
+The Docker execution and independent per-case evidence checks completed. The final workflow assertion failed because it incorrectly expected the validator's `rejected` list to be empty; the validator correctly listed the 985 unexecuted cases as rejected. This was a workflow assertion defect, not an execution failure. The assertion was corrected to require that the rejected IDs equal exactly the 985 cases absent from the compiled plan set, while requiring all 15 planned cases to be authentic.
+
+The same candidate's automated validation workflow run #122 (`45939496896`) succeeded: compileall, source backlog, TEO dossier compiler, Ruff, and 70 unit/adversarial tests passed. The next hosted run must verify the corrected population assertion and archive the partial batch.
+
+This result is not C05 certification: 985 INF cases remain NOT_RUN; the 15 authentic dossiers have `contract_status=NOT_A_PASS`; the global contract PASS count remains zero. The Docker container continues to share the host kernel (`SHARED_HOST_KERNEL_NOT_VM`).
