@@ -149,7 +149,7 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
                 lines = source_bytes.splitlines(keepends=True)
                 line_start, line_end = source_metadata["line_start"], source_metadata["line_end"]
                 excerpt_bytes = b"".join(lines[line_start - 1:line_end])
-                git_blob = hashlib.sha1(f"blob {len(source_bytes)}\\0".encode("ascii") + source_bytes).hexdigest()
+                git_blob = hashlib.sha1(f"blob {len(source_bytes)}\0".encode("ascii") + source_bytes).hexdigest()
                 source_valid = (
                     line_start >= 1 and line_end >= line_start and line_end <= len(lines)
                     and _digest(source_bytes) == source_metadata.get("file_sha256")
