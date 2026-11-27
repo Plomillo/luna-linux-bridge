@@ -128,6 +128,7 @@ def test_dex_table_parser_reconstructs_strings_and_all_declared_table_shapes():
 
 def test_dex_parser_rejects_data_section_overrun_even_with_recomputed_integrity():
     import struct
+
     from metagente_luna_s3.format_exec import dex_inspect
     from metagente_luna_s4.batch2 import _DEX_FIXTURE
 
@@ -140,6 +141,7 @@ def test_dex_parser_rejects_data_section_overrun_even_with_recomputed_integrity(
 
 def test_dex_parser_rejects_string_data_pointer_into_header():
     import struct
+
     from metagente_luna_s3.format_exec import dex_inspect
     from metagente_luna_s4.batch2 import _DEX_FIXTURE
 
@@ -152,6 +154,7 @@ def test_dex_parser_rejects_string_data_pointer_into_header():
 
 def test_dex_parser_checks_uleb128_utf16_length_and_terminator():
     import struct
+
     from metagente_luna_s3.format_exec import dex_inspect
     from metagente_luna_s4.batch2 import _DEX_FIXTURE
 
@@ -164,6 +167,7 @@ def test_dex_parser_checks_uleb128_utf16_length_and_terminator():
 
 def test_dex_parser_bounds_proto_parameter_type_list():
     import struct
+
     from metagente_luna_s3.format_exec import dex_inspect
     from metagente_luna_s4.batch2 import _DEX_FIXTURE
 
