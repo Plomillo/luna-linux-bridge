@@ -169,3 +169,14 @@ def test_population_and_historical_claims_remain_unaccredited():
     assert validate(rows)["c05_passed"] is False
     assert manifest()["c05_status"] == "NOT_PASSED"
     assert manifest()["global_condition_counter"] == "4/26"
+
+
+def test_evidence_paths_cannot_be_reused_between_repetitions(tmp_path):
+    row = _valid_row_with_artifacts(tmp_path)
+    first = row["repetitions"][0]["artifacts"]["fixture"]
+    row["repetitions"][1]["artifacts"]["fixture"] = dict(first)
+    rows = _population("NOT_RUN")
+    rows[0] = row
+    verdict = validate(rows, evidence_root=tmp_path)
+    reasons = verdict["rejected"][0]["reasons"]
+    assert any(reason.startswith("evidence-path-reused:") for reason in reasons)
