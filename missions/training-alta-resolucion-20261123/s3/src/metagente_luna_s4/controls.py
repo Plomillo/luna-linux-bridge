@@ -127,6 +127,12 @@ def _build() -> None:
     _add("MGL5-INF-0047", "boundary", "base64_reject", {"text": "A==="}, "invalid-padding-rejected")
     _add("MGL5-INF-0048", "boundary", "sha256_text", {"text": ""}, "empty-sha256")
     _add("MGL5-INF-0050", "boundary", "manifest_hash", {"document": {}, "altered": {"name": "luna"}}, "empty-manifest-change")
+    _add("MGL5-INF-0608", "negative", "l2_norm", {"components": ["3"]}, "noninteger-components-rejected")
+    _add("MGL5-INF-0608", "boundary", "l2_norm", {"components": []}, "zero-vector")
+    _add("MGL5-INF-0626", "negative", "pearson", {"left": [1, 1, 1], "right": [1, 2, 3]}, "zero-variance-rejected")
+    _add("MGL5-INF-0626", "boundary", "pearson", {"left": [1, 2], "right": [2, 4]}, "perfect-positive-correlation")
+    _add("MGL5-INF-0627", "negative", "pearson", {"left": [1, 1, 1], "right": [3, 2, 1]}, "zero-variance-rejected")
+    _add("MGL5-INF-0627", "boundary", "pearson", {"left": [1, 2], "right": [2, 1]}, "perfect-negative-correlation")
     _add("MGL5-INF-0109", "negative", "stack_sequence", {"steps": ["pop"]}, "single-underflow")
     _add("MGL5-INF-0109", "boundary", "stack_sequence", {"steps": []}, "empty-stack-sequence")
 
