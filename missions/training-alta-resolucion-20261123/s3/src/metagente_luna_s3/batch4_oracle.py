@@ -3,9 +3,12 @@ from __future__ import annotations
 
 
 def counted(arguments: dict, observed: dict) -> dict:
+    times = arguments["times"]
+    if times < 0:
+        return {"ok": observed.get("rejected") is True, "method": "negative operation count rejected"}
     identifiers = observed["ids"]
-    unique = len(identifiers) == len(set(identifiers)) == arguments["times"] == 100
-    return {"ok": unique and observed["completed"] == 100 and observed["failed"] == 0, "method": "one hundred distinct completions"}
+    unique = len(identifiers) == len(set(identifiers)) == times
+    return {"ok": observed.get("rejected") is False and unique and observed["completed"] == times and observed["failed"] == 0, "method": "independent operation identity count"}
 
 
 def correlation(arguments: dict, observed: dict) -> dict:
@@ -67,13 +70,15 @@ def axis_cosines(arguments: dict, observed: dict) -> dict:
 
 
 def request_counts(arguments: dict, observed: dict) -> dict:
-    del arguments
+    successes, failures = arguments["successes"], arguments["failures"]
+    if successes < 0 or failures < 0 or successes + failures <= 0:
+        return {"ok": observed.get("rejected") is True, "method": "invalid request counts rejected"}
     statuses = observed["statuses"]
     ok_count = sum(status == 200 for status in statuses)
     bad_count = sum(status == 500 for status in statuses)
     total = len(statuses)
     recomputed = ok_count / total
-    ok = ok_count == 99 and bad_count == 1 and total == 100 and observed["availability"] == recomputed
+    ok = ok_count == successes and bad_count == failures and total == successes + failures and observed.get("rejected") is False and observed["availability"] == recomputed
     return {"ok": ok, "method": "recounted status codes"}
 
 
