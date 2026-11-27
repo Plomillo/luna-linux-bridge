@@ -4,7 +4,7 @@ from metagente_luna_s4.d01_batch import assess_c05, run_all
 
 def test_encoding_cases_meet_their_stated_criterion_on_three_runs():
     rows = run_all()
-    assert len(rows) == 21
+    assert len(rows) == 27
     assert {row["execution_status"] for row in rows} == {"CRITERION_MET"}
     by_id = {row["case_id"]: row["observed"] for row in rows}
     assert by_id["MGL5-INF-0001"]["recovered"] == "Luna-2026"
@@ -14,7 +14,7 @@ def test_encoding_cases_meet_their_stated_criterion_on_three_runs():
     assert by_id["MGL5-INF-0048"]["digest_hex"] == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
     gate = assess_c05(rows)
     assert gate["gate"] == "NOT_PASSED"
-    assert gate["not_run"] == 979
+    assert gate["not_run"] == 973
     assert gate["counter"] == "4/26"
 
 
