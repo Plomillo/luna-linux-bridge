@@ -227,8 +227,9 @@ _FORMAT_SCHEMAS = {
     "elf_section_layout": {"type": "object", "required": ["payload_hex", "include_load_segments"], "properties": {"payload_hex": {"type": "string", "minLength": 40, "maxLength": 32768, "pattern": "^([0-9a-fA-F]{2})+$"}, "include_load_segments": {"type": "boolean"}}, "additionalProperties": False},
     "elf_dynamic_dependencies": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "minLength": 40, "maxLength": 32768, "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False},
     "elf_rpath_runpath": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "minLength": 40, "maxLength": 32768, "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False},
+    "pe_inspect": {"type": "object", "required": ["payload_hex", "mode"], "properties": {"payload_hex": {"type": "string", "minLength": 40, "maxLength": 32768, "pattern": "^([0-9a-fA-F]{2})+$"}, "mode": {"type": "string", "enum": ["header", "sections", "imports"]}}, "additionalProperties": False},
 }
-_FORMAT_ORACLES = {"sqlite_header": "sqlite_header_independent", "sqlite_integrity": "sqlite_integrity_independent", "wasm_header": "wasm_header_independent", "png_chunks": "png_chunks_independent", "unknown_format": "unknown_format_independent", "block_entropy": "block_entropy_independent", "binary_diff": "binary_diff_independent", "bounded_declared_size": "bounded_size_independent", "reproducible_structure": "reproducible_structure_independent", "jpeg_markers": "jpeg_markers_independent", "partial_recovery": "partial_recovery_independent", "timestamp_provenance": "timestamp_provenance_independent", "dependency_graph": "dependency_graph_independent", "protocol_version_diff": "protocol_version_diff_independent", "section_overlaps": "section_overlaps_independent", "nested_zip_tar": "nested_zip_tar_independent", "forensic_report": "forensic_report_independent", "seven_zip_list": "seven_zip_list_independent", "seven_zip_missing_volume": "seven_zip_missing_volume_independent", "wasm_sections": "wasm_sections_independent", "wasm_type_indices": "wasm_type_indices_independent", "pdf_objects": "pdf_objects_independent", "pdf_xref": "pdf_xref_independent", "pdf_encryption_boundary": "pdf_encryption_boundary_independent", "elf_symbol_tables": "elf_symbol_tables_independent", "elf_host_compatibility": "elf_host_compatibility_independent", "elf_section_layout": "elf_section_layout_independent", "elf_dynamic_dependencies": "elf_dynamic_dependencies_independent", "elf_rpath_runpath": "elf_rpath_runpath_independent"}
+_FORMAT_ORACLES = {"sqlite_header": "sqlite_header_independent", "sqlite_integrity": "sqlite_integrity_independent", "wasm_header": "wasm_header_independent", "png_chunks": "png_chunks_independent", "unknown_format": "unknown_format_independent", "block_entropy": "block_entropy_independent", "binary_diff": "binary_diff_independent", "bounded_declared_size": "bounded_size_independent", "reproducible_structure": "reproducible_structure_independent", "jpeg_markers": "jpeg_markers_independent", "partial_recovery": "partial_recovery_independent", "timestamp_provenance": "timestamp_provenance_independent", "dependency_graph": "dependency_graph_independent", "protocol_version_diff": "protocol_version_diff_independent", "section_overlaps": "section_overlaps_independent", "nested_zip_tar": "nested_zip_tar_independent", "forensic_report": "forensic_report_independent", "seven_zip_list": "seven_zip_list_independent", "seven_zip_missing_volume": "seven_zip_missing_volume_independent", "wasm_sections": "wasm_sections_independent", "wasm_type_indices": "wasm_type_indices_independent", "pdf_objects": "pdf_objects_independent", "pdf_xref": "pdf_xref_independent", "pdf_encryption_boundary": "pdf_encryption_boundary_independent", "elf_symbol_tables": "elf_symbol_tables_independent", "elf_host_compatibility": "elf_host_compatibility_independent", "elf_section_layout": "elf_section_layout_independent", "elf_dynamic_dependencies": "elf_dynamic_dependencies_independent", "elf_rpath_runpath": "elf_rpath_runpath_independent", "pe_inspect": "pe_inspect_independent"}
 for _format_name, _format_oracle in _FORMAT_ORACLES.items():
     REGISTRY[_format_name] = _cap(_format_name, _format_oracle, _FORMAT_SCHEMAS[_format_name])
 
@@ -329,6 +330,7 @@ ORACLES["elf_host_compatibility_independent"] = format_oracle.elf_host_compatibi
 ORACLES["elf_section_layout_independent"] = format_oracle.elf_section_layout_oracle
 ORACLES["elf_dynamic_dependencies_independent"] = format_oracle.elf_dynamic_dependencies_oracle
 ORACLES["elf_rpath_runpath_independent"] = format_oracle.elf_rpath_runpath_oracle
+ORACLES["pe_inspect_independent"] = format_oracle.pe_inspect_oracle
 
 EXECUTORS: dict[str, Callable[..., dict]] = {
     "cidr_bounds": cidr_bounds,
@@ -426,6 +428,7 @@ EXECUTORS["elf_host_compatibility"] = format_exec.elf_host_compatibility
 EXECUTORS["elf_section_layout"] = format_exec.elf_section_layout
 EXECUTORS["elf_dynamic_dependencies"] = format_exec.elf_dynamic_dependencies
 EXECUTORS["elf_rpath_runpath"] = format_exec.elf_rpath_runpath
+EXECUTORS["pe_inspect"] = format_exec.pe_inspect
 
 EXECUTORS["c05_preflight_blocked"] = c05_preflight.blocked_preflight_probe
 

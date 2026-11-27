@@ -106,11 +106,21 @@ def _build() -> None:
     _add("MGL5-INF-0054", "boundary", "elf_section_layout", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX, "include_load_segments": False}, "elf-alternate-section-offsets-within-file")
     _add("MGL5-INF-0055", "negative", "elf_section_layout", {"payload_hex": _ELF_SYMBOLS_HEX[:120], "include_load_segments": True}, "elf-truncated-load-map-rejected")
     _add("MGL5-INF-0055", "boundary", "elf_section_layout", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX, "include_load_segments": True}, "elf-alternate-load-map-preserves-sections")
-    from metagente_luna_s4.batch2 import _ELF_RPATH_RUNPATH_BOUNDARY_HEX
+    from metagente_luna_s4.batch2 import _ELF_RPATH_RUNPATH_BOUNDARY_HEX, _PE_HEX
     _add("MGL5-INF-0058", "negative", "elf_dynamic_dependencies", {"payload_hex": _ELF_SYMBOLS_HEX[:120]}, "elf-truncated-dynamic-input-rejected")
     _add("MGL5-INF-0058", "boundary", "elf_dynamic_dependencies", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX}, "elf-alternate-trusted-dependency-resolution")
     _add("MGL5-INF-0059", "negative", "elf_rpath_runpath", {"payload_hex": _ELF_SYMBOLS_HEX}, "elf-no-search-tags-reported")
     _add("MGL5-INF-0059", "boundary", "elf_rpath_runpath", {"payload_hex": _ELF_RPATH_RUNPATH_BOUNDARY_HEX}, "elf-both-search-tags-reported")
+    no_imports = bytearray.fromhex(_PE_HEX)
+    no_imports[0x110:0x118] = bytes(8)
+    _add("MGL5-INF-0061", "negative", "pe_inspect", {"payload_hex": _PE_HEX[:100], "mode": "header"}, "pe-truncated-header-rejected")
+    _add("MGL5-INF-0061", "boundary", "pe_inspect", {"payload_hex": _PE_HEX + "00", "mode": "header"}, "pe-valid-signature-bounded")
+    _add("MGL5-INF-0062", "negative", "pe_inspect", {"payload_hex": _PE_HEX[:0x188 * 2], "mode": "sections"}, "pe-truncated-section-table-rejected")
+    _add("MGL5-INF-0062", "boundary", "pe_inspect", {"payload_hex": _PE_HEX + "00", "mode": "sections"}, "pe-section-boundary-valid")
+    _add("MGL5-INF-0063", "negative", "pe_inspect", {"payload_hex": no_imports.hex(), "mode": "imports"}, "pe-no-static-imports-reported")
+    _add("MGL5-INF-0063", "boundary", "pe_inspect", {"payload_hex": _PE_HEX + "00", "mode": "imports"}, "pe-static-imports-separated")
+    _add("MGL5-INF-0064", "negative", "pe_inspect", {"payload_hex": _PE_HEX[:0x98 * 2], "mode": "sections"}, "pe-truncated-section-table-rejected")
+    _add("MGL5-INF-0064", "boundary", "pe_inspect", {"payload_hex": _PE_HEX, "mode": "sections"}, "pe-section-boundary-valid")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -415,6 +425,12 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "elf-alternate-trusted-dependency-resolution": return control_completed and observed.get("rejected") is False and observed.get("runtime_resolution_attempted") is True and observed.get("program_entry_executed") is False and set(observed.get("runtime_resolved", {})) == set(observed.get("declared_dependencies", []))
     if expect == "elf-no-search-tags-reported": return control_completed and observed.get("rejected") is False and observed.get("rpath") == [] and observed.get("runpath") == [] and observed.get("both_present") is False
     if expect == "elf-both-search-tags-reported": return control_completed and observed.get("rejected") is False and bool(observed.get("rpath")) and bool(observed.get("runpath")) and observed.get("both_present") is True and observed.get("precedence_claim") == "NOT_INFERRED_WHEN_BOTH_PRESENT"
+    if expect == "pe-truncated-header-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "pe-valid-signature-bounded": return control_completed and observed.get("rejected") is False and observed.get("mz_valid") is True and observed.get("pe_signature_valid") is True and observed.get("bytes_read") == 0x98
+    if expect == "pe-truncated-section-table-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "pe-section-boundary-valid": return control_completed and observed.get("rejected") is False and {".text", ".data", ".rdata"} <= {row["name"] for row in observed.get("sections", [])}
+    if expect == "pe-no-static-imports-reported": return control_completed and observed.get("rejected") is False and observed.get("static_imports") == [] and observed.get("dynamic_runtime_modules_observed") is None
+    if expect == "pe-static-imports-separated": return control_completed and observed.get("rejected") is False and observed.get("static_imports") == [{"dll": "KERNEL32.dll", "symbols": ["ExitProcess"]}] and observed.get("dynamic_runtime_modules_observed") is None
     if expect == "wasm-type-index-out-of-range": return control_completed and observed.get("rejected") is True and observed.get("invalid_indices") == [1]
     if expect == "wasm-no-types-no-functions": return control_completed and observed.get("rejected") is False and observed.get("invalid_indices") == []
     if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True

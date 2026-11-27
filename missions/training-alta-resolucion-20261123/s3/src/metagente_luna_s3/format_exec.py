@@ -564,3 +564,56 @@ def elf_rpath_runpath(payload_hex: str) -> dict:
         "precedence_claim": "NOT_INFERRED_WHEN_BOTH_PRESENT",
         "sha256": observed["sha256"],
     }
+
+
+def pe_inspect(payload_hex: str, mode: str) -> dict:
+    """Inspect PE headers, sections, or static imports without loading the image."""
+    raw = bytes.fromhex(payload_hex)
+    digest = hashlib.sha256(raw).hexdigest()
+    if len(raw) < 64 or raw[:2] != b"MZ":
+        return {"rejected": True, "reason": "invalid_or_truncated_dos_header", "sha256": digest}
+    pe_offset = int.from_bytes(raw[0x3C:0x40], "little")
+    if pe_offset + 24 > len(raw) or raw[pe_offset:pe_offset + 4] != b"PE\0\0":
+        return {"rejected": True, "reason": "invalid_or_truncated_pe_header", "sha256": digest}
+    if mode == "header":
+        return {"rejected": False, "mz_valid": True, "pe_offset": pe_offset, "pe_signature_valid": True, "bytes_read": min(len(raw), pe_offset + 24), "sha256": digest}
+    if pe_offset + 24 > len(raw):
+        return {"rejected": True, "reason": "truncated_coff_header", "sha256": digest}
+    section_count = int.from_bytes(raw[pe_offset + 6:pe_offset + 8], "little")
+    optional_size = int.from_bytes(raw[pe_offset + 20:pe_offset + 22], "little")
+    section_table = pe_offset + 24 + optional_size
+    if section_table + section_count * 40 > len(raw):
+        return {"rejected": True, "reason": "truncated_section_table", "sha256": digest}
+    with tempfile.TemporaryDirectory(prefix="c05-pe-") as temporary:
+        path = f"{temporary}/specimen.exe"
+        with open(path, "wb") as specimen:
+            specimen.write(raw)
+        headers = subprocess.run(["objdump", "-h", path], capture_output=True, text=True, timeout=5, check=False)
+        if headers.returncode != 0:
+            return {"rejected": True, "reason": headers.stderr.strip()[:300], "sha256": digest}
+        sections = []
+        pattern = re.compile(r"^\s*\d+\s+(\S+)\s+([0-9a-fA-F]+)\s+([0-9a-fA-F]+)\s+[0-9a-fA-F]+\s+([0-9a-fA-F]+)")
+        for line in headers.stdout.splitlines():
+            match = pattern.match(line)
+            if match:
+                name, size, vma, file_offset = match.groups()
+                sections.append({"name": name, "size": int(size, 16), "virtual_address": int(vma, 16), "file_offset": int(file_offset, 16)})
+        result = {"rejected": False, "sections": sections, "sha256": digest, "image_loaded": False}
+        if mode == "imports":
+            details = subprocess.run(["objdump", "-p", path], capture_output=True, text=True, timeout=5, check=False)
+            if details.returncode != 0:
+                return {"rejected": True, "reason": details.stderr.strip()[:300], "sha256": digest}
+            imports = []
+            current = None
+            for line in details.stdout.splitlines():
+                dll = re.match(r"\s*DLL Name: (\S+)", line)
+                member = re.match(r"\s*[0-9a-fA-F]+\s+<none>\s+[0-9a-fA-F]+\s+(\S+)", line)
+                if dll:
+                    current = {"dll": dll.group(1), "symbols": []}
+                    imports.append(current)
+                elif member and current is not None:
+                    current["symbols"].append(member.group(1))
+            result["static_imports"] = imports
+            result["dynamic_runtime_modules_observed"] = None
+            result["static_dynamic_distinguished"] = True
+        return result

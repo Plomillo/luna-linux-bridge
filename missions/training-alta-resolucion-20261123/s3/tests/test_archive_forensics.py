@@ -53,6 +53,10 @@ EXPECTED = {
     "MGL5-INF-0055": "elf_section_layout",
     "MGL5-INF-0058": "elf_dynamic_dependencies",
     "MGL5-INF-0059": "elf_rpath_runpath",
+    "MGL5-INF-0061": "pe_inspect",
+    "MGL5-INF-0062": "pe_inspect",
+    "MGL5-INF-0063": "pe_inspect",
+    "MGL5-INF-0064": "pe_inspect",
 }
 
 

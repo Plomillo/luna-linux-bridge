@@ -164,6 +164,12 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "elf-alternate-trusted-dependency-resolution": return completed and observed.get("rejected") is False and observed.get("runtime_resolution_attempted") is True and observed.get("program_entry_executed") is False and set(observed.get("runtime_resolved", {})) == set(observed.get("declared_dependencies", []))
     if expect == "elf-no-search-tags-reported": return completed and observed.get("rejected") is False and observed.get("rpath") == [] and observed.get("runpath") == [] and observed.get("both_present") is False
     if expect == "elf-both-search-tags-reported": return completed and observed.get("rejected") is False and bool(observed.get("rpath")) and bool(observed.get("runpath")) and observed.get("both_present") is True and observed.get("precedence_claim") == "NOT_INFERRED_WHEN_BOTH_PRESENT"
+    if expect == "pe-truncated-header-rejected": return completed and observed.get("rejected") is True
+    if expect == "pe-valid-signature-bounded": return completed and observed.get("rejected") is False and observed.get("mz_valid") is True and observed.get("pe_signature_valid") is True and observed.get("bytes_read") == 0x98
+    if expect == "pe-truncated-section-table-rejected": return completed and observed.get("rejected") is True
+    if expect == "pe-section-boundary-valid": return completed and observed.get("rejected") is False and {".text", ".data", ".rdata"} <= {row["name"] for row in observed.get("sections", [])}
+    if expect == "pe-no-static-imports-reported": return completed and observed.get("rejected") is False and observed.get("static_imports") == [] and observed.get("dynamic_runtime_modules_observed") is None
+    if expect == "pe-static-imports-separated": return completed and observed.get("rejected") is False and observed.get("static_imports") == [{"dll": "KERNEL32.dll", "symbols": ["ExitProcess"]}] and observed.get("dynamic_runtime_modules_observed") is None
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

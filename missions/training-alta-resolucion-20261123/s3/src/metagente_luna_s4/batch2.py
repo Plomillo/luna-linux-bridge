@@ -17,6 +17,8 @@ _ELF_STRIPPED_BOUNDARY_HEX = (_PDF_FIXTURES / "FX-MGL5-INF-0057-boundary-strippe
 _ELF_ARM_HEX = (_PDF_FIXTURES / "FX-MGL5-INF-0060-arm.elf").read_bytes().hex()
 _ELF_RPATH_RUNPATH_HEX = (_PDF_FIXTURES / "FX-MGL5-INF-0059-rpath-runpath.elf").read_bytes().hex()
 _ELF_RPATH_RUNPATH_BOUNDARY_HEX = (_PDF_FIXTURES / "FX-MGL5-INF-0059-boundary-rpath-runpath.elf").read_bytes().hex()
+_PE_FIXTURE = (_PDF_FIXTURES / "FX-MGL5-INF-0061-0064-pe64.bin").read_bytes()
+_PE_HEX = _PE_FIXTURE.hex()
 CASES = [
     {"case_id": "MGL5-INF-0019", "capability_id": "text_units", "arguments": {"text": _ZWJ}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
     {"case_id": "MGL5-INF-0020", "capability_id": "text_units", "arguments": {"text": "e\u0301"}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
@@ -88,6 +90,10 @@ CASES = [
     {"case_id": "MGL5-INF-0055", "capability_id": "elf_section_layout", "arguments": {"payload_hex": _ELF_SYMBOLS_HEX, "include_load_segments": True}, "fixture_provenance": "SOURCE_DERIVED_ELF64_LOAD_MAP: PT_LOAD file/memory extents and associated section names from frozen lab executable"},
     {"case_id": "MGL5-INF-0058", "capability_id": "elf_dynamic_dependencies", "arguments": {"payload_hex": _ELF_SYMBOLS_HEX}, "fixture_provenance": "SOURCE_DERIVED_ELF64_DYNAMIC: frozen compiler-produced specimen; readelf DT_NEEDED and ldd loader resolution only on SHA-256-pinned trusted fixture; program entry never run"},
     {"case_id": "MGL5-INF-0059", "capability_id": "elf_rpath_runpath", "arguments": {"payload_hex": _ELF_RPATH_RUNPATH_HEX}, "fixture_provenance": "SOURCE_DERIVED_ELF64_SEARCH_TAGS: genuine linker RUNPATH plus inert DT_DEBUG slot retyped as DT_RPATH; both dynamic strings validated by independent raw parser"},
+    {"case_id": "MGL5-INF-0061", "capability_id": "pe_inspect", "arguments": {"payload_hex": _PE_HEX, "mode": "header"}, "fixture_provenance": "SOURCE_DERIVED_PE64: deterministic handcrafted PE32+ fixture with MZ, bounded e_lfanew and PE signature; structural inspection only"},
+    {"case_id": "MGL5-INF-0062", "capability_id": "pe_inspect", "arguments": {"payload_hex": _PE_HEX, "mode": "sections"}, "fixture_provenance": "SOURCE_DERIVED_PE64: fixture contains .text, .data and .rdata with independently reconstructable raw offsets and sizes"},
+    {"case_id": "MGL5-INF-0063", "capability_id": "pe_inspect", "arguments": {"payload_hex": _PE_HEX, "mode": "imports"}, "fixture_provenance": "SOURCE_DERIVED_PE64: static KERNEL32.dll ExitProcess import; no image loading or dynamic module observation"},
+    {"case_id": "MGL5-INF-0064", "capability_id": "pe_inspect", "arguments": {"payload_hex": _PE_HEX[:0x188 * 2], "mode": "sections"}, "fixture_provenance": "SOURCE_DERIVED_TRUNCATED_PE64: exact cut at first byte of section table; required safe rejection"},
 
     {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
     {"case_id": "MGL5-INF-0102", "capability_id": "array_minmax", "arguments": {"values": [-8, 4, 4, 19, 0]}},

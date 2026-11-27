@@ -448,3 +448,86 @@ def elf_rpath_runpath_oracle(arguments: dict, observed: dict) -> dict:
         "sha256": hashlib.sha256(raw).hexdigest(),
     } and bool(rpath) and bool(runpath)
     return {"ok": ok, "method": "independent DT_RPATH and DT_RUNPATH extraction with bounded interpretation"}
+
+
+def pe_inspect_oracle(arguments: dict, observed: dict) -> dict:
+    """Reconstruct PE headers, sections, and import tables from raw offsets."""
+    raw = bytes.fromhex(arguments["payload_hex"])
+    digest = hashlib.sha256(raw).hexdigest()
+    if len(raw) < 64 or raw[:2] != b"MZ":
+        return {"ok": observed.get("rejected") is True, "method": "independent bounded DOS header parser"}
+    pe_offset = int.from_bytes(raw[0x3C:0x40], "little")
+    if pe_offset + 24 > len(raw) or raw[pe_offset:pe_offset + 4] != b"PE\0\0":
+        return {"ok": observed.get("rejected") is True, "method": "independent bounded PE signature parser"}
+    if arguments["mode"] == "header":
+        expected = {"rejected": False, "mz_valid": True, "pe_offset": pe_offset, "pe_signature_valid": True, "bytes_read": min(len(raw), pe_offset + 24), "sha256": digest}
+        return {"ok": observed == expected, "method": "independent DOS e_lfanew and NT signature reconstruction"}
+    import struct
+    number = struct.unpack_from("<H", raw, pe_offset + 6)[0]
+    optional_size = struct.unpack_from("<H", raw, pe_offset + 20)[0]
+    table = pe_offset + 24 + optional_size
+    if table + number * 40 > len(raw):
+        return {"ok": observed.get("rejected") is True, "method": "independent section-table extent validation"}
+    sections = []
+    for i in range(number):
+        at = table + i * 40
+        name = raw[at:at + 8].split(b"\0", 1)[0].decode("ascii", "replace")
+        _virtual_size, virtual_address, raw_size, raw_offset = struct.unpack_from("<IIII", raw, at + 8)
+        sections.append({"name": name, "size": raw_size, "virtual_address": virtual_address, "file_offset": raw_offset})
+    if arguments["mode"] == "sections":
+        expected = {"rejected": False, "sections": sections, "sha256": digest, "image_loaded": False}
+        return {"ok": observed == expected, "method": "independent PE section-table reconstruction"}
+    optional = pe_offset + 24
+    magic = struct.unpack_from("<H", raw, optional)[0]
+    directory_offset = optional + (112 if magic == 0x20B else 96)
+    if optional + 2 > len(raw) or magic not in {0x10B, 0x20B} or directory_offset + 16 > optional + optional_size:
+        return {"ok": observed.get("rejected") is True, "method": "independent PE optional-header bounds validation"}
+    import_rva, import_size = struct.unpack_from("<II", raw, directory_offset + 8)
+    def rva_offset(rva: int) -> int | None:
+        for section in sections:
+            delta = rva - section["virtual_address"]
+            if 0 <= delta < section["size"]:
+                offset = section["file_offset"] + delta
+                return offset if offset < len(raw) else None
+        return None
+    def cstring(offset: int | None) -> str | None:
+        if offset is None or offset >= len(raw):
+            return None
+        end = raw.find(b"\0", offset)
+        return raw[offset:end if end >= 0 else len(raw)].decode("ascii", "replace")
+    imports = []
+    descriptor = rva_offset(import_rva) if import_rva else None
+    valid = descriptor is not None and import_size >= 20
+    if valid:
+        for i in range(min(import_size // 20, 4096)):
+            at = descriptor + i * 20
+            if at + 20 > len(raw):
+                valid = False
+                break
+            original, timestamp, chain, name_rva, thunk = struct.unpack_from("<IIIII", raw, at)
+            if not any((original, timestamp, chain, name_rva, thunk)):
+                break
+            dll = cstring(rva_offset(name_rva))
+            thunk_rva = original or thunk
+            thunk_offset = rva_offset(thunk_rva)
+            symbols = []
+            if dll is None or thunk_offset is None:
+                valid = False
+                break
+            width = 8 if magic == 0x20B else 4
+            for j in range(4096):
+                pos = thunk_offset + j * width
+                if pos + width > len(raw):
+                    valid = False
+                    break
+                value = int.from_bytes(raw[pos:pos + width], "little")
+                if value == 0:
+                    break
+                if value >> (width * 8 - 1):
+                    symbols.append(f"ordinal:{value & 0xffff}")
+                else:
+                    hint_name = rva_offset(value)
+                    symbols.append(cstring(hint_name + 2 if hint_name is not None else None))
+            imports.append({"dll": dll, "symbols": symbols})
+    expected = {"rejected": False, "sections": sections, "sha256": digest, "image_loaded": False, "static_imports": imports, "dynamic_runtime_modules_observed": None, "static_dynamic_distinguished": True}
+    return {"ok": valid and observed == expected, "method": "independent PE data-directory, RVA mapping, and import-thunk reconstruction"}
