@@ -87,7 +87,10 @@ jobs:
           assert report["expected"] == 1000, report
           assert report["authentic_results"] == 15, report
           assert report["not_run"] == 985, report
-          assert report["rejected"] == [], report
+          expected_ids={f"MGL5-INF-{number:04d}" for number in range(1,1001)}
+          planned_ids=set(plan["compiled_case_ids"])
+          rejected_ids={item["case_id"] for item in report["rejected"]}
+          assert rejected_ids == expected_ids - planned_ids, report
           assert report["c05_status"] == "NOT_PASSED", report
           assert report["c05_passed"] is False, report
           print("Verified 15 source-bound dossiers with five Docker runs each; 987 remain NOT_RUN; C05 NOT_PASSED.")
