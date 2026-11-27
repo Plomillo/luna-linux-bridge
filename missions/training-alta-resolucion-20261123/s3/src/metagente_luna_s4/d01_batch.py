@@ -79,7 +79,7 @@ def assess_c05(executed: list[dict]) -> dict:
         "not_run": 1000 - len(executed),
         "gate": "NOT_PASSED",
         "counter": "4/26",
-        "reason": "979 cases were not executed. A matching criterion is not the common protocol PASS, because the separate negative and boundary runs are still missing.",
+        "reason": "973 cases were not executed. A matching criterion is not the common protocol PASS, because the separate negative and boundary runs are still missing.",
         "teo_engineering_board": "NOT_DEFINED_IN_PROTOCOL",
         "teo_cases": "MGL5-TEO-0001..0050 remain NOT_RUN",
     }
