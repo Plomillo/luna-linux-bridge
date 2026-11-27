@@ -59,6 +59,7 @@ def test_population_plan_forwards_pinned_docker_image_to_all_five_runs(monkeypat
                 "definition": "negative input",
                 "expected_behavior": "rejected",
                 "source": "case criterion",
+                "expect": "different-text",
             },
         },
         "boundary": {
@@ -68,6 +69,7 @@ def test_population_plan_forwards_pinned_docker_image_to_all_five_runs(monkeypat
                 "definition": "boundary input",
                 "expected_behavior": "accepted at boundary",
                 "source": "case criterion",
+                "expect": "empty-roundtrip",
             },
         },
     }
@@ -174,7 +176,7 @@ def _compiled_case_ids():
     return {plan["CASE_ID"] for plan in plans}
 
 
-def test_54_authored_plans_and_946_explicit_not_run_complete_inventory_not_c05():
+def test_77_authored_plans_and_923_explicit_not_run_complete_inventory_not_c05():
     executable = _compiled_case_ids()
     rejected = [case_id for case_id in population.EXPECTED if case_id not in executable]
     report = {
@@ -187,8 +189,8 @@ def test_54_authored_plans_and_946_explicit_not_run_complete_inventory_not_c05()
         "c05_status": "NOT_PASSED",
     }
 
-    assert len(executable) == 54
-    assert len(rejected) == 946
+    assert len(executable) == 77
+    assert len(rejected) == 923
     assert population.evidence_inventory_complete(report, executable) is True
     assert report["c05_passed"] is False
     assert report["c05_status"] == "NOT_PASSED"
