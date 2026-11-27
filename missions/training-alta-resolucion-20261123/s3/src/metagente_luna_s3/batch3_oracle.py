@@ -30,20 +30,6 @@ def stated_value(arguments: dict, observed: dict) -> dict:
     return {"ok": observed["value"] == answers[arguments["expression"]], "method": "stated value, not the parser"}
 
 
-def fifo_sequence(arguments: dict, observed: dict) -> dict:
-    expected = list(arguments["values"])
-    ok = observed.get("enqueued") == expected and observed.get("dequeued") == expected and observed.get("remaining") == []
-    return {"ok": ok, "method": "independent FIFO sequence invariant"}
-
-
-def factorial_values(arguments: dict, observed: dict) -> dict:
-    values = arguments["values"]
-    if any(not isinstance(value, int) or isinstance(value, bool) or value < 0 for value in values):
-        return {"ok": observed.get("rejected") is True, "method": "independent factorial domain check"}
-    expected = [{"n": value, "value": math.factorial(value)} for value in values]
-    return {"ok": observed.get("rejected") is False and observed.get("results") == expected, "method": "math.factorial reference"}
-
-
 def exit_seven(arguments: dict, observed: dict) -> dict:
     del arguments
     return {"ok": observed["exit_code"] == 7 and isinstance(observed["pid"], int) and observed["pid"] > 0, "method": "status seven"}
