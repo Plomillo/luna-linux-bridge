@@ -245,8 +245,14 @@ def main(argv: list[str]) -> int:
         print(f"plans contain unknown case IDs: {sorted(unknown)[:10]}", file=sys.stderr)
         return 2
 
-    if ledger_path.exists() or report_path.exists():
-        print("ledger/report output already exists; refusing to overwrite historical evidence", file=sys.stderr)
+    blocker_path = ledger_path.with_name("C05_POPULATION_BLOCKERS.jsonl")
+    existing_outputs = [path for path in (ledger_path, report_path, blocker_path) if path.exists()]
+    if existing_outputs:
+        print(
+            "output already exists; refusing to overwrite historical evidence: "
+            + ", ".join(str(path) for path in existing_outputs),
+            file=sys.stderr,
+        )
         return 2
     evidence_root.mkdir(parents=True, exist_ok=True)
     coverage_path = Path("reports/C05_COVERAGE_MATRIX.jsonl")
@@ -300,7 +306,6 @@ def main(argv: list[str]) -> int:
     report = validate(rows, evidence_root=evidence_root)
     ledger_text = "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows)
     report_text = json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    blocker_path = ledger_path.with_name("C05_POPULATION_BLOCKERS.jsonl")
     blocker_text = "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in blocker_inventory)
     write_exclusive(ledger_path, ledger_text)
     write_exclusive(report_path, report_text)
