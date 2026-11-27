@@ -15,7 +15,7 @@ EXPECTED = [f"MGL5-INF-{number:04d}" for number in range(1, 1001)]
 EXECUTION_OUTCOMES = {"PASS", "FAIL", "BLOCKED", "INCONCLUSIVE"}
 REQUIRED_ARTIFACTS = {
     "fixture", "environment", "procedure", "stdout", "stderr",
-    "observed", "oracle", "metrics", "oracle_source", "producer_source",
+    "observed", "oracle", "metrics", "oracle_source", "producer_source", "control_spec",
 }
 RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$")
 
@@ -177,6 +177,13 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
             for field in ("definition", "expected_behavior", "source")
         ):
             errors.append("negative-or-boundary-control-not-specified")
+
+    control_spec = _load_json(loaded["control_spec"]) if "control_spec" in loaded else None
+    if (not isinstance(control_spec, dict) or control_spec.get("case_id") != case_id
+            or control_spec.get("run_id") != run_id or control_spec.get("run_kind") != rep.get("kind")):
+        errors.append("control-spec-provenance-invalid")
+    elif rep.get("kind") in {"NEGATIVE", "BOUNDARY"} and control_spec.get("control") != fixture.get("control"):
+        errors.append("control-spec-fixture-mismatch")
 
     environment = _load_json(loaded["environment"]) if "environment" in loaded else None
     if not isinstance(environment, dict) or not environment.get("environment_id") or environment.get("case_id") != case_id or environment.get("run_id") != run_id:
