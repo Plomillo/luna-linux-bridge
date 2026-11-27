@@ -5,7 +5,6 @@ import ipaddress
 import itertools
 import math
 import random
-import sqlite3
 import statistics
 from decimal import Decimal
 
