@@ -79,13 +79,20 @@ def square_integral(panels: int) -> dict:
 
 def cosine_set(pairs: list[list[list[int]]]) -> dict:
     values = []
-    for left, right in pairs:
+    for pair in pairs:
+        if not isinstance(pair, list) or len(pair) != 2:
+            return {"rejected": True, "reason": "each pair must contain two vectors"}
+        left, right = pair
+        if len(left) != len(right) or not left:
+            return {"rejected": True, "reason": "vector dimensions must match and be non-empty"}
+        left_square = sum(item * item for item in left)
+        right_square = sum(item * item for item in right)
+        if left_square == 0 or right_square == 0:
+            return {"rejected": True, "reason": "zero vector has undefined cosine"}
         dot = sum(item * other for item, other in zip(left, right, strict=True))
-        left_scale = sum(item * item for item in left) ** 0.5
-        right_scale = sum(item * item for item in right) ** 0.5
-        values.append(dot / (left_scale * right_scale))
+        values.append(dot / ((left_square ** 0.5) * (right_square ** 0.5)))
     print(values)
-    return {"values": values}
+    return {"rejected": False, "values": values}
 
 
 def handle_request(index: int, fail_index: int) -> dict:
