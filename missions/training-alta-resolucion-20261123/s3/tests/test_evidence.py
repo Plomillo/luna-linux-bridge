@@ -4,6 +4,7 @@ import json
 import pytest
 
 from metagente_luna_s4.c05_validator import _validate_row
+from metagente_luna_s4.independent_validator import independently_validate_case
 from metagente_luna_s4.evidence import assemble_case_record, persist_run
 
 
@@ -132,6 +133,8 @@ def test_isolated_runner_produces_c05_eligible_process_evidence(tmp_path):
         ),
     ]
     row = assemble_case_record("MGL5-INF-0001", runs)
+    row["independent_validation"] = independently_validate_case(row, tmp_path)
+    assert row["independent_validation"]["status"] == "PASS"
     assert all(run["persisted_evidence"]["clean_state"] is True for run in runs)
     assert all(run["persisted_evidence"]["independent_validation"]["passed"] is False for run in runs)
     assert all(run["persisted_evidence"]["machinery"] == "LOCAL_SUBPROCESS_TEST_ONLY" for run in runs)
