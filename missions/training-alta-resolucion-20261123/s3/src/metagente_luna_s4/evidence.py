@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
+import inspect
 import json
 import os
 import platform
@@ -59,6 +61,19 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
     oracle_module = record.get("oracle_module")
     producer_module = record.get("producer_module")
     oracle_independent = bool(oracle_module and producer_module and oracle_module != producer_module)
+    source_payloads: dict[str, bytes] = {}
+    for label, module_name in (("oracle_source", oracle_module), ("producer_source", producer_module)):
+        if not isinstance(module_name, str) or not module_name:
+            continue
+        try:
+            module = importlib.import_module(module_name)
+            source_path = inspect.getsourcefile(module)
+            if source_path:
+                source_payloads[label] = Path(source_path).read_bytes()
+        except (ImportError, OSError, TypeError):
+            continue
+    oracle_source_digest = hashlib.sha256(source_payloads["oracle_source"]).hexdigest() if "oracle_source" in source_payloads else None
+    producer_source_digest = hashlib.sha256(source_payloads["producer_source"]).hexdigest() if "producer_source" in source_payloads else None
 
     payloads = {
         "fixture": _json_bytes({
@@ -86,6 +101,8 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
             "producer_used_as_oracle": not oracle_independent,
             "oracle_module": oracle_module,
             "producer_module": producer_module,
+            "oracle_source_sha256": oracle_source_digest,
+            "producer_source_sha256": producer_source_digest,
             "result": (
                 "PASS" if isinstance(oracle_result, dict) and oracle_result.get("ok") is True
                 else "FAIL" if isinstance(oracle_result, dict) and oracle_result.get("ok") is False
@@ -99,6 +116,7 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
             "duration_seconds": max(0, ended - started) if isinstance(started, (int, float)) and isinstance(ended, (int, float)) else None,
         }),
     }
+    payloads.update(source_payloads)
     artifacts = {}
     for name, data in payloads.items():
         suffix = ".txt" if name in {"stdout", "stderr"} else ".json"
@@ -108,6 +126,8 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
     return {
         "case_id": case_id,
         "run_id": run_id,
+        "started": started,
+        "ended": ended,
         "artifacts": artifacts,
         "clean_state": False,
         "execution_status": record.get("execution_status"),
