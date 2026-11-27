@@ -26,6 +26,8 @@ Added further Unicode normalization controls for:
 The D01 independent oracle now uses explicit published/fixed vectors for the new cases. Decimal and SHA-256 oracles were generalized to verify the alternate decimal and empty-input vectors independently.
 
 ### D02 ELF signature identification and D03 numerical controls
+Added a source-grounded ELF64 little-endian signature case for a file named `.jpg`. The executor classifies ELF from the magic bytes rather than the filename; an independent oracle recomputes the expected classification. Separate negative and boundary inputs cover unknown bytes and an ELF file with a matching `.elf` extension.
+
 Added source-derived controls for:
 - linear and binary search (previous increment);
 - duplicate detection, bracket validation, stable age sorting and stack underflow (previous increments);
@@ -42,4 +44,4 @@ The hosted restricted-container workflow must still execute the 78 plans (390 ru
 
 ## Remaining work
 
-All 923 cases outside the plan set still require source-grounded normal plans, registered capabilities, fixtures, negative and boundary controls, and actual restricted-container execution. Cases with missing essential parameters remain blocked rather than receiving invented inputs. C05 cannot pass until all 1,000 cases have five valid runs, individual evidence validation, contractual PASS, and global validation.
+All 922 cases outside the plan set still require source-grounded normal plans, registered capabilities, fixtures, negative and boundary controls, and actual restricted-container execution. Cases with missing essential parameters remain blocked rather than receiving invented inputs. C05 cannot pass until all 1,000 cases have five valid runs, individual evidence validation, contractual PASS, and global validation.
