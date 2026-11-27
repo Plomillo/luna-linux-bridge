@@ -217,7 +217,7 @@ def test_population_refuses_preexisting_blocker_output_before_any_execution(tmp_
     report = tmp_path / "report.json"
     blockers = tmp_path / "C05_POPULATION_BLOCKERS.jsonl"
     dossiers.write_text(
-        "".join(json.dumps({"CASE_ID": case_id}) + "\\n" for case_id in population.EXPECTED),
+        "".join(json.dumps({"CASE_ID": case_id}) + "\n" for case_id in population.EXPECTED),
         encoding="utf-8",
     )
     plans.write_text("", encoding="utf-8")
