@@ -1,6 +1,6 @@
 import os
 
-from metagente_luna_s4.controls import accepts, run_controls
+from metagente_luna_s4.controls import CONTROLS, accepts, run_controls
 from metagente_luna_s4.isolated import execute_isolated, run_bounded
 
 
@@ -35,7 +35,10 @@ def test_controls_that_were_defined_are_accepted():
     assert defined
     failures = [(row["case_id"], {kind: {"accepted": result["accepted"], "status": result["execution_status"], "observed": result["observed"]} for kind, result in row["controls"].items() if not result["accepted"]}) for row in defined if row["control_status"] != "PRESENT"]
     assert not failures, __import__("json").dumps(failures, ensure_ascii=False, sort_keys=True)
-    assert len(defined) == 100
+    # The runner must execute every currently authored control case; the
+    # registry is the authoritative count, not a stale historical constant.
+    assert {row["case_id"] for row in defined} == set(CONTROLS)
+    assert len(defined) == len(CONTROLS) == 82
 
 def test_negative_controls_accept_explicit_rejected_collections():
     assert accepts("rejected", {"kept": [], "rejected": [-1]}, "EXECUTED") is True
