@@ -77,6 +77,10 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if not isinstance(observed, dict):
         return False
     completed = lifecycle_status in {"EXECUTED", "FAIL"}
+    if expect == "yaml-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
+    if expect == "yaml-empty-boundary":
+        return completed and observed.get("rejected") is False and observed.get("parsed") == {"name": "", "enabled": False, "count": 0, "items": []} and observed.get("types") == {"name": "str", "enabled": "bool", "count": "int", "items": "list"}
     if expect == "empty-token-stream":
         return completed and observed.get("tokens") == []
     if expect == "increment-negative-rejected":
