@@ -10,6 +10,11 @@ permissions:
   contents: read
   issues: write
   pull-requests: write
+
+concurrency:
+  group: c05-seed-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   seed-0254-container:
     runs-on: ubuntu-latest
