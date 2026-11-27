@@ -99,7 +99,7 @@ def _build() -> None:
     _add("MGL5-INF-0105", "negative", "stable_ages", {"records": [{"id": "", "age": 30}]}, "rejected")
     _add("MGL5-INF-0105", "boundary", "stable_ages", {"records": []}, "empty-record-set")
     _add("MGL5-INF-0024", "negative", "csv_newline", {"text": '"a",1\n"b",2\n'}, "two-records")
-    _add("MGL5-INF-0031", "boundary", "xml_entities", {"document": "<r>&lt;&gt;&amp;</r>"}, "predefined-entity-set")
+    _add("MGL5-INF-0031", "boundary", "xml_entities", {"document": "<r>&lt;&gt;&amp;</r><!-- boundary -->"}, "predefined-entity-set")
     _add("MGL5-INF-0032", "boundary", "xml_unbalanced", {"document": "<a/>"}, "self-closing-accepted")
     _add("MGL5-INF-0037", "negative", "truncated_records", {"payload_hex": ""}, "all-truncated")
     _add("MGL5-INF-0038", "negative", "oversize_length", {"payload_hex": ""}, "empty-oversize-rejected")
