@@ -128,7 +128,7 @@ def test_inline_self_hashed_payload_is_not_execution_evidence():
     verdict = validate(rows)
     assert verdict["c05_passed"] is False
     assert verdict["authentic_results"] == 0
-    assert "exactly-three-repetitions-required" in verdict["rejected"][0]["reasons"]
+    assert "exactly-three-normal-repetitions-required" in verdict["rejected"][0]["reasons"]
 
 
 def test_real_persisted_artifacts_are_verified_for_a_dossier(tmp_path):
@@ -220,4 +220,4 @@ def test_relabeling_same_input_as_negative_and_boundary_is_rejected(tmp_path):
     target_path.write_text(json.dumps(target, sort_keys=True), encoding="utf-8")
     second["sha256"] = hashlib.sha256(target_path.read_bytes()).hexdigest()
     errors = _validate_row(row, tmp_path)
-    assert "normal-negative-boundary-inputs-not-distinct" in errors
+    assert "negative-and-boundary-inputs-must-be-distinct" in errors
