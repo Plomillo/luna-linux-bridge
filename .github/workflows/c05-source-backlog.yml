@@ -2,7 +2,7 @@ name: C05 source-bound planning backlog
 on:
   push:
     branches:
-      - repair/metagente-luna-structured-20261125
+      - repair/c05-921-agency-agents-20261127
     paths:
       - "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt"
       - "missions/training-alta-resolucion-20261123/s3/scripts/build_c05_source_backlog.py"
