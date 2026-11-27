@@ -635,7 +635,7 @@ def _dex_uleb128(raw: bytes, offset: int, limit: int) -> tuple[int, int] | None:
 
 
 def _dex_mutf8(raw: bytes, offset: int, limit: int, expected_units: int) -> str | None:
-    end = raw.find(b"\\x00", offset, limit)
+    end = raw.find(b"\x00", offset, limit)
     if end < 0:
         return None
     units: list[int] = []
