@@ -147,23 +147,23 @@ def source_record(case_id: str) -> tuple[dict, str]:
     text = raw.decode("utf-8")
     lines = raw.splitlines(keepends=True)
     match = re.search(
-        rf"(?m)^\\[{re.escape(case_id)}\\].*?(?=^\\[MGL5-INF-|\\Z)",
+        rf"(?m)^\[{re.escape(case_id)}\].*?(?=^\[MGL5-INF-|\Z)",
         text,
         re.S,
     )
     if match is None:
         raise ValueError(f"source case missing: {case_id}")
     excerpt = match.group(0)
-    start = text[:match.start()].count("\\n") + 1
-    end = start + excerpt.count("\\n") - (1 if excerpt.endswith("\\n") else 0)
+    start = text[:match.start()].count("\n") + 1
+    end = start + excerpt.count("\\n") - (1 if excerpt.endswith("\n") else 0)
     exact = b"".join(lines[start - 1:end])
     if exact.decode("utf-8") != excerpt:
         raise ValueError(f"source line range mismatch: {case_id}")
     fields = {}
     for name, pattern in (
-        ("operation", r"(?m)^FUENTE/OPERACIÓN:\\s*(.*)$"),
-        ("acceptance_criterion", r"(?m)^PASS:\\s*(.*)$"),
-        ("oracle_requirement", r"(?m)^ORÁCULO:\\s*(.*)$"),
+        ("operation", r"(?m)^FUENTE/OPERACIÓN:\s*(.*)$"),
+        ("acceptance_criterion", r"(?m)^PASS:\s*(.*)$"),
+        ("oracle_requirement", r"(?m)^ORÁCULO:\s*(.*)$"),
     ):
         found = re.search(pattern, excerpt)
         if found is None or not found.group(1).strip():
@@ -175,7 +175,7 @@ def source_record(case_id: str) -> tuple[dict, str]:
         "line_end": end,
         "file_sha256": hashlib.sha256(raw).hexdigest(),
         "excerpt_sha256": hashlib.sha256(exact).hexdigest(),
-        "source_blob": hashlib.sha1(f"blob {len(raw)}\\0".encode("ascii") + raw).hexdigest(),
+        "source_blob": hashlib.sha1(f"blob {len(raw)}\0".encode("ascii") + raw).hexdigest(),
         **fields,
     }, excerpt)
 
