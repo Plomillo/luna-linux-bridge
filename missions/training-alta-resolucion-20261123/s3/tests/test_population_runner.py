@@ -206,19 +206,22 @@ def test_inventory_gate_rejects_missing_or_fabricated_execution_evidence():
     assert population.evidence_inventory_complete(report, _compiled_case_ids()) is False
 
 def test_inventory_gate_rejects_duplicate_or_noncanonical_blocker_ids():
+    executable = _compiled_case_ids()
+    rejected = [case_id for case_id in population.EXPECTED if case_id not in executable]
     report = {
         "expected": 1000,
         "rows": 1000,
-        "authentic_results": len(_compiled_case_ids()),
-        "not_run": 1000 - len(_compiled_case_ids()),
+        "authentic_results": len(executable),
+        "not_run": len(rejected),
         "rejected": [
             {"case_id": case_id, "reasons": ["case-not-executed"]}
-            for case_id in population.EXPECTED if case_id not in _compiled_case_ids()
+            for case_id in rejected
         ],
     }
     report["rejected"][-1]["case_id"] = report["rejected"][0]["case_id"]
 
-    assert population.evidence_inventory_complete(report, {f"MGL5-INF-{number:04d}" for number in range(1, 22)}) is False
+    assert population.evidence_inventory_complete(report, executable) is False
+
 
 def test_inventory_gate_rejects_blocker_set_that_is_not_exact_executable_complement():
     executable = _compiled_case_ids()
@@ -227,8 +230,8 @@ def test_inventory_gate_rejects_blocker_set_that_is_not_exact_executable_complem
     report = {
         "expected": 1000,
         "rows": 1000,
-        "authentic_results": 21,
-        "not_run": 979,
+        "authentic_results": len(executable),
+        "not_run": len(rejected_ids),
         "rejected": [
             {"case_id": case_id, "reasons": ["case-not-executed"]}
             for case_id in rejected_ids
