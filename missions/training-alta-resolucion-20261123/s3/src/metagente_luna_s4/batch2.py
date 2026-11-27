@@ -3,6 +3,50 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import hashlib
+import struct
+import zlib
+
+
+def _build_dex_fixture() -> bytes:
+    strings = [b"LExample;", b"V", b"run"]
+    string_ids_off = 112
+    type_ids_off = string_ids_off + 4 * len(strings)
+    proto_ids_off = type_ids_off + 4
+    method_ids_off = proto_ids_off + 12
+    data_off = method_ids_off + 8
+    data = bytearray()
+    string_offsets = []
+    for value in strings:
+        string_offsets.append(data_off + len(data))
+        data.append(len(value))
+        data.extend(value + b"\\0")
+    raw = bytearray(data_off + len(data))
+    raw[:8] = b"dex\\n035\\0"
+    struct.pack_into("<I", raw, 32, len(raw))
+    struct.pack_into("<I", raw, 36, 112)
+    struct.pack_into("<I", raw, 40, 0x12345678)
+    struct.pack_into("<II", raw, 56, len(strings), string_ids_off)
+    struct.pack_into("<II", raw, 64, 1, type_ids_off)
+    struct.pack_into("<II", raw, 72, 1, proto_ids_off)
+    struct.pack_into("<II", raw, 80, 0, 0)
+    struct.pack_into("<II", raw, 88, 1, method_ids_off)
+    struct.pack_into("<II", raw, 96, 0, 0)
+    struct.pack_into("<II", raw, 104, len(data), data_off)
+    for index, offset in enumerate(string_offsets):
+        struct.pack_into("<I", raw, string_ids_off + index * 4, offset)
+    struct.pack_into("<I", raw, type_ids_off, 0)
+    struct.pack_into("<III", raw, proto_ids_off, 1, 0, 0)
+    struct.pack_into("<HHI", raw, method_ids_off, 0, 0, 2)
+    raw[data_off:] = data
+    raw[12:32] = hashlib.sha1(raw[32:]).digest()
+    struct.pack_into("<I", raw, 8, zlib.adler32(raw[12:]) & 0xFFFFFFFF)
+    return bytes(raw)
+
+
+_DEX_FIXTURE = _build_dex_fixture()
+_DEX_HEX = _DEX_FIXTURE.hex()
+
 from metagente_luna_s4.runner import execute
 
 _ENTITIES = "<r>" + "".join(chr(code) for code in (38, 108, 116, 59, 38, 103, 116, 59, 38, 97, 109, 112, 59)) + "</r>"
@@ -95,7 +139,10 @@ CASES = [
     {"case_id": "MGL5-INF-0063", "capability_id": "pe_inspect", "arguments": {"payload_hex": _PE_HEX, "mode": "imports"}, "fixture_provenance": "SOURCE_DERIVED_PE64: static KERNEL32.dll ExitProcess import; no image loading or dynamic module observation"},
     {"case_id": "MGL5-INF-0064", "capability_id": "pe_inspect", "arguments": {"payload_hex": _PE_HEX[:0x188 * 2], "mode": "sections"}, "fixture_provenance": "SOURCE_DERIVED_TRUNCATED_PE64: exact cut at first byte of section table; required safe rejection"},
 
-    {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
+
+    {"case_id": "MGL5-INF-0067", "capability_id": "dex_header", "arguments": {"payload_hex": _DEX_HEX}, "fixture_provenance": "SOURCE_DERIVED_DEX035: deterministic minimal DEX 035 fixture; header fields, SHA-1 signature and Adler-32 checksum generated and frozen by content hash"},
+    {"case_id": "MGL5-INF-0068", "capability_id": "dex_tables", "arguments": {"payload_hex": _DEX_HEX}, "fixture_provenance": "SOURCE_DERIVED_DEX035: minimal string/type/proto/method tables with valid cross-indices; deterministic binary fixture"},
+\n    {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
     {"case_id": "MGL5-INF-0102", "capability_id": "array_minmax", "arguments": {"values": [-8, 4, 4, 19, 0]}},
     {"case_id": "MGL5-INF-0151", "capability_id": "tokenize", "arguments": {"text": "let x = 42 + 3;"}},
     {"case_id": "MGL5-INF-0251", "capability_id": "ipv4_check", "arguments": {"addresses": ["192.0.2.17", "192.0.2.256"]}},
