@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 
 from metagente_luna_s4.c05_validator import _validate_row, contradictions, validate
 from metagente_luna_s4.independent_validator import independently_validate_case
@@ -25,6 +26,24 @@ def _write_artifact(root, relative, payload):
     return {"path": relative, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 
 
+
+def _source_reference(case_id):
+    repository_root = Path(__file__).resolve().parents[4]
+    source_file = "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt"
+    source_bytes = (repository_root / source_file).read_bytes()
+    lines = source_bytes.splitlines(keepends=True)
+    start = next(index for index, line in enumerate(lines) if case_id.encode("utf-8") in line)
+    end = min(start + 5, len(lines))
+    excerpt = b"".join(lines[start:end])
+    git_blob = hashlib.sha1(b"blob " + str(len(source_bytes)).encode("ascii") + b"\\0" + source_bytes).hexdigest()
+    return {
+        "source_file": source_file, "line_start": start + 1, "line_end": end,
+        "file_sha256": hashlib.sha256(source_bytes).hexdigest(),
+        "excerpt_sha256": hashlib.sha256(excerpt).hexdigest(),
+        "source_blob": git_blob,
+    }, excerpt.decode("utf-8")
+
+
 def _valid_row_with_artifacts(tmp_path):
     case_id = "MGL5-INF-0001"
     repetitions = []
@@ -40,13 +59,8 @@ def _valid_row_with_artifacts(tmp_path):
         run_id = f"run-0001-{index:04d}"
         oracle_source = _write_artifact(tmp_path, f"{run_id}/oracle_source.py", "def oracle(value): return value == 1")
         producer_source = _write_artifact(tmp_path, f"{run_id}/producer_source.py", "def producer(value): return value + 0")
-        source_excerpt_text = f"[{case_id}] exact source excerpt"
+        source_metadata, source_excerpt_text = _source_reference(case_id)
         source_excerpt = _write_artifact(tmp_path, f"{run_id}/source_excerpt.txt", source_excerpt_text)
-        source_metadata = {
-            "source_file": "test-source.txt", "line_start": 1, "line_end": 1,
-            "file_sha256": hashlib.sha256(b"test-source-file").hexdigest(),
-            "excerpt_sha256": source_excerpt["sha256"], "source_blob": hashlib.sha1(b"test-git-blob").hexdigest(),
-        }
         artifacts = {
             "fixture": _write_artifact(tmp_path, f"{run_id}/fixture.json", {
                 "case_id": case_id, "run_id": run_id, "fixture_id": "fixture-v1",
