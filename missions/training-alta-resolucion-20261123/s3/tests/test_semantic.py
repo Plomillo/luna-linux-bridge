@@ -41,7 +41,8 @@ def test_seven_literal_instructions():
     assert rows["MGL5-INF-0105"]["observed"]["ids"] == ["b", "d", "a", "c"]
     assert rows["MGL5-INF-0106"]["execution_status"] == "BLOCKED"
     assert rows["MGL5-INF-0106"]["missing_information"] == ["input-integers"]
-    assert rows["MGL5-INF-0109"]["missing_information"] == ["predefined-sequence"]
+    assert rows["MGL5-INF-0109"]["execution_status"] == "CRITERION_MET"
+    assert rows["MGL5-INF-0109"]["observed"]["outputs"] == ["pushed", "pushed", 2, 2, 1, "underflow"]
     assert rows["MGL5-INF-0114"]["missing_information"] == ["edges", "endpoints"]
     assert rows["MGL5-INF-0609"]["missing_information"] == ["matrix-entries"]
     assert rows["MGL5-INF-0611"]["missing_information"] == ["reference-matrix"]
