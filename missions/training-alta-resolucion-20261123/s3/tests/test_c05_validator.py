@@ -130,7 +130,7 @@ def test_inline_self_hashed_payload_is_not_execution_evidence():
     verdict = validate(rows)
     assert verdict["c05_passed"] is False
     assert verdict["authentic_results"] == 0
-    assert "exactly-three-normal-repetitions-required" in verdict["rejected"][0]["reasons"]
+    assert "evidence-root-not-supplied" in verdict["rejected"][0]["reasons"]
 
 
 def test_real_persisted_artifacts_are_verified_for_a_dossier(tmp_path):
