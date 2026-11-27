@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from metagente_luna_s4.batch2 import (
-    _ELF_ARM_HEX,
+    _ELF_ARM_HEX,\n    _DEX_HEX,\n    _DEX_FIXTURE,
     _ELF_STRIPPED_BOUNDARY_HEX,
     _ELF_STRIPPED_HEX,
     _ELF_SYMBOLS_BOUNDARY_HEX,
@@ -33,6 +33,11 @@ def _build() -> None:
         return
     text = "utf8_roundtrip"
     _add("MGL5-INF-0001", "negative", text, {"text": "Luna-2025"}, "different-text")
+
+    _add("MGL5-INF-0067", "negative", "dex_header", {"payload_hex": _DEX_HEX[:80]}, "dex-truncated-header-rejected")
+    _add("MGL5-INF-0067", "boundary", "dex_header", {"payload_hex": _DEX_HEX}, "dex-minimum-valid-header")
+    _add("MGL5-INF-0068", "negative", "dex_tables", {"payload_hex": (lambda b: (b.__setitem__(slice(124, 128), (99).to_bytes(4, "little")), b.hex())[1])(bytearray(_DEX_FIXTURE))}, "dex-invalid-type-string-index")
+    _add("MGL5-INF-0068", "boundary", "dex_tables", {"payload_hex": _DEX_HEX}, "dex-valid-table-indices")
     _add("MGL5-INF-0070", "negative", "zip_path_safety", {"entries": [{"name": "../../escape", "data_hex": "78"}]}, "zip-traversal-blocked")
     _add("MGL5-INF-0070", "boundary", "zip_path_safety", {"entries": [{"name": "inside.txt", "data_hex": ""}]}, "zip-safe-empty")
     _add("MGL5-INF-0071", "negative", "zip_crc", {"payload_hex": "0102"}, "zip-corrupt-crc-detected")
@@ -361,6 +366,11 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     # NORMAL-case oracle verdict. FAIL means the executor ran and the normal
     # oracle rejected this control input; the observed control may still pass.
     control_completed = status in {"EXECUTED", "FAIL"}
+
+    if expect == "dex-truncated-header-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "dex-minimum-valid-header": return control_completed and observed.get("rejected") is False and observed.get("header_size") == 112 and observed.get("checksum_valid") is True and observed.get("signature_valid") is True
+    if expect == "dex-invalid-type-string-index": return control_completed and observed.get("rejected") is False and observed.get("indices_valid") is False
+    if expect == "dex-valid-table-indices": return control_completed and observed.get("rejected") is False and observed.get("indices_valid") is True
     if expect == "zip-traversal-blocked": return control_completed and observed.get("blocked") == ["../../escape"] and observed.get("outside_write") is False
     if expect == "zip-safe-empty": return control_completed and observed.get("safe") == ["inside.txt"] and observed.get("blocked") == []
     if expect in {"zip-corrupt-crc-detected", "zip-minimum-member-crc-detected"}: return control_completed and observed.get("crc_error_detected") is True and observed.get("damaged_member_crc32") != observed.get("central_crc32")
