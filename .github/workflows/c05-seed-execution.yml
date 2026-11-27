@@ -26,7 +26,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: c05-seed-0254-\${{ github.sha }}
+          name: c05-seed-0254-${{ github.sha }}
           path: missions/training-alta-resolucion-20261123/s3/reports/C05_SEED_0254_EVIDENCE
           if-no-files-found: error
           retention-days: 90
