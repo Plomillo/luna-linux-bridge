@@ -81,6 +81,7 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
             "case_id": case_id, "run_id": run_id, "capability_id": capability_id,
             "input": arguments, "fixture_origin": "runner-captured-input",
             "run_kind": record.get("run_kind"), "control": record.get("control_metadata"),
+            "lifecycle_status": record.get("lifecycle_status"),
             "source": record.get("source_metadata"),
         }),
         "environment": _json_bytes({
