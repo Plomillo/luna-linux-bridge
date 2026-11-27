@@ -171,7 +171,8 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
             or fixture.get("run_kind") != rep.get("kind") or "input" not in fixture):
         errors.append("fixture-provenance-invalid")
     source_metadata = fixture.get("source") if isinstance(fixture, dict) else None
-    source_excerpt = loaded.get("source_excerpt")
+    source_excerpt_path = loaded.get("source_excerpt")
+    source_excerpt = source_excerpt_path.read_bytes() if source_excerpt_path is not None else None
     if (not isinstance(source_metadata, dict)
             or not isinstance(source_metadata.get("source_file"), str) or not source_metadata.get("source_file")
             or not isinstance(source_metadata.get("line_start"), int) or source_metadata["line_start"] < 1
@@ -180,7 +181,7 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
             or not re.fullmatch(r"[0-9a-f]{64}", str(source_metadata.get("excerpt_sha256", "")))
             or not isinstance(source_metadata.get("source_blob"), str) or not re.fullmatch(r"[0-9a-f]{40}", source_metadata["source_blob"])
             or source_excerpt is None
-            or _sha256(loaded["source_excerpt"]) != source_metadata.get("excerpt_sha256")
+            or hashlib.sha256(source_excerpt).hexdigest() != source_metadata.get("excerpt_sha256")
             or case_id.encode("utf-8") not in source_excerpt):
         errors.append("source-line-provenance-invalid")
     elif rep.get("kind") in {"NEGATIVE", "BOUNDARY"}:
