@@ -213,3 +213,28 @@ def wasm_type_indices_oracle(arguments: dict, observed: dict) -> dict:
     count, indices = arguments["type_count"], arguments["function_type_indices"]
     invalid = [index for index in indices if index < 0 or index >= count]
     return {"ok": observed.get("rejected") is bool(invalid) and observed.get("type_count") == count and observed.get("function_type_indices") == indices and observed.get("invalid_indices") == invalid, "method": "independent function-index range check"}
+
+
+def pdf_objects_oracle(arguments: dict, observed: dict) -> dict:
+    count = max([2, *(row[0] for row in arguments["references"])])
+    present = list(range(1, count + 1))
+    expected = [{"object": number, "generation": generation, "resolved": generation == 0 and number in present} for number, generation in arguments["references"]]
+    if arguments["missing_object"]:
+        expected.append({"object": arguments["missing_object"], "generation": 0, "resolved": arguments["missing_object"] in present})
+    ok = observed.get("objects") == present and observed.get("references") == expected and all(row["resolved"] for row in expected[:-1]) and (not arguments["missing_object"] or expected[-1]["resolved"] is False)
+    return {"ok": ok, "method": "independent fixture object population and generation-aware reference resolution"}
+
+
+def pdf_xref_oracle(arguments: dict, observed: dict) -> dict:
+    header = b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n"
+    bodies = [b"<< /Type /Catalog /Pages 2 0 R >>", b"<< /Type /Pages /Kids [] /Count 0 >>"]
+    offsets, cursor = {}, len(header)
+    for number, body in enumerate(bodies, 1):
+        offsets[number] = cursor
+        cursor += len(f"{number} 0 obj\n".encode()) + len(body) + len(b"\nendobj\n")
+    discrepancies = []
+    if arguments["corrupt_object"]:
+        number = arguments["corrupt_object"]
+        discrepancies.append({"object": number, "declared_offset": offsets[number] + 1, "actual_offset": offsets[number]})
+    ok = observed.get("object_offsets") == offsets and observed.get("discrepancies") == discrepancies and observed.get("valid") is (not bool(discrepancies))
+    return {"ok": ok, "method": "independent PDF byte-offset reconstruction from header, object headers, and body lengths"}

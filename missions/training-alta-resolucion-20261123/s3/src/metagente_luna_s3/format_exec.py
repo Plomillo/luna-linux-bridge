@@ -5,6 +5,7 @@ import binascii
 import hashlib
 import io
 import math
+import re
 import sqlite3
 import struct
 import tarfile
@@ -318,3 +319,49 @@ def wasm_sections(sections: list[dict], truncate_index: int) -> dict:
 def wasm_type_indices(type_count: int, function_type_indices: list[int]) -> dict:
     invalid = [index for index in function_type_indices if index < 0 or index >= type_count]
     return {"rejected": bool(invalid), "type_count": type_count, "function_type_indices": function_type_indices, "invalid_indices": invalid}
+
+
+def _minimal_pdf(objects: list[str], corrupt_xref_object: int = 0) -> bytes:
+    """Build a byte-accurate PDF 1.4 fixture, optionally corrupting one xref offset."""
+    data = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = [0]
+    for number, body in enumerate(objects, 1):
+        offsets.append(len(data))
+        data.extend(f"{number} 0 obj\n{body}\nendobj\n".encode("ascii"))
+    xref = len(data)
+    data.extend(f"xref\n0 {len(offsets)}\n0000000000 65535 f \n".encode("ascii"))
+    for number, offset in enumerate(offsets[1:], 1):
+        if number == corrupt_xref_object:
+            offset += 1
+        data.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
+    data.extend(f"trailer\n<< /Size {len(offsets)} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode("ascii"))
+    return bytes(data)
+
+
+def pdf_objects(references: list[list[int]], missing_object: int) -> dict:
+    count = max([2, *(ref[0] for ref in references)])
+    objects = ["<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [] /Count 0 >>"]
+    objects.extend("<< >>" for _ in range(count - 2))
+    raw = _minimal_pdf(objects)
+    present = {int(match.group(1)) for match in re.finditer(rb"(?m)^(\d+) 0 obj$", raw)}
+    refs = [{"object": number, "generation": generation, "resolved": generation == 0 and number in present} for number, generation in references]
+    if missing_object:
+        refs.append({"object": missing_object, "generation": 0, "resolved": missing_object in present})
+    return {"objects": sorted(present), "references": refs, "sha256": hashlib.sha256(raw).hexdigest()}
+
+
+def pdf_xref(corrupt_object: int) -> dict:
+    raw = _minimal_pdf(["<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [] /Count 0 >>"], corrupt_object)
+    actual = {int(match.group(1)): match.start() for match in re.finditer(rb"(?m)^(\d+) 0 obj$", raw)}
+    marker = re.search(rb"startxref\n(\d+)\n%%EOF", raw)
+    if marker is None:
+        raise ValueError("PDF startxref marker is missing")
+    xref_start = int(marker.group(1))
+    lines = raw[xref_start:].splitlines()
+    count = int(lines[1].split()[1])
+    discrepancies = []
+    for number, line in enumerate(lines[3:3 + count - 1], 1):
+        declared = int(line[:10])
+        if declared != actual.get(number):
+            discrepancies.append({"object": number, "declared_offset": declared, "actual_offset": actual.get(number)})
+    return {"object_offsets": actual, "xref_offset": xref_start, "discrepancies": discrepancies, "valid": not discrepancies}

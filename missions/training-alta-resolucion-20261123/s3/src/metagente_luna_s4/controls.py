@@ -78,6 +78,10 @@ def _build() -> None:
     _add("MGL5-INF-0086", "boundary", "wasm_sections", {"sections": [{"section_id": 0, "payload_hex": ""}], "truncate_index": -1}, "wasm-empty-custom-section")
     _add("MGL5-INF-0087", "negative", "wasm_type_indices", {"type_count": 1, "function_type_indices": [1]}, "wasm-type-index-out-of-range")
     _add("MGL5-INF-0087", "boundary", "wasm_type_indices", {"type_count": 0, "function_type_indices": []}, "wasm-no-types-no-functions")
+    _add("MGL5-INF-0082", "negative", "pdf_objects", {"references": [[1, 0], [2, 0]], "missing_object": 99}, "pdf-missing-reference-detected")
+    _add("MGL5-INF-0082", "boundary", "pdf_objects", {"references": [[1, 0]], "missing_object": 0}, "pdf-existing-references-resolved")
+    _add("MGL5-INF-0083", "negative", "pdf_xref", {"corrupt_object": 1}, "pdf-xref-object-one-offset-detected")
+    _add("MGL5-INF-0083", "boundary", "pdf_xref", {"corrupt_object": 0}, "pdf-xref-valid-offsets")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -361,6 +365,10 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "seven-zip-first-volume-missing": return control_completed and observed.get("rejected") is False and observed.get("missing_volume") == "parts.7z.001" and observed.get("reconstruction_complete") is False and observed.get("seven_zip_test_exit_code") != 0
     if expect == "wasm-truncated-section-rejected": return control_completed and observed.get("valid") is False
     if expect == "wasm-empty-custom-section": return control_completed and observed.get("valid") is True and observed.get("sections") == [{"section_id": 0, "offset": 8, "payload_offset": 10, "payload_size": 0, "within_module": True}]
+    if expect == "pdf-missing-reference-detected": return control_completed and any(row.get("object") == 99 and row.get("resolved") is False for row in observed.get("references", []))
+    if expect == "pdf-existing-references-resolved": return control_completed and observed.get("objects") == [1, 2] and all(row.get("resolved") is True for row in observed.get("references", []))
+    if expect == "pdf-xref-object-one-offset-detected": return control_completed and observed.get("valid") is False and observed.get("discrepancies", [{}])[0].get("object") == 1
+    if expect == "pdf-xref-valid-offsets": return control_completed and observed.get("valid") is True and observed.get("discrepancies") == []
     if expect == "wasm-type-index-out-of-range": return control_completed and observed.get("rejected") is True and observed.get("invalid_indices") == [1]
     if expect == "wasm-no-types-no-functions": return control_completed and observed.get("rejected") is False and observed.get("invalid_indices") == []
     if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True

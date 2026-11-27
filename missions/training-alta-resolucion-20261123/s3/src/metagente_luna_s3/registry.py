@@ -4,6 +4,7 @@ from __future__ import annotations
 import ipaddress
 from collections.abc import Callable
 
+from metagente_luna_s4 import c05_preflight, c05_preflight_oracle
 from pydantic import BaseModel
 
 from metagente_luna_s3 import (
@@ -25,7 +26,6 @@ from metagente_luna_s3 import (
     more_oracle,
 )
 from metagente_luna_s3.independent_oracles import cidr_bounds_oracle
-from metagente_luna_s4 import c05_preflight, c05_preflight_oracle
 
 
 class Capability(BaseModel):
@@ -219,8 +219,10 @@ _FORMAT_SCHEMAS = {
     "seven_zip_missing_volume": {"type": "object", "required": ["payload_hex", "volume_size", "missing_part"], "properties": {"payload_hex": {"type": "string", "minLength": 2, "maxLength": 32768, "pattern": "^([0-9a-fA-F]{2})+$"}, "volume_size": {"type": "integer", "enum": [1024, 2048]}, "missing_part": {"type": "integer", "minimum": 1, "maximum": 99}}, "additionalProperties": False},
     "wasm_sections": {"type": "object", "required": ["sections", "truncate_index"], "properties": {"sections": {"type": "array", "maxItems": 100, "items": {"type": "object", "required": ["section_id", "payload_hex"], "properties": {"section_id": {"type": "integer", "minimum": 0, "maximum": 12}, "payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False}}, "truncate_index": {"type": "integer", "minimum": -1, "maximum": 99}}, "additionalProperties": False},
     "wasm_type_indices": {"type": "object", "required": ["type_count", "function_type_indices"], "properties": {"type_count": {"type": "integer", "minimum": 0}, "function_type_indices": {"type": "array", "items": {"type": "integer"}}}, "additionalProperties": False},
+    "pdf_objects": {"type": "object", "required": ["references", "missing_object"], "properties": {"references": {"type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 0}}}, "missing_object": {"type": "integer", "minimum": 0}}, "additionalProperties": False},
+    "pdf_xref": {"type": "object", "required": ["corrupt_object"], "properties": {"corrupt_object": {"type": "integer", "minimum": 0, "maximum": 2}}, "additionalProperties": False},
 }
-_FORMAT_ORACLES = {"sqlite_header": "sqlite_header_independent", "sqlite_integrity": "sqlite_integrity_independent", "wasm_header": "wasm_header_independent", "png_chunks": "png_chunks_independent", "unknown_format": "unknown_format_independent", "block_entropy": "block_entropy_independent", "binary_diff": "binary_diff_independent", "bounded_declared_size": "bounded_size_independent", "reproducible_structure": "reproducible_structure_independent", "jpeg_markers": "jpeg_markers_independent", "partial_recovery": "partial_recovery_independent", "timestamp_provenance": "timestamp_provenance_independent", "dependency_graph": "dependency_graph_independent", "protocol_version_diff": "protocol_version_diff_independent", "section_overlaps": "section_overlaps_independent", "nested_zip_tar": "nested_zip_tar_independent", "forensic_report": "forensic_report_independent", "seven_zip_list": "seven_zip_list_independent", "seven_zip_missing_volume": "seven_zip_missing_volume_independent", "wasm_sections": "wasm_sections_independent", "wasm_type_indices": "wasm_type_indices_independent"}
+_FORMAT_ORACLES = {"sqlite_header": "sqlite_header_independent", "sqlite_integrity": "sqlite_integrity_independent", "wasm_header": "wasm_header_independent", "png_chunks": "png_chunks_independent", "unknown_format": "unknown_format_independent", "block_entropy": "block_entropy_independent", "binary_diff": "binary_diff_independent", "bounded_declared_size": "bounded_size_independent", "reproducible_structure": "reproducible_structure_independent", "jpeg_markers": "jpeg_markers_independent", "partial_recovery": "partial_recovery_independent", "timestamp_provenance": "timestamp_provenance_independent", "dependency_graph": "dependency_graph_independent", "protocol_version_diff": "protocol_version_diff_independent", "section_overlaps": "section_overlaps_independent", "nested_zip_tar": "nested_zip_tar_independent", "forensic_report": "forensic_report_independent", "seven_zip_list": "seven_zip_list_independent", "seven_zip_missing_volume": "seven_zip_missing_volume_independent", "wasm_sections": "wasm_sections_independent", "wasm_type_indices": "wasm_type_indices_independent", "pdf_objects": "pdf_objects_independent", "pdf_xref": "pdf_xref_independent"}
 for _format_name, _format_oracle in _FORMAT_ORACLES.items():
     REGISTRY[_format_name] = _cap(_format_name, _format_oracle, _FORMAT_SCHEMAS[_format_name])
 
@@ -314,6 +316,7 @@ ORACLES.update({"protocol_version_diff_independent": format_oracle.protocol_vers
 ORACLES["forensic_report_independent"] = format_oracle.forensic_report_oracle
 ORACLES.update({"seven_zip_list_independent": archive_oracle.seven_zip_list_oracle, "seven_zip_missing_volume_independent": archive_oracle.seven_zip_missing_volume_oracle})
 ORACLES.update({"wasm_sections_independent": format_oracle.wasm_sections_oracle, "wasm_type_indices_independent": format_oracle.wasm_type_indices_oracle})
+ORACLES.update({"pdf_objects_independent": format_oracle.pdf_objects_oracle, "pdf_xref_independent": format_oracle.pdf_xref_oracle})
 
 EXECUTORS: dict[str, Callable[..., dict]] = {
     "cidr_bounds": cidr_bounds,
@@ -404,6 +407,7 @@ EXECUTORS.update({"protocol_version_diff": format_exec.protocol_version_diff, "s
 EXECUTORS["forensic_report"] = format_exec.forensic_report
 EXECUTORS.update({"seven_zip_list": archive_exec.seven_zip_list, "seven_zip_missing_volume": archive_exec.seven_zip_missing_volume})
 EXECUTORS.update({"wasm_sections": format_exec.wasm_sections, "wasm_type_indices": format_exec.wasm_type_indices})
+EXECUTORS.update({"pdf_objects": format_exec.pdf_objects, "pdf_xref": format_exec.pdf_xref})
 
 EXECUTORS["c05_preflight_blocked"] = c05_preflight.blocked_preflight_probe
 

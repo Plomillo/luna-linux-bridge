@@ -143,6 +143,10 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "wasm-empty-custom-section": return completed and observed.get("valid") is True and observed.get("sections") == [{"section_id": 0, "offset": 8, "payload_offset": 10, "payload_size": 0, "within_module": True}]
     if expect == "wasm-type-index-out-of-range": return completed and observed.get("rejected") is True and observed.get("invalid_indices") == [1]
     if expect == "wasm-no-types-no-functions": return completed and observed.get("rejected") is False and observed.get("invalid_indices") == []
+    if expect == "pdf-missing-reference-detected": return completed and any(row.get("object") == 99 and row.get("resolved") is False for row in observed.get("references", []))
+    if expect == "pdf-existing-references-resolved": return completed and observed.get("objects") == [1, 2] and all(row.get("resolved") is True for row in observed.get("references", []))
+    if expect == "pdf-xref-object-one-offset-detected": return completed and observed.get("valid") is False and any(row.get("object") == 1 and row.get("actual_offset") != row.get("declared_offset") for row in observed.get("discrepancies", []))
+    if expect == "pdf-xref-valid-offsets": return completed and observed.get("valid") is True and observed.get("discrepancies") == []
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

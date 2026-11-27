@@ -65,6 +65,8 @@ CASES = [
     {"case_id": "MGL5-INF-0077", "capability_id": "seven_zip_missing_volume", "arguments": {"payload_hex": "00" * 8192, "volume_size": 1024, "missing_part": 2}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: real 7z multipart archive; second volume removed before archive test"},
     {"case_id": "MGL5-INF-0086", "capability_id": "wasm_sections", "arguments": {"sections": [{"section_id": 1, "payload_hex": "01600000"}, {"section_id": 3, "payload_hex": "0100"}], "truncate_index": -1}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: valid type and function sections with ULEB128 lengths"},
     {"case_id": "MGL5-INF-0087", "capability_id": "wasm_type_indices", "arguments": {"type_count": 2, "function_type_indices": [0, 1]}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: two declared types referenced by two functions"},
+    {"case_id": "MGL5-INF-0082", "capability_id": "pdf_objects", "arguments": {"references": [[1, 0], [2, 0]], "missing_object": 0}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: valid PDF 1.4 catalog/pages objects with exact references"},
+    {"case_id": "MGL5-INF-0083", "capability_id": "pdf_xref", "arguments": {"corrupt_object": 2}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: PDF 1.4 cross-reference offset for object 2 displaced by one byte"},
 
     {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
     {"case_id": "MGL5-INF-0102", "capability_id": "array_minmax", "arguments": {"values": [-8, 4, 4, 19, 0]}},

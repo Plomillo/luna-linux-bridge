@@ -42,6 +42,8 @@ EXPECTED = {
     "MGL5-INF-0077": "seven_zip_missing_volume",
     "MGL5-INF-0086": "wasm_sections",
     "MGL5-INF-0087": "wasm_type_indices",
+    "MGL5-INF-0082": "pdf_objects",
+    "MGL5-INF-0083": "pdf_xref",
 }
 
 
