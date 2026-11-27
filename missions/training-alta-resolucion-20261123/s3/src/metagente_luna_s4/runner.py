@@ -64,6 +64,9 @@ def execute(
     oracle = ORACLES.get(capability.oracle_id) if capability is not None else None
     record["producer_module"] = getattr(producer, "__module__", None)
     record["oracle_module"] = getattr(oracle, "__module__", None)
+    record["agent_version"] = "0.1.0"
+    record["executor_version"] = capability.version if capability is not None else "UNDECLARED"
+    record["machinery"] = backend
     lifecycle = record.get("execution_status")
     record["lifecycle_status"] = lifecycle
     if lifecycle == "EXECUTED":
