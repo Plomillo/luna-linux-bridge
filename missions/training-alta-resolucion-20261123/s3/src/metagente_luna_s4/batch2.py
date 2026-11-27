@@ -142,7 +142,8 @@ CASES = [
 
     {"case_id": "MGL5-INF-0067", "capability_id": "dex_header", "arguments": {"payload_hex": _DEX_HEX}, "fixture_provenance": "SOURCE_DERIVED_DEX035: deterministic minimal DEX 035 fixture; header fields, SHA-1 signature and Adler-32 checksum generated and frozen by content hash"},
     {"case_id": "MGL5-INF-0068", "capability_id": "dex_tables", "arguments": {"payload_hex": _DEX_HEX}, "fixture_provenance": "SOURCE_DERIVED_DEX035: minimal string/type/proto/method tables with valid cross-indices; deterministic binary fixture"},
-\n    {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
+
+    {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
     {"case_id": "MGL5-INF-0102", "capability_id": "array_minmax", "arguments": {"values": [-8, 4, 4, 19, 0]}},
     {"case_id": "MGL5-INF-0151", "capability_id": "tokenize", "arguments": {"text": "let x = 42 + 3;"}},
     {"case_id": "MGL5-INF-0251", "capability_id": "ipv4_check", "arguments": {"addresses": ["192.0.2.17", "192.0.2.256"]}},
