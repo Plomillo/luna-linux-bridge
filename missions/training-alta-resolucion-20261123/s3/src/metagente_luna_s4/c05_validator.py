@@ -175,6 +175,23 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
         errors.append("observed-artifact-invalid")
     elif observed.get("case_id") != case_id or observed.get("run_id") != run_id:
         errors.append("observed-provenance-mismatch")
+    if rep.get("execution_status") == "BLOCKED":
+        value = observed.get("value") if isinstance(observed, dict) else None
+        expected_phase = {
+            "NORMAL": "NORMAL_PLAN",
+            "NEGATIVE": "NEGATIVE_CONTROL",
+            "BOUNDARY": "BOUNDARY_CONTROL",
+        }.get(rep.get("kind"))
+        detail = oracle.get("detail") if isinstance(oracle, dict) else None
+        if (not isinstance(value, dict) or value.get("blocked") is not True
+                or value.get("case_id") != case_id or value.get("phase") != expected_phase
+                or value.get("operation_invoked") is not False
+                or not isinstance(value.get("blocker_code"), str) or not value["blocker_code"]
+                or not isinstance(value.get("details"), str) or not value["details"]):
+            errors.append("blocked-preflight-observation-invalid")
+        if (not isinstance(detail, dict) or detail.get("valid_blocked_record") is not True
+                or detail.get("underlying_operation_result") != "NOT_OBSERVED"):
+            errors.append("blocked-preflight-independent-oracle-invalid")
 
     fixture = _load_json(loaded["fixture"]) if "fixture" in loaded else None
     if (not isinstance(fixture, dict) or fixture.get("case_id") != case_id or fixture.get("run_id") != run_id
