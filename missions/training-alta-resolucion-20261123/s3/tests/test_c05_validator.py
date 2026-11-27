@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 from metagente_luna_s4.c05_validator import _functional_population_passes, _validate_row, contradictions, validate
-from metagente_luna_s4.independent_validator import independently_validate_case
+from metagente_luna_s4.independent_validator import _independent_control_accepts, independently_validate_case
 from metagente_luna_s4.reconcile import amendments, intersection, manifest
 
 
@@ -317,3 +317,17 @@ def test_functional_c05_gate_requires_all_1000_contractual_operation_passes():
     assert _functional_population_passes(passed) is True
     passed[-1]["execution_status"] = "BLOCKED"
     assert _functional_population_passes(passed) is False
+
+def test_independent_control_oracle_is_separate_and_fails_closed():
+    assert _independent_control_accepts(
+        "different-text", {"recovered": "Luna-2025"}, "EXECUTED"
+    ) is True
+    assert _independent_control_accepts(
+        "different-text", {"recovered": "Luna-2026"}, "EXECUTED"
+    ) is False
+    assert _independent_control_accepts(
+        "empty-roundtrip", {"bytes_hex": ""}, "BLOCKED"
+    ) is False
+    assert _independent_control_accepts(
+        "unregistered-expectation", {"value": "anything"}, "EXECUTED"
+    ) is False
