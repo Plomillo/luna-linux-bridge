@@ -24,8 +24,8 @@ def direct_index(arguments: dict, observed: dict) -> dict:
 
 
 def named_order(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["order"] == ["A", "B", "C"] and observed["remaining"] == 0, "method": "stated queue order"}
+    expected = list(arguments["values"])
+    return {"ok": observed["order"] == expected and observed["remaining"] == 0, "method": "independent FIFO sequence equality"}
 
 
 def range_sum(arguments: dict, observed: dict) -> dict:
@@ -42,9 +42,11 @@ def full_scans(arguments: dict, observed: dict) -> dict:
 
 
 def reference_factorials(arguments: dict, observed: dict) -> dict:
-    del arguments
-    expected = [math.factorial(number) for number in range(13)]
-    return {"ok": observed["values"] == expected and observed["negative_rejected"] is True, "method": "math.factorial"}
+    values = arguments["values"]
+    if any(not isinstance(number, int) or isinstance(number, bool) or number < 0 for number in values):
+        return {"ok": observed.get("rejected") is True and observed.get("negative_rejected") is True, "method": "independent factorial domain check"}
+    expected = [math.factorial(number) for number in values]
+    return {"ok": observed.get("rejected") is False and observed["values"] == expected and observed["negative_rejected"] is True, "method": "math.factorial"}
 
 
 def folded_value(arguments: dict, observed: dict) -> dict:
