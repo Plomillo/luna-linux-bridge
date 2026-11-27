@@ -97,6 +97,8 @@ def test_archive_forensics_capabilities_reject_untyped_extra_arguments():
         assert schema["type"] == "object"
         assert schema["additionalProperties"] is False
 
+
+
 def _rehash_dex_fixture(payload: bytearray) -> bytes:
     import hashlib
     import struct
@@ -171,6 +173,8 @@ def test_dex_parser_bounds_proto_parameter_type_list():
     struct.pack_into("<I", malformed, proto_ids_off + 8, data_end + 4)
     observed = dex_inspect(_rehash_dex_fixture(malformed).hex(), "tables")
     assert observed == {"rejected": True, "reason": "proto_parameters_offset_out_of_bounds"}
+
+
 
 def test_dex_modified_utf8_handles_encoded_nul_and_surrogate_pair_and_rejects_four_byte_utf8():
     from metagente_luna_s3.format_exec import _dex_mutf8
