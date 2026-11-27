@@ -1,0 +1,11 @@
+{
+  "finding": "PROTODEFINITIVO.txt was absent on repair/metagente-luna-structured-20261125",
+  "cause": "The repair branch diverged from main. It does not contain f58acbdb7dfc, the commit that added the protocol. Compare showed the branch 15 ahead and 2 behind.",
+  "commits_on_main_not_in_repair": [
+    "f58acbdb7dfc Protodefinitivo",
+    "db0523d489ca Programa de entrenamiento de QUINTO ORDEN"
+  ],
+  "repair": "Byte copy of blob c40ca28e into mission/authority. main was not merged and was not modified.",
+  "program_blob_on_repair_root": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
+  "program_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf"
+}

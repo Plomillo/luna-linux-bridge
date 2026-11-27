@@ -1,0 +1,13 @@
+{
+  "cases_with_separate_controls": 32,
+  "cases_in_the_original_fifty": 50,
+  "cases_without_a_separate_control": 18,
+  "new_cases_this_batch": 15,
+  "unique_criterion_met": 65,
+  "not_run": 935,
+  "backend_of_new_batch": "LOCAL_TEST_ONLY",
+  "process_separation": "IMPLEMENTED_AND_TESTED_NOT_A_SANDBOX",
+  "network_restricted": false,
+  "c05_gate": "NOT_PASSED",
+  "counter": "4/26"
+}

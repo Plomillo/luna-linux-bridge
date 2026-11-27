@@ -1,0 +1,87 @@
+{
+  "rule": "HISTORICAL_HELPER_RESULT != AGENT_RESULT; HISTORICAL_HELPER_PASS != METAGENTE_LUNA_PASS",
+  "original_files_modified": false,
+  "recorded_at": "2026-11-24T05:34:49Z",
+  "cases": {
+    "MGL5-INF-0001": {
+      "sha256": "e323a16669d04dadc762fb00de25bbb186ff991fa108252df737773f91221a87",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0001.json"
+    },
+    "MGL5-INF-0002": {
+      "sha256": "2f271e92b30d077145974ad95486bb8f0627204435afdebbc2b6c20769ddce82",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0002.json"
+    },
+    "MGL5-INF-0003": {
+      "sha256": "4c14ef5e695957cbd6555df21f8799bd8e515510f2bdfecb2b93a11726607f08",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0003.json"
+    },
+    "MGL5-INF-0004": {
+      "sha256": "95d11f530f41f09c19f54e614bf1d4bf01c33d935c94fcfa366f5826ce0d7eb4",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0004.json"
+    },
+    "MGL5-INF-0005": {
+      "sha256": "504031fc241cf7becb4fa24db71f4f84ce8213b5ca35d536961f8813bbe7f2a9",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0005.json"
+    },
+    "MGL5-INF-0006": {
+      "sha256": "f509cd023cc3c9e797df93d6a008c8ae9916a50e7b5ca2fa24f46df40694f83a",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0006.json"
+    },
+    "MGL5-INF-0007": {
+      "sha256": "ab833f44b9feea803ec71471ed7cad51c3c5829e0347d269287ef032837d417c",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0007.json"
+    },
+    "MGL5-INF-0008": {
+      "sha256": "b1bb3adf1345c773556b515c8b8057600377a70c1bfb20039d973047af21abca",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0008.json"
+    },
+    "MGL5-INF-0009": {
+      "sha256": "1e3c07240cef066c6fd061dfd46c7355e12a8a806190d9f419a1c14bd8482dbd",
+      "state": "BLOCKED",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0009.json"
+    },
+    "MGL5-INF-0010": {
+      "sha256": "d297bea411864d658f721701296177acb54ad190bd6623257bcde715748233db",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0010.json"
+    },
+    "MGL5-INF-0011": {
+      "sha256": "760b7e4eac8b2210b778c6faf75d6f93c255890b55bcfbe6c205dfb1ce549f69",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0011.json"
+    },
+    "MGL5-INF-0012": {
+      "sha256": "493109a5c9ed7c1bc44c95647a1a46cb031789fcd1d54b6d2d4a575d83b10af4",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0012.json"
+    },
+    "MGL5-INF-0013": {
+      "sha256": "2b7be09381ebccf56dcec29c85f5c301857d20c9074bbb2579fea7b744eb79cf",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0013.json"
+    },
+    "MGL5-INF-0014": {
+      "sha256": "a63101f07de10b48ffe74fdba6bb6d4b926af97a352e369cc542ccdc04e43fd4",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0014.json"
+    },
+    "MGL5-INF-0015": {
+      "sha256": "7610d46503108d22ef50bebe99f49db9a414fed0ee6dedbe933eea928dd95643",
+      "state": "PASS",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0015.json"
+    },
+    "MGL5-INF-0016": {
+      "sha256": "9fa97cc5ba0b09f2f75952afe868a4f8aac102535753c41899c1cc94df36b4b7",
+      "state": "BLOCKED",
+      "path": "missions/training-alta-resolucion-20261123/case-results/MGL5-INF-0016.json"
+    }
+  }
+}

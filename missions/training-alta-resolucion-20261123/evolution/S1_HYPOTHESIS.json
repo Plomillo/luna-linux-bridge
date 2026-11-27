@@ -1,0 +1,12 @@
+{
+  "recorded_before_the_result_commit": true,
+  "hypothesis": "A structured interpreter can classify every operation without case identifiers, delegate the M0 grammar, execute only complete arguments, and block 0253 instead of inventing an address.",
+  "not_claimed": [
+    "M1 promotion",
+    "C05",
+    "C06",
+    "Q5",
+    "learned weights"
+  ],
+  "m0_mutation": false
+}

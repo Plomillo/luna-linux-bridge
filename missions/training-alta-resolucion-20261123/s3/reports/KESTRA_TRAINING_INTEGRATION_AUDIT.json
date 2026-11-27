@@ -1,0 +1,12 @@
+{
+  "recorded_at": "2026-11-25T21:26:14Z",
+  "compose_present_on_repair_branch": true,
+  "compose_blob": "55857db7671f80f6927813228accb0432158cd61",
+  "image": "kestra/kestra:v2.0.3",
+  "docker_socket_mounted": false,
+  "docker_socket_evidence": "the compose file mentions the socket only to say the init container does not receive it",
+  "docker_binary": "ABSENT",
+  "kestra_process": "NOT_STARTED",
+  "training_flows_for_s3": "NOT_CREATED",
+  "reason": "isolation could not be demonstrated because Docker is not available here"
+}

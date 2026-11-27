@@ -1,0 +1,12 @@
+{
+  "recorded_at": "2026-11-25T22:15:03Z",
+  "run_id": 45704445430,
+  "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/45704445430",
+  "commit": "37d3c70a05a16cf8c2915eb9487eb2124050e617",
+  "conclusion": "failure",
+  "python_seen": "3.14.4",
+  "pytest_rootdir": "/home/runner/work/luna-linux-bridge/luna-linux-bridge",
+  "collected": "1157 items / 1 error",
+  "cause": "uv run --project executed pytest with the repository root as cwd, so collection imported scripts outside S3. One of those scripts raised SystemExit. Python was not pinned, so uv selected 3.14.4.",
+  "status": "VERIFIED"
+}

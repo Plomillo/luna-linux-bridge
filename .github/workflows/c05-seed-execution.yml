@@ -1,0 +1,241 @@
+name: C05 hosted restricted-container seed execution
+on:
+  push:
+    branches: [repair/metagente-luna-structured-20261125]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: c05-seed-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  seed-0254-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: missions/training-alta-resolucion-20261123/s3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve immutable Python base image
+        run: |
+          docker pull python:3.12-slim
+          BASE_IMAGE="$(docker image inspect --format '{{index .RepoDigests 0}}' python:3.12-slim)"
+          test -n "$BASE_IMAGE"
+          echo "Resolved base image: $BASE_IMAGE" >> "$GITHUB_STEP_SUMMARY"
+          echo "C05_BASE_IMAGE=$BASE_IMAGE" >> "$GITHUB_ENV"
+      - name: Build restricted worker image and capture immutable image ID
+        run: |
+          docker build --build-arg BASE_IMAGE="$C05_BASE_IMAGE" -f Dockerfile.c05-sandbox -t luna-c05-worker:ci .
+          IMAGE_ID="$(docker image inspect --format '{{.Id}}' luna-c05-worker:ci)"
+          echo "$IMAGE_ID" | grep -Eq '^sha256:[0-9a-f]{64}$'
+          echo "LUNA_C05_SANDBOX_IMAGE=$IMAGE_ID" >> "$GITHUB_ENV"
+          echo "Worker image ID: $IMAGE_ID" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install host evidence collector dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: Execute source-grounded case inside restricted container
+        run: python scripts/execute_c05_seed_0254.py
+      - name: Assert container controls in raw evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("reports/C05_SEED_0254_EVIDENCE/run-summary.json").read_text())
+          runs=[item["result"] for item in data["runs"]]
+          assert len(runs)==5
+          for row in runs:
+              iso=row["isolation_metadata"]
+              assert row["backend"]=="DOCKER_RESTRICTED_CONTAINER"
+              assert iso["containerized"] is True
+              assert iso["network_disabled"] is True
+              assert iso["root_filesystem_read_only"] is True
+              assert iso["capabilities_dropped"] is True
+              assert iso["non_root_uid"]==65534
+              assert iso["container_restrictions_verified"] is True
+              assert iso["sandbox"] is False
+              assert iso["kernel_isolation"]=="SHARED_HOST_KERNEL_NOT_VM"
+          print("Container restrictions recorded for all five runs; shared-kernel limitation retained.")
+          PY
+      - name: Build exact 1,000-case source-bound dossier population
+        run: python scripts/build_c05_source_backlog.py
+      - name: Build exact per-case blocker inventory
+        run: python scripts/build_c05_coverage_matrix.py
+      - name: Compile only existing authored plans with both controls
+        run: |
+          python scripts/build_c05_executable_plans.py \
+            --output reports/C05_EXECUTABLE_PLANS.jsonl \
+            --report reports/C05_EXECUTABLE_PLANS_SUMMARY.json
+      - name: Execute compiled batch in pinned restricted Docker image
+        id: population
+        run: |
+          python scripts/execute_c05_population.py \
+            reports/C05_SOURCE_PLAN_BACKLOG.jsonl \
+            reports/C05_EXECUTABLE_PLANS.jsonl \
+            reports/C05_POPULATION_EVIDENCE \
+            reports/C05_POPULATION_LEDGER.jsonl \
+            reports/C05_POPULATION_REPORT.json \
+            "$LUNA_C05_SANDBOX_IMAGE"
+      - name: Detect Docker population failure before downstream gates
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const runId = context.runId;
+            const run = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
+            const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
+              owner, repo, run_id: runId, per_page: 100
+            });
+            // The current job may still be "in_progress" while this
+            // if: failure() handler runs. Detect failed steps directly;
+            // do not wait for the job-level conclusion to become "failure".
+            const jobsWithFailedSteps = jobsResponse.data.jobs.map(job => ({
+              job,
+              step: (job.steps || []).find(step => step.conclusion === "failure")
+            }));
+            const first = jobsWithFailedSteps.find(item => item.step)
+              || { job: jobsWithFailedSteps.find(item => item.job.status === "in_progress")?.job, step: null };
+            const marker = "<!-- C05_FIRST_FAILURE_WATCH -->";
+            const body = [
+              marker,
+              "## C05 — Docker failure detected at first failed execution gate",
+              "",
+              "- Workflow: **" + run.data.name + "** (#" + run.data.run_number + ")",
+              "- Commit: `" + run.data.head_sha + "`",
+              "- Failed job: **" + (first.job?.name || "unknown") + "**",
+              "- First failed step: **" + (first.step?.name || "not exposed") + "**",
+              "- Run/logs: " + run.data.html_url,
+              "",
+              "Docker population failure detected before downstream validation and artifact upload. Diagnose the failed step, reproduce the cause, apply a targeted repair, add a regression test, and rerun the full C05 chain. No blind retry or PASS promotion."
+            ].join("\n");
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: 196, per_page: 100
+            });
+            const prior = comments.find(comment => comment.body?.includes(marker));
+            if (prior) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: prior.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: 196, body });
+            }
+      - name: Verify evidence population while keeping functional C05 gate closed
+        run: |
+          python - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+
+          plan = json.loads(Path("reports/C05_EXECUTABLE_PLANS_SUMMARY.json").read_text())
+          report = json.loads(Path("reports/C05_POPULATION_REPORT.json").read_text())
+          ledger = [json.loads(line) for line in Path("reports/C05_POPULATION_LEDGER.jsonl").read_text().splitlines() if line]
+          outcomes = Counter(row["execution_status"] for row in ledger)
+
+          blockers = [json.loads(line) for line in Path("reports/C05_POPULATION_BLOCKERS.jsonl").read_text().splitlines() if line]
+          assert plan["authored_normal_specs"] == 101, plan
+          assert plan["interpreter_candidates"] == 7, plan
+          assert plan["interpreter_ready"] == 2, plan
+          assert plan["interpreter_blocked"] == 5, plan
+          assert plan["interpreter_registered"] == 2, plan
+          assert plan["unique_source_plan_candidates"] == 106, plan
+          assert plan["compiled_executable_plans"] == 79, plan
+          assert plan["not_in_plan_set"] == 921, plan
+          assert report["expected"] == 1000, report
+          assert report["rows"] == 1000, report
+          assert report["authentic_results"] == 79, report
+          assert report["not_run"] == 921, report
+          assert len(report["rejected"]) == 921, report
+          assert all(item["reasons"] == ["case-not-executed"] for item in report["rejected"]), report
+          assert report["c05_passed"] is False, report
+          assert report["c05_status"] == "NOT_PASSED", report
+          assert report["contractual_pass"] < 1000, report
+          assert report["operation_passed"] < 1000, report
+          ledger_ids = {row["CASE_ID"] for row in ledger}
+          blocker_ids = {row["CASE_ID"] for row in blockers}
+          rejected_ids = {row["case_id"] for row in report["rejected"]}
+          not_run_ids = {row["CASE_ID"] for row in ledger if row["execution_status"] == "NOT_RUN"}
+          assert len(ledger_ids) == 1000
+          assert len(blockers) == 921
+          assert len(blocker_ids) == 921
+          assert blocker_ids == rejected_ids == not_run_ids
+          assert all(row["status"] == "NOT_RUN" and row["operation_invoked"] is False for row in blockers)
+          assert all(row["CASE_ID"] in row["source_excerpt"] for row in blockers)
+          assert all(len(row["source_metadata"]["excerpt_sha256"]) == 64 for row in blockers)
+          assert outcomes["BLOCKED"] + outcomes["PASS"] + outcomes["FAIL"] + outcomes["INCONCLUSIVE"] == 79, outcomes
+          print(json.dumps({
+              "c05_status": report["c05_status"],
+              "authentic_executions": report["authentic_results"],
+              "execution_outcomes": dict(outcomes),
+              "not_run": report["not_run"],
+              "source_bound_blockers": len(blockers),
+              "c05_certification": "NOT_PASSED",
+              "meaning": "79 executable plans have complete source-grounded plans; 921 source-bound NOT_RUN cases remain unimplemented; C05 remains closed to certification",
+          }, sort_keys=True))
+          PY
+      - name: Upload raw container execution evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c05-seed-0254-container-${{ github.sha }}
+          path: |
+            missions/training-alta-resolucion-20261123/s3/reports/C05_SEED_0254_EVIDENCE
+            missions/training-alta-resolucion-20261123/s3/reports/C05_SOURCE_PLAN_BACKLOG.jsonl
+            missions/training-alta-resolucion-20261123/s3/reports/C05_SOURCE_PLAN_BACKLOG_SUMMARY.json
+            missions/training-alta-resolucion-20261123/s3/reports/C05_EXECUTABLE_PLANS.jsonl
+            missions/training-alta-resolucion-20261123/s3/reports/C05_EXECUTABLE_PLANS_SUMMARY.json
+            missions/training-alta-resolucion-20261123/s3/reports/C05_POPULATION_EVIDENCE
+            missions/training-alta-resolucion-20261123/s3/reports/C05_POPULATION_LEDGER.jsonl
+            missions/training-alta-resolucion-20261123/s3/reports/C05_POPULATION_REPORT.json
+            missions/training-alta-resolucion-20261123/s3/reports/C05_POPULATION_BLOCKERS.jsonl
+          if-no-files-found: error
+          retention-days: 90
+      - name: Detect and report the first C05 failure immediately
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const runId = context.runId;
+            const run = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
+            const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
+              owner, repo, run_id: runId, per_page: 100
+            });
+            // The current job may still be "in_progress" while this
+            // if: failure() handler runs. Detect failed steps directly;
+            // do not wait for the job-level conclusion to become "failure".
+            const jobsWithFailedSteps = jobsResponse.data.jobs.map(job => ({
+              job,
+              step: (job.steps || []).find(step => step.conclusion === "failure")
+            }));
+            const first = jobsWithFailedSteps.find(item => item.step)
+              || { job: jobsWithFailedSteps.find(item => item.job.status === "in_progress")?.job, step: null };
+            const marker = "<!-- C05_FIRST_FAILURE_WATCH -->";
+            const body = [
+              marker,
+              "## C05 — first failure detected",
+              "",
+              "- Workflow: **" + run.data.name + "** (#" + run.data.run_number + ")",
+              "- Commit: `" + run.data.head_sha + "`",
+              "- Failed job: **" + (first.job?.name || "unknown") + "**",
+              "- First failed step: **" + (first.step?.name || "not exposed") + "**",
+              "- Run/logs: " + run.data.html_url,
+              "",
+              "Immediate failure telemetry. The failure must be diagnosed from its logs, reproduced, patched on this branch, covered by a regression test, and revalidated through the full C05 chain. Do not rerun blindly, weaken controls, or promote unsupported cases to PASS."
+            ].join("\n");
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: 196, per_page: 100
+            });
+            const prior = comments.find(comment => comment.body?.includes(marker));
+            if (prior) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: prior.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: 196, body });
+            }

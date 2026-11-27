@@ -1,0 +1,16 @@
+{
+  "recorded_at": "2026-11-24T05:34:49Z",
+  "cases_scanned": 1000,
+  "method": "Mechanical comparison only. A hyphen inside a token such as Luna-2026 or UTF-16 is not a signed value. 'ninguno explícito' is recorded as a corpus pattern, not as a confirmed defect.",
+  "literals_declared_none": 859,
+  "confirmed_discrepancies": [
+    "MGL5-INF-0009",
+    "MGL5-INF-0016",
+    "MGL5-INF-0017",
+    "MGL5-INF-0101",
+    "MGL5-INF-0102",
+    "MGL5-INF-0308"
+  ],
+  "semantic_audit_of_remaining_cases": "NOT_COMPLETED",
+  "none_marked_fixture_valid": true
+}

@@ -1,0 +1,283 @@
+{
+  "classification": "OWNER_RESOLUTION",
+  "source_file": "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt",
+  "source_blob": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
+  "source_modified": false,
+  "lines_with_the_phrase": 53,
+  "unique_case_ids": 52,
+  "references": [
+    {
+      "line": 4450,
+      "case_id": "MGL5-INF-0887",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 4970,
+      "case_id": "MGL5-INF-0991",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5019,
+      "case_id": "MGL5-TEO-0001",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5021,
+      "case_id": "MGL5-TEO-0002",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5023,
+      "case_id": "MGL5-TEO-0003",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5025,
+      "case_id": "MGL5-TEO-0004",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5027,
+      "case_id": "MGL5-TEO-0005",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5029,
+      "case_id": "MGL5-TEO-0006",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5031,
+      "case_id": "MGL5-TEO-0007",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5033,
+      "case_id": "MGL5-TEO-0008",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5035,
+      "case_id": "MGL5-TEO-0009",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5037,
+      "case_id": "MGL5-TEO-0010",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5039,
+      "case_id": "MGL5-TEO-0011",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5041,
+      "case_id": "MGL5-TEO-0012",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5043,
+      "case_id": "MGL5-TEO-0013",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5045,
+      "case_id": "MGL5-TEO-0014",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5047,
+      "case_id": "MGL5-TEO-0015",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5049,
+      "case_id": "MGL5-TEO-0016",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5051,
+      "case_id": "MGL5-TEO-0017",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5053,
+      "case_id": "MGL5-TEO-0018",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5055,
+      "case_id": "MGL5-TEO-0019",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5057,
+      "case_id": "MGL5-TEO-0020",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5059,
+      "case_id": "MGL5-TEO-0021",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5061,
+      "case_id": "MGL5-TEO-0022",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5063,
+      "case_id": "MGL5-TEO-0023",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5065,
+      "case_id": "MGL5-TEO-0024",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5067,
+      "case_id": "MGL5-TEO-0025",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5069,
+      "case_id": "MGL5-TEO-0026",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5071,
+      "case_id": "MGL5-TEO-0027",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5073,
+      "case_id": "MGL5-TEO-0028",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5075,
+      "case_id": "MGL5-TEO-0029",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5077,
+      "case_id": "MGL5-TEO-0030",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5079,
+      "case_id": "MGL5-TEO-0031",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5081,
+      "case_id": "MGL5-TEO-0032",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5083,
+      "case_id": "MGL5-TEO-0033",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5085,
+      "case_id": "MGL5-TEO-0034",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5087,
+      "case_id": "MGL5-TEO-0035",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5089,
+      "case_id": "MGL5-TEO-0036",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5091,
+      "case_id": "MGL5-TEO-0037",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5093,
+      "case_id": "MGL5-TEO-0038",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5095,
+      "case_id": "MGL5-TEO-0039",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5097,
+      "case_id": "MGL5-TEO-0040",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5099,
+      "case_id": "MGL5-TEO-0041",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5101,
+      "case_id": "MGL5-TEO-0042",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5103,
+      "case_id": "MGL5-TEO-0043",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5105,
+      "case_id": "MGL5-TEO-0044",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5107,
+      "case_id": "MGL5-TEO-0045",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5109,
+      "case_id": "MGL5-TEO-0046",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5111,
+      "case_id": "MGL5-TEO-0047",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5113,
+      "case_id": "MGL5-TEO-0048",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5115,
+      "case_id": "MGL5-TEO-0049",
+      "phrase": "revision-humana"
+    },
+    {
+      "line": 5116,
+      "case_id": "MGL5-TEO-0050",
+      "phrase": "validacion-humana"
+    },
+    {
+      "line": 5117,
+      "case_id": "MGL5-TEO-0050",
+      "phrase": "revision-humana"
+    }
+  ],
+  "human_review_operational_gate": false,
+  "automated_validation_required": true,
+  "fake_human_attestation": false,
+  "residual_limitation": "The source text still contains the phrases. This record does not delete or rewrite them.",
+  "c04_revalidation": "NOT_REVALIDATED",
+  "c04_note": "identity.json and m0.py exist at 5251c8ac. The earlier REOPEN was issued when they were absent. Their presence was not re-executed as the C04 environment criterion in this change.",
+  "c05_status": "NOT_PASSED",
+  "global_condition_counter": "4/26"
+}

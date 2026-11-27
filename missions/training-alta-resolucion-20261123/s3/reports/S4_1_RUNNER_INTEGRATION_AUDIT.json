@@ -1,0 +1,38 @@
+{
+  "recorded_at": "2026-11-25T22:48:40Z",
+  "branch": "repair/metagente-luna-structured-20261125",
+  "baseline": "51b544a05374f47b25f278d3c3b92bfad09fabe1",
+  "indexes": {
+    "c724eedd": {
+      "entries": 4060,
+      "files": 3852,
+      "directories": 208,
+      "source": "git tree recursive, saved path list"
+    },
+    "51b544a0": {
+      "entries": 4124,
+      "files": 3905,
+      "directories": 219,
+      "elf": 0,
+      "source": "git tree recursive at that commit"
+    },
+    "conclusion": "The counts differ by 64 entries because they are different commits. They are not interchangeable."
+  },
+  "execute_calls_require_case_id": true,
+  "execute_calls_authorize": true,
+  "default_authorization": "DENIED except TESTED capabilities on LOCAL_TEST_ONLY",
+  "sandbox": "BLOCKED; Docker binary absent; isolation not demonstrated",
+  "oracle": "ipaddress, separate from the integer-mask executor",
+  "contract_status": "NOT_A_PASS",
+  "c05": "IN_PROGRESS",
+  "counter": "4/26",
+  "local_tests": "20 passed before this commit",
+  "remote_ci": {
+    "run": 45716378898,
+    "conclusion": "success",
+    "python": "3.12.15",
+    "tests": "20 passed",
+    "virtualenv_warning": "absent after unset VIRTUAL_ENV",
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/45716378898"
+  }
+}

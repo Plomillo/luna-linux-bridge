@@ -1,0 +1,113 @@
+{
+  "agent": "METAGENTE_LUNA",
+  "version": "M0-20261124.1",
+  "corpus_cases_executed": 0,
+  "synthetic_only": true,
+  "results": [
+    {
+      "name": "utf8",
+      "instruction": "Codificar \"hola\" en UTF-8 y decodificarlo.",
+      "repetitions": [
+        {
+          "code": 0,
+          "status": "OBSERVED",
+          "oracle": {
+            "expect_hex": "686f6c61",
+            "ok": true,
+            "oracle": "manual-utf8"
+          }
+        },
+        {
+          "code": 0,
+          "status": "OBSERVED",
+          "oracle": {
+            "expect_hex": "686f6c61",
+            "ok": true,
+            "oracle": "manual-utf8"
+          }
+        },
+        {
+          "code": 0,
+          "status": "OBSERVED",
+          "oracle": {
+            "expect_hex": "686f6c61",
+            "ok": true,
+            "oracle": "manual-utf8"
+          }
+        }
+      ]
+    },
+    {
+      "name": "bad",
+      "instruction": "Decodificar una secuencia con continuación aislada 0x80.",
+      "repetitions": [
+        {
+          "code": 0,
+          "status": "OBSERVED",
+          "oracle": {
+            "ok": true,
+            "oracle": "utf8-lead-byte-range"
+          }
+        },
+        {
+          "code": 0,
+          "status": "OBSERVED",
+          "oracle": {
+            "ok": true,
+            "oracle": "utf8-lead-byte-range"
+          }
+        },
+        {
+          "code": 0,
+          "status": "OBSERVED",
+          "oracle": {
+            "ok": true,
+            "oracle": "utf8-lead-byte-range"
+          }
+        }
+      ]
+    },
+    {
+      "name": "id-only",
+      "instruction": "MGL5-INF-0001",
+      "repetitions": [
+        {
+          "code": 2,
+          "status": "UNMATCHED",
+          "oracle": null
+        },
+        {
+          "code": 2,
+          "status": "UNMATCHED",
+          "oracle": null
+        },
+        {
+          "code": 2,
+          "status": "UNMATCHED",
+          "oracle": null
+        }
+      ]
+    },
+    {
+      "name": "unknown",
+      "instruction": "Calcular la masa del sol en kilogramos.",
+      "repetitions": [
+        {
+          "code": 2,
+          "status": "UNMATCHED",
+          "oracle": null
+        },
+        {
+          "code": 2,
+          "status": "UNMATCHED",
+          "oracle": null
+        },
+        {
+          "code": 2,
+          "status": "UNMATCHED",
+          "oracle": null
+        }
+      ]
+    }
+  ]
+}

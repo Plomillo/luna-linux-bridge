@@ -1,0 +1,36 @@
+{
+  "id": "C04-MATERIAL-AUDIT",
+  "recorded_at": "2026-11-24T05:34:49Z",
+  "historical_verdict": "PASS",
+  "historical_evidence_commit": "1d37479975a91a95153f1bd486841c2046689b81",
+  "contract_criterion": "entorno operativo, depurado, reproducible, instrumentado y validado para iniciar las pruebas",
+  "corpus_preflight": "PASS",
+  "agent_identity": "NOT_FOUND",
+  "m0": "NOT_FOUND",
+  "entrypoint_that_accepts_original_instruction_and_returns_agent_response": "NOT_FOUND",
+  "examined": [
+    "full tree of 1d374799, 3946 blobs, truncated=false",
+    "no path matching luna.py, metagente.py or agent.py",
+    "code search METAGENTE on default branch: only PROTODEFINITIVO.txt",
+    "commit search METAGENTE: 0",
+    "cajita-luna-runtime/cajita_runtime.py is a package audit/smoke tool",
+    "cajita-luna-runtime/cajita_router.py plans routes and sets certification NOT_GRANTED; it does not execute the training operation",
+    "implementation/super1200/core/super1200_core/foundation.py is a library of registries and engines, not an instruction-answering agent",
+    "implementation/super1200 domain workers are a 1200-capability catalogue with a different domain taxonomy"
+  ],
+  "missing_c04_registers": [
+    "agent identity and version",
+    "initial machinery M0",
+    "agent invocation procedure",
+    "repeatable per-case agent execution"
+  ],
+  "present_c04_registers": [
+    "corpus hash",
+    "case identifier continuity",
+    "host python preflight",
+    "historical helper scripts"
+  ],
+  "false_instrument_risk": "run_d01_first.py answers with local Python functions. Its 14 PASS values are not agent executions.",
+  "current_verdict": "REOPEN",
+  "reason": "The corpus preflight does not satisfy the original C04 acceptance criterion once agent identity, M0 and an invocation path are absent."
+}

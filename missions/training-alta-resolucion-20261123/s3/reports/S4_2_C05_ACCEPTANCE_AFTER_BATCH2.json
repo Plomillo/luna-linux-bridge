@@ -1,0 +1,13 @@
+{
+  "source_lines": "589-643",
+  "acceptance_text": "los 1.000 identificadores tienen expedientes individuales y resultados auténticos, sin ocultar fallos.",
+  "batch1_criterion_met": 21,
+  "batch2_criterion_met": 29,
+  "unique_executed": 50,
+  "not_run": 950,
+  "teo_blocked": 50,
+  "gate": "NOT_PASSED",
+  "counter": "4/26",
+  "protocol_gap": "Negative and boundary runs are still not separate executions.",
+  "backend": "LOCAL_TEST_ONLY"
+}

@@ -1,0 +1,410 @@
+{
+  "agent": "METAGENTE_LUNA",
+  "version": "M0-20261124.2",
+  "count": 20,
+  "cases": [
+    {
+      "CASE_ID": "MGL5-INF-0001",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "utf8_roundtrip",
+        "text": "Luna-2026",
+        "utf8_hex": "4c756e612d32303236",
+        "identical": true,
+        "replacement_used": false
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0002",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "utf8_roundtrip",
+        "text": "computación, información, ñandú",
+        "utf8_hex": "636f6d707574616369c3b36e2c20696e666f726d616369c3b36e2c20c3b1616e64c3ba",
+        "identical": true,
+        "replacement_used": false
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0003",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "utf8_strict_decode",
+        "input_hex": "80",
+        "policy": "strict",
+        "accepted_as_valid_utf8": false,
+        "anomaly": "invalid start byte"
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0004",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "utf16_roundtrip",
+        "endian": "little",
+        "text": "LUNA",
+        "utf16_hex": "4c0055004e004100",
+        "identical": true
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0007",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "uint_from_bytes",
+        "width": 32,
+        "input_hex": "01020304",
+        "little": 67305985,
+        "big": 16909060
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0008",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "uint16_limits",
+        "kept": [
+          {
+            "value": 0,
+            "hex": "0000",
+            "recovered": 0
+          },
+          {
+            "value": 65535,
+            "hex": "ffff",
+            "recovered": 65535
+          }
+        ],
+        "rejected": [
+          {
+            "value": 65536,
+            "rejected": true
+          },
+          {
+            "value": -1,
+            "rejected": true
+          }
+        ]
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0009",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "int16_roundtrip",
+        "recovered": [
+          {
+            "value": -32768,
+            "hex": "0080",
+            "recovered": -32768
+          },
+          {
+            "value": -1,
+            "hex": "ffff",
+            "recovered": -1
+          },
+          {
+            "value": 0,
+            "hex": "0000",
+            "recovered": 0
+          },
+          {
+            "value": 32767,
+            "hex": "ff7f",
+            "recovered": 32767
+          }
+        ],
+        "rejected": [
+          -32769,
+          32768
+        ]
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0010",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "signed_from_hex",
+        "width": 16,
+        "input_hex": "ffff",
+        "value": -1
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0011",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "float_bits",
+        "kind": "float32",
+        "value": 1.5,
+        "hex": "0000c03f"
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0012",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "float_bits",
+        "kind": "float64",
+        "value": 1.5,
+        "hex": "000000000000f83f"
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0013",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "non_finite",
+        "kind": "nan",
+        "equal_to_self": false,
+        "classified": true
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0014",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "non_finite",
+        "kind": "inf",
+        "positive_hex": "000000000000f07f",
+        "negative_hex": "000000000000f0ff",
+        "signs_distinct": true
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0015",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "min_subnormal_f32",
+        "hex": "01000000",
+        "value": 1.401298464324817e-45,
+        "is_subnormal": true
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0016",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "nfc_compare",
+        "left_hex": "c3a9",
+        "right_hex": "c3a9",
+        "same": true
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0017",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "nfd_decompose",
+        "codepoints": [
+          "U+0065",
+          "U+0301"
+        ],
+        "hex": "65cc81"
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0018",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "nfkc_note",
+        "input": "ﬁ",
+        "output": "fi",
+        "preserved_original": false
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0048",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "sha256_text",
+        "text": "abc",
+        "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0101",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "sum_ints",
+        "values": [
+          -3,
+          0,
+          7,
+          11
+        ],
+        "sum": 15,
+        "empty_sum": 0
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0102",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "bounds",
+        "values": [
+          -8,
+          4,
+          4,
+          19,
+          0
+        ],
+        "min": -8,
+        "max": 19
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    },
+    {
+      "CASE_ID": "MGL5-INF-0308",
+      "repetitions": [
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "observed": {
+        "tool": "sqlite_check_insert",
+        "engine": "sqlite3",
+        "column": "edad",
+        "value": -4,
+        "predicate": "edad >= 0",
+        "rejected": true,
+        "error": "CHECK constraint failed: edad >= 0"
+      },
+      "machinery_reported": "M0",
+      "version_reported": "M0-20261124.2"
+    }
+  ]
+}

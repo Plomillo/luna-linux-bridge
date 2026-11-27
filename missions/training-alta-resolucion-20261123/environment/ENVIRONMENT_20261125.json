@@ -1,0 +1,172 @@
+{
+  "agent": "METAGENTE_LUNA",
+  "version": "M0-20261124.2",
+  "results": [
+    {
+      "id": "MGL5-INF-0001",
+      "baseline_verdict": "PASS",
+      "baseline_codes": [
+        0,
+        0,
+        0
+      ],
+      "rerun": [
+        {
+          "code": 0,
+          "seconds": 0.0463,
+          "status": "OBSERVED"
+        },
+        {
+          "code": 0,
+          "seconds": 0.0393,
+          "status": "OBSERVED"
+        },
+        {
+          "code": 0,
+          "seconds": 0.0389,
+          "status": "OBSERVED"
+        }
+      ]
+    },
+    {
+      "id": "MGL5-INF-0009",
+      "baseline_verdict": "PASS",
+      "baseline_codes": [
+        0,
+        0,
+        0
+      ],
+      "rerun": [
+        {
+          "code": 0,
+          "seconds": 0.0393,
+          "status": "OBSERVED"
+        },
+        {
+          "code": 0,
+          "seconds": 0.0394,
+          "status": "OBSERVED"
+        },
+        {
+          "code": 0,
+          "seconds": 0.0391,
+          "status": "OBSERVED"
+        }
+      ]
+    },
+    {
+      "id": "MGL5-INF-0030",
+      "baseline_verdict": "FAIL",
+      "baseline_codes": [
+        2,
+        2,
+        2
+      ],
+      "rerun": [
+        {
+          "code": 2,
+          "seconds": 0.0391,
+          "status": "UNMATCHED"
+        },
+        {
+          "code": 2,
+          "seconds": 0.0392,
+          "status": "UNMATCHED"
+        },
+        {
+          "code": 2,
+          "seconds": 0.0393,
+          "status": "UNMATCHED"
+        }
+      ]
+    },
+    {
+      "id": "MGL5-INF-0308",
+      "baseline_verdict": "PASS",
+      "baseline_codes": [
+        0,
+        0,
+        0
+      ],
+      "rerun": [
+        {
+          "code": 0,
+          "seconds": 0.0399,
+          "status": "OBSERVED"
+        },
+        {
+          "code": 0,
+          "seconds": 0.0392,
+          "status": "OBSERVED"
+        },
+        {
+          "code": 0,
+          "seconds": 0.0394,
+          "status": "OBSERVED"
+        }
+      ]
+    },
+    {
+      "id": "MGL5-INF-0005",
+      "baseline_verdict": "FAIL",
+      "baseline_codes": [
+        2,
+        2,
+        2
+      ],
+      "rerun": [
+        {
+          "code": 2,
+          "seconds": 0.0395,
+          "status": "UNMATCHED"
+        },
+        {
+          "code": 2,
+          "seconds": 0.039,
+          "status": "UNMATCHED"
+        },
+        {
+          "code": 2,
+          "seconds": 0.0388,
+          "status": "UNMATCHED"
+        }
+      ]
+    },
+    {
+      "id": "MGL5-INF-0413",
+      "baseline_verdict": "FAIL",
+      "baseline_codes": [
+        2,
+        2,
+        2
+      ],
+      "rerun": [
+        {
+          "code": 2,
+          "seconds": 0.0393,
+          "status": "UNMATCHED"
+        },
+        {
+          "code": 2,
+          "seconds": 0.039,
+          "status": "UNMATCHED"
+        },
+        {
+          "code": 2,
+          "seconds": 0.039,
+          "status": "UNMATCHED"
+        }
+      ]
+    }
+  ],
+  "environment": {
+    "platform": "Linux-6.12.8+-x86_64-with-glibc2.36",
+    "machine": "x86_64",
+    "python": "3.10.22",
+    "cpu_count": 2,
+    "ram_bytes": 4121083904,
+    "locale": "en_US.UTF-8",
+    "tz": null,
+    "models_loaded": []
+  }
+}

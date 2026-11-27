@@ -1,0 +1,508 @@
+"""Fail-closed C05 evidence validation.
+
+A dossier is an execution only when its persisted evidence artifacts can be
+read from the supplied evidence root and their digests are recomputed from
+bytes. Inline self-hashed payloads are deliberately not accepted.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from pathlib import Path
+
+EXPECTED = [f"MGL5-INF-{number:04d}" for number in range(1, 1001)]
+EXECUTION_OUTCOMES = {"PASS", "FAIL", "BLOCKED", "INCONCLUSIVE"}
+REQUIRED_ARTIFACTS = {
+    "fixture", "environment", "procedure", "stdout", "stderr",
+    "observed", "oracle", "metrics", "oracle_source", "producer_source", "control_spec", "source_excerpt", "environment_lock", "sha256sums",
+}
+RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$")
+
+
+def _sha256(path: Path) -> str | None:
+    try:
+        digest = hashlib.sha256()
+        with path.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+    except (OSError, IsADirectoryError):
+        return None
+
+
+def _safe_artifact(root: Path, item: dict) -> tuple[Path | None, str | None]:
+    if not isinstance(item, dict):
+        return None, "artifact-entry-invalid"
+    relative = item.get("path")
+    expected = item.get("sha256")
+    if not isinstance(relative, str) or not relative or not isinstance(expected, str):
+        return None, "artifact-reference-incomplete"
+    if not re.fullmatch(r"[0-9a-f]{64}", expected):
+        return None, "artifact-digest-invalid"
+    candidate = (root / relative).resolve()
+    try:
+        candidate.relative_to(root.resolve())
+    except ValueError:
+        return None, "artifact-path-escapes-root"
+    actual = _sha256(candidate)
+    if actual is None:
+        return None, "artifact-missing-or-unreadable"
+    if actual != expected:
+        return None, "artifact-digest-mismatch"
+    return candidate, None
+
+
+def _load_json(path: Path) -> dict | list | None:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return None
+
+
+def contradictions(row: dict) -> list[str]:
+    found: list[str] = []
+    status = row.get("contract_status") or row.get("contractual_status")
+    execution = row.get("execution_status")
+    basis = row.get("basis") or row.get("promotion_basis")
+    if status == "PASS" and basis == "CRITERION_MET":
+        found.append("criterion-met-promoted-to-pass")
+    if status == "PASS" and execution == "NOT_RUN":
+        found.append("not-run-promoted-to-pass")
+    if status == "PASS" and execution not in EXECUTION_OUTCOMES:
+        found.append("inflated-state")
+    if execution == "FAIL" and status == "PASS":
+        found.append("fail-promoted-to-contract-pass")
+    if execution in {"BLOCKED", "INCONCLUSIVE", "NOT_RUN"} and status == "PASS":
+        found.append("non-success-promoted-to-contract-pass")
+    if status == "PASS" and row.get("oracle_mode") in {"same-implementation", "self", "producer"}:
+        found.append("circular-oracle")
+    if row.get("human_reviewer") and not row.get("human_review_evidence"):
+        found.append("reviewer-without-evidence")
+    if row.get("repetitions_copied") is True:
+        found.append("copied-repetition")
+    if row.get("evidence_missing") is True:
+        found.append("missing-evidence")
+    if row.get("execution_status") == "NOT_RUN" and (
+        row.get("individual_investigation") is True or row.get("counted_as_execution") is True
+    ):
+        found.append("investigation-is-not-execution")
+    return found
+
+
+def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[str]:
+    errors: list[str] = []
+    run_id = rep.get("run_id")
+    if not isinstance(run_id, str) or not RUN_ID.fullmatch(run_id):
+        errors.append("run-id-invalid")
+    if rep.get("case_id") != case_id:
+        errors.append("run-case-mismatch")
+    if rep.get("clean_state") is not True:
+        errors.append("clean-state-not-proven")
+    if rep.get("execution_status") not in EXECUTION_OUTCOMES:
+        errors.append("execution-outcome-invalid")
+    if not isinstance(rep.get("exit_code"), int) or isinstance(rep.get("exit_code"), bool):
+        errors.append("exit-code-missing")
+    if not isinstance(rep.get("agent_version"), str) or not rep["agent_version"] or rep["agent_version"] == "UNDECLARED":
+        errors.append("agent-version-missing")
+    if not isinstance(rep.get("executor_version"), str) or not rep["executor_version"] or rep["executor_version"] == "UNDECLARED":
+        errors.append("executor-version-missing")
+    if not isinstance(rep.get("machinery"), str) or not rep["machinery"] or rep["machinery"] == "UNDECLARED":
+        errors.append("machinery-missing")
+    started = rep.get("started")
+    ended = rep.get("ended")
+    if not isinstance(started, (int, float)) or isinstance(started, bool):
+        errors.append("start-timestamp-invalid")
+    if not isinstance(ended, (int, float)) or isinstance(ended, bool):
+        errors.append("end-timestamp-invalid")
+    if isinstance(started, (int, float)) and isinstance(ended, (int, float)) and ended < started:
+        errors.append("timestamp-order-invalid")
+
+    artifacts = rep.get("artifacts")
+    if not isinstance(artifacts, dict):
+        errors.append("artifact-manifest-missing")
+        return errors
+    missing = REQUIRED_ARTIFACTS - set(artifacts)
+    if missing:
+        errors.extend(f"artifact-{name}-missing" for name in sorted(missing))
+    loaded: dict[str, Path] = {}
+    for name, item in artifacts.items():
+        path, error = _safe_artifact(evidence_root, item)
+        if error:
+            errors.append(f"{name}:{error}")
+        elif path is not None:
+            loaded[name] = path
+
+    lock_path = loaded.get("environment_lock")
+    if lock_path is None or not lock_path.is_file() or lock_path.stat().st_size == 0:
+        errors.append("environment-lock-missing-or-empty")
+    sums_path = loaded.get("sha256sums")
+    expected_sums = "".join(
+        f"{item['sha256']}  {item['path']}\n"
+        for name, item in sorted(artifacts.items()) if name != "sha256sums" and isinstance(item, dict)
+    )
+    if sums_path is None or sums_path.read_text(encoding="utf-8") != expected_sums:
+        errors.append("sha256sums-manifest-mismatch")
+
+    oracle = _load_json(loaded["oracle"]) if "oracle" in loaded else None
+    if not isinstance(oracle, dict):
+        errors.append("oracle-artifact-invalid")
+    else:
+        if oracle.get("independent") is not True:
+            errors.append("oracle-not-independent")
+        if oracle.get("producer_used_as_oracle") is True:
+            errors.append("oracle-circular")
+        if not oracle.get("oracle_module") or oracle.get("oracle_module") == oracle.get("producer_module"):
+            errors.append("oracle-module-not-independent")
+        oracle_source = loaded.get("oracle_source")
+        producer_source = loaded.get("producer_source")
+        if oracle_source is None or producer_source is None:
+            errors.append("oracle-source-artifact-missing")
+        else:
+            if _sha256(oracle_source) != oracle.get("oracle_source_sha256"):
+                errors.append("oracle-source-hash-mismatch")
+            if _sha256(producer_source) != oracle.get("producer_source_sha256"):
+                errors.append("producer-source-hash-mismatch")
+            if _sha256(oracle_source) == _sha256(producer_source):
+                errors.append("oracle-source-identical-to-producer")
+        if oracle.get("result") not in {"PASS", "FAIL", "INCONCLUSIVE"}:
+            errors.append("oracle-result-invalid")
+        if oracle.get("case_id") != case_id or oracle.get("run_id") != run_id:
+            errors.append("oracle-provenance-mismatch")
+
+    fixture = _load_json(loaded["fixture"]) if "fixture" in loaded else None
+    observed = _load_json(loaded["observed"]) if "observed" in loaded else None
+    if not isinstance(observed, dict):
+        errors.append("observed-artifact-invalid")
+    elif observed.get("case_id") != case_id or observed.get("run_id") != run_id:
+        errors.append("observed-provenance-mismatch")
+    control = fixture.get("control") if isinstance(fixture, dict) else None
+    schema_rejected_control = (
+        rep.get("kind") in {"NEGATIVE", "BOUNDARY"}
+        and isinstance(control, dict)
+        and control.get("expect") == "trapezoid-zero-panels-rejected"
+        and fixture.get("lifecycle_status") == "REJECTED"
+        and isinstance(observed, dict)
+        and observed.get("value") is None
+        and isinstance(oracle, dict)
+        and oracle.get("result") == "INCONCLUSIVE"
+    )
+    if rep.get("execution_status") == "BLOCKED" and not schema_rejected_control:
+        value = observed.get("value") if isinstance(observed, dict) else None
+        expected_phase = {
+            "NORMAL": "NORMAL_PLAN",
+            "NEGATIVE": "NEGATIVE_CONTROL",
+            "BOUNDARY": "BOUNDARY_CONTROL",
+        }.get(rep.get("kind"))
+        detail = oracle.get("detail") if isinstance(oracle, dict) else None
+        if (not isinstance(value, dict) or value.get("blocked") is not True
+                or value.get("case_id") != case_id or value.get("phase") != expected_phase
+                or value.get("operation_invoked") is not False
+                or not isinstance(value.get("blocker_code"), str) or not value["blocker_code"]
+                or not isinstance(value.get("details"), str) or not value["details"]):
+            errors.append("blocked-preflight-observation-invalid")
+        if (not isinstance(detail, dict) or detail.get("valid_blocked_record") is not True
+                or detail.get("underlying_operation_result") != "NOT_OBSERVED"):
+            errors.append("blocked-preflight-independent-oracle-invalid")
+    if (not isinstance(fixture, dict) or fixture.get("case_id") != case_id or fixture.get("run_id") != run_id
+            or not (fixture.get("fixture_origin") or fixture.get("fixture_id"))
+            or fixture.get("run_kind") != rep.get("kind") or "input" not in fixture):
+        errors.append("fixture-provenance-invalid")
+    source_metadata = fixture.get("source") if isinstance(fixture, dict) else None
+    source_excerpt_path = loaded.get("source_excerpt")
+    source_excerpt = source_excerpt_path.read_bytes() if source_excerpt_path is not None else None
+    if (not isinstance(source_metadata, dict)
+            or not isinstance(source_metadata.get("source_file"), str) or not source_metadata.get("source_file")
+            or not isinstance(source_metadata.get("line_start"), int) or source_metadata["line_start"] < 1
+            or not isinstance(source_metadata.get("line_end"), int) or source_metadata["line_end"] < source_metadata["line_start"]
+            or not re.fullmatch(r"[0-9a-f]{64}", str(source_metadata.get("file_sha256", "")))
+            or not re.fullmatch(r"[0-9a-f]{64}", str(source_metadata.get("excerpt_sha256", "")))
+            or not isinstance(source_metadata.get("source_blob"), str) or not re.fullmatch(r"[0-9a-f]{40}", source_metadata["source_blob"])
+            or any(not isinstance(source_metadata.get(field), str) or not source_metadata[field]
+                   for field in ("operation", "acceptance_criterion", "oracle_requirement"))
+            or source_excerpt is None
+            or hashlib.sha256(source_excerpt).hexdigest() != source_metadata.get("excerpt_sha256")
+            or case_id.encode("utf-8") not in source_excerpt
+            or any(source_metadata[field].encode("utf-8") not in source_excerpt
+                   for field in ("operation", "acceptance_criterion", "oracle_requirement"))):
+        errors.append("source-line-provenance-invalid")
+    elif rep.get("kind") in {"NEGATIVE", "BOUNDARY"}:
+        control = fixture.get("control")
+        if not isinstance(control, dict) or not all(
+            isinstance(control.get(field), str) and control[field]
+            for field in ("definition", "expected_behavior", "source")
+        ):
+            errors.append("negative-or-boundary-control-not-specified")
+
+    control_spec = _load_json(loaded["control_spec"]) if "control_spec" in loaded else None
+    if (not isinstance(control_spec, dict) or control_spec.get("case_id") != case_id
+            or control_spec.get("run_id") != run_id or control_spec.get("run_kind") != rep.get("kind")):
+        errors.append("control-spec-provenance-invalid")
+    elif rep.get("kind") in {"NEGATIVE", "BOUNDARY"} and control_spec.get("control") != fixture.get("control"):
+        errors.append("control-spec-fixture-mismatch")
+
+    environment = _load_json(loaded["environment"]) if "environment" in loaded else None
+    if not isinstance(environment, dict) or not environment.get("environment_id") or environment.get("case_id") != case_id or environment.get("run_id") != run_id:
+        errors.append("environment-artifact-invalid")
+    elif rep.get("clean_state") is True:
+        from metagente_luna_s4.isolation import isolation_evidence_valid
+
+        isolation = environment.get("isolation")
+        if not isolation_evidence_valid(isolation):
+            errors.append("clean-state-isolation-not-proven")
+
+    procedure = _load_json(loaded["procedure"]) if "procedure" in loaded else None
+    if (not isinstance(procedure, dict) or procedure.get("case_id") != case_id or procedure.get("run_id") != run_id
+            or not (procedure.get("procedure") or isinstance(procedure.get("steps"), list))):
+        errors.append("procedure-artifact-invalid")
+
+    metrics = _load_json(loaded["metrics"]) if "metrics" in loaded else None
+    if (not isinstance(metrics, dict) or metrics.get("case_id") != case_id or metrics.get("run_id") != run_id
+            or not any(key in metrics for key in ("duration_ms", "duration_seconds"))):
+        errors.append("metrics-artifact-invalid")
+
+    outcome = rep.get("execution_status")
+    oracle_outcome = oracle.get("result") if isinstance(oracle, dict) else None
+    if outcome == "PASS" and (rep.get("exit_code") != 0 or oracle_outcome != "PASS"):
+        errors.append("pass-without-independent-oracle-pass")
+    if outcome == "FAIL" and oracle_outcome != "FAIL":
+        errors.append("fail-without-oracle-fail")
+    if outcome in {"BLOCKED", "INCONCLUSIVE"} and oracle_outcome != "INCONCLUSIVE":
+        errors.append("nonterminal-outcome-oracle-mismatch")
+    return errors
+
+
+
+def _evidence_manifest_digest(row: dict) -> str:
+    entries = []
+    for run in (row.get("repetitions") or []) + (row.get("controls") or []):
+        if not isinstance(run, dict):
+            continue
+        for name, artifact in (run.get("artifacts") or {}).items():
+            if isinstance(artifact, dict):
+                entries.append({
+                    "kind": run.get("kind"), "run_id": run.get("run_id"),
+                    "name": name, "path": artifact.get("path"), "sha256": artifact.get("sha256"),
+                })
+    encoded = json.dumps(sorted(entries, key=lambda item: (str(item["run_id"]), item["name"])),
+                         sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
+    errors = contradictions(row)
+    if evidence_root is None:
+        errors.append("evidence-root-not-supplied")
+        return errors
+    if row.get("execution_status") not in EXECUTION_OUTCOMES:
+        errors.append("case-not-executed")
+        return errors
+
+    case_id = row.get("CASE_ID") or row.get("case_id")
+    repetitions = row.get("repetitions")
+    controls = row.get("controls")
+    if not isinstance(repetitions, list) or len(repetitions) != 3:
+        errors.append("exactly-three-normal-repetitions-required")
+        repetitions = repetitions if isinstance(repetitions, list) else []
+    if not isinstance(controls, list) or len(controls) != 2:
+        errors.append("separate-negative-and-boundary-controls-required")
+        controls = controls if isinstance(controls, list) else []
+
+    normal_kinds = [rep.get("kind") for rep in repetitions if isinstance(rep, dict)]
+    control_kinds = [rep.get("kind") for rep in controls if isinstance(rep, dict)]
+    if normal_kinds != ["NORMAL"] * len(repetitions) or len(repetitions) != 3:
+        errors.append("three-normal-runs-required")
+    if set(control_kinds) != {"NEGATIVE", "BOUNDARY"} or len(controls) != 2:
+        errors.append("one-negative-and-one-boundary-run-required")
+
+    all_runs = repetitions + controls
+    run_ids: list[str] = []
+    normal_outcomes: list[str] = []
+    input_digests: dict[str, list[str]] = {"NORMAL": [], "NEGATIVE": [], "BOUNDARY": []}
+    for rep in all_runs:
+        if not isinstance(rep, dict):
+            errors.append("repetition-entry-invalid")
+            continue
+        errors.extend(_validate_repetition(rep, evidence_root, case_id))
+        run_id = rep.get("run_id")
+        if isinstance(run_id, str):
+            run_ids.append(run_id)
+        kind = rep.get("kind")
+        if kind == "NORMAL" and isinstance(rep.get("execution_status"), str):
+            normal_outcomes.append(rep["execution_status"])
+        artifacts = rep.get("artifacts")
+        if isinstance(artifacts, dict):
+            fixture_ref = artifacts.get("fixture")
+            fixture_path, _ = _safe_artifact(evidence_root, fixture_ref)
+            fixture_data = _load_json(fixture_path) if fixture_path is not None else None
+            if isinstance(fixture_data, dict) and "input" in fixture_data and kind in input_digests:
+                encoded = json.dumps(fixture_data["input"], sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+                input_digests[kind].append(hashlib.sha256(encoded).hexdigest())
+
+    if len(run_ids) != len(set(run_ids)):
+        errors.append("duplicate-run-id-within-case")
+    normal_inputs = input_digests["NORMAL"]
+    negative_inputs = input_digests["NEGATIVE"]
+    boundary_inputs = input_digests["BOUNDARY"]
+    if len(normal_inputs) != 3 or len(set(normal_inputs)) != 1:
+        errors.append("normal-repetitions-must-use-identical-input")
+    if (len(negative_inputs) != 1 or len(boundary_inputs) != 1
+            or not normal_inputs or negative_inputs[0] in normal_inputs
+            or boundary_inputs[0] in normal_inputs or negative_inputs == boundary_inputs):
+        errors.append("negative-and-boundary-inputs-must-be-distinct")
+
+    if len(set(normal_outcomes)) > 1:
+        errors.append("normal-repetition-outcomes-disagree")
+    if row.get("execution_status") != (normal_outcomes[0] if normal_outcomes else None):
+        errors.append("case-outcome-does-not-match-normal-repetitions")
+    if row.get("contract_status") == "PASS" and row.get("execution_status") != "PASS":
+        errors.append("contract-pass-with-nonpass-execution")
+    if row.get("contract_status") == "PASS":
+        evaluation = row.get("contract_evaluation")
+        control_checks = evaluation.get("control_checks") if isinstance(evaluation, dict) else None
+        if (
+            not isinstance(evaluation, dict)
+            or evaluation.get("adjudicator") != "SOURCE_BOUND_PLAN_AND_REGISTERED_CONTROL_EXPECTATIONS"
+            or evaluation.get("normal_repetitions_pass") is not True
+            or evaluation.get("normal_repetition_checks") != [True, True, True]
+            or evaluation.get("controls_pass") is not True
+            or not isinstance(control_checks, list)
+            or len(control_checks) != 2
+            or {item.get("kind") for item in control_checks if isinstance(item, dict)} != {"NEGATIVE", "BOUNDARY"}
+            or not all(isinstance(item, dict) and item.get("accepted") is True for item in control_checks)
+        ):
+            errors.append("contract-adjudication-missing-or-failed")
+    independent = row.get("independent_validation")
+    expected_artifacts = sum(
+        len(run.get("artifacts", {}))
+        for run in all_runs if isinstance(run, dict) and isinstance(run.get("artifacts"), dict)
+    )
+    # Never trust a caller-supplied "independent PASS" object. Re-run the
+    # separate automated verifier at the gate and compare its complete result.
+    try:
+        from metagente_luna_s4.independent_validator import independently_validate_case
+
+        recomputed = independently_validate_case(row, evidence_root)
+    except (ImportError, OSError, TypeError, ValueError) as exc:
+        recomputed = {"status": "FAIL", "findings": [f"independent-validator-error:{type(exc).__name__}"]}
+    if (not isinstance(independent, dict)
+            or independent.get("validator_id") != "LUNA_C05_INDEPENDENT_VALIDATOR"
+            or independent.get("validator_version") != recomputed.get("validator_version")
+            or independent.get("status") != "PASS"
+            or recomputed.get("status") != "PASS"
+            or independent.get("case_id") != case_id
+            or independent.get("method") != "INDEPENDENT_RECOMPUTATION"
+            or independent.get("checked_run_count") != 5
+            or independent.get("checked_artifact_count") != expected_artifacts
+            or independent.get("evidence_digest") != _evidence_manifest_digest(row)
+            or independent != recomputed):
+        errors.append("independent-case-validation-missing-or-invalid")
+    if row.get("contract_status") == "PASS" and (
+        not isinstance(independent, dict) or independent.get("status") != "PASS"
+    ):
+        errors.append("contract-pass-without-independent-validation")
+    return errors
+
+
+def _functional_population_passes(rows: list[dict]) -> bool:
+    """Return true only when all 1,000 underlying operations contractually pass."""
+    return (
+        len(rows) == 1000
+        and all(
+            row.get("execution_status") == "PASS"
+            and row.get("contract_status") == "PASS"
+            for row in rows
+        )
+    )
+
+
+def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
+    """Validate the exact INF population against persisted, byte-verified evidence."""
+    identifiers = [row.get("CASE_ID") or row.get("case_id") for row in rows]
+    problems = []
+    if identifiers != EXPECTED:
+        id_set = set(identifiers)
+        problems.append({
+            "missing": len([case_id for case_id in EXPECTED if case_id not in id_set]),
+            "unknown": len([case_id for case_id in identifiers if case_id not in set(EXPECTED)]),
+            "duplicates": len(identifiers) - len(id_set),
+            "order_mismatch": len(identifiers) == len(EXPECTED) and identifiers != EXPECTED,
+        })
+    root = Path(evidence_root).resolve() if evidence_root is not None else None
+    rejected = []
+    run_owner: dict[str, str] = {}
+    artifact_owner: dict[str, tuple[str, str, str]] = {}
+    authentic = 0
+    not_run = 0
+    contractual_pass = 0
+    for row in rows:
+        case_id = row.get("CASE_ID") or row.get("case_id")
+        if row.get("execution_status") == "NOT_RUN":
+            not_run += 1
+        if row.get("contract_status") == "PASS":
+            contractual_pass += 1
+        errors = _validate_row(row, root)
+        repetitions = row.get("repetitions")
+        controls = row.get("controls")
+        all_runs = (repetitions if isinstance(repetitions, list) else []) + (controls if isinstance(controls, list) else [])
+        for rep in all_runs:
+            if not isinstance(rep, dict):
+                continue
+            run_id = rep.get("run_id")
+            if isinstance(run_id, str):
+                owner = run_owner.setdefault(run_id, case_id)
+                if owner != case_id:
+                    errors.append("run-id-reused-across-cases")
+            artifacts = rep.get("artifacts")
+            if isinstance(artifacts, dict):
+                for artifact_name, artifact in artifacts.items():
+                    if not isinstance(artifact, dict) or not isinstance(artifact.get("path"), str):
+                        continue
+                    artifact_path = artifact["path"]
+                    artifact_key = (case_id, run_id if isinstance(run_id, str) else "", artifact_name)
+                    previous_owner = artifact_owner.setdefault(artifact_path, artifact_key)
+                    if previous_owner != artifact_key:
+                        errors.append(f"evidence-path-reused:{artifact_path}")
+        if errors:
+            rejected.append({"case_id": case_id, "reasons": sorted(set(errors))})
+        else:
+            authentic += 1
+    outcome_counts = {
+        outcome: sum(row.get("execution_status") == outcome for row in rows)
+        for outcome in sorted(EXECUTION_OUTCOMES)
+    }
+    operation_passed = sum(
+        row.get("execution_status") == "PASS" and row.get("contract_status") == "PASS"
+        for row in rows
+    )
+    # Complete, authentic BLOCKED dossiers are useful forensic evidence, but
+    # they do not demonstrate that the underlying operations work. C05 is a
+    # functional gate: every one of the 1,000 cases must execute and pass its
+    # contract with independently verified evidence.
+    passed = (
+        not problems
+        and not rejected
+        and authentic == 1000
+        and not_run == 0
+        and contractual_pass == 1000
+        and operation_passed == 1000
+        and outcome_counts == {"BLOCKED": 0, "FAIL": 0, "INCONCLUSIVE": 0, "PASS": 1000}
+        and _functional_population_passes(rows)
+    )
+    return {
+        "c05_passed": passed,
+        "c05_status": "PASS" if passed else "NOT_PASSED",
+        "expected": 1000,
+        "rows": len(rows),
+        "not_run": not_run,
+        "not_run_counts_as_execution": False,
+        "authentic_results": authentic,
+        "contractual_pass": contractual_pass,
+        "operation_passed": operation_passed,
+        "execution_outcomes": outcome_counts,
+        "rejected": rejected,
+        "structure_problems": problems,
+        "evidence_root_supplied": root is not None,
+        "human_review_required": False,
+        "reason": "C05 functional certification requires 1,000 individually accounted dossiers, 1,000 successful underlying operations, 1,000 contractual PASS results, persisted byte-verified evidence, and independent validation. BLOCKED preflight records are evidence of blockers, never functional operation PASS.",
+    }

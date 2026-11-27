@@ -1,0 +1,30 @@
+{
+  "recorded_at": "2026-11-26T01:10:35Z",
+  "protocol": {
+    "path": "mission/authority/PROTODEFINITIVO.txt",
+    "git_blob_oid": "c40ca28ef8e515b25c8d8c6b035d4e0a8eebe2bf",
+    "git_blob_is_sha256": false,
+    "sha256": "81752b5d837b69a0e50fbb1ec3a6c4f8701cbcad0cbfdb1ebd16ab1efddf06a5",
+    "bytes": 104583,
+    "lines": 2689,
+    "matches_uploaded_bytes": true
+  },
+  "program": {
+    "path": "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt",
+    "git_blob_oid": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
+    "git_blob_is_sha256": false,
+    "sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
+    "bytes": 862771,
+    "lines": 5123,
+    "matches_uploaded_bytes": true,
+    "same_bytes_as_historical_sha256": true
+  },
+  "declared_line_counts_were": {
+    "protocol": 2690,
+    "program": 5124
+  },
+  "actual_splitlines": {
+    "protocol": 2689,
+    "program": 5123
+  }
+}

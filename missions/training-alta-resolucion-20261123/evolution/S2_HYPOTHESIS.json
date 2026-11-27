@@ -1,0 +1,11 @@
+{
+  "recorded_before_results": true,
+  "hypothesis": "Selecting a capability by filled slots, not by case id, executes operations whose operands are already in the instruction and blocks the ones whose essential operand is absent.",
+  "learning": "NOT_DEMONSTRATED",
+  "not_claimed": [
+    "M1",
+    "C05 closure",
+    "C08",
+    "1000 PASS"
+  ]
+}

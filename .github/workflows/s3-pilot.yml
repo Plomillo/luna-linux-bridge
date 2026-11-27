@@ -1,0 +1,29 @@
+name: s3-pilot
+on:
+  push:
+    branches:
+      - repair/metagente-luna-structured-20261125
+    paths:
+      - "missions/training-alta-resolucion-20261123/s3/**"
+      - ".github/workflows/s3-pilot.yml"
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: missions/training-alta-resolucion-20261123/s3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
+        with:
+          python-version: "3.12.15"
+      - name: sync
+        run: unset VIRTUAL_ENV; uv sync --frozen --extra dev
+      - name: python
+        run: unset VIRTUAL_ENV; uv run python -c "import sys; assert sys.version.startswith('3.12.15'), sys.version"
+      - name: pytest
+        run: unset VIRTUAL_ENV; uv run pytest tests
+      - name: ruff
+        run: unset VIRTUAL_ENV; uv run ruff check src tests

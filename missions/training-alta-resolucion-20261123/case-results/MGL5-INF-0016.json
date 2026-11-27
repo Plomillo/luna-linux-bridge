@@ -1,0 +1,13 @@
+{
+  "id": "MGL5-INF-0016",
+  "state": "BLOCKED",
+  "repetitions": 0,
+  "observed": {
+    "state": "BLOCKED",
+    "reason": "FIXTURE_LITERALS_TRUNCATED",
+    "detail": "Operation names U+0301 and U+00E9. Literal list records 0301 and 00. Criterion was not modified."
+  },
+  "program_original_state": "NOT_RUN",
+  "note": "Not executed. Fixture contradiction preserved.",
+  "program_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf"
+}

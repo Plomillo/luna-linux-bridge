@@ -1,0 +1,20 @@
+{
+  "DEFECT_ID": "DEFECT-FIXTURE-MGL5-INF-0017",
+  "SOURCE_OPERATION": "Descomponer U+00E9 a forma canónica.",
+  "SOURCE_LITERAL_VALUES": [
+    "00",
+    "0065",
+    "0301"
+  ],
+  "DERIVED_INPUT": "U+00E9",
+  "DERIVED_EXPECTED": [
+    "U+0065",
+    "U+0301"
+  ],
+  "DERIVATION_REASON": "Operation and PASS name U+00E9 and U+0065 U+0301. Literal 00 does not equal U+00E9 and is preserved.",
+  "execution": "NOT_RUN",
+  "independent_review": "NOT_DONE",
+  "accreditation": false,
+  "recorded_at": "2026-11-24T05:34:49Z",
+  "source_program_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf"
+}

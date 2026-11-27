@@ -1,0 +1,499 @@
+{
+  "recorded_at": "2026-11-25T17:25:39Z",
+  "code_commit": "c4554ff279530c9740f67f0597e0b05e5f81d4b8",
+  "machinery": "R1-20261125.1",
+  "m0_modified": false,
+  "full_corpus_rerun": false,
+  "reason": "The stratified sample changed the stop. A full rerun waits until more operations dispatch.",
+  "historical_20_delegated": 20,
+  "historical_20_oracle_ok": true,
+  "new_observed": [
+    "MGL5-INF-0005",
+    "MGL5-INF-0046",
+    "MGL5-INF-0108",
+    "MGL5-INF-0141",
+    "MGL5-INF-0142",
+    "MGL5-INF-0151",
+    "MGL5-INF-0155",
+    "MGL5-INF-0201",
+    "MGL5-INF-0251",
+    "MGL5-INF-0253",
+    "MGL5-INF-0301",
+    "MGL5-INF-0451",
+    "MGL5-INF-0601"
+  ],
+  "blocked": [
+    "MGL5-INF-0006",
+    "MGL5-INF-0054"
+  ],
+  "still_unmatched": [
+    "MGL5-INF-0401",
+    "MGL5-INF-0801",
+    "MGL5-INF-0951"
+  ],
+  "null_reasons": 0,
+  "limits": [
+    "0253 uses :: repeated twice because the operation names two compressions and contains that literal.",
+    "0141 uses in-memory sqlite, not a recovered laboratory endpoint.",
+    "0451 commits a one-line README because the operation names the filename and not the body.",
+    "These are not C05 or C08."
+  ],
+  "cases": [
+    {
+      "id": "MGL5-INF-0001",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0002",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0003",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0004",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0007",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0008",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0009",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0010",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0011",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0012",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0013",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0014",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0015",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0016",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0017",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0018",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0048",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0101",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0102",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0308",
+      "status": "OBSERVED",
+      "stage": "DELEGATED_TO_M0",
+      "reason": "M0_GRAMMAR_MATCH",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0005",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0006",
+      "status": "BLOCKED",
+      "stage": "FIXTURE",
+      "reason": "ESSENTIAL_FILE_CONTENT_ABSENT",
+      "codes": [
+        2,
+        2,
+        2
+      ],
+      "oracle_ok": null
+    },
+    {
+      "id": "MGL5-INF-0046",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0054",
+      "status": "BLOCKED",
+      "stage": "FIXTURE",
+      "reason": "LAB_ARTIFACT_NOT_IN_SOURCE",
+      "codes": [
+        2,
+        2,
+        2
+      ],
+      "oracle_ok": null
+    },
+    {
+      "id": "MGL5-INF-0108",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0141",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0142",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0151",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0155",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0201",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0251",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0253",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0301",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0401",
+      "status": "UNMATCHED",
+      "stage": "RECOGNITION",
+      "reason": "NO_GRAMMAR_MATCH",
+      "codes": [
+        2,
+        2,
+        2
+      ],
+      "oracle_ok": null
+    },
+    {
+      "id": "MGL5-INF-0451",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0601",
+      "status": "OBSERVED",
+      "stage": "EXECUTED",
+      "reason": "TOOL_RETURNED",
+      "codes": [
+        0,
+        0,
+        0
+      ],
+      "oracle_ok": true
+    },
+    {
+      "id": "MGL5-INF-0801",
+      "status": "UNMATCHED",
+      "stage": "RECOGNITION",
+      "reason": "NO_GRAMMAR_MATCH",
+      "codes": [
+        2,
+        2,
+        2
+      ],
+      "oracle_ok": null
+    },
+    {
+      "id": "MGL5-INF-0951",
+      "status": "UNMATCHED",
+      "stage": "RECOGNITION",
+      "reason": "NO_GRAMMAR_MATCH",
+      "codes": [
+        2,
+        2,
+        2
+      ],
+      "oracle_ok": null
+    }
+  ]
+}

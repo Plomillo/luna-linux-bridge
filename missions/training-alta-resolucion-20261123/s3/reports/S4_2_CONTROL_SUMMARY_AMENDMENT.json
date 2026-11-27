@@ -1,0 +1,22 @@
+{
+  "amends": "S4_2_CONTROL_SUMMARY.json",
+  "historical_file_preserved": true,
+  "historical_unique_criterion_met": 65,
+  "historical_controls": 32,
+  "verified_controls_on_the_first_fifty": 50,
+  "batch3_cases": 15,
+  "batch4_cases": 9,
+  "unique_criterion_met": 74,
+  "pass": 0,
+  "not_run": 926,
+  "c05_gate": "NOT_PASSED",
+  "counter": "4/26",
+  "batch4_corrections": {
+    "MGL5-INF-0620": "The earlier formula was already trapezoidal. The weights are now recorded as [1, 2, 2, 2, 1].",
+    "MGL5-INF-0621": "The earlier run used midpoint panels. The corrected run uses Simpson with four panels.",
+    "MGL5-INF-0142": "The corrected run is a simulated download. The traversal reads zero bytes.",
+    "MGL5-INF-0555": "The corrected run records one hundred distinct completions.",
+    "MGL5-INF-0561": "The corrected run counts ninety-nine successes and one failure.",
+    "MGL5-INF-0633": "The corrected run returns four lags. Lag 0 is 1."
+  }
+}

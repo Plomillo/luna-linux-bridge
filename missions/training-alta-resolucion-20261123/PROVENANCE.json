@@ -1,0 +1,17 @@
+{
+  "execution_branch": "training/metagente-luna-alta-resolucion-20261123",
+  "created_from_ref": "feat/metagente-luna-1000-casos-alta-resolucion",
+  "origin_commit": "b8e793c0a09021e6b269f0161ddee2396b792f76",
+  "program_path": "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt",
+  "program_blob": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
+  "program_sha256": "f67c32d8984be78e73ba1acac050349baef9c1fb6adeb59fef15e53821b88daf",
+  "program_modified": false,
+  "contract_document": {
+    "path": "PROTODEFINITIVO.txt",
+    "commit": "f58acbdb7dfc6722d1dd874729249f06fbbef76d",
+    "blob": "c40ca28ef8e515b25c8d8c6b035d4e0a8eebe2bf",
+    "sha256": "81752b5d837b69a0e50fbb1ec3a6c4f8701cbcad0cbfdb1ebd16ab1efddf06a5",
+    "present_on_this_branch": false,
+    "reason": "Pinned by hash. Not copied, so this branch cannot silently diverge from the rector text."
+  }
+}
