@@ -145,6 +145,14 @@ def _build() -> None:
     _add("MGL5-INF-0254", "boundary", "cidr_bounds", {"cidr": "192.0.2.130/32"}, "host-prefix-boundary")
     _add("MGL5-INF-0255", "negative", "ipv6_prefix", {"cidr": "2001:db8::1/129"}, "ipv6-prefix-rejected")
     _add("MGL5-INF-0255", "boundary", "ipv6_prefix", {"cidr": "2001:db8::1/128"}, "ipv6-host-prefix")
+    _add("MGL5-INF-0171", "negative", "index_limit", {"length": -1}, "negative-length-no-read")
+    _add("MGL5-INF-0171", "boundary", "index_limit", {"length": 0}, "zero-length-no-read")
+    _add("MGL5-INF-0252", "negative", "expand_v6", {"address": "not-an-ipv6-address"}, "expanded-invalid-ipv6-rejected")
+    _add("MGL5-INF-0252", "boundary", "expand_v6", {"address": "::"}, "ipv6-zero-boundary")
+    _add("MGL5-INF-0256", "negative", "mask_bits", {"mask": "255.0.0.255"}, "invalid-mask-rejected")
+    _add("MGL5-INF-0256", "boundary", "mask_bits", {"mask": "255.255.255.255"}, "all-ones-mask-valid")
+    _add("MGL5-INF-0435", "negative", "threshold", {"low": 38, "high": 38, "limit": 38}, "threshold-equality-no-fire")
+    _add("MGL5-INF-0435", "boundary", "threshold", {"low": 38.1, "high": 38.1, "limit": 38}, "threshold-above-fires")
     _add("MGL5-INF-0109", "negative", "stack_sequence", {"steps": ["pop"]}, "single-underflow")
     _add("MGL5-INF-0109", "boundary", "stack_sequence", {"steps": []}, "empty-stack-sequence")
 
@@ -199,6 +207,22 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and (observed.get("sum") == 11 or observed.get("minimum") == 4)
     if expect == "not-fifteen":
         return status == "EXECUTED" and observed["sum"] != 15
+    if expect == "negative-length-no-read":
+        return status == "EXECUTED" and observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == 0
+    if expect == "zero-length-no-read":
+        return status == "EXECUTED" and observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == 0
+    if expect == "expanded-invalid-ipv6-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "ipv6-zero-boundary":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("expanded") == "0000:0000:0000:0000:0000:0000:0000:0000" and observed.get("integer") == 0
+    if expect == "invalid-mask-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True and observed.get("contiguous") is False
+    if expect == "all-ones-mask-valid":
+        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("contiguous") is True and observed.get("bits") == "1" * 32
+    if expect == "threshold-equality-no-fire":
+        return status == "EXECUTED" and observed.get("at_or_below") is True and observed.get("above") is False
+    if expect == "threshold-above-fires":
+        return status == "EXECUTED" and observed.get("at_or_below") is False and observed.get("above") is True
     if expect == "fifo-reversed-order":
         return status == "EXECUTED" and observed.get("order") == ["C", "B", "A"] and observed.get("remaining") == 0
     if expect == "fifo-singleton":
