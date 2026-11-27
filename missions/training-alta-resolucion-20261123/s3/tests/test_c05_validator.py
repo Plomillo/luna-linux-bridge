@@ -29,8 +29,8 @@ def _valid_row_with_artifacts(tmp_path):
     repetitions = []
     for index, kind in enumerate(("NORMAL", "NEGATIVE", "BOUNDARY"), start=1):
         run_id = f"run-0001-{index:04d}"
-        oracle_source = _write_artifact(tmp_path, f"{run_id}/oracle_source.py", "def oracle(value): return value == 1\\n")
-        producer_source = _write_artifact(tmp_path, f"{run_id}/producer_source.py", "def producer(value): return value + 0\\n")
+        oracle_source = _write_artifact(tmp_path, f"{run_id}/oracle_source.py", "def oracle(value): return value == 1")
+        producer_source = _write_artifact(tmp_path, f"{run_id}/producer_source.py", "def producer(value): return value + 0")
         artifacts = {
             "fixture": _write_artifact(tmp_path, f"{run_id}/fixture.json", {"case_id": case_id, "run_id": run_id, "fixture_id": "fixture-v1"}),
             "environment": _write_artifact(tmp_path, f"{run_id}/environment.json", {"case_id": case_id, "run_id": run_id, "environment_id": "pytest-local"}),
