@@ -16,3 +16,16 @@ def test_third_batch_meets_the_stated_results():
     assert by_id["MGL5-INF-0255"]["prefix"] == "2001:db8:abcd:12::/64"
     assert by_id["MGL5-INF-0608"]["norm"] == 13
     assert by_id["MGL5-INF-0763"]["value"] == 0.8
+
+
+def test_arithmetic_and_registered_controls_are_independently_recomputed():
+    from metagente_luna_s3.batch3_exec import arithmetic, binary_insert, child_status
+    from metagente_luna_s3.batch3_oracle import exit_seven, sorted_values, stated_value
+
+    for expression in ("2+3*5", "0+0", "2*(1+2)", "(0+0)*1", "3*4+5", "0*1+0"):
+        arguments = {"expression": expression}
+        assert stated_value(arguments, arithmetic(expression))["ok"] is True
+    values = [5, 2, 9]
+    assert sorted_values({"values": values}, binary_insert(values))["ok"] is True
+    for code in (7, 1, 0):
+        assert exit_seven({"exit_code": code}, child_status(code))["ok"] is True
