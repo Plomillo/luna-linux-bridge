@@ -43,8 +43,8 @@ jobs:
         with:
           name: c05-source-plan-backlog-${{ github.sha }}
           path: |
-            reports/C05_SOURCE_PLAN_BACKLOG.jsonl
-            reports/C05_SOURCE_PLAN_BACKLOG_SUMMARY.json
+            missions/training-alta-resolucion-20261123/s3/reports/C05_SOURCE_PLAN_BACKLOG.jsonl
+            missions/training-alta-resolucion-20261123/s3/reports/C05_SOURCE_PLAN_BACKLOG_SUMMARY.json
           if-no-files-found: error
           retention-days: 90
       - name: Ruff
