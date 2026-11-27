@@ -2,6 +2,7 @@ import hashlib
 import json
 
 from metagente_luna_s4.c05_validator import _validate_row, contradictions, validate
+from metagente_luna_s4.independent_validator import independently_validate_case
 from metagente_luna_s4.reconcile import amendments, intersection, manifest
 
 
@@ -81,11 +82,12 @@ def _valid_row_with_artifacts(tmp_path):
             "artifacts": artifacts,
         }
         (repetitions if kind == "NORMAL" else controls).append(run)
-    return {
+    row = {
         "CASE_ID": case_id, "execution_status": "PASS", "contract_status": "PASS",
         "repetitions": repetitions, "controls": controls,
-        "independent_validation": {"passed": True},
     }
+    row["independent_validation"] = independently_validate_case(row, tmp_path)
+    return row
 
 def test_population_intersection_is_exact():
     report = intersection()
