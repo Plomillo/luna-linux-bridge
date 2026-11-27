@@ -200,6 +200,20 @@ def _build() -> None:
     _add("MGL5-INF-0040", "boundary", "unknown_field", {"record": {"id": "A-1", "name": "Luna"}, "known_fields": ["id", "name"]}, "both-kept")
     _add("MGL5-INF-0049", "negative", "mixed_roundtrip", {"document": {"n": 1208925819614629174706176}}, "rejected")
     _add("MGL5-INF-0049", "boundary", "mixed_roundtrip", {"document": {}}, "both-kept")
+    _add("MGL5-INF-0112", "negative", "binary_insert", {"values": [8, "x"]}, "rejected")
+    _add("MGL5-INF-0112", "boundary", "binary_insert", {"values": [42]}, "both-kept")
+    _add("MGL5-INF-0125", "negative", "arithmetic", {"expression": "1+"}, "rejected")
+    _add("MGL5-INF-0125", "boundary", "arithmetic", {"expression": "0"}, "both-kept")
+    _add("MGL5-INF-0155", "negative", "arithmetic", {"expression": "2**"}, "rejected")
+    _add("MGL5-INF-0155", "boundary", "arithmetic", {"expression": "1"}, "both-kept")
+    _add("MGL5-INF-0168", "negative", "arithmetic", {"expression": "("}, "rejected")
+    _add("MGL5-INF-0168", "boundary", "arithmetic", {"expression": "2"}, "both-kept")
+    _add("MGL5-INF-0202", "negative", "child_status", {"exit_code": -1}, "rejected")
+    _add("MGL5-INF-0202", "boundary", "child_status", {"exit_code": 255}, "both-kept")
+    _add("MGL5-INF-0411", "negative", "cosine_set", {"pairs": [[[0, 0], [1, 0]]]}, "rejected")
+    _add("MGL5-INF-0411", "boundary", "cosine_set", {"pairs": [[[1, 1], [1, 1]]]}, "both-kept")
+    _add("MGL5-INF-0633", "negative", "acf_lag0", {"values": []}, "rejected")
+    _add("MGL5-INF-0633", "boundary", "acf_lag0", {"values": [1, 2]}, "both-kept")
 
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
