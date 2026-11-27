@@ -331,6 +331,17 @@ def test_independent_control_oracle_is_separate_and_fails_closed():
     assert _independent_control_accepts(
         "unregistered-expectation", {"value": "anything"}, "EXECUTED"
     ) is False
+    assert _independent_control_accepts(
+        "empty-record-set", {"records": [], "rejected": False}, "EXECUTED"
+    ) is True
+    assert _independent_control_accepts(
+        "single-underflow",
+        {"underflow_count": 1, "events": [{"operation": "underflow", "source": "pop"}]},
+        "EXECUTED",
+    ) is True
+    assert _independent_control_accepts(
+        "empty-stack-sequence", {"events": [], "stack": [], "underflow_count": 0}, "EXECUTED"
+    ) is True
 
 def test_contractual_pass_requires_explicit_three_run_and_two_control_adjudication(tmp_path):
     row = _valid_row_with_artifacts(tmp_path)
