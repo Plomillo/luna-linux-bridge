@@ -55,7 +55,9 @@ def stated_prefix(arguments: dict, observed: dict) -> dict:
 
 
 def fever_rule(arguments: dict, observed: dict) -> dict:
-    return {"ok": observed["below_or_equal"] is False and observed["above"] is True and arguments["limit"] == 38, "method": "strict greater-than"}
+    at_or_below = arguments["low"] <= arguments["limit"]
+    above = arguments["high"] > arguments["limit"]
+    return {"ok": observed.get("at_or_below") is at_or_below and observed.get("above") is above, "method": "independent strict greater-than comparison"}
 
 
 def thirteen(arguments: dict, observed: dict) -> dict:
