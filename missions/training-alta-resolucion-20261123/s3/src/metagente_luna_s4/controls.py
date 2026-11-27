@@ -214,6 +214,9 @@ def _build() -> None:
     _add("MGL5-INF-0639", "negative", "rk4_decay", {"step": 2.0}, "rk4-step-out-of-range-rejected")
     _add("MGL5-INF-0639", "boundary", "rk4_decay", {"step": 1.0}, "rk4-single-step-boundary")
 
+    _add("MGL5-INF-0033", "negative", "yaml_types", {"text": "name: Luna\\n  broken: true\\n"}, "yaml-rejected")
+    _add("MGL5-INF-0033", "boundary", "yaml_types", {"text": "name: ''\\nenabled: false\\ncount: 0\\nitems: []\\n"}, "yaml-empty-boundary")
+
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
     # A control is adjudicated against its own expected behavior, not the
@@ -222,6 +225,10 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     control_completed = status in {"EXECUTED", "FAIL"}
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.
+    if expect == "yaml-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
+    if expect == "yaml-empty-boundary":
+        return control_completed and observed.get("rejected") is False and observed.get("parsed") == {"name": "", "enabled": False, "count": 0, "items": []} and observed.get("types") == {"name": "str", "enabled": "bool", "count": "int", "items": "list"}
     if expect == "trapezoid-zero-panels-rejected":
         return status == "REJECTED" and observed is None
     if observed is None:
