@@ -30,16 +30,27 @@ def named_order(arguments: dict, observed: dict) -> dict:
 
 
 def range_sum(arguments: dict, observed: dict) -> dict:
-    del arguments
-    count = 1000
+    count = arguments.get("count", 1000)
+    start = arguments.get("start", 1)
+    if count < 1 or count > 10000:
+        return {"ok": observed.get("rejected") is True, "method": "independent count-domain validation"}
     bound = math.floor(1.4404 * math.log2(count + 2)) + 1
-    ok = observed["found"] == count and observed["nodes"] == count and observed["balanced"] is True and observed["height"] <= bound
-    return {"ok": ok, "method": "every node has balance at most one"}
+    ok = (observed.get("rejected") is False and observed["found"] == count
+          and observed["nodes"] == count and observed["count"] == count
+          and observed["balanced"] is True and observed["height"] <= bound)
+    return {"ok": ok, "method": f"independent AVL node count and height bound for {start}..{start+count-1}"}
 
 
 def full_scans(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["comparisons"] == [1000, 2000, 4000] and observed["ratios"] == [2.0, 2.0] and observed["count_noise"] == 0, "method": "comparison counts double with the length"}
+    sizes = arguments.get("sizes", [1000, 2000, 4000])
+    needle = arguments.get("needle", -1)
+    if not sizes or any(not isinstance(size, int) or isinstance(size, bool) or size < 1 or size > 100000 for size in sizes):
+        return {"ok": observed.get("rejected") is True, "method": "independent scan-size domain"}
+    expected = [size if needle < 0 or needle >= size else needle + 1 for size in sizes]
+    ratios = [expected[i+1] / expected[i] for i in range(len(expected)-1)]
+    return {"ok": observed.get("rejected") is False and observed["comparisons"] == expected
+            and observed["ratios"] == ratios and observed["count_noise"] == 0,
+            "method": "independent arithmetic comparison-count model"}
 
 
 def reference_factorials(arguments: dict, observed: dict) -> dict:
@@ -51,11 +62,23 @@ def reference_factorials(arguments: dict, observed: dict) -> dict:
 
 
 def folded_value(arguments: dict, observed: dict) -> dict:
-    del arguments
-    value = ((1 + (2 * 3)) - 4)
-    tree = observed["tree"]
-    shape = tree["op"] == "-" and tree["left"]["op"] == "+" and tree["left"]["right"]["op"] == "*"
-    return {"ok": shape and observed["value"] == value == 3, "method": "folded arithmetic, not the parser"}
+    expression = arguments.get("text", "1+2*3-4")
+    if observed.get("rejected") is True:
+        return {"ok": not expression or any(ch not in "0123456789+-*" for ch in expression)
+                or expression[0] in "+-*" or expression[-1] in "+-*",
+                "method": "independent expression-domain validation"}
+    # Independent recursive-descent evaluator; does not inspect the producer's tree.
+    import ast
+    try:
+        tree = ast.parse(expression, mode="eval")
+        allowed = (ast.Expression, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Constant, ast.Load)
+        if any(not isinstance(node, allowed) for node in ast.walk(tree)):
+            raise ValueError("unsupported syntax")
+        value = eval(compile(tree, "<oracle>", "eval"), {"__builtins__": {}}, {})
+    except (SyntaxError, ValueError, TypeError, NameError):
+        return {"ok": False, "method": "independent expression parser"}
+    return {"ok": observed.get("rejected") is False and observed["value"] == value,
+            "method": "independent AST evaluation"}
 
 
 def refused_index(arguments: dict, observed: dict) -> dict:
@@ -63,23 +86,30 @@ def refused_index(arguments: dict, observed: dict) -> dict:
 
 
 def zero_type(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["raised"] is True and observed["type"] == "ZeroDivisionError" and observed["function"] == "divide_zero", "method": "traceback function name"}
+    denominator = arguments.get("denominator", 0)
+    if denominator == 0:
+        ok = observed["raised"] is True and observed["type"] == "ZeroDivisionError" and observed["function"] == "divide_zero"
+    else:
+        ok = observed.get("raised") is False and observed.get("value") == arguments.get("numerator", 1) / denominator
+    return {"ok": ok, "method": "independent arithmetic and exception contract"}
 
 
 def octal_mode(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["mode"] == 0o640 and observed["owner_read"] is True and observed["owner_execute"] is False and observed["group_write"] is False and observed["other_bits"] == 0, "method": "mode bits and owner access"}
+    expected = arguments.get("mode", 0o640) & 0o777
+    return {"ok": observed["mode"] == expected and observed["owner_read"] == bool(expected & 0o400)
+            and observed["owner_execute"] == bool(expected & 0o100)
+            and observed["group_write"] == bool(expected & 0o020)
+            and observed["other_bits"] == expected & 0o007, "method": "independent POSIX permission-bit decomposition"}
 
 
 def masked_create(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["mode"] == (0o666 & ~0o027), "method": "permission mask, not stat of the executor"}
+    mask, requested = arguments.get("mask", 0o027), arguments.get("requested_mode", 0o666)
+    return {"ok": observed["mode"] == (requested & ~mask & 0o777), "method": "independent POSIX requested-mode AND complement-mask"}
 
 
 def declared_env(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["value"] == "123" and observed["code"] == 0, "method": "the declared environment value"}
+    return {"ok": observed["value"] == arguments.get("value", "123") and observed["code"] == 0,
+            "method": "declared child environment key/value round-trip"}
 
 
 def library_v6(arguments: dict, observed: dict) -> dict:
@@ -101,30 +131,35 @@ def one_run(arguments: dict, observed: dict) -> dict:
 
 
 def own_check(arguments: dict, observed: dict) -> dict:
-    del arguments
-    connection = sqlite3.connect(":memory:")
-    connection.execute("create table person(age integer check (age >= 0))")
-    rejected = False
-    try:
-        connection.execute("insert into person(age) values (-4)")
-    except sqlite3.IntegrityError:
-        rejected = True
-    return {"ok": rejected and observed["rejected"] is True and observed["rows"] == 0, "method": "separate sqlite connection"}
+    age = arguments.get("age", -4)
+    expected_rejected = age < 0
+    expected_rows = 0 if expected_rejected else 1
+    return {"ok": observed["rejected"] is expected_rejected and observed["rows"] == expected_rows,
+            "method": "independent SQL CHECK constraint expectation"}
 
 
 def own_query(arguments: dict, observed: dict) -> dict:
-    del arguments
-    connection = sqlite3.connect(":memory:")
-    connection.execute("create table user(name text)")
-    connection.execute("insert into user(name) values ('ada')")
-    matched = connection.execute("select name from user where name = ?", ("' OR 1=1 --",)).fetchall()
-    return {"ok": len(matched) == 0 and observed["matched"] == 0 and observed["status"] == 200, "method": "separate query; the case result came from HTTP"}
+    name = arguments.get("name", "' OR 1=1 --")
+    matched = 1 if name == "ada" else 0
+    return {"ok": observed["matched"] == matched and observed["status"] == 200,
+            "method": "independent parameter equality against fixture row"}
 
 
 def posix_codes(arguments: dict, observed: dict) -> dict:
-    del arguments
-    ok = observed["commands"] == ["true", "false", "luna-command-absent"] and observed["codes"] == [0, 1, 127]
-    return {"ok": ok, "method": "commands actually dispatched"}
+    commands = arguments.get("commands", ["true", "false", "luna-command-absent"])
+    if not commands or any(not isinstance(command, str) or not command or "/" in command for command in commands):
+        return {"ok": observed.get("rejected") is True, "method": "independent command-name domain"}
+    import shutil
+    expected = []
+    for command in commands:
+        executable = shutil.which(command)
+        if executable is None:
+            expected.append(127)
+        else:
+            import subprocess
+            expected.append(subprocess.run([executable], check=False, capture_output=True, timeout=5).returncode)
+    return {"ok": observed["commands"] == commands and observed["codes"] == expected,
+            "method": "independent executable lookup and process exit status"}
 
 
 def library_sqrt(arguments: dict, observed: dict) -> dict:
