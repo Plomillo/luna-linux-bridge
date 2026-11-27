@@ -34,7 +34,17 @@ def test_controls_that_were_defined_are_accepted():
     defined = [row for row in rows if row["controls"]]
     assert defined
     assert all(row["control_status"] == "PRESENT" for row in defined)
-    assert len(defined) == 52
+    assert len(defined) == 54
+
+def test_search_controls_distinguish_absence_and_first_boundary_position():
+    assert accepts("first-match-absent", {"index": None, "duplicates": []}, "EXECUTED") is True
+    assert accepts("first-match-absent", {"index": 1, "duplicates": [1]}, "EXECUTED") is False
+    assert accepts("first-match-singleton", {"index": 0, "duplicates": [0]}, "EXECUTED") is True
+    assert accepts("binary-find-absent", {"index": None, "comparisons": 5}, "EXECUTED") is True
+    assert accepts("binary-find-first", {"index": 0, "comparisons": 5}, "EXECUTED") is True
+    assert accepts("binary-find-first", {"index": 0, "comparisons": 6}, "EXECUTED") is False
+    assert accepts("binary-find-absent", {"index": None, "comparisons": 5}, "BLOCKED") is False
+
 
 def test_empty_roundtrip_control_cannot_pass_without_successful_execution():
     assert accepts("empty-roundtrip", {"bytes_hex": ""}, "EXECUTED") is True
