@@ -102,7 +102,8 @@ def f32_table(arguments: dict, observed: dict) -> dict:
 
 
 def decimal_literal(arguments: dict, observed: dict) -> dict:
-    return {"ok": arguments["text"] == "0.10" and observed["text"] == "0.10" and observed["used_binary_float"] is False, "method": "case literal"}
+    expected = str(Decimal(arguments["text"]))
+    return {"ok": observed["text"] == expected and observed["used_binary_float"] is False, "method": "independent Decimal parsing"}
 
 
 def state_table(arguments: dict, observed: dict) -> dict:
