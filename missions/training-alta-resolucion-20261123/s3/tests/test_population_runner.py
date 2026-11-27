@@ -238,3 +238,56 @@ def test_population_refuses_preexisting_blocker_output_before_any_execution(tmp_
     assert not ledger.exists()
     assert not report.exists()
     assert blockers.read_text(encoding="utf-8") == "historical evidence"
+
+def test_contract_adjudication_requires_three_normal_passes_and_both_control_expectations():
+    plan = {
+        "negative": {"control_metadata": {"expect": "different-text"}},
+        "boundary": {"control_metadata": {"expect": "empty-roundtrip"}},
+    }
+    normal = [
+        {
+            "execution_status": "PASS",
+            "lifecycle_status": "EXECUTED",
+            "oracle_result": {"ok": True},
+        }
+        for _ in range(3)
+    ]
+    negative = {
+        "execution_status": "PASS",
+        "lifecycle_status": "EXECUTED",
+        "observed": {"recovered": "Luna-2025"},
+    }
+    boundary = {
+        "execution_status": "PASS",
+        "lifecycle_status": "EXECUTED",
+        "observed": {"recovered": ""},
+    }
+
+    accepted = population.evaluate_contract(plan, normal + [negative, boundary])
+    assert accepted["normal_repetitions_pass"] is True
+    assert accepted["controls_pass"] is True
+
+    rejected = population.evaluate_contract(
+        plan,
+        normal + [{**negative, "observed": {"recovered": "Luna-2026"}}, boundary],
+    )
+    assert rejected["controls_pass"] is False
+
+
+def test_contract_adjudication_rejects_any_nonpassing_normal_repetition():
+    plan = {
+        "negative": {"control_metadata": {"expect": "different-text"}},
+        "boundary": {"control_metadata": {"expect": "empty-roundtrip"}},
+    }
+    normal = [
+        {"execution_status": "PASS", "lifecycle_status": "EXECUTED", "oracle_result": {"ok": True}}
+        for _ in range(3)
+    ]
+    normal[1]["execution_status"] = "FAIL"
+    runs = normal + [
+        {"execution_status": "PASS", "lifecycle_status": "EXECUTED", "observed": {"recovered": "Luna-2025"}},
+        {"execution_status": "PASS", "lifecycle_status": "EXECUTED", "observed": {"recovered": ""}},
+    ]
+
+    result = population.evaluate_contract(plan, runs)
+    assert result["normal_repetitions_pass"] is False
