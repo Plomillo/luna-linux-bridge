@@ -1,7 +1,3 @@
-from metagente_luna_s4.batch5 import CASES
-from metagente_luna_s4.runner import execute
-
-
 EXPECTED = {
     "MGL5-INF-0113": ("balanced_range", "range_sum"),
     "MGL5-INF-0119": ("linear_scans", "full_scans"),
@@ -17,6 +13,9 @@ EXPECTED = {
 
 
 def test_ten_source_defined_batch5_normal_operations_match_independent_oracles():
+    from metagente_luna_s4.batch5 import CASES
+    from metagente_luna_s4.runner import execute
+
     by_id = {case["case_id"]: case for case in CASES}
     assert set(EXPECTED).issubset(by_id)
 
@@ -41,6 +40,8 @@ def test_ten_source_defined_batch5_normal_operations_match_independent_oracles()
 
 
 def test_source_defined_batch5_normal_specs_do_not_claim_negative_or_boundary_coverage():
+    from metagente_luna_s4.batch5 import CASES
+
     by_id = {case["case_id"]: case for case in CASES}
     for case_id in EXPECTED:
         assert by_id[case_id]["arguments"] == {}
