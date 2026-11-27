@@ -27,6 +27,7 @@ ledger and report; it does not mutate historical C05 dossiers or helper ledgers.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -62,6 +63,26 @@ def plan_errors(plan: dict, case_id: str) -> list[str]:
     excerpt = plan.get("source_excerpt")
     if not isinstance(source, dict) or not isinstance(excerpt, str) or case_id not in excerpt:
         errors.append("source-provenance-missing")
+    else:
+        root = Path(__file__).resolve().parents[4]
+        try:
+            source_path = (root / source["source_file"]).resolve()
+            source_path.relative_to(root)
+            source_bytes = source_path.read_bytes()
+            lines = source_bytes.splitlines(keepends=True)
+            start, end = source["line_start"], source["line_end"]
+            exact = b"".join(lines[start - 1:end])
+            git_blob = hashlib.sha1(f"blob {len(source_bytes)}\\0".encode("ascii") + source_bytes).hexdigest()
+            if hashlib.sha256(source_bytes).hexdigest() != source["file_sha256"]:
+                errors.append("source-file-sha256-mismatch")
+            if git_blob != source["source_blob"]:
+                errors.append("source-git-blob-mismatch")
+            if start < 1 or end < start or end > len(lines) or exact.decode("utf-8") != excerpt:
+                errors.append("source-line-range-mismatch")
+            if hashlib.sha256(exact).hexdigest() != source["excerpt_sha256"]:
+                errors.append("source-excerpt-sha256-mismatch")
+        except (KeyError, OSError, UnicodeError, ValueError, TypeError):
+            errors.append("source-file-unavailable-or-invalid")
     for name in ("normal", "negative", "boundary"):
         item = plan.get(name)
         if not isinstance(item, dict) or not isinstance(item.get("capability_id"), str) or not isinstance(item.get("arguments"), dict):
