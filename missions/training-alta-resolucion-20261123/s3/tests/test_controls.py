@@ -456,7 +456,7 @@ def test_d01_protobuf_schema_compatibility_and_cbor_roundtrip_cases():
     cbor_args = {"document": document}
     cbor_observed = cbor_roundtrip(**cbor_args)
     assert cbor_vector_oracle(cbor_args, cbor_observed)["ok"] is True
-    cbor_negative = cbor_roundtrip({1: "unsupported"})
-    assert accepts("cbor-unsupported-key-rejected", cbor_negative, "EXECUTED") is True
-    assert _independent_control_accepts("cbor-unsupported-key-rejected", cbor_negative, "EXECUTED") is True
+    cbor_negative = cbor_roundtrip({"name": 1.5})
+    assert accepts("cbor-unsupported-value-rejected", cbor_negative, "EXECUTED") is True
+    assert _independent_control_accepts("cbor-unsupported-value-rejected", cbor_negative, "EXECUTED") is True
     assert cbor_vector_oracle({"document": {}}, cbor_roundtrip({}))["ok"] is True

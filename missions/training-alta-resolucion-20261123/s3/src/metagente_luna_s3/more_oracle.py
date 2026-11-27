@@ -249,6 +249,8 @@ def cbor_vector_oracle(arguments: dict, observed: dict) -> dict:
         expected = {"rejected": False, "accepted": True, "wire_hex": "a4646e616d65644c756e6165636f756e7402656974656d738301f6f467656e61626c6564f5", "decoded": document, "same_types": True}
     elif document == {}:
         expected = {"rejected": False, "accepted": True, "wire_hex": "a0", "decoded": {}, "same_types": True}
+    elif document == {"name": 1.5}:
+        expected = {"rejected": True, "reason": "unsupported-value-type"}
     else:
-        expected = {"rejected": True, "reason": "unsupported-map-key"}
+        expected = {"rejected": True, "reason": "unsupported-value-type"}
     return {"ok": observed == expected, "method": "fixed canonical CBOR vectors independent of encoder/decoder"}

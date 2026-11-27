@@ -93,8 +93,8 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
         return completed and observed.get("rejected") is True and observed.get("reason") == "known-field-type"
     if expect == "no-unknown-fields":
         return completed and observed.get("accepted") is True and observed.get("known") == {"name": "Luna", "version": 2} and observed.get("unknown") == {}
-    if expect == "cbor-unsupported-key-rejected":
-        return completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-map-key"
+    if expect == "cbor-unsupported-value-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-value-type"
     if expect == "cbor-empty-map-roundtrip":
         return completed and observed.get("accepted") is True and observed.get("wire_hex") == "a0" and observed.get("decoded") == {} and observed.get("same_types") is True
     if expect == "yaml-rejected":

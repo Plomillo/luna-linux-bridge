@@ -231,7 +231,7 @@ def _build() -> None:
     _add("MGL5-INF-0039", "boundary", "schema_migrate", {"document": {"version": 1, "name": "", "count": 0}}, "schema-v1-empty-migrates")
     _add("MGL5-INF-0040", "negative", "schema_unknown_field", {"record": {"name": 7, "version": 2, "extra": "future"}, "known_fields": ["name", "version"]}, "known-field-type-rejected")
     _add("MGL5-INF-0040", "boundary", "schema_unknown_field", {"record": {"name": "Luna", "version": 2}, "known_fields": ["name", "version"]}, "no-unknown-fields")
-    _add("MGL5-INF-0049", "negative", "cbor_roundtrip", {"document": {1: "unsupported"}}, "cbor-unsupported-key-rejected")
+    _add("MGL5-INF-0049", "negative", "cbor_roundtrip", {"document": {"name": 1.5}}, "cbor-unsupported-value-rejected")
     _add("MGL5-INF-0049", "boundary", "cbor_roundtrip", {"document": {}}, "cbor-empty-map-roundtrip")
 
 
@@ -258,8 +258,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return control_completed and observed.get("rejected") is True and observed.get("reason") == "known-field-type"
     if expect == "no-unknown-fields":
         return control_completed and observed.get("accepted") is True and observed.get("known") == {"name": "Luna", "version": 2} and observed.get("unknown") == {}
-    if expect == "cbor-unsupported-key-rejected":
-        return control_completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-map-key"
+    if expect == "cbor-unsupported-value-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-value-type"
     if expect == "cbor-empty-map-roundtrip":
         return control_completed and observed.get("accepted") is True and observed.get("wire_hex") == "a0" and observed.get("decoded") == {} and observed.get("same_types") is True
     if expect == "yaml-rejected":
