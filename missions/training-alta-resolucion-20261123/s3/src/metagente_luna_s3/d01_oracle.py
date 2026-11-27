@@ -93,21 +93,30 @@ def nfc_table(arguments: dict, observed: dict) -> dict:
     if arguments["decomposed"] == arguments["composed"]:
         ok = observed["same_nfc"] is True and observed["nfc"] == arguments["composed"]
         return {"ok": ok, "method": "identity pair, not unicodedata"}
-    table = {("e\u0301", "\u00e9"): "\u00e9"}
-    expected = table[(arguments["decomposed"], arguments["composed"])]
-    return {"ok": observed["same_nfc"] is True and observed["nfc"] == expected, "method": "fixed pair, not unicodedata"}
+    table = {
+        ("e\u0301", "\u00e9"): ("\u00e9", True),
+        ("e\u0301", "e"): ("\u00e9", False),
+    }
+    expected, same = table[(arguments["decomposed"], arguments["composed"])]
+    return {"ok": observed["same_nfc"] is same and observed["nfc"] == expected, "method": "fixed normalization table, not unicodedata"}
 
 
 def nfd_table(arguments: dict, observed: dict) -> dict:
-    expected = ["U+0061"] if arguments["composed"] == "a" else ["U+0065", "U+0301"]
+    expected = {
+        "a": ["U+0061"],
+        "é": ["U+0065", "U+0301"],
+        "ñ": ["U+006E", "U+0303"],
+    }[arguments["composed"]]
     return {"ok": observed["codepoints"] == expected, "method": "fixed decomposition"}
 
 
 def nfkc_table(arguments: dict, observed: dict) -> dict:
-    if arguments["text"] == "A":
-        ok = observed["compatibility"] == "A" and observed["preserves_original_form"] is True
-    else:
-        ok = observed["compatibility"] == "fi" and observed["preserves_original_form"] is False
+    expected = {
+        "A": ("A", True),
+        "ﬁ": ("fi", False),
+        "Ａ": ("A", False),
+    }[arguments["text"]]
+    ok = (observed["compatibility"], observed["preserves_original_form"]) == expected
     return {"ok": ok, "method": "fixed ligature"}
 
 
