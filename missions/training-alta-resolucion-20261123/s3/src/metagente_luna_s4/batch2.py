@@ -19,9 +19,9 @@ def _build_dex_fixture() -> bytes:
     for value in strings:
         string_offsets.append(data_off + len(data))
         data.append(len(value))
-        data.extend(value + b"\0")
+        data.extend(value + bytes([0]))
     raw = bytearray(data_off + len(data))
-    raw[:8] = b"dex\n035\0"
+    raw[:8] = bytes.fromhex("6465780a30333500")
     struct.pack_into("<I", raw, 32, len(raw))
     struct.pack_into("<I", raw, 36, 112)
     struct.pack_into("<I", raw, 40, 0x12345678)
