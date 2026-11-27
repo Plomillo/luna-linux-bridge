@@ -414,7 +414,7 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "empty-payload":
         return control_completed and observed["length"] == 0 and observed["checksum"] == 0
     if expect == "other-decimal":
-        return status == "FAIL"
+        return control_completed and observed.get("text") == "0.2" and observed.get("used_binary_float") is False
     if expect == "other-bytes":
         return control_completed and observed["decoded_hex"] == "000000"
     if expect == "valid-accepted":
