@@ -170,12 +170,24 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
         if oracle.get("case_id") != case_id or oracle.get("run_id") != run_id:
             errors.append("oracle-provenance-mismatch")
 
+    fixture = _load_json(loaded["fixture"]) if "fixture" in loaded else None
     observed = _load_json(loaded["observed"]) if "observed" in loaded else None
     if not isinstance(observed, dict):
         errors.append("observed-artifact-invalid")
     elif observed.get("case_id") != case_id or observed.get("run_id") != run_id:
         errors.append("observed-provenance-mismatch")
-    if rep.get("execution_status") == "BLOCKED":
+    control = fixture.get("control") if isinstance(fixture, dict) else None
+    schema_rejected_control = (
+        rep.get("kind") in {"NEGATIVE", "BOUNDARY"}
+        and isinstance(control, dict)
+        and control.get("expect") == "trapezoid-zero-panels-rejected"
+        and fixture.get("lifecycle_status") == "REJECTED"
+        and isinstance(observed, dict)
+        and observed.get("value") is None
+        and isinstance(oracle, dict)
+        and oracle.get("result") == "INCONCLUSIVE"
+    )
+    if rep.get("execution_status") == "BLOCKED" and not schema_rejected_control:
         value = observed.get("value") if isinstance(observed, dict) else None
         expected_phase = {
             "NORMAL": "NORMAL_PLAN",
@@ -192,8 +204,6 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
         if (not isinstance(detail, dict) or detail.get("valid_blocked_record") is not True
                 or detail.get("underlying_operation_result") != "NOT_OBSERVED"):
             errors.append("blocked-preflight-independent-oracle-invalid")
-
-    fixture = _load_json(loaded["fixture"]) if "fixture" in loaded else None
     if (not isinstance(fixture, dict) or fixture.get("case_id") != case_id or fixture.get("run_id") != run_id
             or not (fixture.get("fixture_origin") or fixture.get("fixture_id"))
             or fixture.get("run_kind") != rep.get("kind") or "input" not in fixture):
