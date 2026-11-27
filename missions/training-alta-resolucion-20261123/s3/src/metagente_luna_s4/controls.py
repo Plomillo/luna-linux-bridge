@@ -87,6 +87,8 @@ def _build() -> None:
     _add("MGL5-INF-0044", "boundary", "zlib_roundtrip", {"payload_hex": "01"}, "other-payload")
     _add("MGL5-INF-0045", "boundary", "zlib_corrupt", {"payload_hex": "01"}, "other-damaged")
     _add("MGL5-INF-0051", "negative", "magic_bytes", {"name": "sample.png", "payload_hex": "89504e470d0a1a0a"}, "extension-agrees")
+    _add("MGL5-INF-0052", "negative", "magic_bytes", {"name": "sample.elf", "payload_hex": "00000000"}, "unknown-signature")
+    _add("MGL5-INF-0052", "boundary", "magic_bytes", {"name": "sample.elf", "payload_hex": "7f454c46020101000000000000000000"}, "elf-extension-match")
     _add("MGL5-INF-0601", "boundary", "binary_float_gap", {}, "float-edge")
     _add("MGL5-INF-0107", "negative", "duplicates", {"values": [1, 2, 3]}, "no-duplicates")
     _add("MGL5-INF-0107", "boundary", "duplicates", {"values": [5, 5]}, "single-duplicate")
@@ -461,6 +463,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return control_completed and observed["corruption_detected"] is True and observed["integrity_claimed"] is False
     if expect == "extension-agrees":
         return control_completed and observed["detected"] == "png" and observed["extension_matches_content"] is True
+    if expect == "elf-extension-match":
+        return control_completed and observed.get("detected") == "elf" and observed.get("extension_matches_content") is True
     if expect == "float-edge":
         return control_completed and observed["equal"] is False and observed["difference"] != 0
     if expect == "already-composed":
