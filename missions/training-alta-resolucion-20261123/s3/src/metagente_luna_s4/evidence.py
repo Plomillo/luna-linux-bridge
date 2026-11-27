@@ -85,6 +85,7 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
             "case_id": case_id, "run_id": run_id,
             "environment_id": f"{platform.system()}-{platform.machine()}-python-{sys.version_info.major}.{sys.version_info.minor}",
             "python": sys.version, "platform": platform.platform(),
+            "isolation": record.get("isolation_metadata"),
         }),
         "procedure": _json_bytes({
             "case_id": case_id, "run_id": run_id, "capability_id": capability_id,
@@ -134,7 +135,7 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
         "started": started,
         "ended": ended,
         "artifacts": artifacts,
-        "clean_state": False,
+        "clean_state": record.get("clean_state_verified") is True,
         "execution_status": record.get("execution_status"),
         "exit_code": record.get("exit_code"),
         "agent_version": record.get("agent_version"),
