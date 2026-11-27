@@ -31,25 +31,45 @@ class Capability(BaseModel):
 
 
 def cidr_bounds(cidr: str) -> dict:
-    address, prefix_s = cidr.split("/")
-    ip = 0
-    for part in address.split("."):
-        ip = (ip << 8) | int(part)
-    prefix = int(prefix_s)
-    mask = (0xFFFFFFFF << (32 - prefix)) & 0xFFFFFFFF
-    network = ip & mask
-    broadcast = network | (0xFFFFFFFF ^ mask)
+    """Calculate IPv4 CIDR bounds; invalid prefixes return an explicit rejection."""
+    try:
+        address, prefix_s = cidr.split("/")
+        octets = address.split(".")
+        if len(octets) != 4 or any(not part.isdecimal() for part in octets):
+            return {"accepted": False, "rejected": True, "reason": "invalid IPv4 address"}
+        values = [int(part) for part in octets]
+        if any(value < 0 or value > 255 for value in values):
+            return {"accepted": False, "rejected": True, "reason": "IPv4 octet out of range"}
+        if not prefix_s.isdecimal() or not 0 <= int(prefix_s) <= 32:
+            return {"accepted": False, "rejected": True, "reason": "IPv4 prefix length out of range"}
+        ip = 0
+        for part in values:
+            ip = (ip << 8) | part
+        prefix = int(prefix_s)
+        mask = (0xFFFFFFFF << (32 - prefix)) & 0xFFFFFFFF
+        network = ip & mask
+        broadcast = network | (0xFFFFFFFF ^ mask)
 
-    def dotted(value: int) -> str:
-        return ".".join(str((value >> shift) & 255) for shift in (24, 16, 8, 0))
+        def dotted(value: int) -> str:
+            return ".".join(str((value >> shift) & 255) for shift in (24, 16, 8, 0))
 
-    return {"network": dotted(network), "broadcast": dotted(broadcast)}
+        return {"accepted": True, "network": dotted(network), "broadcast": dotted(broadcast)}
+    except (ValueError, TypeError):
+        return {"accepted": False, "rejected": True, "reason": "malformed CIDR"}
 
 
 def cidr_oracle(cidr: str, observed: dict) -> dict:
-    network = ipaddress.ip_interface(cidr).network
-    ok = observed["network"] == str(network.network_address) and observed["broadcast"] == str(network.broadcast_address)
-    return {"ok": ok, "method": "ipaddress, not the integer mask"}
+    try:
+        network = ipaddress.ip_interface(cidr).network
+    except ValueError:
+        ok = observed.get("accepted") is False and observed.get("rejected") is True
+        return {"ok": ok, "expected": {"rejected": True}, "method": "independent ipaddress input validation"}
+    ok = (
+        observed.get("accepted") is True
+        and observed.get("network") == str(network.network_address)
+        and observed.get("broadcast") == str(network.broadcast_address)
+    )
+    return {"ok": ok, "expected": {"network": str(network.network_address), "broadcast": str(network.broadcast_address)}, "method": "independent ipaddress reference implementation"}
 
 
 _OBJECT = {"type": "object"}
