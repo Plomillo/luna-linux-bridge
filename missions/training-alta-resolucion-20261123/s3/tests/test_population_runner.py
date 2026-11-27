@@ -105,8 +105,8 @@ def test_plan_compiler_emits_only_cases_with_both_authored_controls():
 
     plans, report = compiler.compile_plans()
 
-    assert report["compiled_executable_plans"] == len(plans) == 15
-    assert report["not_in_plan_set"] == 985
+    assert report["compiled_executable_plans"] == len(plans) == 17
+    assert report["not_in_plan_set"] == 983
     assert report["certification"] == "NOT_PASSED"
     assert [plan["CASE_ID"] for plan in plans] == sorted(plan["CASE_ID"] for plan in plans)
     for plan in plans:
@@ -164,15 +164,15 @@ def test_compiled_plans_pass_source_and_capability_preflight():
     for plan in plans:
         assert population.plan_errors(plan, plan["CASE_ID"]) == []
 
-def test_fifteen_authentic_executions_and_985_explicit_not_run_complete_inventory_not_c05():
+def test_seventeen_authentic_executions_and_983_explicit_not_run_complete_inventory_not_c05():
     report = {
         "expected": 1000,
         "rows": 1000,
-        "authentic_results": 15,
-        "not_run": 985,
+        "authentic_results": 17,
+        "not_run": 983,
         "rejected": [
             {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
-            for number in range(16, 1001)
+            for number in range(18, 1001)
         ],
         "c05_passed": False,
         "c05_status": "NOT_PASSED",
@@ -202,7 +202,7 @@ def test_inventory_gate_rejects_duplicate_or_noncanonical_blocker_ids():
         "not_run": 985,
         "rejected": [
             {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
-            for number in range(1, 986)
+            for number in range(1, 984)
         ],
     }
     report["rejected"][-1]["case_id"] = report["rejected"][0]["case_id"]
