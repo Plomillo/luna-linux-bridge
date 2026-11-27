@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 from metagente_luna_s4.batch2 import CASES as SECOND
+from metagente_luna_s4.batch3 import CASES as THIRD
 from metagente_luna_s4.batch5 import CASES as FIFTH
 from metagente_luna_s4.batch6 import CASES as SIXTH
 from metagente_luna_s4.d01_batch import CASES as FIRST
 from metagente_luna_s4.runner import execute
 
-CASES = FIRST + SECOND + FIFTH + SIXTH
+CASES = FIRST + SECOND + THIRD + FIFTH + SIXTH
 
 
 CONTROLS: dict[str, dict] = {}
@@ -86,6 +87,10 @@ def _build() -> None:
     _add("MGL5-INF-0045", "boundary", "zlib_corrupt", {"payload_hex": "01"}, "other-damaged")
     _add("MGL5-INF-0051", "negative", "magic_bytes", {"name": "sample.png", "payload_hex": "89504e470d0a1a0a"}, "extension-agrees")
     _add("MGL5-INF-0601", "boundary", "binary_float_gap", {}, "float-edge")
+    _add("MGL5-INF-0107", "negative", "duplicates", {"values": [1, 2, 3]}, "no-duplicates")
+    _add("MGL5-INF-0107", "boundary", "duplicates", {"values": [5, 5]}, "single-duplicate")
+    _add("MGL5-INF-0108", "negative", "brackets", {"texts": ["([)]"]}, "mismatched-brackets")
+    _add("MGL5-INF-0108", "boundary", "brackets", {"texts": [""]}, "empty-brackets")
     _add("MGL5-INF-0103", "negative", "first_match", {"needle": 8, "values": [2, 7, 9, 7]}, "first-match-absent")
     _add("MGL5-INF-0103", "boundary", "first_match", {"needle": 7, "values": [7]}, "first-match-singleton")
     _add("MGL5-INF-0104", "negative", "binary_find", {"needle": 32, "start": 1, "end": 31}, "binary-find-absent")
@@ -214,6 +219,14 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and observed["equal"] is False and observed["difference"] != 0
     if expect == "already-composed":
         return status == "EXECUTED" and observed["same_nfc"] is True and observed["nfc"] == "a"
+    if expect == "no-duplicates":
+        return status == "EXECUTED" and observed.get("duplicates") == []
+    if expect == "single-duplicate":
+        return status == "EXECUTED" and observed.get("duplicates") == [5]
+    if expect == "mismatched-brackets":
+        return status == "EXECUTED" and observed.get("results") == [{"text": "([)]", "accepted": False}]
+    if expect == "empty-brackets":
+        return status == "EXECUTED" and observed.get("results") == [{"text": "", "accepted": True}]
     if expect == "first-match-absent":
         return status == "EXECUTED" and observed.get("index") is None and observed.get("duplicates") == []
     if expect == "first-match-singleton":
