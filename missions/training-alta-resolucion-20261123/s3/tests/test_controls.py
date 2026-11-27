@@ -38,7 +38,7 @@ def test_controls_that_were_defined_are_accepted():
     # The runner must execute every currently authored control case; the
     # registry is the authoritative count, not a stale historical constant.
     assert {row["case_id"] for row in defined} == set(CONTROLS)
-    assert len(defined) == len(CONTROLS) == 90
+    assert len(defined) == len(CONTROLS) == 93
 
 def test_both_kept_control_returns_a_boolean_not_a_collection():
     result = accepts("both-kept", {"kept": [0, 65535]}, "EXECUTED")
@@ -317,3 +317,22 @@ def test_ieee754_and_float_gap_controls_are_checked_by_primary_adjudicator():
     for expect, observed in cases:
         assert accepts(expect, observed, "EXECUTED") is True, expect
         assert accepts(expect, observed, "BLOCKED") is False, expect
+
+
+def test_numerical_fit_and_integrator_controls():
+    from metagente_luna_s3.batch5_exec import exact_line, euler_decay, rk4_decay
+    from metagente_luna_s3.batch5_oracle import two_points, smaller_step, series_exp
+    from metagente_luna_s4.controls import accepts
+
+    line_args = {"xs": [0, 1, 2], "slope": -1, "intercept": 0}
+    line = exact_line(**line_args)
+    assert two_points(line_args, line)["ok"] is True
+    assert accepts("line-negative-slope", line, "EXECUTED") is True
+
+    euler_args = {"coarse_step": 0.05, "fine_step": 0.1}
+    euler = euler_decay(**euler_args)
+    assert smaller_step(euler_args, euler)["ok"] is False
+    assert accepts("euler-step-order-reversed", euler, "FAIL") is True
+
+    assert rk4_decay(2.0)["rejected"] is True
+    assert series_exp({"step": 2.0}, rk4_decay(2.0))["ok"] is True
