@@ -207,3 +207,33 @@ def test_inventory_gate_rejects_duplicate_or_noncanonical_blocker_ids():
     report["rejected"][-1]["case_id"] = report["rejected"][0]["case_id"]
 
     assert population.evidence_inventory_complete(report) is False
+
+def test_population_refuses_preexisting_blocker_output_before_any_execution(tmp_path, capsys):
+    dossiers = tmp_path / "dossiers.jsonl"
+    plans = tmp_path / "plans.jsonl"
+    evidence = tmp_path / "evidence"
+    ledger = tmp_path / "ledger.jsonl"
+    report = tmp_path / "report.json"
+    blockers = tmp_path / "C05_POPULATION_BLOCKERS.jsonl"
+    dossiers.write_text(
+        "".join(json.dumps({"CASE_ID": case_id}) + "\\n" for case_id in population.EXPECTED),
+        encoding="utf-8",
+    )
+    plans.write_text("", encoding="utf-8")
+    blockers.write_text("historical evidence", encoding="utf-8")
+
+    result = population.main([
+        "execute_c05_population.py",
+        str(dossiers),
+        str(plans),
+        str(evidence),
+        str(ledger),
+        str(report),
+        "sha256:" + "a" * 64,
+    ])
+
+    assert result == 2
+    assert "refusing to overwrite historical evidence" in capsys.readouterr().err
+    assert not ledger.exists()
+    assert not report.exists()
+    assert blockers.read_text(encoding="utf-8") == "historical evidence"
