@@ -11,7 +11,7 @@ source=SOURCE.read_bytes(); text=source.decode("utf-8")
 m=re.search(r"(?m)^\[MGL5-INF-0254\].*?(?=^\[MGL5-INF-|\Z)",text,re.S)
 if not m: raise SystemExit("case source not found")
 excerpt=m.group(0); lines=source.splitlines(keepends=True)
-start=text[:m.start()].count("\n")+1; end=excerpt.count("\n")+start
+start=text[:m.start()].count("\n")+1; end=excerpt.count("\n")+start-(1 if excerpt.endswith("\n") else 0)
 exact=b"".join(lines[start-1:end])
 if exact.decode("utf-8")!=excerpt: raise SystemExit("line excerpt mismatch")
 blob=hashlib.sha1(f"blob {len(source)}\0".encode()+source).hexdigest()
