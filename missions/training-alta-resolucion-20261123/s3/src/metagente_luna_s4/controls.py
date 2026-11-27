@@ -97,6 +97,15 @@ def _build() -> None:
     _add("MGL5-INF-0104", "boundary", "binary_find", {"needle": 1, "start": 1, "end": 31}, "binary-find-first")
     _add("MGL5-INF-0105", "negative", "stable_ages", {"records": [{"id": "", "age": 30}]}, "rejected")
     _add("MGL5-INF-0105", "boundary", "stable_ages", {"records": []}, "empty-record-set")
+    _add("MGL5-INF-0024", "negative", "csv_newline", {"text": '"a",1\\n"b",2\\n'}, "two-records")
+    _add("MGL5-INF-0031", "boundary", "xml_entities", {"document": "<r>&lt;&gt;&amp;</r>"}, "predefined-entity-set")
+    _add("MGL5-INF-0032", "boundary", "xml_unbalanced", {"document": "<a/>"}, "self-closing-accepted")
+    _add("MGL5-INF-0037", "negative", "truncated_records", {"payload_hex": ""}, "all-truncated")
+    _add("MGL5-INF-0038", "negative", "oversize_length", {"payload_hex": ""}, "empty-oversize-rejected")
+    _add("MGL5-INF-0043", "negative", "three_states", {"present": {"b": None, "c": ""}, "absent_key": "b"}, "field-present")
+    _add("MGL5-INF-0044", "negative", "zlib_roundtrip", {"payload_hex": ""}, "empty-payload-roundtrip")
+    _add("MGL5-INF-0045", "negative", "zlib_corrupt", {"payload_hex": ""}, "empty-stream-corrupt")
+    _add("MGL5-INF-0051", "boundary", "magic_bytes", {"name": "sample.dat", "payload_hex": "00000000"}, "unknown-signature")
     _add("MGL5-INF-0109", "negative", "stack_sequence", {"steps": ["pop"]}, "single-underflow")
     _add("MGL5-INF-0109", "boundary", "stack_sequence", {"steps": []}, "empty-stack-sequence")
 
@@ -151,6 +160,24 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and (observed.get("sum") == 11 or observed.get("minimum") == 4)
     if expect == "not-fifteen":
         return status == "EXECUTED" and observed["sum"] != 15
+    if expect == "two-records":
+        return status == "EXECUTED" and observed.get("records") == 2 and observed.get("fields", [None])[0] == "a"
+    if expect == "predefined-entity-set":
+        return status == "EXECUTED" and observed.get("text") == "<>&" and observed.get("external_expanded") is False
+    if expect == "self-closing-accepted":
+        return status == "EXECUTED" and observed.get("rejected") is False
+    if expect == "all-truncated":
+        return status == "EXECUTED" and observed.get("all_rejected") is True and len(observed.get("rejected_lengths", [])) == 4
+    if expect == "empty-oversize-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True and observed.get("allocated_declared_length") is False
+    if expect == "field-present":
+        return status == "EXECUTED" and observed.get("absent") is False and observed.get("null") is True and observed.get("empty") is True
+    if expect == "empty-payload-roundtrip":
+        return status == "EXECUTED" and observed.get("match") is True and observed.get("compressed_differs") is True
+    if expect == "empty-stream-corrupt":
+        return status == "EXECUTED" and observed.get("corruption_detected") is True and observed.get("integrity_claimed") is False
+    if expect == "unknown-signature":
+        return status == "EXECUTED" and observed.get("detected") == "unknown" and observed.get("extension_matches_content") is False
     if expect == "no-cr":
         return status == "EXECUTED" and observed["written"] == "a\r\nb\r\n"
     if expect == "already-lf":
