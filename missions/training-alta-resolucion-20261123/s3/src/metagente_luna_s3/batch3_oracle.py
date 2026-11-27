@@ -30,18 +30,42 @@ def stated_value(arguments: dict, observed: dict) -> dict:
     return {"ok": observed["value"] == answers[arguments["expression"]], "method": "stated value, not the parser"}
 
 
+def fifo_sequence(arguments: dict, observed: dict) -> dict:
+    expected = list(arguments["values"])
+    ok = observed.get("enqueued") == expected and observed.get("dequeued") == expected and observed.get("remaining") == []
+    return {"ok": ok, "method": "independent FIFO sequence invariant"}
+
+
+def factorial_values(arguments: dict, observed: dict) -> dict:
+    values = arguments["values"]
+    if any(not isinstance(value, int) or isinstance(value, bool) or value < 0 for value in values):
+        return {"ok": observed.get("rejected") is True, "method": "independent factorial domain check"}
+    expected = [{"n": value, "value": math.factorial(value)} for value in values]
+    return {"ok": observed.get("rejected") is False and observed.get("results") == expected, "method": "math.factorial reference"}
+
+
 def exit_seven(arguments: dict, observed: dict) -> dict:
     del arguments
     return {"ok": observed["exit_code"] == 7 and isinstance(observed["pid"], int) and observed["pid"] > 0, "method": "status seven"}
 
 
 def two_compressions(arguments: dict, observed: dict) -> dict:
-    return {"ok": arguments["address"].count("::") > 1 and observed["accepted"] is False, "method": "compression count, not ipaddress"}
+    try:
+        ipaddress.IPv6Address(arguments["address"])
+    except ipaddress.AddressValueError:
+        expected = False
+    else:
+        expected = True
+    return {"ok": observed.get("accepted") is expected, "method": "independent IPv6 address parser"}
 
 
 def stated_prefix(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["prefix"] == "2001:db8:abcd:12::/64", "method": "prefix written in the case"}
+    try:
+        network = ipaddress.ip_network(arguments["cidr"], strict=False)
+    except ValueError:
+        return {"ok": observed.get("rejected") is True, "method": "independent IPv6 prefix validation"}
+    expected = f"{network.network_address}/{network.prefixlen}"
+    return {"ok": observed.get("rejected") is False and observed.get("prefix") == expected, "method": "independent IPv6 network calculation"}
 
 
 def fever_rule(arguments: dict, observed: dict) -> dict:
