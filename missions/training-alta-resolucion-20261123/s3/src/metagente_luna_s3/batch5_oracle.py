@@ -12,7 +12,8 @@ from decimal import Decimal
 
 def scan_index(arguments: dict, observed: dict) -> dict:
     duplicates = [index for index, value in enumerate(arguments["values"]) if value == arguments["needle"]]
-    ok = observed["index"] == duplicates[0] and observed["duplicates"] == duplicates
+    expected_index = duplicates[0] if duplicates else None
+    ok = observed["index"] == expected_index and observed["duplicates"] == duplicates
     return {"ok": ok, "method": "all matching indexes, then the first"}
 
 
