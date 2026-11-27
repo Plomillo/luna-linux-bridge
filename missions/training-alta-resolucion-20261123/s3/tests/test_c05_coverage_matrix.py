@@ -19,14 +19,14 @@ def test_coverage_matrix_accounts_for_every_source_case_without_promoting_missin
     ]
     assert summary["counts"]["source_defined"] == 1000
     assert summary["counts"]["normal_spec_defined"] == 101
-    assert summary["counts"]["ready_for_execution"] == 54
-    assert summary["counts"]["blocked"] == 946
+    assert summary["counts"]["ready_for_execution"] == 60
+    assert summary["counts"]["blocked"] == 940
     assert summary["counts"]["interpreter_candidates"] == 7
     assert summary["counts"]["interpreter_ready"] == 2
     assert summary["counts"]["interpreter_blocked"] == 5
     assert summary["counts"]["interpreter_registered"] == 2
     assert summary["counts"]["no_normal_spec_and_no_interpreter_candidate"] == 894
-    assert summary["counts"]["normal_spec_incomplete"] == 47
+    assert summary["counts"]["normal_spec_incomplete"] == 41
     assert summary["certification"] == "NOT_PASSED"
 
 
