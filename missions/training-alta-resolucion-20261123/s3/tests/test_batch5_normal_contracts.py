@@ -1,6 +1,6 @@
 from metagente_luna_s4.batch5 import CASES
-from metagente_luna_s4.runner import execute
 from metagente_luna_s4.controls import run_controls
+from metagente_luna_s4.runner import execute
 
 
 EXPECTED = {
