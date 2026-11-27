@@ -74,19 +74,38 @@ def published_bits(arguments: dict, observed: dict) -> dict:
 
 
 def nan_bits(arguments: dict, observed: dict) -> dict:
-    del arguments
-    probe = struct.unpack(">d", bytes.fromhex("7ff8000000000000"))[0]
-    return {"ok": observed["is_nan"] is True and observed["equals_itself"] is False and math.isnan(probe), "method": "canonical NaN payload"}
+    probe = struct.unpack(">d", bytes.fromhex(arguments["payload_hex"]))[0]
+    expected_nan = math.isnan(probe)
+    ok = (
+        observed.get("payload_hex") == arguments["payload_hex"].lower()
+        and observed.get("is_nan") is expected_nan
+        and observed.get("equals_itself") is (probe == probe)
+        and observed.get("ordinary") is (not expected_nan)
+    )
+    return {"ok": ok, "method": "independent IEEE-754 payload interpretation"}
 
 
 def inf_signs(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["positive_sign"] is True and observed["negative_sign"] is True and bool(observed["output_format"]), "method": "separate sign check"}
+    if arguments["encoding"] == "literal":
+        positive, negative = math.inf, -math.inf
+    else:
+        positive = struct.unpack(">d", bytes.fromhex(arguments["positive_hex"]))[0]
+        negative = struct.unpack(">d", bytes.fromhex(arguments["negative_hex"]))[0]
+    ok = (
+        observed.get("positive_sign") is (math.copysign(1.0, positive) > 0)
+        and observed.get("negative_sign") is (math.copysign(1.0, negative) < 0)
+        and observed.get("positive_is_infinite") is math.isinf(positive)
+        and observed.get("negative_is_infinite") is math.isinf(negative)
+    )
+    return {"ok": ok, "method": "independent sign and exponent check"}
 
 
 def subnormal_bits(arguments: dict, observed: dict) -> dict:
-    del arguments
-    return {"ok": observed["float32_bits_hex"] == "00000001" and observed["is_subnormal"] is True, "method": "IEEE bit 0"}
+    raw = bytes.fromhex(arguments["bits_hex"])
+    value = struct.unpack(">f", raw)[0]
+    expected_subnormal = math.isfinite(value) and value != 0.0 and abs(value) < 2 ** -126
+    ok = observed.get("bits_hex") == raw.hex() and observed.get("is_subnormal") is expected_subnormal
+    return {"ok": ok, "method": "independent IEEE-754 exponent/fraction classification"}
 
 
 def nfc_table(arguments: dict, observed: dict) -> dict:
