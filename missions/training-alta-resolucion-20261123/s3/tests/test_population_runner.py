@@ -207,7 +207,24 @@ def test_inventory_gate_rejects_duplicate_or_noncanonical_blocker_ids():
     }
     report["rejected"][-1]["case_id"] = report["rejected"][0]["case_id"]
 
-    assert population.evidence_inventory_complete(report) is False
+    assert population.evidence_inventory_complete(report, {f"MGL5-INF-{number:04d}" for number in range(1, 22)}) is False
+
+def test_inventory_gate_rejects_blocker_set_that_is_not_exact_executable_complement():
+    executable = {f"MGL5-INF-{number:04d}" for number in range(1, 22)}
+    rejected_ids = [number for number in range(22, 1001)]
+    rejected_ids[-1] = 1  # omit a genuine NOT_RUN case and misclassify an executable case
+    report = {
+        "expected": 1000,
+        "rows": 1000,
+        "authentic_results": 21,
+        "not_run": 979,
+        "rejected": [
+            {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
+            for number in rejected_ids
+        ],
+    }
+    assert population.evidence_inventory_complete(report, executable) is False
+
 
 def test_population_refuses_preexisting_blocker_output_before_any_execution(tmp_path, capsys):
     dossiers = tmp_path / "dossiers.jsonl"
