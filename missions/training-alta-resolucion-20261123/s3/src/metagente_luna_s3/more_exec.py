@@ -237,7 +237,7 @@ def manifest_hash(document: dict, altered: dict) -> dict:
 
 def magic_bytes(name: str, payload_hex: str) -> dict:
     raw = bytes.fromhex(payload_hex)
-    detected = "png" if raw.startswith(PNG) else "elf" if raw.startswith(b"\\x7fELF") else "unknown"
+    detected = "png" if raw.startswith(PNG) else "elf" if raw.startswith(b"\x7fELF") else "unknown"
     print(detected)
     return {"extension": name.rsplit(".", 1)[-1], "detected": detected, "extension_matches_content": name.endswith("." + detected)}
 
