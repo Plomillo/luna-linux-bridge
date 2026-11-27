@@ -47,6 +47,17 @@ jobs:
             missions/training-alta-resolucion-20261123/s3/reports/C05_SOURCE_PLAN_BACKLOG_SUMMARY.json
           if-no-files-found: error
           retention-days: 90
+      - name: Compile source-bound TEO dossiers
+        run: python scripts/build_c05_teo_dossiers.py
+      - name: Archive source-bound TEO dossiers
+        uses: actions/upload-artifact@v4
+        with:
+          name: c05-teo-dossiers-${{ github.sha }}
+          path: |
+            missions/training-alta-resolucion-20261123/s3/reports/C05_TEO_DOSSIERS.jsonl
+            missions/training-alta-resolucion-20261123/s3/reports/C05_TEO_DOSSIERS_SUMMARY.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Ruff
         run: ruff check src tests
       - name: Unit and adversarial tests
