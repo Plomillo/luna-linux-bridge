@@ -192,9 +192,21 @@ def ip_module(arguments: dict, observed: dict) -> dict:
 
 
 def decimal_gap(arguments: dict, observed: dict) -> dict:
-    del arguments
-    exact = Decimal("0.1") + Decimal("0.2") == Decimal("0.3")
-    return {"ok": exact and observed["equal"] is False and observed["difference"] != 0, "method": "decimal exact sum versus binary result"}
+    left, right, target = arguments["left"], arguments["right"], arguments["target"]
+    if any(not isinstance(value, (int, float)) or isinstance(value, bool) for value in (left, right, target)):
+        return {"ok": observed.get("rejected") is True, "method": "independent numeric-domain validation"}
+    exact_decimal = Decimal(str(left)) + Decimal(str(right)) == Decimal(str(target))
+    binary_total = left + right
+    expected_difference = binary_total - target
+    return {
+        "ok": observed.get("accepted") is True
+        and observed.get("sum") == binary_total
+        and observed.get("target") == target
+        and observed.get("equal") is (binary_total == target)
+        and observed.get("decimal_equal") is exact_decimal
+        and observed.get("difference") == expected_difference,
+        "method": "independent Decimal exact-sum and binary-float comparison",
+    }
 
 
 def zlib_available() -> bool:
