@@ -188,6 +188,13 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
     environment = _load_json(loaded["environment"]) if "environment" in loaded else None
     if not isinstance(environment, dict) or not environment.get("environment_id") or environment.get("case_id") != case_id or environment.get("run_id") != run_id:
         errors.append("environment-artifact-invalid")
+    elif rep.get("clean_state") is True:
+        isolation = environment.get("isolation")
+        if (not isinstance(isolation, dict) or isolation.get("mode") != "FRESH_PROCESS_TEMPORARY_WORKSPACE"
+                or isolation.get("process_isolated") is not True or isolation.get("workspace_ephemeral") is not True
+                or isolation.get("cwd_isolated") is not True or isolation.get("home_isolated") is not True
+                or isolation.get("tmp_isolated") is not True or isolation.get("sandbox") is not False):
+            errors.append("clean-state-isolation-not-proven")
 
     procedure = _load_json(loaded["procedure"]) if "procedure" in loaded else None
     if (not isinstance(procedure, dict) or procedure.get("case_id") != case_id or procedure.get("run_id") != run_id
