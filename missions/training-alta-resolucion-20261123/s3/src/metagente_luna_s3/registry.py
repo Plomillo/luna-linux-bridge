@@ -53,7 +53,7 @@ def cidr_bounds(cidr: str) -> dict:
         def dotted(value: int) -> str:
             return ".".join(str((value >> shift) & 255) for shift in (24, 16, 8, 0))
 
-        return {"accepted": True, "network": dotted(network), "broadcast": dotted(broadcast)}
+        return {"network": dotted(network), "broadcast": dotted(broadcast)}
     except (ValueError, TypeError):
         return {"accepted": False, "rejected": True, "reason": "malformed CIDR"}
 
