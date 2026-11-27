@@ -15,6 +15,8 @@ from metagente_luna_s3 import (
     batch5_oracle,
     batch6_exec,
     batch6_oracle,
+    d01_compat_exec,
+    d01_compat_oracle,
     d01_exec,
     d01_oracle,
     more_exec,
@@ -93,9 +95,9 @@ REGISTRY: dict[str, Capability] = {
     "int16_values": _cap("int16_values", "int16_range", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
     "twos_complement_16": _cap("twos_complement_16", "sign_bit", {"type": "object", "required": ["hex_value", "width"], "properties": {"hex_value": {"type": "string"}, "width": {"type": "integer"}}, "additionalProperties": False}),
     "float_bits": _cap("float_bits", "published_bits", {"type": "object", "required": ["value", "kind", "reference"], "properties": {"value": {"type": "number"}, "kind": {"type": "integer"}, "reference": {"type": "string"}}, "additionalProperties": False}),
-    "nan_policy": _cap("nan_policy", "nan_bits", {"type": "object", "additionalProperties": False}),
-    "inf_policy": _cap("inf_policy", "inf_signs", {"type": "object", "additionalProperties": False}),
-    "subnormal_f32": _cap("subnormal_f32", "subnormal_bits", {"type": "object", "additionalProperties": False}),
+    "nan_policy": _cap("nan_policy", "nan_bits", {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string"}}, "additionalProperties": False}),
+    "inf_policy": _cap("inf_policy", "inf_signs", {"type": "object", "required": ["encoding", "positive_hex", "negative_hex"], "properties": {"encoding": {"type": "string", "enum": ["literal", "binary64"]}, "positive_hex": {"type": "string"}, "negative_hex": {"type": "string"}}, "additionalProperties": False}),
+    "subnormal_f32": _cap("subnormal_f32", "subnormal_bits", {"type": "object", "required": ["bits_hex"], "properties": {"bits_hex": {"type": "string"}}, "additionalProperties": False}),
     "nfc_compare": _cap("nfc_compare", "nfc_table", {"type": "object", "required": ["decomposed", "composed"], "properties": {"decomposed": {"type": "string"}, "composed": {"type": "string"}}, "additionalProperties": False}),
     "nfd_decompose": _cap("nfd_decompose", "nfd_table", {"type": "object", "required": ["composed"], "properties": {"composed": {"type": "string"}}, "additionalProperties": False}),
     "nfkc_compat": _cap("nfkc_compat", "nfkc_table", {"type": "object", "required": ["text"], "properties": {"text": {"type": "string"}}, "additionalProperties": False}),
@@ -326,6 +328,31 @@ for _name, _oracle_name, _schema in batch5_exec.SPECS:
     REGISTRY[_name] = _cap(_name, _oracle_name, _schema)
     EXECUTORS[_name] = getattr(batch5_exec, _name)
     ORACLES[_oracle_name] = getattr(batch5_oracle, _oracle_name)
+
+
+REGISTRY["yaml_types"] = _cap("yaml_types", "yaml_types", {"type": "object", "required": ["yaml_text"], "properties": {"yaml_text": {"type": "string"}}, "additionalProperties": False})
+REGISTRY["yaml_ambiguous"] = _cap("yaml_ambiguous", "yaml_ambiguous", {"type": "object", "required": ["version", "yaml_text"], "properties": {"version": {"type": "string"}, "yaml_text": {"type": "string"}}, "additionalProperties": False})
+REGISTRY["protobuf_compat"] = _cap("protobuf_compat", "protobuf_compat", {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string"}}, "additionalProperties": False})
+REGISTRY["schema_migrate"] = _cap("schema_migrate", "schema_migrate", {"type": "object", "required": ["document"], "properties": {"document": {"type": "object"}}, "additionalProperties": False})
+REGISTRY["unknown_field"] = _cap("unknown_field", "unknown_field", {"type": "object", "required": ["record", "known_fields"], "properties": {"record": {"type": "object"}, "known_fields": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": False})
+REGISTRY["mixed_roundtrip"] = _cap("mixed_roundtrip", "mixed_roundtrip", {"type": "object", "required": ["document"], "properties": {"document": {"type": "object"}}, "additionalProperties": False})
+
+ORACLES.update({
+    "yaml_types": d01_compat_oracle.yaml_types,
+    "yaml_ambiguous": d01_compat_oracle.yaml_ambiguous,
+    "protobuf_compat": d01_compat_oracle.protobuf_compat,
+    "schema_migrate": d01_compat_oracle.schema_migrate,
+    "unknown_field": d01_compat_oracle.unknown_field,
+    "mixed_roundtrip": d01_compat_oracle.mixed_roundtrip,
+})
+EXECUTORS.update({
+    "yaml_types": d01_compat_exec.yaml_types,
+    "yaml_ambiguous": d01_compat_exec.yaml_ambiguous,
+    "protobuf_compat": d01_compat_exec.protobuf_compat,
+    "schema_migrate": d01_compat_exec.schema_migrate,
+    "unknown_field": d01_compat_exec.unknown_field,
+    "mixed_roundtrip": d01_compat_exec.mixed_roundtrip,
+})
 
 
 def run(capability_id: str, arguments: dict) -> dict:
