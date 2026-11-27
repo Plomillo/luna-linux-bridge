@@ -222,7 +222,7 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "not-the-sample":
         return control_completed and observed.get("little_endian_hex") != "0x04030201" and observed.get("minimum") != -8
     if expect == "rejected":
-        return control_completed and observed.get("rejected")
+        return control_completed and observed.get("rejected") is True
     if expect == "both-kept":
         return control_completed and observed.get("kept", observed.get("accepted"))
     if expect == "max-positive":
@@ -262,7 +262,7 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "newton-unit-root-boundary":
         return control_completed and observed.get("rejected") is False and observed.get("root") == 1.0 and observed.get("residual") == 0.0
     if expect == "trapezoid-zero-panels-rejected":
-        return control_completed and observed.get("rejected") is True
+        return status == "REJECTED" and observed is None
     if expect == "trapezoid-single-panel-boundary":
         return control_completed and observed.get("rejected") is False and observed.get("value") == 0.5 and observed.get("panels") == 1
     if expect == "simpson-odd-panels-rejected":
