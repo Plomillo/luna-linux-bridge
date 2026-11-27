@@ -57,6 +57,14 @@ def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries
     assert accepts("empty-manifest-change", {"reproduced": True, "altered_changes": True, "digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"}, "EXECUTED") is True
 
 
+def test_unicode_control_oracles_cover_distinct_normalization_edges():
+    from metagente_luna_s3.d01_oracle import nfc_table, nfd_table, nfkc_table
+
+    assert nfc_table({"decomposed": "e\\u0301", "composed": "e"}, {"same_nfc": False, "nfc": "é"})["ok"] is True
+    assert nfd_table({"composed": "ñ"}, {"codepoints": ["U+006E", "U+0303"]})["ok"] is True
+    assert nfkc_table({"text": "Ａ"}, {"compatibility": "A", "preserves_original_form": False})["ok"] is True
+
+
 def test_independent_oracles_cover_empty_decimal_and_empty_sha256_vectors():
     from metagente_luna_s3.d01_oracle import nist_abc
     from metagente_luna_s3.more_oracle import decimal_literal
