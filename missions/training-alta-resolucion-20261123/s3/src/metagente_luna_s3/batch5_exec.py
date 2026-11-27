@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ipaddress
+import itertools
 import json
 import math
 import os
@@ -166,7 +167,7 @@ def factorials(values: list[int]) -> dict:
 
 
 def precedence_tree(text: str = "1+2*3-4") -> dict:
-    if not isinstance(text, str) or not text or any(ch not in "0123456789+-*" for ch in text) or text[0] in "+-*" or text[-1] in "+-*" or any(a in "+-*" and b in "+-*" for a,b in zip(text,text[1:])):
+    if not isinstance(text, str) or not text or any(ch not in "0123456789+-*" for ch in text) or text[0] in "+-*" or text[-1] in "+-*" or any(a in "+-*" and b in "+-*" for a,b in itertools.pairwise(text)):
         return {"rejected": True, "reason": "invalid arithmetic expression"}
     values: list = []
     operators: list[str] = []
