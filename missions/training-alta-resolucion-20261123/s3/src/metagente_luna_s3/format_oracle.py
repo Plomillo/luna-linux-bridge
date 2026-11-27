@@ -601,7 +601,7 @@ def dex_tables_oracle(arguments: dict, observed: dict) -> dict:
             shift += 7
         else:
             return {"ok": observed.get("rejected") is True, "method": method}
-        terminator = raw.find(b"\\x00", cursor, data_end)
+        terminator = raw.find(b"\x00", cursor, data_end)
         if terminator < 0 or terminator - cursor != length:
             return {"ok": observed.get("rejected") is True, "method": method}
         try:
