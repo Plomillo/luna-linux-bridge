@@ -166,5 +166,5 @@ def mixed_roundtrip(document: dict) -> dict:
             "decoded": decoded,
             "json_text": json_text,
         }
-    except (TypeError, ValueError, msgpack.PackException, msgpack.UnpackException) as exc:
+    except (TypeError, ValueError, OverflowError, msgpack.PackException, msgpack.UnpackException) as exc:
         return {"accepted": False, "rejected": True, "reason": type(exc).__name__}
