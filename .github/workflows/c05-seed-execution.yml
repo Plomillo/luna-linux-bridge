@@ -156,7 +156,7 @@ jobs:
               "- Run/logs: " + run.data.html_url,
               "",
               "Immediate failure telemetry. The failure must be diagnosed from its logs, reproduced, patched on this branch, covered by a regression test, and revalidated through the full C05 chain. Do not rerun blindly, weaken controls, or promote unsupported cases to PASS."
-            ].join("\\n");
+            ].join("\n");
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner, repo, issue_number: 196, per_page: 100
             });
