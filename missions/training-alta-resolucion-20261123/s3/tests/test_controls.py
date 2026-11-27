@@ -38,7 +38,7 @@ def test_controls_that_were_defined_are_accepted():
     # The runner must execute every currently authored control case; the
     # registry is the authoritative count, not a stale historical constant.
     assert {row["case_id"] for row in defined} == set(CONTROLS)
-    assert len(defined) == len(CONTROLS) == 82
+    assert len(defined) == len(CONTROLS) == 83
 
 def test_negative_controls_accept_explicit_rejected_collections():
     assert accepts("rejected", {"kept": [], "rejected": [-1]}, "EXECUTED") is True
