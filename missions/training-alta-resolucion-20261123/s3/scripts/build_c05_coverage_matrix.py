@@ -12,6 +12,8 @@ from metagente_luna_s4.batch2 import CASES as BATCH2
 from metagente_luna_s4.batch3 import CASES as BATCH3
 from metagente_luna_s4.batch4 import CASES as BATCH4
 from metagente_luna_s4.batch5 import CASES as BATCH5
+from metagente_luna_s4.batch6 import CASES as BATCH6, OPERATIONS as BATCH6_OPERATIONS
+from metagente_luna_s3.interpret import interpret
 from metagente_luna_s4.controls import CONTROLS, _build as build_controls
 from metagente_luna_s4.d01_batch import CASES as D01
 
@@ -29,7 +31,7 @@ def build() -> tuple[list[dict], dict]:
         match.group(1)
         for match in re.finditer(r"(?m)^\[(MGL5-INF-\d{4})\]", text)
     }
-    specs = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5
+    specs = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5 + BATCH6
     by_id: dict[str, dict] = {}
     duplicates: set[str] = set()
     for spec in specs:
@@ -41,11 +43,21 @@ def build() -> tuple[list[dict], dict]:
         by_id[case_id] = spec
 
     build_controls()
+    interpreter_by_id = {}
+    for candidate_id, instruction in BATCH6_OPERATIONS:
+        interpretation = interpret(instruction)
+        interpreter_by_id[candidate_id] = {
+            "status": interpretation.status,
+            "intent": interpretation.intent,
+            "registered": interpretation.intent in REGISTRY,
+            "missing": interpretation.missing,
+        }
     rows = []
     for number in range(1, 1001):
         case_id = f"MGL5-INF-{number:04d}"
         spec = by_id.get(case_id)
         controls = CONTROLS.get(case_id, {})
+        interpreter = interpreter_by_id.get(case_id)
         reasons = []
         if case_id not in source_ids:
             reasons.append("SOURCE_CASE_MISSING")
@@ -57,6 +69,11 @@ def build() -> tuple[list[dict], dict]:
                 reasons.append("NORMAL_CAPABILITY_UNREGISTERED")
             if not isinstance(spec.get("arguments"), dict):
                 reasons.append("NORMAL_ARGUMENTS_NOT_TYPED_OBJECT")
+        if interpreter is not None:
+            if interpreter["status"] != "READY":
+                reasons.append("INTERPRETER_CANDIDATE_NOT_READY")
+            elif not interpreter["registered"]:
+                reasons.append("INTERPRETER_CAPABILITY_UNREGISTERED")
         if "negative" not in controls:
             reasons.append("NEGATIVE_CONTROL_MISSING")
         elif controls["negative"].get("capability_id") not in REGISTRY:
@@ -72,6 +89,11 @@ def build() -> tuple[list[dict], dict]:
             "source_defined": case_id in source_ids,
             "normal_spec_defined": spec is not None,
             "normal_capability": spec.get("capability_id") if spec else None,
+            "interpreter_candidate_defined": interpreter is not None,
+            "interpreter_status": interpreter.get("status") if interpreter else None,
+            "interpreter_intent": interpreter.get("intent") if interpreter else None,
+            "interpreter_registered": interpreter.get("registered") if interpreter else False,
+            "interpreter_missing": interpreter.get("missing", []) if interpreter else [],
             "negative_control_defined": "negative" in controls,
             "boundary_control_defined": "boundary" in controls,
             "ready_for_execution": not reasons,
@@ -85,6 +107,12 @@ def build() -> tuple[list[dict], dict]:
         "boundary_control_defined": sum(row["boundary_control_defined"] for row in rows),
         "ready_for_execution": sum(row["ready_for_execution"] for row in rows),
         "blocked": sum(not row["ready_for_execution"] for row in rows),
+        "interpreter_candidates": sum(row["interpreter_candidate_defined"] for row in rows),
+        "interpreter_ready": sum(row["interpreter_status"] == "READY" for row in rows),
+        "interpreter_blocked": sum(row["interpreter_candidate_defined"] and row["interpreter_status"] != "READY" for row in rows),
+        "interpreter_registered": sum(row["interpreter_registered"] for row in rows),
+        "no_normal_spec_and_no_interpreter_candidate": sum(not row["normal_spec_defined"] and not row["interpreter_candidate_defined"] for row in rows),
+        "normal_spec_incomplete": sum(row["normal_spec_defined"] and not row["ready_for_execution"] for row in rows),
     }
     blocker_counts: dict[str, int] = {}
     for row in rows:
