@@ -90,6 +90,10 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
             "case_id": case_id, "run_id": run_id, "capability_id": capability_id,
             "procedure": "metagente_luna_s4.runner.execute",
         }),
+        "control_spec": _json_bytes({
+            "case_id": case_id, "run_id": run_id, "run_kind": record.get("run_kind"),
+            "control": record.get("control_metadata"),
+        }),
         "stdout": str(record.get("stdout", "")).encode("utf-8"),
         "stderr": str(record.get("stderr", "")).encode("utf-8"),
         "observed": _json_bytes({
