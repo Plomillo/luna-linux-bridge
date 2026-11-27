@@ -187,6 +187,16 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and (observed.get("sum") == 11 or observed.get("minimum") == 4)
     if expect == "not-fifteen":
         return status == "EXECUTED" and observed["sum"] != 15
+    if expect == "noninteger-components-rejected":
+        return status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "zero-vector":
+        return status == "EXECUTED" and observed.get("norm") == 0 and observed.get("square") == 0
+    if expect == "zero-variance-rejected":
+        return status == "EXECUTED" and observed.get("value") is None and observed.get("error") == "zero-variance"
+    if expect == "perfect-positive-correlation":
+        return status == "EXECUTED" and observed.get("error") is None and abs(observed.get("value", 0) - 1.0) < 1e-9
+    if expect == "perfect-negative-correlation":
+        return status == "EXECUTED" and observed.get("error") is None and abs(observed.get("value", 0) + 1.0) < 1e-9
     if expect == "nfc-mismatch":
         return status == "EXECUTED" and observed.get("same_nfc") is False and observed.get("nfc") == "é"
     if expect == "n-tilde-decomposed":
