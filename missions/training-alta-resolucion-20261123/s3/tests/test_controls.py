@@ -38,7 +38,24 @@ def test_controls_that_were_defined_are_accepted():
     # The runner must execute every currently authored control case; the
     # registry is the authoritative count, not a stale historical constant.
     assert {row["case_id"] for row in defined} == set(CONTROLS)
-    assert len(defined) == len(CONTROLS) == 93
+    assert len(defined) == len(CONTROLS) == 94
+
+def test_yaml_type_plan_and_independent_oracle_cover_negative_and_boundary_inputs():
+    from metagente_luna_s3.d01_exec import yaml_types
+    from metagente_luna_s3.d01_oracle import yaml_types_oracle
+
+    normal = {"text": "name: Luna\\nenabled: true\\ncount: 3\\nitems:\\n  - uno\\n  - dos\\n"}
+    negative = {"text": "name: Luna\\n  broken: true\\n"}
+    boundary = {"text": "name: ''\\nenabled: false\\ncount: 0\\nitems: []\\n"}
+    normal_result = yaml_types(**normal)
+    assert yaml_types_oracle(normal, normal_result)["ok"] is True
+    negative_result = yaml_types(**negative)
+    assert yaml_types_oracle(negative, negative_result)["ok"] is True
+    boundary_result = yaml_types(**boundary)
+    assert yaml_types_oracle(boundary, boundary_result)["ok"] is True
+    assert accepts("yaml-rejected", negative_result, "EXECUTED") is True
+    assert accepts("yaml-empty-boundary", boundary_result, "EXECUTED") is True
+
 
 def test_both_kept_control_returns_a_boolean_not_a_collection():
     result = accepts("both-kept", {"kept": [0, 65535]}, "EXECUTED")
