@@ -364,12 +364,30 @@ def _build() -> None:
     _add("MGL5-INF-0503", "negative", "exit_codes", {"commands": []}, "command-list-rejected")
     _add("MGL5-INF-0503", "boundary", "exit_codes", {"commands": ["true"]}, "single-zero-exit")
 
+
+    _add("MGL5-INF-0114", "negative", "shortest_path", {"nodes": ["A", "B", "C"], "edges": [["A", "B"]], "start": "A", "target": "C"}, "bfs-unreachable-target")
+    _add("MGL5-INF-0114", "boundary", "shortest_path", {"nodes": ["A"], "edges": [], "start": "A", "target": "A"}, "bfs-single-node-zero-distance")
+    _add("MGL5-INF-0609", "negative", "matrix_multiply", {"left": [[1, 2, 3]], "right": [[1, 2], [3, 4]]}, "matrix-inner-dimension-mismatch")
+    _add("MGL5-INF-0609", "boundary", "matrix_multiply", {"left": [[0]], "right": [[0]]}, "matrix-single-zero-product")
+    _add("MGL5-INF-0611", "negative", "determinant_3x3", {"matrix": [[1, 2], [3, 4]]}, "determinant-nonsquare-rejected")
+    _add("MGL5-INF-0611", "boundary", "determinant_3x3", {"matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]}, "determinant-identity-one")
+    _add("MGL5-INF-0632", "negative", "moving_average", {"values": [1, 2, 3], "window": 4}, "moving-window-too-wide")
+    _add("MGL5-INF-0632", "boundary", "moving_average", {"values": [9], "window": 1}, "moving-single-value-boundary")
+
 def accepts(expect: str, observed: dict, status: str) -> bool:
     # A control is adjudicated against its own expected behavior, not the
     # NORMAL-case oracle verdict. FAIL means the executor ran and the normal
     # oracle rejected this control input; the observed control may still pass.
     control_completed = status in {"EXECUTED", "FAIL"}
 
+    if expect == "bfs-unreachable-target": return control_completed and observed.get("reachable") is False and observed.get("path") == [] and observed.get("distance") is None
+    if expect == "bfs-single-node-zero-distance": return control_completed and observed.get("reachable") is True and observed.get("path") == ["A"] and observed.get("distance") == 0
+    if expect == "matrix-inner-dimension-mismatch": return control_completed and observed.get("rejected") is True and observed.get("reason") == "matrix_dimensions_invalid"
+    if expect == "matrix-single-zero-product": return control_completed and observed.get("rejected") is False and observed.get("result") == [[0]]
+    if expect == "determinant-nonsquare-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "matrix_must_be_3x3"
+    if expect == "determinant-identity-one": return control_completed and observed.get("rejected") is False and observed.get("determinant") == 1
+    if expect == "moving-window-too-wide": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_window_or_series"
+    if expect == "moving-single-value-boundary": return control_completed and observed.get("rejected") is False and observed.get("averages") == [9.0] and observed.get("start_indices") == [0]
     if expect == "dex-truncated-header-rejected": return control_completed and observed.get("rejected") is True
     if expect == "dex-minimum-valid-header": return control_completed and observed.get("rejected") is False and observed.get("header_size") == 112 and observed.get("checksum_valid") is True and observed.get("signature_valid") is True
     if expect == "dex-invalid-type-string-index": return control_completed and observed.get("rejected") is False and observed.get("indices_valid") is False
