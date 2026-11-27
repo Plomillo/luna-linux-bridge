@@ -80,7 +80,11 @@ def test_assembler_requires_three_distinct_run_kinds(tmp_path):
 
     runs = [
         execute("utf8_roundtrip", {"text": "Luna"}, "MGL5-INF-0001",
-                evidence_root=str(tmp_path), run_kind=kind)
+                evidence_root=str(tmp_path), run_kind=kind,
+                control_metadata=(
+                    {"definition": f"{kind} control", "expected_behavior": "oracle-defined", "source": "test-spec"}
+                    if kind != "NORMAL" else None
+                ))
         for kind in ("NORMAL", "NEGATIVE", "BOUNDARY")
     ]
     row = assemble_case_record("MGL5-INF-0001", runs)
