@@ -381,7 +381,7 @@ def schema_migrate(document: dict) -> dict:
     name, count = document.get("name"), document.get("count")
     if not isinstance(name, str) or not isinstance(count, int) or isinstance(count, bool) or count < 0:
         return {"rejected": True, "reason": "invalid-invariant-field"}
-    migrated = {"version": 2, "name": name, "count": count, "enabled": True}
+    migrated = {"version": 2, "name": name, "count": count}
     return {"rejected": False, "migrated": True, "document": migrated, "invariants": {"name": name, "count": count}}
 
 

@@ -427,8 +427,18 @@ def test_d01_numeric_base64_null_and_manifest_controls_have_independent_adjudica
 
 
 def test_d01_protobuf_schema_compatibility_and_cbor_roundtrip_cases():
-    from metagente_luna_s3.more_exec import cbor_roundtrip, protobuf_old_reader, schema_migrate, schema_unknown_field
-    from metagente_luna_s3.more_oracle import cbor_vector_oracle, protobuf_wire_oracle, schema_v2_oracle, unknown_field_oracle
+    from metagente_luna_s3.more_exec import (
+        cbor_roundtrip,
+        protobuf_old_reader,
+        schema_migrate,
+        schema_unknown_field,
+    )
+    from metagente_luna_s3.more_oracle import (
+        cbor_vector_oracle,
+        protobuf_wire_oracle,
+        schema_v2_oracle,
+        unknown_field_oracle,
+    )
     from metagente_luna_s4.controls import accepts
     from metagente_luna_s4.independent_validator import _independent_control_accepts
 

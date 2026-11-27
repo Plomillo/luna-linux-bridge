@@ -253,7 +253,7 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "schema-v0-rejected":
         return control_completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-version"
     if expect == "schema-v1-empty-migrates":
-        return control_completed and observed.get("rejected") is False and observed.get("document") == {"version": 2, "name": "", "count": 0, "enabled": True}
+        return control_completed and observed.get("rejected") is False and observed.get("document") == {"version": 2, "name": "", "count": 0}
     if expect == "known-field-type-rejected":
         return control_completed and observed.get("rejected") is True and observed.get("reason") == "known-field-type"
     if expect == "no-unknown-fields":

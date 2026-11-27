@@ -88,7 +88,7 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "schema-v0-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-version"
     if expect == "schema-v1-empty-migrates":
-        return completed and observed.get("rejected") is False and observed.get("document") == {"version": 2, "name": "", "count": 0, "enabled": True}
+        return completed and observed.get("rejected") is False and observed.get("document") == {"version": 2, "name": "", "count": 0}
     if expect == "known-field-type-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "known-field-type"
     if expect == "no-unknown-fields":

@@ -223,9 +223,9 @@ def protobuf_wire_oracle(arguments: dict, observed: dict) -> dict:
 def schema_v2_oracle(arguments: dict, observed: dict) -> dict:
     source = arguments["document"]
     if source == {"version": 1, "name": "Luna", "count": 3}:
-        expected = {"rejected": False, "migrated": True, "document": {"version": 2, "name": "Luna", "count": 3, "enabled": True}, "invariants": {"name": "Luna", "count": 3}}
+        expected = {"rejected": False, "migrated": True, "document": {"version": 2, "name": "Luna", "count": 3}, "invariants": {"name": "Luna", "count": 3}}
     elif source == {"version": 1, "name": "", "count": 0}:
-        expected = {"rejected": False, "migrated": True, "document": {"version": 2, "name": "", "count": 0, "enabled": True}, "invariants": {"name": "", "count": 0}}
+        expected = {"rejected": False, "migrated": True, "document": {"version": 2, "name": "", "count": 0}, "invariants": {"name": "", "count": 0}}
     else:
         expected = {"rejected": True, "reason": "unsupported-version"}
     return {"ok": observed == expected, "method": "frozen v1-to-v2 migration vectors and invariant table"}
