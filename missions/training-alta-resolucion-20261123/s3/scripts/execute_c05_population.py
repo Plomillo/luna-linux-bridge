@@ -155,7 +155,7 @@ def source_record(case_id: str) -> tuple[dict, str]:
         raise ValueError(f"source case missing: {case_id}")
     excerpt = match.group(0)
     start = text[:match.start()].count("\n") + 1
-    end = start + excerpt.count("\\n") - (1 if excerpt.endswith("\n") else 0)
+    end = start + excerpt.count("\n") - (1 if excerpt.endswith("\n") else 0)
     exact = b"".join(lines[start - 1:end])
     if exact.decode("utf-8") != excerpt:
         raise ValueError(f"source line range mismatch: {case_id}")
