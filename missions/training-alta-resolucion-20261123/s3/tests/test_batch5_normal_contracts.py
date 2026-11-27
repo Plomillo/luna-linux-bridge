@@ -45,8 +45,7 @@ def test_source_defined_batch5_normal_specs_do_not_claim_negative_or_boundary_co
     by_id = {case["case_id"]: case for case in CASES}
     for case_id in EXPECTED:
         assert by_id[case_id]["arguments"] == {}
-    # These cases remain intentionally blocked from the C05 executable plan set
-    # until distinct negative and boundary fixtures are authored and adjudicated.
+    # Normal fixtures remain source-defined and deliberately separate from controls.
 
 
 
