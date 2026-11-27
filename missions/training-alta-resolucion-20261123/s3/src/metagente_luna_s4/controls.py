@@ -216,6 +216,8 @@ def _build() -> None:
 
     _add("MGL5-INF-0033", "negative", "yaml_types", {"text": "name: Luna\n  broken: true\n"}, "yaml-rejected")
     _add("MGL5-INF-0033", "boundary", "yaml_types", {"text": "name: ''\nenabled: false\ncount: 0\nitems: []\n"}, "yaml-empty-boundary")
+    _add("MGL5-INF-0034", "negative", "yaml_ambiguous", {"text": "flag: yes\\ndate: 2026-01-02\\n", "schema_version": "1.3"}, "yaml-version-rejected")
+    _add("MGL5-INF-0034", "boundary", "yaml_ambiguous", {"text": "flag: yes\\ndate: 2026-01-02\\n", "schema_version": "1.2"}, "yaml12-ambiguous-strings")
 
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
