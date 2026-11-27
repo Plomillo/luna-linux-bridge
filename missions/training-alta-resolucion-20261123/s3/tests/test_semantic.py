@@ -42,7 +42,16 @@ def test_seven_literal_instructions():
     assert rows["MGL5-INF-0106"]["execution_status"] == "BLOCKED"
     assert rows["MGL5-INF-0106"]["missing_information"] == ["input-integers"]
     assert rows["MGL5-INF-0109"]["execution_status"] == "CRITERION_MET"
-    assert rows["MGL5-INF-0109"]["observed"]["outputs"] == ["pushed", "pushed", 2, 2, 1, "underflow"]
+    assert rows["MGL5-INF-0109"]["observed"]["events"] == [
+        {"operation": "push", "value": 1},
+        {"operation": "push", "value": 2},
+        {"operation": "peek", "value": 2},
+        {"operation": "pop", "value": 2},
+        {"operation": "pop", "value": 1},
+        {"operation": "underflow", "source": "pop"},
+    ]
+    assert rows["MGL5-INF-0109"]["observed"]["stack"] == []
+    assert rows["MGL5-INF-0109"]["observed"]["underflow_count"] == 1
     assert rows["MGL5-INF-0114"]["missing_information"] == ["edges", "endpoints"]
     assert rows["MGL5-INF-0609"]["missing_information"] == ["matrix-entries"]
     assert rows["MGL5-INF-0611"]["missing_information"] == ["reference-matrix"]
