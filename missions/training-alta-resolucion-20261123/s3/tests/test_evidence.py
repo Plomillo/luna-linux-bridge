@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
 
@@ -7,6 +8,25 @@ from metagente_luna_s4.c05_validator import _validate_row
 from metagente_luna_s4.independent_validator import independently_validate_case
 from metagente_luna_s4.evidence import assemble_case_record, persist_run
 
+
+
+def _source_reference(case_id):
+    repository_root = Path(__file__).resolve().parents[4]
+    source_file = "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt"
+    source_bytes = (repository_root / source_file).read_bytes()
+    lines = source_bytes.splitlines(keepends=True)
+    start = next(index for index, line in enumerate(lines) if case_id.encode("utf-8") in line)
+    end = min(start + 5, len(lines))
+    excerpt = b"".join(lines[start:end])
+    metadata = {
+        "source_file": source_file,
+        "line_start": start + 1,
+        "line_end": end,
+        "file_sha256": hashlib.sha256(source_bytes).hexdigest(),
+        "excerpt_sha256": hashlib.sha256(excerpt).hexdigest(),
+        "source_blob": "c259b6bca37fdfc9711ffda07b3e388e3b9774ff",
+    }
+    return metadata, excerpt.decode("utf-8")
 
 def test_persist_run_writes_byte_hashed_artifacts_without_certifying(tmp_path):
     record = {
@@ -116,20 +136,23 @@ def test_assembler_rejects_missing_negative_or_boundary_run(tmp_path):
 def test_isolated_runner_produces_c05_eligible_process_evidence(tmp_path):
     from metagente_luna_s4.runner import execute_isolated
 
+    source_metadata, source_excerpt = _source_reference("MGL5-INF-0001")
     runs = [
         execute_isolated("utf8_roundtrip", {"text": "Luna"}, "MGL5-INF-0001",
-                         evidence_root=str(tmp_path), run_kind="NORMAL")
+                         evidence_root=str(tmp_path), run_kind="NORMAL", source_metadata=source_metadata, source_excerpt=source_excerpt)
         for _ in range(3)
     ] + [
         execute_isolated(
             "utf8_reject_invalid", {"payload_hex": "80"}, "MGL5-INF-0001",
             evidence_root=str(tmp_path), run_kind="NEGATIVE",
             control_metadata={"definition": "isolated continuation byte", "expected_behavior": "reject invalid UTF-8", "source": "test-spec"},
+            source_metadata=source_metadata, source_excerpt=source_excerpt,
         ),
         execute_isolated(
             "utf8_roundtrip", {"text": ""}, "MGL5-INF-0001",
             evidence_root=str(tmp_path), run_kind="BOUNDARY",
             control_metadata={"definition": "empty string boundary", "expected_behavior": "round-trip empty text", "source": "test-spec"},
+            source_metadata=source_metadata, source_excerpt=source_excerpt,
         ),
     ]
     row = assemble_case_record("MGL5-INF-0001", runs)
