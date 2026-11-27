@@ -1,6 +1,6 @@
 import os
 
-from metagente_luna_s4.controls import run_controls
+from metagente_luna_s4.controls import accepts, run_controls
 from metagente_luna_s4.isolated import execute_isolated, run_bounded
 
 
@@ -35,3 +35,8 @@ def test_controls_that_were_defined_are_accepted():
     assert defined
     assert all(row["control_status"] == "PRESENT" for row in defined)
     assert len(defined) == 50
+
+def test_empty_roundtrip_control_cannot_pass_without_successful_execution():
+    assert accepts("empty-roundtrip", {"bytes_hex": ""}, "EXECUTED") is True
+    assert accepts("empty-roundtrip", {"bytes_hex": ""}, "BLOCKED") is False
+    assert accepts("empty-roundtrip", {"visible": ""}, "INCONCLUSIVE") is False
