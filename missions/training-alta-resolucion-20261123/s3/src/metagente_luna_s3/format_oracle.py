@@ -563,7 +563,7 @@ def dex_tables_oracle(arguments: dict, observed: dict) -> dict:
     """Reconstruct DEX table layout and references without using executor output as input."""
     raw = bytes.fromhex(arguments["payload_hex"])
     method = "independent DEX table bounds, strings and cross-reference reconstruction"
-    if len(raw) < 112 or raw[:4] != bytes.fromhex("6465780a") or raw[7] != 0 or raw[4:7] != b"035":
+    if len(raw) < 112 or raw[:4] != bytes.fromhex("6465780a") or raw[7] != 0 or raw[4:7] not in {b"035", b"036", b"037", b"038", b"039"}:
         return {"ok": observed.get("rejected") is True, "method": method}
     file_size, header_size, endian = struct.unpack_from("<III", raw, 32)
     data_size, data_off = struct.unpack_from("<II", raw, 104)
