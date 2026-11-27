@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from metagente_luna_s3.batch6_exec import stable_ages, stack_sequence
-from metagente_luna_s3.batch6_oracle import stable_ages_oracle, stack_sequence_oracle
+from metagente_luna_s3.batch6_exec import descending_values, stable_ages, stack_sequence
+from metagente_luna_s3.batch6_oracle import descending_values_oracle, stable_ages_oracle, stack_sequence_oracle
 from metagente_luna_s3.interpret import interpret
 from metagente_luna_s4.batch6 import CASES, OPERATIONS
 from metagente_luna_s4.controls import accepts
@@ -9,14 +9,23 @@ from metagente_luna_s4.controls import accepts
 
 def test_batch6_cases_are_typed_source_grounded_plans():
     by_id = {case["case_id"]: case for case in CASES}
-    assert set(by_id) == {"MGL5-INF-0105", "MGL5-INF-0109"}
+    assert set(by_id) == {"MGL5-INF-0105", "MGL5-INF-0106", "MGL5-INF-0109"}
     assert by_id["MGL5-INF-0105"]["fixture_provenance"].endswith("#stable-ages")
     assert by_id["MGL5-INF-0109"]["fixture_provenance"].endswith("#stack-script")
+    assert by_id["MGL5-INF-0106"]["fixture_provenance"].startswith("SOURCE_SEED_0106;")
+    assert len(by_id["MGL5-INF-0106"]["arguments"]["values"]) == 10_000
     for case_id, instruction in OPERATIONS:
-        if case_id in by_id:
-            result = interpret(instruction)
-            assert result.status == "READY"
-            assert result.intent == by_id[case_id]["capability_id"]
+        if case_id not in by_id:
+            continue
+        result = interpret(instruction)
+        if case_id == "MGL5-INF-0106":
+            # The language interpreter correctly refuses to invent the 10,000
+            # values; the separately authored, seeded fixture supplies them.
+            assert result.status == "BLOCKED"
+            assert result.missing == ["input-integers"]
+            continue
+        assert result.status == "READY"
+        assert result.intent == by_id[case_id]["capability_id"]
 
 
 def test_stable_age_sort_preserves_equal_age_order_and_rejects_bad_records():
@@ -57,3 +66,25 @@ def test_stack_sequence_controls_underflow_and_empty_boundary():
     boundary_result = stack_sequence(**boundary)
     assert accepts("empty-stack-sequence", boundary_result, "EXECUTED") is True
     assert stack_sequence_oracle(boundary, boundary_result)["ok"] is True
+
+
+def test_descending_sort_checks_permutation_order_and_rejection_controls():
+    from metagente_luna_s4.batch6 import CASES as BATCH6_CASES
+
+    spec = next(item for item in BATCH6_CASES if item["case_id"] == "MGL5-INF-0106")
+    arguments = spec["arguments"]
+    observed = descending_values(**arguments)
+    assert len(observed["ordered"]) == 10_000
+    assert observed["ordered"][0] == 9_999
+    assert observed["ordered"][-1] == 0
+    assert descending_values_oracle(arguments, observed)["ok"] is True
+
+    invalid = {"values": [3, "invalid", 2]}
+    rejected = descending_values(**invalid)
+    assert accepts("rejected", rejected, "EXECUTED") is True
+    assert descending_values_oracle(invalid, rejected)["ok"] is True
+
+    boundary = {"values": [0]}
+    boundary_result = descending_values(**boundary)
+    assert accepts("descending-singleton", boundary_result, "EXECUTED") is True
+    assert descending_values_oracle(boundary, boundary_result)["ok"] is True
