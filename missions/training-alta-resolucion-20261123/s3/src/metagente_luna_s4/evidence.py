@@ -132,9 +132,9 @@ def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dic
         "clean_state": False,
         "execution_status": record.get("execution_status"),
         "exit_code": record.get("exit_code"),
-        "agent_version": record.get("agent_version", "UNDECLARED"),
-        "executor_version": record.get("executor_version", "UNDECLARED"),
-        "machinery": record.get("backend", "UNDECLARED"),
+        "agent_version": record.get("agent_version"),
+        "executor_version": record.get("executor_version"),
+        "machinery": record.get("backend"),
         "independent_validation": {"passed": False, "status": "NOT_RUN"},
         "evidence_status": "PERSISTED_NOT_INDEPENDENTLY_VALIDATED",
     }
