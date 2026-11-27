@@ -160,6 +160,10 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect in {"elf-truncated-section-table-rejected", "elf-truncated-load-map-rejected"}: return completed and observed.get("rejected") is True
     if expect == "elf-alternate-section-offsets-within-file": return completed and observed.get("rejected") is False and observed.get("section_offsets_valid") is True and not observed.get("load_segments")
     if expect == "elf-alternate-load-map-preserves-sections": return completed and observed.get("rejected") is False and observed.get("section_offsets_valid") is True and bool(observed.get("load_segments")) and all(segment.get("associated_sections") for segment in observed.get("load_segments", []))
+    if expect == "elf-truncated-dynamic-input-rejected": return completed and observed.get("rejected") is True
+    if expect == "elf-alternate-trusted-dependency-resolution": return completed and observed.get("rejected") is False and observed.get("runtime_resolution_attempted") is True and observed.get("program_entry_executed") is False and set(observed.get("runtime_resolved", {})) == set(observed.get("declared_dependencies", []))
+    if expect == "elf-no-search-tags-reported": return completed and observed.get("rejected") is False and observed.get("rpath") == [] and observed.get("runpath") == [] and observed.get("both_present") is False
+    if expect == "elf-both-search-tags-reported": return completed and observed.get("rejected") is False and bool(observed.get("rpath")) and bool(observed.get("runpath")) and observed.get("both_present") is True and observed.get("precedence_claim") == "NOT_INFERRED_WHEN_BOTH_PRESENT"
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

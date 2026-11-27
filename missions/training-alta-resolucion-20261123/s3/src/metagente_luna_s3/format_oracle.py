@@ -375,3 +375,76 @@ def elf_section_layout_oracle(arguments: dict, observed: dict) -> dict:
     expected = {"rejected": False, "sections": sections, "load_segments": expected_loads, "section_offsets_valid": all(row["offset_within_file"] for row in sections), "sha256": hashlib.sha256(raw).hexdigest()}
     ok = observed == expected
     return {"ok": ok, "method": "independent ELF section-name string table and program-header interval reconstruction"}
+
+
+def _elf_dynamic_entries(raw: bytes) -> tuple[list[str], list[str], list[str]] | None:
+    if len(raw) < 64 or raw[:6] != b"\x7fELF\x02\x01":
+        return None
+    shoff = struct.unpack_from("<Q", raw, 40)[0]
+    shentsize, shnum, shstrndx = struct.unpack_from("<HHH", raw, 58)
+    if shentsize < 64 or shnum == 0 or shstrndx >= shnum or shoff + shentsize * shnum > len(raw):
+        return None
+    headers = [struct.unpack_from("<IIQQQQIIQQ", raw, shoff + index * shentsize) for index in range(shnum)]
+    names_header = headers[shstrndx]
+    names = raw[names_header[4]:names_header[4] + names_header[5]]
+    def cstring(data: bytes, offset: int) -> str:
+        end = data.find(b"\0", offset)
+        return data[offset:end if end >= 0 else len(data)].decode("utf-8", "replace")
+    sections = {cstring(names, row[0]): row for row in headers}
+    dynamic, dynstr = sections.get(".dynamic"), sections.get(".dynstr")
+    if dynamic is None or dynstr is None or dynamic[6] >= len(headers):
+        return None
+    strings = raw[dynstr[4]:dynstr[4] + dynstr[5]]
+    needed, rpath, runpath = [], [], []
+    entry_size = dynamic[9] or 16
+    if entry_size < 16 or dynamic[4] + dynamic[5] > len(raw):
+        return None
+    for offset in range(dynamic[4], dynamic[4] + dynamic[5], entry_size):
+        tag, value = struct.unpack_from("<qQ", raw, offset)
+        if tag == 0:
+            break
+        if tag == 1:
+            needed.append(cstring(strings, value))
+        elif tag == 15:
+            rpath.append(cstring(strings, value))
+        elif tag == 29:
+            runpath.append(cstring(strings, value))
+    return needed, rpath, runpath
+
+
+def elf_dynamic_dependencies_oracle(arguments: dict, observed: dict) -> dict:
+    raw = bytes.fromhex(arguments["payload_hex"])
+    parsed = _elf_dynamic_entries(raw)
+    if parsed is None:
+        return {"ok": observed.get("rejected") is True, "method": "independent ELF dynamic-section bounds and string-table decoder"}
+    needed, rpath, runpath = parsed
+    digest = hashlib.sha256(raw).hexdigest()
+    trusted = digest in {"73dfd15b920dbc069830e413dfe79bfcc24f9999ceffb3e4da4dec45cf7dbfca", "1003715dcd699bf98061167a830d5fdb5bcefc107952ac584476bd45688da985"}
+    resolved = observed.get("runtime_resolved")
+    runtime_ok = (
+        observed.get("runtime_resolution_attempted") is trusted
+        and (not trusted and resolved is None or trusted and isinstance(resolved, dict) and set(resolved) == set(needed))
+        and observed.get("runtime_unresolved") == [name for name, path in (resolved or {}).items() if path is None]
+        and all(path is None or (isinstance(path, str) and path.startswith("/")) for path in (resolved or {}).values())
+    )
+    ok = observed.get("rejected") is False and observed.get("declared_dependencies") == needed and observed.get("rpath") == rpath and observed.get("runpath") == runpath and observed.get("program_entry_executed") is False and observed.get("ldd_loaded_dependencies_only") is trusted and runtime_ok and observed.get("sha256") == digest
+    return {"ok": ok, "method": "independent ELF SHT_DYNAMIC and linked SHT_STRTAB decoding; runtime outputs constrained to declared names"}
+
+
+def elf_rpath_runpath_oracle(arguments: dict, observed: dict) -> dict:
+    raw = bytes.fromhex(arguments["payload_hex"])
+    parsed = _elf_dynamic_entries(raw)
+    if parsed is None:
+        return {"ok": observed.get("rejected") is True, "method": "independent ELF dynamic-section bounds validation"}
+    _needed, rpath, runpath = parsed
+    ok = observed == {
+        "rejected": False,
+        "rpath": rpath,
+        "runpath": runpath,
+        "rpath_scope": "legacy search path; may affect descendant dependencies" if rpath else None,
+        "runpath_scope": "direct dependencies of the object" if runpath else None,
+        "both_present": bool(rpath and runpath),
+        "precedence_claim": "NOT_INFERRED_WHEN_BOTH_PRESENT",
+        "sha256": hashlib.sha256(raw).hexdigest(),
+    } and bool(rpath) and bool(runpath)
+    return {"ok": ok, "method": "independent DT_RPATH and DT_RUNPATH extraction with bounded interpretation"}

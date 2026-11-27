@@ -503,3 +503,64 @@ def elf_section_layout(payload_hex: str, include_load_segments: bool) -> dict:
             load_segments.append(segment)
     valid = all(section["offset_within_file"] for section in sections)
     return {"rejected": False, "sections": sections, "load_segments": load_segments, "section_offsets_valid": valid, "sha256": hashlib.sha256(raw).hexdigest()}
+
+
+def elf_dynamic_dependencies(payload_hex: str) -> dict:
+    """Compare DT_NEEDED declarations with loader resolution for allowlisted fixtures only."""
+    raw = bytes.fromhex(payload_hex)
+    if not raw.startswith(b"\x7fELF"):
+        raise ValueError("input does not have an ELF signature")
+    digest = hashlib.sha256(raw).hexdigest()
+    trusted_runtime_fixtures = {
+        "73dfd15b920dbc069830e413dfe79bfcc24f9999ceffb3e4da4dec45cf7dbfca",
+        "1003715dcd699bf98061167a830d5fdb5bcefc107952ac584476bd45688da985",
+    }
+    with tempfile.TemporaryDirectory(prefix="c05-elf-dynamic-") as temporary:
+        path = f"{temporary}/specimen.elf"
+        with open(path, "wb") as specimen:
+            specimen.write(raw)
+        result = subprocess.run(["readelf", "--dynamic", "--wide", path], capture_output=True, text=True, timeout=5, check=False)
+        if result.returncode != 0:
+            return {"rejected": True, "reason": result.stderr.strip()[:300], "sha256": digest}
+        needed = re.findall(r"\(NEEDED\).*?\[([^\]]+)\]", result.stdout)
+        tags = {}
+        for label in ("RPATH", "RUNPATH"):
+            tags[label] = re.findall(rf"\({label}\).*?\[([^\]]*)\]", result.stdout)
+        runtime: dict[str, str | None] | None = None
+        attempted = digest in trusted_runtime_fixtures
+        if attempted:
+            loaded = subprocess.run(["ldd", path], capture_output=True, text=True, timeout=5, check=False, env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"})
+            runtime = {}
+            for line in loaded.stdout.splitlines():
+                match = re.match(r"^\s*(\S+)\s+=>\s+(not found|/\S+)", line)
+                if match and match.group(1) in needed:
+                    runtime[match.group(1)] = None if match.group(2) == "not found" else match.group(2)
+            runtime = {name: runtime.get(name) for name in needed}
+    return {
+        "rejected": False,
+        "declared_dependencies": needed,
+        "runtime_resolution_attempted": attempted,
+        "runtime_resolved": runtime,
+        "runtime_unresolved": [name for name, path in (runtime or {}).items() if path is None],
+        "rpath": tags["RPATH"],
+        "runpath": tags["RUNPATH"],
+        "ldd_loaded_dependencies_only": attempted,
+        "program_entry_executed": False,
+        "sha256": digest,
+    }
+
+
+def elf_rpath_runpath(payload_hex: str) -> dict:
+    observed = elf_dynamic_dependencies(payload_hex)
+    if observed.get("rejected"):
+        return observed
+    return {
+        "rejected": False,
+        "rpath": observed["rpath"],
+        "runpath": observed["runpath"],
+        "rpath_scope": "legacy search path; may affect descendant dependencies" if observed["rpath"] else None,
+        "runpath_scope": "direct dependencies of the object" if observed["runpath"] else None,
+        "both_present": bool(observed["rpath"] and observed["runpath"]),
+        "precedence_claim": "NOT_INFERRED_WHEN_BOTH_PRESENT",
+        "sha256": observed["sha256"],
+    }

@@ -51,6 +51,8 @@ EXPECTED = {
     "MGL5-INF-0060": "elf_host_compatibility",
     "MGL5-INF-0054": "elf_section_layout",
     "MGL5-INF-0055": "elf_section_layout",
+    "MGL5-INF-0058": "elf_dynamic_dependencies",
+    "MGL5-INF-0059": "elf_rpath_runpath",
 }
 
 

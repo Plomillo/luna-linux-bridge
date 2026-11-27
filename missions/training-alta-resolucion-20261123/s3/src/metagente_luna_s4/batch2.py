@@ -15,6 +15,8 @@ _ELF_SYMBOLS_BOUNDARY_HEX = (_PDF_FIXTURES / "FX-MGL5-INF-0095-boundary.elf").re
 _ELF_STRIPPED_HEX = (_PDF_FIXTURES / "FX-MGL5-INF-0057-stripped.elf").read_bytes().hex()
 _ELF_STRIPPED_BOUNDARY_HEX = (_PDF_FIXTURES / "FX-MGL5-INF-0057-boundary-stripped.elf").read_bytes().hex()
 _ELF_ARM_HEX = (_PDF_FIXTURES / "FX-MGL5-INF-0060-arm.elf").read_bytes().hex()
+_ELF_RPATH_RUNPATH_HEX = (_PDF_FIXTURES / "FX-MGL5-INF-0059-rpath-runpath.elf").read_bytes().hex()
+_ELF_RPATH_RUNPATH_BOUNDARY_HEX = (_PDF_FIXTURES / "FX-MGL5-INF-0059-boundary-rpath-runpath.elf").read_bytes().hex()
 CASES = [
     {"case_id": "MGL5-INF-0019", "capability_id": "text_units", "arguments": {"text": _ZWJ}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
     {"case_id": "MGL5-INF-0020", "capability_id": "text_units", "arguments": {"text": "e\u0301"}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
@@ -84,6 +86,8 @@ CASES = [
     {"case_id": "MGL5-INF-0060", "capability_id": "elf_host_compatibility", "arguments": {"payload_hex": _ELF_ARM_HEX, "native_machine": 62}, "fixture_provenance": "SOURCE_DERIVED_ARCHITECTURE_MISMATCH: valid ELF64 little-endian specimen with e_machine changed to ARM(40), host target x86-64(62)"},
     {"case_id": "MGL5-INF-0054", "capability_id": "elf_section_layout", "arguments": {"payload_hex": _ELF_SYMBOLS_HEX, "include_load_segments": False}, "fixture_provenance": "SOURCE_DERIVED_ELF64_SECTION_TABLE: readelf section inventory from frozen lab executable; offsets independently bounded against exact file length"},
     {"case_id": "MGL5-INF-0055", "capability_id": "elf_section_layout", "arguments": {"payload_hex": _ELF_SYMBOLS_HEX, "include_load_segments": True}, "fixture_provenance": "SOURCE_DERIVED_ELF64_LOAD_MAP: PT_LOAD file/memory extents and associated section names from frozen lab executable"},
+    {"case_id": "MGL5-INF-0058", "capability_id": "elf_dynamic_dependencies", "arguments": {"payload_hex": _ELF_SYMBOLS_HEX}, "fixture_provenance": "SOURCE_DERIVED_ELF64_DYNAMIC: frozen compiler-produced specimen; readelf DT_NEEDED and ldd loader resolution only on SHA-256-pinned trusted fixture; program entry never run"},
+    {"case_id": "MGL5-INF-0059", "capability_id": "elf_rpath_runpath", "arguments": {"payload_hex": _ELF_RPATH_RUNPATH_HEX}, "fixture_provenance": "SOURCE_DERIVED_ELF64_SEARCH_TAGS: genuine linker RUNPATH plus inert DT_DEBUG slot retyped as DT_RPATH; both dynamic strings validated by independent raw parser"},
 
     {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
     {"case_id": "MGL5-INF-0102", "capability_id": "array_minmax", "arguments": {"values": [-8, 4, 4, 19, 0]}},
