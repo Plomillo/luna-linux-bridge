@@ -390,6 +390,20 @@ def main(argv: list[str]) -> int:
             })
         },
         "rejected_case_details": report["rejected"],
+        "rejected_evidence_details": [
+            {
+                "case_id": row["CASE_ID"],
+                "execution_status": row.get("execution_status"),
+                "contract_status": row.get("contract_status"),
+                "contract_evaluation": row.get("contract_evaluation"),
+                "independent_validation": row.get("independent_validation"),
+                "reason": row.get("reason"),
+            }
+            for row in rows
+            if row.get("CASE_ID") in {
+                item.get("case_id") for item in report["rejected"]
+            } and row.get("execution_status") != "NOT_RUN"
+        ],
         "ledger": str(ledger_path),
         "report": str(report_path),
         "blocker_inventory": str(blocker_path),
