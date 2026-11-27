@@ -119,3 +119,34 @@ def test_plan_compiler_emits_only_cases_with_both_authored_controls():
         assert plan["normal"]["arguments"] != plan["negative"]["arguments"]
         assert plan["normal"]["arguments"] != plan["boundary"]["arguments"]
         assert plan["negative"]["arguments"] != plan["boundary"]["arguments"]
+
+
+def test_population_plan_requires_machine_checkable_control_expectations():
+    plan = {
+        "source_metadata": {},
+        "source_excerpt": "",
+        "normal": {"capability_id": "cidr_bounds", "arguments": {"cidr": "192.0.2.130/26"}},
+        "negative": {
+            "capability_id": "cidr_bounds",
+            "arguments": {"cidr": "192.0.2.130/33"},
+            "control_metadata": {
+                "definition": "invalid prefix",
+                "expected_behavior": "reject",
+                "source": "source case",
+            },
+        },
+        "boundary": {
+            "capability_id": "cidr_bounds",
+            "arguments": {"cidr": "192.0.2.130/32"},
+            "control_metadata": {
+                "definition": "host prefix",
+                "expected_behavior": "accept",
+                "source": "source case",
+                "expect": "boundary-accepted",
+            },
+        },
+    }
+
+    errors = population.plan_errors(plan, "MGL5-INF-0001")
+
+    assert "negative-control-definition-incomplete" in errors
