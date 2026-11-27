@@ -6,6 +6,7 @@ def stable_ages(records: list[dict]) -> dict:
     if not isinstance(records, list) or any(
         not isinstance(row, dict)
         or not isinstance(row.get("id"), str)
+        or not row.get("id")
         or not isinstance(row.get("age"), int)
         or isinstance(row.get("age"), bool)
         for row in records
