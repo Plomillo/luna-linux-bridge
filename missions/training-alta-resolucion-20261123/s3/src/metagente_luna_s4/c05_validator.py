@@ -226,6 +226,18 @@ def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
             outcomes.append(rep["execution_status"])
     if len(run_ids) != len(set(run_ids)):
         errors.append("duplicate-run-id-within-case")
+    input_digests = []
+    for rep in repetitions:
+        if not isinstance(rep, dict) or not isinstance(rep.get("artifacts"), dict):
+            continue
+        fixture_ref = rep["artifacts"].get("fixture")
+        fixture_path, fixture_error = _safe_artifact(evidence_root, fixture_ref)
+        fixture_data = _load_json(fixture_path) if fixture_path is not None else None
+        if isinstance(fixture_data, dict) and "input" in fixture_data:
+            encoded = json.dumps(fixture_data["input"], sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+            input_digests.append(hashlib.sha256(encoded).hexdigest())
+    if len(input_digests) != 3 or len(set(input_digests)) != 3:
+        errors.append("normal-negative-boundary-inputs-not-distinct")
     if len(set(outcomes)) > 1:
         errors.append("repetition-outcomes-disagree")
     required_kinds = {"NORMAL", "NEGATIVE", "BOUNDARY"}
