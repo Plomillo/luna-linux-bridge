@@ -191,9 +191,13 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
             or not re.fullmatch(r"[0-9a-f]{64}", str(source_metadata.get("file_sha256", "")))
             or not re.fullmatch(r"[0-9a-f]{64}", str(source_metadata.get("excerpt_sha256", "")))
             or not isinstance(source_metadata.get("source_blob"), str) or not re.fullmatch(r"[0-9a-f]{40}", source_metadata["source_blob"])
+            or any(not isinstance(source_metadata.get(field), str) or not source_metadata[field]
+                   for field in ("operation", "acceptance_criterion", "oracle_requirement"))
             or source_excerpt is None
             or hashlib.sha256(source_excerpt).hexdigest() != source_metadata.get("excerpt_sha256")
-            or case_id.encode("utf-8") not in source_excerpt):
+            or case_id.encode("utf-8") not in source_excerpt
+            or any(source_metadata[field].encode("utf-8") not in source_excerpt
+                   for field in ("operation", "acceptance_criterion", "oracle_requirement"))):
         errors.append("source-line-provenance-invalid")
     elif rep.get("kind") in {"NEGATIVE", "BOUNDARY"}:
         control = fixture.get("control")
