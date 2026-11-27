@@ -97,6 +97,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: c05-seed-0254-container-${{ github.sha }}
-          path: missions/training-alta-resolucion-20261123/s3/reports/C05_SEED_0254_EVIDENCE
+          path: |
+            missions/training-alta-resolucion-20261123/s3/reports/C05_SEED_0254_EVIDENCE
+            missions/training-alta-resolucion-20261123/s3/reports/C05_SOURCE_PLAN_BACKLOG.jsonl
+            missions/training-alta-resolucion-20261123/s3/reports/C05_SOURCE_PLAN_BACKLOG_SUMMARY.json
+            missions/training-alta-resolucion-20261123/s3/reports/C05_EXECUTABLE_PLANS.jsonl
+            missions/training-alta-resolucion-20261123/s3/reports/C05_EXECUTABLE_PLANS_SUMMARY.json
+            missions/training-alta-resolucion-20261123/s3/reports/C05_POPULATION_EVIDENCE
+            missions/training-alta-resolucion-20261123/s3/reports/C05_POPULATION_LEDGER.jsonl
+            missions/training-alta-resolucion-20261123/s3/reports/C05_POPULATION_REPORT.json
           if-no-files-found: error
           retention-days: 90
