@@ -197,10 +197,15 @@ def evidence_inventory_complete(report: dict) -> bool:
         return False
     if not isinstance(rejected, list) or len(rejected) != 985:
         return False
-    return all(
-        item.get("reasons") == ["case-not-executed"]
-        for item in rejected if isinstance(item, dict)
-    ) and all(isinstance(item, dict) for item in rejected)
+    if not all(isinstance(item, dict) for item in rejected):
+        return False
+    rejected_ids = [item.get("case_id") for item in rejected]
+    expected_ids = set(EXPECTED)
+    return (
+        len(set(rejected_ids)) == 985
+        and set(rejected_ids).issubset(expected_ids)
+        and all(item.get("reasons") == ["case-not-executed"] for item in rejected)
+    )
 
 
 def write_exclusive(path: Path, content: str) -> None:
