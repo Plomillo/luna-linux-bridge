@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from metagente_luna_s3.batch6_exec import descending_values, stable_ages, stack_sequence
-from metagente_luna_s3.batch6_oracle import descending_values_oracle, stable_ages_oracle, stack_sequence_oracle
+from metagente_luna_s3.batch6_oracle import (
+    descending_values_oracle,
+    stable_ages_oracle,
+    stack_sequence_oracle,
+)
 from metagente_luna_s3.interpret import interpret
 from metagente_luna_s4.batch6 import CASES, OPERATIONS
 from metagente_luna_s4.controls import accepts
