@@ -192,6 +192,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     control_completed = status in {"EXECUTED", "FAIL"}
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.
+    if expect == "trapezoid-zero-panels-rejected":
+        return status == "REJECTED" and observed is None
     if observed is None:
         return False
     if expect == "preflight-blocked":
