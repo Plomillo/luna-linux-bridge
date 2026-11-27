@@ -138,6 +138,9 @@ def main(argv: list[str]) -> int:
         print(f"plans contain unknown case IDs: {sorted(unknown)[:10]}", file=sys.stderr)
         return 2
 
+    if ledger_path.exists() or report_path.exists():
+        print("ledger/report output already exists; refusing to overwrite historical evidence", file=sys.stderr)
+        return 2
     evidence_root.mkdir(parents=True, exist_ok=True)
     rows = []
     for case_id in EXPECTED:
