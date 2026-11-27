@@ -57,6 +57,22 @@ def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries
     assert accepts("empty-manifest-change", {"reproduced": True, "altered_changes": True, "digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"}, "EXECUTED") is True
 
 
+def test_fifo_factorial_path_and_ipv6_independent_oracles():
+    from metagente_luna_s3.batch3_oracle import stated_prefix, two_compressions
+    from metagente_luna_s3.batch4_oracle import escapes
+    from metagente_luna_s3.batch5_oracle import named_order, reference_factorials
+
+    assert named_order({"values": ["C", "B", "A"]}, {"order": ["C", "B", "A"], "remaining": 0})["ok"] is True
+    assert reference_factorials({"values": [-1]}, {"rejected": True, "negative_rejected": True})["ok"] is True
+    assert reference_factorials({"values": [0]}, {"rejected": False, "values": [1], "negative_rejected": True})["ok"] is True
+    assert escapes({"requested": "escape"}, {"blocked": True, "bytes_read": 0, "opened_outside": False, "operation": "simulated-download", "reason": "symlink-escapes"})["ok"] is True
+    assert escapes({"requested": "inside-link"}, {"blocked": False, "bytes_read": 7, "opened_outside": False, "operation": "simulated-download", "reason": "internal-link"})["ok"] is True
+    assert two_compressions({"address": "not-an-ipv6-address"}, {"accepted": False})["ok"] is True
+    assert two_compressions({"address": "::"}, {"accepted": True})["ok"] is True
+    assert stated_prefix({"cidr": "2001:db8::1/129"}, {"rejected": True})["ok"] is True
+    assert stated_prefix({"cidr": "2001:db8::1/128"}, {"rejected": False, "prefix": "2001:db8::1/128"})["ok"] is True
+
+
 def test_fifo_factorial_path_and_ipv6_controls_are_adjudicated():
     assert accepts("fifo-reversed-order", {"order": ["C", "B", "A"], "remaining": 0}, "EXECUTED") is True
     assert accepts("fifo-singleton", {"order": ["A"], "remaining": 0}, "EXECUTED") is True
