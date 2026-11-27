@@ -11,7 +11,7 @@ import struct
 import unicodedata
 import xml.etree.ElementTree as ET
 import zlib
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 PNG = bytes.fromhex("89504e470d0a1a0a")
 
@@ -179,9 +179,12 @@ def float32_exactness(values: list[int]) -> dict:
 
 
 def decimal_text(text: str) -> dict:
-    value = Decimal(text)
+    try:
+        value = Decimal(text)
+    except InvalidOperation:
+        return {"rejected": True, "reason": "invalid-decimal"}
     print(value)
-    return {"text": str(value), "used_binary_float": False}
+    return {"rejected": False, "text": str(value), "used_binary_float": False}
 
 
 def three_states(present: dict, absent_key: str) -> dict:
@@ -210,10 +213,13 @@ def zlib_corrupt(payload_hex: str) -> dict:
 
 
 def base64_bytes(payload_hex: str) -> dict:
-    payload = bytes.fromhex(payload_hex)
+    try:
+        payload = bytes.fromhex(payload_hex)
+    except ValueError:
+        return {"rejected": True, "reason": "invalid-hex-input"}
     encoded = base64.b64encode(payload).decode("ascii")
     print(encoded)
-    return {"decoded_hex": base64.b64decode(encoded).hex(), "encoded": encoded}
+    return {"rejected": False, "decoded_hex": base64.b64decode(encoded).hex(), "encoded": encoded}
 
 
 def base64_reject(text: str) -> dict:

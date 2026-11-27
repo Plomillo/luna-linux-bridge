@@ -38,7 +38,7 @@ def test_controls_that_were_defined_are_accepted():
     # The runner must execute every currently authored control case; the
     # registry is the authoritative count, not a stale historical constant.
     assert {row["case_id"] for row in defined} == set(CONTROLS)
-    assert len(defined) == len(CONTROLS) == 95
+    assert len(defined) == len(CONTROLS) == 101
 
 def test_yaml_type_plan_and_independent_oracle_cover_negative_and_boundary_inputs():
     from metagente_luna_s3.d01_exec import yaml_types
@@ -374,3 +374,43 @@ def test_numerical_fit_and_integrator_controls():
 
     assert rk4_decay(2.0)["rejected"] is True
     assert series_exp({"step": 2.0}, rk4_decay(2.0))["ok"] is True
+
+
+
+def test_d01_numeric_base64_null_and_manifest_controls_have_independent_adjudication():
+    from metagente_luna_s3.more_exec import (
+        base64_bytes, base64_reject, decimal_text, float32_exactness, manifest_hash, three_states,
+    )
+    from metagente_luna_s3.more_oracle import (
+        b64_table, decimal_literal, f32_table, stable_digest, state_table,
+    )
+    from metagente_luna_s4.independent_validator import _independent_control_accepts
+
+    cases = [
+        ("float32-inexact-identified", float32_exactness({"values": [16777217]}), "EXECUTED"),
+        ("float32-exact-transition", float32_exactness({"values": [16777216]}), "EXECUTED"),
+        ("decimal-invalid-rejected", decimal_text("0.10x"), "EXECUTED"),
+        ("known-key-not-absent", three_states({"b": None, "c": ""}, "b"), "EXECUTED"),
+        ("nonempty-field-not-empty", three_states({"b": None, "c": "x"}, "a"), "EXECUTED"),
+        ("base64-invalid-hex-rejected", base64_bytes("0g"), "EXECUTED"),
+        ("valid-base64-accepted", base64_reject("AA=="), "FAIL"),
+        ("unchanged-manifest-stable", manifest_hash({"name": "luna"}, {"name": "luna"}), "EXECUTED"),
+    ]
+    for expectation, observed, lifecycle in cases:
+        assert accepts(expectation, observed, lifecycle) is True
+        assert _independent_control_accepts(expectation, observed, lifecycle) is True
+
+    normal_float = {"values": [16777216, 16777217, 16777219]}
+    assert f32_table(normal_float, float32_exactness(**normal_float))["ok"] is True
+    normal_decimal = {"text": "0.10"}
+    assert decimal_literal(normal_decimal, decimal_text(**normal_decimal))["ok"] is True
+    normal_states = {"present": {"b": None, "c": ""}, "absent_key": "a"}
+    assert state_table(normal_states, three_states(**normal_states))["ok"] is True
+    normal_base64 = {"payload_hex": "00ff01"}
+    assert b64_table(normal_base64, base64_bytes(**normal_base64))["ok"] is True
+    normal_hash = {"document": {"name": "luna", "version": 1}, "altered": {"name": "luna", "version": 2}}
+    assert stable_digest(normal_hash, manifest_hash(**normal_hash))["ok"] is True
+    invalid_decimal = {"text": "0.10x"}
+    assert decimal_literal(invalid_decimal, decimal_text(**invalid_decimal))["ok"] is True
+    invalid_hex = {"payload_hex": "0g"}
+    assert b64_table(invalid_hex, base64_bytes(**invalid_hex))["ok"] is True

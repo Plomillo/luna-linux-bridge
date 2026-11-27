@@ -102,8 +102,11 @@ def f32_table(arguments: dict, observed: dict) -> dict:
 
 
 def decimal_literal(arguments: dict, observed: dict) -> dict:
-    expected = str(Decimal(arguments["text"]))
-    return {"ok": observed["text"] == expected and observed["used_binary_float"] is False, "method": "independent Decimal parsing"}
+    try:
+        expected = str(Decimal(arguments["text"]))
+    except Exception:
+        return {"ok": observed.get("rejected") is True and observed.get("reason") == "invalid-decimal", "method": "fixed invalid Decimal rejection"}
+    return {"ok": observed.get("rejected") is False and observed.get("text") == expected and observed.get("used_binary_float") is False, "method": "independent Decimal parsing"}
 
 
 def state_table(arguments: dict, observed: dict) -> dict:
@@ -125,13 +128,16 @@ def damaged(arguments: dict, observed: dict) -> dict:
 
 
 def b64_table(arguments: dict, observed: dict) -> dict:
-    payload = bytes.fromhex(arguments["payload_hex"])
+    try:
+        payload = bytes.fromhex(arguments["payload_hex"])
+    except ValueError:
+        return {"ok": observed.get("rejected") is True and observed.get("reason") == "invalid-hex-input", "method": "independent malformed-hex rejection"}
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     value = int.from_bytes(payload, "big")
     encoded = ""
     for shift in (18, 12, 6, 0):
         encoded += alphabet[(value >> shift) & 63]
-    return {"ok": observed["decoded_hex"] == payload.hex() and observed["encoded"] == encoded, "method": "manual 24-bit groups"}
+    return {"ok": observed.get("rejected") is False and observed["decoded_hex"] == payload.hex() and observed["encoded"] == encoded, "method": "manual 24-bit groups"}
 
 
 def bad_padding(arguments: dict, observed: dict) -> dict:

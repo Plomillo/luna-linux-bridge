@@ -85,6 +85,22 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
     if expect == "yaml-empty-boundary":
         return completed and observed.get("rejected") is False and observed.get("parsed") == {"name": "", "enabled": False, "count": 0, "items": []} and observed.get("types") == {"name": "str", "enabled": "bool", "count": "int", "items": "list"}
+    if expect == "float32-inexact-identified":
+        return completed and observed.get("rows") == [{"value": 16777217, "exact": False}]
+    if expect == "float32-exact-transition":
+        return completed and observed.get("rows") == [{"value": 16777216, "exact": True}]
+    if expect == "decimal-invalid-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "invalid-decimal"
+    if expect == "known-key-not-absent":
+        return completed and observed == {"absent": False, "null": True, "empty": True}
+    if expect == "nonempty-field-not-empty":
+        return completed and observed == {"absent": True, "null": True, "empty": False}
+    if expect == "base64-invalid-hex-rejected":
+        return completed and observed == {"rejected": True, "reason": "invalid-hex-input"}
+    if expect == "valid-base64-accepted":
+        return completed and observed.get("rejected") is False and observed.get("error_recorded") is False
+    if expect == "unchanged-manifest-stable":
+        return completed and observed.get("reproduced") is True and observed.get("altered_changes") is False
     if expect == "empty-token-stream":
         return completed and observed.get("tokens") == []
     if expect == "increment-negative-rejected":
