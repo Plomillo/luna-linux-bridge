@@ -134,6 +134,7 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect in {"sections-nonoverlap-rejected-as-invalid-fixture", "sections-adjacent-no-overlap"}: return completed and observed.get("overlaps") == [] and observed.get("valid") is True
     if expect == "nested-archive-retains-literal-entry-name": return completed and observed.get("tree", {}).get("children", [{}])[0].get("children", [{}])[0].get("name") == "../../outside"
     if expect == "nested-archive-empty-member": return completed and observed.get("tree", {}).get("children", [{}])[0].get("children") == [{"name": "empty", "size": 0, "data_hex": ""}]
+    if expect in {"forensic-clean-single-byte", "forensic-empty-clean-boundary"}: return completed and observed.get("observations") == [] and observed.get("inferences") == [] and observed.get("conclusion", {}).get("anomaly_count") == 0
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

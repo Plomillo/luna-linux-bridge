@@ -37,6 +37,7 @@ EXPECTED = {
     "MGL5-INF-0094": "protocol_version_diff",
     "MGL5-INF-0096": "section_overlaps",
     "MGL5-INF-0098": "nested_zip_tar",
+    "MGL5-INF-0100": "forensic_report",
 }
 
 

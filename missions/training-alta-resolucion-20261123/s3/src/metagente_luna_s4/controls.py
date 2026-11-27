@@ -68,6 +68,8 @@ def _build() -> None:
     _add("MGL5-INF-0096", "boundary", "section_overlaps", {"sections": [{"name": "a", "offset": 0, "size": 4}, {"name": "b", "offset": 4, "size": 1}]}, "sections-adjacent-no-overlap")
     _add("MGL5-INF-0098", "negative", "nested_zip_tar", {"entries": [{"name": "../../outside", "data_hex": "78"}]}, "nested-archive-retains-literal-entry-name")
     _add("MGL5-INF-0098", "boundary", "nested_zip_tar", {"entries": [{"name": "empty", "data_hex": ""}]}, "nested-archive-empty-member")
+    _add("MGL5-INF-0100", "negative", "forensic_report", {"payload_hex": "00", "declared_size": 1, "stored_crc32": 3523407757, "sections": [{"name": "a", "offset": 0, "size": 1}]}, "forensic-clean-single-byte")
+    _add("MGL5-INF-0100", "boundary", "forensic_report", {"payload_hex": "", "declared_size": 0, "stored_crc32": 0, "sections": []}, "forensic-empty-clean-boundary")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -344,6 +346,7 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect in {"sections-nonoverlap-rejected-as-invalid-fixture", "sections-adjacent-no-overlap"}: return control_completed and observed.get("overlaps") == [] and observed.get("valid") is True
     if expect == "nested-archive-retains-literal-entry-name": return control_completed and observed.get("tree", {}).get("children", [{}])[0].get("children", [{}])[0].get("name") == "../../outside"
     if expect == "nested-archive-empty-member": return control_completed and observed.get("tree", {}).get("children", [{}])[0].get("children") == [{"name": "empty", "size": 0, "data_hex": ""}]
+    if expect in {"forensic-clean-single-byte", "forensic-empty-clean-boundary"}: return control_completed and observed.get("observations") == [] and observed.get("inferences") == [] and observed.get("conclusion", {}).get("anomaly_count") == 0
     if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.

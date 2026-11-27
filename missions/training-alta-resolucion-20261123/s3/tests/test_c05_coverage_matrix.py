@@ -18,14 +18,14 @@ def test_coverage_matrix_accounts_for_every_source_case_without_promoting_missin
         f"MGL5-INF-{number:04d}" for number in range(1, 1001)
     ]
     assert summary["counts"]["source_defined"] == 1000
-    assert summary["counts"]["normal_spec_defined"] == 132
-    assert summary["counts"]["ready_for_execution"] == 132
-    assert summary["counts"]["blocked"] == 868
+    assert summary["counts"]["normal_spec_defined"] == 133
+    assert summary["counts"]["ready_for_execution"] == 133
+    assert summary["counts"]["blocked"] == 867
     assert summary["counts"]["interpreter_candidates"] == 7
     assert summary["counts"]["interpreter_ready"] == 2
     assert summary["counts"]["interpreter_blocked"] == 5
     assert summary["counts"]["interpreter_registered"] == 2
-    assert summary["counts"]["no_normal_spec_and_no_interpreter_candidate"] == 864
+    assert summary["counts"]["no_normal_spec_and_no_interpreter_candidate"] == 863
     assert summary["counts"]["normal_spec_incomplete"] == 0
     assert summary["certification"] == "NOT_PASSED"
 
@@ -36,8 +36,8 @@ def test_coverage_matrix_identifies_missing_plan_and_control_reasons():
 
     assert by_id["MGL5-INF-0001"]["ready_for_execution"] is True
     assert by_id["MGL5-INF-0006"]["ready_for_execution"] is True
-    assert by_id["MGL5-INF-0100"]["ready_for_execution"] is False
-    assert "NORMAL_EXECUTION_SPEC_MISSING" in by_id["MGL5-INF-0100"]["blockers"]
+    assert by_id["MGL5-INF-0054"]["ready_for_execution"] is False
+    assert "NORMAL_EXECUTION_SPEC_MISSING" in by_id["MGL5-INF-0054"]["blockers"]
     assert by_id["MGL5-INF-0103"]["ready_for_execution"] is True
     assert by_id["MGL5-INF-0107"]["ready_for_execution"] is True
     assert by_id["MGL5-INF-0108"]["ready_for_execution"] is True
@@ -47,7 +47,7 @@ def test_coverage_matrix_identifies_missing_plan_and_control_reasons():
     assert by_id["MGL5-INF-0106"]["interpreter_status"] == "BLOCKED"
     assert by_id["MGL5-INF-0106"]["ready_for_execution"] is True
     assert "INTERPRETER_CANDIDATE_NOT_READY" not in by_id["MGL5-INF-0106"]["blockers"]
-    assert summary["blocker_counts"]["NORMAL_EXECUTION_SPEC_MISSING"] == 868
+    assert summary["blocker_counts"]["NORMAL_EXECUTION_SPEC_MISSING"] == 867
 
 
 def test_require_complete_gate_fails_closed_for_incomplete_population(monkeypatch):

@@ -1,6 +1,7 @@
 """Small binary-format probes backed by real standard-library artifacts."""
 from __future__ import annotations
 
+import binascii
 import hashlib
 import io
 import math
@@ -250,3 +251,18 @@ def nested_zip_tar(entries: list[dict]) -> dict:
     with tarfile.open(fileobj=io.BytesIO(nested), mode="r:") as archive:
         files = [{"name": member.name, "size": member.size, "data_hex": archive.extractfile(member).read().hex()} for member in archive.getmembers() if member.isfile()]
     return {"tree": {"name": "outer.zip", "children": [{"name": "inner.tar", "children": files}]}, "nested_sha256": hashlib.sha256(nested).hexdigest()}
+
+
+def forensic_report(payload_hex: str, declared_size: int, stored_crc32: int, sections: list[dict]) -> dict:
+    raw = bytes.fromhex(payload_hex)
+    anomalies = []
+    if declared_size != len(raw):
+        anomalies.append({"code": "DECLARED_SIZE_MISMATCH", "offset": 0, "observed": declared_size, "actual": len(raw)})
+    actual_crc = binascii.crc32(raw) & 0xFFFFFFFF
+    if stored_crc32 != actual_crc:
+        anomalies.append({"code": "CRC_MISMATCH", "offset": len(raw), "stored": stored_crc32, "computed": actual_crc})
+    for index, left in enumerate(sections):
+        for right in sections[index + 1:]:
+            if max(left["offset"], right["offset"]) < min(left["offset"] + left["size"], right["offset"] + right["size"]):
+                anomalies.append({"code": "SECTION_OVERLAP", "offset": max(left["offset"], right["offset"]), "sections": [left["name"], right["name"]]})
+    return {"observations": anomalies, "inferences": [{"anomaly": item["code"], "confidence": "structural"} for item in anomalies], "conclusion": {"anomaly_count": len(anomalies), "integrity": "INCOMPLETE" if anomalies else "NO_ANOMALY_DETECTED"}}

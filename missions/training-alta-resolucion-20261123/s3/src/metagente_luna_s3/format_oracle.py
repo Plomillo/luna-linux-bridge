@@ -169,3 +169,22 @@ def nested_zip_tar_oracle(arguments: dict, observed: dict) -> dict:
     tree = observed.get("tree", {})
     children = tree.get("children", [])
     return {"ok": tree.get("name") == "outer.zip" and len(children) == 1 and children[0].get("name") == "inner.tar" and children[0].get("children") == expected_files and bool(observed.get("nested_sha256")), "method": "source-entry equality through expected parent-child container path"}
+
+
+def forensic_report_oracle(arguments: dict, observed: dict) -> dict:
+    raw = bytes.fromhex(arguments["payload_hex"])
+    expected = []
+    if arguments["declared_size"] != len(raw):
+        expected.append({"code": "DECLARED_SIZE_MISMATCH", "offset": 0, "observed": arguments["declared_size"], "actual": len(raw)})
+    checksum = zlib.crc32(raw) & 0xFFFFFFFF
+    if arguments["stored_crc32"] != checksum:
+        expected.append({"code": "CRC_MISMATCH", "offset": len(raw), "stored": arguments["stored_crc32"], "computed": checksum})
+    sections = arguments["sections"]
+    for index, left in enumerate(sections):
+        for right in sections[index + 1:]:
+            start, end = max(left["offset"], right["offset"]), min(left["offset"] + left["size"], right["offset"] + right["size"])
+            if start < end:
+                expected.append({"code": "SECTION_OVERLAP", "offset": start, "sections": [left["name"], right["name"]]})
+    inference_rows = [{"anomaly": item["code"], "confidence": "structural"} for item in expected]
+    conclusion = {"anomaly_count": len(expected), "integrity": "INCOMPLETE" if expected else "NO_ANOMALY_DETECTED"}
+    return {"ok": observed.get("observations") == expected and observed.get("inferences") == inference_rows and observed.get("conclusion") == conclusion, "method": "independent size, CRC32, and interval reconstruction"}
