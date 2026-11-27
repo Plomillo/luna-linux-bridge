@@ -32,7 +32,7 @@ def test_persist_run_writes_byte_hashed_artifacts_without_certifying(tmp_path):
     assert result["execution_status"] == "PASS"
     assert set(result["artifacts"]) == {
         "fixture", "environment", "procedure", "stdout",
-        "stderr", "observed", "oracle", "metrics", "oracle_source", "producer_source",
+        "stderr", "observed", "oracle", "metrics", "oracle_source", "producer_source", "control_spec",
     }
     for artifact in result["artifacts"].values():
         path = tmp_path / artifact["path"]
