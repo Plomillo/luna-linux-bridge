@@ -71,6 +71,24 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     """Independent control adjudication; unknown expectation IDs fail closed."""
     if not isinstance(observed, dict):
         return False
+    if expect == "empty-token-stream":
+        return lifecycle_status == "EXECUTED" and observed.get("tokens") == []
+    if expect == "increment-negative-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "increment-zero-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("completed") == 0 and observed.get("failed") == 0 and observed.get("ids") == []
+    if expect == "request-negative-count-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "request-single-success-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("availability") == 1.0 and observed.get("successes") == 1 and observed.get("failures") == 0 and observed.get("total") == 1
+    if expect == "sqrt-negative-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "sqrt-zero-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("estimate") == 0 and observed.get("residual") == 0
+    if expect == "sum-negative-count-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "sum-zero-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("naive") == 1.0 and observed.get("kahan") == 1.0
     if expect == "negative-length-no-read":
         return lifecycle_status == "EXECUTED" and observed.get("out_of_range") is True and observed.get("reads") == 0 and observed.get("length") == 0
     if expect == "zero-length-no-read":
