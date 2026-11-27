@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ipaddress
+import itertools
 import json
 import math
 import os
@@ -135,7 +136,7 @@ def linear_scans(sizes: list[int] | None = None) -> dict:
     if (
         not isinstance(sizes, list) or len(sizes) < 2
         or any(not isinstance(size, int) or isinstance(size, bool) or size < 1 for size in sizes)
-        or any(left >= right for left, right in zip(sizes, sizes[1:]))
+        or any(left >= right for left, right in itertools.pairwise(sizes))
     ):
         return {"accepted": False, "rejected": True, "reason": "sizes must be positive and strictly increasing"}
     counts = []
