@@ -71,6 +71,24 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     """Independent control adjudication; unknown expectation IDs fail closed."""
     if not isinstance(observed, dict):
         return False
+    if expect == "two-records":
+        return lifecycle_status == "EXECUTED" and observed.get("records") == 2 and observed.get("fields", [None])[0] == "a"
+    if expect == "predefined-entity-set":
+        return lifecycle_status == "EXECUTED" and observed.get("text") == "<>&" and observed.get("external_expanded") is False
+    if expect == "self-closing-accepted":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False
+    if expect == "all-truncated":
+        return lifecycle_status == "EXECUTED" and observed.get("all_rejected") is True and len(observed.get("rejected_lengths", [])) == 4
+    if expect == "empty-oversize-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True and observed.get("allocated_declared_length") is False
+    if expect == "field-present":
+        return lifecycle_status == "EXECUTED" and observed.get("absent") is False and observed.get("null") is True and observed.get("empty") is True
+    if expect == "empty-payload-roundtrip":
+        return lifecycle_status == "EXECUTED" and observed.get("match") is True and observed.get("compressed_differs") is True
+    if expect == "empty-stream-corrupt":
+        return lifecycle_status == "EXECUTED" and observed.get("corruption_detected") is True and observed.get("integrity_claimed") is False
+    if expect == "unknown-signature":
+        return lifecycle_status == "EXECUTED" and observed.get("detected") == "unknown" and observed.get("extension_matches_content") is False
     if expect == "different-text":
         return lifecycle_status == "EXECUTED" and observed.get("recovered") not in {
             "Luna-2026", "computación, información, ñandú"
