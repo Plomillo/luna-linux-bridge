@@ -38,7 +38,7 @@ def test_controls_that_were_defined_are_accepted():
     # The runner must execute every currently authored control case; the
     # registry is the authoritative count, not a stale historical constant.
     assert {row["case_id"] for row in defined} == set(CONTROLS)
-    assert len(defined) == len(CONTROLS) == 95
+    assert len(defined) == len(CONTROLS) == 99
 
 def test_yaml_type_plan_and_independent_oracle_cover_negative_and_boundary_inputs():
     from metagente_luna_s3.d01_exec import yaml_types
@@ -423,3 +423,40 @@ def test_d01_numeric_base64_null_and_manifest_controls_have_independent_adjudica
     assert decimal_literal(invalid_decimal, decimal_text(**invalid_decimal))["ok"] is True
     invalid_hex = {"payload_hex": "0g"}
     assert b64_table(invalid_hex, base64_bytes(**invalid_hex))["ok"] is True
+
+
+
+def test_d01_protobuf_schema_compatibility_and_cbor_roundtrip_cases():
+    from metagente_luna_s3.more_exec import cbor_roundtrip, protobuf_old_reader, schema_migrate, schema_unknown_field
+    from metagente_luna_s3.more_oracle import cbor_vector_oracle, protobuf_wire_oracle, schema_v2_oracle, unknown_field_oracle
+    from metagente_luna_s4.controls import accepts
+    from metagente_luna_s4.independent_validator import _independent_control_accepts
+
+    protobuf = {"wire_hex": "080712036e6577"}
+    observed_protobuf = protobuf_old_reader(**protobuf)
+    assert protobuf_wire_oracle(protobuf, observed_protobuf)["ok"] is True
+    assert observed_protobuf["unknown_fields"] == [2]
+    protobuf_negative = protobuf_old_reader("08071205")
+    assert accepts("protobuf-malformed-rejected", protobuf_negative, "EXECUTED") is True
+    assert _independent_control_accepts("protobuf-malformed-rejected", protobuf_negative, "EXECUTED") is True
+
+    migration = {"document": {"version": 1, "name": "Luna", "count": 3}}
+    assert schema_v2_oracle(migration, schema_migrate(**migration))["ok"] is True
+    schema_negative = schema_migrate({"version": 0, "name": "Luna", "count": 3})
+    assert accepts("schema-v0-rejected", schema_negative, "EXECUTED") is True
+    assert _independent_control_accepts("schema-v0-rejected", schema_negative, "EXECUTED") is True
+
+    unknown = {"record": {"name": "Luna", "version": 2, "extra": "future"}, "known_fields": ["name", "version"]}
+    assert unknown_field_oracle(unknown, schema_unknown_field(**unknown))["ok"] is True
+    unknown_negative = schema_unknown_field({"name": 7, "version": 2, "extra": "future"}, ["name", "version"])
+    assert accepts("known-field-type-rejected", unknown_negative, "EXECUTED") is True
+    assert _independent_control_accepts("known-field-type-rejected", unknown_negative, "EXECUTED") is True
+
+    document = {"name": "Luna", "count": 2, "enabled": True, "items": [1, None, False]}
+    cbor_args = {"document": document}
+    cbor_observed = cbor_roundtrip(**cbor_args)
+    assert cbor_vector_oracle(cbor_args, cbor_observed)["ok"] is True
+    cbor_negative = cbor_roundtrip({1: "unsupported"})
+    assert accepts("cbor-unsupported-key-rejected", cbor_negative, "EXECUTED") is True
+    assert _independent_control_accepts("cbor-unsupported-key-rejected", cbor_negative, "EXECUTED") is True
+    assert cbor_vector_oracle({"document": {}}, cbor_roundtrip({}))["ok"] is True

@@ -225,6 +225,14 @@ def _build() -> None:
     _add("MGL5-INF-0033", "boundary", "yaml_types", {"text": "name: ''\nenabled: false\ncount: 0\nitems: []\n"}, "yaml-empty-boundary")
     _add("MGL5-INF-0034", "negative", "yaml_ambiguous", {"text": "flag: yes\n  broken: x\n", "schema_version": "1.1"}, "yaml-invalid-rejected")
     _add("MGL5-INF-0034", "boundary", "yaml_ambiguous", {"text": "flag: yes\ndate: 2026-01-02\n", "schema_version": "1.2"}, "yaml12-ambiguous-strings")
+    _add("MGL5-INF-0035", "negative", "protobuf_old_reader", {"wire_hex": "08071205"}, "protobuf-malformed-rejected")
+    _add("MGL5-INF-0035", "boundary", "protobuf_old_reader", {"wire_hex": "0807"}, "protobuf-no-unknown-fields")
+    _add("MGL5-INF-0039", "negative", "schema_migrate", {"document": {"version": 0, "name": "Luna", "count": 3}}, "schema-v0-rejected")
+    _add("MGL5-INF-0039", "boundary", "schema_migrate", {"document": {"version": 1, "name": "", "count": 0}}, "schema-v1-empty-migrates")
+    _add("MGL5-INF-0040", "negative", "schema_unknown_field", {"record": {"name": 7, "version": 2, "extra": "future"}, "known_fields": ["name", "version"]}, "known-field-type-rejected")
+    _add("MGL5-INF-0040", "boundary", "schema_unknown_field", {"record": {"name": "Luna", "version": 2}, "known_fields": ["name", "version"]}, "no-unknown-fields")
+    _add("MGL5-INF-0049", "negative", "cbor_roundtrip", {"document": {1: "unsupported"}}, "cbor-unsupported-key-rejected")
+    _add("MGL5-INF-0049", "boundary", "cbor_roundtrip", {"document": {}}, "cbor-empty-map-roundtrip")
 
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
@@ -238,6 +246,22 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return control_completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
     if expect == "yaml12-ambiguous-strings":
         return control_completed and observed.get("rejected") is False and observed.get("schema_version") == "1.2" and observed.get("parsed") == {"flag": "yes", "date": "2026-01-02"} and observed.get("types") == {"flag": "str", "date": "str"}
+    if expect == "protobuf-malformed-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "truncated-length-delimited"
+    if expect == "protobuf-no-unknown-fields":
+        return control_completed and observed.get("accepted") is True and observed.get("unknown_fields") == [] and observed.get("known_fields") == {"1": 7}
+    if expect == "schema-v0-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-version"
+    if expect == "schema-v1-empty-migrates":
+        return control_completed and observed.get("rejected") is False and observed.get("document") == {"version": 2, "name": "", "count": 0, "enabled": True}
+    if expect == "known-field-type-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "known-field-type"
+    if expect == "no-unknown-fields":
+        return control_completed and observed.get("accepted") is True and observed.get("known") == {"name": "Luna", "version": 2} and observed.get("unknown") == {}
+    if expect == "cbor-unsupported-key-rejected":
+        return control_completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-map-key"
+    if expect == "cbor-empty-map-roundtrip":
+        return control_completed and observed.get("accepted") is True and observed.get("wire_hex") == "a0" and observed.get("decoded") == {} and observed.get("same_types") is True
     if expect == "yaml-rejected":
         return control_completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
     if expect == "yaml-empty-boundary":

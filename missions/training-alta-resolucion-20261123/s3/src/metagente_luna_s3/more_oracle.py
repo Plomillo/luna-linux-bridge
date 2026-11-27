@@ -208,3 +208,47 @@ def decimal_gap(arguments: dict, observed: dict) -> dict:
 
 def zlib_available() -> bool:
     return zlib.compress(b"a") != b"a"
+
+
+def protobuf_wire_oracle(arguments: dict, observed: dict) -> dict:
+    vectors = {
+        "080712036e6577": {"rejected": False, "accepted": True, "known_fields": {"1": 7}, "unknown_fields": [2], "consumed": 7},
+        "0807": {"rejected": False, "accepted": True, "known_fields": {"1": 7}, "unknown_fields": [], "consumed": 2},
+        "08071205": {"rejected": True, "reason": "truncated-length-delimited"},
+    }
+    expected = vectors.get(arguments["wire_hex"])
+    return {"ok": expected is not None and observed == expected, "method": "frozen protobuf wire-format vectors; independent of runtime decoder"}
+
+
+def schema_v2_oracle(arguments: dict, observed: dict) -> dict:
+    source = arguments["document"]
+    if source == {"version": 1, "name": "Luna", "count": 3}:
+        expected = {"rejected": False, "migrated": True, "document": {"version": 2, "name": "Luna", "count": 3, "enabled": True}, "invariants": {"name": "Luna", "count": 3}}
+    elif source == {"version": 1, "name": "", "count": 0}:
+        expected = {"rejected": False, "migrated": True, "document": {"version": 2, "name": "", "count": 0, "enabled": True}, "invariants": {"name": "", "count": 0}}
+    else:
+        expected = {"rejected": True, "reason": "unsupported-version"}
+    return {"ok": observed == expected, "method": "frozen v1-to-v2 migration vectors and invariant table"}
+
+
+def unknown_field_oracle(arguments: dict, observed: dict) -> dict:
+    record = arguments["record"]
+    known_fields = arguments["known_fields"]
+    if record == {"name": "Luna", "version": 2, "extra": "future"} and known_fields == ["name", "version"]:
+        expected = {"rejected": False, "accepted": True, "known": {"name": "Luna", "version": 2}, "unknown": {"extra": "future"}, "policy": "PRESERVE_UNKNOWN_SEPARATELY"}
+    elif record == {"name": "Luna", "version": 2} and known_fields == ["name", "version"]:
+        expected = {"rejected": False, "accepted": True, "known": {"name": "Luna", "version": 2}, "unknown": {}, "policy": "PRESERVE_UNKNOWN_SEPARATELY"}
+    else:
+        expected = {"rejected": True, "reason": "known-field-type"}
+    return {"ok": observed == expected, "method": "frozen known/unknown field partition and validation vectors"}
+
+
+def cbor_vector_oracle(arguments: dict, observed: dict) -> dict:
+    document = arguments["document"]
+    if document == {"name": "Luna", "count": 2, "enabled": True, "items": [1, None, False]}:
+        expected = {"rejected": False, "accepted": True, "wire_hex": "a4646e616d65644c756e6165636f756e7402656974656d738301f6f467656e61626c6564f5", "decoded": document, "same_types": True}
+    elif document == {}:
+        expected = {"rejected": False, "accepted": True, "wire_hex": "a0", "decoded": {}, "same_types": True}
+    else:
+        expected = {"rejected": True, "reason": "unsupported-map-key"}
+    return {"ok": observed == expected, "method": "fixed canonical CBOR vectors independent of encoder/decoder"}

@@ -81,6 +81,22 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
     if expect == "yaml12-ambiguous-strings":
         return completed and observed.get("rejected") is False and observed.get("schema_version") == "1.2" and observed.get("parsed") == {"flag": "yes", "date": "2026-01-02"} and observed.get("types") == {"flag": "str", "date": "str"}
+    if expect == "protobuf-malformed-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "truncated-length-delimited"
+    if expect == "protobuf-no-unknown-fields":
+        return completed and observed.get("accepted") is True and observed.get("unknown_fields") == [] and observed.get("known_fields") == {"1": 7}
+    if expect == "schema-v0-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-version"
+    if expect == "schema-v1-empty-migrates":
+        return completed and observed.get("rejected") is False and observed.get("document") == {"version": 2, "name": "", "count": 0, "enabled": True}
+    if expect == "known-field-type-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "known-field-type"
+    if expect == "no-unknown-fields":
+        return completed and observed.get("accepted") is True and observed.get("known") == {"name": "Luna", "version": 2} and observed.get("unknown") == {}
+    if expect == "cbor-unsupported-key-rejected":
+        return completed and observed.get("rejected") is True and observed.get("reason") == "unsupported-map-key"
+    if expect == "cbor-empty-map-roundtrip":
+        return completed and observed.get("accepted") is True and observed.get("wire_hex") == "a0" and observed.get("decoded") == {} and observed.get("same_types") is True
     if expect == "yaml-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
     if expect == "yaml-empty-boundary":
