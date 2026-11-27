@@ -10,7 +10,7 @@ permissions:
 jobs:
   seed-0254-container:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
     defaults:
       run:
         working-directory: missions/training-alta-resolucion-20261123/s3
@@ -60,6 +60,8 @@ jobs:
           PY
       - name: Build exact 1,000-case source-bound dossier population
         run: python scripts/build_c05_source_backlog.py
+      - name: Build exact per-case blocker inventory
+        run: python scripts/build_c05_coverage_matrix.py
       - name: Compile only existing authored plans with both controls
         run: |
           python scripts/build_c05_executable_plans.py \
