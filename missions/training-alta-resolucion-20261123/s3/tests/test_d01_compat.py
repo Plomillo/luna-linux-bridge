@@ -23,4 +23,4 @@ def test_parameterized_ieee754_cases_preserve_normal_and_edge_vectors():
     for case_id in ("MGL5-INF-0013", "MGL5-INF-0014", "MGL5-INF-0015"):
         spec = specs[case_id]
         observed = run(spec["capability_id"], spec["arguments"])
-        assert ORACLES[spec["capability_id"]](spec["arguments"], observed)["ok"] is True
+        assert ORACLES[REGISTRY[spec["capability_id"]].oracle_id](spec["arguments"], observed)["ok"] is True
