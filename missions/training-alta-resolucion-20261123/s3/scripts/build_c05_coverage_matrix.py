@@ -27,7 +27,7 @@ def build() -> tuple[list[dict], dict]:
     source_hash = hashlib.sha256(raw).hexdigest()
     source_ids = {
         match.group(1)
-        for match in re.finditer(r"(?m)^\\[(MGL5-INF-\\d{4})\\]", text)
+        for match in re.finditer(r"(?m)^\[(MGL5-INF-\d{4})\]", text)
     }
     specs = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5
     by_id: dict[str, dict] = {}
@@ -108,7 +108,7 @@ def main() -> int:
     for target in (OUTPUT, SUMMARY):
         if target.exists():
             raise SystemExit(f"refusing to overwrite existing coverage artifact: {target}")
-    OUTPUT.write_text("".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\\n" for row in rows), encoding="utf-8")
+    OUTPUT.write_text("".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
     SUMMARY.write_text(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
     return 0
