@@ -29,7 +29,7 @@ def _write_bytes(path: Path, data: bytes) -> dict:
 
 
 def _json_bytes(value: dict) -> bytes:
-    return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\\n").encode("utf-8")
+    return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
 
 
 def persist_run(record: dict, arguments: dict, evidence_root: str | Path) -> dict:
