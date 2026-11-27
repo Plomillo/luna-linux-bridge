@@ -145,9 +145,9 @@ jobs:
           assert plan["not_in_plan_set"] == 923, plan
           assert report["expected"] == 1000, report
           assert report["rows"] == 1000, report
-          assert report["authentic_results"] == 54, report
-          assert report["not_run"] == 946, report
-          assert len(report["rejected"]) == 946, report
+          assert report["authentic_results"] == 77, report
+          assert report["not_run"] == 923, report
+          assert len(report["rejected"]) == 923, report
           assert all(item["reasons"] == ["case-not-executed"] for item in report["rejected"]), report
           assert report["c05_passed"] is False, report
           assert report["c05_status"] == "NOT_PASSED", report
