@@ -380,6 +380,16 @@ def main(argv: list[str]) -> int:
         "not_run": report["not_run"],
         "rejected": len(report["rejected"]),
         "execution_failures": execution_failures,
+        "validation_rejections": len(report["rejected"]),
+        "validation_rejection_reasons": {
+            reason: sum(reason in item.get("reasons", []) for item in report["rejected"])
+            for reason in sorted({
+                reason
+                for item in report["rejected"]
+                for reason in item.get("reasons", [])
+            })
+        },
+        "rejected_case_details": report["rejected"],
         "ledger": str(ledger_path),
         "report": str(report_path),
         "blocker_inventory": str(blocker_path),
