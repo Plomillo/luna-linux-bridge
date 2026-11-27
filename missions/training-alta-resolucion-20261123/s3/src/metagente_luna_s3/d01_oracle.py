@@ -186,3 +186,17 @@ def yaml_types_oracle(arguments: dict, observed: dict) -> dict:
     else:
         ok = False
     return {"ok": ok, "method": "fixed independent semantic fixture table"}
+
+ 
+def yaml_ambiguous_oracle(arguments: dict, observed: dict) -> dict:
+    """Fixed cross-version YAML scalar table, independent of the parser."""
+    version = arguments["schema_version"]
+    if arguments["text"] != "flag: yes\ndate: 2026-01-02\n":
+        ok = observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
+    elif version == "1.1":
+        ok = observed.get("rejected") is False and observed.get("schema_version") == "1.1" and observed.get("parsed") == {"flag": True, "date": "2026-01-02"} and observed.get("types") == {"flag": "bool", "date": "date"}
+    elif version == "1.2":
+        ok = observed.get("rejected") is False and observed.get("schema_version") == "1.2" and observed.get("parsed") == {"flag": "yes", "date": "2026-01-02"} and observed.get("types") == {"flag": "str", "date": "str"}
+    else:
+        ok = observed.get("rejected") is True and observed.get("reason") == "unsupported-yaml-version"
+    return {"ok": ok, "method": "fixed YAML 1.1 versus 1.2 scalar-resolution table"}
