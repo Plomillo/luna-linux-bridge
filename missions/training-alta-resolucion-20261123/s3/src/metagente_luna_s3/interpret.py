@@ -76,8 +76,12 @@ def interpret(instruction: str) -> Interpretation:
         return _blocked(text, "descending-sort", ["input-integers"])
     if "edad" in folded and "ordenar" in folded:
         return _ready(text, "stable_ages", [Argument(name="records", value=_FIXTURE["stable-ages"]["records"], provenance=Provenance.FIXTURE)])
-    if "push" in folded and "peek" in folded and not re.search(r"push:\d+", folded):
-        return _blocked(text, "stack", ["predefined-sequence"])
+    if "push" in folded and "peek" in folded:
+        return _ready(
+            text,
+            "stack_sequence",
+            [Argument(name="steps", value=_FIXTURE["stack-script"]["steps"], provenance=Provenance.FIXTURE)],
+        )
     if "grafo" in folded or "seis nodos" in folded:
         return _blocked(text, "shortest-path", ["edges", "endpoints"])
     if "matriz" in folded or "determinante" in folded or "2×3" in text or "2x3" in folded:
