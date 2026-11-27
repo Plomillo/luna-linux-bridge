@@ -100,3 +100,19 @@ def test_new_source_grounded_controls_are_independently_adjudicated():
     for expect, observed, status in cases:
         assert _independent_control_accepts(expect, observed, status) is True, expect
         assert _independent_control_accepts(expect, observed, "BLOCKED") is False, expect
+
+
+def test_ieee754_and_float_gap_controls_have_independent_adjudication():
+    cases = [
+        ("nan-finite-control", {"is_nan": False, "equals_itself": True, "ordinary": True}),
+        ("nan-negative-payload-boundary", {"is_nan": True, "equals_itself": False, "negative_sign": True}),
+        ("inf-finite-control", {"positive_sign": False, "negative_sign": False}),
+        ("inf-negative-boundary", {"positive_sign": False, "negative_sign": True}),
+        ("subnormal-normal-control", {"is_subnormal": False, "float32_bits_hex": "00800000"}),
+        ("subnormal-zero-boundary", {"is_subnormal": False, "float32_bits_hex": "00000000"}),
+        ("float-exact-control", {"equal": True, "difference": 0, "decimal_exact": True}),
+        ("float-rounding-boundary", {"equal": True, "difference": 0, "decimal_exact": False}),
+    ]
+    for expect, observed in cases:
+        assert _independent_control_accepts(expect, observed, "EXECUTED") is True, expect
+        assert _independent_control_accepts(expect, observed, "BLOCKED") is False, expect
