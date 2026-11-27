@@ -96,3 +96,78 @@ def test_archive_forensics_capabilities_reject_untyped_extra_arguments():
         schema = REGISTRY[capability].input_schema
         assert schema["type"] == "object"
         assert schema["additionalProperties"] is False
+
+def _rehash_dex_fixture(payload: bytearray) -> bytes:
+    import hashlib
+    import struct
+    import zlib
+
+    payload[12:32] = hashlib.sha1(payload[32:]).digest()
+    struct.pack_into("<I", payload, 8, zlib.adler32(payload[12:]) & 0xffffffff)
+    return bytes(payload)
+
+
+def test_dex_table_parser_reconstructs_strings_and_all_declared_table_shapes():
+    from metagente_luna_s3.format_exec import dex_inspect
+    from metagente_luna_s3.format_oracle import dex_tables_oracle
+    from metagente_luna_s4.batch2 import _DEX_HEX
+
+    arguments = {"payload_hex": _DEX_HEX}
+    observed = dex_inspect(_DEX_HEX, "tables")
+    assert observed["rejected"] is False
+    assert observed["strings"] == ["LExample;", "V", "run"]
+    assert observed["type_string_indices"] == [0]
+    assert observed["proto_references"] == [{"shorty_idx": 1, "return_type_idx": 0, "parameters_off": 0, "parameter_type_indices": []}]
+    assert observed["field_references"] == []
+    assert observed["method_references"] == [{"class_idx": 0, "proto_idx": 0, "name_idx": 2}]
+    assert observed["indices_valid"] is True
+    assert dex_tables_oracle(arguments, observed)["ok"] is True
+
+
+def test_dex_parser_rejects_data_section_overrun_even_with_recomputed_integrity():
+    import struct
+    from metagente_luna_s3.format_exec import dex_inspect
+    from metagente_luna_s4.batch2 import _DEX_FIXTURE
+
+    malformed = bytearray(_DEX_FIXTURE)
+    struct.pack_into("<I", malformed, 104, len(malformed) + 1)
+    payload = _rehash_dex_fixture(malformed).hex()
+    observed = dex_inspect(payload, "tables")
+    assert observed == {"rejected": True, "reason": "data_section_out_of_bounds"}
+
+
+def test_dex_parser_rejects_string_data_pointer_into_header():
+    import struct
+    from metagente_luna_s3.format_exec import dex_inspect
+    from metagente_luna_s4.batch2 import _DEX_FIXTURE
+
+    malformed = bytearray(_DEX_FIXTURE)
+    string_ids_off = struct.unpack_from("<I", malformed, 60)[0]
+    struct.pack_into("<I", malformed, string_ids_off, 56)
+    observed = dex_inspect(_rehash_dex_fixture(malformed).hex(), "tables")
+    assert observed == {"rejected": True, "reason": "string_data_offset_out_of_bounds"}
+
+
+def test_dex_parser_checks_uleb128_utf16_length_and_terminator():
+    import struct
+    from metagente_luna_s3.format_exec import dex_inspect
+    from metagente_luna_s4.batch2 import _DEX_FIXTURE
+
+    malformed = bytearray(_DEX_FIXTURE)
+    data_off = struct.unpack_from("<I", malformed, 108)[0]
+    malformed[data_off] = 8  # The string contains nine UTF-16 code units.
+    observed = dex_inspect(_rehash_dex_fixture(malformed).hex(), "tables")
+    assert observed == {"rejected": True, "reason": "string_data_encoding_or_length_invalid"}
+
+
+def test_dex_parser_bounds_proto_parameter_type_list():
+    import struct
+    from metagente_luna_s3.format_exec import dex_inspect
+    from metagente_luna_s4.batch2 import _DEX_FIXTURE
+
+    malformed = bytearray(_DEX_FIXTURE)
+    proto_ids_off = struct.unpack_from("<I", malformed, 76)[0]
+    data_end = struct.unpack_from("<I", malformed, 104)[0] + struct.unpack_from("<I", malformed, 108)[0]
+    struct.pack_into("<I", malformed, proto_ids_off + 8, data_end + 4)
+    observed = dex_inspect(_rehash_dex_fixture(malformed).hex(), "tables")
+    assert observed == {"rejected": True, "reason": "proto_parameters_offset_out_of_bounds"}
