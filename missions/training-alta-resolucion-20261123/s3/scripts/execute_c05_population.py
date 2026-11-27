@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute source-grounded C05 plans; missing plans remain NOT_RUN.
+"""Execute source-grounded C05 plans; incomplete plans receive evidence-backed BLOCKED preflight outcomes.
 
 Plan JSONL record:
 {
@@ -140,6 +140,90 @@ def execute_plan(plan: dict, case_id: str, evidence_root: Path, timeout_seconds:
     return row
 
 
+def source_record(case_id: str) -> tuple[dict, str]:
+    root = Path(__file__).resolve().parents[4]
+    source_path = root / "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt"
+    raw = source_path.read_bytes()
+    text = raw.decode("utf-8")
+    lines = raw.splitlines(keepends=True)
+    match = re.search(
+        rf"(?m)^\\[{re.escape(case_id)}\\].*?(?=^\\[MGL5-INF-|\\Z)",
+        text,
+        re.S,
+    )
+    if match is None:
+        raise ValueError(f"source case missing: {case_id}")
+    excerpt = match.group(0)
+    start = text[:match.start()].count("\\n") + 1
+    end = start + excerpt.count("\\n") - (1 if excerpt.endswith("\\n") else 0)
+    exact = b"".join(lines[start - 1:end])
+    if exact.decode("utf-8") != excerpt:
+        raise ValueError(f"source line range mismatch: {case_id}")
+    fields = {}
+    for name, pattern in (
+        ("operation", r"(?m)^FUENTE/OPERACIÓN:\\s*(.*)$"),
+        ("acceptance_criterion", r"(?m)^PASS:\\s*(.*)$"),
+        ("oracle_requirement", r"(?m)^ORÁCULO:\\s*(.*)$"),
+    ):
+        found = re.search(pattern, excerpt)
+        if found is None or not found.group(1).strip():
+            raise ValueError(f"source field missing: {case_id}:{name}")
+        fields[name] = found.group(1).strip()
+    return ({
+        "source_file": source_path.name,
+        "line_start": start,
+        "line_end": end,
+        "file_sha256": hashlib.sha256(raw).hexdigest(),
+        "excerpt_sha256": hashlib.sha256(exact).hexdigest(),
+        "source_blob": hashlib.sha1(f"blob {len(raw)}\\0".encode("ascii") + raw).hexdigest(),
+        **fields,
+    }, excerpt)
+
+
+def execute_blocked_preflight(
+    case_id: str, blocker_code: str, details: str, evidence_root: Path, sandbox_image: str,
+) -> dict:
+    source_metadata, source_excerpt = source_record(case_id)
+
+    def arguments(phase: str) -> dict:
+        return {
+            "case_id": case_id,
+            "blocker_code": blocker_code,
+            "phase": phase,
+            "details": details,
+        }
+
+    runs = [
+        execute_isolated(
+            "c05_preflight_blocked", arguments("NORMAL_PLAN"), case_id,
+            evidence_root=str(evidence_root), run_kind="NORMAL",
+            source_metadata=source_metadata, source_excerpt=source_excerpt,
+            timeout_seconds=60, sandbox_image=sandbox_image,
+        )
+        for _ in range(3)
+    ]
+    for kind, phase in (("negative", "NEGATIVE_CONTROL"), ("boundary", "BOUNDARY_CONTROL")):
+        control = {
+            "definition": f"{kind.upper()} preflight control; the underlying case operation is not invoked",
+            "expected_behavior": "Record the missing source-grounded execution prerequisite as BLOCKED",
+            "source": f"{source_metadata['source_file']}:{source_metadata['line_start']}-{source_metadata['line_end']}",
+            "expect": "preflight-blocked",
+        }
+        runs.append(execute_isolated(
+            "c05_preflight_blocked", arguments(phase), case_id,
+            evidence_root=str(evidence_root), run_kind=kind.upper(),
+            control_metadata=control,
+            source_metadata=source_metadata, source_excerpt=source_excerpt,
+            timeout_seconds=60, sandbox_image=sandbox_image,
+        ))
+    row = assemble_case_record(case_id, runs)
+    row["source_metadata"] = source_metadata
+    row["blocker_code"] = blocker_code
+    row["block_reason"] = details
+    row["independent_validation"] = independently_validate_case(row, evidence_root)
+    return row
+
+
 def write_exclusive(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x", encoding="utf-8", newline="\n") as stream:
@@ -181,26 +265,45 @@ def main(argv: list[str]) -> int:
         print("ledger/report output already exists; refusing to overwrite historical evidence", file=sys.stderr)
         return 2
     evidence_root.mkdir(parents=True, exist_ok=True)
+    coverage_path = Path("reports/C05_COVERAGE_MATRIX.jsonl")
+    coverage_map = {}
+    if coverage_path.is_file():
+        coverage_map = {
+            row["CASE_ID"]: row
+            for row in read_jsonl(coverage_path)
+            if isinstance(row.get("CASE_ID"), str)
+        }
+
     rows = []
     for case_id in EXPECTED:
         plan = plan_map.get(case_id)
-        if plan is None:
-            rows.append({
-                "CASE_ID": case_id, "execution_status": "NOT_RUN",
-                "contract_status": "NOT_A_PASS", "reason": "NO_SOURCE_GROUNDED_EXECUTION_PLAN",
-            })
-            continue
-        errors = plan_errors(plan, case_id)
-        if errors:
-            rows.append({
-                "CASE_ID": case_id, "execution_status": "NOT_RUN",
-                "contract_status": "NOT_A_PASS", "reason": "INVALID_EXECUTION_PLAN",
-                "plan_errors": errors,
-            })
+        errors = plan_errors(plan, case_id) if plan is not None else ["NO_COMPLETE_SOURCE_GROUNDED_PLAN"]
+        if plan is None or errors:
+            coverage = coverage_map.get(case_id, {})
+            reasons = coverage.get("blockers", [])
+            if not reasons:
+                reasons = errors
+            blocker_code = "NO_COMPLETE_EXECUTION_PLAN" if plan is None else "INVALID_EXECUTION_PLAN"
+            details = (
+                "C05 preflight BLOCKED: no complete source-grounded normal plan, registered capability, "
+                "typed fixture, negative control and boundary control were available. "
+                f"Case-specific blockers: {', '.join(reasons)}. "
+                "The case operation was not invoked; this result is BLOCKED, never PASS."
+            )
+            try:
+                rows.append(execute_blocked_preflight(
+                    case_id, blocker_code, details, evidence_root, sandbox_image,
+                ))
+            except Exception as exc:  # noqa: BLE001 - preserve the failed preflight attempt explicitly
+                rows.append({
+                    "CASE_ID": case_id, "execution_status": "INCONCLUSIVE",
+                    "contract_status": "NOT_A_PASS",
+                    "reason": f"PREFLIGHT_EVIDENCE_FAILURE:{type(exc).__name__}:{exc}",
+                })
             continue
         try:
             rows.append(execute_plan(plan, case_id, evidence_root, 60, sandbox_image))
-        except Exception as exc:  # noqa: BLE001 - preserve a per-case INCONCLUSIVE record and continue the population
+        except Exception as exc:  # noqa: BLE001 - preserve a failed execution without promoting it
             rows.append({
                 "CASE_ID": case_id, "execution_status": "INCONCLUSIVE",
                 "contract_status": "NOT_A_PASS",
