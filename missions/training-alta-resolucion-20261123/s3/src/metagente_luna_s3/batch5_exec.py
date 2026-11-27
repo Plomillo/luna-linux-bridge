@@ -508,10 +508,10 @@ _VALUES = {"type": "object", "required": ["values"], "properties": {"values": {"
 SPECS = [
     ("first_match", "scan_index", {"type": "object", "required": ["needle", "values"], "properties": {"needle": {"type": "integer"}, "values": {"type": "array"}}, "additionalProperties": False}),
     ("binary_find", "direct_index", {"type": "object", "required": ["needle", "start", "end"], "properties": {"needle": {"type": "integer"}, "start": {"type": "integer"}, "end": {"type": "integer"}}, "additionalProperties": False}),
-    ("dequeue_named", "named_order", _NONE),
+    ("dequeue_named", "named_order", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
     ("balanced_range", "range_sum", _NONE),
     ("linear_scans", "full_scans", _NONE),
-    ("factorials", "reference_factorials", _NONE),
+    ("factorials", "reference_factorials", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array"}}, "additionalProperties": False}),
     ("precedence_tree", "folded_value", _NONE),
     ("index_limit", "refused_index", {"type": "object", "required": ["length"], "properties": {"length": {"type": "integer"}}, "additionalProperties": False}),
     ("divide_zero", "zero_type", _NONE),
