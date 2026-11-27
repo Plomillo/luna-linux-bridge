@@ -61,9 +61,16 @@ def plan_errors(plan: dict, case_id: str) -> list[str]:
         errors.append("case-id-mismatch")
     source = plan.get("source_metadata")
     excerpt = plan.get("source_excerpt")
-    if not isinstance(source, dict) or not isinstance(excerpt, str) or case_id not in excerpt:
+    required_source_fields = (
+        "source_file", "line_start", "line_end", "file_sha256", "excerpt_sha256",
+        "source_blob", "operation", "acceptance_criterion", "oracle_requirement",
+    )
+    if (not isinstance(source, dict) or not isinstance(excerpt, str) or case_id not in excerpt
+            or any(not source.get(field) for field in required_source_fields)):
         errors.append("source-provenance-missing")
     else:
+        if any(source[field] not in excerpt for field in ("operation", "acceptance_criterion", "oracle_requirement")):
+            errors.append("source-operation-criterion-or-oracle-not-bound")
         root = Path(__file__).resolve().parents[4]
         try:
             source_path = (root / source["source_file"]).resolve()
