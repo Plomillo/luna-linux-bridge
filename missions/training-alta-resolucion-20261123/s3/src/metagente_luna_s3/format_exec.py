@@ -624,7 +624,7 @@ def dex_inspect(payload_hex: str, mode: str) -> dict:
     raw = bytes.fromhex(payload_hex)
     if mode not in {"header", "tables"}:
         return {"rejected": True, "reason": "unsupported_mode"}
-    if len(raw) < 112 or raw[:4] != b"dex\\n" or raw[7] != 0:
+    if len(raw) < 112 or raw[:4] != bytes.fromhex("6465780a") or raw[7] != 0:
         return {"rejected": True, "reason": "invalid_or_truncated_dex_header"}
     version = raw[4:7].decode("ascii", "replace")
     file_size, header_size, endian = struct.unpack_from("<III", raw, 32)
