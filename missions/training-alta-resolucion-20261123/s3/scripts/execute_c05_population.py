@@ -244,16 +244,16 @@ def evidence_inventory_complete(report: dict) -> bool:
     if not all(isinstance(value, int) and not isinstance(value, bool)
                for value in (expected, rows, not_run, authentic)):
         return False
-    if expected != 1000 or rows != 1000 or not_run != 981 or authentic != 19:
+    if expected != 1000 or rows != 1000 or not_run != 979 or authentic != 21:
         return False
-    if not isinstance(rejected, list) or len(rejected) != 981:
+    if not isinstance(rejected, list) or len(rejected) != 979:
         return False
     if not all(isinstance(item, dict) for item in rejected):
         return False
     rejected_ids = [item.get("case_id") for item in rejected]
     expected_ids = set(EXPECTED)
     return (
-        len(set(rejected_ids)) == 981
+        len(set(rejected_ids)) == 979
         and set(rejected_ids).issubset(expected_ids)
         and all(item.get("reasons") == ["case-not-executed"] for item in rejected)
     )
@@ -372,10 +372,10 @@ def main(argv: list[str]) -> int:
         "blocker_inventory": str(blocker_path),
         "blocked_cases": len(blocker_inventory),
     }, ensure_ascii=False))
-    # Exit successfully only when all 19 authored executable plans produce
-    # authentic evidence and the remaining 981 are explicitly source-bound
+    # Exit successfully only when all 21 authored executable plans produce
+    # authentic evidence and the remaining 979 are explicitly source-bound
     # NOT_RUN blockers. This completes evidence collection, not C05.
-    return 0 if evidence_inventory_complete(report) and len(blocker_inventory) == 981 else 1
+    return 0 if evidence_inventory_complete(report) and len(blocker_inventory) == 979 else 1
 
 
 if __name__ == "__main__":
