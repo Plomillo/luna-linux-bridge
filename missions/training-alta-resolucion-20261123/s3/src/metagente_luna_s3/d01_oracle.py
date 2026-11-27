@@ -145,6 +145,10 @@ def json_scan(arguments: dict, observed: dict) -> dict:
 
 
 def nist_abc(arguments: dict, observed: dict) -> dict:
-    vector = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
-    ok = arguments["text"] == "abc" and observed["digest_hex"] == vector
-    return {"ok": ok, "method": "NIST vector, not hashlib"}
+    vectors = {
+        "abc": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        "": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    }
+    expected = vectors.get(arguments["text"])
+    ok = expected is not None and observed["digest_hex"] == expected
+    return {"ok": ok, "method": "published SHA-256 vectors, not hashlib"}
