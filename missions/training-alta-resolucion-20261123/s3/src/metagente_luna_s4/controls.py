@@ -146,15 +146,6 @@ def _build() -> None:
     _add("MGL5-INF-0254", "boundary", "cidr_bounds", {"cidr": "192.0.2.130/32"}, "host-prefix-boundary")
     _add("MGL5-INF-0255", "negative", "ipv6_prefix", {"cidr": "2001:db8::1/129"}, "ipv6-prefix-rejected")
     _add("MGL5-INF-0255", "boundary", "ipv6_prefix", {"cidr": "2001:db8::1/128"}, "ipv6-host-prefix")
-    _add("MGL5-INF-0151", "boundary", "tokenize", {"text": ""}, "empty-token-stream")
-    _add("MGL5-INF-0555", "negative", "increment", {"times": -1}, "increment-negative-rejected")
-    _add("MGL5-INF-0555", "boundary", "increment", {"times": 0}, "increment-zero-boundary")
-    _add("MGL5-INF-0561", "negative", "request_log", {"successes": 99, "failures": -1}, "request-negative-count-rejected")
-    _add("MGL5-INF-0561", "boundary", "request_log", {"successes": 1, "failures": 0}, "request-single-success-boundary")
-    _add("MGL5-INF-0602", "negative", "sqrt_two", {"value": -1.0}, "sqrt-negative-rejected")
-    _add("MGL5-INF-0602", "boundary", "sqrt_two", {"value": 0.0}, "sqrt-zero-boundary")
-    _add("MGL5-INF-0607", "negative", "compensated_sum", {"start": 1.0, "increment": 1e-8, "count": -1}, "sum-negative-count-rejected")
-    _add("MGL5-INF-0607", "boundary", "compensated_sum", {"start": 1.0, "increment": 1e-8, "count": 0}, "sum-zero-boundary")
     _add("MGL5-INF-0171", "negative", "index_limit", {"length": -1}, "negative-length-no-read")
     _add("MGL5-INF-0171", "boundary", "index_limit", {"length": 0}, "zero-length-no-read")
     _add("MGL5-INF-0252", "negative", "expand_v6", {"address": "not-an-ipv6-address"}, "expanded-invalid-ipv6-rejected")
@@ -228,22 +219,6 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and observed["sum"] != 15
     if expect == "empty-token-stream":
         return status == "EXECUTED" and observed.get("tokens") == []
-    if expect == "increment-negative-rejected":
-        return status == "EXECUTED" and observed.get("rejected") is True
-    if expect == "increment-zero-boundary":
-        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("completed") == 0 and observed.get("failed") == 0 and observed.get("ids") == []
-    if expect == "request-negative-count-rejected":
-        return status == "EXECUTED" and observed.get("rejected") is True
-    if expect == "request-single-success-boundary":
-        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("availability") == 1.0 and observed.get("successes") == 1 and observed.get("failures") == 0 and observed.get("total") == 1
-    if expect == "sqrt-negative-rejected":
-        return status == "EXECUTED" and observed.get("rejected") is True
-    if expect == "sqrt-zero-boundary":
-        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("estimate") == 0 and observed.get("residual") == 0
-    if expect == "sum-negative-count-rejected":
-        return status == "EXECUTED" and observed.get("rejected") is True
-    if expect == "sum-zero-boundary":
-        return status == "EXECUTED" and observed.get("rejected") is False and observed.get("naive") == 1.0 and observed.get("kahan") == 1.0
     if expect == "increment-negative-rejected":
         return status == "EXECUTED" and observed.get("rejected") is True
     if expect == "increment-zero-boundary":
