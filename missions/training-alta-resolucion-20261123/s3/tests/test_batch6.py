@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from metagente_luna_s3.batch6_exec import descending_values, stable_ages, stack_sequence
+from metagente_luna_s3.batch5_exec import descending_seed
+from metagente_luna_s3.batch6_exec import stable_ages, stack_sequence
+from metagente_luna_s3.batch5_oracle import seed_permutation
 from metagente_luna_s3.batch6_oracle import (
-    descending_values_oracle,
     stable_ages_oracle,
     stack_sequence_oracle,
 )
@@ -16,8 +17,8 @@ def test_batch6_cases_are_typed_source_grounded_plans():
     assert set(by_id) == {"MGL5-INF-0105", "MGL5-INF-0106", "MGL5-INF-0109"}
     assert by_id["MGL5-INF-0105"]["fixture_provenance"].endswith("#stable-ages")
     assert by_id["MGL5-INF-0109"]["fixture_provenance"].endswith("#stack-script")
-    assert by_id["MGL5-INF-0106"]["fixture_provenance"].endswith("#ten-thousand; range(count); seeded shuffle")
-    assert len(by_id["MGL5-INF-0106"]["arguments"]["values"]) == 10_000
+    assert by_id["MGL5-INF-0106"]["fixture_provenance"].endswith("#ten-thousand; seed/count drive deterministic integer generation")
+    assert by_id["MGL5-INF-0106"]["arguments"] == {"seed": 106, "count": 10_000}
     for case_id, instruction in OPERATIONS:
         if case_id not in by_id:
             continue
@@ -77,18 +78,18 @@ def test_descending_sort_checks_permutation_order_and_rejection_controls():
 
     spec = next(item for item in BATCH6_CASES if item["case_id"] == "MGL5-INF-0106")
     arguments = spec["arguments"]
-    observed = descending_values(**arguments)
-    assert len(observed["ordered"]) == 10_000
-    assert observed["ordered"][0] == 9_999
-    assert observed["ordered"][-1] == 0
-    assert descending_values_oracle(arguments, observed)["ok"] is True
+    observed = descending_seed(**arguments)
+    ordered = observed["ordered"]
+    assert len(ordered) == observed["length"] == 10_000
+    assert all(ordered[index] >= ordered[index + 1] for index in range(len(ordered) - 1))
+    assert seed_permutation(arguments, observed)["ok"] is True
 
-    invalid = {"values": [3, "invalid", 2]}
-    rejected = descending_values(**invalid)
+    invalid = {"seed": 106, "count": -1}
+    rejected = descending_seed(**invalid)
     assert accepts("rejected", rejected, "EXECUTED") is True
-    assert descending_values_oracle(invalid, rejected)["ok"] is True
+    assert seed_permutation(invalid, rejected)["ok"] is True
 
-    boundary = {"values": [0]}
-    boundary_result = descending_values(**boundary)
-    assert accepts("descending-singleton", boundary_result, "EXECUTED") is True
-    assert descending_values_oracle(boundary, boundary_result)["ok"] is True
+    boundary = {"seed": 106, "count": 1}
+    boundary_result = descending_seed(**boundary)
+    assert accepts("descending-seed-singleton", boundary_result, "EXECUTED") is True
+    assert seed_permutation(boundary, boundary_result)["ok"] is True
