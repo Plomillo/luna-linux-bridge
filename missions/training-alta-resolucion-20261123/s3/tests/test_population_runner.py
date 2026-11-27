@@ -163,30 +163,32 @@ def test_compiled_plans_pass_source_and_capability_preflight():
     for plan in plans:
         assert population.plan_errors(plan, plan["CASE_ID"]) == []
 
-def test_complete_blocked_population_is_evidence_complete_but_not_c05_certified():
+def test_fifteen_authentic_executions_and_985_explicit_not_run_complete_inventory_not_c05():
+    report = {
+        "expected": 1000,
+        "rows": 1000,
+        "authentic_results": 15,
+        "not_run": 985,
+        "rejected": [
+            {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
+            for number in range(16, 1001)
+        ],
+        "c05_passed": False,
+        "c05_status": "NOT_PASSED",
+    }
+
+    assert population.evidence_inventory_complete(report) is True
+    assert report["c05_passed"] is False
+    assert report["c05_status"] == "NOT_PASSED"
+
+
+def test_inventory_gate_rejects_missing_or_fabricated_execution_evidence():
     report = {
         "expected": 1000,
         "rows": 1000,
         "authentic_results": 1000,
         "not_run": 0,
         "rejected": [],
-        "c05_passed": False,
-        "c05_status": "NOT_PASSED",
-        "execution_outcomes": {"BLOCKED": 985, "PASS": 15, "FAIL": 0, "INCONCLUSIVE": 0},
     }
 
-    assert population.evidence_population_complete(report) is True
-    assert report["c05_passed"] is False
-    assert report["c05_status"] == "NOT_PASSED"
-
-
-def test_incomplete_or_rejected_population_is_not_evidence_complete():
-    report = {
-        "expected": 1000,
-        "rows": 1000,
-        "authentic_results": 999,
-        "not_run": 1,
-        "rejected": [{"case_id": "MGL5-INF-1000"}],
-    }
-
-    assert population.evidence_population_complete(report) is False
+    assert population.evidence_inventory_complete(report) is False
