@@ -11,9 +11,10 @@ import jsonschema
 
 from metagente_luna_s3.registry import EXECUTORS, ORACLES, REGISTRY
 from metagente_luna_s4.guard import authorize, require_case_id
+from metagente_luna_s4.evidence import persist_run
 
 
-def execute(capability_id: str, arguments: dict, case_id: str, backend: str = "LOCAL_TEST_ONLY") -> dict:
+def _execute(capability_id: str, arguments: dict, case_id: str, backend: str = "LOCAL_TEST_ONLY") -> dict:
     started = time.time()
     run_id = str(uuid.uuid4())
     try:
@@ -47,6 +48,36 @@ def execute(capability_id: str, arguments: dict, case_id: str, backend: str = "L
         return _record(run_id, case_id, capability_id, started, 1, stdout.getvalue(), stderr.getvalue() or type(exc).__name__, None, "ERROR", decision, backend)
     status = "EXECUTED" if verdict.get("ok") is True else "FAIL"
     return _record(run_id, case_id, capability_id, started, 0, stdout.getvalue(), stderr.getvalue(), observed, status, decision, backend, verdict)
+
+
+def execute(
+    capability_id: str,
+    arguments: dict,
+    case_id: str,
+    backend: str = "LOCAL_TEST_ONLY",
+    evidence_root: str | None = None,
+) -> dict:
+    """Execute once and optionally persist its raw evidence; never certify it."""
+    record = _execute(capability_id, arguments, case_id, backend)
+    capability = REGISTRY.get(capability_id)
+    producer = EXECUTORS.get(capability_id)
+    oracle = ORACLES.get(capability.oracle_id) if capability is not None else None
+    record["producer_module"] = getattr(producer, "__module__", None)
+    record["oracle_module"] = getattr(oracle, "__module__", None)
+    lifecycle = record.get("execution_status")
+    record["lifecycle_status"] = lifecycle
+    if lifecycle == "EXECUTED":
+        record["execution_status"] = "PASS" if isinstance(record.get("oracle_result"), dict) and record["oracle_result"].get("ok") is True else "FAIL"
+    elif lifecycle == "ERROR":
+        record["execution_status"] = "INCONCLUSIVE"
+    elif lifecycle == "REJECTED":
+        record["execution_status"] = "BLOCKED"
+    if evidence_root is not None and record.get("execution_status") in {"PASS", "FAIL", "BLOCKED", "INCONCLUSIVE"}:
+        try:
+            record["persisted_evidence"] = persist_run(record, arguments, evidence_root)
+        except (OSError, TypeError, ValueError) as exc:
+            record["evidence_persistence_error"] = f"{type(exc).__name__}: {exc}"
+    return record
 
 
 def _record(run_id, case_id, capability_id, started, code, stdout, stderr, observed, status, authorization=None, backend=None, oracle_result=None) -> dict:
