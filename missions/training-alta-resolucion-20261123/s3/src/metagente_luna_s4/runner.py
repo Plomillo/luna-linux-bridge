@@ -60,6 +60,14 @@ def execute(
     control_metadata: dict | None = None,
 ) -> dict:
     """Execute once and optionally persist its raw evidence; never certify it."""
+    if run_kind not in {"NORMAL", "NEGATIVE", "BOUNDARY"}:
+        raise ValueError("run_kind must be NORMAL, NEGATIVE, or BOUNDARY")
+    if run_kind in {"NEGATIVE", "BOUNDARY"} and (
+        not isinstance(control_metadata, dict)
+        or not all(isinstance(control_metadata.get(field), str) and control_metadata[field]
+                   for field in ("definition", "expected_behavior", "source"))
+    ):
+        raise ValueError("negative and boundary runs require definition, expected_behavior, and source")
     record = _execute(capability_id, arguments, case_id, backend)
     capability = REGISTRY.get(capability_id)
     producer = EXECUTORS.get(capability_id)
