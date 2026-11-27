@@ -90,7 +90,10 @@ def descending_values_oracle(arguments: dict, observed: dict) -> dict:
         ok = isinstance(observed, dict) and observed.get("rejected") is True
         return {"ok": ok, "expected": {"rejected": True}, "method": "independent integer-domain validation"}
     ordered = observed.get("ordered") if isinstance(observed, dict) else None
-    is_permutation = isinstance(ordered, list) and Counter(ordered) == Counter(values)
+    observed_values_valid = isinstance(ordered, list) and all(
+        isinstance(value, int) and not isinstance(value, bool) for value in ordered
+    )
+    is_permutation = observed_values_valid and Counter(ordered) == Counter(values)
     nonincreasing = isinstance(ordered, list) and all(
         ordered[index] >= ordered[index + 1] for index in range(len(ordered) - 1)
     )
