@@ -312,6 +312,16 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
             and observed.get("stack") == []
             and observed.get("underflow_count") == 0
         )
+    if expect == "descending-seed-singleton":
+        ordered = observed.get("ordered")
+        return (
+            lifecycle_status == "EXECUTED"
+            and observed.get("rejected") is False
+            and observed.get("length") == 1
+            and isinstance(ordered, list) and len(ordered) == 1
+            and observed.get("first") == observed.get("last") == ordered[0]
+            and observed.get("checksum") == ordered[0]
+        )
     return False
 
 
