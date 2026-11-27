@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 from metagente_luna_s4.batch2 import CASES as SECOND
+from metagente_luna_s4.batch5 import CASES as FIFTH
 from metagente_luna_s4.batch6 import CASES as SIXTH
 from metagente_luna_s4.d01_batch import CASES as FIRST
 from metagente_luna_s4.runner import execute
 
-CASES = FIRST + SECOND + SIXTH
+CASES = FIRST + SECOND + FIFTH + SIXTH
 
 
 CONTROLS: dict[str, dict] = {}
@@ -85,6 +86,10 @@ def _build() -> None:
     _add("MGL5-INF-0045", "boundary", "zlib_corrupt", {"payload_hex": "01"}, "other-damaged")
     _add("MGL5-INF-0051", "negative", "magic_bytes", {"name": "sample.png", "payload_hex": "89504e470d0a1a0a"}, "extension-agrees")
     _add("MGL5-INF-0601", "boundary", "binary_float_gap", {}, "float-edge")
+    _add("MGL5-INF-0103", "negative", "first_match", {"needle": 8, "values": [2, 7, 9, 7]}, "first-match-absent")
+    _add("MGL5-INF-0103", "boundary", "first_match", {"needle": 7, "values": [7]}, "first-match-singleton")
+    _add("MGL5-INF-0104", "negative", "binary_find", {"needle": 32, "start": 1, "end": 31}, "binary-find-absent")
+    _add("MGL5-INF-0104", "boundary", "binary_find", {"needle": 1, "start": 1, "end": 31}, "binary-find-first")
     _add("MGL5-INF-0105", "negative", "stable_ages", {"records": [{"id": "", "age": 30}]}, "rejected")
     _add("MGL5-INF-0105", "boundary", "stable_ages", {"records": []}, "empty-record-set")
     _add("MGL5-INF-0109", "negative", "stack_sequence", {"steps": ["pop"]}, "single-underflow")
@@ -209,6 +214,14 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
         return status == "EXECUTED" and observed["equal"] is False and observed["difference"] != 0
     if expect == "already-composed":
         return status == "EXECUTED" and observed["same_nfc"] is True and observed["nfc"] == "a"
+    if expect == "first-match-absent":
+        return status == "EXECUTED" and observed.get("index") is None and observed.get("duplicates") == []
+    if expect == "first-match-singleton":
+        return status == "EXECUTED" and observed.get("index") == 0 and observed.get("duplicates") == [0]
+    if expect == "binary-find-absent":
+        return status == "EXECUTED" and observed.get("index") is None and observed.get("comparisons", 0) > 0
+    if expect == "binary-find-first":
+        return status == "EXECUTED" and observed.get("index") == 0 and 1 <= observed.get("comparisons", 0) <= 5
     if expect == "empty-record-set":
         return status == "EXECUTED" and observed.get("records") == [] and observed.get("rejected") is False
     if expect == "single-underflow":
