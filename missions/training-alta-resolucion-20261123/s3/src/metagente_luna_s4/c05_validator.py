@@ -206,11 +206,14 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
             or not any(key in metrics for key in ("duration_ms", "duration_seconds"))):
         errors.append("metrics-artifact-invalid")
 
-    if rep.get("execution_status") == "PASS":
-        if rep.get("exit_code") != 0:
-            errors.append("pass-with-nonzero-exit")
-        if not isinstance(oracle, dict) or oracle.get("result") != "PASS":
-            errors.append("pass-without-independent-oracle-pass")
+    outcome = rep.get("execution_status")
+    oracle_outcome = oracle.get("result") if isinstance(oracle, dict) else None
+    if outcome == "PASS" and (rep.get("exit_code") != 0 or oracle_outcome != "PASS"):
+        errors.append("pass-without-independent-oracle-pass")
+    if outcome == "FAIL" and oracle_outcome != "FAIL":
+        errors.append("fail-without-oracle-fail")
+    if outcome in {"BLOCKED", "INCONCLUSIVE"} and oracle_outcome != "INCONCLUSIVE":
+        errors.append("nonterminal-outcome-oracle-mismatch")
     return errors
 
 
