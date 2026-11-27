@@ -175,6 +175,6 @@ def test_dex_parser_bounds_proto_parameter_type_list():
 def test_dex_modified_utf8_handles_encoded_nul_and_surrogate_pair_and_rejects_four_byte_utf8():
     from metagente_luna_s3.format_exec import _dex_mutf8
 
-    assert _dex_mutf8(b"\\xc0\\x80\\x00", 0, 3, 1) == "\\x00"
-    assert _dex_mutf8(b"\\xed\\xa0\\xbd\\xed\\xb8\\x80\\x00", 0, 7, 2) == "🚀"
-    assert _dex_mutf8(b"\\xf0\\x9f\\x9a\\x80\\x00", 0, 5, 2) is None
+    assert _dex_mutf8(bytes([0xc0, 0x80, 0x00]), 0, 3, 1) == chr(0)
+    assert _dex_mutf8(bytes([0xed, 0xa0, 0xbd, 0xed, 0xb8, 0x80, 0x00]), 0, 7, 2) == "\U0001f680"
+    assert _dex_mutf8(bytes([0xf0, 0x9f, 0x9a, 0x80, 0x00]), 0, 5, 2) is None
