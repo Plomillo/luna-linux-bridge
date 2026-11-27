@@ -34,7 +34,7 @@ def test_controls_that_were_defined_are_accepted():
     defined = [row for row in rows if row["controls"]]
     assert defined
     assert all(row["control_status"] == "PRESENT" for row in defined)
-    assert len(defined) == 84
+    assert len(defined) == 91
 
 def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries():
     assert accepts("distinct-bom-payloads", {"visible": "marked", "plain_text": "plain", "contains_bom_character": False}, "EXECUTED") is True
@@ -71,6 +71,22 @@ def test_fifo_factorial_path_and_ipv6_independent_oracles():
     assert two_compressions({"address": "::"}, {"accepted": True})["ok"] is True
     assert stated_prefix({"cidr": "2001:db8::1/129"}, {"rejected": True})["ok"] is True
     assert stated_prefix({"cidr": "2001:db8::1/128"}, {"rejected": False, "prefix": "2001:db8::1/128"})["ok"] is True
+
+
+def test_lexer_metrics_and_numerical_oracles_cover_new_boundaries():
+    from metagente_luna_s3.batch4_oracle import counted, request_counts
+    from metagente_luna_s3.batch5_oracle import decimal_total, library_sqrt
+    from metagente_luna_s3.more_oracle import token_vector
+
+    assert token_vector({"text": ""}, {"tokens": []})["ok"] is True
+    assert counted({"times": -1}, {"rejected": True})["ok"] is True
+    assert counted({"times": 0}, {"rejected": False, "ids": [], "completed": 0, "failed": 0})["ok"] is True
+    assert request_counts({"successes": 99, "failures": -1}, {"rejected": True})["ok"] is True
+    assert request_counts({"successes": 1, "failures": 0}, {"rejected": False, "statuses": [200], "availability": 1.0})["ok"] is True
+    assert library_sqrt({"value": -1.0}, {"rejected": True})["ok"] is True
+    assert library_sqrt({"value": 0.0}, {"rejected": False, "estimate": 0.0, "residual": 0.0})["ok"] is True
+    assert decimal_total({"start": 1.0, "increment": 1e-8, "count": -1}, {"rejected": True})["ok"] is True
+    assert decimal_total({"start": 1.0, "increment": 1e-8, "count": 0}, {"rejected": False, "naive": 1.0, "kahan": 1.0})["ok"] is True
 
 
 def test_index_ipv6_mask_and_threshold_independent_oracles():
