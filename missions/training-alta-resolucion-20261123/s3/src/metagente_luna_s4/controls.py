@@ -233,7 +233,7 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
             rejected is True or (isinstance(rejected, list) and bool(rejected))
         )
     if expect == "both-kept":
-        return control_completed and observed.get("kept", observed.get("accepted"))
+        return control_completed and bool(observed.get("kept", observed.get("accepted")))
     if expect == "max-positive":
         return control_completed and observed["signed"] == 32767
     if expect == "not-minus-one":
