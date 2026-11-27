@@ -30,7 +30,7 @@ def test_stable_age_sort_preserves_equal_age_order_and_rejects_bad_records():
     assert [row["id"] for row in observed["records"]] == ["b", "d", "a", "c"]
     assert stable_ages_oracle(arguments, observed)["ok"] is True
 
-    invalid = {"records": [{"id": "bad", "age": "unknown"}]}
+    invalid = {"records": [{"id": "", "age": 30}]}
     rejected = stable_ages(**invalid)
     assert accepts("rejected", rejected, "EXECUTED") is True
     assert stable_ages_oracle(invalid, rejected)["ok"] is True
