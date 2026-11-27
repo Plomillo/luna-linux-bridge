@@ -37,6 +37,12 @@ def test_controls_that_were_defined_are_accepted():
     assert not failures, __import__("json").dumps(failures, ensure_ascii=False, sort_keys=True)
     assert len(defined) == 100
 
+def test_negative_controls_accept_explicit_rejected_collections():
+    assert accepts("rejected", {"kept": [], "rejected": [-1]}, "EXECUTED") is True
+    assert accepts("rejected", {"accepted": [], "rejected": ["192.0.2.256"]}, "EXECUTED") is True
+    assert accepts("rejected", {"kept": [], "rejected": []}, "EXECUTED") is False
+
+
 def test_d01_complementary_controls_cover_text_serialization_and_hash_boundaries():
     assert accepts("distinct-bom-payloads", {"visible": "marked", "plain_text": "plain", "contains_bom_character": False}, "EXECUTED") is True
     assert accepts("combining-grapheme", {"bytes": 3, "codepoints": 2, "graphemes": 1}, "EXECUTED") is True
@@ -102,7 +108,10 @@ def test_newton_and_quadrature_oracles_are_independent():
 def test_newton_and_quadrature_controls_are_adjudicated():
     assert accepts("newton-negative-target-rejected", {"rejected": True}, "EXECUTED") is True
     assert accepts("newton-unit-root-boundary", {"rejected": False, "root": 1.0, "residual": 0.0}, "EXECUTED") is True
-    assert accepts("trapezoid-zero-panels-rejected", {"rejected": True}, "EXECUTED") is True
+    # Zero panels violate the input schema, so rejection occurs before an
+    # operation result exists. It must not be represented as EXECUTED.
+    assert accepts("trapezoid-zero-panels-rejected", None, "REJECTED") is True
+    assert accepts("trapezoid-zero-panels-rejected", {"rejected": True}, "EXECUTED") is False
     assert accepts("trapezoid-single-panel-boundary", {"rejected": False, "value": 0.5, "panels": 1}, "EXECUTED") is True
     assert accepts("simpson-odd-panels-rejected", {"rejected": True}, "EXECUTED") is True
     assert accepts("simpson-minimum-even-boundary", {"rejected": False, "value": 1 / 3, "panels": 2}, "EXECUTED") is True
