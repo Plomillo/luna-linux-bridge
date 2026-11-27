@@ -448,6 +448,8 @@ def euler_decay(coarse_step: float, fine_step: float) -> dict:
 
 
 def rk4_decay(step: float) -> dict:
+    if not 0 < step <= 1:
+        return {"rejected": True, "reason": "step must be in (0, 1]"}
     value = 1.0
     for _ in range(round(1 / step)):
         first = value
