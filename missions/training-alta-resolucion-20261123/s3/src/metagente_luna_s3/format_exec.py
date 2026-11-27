@@ -619,23 +619,96 @@ def pe_inspect(payload_hex: str, mode: str) -> dict:
         return result
 
 
+def _dex_uleb128(raw: bytes, offset: int, limit: int) -> tuple[int, int] | None:
+    value = 0
+    for shift in range(0, 35, 7):
+        if offset >= limit:
+            return None
+        byte = raw[offset]
+        offset += 1
+        value |= (byte & 0x7f) << shift
+        if not byte & 0x80:
+            if shift == 28 and byte > 0x0f:
+                return None
+            return value, offset
+    return None
+
+
+def _dex_mutf8(raw: bytes, offset: int, limit: int, expected_units: int) -> str | None:
+    end = raw.find(b"\\x00", offset, limit)
+    if end < 0:
+        return None
+    units: list[int] = []
+    cursor = offset
+    while cursor < end:
+        first = raw[cursor]
+        cursor += 1
+        if first <= 0x7f:
+            units.append(first)
+            continue
+        if 0xc0 <= first <= 0xdf:
+            if cursor >= end or raw[cursor] & 0xc0 != 0x80:
+                return None
+            second = raw[cursor]
+            cursor += 1
+            unit = ((first & 0x1f) << 6) | (second & 0x3f)
+            if unit == 0:
+                if first != 0xc0 or second != 0x80:
+                    return None
+            elif unit < 0x80:
+                return None
+            units.append(unit)
+            continue
+        if 0xe0 <= first <= 0xef:
+            if cursor + 1 >= end or raw[cursor] & 0xc0 != 0x80 or raw[cursor + 1] & 0xc0 != 0x80:
+                return None
+            second, third = raw[cursor], raw[cursor + 1]
+            cursor += 2
+            unit = ((first & 0x0f) << 12) | ((second & 0x3f) << 6) | (third & 0x3f)
+            if unit < 0x800:
+                return None
+            units.append(unit)
+            continue
+        # DEX modified UTF-8 encodes UTF-16 code units, not four-byte UTF-8.
+        return None
+    if len(units) != expected_units:
+        return None
+    encoded = b"".join(unit.to_bytes(2, "little") for unit in units)
+    try:
+        return encoded.decode("utf-16-le", errors="surrogatepass")
+    except UnicodeDecodeError:
+        return None
+
+
 def dex_inspect(payload_hex: str, mode: str) -> dict:
-    """Inspect a bounded DEX header and cross-table indices without loading code."""
+    """Inspect DEX 035 header and bounded tables without loading code."""
     raw = bytes.fromhex(payload_hex)
     if mode not in {"header", "tables"}:
         return {"rejected": True, "reason": "unsupported_mode"}
     if len(raw) < 112 or raw[:4] != bytes.fromhex("6465780a") or raw[7] != 0:
         return {"rejected": True, "reason": "invalid_or_truncated_dex_header"}
     version = raw[4:7].decode("ascii", "replace")
+    if version != "035":
+        return {"rejected": True, "reason": "unsupported_dex_version"}
     file_size, header_size, endian = struct.unpack_from("<III", raw, 32)
+    data_size, data_off = struct.unpack_from("<II", raw, 104)
     if file_size != len(raw) or header_size != 112 or endian != 0x12345678:
         return {"rejected": True, "reason": "header_size_endian_or_file_size_mismatch"}
+    if data_size == 0:
+        if data_off not in (0, len(raw)):
+            return {"rejected": True, "reason": "empty_data_section_offset_invalid"}
+        data_start, data_end = len(raw), len(raw)
+    elif data_off < 112 or data_off + data_size > len(raw):
+        return {"rejected": True, "reason": "data_section_out_of_bounds"}
+    else:
+        data_start, data_end = data_off, data_off + data_size
     checksum = struct.unpack_from("<I", raw, 8)[0]
     checksum_valid = checksum == (zlib.adler32(raw[12:]) & 0xFFFFFFFF)
     signature_valid = raw[12:32] == hashlib.sha1(raw[32:]).digest()
     if mode == "header":
         return {"rejected": False, "version": version, "file_size": file_size,
                 "header_size": header_size, "endian_tag": endian,
+                "data_size": data_size, "data_off": data_off,
                 "checksum_valid": checksum_valid, "signature_valid": signature_valid}
     fields = {
         "string_ids": (56, 60, 4), "type_ids": (64, 68, 4),
@@ -645,19 +718,23 @@ def dex_inspect(payload_hex: str, mode: str) -> dict:
     tables = {}
     for name, (size_at, off_at, width) in fields.items():
         count, offset = struct.unpack_from("<II", raw, size_at)
-        if count and (offset < 112 or offset + count * width > len(raw)):
+        if count and (offset < 112 or offset % 4 or offset + count * width > data_start):
             return {"rejected": True, "reason": f"{name}_out_of_bounds"}
         tables[name] = {"count": count, "offset": offset, "width": width}
     strings = []
     string_table = tables["string_ids"]
     for index in range(string_table["count"]):
         offset = struct.unpack_from("<I", raw, string_table["offset"] + index * 4)[0]
-        if offset >= len(raw):
+        if not data_start <= offset < data_end:
             return {"rejected": True, "reason": "string_data_offset_out_of_bounds"}
-        end = raw.find(bytes([0]), offset)
-        if end < 0:
-            return {"rejected": True, "reason": "unterminated_string_data"}
-        strings.append(raw[offset:end].decode("utf-8", "replace"))
+        declared = _dex_uleb128(raw, offset, data_end)
+        if declared is None:
+            return {"rejected": True, "reason": "string_length_uleb128_invalid"}
+        utf16_length, value_offset = declared
+        value = _dex_mutf8(raw, value_offset, data_end, utf16_length)
+        if value is None:
+            return {"rejected": True, "reason": "string_data_encoding_or_length_invalid"}
+        strings.append(value)
     type_refs = []
     type_table = tables["type_ids"]
     for index in range(type_table["count"]):
@@ -667,7 +744,21 @@ def dex_inspect(payload_hex: str, mode: str) -> dict:
     proto_table = tables["proto_ids"]
     for index in range(proto_table["count"]):
         shorty_idx, return_idx, parameters_off = struct.unpack_from("<III", raw, proto_table["offset"] + index * 12)
-        proto_refs.append({"shorty_idx": shorty_idx, "return_type_idx": return_idx, "parameters_off": parameters_off})
+        parameter_indices = []
+        if parameters_off:
+            if parameters_off < data_start or parameters_off + 4 > data_end or parameters_off % 4:
+                return {"rejected": True, "reason": "proto_parameters_offset_out_of_bounds"}
+            parameter_count = struct.unpack_from("<I", raw, parameters_off)[0]
+            if parameters_off + 4 + parameter_count * 2 > data_end:
+                return {"rejected": True, "reason": "proto_parameters_out_of_bounds"}
+            parameter_indices = list(struct.unpack_from(f"<{parameter_count}H", raw, parameters_off + 4)) if parameter_count else []
+        proto_refs.append({"shorty_idx": shorty_idx, "return_type_idx": return_idx,
+                          "parameters_off": parameters_off, "parameter_type_indices": parameter_indices})
+    field_refs = []
+    field_table = tables["field_ids"]
+    for index in range(field_table["count"]):
+        class_idx, type_idx, name_idx = struct.unpack_from("<HHI", raw, field_table["offset"] + index * 8)
+        field_refs.append({"class_idx": class_idx, "type_idx": type_idx, "name_idx": name_idx})
     method_refs = []
     method_table = tables["method_ids"]
     for index in range(method_table["count"]):
@@ -675,10 +766,15 @@ def dex_inspect(payload_hex: str, mode: str) -> dict:
         method_refs.append({"class_idx": class_idx, "proto_idx": proto_idx, "name_idx": name_idx})
     valid = (
         all(index < len(strings) for index in type_refs)
-        and all(row["shorty_idx"] < len(strings) and row["return_type_idx"] < len(type_refs) for row in proto_refs)
-        and all(row["class_idx"] < len(type_refs) and row["proto_idx"] < len(proto_refs) and row["name_idx"] < len(strings) for row in method_refs)
+        and all(row["shorty_idx"] < len(strings) and row["return_type_idx"] < len(type_refs)
+                and all(i < len(type_refs) for i in row["parameter_type_indices"]) for row in proto_refs)
+        and all(row["class_idx"] < len(type_refs) and row["type_idx"] < len(type_refs)
+                and row["name_idx"] < len(strings) for row in field_refs)
+        and all(row["class_idx"] < len(type_refs) and row["proto_idx"] < len(proto_refs)
+                and row["name_idx"] < len(strings) for row in method_refs)
     )
     return {"rejected": False, "tables": tables, "strings": strings,
             "type_string_indices": type_refs, "proto_references": proto_refs,
-            "method_references": method_refs, "indices_valid": valid,
-            "checksum_valid": checksum_valid, "signature_valid": signature_valid}
+            "field_references": field_refs, "method_references": method_refs,
+            "indices_valid": valid, "checksum_valid": checksum_valid,
+            "signature_valid": signature_valid}
