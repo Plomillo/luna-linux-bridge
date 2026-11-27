@@ -106,7 +106,7 @@ def plan_errors(plan: dict, case_id: str) -> list[str]:
         control = item.get("control_metadata") if isinstance(item, dict) else None
         if not isinstance(control, dict) or not all(
             isinstance(control.get(field), str) and control[field]
-            for field in ("definition", "expected_behavior", "source")
+            for field in ("definition", "expected_behavior", "source", "expect")
         ):
             errors.append(f"{name}-control-definition-incomplete")
     return errors
