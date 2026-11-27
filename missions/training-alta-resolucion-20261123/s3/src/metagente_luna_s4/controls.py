@@ -420,7 +420,7 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "valid-accepted":
         return observed is not None and observed["rejected"] is False
     if expect == "one-token":
-        return status == "FAIL"
+        return control_completed and observed.get("tokens") == [{"kind": "word", "lexeme": "x", "start": 0, "end": 1}]
     if expect == "other-json":
         return control_completed and observed["parsed"] == {"n": 1}
     if expect == "unchanged":
