@@ -71,6 +71,42 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     """Independent control adjudication; unknown expectation IDs fail closed."""
     if not isinstance(observed, dict):
         return False
+    if expect == "distinct-bom-payloads":
+        return lifecycle_status == "EXECUTED" and observed.get("visible") == "marked" and observed.get("plain_text") == "plain" and observed.get("contains_bom_character") is False
+    if expect == "combining-grapheme":
+        return lifecycle_status == "EXECUTED" and observed.get("bytes") == 3 and observed.get("codepoints") == 2 and observed.get("graphemes") == 1
+    if expect == "zwj-one-grapheme":
+        return lifecycle_status == "EXECUTED" and observed.get("preserved") == "👨‍🚀" and observed.get("codepoints") == 3 and observed.get("graphemes") == 1
+    if expect == "single-crlf":
+        return lifecycle_status == "EXECUTED" and observed.get("lines") == ["x"] and observed.get("written") == "x\r\n" and observed.get("doubled_cr") is False
+    if expect == "lone-cr-normalized":
+        return lifecycle_status == "EXECUTED" and observed.get("converted") == "a\nb" and observed.get("cr_remaining") is False
+    if expect == "empty-cell-preserved":
+        return lifecycle_status == "EXECUTED" and observed.get("parsed") == [["", "x"], ["y", "z"]]
+    if expect == "nested-types-preserved":
+        return lifecycle_status == "EXECUTED" and observed.get("parsed") == {"items": [1, None, False], "child": {"ok": True}}
+    if expect == "single-nonascii":
+        return lifecycle_status == "EXECUTED" and observed.get("parsed") == "ñ" and "\\u00" not in observed.get("raw", "")
+    if expect == "duplicate-equal-values":
+        return lifecycle_status == "EXECUTED" and observed.get("duplicate_detected") is True and observed.get("deterministic") is True
+    if expect == "valid-json-accepted":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected_count") == 0 and observed.get("rejected") == []
+    if expect == "empty-object-canonical":
+        return lifecycle_status == "EXECUTED" and observed.get("same") is True and observed.get("canonical") == "{}"
+    if expect == "single-byte-frame":
+        return lifecycle_status == "EXECUTED" and observed.get("length") == 1 and observed.get("checksum") == 255
+    if expect == "exact-power-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rows") == [{"value": 16777216, "exact": True}]
+    if expect == "zero-decimal-preserved":
+        return lifecycle_status == "EXECUTED" and observed.get("text") == "0.00" and observed.get("used_binary_float") is False
+    if expect == "other-three-bytes":
+        return lifecycle_status == "EXECUTED" and observed.get("decoded_hex") == "010203"
+    if expect == "invalid-padding-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True and observed.get("error_recorded") is True
+    if expect == "empty-sha256":
+        return lifecycle_status == "EXECUTED" and observed.get("digest_hex") == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    if expect == "empty-manifest-change":
+        return lifecycle_status == "EXECUTED" and observed.get("reproduced") is True and observed.get("altered_changes") is True and observed.get("digest") == "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
     if expect == "two-records":
         return lifecycle_status == "EXECUTED" and observed.get("records") == 2 and observed.get("fields", [None])[0] == "a"
     if expect == "predefined-entity-set":
