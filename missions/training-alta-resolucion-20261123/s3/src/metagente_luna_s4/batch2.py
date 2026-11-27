@@ -30,6 +30,7 @@ CASES = [
     {"case_id": "MGL5-INF-0047", "capability_id": "base64_reject", "arguments": {"text": "****"}},
     {"case_id": "MGL5-INF-0050", "capability_id": "manifest_hash", "arguments": {"document": {"name": "luna"}, "altered": {"name": "luna-x"}}, "fixture_provenance": "SYNTHETIC_MINIMAL"},
     {"case_id": "MGL5-INF-0051", "capability_id": "magic_bytes", "arguments": {"name": "sample.dat", "payload_hex": "89504e470d0a1a0a"}, "fixture_provenance": "SIGNATURE_PREFIX_NOT_A_FULL_PNG"},
+    {"case_id": "MGL5-INF-0052", "capability_id": "magic_bytes", "arguments": {"name": "sample.jpg", "payload_hex": "7f454c46020101000000000000000000"}, "fixture_provenance": "ELF64_LE_IDENT_HEADER_PREFIX"},
     {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
     {"case_id": "MGL5-INF-0102", "capability_id": "array_minmax", "arguments": {"values": [-8, 4, 4, 19, 0]}},
     {"case_id": "MGL5-INF-0151", "capability_id": "tokenize", "arguments": {"text": "let x = 42 + 3;"}},
