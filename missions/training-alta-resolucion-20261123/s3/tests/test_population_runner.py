@@ -128,8 +128,8 @@ def test_plan_compiler_emits_only_cases_with_both_authored_controls():
 
     plans, report = compiler.compile_plans()
 
-    assert report["compiled_executable_plans"] == len(plans) == 94
-    assert report["not_in_plan_set"] == 906
+    assert report["compiled_executable_plans"] == len(plans) == 95
+    assert report["not_in_plan_set"] == 905
     assert report["certification"] == "NOT_PASSED"
     assert [plan["CASE_ID"] for plan in plans] == sorted(plan["CASE_ID"] for plan in plans)
     for plan in plans:
@@ -210,8 +210,8 @@ def test_93_authored_plans_and_907_explicit_not_run_complete_inventory_not_c05()
         "c05_status": "NOT_PASSED",
     }
 
-    assert len(executable) == 94
-    assert len(rejected) == 906
+    assert len(executable) == 95
+    assert len(rejected) == 905
     assert population.evidence_inventory_complete(report, executable) is True
     assert report["c05_passed"] is False
     assert report["c05_status"] == "NOT_PASSED"
