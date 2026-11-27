@@ -347,6 +347,21 @@ def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
         errors.append("case-outcome-does-not-match-normal-repetitions")
     if row.get("contract_status") == "PASS" and row.get("execution_status") != "PASS":
         errors.append("contract-pass-with-nonpass-execution")
+    if row.get("contract_status") == "PASS":
+        evaluation = row.get("contract_evaluation")
+        control_checks = evaluation.get("control_checks") if isinstance(evaluation, dict) else None
+        if (
+            not isinstance(evaluation, dict)
+            or evaluation.get("adjudicator") != "SOURCE_BOUND_PLAN_AND_REGISTERED_CONTROL_EXPECTATIONS"
+            or evaluation.get("normal_repetitions_pass") is not True
+            or evaluation.get("normal_repetition_checks") != [True, True, True]
+            or evaluation.get("controls_pass") is not True
+            or not isinstance(control_checks, list)
+            or len(control_checks) != 2
+            or {item.get("kind") for item in control_checks if isinstance(item, dict)} != {"NEGATIVE", "BOUNDARY"}
+            or not all(isinstance(item, dict) and item.get("accepted") is True for item in control_checks)
+        ):
+            errors.append("contract-adjudication-missing-or-failed")
     independent = row.get("independent_validation")
     expected_artifacts = sum(
         len(run.get("artifacts", {}))
