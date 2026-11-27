@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from metagente_luna_s3.registry import ORACLES, run
+from metagente_luna_s3.registry import ORACLES, REGISTRY, run
 from metagente_luna_s4.d01_batch import CASES
 
 
@@ -14,7 +14,7 @@ def test_new_d01_compatibility_cases_have_independent_oracle_passes():
     for case_id in sorted(selected):
         spec = specs[case_id]
         observed = run(spec["capability_id"], spec["arguments"])
-        adjudication = ORACLES[spec["capability_id"]](spec["arguments"], observed)
+        adjudication = ORACLES[REGISTRY[spec["capability_id"]].oracle_id](spec["arguments"], observed)
         assert adjudication["ok"] is True, (case_id, observed, adjudication)
 
 
