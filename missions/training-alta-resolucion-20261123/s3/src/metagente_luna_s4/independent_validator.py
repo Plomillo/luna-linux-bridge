@@ -160,6 +160,7 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
 
     seen_runs: set[str] = set()
     inputs: dict[str, list[str]] = {"NORMAL": [], "NEGATIVE": [], "BOUNDARY": []}
+    control_expectations: dict[str, str] = {}
     checked_artifacts = 0
     for run in runs:
         if not isinstance(run, dict):
@@ -290,7 +291,8 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
             findings.append("control-spec-fixture-mismatch")
         if kind in {"NEGATIVE", "BOUNDARY"} and isinstance(fixture, dict):
             control = fixture.get("control")
-            if isinstance(control, dict) and isinstance(control.get("expect"), str):
+            if isinstance(control, dict) and isinstance(control.get("expect"), str) and control["expect"]:
+                control_expectations[kind] = control["expect"]
                 try:
                     if not _independent_control_accepts(
                         control["expect"], (observed or {}).get("value"),
@@ -299,6 +301,8 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
                         findings.append("control-semantic-expectation-not-met")
                 except (KeyError, TypeError, ValueError):
                     findings.append("control-semantic-validator-error")
+            elif row.get("contract_status") == "PASS":
+                findings.append("control-expectation-missing")
         if not observed or observed.get("case_id") != case_id or observed.get("run_id") != run_id:
             findings.append("observed-identity-invalid")
         if run.get("execution_status") == "BLOCKED":
@@ -333,6 +337,28 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
         findings.append("normal-outcomes-not-stable")
     if row.get("execution_status") != (normal_outcomes[0] if normal_outcomes else None):
         findings.append("row-outcome-does-not-match-normal-runs")
+
+    if row.get("contract_status") == "PASS":
+        evaluation = row.get("contract_evaluation")
+        checks = evaluation.get("control_checks") if isinstance(evaluation, dict) else None
+        check_map = {
+            item.get("kind"): item
+            for item in checks if isinstance(item, dict)
+        } if isinstance(checks, list) else {}
+        if (
+            not isinstance(evaluation, dict)
+            or evaluation.get("normal_repetitions_pass") is not True
+            or evaluation.get("normal_repetition_checks") != [True, True, True]
+            or evaluation.get("controls_pass") is not True
+            or set(control_expectations) != {"NEGATIVE", "BOUNDARY"}
+            or set(check_map) != {"NEGATIVE", "BOUNDARY"}
+            or any(
+                check_map[kind].get("expect") != control_expectations[kind]
+                or check_map[kind].get("accepted") is not True
+                for kind in ("NEGATIVE", "BOUNDARY")
+            )
+        ):
+            findings.append("contract-adjudication-not-independently-confirmed")
 
     status = "PASS" if not findings and len(runs) == 5 else "FAIL"
     return {
