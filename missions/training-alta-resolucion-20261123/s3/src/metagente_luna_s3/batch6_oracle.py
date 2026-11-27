@@ -1,6 +1,8 @@
 """Independent reference implementations for D03 batch-six executors."""
 from __future__ import annotations
 
+from collections import Counter
+
 
 def stable_ages_oracle(arguments: dict, observed: dict) -> dict:
     records = arguments["records"]
@@ -76,4 +78,24 @@ def stack_sequence_oracle(arguments: dict, observed: dict) -> dict:
         "ok": observed == expected,
         "expected": expected,
         "method": "independent stack state-machine oracle",
+    }
+
+
+def descending_values_oracle(arguments: dict, observed: dict) -> dict:
+    values = arguments["values"]
+    valid = isinstance(values, list) and all(
+        isinstance(value, int) and not isinstance(value, bool) for value in values
+    )
+    if not valid:
+        ok = isinstance(observed, dict) and observed.get("rejected") is True
+        return {"ok": ok, "expected": {"rejected": True}, "method": "independent integer-domain validation"}
+    ordered = observed.get("ordered") if isinstance(observed, dict) else None
+    is_permutation = isinstance(ordered, list) and Counter(ordered) == Counter(values)
+    nonincreasing = isinstance(ordered, list) and all(
+        ordered[index] >= ordered[index + 1] for index in range(len(ordered) - 1)
+    )
+    return {
+        "ok": observed.get("rejected") is False and is_permutation and nonincreasing,
+        "expected": {"count": len(values), "nonincreasing": True, "permutation": True},
+        "method": "independent multiset equality and adjacent-order invariants",
     }
