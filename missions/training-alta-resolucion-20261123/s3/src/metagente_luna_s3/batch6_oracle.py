@@ -7,6 +7,7 @@ def stable_ages_oracle(arguments: dict, observed: dict) -> dict:
     valid = isinstance(records, list) and all(
         isinstance(row, dict)
         and isinstance(row.get("id"), str)
+        and bool(row.get("id"))
         and isinstance(row.get("age"), int)
         and not isinstance(row.get("age"), bool)
         for row in records
