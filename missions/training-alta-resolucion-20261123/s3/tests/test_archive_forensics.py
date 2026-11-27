@@ -56,7 +56,7 @@ EXPECTED = {
     "MGL5-INF-0061": "pe_inspect",
     "MGL5-INF-0062": "pe_inspect",
     "MGL5-INF-0063": "pe_inspect",
-    "MGL5-INF-0064": "pe_inspect",
+    "MGL5-INF-0064": "pe_inspect",\n    "MGL5-INF-0067": "dex_header",\n    "MGL5-INF-0068": "dex_tables",
 }
 
 
