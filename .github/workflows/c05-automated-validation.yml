@@ -84,3 +84,6 @@ jobs:
             echo "- This workflow does not issue C05 PASS or certification."
             echo "- No human approval is an operational gate; independent automated validation is required per case."
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Enforce complete 1,000-case C05 plan coverage
+        if: always()
+        run: python scripts/build_c05_coverage_matrix.py --require-complete
