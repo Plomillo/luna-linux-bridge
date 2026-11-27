@@ -171,3 +171,10 @@ def test_dex_parser_bounds_proto_parameter_type_list():
     struct.pack_into("<I", malformed, proto_ids_off + 8, data_end + 4)
     observed = dex_inspect(_rehash_dex_fixture(malformed).hex(), "tables")
     assert observed == {"rejected": True, "reason": "proto_parameters_offset_out_of_bounds"}
+
+def test_dex_modified_utf8_handles_encoded_nul_and_surrogate_pair_and_rejects_four_byte_utf8():
+    from metagente_luna_s3.format_exec import _dex_mutf8
+
+    assert _dex_mutf8(b"\\xc0\\x80\\x00", 0, 3, 1) == "\\x00"
+    assert _dex_mutf8(b"\\xed\\xa0\\xbd\\xed\\xb8\\x80\\x00", 0, 7, 2) == "🚀"
+    assert _dex_mutf8(b"\\xf0\\x9f\\x9a\\x80\\x00", 0, 5, 2) is None
