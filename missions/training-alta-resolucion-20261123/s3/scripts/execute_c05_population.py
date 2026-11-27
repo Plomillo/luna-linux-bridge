@@ -61,12 +61,18 @@ def plan_errors(plan: dict, case_id: str) -> list[str]:
         errors.append("case-id-mismatch")
     source = plan.get("source_metadata")
     excerpt = plan.get("source_excerpt")
-    required_source_fields = (
-        "source_file", "line_start", "line_end", "file_sha256", "excerpt_sha256",
-        "source_blob", "operation", "acceptance_criterion", "oracle_requirement",
+    string_source_fields = (
+        "source_file", "file_sha256", "excerpt_sha256", "source_blob",
+        "operation", "acceptance_criterion", "oracle_requirement",
     )
-    if (not isinstance(source, dict) or not isinstance(excerpt, str) or case_id not in excerpt
-            or any(not source.get(field) for field in required_source_fields)):
+    valid_source_shape = (
+        isinstance(source, dict)
+        and all(isinstance(source.get(field), str) and source[field] for field in string_source_fields)
+        and isinstance(source.get("line_start"), int) and not isinstance(source.get("line_start"), bool)
+        and isinstance(source.get("line_end"), int) and not isinstance(source.get("line_end"), bool)
+        and isinstance(excerpt, str) and case_id in excerpt
+    )
+    if not valid_source_shape:
         errors.append("source-provenance-missing")
     else:
         if any(source[field] not in excerpt for field in ("operation", "acceptance_criterion", "oracle_requirement")):
@@ -189,7 +195,7 @@ def main(argv: list[str]) -> int:
             continue
         try:
             rows.append(execute_plan(plan, case_id, evidence_root, 60))
-        except (OSError, ValueError, TypeError, KeyError) as exc:
+        except Exception as exc:  # noqa: BLE001 - preserve a per-case INCONCLUSIVE record and continue the population
             rows.append({
                 "CASE_ID": case_id, "execution_status": "INCONCLUSIVE",
                 "contract_status": "NOT_A_PASS",
