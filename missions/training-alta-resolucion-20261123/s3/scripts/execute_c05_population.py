@@ -244,16 +244,16 @@ def evidence_inventory_complete(report: dict) -> bool:
     if not all(isinstance(value, int) and not isinstance(value, bool)
                for value in (expected, rows, not_run, authentic)):
         return False
-    if expected != 1000 or rows != 1000 or not_run != 985 or authentic != 15:
+    if expected != 1000 or rows != 1000 or not_run != 983 or authentic != 17:
         return False
-    if not isinstance(rejected, list) or len(rejected) != 985:
+    if not isinstance(rejected, list) or len(rejected) != 983:
         return False
     if not all(isinstance(item, dict) for item in rejected):
         return False
     rejected_ids = [item.get("case_id") for item in rejected]
     expected_ids = set(EXPECTED)
     return (
-        len(set(rejected_ids)) == 985
+        len(set(rejected_ids)) == 983
         and set(rejected_ids).issubset(expected_ids)
         and all(item.get("reasons") == ["case-not-executed"] for item in rejected)
     )
