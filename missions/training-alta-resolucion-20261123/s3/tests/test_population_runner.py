@@ -105,8 +105,8 @@ def test_plan_compiler_emits_only_cases_with_both_authored_controls():
 
     plans, report = compiler.compile_plans()
 
-    assert report["compiled_executable_plans"] == len(plans) == 21
-    assert report["not_in_plan_set"] == 979
+    assert report["compiled_executable_plans"] == len(plans) == 30
+    assert report["not_in_plan_set"] == 970
     assert report["certification"] == "NOT_PASSED"
     assert [plan["CASE_ID"] for plan in plans] == sorted(plan["CASE_ID"] for plan in plans)
     for plan in plans:
@@ -164,21 +164,21 @@ def test_compiled_plans_pass_source_and_capability_preflight():
     for plan in plans:
         assert population.plan_errors(plan, plan["CASE_ID"]) == []
 
-def test_twenty_one_authentic_executions_and_979_explicit_not_run_complete_inventory_not_c05():
+def test_thirty_authentic_executions_and_970_explicit_not_run_complete_inventory_not_c05():
     report = {
         "expected": 1000,
         "rows": 1000,
-        "authentic_results": 21,
-        "not_run": 979,
+        "authentic_results": 30,
+        "not_run": 970,
         "rejected": [
             {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
-            for number in range(22, 1001)
+            for number in range(31, 1001)
         ],
         "c05_passed": False,
         "c05_status": "NOT_PASSED",
     }
 
-    assert population.evidence_inventory_complete(report, {f"MGL5-INF-{number:04d}" for number in range(1, 22)}) is True
+    assert population.evidence_inventory_complete(report, {f"MGL5-INF-{number:04d}" for number in range(1, 31)}) is True
     assert report["c05_passed"] is False
     assert report["c05_status"] == "NOT_PASSED"
 
@@ -202,7 +202,7 @@ def test_inventory_gate_rejects_duplicate_or_noncanonical_blocker_ids():
         "not_run": 979,
         "rejected": [
             {"case_id": f"MGL5-INF-{number:04d}", "reasons": ["case-not-executed"]}
-            for number in range(22, 1001)
+            for number in range(31, 1001)
         ],
     }
     report["rejected"][-1]["case_id"] = report["rejected"][0]["case_id"]
