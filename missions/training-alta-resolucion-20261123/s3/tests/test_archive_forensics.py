@@ -24,6 +24,7 @@ EXPECTED = {
     "MGL5-INF-0078": "sqlite_header",
     "MGL5-INF-0079": "sqlite_integrity",
     "MGL5-INF-0085": "wasm_header",
+    "MGL5-INF-0080": "png_chunks",
 }
 
 

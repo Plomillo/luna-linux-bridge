@@ -47,6 +47,7 @@ CASES = [
     {"case_id": "MGL5-INF-0078", "capability_id": "sqlite_header", "arguments": {"page_size": 4096}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: generated in-memory SQLite database; header fields read from serialized bytes"},
     {"case_id": "MGL5-INF-0079", "capability_id": "sqlite_integrity", "arguments": {"corrupt": False, "values": ["alpha", "beta"]}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: SQLite lab copy generated in memory; negative mutates only the copy header"},
     {"case_id": "MGL5-INF-0085", "capability_id": "wasm_header", "arguments": {"magic_hex": "0061736d", "version": 1}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: WebAssembly magic and version encoded per binary format"},
+    {"case_id": "MGL5-INF-0080", "capability_id": "png_chunks", "arguments": {"chunks": [{"type": "IHDR", "data_hex": "00000001000000010802000000"}, {"type": "IDAT", "data_hex": "00"}, {"type": "IEND", "data_hex": ""}], "tamper_index": -1}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: 1x1 RGB PNG chunk sequence; integrity fields generated per PNG chunk CRC rule"},
 
     {"case_id": "MGL5-INF-0101", "capability_id": "array_sum", "arguments": {"values": [-3, 0, 7, 11], "empty": []}},
     {"case_id": "MGL5-INF-0102", "capability_id": "array_minmax", "arguments": {"values": [-8, 4, 4, 19, 0]}},

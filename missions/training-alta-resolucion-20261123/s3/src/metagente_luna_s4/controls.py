@@ -42,6 +42,8 @@ def _build() -> None:
     _add("MGL5-INF-0079", "boundary", "sqlite_integrity", {"corrupt": False, "values": []}, "sqlite-empty-integrity-ok")
     _add("MGL5-INF-0085", "negative", "wasm_header", {"magic_hex": "0161736d", "version": 1}, "wasm-invalid-magic-rejected")
     _add("MGL5-INF-0085", "boundary", "wasm_header", {"magic_hex": "0061736d", "version": 0}, "wasm-version-zero-rejected")
+    _add("MGL5-INF-0080", "negative", "png_chunks", {"chunks": [{"type": "IHDR", "data_hex": "00000001000000010802000000"}, {"type": "IDAT", "data_hex": "00"}, {"type": "IEND", "data_hex": ""}], "tamper_index": 1}, "png-crc-mismatch-located")
+    _add("MGL5-INF-0080", "boundary", "png_chunks", {"chunks": [{"type": "IHDR", "data_hex": "00000001000000010802000000"}, {"type": "IDAT", "data_hex": ""}, {"type": "IEND", "data_hex": ""}], "tamper_index": -1}, "png-empty-idat-crc-valid")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -295,6 +297,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "sqlite-empty-integrity-ok": return control_completed and observed.get("integrity") is True and observed.get("messages") == ["ok"]
     if expect == "wasm-invalid-magic-rejected": return control_completed and observed.get("accepted") is False and observed.get("magic_valid") is False
     if expect == "wasm-version-zero-rejected": return control_completed and observed.get("accepted") is False and observed.get("magic_valid") is True and observed.get("version") == 0
+    if expect == "png-crc-mismatch-located": return control_completed and [row["type"] for row in observed.get("chunks", []) if not row["crc_valid"]] == ["IDAT"]
+    if expect == "png-empty-idat-crc-valid": return control_completed and all(row["crc_valid"] for row in observed.get("chunks", [])) and observed.get("chunks", [])[1]["length"] == 0
     if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.

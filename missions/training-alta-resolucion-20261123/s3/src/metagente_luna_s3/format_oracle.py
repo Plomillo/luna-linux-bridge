@@ -1,6 +1,8 @@
 """Format checks using SQLite header constants and WebAssembly binary contract."""
 from __future__ import annotations
 
+import zlib
+
 
 def sqlite_header_oracle(arguments: dict, observed: dict) -> dict:
     expected_page_size = arguments["page_size"]
@@ -19,3 +21,22 @@ def sqlite_integrity_oracle(arguments: dict, observed: dict) -> dict:
 def wasm_header_oracle(arguments: dict, observed: dict) -> dict:
     magic_ok = bytes.fromhex(arguments["magic_hex"]) == b"\0asm"
     return {"ok": observed.get("magic_valid") is magic_ok and observed.get("version") == arguments["version"] and observed.get("accepted") is (magic_ok and arguments["version"] == 1), "method": "WebAssembly core binary magic and little-endian version 1"}
+
+
+def png_chunks_oracle(arguments: dict, observed: dict) -> dict:
+    chunks = observed.get("chunks", [])
+    expected_types = [chunk["type"] for chunk in arguments["chunks"]]
+    if len(chunks) != len(arguments["chunks"]):
+        return {"ok": False, "method": "independent PNG type/length/CRC reconstruction"}
+    expected_crc = [zlib.crc32(chunk["type"].encode("ascii") + bytes.fromhex(chunk["data_hex"])) & 0xFFFFFFFF for chunk in arguments["chunks"]]
+    expected_valid = [index != arguments["tamper_index"] for index in range(len(chunks))]
+    ok = (
+        observed.get("signature_valid") is True
+        and [row.get("type") for row in chunks] == expected_types
+        and [row.get("length") for row in chunks] == [len(bytes.fromhex(chunk["data_hex"])) for chunk in arguments["chunks"]]
+        and [row.get("crc_valid") for row in chunks] == expected_valid
+        and [row.get("computed_crc32") for row in chunks] == expected_crc
+        and all((row.get("stored_crc32") == expected_crc[index]) is expected_valid[index] for index, row in enumerate(chunks))
+        and all(row.get("truncated") is False for row in chunks)
+    )
+    return {"ok": ok, "method": "independent PNG type/length/CRC reconstruction"}

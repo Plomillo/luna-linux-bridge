@@ -111,6 +111,8 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "sqlite-empty-integrity-ok": return completed and observed.get("integrity") is True and observed.get("messages") == ["ok"]
     if expect == "wasm-invalid-magic-rejected": return completed and observed.get("accepted") is False and observed.get("magic_valid") is False
     if expect == "wasm-version-zero-rejected": return completed and observed.get("accepted") is False and observed.get("magic_valid") is True and observed.get("version") == 0
+    if expect == "png-crc-mismatch-located": return completed and [row["type"] for row in observed.get("chunks", []) if not row["crc_valid"]] == ["IDAT"]
+    if expect == "png-empty-idat-crc-valid": return completed and all(row["crc_valid"] for row in observed.get("chunks", [])) and observed.get("chunks", [])[1]["length"] == 0
 
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import sqlite3
+import struct
+import zlib
 
 
 def sqlite_header(page_size: int) -> dict:
@@ -53,3 +55,40 @@ def wasm_header(magic_hex: str, version: int) -> dict:
     valid_magic = raw[:4] == b"\0asm"
     parsed_version = int.from_bytes(raw[4:8], "little") if len(raw) >= 8 else None
     return {"accepted": valid_magic and parsed_version == 1, "magic_valid": valid_magic, "version": parsed_version}
+
+
+def png_chunks(chunks: list[dict], tamper_index: int) -> dict:
+    if [chunk["type"] for chunk in chunks] != ["IHDR", "IDAT", "IEND"]:
+        raise ValueError("fixture must contain IHDR, IDAT, and IEND in source order")
+    if len(bytes.fromhex(chunks[0]["data_hex"])) != 13 or chunks[2]["data_hex"]:
+        raise ValueError("invalid IHDR or IEND length")
+    if tamper_index >= len(chunks):
+        raise ValueError("tamper index is outside the chunk sequence")
+    raw = bytearray(b"\x89PNG\r\n\x1a\n")
+    for chunk in chunks:
+        kind, payload = chunk["type"].encode("ascii"), bytes.fromhex(chunk["data_hex"])
+        raw.extend(struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF))
+    if tamper_index >= 0:
+        offset = 8
+        for index, chunk in enumerate(chunks):
+            size = len(bytes.fromhex(chunk["data_hex"]))
+            crc_offset = offset + 8 + size
+            if index == tamper_index:
+                raw[crc_offset] ^= 1
+                break
+            offset += 12 + size
+    if raw[:8] != b"\x89PNG\r\n\x1a\n":
+        raise ValueError("PNG signature mismatch")
+    observed, offset = [], 8
+    while offset + 12 <= len(raw):
+        size = struct.unpack(">I", raw[offset:offset + 4])[0]
+        end = offset + 12 + size
+        if end > len(raw):
+            observed.append({"type": raw[offset + 4:offset + 8].decode("ascii", "replace"), "length": size, "crc_valid": False, "truncated": True})
+            break
+        kind, payload = bytes(raw[offset + 4:offset + 8]), bytes(raw[offset + 8:offset + 8 + size])
+        stored_crc = struct.unpack(">I", raw[offset + 8 + size:end])[0]
+        calculated_crc = zlib.crc32(kind + payload) & 0xFFFFFFFF
+        observed.append({"type": kind.decode("ascii"), "length": size, "stored_crc32": stored_crc, "computed_crc32": calculated_crc, "crc_valid": stored_crc == calculated_crc, "truncated": False})
+        offset = end
+    return {"signature_valid": True, "chunks": observed, "archive_sha256": __import__("hashlib").sha256(raw).hexdigest()}
