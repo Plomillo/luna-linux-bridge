@@ -47,7 +47,7 @@ def full_scans(arguments: dict, observed: dict) -> dict:
     valid = (
         isinstance(sizes, list) and len(sizes) >= 2
         and all(isinstance(size, int) and not isinstance(size, bool) and size > 0 for size in sizes)
-        and all(left < right for left, right in zip(sizes, sizes[1:]))
+        and all(left < right for left, right in itertools.pairwise(sizes))
     )
     if not valid:
         return {"ok": observed.get("rejected") is True, "method": "independent scan-size validation"}
