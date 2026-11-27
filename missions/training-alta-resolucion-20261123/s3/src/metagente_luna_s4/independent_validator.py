@@ -71,6 +71,30 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     """Independent control adjudication; unknown expectation IDs fail closed."""
     if not isinstance(observed, dict):
         return False
+    if expect == "fifo-reversed-order":
+        return lifecycle_status == "EXECUTED" and observed.get("order") == ["C", "B", "A"] and observed.get("remaining") == 0
+    if expect == "fifo-singleton":
+        return lifecycle_status == "EXECUTED" and observed.get("order") == ["A"] and observed.get("remaining") == 0
+    if expect == "factorial-negative-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True and observed.get("negative_rejected") is True
+    if expect == "factorial-zero-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("values") == [1]
+    if expect == "symlink-escape-blocked":
+        return lifecycle_status == "EXECUTED" and observed.get("blocked") is True and observed.get("bytes_read") == 0 and observed.get("reason") == "symlink-escapes"
+    if expect == "internal-symlink-allowed":
+        return lifecycle_status == "EXECUTED" and observed.get("blocked") is False and observed.get("bytes_read") == 7 and observed.get("reason") == "internal-link"
+    if expect == "malformed-ipv6-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("accepted") is False
+    if expect == "ipv6-unspecified-accepted":
+        return lifecycle_status == "EXECUTED" and observed.get("accepted") is True
+    if expect == "invalid-prefix-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "host-prefix-boundary":
+        return lifecycle_status == "EXECUTED" and observed.get("network") == "192.0.2.130" and observed.get("broadcast") == "192.0.2.130"
+    if expect == "ipv6-prefix-rejected":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
+    if expect == "ipv6-host-prefix":
+        return lifecycle_status == "EXECUTED" and observed.get("rejected") is False and observed.get("prefix") == "2001:db8::1/128"
     if expect == "noninteger-components-rejected":
         return lifecycle_status == "EXECUTED" and observed.get("rejected") is True
     if expect == "zero-vector":
