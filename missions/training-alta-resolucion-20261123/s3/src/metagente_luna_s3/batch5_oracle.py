@@ -67,18 +67,29 @@ def folded_value(arguments: dict, observed: dict) -> dict:
         return {"ok": not expression or any(ch not in "0123456789+-*" for ch in expression)
                 or expression[0] in "+-*" or expression[-1] in "+-*",
                 "method": "independent expression-domain validation"}
-    # Independent recursive-descent evaluator; does not inspect the producer's tree.
+    # Independent AST evaluator; it never evaluates compiled source or calls the producer.
     import ast
+
+    def evaluate(node):
+        if isinstance(node, ast.Expression):
+            return evaluate(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, int) and not isinstance(node.value, bool):
+            return node.value
+        if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub, ast.Mult)):
+            left, right = evaluate(node.left), evaluate(node.right)
+            if isinstance(node.op, ast.Add):
+                return left + right
+            if isinstance(node.op, ast.Sub):
+                return left - right
+            return left * right
+        raise ValueError("unsupported arithmetic syntax")
+
     try:
-        tree = ast.parse(expression, mode="eval")
-        allowed = (ast.Expression, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Constant, ast.Load)
-        if any(not isinstance(node, allowed) for node in ast.walk(tree)):
-            raise ValueError("unsupported syntax")
-        value = eval(compile(tree, "<oracle>", "eval"), {"__builtins__": {}}, {})
-    except (SyntaxError, ValueError, TypeError, NameError):
-        return {"ok": False, "method": "independent expression parser"}
+        value = evaluate(ast.parse(expression, mode="eval"))
+    except (SyntaxError, ValueError, TypeError, RecursionError):
+        return {"ok": False, "method": "independent AST evaluator rejected unsupported syntax"}
     return {"ok": observed.get("rejected") is False and observed["value"] == value,
-            "method": "independent AST evaluation"}
+            "method": "independent AST arithmetic evaluation"}
 
 
 def refused_index(arguments: dict, observed: dict) -> dict:
