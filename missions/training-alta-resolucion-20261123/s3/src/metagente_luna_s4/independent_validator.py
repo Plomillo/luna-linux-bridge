@@ -71,6 +71,12 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     """Independent control adjudication; unknown expectation IDs fail closed."""
     if not isinstance(observed, dict):
         return False
+    if expect == "nfc-mismatch":
+        return lifecycle_status == "EXECUTED" and observed.get("same_nfc") is False and observed.get("nfc") == "é"
+    if expect == "n-tilde-decomposed":
+        return lifecycle_status == "EXECUTED" and observed.get("codepoints") == ["U+006E", "U+0303"]
+    if expect == "fullwidth-compat":
+        return lifecycle_status == "EXECUTED" and observed.get("compatibility") == "A" and observed.get("preserves_original_form") is False
     if expect == "distinct-bom-payloads":
         return lifecycle_status == "EXECUTED" and observed.get("visible") == "marked" and observed.get("plain_text") == "plain" and observed.get("contains_bom_character") is False
     if expect == "combining-grapheme":
