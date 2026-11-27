@@ -14,7 +14,7 @@ from metagente_luna_s4.controls import accepts
 
 def test_batch6_cases_are_typed_source_grounded_plans():
     by_id = {case["case_id"]: case for case in CASES}
-    assert set(by_id) == {"MGL5-INF-0105", "MGL5-INF-0106", "MGL5-INF-0109"}
+    assert set(by_id) == {"MGL5-INF-0105", "MGL5-INF-0106", "MGL5-INF-0109", "MGL5-INF-0114", "MGL5-INF-0609", "MGL5-INF-0611", "MGL5-INF-0632"}
     assert by_id["MGL5-INF-0105"]["fixture_provenance"].endswith("#stable-ages")
     assert by_id["MGL5-INF-0109"]["fixture_provenance"].endswith("#stack-script")
     assert by_id["MGL5-INF-0106"]["fixture_provenance"].endswith("#ten-thousand; seed/count drive deterministic integer generation")
@@ -93,3 +93,52 @@ def test_descending_sort_checks_permutation_order_and_rejection_controls():
     boundary_result = descending_seed(**boundary)
     assert accepts("descending-seed-singleton", boundary_result, "EXECUTED") is True
     assert seed_permutation(boundary, boundary_result)["ok"] is True
+
+def test_four_new_d03_candidates_are_registered_oracled_and_controlled():
+    from metagente_luna_s3.batch6_exec import (
+        determinant_3x3, matrix_multiply, moving_average, shortest_path,
+    )
+    from metagente_luna_s3.batch6_oracle import (
+        determinant_3x3_oracle, matrix_multiply_oracle, moving_average_oracle,
+        shortest_path_oracle,
+    )
+    from metagente_luna_s4.controls import run_controls
+    from metagente_luna_s4.batch6 import CASES as BATCH6_CASES
+
+    specs = {item["case_id"]: item for item in BATCH6_CASES}
+    graph = specs["MGL5-INF-0114"]["arguments"]
+    graph_result = shortest_path(**graph)
+    assert graph_result == {"rejected": False, "reachable": True, "path": ["A", "B", "D", "E", "F"], "distance": 4}
+    assert shortest_path_oracle(graph, graph_result)["ok"] is True
+
+    product = specs["MGL5-INF-0609"]["arguments"]
+    product_result = matrix_multiply(**product)
+    assert product_result["result"] == [[58, 64], [139, 154]]
+    assert matrix_multiply_oracle(product, product_result)["ok"] is True
+
+    determinant = specs["MGL5-INF-0611"]["arguments"]
+    determinant_result = determinant_3x3(**determinant)
+    assert determinant_result["determinant"] == -306
+    assert determinant_3x3_oracle(determinant, determinant_result)["ok"] is True
+
+    series = specs["MGL5-INF-0632"]["arguments"]
+    series_result = moving_average(**series)
+    assert series_result["averages"] == [2.0, 3.0, 4.0, 5.0]
+    assert moving_average_oracle(series, series_result)["ok"] is True
+
+    controls = {row["case_id"]: row["controls"] for row in run_controls()}
+    for case_id in ("MGL5-INF-0114", "MGL5-INF-0609", "MGL5-INF-0611", "MGL5-INF-0632"):
+        assert controls[case_id]["negative"]["accepted"] is True
+        assert controls[case_id]["boundary"]["accepted"] is True
+        assert controls[case_id]["negative"]["run_kind"] == "NEGATIVE"
+        assert controls[case_id]["boundary"]["run_kind"] == "BOUNDARY"
+
+
+def test_interpreter_resolves_new_fixture_backed_d03_operations():
+    for case_id, operation in OPERATIONS:
+        if case_id not in {"MGL5-INF-0114", "MGL5-INF-0609", "MGL5-INF-0611", "MGL5-INF-0632"}:
+            continue
+        result = interpret(operation)
+        assert result.status == "READY"
+        assert result.intent in {"shortest_path", "matrix_multiply", "determinant_3x3", "moving_average"}
+        assert all(argument.provenance == "FIXTURE" for argument in result.arguments)
