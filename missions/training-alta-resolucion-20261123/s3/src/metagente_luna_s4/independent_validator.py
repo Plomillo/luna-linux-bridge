@@ -617,6 +617,21 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "euler-equal-step-boundary": return completed and abs(observed.get("fine_error", 0) - observed.get("coarse_error", 0)) < 1e-12
     if expect == "rk4-step-out-of-range-rejected": return completed and observed.get("rejected") is True
     if expect == "rk4-single-step-boundary": return completed and observed.get("rejected") is not True and observed.get("step") == 1.0
+
+    if expect == "fibonacci-negative-input-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_fibonacci_index"
+    if expect == "fibonacci-zero-boundary": return completed and observed.get("rejected") is False and observed.get("naive_result") == observed.get("memoized_result") == 0 and observed.get("naive_calls") == observed.get("memoized_total_calls") == 1
+    if expect == "knapsack-negative-capacity-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_knapsack_fixture"
+    if expect == "knapsack-zero-capacity": return completed and observed.get("rejected") is False and observed.get("maximum_value") == 0
+    if expect == "email-invalid-rejected": return completed and observed.get("accepted") == [] and observed.get("invalid") == ["not-an-email"]
+    if expect == "email-minimal-domain-boundary": return completed and observed.get("accepted") == ["a@b.co"] and observed.get("invalid") == []
+    if expect == "optional-null-handled": return completed and observed.get("source") == "null" and observed.get("value") == "fallback" and observed.get("dereferenced") is False
+    if expect == "optional-value-preserved": return completed and observed.get("source") == "value" and observed.get("value") == "explicit" and observed.get("dereferenced") is True
+    if expect == "cleanup-invalid-fixture-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_hex"
+    if expect == "cleanup-empty-resource-closed": return completed and observed.get("closed") is True and observed.get("bytes_read") == 0 and observed.get("error") is None
+    if expect == "finally-without-exception-once": return completed and observed.get("error_type") is None and observed.get("finalizer_count") == 1
+    if expect == "finally-empty-exception-once": return completed and observed.get("error_type") == "ValueError" and observed.get("error_message") == "" and observed.get("finalizer_count") == 1
+    if expect == "raii-normal-exit-releases": return completed and observed.get("exit_path") == "normal_exit" and observed.get("bytes_consumed") == 7 and observed.get("released") is True and observed.get("release_count") == 1
+    if expect == "raii-empty-early-exit-releases": return completed and observed.get("exit_path") == "early_exit" and observed.get("bytes_consumed") == 0 and observed.get("released") is True and observed.get("release_count") == 1
     return False
 
 
