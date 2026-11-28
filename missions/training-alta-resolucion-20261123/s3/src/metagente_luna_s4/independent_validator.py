@@ -128,6 +128,10 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "moving-window-too-wide": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_window_or_series"
     if expect == "moving-single-value-boundary": return completed and observed.get("rejected") is False and observed.get("averages") == [9.0] and observed.get("start_indices") == [0]
 
+    if expect == "apk-signature-invalid-detected":
+        return completed and observed.get("signature_present") is True and observed.get("signature_valid") is False and observed.get("status") == "INVALID"
+    if expect == "apk-signature-absence-detected":
+        return completed and observed.get("signature_present") is False and observed.get("signature_valid") is False and observed.get("status") == "ABSENT"
     if expect == "apk-dex-missing-reported":
         return completed and observed.get("missing") == ["classes.dex"] and observed.get("present") == {"manifest": True, "resources": True, "dex": False}
     if expect == "apk-empty-members-listed":
