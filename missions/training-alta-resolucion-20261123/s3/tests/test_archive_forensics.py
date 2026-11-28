@@ -58,12 +58,12 @@ EXPECTED = {
     "MGL5-INF-0063": "pe_inspect",
     "MGL5-INF-0064": "pe_inspect",
     "MGL5-INF-0067": "dex_header",
-    "MGL5-INF-0068": "dex_tables",
+    "MGL5-INF-0068": "dex_tables",\n    "MGL5-INF-0633": "acf_lag0",\n    "MGL5-INF-0634": "trend_stationarity",
 }
 
 
 def test_archive_forensics_source_cases_have_three_stable_oracled_runs():
-    selected = {row["case_id"]: row for row in CASES if row["case_id"] in EXPECTED}
+    selected = {row["case_id"]: row for row in COMPILER.CASE_SPECS if row["case_id"] in EXPECTED}
     assert set(selected) == set(EXPECTED)
 
     for case_id, capability in EXPECTED.items():
