@@ -47,7 +47,7 @@ def zip_central_compare(entries: list[dict], tamper_central_name: bool = False) 
             central_names.append(central_name)
             if archive_bytes[local_offset:local_offset + 4] != b"PK\x03\x04" or local_offset + 30 > len(archive_bytes):
                 raise ValueError("local_record_invalid")
-            local_name_len, local_extra_len = struct.unpack_from("<HH", archive_bytes, local_offset + 26)
+            local_name_len, _local_extra_len = struct.unpack_from("<HH", archive_bytes, local_offset + 26)
             local_name = archive_bytes[local_offset + 30:local_offset + 30 + local_name_len].decode("utf-8")
             local_names.append(local_name)
             if local_name != central_name:
