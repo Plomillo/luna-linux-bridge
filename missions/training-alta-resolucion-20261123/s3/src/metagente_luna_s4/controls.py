@@ -19,9 +19,10 @@ from metagente_luna_s4.batch4 import CASES as FOURTH
 from metagente_luna_s4.batch5 import CASES as FIFTH
 from metagente_luna_s4.batch6 import CASES as SIXTH
 from metagente_luna_s4.d01_batch import CASES as FIRST
+from metagente_luna_s4.batch7 import CASES as SEVENTH
 from metagente_luna_s4.runner import execute
 
-CASES = FIRST + SECOND + THIRD + FOURTH + FIFTH + SIXTH
+CASES = FIRST + SECOND + THIRD + FOURTH + FIFTH + SIXTH + SEVENTH
 
 
 CONTROLS: dict[str, dict] = {}
@@ -37,6 +38,8 @@ def _build() -> None:
     text = "utf8_roundtrip"
     _add("MGL5-INF-0001", "negative", text, {"text": "Luna-2025"}, "different-text")
 
+    _add("MGL5-INF-0633", "negative", "acf_lag0", {"values": [7, 7, 7]}, "acf-zero-variance-rejected")
+    _add("MGL5-INF-0633", "boundary", "acf_lag0", {"values": [1, 2]}, "acf-two-point-boundary")
     _add("MGL5-INF-0067", "negative", "dex_header", {"payload_hex": _DEX_HEX[:80]}, "dex-truncated-header-rejected")
     _add("MGL5-INF-0067", "boundary", "dex_header", {"payload_hex": _DEX_BOUNDARY_HEX}, "dex-minimum-valid-header")
     _add("MGL5-INF-0068", "negative", "dex_tables", {"payload_hex": (_DEX_FIXTURE[:124] + (99).to_bytes(4, "little") + _DEX_FIXTURE[128:]).hex()}, "dex-invalid-type-string-index")
