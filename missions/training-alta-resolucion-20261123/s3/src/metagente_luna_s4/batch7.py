@@ -1,15 +1,15 @@
-"""Source-bound scientific-computing case additions with independent ACF oracle."""
+"""Source-bound stationarity diagnostic for MGL5-INF-0634."""
 from __future__ import annotations
 
 from metagente_luna_s4.runner import execute
 
-# FX-MGL5-INF-0634: deterministic synthetic series, seed 0634.
+# Canonical JSON fixture SHA-256 for {"values":[1,2,3,4,5,6,7,8]}.
 CASES = [
     {
         "case_id": "MGL5-INF-0634",
-        "capability_id": "acf_lag0",
-        "arguments": {"values": [1, 2, 3, 4]},
-        "fixture_provenance": "SYNTHETIC_MINIMAL: seed=0634; linear-trend series [1,2,3,4]; independently recomputed lagged covariance reference",
+        "capability_id": "trend_stationarity",
+        "arguments": {"values": [1, 2, 3, 4, 5, 6, 7, 8]},
+        "fixture_provenance": "SYNTHETIC_MINIMAL: deterministic linear trend; canonical fixture SHA-256=e1008f4fb4eb6e2a120d9e06bf2a610192f0e1ca242d715b3daa41154e4f74a7; diagnostic is not a formal stationarity test",
     },
 ]
 
