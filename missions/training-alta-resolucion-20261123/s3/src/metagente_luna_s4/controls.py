@@ -371,8 +371,8 @@ def _build() -> None:
     _add("MGL5-INF-0609", "boundary", "matrix_multiply", {"left": [[0]], "right": [[0]]}, "matrix-single-zero-product")
     _add("MGL5-INF-0611", "negative", "determinant_3x3", {"matrix": [[1, 2], [3, 4]]}, "determinant-nonsquare-rejected")
     _add("MGL5-INF-0611", "boundary", "determinant_3x3", {"matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]}, "determinant-identity-one")
-    _add("MGL5-INF-0632", "negative", "moving_average", {"values": [1, 2, 3], "window": 4}, "moving-window-too-wide")
-    _add("MGL5-INF-0632", "boundary", "moving_average", {"values": [9], "window": 1}, "moving-single-value-boundary")
+    _add("MGL5-INF-0632", "negative", "moving_average_c05", {"values": [1, 2, 3], "window": 4}, "moving-window-too-wide")
+    _add("MGL5-INF-0632", "boundary", "moving_average_c05", {"values": [9], "window": 1}, "moving-single-value-boundary")
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
     # A control is adjudicated against its own expected behavior, not the
