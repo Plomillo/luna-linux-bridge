@@ -141,10 +141,10 @@ jobs:
 
           blockers = [json.loads(line) for line in Path("reports/C05_POPULATION_BLOCKERS.jsonl").read_text().splitlines() if line]
           assert plan["authored_normal_specs"] == plan["compiled_executable_plans"], plan
-          assert plan["interpreter_candidates"] == 11, plan
-          assert plan["interpreter_ready"] == 11, plan
+          assert plan["interpreter_candidates"] == 16, plan
+          assert plan["interpreter_ready"] == 16, plan
           assert plan["interpreter_blocked"] == 0, plan
-          assert plan["interpreter_registered"] == 11, plan
+          assert plan["interpreter_registered"] == 16, plan
           assert plan["unique_source_plan_candidates"] >= plan["compiled_executable_plans"], plan
           executable_count = plan["compiled_executable_plans"]
           not_run_count = 1000 - executable_count

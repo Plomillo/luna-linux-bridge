@@ -71,3 +71,19 @@ def test_fifo_bst_dfs_linked_list_source_instructions_execute():
     assert rows["MGL5-INF-0112"]["observed"]["inorder"] == [1, 3, 6, 8, 10, 14]
     assert rows["MGL5-INF-0115"]["observed"]["cycle"] is True
     assert rows["MGL5-INF-0111"]["observed"]["values"] == [1, 3]
+def test_legacy_batch3_batch5_cases_are_rewired_and_new_batch6_cases_execute():
+    from metagente_luna_s4.batch3 import CASES as BATCH3_CASES
+    from metagente_luna_s4.batch5 import CASES as BATCH5_CASES
+    from metagente_luna_s4.runner import execute
+
+    batch3_spec = next(item for item in BATCH3_CASES if item["case_id"] == "MGL5-INF-0112")
+    batch5_specs = {item["case_id"]: item for item in BATCH5_CASES}
+    for case_id in ("MGL5-INF-0110", "MGL5-INF-0113", "MGL5-INF-0119"):
+        result = execute(batch5_specs[case_id]["capability_id"], batch5_specs[case_id]["arguments"], case_id)
+        assert result["execution_status"] == "EXECUTED" and result["oracle_result"]["ok"]
+    result = execute(batch3_spec["capability_id"], batch3_spec["arguments"], batch3_spec["case_id"])
+    assert result["execution_status"] == "EXECUTED" and result["oracle_result"]["ok"]
+
+    rows = {row["case_id"]: row for row in run_all()}
+    for case_id in ("MGL5-INF-0111", "MGL5-INF-0115", "MGL5-INF-0116", "MGL5-INF-0117", "MGL5-INF-0118"):
+        assert rows[case_id]["execution_status"] == "CRITERION_MET"
