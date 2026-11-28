@@ -95,6 +95,7 @@ def test_descending_sort_checks_permutation_order_and_rejection_controls():
 
 
 def test_registered_d03_plans_have_oracles_and_controls():
+    # All source cases resolve to the corrected executor contracts.
     from metagente_luna_s3.batch6_exec import (
         avl_tree,
         bellman_ford_cycle,
