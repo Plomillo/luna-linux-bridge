@@ -141,6 +141,7 @@ CASES = [
     {"case_id": "MGL5-INF-0061", "capability_id": "pe_inspect", "arguments": {"payload_hex": _PE_HEX, "mode": "header"}, "fixture_provenance": "SOURCE_DERIVED_PE64: deterministic handcrafted PE32+ fixture with MZ, bounded e_lfanew and PE signature; structural inspection only"},
     {"case_id": "MGL5-INF-0062", "capability_id": "pe_inspect", "arguments": {"payload_hex": _PE_HEX, "mode": "sections"}, "fixture_provenance": "SOURCE_DERIVED_PE64: fixture contains .text, .data and .rdata with independently reconstructable raw offsets and sizes"},
     {"case_id": "MGL5-INF-0063", "capability_id": "pe_inspect", "arguments": {"payload_hex": _PE_HEX, "mode": "imports"}, "fixture_provenance": "SOURCE_DERIVED_PE64: static KERNEL32.dll ExitProcess import; no image loading or dynamic module observation"},
+    {"case_id": "MGL5-INF-0065", "capability_id": "apk_inventory", "arguments": {"entries": [{"name": "AndroidManifest.xml", "data_hex": "3c6d616e69666573742f3e"}, {"name": "resources.arsc", "data_hex": "01020304"}, {"name": "classes.dex", "data_hex": "6465780a30333500"}]}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL: deterministic APK-like ZIP with manifest, resource table, and DEX member; inventory-only/no extraction"},
     {"case_id": "MGL5-INF-0064", "capability_id": "pe_inspect", "arguments": {"payload_hex": _PE_HEX[:0x188 * 2], "mode": "sections"}, "fixture_provenance": "SOURCE_DERIVED_TRUNCATED_PE64: exact cut at first byte of section table; required safe rejection"},
 
 
