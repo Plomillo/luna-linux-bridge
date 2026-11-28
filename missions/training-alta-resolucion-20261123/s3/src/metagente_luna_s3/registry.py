@@ -623,6 +623,13 @@ REGISTRY.update({
     "raii_release": _cap("raii_release", "raii_release_independent", {"type":"object","required":["early_exit","payload_hex"],"properties":{"early_exit":{"type":"boolean"},"payload_hex":{"type":"string"}},"additionalProperties":False}),
 })
 ORACLES.update({
+    "fibonacci_compare": d03_oracle.fibonacci_oracle,
+    "knapsack_01": d03_oracle.knapsack_oracle,
+    "email_syntax": d03_oracle.email_oracle,
+    "optional_value": d03_oracle.optional_value_oracle,
+    "read_cleanup": d03_oracle.cleanup_oracle,
+    "finally_once": d03_oracle.finally_oracle,
+    "raii_release": d03_oracle.raii_oracle,
     "fibonacci_independent": d03_oracle.fibonacci_oracle,
     "knapsack_independent": d03_oracle.knapsack_oracle,
     "email_syntax_independent": d03_oracle.email_oracle,
