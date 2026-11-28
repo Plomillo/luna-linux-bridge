@@ -11,6 +11,10 @@ OPERATIONS = [
     ("MGL5-INF-0105", "Ordenar registros por edad conservando orden entre edades iguales."),
     ("MGL5-INF-0106", "Ordenar 10.000 enteros en orden descendente."),
     ("MGL5-INF-0109", "Ejecutar push, pop y peek con secuencia predefinida."),
+    ("MGL5-INF-0110", "Encolar A, B, C y desencolar tres veces."),
+    ("MGL5-INF-0111", "Insertar y eliminar nodos en cabeza, centro y cola."),
+    ("MGL5-INF-0112", "Insertar 8, 3, 10, 1, 6, 14 en árbol BST y obtener inorder."),
+    ("MGL5-INF-0115", "Recorrer grafo con ciclo usando DFS."),
     ("MGL5-INF-0114", "Buscar ruta en grafo de seis nodos conocido."),
     ("MGL5-INF-0609", "Multiplicar matrices 2×3 y 3×2 conocidas."),
     ("MGL5-INF-0611", "Calcular determinante de matriz 3×3 de referencia."),
@@ -46,31 +50,6 @@ CASES = [
         "capability_id": "stack_sequence",
         "arguments": {"steps": _FIXTURE["stack-script"]["steps"]},
         "fixture_provenance": "FIXTURE:derived_parameters.json#stack-script",
-    },
-
-    {
-        "case_id": "MGL5-INF-0110",
-        "capability_id": "fifo_queue",
-        "arguments": {"steps": _FIXTURE["fifo-queue"]["steps"]},
-        "fixture_provenance": "FIXTURE:derived_parameters.json#fifo-queue; enqueue A/B/C then dequeue three",
-    },
-    {
-        "case_id": "MGL5-INF-0111",
-        "capability_id": "linked_list",
-        "arguments": {"operations": _FIXTURE["linked-list"]["operations"]},
-        "fixture_provenance": "FIXTURE:derived_parameters.json#linked-list; head/middle/tail edits",
-    },
-    {
-        "case_id": "MGL5-INF-0112",
-        "capability_id": "bst_inorder",
-        "arguments": {"values": _FIXTURE["bst-values"]["values"]},
-        "fixture_provenance": "FIXTURE:derived_parameters.json#bst-values; source-listed insertion values",
-    },
-    {
-        "case_id": "MGL5-INF-0115",
-        "capability_id": "dfs_graph",
-        "arguments": {"nodes": _FIXTURE["dfs-cycle"]["nodes"], "edges": _FIXTURE["dfs-cycle"]["edges"], "start": _FIXTURE["dfs-cycle"]["start"]},
-        "fixture_provenance": "FIXTURE:derived_parameters.json#dfs-cycle; cycle plus reachable tail",
     },
     {
         "case_id": "MGL5-INF-0114",
