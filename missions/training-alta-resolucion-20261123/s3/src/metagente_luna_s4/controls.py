@@ -39,6 +39,8 @@ def _build() -> None:
 
     _add("MGL5-INF-0065", "negative", "apk_inventory", {"entries": [{"name": "AndroidManifest.xml", "data_hex": "3c6d616e69666573742f3e"}, {"name": "resources.arsc", "data_hex": "01020304"}]}, "apk-dex-missing-reported")
     _add("MGL5-INF-0065", "boundary", "apk_inventory", {"entries": [{"name": "AndroidManifest.xml", "data_hex": ""}, {"name": "resources.arsc", "data_hex": ""}, {"name": "classes.dex", "data_hex": ""}]}, "apk-empty-members-listed")
+    _add("MGL5-INF-0066", "negative", "apk_signature_verify", {"entries": [{"name": "AndroidManifest.xml", "data_hex": "3c6d616e69666573742f3e"}, {"name": "resources.arsc", "data_hex": "01020304"}, {"name": "classes.dex", "data_hex": "6465780a30333500"}], "signature_mode": "invalid"}, "apk-signature-invalid-detected")
+    _add("MGL5-INF-0066", "boundary", "apk_signature_verify", {"entries": [{"name": "AndroidManifest.xml", "data_hex": "3c6d616e69666573742f3e"}, {"name": "resources.arsc", "data_hex": "01020304"}, {"name": "classes.dex", "data_hex": "6465780a30333500"}], "signature_mode": "absent"}, "apk-signature-absence-detected")
     _add("MGL5-INF-0067", "negative", "dex_header", {"payload_hex": _DEX_HEX[:80]}, "dex-truncated-header-rejected")
     _add("MGL5-INF-0067", "boundary", "dex_header", {"payload_hex": _DEX_BOUNDARY_HEX}, "dex-minimum-valid-header")
     _add("MGL5-INF-0068", "negative", "dex_tables", {"payload_hex": (_DEX_FIXTURE[:124] + (99).to_bytes(4, "little") + _DEX_FIXTURE[128:]).hex()}, "dex-invalid-type-string-index")
@@ -414,6 +416,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "determinant-identity-one": return control_completed and observed.get("rejected") is False and observed.get("determinant") == 1
     if expect == "moving-window-too-wide": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_window_or_series"
     if expect == "moving-single-value-boundary": return control_completed and observed.get("rejected") is False and observed.get("averages") == [9.0] and observed.get("start_indices") == [0]
+    if expect == "apk-signature-invalid-detected": return control_completed and observed.get("signature_present") is True and observed.get("signature_valid") is False and observed.get("status") == "INVALID"
+    if expect == "apk-signature-absence-detected": return control_completed and observed.get("signature_present") is False and observed.get("signature_valid") is False and observed.get("status") == "ABSENT"
     if expect == "apk-dex-missing-reported": return control_completed and observed.get("missing") == ["classes.dex"] and observed.get("present") == {"manifest": True, "resources": True, "dex": False}
     if expect == "apk-empty-members-listed": return control_completed and observed.get("present") == {"manifest": True, "resources": True, "dex": True} and observed.get("uncompressed_bytes") == 0
     if expect == "dex-truncated-header-rejected": return control_completed and observed.get("rejected") is True
