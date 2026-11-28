@@ -292,3 +292,70 @@ def linked_list_oracle(arguments: dict, observed: dict) -> dict:
         else:
             expected = {"rejected": False, "values": values, "length": len(values), "history": history}
     return {"ok": observed == expected, "expected": expected, "method": "independent array reference"}
+def dijkstra_oracle(arguments, observed):
+    nodes,edges,start,target=(arguments.get("nodes"),arguments.get("edges"),arguments.get("start"),arguments.get("target"))
+    valid=isinstance(nodes,list) and bool(nodes) and len(set(nodes))==len(nodes) and isinstance(edges,list) and all(isinstance(e,list) and len(e)==3 and e[0] in nodes and e[1] in nodes and isinstance(e[2],(int,float)) and not isinstance(e[2],bool) for e in edges) and start in nodes and target in nodes
+    if not valid:expected={"rejected":True,"reason":"invalid_graph"}
+    elif any(weight<0 for _,_,weight in edges):expected={"rejected":True,"reason":"negative_weight_rejected"}
+    else:
+        dist={node:float("inf") for node in nodes};pred={};dist[start]=0
+        for _ in range(len(nodes)-1):
+            changed=False
+            for source,destination,weight in edges:
+                if dist[source]!=float("inf") and dist[source]+weight<dist[destination]:
+                    dist[destination]=dist[source]+weight;pred[destination]=source;changed=True
+            if not changed:break
+        reachable=dist[target]!=float("inf");path=[]
+        if reachable:
+            cursor=target
+            while cursor!=start:path.append(cursor);cursor=pred[cursor]
+            path.append(start);path.reverse()
+        expected={"rejected":False,"reachable":reachable,"distance":dist[target] if reachable else None,"path":path,"distances":{node:dist[node] if dist[node]!=float("inf") else None for node in nodes}}
+    return {"ok":observed==expected,"expected":expected,"method":"independent Bellman-Ford oracle"}
+
+
+def avl_tree_oracle(arguments, observed):
+    values=arguments.get("values")
+    if not isinstance(values,list) or any(not isinstance(v,int) or isinstance(v,bool) for v in values):return {"ok":observed=={"rejected":True,"reason":"values_must_be_integers"},"method":"input contract"}
+    if len(set(values))!=len(values):return {"ok":observed=={"rejected":True,"reason":"duplicate_value"},"method":"duplicate contract"}
+    order=[];balanced=True
+    def audit(node):
+        nonlocal balanced
+        if node is None:return 0
+        if not isinstance(node,dict) or set(node)!={"value","left","right"} or not isinstance(node["value"],int) or isinstance(node["value"],bool):balanced=False;return 0
+        left=audit(node["left"]);order.append(node["value"]);right=audit(node["right"])
+        if abs(left-right)>1:balanced=False
+        return max(left,right)+1
+    height=audit(observed.get("root"));sorted_values=sorted(values)
+    ok=observed.get("rejected") is False and order==sorted_values and observed.get("inorder")==sorted_values and observed.get("count")==len(values) and observed.get("height")==height and observed.get("balanced") is balanced and balanced
+    if len(values)==1000:ok=ok and height<=10
+    return {"ok":ok,"method":"independent structural AVL audit"}
+
+
+def bellman_ford_cycle_oracle(arguments, observed):
+    nodes,edges,start=arguments.get("nodes"),arguments.get("edges"),arguments.get("start")
+    valid=isinstance(nodes,list) and bool(nodes) and len(set(nodes))==len(nodes) and isinstance(edges,list) and all(isinstance(e,list) and len(e)==3 and e[0] in nodes and e[1] in nodes and isinstance(e[2],(int,float)) and not isinstance(e[2],bool) for e in edges) and start in nodes
+    if not valid:expected={"rejected":True,"reason":"invalid_graph"}
+    else:
+        dist={node:None for node in nodes};dist[start]=0
+        for _ in range(len(nodes)-1):
+            for source,destination,weight in edges:
+                if dist[source] is not None and (dist[destination] is None or dist[source]+weight<dist[destination]):dist[destination]=dist[source]+weight
+        cycle=any(dist[source] is not None and (dist[destination] is None or dist[source]+weight<dist[destination]) for source,destination,weight in edges)
+        expected={"rejected":False,"negative_cycle_reachable":cycle,"distances":None if cycle else dist}
+    return {"ok":observed==expected,"expected":expected,"method":"independent Bellman-Ford relaxation"}
+
+
+def linear_search_complexity_oracle(arguments, observed):
+    sizes,target=arguments.get("sizes"),arguments.get("target")
+    if not isinstance(sizes,list) or any(not isinstance(n,int) or isinstance(n,bool) or n<=0 for n in sizes) or not isinstance(target,int) or isinstance(target,bool):expected={"rejected":True,"reason":"invalid_sizes_or_target"}
+    else:
+        rows=[]
+        for size in sizes:
+            comparisons,index=0,None
+            for candidate in range(size):
+                comparisons+=1
+                if candidate==target:index=candidate;break
+            rows.append({"size":size,"comparisons":comparisons,"index":index,"found":index is not None})
+        expected={"rejected":False,"measurements":rows,"growth_ratios":[rows[i]["comparisons"]/rows[i-1]["comparisons"] for i in range(1,len(rows))],"complexity":"LINEAR"}
+    return {"ok":observed==expected,"expected":expected,"method":"independent direct-count search"}

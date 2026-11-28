@@ -252,8 +252,8 @@ def _build() -> None:
     _add("MGL5-INF-0626", "boundary", "pearson", {"left": [1, 2], "right": [2, 4]}, "perfect-positive-correlation")
     _add("MGL5-INF-0627", "negative", "pearson", {"left": [1, 1, 1], "right": [3, 2, 1]}, "zero-variance-rejected")
     _add("MGL5-INF-0627", "boundary", "pearson", {"left": [1, 2], "right": [2, 1]}, "perfect-negative-correlation")
-    _add("MGL5-INF-0110", "negative", "dequeue_named", {"values": ["C", "B", "A"]}, "fifo-reversed-order")
-    _add("MGL5-INF-0110", "boundary", "dequeue_named", {"values": ["A"]}, "fifo-singleton")
+    _add("MGL5-INF-0110", "negative", "fifo_queue", {"steps": ["enqueue:C", "enqueue:B", "enqueue:A", "dequeue", "dequeue", "dequeue"]}, "fifo-reversed-order")
+    _add("MGL5-INF-0110", "boundary", "fifo_queue", {"steps": ["enqueue:A", "dequeue"]}, "fifo-singleton")
     _add("MGL5-INF-0120", "negative", "factorials", {"values": [-1]}, "factorial-negative-rejected")
     _add("MGL5-INF-0120", "boundary", "factorials", {"values": [0]}, "factorial-zero-boundary")
     _add("MGL5-INF-0142", "negative", "confined", {"requested": "escape"}, "symlink-escape-blocked")
@@ -299,8 +299,8 @@ def _build() -> None:
     _add("MGL5-INF-0607", "boundary", "compensated_sum", {"start": 1.0, "increment": 1e-8, "count": 0}, "sum-zero-boundary")
     _add("MGL5-INF-0109", "negative", "stack_sequence", {"steps": ["pop"]}, "single-underflow")
     _add("MGL5-INF-0109", "boundary", "stack_sequence", {"steps": []}, "empty-stack-sequence")
-    _add("MGL5-INF-0112", "negative", "binary_insert", {"values": [5, 2, 9]}, "binary-insert-variant")
-    _add("MGL5-INF-0112", "boundary", "binary_insert", {"values": [7]}, "binary-insert-singleton")
+    _add("MGL5-INF-0112", "negative", "bst_inorder", {"values": [5, 2, 9]}, "binary-insert-variant")
+    _add("MGL5-INF-0112", "boundary", "bst_inorder", {"values": [7]}, "binary-insert-singleton")
     _add("MGL5-INF-0125", "negative", "arithmetic", {"expression": "2+3*5"}, "arithmetic-variant-17")
     _add("MGL5-INF-0125", "boundary", "arithmetic", {"expression": "0+0"}, "arithmetic-zero-boundary")
     _add("MGL5-INF-0155", "negative", "arithmetic", {"expression": "2*(1+2)"}, "arithmetic-variant-6")
@@ -343,10 +343,10 @@ def _build() -> None:
 
     # C05: distinct negative and boundary fixtures for the ten previously
     # source-defined but control-incomplete batch-5 operations.
-    _add("MGL5-INF-0113", "negative", "balanced_range", {"count": 0}, "range-count-rejected")
-    _add("MGL5-INF-0113", "boundary", "balanced_range", {"start": 0, "count": 1}, "range-singleton")
-    _add("MGL5-INF-0119", "negative", "linear_scans", {"sizes": [0]}, "scan-size-rejected")
-    _add("MGL5-INF-0119", "boundary", "linear_scans", {"sizes": [1, 2, 4], "needle": 0}, "scan-first-element")
+    _add("MGL5-INF-0113", "negative", "avl_tree", {"values": [1, 1]}, "avl-duplicate-rejected")
+    _add("MGL5-INF-0113", "boundary", "avl_tree", {"values": [1]}, "avl-singleton-balanced")
+    _add("MGL5-INF-0119", "negative", "linear_search_complexity", {"sizes": [0], "target": 0}, "linear-search-invalid-size-rejected")
+    _add("MGL5-INF-0119", "boundary", "linear_search_complexity", {"sizes": [1], "target": 0}, "linear-search-singleton-hit")
     _add("MGL5-INF-0141", "negative", "parameterized_name", {"name": "' OR 1=1 --"}, "query-injection-not-matched")
     _add("MGL5-INF-0141", "boundary", "parameterized_name", {"name": "ada"}, "query-exact-match")
     _add("MGL5-INF-0154", "negative", "precedence_tree", {"text": "1+*2"}, "expression-rejected")
@@ -365,6 +365,13 @@ def _build() -> None:
     _add("MGL5-INF-0503", "boundary", "exit_codes", {"commands": ["true"]}, "single-zero-exit")
 
 
+
+    _add("MGL5-INF-0116", "negative", "dijkstra", {"nodes": ["A", "B"], "edges": [["A", "B", -1]], "start": "A", "target": "B"}, "dijkstra-negative-weight-rejected")
+    _add("MGL5-INF-0116", "boundary", "dijkstra", {"nodes": ["A"], "edges": [], "start": "A", "target": "A"}, "dijkstra-singleton-boundary")
+    _add("MGL5-INF-0117", "negative", "dijkstra", {"nodes": ["A", "B"], "edges": [["A", "Z", 1]], "start": "A", "target": "B"}, "dijkstra-invalid-edge-rejected")
+    _add("MGL5-INF-0117", "boundary", "dijkstra", {"nodes": ["A", "B", "C"], "edges": [["A", "B", 0], ["B", "C", 1]], "start": "A", "target": "C"}, "dijkstra-zero-weight-path")
+    _add("MGL5-INF-0118", "negative", "bellman_ford_cycle", {"nodes": ["A", "B", "C"], "edges": [["A", "B", 1], ["B", "C", 1]], "start": "A"}, "bellman-no-negative-cycle")
+    _add("MGL5-INF-0118", "boundary", "bellman_ford_cycle", {"nodes": ["A"], "edges": [], "start": "A"}, "bellman-singleton")
     _add("MGL5-INF-0114", "negative", "shortest_path", {"nodes": ["A", "B", "C"], "edges": [["A", "B"]], "start": "A", "target": "C"}, "bfs-unreachable-target")
     _add("MGL5-INF-0114", "boundary", "shortest_path", {"nodes": ["A"], "edges": [], "start": "A", "target": "A"}, "bfs-single-node-zero-distance")
     _add("MGL5-INF-0609", "negative", "matrix_multiply", {"left": [[1, 2, 3]], "right": [[1, 2], [3, 4]]}, "matrix-inner-dimension-mismatch")
@@ -380,6 +387,13 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     # oracle rejected this control input; the observed control may still pass.
     control_completed = status in {"EXECUTED", "FAIL"}
 
+
+    if expect == "dijkstra-negative-weight-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "negative_weight_rejected"
+    if expect == "dijkstra-singleton-boundary": return control_completed and observed.get("rejected") is False and observed.get("reachable") is True and observed.get("distance") == 0 and observed.get("path") == ["A"]
+    if expect == "dijkstra-invalid-edge-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_graph"
+    if expect == "dijkstra-zero-weight-path": return control_completed and observed.get("rejected") is False and observed.get("distance") == 1 and observed.get("path") == ["A", "B", "C"]
+    if expect == "bellman-no-negative-cycle": return control_completed and observed.get("negative_cycle_reachable") is False and observed.get("distances") == {"A": 0, "B": 1, "C": 2}
+    if expect == "bellman-singleton": return control_completed and observed.get("negative_cycle_reachable") is False and observed.get("distances") == {"A": 0}
     if expect == "bfs-unreachable-target": return control_completed and observed.get("reachable") is False and observed.get("path") == [] and observed.get("distance") is None
     if expect == "bfs-single-node-zero-distance": return control_completed and observed.get("reachable") is True and observed.get("path") == ["A"] and observed.get("distance") == 0
     if expect == "matrix-inner-dimension-mismatch": return control_completed and observed.get("rejected") is True and observed.get("reason") == "matrix_dimensions_invalid"
@@ -628,9 +642,9 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "threshold-above-fires":
         return control_completed and observed.get("at_or_below") is False and observed.get("above") is True
     if expect == "fifo-reversed-order":
-        return control_completed and observed.get("order") == ["C", "B", "A"] and observed.get("remaining") == 0
+        return control_completed and observed.get("dequeued") == ["C", "B", "A"] and observed.get("queue") == []
     if expect == "fifo-singleton":
-        return control_completed and observed.get("order") == ["A"] and observed.get("remaining") == 0
+        return control_completed and observed.get("dequeued") == ["A"] and observed.get("queue") == []
     if expect == "factorial-negative-rejected":
         return control_completed and observed.get("rejected") is True and observed.get("negative_rejected") is True
     if expect == "factorial-zero-boundary":
@@ -835,10 +849,10 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
             and observed.get("underflow_count") == 0
         )
 
-    if expect == "range-count-rejected": return control_completed and observed.get("rejected") is True
-    if expect == "range-singleton": return control_completed and observed.get("rejected") is False and observed.get("count") == observed.get("nodes") == observed.get("found") == 1
-    if expect == "scan-size-rejected": return control_completed and observed.get("rejected") is True
-    if expect == "scan-first-element": return control_completed and observed.get("rejected") is False and observed.get("comparisons") == [1, 1, 1]
+    if expect == "avl-duplicate-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "duplicate_value"
+    if expect == "avl-singleton-balanced": return control_completed and observed.get("rejected") is False and observed.get("inorder") == [1] and observed.get("height") == 1 and observed.get("balanced") is True
+    if expect == "linear-search-invalid-size-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_sizes_or_target"
+    if expect == "linear-search-singleton-hit": return control_completed and observed.get("measurements") == [{"size": 1, "comparisons": 1, "index": 0, "found": True}] and observed.get("complexity") == "LINEAR"
     if expect == "query-injection-not-matched": return control_completed and observed.get("matched") == 0 and observed.get("status") == 200
     if expect == "query-exact-match": return control_completed and observed.get("matched") == 1 and observed.get("status") == 200
     if expect == "expression-rejected": return control_completed and observed.get("rejected") is True

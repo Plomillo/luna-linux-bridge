@@ -1,6 +1,8 @@
 """Executors for the source-grounded D03 batch-six cases."""
 from __future__ import annotations
 
+import heapq
+
 
 def stable_ages(records: list[dict]) -> dict:
     if not isinstance(records, list) or any(
@@ -162,7 +164,7 @@ def bst_inorder(values: list[int]) -> dict:
     if not isinstance(values, list) or any(not isinstance(v, int) or isinstance(v, bool) for v in values):
         return {"rejected": True, "reason": "values_must_be_integers"}
     class Node:
-        __slots__ = ("value", "left", "right")
+        __slots__ = ("left", "right", "value")
         def __init__(self, value):
             self.value, self.left, self.right = value, None, None
     root = None
@@ -227,7 +229,7 @@ def linked_list(operations: list[dict]) -> dict:
     if not isinstance(operations, list):
         return {"rejected": True, "reason": "operations_must_be_list"}
     class Node:
-        __slots__ = ("value", "next")
+        __slots__ = ("next", "value")
         def __init__(self, value):
             self.value, self.next = value, None
     head, size, history = None, 0, []
@@ -267,3 +269,107 @@ def linked_list(operations: list[dict]) -> dict:
         values.append(node.value)
         node = node.next
     return {"rejected": False, "values": values, "length": size, "history": history}
+def dijkstra(nodes, edges, start, target):
+    if (not isinstance(nodes, list) or not nodes or len(set(nodes)) != len(nodes)
+        or any(not isinstance(node, str) or not node for node in nodes)
+        or not isinstance(edges, list) or any(not isinstance(edge, list) or len(edge) != 3 for edge in edges)
+        or any(source not in nodes or destination not in nodes for source, destination, weight in edges)
+        or any(not isinstance(weight, (int, float)) or isinstance(weight, bool) for _, _, weight in edges)
+        or start not in nodes or target not in nodes):
+        return {"rejected": True, "reason": "invalid_graph"}
+    if any(weight < 0 for _, _, weight in edges):
+        return {"rejected": True, "reason": "negative_weight_rejected"}
+    adjacency = {node: [] for node in nodes}
+    for source, destination, weight in edges: adjacency[source].append((destination, weight))
+    distances, previous = {node: float("inf") for node in nodes}, {}
+    distances[start] = 0
+    heap = [(0, start)]
+    while heap:
+        distance, node = heapq.heappop(heap)
+        if distance != distances[node]: continue
+        for neighbor, weight in adjacency[node]:
+            candidate = distance + weight
+            if candidate < distances[neighbor]:
+                distances[neighbor] = candidate
+                previous[neighbor] = node
+                heapq.heappush(heap, (candidate, neighbor))
+    reachable = distances[target] != float("inf")
+    path = []
+    if reachable:
+        node = target
+        while node != start: path.append(node); node = previous[node]
+        path.append(start); path.reverse()
+    return {"rejected": False, "reachable": reachable, "distance": distances[target] if reachable else None, "path": path, "distances": {node: distances[node] if distances[node] != float("inf") else None for node in nodes}}
+
+
+def avl_tree(values):
+    if not isinstance(values, list) or any(not isinstance(value, int) or isinstance(value, bool) for value in values):
+        return {"rejected": True, "reason": "values_must_be_integers"}
+    class Node:
+        __slots__ = ("height", "left", "right", "value")
+        def __init__(self, value): self.value, self.left, self.right, self.height = value, None, None, 1
+    def height(node): return node.height if node is not None else 0
+    def update(node): node.height = max(height(node.left), height(node.right)) + 1
+    def rotate_right(root):
+        pivot=root.left;root.left=pivot.right;pivot.right=root;update(root);update(pivot);return pivot
+    def rotate_left(root):
+        pivot=root.right;root.right=pivot.left;pivot.left=root;update(root);update(pivot);return pivot
+    def insert(root,value):
+        if root is None:return Node(value)
+        if value==root.value:raise ValueError("duplicate_value")
+        if value<root.value:root.left=insert(root.left,value)
+        else:root.right=insert(root.right,value)
+        update(root);balance=height(root.left)-height(root.right)
+        if balance>1:
+            if value>root.left.value:root.left=rotate_left(root.left)
+            return rotate_right(root)
+        if balance<-1:
+            if value<root.right.value:root.right=rotate_right(root.right)
+            return rotate_left(root)
+        return root
+    root=None
+    try:
+        for value in values:root=insert(root,value)
+    except ValueError as exc:return {"rejected":True,"reason":str(exc)}
+    order=[];balanced=True
+    def walk(node):
+        nonlocal balanced
+        if node is None:return 0
+        left=walk(node.left);order.append(node.value);right=walk(node.right)
+        if abs(left-right)>1:balanced=False
+        return max(left,right)+1
+    tree_height=walk(root)
+    def serialize(node):return None if node is None else {"value":node.value,"left":serialize(node.left),"right":serialize(node.right)}
+    return {"rejected":False,"root":serialize(root),"inorder":order,"count":len(order),"height":tree_height,"balanced":balanced}
+
+
+def bellman_ford_cycle(nodes, edges, start):
+    if (not isinstance(nodes,list) or not nodes or len(set(nodes))!=len(nodes)
+        or any(not isinstance(node,str) or not node for node in nodes)
+        or not isinstance(edges,list) or any(not isinstance(edge,list) or len(edge)!=3 for edge in edges)
+        or any(source not in nodes or destination not in nodes for source,destination,weight in edges)
+        or any(not isinstance(weight,(int,float)) or isinstance(weight,bool) for _,_,weight in edges)
+        or start not in nodes):
+        return {"rejected":True,"reason":"invalid_graph"}
+    distance={node:float("inf") for node in nodes};distance[start]=0
+    for _ in range(len(nodes)-1):
+        changed=False
+        for source,destination,weight in edges:
+            if distance[source]!=float("inf") and distance[source]+weight<distance[destination]:
+                distance[destination]=distance[source]+weight;changed=True
+        if not changed:break
+    cycle=any(distance[source]!=float("inf") and distance[source]+weight<distance[destination] for source,destination,weight in edges)
+    return {"rejected":False,"negative_cycle_reachable":cycle,"distances":None if cycle else {node:distance[node] if distance[node]!=float("inf") else None for node in nodes}}
+
+
+def linear_search_complexity(sizes, target):
+    if not isinstance(sizes,list) or any(not isinstance(size,int) or isinstance(size,bool) or size<=0 for size in sizes) or not isinstance(target,int) or isinstance(target,bool):
+        return {"rejected":True,"reason":"invalid_sizes_or_target"}
+    measurements=[]
+    for size in sizes:
+        comparisons,index=0,None
+        for i,value in enumerate(range(size)):
+            comparisons+=1
+            if value==target:index=i;break
+        measurements.append({"size":size,"comparisons":comparisons,"index":index,"found":index is not None})
+    return {"rejected":False,"measurements":measurements,"growth_ratios":[measurements[i]["comparisons"]/measurements[i-1]["comparisons"] for i in range(1,len(measurements))],"complexity":"LINEAR"}

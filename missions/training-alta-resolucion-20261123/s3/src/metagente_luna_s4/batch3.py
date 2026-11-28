@@ -6,7 +6,7 @@ from metagente_luna_s4.runner import execute
 CASES = [
     {"case_id": "MGL5-INF-0107", "capability_id": "duplicates", "arguments": {"values": [1, 2, 3, 2, 4, 1]}},
     {"case_id": "MGL5-INF-0108", "capability_id": "brackets", "arguments": {"texts": ["({[]})", "([)]"]}},
-    {"case_id": "MGL5-INF-0112", "capability_id": "binary_insert", "arguments": {"values": [8, 3, 10, 1, 6, 14]}},
+    {"case_id": "MGL5-INF-0112", "capability_id": "bst_inorder", "arguments": {"values": [8, 3, 10, 1, 6, 14]}, "fixture_provenance": "SOURCE_LITERAL: program instruction lists six values"},
     {"case_id": "MGL5-INF-0125", "capability_id": "arithmetic", "arguments": {"expression": "2+3*4"}},
     {"case_id": "MGL5-INF-0155", "capability_id": "arithmetic", "arguments": {"expression": "(1+2)*3"}},
     {"case_id": "MGL5-INF-0168", "capability_id": "arithmetic", "arguments": {"expression": "2*3+4"}},

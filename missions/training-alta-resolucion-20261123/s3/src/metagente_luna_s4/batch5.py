@@ -11,9 +11,9 @@ PARAMS = json.loads((Path(__file__).resolve().parents[2] / "fixtures" / "derived
 CASES = [
     {"case_id": "MGL5-INF-0103", "capability_id": "first_match", "arguments": {"needle": 7, "values": [2, 7, 9, 7]}},
     {"case_id": "MGL5-INF-0104", "capability_id": "binary_find", "arguments": {"needle": 13, "start": 1, "end": 31}},
-    {"case_id": "MGL5-INF-0110", "capability_id": "dequeue_named", "arguments": {"values": ["A", "B", "C"]}},
-    {"case_id": "MGL5-INF-0113", "capability_id": "balanced_range", "arguments": {}},
-    {"case_id": "MGL5-INF-0119", "capability_id": "linear_scans", "arguments": {}},
+    {"case_id": "MGL5-INF-0110", "capability_id": "fifo_queue", "arguments": {"steps": ["enqueue:A", "enqueue:B", "enqueue:C", "dequeue", "dequeue", "dequeue"]}, "fixture_provenance": "SOURCE_LITERAL: instruction defines enqueue/dequeue order"},
+    {"case_id": "MGL5-INF-0113", "capability_id": "avl_tree", "arguments": {"values": list(range(1, 1001))}, "fixture_provenance": "SOURCE_LITERAL: ascending sequence 1..1000"},
+    {"case_id": "MGL5-INF-0119", "capability_id": "linear_search_complexity", "arguments": {"sizes": [1000, 2000, 4000], "target": 4000}, "fixture_provenance": "SOURCE_LITERAL: size sequence and absent target"},
     {"case_id": "MGL5-INF-0120", "capability_id": "factorials", "arguments": {"values": list(range(13))}},
     {"case_id": "MGL5-INF-0154", "capability_id": "precedence_tree", "arguments": {}},
     {"case_id": "MGL5-INF-0171", "capability_id": "index_limit", "arguments": {"length": 8}},
