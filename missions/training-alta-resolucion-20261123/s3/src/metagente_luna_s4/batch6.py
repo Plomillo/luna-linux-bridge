@@ -38,6 +38,7 @@ _TEN_THOUSAND = _FIXTURE["ten-thousand"]
 # complete are exposed to the C05 plan compiler. Other interpreter candidates
 # remain visible in the coverage matrix as blocked/ambiguous.
 CASES = [
+    # C05 additions: fixture-backed graph, tree, list, queue and complexity plans.
     {
         "case_id": "MGL5-INF-0106",
         "capability_id": "descending_seed",
