@@ -34,6 +34,22 @@ def _write_artifact(root, relative, payload):
     return {"path": relative, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 
 
+def _rewrite_run_artifact(run, root, name, payload):
+    reference = run["artifacts"][name]
+    path = root / reference["path"]
+    path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+    reference["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    sums_reference = run["artifacts"]["sha256sums"]
+    sums_path = root / sums_reference["path"]
+    sums_content = "".join(
+        f"{artifact['sha256']}  {artifact['path']}\n"
+        for artifact_name, artifact in sorted(run["artifacts"].items())
+        if artifact_name != "sha256sums"
+    )
+    sums_path.write_text(sums_content, encoding="utf-8")
+    sums_reference["sha256"] = hashlib.sha256(sums_path.read_bytes()).hexdigest()
+
+
 
 def _source_reference(case_id):
     repository_root = Path(__file__).resolve().parents[4]
@@ -64,8 +80,7 @@ def _source_reference(case_id):
     return metadata, excerpt_text
 
 
-def _valid_row_with_artifacts(tmp_path):
-    case_id = "MGL5-INF-0001"
+def _valid_row_with_artifacts(tmp_path, case_id="MGL5-INF-0001"):
     repetitions = []
     controls = []
     run_specs = [
@@ -76,7 +91,7 @@ def _valid_row_with_artifacts(tmp_path):
         ("BOUNDARY", {"sample": "boundary"}, {"definition": "boundary input", "expected_behavior": "accept boundary", "source": "test-spec"}),
     ]
     for index, (kind, input_value, control) in enumerate(run_specs, start=1):
-        run_id = f"run-0001-{index:04d}"
+        run_id = f"run-{case_id[-4:]}-{index:04d}"
         oracle_source = _write_artifact(tmp_path, f"{run_id}/oracle_source.py", "def oracle(value): return value == 1")
         producer_source = _write_artifact(tmp_path, f"{run_id}/producer_source.py", "def producer(value): return value + 0")
         source_metadata, source_excerpt_text = _source_reference(case_id)
@@ -89,21 +104,21 @@ def _valid_row_with_artifacts(tmp_path):
             "environment": _write_artifact(tmp_path, f"{run_id}/environment.json", {
                 "case_id": case_id, "run_id": run_id, "environment_id": "pytest-local",
                 "isolation": {
-                    "mode": "FRESH_PROCESS_TEMPORARY_WORKSPACE",
+                    "mode": "DOCKER_RESTRICTED_CONTAINER",
                     "process_isolated": True,
-                    "containerized": False,
-                    "network_disabled": False,
-                    "root_filesystem_read_only": False,
-                    "capabilities_dropped": False,
-                    "non_root_uid": None,
-                    "resource_limits": None,
-                    "image_id": None,
+                    "containerized": True,
+                    "network_disabled": True,
+                    "root_filesystem_read_only": True,
+                    "capabilities_dropped": True,
+                    "non_root_uid": 65534,
+                    "resource_limits": {"pids": 64, "memory": "256m", "cpus": 1},
+                    "image_id": "sha256:" + "a" * 64,
                     "workspace_ephemeral": True,
                     "cwd_isolated": True,
                     "home_isolated": True,
                     "tmp_isolated": True,
                     "sandbox": False,
-                    "container_restrictions_verified": False,
+                    "container_restrictions_verified": True,
                     "kernel_isolation": "SHARED_HOST_KERNEL_NOT_VM",
                 },
             }),
@@ -145,7 +160,7 @@ def _valid_row_with_artifacts(tmp_path):
             "kind": kind, "run_id": run_id, "case_id": case_id,
             "clean_state": True, "execution_status": "PASS", "exit_code": 0,
             "agent_version": "test-agent-1", "executor_version": "test-executor-1",
-            "machinery": "pytest-test-fixture", "started": 1.0, "ended": 2.0,
+            "machinery": "DOCKER_RESTRICTED_CONTAINER", "started": 1.0, "ended": 2.0,
             "artifacts": artifacts,
         }
         (repetitions if kind == "NORMAL" else controls).append(run)
@@ -203,6 +218,79 @@ def test_inline_self_hashed_payload_is_not_execution_evidence():
 def test_real_persisted_artifacts_are_verified_for_a_dossier(tmp_path):
     row = _valid_row_with_artifacts(tmp_path)
     assert _validate_row(row, tmp_path) == []
+
+
+def test_primary_and_independent_validators_reject_host_process_evidence(tmp_path):
+    row = _valid_row_with_artifacts(tmp_path)
+    run = row["repetitions"][0]
+    environment_reference = run["artifacts"]["environment"]
+    environment_path = tmp_path / environment_reference["path"]
+    environment = json.loads(environment_path.read_text(encoding="utf-8"))
+    environment["isolation"] = {
+        "mode": "FRESH_PROCESS_TEMPORARY_WORKSPACE",
+        "process_isolated": True,
+        "containerized": False,
+        "network_disabled": False,
+        "root_filesystem_read_only": False,
+        "capabilities_dropped": False,
+        "non_root_uid": None,
+        "resource_limits": None,
+        "image_id": None,
+        "workspace_ephemeral": True,
+        "cwd_isolated": True,
+        "home_isolated": True,
+        "tmp_isolated": True,
+        "sandbox": False,
+        "container_restrictions_verified": False,
+        "kernel_isolation": "SHARED_HOST_KERNEL_NOT_VM",
+    }
+    _rewrite_run_artifact(run, tmp_path, "environment", environment)
+
+    errors = _validate_row(row, tmp_path)
+    independent = independently_validate_case(row, tmp_path)
+
+    assert "clean-state-isolation-not-proven" in errors
+    assert independent["status"] == "FAIL"
+    assert "restricted-docker-profile-not-proven" in independent["findings"]
+
+
+def test_primary_and_independent_validators_reject_image_id_drift_within_five_runs(tmp_path):
+    row = _valid_row_with_artifacts(tmp_path)
+    run = row["controls"][0]
+    environment_reference = run["artifacts"]["environment"]
+    environment_path = tmp_path / environment_reference["path"]
+    environment = json.loads(environment_path.read_text(encoding="utf-8"))
+    environment["isolation"]["image_id"] = "sha256:" + "b" * 64
+    _rewrite_run_artifact(run, tmp_path, "environment", environment)
+
+    errors = _validate_row(row, tmp_path)
+    independent = independently_validate_case(row, tmp_path)
+
+    assert "restricted-docker-image-not-consistent-across-five-runs" in errors
+    assert independent["status"] == "FAIL"
+    assert "restricted-docker-image-not-consistent-across-five-runs" in independent["findings"]
+
+
+def test_population_gate_rejects_image_id_drift_between_dossiers(tmp_path):
+    rows = _population("NOT_RUN")
+    rows[0] = _valid_row_with_artifacts(tmp_path, "MGL5-INF-0001")
+    rows[1] = _valid_row_with_artifacts(tmp_path, "MGL5-INF-0002")
+    for run in rows[1]["repetitions"] + rows[1]["controls"]:
+        reference = run["artifacts"]["environment"]
+        path = tmp_path / reference["path"]
+        environment = json.loads(path.read_text(encoding="utf-8"))
+        environment["isolation"]["image_id"] = "sha256:" + "b" * 64
+        _rewrite_run_artifact(run, tmp_path, "environment", environment)
+
+    report = validate(rows, evidence_root=tmp_path)
+
+    assert report["authentic_results"] == 2
+    assert report["sandbox_image_id"] is None
+    assert report["sandbox_image_ids"] == ["sha256:" + "a" * 64, "sha256:" + "b" * 64]
+    assert report["evidence_consistency_problems"] == [
+        "sandbox-image-not-uniform-across-executed-population"
+    ]
+    assert report["c05_passed"] is False
 
 
 def test_caller_cannot_forge_independent_validation_pass(tmp_path):
