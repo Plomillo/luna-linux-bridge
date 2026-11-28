@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import hashlib
+import itertools
 import math
 import struct
 import zlib
-import itertools
 
 
 def sqlite_header_oracle(arguments: dict, observed: dict) -> dict:
