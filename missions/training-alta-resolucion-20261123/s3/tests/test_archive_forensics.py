@@ -4,7 +4,6 @@ import importlib.util
 from pathlib import Path
 
 from metagente_luna_s3.registry import ORACLES, REGISTRY, run
-from metagente_luna_s4.batch2 import CASES
 from metagente_luna_s4.controls import run_controls
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "build_c05_executable_plans.py"
