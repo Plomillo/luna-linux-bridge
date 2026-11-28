@@ -7,8 +7,6 @@ from collections.abc import Callable
 from pydantic import BaseModel
 
 from metagente_luna_s3 import (
-    d03_exec,
-    d03_oracle,
     apk_inventory_exec,
     apk_inventory_oracle,
     apk_signature_exec,
@@ -25,6 +23,8 @@ from metagente_luna_s3 import (
     batch6_oracle,
     d01_exec,
     d01_oracle,
+    d03_exec,
+    d03_oracle,
     format_exec,
     format_oracle,
     more_exec,
