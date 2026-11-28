@@ -414,6 +414,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "determinant-identity-one": return control_completed and observed.get("rejected") is False and observed.get("determinant") == 1
     if expect == "moving-window-too-wide": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_window_or_series"
     if expect == "moving-single-value-boundary": return control_completed and observed.get("rejected") is False and observed.get("averages") == [9.0] and observed.get("start_indices") == [0]
+    if expect == "apk-dex-missing-reported": return control_completed and observed.get("missing") == ["classes.dex"] and observed.get("present") == {"manifest": True, "resources": True, "dex": False}
+    if expect == "apk-empty-members-listed": return control_completed and observed.get("present") == {"manifest": True, "resources": True, "dex": True} and observed.get("uncompressed_bytes") == 0
     if expect == "dex-truncated-header-rejected": return control_completed and observed.get("rejected") is True
     if expect == "dex-minimum-valid-header": return control_completed and observed.get("rejected") is False and observed.get("header_size") == 112 and observed.get("checksum_valid") is True and observed.get("signature_valid") is True
     if expect == "dex-invalid-type-string-index": return control_completed and observed.get("rejected") is False and observed.get("indices_valid") is False
