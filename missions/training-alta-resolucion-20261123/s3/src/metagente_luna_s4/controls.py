@@ -386,8 +386,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "matrix-single-zero-product": return control_completed and observed.get("rejected") is False and observed.get("result") == [[0]]
     if expect == "determinant-nonsquare-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "matrix_must_be_3x3"
     if expect == "determinant-identity-one": return control_completed and observed.get("rejected") is False and observed.get("determinant") == 1
-    if expect == "moving-window-too-wide": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_window_or_series"
-    if expect == "moving-single-value-boundary": return control_completed and observed.get("rejected") is False and observed.get("averages") == [9.0] and observed.get("start_indices") == [0]
+    if expect == "moving-window-too-wide": return control_completed and observed.get("window") == 4 and observed.get("means") == [] and observed.get("alignment") == "window-end"
+    if expect == "moving-single-value-boundary": return control_completed and observed.get("window") == 1 and observed.get("means") == [9.0] and observed.get("alignment") == "window-end"
     if expect == "dex-truncated-header-rejected": return control_completed and observed.get("rejected") is True
     if expect == "dex-minimum-valid-header": return control_completed and observed.get("rejected") is False and observed.get("header_size") == 112 and observed.get("checksum_valid") is True and observed.get("signature_valid") is True
     if expect == "dex-invalid-type-string-index": return control_completed and observed.get("rejected") is False and observed.get("indices_valid") is False
