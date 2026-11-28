@@ -145,6 +145,7 @@ CASES = [
     {"case_id": "MGL5-INF-0064", "capability_id": "pe_inspect", "arguments": {"payload_hex": _PE_HEX[:0x188 * 2], "mode": "sections"}, "fixture_provenance": "SOURCE_DERIVED_TRUNCATED_PE64: exact cut at first byte of section table; required safe rejection"},
 
 
+    {"case_id": "MGL5-INF-0066", "capability_id": "apk_signature_verify", "arguments": {"entries": [{"name": "AndroidManifest.xml", "data_hex": "3c6d616e69666573742f3e"}, {"name": "resources.arsc", "data_hex": "01020304"}, {"name": "classes.dex", "data_hex": "6465780a30333500"}], "signature_mode": "valid"}, "fixture_provenance": "SOURCE_DERIVED_MINIMAL_TEST_APK: fixture-only HMAC-SHA256 signature envelope; explicitly not Android APK signing schemes v1/v2/v3/v4; distinguishes valid/invalid/absent without external tools"},
     {"case_id": "MGL5-INF-0067", "capability_id": "dex_header", "arguments": {"payload_hex": _DEX_HEX}, "fixture_provenance": "SOURCE_DERIVED_DEX035: deterministic minimal DEX 035 fixture; header fields, SHA-1 signature and Adler-32 checksum generated and frozen by content hash"},
     {"case_id": "MGL5-INF-0068", "capability_id": "dex_tables", "arguments": {"payload_hex": _DEX_HEX}, "fixture_provenance": "SOURCE_DERIVED_DEX035: minimal string/type/proto/method tables with valid cross-indices; deterministic binary fixture"},
 
