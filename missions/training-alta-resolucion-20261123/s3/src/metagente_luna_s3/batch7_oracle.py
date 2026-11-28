@@ -16,12 +16,14 @@ def trend_stationarity_oracle(arguments: dict, observed: dict) -> dict:
     if expected is None:
         return {"ok": False, "method": "fixed reference vectors independent of executor"}
     status, slope, r_squared = expected
+    slope_ok = observed.get("slope") is None if slope is None else isinstance(observed.get("slope"), (int, float)) and abs(observed["slope"] - slope) < 1e-12
+    r_squared_ok = observed.get("r_squared") is None if r_squared is None else isinstance(observed.get("r_squared"), (int, float)) and abs(observed["r_squared"] - r_squared) < 1e-12
     ok = (
         observed.get("rejected") is False
         and observed.get("status") == status
         and observed.get("n") == len(values)
-        and observed.get("slope") == slope
-        and observed.get("r_squared") == r_squared
+        and slope_ok
+        and r_squared_ok
         and observed.get("method") == "linear-regression-diagnostic"
         and isinstance(observed.get("limitation"), str)
         and bool(observed.get("limitation"))
