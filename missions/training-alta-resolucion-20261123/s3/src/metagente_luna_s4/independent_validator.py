@@ -98,6 +98,15 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "age-zero-accepted": return completed and observed.get("rejected") is False and observed.get("rows") == 1
     if expect == "command-list-rejected": return completed and observed.get("rejected") is True
     if expect == "single-zero-exit": return completed and observed.get("rejected") is not True and observed.get("commands") == ["true"] and observed.get("codes") == [0]
+
+    if expect == "fifo-reversed-order": return completed and observed.get("dequeued") == ["C", "B", "A"] and observed.get("queue") == []
+    if expect == "fifo-singleton": return completed and observed.get("dequeued") == ["A"] and observed.get("queue") == []
+    if expect == "linked-list-delete-out-of-bounds": return completed and observed.get("rejected") is True and observed.get("reason") == "delete_index_out_of_bounds"
+    if expect == "linked-list-singleton-roundtrip": return completed and observed.get("rejected") is False and observed.get("values") == [] and observed.get("length") == 0
+    if expect == "bst-insert-variant": return completed and observed.get("inorder") == [2, 5, 9] and observed.get("count") == 3
+    if expect == "bst-insert-singleton": return completed and observed.get("inorder") == [7] and observed.get("count") == 1
+    if expect == "dfs-invalid-edge-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_graph"
+    if expect == "dfs-self-loop-boundary": return completed and observed.get("rejected") is False and observed.get("order") == ["A"] and observed.get("visited_count") == 1 and observed.get("cycle") is True
     if expect == "bfs-unreachable-target": return completed and observed.get("reachable") is False and observed.get("path") == [] and observed.get("distance") is None
     if expect == "bfs-single-node-zero-distance": return completed and observed.get("reachable") is True and observed.get("path") == ["A"] and observed.get("distance") == 0
     if expect == "matrix-inner-dimension-mismatch": return completed and observed.get("rejected") is True and observed.get("reason") == "matrix_dimensions_invalid"
