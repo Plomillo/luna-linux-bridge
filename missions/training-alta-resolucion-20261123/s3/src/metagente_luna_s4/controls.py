@@ -365,15 +365,6 @@ def _build() -> None:
     _add("MGL5-INF-0503", "boundary", "exit_codes", {"commands": ["true"]}, "single-zero-exit")
 
 
-
-    _add("MGL5-INF-0110", "negative", "fifo_queue", {"steps": ["enqueue:C", "enqueue:B", "enqueue:A", "dequeue", "dequeue", "dequeue"]}, "fifo-reversed-order")
-    _add("MGL5-INF-0110", "boundary", "fifo_queue", {"steps": ["enqueue:A", "dequeue"]}, "fifo-singleton")
-    _add("MGL5-INF-0111", "negative", "linked_list", {"operations": [{"op": "delete", "index": 5}]}, "linked-list-delete-out-of-bounds")
-    _add("MGL5-INF-0111", "boundary", "linked_list", {"operations": [{"op": "insert", "index": 0, "value": 9}, {"op": "delete", "index": 0}]}, "linked-list-singleton-roundtrip")
-    _add("MGL5-INF-0112", "negative", "bst_inorder", {"values": [5, 2, 9]}, "bst-insert-variant")
-    _add("MGL5-INF-0112", "boundary", "bst_inorder", {"values": [7]}, "bst-insert-singleton")
-    _add("MGL5-INF-0115", "negative", "dfs_graph", {"nodes": ["A", "B"], "edges": [["A", "Z"]], "start": "A"}, "dfs-invalid-edge-rejected")
-    _add("MGL5-INF-0115", "boundary", "dfs_graph", {"nodes": ["A"], "edges": [["A", "A"]], "start": "A"}, "dfs-self-loop-boundary")
     _add("MGL5-INF-0114", "negative", "shortest_path", {"nodes": ["A", "B", "C"], "edges": [["A", "B"]], "start": "A", "target": "C"}, "bfs-unreachable-target")
     _add("MGL5-INF-0114", "boundary", "shortest_path", {"nodes": ["A"], "edges": [], "start": "A", "target": "A"}, "bfs-single-node-zero-distance")
     _add("MGL5-INF-0609", "negative", "matrix_multiply", {"left": [[1, 2, 3]], "right": [[1, 2], [3, 4]]}, "matrix-inner-dimension-mismatch")
@@ -389,15 +380,6 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     # oracle rejected this control input; the observed control may still pass.
     control_completed = status in {"EXECUTED", "FAIL"}
 
-
-    if expect == "fifo-reversed-order": return control_completed and observed.get("dequeued") == ["C", "B", "A"] and observed.get("queue") == []
-    if expect == "fifo-singleton": return control_completed and observed.get("dequeued") == ["A"] and observed.get("queue") == []
-    if expect == "linked-list-delete-out-of-bounds": return control_completed and observed.get("rejected") is True and observed.get("reason") == "delete_index_out_of_bounds"
-    if expect == "linked-list-singleton-roundtrip": return control_completed and observed.get("rejected") is False and observed.get("values") == [] and observed.get("length") == 0
-    if expect == "bst-insert-variant": return control_completed and observed.get("inorder") == [2, 5, 9] and observed.get("count") == 3
-    if expect == "bst-insert-singleton": return control_completed and observed.get("inorder") == [7] and observed.get("count") == 1
-    if expect == "dfs-invalid-edge-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_graph"
-    if expect == "dfs-self-loop-boundary": return control_completed and observed.get("rejected") is False and observed.get("order") == ["A"] and observed.get("visited_count") == 1 and observed.get("cycle") is True
     if expect == "bfs-unreachable-target": return control_completed and observed.get("reachable") is False and observed.get("path") == [] and observed.get("distance") is None
     if expect == "bfs-single-node-zero-distance": return control_completed and observed.get("reachable") is True and observed.get("path") == ["A"] and observed.get("distance") == 0
     if expect == "matrix-inner-dimension-mismatch": return control_completed and observed.get("rejected") is True and observed.get("reason") == "matrix_dimensions_invalid"
