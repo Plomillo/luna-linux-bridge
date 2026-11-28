@@ -3,9 +3,6 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import json
-import zipfile
-import io
 
 _TEST_KEY = bytes.fromhex("c05a11f066d20b7e4a9308b5d3f0e2a1")
 _SIG_MEMBER = "META-INF/LUNA.TESTSIG"
