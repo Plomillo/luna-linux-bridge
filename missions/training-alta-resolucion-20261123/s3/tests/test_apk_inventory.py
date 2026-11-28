@@ -45,7 +45,8 @@ def test_apk_inventory_control_runs_are_adjudicated_by_both_validators():
 
     case = next(row for row in run_controls() if row["case_id"] == "MGL5-INF-0065")
     assert set(case["controls"]) == {"negative", "boundary"}
-    for kind, control in case["controls"].items():
+    for kind in ("negative", "boundary"):
+        control = case["controls"][kind]
         assert control["accepted"] is True
         assert _independent_control_accepts(
             CONTROLS[case["case_id"]][kind]["expect"], control["observed"], control["execution_status"]
