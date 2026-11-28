@@ -37,7 +37,9 @@ def test_coverage_matrix_identifies_missing_plan_and_control_reasons():
     assert by_id["MGL5-INF-0001"]["ready_for_execution"] is True
     assert by_id["MGL5-INF-0006"]["ready_for_execution"] is True
     assert by_id["MGL5-INF-0054"]["ready_for_execution"] is True
-    assert by_id["MGL5-INF-0055"]["ready_for_execution"] is True\n    assert by_id["MGL5-INF-0633"]["ready_for_execution"] is True\n    assert by_id["MGL5-INF-0634"]["ready_for_execution"] is True
+    assert by_id["MGL5-INF-0055"]["ready_for_execution"] is True
+    assert by_id["MGL5-INF-0633"]["ready_for_execution"] is True
+    assert by_id["MGL5-INF-0634"]["ready_for_execution"] is True
     assert "NORMAL_EXECUTION_SPEC_MISSING" not in by_id["MGL5-INF-0054"]["blockers"]
     assert by_id["MGL5-INF-0103"]["ready_for_execution"] is True
     assert by_id["MGL5-INF-0107"]["ready_for_execution"] is True
