@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from metagente_luna_s3 import (
     apk_inventory_exec,
     apk_inventory_oracle,
+    apk_signature_exec,
+    apk_signature_oracle,
     archive_exec,
     archive_oracle,
     batch3_exec,
@@ -259,6 +261,32 @@ REGISTRY["apk_inventory"] = _cap(
     },
 )
 
+REGISTRY["apk_signature_verify"] = _cap(
+    "apk_signature_verify",
+    "apk_signature_independent",
+    {
+        "type": "object",
+        "required": ["entries", "signature_mode"],
+        "properties": {
+            "entries": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "required": ["name", "data_hex"],
+                    "properties": {
+                        "name": {"type": "string", "minLength": 1},
+                        "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"},
+                    },
+                    "additionalProperties": False,
+                },
+            },
+            "signature_mode": {"type": "string", "enum": ["valid", "invalid", "absent"]},
+        },
+        "additionalProperties": False,
+    },
+)
+
 _FORMAT_SCHEMAS = {
     "sqlite_header": {"type": "object", "required": ["page_size"], "properties": {"page_size": {"type": "integer", "enum": [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]}}, "additionalProperties": False},
     "sqlite_integrity": {"type": "object", "required": ["corrupt", "values"], "properties": {"corrupt": {"type": "boolean"}, "values": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": False},
@@ -412,6 +440,7 @@ ORACLES["elf_rpath_runpath_independent"] = format_oracle.elf_rpath_runpath_oracl
 ORACLES["pe_inspect_independent"] = format_oracle.pe_inspect_oracle
 
 ORACLES["apk_inventory_independent"] = apk_inventory_oracle.apk_inventory_oracle
+ORACLES["apk_signature_independent"] = apk_signature_oracle.apk_signature_oracle
 
 EXECUTORS: dict[str, Callable[..., dict]] = {
     "cidr_bounds": cidr_bounds,
@@ -505,6 +534,7 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
 }
 
 EXECUTORS["apk_inventory"] = apk_inventory_exec.apk_inventory
+EXECUTORS["apk_signature_verify"] = apk_signature_exec.apk_signature_verify
 
 EXECUTORS.update({"zip_path_safety": archive_exec.zip_path_safety, "zip_crc": archive_exec.zip_crc, "zip_duplicates": archive_exec.zip_duplicates, "tar_offsets": archive_exec.tar_offsets, "tar_truncated": archive_exec.tar_truncated, "gzip_crc": archive_exec.gzip_crc})
 EXECUTORS.update({"sqlite_header": format_exec.sqlite_header, "sqlite_integrity": format_exec.sqlite_integrity, "wasm_header": format_exec.wasm_header})
