@@ -32,7 +32,7 @@ def test_missing_input_is_not_invented():
     assert {argument.name: argument.value for argument in thousands.arguments} == {"seed": 106, "count": 10_000}
     assert vague.status == "BLOCKED"
     assert window.status == "READY"
-    assert window.intent == "moving_average"
+    assert window.intent == "moving_average_c05"
     assert {argument.name: argument.value for argument in window.arguments} == {"values": [1, 2, 3, 4, 5, 6], "window": 3}
 
 
