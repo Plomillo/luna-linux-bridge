@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import binascii
 import hashlib
-import itertools
 import io
+import itertools
 import math
 import re
 import sqlite3
