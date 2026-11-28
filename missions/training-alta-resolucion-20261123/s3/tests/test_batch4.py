@@ -22,6 +22,7 @@ def test_fourth_batch_meets_the_stated_results():
     assert abs(by_id["MGL5-INF-0626"]["value"] - 1) < 1e-9
     assert abs(by_id["MGL5-INF-0627"]["value"] + 1) < 1e-9
     assert by_id["MGL5-INF-0633"]["lags"][0] == 1
+    assert by_id["MGL5-INF-0633"]["lags"] == [1.0, 0.25, -0.3, -0.45]
     assert len(by_id["MGL5-INF-0633"]["lags"]) == 4
 
 

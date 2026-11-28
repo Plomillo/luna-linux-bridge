@@ -13,6 +13,7 @@ from metagente_luna_s4.batch3 import CASES as BATCH3
 from metagente_luna_s4.batch4 import CASES as BATCH4
 from metagente_luna_s4.batch5 import CASES as BATCH5
 from metagente_luna_s4.batch6 import CASES as BATCH6, OPERATIONS as BATCH6_OPERATIONS
+from metagente_luna_s4.batch7 import CASES as BATCH7
 from metagente_luna_s3.interpret import interpret
 from metagente_luna_s4.controls import CONTROLS, _build as build_controls
 from metagente_luna_s4.d01_batch import CASES as D01
@@ -31,7 +32,7 @@ def build() -> tuple[list[dict], dict]:
         match.group(1)
         for match in re.finditer(r"(?m)^\[(MGL5-INF-\d{4})\]", text)
     }
-    specs = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5 + BATCH6
+    specs = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5 + BATCH6 + BATCH7
     by_id: dict[str, dict] = {}
     duplicates: set[str] = set()
     for spec in specs:

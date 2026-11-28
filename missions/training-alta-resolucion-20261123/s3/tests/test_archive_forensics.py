@@ -4,7 +4,6 @@ import importlib.util
 from pathlib import Path
 
 from metagente_luna_s3.registry import ORACLES, REGISTRY, run
-from metagente_luna_s4.batch2 import CASES
 from metagente_luna_s4.controls import run_controls
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "build_c05_executable_plans.py"
@@ -59,11 +58,13 @@ EXPECTED = {
     "MGL5-INF-0064": "pe_inspect",
     "MGL5-INF-0067": "dex_header",
     "MGL5-INF-0068": "dex_tables",
+    "MGL5-INF-0633": "acf_lag0",
+    "MGL5-INF-0634": "trend_stationarity",
 }
 
 
 def test_archive_forensics_source_cases_have_three_stable_oracled_runs():
-    selected = {row["case_id"]: row for row in CASES if row["case_id"] in EXPECTED}
+    selected = {row["case_id"]: row for row in COMPILER.CASE_SPECS if row["case_id"] in EXPECTED}
     assert set(selected) == set(EXPECTED)
 
     for case_id, capability in EXPECTED.items():
@@ -186,3 +187,24 @@ def test_dex_modified_utf8_handles_encoded_nul_and_surrogate_pair_and_rejects_fo
     assert _dex_mutf8(bytes([0xc0, 0x80, 0x00]), 0, 3, 1) == chr(0)
     assert _dex_mutf8(bytes([0xed, 0xa0, 0xbd, 0xed, 0xba, 0x80, 0x00]), 0, 7, 2) == "\U0001f680"
     assert _dex_mutf8(bytes([0xf0, 0x9f, 0x9a, 0x80, 0x00]), 0, 5, 2) is None
+
+
+
+def test_dex_header_rejects_out_of_bounds_table_offsets_with_independent_oracle():
+    import struct
+
+    from metagente_luna_s3.format_exec import dex_inspect
+    from metagente_luna_s3.format_oracle import dex_header_oracle
+    from metagente_luna_s4.batch2 import _DEX_FIXTURE, _DEX_HEX
+
+    valid_args = {"payload_hex": _DEX_HEX}
+    valid = dex_inspect(_DEX_HEX, "header")
+    assert valid["offsets_valid"] is True
+    assert dex_header_oracle(valid_args, valid)["ok"] is True
+
+    malformed = bytearray(_DEX_FIXTURE)
+    struct.pack_into("<I", malformed, 60, len(malformed) + 4)
+    invalid_args = {"payload_hex": _rehash_dex_fixture(malformed).hex()}
+    observed = dex_inspect(invalid_args["payload_hex"], "header")
+    assert observed == {"rejected": True, "reason": "dex_header_offsets_invalid"}
+    assert dex_header_oracle(invalid_args, observed)["ok"] is True

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import itertools
 import math
 import struct
 import zlib
@@ -534,30 +535,79 @@ def pe_inspect_oracle(arguments: dict, observed: dict) -> dict:
 
 
 def dex_header_oracle(arguments: dict, observed: dict) -> dict:
+    """Reconstruct DEX header offsets and checksums from raw bytes independently."""
     raw = bytes.fromhex(arguments["payload_hex"])
-    valid = (len(raw) >= 112 and raw[:4] == bytes.fromhex("6465780a") and raw[7] == 0)
-    if valid:
-        version = raw[4:7].decode("ascii", "replace")
-        file_size, header_size, endian = struct.unpack_from("<III", raw, 32)
-        valid = file_size == len(raw) and header_size == 112 and endian == 0x12345678
-        checksum = struct.unpack_from("<I", raw, 8)[0]
-        signature = raw[12:32]
-        checksum_ok = checksum == (zlib.adler32(raw[12:]) & 0xFFFFFFFF)
-        signature_ok = signature == hashlib.sha1(raw[32:]).digest()
+    expected_reason = None
+    if len(raw) < 112 or raw[:4] != bytes.fromhex("6465780a") or raw[7] != 0:
+        expected_reason = "invalid_or_truncated_dex_header"
     else:
-        version, file_size, header_size, endian = "", 0, 0, 0
-        checksum_ok = signature_ok = False
+        version = raw[4:7].decode("ascii", "replace")
+        if version not in {"035", "036", "037", "038", "039"}:
+            expected_reason = "unsupported_dex_version"
+        else:
+            file_size, header_size, endian = struct.unpack_from("<III", raw, 32)
+            data_size, data_off = struct.unpack_from("<II", raw, 104)
+            if file_size != len(raw) or header_size != 112 or endian != 0x12345678:
+                expected_reason = "header_size_endian_or_file_size_mismatch"
+            elif data_size == 0 and data_off not in (0, len(raw)):
+                expected_reason = "empty_data_section_offset_invalid"
+            elif data_size and (data_off < 112 or data_off + data_size > len(raw)):
+                expected_reason = "data_section_out_of_bounds"
+            else:
+                data_start = data_off if data_size else len(raw)
+                data_end = data_off + data_size if data_size else len(raw)
+                layout = {
+                    "string_ids": (56, 60, 4), "type_ids": (64, 68, 4),
+                    "proto_ids": (72, 76, 12), "field_ids": (80, 84, 8),
+                    "method_ids": (88, 92, 8), "class_defs": (96, 100, 32),
+                }
+                table_layout = {}
+                extents = []
+                offsets_valid = True
+                for name, (size_at, off_at, width) in layout.items():
+                    count, offset = struct.unpack_from("<II", raw, size_at)
+                    if count == 0:
+                        if offset != 0:
+                            offsets_valid = False
+                    elif offset < 112 or offset % 4 or offset + count * width > data_start:
+                        offsets_valid = False
+                    else:
+                        extents.append((offset, offset + count * width, name))
+                    table_layout[name] = {"count": count, "offset": offset, "width": width}
+                extents.sort()
+                if any(left[1] > right[0] for left, right in itertools.pairwise(extents)):
+                    offsets_valid = False
+                link_size, link_off = struct.unpack_from("<II", raw, 44)
+                link_valid = (link_size == 0 and link_off == 0) or (
+                    link_size > 0 and link_off >= 112 and link_off + link_size <= len(raw)
+                )
+                map_off = struct.unpack_from("<I", raw, 52)[0]
+                map_valid = map_off == 0 or (
+                    map_off >= data_start and map_off % 4 == 0 and map_off + 4 <= data_end
+                    and map_off + 4 + struct.unpack_from("<I", raw, map_off)[0] * 12 <= data_end
+                )
+                if not offsets_valid or not link_valid or not map_valid:
+                    expected_reason = "dex_header_offsets_invalid"
+    if expected_reason is not None:
+        ok = observed.get("rejected") is True and observed.get("reason") == expected_reason
+        return {"ok": ok, "method": "independent DEX header table/link/map bounds and failure reconstruction"}
+    checksum = struct.unpack_from("<I", raw, 8)[0]
+    checksum_valid = checksum == (zlib.adler32(raw[12:]) & 0xFFFFFFFF)
+    signature_valid = raw[12:32] == hashlib.sha1(raw[32:]).digest()
     ok = (
         observed.get("rejected") is False
         and observed.get("version") == version
         and observed.get("file_size") == file_size
         and observed.get("header_size") == header_size
         and observed.get("endian_tag") == endian
-        and observed.get("checksum_valid") is checksum_ok
-        and observed.get("signature_valid") is signature_ok
+        and observed.get("data_size") == data_size
+        and observed.get("data_off") == data_off
+        and observed.get("offsets_valid") is True
+        and observed.get("table_layout") == table_layout
+        and observed.get("checksum_valid") is checksum_valid
+        and observed.get("signature_valid") is signature_valid
     )
-    return {"ok": ok, "method": "independent DEX header offsets, Adler-32 and SHA-1 recomputation"}
-
+    return {"ok": ok, "method": "independent DEX header table/link/map bounds, Adler-32 and SHA-1 recomputation"}
 
 def dex_tables_oracle(arguments: dict, observed: dict) -> dict:
     """Reconstruct DEX table layout and references without using executor output as input."""

@@ -17,6 +17,8 @@ from metagente_luna_s3 import (
     batch5_oracle,
     batch6_exec,
     batch6_oracle,
+    batch7_exec,
+    batch7_oracle,
     d01_exec,
     d01_oracle,
     format_exec,
@@ -516,3 +518,24 @@ def run(capability_id: str, arguments: dict) -> dict:
     if capability_id not in REGISTRY or capability_id not in EXECUTORS:
         raise KeyError(capability_id)
     return EXECUTORS[capability_id](**arguments)
+
+
+
+REGISTRY["trend_stationarity"] = _cap(
+    "trend_stationarity",
+    "trend_stationarity_independent",
+    {
+        "type": "object",
+        "required": ["values"],
+        "properties": {
+            "values": {
+                "type": "array",
+                "minItems": 2,
+                "items": {"type": "number"},
+            },
+        },
+        "additionalProperties": False,
+    },
+)
+ORACLES["trend_stationarity_independent"] = batch7_oracle.trend_stationarity_oracle
+EXECUTORS["trend_stationarity"] = batch7_exec.trend_stationarity

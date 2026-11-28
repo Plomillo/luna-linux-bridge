@@ -29,3 +29,34 @@ CI and hosted seed execution are green for the implemented subset; the evidence 
 ## Next work
 
 Expand the executable-plan backlog with the next source-bound case(s), including implementation, negative/boundary controls, independent oracle, per-case evidence, tests and coverage/population count updates. Keep the append-only audit log updated with each subsequent inspection.
+
+
+## Audit entry: 2026-11-28 12:40:49 -03:00 — INF-0633/0634 source/control reconciliation
+
+- Main inspected: `b53ea644c21264360fa2b648e4a545a0db36c137`.
+- PR #199: closed and **already merged**; head `93b323fe496a81cdc9f5675884d3ea6c1827d9c6`, merge commit `a8ed0b3df175a4792eb36b5e02324f6512af9161`. The requested branch still exists, but it no longer has an open PR. No new PR was created.
+- Active C05 work inspected: PR #204 branch `work/c05-archive-forensics-20261127`, head `68b6ce9bf7f143d92c3f14f64124e4ea18bd664e`; PR #205 branch `work/c05-animal-inf0065-apk-inventory-20261128`, head `9ac8becb3c31284882c82d2e20c64ef241f72eed`.
+- PR #204 failures: unit workflow `46101101376` failed Ruff `I001` import ordering; hosted workflow `46101101322` failed the authored/compiled plan equality. Compiler report: 164 authored normal specs, 163 compiled, `MGL5-INF-0633` skipped for missing controls, 837 NOT_RUN.
+- PR #205 hosted restricted execution `46160117218` and independent validation `46160117209` succeeded for its head; evidence artifact `15269795531`, 15,751,655 bytes, digest `sha256:41f2ce2535e6f1dd18d40582ed75261b1d0af72060a6344bc9cffc9b3fc75180`. Its branch reports 164 plans / 836 NOT_RUN; this is a separate open PR, not merged or added to PR #204's count.
+- Forensic source mismatch: INF-0633 is ACF and already had a normal spec in batch4; its controls were accidentally moved to INF-0634. INF-0634's source criterion is linear-trend stationarity analysis, but its plan used ACF lag-0, a false-positive operation mapping. This left INF-0633 uncompileable and inflated the missing-plan count.
+- Applied repair on the existing PR #204 branch (no duplicate PR): INF-0633 negative/boundary controls restored; INF-0634 changed to a deterministic linear-trend diagnostic with a fixed-vector independent oracle, a no-trend negative control and a two-point power-boundary control; added tests for stable output, exact slope/R² reference values, primary/independent adjudication and source mapping; corrected coverage assertions to 164 ready / 836 blocked.
+- Code commits in this repair sequence: `0104620f11fddda2031466d65b5f6dff965e0627`, `9a4430d245661c29d8467419efe8746a05bb84d2`, `84c3b1bff1b0234e3f1a92ae8cfc812fdf8c7ebf`, `1e155a07b16275d852cea41f6575f1f58744aa07`, `a9b90de4ae92438a82c8b41f1f5df4b96be757c0`, `be266bf01854d5bc1dab1fba38741baf5bb1da71`, `abd2b7ef2aeadf4b6334110f444d35b1376614a1`, `f4fb7096e73465747d5e8e4a8587f8ade3a0b78e`, `c48b016eea4ebc22c5170f2cd03832a8029ae6c2`, `3a2fa2d4b42eda24dcc7cfc542d0723a4f462f68`, `fa8413b3329d1e5914c90bd5b23ca1b90fbbdfd1`.
+- CI and hosted restricted population for the repaired head: **PENDING** at this entry. No PASS/certification and no merge.
+
+
+## Audit entry: 2026-11-28 — DEX header offset false-positive hardening
+
+- Re-inspected source MGL5-INF-0067: criterion explicitly requires version, sizes, offsets and checksum validation. Before this increment, `dex_header` checked file/header/data sizes and checksums but returned from header mode before validating the six ID-table offset/extent pairs, link section and map-list bounds.
+- Added header-mode validation for all six table size/offset pairs, zero-count offset consistency, alignment, table extents before the data section, table overlap, link-section bounds and map-list bounds. The independent header oracle reconstructs the same structural constraints from raw bytes, without calling the executor.
+- Boundary control now also requires `offsets_valid=true`. Added a rehashed malformed fixture regression: string-ID table offset beyond file bounds must be rejected by both parser and oracle.
+- Code commits: `a83cdd967f055f421460b1b91592b1eea7bdd276`, `56774c27e1dea40c498f5720725bdea8bf9375c9`, `bb5d37040d01021005fb40a8953552d6cdf4109d`, `9dd53bd0164f459b3f13de67d5f8b9eade207622`, `a35fd1a7c08b3a4f52632d4558645f44a3633800`.
+- CI repair history: commit `582b7eb` had a compile failure from literal escaped newlines in the coverage test; `5bb32a0` corrected the archive-case mapping; `24b76d1` corrected trend-oracle float comparison tolerance; `6568a22` corrected independent trend-control tolerance. The latest DEX changes supersede those runs; full unit and restricted-container validation is pending for the new head.
+- Current expected PR #204 branch population remains 164 executable plans / 836 NOT_RUN, subject to hosted report reconciliation. No merge or certification.
+
+
+## Audit entry: 2026-11-28 — Coverage-matrix/compiler divergence correction
+
+- Unit workflow at head `d70ff3a`: Ruff passed; tests reported 150 passed, 4 failed. The compiler emitted 164 plans, but the coverage matrix script omitted BATCH7 and reported 163/837; the test suite and population inventory still hardcoded 163/837. INF-0634 was therefore falsely shown not ready by the matrix despite being compiled with both controls.
+- Corrected `build_c05_coverage_matrix.py` to include BATCH7 and reconciled population test assertions to 164 plans / 836 explicit NOT_RUN. This preserves the distinction between authored/executable plans and hosted evidence; no NOT_RUN is promoted.
+- Repair commits: `252aaf1b3e0fe3806b0b51f0baea0b926bed9df6`, `3b0fda75a750c8af6ea0246c317158bd3dc77def`.
+- Full unit rerun and restricted hosted execution for the corrected head are pending. No PASS/certification and no merge.
