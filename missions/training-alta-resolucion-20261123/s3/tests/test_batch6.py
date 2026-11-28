@@ -144,5 +144,5 @@ def test_interpreter_resolves_new_fixture_backed_d03_operations():
             continue
         result = interpret(operation)
         assert result.status == "READY"
-        assert result.intent in {"descending_seed", "shortest_path", "matrix_multiply", "determinant_3x3", "moving_average"}
+        assert result.intent in {"descending_seed", "shortest_path", "matrix_multiply", "determinant_3x3", "moving_average", "moving_average_c05"}
         assert all(argument.provenance == "FIXTURE" for argument in result.arguments)
