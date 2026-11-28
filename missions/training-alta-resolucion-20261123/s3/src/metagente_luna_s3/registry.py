@@ -11,6 +11,8 @@ from metagente_luna_s3 import (
     apk_inventory_oracle,
     apk_signature_exec,
     apk_signature_oracle,
+    zip_central_exec,
+    zip_central_oracle,
     archive_exec,
     archive_oracle,
     batch3_exec,
@@ -261,6 +263,32 @@ REGISTRY["apk_inventory"] = _cap(
     },
 )
 
+REGISTRY["zip_central_compare"] = _cap(
+    "zip_central_compare",
+    "zip_central_independent",
+    {
+        "type": "object",
+        "required": ["entries", "tamper_central_name"],
+        "properties": {
+            "entries": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "required": ["name", "data_hex"],
+                    "properties": {
+                        "name": {"type": "string", "minLength": 1},
+                        "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"},
+                    },
+                    "additionalProperties": False,
+                },
+            },
+            "tamper_central_name": {"type": "boolean"},
+        },
+        "additionalProperties": False,
+    },
+)
+
 REGISTRY["apk_signature_verify"] = _cap(
     "apk_signature_verify",
     "apk_signature_independent",
@@ -441,6 +469,7 @@ ORACLES["pe_inspect_independent"] = format_oracle.pe_inspect_oracle
 
 ORACLES["apk_inventory_independent"] = apk_inventory_oracle.apk_inventory_oracle
 ORACLES["apk_signature_independent"] = apk_signature_oracle.apk_signature_oracle
+ORACLES["zip_central_independent"] = zip_central_oracle.zip_central_compare_oracle
 
 EXECUTORS: dict[str, Callable[..., dict]] = {
     "cidr_bounds": cidr_bounds,
@@ -535,6 +564,7 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
 
 EXECUTORS["apk_inventory"] = apk_inventory_exec.apk_inventory
 EXECUTORS["apk_signature_verify"] = apk_signature_exec.apk_signature_verify
+EXECUTORS["zip_central_compare"] = zip_central_exec.zip_central_compare
 
 EXECUTORS.update({"zip_path_safety": archive_exec.zip_path_safety, "zip_crc": archive_exec.zip_crc, "zip_duplicates": archive_exec.zip_duplicates, "tar_offsets": archive_exec.tar_offsets, "tar_truncated": archive_exec.tar_truncated, "gzip_crc": archive_exec.gzip_crc})
 EXECUTORS.update({"sqlite_header": format_exec.sqlite_header, "sqlite_integrity": format_exec.sqlite_integrity, "wasm_header": format_exec.wasm_header})
