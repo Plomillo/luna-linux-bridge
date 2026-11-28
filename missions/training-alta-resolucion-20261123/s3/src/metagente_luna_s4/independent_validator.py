@@ -128,6 +128,10 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "moving-window-too-wide": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_window_or_series"
     if expect == "moving-single-value-boundary": return completed and observed.get("rejected") is False and observed.get("averages") == [9.0] and observed.get("start_indices") == [0]
 
+    if expect == "zip-central-local-filename-mismatch-detected":
+        return completed and observed.get("mismatch_detected") is True and observed.get("extraction_performed") is False and observed.get("outside_destination_write") is False
+    if expect == "zip-central-local-empty-member-matches":
+        return completed and observed.get("mismatch_detected") is False and observed.get("local_names") == observed.get("central_names") == ["empty"] and observed.get("extraction_performed") is False
     if expect == "apk-signature-invalid-detected":
         return completed and observed.get("signature_present") is True and observed.get("signature_valid") is False and observed.get("status") == "INVALID"
     if expect == "apk-signature-absence-detected":
