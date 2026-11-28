@@ -1,6 +1,5 @@
 import importlib
 
-
 APK_ENTRIES = [
     {"name": "AndroidManifest.xml", "data_hex": "3c6d616e69666573742f3e"},
     {"name": "resources.arsc", "data_hex": "01020304"},
