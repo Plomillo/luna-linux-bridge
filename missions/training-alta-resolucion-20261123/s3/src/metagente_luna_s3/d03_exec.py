@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import io
 import re
-from functools import lru_cache
+from functools import cache
 
 
 def fibonacci_compare(n: int) -> dict:
@@ -20,7 +20,7 @@ def fibonacci_compare(n: int) -> dict:
 
     memo_calls = 0
 
-    @lru_cache(maxsize=None)
+    @cache
     def memoized(value: int) -> int:
         nonlocal memo_calls
         memo_calls += 1
