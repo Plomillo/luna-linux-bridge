@@ -52,3 +52,11 @@ Expand the executable-plan backlog with the next source-bound case(s), including
 - Code commits: `a83cdd967f055f421460b1b91592b1eea7bdd276`, `56774c27e1dea40c498f5720725bdea8bf9375c9`, `bb5d37040d01021005fb40a8953552d6cdf4109d`, `9dd53bd0164f459b3f13de67d5f8b9eade207622`, `a35fd1a7c08b3a4f52632d4558645f44a3633800`.
 - CI repair history: commit `582b7eb` had a compile failure from literal escaped newlines in the coverage test; `5bb32a0` corrected the archive-case mapping; `24b76d1` corrected trend-oracle float comparison tolerance; `6568a22` corrected independent trend-control tolerance. The latest DEX changes supersede those runs; full unit and restricted-container validation is pending for the new head.
 - Current expected PR #204 branch population remains 164 executable plans / 836 NOT_RUN, subject to hosted report reconciliation. No merge or certification.
+
+
+## Audit entry: 2026-11-28 — Coverage-matrix/compiler divergence correction
+
+- Unit workflow at head `d70ff3a`: Ruff passed; tests reported 150 passed, 4 failed. The compiler emitted 164 plans, but the coverage matrix script omitted BATCH7 and reported 163/837; the test suite and population inventory still hardcoded 163/837. INF-0634 was therefore falsely shown not ready by the matrix despite being compiled with both controls.
+- Corrected `build_c05_coverage_matrix.py` to include BATCH7 and reconciled population test assertions to 164 plans / 836 explicit NOT_RUN. This preserves the distinction between authored/executable plans and hosted evidence; no NOT_RUN is promoted.
+- Repair commits: `252aaf1b3e0fe3806b0b51f0baea0b926bed9df6`, `3b0fda75a750c8af6ea0246c317158bd3dc77def`.
+- Full unit rerun and restricted hosted execution for the corrected head are pending. No PASS/certification and no merge.
