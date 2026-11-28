@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from metagente_luna_s4.batch2 import (
-    CASES as SECOND,
     _DEX_BOUNDARY_HEX,
     _DEX_FIXTURE,
     _DEX_HEX,
@@ -14,6 +13,7 @@ from metagente_luna_s4.batch2 import (
     _PDF_ENCRYPTED_BOUNDARY_HEX,
     _PDF_ENCRYPTED_HEX,
 )
+from metagente_luna_s4.batch2 import CASES as SECOND
 from metagente_luna_s4.batch3 import CASES as THIRD
 from metagente_luna_s4.batch4 import CASES as FOURTH
 from metagente_luna_s4.batch5 import CASES as FIFTH
