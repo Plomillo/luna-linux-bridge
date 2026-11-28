@@ -174,7 +174,7 @@ def test_isolation_validator_rejects_mutable_docker_image_reference():
     assert isolation_evidence_valid(evidence) is False
 
 
-def test_isolation_validator_preserves_local_process_profile():
+def test_isolation_validator_rejects_local_process_profile_for_c05():
     evidence = {
         "mode": "FRESH_PROCESS_TEMPORARY_WORKSPACE",
         "process_isolated": True,
@@ -193,4 +193,4 @@ def test_isolation_validator_preserves_local_process_profile():
         "container_restrictions_verified": False,
         "kernel_isolation": "SHARED_HOST_KERNEL_NOT_VM",
     }
-    assert isolation_evidence_valid(evidence) is True
+    assert isolation_evidence_valid(evidence) is False
