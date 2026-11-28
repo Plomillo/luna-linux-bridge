@@ -164,5 +164,92 @@
     ],
     "expected": -306,
     "reason": "Minimal 3x3 integer reference matrix; determinant can be checked by cofactor expansion."
+  },
+  "fifo-queue": {
+    "steps": [
+      "enqueue:A",
+      "enqueue:B",
+      "enqueue:C",
+      "dequeue",
+      "dequeue",
+      "dequeue"
+    ],
+    "reason": "Source specifies three enqueues and three dequeues; fixture labels are deterministic."
+  },
+  "linked-list": {
+    "operations": [
+      {
+        "op": "insert",
+        "index": 0,
+        "value": 2
+      },
+      {
+        "op": "insert",
+        "index": 1,
+        "value": 4
+      },
+      {
+        "op": "insert",
+        "index": 1,
+        "value": 3
+      },
+      {
+        "op": "delete",
+        "index": 0
+      },
+      {
+        "op": "delete",
+        "index": 1
+      },
+      {
+        "op": "insert",
+        "index": 0,
+        "value": 1
+      }
+    ],
+    "reason": "Typed operation script exercises head, middle, and tail edits."
+  },
+  "bst-values": {
+    "values": [
+      8,
+      3,
+      10,
+      1,
+      6,
+      14
+    ],
+    "reason": "Source lists these six values for inorder traversal."
+  },
+  "dfs-cycle": {
+    "nodes": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "edges": [
+      [
+        "A",
+        "B"
+      ],
+      [
+        "A",
+        "C"
+      ],
+      [
+        "B",
+        "C"
+      ],
+      [
+        "C",
+        "A"
+      ],
+      [
+        "C",
+        "D"
+      ]
+    ],
+    "start": "A",
+    "reason": "Deterministic directed cycle with a reachable tail."
   }
 }

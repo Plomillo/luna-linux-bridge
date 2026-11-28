@@ -180,3 +180,115 @@ def moving_average_oracle(arguments: dict, observed: dict) -> dict:
         "start_indices": list(range(len(expected_values))), "averages": expected_values,
     }
     return {"ok": observed == expected, "expected": expected, "method": "independent window-index recomputation"}
+def fifo_queue_oracle(arguments: dict, observed: dict) -> dict:
+    steps = arguments.get("steps")
+    if not isinstance(steps, list) or any(not isinstance(step, str) for step in steps):
+        expected = {"rejected": True, "reason": "steps_must_be_strings"}
+    else:
+        queue, removed, events, underflow = [], [], [], 0
+        for step in steps:
+            if step.startswith("enqueue:") and step[8:]:
+                queue.append(step[8:])
+                events.append({"operation": "enqueue", "value": step[8:]})
+            elif step == "dequeue":
+                if queue:
+                    value = queue.pop(0)
+                    removed.append(value)
+                    events.append({"operation": "dequeue", "value": value})
+                else:
+                    underflow += 1
+                    events.append({"operation": "underflow", "source": "dequeue"})
+            else:
+                expected = {"rejected": True, "reason": "unsupported_queue_step"}
+                break
+        else:
+            expected = {"rejected": False, "queue": queue, "dequeued": removed, "events": events, "underflow_count": underflow}
+    return {"ok": observed == expected, "expected": expected, "method": "independent FIFO reference model"}
+
+
+def bst_inorder_oracle(arguments: dict, observed: dict) -> dict:
+    values = arguments.get("values")
+    if not isinstance(values, list) or any(not isinstance(v, int) or isinstance(v, bool) for v in values):
+        expected = {"rejected": True, "reason": "values_must_be_integers"}
+    elif len(set(values)) != len(values):
+        expected = {"rejected": True, "reason": "duplicate_value"}
+    else:
+        root = None
+        def insert(node, value):
+            if node is None:
+                return {"value": value, "low": None, "high": None}
+            side = "low" if value < node["value"] else "high"
+            node[side] = insert(node[side], value)
+            return node
+        for value in values:
+            root = insert(root, value)
+        order = []
+        def traverse(node):
+            if node is None:
+                return 0
+            left = traverse(node["low"])
+            order.append(node["value"])
+            right = traverse(node["high"])
+            return max(left, right) + 1
+        height = traverse(root)
+        expected = {"rejected": False, "inorder": sorted(values), "count": len(values), "height": height}
+    return {"ok": observed == expected, "expected": expected, "method": "independent dictionary BST model"}
+
+
+def dfs_graph_oracle(arguments: dict, observed: dict) -> dict:
+    nodes, edges, start = arguments.get("nodes"), arguments.get("edges"), arguments.get("start")
+    valid = isinstance(nodes, list) and bool(nodes) and len(set(nodes)) == len(nodes) and isinstance(edges, list) and all(
+        isinstance(edge, list) and len(edge) == 2 and all(v in nodes for v in edge) for edge in edges
+    ) and start in nodes
+    if not valid:
+        expected = {"rejected": True, "reason": "invalid_graph"}
+    else:
+        adjacency = {node: [] for node in nodes}
+        for source, destination in edges:
+            adjacency[source].append(destination)
+        visited, active, order, cycle = set(), set(), [], False
+        def visit(node):
+            nonlocal cycle
+            visited.add(node)
+            active.add(node)
+            order.append(node)
+            for child in adjacency[node]:
+                if child in active:
+                    cycle = True
+                elif child not in visited:
+                    visit(child)
+            active.remove(node)
+        visit(start)
+        expected = {"rejected": False, "order": order, "visited_count": len(order), "cycle": cycle}
+    return {"ok": observed == expected, "expected": expected, "method": "recursive DFS reference model"}
+
+
+def linked_list_oracle(arguments: dict, observed: dict) -> dict:
+    ops = arguments.get("operations")
+    values, history = [], []
+    if not isinstance(ops, list):
+        expected = {"rejected": True, "reason": "operations_must_be_list"}
+    else:
+        for op in ops:
+            if not isinstance(op, dict) or op.get("op") not in {"insert", "delete"}:
+                expected = {"rejected": True, "reason": "invalid_operation"}
+                break
+            index = op.get("index")
+            if not isinstance(index, int) or isinstance(index, bool):
+                expected = {"rejected": True, "reason": "index_must_be_integer"}
+                break
+            if op["op"] == "insert":
+                if not 0 <= index <= len(values) or not isinstance(op.get("value"), int) or isinstance(op.get("value"), bool):
+                    expected = {"rejected": True, "reason": "insert_bounds_or_value_invalid"}
+                    break
+                values.insert(index, op["value"])
+                history.append({"operation": "insert", "index": index, "value": op["value"], "length": len(values)})
+            else:
+                if not 0 <= index < len(values):
+                    expected = {"rejected": True, "reason": "delete_index_out_of_bounds"}
+                    break
+                value = values.pop(index)
+                history.append({"operation": "delete", "index": index, "value": value, "length": len(values)})
+        else:
+            expected = {"rejected": False, "values": values, "length": len(values), "history": history}
+    return {"ok": observed == expected, "expected": expected, "method": "independent array reference"}

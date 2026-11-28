@@ -137,3 +137,133 @@ def moving_average(values: list[float], window: int) -> dict:
         for start in range(len(values) - window + 1)
     ]
     return {"rejected": False, "window": window, "start_indices": list(range(len(averages))), "averages": averages}
+def fifo_queue(steps: list[str]) -> dict:
+    if not isinstance(steps, list) or any(not isinstance(step, str) for step in steps):
+        return {"rejected": True, "reason": "steps_must_be_strings"}
+    queue, removed, events, underflow = [], [], [], 0
+    for step in steps:
+        if step.startswith("enqueue:") and step[8:]:
+            queue.append(step[8:])
+            events.append({"operation": "enqueue", "value": step[8:]})
+        elif step == "dequeue":
+            if queue:
+                value = queue.pop(0)
+                removed.append(value)
+                events.append({"operation": "dequeue", "value": value})
+            else:
+                underflow += 1
+                events.append({"operation": "underflow", "source": "dequeue"})
+        else:
+            return {"rejected": True, "reason": "unsupported_queue_step"}
+    return {"rejected": False, "queue": queue, "dequeued": removed, "events": events, "underflow_count": underflow}
+
+
+def bst_inorder(values: list[int]) -> dict:
+    if not isinstance(values, list) or any(not isinstance(v, int) or isinstance(v, bool) for v in values):
+        return {"rejected": True, "reason": "values_must_be_integers"}
+    class Node:
+        __slots__ = ("value", "left", "right")
+        def __init__(self, value):
+            self.value, self.left, self.right = value, None, None
+    root = None
+    for value in values:
+        if root is None:
+            root = Node(value)
+            continue
+        node = root
+        while True:
+            if value == node.value:
+                return {"rejected": True, "reason": "duplicate_value"}
+            branch = "left" if value < node.value else "right"
+            child = getattr(node, branch)
+            if child is None:
+                setattr(node, branch, Node(value))
+                break
+            node = child
+    ordered = []
+    def visit(node):
+        if node is None:
+            return 0
+        left = visit(node.left)
+        ordered.append(node.value)
+        right = visit(node.right)
+        return max(left, right) + 1
+    height = visit(root)
+    return {"rejected": False, "inorder": ordered, "count": len(ordered), "height": height}
+
+
+def dfs_graph(nodes: list[str], edges: list[list[str]], start: str) -> dict:
+    if (not isinstance(nodes, list) or not nodes or len(set(nodes)) != len(nodes)
+        or any(not isinstance(n, str) or not n for n in nodes)
+        or not isinstance(edges, list)
+        or any(not isinstance(e, list) or len(e) != 2 or any(not isinstance(v, str) for v in e) for e in edges)
+        or any(v not in nodes for e in edges for v in e) or start not in nodes):
+        return {"rejected": True, "reason": "invalid_graph"}
+    adjacency = {node: [] for node in nodes}
+    for source, target in edges:
+        adjacency[source].append(target)
+    colors = {node: 0 for node in nodes}
+    order, cycle, stack = [], False, [(start, 0)]
+    colors[start] = 1
+    order.append(start)
+    while stack:
+        node, index = stack[-1]
+        if index == len(adjacency[node]):
+            colors[node] = 2
+            stack.pop()
+            continue
+        neighbor = adjacency[node][index]
+        stack[-1] = (node, index + 1)
+        if colors[neighbor] == 1:
+            cycle = True
+        elif colors[neighbor] == 0:
+            colors[neighbor] = 1
+            order.append(neighbor)
+            stack.append((neighbor, 0))
+    return {"rejected": False, "order": order, "visited_count": len(order), "cycle": cycle}
+
+
+def linked_list(operations: list[dict]) -> dict:
+    if not isinstance(operations, list):
+        return {"rejected": True, "reason": "operations_must_be_list"}
+    class Node:
+        __slots__ = ("value", "next")
+        def __init__(self, value):
+            self.value, self.next = value, None
+    head, size, history = None, 0, []
+    for op in operations:
+        if not isinstance(op, dict) or op.get("op") not in {"insert", "delete"}:
+            return {"rejected": True, "reason": "invalid_operation"}
+        index = op.get("index")
+        if not isinstance(index, int) or isinstance(index, bool):
+            return {"rejected": True, "reason": "index_must_be_integer"}
+        if op["op"] == "insert":
+            if not 0 <= index <= size or not isinstance(op.get("value"), int) or isinstance(op.get("value"), bool):
+                return {"rejected": True, "reason": "insert_bounds_or_value_invalid"}
+            new = Node(op["value"])
+            if index == 0:
+                new.next, head = head, new
+            else:
+                previous = head
+                for _ in range(index - 1):
+                    previous = previous.next
+                new.next, previous.next = previous.next, new
+            size += 1
+            history.append({"operation": "insert", "index": index, "value": op["value"], "length": size})
+        else:
+            if not 0 <= index < size:
+                return {"rejected": True, "reason": "delete_index_out_of_bounds"}
+            if index == 0:
+                removed, head = head.value, head.next
+            else:
+                previous = head
+                for _ in range(index - 1):
+                    previous = previous.next
+                removed, previous.next = previous.next.value, previous.next.next
+            size -= 1
+            history.append({"operation": "delete", "index": index, "value": removed, "length": size})
+    values, node = [], head
+    while node is not None:
+        values.append(node.value)
+        node = node.next
+    return {"rejected": False, "values": values, "length": size, "history": history}

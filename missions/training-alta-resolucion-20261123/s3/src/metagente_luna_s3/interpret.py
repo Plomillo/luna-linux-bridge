@@ -86,6 +86,19 @@ def interpret(instruction: str) -> Interpretation:
             "stack_sequence",
             [Argument(name="steps", value=_FIXTURE["stack-script"]["steps"], provenance=Provenance.FIXTURE)],
         )
+
+    if "cola fifo" in folded or ("encolar" in folded and "desencolar" in folded):
+        fixture = _FIXTURE["fifo-queue"]
+        return _ready(text, "fifo_queue", [Argument(name="steps", value=fixture["steps"], provenance=Provenance.FIXTURE)])
+    if "lista enlazada" in folded:
+        fixture = _FIXTURE["linked-list"]
+        return _ready(text, "linked_list", [Argument(name="operations", value=fixture["operations"], provenance=Provenance.FIXTURE)])
+    if "bst" in folded or "arbol binario de busqueda" in folded:
+        fixture = _FIXTURE["bst-values"]
+        return _ready(text, "bst_inorder", [Argument(name="values", value=fixture["values"], provenance=Provenance.FIXTURE)])
+    if "dfs" in folded or "recorrer grafo con ciclo" in folded:
+        fixture = _FIXTURE["dfs-cycle"]
+        return _ready(text, "dfs_graph", [Argument(name="nodes", value=fixture["nodes"], provenance=Provenance.FIXTURE), Argument(name="edges", value=fixture["edges"], provenance=Provenance.FIXTURE), Argument(name="start", value=fixture["start"], provenance=Provenance.FIXTURE)])
     if "grafo" in folded or "seis nodos" in folded:
         fixture = _FIXTURE["bfs-six-node"]
         return _ready(text, "shortest_path", [

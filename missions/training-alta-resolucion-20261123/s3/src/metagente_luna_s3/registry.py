@@ -175,6 +175,11 @@ REGISTRY: dict[str, Capability] = {
         "properties": {"steps": {"type": "array", "items": {"type": "string"}}},
         "additionalProperties": False,
     }),
+
+    "fifo_queue": _cap("fifo_queue", "fifo_queue_reference", {"type": "object", "required": ["steps"], "properties": {"steps": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": False}),
+    "bst_inorder": _cap("bst_inorder", "bst_inorder_reference", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array", "items": {"type": "integer"}}}, "additionalProperties": False}),
+    "dfs_graph": _cap("dfs_graph", "dfs_graph_reference", {"type": "object", "required": ["nodes", "edges", "start"], "properties": {"nodes": {"type": "array", "items": {"type": "string"}}, "edges": {"type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "string"}}}, "start": {"type": "string"}}, "additionalProperties": False}),
+    "linked_list": _cap("linked_list", "linked_list_reference", {"type": "object", "required": ["operations"], "properties": {"operations": {"type": "array", "items": {"type": "object"}}}, "additionalProperties": False}),
     "shortest_path": _cap("shortest_path", "shortest_path_reference", {
         "type": "object", "required": ["nodes", "edges", "start", "target"],
         "properties": {
@@ -334,6 +339,10 @@ ORACLES: dict[str, Callable[..., dict]] = {
     "escapes": batch4_oracle.escapes,
     "request_counts": batch4_oracle.request_counts,
     "stable_age_records": batch6_oracle.stable_ages_oracle,
+    "fifo_queue_reference": batch6_oracle.fifo_queue_oracle,
+    "bst_inorder_reference": batch6_oracle.bst_inorder_oracle,
+    "dfs_graph_reference": batch6_oracle.dfs_graph_oracle,
+    "linked_list_reference": batch6_oracle.linked_list_oracle,
     "stack_state_machine": batch6_oracle.stack_sequence_oracle,
     "shortest_path_reference": batch6_oracle.shortest_path_oracle,
     "matrix_product_reference": batch6_oracle.matrix_multiply_oracle,
@@ -442,6 +451,10 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "confined": batch4_exec.confined,
     "request_log": batch4_exec.request_log,
     "stable_ages": batch6_exec.stable_ages,
+    "fifo_queue": batch6_exec.fifo_queue,
+    "bst_inorder": batch6_exec.bst_inorder,
+    "dfs_graph": batch6_exec.dfs_graph,
+    "linked_list": batch6_exec.linked_list,
     "stack_sequence": batch6_exec.stack_sequence,
     "shortest_path": batch6_exec.shortest_path,
     "matrix_multiply": batch6_exec.matrix_multiply,
