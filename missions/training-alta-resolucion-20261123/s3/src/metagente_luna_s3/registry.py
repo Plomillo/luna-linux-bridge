@@ -7,6 +7,8 @@ from collections.abc import Callable
 from pydantic import BaseModel
 
 from metagente_luna_s3 import (
+    d03_exec,
+    d03_oracle,
     apk_inventory_exec,
     apk_inventory_oracle,
     apk_signature_exec,
@@ -607,3 +609,34 @@ def run(capability_id: str, arguments: dict) -> dict:
     if capability_id not in REGISTRY or capability_id not in EXECUTORS:
         raise KeyError(capability_id)
     return EXECUTORS[capability_id](**arguments)
+
+
+# D03 source-grounded implementations. Source-omitted literals are explicitly
+# recorded as fixture choices in d03_batch.py rather than attributed to source.
+REGISTRY.update({
+    "fibonacci_compare": _cap("fibonacci_compare", "fibonacci_independent", {"type":"object","required":["n"],"properties":{"n":{"type":"integer"}},"additionalProperties":False}),
+    "knapsack_01": _cap("knapsack_01", "knapsack_independent", {"type":"object","required":["items","capacity"],"properties":{"capacity":{"type":"integer"},"items":{"type":"array","items":{"type":"object","required":["weight","value"],"properties":{"weight":{"type":"integer"},"value":{"type":"integer"}},"additionalProperties":False}}},"additionalProperties":False}),
+    "email_syntax": _cap("email_syntax", "email_syntax_independent", {"type":"object","required":["addresses"],"properties":{"addresses":{"type":"array","items":{"type":"string"}}},"additionalProperties":False}),
+    "optional_value": _cap("optional_value", "optional_value_independent", {"type":"object","required":["present","value","default"],"properties":{"present":{"type":"boolean"},"value":{"type":["string","null"]},"default":{"type":"string"}},"additionalProperties":False}),
+    "read_cleanup": _cap("read_cleanup", "read_cleanup_independent", {"type":"object","required":["payload_hex","fail_read"],"properties":{"payload_hex":{"type":"string"},"fail_read":{"type":"boolean"}},"additionalProperties":False}),
+    "finally_once": _cap("finally_once", "finally_once_independent", {"type":"object","required":["raise_error","message"],"properties":{"raise_error":{"type":"boolean"},"message":{"type":"string"}},"additionalProperties":False}),
+    "raii_release": _cap("raii_release", "raii_release_independent", {"type":"object","required":["early_exit","payload_hex"],"properties":{"early_exit":{"type":"boolean"},"payload_hex":{"type":"string"}},"additionalProperties":False}),
+})
+ORACLES.update({
+    "fibonacci_independent": d03_oracle.fibonacci_oracle,
+    "knapsack_independent": d03_oracle.knapsack_oracle,
+    "email_syntax_independent": d03_oracle.email_oracle,
+    "optional_value_independent": d03_oracle.optional_value_oracle,
+    "read_cleanup_independent": d03_oracle.cleanup_oracle,
+    "finally_once_independent": d03_oracle.finally_oracle,
+    "raii_release_independent": d03_oracle.raii_oracle,
+})
+EXECUTORS.update({
+    "fibonacci_compare": d03_exec.fibonacci_compare,
+    "knapsack_01": d03_exec.knapsack_01,
+    "email_syntax": d03_exec.email_syntax,
+    "optional_value": d03_exec.optional_value,
+    "read_cleanup": d03_exec.read_cleanup,
+    "finally_once": d03_exec.finally_once,
+    "raii_release": d03_exec.raii_release,
+})
