@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import binascii
 import hashlib
+import itertools
 import io
 import math
 import re
@@ -724,7 +725,7 @@ def dex_inspect(payload_hex: str, mode: str) -> dict:
             extents.append((offset, offset + count * width, name))
         header_tables[name] = {"count": count, "offset": offset, "width": width}
     extents.sort()
-    if any(left[1] > right[0] for left, right in zip(extents, extents[1:])):
+    if any(left[1] > right[0] for left, right in itertools.pairwise(extents)):
         offsets_valid = False
     link_size, link_off = struct.unpack_from("<II", raw, 44)
     link_valid = (link_size == 0 and link_off == 0) or (
