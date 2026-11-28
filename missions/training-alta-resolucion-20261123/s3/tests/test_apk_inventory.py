@@ -38,3 +38,15 @@ def test_apk_inventory_negative_missing_dex_and_boundary_empty_members():
     assert boundary["uncompressed_bytes"] == 0
     assert apk_inventory_oracle({"entries": boundary_entries}, boundary)["ok"] is True
     assert accepts("apk-empty-members-listed", boundary, "EXECUTED") is True
+
+def test_apk_inventory_control_runs_are_adjudicated_by_both_validators():
+    from metagente_luna_s4.controls import run_controls
+    from metagente_luna_s4.independent_validator import _independent_control_accepts
+
+    case = next(row for row in run_controls() if row["case_id"] == "MGL5-INF-0065")
+    assert set(case["controls"]) == {"negative", "boundary"}
+    for kind, control in case["controls"].items():
+        assert control["accepted"] is True
+        assert _independent_control_accepts(
+            control["expect"], control["observed"], control["execution_status"]
+        ) is True
