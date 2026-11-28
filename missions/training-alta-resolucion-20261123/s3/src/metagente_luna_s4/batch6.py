@@ -67,7 +67,7 @@ CASES = [
     },
     {
         "case_id": "MGL5-INF-0632",
-        "capability_id": "moving_average",
+        "capability_id": "moving_average_c05",
         "arguments": {"values": _FIXTURE["moving-window"]["values"], "window": _FIXTURE["moving-window"]["window"]},
         "fixture_provenance": "FIXTURE:derived_parameters.json#moving-window; explicit six values, window 3",
     },
