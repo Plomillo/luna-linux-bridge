@@ -3,13 +3,13 @@ from __future__ import annotations
 
 from metagente_luna_s4.runner import execute
 
-# FX-MGL5-INF-0633: deterministic synthetic series, seed 0633.
+# FX-MGL5-INF-0634: deterministic synthetic series, seed 0634.
 CASES = [
     {
-        "case_id": "MGL5-INF-0633",
+        "case_id": "MGL5-INF-0634",
         "capability_id": "acf_lag0",
         "arguments": {"values": [1, 2]},
-        "fixture_provenance": "SYNTHETIC_MINIMAL: seed=0633; two-point non-constant series; exact ACF reference [1.0, -0.5]",
+        "fixture_provenance": "SYNTHETIC_MINIMAL: seed=0634; linear-trend series [1,2,3,4]; independently recomputed lagged covariance reference",
     },
 ]
 

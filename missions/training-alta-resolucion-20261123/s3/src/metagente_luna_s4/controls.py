@@ -38,8 +38,8 @@ def _build() -> None:
     text = "utf8_roundtrip"
     _add("MGL5-INF-0001", "negative", text, {"text": "Luna-2025"}, "different-text")
 
-    _add("MGL5-INF-0633", "negative", "acf_lag0", {"values": [7, 7, 7]}, "acf-zero-variance-rejected")
-    _add("MGL5-INF-0633", "boundary", "acf_lag0", {"values": [1, 2]}, "acf-two-point-boundary")
+    _add("MGL5-INF-0634", "negative", "acf_lag0", {"values": [7, 7, 7]}, "acf-zero-variance-rejected")
+    _add("MGL5-INF-0634", "boundary", "acf_lag0", {"values": [1, 2]}, "acf-two-point-boundary")
     _add("MGL5-INF-0067", "negative", "dex_header", {"payload_hex": _DEX_HEX[:80]}, "dex-truncated-header-rejected")
     _add("MGL5-INF-0067", "boundary", "dex_header", {"payload_hex": _DEX_BOUNDARY_HEX}, "dex-minimum-valid-header")
     _add("MGL5-INF-0068", "negative", "dex_tables", {"payload_hex": (_DEX_FIXTURE[:124] + (99).to_bytes(4, "little") + _DEX_FIXTURE[128:]).hex()}, "dex-invalid-type-string-index")
@@ -314,8 +314,8 @@ def _build() -> None:
     _add("MGL5-INF-0202", "boundary", "child_status", {"exit_code": 0}, "child-exit-zero")
     _add("MGL5-INF-0411", "negative", "cosine_set", {"pairs": [[[0, 0], [1, 0]]]}, "cosine-zero-vector-rejected")
     _add("MGL5-INF-0411", "boundary", "cosine_set", {"pairs": [[[3, 4], [3, 4]]]}, "cosine-identical-boundary")
-    _add("MGL5-INF-0633", "negative", "acf_lag0", {"values": [5, 5, 5]}, "acf-zero-variance-rejected")
-    _add("MGL5-INF-0633", "boundary", "acf_lag0", {"values": [1, 2]}, "acf-two-point-boundary")
+    _add("MGL5-INF-0634", "negative", "acf_lag0", {"values": [5, 5, 5]}, "acf-zero-variance-rejected")
+    _add("MGL5-INF-0634", "boundary", "acf_lag0", {"values": [1, 2]}, "acf-two-point-boundary")
     _add("MGL5-INF-0013", "negative", "nan_policy", {"value_kind": "finite"}, "nan-finite-control")
     _add("MGL5-INF-0013", "boundary", "nan_policy", {"value_kind": "negative-nan"}, "nan-negative-payload-boundary")
     _add("MGL5-INF-0014", "negative", "inf_policy", {"value_kind": "finite"}, "inf-finite-control")
