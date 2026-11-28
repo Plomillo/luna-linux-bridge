@@ -119,10 +119,6 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "bellman-no-negative-cycle": return completed and observed.get("negative_cycle_reachable") is False and observed.get("distances") == {"A": 0, "B": 1, "C": 2}
     if expect == "bellman-singleton": return completed and observed.get("negative_cycle_reachable") is False and observed.get("distances") == {"A": 0}
 
-    if expect == "linked-list-delete-out-of-bounds": return control_completed and observed.get("rejected") is True and observed.get("reason") == "delete_index_out_of_bounds"
-    if expect == "linked-list-singleton-roundtrip": return control_completed and observed.get("rejected") is False and observed.get("values") == [] and observed.get("length") == 0
-    if expect == "dfs-invalid-edge-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_graph"
-    if expect == "dfs-self-loop-boundary": return control_completed and observed.get("rejected") is False and observed.get("order") == ["A"] and observed.get("visited_count") == 1 and observed.get("cycle") is True
     if expect == "bfs-unreachable-target": return completed and observed.get("reachable") is False and observed.get("path") == [] and observed.get("distance") is None
     if expect == "bfs-single-node-zero-distance": return completed and observed.get("reachable") is True and observed.get("path") == ["A"] and observed.get("distance") == 0
     if expect == "matrix-inner-dimension-mismatch": return completed and observed.get("rejected") is True and observed.get("reason") == "matrix_dimensions_invalid"
