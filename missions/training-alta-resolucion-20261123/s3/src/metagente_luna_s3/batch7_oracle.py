@@ -1,6 +1,4 @@
 """Independent fixed-vector adjudication for MGL5-INF-0634."""
-from __future__ import annotations
-
 
 _REFERENCE = {
     (1, 2, 3, 4, 5, 6, 7, 8): ("TREND_EVIDENCE", 1.0, 1.0),
