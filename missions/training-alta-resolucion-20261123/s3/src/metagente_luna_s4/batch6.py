@@ -58,6 +58,36 @@ CASES = [
         "fixture_provenance": "FIXTURE:derived_parameters.json#stack-script",
     },
     {
+        "case_id": "MGL5-INF-0111",
+        "capability_id": "linked_list",
+        "arguments": {"operations": _FIXTURE["linked-list"]["operations"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#linked-list; head/middle/tail operations",
+    },
+    {
+        "case_id": "MGL5-INF-0115",
+        "capability_id": "dfs_graph",
+        "arguments": {"nodes": _FIXTURE["dfs-cycle"]["nodes"], "edges": _FIXTURE["dfs-cycle"]["edges"], "start": _FIXTURE["dfs-cycle"]["start"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#dfs-cycle; directed cycle with reachable tail",
+    },
+    {
+        "case_id": "MGL5-INF-0116",
+        "capability_id": "dijkstra",
+        "arguments": {"nodes": _FIXTURE["dijkstra-positive"]["nodes"], "edges": _FIXTURE["dijkstra-positive"]["edges"], "start": _FIXTURE["dijkstra-positive"]["start"], "target": _FIXTURE["dijkstra-positive"]["target"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#dijkstra-positive; nonnegative weighted graph",
+    },
+    {
+        "case_id": "MGL5-INF-0117",
+        "capability_id": "dijkstra",
+        "arguments": {"nodes": _FIXTURE["dijkstra-negative"]["nodes"], "edges": _FIXTURE["dijkstra-negative"]["edges"], "start": _FIXTURE["dijkstra-negative"]["start"], "target": _FIXTURE["dijkstra-negative"]["target"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#dijkstra-negative; negative edge rejection",
+    },
+    {
+        "case_id": "MGL5-INF-0118",
+        "capability_id": "bellman_ford_cycle",
+        "arguments": {"nodes": _FIXTURE["bellman-negative-cycle"]["nodes"], "edges": _FIXTURE["bellman-negative-cycle"]["edges"], "start": _FIXTURE["bellman-negative-cycle"]["start"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#bellman-negative-cycle; reachable negative cycle",
+    },
+    {
         "case_id": "MGL5-INF-0114",
         "capability_id": "shortest_path",
         "arguments": {key: _FIXTURE["bfs-six-node"][key] for key in ("nodes", "edges", "start", "target")},

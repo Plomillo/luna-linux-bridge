@@ -372,6 +372,11 @@ def _build() -> None:
     _add("MGL5-INF-0117", "boundary", "dijkstra", {"nodes": ["A", "B", "C"], "edges": [["A", "B", 0], ["B", "C", 1]], "start": "A", "target": "C"}, "dijkstra-zero-weight-path")
     _add("MGL5-INF-0118", "negative", "bellman_ford_cycle", {"nodes": ["A", "B", "C"], "edges": [["A", "B", 1], ["B", "C", 1]], "start": "A"}, "bellman-no-negative-cycle")
     _add("MGL5-INF-0118", "boundary", "bellman_ford_cycle", {"nodes": ["A"], "edges": [], "start": "A"}, "bellman-singleton")
+
+    _add("MGL5-INF-0111", "negative", "linked_list", {"operations": [{"op": "delete", "index": 2}]}, "linked-list-delete-out-of-bounds")
+    _add("MGL5-INF-0111", "boundary", "linked_list", {"operations": [{"op": "insert", "index": 0, "value": 1}, {"op": "delete", "index": 0}]}, "linked-list-singleton-roundtrip")
+    _add("MGL5-INF-0115", "negative", "dfs_graph", {"nodes": ["A", "B"], "edges": [["A", "Z"]], "start": "A"}, "dfs-invalid-edge-rejected")
+    _add("MGL5-INF-0115", "boundary", "dfs_graph", {"nodes": ["A"], "edges": [["A", "A"]], "start": "A"}, "dfs-self-loop-boundary")
     _add("MGL5-INF-0114", "negative", "shortest_path", {"nodes": ["A", "B", "C"], "edges": [["A", "B"]], "start": "A", "target": "C"}, "bfs-unreachable-target")
     _add("MGL5-INF-0114", "boundary", "shortest_path", {"nodes": ["A"], "edges": [], "start": "A", "target": "A"}, "bfs-single-node-zero-distance")
     _add("MGL5-INF-0609", "negative", "matrix_multiply", {"left": [[1, 2, 3]], "right": [[1, 2], [3, 4]]}, "matrix-inner-dimension-mismatch")
@@ -394,6 +399,11 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "dijkstra-zero-weight-path": return control_completed and observed.get("rejected") is False and observed.get("distance") == 1 and observed.get("path") == ["A", "B", "C"]
     if expect == "bellman-no-negative-cycle": return control_completed and observed.get("negative_cycle_reachable") is False and observed.get("distances") == {"A": 0, "B": 1, "C": 2}
     if expect == "bellman-singleton": return control_completed and observed.get("negative_cycle_reachable") is False and observed.get("distances") == {"A": 0}
+
+    if expect == "linked-list-delete-out-of-bounds": return control_completed and observed.get("rejected") is True and observed.get("reason") == "delete_index_out_of_bounds"
+    if expect == "linked-list-singleton-roundtrip": return control_completed and observed.get("rejected") is False and observed.get("values") == [] and observed.get("length") == 0
+    if expect == "dfs-invalid-edge-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_graph"
+    if expect == "dfs-self-loop-boundary": return control_completed and observed.get("rejected") is False and observed.get("order") == ["A"] and observed.get("visited_count") == 1 and observed.get("cycle") is True
     if expect == "bfs-unreachable-target": return control_completed and observed.get("reachable") is False and observed.get("path") == [] and observed.get("distance") is None
     if expect == "bfs-single-node-zero-distance": return control_completed and observed.get("reachable") is True and observed.get("path") == ["A"] and observed.get("distance") == 0
     if expect == "matrix-inner-dimension-mismatch": return control_completed and observed.get("rejected") is True and observed.get("reason") == "matrix_dimensions_invalid"

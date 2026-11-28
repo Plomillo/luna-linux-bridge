@@ -1,6 +1,6 @@
 EXPECTED = {
-    "MGL5-INF-0113": ("balanced_range", "range_sum"),
-    "MGL5-INF-0119": ("linear_scans", "full_scans"),
+    "MGL5-INF-0113": ("avl_tree", "avl_tree_reference"),
+    "MGL5-INF-0119": ("linear_search_complexity", "linear_search_complexity_reference"),
     "MGL5-INF-0141": ("parameterized_name", "own_query"),
     "MGL5-INF-0154": ("precedence_tree", "folded_value"),
     "MGL5-INF-0186": ("divide_zero", "zero_type"),
@@ -22,7 +22,14 @@ def test_ten_source_defined_batch5_normal_operations_match_independent_oracles()
     for case_id, (capability, oracle_method) in EXPECTED.items():
         spec = by_id[case_id]
         assert spec["capability_id"] == capability
-        assert spec["arguments"] == {}
+        expected_arguments = {
+            "MGL5-INF-0113": {"values": list(range(1, 1001))},
+            "MGL5-INF-0119": {"sizes": [1000, 2000, 4000], "target": 4000},
+        }
+        if case_id in expected_arguments:
+            assert spec["arguments"] == expected_arguments[case_id]
+        else:
+            assert spec["arguments"] == {}
 
         runs = [
             execute(spec["capability_id"], spec["arguments"], case_id)
@@ -34,7 +41,7 @@ def test_ten_source_defined_batch5_normal_operations_match_independent_oracles()
         assert all(run["observed"] == runs[0]["observed"] for run in runs), case_id
         assert all(run["oracle_result"]["method"] == runs[0]["oracle_result"]["method"] for run in runs), case_id
         assert oracle_method in {
-            "range_sum", "full_scans", "own_query", "folded_value", "zero_type",
+            "avl_tree_reference", "linear_search_complexity_reference", "own_query", "folded_value", "zero_type",
             "octal_mode", "masked_create", "declared_env", "own_check", "posix_codes",
         }
 
@@ -43,7 +50,9 @@ def test_source_defined_batch5_normal_specs_do_not_claim_negative_or_boundary_co
     from metagente_luna_s4.batch5 import CASES
 
     by_id = {case["case_id"]: case for case in CASES}
-    for case_id in EXPECTED:
+    assert by_id["MGL5-INF-0113"]["arguments"] == {"values": list(range(1, 1001))}
+    assert by_id["MGL5-INF-0119"]["arguments"] == {"sizes": [1000, 2000, 4000], "target": 4000}
+    for case_id in set(EXPECTED) - {"MGL5-INF-0113", "MGL5-INF-0119"}:
         assert by_id[case_id]["arguments"] == {}
     # Normal fixtures remain source-defined and deliberately separate from controls.
 
