@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from metagente_luna_s3 import (
     archive_exec,
     archive_oracle,
+    apk_inventory_exec,
+    apk_inventory_oracle,
     batch3_exec,
     batch3_oracle,
     batch4_exec,
