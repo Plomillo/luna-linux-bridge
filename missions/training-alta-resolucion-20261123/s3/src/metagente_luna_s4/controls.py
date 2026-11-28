@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from metagente_luna_s4.batch2 import (
+    CASES as SECOND,
     _DEX_BOUNDARY_HEX,
     _DEX_FIXTURE,
     _DEX_HEX,
@@ -13,13 +14,12 @@ from metagente_luna_s4.batch2 import (
     _PDF_ENCRYPTED_BOUNDARY_HEX,
     _PDF_ENCRYPTED_HEX,
 )
-from metagente_luna_s4.batch2 import CASES as SECOND
 from metagente_luna_s4.batch3 import CASES as THIRD
 from metagente_luna_s4.batch4 import CASES as FOURTH
 from metagente_luna_s4.batch5 import CASES as FIFTH
 from metagente_luna_s4.batch6 import CASES as SIXTH
-from metagente_luna_s4.d01_batch import CASES as FIRST
 from metagente_luna_s4.batch7 import CASES as SEVENTH
+from metagente_luna_s4.d01_batch import CASES as FIRST
 from metagente_luna_s4.runner import execute
 
 CASES = FIRST + SECOND + THIRD + FOURTH + FIFTH + SIXTH + SEVENTH
@@ -37,9 +37,12 @@ def _build() -> None:
         return
     text = "utf8_roundtrip"
     _add("MGL5-INF-0001", "negative", text, {"text": "Luna-2025"}, "different-text")
+    _add("MGL5-INF-0633", "negative", "acf_lag0", {"values": [7, 7, 7]}, "acf-zero-variance-rejected")
+    _add("MGL5-INF-0633", "boundary", "acf_lag0", {"values": [1, 2]}, "acf-two-point-boundary")
+    _add("MGL5-INF-0634", "negative", "trend_stationarity", {"values": [2, 4, 3, 4, 3, 2, 4, 3]}, "trend-no-evidence")
+    _add("MGL5-INF-0634", "boundary", "trend_stationarity", {"values": [1, 2]}, "trend-insufficient-power")
 
-    _add("MGL5-INF-0634", "negative", "acf_lag0", {"values": [7, 7, 7]}, "acf-zero-variance-rejected")
-    _add("MGL5-INF-0634", "boundary", "acf_lag0", {"values": [1, 2]}, "acf-two-point-boundary")
+
     _add("MGL5-INF-0067", "negative", "dex_header", {"payload_hex": _DEX_HEX[:80]}, "dex-truncated-header-rejected")
     _add("MGL5-INF-0067", "boundary", "dex_header", {"payload_hex": _DEX_BOUNDARY_HEX}, "dex-minimum-valid-header")
     _add("MGL5-INF-0068", "negative", "dex_tables", {"payload_hex": (_DEX_FIXTURE[:124] + (99).to_bytes(4, "little") + _DEX_FIXTURE[128:]).hex()}, "dex-invalid-type-string-index")
@@ -314,8 +317,7 @@ def _build() -> None:
     _add("MGL5-INF-0202", "boundary", "child_status", {"exit_code": 0}, "child-exit-zero")
     _add("MGL5-INF-0411", "negative", "cosine_set", {"pairs": [[[0, 0], [1, 0]]]}, "cosine-zero-vector-rejected")
     _add("MGL5-INF-0411", "boundary", "cosine_set", {"pairs": [[[3, 4], [3, 4]]]}, "cosine-identical-boundary")
-    _add("MGL5-INF-0634", "negative", "acf_lag0", {"values": [5, 5, 5]}, "acf-zero-variance-rejected")
-    _add("MGL5-INF-0634", "boundary", "acf_lag0", {"values": [1, 2]}, "acf-two-point-boundary")
+
     _add("MGL5-INF-0013", "negative", "nan_policy", {"value_kind": "finite"}, "nan-finite-control")
     _add("MGL5-INF-0013", "boundary", "nan_policy", {"value_kind": "negative-nan"}, "nan-negative-payload-boundary")
     _add("MGL5-INF-0014", "negative", "inf_policy", {"value_kind": "finite"}, "inf-finite-control")
@@ -896,6 +898,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "acf-two-point-boundary":
         values = observed.get("lags")
         return control_completed and observed.get("error") is None and isinstance(values, list) and len(values) == 2 and abs(values[0] - 1.0) < 1e-9 and abs(values[1] + 0.5) < 1e-9
+    if expect == "trend-no-evidence": return control_completed and observed.get("status") == "NO_TREND_EVIDENCE" and observed.get("n") == 8 and abs(observed.get("slope", 1)) < 0.5 and observed.get("r_squared", 1) < 0.8
+    if expect == "trend-insufficient-power": return control_completed and observed.get("status") == "INSUFFICIENT_POWER" and observed.get("n") == 2 and observed.get("slope") is None and observed.get("r_squared") is None
     if expect == "nan-finite-control": return control_completed and observed.get("is_nan") is False and observed.get("equals_itself") is True and observed.get("ordinary") is True
     if expect == "nan-negative-payload-boundary": return control_completed and observed.get("is_nan") is True and observed.get("equals_itself") is False and observed.get("negative_sign") is True
     if expect == "inf-finite-control": return control_completed and observed.get("positive_sign") is False and observed.get("negative_sign") is False
