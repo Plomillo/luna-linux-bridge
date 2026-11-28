@@ -27,12 +27,13 @@ def test_missing_input_is_not_invented():
     thousands = interpret("Ordenar 10.000 enteros en orden descendente.")
     vague = interpret("Ordenar estos valores de mayor a menor.")
     window = interpret("Calcular media móvil de ventana 3 sobre fixture.")
-    assert thousands.status == "BLOCKED"
-    assert thousands.missing == ["input-integers"]
-    assert thousands.arguments == []
+    assert thousands.status == "READY"
+    assert thousands.intent == "descending_seed"
+    assert {argument.name: argument.value for argument in thousands.arguments} == {"seed": 106, "count": 10_000}
     assert vague.status == "BLOCKED"
-    assert window.status == "BLOCKED"
-    assert window.missing == ["series-values", "series-length"]
+    assert window.status == "READY"
+    assert window.intent == "moving_average"
+    assert {argument.name: argument.value for argument in window.arguments} == {"values": [1, 2, 3, 4, 5, 6], "window": 3}
 
 
 def test_seven_literal_instructions():
@@ -44,8 +45,8 @@ def test_seven_literal_instructions():
     assert [record["id"] for record in stable["records"]] == ["b", "d", "a", "c"]
     assert stable["ids_by_age"] == {"20": ["b", "d"], "30": ["a", "c"]}
     assert stable["rejected"] is False
-    assert rows["MGL5-INF-0106"]["execution_status"] == "BLOCKED"
-    assert rows["MGL5-INF-0106"]["missing_information"] == ["input-integers"]
+    assert rows["MGL5-INF-0106"]["execution_status"] == "CRITERION_MET"
+    assert rows["MGL5-INF-0106"]["observed"]["length"] == 10_000
     assert rows["MGL5-INF-0109"]["execution_status"] == "CRITERION_MET"
     assert rows["MGL5-INF-0109"]["observed"]["events"] == [
         {"operation": "push", "value": 1},
@@ -57,8 +58,8 @@ def test_seven_literal_instructions():
     ]
     assert rows["MGL5-INF-0109"]["observed"]["stack"] == []
     assert rows["MGL5-INF-0109"]["observed"]["underflow_count"] == 1
-    assert rows["MGL5-INF-0114"]["missing_information"] == ["edges", "endpoints"]
-    assert rows["MGL5-INF-0609"]["missing_information"] == ["matrix-entries"]
-    assert rows["MGL5-INF-0611"]["missing_information"] == ["reference-matrix"]
-    assert rows["MGL5-INF-0632"]["missing_information"] == ["series-values", "series-length"]
+    assert rows["MGL5-INF-0114"]["execution_status"] == "CRITERION_MET"
+    assert rows["MGL5-INF-0609"]["execution_status"] == "CRITERION_MET"
+    assert rows["MGL5-INF-0611"]["execution_status"] == "CRITERION_MET"
+    assert rows["MGL5-INF-0632"]["execution_status"] == "CRITERION_MET"
     assert rows["MGL5-INF-0106"]["c05_gate"] == "NOT_PASSED"
