@@ -9,8 +9,8 @@ def fibonacci_oracle(arguments: dict, observed: dict) -> dict:
     values = [0, 1]
     for index in range(2, n + 1):
         values.append(values[-1] + values[-2])
-    result = values[n] if n < 2 else values[n]
-    naive_calls = 1 if n < 2 else 1
+    result = values[n]
+    naive_calls = 1
     if n >= 2:
         counts = [1, 1]
         for index in range(2, n + 1):
