@@ -37,6 +37,8 @@ def _build() -> None:
     text = "utf8_roundtrip"
     _add("MGL5-INF-0001", "negative", text, {"text": "Luna-2025"}, "different-text")
 
+    _add("MGL5-INF-0065", "negative", "apk_inventory", {"entries": [{"name": "AndroidManifest.xml", "data_hex": "3c6d616e69666573742f3e"}, {"name": "resources.arsc", "data_hex": "01020304"}]}, "apk-dex-missing-reported")
+    _add("MGL5-INF-0065", "boundary", "apk_inventory", {"entries": [{"name": "AndroidManifest.xml", "data_hex": ""}, {"name": "resources.arsc", "data_hex": ""}, {"name": "classes.dex", "data_hex": ""}]}, "apk-empty-members-listed")
     _add("MGL5-INF-0067", "negative", "dex_header", {"payload_hex": _DEX_HEX[:80]}, "dex-truncated-header-rejected")
     _add("MGL5-INF-0067", "boundary", "dex_header", {"payload_hex": _DEX_BOUNDARY_HEX}, "dex-minimum-valid-header")
     _add("MGL5-INF-0068", "negative", "dex_tables", {"payload_hex": (_DEX_FIXTURE[:124] + (99).to_bytes(4, "little") + _DEX_FIXTURE[128:]).hex()}, "dex-invalid-type-string-index")
