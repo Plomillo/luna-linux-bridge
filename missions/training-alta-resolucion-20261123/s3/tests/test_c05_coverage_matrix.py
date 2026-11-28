@@ -18,9 +18,9 @@ def test_coverage_matrix_accounts_for_every_source_case_without_promoting_missin
         f"MGL5-INF-{number:04d}" for number in range(1, 1001)
     ]
     assert summary["counts"]["source_defined"] == 1000
-    assert summary["counts"]["normal_spec_defined"] == 165
+    assert summary["counts"]["normal_spec_defined"] == 166
     assert summary["counts"]["ready_for_execution"] == 164
-    assert summary["counts"]["blocked"] == 835
+    assert summary["counts"]["blocked"] == 834
     assert summary["counts"]["interpreter_candidates"] == 16
     assert summary["counts"]["interpreter_ready"] == 16
     assert summary["counts"]["interpreter_blocked"] == 0
