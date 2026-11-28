@@ -14,7 +14,7 @@ from metagente_luna_s4.controls import accepts
 
 def test_batch6_cases_are_typed_source_grounded_plans():
     by_id = {case["case_id"]: case for case in CASES}
-    assert set(by_id) == {"MGL5-INF-0105", "MGL5-INF-0106", "MGL5-INF-0109", "MGL5-INF-0114", "MGL5-INF-0609", "MGL5-INF-0611", "MGL5-INF-0632"}
+    assert set(by_id) == {"MGL5-INF-0105", "MGL5-INF-0106", "MGL5-INF-0109", "MGL5-INF-0110", "MGL5-INF-0111", "MGL5-INF-0112", "MGL5-INF-0114", "MGL5-INF-0115", "MGL5-INF-0609", "MGL5-INF-0611", "MGL5-INF-0632"}
     assert by_id["MGL5-INF-0105"]["fixture_provenance"].endswith("#stable-ages")
     assert by_id["MGL5-INF-0109"]["fixture_provenance"].endswith("#stack-script")
     assert by_id["MGL5-INF-0106"]["fixture_provenance"].endswith("#ten-thousand; seed/count drive deterministic integer generation")
@@ -140,9 +140,46 @@ def test_four_new_d03_candidates_are_registered_oracled_and_controlled():
 
 def test_interpreter_resolves_new_fixture_backed_d03_operations():
     for case_id, operation in OPERATIONS:
-        if case_id not in {"MGL5-INF-0106", "MGL5-INF-0114", "MGL5-INF-0609", "MGL5-INF-0611", "MGL5-INF-0632"}:
+        if case_id not in {"MGL5-INF-0106", "MGL5-INF-0110", "MGL5-INF-0111", "MGL5-INF-0112", "MGL5-INF-0114", "MGL5-INF-0115", "MGL5-INF-0609", "MGL5-INF-0611", "MGL5-INF-0632"}:
             continue
         result = interpret(operation)
         assert result.status == "READY"
         assert result.intent in {"descending_seed", "shortest_path", "matrix_multiply", "determinant_3x3", "moving_average", "moving_average_c05"}
         assert all(argument.provenance == "FIXTURE" for argument in result.arguments)
+
+def test_fifo_bst_dfs_linked_list_have_independent_oracles_and_controls():
+    from metagente_luna_s3.batch6_exec import fifo_queue, bst_inorder, dfs_graph, linked_list
+    from metagente_luna_s3.batch6_oracle import fifo_queue_oracle, bst_inorder_oracle, dfs_graph_oracle, linked_list_oracle
+    from metagente_luna_s4.controls import run_controls
+
+    specs = {case["case_id"]: case for case in CASES}
+    qargs = specs["MGL5-INF-0110"]["arguments"]
+    qresult = fifo_queue(**qargs)
+    assert qresult["dequeued"] == ["A", "B", "C"] and fifo_queue_oracle(qargs, qresult)["ok"]
+
+    bargs = specs["MGL5-INF-0112"]["arguments"]
+    bresult = bst_inorder(**bargs)
+    assert bresult["inorder"] == [1, 3, 6, 8, 10, 14] and bst_inorder_oracle(bargs, bresult)["ok"]
+
+    dargs = specs["MGL5-INF-0115"]["arguments"]
+    dresult = dfs_graph(**dargs)
+    assert dresult["order"] == ["A", "B", "C", "D"] and dresult["cycle"] is True
+    assert dfs_graph_oracle(dargs, dresult)["ok"]
+
+    largs = specs["MGL5-INF-0111"]["arguments"]
+    lresult = linked_list(**largs)
+    assert lresult["values"] == [1, 3] and lresult["length"] == 2 and linked_list_oracle(largs, lresult)["ok"]
+
+    controls = {row["case_id"]: row["controls"] for row in run_controls()}
+    for case_id in ("MGL5-INF-0110", "MGL5-INF-0111", "MGL5-INF-0112", "MGL5-INF-0115"):
+        assert all(control["accepted"] for control in controls[case_id].values())
+
+
+def test_interpreter_resolves_four_new_fixture_operations():
+    expected = {"MGL5-INF-0110": "fifo_queue", "MGL5-INF-0111": "linked_list", "MGL5-INF-0112": "bst_inorder", "MGL5-INF-0115": "dfs_graph"}
+    for case_id, operation in OPERATIONS:
+        if case_id not in expected:
+            continue
+        plan = interpret(operation)
+        assert plan.status == "READY" and plan.intent == expected[case_id]
+        assert all(argument.provenance == "FIXTURE" for argument in plan.arguments)

@@ -63,3 +63,11 @@ def test_seven_literal_instructions():
     assert rows["MGL5-INF-0611"]["execution_status"] == "CRITERION_MET"
     assert rows["MGL5-INF-0632"]["execution_status"] == "CRITERION_MET"
     assert rows["MGL5-INF-0106"]["c05_gate"] == "NOT_PASSED"
+def test_fifo_bst_dfs_linked_list_source_instructions_execute():
+    rows = {row["case_id"]: row for row in run_all()}
+    for case_id in ("MGL5-INF-0110", "MGL5-INF-0111", "MGL5-INF-0112", "MGL5-INF-0115"):
+        assert rows[case_id]["execution_status"] == "CRITERION_MET"
+    assert rows["MGL5-INF-0110"]["observed"]["dequeued"] == ["A", "B", "C"]
+    assert rows["MGL5-INF-0112"]["observed"]["inorder"] == [1, 3, 6, 8, 10, 14]
+    assert rows["MGL5-INF-0115"]["observed"]["cycle"] is True
+    assert rows["MGL5-INF-0111"]["observed"]["values"] == [1, 3]
