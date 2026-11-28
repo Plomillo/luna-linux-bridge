@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 VALIDATOR_ID = "LUNA_C05_INDEPENDENT_VALIDATOR"
@@ -65,6 +66,32 @@ def _json(data: bytes | None) -> dict | None:
     except (UnicodeError, json.JSONDecodeError):
         return None
     return value if isinstance(value, dict) else None
+
+
+def _restricted_docker_profile_valid(isolation: object) -> bool:
+    """Independent profile adjudication; host-process evidence is not C05-valid."""
+    if not isinstance(isolation, dict):
+        return False
+    image_id = isolation.get("image_id")
+    return (
+        isolation.get("mode") == "DOCKER_RESTRICTED_CONTAINER"
+        and isolation.get("process_isolated") is True
+        and isolation.get("containerized") is True
+        and isolation.get("network_disabled") is True
+        and isolation.get("root_filesystem_read_only") is True
+        and isolation.get("capabilities_dropped") is True
+        and isolation.get("non_root_uid") == 65534
+        and isolation.get("resource_limits") == {"pids": 64, "memory": "256m", "cpus": 1}
+        and isinstance(image_id, str)
+        and re.fullmatch(r"sha256:[0-9a-f]{64}", image_id) is not None
+        and isolation.get("workspace_ephemeral") is True
+        and isolation.get("cwd_isolated") is True
+        and isolation.get("home_isolated") is True
+        and isolation.get("tmp_isolated") is True
+        and isolation.get("sandbox") is False
+        and isolation.get("container_restrictions_verified") is True
+        and isolation.get("kernel_isolation") == "SHARED_HOST_KERNEL_NOT_VM"
+    )
 
 
 def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_status: str | None) -> bool:
@@ -431,6 +458,7 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
     seen_runs: set[str] = set()
     inputs: dict[str, list[str]] = {"NORMAL": [], "NEGATIVE": [], "BOUNDARY": []}
     control_expectations: dict[str, str] = {}
+    image_ids: list[str] = []
     checked_artifacts = 0
     for run in runs:
         if not isinstance(run, dict):
@@ -452,6 +480,8 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
             findings.append("clean-process-state-not-proven")
         if not isinstance(run.get("exit_code"), int) or isinstance(run.get("exit_code"), bool):
             findings.append("exit-code-missing")
+        if run.get("machinery") != "DOCKER_RESTRICTED_CONTAINER":
+            findings.append("machinery-not-restricted-docker")
         artifacts = run.get("artifacts")
         if not isinstance(artifacts, dict) or REQUIRED - set(artifacts):
             findings.append("required-artifacts-missing")
@@ -548,11 +578,11 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
         if not environment or environment.get("case_id") != case_id or environment.get("run_id") != run_id:
             findings.append("environment-identity-invalid")
         else:
-            from metagente_luna_s4.isolation import isolation_evidence_valid
-
             isolation = environment.get("isolation")
-            if not isolation_evidence_valid(isolation):
-                findings.append("process-isolation-evidence-invalid")
+            if not _restricted_docker_profile_valid(isolation):
+                findings.append("restricted-docker-profile-not-proven")
+            else:
+                image_ids.append(isolation["image_id"])
         if not procedure or procedure.get("case_id") != case_id or procedure.get("run_id") != run_id:
             findings.append("procedure-identity-invalid")
         if not control_spec or control_spec.get("case_id") != case_id or control_spec.get("run_id") != run_id or control_spec.get("run_kind") != kind:
@@ -607,6 +637,8 @@ def independently_validate_case(row: dict, evidence_root: str | Path) -> dict:
         if not metrics or metrics.get("case_id") != case_id or metrics.get("run_id") != run_id:
             findings.append("metrics-identity-invalid")
 
+    if len(image_ids) != 5 or len(set(image_ids)) != 1:
+        findings.append("restricted-docker-image-not-consistent-across-five-runs")
     if len(inputs["NORMAL"]) != 3 or len(set(inputs["NORMAL"])) != 1:
         findings.append("normal-inputs-not-identical")
     if (len(inputs["NEGATIVE"]) != 1 or len(inputs["BOUNDARY"]) != 1
