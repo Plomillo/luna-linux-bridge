@@ -1,6 +1,7 @@
 """Independent ZIP local/central record oracle for INF-0069."""
 from __future__ import annotations
 
+
 def zip_central_compare_oracle(arguments: dict, observed: dict) -> dict:
     expected_local = [row["name"] for row in arguments["entries"]]
     expected_central = expected_local.copy()
