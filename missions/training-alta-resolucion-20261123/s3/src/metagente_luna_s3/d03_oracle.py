@@ -29,7 +29,7 @@ def fibonacci_oracle(arguments: dict, observed: dict) -> dict:
         visit(index - 2)
 
     visit(n)
-    expected_misses = len(seen) + min(n + 1, 2)
+    expected_misses = 1 if n < 2 else n + 1
     expected_hits = memo_calls - expected_misses
     ok = (
         observed.get("rejected") is False
