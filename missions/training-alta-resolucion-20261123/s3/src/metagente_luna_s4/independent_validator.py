@@ -591,6 +591,10 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "acf-two-point-boundary":
         values = observed.get("lags")
         return completed and observed.get("error") is None and isinstance(values, list) and len(values) == 2 and abs(values[0] - 1.0) < 1e-9 and abs(values[1] + 0.5) < 1e-9
+    if expect == "trend-no-evidence":
+        return completed and observed.get("status") == "NO_TREND_EVIDENCE" and observed.get("n") == 8 and observed.get("slope") == 1 / 28 and observed.get("r_squared") == 1 / 91
+    if expect == "trend-insufficient-power":
+        return completed and observed.get("status") == "INSUFFICIENT_POWER" and observed.get("n") == 2 and observed.get("slope") is None and observed.get("r_squared") is None
     if expect == "nan-finite-control": return completed and observed.get("is_nan") is False and observed.get("equals_itself") is True and observed.get("ordinary") is True
     if expect == "nan-negative-payload-boundary": return completed and observed.get("is_nan") is True and observed.get("equals_itself") is False and observed.get("negative_sign") is True
     if expect == "inf-finite-control": return completed and observed.get("positive_sign") is False and observed.get("negative_sign") is False
