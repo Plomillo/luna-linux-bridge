@@ -130,6 +130,12 @@ def test_plan_compiler_emits_only_cases_with_both_authored_controls():
 
     assert report["compiled_executable_plans"] == len(plans) == 79
     assert report["not_in_plan_set"] == 921
+    assert report["authored_normal_specs"] == 103
+    assert report["interpreter_candidates"] == 7
+    assert report["interpreter_ready"] == 2
+    assert report["interpreter_blocked"] == 5
+    assert report["interpreter_registered"] == 2
+    assert report["unique_source_plan_candidates"] == 107
     assert report["certification"] == "NOT_PASSED"
     assert [plan["CASE_ID"] for plan in plans] == sorted(plan["CASE_ID"] for plan in plans)
     for plan in plans:
