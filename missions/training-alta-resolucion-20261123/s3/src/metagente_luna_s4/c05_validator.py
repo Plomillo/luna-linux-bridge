@@ -109,6 +109,8 @@ def _validate_repetition(rep: dict, evidence_root: Path, case_id: str) -> list[s
         errors.append("executor-version-missing")
     if not isinstance(rep.get("machinery"), str) or not rep["machinery"] or rep["machinery"] == "UNDECLARED":
         errors.append("machinery-missing")
+    elif rep["machinery"] != "DOCKER_RESTRICTED_CONTAINER":
+        errors.append("machinery-not-restricted-docker")
     started = rep.get("started")
     ended = rep.get("ended")
     if not isinstance(started, (int, float)) or isinstance(started, bool):
@@ -289,6 +291,22 @@ def _evidence_manifest_digest(row: dict) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _validated_run_image_id(rep: dict, evidence_root: Path) -> str | None:
+    artifacts = rep.get("artifacts")
+    environment_ref = artifacts.get("environment") if isinstance(artifacts, dict) else None
+    environment_path, error = _safe_artifact(evidence_root, environment_ref)
+    if error or environment_path is None:
+        return None
+    environment = _load_json(environment_path)
+    isolation = environment.get("isolation") if isinstance(environment, dict) else None
+    from metagente_luna_s4.isolation import isolation_evidence_valid
+
+    if not isolation_evidence_valid(isolation):
+        return None
+    image_id = isolation.get("image_id")
+    return image_id if isinstance(image_id, str) else None
+
+
 def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
     errors = contradictions(row)
     if evidence_root is None:
@@ -319,11 +337,15 @@ def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
     run_ids: list[str] = []
     normal_outcomes: list[str] = []
     input_digests: dict[str, list[str]] = {"NORMAL": [], "NEGATIVE": [], "BOUNDARY": []}
+    run_image_ids: list[str] = []
     for rep in all_runs:
         if not isinstance(rep, dict):
             errors.append("repetition-entry-invalid")
             continue
         errors.extend(_validate_repetition(rep, evidence_root, case_id))
+        image_id = _validated_run_image_id(rep, evidence_root)
+        if image_id is not None:
+            run_image_ids.append(image_id)
         run_id = rep.get("run_id")
         if isinstance(run_id, str):
             run_ids.append(run_id)
@@ -341,6 +363,8 @@ def _validate_row(row: dict, evidence_root: Path | None) -> list[str]:
 
     if len(run_ids) != len(set(run_ids)):
         errors.append("duplicate-run-id-within-case")
+    if len(run_image_ids) != 5 or len(set(run_image_ids)) != 1:
+        errors.append("restricted-docker-image-not-consistent-across-five-runs")
     normal_inputs = input_digests["NORMAL"]
     negative_inputs = input_digests["NEGATIVE"]
     boundary_inputs = input_digests["BOUNDARY"]
@@ -430,6 +454,8 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
         })
     root = Path(evidence_root).resolve() if evidence_root is not None else None
     rejected = []
+    global_evidence_problems: list[str] = []
+    population_image_ids: set[str] = set()
     run_owner: dict[str, str] = {}
     artifact_owner: dict[str, tuple[str, str, str]] = {}
     authentic = 0
@@ -445,6 +471,12 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
         repetitions = row.get("repetitions")
         controls = row.get("controls")
         all_runs = (repetitions if isinstance(repetitions, list) else []) + (controls if isinstance(controls, list) else [])
+        if root is not None:
+            for rep in all_runs:
+                if isinstance(rep, dict):
+                    image_id = _validated_run_image_id(rep, root)
+                    if image_id is not None:
+                        population_image_ids.add(image_id)
         for rep in all_runs:
             if not isinstance(rep, dict):
                 continue
@@ -467,6 +499,8 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
             rejected.append({"case_id": case_id, "reasons": sorted(set(errors))})
         else:
             authentic += 1
+    if len(population_image_ids) > 1:
+        global_evidence_problems.append("sandbox-image-not-uniform-across-executed-population")
     outcome_counts = {
         outcome: sum(row.get("execution_status") == outcome for row in rows)
         for outcome in sorted(EXECUTION_OUTCOMES)
@@ -482,6 +516,7 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
     passed = (
         not problems
         and not rejected
+        and not global_evidence_problems
         and authentic == 1000
         and not_run == 0
         and contractual_pass == 1000
@@ -502,6 +537,9 @@ def validate(rows: list[dict], evidence_root: str | Path | None = None) -> dict:
         "execution_outcomes": outcome_counts,
         "rejected": rejected,
         "structure_problems": problems,
+        "evidence_consistency_problems": global_evidence_problems,
+        "sandbox_image_id": next(iter(population_image_ids)) if len(population_image_ids) == 1 else None,
+        "sandbox_image_ids": sorted(population_image_ids),
         "evidence_root_supplied": root is not None,
         "human_review_required": False,
         "reason": "C05 functional certification requires 1,000 individually accounted dossiers, 1,000 successful underlying operations, 1,000 contractual PASS results, persisted byte-verified evidence, and independent validation. BLOCKED preflight records are evidence of blockers, never functional operation PASS.",
