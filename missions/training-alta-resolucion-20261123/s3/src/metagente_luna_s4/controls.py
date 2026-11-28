@@ -45,6 +45,8 @@ def _build() -> None:
     _add("MGL5-INF-0067", "boundary", "dex_header", {"payload_hex": _DEX_BOUNDARY_HEX}, "dex-minimum-valid-header")
     _add("MGL5-INF-0068", "negative", "dex_tables", {"payload_hex": (_DEX_FIXTURE[:124] + (99).to_bytes(4, "little") + _DEX_FIXTURE[128:]).hex()}, "dex-invalid-type-string-index")
     _add("MGL5-INF-0068", "boundary", "dex_tables", {"payload_hex": _DEX_BOUNDARY_HEX}, "dex-valid-table-indices")
+    _add("MGL5-INF-0069", "negative", "zip_central_compare", {"entries": [{"name": "safe.txt", "data_hex": "616263"}], "tamper_central_name": True}, "zip-central-local-filename-mismatch-detected")
+    _add("MGL5-INF-0069", "boundary", "zip_central_compare", {"entries": [{"name": "empty", "data_hex": ""}], "tamper_central_name": False}, "zip-central-local-empty-member-matches")
     _add("MGL5-INF-0070", "negative", "zip_path_safety", {"entries": [{"name": "../../escape", "data_hex": "78"}]}, "zip-traversal-blocked")
     _add("MGL5-INF-0070", "boundary", "zip_path_safety", {"entries": [{"name": "inside.txt", "data_hex": ""}]}, "zip-safe-empty")
     _add("MGL5-INF-0071", "negative", "zip_crc", {"payload_hex": "0102"}, "zip-corrupt-crc-detected")
@@ -416,6 +418,8 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "determinant-identity-one": return control_completed and observed.get("rejected") is False and observed.get("determinant") == 1
     if expect == "moving-window-too-wide": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_window_or_series"
     if expect == "moving-single-value-boundary": return control_completed and observed.get("rejected") is False and observed.get("averages") == [9.0] and observed.get("start_indices") == [0]
+    if expect == "zip-central-local-filename-mismatch-detected": return control_completed and observed.get("mismatch_detected") is True and observed.get("extraction_performed") is False and observed.get("outside_destination_write") is False
+    if expect == "zip-central-local-empty-member-matches": return control_completed and observed.get("mismatch_detected") is False and observed.get("local_names") == observed.get("central_names") == ["empty"] and observed.get("extraction_performed") is False
     if expect == "apk-signature-invalid-detected": return control_completed and observed.get("signature_present") is True and observed.get("signature_valid") is False and observed.get("status") == "INVALID"
     if expect == "apk-signature-absence-detected": return control_completed and observed.get("signature_present") is False and observed.get("signature_valid") is False and observed.get("status") == "ABSENT"
     if expect == "apk-dex-missing-reported": return control_completed and observed.get("missing") == ["classes.dex"] and observed.get("present") == {"manifest": True, "resources": True, "dex": False}
