@@ -58,7 +58,9 @@ EXPECTED = {
     "MGL5-INF-0063": "pe_inspect",
     "MGL5-INF-0064": "pe_inspect",
     "MGL5-INF-0067": "dex_header",
-    "MGL5-INF-0068": "dex_tables",\n    "MGL5-INF-0633": "acf_lag0",\n    "MGL5-INF-0634": "trend_stationarity",
+    "MGL5-INF-0068": "dex_tables",
+    "MGL5-INF-0633": "acf_lag0",
+    "MGL5-INF-0634": "trend_stationarity",
 }
 
 
