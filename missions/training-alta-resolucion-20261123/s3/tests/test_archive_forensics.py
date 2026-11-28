@@ -184,5 +184,5 @@ def test_dex_modified_utf8_handles_encoded_nul_and_surrogate_pair_and_rejects_fo
     from metagente_luna_s3.format_exec import _dex_mutf8
 
     assert _dex_mutf8(bytes([0xc0, 0x80, 0x00]), 0, 3, 1) == chr(0)
-    assert _dex_mutf8(bytes([0xed, 0xa0, 0xbd, 0xed, 0xb8, 0x80, 0x00]), 0, 7, 2) == "\U0001f680"
+    assert _dex_mutf8(bytes([0xed, 0xa0, 0xbd, 0xed, 0xba, 0x80, 0x00]), 0, 7, 2) == "\U0001f680"
     assert _dex_mutf8(bytes([0xf0, 0x9f, 0x9a, 0x80, 0x00]), 0, 5, 2) is None
