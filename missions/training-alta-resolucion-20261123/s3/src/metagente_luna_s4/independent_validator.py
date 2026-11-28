@@ -107,6 +107,17 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "bst-insert-singleton": return completed and observed.get("inorder") == [7] and observed.get("count") == 1
     if expect == "dfs-invalid-edge-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_graph"
     if expect == "dfs-self-loop-boundary": return completed and observed.get("rejected") is False and observed.get("order") == ["A"] and observed.get("visited_count") == 1 and observed.get("cycle") is True
+
+    if expect == "avl-duplicate-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "duplicate_value"
+    if expect == "avl-singleton-balanced": return completed and observed.get("rejected") is False and observed.get("inorder") == [1] and observed.get("balanced") is True and observed.get("height") == 1
+    if expect == "linear-search-invalid-size-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_sizes_or_target"
+    if expect == "linear-search-singleton-hit": return completed and observed.get("measurements") == [{"size": 1, "comparisons": 1, "index": 0, "found": True}] and observed.get("complexity") == "LINEAR"
+    if expect == "dijkstra-negative-weight-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "negative_weight_rejected"
+    if expect == "dijkstra-singleton-boundary": return completed and observed.get("rejected") is False and observed.get("reachable") is True and observed.get("distance") == 0 and observed.get("path") == ["A"]
+    if expect == "dijkstra-invalid-edge-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_graph"
+    if expect == "dijkstra-zero-weight-path": return completed and observed.get("rejected") is False and observed.get("distance") == 1 and observed.get("path") == ["A", "B", "C"]
+    if expect == "bellman-no-negative-cycle": return completed and observed.get("negative_cycle_reachable") is False and observed.get("distances") == {"A": 0, "B": 1, "C": 2}
+    if expect == "bellman-singleton": return completed and observed.get("negative_cycle_reachable") is False and observed.get("distances") == {"A": 0}
     if expect == "bfs-unreachable-target": return completed and observed.get("reachable") is False and observed.get("path") == [] and observed.get("distance") is None
     if expect == "bfs-single-node-zero-distance": return completed and observed.get("reachable") is True and observed.get("path") == ["A"] and observed.get("distance") == 0
     if expect == "matrix-inner-dimension-mismatch": return completed and observed.get("rejected") is True and observed.get("reason") == "matrix_dimensions_invalid"

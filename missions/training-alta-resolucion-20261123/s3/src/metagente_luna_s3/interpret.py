@@ -99,6 +99,25 @@ def interpret(instruction: str) -> Interpretation:
     if "dfs" in folded or "recorrer grafo con ciclo" in folded:
         fixture = _FIXTURE["dfs-cycle"]
         return _ready(text, "dfs_graph", [Argument(name="nodes", value=fixture["nodes"], provenance=Provenance.FIXTURE), Argument(name="edges", value=fixture["edges"], provenance=Provenance.FIXTURE), Argument(name="start", value=fixture["start"], provenance=Provenance.FIXTURE)])
+
+    if "nodos" in folded and "cabeza" in folded and "cola" in folded:
+        fixture = _FIXTURE["linked-list"]
+        return _ready(text, "linked_list", [Argument(name="operations", value=fixture["operations"], provenance=Provenance.FIXTURE)])
+    if "balanceado" in folded or "avl" in folded:
+        fixture = _FIXTURE["avl-ascending"]
+        return _ready(text, "avl_tree", [Argument(name="values", value=fixture["values"], provenance=Provenance.FIXTURE)])
+    if "busqueda lineal" in folded and "1.000" in text:
+        fixture = _FIXTURE["linear-search-sizes"]
+        return _ready(text, "linear_search_complexity", [Argument(name="sizes", value=fixture["sizes"], provenance=Provenance.FIXTURE), Argument(name="target", value=fixture["target"], provenance=Provenance.FIXTURE)])
+    if "dijkstra" in folded and "negativa" in folded:
+        fixture = _FIXTURE["dijkstra-negative"]
+        return _ready(text, "dijkstra", [Argument(name="nodes", value=fixture["nodes"], provenance=Provenance.FIXTURE), Argument(name="edges", value=fixture["edges"], provenance=Provenance.FIXTURE), Argument(name="start", value=fixture["start"], provenance=Provenance.FIXTURE), Argument(name="target", value=fixture["target"], provenance=Provenance.FIXTURE)])
+    if "dijkstra" in folded or "pesos no negativos" in folded:
+        fixture = _FIXTURE["dijkstra-positive"]
+        return _ready(text, "dijkstra", [Argument(name="nodes", value=fixture["nodes"], provenance=Provenance.FIXTURE), Argument(name="edges", value=fixture["edges"], provenance=Provenance.FIXTURE), Argument(name="start", value=fixture["start"], provenance=Provenance.FIXTURE), Argument(name="target", value=fixture["target"], provenance=Provenance.FIXTURE)])
+    if "ciclo negativo" in folded or "bellman-ford" in folded:
+        fixture = _FIXTURE["bellman-negative-cycle"]
+        return _ready(text, "bellman_ford_cycle", [Argument(name="nodes", value=fixture["nodes"], provenance=Provenance.FIXTURE), Argument(name="edges", value=fixture["edges"], provenance=Provenance.FIXTURE), Argument(name="start", value=fixture["start"], provenance=Provenance.FIXTURE)])
     if "grafo" in folded or "seis nodos" in folded:
         fixture = _FIXTURE["bfs-six-node"]
         return _ready(text, "shortest_path", [
