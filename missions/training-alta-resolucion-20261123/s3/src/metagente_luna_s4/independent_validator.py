@@ -129,7 +129,7 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "moving-single-value-boundary": return completed and observed.get("rejected") is False and observed.get("averages") == [9.0] and observed.get("start_indices") == [0]
 
     if expect == "dex-truncated-header-rejected": return completed and observed.get("rejected") is True
-    if expect == "dex-minimum-valid-header": return completed and observed.get("rejected") is False and observed.get("header_size") == 112 and observed.get("checksum_valid") is True and observed.get("signature_valid") is True
+    if expect == "dex-minimum-valid-header": return completed and observed.get("rejected") is False and observed.get("header_size") == 112 and observed.get("offsets_valid") is True and observed.get("checksum_valid") is True and observed.get("signature_valid") is True
     if expect == "dex-invalid-type-string-index": return completed and observed.get("rejected") is False and observed.get("indices_valid") is False
     if expect == "dex-valid-table-indices": return completed and observed.get("rejected") is False and observed.get("indices_valid") is True
     if expect == "zip-traversal-blocked": return completed and observed.get("blocked") == ["../../escape"] and observed.get("outside_write") is False
