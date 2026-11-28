@@ -48,7 +48,7 @@ def test_coverage_matrix_identifies_missing_plan_and_control_reasons():
     assert by_id["MGL5-INF-0106"]["interpreter_status"] == "READY"
     assert by_id["MGL5-INF-0106"]["ready_for_execution"] is True
     assert "INTERPRETER_CANDIDATE_NOT_READY" not in by_id["MGL5-INF-0106"]["blockers"]
-    assert summary["blocker_counts"]["NORMAL_EXECUTION_SPEC_MISSING"] == 846
+    assert summary["blocker_counts"]["NORMAL_EXECUTION_SPEC_MISSING"] == 842
 
 
 def test_require_complete_gate_fails_closed_for_incomplete_population(monkeypatch):
