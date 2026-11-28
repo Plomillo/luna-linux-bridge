@@ -107,7 +107,7 @@ def interpret(instruction: str) -> Interpretation:
         ])
     if "media movil" in folded or "ventana" in folded:
         fixture = _FIXTURE["moving-window"]
-        return _ready(text, "moving_average", [
+        return _ready(text, "moving_average_c05", [
             Argument(name="values", value=fixture["values"], provenance=Provenance.FIXTURE),
             Argument(name="window", value=fixture["window"], provenance=Provenance.FIXTURE),
         ])
