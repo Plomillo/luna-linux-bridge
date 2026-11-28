@@ -8,7 +8,7 @@ CASES = [
     {
         "case_id": "MGL5-INF-0634",
         "capability_id": "acf_lag0",
-        "arguments": {"values": [1, 2]},
+        "arguments": {"values": [1, 2, 3, 4]},
         "fixture_provenance": "SYNTHETIC_MINIMAL: seed=0634; linear-trend series [1,2,3,4]; independently recomputed lagged covariance reference",
     },
 ]
