@@ -19,9 +19,10 @@ from metagente_luna_s4.batch4 import CASES as FOURTH
 from metagente_luna_s4.batch5 import CASES as FIFTH
 from metagente_luna_s4.batch6 import CASES as SIXTH
 from metagente_luna_s4.d01_batch import CASES as FIRST
+from metagente_luna_s4.d03_batch import CASES as SEVENTH
 from metagente_luna_s4.runner import execute
 
-CASES = FIRST + SECOND + THIRD + FOURTH + FIFTH + SIXTH
+CASES = FIRST + SECOND + THIRD + FOURTH + FIFTH + SIXTH + SEVENTH
 
 
 CONTROLS: dict[str, dict] = {}
@@ -391,6 +392,23 @@ def _build() -> None:
     _add("MGL5-INF-0611", "boundary", "determinant_3x3", {"matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]}, "determinant-identity-one")
     _add("MGL5-INF-0632", "negative", "moving_average_c05", {"values": [1, 2, 3], "window": 4}, "moving-window-too-wide")
     _add("MGL5-INF-0632", "boundary", "moving_average_c05", {"values": [9], "window": 1}, "moving-single-value-boundary")
+
+    # D03 programming and resource-lifecycle controls.
+    _add("MGL5-INF-0122", "negative", "fibonacci_compare", {"n": -1}, "fibonacci-negative-input-rejected")
+    _add("MGL5-INF-0122", "boundary", "fibonacci_compare", {"n": 0}, "fibonacci-zero-boundary")
+    _add("MGL5-INF-0123", "negative", "knapsack_01", {"capacity": -1, "items": [{"weight": 6, "value": 30}, {"weight": 4, "value": 16}, {"weight": 5, "value": 20}, {"weight": 3, "value": 14}]}, "knapsack-negative-capacity-rejected")
+    _add("MGL5-INF-0123", "boundary", "knapsack_01", {"capacity": 0, "items": [{"weight": 6, "value": 30}, {"weight": 4, "value": 16}, {"weight": 5, "value": 20}, {"weight": 3, "value": 14}]}, "knapsack-zero-capacity")
+    _add("MGL5-INF-0124", "negative", "email_syntax", {"addresses": ["not-an-email"]}, "email-invalid-rejected")
+    _add("MGL5-INF-0124", "boundary", "email_syntax", {"addresses": ["a@b.co"]}, "email-minimal-domain-boundary")
+    _add("MGL5-INF-0127", "negative", "optional_value", {"present": True, "value": None, "default": "fallback"}, "optional-null-handled")
+    _add("MGL5-INF-0127", "boundary", "optional_value", {"present": True, "value": "explicit", "default": "fallback"}, "optional-value-preserved")
+    _add("MGL5-INF-0128", "negative", "read_cleanup", {"payload_hex": "zz", "fail_read": True}, "cleanup-invalid-fixture-rejected")
+    _add("MGL5-INF-0128", "boundary", "read_cleanup", {"payload_hex": "", "fail_read": False}, "cleanup-empty-resource-closed")
+    _add("MGL5-INF-0129", "negative", "finally_once", {"raise_error": False, "message": "no-error"}, "finally-without-exception-once")
+    _add("MGL5-INF-0129", "boundary", "finally_once", {"raise_error": True, "message": ""}, "finally-empty-exception-once")
+    _add("MGL5-INF-0130", "negative", "raii_release", {"early_exit": False, "payload_hex": "7061796c6f6164"}, "raii-normal-exit-releases")
+    _add("MGL5-INF-0130", "boundary", "raii_release", {"early_exit": True, "payload_hex": ""}, "raii-empty-early-exit-releases")
+
 
 def accepts(expect: str, observed: dict, status: str) -> bool:
     # A control is adjudicated against its own expected behavior, not the
@@ -919,6 +937,21 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "euler-equal-step-boundary": return control_completed and abs(observed.get("fine_error", 0) - observed.get("coarse_error", 0)) < 1e-12
     if expect == "rk4-step-out-of-range-rejected": return control_completed and observed.get("rejected") is True
     if expect == "rk4-single-step-boundary": return control_completed and observed.get("rejected") is not True and observed.get("step") == 1.0
+
+    if expect == "fibonacci-negative-input-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_fibonacci_index"
+    if expect == "fibonacci-zero-boundary": return control_completed and observed.get("rejected") is False and observed.get("naive_result") == observed.get("memoized_result") == 0 and observed.get("naive_calls") == observed.get("memoized_total_calls") == 1
+    if expect == "knapsack-negative-capacity-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_knapsack_fixture"
+    if expect == "knapsack-zero-capacity": return control_completed and observed.get("rejected") is False and observed.get("maximum_value") == 0
+    if expect == "email-invalid-rejected": return control_completed and observed.get("accepted") == [] and observed.get("invalid") == ["not-an-email"]
+    if expect == "email-minimal-domain-boundary": return control_completed and observed.get("accepted") == ["a@b.co"] and observed.get("invalid") == []
+    if expect == "optional-null-handled": return control_completed and observed.get("source") == "null" and observed.get("value") == "fallback" and observed.get("dereferenced") is False
+    if expect == "optional-value-preserved": return control_completed and observed.get("source") == "value" and observed.get("value") == "explicit" and observed.get("dereferenced") is True
+    if expect == "cleanup-invalid-fixture-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_hex"
+    if expect == "cleanup-empty-resource-closed": return control_completed and observed.get("closed") is True and observed.get("bytes_read") == 0 and observed.get("error") is None
+    if expect == "finally-without-exception-once": return control_completed and observed.get("error_type") is None and observed.get("finalizer_count") == 1
+    if expect == "finally-empty-exception-once": return control_completed and observed.get("error_type") == "ValueError" and observed.get("error_message") == "" and observed.get("finalizer_count") == 1
+    if expect == "raii-normal-exit-releases": return control_completed and observed.get("exit_path") == "normal_exit" and observed.get("bytes_consumed") == 7 and observed.get("released") is True and observed.get("release_count") == 1
+    if expect == "raii-empty-early-exit-releases": return control_completed and observed.get("exit_path") == "early_exit" and observed.get("bytes_consumed") == 0 and observed.get("released") is True and observed.get("release_count") == 1
     return False
 
 
