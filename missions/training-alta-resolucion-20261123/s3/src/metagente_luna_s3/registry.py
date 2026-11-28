@@ -194,7 +194,7 @@ REGISTRY: dict[str, Capability] = {
         "properties": {"matrix": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}}},
         "additionalProperties": False,
     }),
-    "moving_average": _cap("moving_average", "moving_average_reference", {
+    "moving_average_c05": _cap("moving_average_c05", "moving_average_c05_reference", {
         "type": "object", "required": ["values", "window"],
         "properties": {"values": {"type": "array", "items": {"type": "number"}},
                        "window": {"type": "integer", "minimum": 1}},
@@ -338,7 +338,7 @@ ORACLES: dict[str, Callable[..., dict]] = {
     "shortest_path_reference": batch6_oracle.shortest_path_oracle,
     "matrix_product_reference": batch6_oracle.matrix_multiply_oracle,
     "determinant_reference": batch6_oracle.determinant_3x3_oracle,
-    "moving_average_reference": batch6_oracle.moving_average_oracle,
+    "moving_average_c05_reference": batch6_oracle.moving_average_oracle,
 }
 
 REGISTRY.update({
@@ -446,7 +446,7 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "shortest_path": batch6_exec.shortest_path,
     "matrix_multiply": batch6_exec.matrix_multiply,
     "determinant_3x3": batch6_exec.determinant_3x3,
-    "moving_average": batch6_exec.moving_average,
+    "moving_average_c05": batch6_exec.moving_average,
 }
 
 EXECUTORS.update({"zip_path_safety": archive_exec.zip_path_safety, "zip_crc": archive_exec.zip_crc, "zip_duplicates": archive_exec.zip_duplicates, "tar_offsets": archive_exec.tar_offsets, "tar_truncated": archive_exec.tar_truncated, "gzip_crc": archive_exec.gzip_crc})
