@@ -234,6 +234,31 @@ _ARCHIVE_ORACLES = {"zip_path_safety": "archive_path", "zip_crc": "archive_zip_c
 for _archive_name, _archive_oracle in _ARCHIVE_ORACLES.items():
     REGISTRY[_archive_name] = _cap(_archive_name, _archive_oracle, _ARCHIVE_SCHEMAS[_archive_name])
 
+REGISTRY["apk_inventory"] = _cap(
+    "apk_inventory",
+    "apk_inventory_independent",
+    {
+        "type": "object",
+        "required": ["entries"],
+        "properties": {
+            "entries": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "required": ["name", "data_hex"],
+                    "properties": {
+                        "name": {"type": "string", "minLength": 1},
+                        "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"},
+                    },
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "additionalProperties": False,
+    },
+)
+
 _FORMAT_SCHEMAS = {
     "sqlite_header": {"type": "object", "required": ["page_size"], "properties": {"page_size": {"type": "integer", "enum": [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]}}, "additionalProperties": False},
     "sqlite_integrity": {"type": "object", "required": ["corrupt", "values"], "properties": {"corrupt": {"type": "boolean"}, "values": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": False},
@@ -386,6 +411,8 @@ ORACLES["elf_dynamic_dependencies_independent"] = format_oracle.elf_dynamic_depe
 ORACLES["elf_rpath_runpath_independent"] = format_oracle.elf_rpath_runpath_oracle
 ORACLES["pe_inspect_independent"] = format_oracle.pe_inspect_oracle
 
+ORACLES["apk_inventory_independent"] = apk_inventory_oracle.apk_inventory_oracle
+
 EXECUTORS: dict[str, Callable[..., dict]] = {
     "cidr_bounds": cidr_bounds,
     "utf8_roundtrip": d01_exec.utf8_roundtrip,
@@ -476,6 +503,8 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "determinant_3x3": batch6_exec.determinant_3x3,
     "moving_average_c05": batch6_exec.moving_average,
 }
+
+EXECUTORS["apk_inventory"] = apk_inventory_exec.apk_inventory
 
 EXECUTORS.update({"zip_path_safety": archive_exec.zip_path_safety, "zip_crc": archive_exec.zip_crc, "zip_duplicates": archive_exec.zip_duplicates, "tar_offsets": archive_exec.tar_offsets, "tar_truncated": archive_exec.tar_truncated, "gzip_crc": archive_exec.gzip_crc})
 EXECUTORS.update({"sqlite_header": format_exec.sqlite_header, "sqlite_integrity": format_exec.sqlite_integrity, "wasm_header": format_exec.wasm_header})
