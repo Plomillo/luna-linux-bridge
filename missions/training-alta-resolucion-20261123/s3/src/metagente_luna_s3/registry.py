@@ -17,6 +17,8 @@ from metagente_luna_s3 import (
     batch5_oracle,
     batch6_exec,
     batch6_oracle,
+    batch7_exec,
+    batch7_oracle,
     d01_exec,
     d01_oracle,
     format_exec,
