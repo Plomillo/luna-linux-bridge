@@ -705,16 +705,45 @@ def dex_inspect(payload_hex: str, mode: str) -> dict:
     checksum = struct.unpack_from("<I", raw, 8)[0]
     checksum_valid = checksum == (zlib.adler32(raw[12:]) & 0xFFFFFFFF)
     signature_valid = raw[12:32] == hashlib.sha1(raw[32:]).digest()
-    if mode == "header":
-        return {"rejected": False, "version": version, "file_size": file_size,
-                "header_size": header_size, "endian_tag": endian,
-                "data_size": data_size, "data_off": data_off,
-                "checksum_valid": checksum_valid, "signature_valid": signature_valid}
     fields = {
         "string_ids": (56, 60, 4), "type_ids": (64, 68, 4),
         "proto_ids": (72, 76, 12), "field_ids": (80, 84, 8),
         "method_ids": (88, 92, 8), "class_defs": (96, 100, 32),
     }
+    header_tables = {}
+    extents = []
+    offsets_valid = True
+    for name, (size_at, off_at, width) in fields.items():
+        count, offset = struct.unpack_from("<II", raw, size_at)
+        if count == 0:
+            if offset != 0:
+                offsets_valid = False
+        elif offset < 112 or offset % 4 or offset + count * width > data_start:
+            offsets_valid = False
+        else:
+            extents.append((offset, offset + count * width, name))
+        header_tables[name] = {"count": count, "offset": offset, "width": width}
+    extents.sort()
+    if any(left[1] > right[0] for left, right in zip(extents, extents[1:])):
+        offsets_valid = False
+    link_size, link_off = struct.unpack_from("<II", raw, 44)
+    link_valid = (link_size == 0 and link_off == 0) or (
+        link_size > 0 and link_off >= 112 and link_off + link_size <= len(raw)
+    )
+    map_off = struct.unpack_from("<I", raw, 52)[0]
+    map_valid = map_off == 0 or (
+        map_off >= data_start and map_off % 4 == 0 and map_off + 4 <= data_end
+        and map_off + 4 + struct.unpack_from("<I", raw, map_off)[0] * 12 <= data_end
+    )
+    offsets_valid = offsets_valid and link_valid and map_valid
+    if mode == "header":
+        if not offsets_valid:
+            return {"rejected": True, "reason": "dex_header_offsets_invalid"}
+        return {"rejected": False, "version": version, "file_size": file_size,
+                "header_size": header_size, "endian_tag": endian,
+                "data_size": data_size, "data_off": data_off,
+                "offsets_valid": offsets_valid, "table_layout": header_tables,
+                "checksum_valid": checksum_valid, "signature_valid": signature_valid}
     tables = {}
     for name, (size_at, off_at, width) in fields.items():
         count, offset = struct.unpack_from("<II", raw, size_at)
