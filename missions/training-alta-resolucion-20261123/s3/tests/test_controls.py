@@ -38,7 +38,7 @@ def test_controls_that_were_defined_are_accepted():
     # The runner must execute every currently authored control case; the
     # registry is the authoritative count, not a stale historical constant.
     assert {row["case_id"] for row in defined} == set(CONTROLS)
-    assert len(defined) == len(CONTROLS) == 110
+    assert len(defined) == len(CONTROLS) == 163
 
 def test_yaml_type_plan_and_independent_oracle_cover_negative_and_boundary_inputs():
     from metagente_luna_s3.d01_exec import yaml_types
@@ -231,8 +231,8 @@ def test_index_ipv6_mask_and_threshold_control_expectations():
 
 
 def test_fifo_factorial_path_and_ipv6_controls_are_adjudicated():
-    assert accepts("fifo-reversed-order", {"order": ["C", "B", "A"], "remaining": 0}, "EXECUTED") is True
-    assert accepts("fifo-singleton", {"order": ["A"], "remaining": 0}, "EXECUTED") is True
+    assert accepts("fifo-reversed-order", {"dequeued": ["C", "B", "A"], "queue": []}, "EXECUTED") is True
+    assert accepts("fifo-singleton", {"dequeued": ["A"], "queue": []}, "EXECUTED") is True
     assert accepts("factorial-negative-rejected", {"rejected": True, "negative_rejected": True}, "EXECUTED") is True
     assert accepts("factorial-zero-boundary", {"rejected": False, "values": [1]}, "EXECUTED") is True
     assert accepts("symlink-escape-blocked", {"blocked": True, "bytes_read": 0, "reason": "symlink-escapes"}, "EXECUTED") is True

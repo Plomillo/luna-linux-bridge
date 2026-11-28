@@ -7,6 +7,8 @@ from collections.abc import Callable
 from pydantic import BaseModel
 
 from metagente_luna_s3 import (
+    archive_exec,
+    archive_oracle,
     batch3_exec,
     batch3_oracle,
     batch4_exec,
@@ -17,6 +19,8 @@ from metagente_luna_s3 import (
     batch6_oracle,
     d01_exec,
     d01_oracle,
+    format_exec,
+    format_oracle,
     more_exec,
     more_oracle,
 )
@@ -171,6 +175,41 @@ REGISTRY: dict[str, Capability] = {
         "properties": {"steps": {"type": "array", "items": {"type": "string"}}},
         "additionalProperties": False,
     }),
+
+    "fifo_queue": _cap("fifo_queue", "fifo_queue_reference", {"type": "object", "required": ["steps"], "properties": {"steps": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": False}),
+    "bst_inorder": _cap("bst_inorder", "bst_inorder_reference", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array", "items": {"type": "integer"}}}, "additionalProperties": False}),
+    "dfs_graph": _cap("dfs_graph", "dfs_graph_reference", {"type": "object", "required": ["nodes", "edges", "start"], "properties": {"nodes": {"type": "array", "items": {"type": "string"}}, "edges": {"type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "string"}}}, "start": {"type": "string"}}, "additionalProperties": False}),
+    "linked_list": _cap("linked_list", "linked_list_reference", {"type": "object", "required": ["operations"], "properties": {"operations": {"type": "array", "items": {"type": "object"}}}, "additionalProperties": False}),
+
+    "dijkstra": _cap("dijkstra", "dijkstra_reference", {"type": "object", "required": ["nodes", "edges", "start", "target"], "properties": {"nodes": {"type": "array", "items": {"type": "string"}}, "edges": {"type": "array", "items": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": ["string", "number"]}}}, "start": {"type": "string"}, "target": {"type": "string"}}, "additionalProperties": False}),
+    "avl_tree": _cap("avl_tree", "avl_tree_reference", {"type": "object", "required": ["values"], "properties": {"values": {"type": "array", "items": {"type": "integer"}}}, "additionalProperties": False}),
+    "bellman_ford_cycle": _cap("bellman_ford_cycle", "bellman_ford_cycle_reference", {"type": "object", "required": ["nodes", "edges", "start"], "properties": {"nodes": {"type": "array", "items": {"type": "string"}}, "edges": {"type": "array", "items": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": ["string", "number"]}}}, "start": {"type": "string"}}, "additionalProperties": False}),
+    "linear_search_complexity": _cap("linear_search_complexity", "linear_search_complexity_reference", {"type": "object", "required": ["sizes", "target"], "properties": {"sizes": {"type": "array", "items": {"type": "integer"}}, "target": {"type": "integer"}}, "additionalProperties": False}),
+    "shortest_path": _cap("shortest_path", "shortest_path_reference", {
+        "type": "object", "required": ["nodes", "edges", "start", "target"],
+        "properties": {
+            "nodes": {"type": "array", "items": {"type": "string"}},
+            "edges": {"type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "string"}}},
+            "start": {"type": "string"}, "target": {"type": "string"},
+        }, "additionalProperties": False,
+    }),
+    "matrix_multiply": _cap("matrix_multiply", "matrix_product_reference", {
+        "type": "object", "required": ["left", "right"],
+        "properties": {"left": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}},
+                       "right": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}}},
+        "additionalProperties": False,
+    }),
+    "determinant_3x3": _cap("determinant_3x3", "determinant_reference", {
+        "type": "object", "required": ["matrix"],
+        "properties": {"matrix": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}}},
+        "additionalProperties": False,
+    }),
+    "moving_average_c05": _cap("moving_average_c05", "moving_average_c05_reference", {
+        "type": "object", "required": ["values", "window"],
+        "properties": {"values": {"type": "array", "items": {"type": "number"}},
+                       "window": {"type": "integer", "minimum": 1}},
+        "additionalProperties": False,
+    }),
 }
 
 REGISTRY["c05_preflight_blocked"] = _cap(
@@ -180,6 +219,54 @@ REGISTRY["c05_preflight_blocked"] = _cap(
                     "phase": {"type": "string"}, "details": {"type": "string"}},
      "additionalProperties": False},
 )
+
+_ARCHIVE_SCHEMAS = {
+    "zip_path_safety": {"type": "object", "required": ["entries"], "properties": {"entries": {"type": "array", "items": {"type": "object", "required": ["name", "data_hex"], "properties": {"name": {"type": "string"}, "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False}}}, "additionalProperties": False},
+    "zip_crc": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "minLength": 2, "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False},
+    "zip_duplicates": {"type": "object", "required": ["names", "payloads_hex"], "properties": {"names": {"type": "array", "items": {"type": "string"}}, "payloads_hex": {"type": "array", "items": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}}, "additionalProperties": False},
+    "tar_offsets": {"type": "object", "required": ["entries"], "properties": {"entries": {"type": "array", "minItems": 3, "items": {"type": "object", "required": ["name", "data_hex"], "properties": {"name": {"type": "string"}, "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False}}}, "additionalProperties": False},
+    "tar_truncated": {"type": "object", "required": ["first_hex", "second_hex", "cut_into_second"], "properties": {"first_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})+$"}, "second_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})+$"}, "cut_into_second": {"type": "integer", "minimum": 0}}, "additionalProperties": False},
+    "gzip_crc": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False},
+}
+_ARCHIVE_ORACLES = {"zip_path_safety": "archive_path", "zip_crc": "archive_zip_crc", "zip_duplicates": "archive_zip_duplicates", "tar_offsets": "archive_tar_offsets", "tar_truncated": "archive_tar_truncated", "gzip_crc": "archive_gzip_crc"}
+for _archive_name, _archive_oracle in _ARCHIVE_ORACLES.items():
+    REGISTRY[_archive_name] = _cap(_archive_name, _archive_oracle, _ARCHIVE_SCHEMAS[_archive_name])
+
+_FORMAT_SCHEMAS = {
+    "sqlite_header": {"type": "object", "required": ["page_size"], "properties": {"page_size": {"type": "integer", "enum": [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]}}, "additionalProperties": False},
+    "sqlite_integrity": {"type": "object", "required": ["corrupt", "values"], "properties": {"corrupt": {"type": "boolean"}, "values": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": False},
+    "wasm_header": {"type": "object", "required": ["magic_hex", "version"], "properties": {"magic_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2}){4}$"}, "version": {"type": "integer", "minimum": 0, "maximum": 4294967295}}, "additionalProperties": False},
+    "png_chunks": {"type": "object", "required": ["chunks", "tamper_index"], "properties": {"chunks": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["type", "data_hex"], "properties": {"type": {"type": "string", "pattern": "^[A-Z]{4}$"}, "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False}}, "tamper_index": {"type": "integer", "minimum": -1, "maximum": 100}}, "additionalProperties": False},
+    "unknown_format": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "minLength": 2, "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False},
+    "block_entropy": {"type": "object", "required": ["payload_hex", "block_size"], "properties": {"payload_hex": {"type": "string", "minLength": 2, "pattern": "^([0-9a-fA-F]{2})+$"}, "block_size": {"type": "integer", "minimum": 1, "maximum": 1048576}}, "additionalProperties": False},
+    "binary_diff": {"type": "object", "required": ["left_hex", "right_hex"], "properties": {"left_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}, "right_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False},
+    "bounded_declared_size": {"type": "object", "required": ["declared_size", "payload_hex"], "properties": {"declared_size": {"type": "integer", "minimum": 0}, "payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False},
+    "reproducible_structure": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False},
+    "jpeg_markers": {"type": "object", "required": ["segments", "truncate_last"], "properties": {"segments": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "object", "required": ["marker", "payload_hex"], "properties": {"marker": {"type": "string", "enum": ["DQT", "SOF0"]}, "payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False}}, "truncate_last": {"type": "boolean"}}, "additionalProperties": False},
+    "partial_recovery": {"type": "object", "required": ["header_hex", "payload_hex", "expected_magic_hex"], "properties": {"header_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})+$"}, "payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}, "expected_magic_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False},
+    "timestamp_provenance": {"type": "object", "required": ["metadata_timestamp", "filesystem_timestamp"], "properties": {"metadata_timestamp": {"type": "integer"}, "filesystem_timestamp": {"type": "integer"}}, "additionalProperties": False},
+    "dependency_graph": {"type": "object", "required": ["root", "nodes", "edges"], "properties": {"root": {"type": "string"}, "nodes": {"type": "array", "items": {"type": "string"}, "uniqueItems": True}, "edges": {"type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "string"}}}}, "additionalProperties": False},
+    "protocol_version_diff": {"type": "object", "required": ["old_fields", "new_fields"], "properties": {"old_fields": {"type": "array", "items": {"type": "object", "required": ["name", "width", "offset"], "properties": {"name": {"type": "string"}, "width": {"type": "integer", "minimum": 1}, "offset": {"type": "integer", "minimum": 0}}, "additionalProperties": False}}, "new_fields": {"type": "array", "items": {"type": "object", "required": ["name", "width", "offset"], "properties": {"name": {"type": "string"}, "width": {"type": "integer", "minimum": 1}, "offset": {"type": "integer", "minimum": 0}}, "additionalProperties": False}}}, "additionalProperties": False},
+    "section_overlaps": {"type": "object", "required": ["sections"], "properties": {"sections": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["name", "offset", "size"], "properties": {"name": {"type": "string"}, "offset": {"type": "integer", "minimum": 0}, "size": {"type": "integer", "minimum": 1}}, "additionalProperties": False}}}, "additionalProperties": False},
+    "nested_zip_tar": {"type": "object", "required": ["entries"], "properties": {"entries": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["name", "data_hex"], "properties": {"name": {"type": "string"}, "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False}}}, "additionalProperties": False},
+    "forensic_report": {"type": "object", "required": ["payload_hex", "declared_size", "stored_crc32", "sections"], "properties": {"payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}, "declared_size": {"type": "integer", "minimum": 0}, "stored_crc32": {"type": "integer", "minimum": 0, "maximum": 4294967295}, "sections": {"type": "array", "items": {"type": "object", "required": ["name", "offset", "size"], "properties": {"name": {"type": "string"}, "offset": {"type": "integer", "minimum": 0}, "size": {"type": "integer", "minimum": 1}}, "additionalProperties": False}}}, "additionalProperties": False},
+    "seven_zip_list": {"type": "object", "required": ["entries"], "properties": {"entries": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["name", "data_hex"], "properties": {"name": {"type": "string", "minLength": 1}, "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False}}}, "additionalProperties": False},
+    "seven_zip_missing_volume": {"type": "object", "required": ["payload_hex", "volume_size", "missing_part"], "properties": {"payload_hex": {"type": "string", "minLength": 2, "maxLength": 32768, "pattern": "^([0-9a-fA-F]{2})+$"}, "volume_size": {"type": "integer", "enum": [1024, 2048]}, "missing_part": {"type": "integer", "minimum": 1, "maximum": 99}}, "additionalProperties": False},
+    "wasm_sections": {"type": "object", "required": ["sections", "truncate_index"], "properties": {"sections": {"type": "array", "maxItems": 100, "items": {"type": "object", "required": ["section_id", "payload_hex"], "properties": {"section_id": {"type": "integer", "minimum": 0, "maximum": 12}, "payload_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"}}, "additionalProperties": False}}, "truncate_index": {"type": "integer", "minimum": -1, "maximum": 99}}, "additionalProperties": False},
+    "wasm_type_indices": {"type": "object", "required": ["type_count", "function_type_indices"], "properties": {"type_count": {"type": "integer", "minimum": 0}, "function_type_indices": {"type": "array", "items": {"type": "integer"}}}, "additionalProperties": False},
+    "pdf_objects": {"type": "object", "required": ["references", "missing_object"], "properties": {"references": {"type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 0}}}, "missing_object": {"type": "integer", "minimum": 0}}, "additionalProperties": False},
+    "pdf_xref": {"type": "object", "required": ["corrupt_object"], "properties": {"corrupt_object": {"type": "integer", "minimum": 0, "maximum": 2}}, "additionalProperties": False},
+    "pdf_encryption_boundary": {"type": "object", "required": ["pdf_hex"], "properties": {"pdf_hex": {"type": "string", "minLength": 10, "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False},
+    "elf_symbol_tables": {"type": "object", "required": ["payload_hex", "require_complete"], "properties": {"payload_hex": {"type": "string", "minLength": 20, "maxLength": 32768, "pattern": "^([0-9a-fA-F]{2})+$"}, "require_complete": {"type": "boolean"}, "required_symbols": {"type": "array", "items": {"type": "string"}, "uniqueItems": True}}, "additionalProperties": False},
+    "elf_host_compatibility": {"type": "object", "required": ["payload_hex", "native_machine"], "properties": {"payload_hex": {"type": "string", "minLength": 40, "pattern": "^([0-9a-fA-F]{2})+$"}, "native_machine": {"type": "integer", "minimum": 0, "maximum": 65535}}, "additionalProperties": False},
+    "elf_section_layout": {"type": "object", "required": ["payload_hex", "include_load_segments"], "properties": {"payload_hex": {"type": "string", "minLength": 40, "maxLength": 32768, "pattern": "^([0-9a-fA-F]{2})+$"}, "include_load_segments": {"type": "boolean"}}, "additionalProperties": False},
+    "elf_dynamic_dependencies": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "minLength": 40, "maxLength": 32768, "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False},
+    "elf_rpath_runpath": {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string", "minLength": 40, "maxLength": 32768, "pattern": "^([0-9a-fA-F]{2})+$"}}, "additionalProperties": False},
+    "pe_inspect": {"type": "object", "required": ["payload_hex", "mode"], "properties": {"payload_hex": {"type": "string", "minLength": 40, "maxLength": 32768, "pattern": "^([0-9a-fA-F]{2})+$"}, "mode": {"type": "string", "enum": ["header", "sections", "imports"]}}, "additionalProperties": False},
+}
+_FORMAT_ORACLES = {"sqlite_header": "sqlite_header_independent", "sqlite_integrity": "sqlite_integrity_independent", "wasm_header": "wasm_header_independent", "png_chunks": "png_chunks_independent", "unknown_format": "unknown_format_independent", "block_entropy": "block_entropy_independent", "binary_diff": "binary_diff_independent", "bounded_declared_size": "bounded_size_independent", "reproducible_structure": "reproducible_structure_independent", "jpeg_markers": "jpeg_markers_independent", "partial_recovery": "partial_recovery_independent", "timestamp_provenance": "timestamp_provenance_independent", "dependency_graph": "dependency_graph_independent", "protocol_version_diff": "protocol_version_diff_independent", "section_overlaps": "section_overlaps_independent", "nested_zip_tar": "nested_zip_tar_independent", "forensic_report": "forensic_report_independent", "seven_zip_list": "seven_zip_list_independent", "seven_zip_missing_volume": "seven_zip_missing_volume_independent", "wasm_sections": "wasm_sections_independent", "wasm_type_indices": "wasm_type_indices_independent", "pdf_objects": "pdf_objects_independent", "pdf_xref": "pdf_xref_independent", "pdf_encryption_boundary": "pdf_encryption_boundary_independent", "elf_symbol_tables": "elf_symbol_tables_independent", "elf_host_compatibility": "elf_host_compatibility_independent", "elf_section_layout": "elf_section_layout_independent", "elf_dynamic_dependencies": "elf_dynamic_dependencies_independent", "elf_rpath_runpath": "elf_rpath_runpath_independent", "pe_inspect": "pe_inspect_independent"}
+for _format_name, _format_oracle in _FORMAT_ORACLES.items():
+    REGISTRY[_format_name] = _cap(_format_name, _format_oracle, _FORMAT_SCHEMAS[_format_name])
 
 ORACLES: dict[str, Callable[..., dict]] = {
     "ipaddress": cidr_bounds_oracle,
@@ -257,10 +344,45 @@ ORACLES: dict[str, Callable[..., dict]] = {
     "escapes": batch4_oracle.escapes,
     "request_counts": batch4_oracle.request_counts,
     "stable_age_records": batch6_oracle.stable_ages_oracle,
+    "fifo_queue_reference": batch6_oracle.fifo_queue_oracle,
+    "bst_inorder_reference": batch6_oracle.bst_inorder_oracle,
+    "dfs_graph_reference": batch6_oracle.dfs_graph_oracle,
+    "linked_list_reference": batch6_oracle.linked_list_oracle,
     "stack_state_machine": batch6_oracle.stack_sequence_oracle,
+    "shortest_path_reference": batch6_oracle.shortest_path_oracle,
+    "dijkstra_reference": batch6_oracle.dijkstra_oracle,
+    "avl_tree_reference": batch6_oracle.avl_tree_oracle,
+    "bellman_ford_cycle_reference": batch6_oracle.bellman_ford_cycle_oracle,
+    "linear_search_complexity_reference": batch6_oracle.linear_search_complexity_oracle,
+    "matrix_product_reference": batch6_oracle.matrix_multiply_oracle,
+    "determinant_reference": batch6_oracle.determinant_3x3_oracle,
+    "moving_average_c05_reference": batch6_oracle.moving_average_oracle,
 }
 
+REGISTRY.update({
+    "dex_header": _cap("dex_header", "dex_header_independent", {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string"}}, "additionalProperties": False}),
+    "dex_tables": _cap("dex_tables", "dex_tables_independent", {"type": "object", "required": ["payload_hex"], "properties": {"payload_hex": {"type": "string"}}, "additionalProperties": False}),
+})
+
 ORACLES["c05_preflight_blocked_oracle"] = c05_preflight_oracle.blocked_preflight_oracle
+ORACLES.update({"archive_path": archive_oracle.path_oracle, "archive_zip_crc": archive_oracle.crc_oracle, "archive_zip_duplicates": archive_oracle.duplicate_oracle, "archive_tar_offsets": archive_oracle.tar_offsets_oracle, "archive_tar_truncated": archive_oracle.truncated_oracle, "archive_gzip_crc": archive_oracle.gzip_oracle})
+ORACLES.update({"sqlite_header_independent": format_oracle.sqlite_header_oracle, "sqlite_integrity_independent": format_oracle.sqlite_integrity_oracle, "wasm_header_independent": format_oracle.wasm_header_oracle})
+ORACLES["png_chunks_independent"] = format_oracle.png_chunks_oracle
+ORACLES.update({"unknown_format_independent": format_oracle.unknown_format_oracle, "block_entropy_independent": format_oracle.block_entropy_oracle, "binary_diff_independent": format_oracle.binary_diff_oracle, "bounded_size_independent": format_oracle.bounded_size_oracle, "reproducible_structure_independent": format_oracle.reproducible_oracle})
+ORACLES["jpeg_markers_independent"] = format_oracle.jpeg_markers_oracle
+ORACLES.update({"partial_recovery_independent": format_oracle.partial_recovery_oracle, "timestamp_provenance_independent": format_oracle.timestamp_provenance_oracle, "dependency_graph_independent": format_oracle.dependency_graph_oracle})
+ORACLES.update({"protocol_version_diff_independent": format_oracle.protocol_version_diff_oracle, "section_overlaps_independent": format_oracle.section_overlaps_oracle, "nested_zip_tar_independent": format_oracle.nested_zip_tar_oracle})
+ORACLES["forensic_report_independent"] = format_oracle.forensic_report_oracle
+ORACLES.update({"seven_zip_list_independent": archive_oracle.seven_zip_list_oracle, "seven_zip_missing_volume_independent": archive_oracle.seven_zip_missing_volume_oracle})
+ORACLES.update({"wasm_sections_independent": format_oracle.wasm_sections_oracle, "wasm_type_indices_independent": format_oracle.wasm_type_indices_oracle})
+ORACLES.update({"pdf_objects_independent": format_oracle.pdf_objects_oracle, "pdf_xref_independent": format_oracle.pdf_xref_oracle})
+ORACLES["pdf_encryption_boundary_independent"] = format_oracle.pdf_encryption_boundary_oracle
+ORACLES["elf_symbol_tables_independent"] = format_oracle.elf_symbol_tables_oracle
+ORACLES["elf_host_compatibility_independent"] = format_oracle.elf_host_compatibility_oracle
+ORACLES["elf_section_layout_independent"] = format_oracle.elf_section_layout_oracle
+ORACLES["elf_dynamic_dependencies_independent"] = format_oracle.elf_dynamic_dependencies_oracle
+ORACLES["elf_rpath_runpath_independent"] = format_oracle.elf_rpath_runpath_oracle
+ORACLES["pe_inspect_independent"] = format_oracle.pe_inspect_oracle
 
 EXECUTORS: dict[str, Callable[..., dict]] = {
     "cidr_bounds": cidr_bounds,
@@ -338,10 +460,51 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "confined": batch4_exec.confined,
     "request_log": batch4_exec.request_log,
     "stable_ages": batch6_exec.stable_ages,
+    "fifo_queue": batch6_exec.fifo_queue,
+    "bst_inorder": batch6_exec.bst_inorder,
+    "dfs_graph": batch6_exec.dfs_graph,
+    "linked_list": batch6_exec.linked_list,
     "stack_sequence": batch6_exec.stack_sequence,
+    "shortest_path": batch6_exec.shortest_path,
+    "dijkstra": batch6_exec.dijkstra,
+    "avl_tree": batch6_exec.avl_tree,
+    "bellman_ford_cycle": batch6_exec.bellman_ford_cycle,
+    "linear_search_complexity": batch6_exec.linear_search_complexity,
+    "matrix_multiply": batch6_exec.matrix_multiply,
+    "determinant_3x3": batch6_exec.determinant_3x3,
+    "moving_average_c05": batch6_exec.moving_average,
 }
 
+EXECUTORS.update({"zip_path_safety": archive_exec.zip_path_safety, "zip_crc": archive_exec.zip_crc, "zip_duplicates": archive_exec.zip_duplicates, "tar_offsets": archive_exec.tar_offsets, "tar_truncated": archive_exec.tar_truncated, "gzip_crc": archive_exec.gzip_crc})
+EXECUTORS.update({"sqlite_header": format_exec.sqlite_header, "sqlite_integrity": format_exec.sqlite_integrity, "wasm_header": format_exec.wasm_header})
+EXECUTORS["png_chunks"] = format_exec.png_chunks
+EXECUTORS.update({"unknown_format": format_exec.unknown_format, "block_entropy": format_exec.block_entropy, "binary_diff": format_exec.binary_diff, "bounded_declared_size": format_exec.bounded_declared_size, "reproducible_structure": format_exec.reproducible_structure})
+EXECUTORS["jpeg_markers"] = format_exec.jpeg_markers
+EXECUTORS.update({"partial_recovery": format_exec.partial_recovery, "timestamp_provenance": format_exec.timestamp_provenance, "dependency_graph": format_exec.dependency_graph})
+EXECUTORS.update({"protocol_version_diff": format_exec.protocol_version_diff, "section_overlaps": format_exec.section_overlaps, "nested_zip_tar": format_exec.nested_zip_tar})
+EXECUTORS["forensic_report"] = format_exec.forensic_report
+EXECUTORS.update({"seven_zip_list": archive_exec.seven_zip_list, "seven_zip_missing_volume": archive_exec.seven_zip_missing_volume})
+EXECUTORS.update({"wasm_sections": format_exec.wasm_sections, "wasm_type_indices": format_exec.wasm_type_indices})
+EXECUTORS.update({"pdf_objects": format_exec.pdf_objects, "pdf_xref": format_exec.pdf_xref})
+EXECUTORS["pdf_encryption_boundary"] = format_exec.pdf_encryption_boundary
+EXECUTORS["elf_symbol_tables"] = format_exec.elf_symbol_tables
+EXECUTORS["elf_host_compatibility"] = format_exec.elf_host_compatibility
+EXECUTORS["elf_section_layout"] = format_exec.elf_section_layout
+EXECUTORS["elf_dynamic_dependencies"] = format_exec.elf_dynamic_dependencies
+EXECUTORS["elf_rpath_runpath"] = format_exec.elf_rpath_runpath
+EXECUTORS["pe_inspect"] = format_exec.pe_inspect
+
+ORACLES.update({
+    "dex_header_independent": format_oracle.dex_header_oracle,
+    "dex_tables_independent": format_oracle.dex_tables_oracle,
+})
+
 EXECUTORS["c05_preflight_blocked"] = c05_preflight.blocked_preflight_probe
+
+EXECUTORS.update({
+    "dex_header": lambda payload_hex: format_exec.dex_inspect(payload_hex, "header"),
+    "dex_tables": lambda payload_hex: format_exec.dex_inspect(payload_hex, "tables"),
+})
 
 for _name, _oracle_name, _schema in batch5_exec.SPECS:
     REGISTRY[_name] = _cap(_name, _oracle_name, _schema)

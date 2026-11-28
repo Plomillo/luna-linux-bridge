@@ -99,6 +99,112 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "command-list-rejected": return completed and observed.get("rejected") is True
     if expect == "single-zero-exit": return completed and observed.get("rejected") is not True and observed.get("commands") == ["true"] and observed.get("codes") == [0]
 
+    if expect == "fifo-reversed-order": return completed and observed.get("dequeued") == ["C", "B", "A"] and observed.get("queue") == []
+    if expect == "fifo-singleton": return completed and observed.get("dequeued") == ["A"] and observed.get("queue") == []
+    if expect == "linked-list-delete-out-of-bounds": return completed and observed.get("rejected") is True and observed.get("reason") == "delete_index_out_of_bounds"
+    if expect == "linked-list-singleton-roundtrip": return completed and observed.get("rejected") is False and observed.get("values") == [] and observed.get("length") == 0
+    if expect == "bst-insert-variant": return completed and observed.get("inorder") == [2, 5, 9] and observed.get("count") == 3
+    if expect == "bst-insert-singleton": return completed and observed.get("inorder") == [7] and observed.get("count") == 1
+    if expect == "dfs-invalid-edge-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_graph"
+    if expect == "dfs-self-loop-boundary": return completed and observed.get("rejected") is False and observed.get("order") == ["A"] and observed.get("visited_count") == 1 and observed.get("cycle") is True
+
+    if expect == "avl-duplicate-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "duplicate_value"
+    if expect == "avl-singleton-balanced": return completed and observed.get("rejected") is False and observed.get("inorder") == [1] and observed.get("balanced") is True and observed.get("height") == 1
+    if expect == "linear-search-invalid-size-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_sizes_or_target"
+    if expect == "linear-search-singleton-hit": return completed and observed.get("measurements") == [{"size": 1, "comparisons": 1, "index": 0, "found": True}] and observed.get("complexity") == "LINEAR"
+    if expect == "dijkstra-negative-weight-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "negative_weight_rejected"
+    if expect == "dijkstra-singleton-boundary": return completed and observed.get("rejected") is False and observed.get("reachable") is True and observed.get("distance") == 0 and observed.get("path") == ["A"]
+    if expect == "dijkstra-invalid-edge-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_graph"
+    if expect == "dijkstra-zero-weight-path": return completed and observed.get("rejected") is False and observed.get("distance") == 1 and observed.get("path") == ["A", "B", "C"]
+    if expect == "bellman-no-negative-cycle": return completed and observed.get("negative_cycle_reachable") is False and observed.get("distances") == {"A": 0, "B": 1, "C": 2}
+    if expect == "bellman-singleton": return completed and observed.get("negative_cycle_reachable") is False and observed.get("distances") == {"A": 0}
+
+    if expect == "bfs-unreachable-target": return completed and observed.get("reachable") is False and observed.get("path") == [] and observed.get("distance") is None
+    if expect == "bfs-single-node-zero-distance": return completed and observed.get("reachable") is True and observed.get("path") == ["A"] and observed.get("distance") == 0
+    if expect == "matrix-inner-dimension-mismatch": return completed and observed.get("rejected") is True and observed.get("reason") == "matrix_dimensions_invalid"
+    if expect == "matrix-single-zero-product": return completed and observed.get("rejected") is False and observed.get("result") == [[0]]
+    if expect == "determinant-nonsquare-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "matrix_must_be_3x3"
+    if expect == "determinant-identity-one": return completed and observed.get("rejected") is False and observed.get("determinant") == 1
+    if expect == "moving-window-too-wide": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_window_or_series"
+    if expect == "moving-single-value-boundary": return completed and observed.get("rejected") is False and observed.get("averages") == [9.0] and observed.get("start_indices") == [0]
+
+    if expect == "dex-truncated-header-rejected": return completed and observed.get("rejected") is True
+    if expect == "dex-minimum-valid-header": return completed and observed.get("rejected") is False and observed.get("header_size") == 112 and observed.get("checksum_valid") is True and observed.get("signature_valid") is True
+    if expect == "dex-invalid-type-string-index": return completed and observed.get("rejected") is False and observed.get("indices_valid") is False
+    if expect == "dex-valid-table-indices": return completed and observed.get("rejected") is False and observed.get("indices_valid") is True
+    if expect == "zip-traversal-blocked": return completed and observed.get("blocked") == ["../../escape"] and observed.get("outside_write") is False
+    if expect == "zip-safe-empty": return completed and observed.get("safe") == ["inside.txt"] and observed.get("blocked") == []
+    if expect in {"zip-corrupt-crc-detected", "zip-minimum-member-crc-detected", "gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return completed and observed.get("crc_error_detected") is True and (not expect.startswith("zip-") or observed.get("damaged_member_crc32") != observed.get("central_crc32"))
+    if expect == "zip-duplicate-content-preserved": return completed and observed.get("collisions") == ["x"] and observed.get("contents") == ["61", "62"] and observed.get("silent_overwrite") is False
+    if expect == "zip-single-entry-preserved": return completed and observed.get("collisions") == [] and observed.get("contents") == [""]
+    if expect == "tar-empty-block-boundaries": return completed and [row["header_offset"] for row in observed.get("members", [])] == [0, 512, 1536] and [row["size"] for row in observed.get("members", [])] == [0, 1, 0]
+    if expect == "tar-one-byte-block-boundaries": return completed and [row["header_offset"] for row in observed.get("members", [])] == [0, 1024, 2048] and all(row["size"] == 1 for row in observed.get("members", []))
+    if expect in {"tar-second-header-only-incomplete", "tar-second-empty-prefix-incomplete"}: return completed and observed.get("first_preserved") is True and observed.get("second_incomplete") is True
+    if expect in {"sqlite-minimum-page-size", "sqlite-maximum-page-size"}: return completed and observed.get("page_size") in {512, 65536} and observed.get("encoding") == "UTF-8"
+    if expect == "sqlite-corruption-reported": return completed and observed.get("integrity") is False and observed.get("corrupt_input") is True and bool(observed.get("messages"))
+    if expect == "sqlite-empty-integrity-ok": return completed and observed.get("integrity") is True and observed.get("messages") == ["ok"]
+    if expect == "wasm-invalid-magic-rejected": return completed and observed.get("accepted") is False and observed.get("magic_valid") is False
+    if expect == "wasm-version-zero-rejected": return completed and observed.get("accepted") is False and observed.get("magic_valid") is True and observed.get("version") == 0
+    if expect == "png-crc-mismatch-located": return completed and [row["type"] for row in observed.get("chunks", []) if not row["crc_valid"]] == ["IDAT"]
+    if expect == "png-empty-idat-crc-valid": return completed and all(row["crc_valid"] for row in observed.get("chunks", [])) and observed.get("chunks", [])[1]["length"] == 0
+    if expect == "known-signature-is-not-unknown": return completed and observed.get("format") == "png" and observed.get("invented_details") is False
+    if expect == "unknown-single-byte": return completed and observed.get("format") == "unknown" and observed.get("length") == 1
+    if expect == "zero-entropy-blocks": return completed and all(row["bits_per_byte"] == 0 for row in observed.get("blocks", []))
+    if expect == "single-byte-entropy-boundary": return completed and observed.get("blocks") == [{"offset": 0, "length": 1, "bits_per_byte": 0.0}]
+    if expect == "identical-binaries-no-diff": return completed and observed.get("differences") == []
+    if expect == "single-byte-offset-zero-diff": return completed and observed.get("differences") == [{"offset": 0, "before": 0, "after": 1}]
+    if expect == "oversized-declaration-rejected": return completed and observed.get("rejected") is True and observed.get("allocated_from_declaration") is False
+    if expect == "zero-size-boundary": return completed and observed.get("rejected") is False and observed.get("actual_size") == 0 and observed.get("allocated_from_declaration") is False
+    if expect in {"reproducibility-with-different-input", "empty-input-reproducibility"}: return completed and observed.get("identical") is True and observed.get("first") == observed.get("second")
+    if expect == "jpeg-truncated-marker-sequence-detected": return completed and observed.get("valid") is False and observed.get("truncated") is True
+    if expect == "jpeg-alternate-valid-marker-sequence": return completed and observed.get("valid") is True and [row["name"] for row in observed.get("markers", [])] == ["SOI", "DQT", "SOF0", "EOI"]
+    if expect == "partial-invalid-header-rejected": return completed and observed.get("header_valid") is False and observed.get("recovered_hex") == "" and observed.get("integrity_complete") is False
+    if expect == "partial-empty-body-recovered": return completed and observed.get("header_valid") is True and observed.get("recovered_hex") == "" and observed.get("unknown_trailer") is True
+    if expect in {"timestamp-order-does-not-prove-creation", "timestamp-equality-source-preserved"}: return completed and [row["source"] for row in observed.get("timestamps", [])] == ["embedded_metadata", "filesystem"] and observed.get("creation_time_proven") is False and bool(observed.get("warning"))
+    if expect == "dependency-cycle-detected": return completed and observed.get("rejected") is False and observed.get("cycle") is True and observed.get("reachable") == ["A", "B"]
+    if expect == "dependency-singleton-no-edges": return completed and observed.get("rejected") is False and observed.get("cycle") is False and observed.get("reachable") == []
+    if expect == "protocol-width-change-incompatible": return completed and observed.get("changes", [{}])[0].get("change") == "modified" and observed.get("backward_compatible") is False
+    if expect == "protocol-identical-layout-boundary": return completed and observed.get("changes") == [] and observed.get("backward_compatible") is True
+    if expect in {"sections-nonoverlap-rejected-as-invalid-fixture", "sections-adjacent-no-overlap"}: return completed and observed.get("overlaps") == [] and observed.get("valid") is True
+    if expect == "nested-archive-retains-literal-entry-name": return completed and observed.get("tree", {}).get("children", [{}])[0].get("children", [{}])[0].get("name") == "../../outside"
+    if expect == "nested-archive-empty-member": return completed and observed.get("tree", {}).get("children", [{}])[0].get("children") == [{"name": "empty", "size": 0, "data_hex": ""}]
+    if expect in {"forensic-clean-single-byte", "forensic-empty-clean-boundary"}: return completed and observed.get("observations") == [] and observed.get("inferences") == [] and observed.get("conclusion", {}).get("anomaly_count") == 0
+    if expect == "seven-zip-nested-name-listed": return completed and observed.get("members") == [{"name": "nested/item.txt", "size": 1, "method": "Copy"}]
+    if expect == "seven-zip-empty-file-listed": return completed and observed.get("members") == [{"name": "empty.bin", "size": 0, "method": "not_applicable_empty"}]
+    if expect == "seven-zip-out-of-range-part-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "missing_part_index_out_of_range"
+    if expect == "seven-zip-first-volume-missing": return completed and observed.get("rejected") is False and observed.get("missing_volume") == "parts.7z.001" and observed.get("reconstruction_complete") is False and observed.get("seven_zip_test_exit_code") != 0
+    if expect == "wasm-truncated-section-rejected": return completed and observed.get("valid") is False
+    if expect == "wasm-empty-custom-section": return completed and observed.get("valid") is True and observed.get("sections") == [{"section_id": 0, "offset": 8, "payload_offset": 10, "payload_size": 0, "within_module": True}]
+    if expect == "wasm-type-index-out-of-range": return completed and observed.get("rejected") is True and observed.get("invalid_indices") == [1]
+    if expect == "wasm-no-types-no-functions": return completed and observed.get("rejected") is False and observed.get("invalid_indices") == []
+    if expect == "pdf-missing-reference-detected": return completed and any(row.get("object") == 99 and row.get("resolved") is False for row in observed.get("references", []))
+    if expect == "pdf-existing-references-resolved": return completed and observed.get("objects") == [1, 2] and all(row.get("resolved") is True for row in observed.get("references", []))
+    if expect == "pdf-xref-object-one-offset-detected": return completed and observed.get("valid") is False and any(row.get("object") == 1 and row.get("actual_offset") != row.get("declared_offset") for row in observed.get("discrepancies", []))
+    if expect == "pdf-xref-valid-offsets": return completed and observed.get("valid") is True and observed.get("discrepancies") == []
+    if expect == "pdf-unencrypted-input-no-protected-content-claim": return completed and observed.get("encrypted") is False and observed.get("content_available") is False and observed.get("plaintext_claim") is None
+    if expect == "pdf-empty-protected-fixture-access-limited": return completed and observed.get("encrypted") is True and observed.get("content_available") is False and observed.get("plaintext_claim") is None
+    if expect == "elf-truncated-symbol-input-rejected": return completed and observed.get("rejected") is True
+    if expect == "elf-boundary-symbol-present": return completed and observed.get("rejected") is False and any(row.get("name") == "main" for row in observed.get("complete_symbols", []))
+    if expect == "elf-symbol-tables-present-not-stripped": return completed and observed.get("rejected") is False and observed.get("stripped") is False
+    if expect == "elf-alternate-stripped-without-inference": return completed and observed.get("stripped") is True and observed.get("invented_symbols") == []
+    if expect == "elf-complete-table-required": return completed and observed.get("rejected") is True and observed.get("reason") == "complete_symbol_table_missing"
+    if expect == "elf-distinct-full-and-dynamic-tables": return completed and observed.get("stripped") is False and bool(observed.get("complete_only")) and observed.get("provenance", {}).get("complete") == ".symtab" and observed.get("provenance", {}).get("dynamic") == ".dynsym"
+    if expect == "elf-truncated-wrong-architecture-rejected": return completed and observed.get("host_compatible") is False and observed.get("header", {}).get("rejected") is True
+    if expect == "elf-native-architecture-compatible": return completed and observed.get("host_compatible") is True and observed.get("header", {}).get("architecture") == "x86-64"
+    if expect in {"elf-truncated-section-table-rejected", "elf-truncated-load-map-rejected"}: return completed and observed.get("rejected") is True
+    if expect == "elf-alternate-section-offsets-within-file": return completed and observed.get("rejected") is False and observed.get("section_offsets_valid") is True and not observed.get("load_segments")
+    if expect == "elf-alternate-load-map-preserves-sections": return completed and observed.get("rejected") is False and observed.get("section_offsets_valid") is True and bool(observed.get("load_segments")) and all(segment.get("associated_sections") for segment in observed.get("load_segments", []))
+    if expect == "elf-truncated-dynamic-input-rejected": return completed and observed.get("rejected") is True
+    if expect == "elf-alternate-trusted-dependency-resolution": return completed and observed.get("rejected") is False and observed.get("runtime_resolution_attempted") is True and observed.get("program_entry_executed") is False and set(observed.get("runtime_resolved", {})) == set(observed.get("declared_dependencies", []))
+    if expect == "elf-no-search-tags-reported": return completed and observed.get("rejected") is False and observed.get("rpath") == [] and observed.get("runpath") == [] and observed.get("both_present") is False
+    if expect == "elf-both-search-tags-reported": return completed and observed.get("rejected") is False and bool(observed.get("rpath")) and bool(observed.get("runpath")) and observed.get("both_present") is True and observed.get("precedence_claim") == "NOT_INFERRED_WHEN_BOTH_PRESENT"
+    if expect == "pe-truncated-header-rejected": return completed and observed.get("rejected") is True
+    if expect == "pe-valid-signature-bounded": return completed and observed.get("rejected") is False and observed.get("mz_valid") is True and observed.get("pe_signature_valid") is True and observed.get("bytes_read") == 0x98
+    if expect == "pe-truncated-section-table-rejected": return completed and observed.get("rejected") is True
+    if expect == "pe-section-boundary-valid": return completed and observed.get("rejected") is False and {".text", ".data", ".rdata"} <= {row["name"] for row in observed.get("sections", [])}
+    if expect == "pe-no-static-imports-reported": return completed and observed.get("rejected") is False and observed.get("static_imports") == [] and observed.get("dynamic_runtime_modules_observed") is None
+    if expect == "pe-static-imports-separated": return completed and observed.get("rejected") is False and observed.get("static_imports") == [{"dll": "KERNEL32.dll", "symbols": ["ExitProcess"]}] and observed.get("dynamic_runtime_modules_observed") is None
+
     if expect == "yaml-invalid-rejected":
         return completed and observed.get("rejected") is True and observed.get("reason") == "yaml-parse-error"
     if expect == "yaml12-ambiguous-strings":

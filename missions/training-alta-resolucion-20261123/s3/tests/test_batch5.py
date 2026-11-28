@@ -9,7 +9,7 @@ def test_fifth_batch_executes_the_literal_cases():
     by_id = {row["case_id"]: row["observed"] for row in rows}
     assert by_id["MGL5-INF-0103"]["index"] == 1
     assert by_id["MGL5-INF-0104"]["index"] == 12
-    assert by_id["MGL5-INF-0110"]["order"] == ["A", "B", "C"]
+    assert by_id["MGL5-INF-0110"]["dequeued"] == ["A", "B", "C"]
     assert by_id["MGL5-INF-0120"]["values"][0] == 1
     assert by_id["MGL5-INF-0120"]["values"][5] == 120
     assert by_id["MGL5-INF-0154"]["value"] == 3

@@ -1,6 +1,18 @@
 """Source-bound negative and boundary inputs for authored executable cases."""
 from __future__ import annotations
 
+from metagente_luna_s4.batch2 import (
+    _DEX_BOUNDARY_HEX,
+    _DEX_FIXTURE,
+    _DEX_HEX,
+    _ELF_ARM_HEX,
+    _ELF_STRIPPED_BOUNDARY_HEX,
+    _ELF_STRIPPED_HEX,
+    _ELF_SYMBOLS_BOUNDARY_HEX,
+    _ELF_SYMBOLS_HEX,
+    _PDF_ENCRYPTED_BOUNDARY_HEX,
+    _PDF_ENCRYPTED_HEX,
+)
 from metagente_luna_s4.batch2 import CASES as SECOND
 from metagente_luna_s4.batch3 import CASES as THIRD
 from metagente_luna_s4.batch4 import CASES as FOURTH
@@ -24,6 +36,99 @@ def _build() -> None:
         return
     text = "utf8_roundtrip"
     _add("MGL5-INF-0001", "negative", text, {"text": "Luna-2025"}, "different-text")
+
+    _add("MGL5-INF-0067", "negative", "dex_header", {"payload_hex": _DEX_HEX[:80]}, "dex-truncated-header-rejected")
+    _add("MGL5-INF-0067", "boundary", "dex_header", {"payload_hex": _DEX_BOUNDARY_HEX}, "dex-minimum-valid-header")
+    _add("MGL5-INF-0068", "negative", "dex_tables", {"payload_hex": (_DEX_FIXTURE[:124] + (99).to_bytes(4, "little") + _DEX_FIXTURE[128:]).hex()}, "dex-invalid-type-string-index")
+    _add("MGL5-INF-0068", "boundary", "dex_tables", {"payload_hex": _DEX_BOUNDARY_HEX}, "dex-valid-table-indices")
+    _add("MGL5-INF-0070", "negative", "zip_path_safety", {"entries": [{"name": "../../escape", "data_hex": "78"}]}, "zip-traversal-blocked")
+    _add("MGL5-INF-0070", "boundary", "zip_path_safety", {"entries": [{"name": "inside.txt", "data_hex": ""}]}, "zip-safe-empty")
+    _add("MGL5-INF-0071", "negative", "zip_crc", {"payload_hex": "0102"}, "zip-corrupt-crc-detected")
+    _add("MGL5-INF-0071", "boundary", "zip_crc", {"payload_hex": "00"}, "zip-minimum-member-crc-detected")
+    _add("MGL5-INF-0072", "negative", "zip_duplicates", {"names": ["x", "x"], "payloads_hex": ["61", "62"]}, "zip-duplicate-content-preserved")
+    _add("MGL5-INF-0072", "boundary", "zip_duplicates", {"names": ["only"], "payloads_hex": [""]}, "zip-single-entry-preserved")
+    _add("MGL5-INF-0073", "negative", "tar_offsets", {"entries": [{"name": "a", "data_hex": ""}, {"name": "b", "data_hex": "00"}, {"name": "c", "data_hex": ""}]}, "tar-empty-block-boundaries")
+    _add("MGL5-INF-0073", "boundary", "tar_offsets", {"entries": [{"name": "a", "data_hex": "61"}, {"name": "b", "data_hex": "62"}, {"name": "c", "data_hex": "63"}]}, "tar-one-byte-block-boundaries")
+    _add("MGL5-INF-0074", "negative", "tar_truncated", {"first_hex": "61", "second_hex": "626364", "cut_into_second": 0}, "tar-second-header-only-incomplete")
+    _add("MGL5-INF-0074", "boundary", "tar_truncated", {"first_hex": "61", "second_hex": "62", "cut_into_second": 0}, "tar-second-empty-prefix-incomplete")
+    _add("MGL5-INF-0075", "negative", "gzip_crc", {"payload_hex": "00"}, "gzip-crc-mismatch-detected")
+    _add("MGL5-INF-0075", "boundary", "gzip_crc", {"payload_hex": ""}, "gzip-empty-crc-mismatch-detected")
+    _add("MGL5-INF-0078", "negative", "sqlite_header", {"page_size": 512}, "sqlite-minimum-page-size")
+    _add("MGL5-INF-0078", "boundary", "sqlite_header", {"page_size": 65536}, "sqlite-maximum-page-size")
+    _add("MGL5-INF-0079", "negative", "sqlite_integrity", {"corrupt": True, "values": ["alpha", "beta"]}, "sqlite-corruption-reported")
+    _add("MGL5-INF-0079", "boundary", "sqlite_integrity", {"corrupt": False, "values": []}, "sqlite-empty-integrity-ok")
+    _add("MGL5-INF-0085", "negative", "wasm_header", {"magic_hex": "0161736d", "version": 1}, "wasm-invalid-magic-rejected")
+    _add("MGL5-INF-0085", "boundary", "wasm_header", {"magic_hex": "0061736d", "version": 0}, "wasm-version-zero-rejected")
+    _add("MGL5-INF-0080", "negative", "png_chunks", {"chunks": [{"type": "IHDR", "data_hex": "00000001000000010802000000"}, {"type": "IDAT", "data_hex": "00"}, {"type": "IEND", "data_hex": ""}], "tamper_index": 1}, "png-crc-mismatch-located")
+    _add("MGL5-INF-0080", "boundary", "png_chunks", {"chunks": [{"type": "IHDR", "data_hex": "00000001000000010802000000"}, {"type": "IDAT", "data_hex": ""}, {"type": "IEND", "data_hex": ""}], "tamper_index": -1}, "png-empty-idat-crc-valid")
+    _add("MGL5-INF-0088", "negative", "unknown_format", {"payload_hex": "89504e470d0a1a0a"}, "known-signature-is-not-unknown")
+    _add("MGL5-INF-0088", "boundary", "unknown_format", {"payload_hex": "00"}, "unknown-single-byte")
+    _add("MGL5-INF-0089", "negative", "block_entropy", {"payload_hex": "00000000", "block_size": 2}, "zero-entropy-blocks")
+    _add("MGL5-INF-0089", "boundary", "block_entropy", {"payload_hex": "ff", "block_size": 1}, "single-byte-entropy-boundary")
+    _add("MGL5-INF-0090", "negative", "binary_diff", {"left_hex": "aabb", "right_hex": "aabb"}, "identical-binaries-no-diff")
+    _add("MGL5-INF-0090", "boundary", "binary_diff", {"left_hex": "00", "right_hex": "01"}, "single-byte-offset-zero-diff")
+    _add("MGL5-INF-0097", "negative", "bounded_declared_size", {"declared_size": 3, "payload_hex": "00"}, "oversized-declaration-rejected")
+    _add("MGL5-INF-0097", "boundary", "bounded_declared_size", {"declared_size": 0, "payload_hex": ""}, "zero-size-boundary")
+    _add("MGL5-INF-0099", "negative", "reproducible_structure", {"payload_hex": "00ff"}, "reproducibility-with-different-input")
+    _add("MGL5-INF-0099", "boundary", "reproducible_structure", {"payload_hex": ""}, "empty-input-reproducibility")
+    _add("MGL5-INF-0081", "negative", "jpeg_markers", {"segments": [{"marker": "DQT", "payload_hex": "00" + "01" * 64}, {"marker": "SOF0", "payload_hex": "080001000101011100"}], "truncate_last": True}, "jpeg-truncated-marker-sequence-detected")
+    _add("MGL5-INF-0081", "boundary", "jpeg_markers", {"segments": [{"marker": "DQT", "payload_hex": "00" + "ff" * 64}, {"marker": "SOF0", "payload_hex": "080002000201011100"}], "truncate_last": False}, "jpeg-alternate-valid-marker-sequence")
+    _add("MGL5-INF-0091", "negative", "partial_recovery", {"header_hex": "00000000", "payload_hex": "4142", "expected_magic_hex": "4c554e41"}, "partial-invalid-header-rejected")
+    _add("MGL5-INF-0091", "boundary", "partial_recovery", {"header_hex": "4c554e41", "payload_hex": "", "expected_magic_hex": "4c554e41"}, "partial-empty-body-recovered")
+    _add("MGL5-INF-0092", "negative", "timestamp_provenance", {"metadata_timestamp": 100, "filesystem_timestamp": 50}, "timestamp-order-does-not-prove-creation")
+    _add("MGL5-INF-0092", "boundary", "timestamp_provenance", {"metadata_timestamp": 100, "filesystem_timestamp": 100}, "timestamp-equality-source-preserved")
+    _add("MGL5-INF-0093", "negative", "dependency_graph", {"root": "A", "nodes": ["A", "B"], "edges": [["A", "B"], ["B", "A"]]}, "dependency-cycle-detected")
+    _add("MGL5-INF-0093", "boundary", "dependency_graph", {"root": "A", "nodes": ["A"], "edges": []}, "dependency-singleton-no-edges")
+    _add("MGL5-INF-0094", "negative", "protocol_version_diff", {"old_fields": [{"name": "count", "width": 16, "offset": 1}], "new_fields": [{"name": "count", "width": 32, "offset": 1}]}, "protocol-width-change-incompatible")
+    _add("MGL5-INF-0094", "boundary", "protocol_version_diff", {"old_fields": [{"name": "id", "width": 8, "offset": 0}], "new_fields": [{"name": "id", "width": 8, "offset": 0}]}, "protocol-identical-layout-boundary")
+    _add("MGL5-INF-0096", "negative", "section_overlaps", {"sections": [{"name": "a", "offset": 0, "size": 4}, {"name": "b", "offset": 8, "size": 2}]}, "sections-nonoverlap-rejected-as-invalid-fixture")
+    _add("MGL5-INF-0096", "boundary", "section_overlaps", {"sections": [{"name": "a", "offset": 0, "size": 4}, {"name": "b", "offset": 4, "size": 1}]}, "sections-adjacent-no-overlap")
+    _add("MGL5-INF-0098", "negative", "nested_zip_tar", {"entries": [{"name": "../../outside", "data_hex": "78"}]}, "nested-archive-retains-literal-entry-name")
+    _add("MGL5-INF-0098", "boundary", "nested_zip_tar", {"entries": [{"name": "empty", "data_hex": ""}]}, "nested-archive-empty-member")
+    _add("MGL5-INF-0100", "negative", "forensic_report", {"payload_hex": "00", "declared_size": 1, "stored_crc32": 3523407757, "sections": [{"name": "a", "offset": 0, "size": 1}]}, "forensic-clean-single-byte")
+    _add("MGL5-INF-0100", "boundary", "forensic_report", {"payload_hex": "", "declared_size": 0, "stored_crc32": 0, "sections": []}, "forensic-empty-clean-boundary")
+    _add("MGL5-INF-0076", "negative", "seven_zip_list", {"entries": [{"name": "nested/item.txt", "data_hex": "78"}]}, "seven-zip-nested-name-listed")
+    _add("MGL5-INF-0076", "boundary", "seven_zip_list", {"entries": [{"name": "empty.bin", "data_hex": ""}]}, "seven-zip-empty-file-listed")
+    _add("MGL5-INF-0077", "negative", "seven_zip_missing_volume", {"payload_hex": "00" * 8192, "volume_size": 1024, "missing_part": 99}, "seven-zip-out-of-range-part-rejected")
+    _add("MGL5-INF-0077", "boundary", "seven_zip_missing_volume", {"payload_hex": "00" * 8192, "volume_size": 2048, "missing_part": 1}, "seven-zip-first-volume-missing")
+    _add("MGL5-INF-0086", "negative", "wasm_sections", {"sections": [{"section_id": 1, "payload_hex": "01600000"}, {"section_id": 3, "payload_hex": "0100"}], "truncate_index": 1}, "wasm-truncated-section-rejected")
+    _add("MGL5-INF-0086", "boundary", "wasm_sections", {"sections": [{"section_id": 0, "payload_hex": ""}], "truncate_index": -1}, "wasm-empty-custom-section")
+    _add("MGL5-INF-0087", "negative", "wasm_type_indices", {"type_count": 1, "function_type_indices": [1]}, "wasm-type-index-out-of-range")
+    _add("MGL5-INF-0087", "boundary", "wasm_type_indices", {"type_count": 0, "function_type_indices": []}, "wasm-no-types-no-functions")
+    _add("MGL5-INF-0082", "negative", "pdf_objects", {"references": [[1, 0], [2, 0]], "missing_object": 99}, "pdf-missing-reference-detected")
+    _add("MGL5-INF-0082", "boundary", "pdf_objects", {"references": [[1, 0]], "missing_object": 0}, "pdf-existing-references-resolved")
+    _add("MGL5-INF-0083", "negative", "pdf_xref", {"corrupt_object": 1}, "pdf-xref-object-one-offset-detected")
+    _add("MGL5-INF-0083", "boundary", "pdf_xref", {"corrupt_object": 0}, "pdf-xref-valid-offsets")
+    plain_pdf = bytes.fromhex(_PDF_ENCRYPTED_HEX).replace(b"/Encrypt 3 0 R", b"/EncrypX 3 0 R").hex()
+    _add("MGL5-INF-0084", "negative", "pdf_encryption_boundary", {"pdf_hex": plain_pdf}, "pdf-unencrypted-input-no-protected-content-claim")
+    _add("MGL5-INF-0084", "boundary", "pdf_encryption_boundary", {"pdf_hex": _PDF_ENCRYPTED_BOUNDARY_HEX}, "pdf-empty-protected-fixture-access-limited")
+    _add("MGL5-INF-0056", "negative", "elf_symbol_tables", {"payload_hex": _ELF_SYMBOLS_HEX[:120], "require_complete": True}, "elf-truncated-symbol-input-rejected")
+    _add("MGL5-INF-0056", "boundary", "elf_symbol_tables", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX, "require_complete": True, "required_symbols": ["main"]}, "elf-boundary-symbol-present")
+    _add("MGL5-INF-0057", "negative", "elf_symbol_tables", {"payload_hex": _ELF_SYMBOLS_HEX, "require_complete": False}, "elf-symbol-tables-present-not-stripped")
+    _add("MGL5-INF-0057", "boundary", "elf_symbol_tables", {"payload_hex": _ELF_STRIPPED_BOUNDARY_HEX, "require_complete": False}, "elf-alternate-stripped-without-inference")
+    _add("MGL5-INF-0095", "negative", "elf_symbol_tables", {"payload_hex": _ELF_STRIPPED_HEX, "require_complete": True}, "elf-complete-table-required")
+    _add("MGL5-INF-0095", "boundary", "elf_symbol_tables", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX, "require_complete": True}, "elf-distinct-full-and-dynamic-tables")
+    _add("MGL5-INF-0060", "negative", "elf_host_compatibility", {"payload_hex": _ELF_ARM_HEX[:48], "native_machine": 62}, "elf-truncated-wrong-architecture-rejected")
+    _add("MGL5-INF-0060", "boundary", "elf_host_compatibility", {"payload_hex": _ELF_SYMBOLS_HEX, "native_machine": 62}, "elf-native-architecture-compatible")
+    _add("MGL5-INF-0054", "negative", "elf_section_layout", {"payload_hex": _ELF_SYMBOLS_HEX[:120], "include_load_segments": False}, "elf-truncated-section-table-rejected")
+    _add("MGL5-INF-0054", "boundary", "elf_section_layout", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX, "include_load_segments": False}, "elf-alternate-section-offsets-within-file")
+    _add("MGL5-INF-0055", "negative", "elf_section_layout", {"payload_hex": _ELF_SYMBOLS_HEX[:120], "include_load_segments": True}, "elf-truncated-load-map-rejected")
+    _add("MGL5-INF-0055", "boundary", "elf_section_layout", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX, "include_load_segments": True}, "elf-alternate-load-map-preserves-sections")
+    from metagente_luna_s4.batch2 import _ELF_RPATH_RUNPATH_BOUNDARY_HEX, _PE_HEX
+    _add("MGL5-INF-0058", "negative", "elf_dynamic_dependencies", {"payload_hex": _ELF_SYMBOLS_HEX[:120]}, "elf-truncated-dynamic-input-rejected")
+    _add("MGL5-INF-0058", "boundary", "elf_dynamic_dependencies", {"payload_hex": _ELF_SYMBOLS_BOUNDARY_HEX}, "elf-alternate-trusted-dependency-resolution")
+    _add("MGL5-INF-0059", "negative", "elf_rpath_runpath", {"payload_hex": _ELF_SYMBOLS_HEX}, "elf-no-search-tags-reported")
+    _add("MGL5-INF-0059", "boundary", "elf_rpath_runpath", {"payload_hex": _ELF_RPATH_RUNPATH_BOUNDARY_HEX}, "elf-both-search-tags-reported")
+    no_imports = bytearray.fromhex(_PE_HEX)
+    no_imports[0x110:0x118] = bytes(8)
+    _add("MGL5-INF-0061", "negative", "pe_inspect", {"payload_hex": _PE_HEX[:100], "mode": "header"}, "pe-truncated-header-rejected")
+    _add("MGL5-INF-0061", "boundary", "pe_inspect", {"payload_hex": _PE_HEX + "00", "mode": "header"}, "pe-valid-signature-bounded")
+    _add("MGL5-INF-0062", "negative", "pe_inspect", {"payload_hex": _PE_HEX[:0x188 * 2], "mode": "sections"}, "pe-truncated-section-table-rejected")
+    _add("MGL5-INF-0062", "boundary", "pe_inspect", {"payload_hex": _PE_HEX + "00", "mode": "sections"}, "pe-section-boundary-valid")
+    _add("MGL5-INF-0063", "negative", "pe_inspect", {"payload_hex": no_imports.hex(), "mode": "imports"}, "pe-no-static-imports-reported")
+    _add("MGL5-INF-0063", "boundary", "pe_inspect", {"payload_hex": _PE_HEX + "00", "mode": "imports"}, "pe-static-imports-separated")
+    _add("MGL5-INF-0064", "negative", "pe_inspect", {"payload_hex": _PE_HEX[:0x98 * 2], "mode": "sections"}, "pe-truncated-section-table-rejected")
+    _add("MGL5-INF-0064", "boundary", "pe_inspect", {"payload_hex": _PE_HEX, "mode": "sections"}, "pe-section-boundary-valid")
     _add("MGL5-INF-0001", "boundary", text, {"text": ""}, "empty-roundtrip")
     _add("MGL5-INF-0002", "negative", text, {"text": "computacion"}, "different-text")
     _add("MGL5-INF-0002", "boundary", text, {"text": "ñ"}, "single-multibyte")
@@ -147,8 +252,8 @@ def _build() -> None:
     _add("MGL5-INF-0626", "boundary", "pearson", {"left": [1, 2], "right": [2, 4]}, "perfect-positive-correlation")
     _add("MGL5-INF-0627", "negative", "pearson", {"left": [1, 1, 1], "right": [3, 2, 1]}, "zero-variance-rejected")
     _add("MGL5-INF-0627", "boundary", "pearson", {"left": [1, 2], "right": [2, 1]}, "perfect-negative-correlation")
-    _add("MGL5-INF-0110", "negative", "dequeue_named", {"values": ["C", "B", "A"]}, "fifo-reversed-order")
-    _add("MGL5-INF-0110", "boundary", "dequeue_named", {"values": ["A"]}, "fifo-singleton")
+    _add("MGL5-INF-0110", "negative", "fifo_queue", {"steps": ["enqueue:C", "enqueue:B", "enqueue:A", "dequeue", "dequeue", "dequeue"]}, "fifo-reversed-order")
+    _add("MGL5-INF-0110", "boundary", "fifo_queue", {"steps": ["enqueue:A", "dequeue"]}, "fifo-singleton")
     _add("MGL5-INF-0120", "negative", "factorials", {"values": [-1]}, "factorial-negative-rejected")
     _add("MGL5-INF-0120", "boundary", "factorials", {"values": [0]}, "factorial-zero-boundary")
     _add("MGL5-INF-0142", "negative", "confined", {"requested": "escape"}, "symlink-escape-blocked")
@@ -194,8 +299,8 @@ def _build() -> None:
     _add("MGL5-INF-0607", "boundary", "compensated_sum", {"start": 1.0, "increment": 1e-8, "count": 0}, "sum-zero-boundary")
     _add("MGL5-INF-0109", "negative", "stack_sequence", {"steps": ["pop"]}, "single-underflow")
     _add("MGL5-INF-0109", "boundary", "stack_sequence", {"steps": []}, "empty-stack-sequence")
-    _add("MGL5-INF-0112", "negative", "binary_insert", {"values": [5, 2, 9]}, "binary-insert-variant")
-    _add("MGL5-INF-0112", "boundary", "binary_insert", {"values": [7]}, "binary-insert-singleton")
+    _add("MGL5-INF-0112", "negative", "bst_inorder", {"values": [5, 2, 9]}, "binary-insert-variant")
+    _add("MGL5-INF-0112", "boundary", "bst_inorder", {"values": [7]}, "binary-insert-singleton")
     _add("MGL5-INF-0125", "negative", "arithmetic", {"expression": "2+3*5"}, "arithmetic-variant-17")
     _add("MGL5-INF-0125", "boundary", "arithmetic", {"expression": "0+0"}, "arithmetic-zero-boundary")
     _add("MGL5-INF-0155", "negative", "arithmetic", {"expression": "2*(1+2)"}, "arithmetic-variant-6")
@@ -238,10 +343,10 @@ def _build() -> None:
 
     # C05: distinct negative and boundary fixtures for the ten previously
     # source-defined but control-incomplete batch-5 operations.
-    _add("MGL5-INF-0113", "negative", "balanced_range", {"count": 0}, "range-count-rejected")
-    _add("MGL5-INF-0113", "boundary", "balanced_range", {"start": 0, "count": 1}, "range-singleton")
-    _add("MGL5-INF-0119", "negative", "linear_scans", {"sizes": [0]}, "scan-size-rejected")
-    _add("MGL5-INF-0119", "boundary", "linear_scans", {"sizes": [1, 2, 4], "needle": 0}, "scan-first-element")
+    _add("MGL5-INF-0113", "negative", "avl_tree", {"values": [1, 1]}, "avl-duplicate-rejected")
+    _add("MGL5-INF-0113", "boundary", "avl_tree", {"values": [1]}, "avl-singleton-balanced")
+    _add("MGL5-INF-0119", "negative", "linear_search_complexity", {"sizes": [0], "target": 0}, "linear-search-invalid-size-rejected")
+    _add("MGL5-INF-0119", "boundary", "linear_search_complexity", {"sizes": [1], "target": 0}, "linear-search-singleton-hit")
     _add("MGL5-INF-0141", "negative", "parameterized_name", {"name": "' OR 1=1 --"}, "query-injection-not-matched")
     _add("MGL5-INF-0141", "boundary", "parameterized_name", {"name": "ada"}, "query-exact-match")
     _add("MGL5-INF-0154", "negative", "precedence_tree", {"text": "1+*2"}, "expression-rejected")
@@ -259,11 +364,131 @@ def _build() -> None:
     _add("MGL5-INF-0503", "negative", "exit_codes", {"commands": []}, "command-list-rejected")
     _add("MGL5-INF-0503", "boundary", "exit_codes", {"commands": ["true"]}, "single-zero-exit")
 
+
+
+    _add("MGL5-INF-0116", "negative", "dijkstra", {"nodes": ["A", "B"], "edges": [["A", "B", -1]], "start": "A", "target": "B"}, "dijkstra-negative-weight-rejected")
+    _add("MGL5-INF-0116", "boundary", "dijkstra", {"nodes": ["A"], "edges": [], "start": "A", "target": "A"}, "dijkstra-singleton-boundary")
+    _add("MGL5-INF-0117", "negative", "dijkstra", {"nodes": ["A", "B"], "edges": [["A", "Z", 1]], "start": "A", "target": "B"}, "dijkstra-invalid-edge-rejected")
+    _add("MGL5-INF-0117", "boundary", "dijkstra", {"nodes": ["A", "B", "C"], "edges": [["A", "B", 0], ["B", "C", 1]], "start": "A", "target": "C"}, "dijkstra-zero-weight-path")
+    _add("MGL5-INF-0118", "negative", "bellman_ford_cycle", {"nodes": ["A", "B", "C"], "edges": [["A", "B", 1], ["B", "C", 1]], "start": "A"}, "bellman-no-negative-cycle")
+    _add("MGL5-INF-0118", "boundary", "bellman_ford_cycle", {"nodes": ["A"], "edges": [], "start": "A"}, "bellman-singleton")
+
+    _add("MGL5-INF-0111", "negative", "linked_list", {"operations": [{"op": "delete", "index": 2}]}, "linked-list-delete-out-of-bounds")
+    _add("MGL5-INF-0111", "boundary", "linked_list", {"operations": [{"op": "insert", "index": 0, "value": 1}, {"op": "delete", "index": 0}]}, "linked-list-singleton-roundtrip")
+    _add("MGL5-INF-0115", "negative", "dfs_graph", {"nodes": ["A", "B"], "edges": [["A", "Z"]], "start": "A"}, "dfs-invalid-edge-rejected")
+    _add("MGL5-INF-0115", "boundary", "dfs_graph", {"nodes": ["A"], "edges": [["A", "A"]], "start": "A"}, "dfs-self-loop-boundary")
+    _add("MGL5-INF-0114", "negative", "shortest_path", {"nodes": ["A", "B", "C"], "edges": [["A", "B"]], "start": "A", "target": "C"}, "bfs-unreachable-target")
+    _add("MGL5-INF-0114", "boundary", "shortest_path", {"nodes": ["A"], "edges": [], "start": "A", "target": "A"}, "bfs-single-node-zero-distance")
+    _add("MGL5-INF-0609", "negative", "matrix_multiply", {"left": [[1, 2, 3]], "right": [[1, 2], [3, 4]]}, "matrix-inner-dimension-mismatch")
+    _add("MGL5-INF-0609", "boundary", "matrix_multiply", {"left": [[0]], "right": [[0]]}, "matrix-single-zero-product")
+    _add("MGL5-INF-0611", "negative", "determinant_3x3", {"matrix": [[1, 2], [3, 4]]}, "determinant-nonsquare-rejected")
+    _add("MGL5-INF-0611", "boundary", "determinant_3x3", {"matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]}, "determinant-identity-one")
+    _add("MGL5-INF-0632", "negative", "moving_average_c05", {"values": [1, 2, 3], "window": 4}, "moving-window-too-wide")
+    _add("MGL5-INF-0632", "boundary", "moving_average_c05", {"values": [9], "window": 1}, "moving-single-value-boundary")
+
 def accepts(expect: str, observed: dict, status: str) -> bool:
     # A control is adjudicated against its own expected behavior, not the
     # NORMAL-case oracle verdict. FAIL means the executor ran and the normal
     # oracle rejected this control input; the observed control may still pass.
     control_completed = status in {"EXECUTED", "FAIL"}
+
+
+    if expect == "dijkstra-negative-weight-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "negative_weight_rejected"
+    if expect == "dijkstra-singleton-boundary": return control_completed and observed.get("rejected") is False and observed.get("reachable") is True and observed.get("distance") == 0 and observed.get("path") == ["A"]
+    if expect == "dijkstra-invalid-edge-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_graph"
+    if expect == "dijkstra-zero-weight-path": return control_completed and observed.get("rejected") is False and observed.get("distance") == 1 and observed.get("path") == ["A", "B", "C"]
+    if expect == "bellman-no-negative-cycle": return control_completed and observed.get("negative_cycle_reachable") is False and observed.get("distances") == {"A": 0, "B": 1, "C": 2}
+    if expect == "bellman-singleton": return control_completed and observed.get("negative_cycle_reachable") is False and observed.get("distances") == {"A": 0}
+
+    if expect == "linked-list-delete-out-of-bounds": return control_completed and observed.get("rejected") is True and observed.get("reason") == "delete_index_out_of_bounds"
+    if expect == "linked-list-singleton-roundtrip": return control_completed and observed.get("rejected") is False and observed.get("values") == [] and observed.get("length") == 0
+    if expect == "dfs-invalid-edge-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_graph"
+    if expect == "dfs-self-loop-boundary": return control_completed and observed.get("rejected") is False and observed.get("order") == ["A"] and observed.get("visited_count") == 1 and observed.get("cycle") is True
+    if expect == "bfs-unreachable-target": return control_completed and observed.get("reachable") is False and observed.get("path") == [] and observed.get("distance") is None
+    if expect == "bfs-single-node-zero-distance": return control_completed and observed.get("reachable") is True and observed.get("path") == ["A"] and observed.get("distance") == 0
+    if expect == "matrix-inner-dimension-mismatch": return control_completed and observed.get("rejected") is True and observed.get("reason") == "matrix_dimensions_invalid"
+    if expect == "matrix-single-zero-product": return control_completed and observed.get("rejected") is False and observed.get("result") == [[0]]
+    if expect == "determinant-nonsquare-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "matrix_must_be_3x3"
+    if expect == "determinant-identity-one": return control_completed and observed.get("rejected") is False and observed.get("determinant") == 1
+    if expect == "moving-window-too-wide": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_window_or_series"
+    if expect == "moving-single-value-boundary": return control_completed and observed.get("rejected") is False and observed.get("averages") == [9.0] and observed.get("start_indices") == [0]
+    if expect == "dex-truncated-header-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "dex-minimum-valid-header": return control_completed and observed.get("rejected") is False and observed.get("header_size") == 112 and observed.get("checksum_valid") is True and observed.get("signature_valid") is True
+    if expect == "dex-invalid-type-string-index": return control_completed and observed.get("rejected") is False and observed.get("indices_valid") is False
+    if expect == "dex-valid-table-indices": return control_completed and observed.get("rejected") is False and observed.get("indices_valid") is True
+    if expect == "zip-traversal-blocked": return control_completed and observed.get("blocked") == ["../../escape"] and observed.get("outside_write") is False
+    if expect == "zip-safe-empty": return control_completed and observed.get("safe") == ["inside.txt"] and observed.get("blocked") == []
+    if expect in {"zip-corrupt-crc-detected", "zip-minimum-member-crc-detected"}: return control_completed and observed.get("crc_error_detected") is True and observed.get("damaged_member_crc32") != observed.get("central_crc32")
+    if expect == "zip-duplicate-content-preserved": return control_completed and observed.get("collisions") == ["x"] and observed.get("contents") == ["61", "62"] and observed.get("silent_overwrite") is False
+    if expect == "zip-single-entry-preserved": return control_completed and observed.get("collisions") == [] and observed.get("contents") == [""]
+    if expect == "tar-empty-block-boundaries": return control_completed and [row["header_offset"] for row in observed.get("members", [])] == [0, 512, 1536] and [row["size"] for row in observed.get("members", [])] == [0, 1, 0]
+    if expect == "tar-one-byte-block-boundaries": return control_completed and [row["header_offset"] for row in observed.get("members", [])] == [0, 1024, 2048] and all(row["size"] == 1 for row in observed.get("members", []))
+    if expect in {"tar-second-header-only-incomplete", "tar-second-empty-prefix-incomplete"}: return control_completed and observed.get("first_preserved") is True and observed.get("second_incomplete") is True
+    if expect in {"sqlite-minimum-page-size", "sqlite-maximum-page-size"}: return control_completed and observed.get("page_size") in {512, 65536} and observed.get("encoding") == "UTF-8"
+    if expect == "sqlite-corruption-reported": return control_completed and observed.get("integrity") is False and observed.get("corrupt_input") is True and bool(observed.get("messages"))
+    if expect == "sqlite-empty-integrity-ok": return control_completed and observed.get("integrity") is True and observed.get("messages") == ["ok"]
+    if expect == "wasm-invalid-magic-rejected": return control_completed and observed.get("accepted") is False and observed.get("magic_valid") is False
+    if expect == "wasm-version-zero-rejected": return control_completed and observed.get("accepted") is False and observed.get("magic_valid") is True and observed.get("version") == 0
+    if expect == "png-crc-mismatch-located": return control_completed and [row["type"] for row in observed.get("chunks", []) if not row["crc_valid"]] == ["IDAT"]
+    if expect == "png-empty-idat-crc-valid": return control_completed and all(row["crc_valid"] for row in observed.get("chunks", [])) and observed.get("chunks", [])[1]["length"] == 0
+    if expect == "known-signature-is-not-unknown": return control_completed and observed.get("format") == "png" and observed.get("invented_details") is False
+    if expect == "unknown-single-byte": return control_completed and observed.get("format") == "unknown" and observed.get("length") == 1
+    if expect == "zero-entropy-blocks": return control_completed and all(row["bits_per_byte"] == 0 for row in observed.get("blocks", []))
+    if expect == "single-byte-entropy-boundary": return control_completed and observed.get("blocks") == [{"offset": 0, "length": 1, "bits_per_byte": 0.0}]
+    if expect == "identical-binaries-no-diff": return control_completed and observed.get("differences") == []
+    if expect == "single-byte-offset-zero-diff": return control_completed and observed.get("differences") == [{"offset": 0, "before": 0, "after": 1}]
+    if expect == "oversized-declaration-rejected": return control_completed and observed.get("rejected") is True and observed.get("allocated_from_declaration") is False
+    if expect == "zero-size-boundary": return control_completed and observed.get("rejected") is False and observed.get("actual_size") == 0 and observed.get("allocated_from_declaration") is False
+    if expect in {"reproducibility-with-different-input", "empty-input-reproducibility"}: return control_completed and observed.get("identical") is True and observed.get("first") == observed.get("second")
+    if expect == "jpeg-truncated-marker-sequence-detected": return control_completed and observed.get("valid") is False and observed.get("truncated") is True
+    if expect == "jpeg-alternate-valid-marker-sequence": return control_completed and observed.get("valid") is True and [row["name"] for row in observed.get("markers", [])] == ["SOI", "DQT", "SOF0", "EOI"]
+    if expect == "partial-invalid-header-rejected": return control_completed and observed.get("header_valid") is False and observed.get("recovered_hex") == "" and observed.get("integrity_complete") is False
+    if expect == "partial-empty-body-recovered": return control_completed and observed.get("header_valid") is True and observed.get("recovered_hex") == "" and observed.get("unknown_trailer") is True
+    if expect in {"timestamp-order-does-not-prove-creation", "timestamp-equality-source-preserved"}: return control_completed and [row["source"] for row in observed.get("timestamps", [])] == ["embedded_metadata", "filesystem"] and observed.get("creation_time_proven") is False and bool(observed.get("warning"))
+    if expect == "dependency-cycle-detected": return control_completed and observed.get("rejected") is False and observed.get("cycle") is True and observed.get("reachable") == ["A", "B"]
+    if expect == "dependency-singleton-no-edges": return control_completed and observed.get("rejected") is False and observed.get("cycle") is False and observed.get("reachable") == []
+    if expect == "protocol-width-change-incompatible": return control_completed and observed.get("changes", [{}])[0].get("change") == "modified" and observed.get("backward_compatible") is False
+    if expect == "protocol-identical-layout-boundary": return control_completed and observed.get("changes") == [] and observed.get("backward_compatible") is True
+    if expect in {"sections-nonoverlap-rejected-as-invalid-fixture", "sections-adjacent-no-overlap"}: return control_completed and observed.get("overlaps") == [] and observed.get("valid") is True
+    if expect == "nested-archive-retains-literal-entry-name": return control_completed and observed.get("tree", {}).get("children", [{}])[0].get("children", [{}])[0].get("name") == "../../outside"
+    if expect == "nested-archive-empty-member": return control_completed and observed.get("tree", {}).get("children", [{}])[0].get("children") == [{"name": "empty", "size": 0, "data_hex": ""}]
+    if expect in {"forensic-clean-single-byte", "forensic-empty-clean-boundary"}: return control_completed and observed.get("observations") == [] and observed.get("inferences") == [] and observed.get("conclusion", {}).get("anomaly_count") == 0
+    if expect == "seven-zip-nested-name-listed": return control_completed and observed.get("members") == [{"name": "nested/item.txt", "size": 1, "method": "Copy"}]
+    if expect == "seven-zip-empty-file-listed": return control_completed and observed.get("members") == [{"name": "empty.bin", "size": 0, "method": "not_applicable_empty"}]
+    if expect == "seven-zip-out-of-range-part-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "missing_part_index_out_of_range"
+    if expect == "seven-zip-first-volume-missing": return control_completed and observed.get("rejected") is False and observed.get("missing_volume") == "parts.7z.001" and observed.get("reconstruction_complete") is False and observed.get("seven_zip_test_exit_code") != 0
+    if expect == "wasm-truncated-section-rejected": return control_completed and observed.get("valid") is False
+    if expect == "wasm-empty-custom-section": return control_completed and observed.get("valid") is True and observed.get("sections") == [{"section_id": 0, "offset": 8, "payload_offset": 10, "payload_size": 0, "within_module": True}]
+    if expect == "pdf-missing-reference-detected": return control_completed and any(row.get("object") == 99 and row.get("resolved") is False for row in observed.get("references", []))
+    if expect == "pdf-existing-references-resolved": return control_completed and observed.get("objects") == [1, 2] and all(row.get("resolved") is True for row in observed.get("references", []))
+    if expect == "pdf-xref-object-one-offset-detected": return control_completed and observed.get("valid") is False and observed.get("discrepancies", [{}])[0].get("object") == 1
+    if expect == "pdf-xref-valid-offsets": return control_completed and observed.get("valid") is True and observed.get("discrepancies") == []
+    if expect == "pdf-unencrypted-input-no-protected-content-claim": return control_completed and observed.get("encrypted") is False and observed.get("content_available") is False and observed.get("plaintext_claim") is None
+    if expect == "pdf-empty-protected-fixture-access-limited": return control_completed and observed.get("encrypted") is True and observed.get("content_available") is False and observed.get("plaintext_claim") is None
+    if expect == "elf-truncated-symbol-input-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "elf-boundary-symbol-present": return control_completed and observed.get("rejected") is False and "main" in {row["name"] for row in observed.get("complete_symbols", [])}
+    if expect == "elf-symbol-tables-present-not-stripped": return control_completed and observed.get("rejected") is False and observed.get("stripped") is False
+    if expect == "elf-alternate-stripped-without-inference": return control_completed and observed.get("stripped") is True and observed.get("invented_symbols") == []
+    if expect == "elf-complete-table-required": return control_completed and observed.get("rejected") is True and observed.get("reason") == "complete_symbol_table_missing"
+    if expect == "elf-distinct-full-and-dynamic-tables": return control_completed and observed.get("stripped") is False and bool(observed.get("complete_only")) and observed.get("provenance", {}).get("complete") == ".symtab" and observed.get("provenance", {}).get("dynamic") == ".dynsym"
+    if expect == "elf-truncated-wrong-architecture-rejected": return control_completed and observed.get("host_compatible") is False and observed.get("header", {}).get("rejected") is True
+    if expect == "elf-native-architecture-compatible": return control_completed and observed.get("host_compatible") is True and observed.get("header", {}).get("architecture") == "x86-64"
+    if expect in {"elf-truncated-section-table-rejected", "elf-truncated-load-map-rejected"}: return control_completed and observed.get("rejected") is True
+    if expect == "elf-alternate-section-offsets-within-file": return control_completed and observed.get("rejected") is False and observed.get("section_offsets_valid") is True and not observed.get("load_segments")
+    if expect == "elf-alternate-load-map-preserves-sections": return control_completed and observed.get("rejected") is False and observed.get("section_offsets_valid") is True and bool(observed.get("load_segments")) and all(segment.get("associated_sections") for segment in observed.get("load_segments", []))
+    if expect == "elf-truncated-dynamic-input-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "elf-alternate-trusted-dependency-resolution": return control_completed and observed.get("rejected") is False and observed.get("runtime_resolution_attempted") is True and observed.get("program_entry_executed") is False and set(observed.get("runtime_resolved", {})) == set(observed.get("declared_dependencies", []))
+    if expect == "elf-no-search-tags-reported": return control_completed and observed.get("rejected") is False and observed.get("rpath") == [] and observed.get("runpath") == [] and observed.get("both_present") is False
+    if expect == "elf-both-search-tags-reported": return control_completed and observed.get("rejected") is False and bool(observed.get("rpath")) and bool(observed.get("runpath")) and observed.get("both_present") is True and observed.get("precedence_claim") == "NOT_INFERRED_WHEN_BOTH_PRESENT"
+    if expect == "pe-truncated-header-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "pe-valid-signature-bounded": return control_completed and observed.get("rejected") is False and observed.get("mz_valid") is True and observed.get("pe_signature_valid") is True and observed.get("bytes_read") == 0x98
+    if expect == "pe-truncated-section-table-rejected": return control_completed and observed.get("rejected") is True
+    if expect == "pe-section-boundary-valid": return control_completed and observed.get("rejected") is False and {".text", ".data", ".rdata"} <= {row["name"] for row in observed.get("sections", [])}
+    if expect == "pe-no-static-imports-reported": return control_completed and observed.get("rejected") is False and observed.get("static_imports") == [] and observed.get("dynamic_runtime_modules_observed") is None
+    if expect == "pe-static-imports-separated": return control_completed and observed.get("rejected") is False and observed.get("static_imports") == [{"dll": "KERNEL32.dll", "symbols": ["ExitProcess"]}] and observed.get("dynamic_runtime_modules_observed") is None
+    if expect == "wasm-type-index-out-of-range": return control_completed and observed.get("rejected") is True and observed.get("invalid_indices") == [1]
+    if expect == "wasm-no-types-no-functions": return control_completed and observed.get("rejected") is False and observed.get("invalid_indices") == []
+    if expect in {"gzip-crc-mismatch-detected", "gzip-empty-crc-mismatch-detected"}: return control_completed and observed.get("crc_error_detected") is True
     # A schema-level rejection is a valid negative control even though the
     # operation never ran and therefore produced no observed payload.
     if expect == "yaml-invalid-rejected":
@@ -427,9 +652,9 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
     if expect == "threshold-above-fires":
         return control_completed and observed.get("at_or_below") is False and observed.get("above") is True
     if expect == "fifo-reversed-order":
-        return control_completed and observed.get("order") == ["C", "B", "A"] and observed.get("remaining") == 0
+        return control_completed and observed.get("dequeued") == ["C", "B", "A"] and observed.get("queue") == []
     if expect == "fifo-singleton":
-        return control_completed and observed.get("order") == ["A"] and observed.get("remaining") == 0
+        return control_completed and observed.get("dequeued") == ["A"] and observed.get("queue") == []
     if expect == "factorial-negative-rejected":
         return control_completed and observed.get("rejected") is True and observed.get("negative_rejected") is True
     if expect == "factorial-zero-boundary":
@@ -634,10 +859,10 @@ def accepts(expect: str, observed: dict, status: str) -> bool:
             and observed.get("underflow_count") == 0
         )
 
-    if expect == "range-count-rejected": return control_completed and observed.get("rejected") is True
-    if expect == "range-singleton": return control_completed and observed.get("rejected") is False and observed.get("count") == observed.get("nodes") == observed.get("found") == 1
-    if expect == "scan-size-rejected": return control_completed and observed.get("rejected") is True
-    if expect == "scan-first-element": return control_completed and observed.get("rejected") is False and observed.get("comparisons") == [1, 1, 1]
+    if expect == "avl-duplicate-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "duplicate_value"
+    if expect == "avl-singleton-balanced": return control_completed and observed.get("rejected") is False and observed.get("inorder") == [1] and observed.get("height") == 1 and observed.get("balanced") is True
+    if expect == "linear-search-invalid-size-rejected": return control_completed and observed.get("rejected") is True and observed.get("reason") == "invalid_sizes_or_target"
+    if expect == "linear-search-singleton-hit": return control_completed and observed.get("measurements") == [{"size": 1, "comparisons": 1, "index": 0, "found": True}] and observed.get("complexity") == "LINEAR"
     if expect == "query-injection-not-matched": return control_completed and observed.get("matched") == 0 and observed.get("status") == 200
     if expect == "query-exact-match": return control_completed and observed.get("matched") == 1 and observed.get("status") == 200
     if expect == "expression-rejected": return control_completed and observed.get("rejected") is True
@@ -695,11 +920,21 @@ def run_controls() -> list[dict]:
         controls = CONTROLS.get(spec["case_id"], {})
         record = {"case_id": spec["case_id"], "controls": {}}
         for kind, item in controls.items():
-            result = execute(item["capability_id"], item["arguments"], spec["case_id"])
+            metadata = {
+                "definition": f"{kind.upper()} control {item['expect']}",
+                "expected_behavior": f"accepts({item['expect']!r}, observed, lifecycle_status) is true",
+                "source": f"{__file__}:{spec['case_id']}:{kind}",
+            }
+            result = execute(
+                item["capability_id"], item["arguments"], spec["case_id"],
+                run_kind=kind.upper(), control_metadata=metadata,
+            )
             record["controls"][kind] = {
                 "execution_status": result["execution_status"],
+                "run_kind": result["run_kind"],
+                "control_metadata": result["control_metadata"],
                 "observed": result["observed"],
-                "accepted": accepts(item["expect"], result["observed"], result["execution_status"]),
+                "accepted": accepts(item["expect"], result["observed"], result["lifecycle_status"]),
             }
         record["control_status"] = "PRESENT" if controls and all(item["accepted"] for item in record["controls"].values()) else "MISSING"
         rows.append(record)

@@ -73,7 +73,11 @@ def interpret(instruction: str) -> Interpretation:
             ],
         )
     if ("10.000" in text or "10000" in text) and "ordenar" in folded and not found["bracket"]:
-        return _blocked(text, "descending-sort", ["input-integers"])
+        fixture = _FIXTURE["ten-thousand"]
+        return _ready(text, "descending_seed", [
+            Argument(name="seed", value=fixture["seed"], provenance=Provenance.FIXTURE),
+            Argument(name="count", value=fixture["count"], provenance=Provenance.FIXTURE),
+        ])
     if "edad" in folded and "ordenar" in folded:
         return _ready(text, "stable_ages", [Argument(name="records", value=_FIXTURE["stable-ages"]["records"], provenance=Provenance.FIXTURE)])
     if "push" in folded and "peek" in folded:
@@ -82,8 +86,63 @@ def interpret(instruction: str) -> Interpretation:
             "stack_sequence",
             [Argument(name="steps", value=_FIXTURE["stack-script"]["steps"], provenance=Provenance.FIXTURE)],
         )
+
+    if "cola fifo" in folded or ("encolar" in folded and "desencolar" in folded):
+        fixture = _FIXTURE["fifo-queue"]
+        return _ready(text, "fifo_queue", [Argument(name="steps", value=fixture["steps"], provenance=Provenance.FIXTURE)])
+    if "lista enlazada" in folded:
+        fixture = _FIXTURE["linked-list"]
+        return _ready(text, "linked_list", [Argument(name="operations", value=fixture["operations"], provenance=Provenance.FIXTURE)])
+    if "bst" in folded or "arbol binario de busqueda" in folded:
+        fixture = _FIXTURE["bst-values"]
+        return _ready(text, "bst_inorder", [Argument(name="values", value=fixture["values"], provenance=Provenance.FIXTURE)])
+    if "dfs" in folded or "recorrer grafo con ciclo" in folded:
+        fixture = _FIXTURE["dfs-cycle"]
+        return _ready(text, "dfs_graph", [Argument(name="nodes", value=fixture["nodes"], provenance=Provenance.FIXTURE), Argument(name="edges", value=fixture["edges"], provenance=Provenance.FIXTURE), Argument(name="start", value=fixture["start"], provenance=Provenance.FIXTURE)])
+
+    if "nodos" in folded and "cabeza" in folded and "cola" in folded:
+        fixture = _FIXTURE["linked-list"]
+        return _ready(text, "linked_list", [Argument(name="operations", value=fixture["operations"], provenance=Provenance.FIXTURE)])
+    if "balanceado" in folded or "avl" in folded:
+        fixture = _FIXTURE["avl-ascending"]
+        return _ready(text, "avl_tree", [Argument(name="values", value=fixture["values"], provenance=Provenance.FIXTURE)])
+    if "busqueda lineal" in folded and "1.000" in text:
+        fixture = _FIXTURE["linear-search-sizes"]
+        return _ready(text, "linear_search_complexity", [Argument(name="sizes", value=fixture["sizes"], provenance=Provenance.FIXTURE), Argument(name="target", value=fixture["target"], provenance=Provenance.FIXTURE)])
+    if "dijkstra" in folded and "negativa" in folded:
+        fixture = _FIXTURE["dijkstra-negative"]
+        return _ready(text, "dijkstra", [Argument(name="nodes", value=fixture["nodes"], provenance=Provenance.FIXTURE), Argument(name="edges", value=fixture["edges"], provenance=Provenance.FIXTURE), Argument(name="start", value=fixture["start"], provenance=Provenance.FIXTURE), Argument(name="target", value=fixture["target"], provenance=Provenance.FIXTURE)])
+    if "dijkstra" in folded or "pesos no negativos" in folded:
+        fixture = _FIXTURE["dijkstra-positive"]
+        return _ready(text, "dijkstra", [Argument(name="nodes", value=fixture["nodes"], provenance=Provenance.FIXTURE), Argument(name="edges", value=fixture["edges"], provenance=Provenance.FIXTURE), Argument(name="start", value=fixture["start"], provenance=Provenance.FIXTURE), Argument(name="target", value=fixture["target"], provenance=Provenance.FIXTURE)])
+    if "ciclo negativo" in folded or "bellman-ford" in folded:
+        fixture = _FIXTURE["bellman-negative-cycle"]
+        return _ready(text, "bellman_ford_cycle", [Argument(name="nodes", value=fixture["nodes"], provenance=Provenance.FIXTURE), Argument(name="edges", value=fixture["edges"], provenance=Provenance.FIXTURE), Argument(name="start", value=fixture["start"], provenance=Provenance.FIXTURE)])
     if "grafo" in folded or "seis nodos" in folded:
-        return _blocked(text, "shortest-path", ["edges", "endpoints"])
+        fixture = _FIXTURE["bfs-six-node"]
+        return _ready(text, "shortest_path", [
+            Argument(name="nodes", value=fixture["nodes"], provenance=Provenance.FIXTURE),
+            Argument(name="edges", value=fixture["edges"], provenance=Provenance.FIXTURE),
+            Argument(name="start", value=fixture["start"], provenance=Provenance.FIXTURE),
+            Argument(name="target", value=fixture["target"], provenance=Provenance.FIXTURE),
+        ])
+    if "determinante" in folded:
+        fixture = _FIXTURE["determinant-reference"]
+        return _ready(text, "determinant_3x3", [
+            Argument(name="matrix", value=fixture["matrix"], provenance=Provenance.FIXTURE),
+        ])
+    if "matriz" in folded or "2×3" in text or "2x3" in folded:
+        fixture = _FIXTURE["matrix-product"]
+        return _ready(text, "matrix_multiply", [
+            Argument(name="left", value=fixture["left"], provenance=Provenance.FIXTURE),
+            Argument(name="right", value=fixture["right"], provenance=Provenance.FIXTURE),
+        ])
+    if "media movil" in folded or "ventana" in folded:
+        fixture = _FIXTURE["moving-window"]
+        return _ready(text, "moving_average_c05", [
+            Argument(name="values", value=fixture["values"], provenance=Provenance.FIXTURE),
+            Argument(name="window", value=fixture["window"], provenance=Provenance.FIXTURE),
+        ])
     if "matriz" in folded or "determinante" in folded or "2×3" in text or "2x3" in folded:
         missing = ["reference-matrix"] if "determinante" in folded else ["matrix-entries"]
         return _blocked(text, "matrix", missing)

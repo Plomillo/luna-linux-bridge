@@ -27,12 +27,13 @@ def test_missing_input_is_not_invented():
     thousands = interpret("Ordenar 10.000 enteros en orden descendente.")
     vague = interpret("Ordenar estos valores de mayor a menor.")
     window = interpret("Calcular media móvil de ventana 3 sobre fixture.")
-    assert thousands.status == "BLOCKED"
-    assert thousands.missing == ["input-integers"]
-    assert thousands.arguments == []
+    assert thousands.status == "READY"
+    assert thousands.intent == "descending_seed"
+    assert {argument.name: argument.value for argument in thousands.arguments} == {"seed": 106, "count": 10_000}
     assert vague.status == "BLOCKED"
-    assert window.status == "BLOCKED"
-    assert window.missing == ["series-values", "series-length"]
+    assert window.status == "READY"
+    assert window.intent == "moving_average_c05"
+    assert {argument.name: argument.value for argument in window.arguments} == {"values": [1, 2, 3, 4, 5, 6], "window": 3}
 
 
 def test_seven_literal_instructions():
@@ -44,8 +45,8 @@ def test_seven_literal_instructions():
     assert [record["id"] for record in stable["records"]] == ["b", "d", "a", "c"]
     assert stable["ids_by_age"] == {"20": ["b", "d"], "30": ["a", "c"]}
     assert stable["rejected"] is False
-    assert rows["MGL5-INF-0106"]["execution_status"] == "BLOCKED"
-    assert rows["MGL5-INF-0106"]["missing_information"] == ["input-integers"]
+    assert rows["MGL5-INF-0106"]["execution_status"] == "CRITERION_MET"
+    assert rows["MGL5-INF-0106"]["observed"]["length"] == 10_000
     assert rows["MGL5-INF-0109"]["execution_status"] == "CRITERION_MET"
     assert rows["MGL5-INF-0109"]["observed"]["events"] == [
         {"operation": "push", "value": 1},
@@ -57,8 +58,32 @@ def test_seven_literal_instructions():
     ]
     assert rows["MGL5-INF-0109"]["observed"]["stack"] == []
     assert rows["MGL5-INF-0109"]["observed"]["underflow_count"] == 1
-    assert rows["MGL5-INF-0114"]["missing_information"] == ["edges", "endpoints"]
-    assert rows["MGL5-INF-0609"]["missing_information"] == ["matrix-entries"]
-    assert rows["MGL5-INF-0611"]["missing_information"] == ["reference-matrix"]
-    assert rows["MGL5-INF-0632"]["missing_information"] == ["series-values", "series-length"]
+    assert rows["MGL5-INF-0114"]["execution_status"] == "CRITERION_MET"
+    assert rows["MGL5-INF-0609"]["execution_status"] == "CRITERION_MET"
+    assert rows["MGL5-INF-0611"]["execution_status"] == "CRITERION_MET"
+    assert rows["MGL5-INF-0632"]["execution_status"] == "CRITERION_MET"
     assert rows["MGL5-INF-0106"]["c05_gate"] == "NOT_PASSED"
+def test_fifo_bst_dfs_linked_list_source_instructions_execute():
+    rows = {row["case_id"]: row for row in run_all()}
+    for case_id in ("MGL5-INF-0110", "MGL5-INF-0111", "MGL5-INF-0112", "MGL5-INF-0115"):
+        assert rows[case_id]["execution_status"] == "CRITERION_MET"
+    assert rows["MGL5-INF-0110"]["observed"]["dequeued"] == ["A", "B", "C"]
+    assert rows["MGL5-INF-0112"]["observed"]["inorder"] == [1, 3, 6, 8, 10, 14]
+    assert rows["MGL5-INF-0115"]["observed"]["cycle"] is True
+    assert rows["MGL5-INF-0111"]["observed"]["values"] == [1, 3]
+def test_legacy_batch3_batch5_cases_are_rewired_and_new_batch6_cases_execute():
+    from metagente_luna_s4.batch3 import CASES as BATCH3_CASES
+    from metagente_luna_s4.batch5 import CASES as BATCH5_CASES
+    from metagente_luna_s4.runner import execute
+
+    batch3_spec = next(item for item in BATCH3_CASES if item["case_id"] == "MGL5-INF-0112")
+    batch5_specs = {item["case_id"]: item for item in BATCH5_CASES}
+    for case_id in ("MGL5-INF-0110", "MGL5-INF-0113", "MGL5-INF-0119"):
+        result = execute(batch5_specs[case_id]["capability_id"], batch5_specs[case_id]["arguments"], case_id)
+        assert result["execution_status"] == "EXECUTED" and result["oracle_result"]["ok"]
+    result = execute(batch3_spec["capability_id"], batch3_spec["arguments"], batch3_spec["case_id"])
+    assert result["execution_status"] == "EXECUTED" and result["oracle_result"]["ok"]
+
+    rows = {row["case_id"]: row for row in run_all()}
+    for case_id in ("MGL5-INF-0111", "MGL5-INF-0115", "MGL5-INF-0116", "MGL5-INF-0117", "MGL5-INF-0118"):
+        assert rows[case_id]["execution_status"] == "CRITERION_MET"

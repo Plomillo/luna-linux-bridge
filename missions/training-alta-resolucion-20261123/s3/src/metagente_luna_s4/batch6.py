@@ -11,6 +11,15 @@ OPERATIONS = [
     ("MGL5-INF-0105", "Ordenar registros por edad conservando orden entre edades iguales."),
     ("MGL5-INF-0106", "Ordenar 10.000 enteros en orden descendente."),
     ("MGL5-INF-0109", "Ejecutar push, pop y peek con secuencia predefinida."),
+    ("MGL5-INF-0110", "Encolar A, B, C y desencolar tres veces."),
+    ("MGL5-INF-0111", "Insertar y eliminar nodos en cabeza, centro y cola."),
+    ("MGL5-INF-0112", "Insertar 8, 3, 10, 1, 6, 14 en árbol BST y obtener inorder."),
+    ("MGL5-INF-0115", "Recorrer grafo con ciclo usando DFS."),
+    ("MGL5-INF-0113", "Insertar secuencia ascendente de 1 a 1.000 en árbol AVL balanceado."),
+    ("MGL5-INF-0116", "Calcular ruta mínima en grafo con pesos no negativos usando Dijkstra."),
+    ("MGL5-INF-0117", "Dijkstra: introducir arista negativa y rechazarla."),
+    ("MGL5-INF-0118", "Detectar ciclo negativo alcanzable con Bellman-Ford."),
+    ("MGL5-INF-0119", "Medir búsqueda lineal en arreglos de tamaño 1.000, 2.000 y 4.000."),
     ("MGL5-INF-0114", "Buscar ruta en grafo de seis nodos conocido."),
     ("MGL5-INF-0609", "Multiplicar matrices 2×3 y 3×2 conocidas."),
     ("MGL5-INF-0611", "Calcular determinante de matriz 3×3 de referencia."),
@@ -29,6 +38,7 @@ _TEN_THOUSAND = _FIXTURE["ten-thousand"]
 # complete are exposed to the C05 plan compiler. Other interpreter candidates
 # remain visible in the coverage matrix as blocked/ambiguous.
 CASES = [
+    # C05 additions: fixture-backed graph, tree, list, queue and complexity plans.
     {
         "case_id": "MGL5-INF-0106",
         "capability_id": "descending_seed",
@@ -46,6 +56,60 @@ CASES = [
         "capability_id": "stack_sequence",
         "arguments": {"steps": _FIXTURE["stack-script"]["steps"]},
         "fixture_provenance": "FIXTURE:derived_parameters.json#stack-script",
+    },
+    {
+        "case_id": "MGL5-INF-0111",
+        "capability_id": "linked_list",
+        "arguments": {"operations": _FIXTURE["linked-list"]["operations"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#linked-list; head/middle/tail operations",
+    },
+    {
+        "case_id": "MGL5-INF-0115",
+        "capability_id": "dfs_graph",
+        "arguments": {"nodes": _FIXTURE["dfs-cycle"]["nodes"], "edges": _FIXTURE["dfs-cycle"]["edges"], "start": _FIXTURE["dfs-cycle"]["start"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#dfs-cycle; directed cycle with reachable tail",
+    },
+    {
+        "case_id": "MGL5-INF-0116",
+        "capability_id": "dijkstra",
+        "arguments": {"nodes": _FIXTURE["dijkstra-positive"]["nodes"], "edges": _FIXTURE["dijkstra-positive"]["edges"], "start": _FIXTURE["dijkstra-positive"]["start"], "target": _FIXTURE["dijkstra-positive"]["target"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#dijkstra-positive; nonnegative weighted graph",
+    },
+    {
+        "case_id": "MGL5-INF-0117",
+        "capability_id": "dijkstra",
+        "arguments": {"nodes": _FIXTURE["dijkstra-negative"]["nodes"], "edges": _FIXTURE["dijkstra-negative"]["edges"], "start": _FIXTURE["dijkstra-negative"]["start"], "target": _FIXTURE["dijkstra-negative"]["target"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#dijkstra-negative; negative edge rejection",
+    },
+    {
+        "case_id": "MGL5-INF-0118",
+        "capability_id": "bellman_ford_cycle",
+        "arguments": {"nodes": _FIXTURE["bellman-negative-cycle"]["nodes"], "edges": _FIXTURE["bellman-negative-cycle"]["edges"], "start": _FIXTURE["bellman-negative-cycle"]["start"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#bellman-negative-cycle; reachable negative cycle",
+    },
+    {
+        "case_id": "MGL5-INF-0114",
+        "capability_id": "shortest_path",
+        "arguments": {key: _FIXTURE["bfs-six-node"][key] for key in ("nodes", "edges", "start", "target")},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#bfs-six-node; six-node directed graph with tied shortest paths",
+    },
+    {
+        "case_id": "MGL5-INF-0609",
+        "capability_id": "matrix_multiply",
+        "arguments": {"left": _FIXTURE["matrix-product"]["left"], "right": _FIXTURE["matrix-product"]["right"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#matrix-product; 2x3 by 3x2 integer matrices",
+    },
+    {
+        "case_id": "MGL5-INF-0611",
+        "capability_id": "determinant_3x3",
+        "arguments": {"matrix": _FIXTURE["determinant-reference"]["matrix"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#determinant-reference; expected determinant -306",
+    },
+    {
+        "case_id": "MGL5-INF-0632",
+        "capability_id": "moving_average_c05",
+        "arguments": {"values": _FIXTURE["moving-window"]["values"], "window": _FIXTURE["moving-window"]["window"]},
+        "fixture_provenance": "FIXTURE:derived_parameters.json#moving-window; explicit six values, window 3",
     },
 ]
 
