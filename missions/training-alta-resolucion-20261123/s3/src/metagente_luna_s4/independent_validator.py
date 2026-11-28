@@ -98,6 +98,14 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "age-zero-accepted": return completed and observed.get("rejected") is False and observed.get("rows") == 1
     if expect == "command-list-rejected": return completed and observed.get("rejected") is True
     if expect == "single-zero-exit": return completed and observed.get("rejected") is not True and observed.get("commands") == ["true"] and observed.get("codes") == [0]
+    if expect == "bfs-unreachable-target": return completed and observed.get("reachable") is False and observed.get("path") == [] and observed.get("distance") is None
+    if expect == "bfs-single-node-zero-distance": return completed and observed.get("reachable") is True and observed.get("path") == ["A"] and observed.get("distance") == 0
+    if expect == "matrix-inner-dimension-mismatch": return completed and observed.get("rejected") is True and observed.get("reason") == "matrix_dimensions_invalid"
+    if expect == "matrix-single-zero-product": return completed and observed.get("rejected") is False and observed.get("result") == [[0]]
+    if expect == "determinant-nonsquare-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "matrix_must_be_3x3"
+    if expect == "determinant-identity-one": return completed and observed.get("rejected") is False and observed.get("determinant") == 1
+    if expect == "moving-window-too-wide": return completed and observed.get("window") == 4 and observed.get("means") == [] and observed.get("alignment") == "window-end"
+    if expect == "moving-single-value-boundary": return completed and observed.get("window") == 1 and observed.get("means") == [9.0] and observed.get("alignment") == "window-end"
 
     if expect == "dex-truncated-header-rejected": return completed and observed.get("rejected") is True
     if expect == "dex-minimum-valid-header": return completed and observed.get("rejected") is False and observed.get("header_size") == 112 and observed.get("checksum_valid") is True and observed.get("signature_valid") is True
