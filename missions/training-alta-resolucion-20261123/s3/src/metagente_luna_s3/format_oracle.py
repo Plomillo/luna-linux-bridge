@@ -5,6 +5,7 @@ import hashlib
 import math
 import struct
 import zlib
+import itertools
 
 
 def sqlite_header_oracle(arguments: dict, observed: dict) -> dict:
@@ -574,7 +575,7 @@ def dex_header_oracle(arguments: dict, observed: dict) -> dict:
                         extents.append((offset, offset + count * width, name))
                     table_layout[name] = {"count": count, "offset": offset, "width": width}
                 extents.sort()
-                if any(left[1] > right[0] for left, right in zip(extents, extents[1:])):
+                if any(left[1] > right[0] for left, right in itertools.pairwise(extents)):
                     offsets_valid = False
                 link_size, link_off = struct.unpack_from("<II", raw, 44)
                 link_valid = (link_size == 0 and link_off == 0) or (
