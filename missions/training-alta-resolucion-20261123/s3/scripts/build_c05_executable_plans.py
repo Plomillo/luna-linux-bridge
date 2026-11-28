@@ -16,12 +16,13 @@ from metagente_luna_s4.batch6 import CASES as BATCH6, OPERATIONS as BATCH6_OPERA
 from metagente_luna_s3.interpret import interpret
 from metagente_luna_s4.controls import CONTROLS, _build as build_controls
 from metagente_luna_s4.d01_batch import CASES as D01
+from metagente_luna_s4.d03_batch import CASES as D03
 
 
 ROOT = Path(__file__).resolve().parents[4]
 SOURCE_PATH = ROOT / "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt"
 CONTROL_PATH = Path(__file__).resolve().parents[1] / "src" / "metagente_luna_s4" / "controls.py"
-CASE_SPECS = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5 + BATCH6
+CASE_SPECS = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5 + BATCH6 + D03
 
 def _source_record(case_id: str, source: bytes, text: str, lines: list[bytes]) -> tuple[dict, str]:
     match = re.search(rf"(?m)^\[{re.escape(case_id)}\].*?(?=^\[MGL5-INF-|\Z)", text, re.S)

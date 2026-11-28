@@ -16,6 +16,7 @@ from metagente_luna_s4.batch6 import CASES as BATCH6, OPERATIONS as BATCH6_OPERA
 from metagente_luna_s3.interpret import interpret
 from metagente_luna_s4.controls import CONTROLS, _build as build_controls
 from metagente_luna_s4.d01_batch import CASES as D01
+from metagente_luna_s4.d03_batch import CASES as D03
 
 ROOT = Path(__file__).resolve().parents[4]
 SOURCE = ROOT / "PROGRAMA_DE_ENTRENAMIENTO_DE_ALTA_RESOLUCION.txt"
@@ -31,7 +32,7 @@ def build() -> tuple[list[dict], dict]:
         match.group(1)
         for match in re.finditer(r"(?m)^\[(MGL5-INF-\d{4})\]", text)
     }
-    specs = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5 + BATCH6
+    specs = D01 + BATCH2 + BATCH3 + BATCH4 + BATCH5 + BATCH6 + D03
     by_id: dict[str, dict] = {}
     duplicates: set[str] = set()
     for spec in specs:

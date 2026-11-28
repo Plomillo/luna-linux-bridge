@@ -128,6 +128,18 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "moving-window-too-wide": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_window_or_series"
     if expect == "moving-single-value-boundary": return completed and observed.get("rejected") is False and observed.get("averages") == [9.0] and observed.get("start_indices") == [0]
 
+    if expect == "zip-central-local-filename-mismatch-detected":
+        return completed and observed.get("mismatch_detected") is True and observed.get("extraction_performed") is False and observed.get("outside_destination_write") is False
+    if expect == "zip-central-local-empty-member-matches":
+        return completed and observed.get("mismatch_detected") is False and observed.get("local_names") == observed.get("central_names") == ["empty"] and observed.get("extraction_performed") is False
+    if expect == "apk-signature-invalid-detected":
+        return completed and observed.get("signature_present") is True and observed.get("signature_valid") is False and observed.get("status") == "INVALID"
+    if expect == "apk-signature-absence-detected":
+        return completed and observed.get("signature_present") is False and observed.get("signature_valid") is False and observed.get("status") == "ABSENT"
+    if expect == "apk-dex-missing-reported":
+        return completed and observed.get("missing") == ["classes.dex"] and observed.get("present") == {"manifest": True, "resources": True, "dex": False}
+    if expect == "apk-empty-members-listed":
+        return completed and observed.get("present") == {"manifest": True, "resources": True, "dex": True} and observed.get("uncompressed_bytes") == 0
     if expect == "dex-truncated-header-rejected": return completed and observed.get("rejected") is True
     if expect == "dex-minimum-valid-header": return completed and observed.get("rejected") is False and observed.get("header_size") == 112 and observed.get("checksum_valid") is True and observed.get("signature_valid") is True
     if expect == "dex-invalid-type-string-index": return completed and observed.get("rejected") is False and observed.get("indices_valid") is False
@@ -605,6 +617,21 @@ def _independent_control_accepts(expect: str, observed: dict | None, lifecycle_s
     if expect == "euler-equal-step-boundary": return completed and abs(observed.get("fine_error", 0) - observed.get("coarse_error", 0)) < 1e-12
     if expect == "rk4-step-out-of-range-rejected": return completed and observed.get("rejected") is True
     if expect == "rk4-single-step-boundary": return completed and observed.get("rejected") is not True and observed.get("step") == 1.0
+
+    if expect == "fibonacci-negative-input-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_fibonacci_index"
+    if expect == "fibonacci-zero-boundary": return completed and observed.get("rejected") is False and observed.get("naive_result") == observed.get("memoized_result") == 0 and observed.get("naive_calls") == observed.get("memoized_total_calls") == 1
+    if expect == "knapsack-negative-capacity-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_knapsack_fixture"
+    if expect == "knapsack-zero-capacity": return completed and observed.get("rejected") is False and observed.get("maximum_value") == 0
+    if expect == "email-invalid-rejected": return completed and observed.get("accepted") == [] and observed.get("invalid") == ["not-an-email"]
+    if expect == "email-minimal-domain-boundary": return completed and observed.get("accepted") == ["a@b.co"] and observed.get("invalid") == []
+    if expect == "optional-null-handled": return completed and observed.get("source") == "null" and observed.get("value") == "fallback" and observed.get("dereferenced") is False
+    if expect == "optional-value-preserved": return completed and observed.get("source") == "value" and observed.get("value") == "explicit" and observed.get("dereferenced") is True
+    if expect == "cleanup-invalid-fixture-rejected": return completed and observed.get("rejected") is True and observed.get("reason") == "invalid_hex"
+    if expect == "cleanup-empty-resource-closed": return completed and observed.get("closed") is True and observed.get("bytes_read") == 0 and observed.get("error") is None
+    if expect == "finally-without-exception-once": return completed and observed.get("error_type") is None and observed.get("finalizer_count") == 1
+    if expect == "finally-empty-exception-once": return completed and observed.get("error_type") == "ValueError" and observed.get("error_message") == "" and observed.get("finalizer_count") == 1
+    if expect == "raii-normal-exit-releases": return completed and observed.get("exit_path") == "normal_exit" and observed.get("bytes_consumed") == 7 and observed.get("released") is True and observed.get("release_count") == 1
+    if expect == "raii-empty-early-exit-releases": return completed and observed.get("exit_path") == "early_exit" and observed.get("bytes_consumed") == 0 and observed.get("released") is True and observed.get("release_count") == 1
     return False
 
 

@@ -7,6 +7,10 @@ from collections.abc import Callable
 from pydantic import BaseModel
 
 from metagente_luna_s3 import (
+    apk_inventory_exec,
+    apk_inventory_oracle,
+    apk_signature_exec,
+    apk_signature_oracle,
     archive_exec,
     archive_oracle,
     batch3_exec,
@@ -19,10 +23,14 @@ from metagente_luna_s3 import (
     batch6_oracle,
     d01_exec,
     d01_oracle,
+    d03_exec,
+    d03_oracle,
     format_exec,
     format_oracle,
     more_exec,
     more_oracle,
+    zip_central_exec,
+    zip_central_oracle,
 )
 from metagente_luna_s3.independent_oracles import cidr_bounds_oracle
 from metagente_luna_s4 import c05_preflight, c05_preflight_oracle
@@ -232,6 +240,83 @@ _ARCHIVE_ORACLES = {"zip_path_safety": "archive_path", "zip_crc": "archive_zip_c
 for _archive_name, _archive_oracle in _ARCHIVE_ORACLES.items():
     REGISTRY[_archive_name] = _cap(_archive_name, _archive_oracle, _ARCHIVE_SCHEMAS[_archive_name])
 
+REGISTRY["apk_inventory"] = _cap(
+    "apk_inventory",
+    "apk_inventory_independent",
+    {
+        "type": "object",
+        "required": ["entries"],
+        "properties": {
+            "entries": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "required": ["name", "data_hex"],
+                    "properties": {
+                        "name": {"type": "string", "minLength": 1},
+                        "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"},
+                    },
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "additionalProperties": False,
+    },
+)
+
+REGISTRY["zip_central_compare"] = _cap(
+    "zip_central_compare",
+    "zip_central_independent",
+    {
+        "type": "object",
+        "required": ["entries", "tamper_central_name"],
+        "properties": {
+            "entries": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "required": ["name", "data_hex"],
+                    "properties": {
+                        "name": {"type": "string", "minLength": 1},
+                        "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"},
+                    },
+                    "additionalProperties": False,
+                },
+            },
+            "tamper_central_name": {"type": "boolean"},
+        },
+        "additionalProperties": False,
+    },
+)
+
+REGISTRY["apk_signature_verify"] = _cap(
+    "apk_signature_verify",
+    "apk_signature_independent",
+    {
+        "type": "object",
+        "required": ["entries", "signature_mode"],
+        "properties": {
+            "entries": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "required": ["name", "data_hex"],
+                    "properties": {
+                        "name": {"type": "string", "minLength": 1},
+                        "data_hex": {"type": "string", "pattern": "^([0-9a-fA-F]{2})*$"},
+                    },
+                    "additionalProperties": False,
+                },
+            },
+            "signature_mode": {"type": "string", "enum": ["valid", "invalid", "absent"]},
+        },
+        "additionalProperties": False,
+    },
+)
+
 _FORMAT_SCHEMAS = {
     "sqlite_header": {"type": "object", "required": ["page_size"], "properties": {"page_size": {"type": "integer", "enum": [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]}}, "additionalProperties": False},
     "sqlite_integrity": {"type": "object", "required": ["corrupt", "values"], "properties": {"corrupt": {"type": "boolean"}, "values": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": False},
@@ -384,6 +469,10 @@ ORACLES["elf_dynamic_dependencies_independent"] = format_oracle.elf_dynamic_depe
 ORACLES["elf_rpath_runpath_independent"] = format_oracle.elf_rpath_runpath_oracle
 ORACLES["pe_inspect_independent"] = format_oracle.pe_inspect_oracle
 
+ORACLES["apk_inventory_independent"] = apk_inventory_oracle.apk_inventory_oracle
+ORACLES["apk_signature_independent"] = apk_signature_oracle.apk_signature_oracle
+ORACLES["zip_central_independent"] = zip_central_oracle.zip_central_compare_oracle
+
 EXECUTORS: dict[str, Callable[..., dict]] = {
     "cidr_bounds": cidr_bounds,
     "utf8_roundtrip": d01_exec.utf8_roundtrip,
@@ -475,6 +564,10 @@ EXECUTORS: dict[str, Callable[..., dict]] = {
     "moving_average_c05": batch6_exec.moving_average,
 }
 
+EXECUTORS["apk_inventory"] = apk_inventory_exec.apk_inventory
+EXECUTORS["apk_signature_verify"] = apk_signature_exec.apk_signature_verify
+EXECUTORS["zip_central_compare"] = zip_central_exec.zip_central_compare
+
 EXECUTORS.update({"zip_path_safety": archive_exec.zip_path_safety, "zip_crc": archive_exec.zip_crc, "zip_duplicates": archive_exec.zip_duplicates, "tar_offsets": archive_exec.tar_offsets, "tar_truncated": archive_exec.tar_truncated, "gzip_crc": archive_exec.gzip_crc})
 EXECUTORS.update({"sqlite_header": format_exec.sqlite_header, "sqlite_integrity": format_exec.sqlite_integrity, "wasm_header": format_exec.wasm_header})
 EXECUTORS["png_chunks"] = format_exec.png_chunks
@@ -516,3 +609,41 @@ def run(capability_id: str, arguments: dict) -> dict:
     if capability_id not in REGISTRY or capability_id not in EXECUTORS:
         raise KeyError(capability_id)
     return EXECUTORS[capability_id](**arguments)
+
+
+# D03 source-grounded implementations. Source-omitted literals are explicitly
+# recorded as fixture choices in d03_batch.py rather than attributed to source.
+REGISTRY.update({
+    "fibonacci_compare": _cap("fibonacci_compare", "fibonacci_independent", {"type":"object","required":["n"],"properties":{"n":{"type":"integer"}},"additionalProperties":False}),
+    "knapsack_01": _cap("knapsack_01", "knapsack_independent", {"type":"object","required":["items","capacity"],"properties":{"capacity":{"type":"integer"},"items":{"type":"array","items":{"type":"object","required":["weight","value"],"properties":{"weight":{"type":"integer"},"value":{"type":"integer"}},"additionalProperties":False}}},"additionalProperties":False}),
+    "email_syntax": _cap("email_syntax", "email_syntax_independent", {"type":"object","required":["addresses"],"properties":{"addresses":{"type":"array","items":{"type":"string"}}},"additionalProperties":False}),
+    "optional_value": _cap("optional_value", "optional_value_independent", {"type":"object","required":["present","value","default"],"properties":{"present":{"type":"boolean"},"value":{"type":["string","null"]},"default":{"type":"string"}},"additionalProperties":False}),
+    "read_cleanup": _cap("read_cleanup", "read_cleanup_independent", {"type":"object","required":["payload_hex","fail_read"],"properties":{"payload_hex":{"type":"string"},"fail_read":{"type":"boolean"}},"additionalProperties":False}),
+    "finally_once": _cap("finally_once", "finally_once_independent", {"type":"object","required":["raise_error","message"],"properties":{"raise_error":{"type":"boolean"},"message":{"type":"string"}},"additionalProperties":False}),
+    "raii_release": _cap("raii_release", "raii_release_independent", {"type":"object","required":["early_exit","payload_hex"],"properties":{"early_exit":{"type":"boolean"},"payload_hex":{"type":"string"}},"additionalProperties":False}),
+})
+ORACLES.update({
+    "fibonacci_compare": d03_oracle.fibonacci_oracle,
+    "knapsack_01": d03_oracle.knapsack_oracle,
+    "email_syntax": d03_oracle.email_oracle,
+    "optional_value": d03_oracle.optional_value_oracle,
+    "read_cleanup": d03_oracle.cleanup_oracle,
+    "finally_once": d03_oracle.finally_oracle,
+    "raii_release": d03_oracle.raii_oracle,
+    "fibonacci_independent": d03_oracle.fibonacci_oracle,
+    "knapsack_independent": d03_oracle.knapsack_oracle,
+    "email_syntax_independent": d03_oracle.email_oracle,
+    "optional_value_independent": d03_oracle.optional_value_oracle,
+    "read_cleanup_independent": d03_oracle.cleanup_oracle,
+    "finally_once_independent": d03_oracle.finally_oracle,
+    "raii_release_independent": d03_oracle.raii_oracle,
+})
+EXECUTORS.update({
+    "fibonacci_compare": d03_exec.fibonacci_compare,
+    "knapsack_01": d03_exec.knapsack_01,
+    "email_syntax": d03_exec.email_syntax,
+    "optional_value": d03_exec.optional_value,
+    "read_cleanup": d03_exec.read_cleanup,
+    "finally_once": d03_exec.finally_once,
+    "raii_release": d03_exec.raii_release,
+})
