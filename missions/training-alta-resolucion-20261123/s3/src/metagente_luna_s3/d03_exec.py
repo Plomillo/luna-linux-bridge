@@ -56,27 +56,11 @@ def knapsack_01(items: list[dict], capacity: int) -> dict:
         weight, value = item["weight"], item["value"]
         for room in range(capacity, weight - 1, -1):
             table[room] = max(table[room], table[room - weight] + value)
-    selected = []
-    remaining = capacity
-    for index in range(len(items) - 1, -1, -1):
-        previous = [0] * (capacity + 1)
-        for item in items[:index]:
-            for room in range(capacity, item["weight"] - 1, -1):
-                previous[room] = max(previous[room], previous[room - item["weight"]] + item["value"])
-        if table[remaining] != previous[remaining]:
-            selected.append(index)
-            remaining -= items[index]["weight"]
-            table = previous
-    selected.reverse()
+    best_value = table[capacity]
     return {
         "rejected": False,
         "capacity": capacity,
-        "maximum_value": max([0] + [0]) if not items else max(
-            sum(items[i]["value"] for i in combo)
-            for mask in range(1 << len(items))
-            for combo in [[i for i in range(len(items)) if mask & (1 << i)]]
-            if sum(items[i]["weight"] for i in combo) <= capacity
-        ),
+        "maximum_value": best_value,
         "algorithm": "0/1_DYNAMIC_PROGRAMMING",
         "items_considered": len(items),
     }
